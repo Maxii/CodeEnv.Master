@@ -5,12 +5,12 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: Utility.cs
+// File: General.cs
 // TODO - one line to give a brief idea of what the file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-namespace CodeEnv.Master.Common.Utility {
+namespace CodeEnv.Master.Common.General {
 
     using System;
     using System.Collections.Generic;

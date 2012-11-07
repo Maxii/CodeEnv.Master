@@ -34,6 +34,7 @@
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Design" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.XML" />
     <Reference Include="System.Xml.Linq" />
@@ -55,9 +56,9 @@
     <Compile Include="ResourceMgmt\ResourceMgrFactory.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Utility\Arguments.cs" />
-    <Compile Include="Utility\Constants.cs" />
-    <Compile Include="Utility\Utility.cs">
+    <Compile Include="General\Arguments.cs" />
+    <Compile Include="General\Constants.cs" />
+    <Compile Include="General\Utility.cs">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>

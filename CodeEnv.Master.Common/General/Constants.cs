@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-namespace CodeEnv.Master.Common.Utility {
+namespace CodeEnv.Master.Common.General {
 
     using System;
     using System.IO;
@@ -28,8 +28,8 @@ namespace CodeEnv.Master.Common.Utility {
         //public sealed static DecimalFormat FOUR_DP = new DecimalFormat("0.####");
 
         // Common Strings
-        public const string UserCurrentWorkingDirectoryPath = System.Environment.CurrentDirectory;
-        public const string NewLine = System.Environment.NewLine;
+        public static readonly string UserCurrentWorkingDirectoryPath = System.Environment.CurrentDirectory;
+        public static readonly string NewLine = System.Environment.NewLine;
         public const string Space = " ";
         public const string Period = ".";
         public const string Tab = "\t";
@@ -40,8 +40,8 @@ namespace CodeEnv.Master.Common.Utility {
         public const string Ellipsis = "...";
 
         // Common Characters        
-        public const char FileSeparator = Path.DirectorySeparatorChar;
-        public const char PathSeparator = Path.PathSeparator;
+        public static readonly char FileSeparator = Path.DirectorySeparatorChar;
+        public static readonly char PathSeparator = Path.PathSeparator;
         public const char CommaDelimiter = ',';
         public const char SpaceDelimiter = ' ';
         public const char PeriodDelimiter = '.';

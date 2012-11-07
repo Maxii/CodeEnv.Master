@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-namespace CodeEnv.Master.Common.Utility {
+namespace CodeEnv.Master.Common.General {
 
     using System;
     using System.Collections.Generic;

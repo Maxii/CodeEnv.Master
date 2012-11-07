@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using CodeEnv.Master.Common.MyEnums;
-using CodeEnv.Master.Common.Utility;
+using CodeEnv.Master.Common.General;
 
 
 namespace Program {
@@ -15,10 +15,6 @@ namespace Program {
 
         internal void Init() {
             picList = System.IO.Directory.GetFiles(@"C:\Users\Public\Pictures\Sample Pictures", "*.jpg");
-            // proves GetListFromString works
-            picList = Utility.GetListFromString(string.Join(",", picList));
-            // proves exception can draw message from Resources
-            //  picList = Utility.GetListFromString(null);
         }
 
         internal string peek() {

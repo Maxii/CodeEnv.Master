@@ -16,7 +16,7 @@ namespace CodeEnv.Master.Common.MyEnums {
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common.Extensions;
-    using CodeEnv.Master.Common.Utility;
+    using CodeEnv.Master.Common.General;
 
     /// <summary>
     /// Courtesy of Damien Guard. http://damieng.com/blog/category/development/net

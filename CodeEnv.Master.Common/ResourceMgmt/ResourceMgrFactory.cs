@@ -16,9 +16,15 @@ namespace CodeEnv.Master.Common.ResourceMgmt {
     using System.Collections.Generic;
     using System.Linq;
     using System.Resources;
-    using CodeEnv.Master.Common.Utility;
+    using CodeEnv.Master.Common.General;
     using CodeEnv.Master.Common.Extensions;
     using System.Reflection;
+    using System.IO;
+    using Microsoft.CSharp;
+    using System.CodeDom;
+    using System.CodeDom.Compiler;
+    using System.Diagnostics;
+    using System.Resources.Tools;
 
     /// <summary>
     /// SingletonPattern. TODO
@@ -32,7 +38,7 @@ namespace CodeEnv.Master.Common.ResourceMgmt {
         /// Explicit static constructor that enables lazy instantiation by telling C# compiler
         /// not to mark type as beforefieldinit.
         /// </summary>
-        private static ResourceMgrFactory() { }
+        static ResourceMgrFactory() { }
 
         /// <summary>
         /// Private constructor that prevents the creation of another externally requested instance of <see cref="ResourceMgrFactory"/>.
@@ -54,7 +60,35 @@ namespace CodeEnv.Master.Common.ResourceMgmt {
         public void Initialize(string rootResourceNamespace) {
             Utility.ValidateAccess(!isInitialized);
             RootResourceNamespace = rootResourceNamespace;
+            InitializeStrongTypedResourceAccessor(rootResourceNamespace);
             isInitialized = true;
+        }
+
+        /// <summary>
+        /// Initializes the strongly typed resource accessor, allowing syntax like StronglyTypedResourceAccessor.NameOfResource.
+        /// TODO improve this to generate an Accessor for EACH .resx Resource file
+        /// </summary>
+        /// <param name="rootResourceNamespace">The root resource namespace.</param>
+        private void InitializeStrongTypedResourceAccessor(string rootResourceNamespace) {
+            string desiredAccessorClassName = "StronglyTypedResourceAccessor";
+            string desiredAccessorFileName = @".\" + desiredAccessorClassName + Constants.Period + ".cs";
+            string accessorCodeNamespace = GetType().Namespace;
+            StreamWriter sw = new StreamWriter(desiredAccessorFileName);    // creates the .cs file to write code too
+            string resxFilePath = rootResourceNamespace + Constants.FileSeparator + "ErrorStrings.resx";
+            string[] errors = null;
+            CSharpCodeProvider provider = new CSharpCodeProvider(); // specifies use of C# as the code language of the accessor
+
+            bool generateInternalClass = false;   // means accessor class created will be public
+            CodeCompileUnit code = StronglyTypedResourceBuilder.Create(resxFilePath, desiredAccessorClassName,
+                                                                       accessorCodeNamespace, provider,
+                                                                       generateInternalClass, out errors);
+            if (errors.Length > 0) {
+                foreach (var error in errors) {
+                    Debug.WriteLine(error);
+                }
+            }
+            provider.GenerateCodeFromCompileUnit(code, sw, new CodeGeneratorOptions());
+            sw.Close();
         }
 
         private string rootResourceNamespace;
@@ -63,7 +97,7 @@ namespace CodeEnv.Master.Common.ResourceMgmt {
                 Utility.ValidateAccess(isInitialized);
                 return rootResourceNamespace;
             }
-            private set;
+            private set { rootResourceNamespace = value; }
         }
 
         public enum ResourceFileName {

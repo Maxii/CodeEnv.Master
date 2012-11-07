@@ -21,7 +21,7 @@ namespace CodeEnv.Master.MyWpfApplicationPrototype {
     using System.Windows;
     using System.Windows.Threading;
     using CodeEnv.Master.Common.ResourceMgmt;
-    using CodeEnv.Master.Common.Utility;
+    using CodeEnv.Master.Common.General;
 
     /// <summary>
     /// The main entry point extending the Application class, implementing code behind logic for App.xaml
