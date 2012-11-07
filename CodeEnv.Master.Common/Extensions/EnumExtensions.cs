@@ -10,25 +10,28 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-namespace CodeEnv.Master.Common.MyEnums {
+namespace CodeEnv.Master.Common.Extensions {
 
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Reflection;
+    using CodeEnv.Master.Common.MyEnums;
 
     /// <summary>
     /// Static class encapsulating extension methods for Direction, allowing
     /// usage like: string friendlyDescription = Direction.FIRST.GetDescription()
     /// </summary>
-    public static class EnumHelper {
+    public static class EnumExtensions {
 
         /// <summary>Gets the string name of the enum constant. Equivalent to enumConstant.toString().</summary>
         /// <param name="enumConstant">The enum constant.</param>
         /// <returns>The string name of this enumConstant. </returns>
         /// <remarks>Not localizable. For localizable descriptions, use GetDescription().</remarks>
         public static string GetName(this Enum enumConstant) {
-            return enumConstant.ToString();
+            Type enumType = enumConstant.GetType();
+            //return Enum.GetName(enumType, enumConstant); // OPTIMIZE better performance than enumConstant.ToString()?
+            return Enum.GetName(enumType, enumConstant);    // FIXME Enum<enumType>.getName(enumConstant) won't compile
         }
 
         /// <summary>Gets the friendly description.</summary>
@@ -41,7 +44,7 @@ namespace CodeEnv.Master.Common.MyEnums {
 
             EnumAttribute attribute = GetAttribute(enumConstant);
             if (attribute == null) {
-                return enumConstant.ToString();
+                return GetName(enumConstant);
             }
             return attribute.FriendlyDescription;
             // TODO convert to a localizable version using resources
@@ -65,7 +68,7 @@ namespace CodeEnv.Master.Common.MyEnums {
             foreach (Enum value in enumValues) {
                 list.Add(new KeyValuePair<Enum, string>(value, GetDescription(value)));
             }
-            
+
             return list;
         }
 
@@ -77,6 +80,6 @@ namespace CodeEnv.Master.Common.MyEnums {
             Type enumType = enumConstant.GetType();
             return enumType.GetField(Enum.GetName(enumType, enumConstant));
         }
-    }   
+    }
 }
 

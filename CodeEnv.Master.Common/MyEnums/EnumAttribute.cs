@@ -15,7 +15,7 @@ namespace CodeEnv.Master.Common.MyEnums {
     using System;
 
     /// <summary>
-    /// Uses Attribute metadata to capture whatever values we want to associate with each Direction Value.
+    /// Uses Attribute metadata to capture whatever values we want to associate with each MyEnum Value.
     /// </summary>
     /// 
     /// <remarks>Attribute parameters can only be a) primitive types, b) the Type enumType, c) an enum enumType

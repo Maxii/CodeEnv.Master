@@ -30,4 +30,5 @@ namespace CodeEnv.Master.Common.MyEnums {
         [EnumAttribute("Down")]
         DOWN = 8
     }
+
 }
