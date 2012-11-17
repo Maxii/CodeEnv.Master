@@ -20,8 +20,7 @@ namespace CodeEnv.Master.MyWpfApplicationPrototype {
     using System.Reflection;
     using System.Windows;
     using System.Windows.Threading;
-    using CodeEnv.Master.Common.ResourceMgmt;
-    using CodeEnv.Master.Common.General;
+    using CodeEnv.Master.Common;
 
     /// <summary>
     /// The main entry point extending the Application class, implementing code behind logic for App.xaml
@@ -59,10 +58,11 @@ namespace CodeEnv.Master.MyWpfApplicationPrototype {
             // IMPROVE For more robust command line processing approach, see http://msdn.microsoft.com/en-us/library/aa972153(v=vs.90).aspx
             bool godMode = false;
             for (int i = 0; i != e.Args.Length; ++i) {
-                if (e.Args[i] == "/GodMode") {
+                if (e.Args[i] == Constants.GodMode) {
                     godMode = true;
                 }
             }
+
             // UNDONE do something with godMode
 
             // The singleton instance of App or Application can be acquired once the Application.Startup event has been received
@@ -74,16 +74,16 @@ namespace CodeEnv.Master.MyWpfApplicationPrototype {
             mainWindow.Show();
         }
 
-        private void Initialize() {
-            App app = (App)Application.Current;
-            string appNamespace = app.GetType().Namespace;
-            string resourceNamespace = appNamespace + Constants.Period + "Resources";
-            ResourceMgrFactory.Instance.Initialize(resourceNamespace);
-        }
+        //private void Initialize() {
+        //    App app = (App)Application.Current;
+        //    string appNamespace = app.GetType().Namespace;
+        //    string resourceNamespace = appNamespace + Constants.Period + "Resources";
+        //    ResourceMgrFactory.Instance.Initialize(resourceNamespace);
+        //}
 
         /// <summary>
         /// Handles the Application.Activated event signifying either the MainWindow has initially shown or the user
-        /// has switched from another application by selecting one of this Application's Windows. This is not a Window.Activated event.
+        /// has switched from another application by selecting one of this Application'text Windows. This is not a Window.Activated event.
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="EventArgs" /> instance containing the event data.</param>
@@ -94,7 +94,7 @@ namespace CodeEnv.Master.MyWpfApplicationPrototype {
 
         /// <summary>
         /// Handles the Application.Deactivated event signifying either the application has shut down or the user
-        /// has switched from this application by selecting one of another application's windows. This is not a Window.Deactivated event.       
+        /// has switched from this application by selecting one of another application'text windows. This is not a Window.Deactivated event.       
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="EventArgs" /> instance containing the event data.</param>

@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace CodeEnv.Master.MyWpfApplicationPrototype.Resources {
+namespace CodeEnv.Master.Resources {
     using System;
     
     
@@ -22,14 +22,14 @@ namespace CodeEnv.Master.MyWpfApplicationPrototype.Resources {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    public class ErrorStrings {
+    public class CommonTerms {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
         private static global::System.Globalization.CultureInfo resourceCulture;
         
         [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        internal ErrorStrings() {
+        internal CommonTerms() {
         }
         
         /// <summary>
@@ -39,7 +39,7 @@ namespace CodeEnv.Master.MyWpfApplicationPrototype.Resources {
         public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("CodeEnv.Master.MyWpfApplicationPrototype.Resources.ErrorStrings", typeof(ErrorStrings).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("CodeEnv.Master.Resources.CommonTerms", typeof(CommonTerms).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -47,7 +47,7 @@ namespace CodeEnv.Master.MyWpfApplicationPrototype.Resources {
         }
         
         /// <summary>
-        ///   Overrides the current thread'text CurrentUICulture property for all
+        ///   Overrides the current thread's CurrentUICulture property for all
         ///   resource lookups using this strongly typed resource class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
@@ -61,20 +61,38 @@ namespace CodeEnv.Master.MyWpfApplicationPrototype.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The string named {0} should not be empty..
+        ///   Looks up a localized string similar to Down.
         /// </summary>
-        public static string ArgumentException_EmptyString {
+        public static string Down {
             get {
-                return ResourceManager.GetString("ArgumentException_EmptyString", resourceCulture);
+                return ResourceManager.GetString("Down", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The low enumConstant {0} is greater than the high enumConstant {1}..
+        ///   Looks up a localized string similar to Left.
         /// </summary>
-        public static string ArgumentException_LowGreaterThanHigh {
+        public static string Left {
             get {
-                return ResourceManager.GetString("ArgumentException_LowGreaterThanHigh", resourceCulture);
+                return ResourceManager.GetString("Left", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Right.
+        /// </summary>
+        public static string Right {
+            get {
+                return ResourceManager.GetString("Right", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Up.
+        /// </summary>
+        public static string Up {
+            get {
+                return ResourceManager.GetString("Up", resourceCulture);
             }
         }
     }

@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-namespace CodeEnv.Master.Common.General {
+namespace CodeEnv.Master.Common {
 
     using System;
     using System.IO;
@@ -21,11 +21,17 @@ namespace CodeEnv.Master.Common.General {
     public static class Constants {
 
 
-        // Common Formats. Usage: ONE_DP.format(variable)
-        //public sealed static DecimalFormat NO_DP = new DecimalFormat("0");
-        //public sealed static DecimalFormat ONE_DP = new DecimalFormat("0.#");
-        //public sealed static DecimalFormat TWO_DP = new DecimalFormat("0.##");
-        //public sealed static DecimalFormat FOUR_DP = new DecimalFormat("0.####");
+        // Composite Formatting for Argument Index 0      see  http://msdn.microsoft.com/en-us/library/txafckwd.aspx 
+        // TODO how to structure this so that the index number is insertable?
+        public const string StringArgFormatNoDP = "{0:0}";   // "{0:0.}"?
+        public const string StringArgFormatMaxOneDP = "{0:0.#}";
+        public const string StringArgFormatTwoDP = "{0:0.00}"; // read as for Argument Index 0 : Leading/Trailing zeros = 0 . Decimal places = 2
+        public const string StringArgFormatMaxTwoDP = "{0:0.##}";    // read as for Argument Index 0 : Leading/Trailing zeros = 0 . Decimal places = up to 2
+        public const string StringArgFormatMaxFourDP = "{0:0.####}";
+
+        // Common Numeric Formatting  see http://msdn.microsoft.com/en-us/library/dwhawy9k.aspx
+        public const string CurrencyNumericFormat = "C02";
+        public const string PercentNumericFormat = "P00";
 
         // Common Strings
         public static readonly string UserCurrentWorkingDirectoryPath = System.Environment.CurrentDirectory;
@@ -36,8 +42,11 @@ namespace CodeEnv.Master.Common.General {
         public const string Comma = ",";
         public const string DoubleQuote = "\"";
         public const string SingleQuote = "'";
-        public const string UnderScore = "_";
+        public const string Underscore = "_";
         public const string Ellipsis = "...";
+
+        // Switch Strings
+        public const string GodMode = "/GodMode";
 
         // Common Characters        
         public static readonly char FileSeparator = Path.DirectorySeparatorChar;
@@ -50,9 +59,13 @@ namespace CodeEnv.Master.Common.General {
         public const string PositiveSign = "+";
         public const string NegativeSign = "-";
 
+        public const int MinusOne = -1;
+        public const int Zero = 0;
         public const int One = 1;
 
-        public const float Zero = 0.0F;
+        public const long ZeroL = 0L;
+
+        public const float ZeroF = 0.0F;
         public const float ZeroPercent = 0.0F;
         public const float OneHundredPercent = 1.0F;
 

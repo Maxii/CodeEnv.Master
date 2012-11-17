@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-namespace CodeEnv.Master.Common.MyEnums {
+namespace CodeEnv.Master.Common {
 
     using System;
 
@@ -22,7 +22,7 @@ namespace CodeEnv.Master.Common.MyEnums {
     /// or d) a one-dimensional array of any of these.
     /// <para>Uses Reflection so performance is slow. TODO - use Dictionary lookup after initial use.</para>
     /// </remarks>
-    /// 
+    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]   // Custom Attributes - see Pro .NET 3.5 Page 548
     public sealed class EnumAttribute : Attribute {
 
         /// <summary>

@@ -11,9 +11,10 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-namespace CodeEnv.Master.Common.MyEnums {
+namespace CodeEnv.Master.Common {
 
     using System;
+    using CodeEnv.Master.Resources;
 
     /// <summary>
     /// The specialized enum itself.
@@ -21,14 +22,14 @@ namespace CodeEnv.Master.Common.MyEnums {
     /// <remarks>Use Enum.isDefined() to test Direction for validity before using in a switch statement.
     /// C# enums are not enumType-safe.</remarks>
     public enum Direction {
-        [EnumAttribute("Left")]
-        LEFT = 1,
+        [EnumAttribute("Left")]   // Can'fieldType substitute a string Resource for a string in an Attribute argument
+        Left,
         [EnumAttribute("Right")]
-        RIGHT = 2,
+        Right,
         [EnumAttribute("Up")]
-        UP = 4,
+        Up,
         [EnumAttribute("Down")]
-        DOWN = 8
+        Down
     }
 
 }

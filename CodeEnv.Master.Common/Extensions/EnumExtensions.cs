@@ -10,13 +10,12 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-namespace CodeEnv.Master.Common.Extensions {
+namespace CodeEnv.Master.Common {
 
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Reflection;
-    using CodeEnv.Master.Common.MyEnums;
 
     /// <summary>
     /// Static class encapsulating extension methods for Direction, allowing
@@ -29,18 +28,16 @@ namespace CodeEnv.Master.Common.Extensions {
         /// <returns>The string name of this enumConstant. </returns>
         /// <remarks>Not localizable. For localizable descriptions, use GetDescription().</remarks>
         public static string GetName(this Enum enumConstant) {
+            Arguments.ValidateNotNull(enumConstant);
             Type enumType = enumConstant.GetType();
-            //return Enum.GetName(enumType, enumConstant); // OPTIMIZE better performance than enumConstant.ToString()?
-            return Enum.GetName(enumType, enumConstant);    // FIXME Enum<enumType>.getName(enumConstant) won't compile
+            return Enum.GetName(enumType, enumConstant);    // OPTIMIZE better performance than enumConstant.ToString()?
         }
 
         /// <summary>Gets the friendly description.</summary>
         /// <param friendlyDescription="enumConstant">The named enum constant.</param>
         /// <returns>A friendly description as a string or toString() if no <see cref="EnumAttribute"/> is present.</returns>
         public static string GetDescription(this Enum enumConstant) {
-            if (enumConstant == null) {
-                throw new ArgumentNullException("enumConstant");
-            }
+            Arguments.ValidateNotNull(enumConstant);
 
             EnumAttribute attribute = GetAttribute(enumConstant);
             if (attribute == null) {
@@ -58,9 +55,7 @@ namespace CodeEnv.Master.Common.Extensions {
         /// <returns>An <see cref="IList"/> containing the enumerated
         /// values (key) and descriptions of the provided Type.</returns>
         public static IList ToList(this Type enumType) {
-            if (enumType == null) {
-                throw new ArgumentNullException("enumType");
-            }
+            Arguments.ValidateNotNull(enumType);
 
             ArrayList list = new ArrayList();
             Array enumValues = Enum.GetValues(enumType);
@@ -68,7 +63,6 @@ namespace CodeEnv.Master.Common.Extensions {
             foreach (Enum value in enumValues) {
                 list.Add(new KeyValuePair<Enum, string>(value, GetDescription(value)));
             }
-
             return list;
         }
 

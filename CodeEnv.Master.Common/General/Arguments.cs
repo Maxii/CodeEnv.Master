@@ -10,10 +10,11 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-namespace CodeEnv.Master.Common.General {
+namespace CodeEnv.Master.Common {
 
     using System;
     using System.Collections.Generic;
+    using CodeEnv.Master.Resources;
 
     /// <summary>
     /// A collection of static utility methods for common argument
@@ -32,10 +33,10 @@ namespace CodeEnv.Master.Common.General {
         /// explicit test can be useful.
         /// </summary>
         /// <param name="arg">The arg.</param>
-        /// <exception cref="System.ArgumentNullException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
         public static void ValidateNotNull(object arg) {
             if (arg == null) {
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(ErrorMessages.Null);
             }
         }
 
@@ -46,7 +47,7 @@ namespace CodeEnv.Master.Common.General {
         /// <exception cref="ArgumentException">Text is null or has no content.</exception>
         public static void ValidateForContent(string text) {
             if (!Utility.CheckForContent(text)) {
-                throw new ArgumentException("Text has no visible content.");
+                throw new ArgumentException(ErrorMessages.EmptyOrNullString);
             }
         }
 
@@ -59,9 +60,7 @@ namespace CodeEnv.Master.Common.General {
         /// <exception cref="IllegalArgumentException"></exception>
         public static void ValidateForRange(int number, int low, int high) {
             if (!Utility.IsInRange(number, low, high)) {
-                throw new ArgumentOutOfRangeException
-                (number + " not in range " + low
-                                                   + ".." + high);
+                throw new ArgumentOutOfRangeException(ErrorMessages.OutOfRange.Inject(number, low, high));
             }
         }
 
@@ -71,10 +70,10 @@ namespace CodeEnv.Master.Common.General {
         /// <param name="number">The number.</param>
         /// <param name="low">The low.</param>
         /// <param name="high">The high.</param>
-        /// <exception cref="IllegalArgumentException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         public static void ValidateForRange(float number, float low, float high) {
             if (number < low || number > high) {
-                throw new ArgumentOutOfRangeException(number + " not in range " + low + ".." + high);
+                throw new ArgumentOutOfRangeException(ErrorMessages.OutOfRange.Inject(number, low, high));
             }
         }
 
@@ -82,10 +81,10 @@ namespace CodeEnv.Master.Common.General {
         /// Validates the provided number is not negative.
         /// </summary>
         /// <param name="number">The number.</param>
-        /// <exception cref="IllegalArgumentException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         public static void ValidateNotNegative(int number) {
-            if (number < 0) {
-                throw new ArgumentOutOfRangeException(number + " is < 0.");
+            if (number < Constants.Zero) {
+                throw new ArgumentOutOfRangeException(ErrorMessages.NegativeValue.Inject(number));
             }
         }
 
@@ -93,24 +92,35 @@ namespace CodeEnv.Master.Common.General {
         /// Validates the provided number is not negative.
         /// </summary>
         /// <param name="number">The number.</param>
-        /// <exception cref="IllegalArgumentException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         public static void ValidateNotNegative(long number) {
-            if (number < 0L) {
-                throw new ArgumentOutOfRangeException(number + " is < 0.");
+            if (number < Constants.ZeroL) {
+                throw new ArgumentOutOfRangeException(ErrorMessages.NegativeValue.Inject(number));
             }
         }
 
         /// <summary>
-        /// Validates the provided Collection is not empty.
+        /// Validates the provided number is not negative.
+        /// </summary>
+        /// <param name="number">The number.</param>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public static void ValidateNotNegative(float number) {
+            if (number < Constants.ZeroF) {
+                throw new ArgumentOutOfRangeException(ErrorMessages.NegativeValue.Inject(number));
+            }
+        }
+
+        /// <summary>
+        /// Validates the provided Collection is not empty or null;
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="collection">The collection.</param>
-        /// <exception cref="System.ArgumentException">Collection is empty.</exception>
+        /// <exception cref="ArgumentException">Collection is empty.</exception>
         /// <exception cref="ArgumentNullException">Collection is null.</exception>
         public static void ValidateNotEmpty<T>(ICollection<T> collection) {
             ValidateNotNull(collection);
             if (collection.Count == 0) {
-                throw new ArgumentException("Collection is empty.");
+                throw new ArgumentException(ErrorMessages.CollectionEmpty);
             }
         }
     }

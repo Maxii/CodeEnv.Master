@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-namespace CodeEnv.Master.Common.Extensions {
+namespace CodeEnv.Master.Common {
 
     using System;
     using System.Collections.Generic;
@@ -32,9 +32,8 @@ namespace CodeEnv.Master.Common.Extensions {
         /// <returns></returns>
         /// <exception cref="System.ArgumentNullException">source</exception>
         public static bool EqualsAnyOf<T>(this T source, params T[] args) {
-            if (null == source) {   // UNDERSTAND how can the object calling this extension be null?
-                throw new ArgumentNullException("source");
-            }
+            Arguments.ValidateNotNull(source);
+            Arguments.ValidateNotEmpty(args);
             return args.Contains<T>(source);
         }
 
@@ -55,6 +54,7 @@ namespace CodeEnv.Master.Common.Extensions {
         /// <param name="args">The list of values of Type T to pick from.</param>
         /// <returns></returns>
         public static T OneOf<T>(this Random rngInstance, params T[] args) {
+            Arguments.ValidateNotEmpty(args);
             return args[rngInstance.Next(args.Length)];
         }
 

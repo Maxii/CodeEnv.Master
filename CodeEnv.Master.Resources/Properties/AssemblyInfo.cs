@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Resources;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -6,8 +7,16 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("CodeEnv.Master.Common")]
+[assembly: AssemblyTitle("CodeEnv.Master.Resources")]
 [assembly: AssemblyCulture("")]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("5A64D9E2-0BF6-4CE2-B443-6C45C110E5A8")]
+[assembly: Guid("d8b7e94a-dbac-46f3-9790-b136ef51594b")]
+
+// Instructs the resource fallback process to search for the default culture resource file in a satellite assembly rather than the Main assembly
+[assembly: NeutralResourcesLanguageAttribute("en-US", UltimateResourceFallbackLocation.Satellite)]
+
+
+
+
+

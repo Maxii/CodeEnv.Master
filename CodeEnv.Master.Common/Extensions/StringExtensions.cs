@@ -10,11 +10,8 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-namespace CodeEnv.Master.Common.Extensions {
-
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
+using System.Globalization;
+namespace CodeEnv.Master.Common {
 
     /// <summary>
     /// TODO 
@@ -25,11 +22,12 @@ namespace CodeEnv.Master.Common.Extensions {
         /// Inserts the ToString() verion of the arguments provided into the calling string using string.Format().
         /// Usage syntax: "The {0} jumped over the {1}.".Inject("Cat", "Moon");
         /// </summary>
-        /// <param name="s">The calling string.</param>
+        /// <param name="text">The calling string.</param>
         /// <param name="args">The arguments to be inserted into the formated string.</param>
         /// <returns></returns>
-        public static string Inject(this string s, params object[] args) {
-            return string.Format(s, args);
+        public static string Inject(this string text, params object[] args) {
+            Arguments.ValidateForContent(text);
+            return string.Format(CultureInfo.CurrentCulture, text, args);
         }
 
     }

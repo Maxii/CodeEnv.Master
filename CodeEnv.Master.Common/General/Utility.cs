@@ -10,23 +10,21 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-namespace CodeEnv.Master.Common.General {
+namespace CodeEnv.Master.Common {
 
     using System;
     using System.Collections.Generic;
     using System.Resources;
-    using CodeEnv.Master.Common.Extensions;
-    using CodeEnv.Master.Common.ResourceMgmt;
+
+    using CodeEnv.Master.Resources;
 
     /// <summary>
     /// TODO 
     /// </summary>
     public static class Utility {
 
-        private static ResourceMgrFactory resourceMgrFactory = ResourceMgrFactory.Instance;
-
         /// <summary>
-        /// Determines whether a value is in the range low..high, inclusive.
+        /// Determines whether a enumConstant is in the range low..high, inclusive.
         /// </summary>
         /// <param name="number">The number.</param>
         /// <param name="low">The acceptable low.</param>
@@ -37,8 +35,8 @@ namespace CodeEnv.Master.Common.General {
         /// <exception cref="System.ArgumentException">Low is greater than High.</exception>
         public static bool IsInRange(int number, int low, int high) {
             if (low > high) {
-                string errorMsg = resourceMgrFactory.GetString(ResourceMgrFactory.ResourceFileName.ErrorStrings, "ArgumentException_LowGreaterThanHigh");
-                throw new ArgumentException(errorMsg.Inject(low, high));
+                string errorMsg = ErrorMessages.LowGreaterThanHigh.Inject(low, high);
+                throw new ArgumentException(errorMsg);
             }
             return ((low <= number) && (number <= high));
         }
@@ -46,21 +44,20 @@ namespace CodeEnv.Master.Common.General {
         /// <summary>
         /// Parses the boolean.
         /// </summary>
-        /// <param name="boolString">The boolean string.</param>
+        /// <param name="boolText">The boolean string.</param>
         /// <returns> Returns <c>true</c> if bool parameter equals "true" (ignoring
         /// case), or <c>false</c>  if bool equals "false" (ignoring case).</returns>
         /// <exception cref="System.ArgumentException">Cannot parse into Boolean: 
-        ///                                                    + boolString</exception>
-        public static bool ParseBoolean(string boolString) {
-            if (boolString.Equals("true", StringComparison.OrdinalIgnoreCase)) {
+        ///                                                    + boolText</exception>
+        public static bool ParseBoolean(string boolText) {
+            if (boolText.Equals("true", StringComparison.OrdinalIgnoreCase)) {
                 return true;
             }
-            else if (boolString.Equals("false", StringComparison.OrdinalIgnoreCase)) {
+            else if (boolText.Equals("false", StringComparison.OrdinalIgnoreCase)) {
                 return false;
             }
             else {
-                throw new ArgumentException("Cannot parse into Boolean: "
-                                                   + boolString);
+                throw new ArgumentException(ErrorMessages.NotBoolean.Inject(boolText));
             }
         }
 
@@ -84,10 +81,20 @@ namespace CodeEnv.Master.Common.General {
         /// <exception cref="System.MethodAccessException"></exception>
         public static void ValidateAccess(bool accessIsValid) {
             if (!accessIsValid) {
-                String msg =
-                        "Accessing an object or method that is either not initialized, closed or otherwise invalid.";
-                throw new MethodAccessException(msg);
+                throw new MethodAccessException(ErrorMessages.InvalidAccess);
             }
+        }
+
+        /// <summary>
+        /// Generates and returns a list of substrings from the provided text, using the specified delimiter.
+        /// </summary>
+        /// <param name="text">The text to separate.</param>
+        /// <param name="delimiter">The delimiter.</param>
+        /// <returns></returns>
+        public static IList<String> GetListFromString(String text, char delimiter) {
+            Arguments.ValidateForContent(text);
+            IList<string> result = text.Split(delimiter);
+            return result;
         }
     }
 }
