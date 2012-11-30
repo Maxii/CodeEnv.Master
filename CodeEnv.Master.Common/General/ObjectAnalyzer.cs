@@ -18,6 +18,7 @@ namespace CodeEnv.Master.Common {
     using System.Linq;
     using System.Reflection;
     using System.Security.Permissions;
+    using System.Text;
     using CodeEnv.Master.Resources;
 
     /// <summary>
@@ -39,87 +40,97 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         private IList<object> visited = new List<object>();
         private BindingFlags allNonStaticFields = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        private BindingFlags nonStaticPublicFields = BindingFlags.Instance | BindingFlags.Public;
+        private bool showPrivate = false;
 
 
         /// <summary>
         /// Returns a <see cref="System.String" /> containing a comprehensive view of the supplied object instance.
         /// </summary>
-        /// <param name="obj">The obj.</param>
+        /// <param name="objectToConvert">The object to convert to a string.</param>
         /// <returns>
         /// A <see cref="System.String" /> that represents this instance.
         /// </returns>
-        public string ToString(object obj) {
-            string objContentString = string.Empty;
+        public string ToString(object objectToConvert) {
+#if DEBUG
+            showPrivate = true;
+#endif
+            return ConvertToString(objectToConvert);
+        }
+
+        private string ConvertToString(object obj) {
+            StringBuilder objContentMsg = new StringBuilder();
             if (obj == null) {
-                objContentString = GeneralMessages.NullObject;
-                return objContentString;
+                objContentMsg.Append(GeneralMessages.NullObject);
+                return objContentMsg.ToString();
             }
             if (visited.Contains(obj)) {
-                objContentString = "...";
-                return objContentString;
+                objContentMsg.Append(Constants.Ellipsis);
+                return objContentMsg.ToString();
             }
             visited.Add(obj);
             Type objType = obj.GetType();
             if (objType == typeof(string)) {
-                objContentString = (string)obj;
-                return objContentString;
+                objContentMsg.Append((string)obj);
+                return objContentMsg.ToString();
             }
             if (objType.IsArray) {
                 Array array = (Array)obj;
-                objContentString = objType.GetElementType() + "[]{";    // the Type contained in the Array
+                objContentMsg.Append(objType.GetElementType());
+                objContentMsg.Append("[]{");    // the Type contained in the Array   
                 for (int i = 0; i < array.Length; i++) {
                     if (i > 0) {
-                        objContentString += Constants.Comma;
+                        objContentMsg.Append(Constants.Comma);
                     }
                     object arrayItem = array.GetValue(i);
                     if (objType.GetElementType().IsPrimitive) {
-                        objContentString += arrayItem;  // primitives like int are structures that all derive from object, so object.ToString() works
+                        objContentMsg.Append(arrayItem);    // primitives like int are structures that all derive from object, so object.ToString() works 
                     }
                     else {
-                        objContentString += ToString(arrayItem);
+                        objContentMsg.Append(ConvertToString(arrayItem));  // recursive
                     }
                 }
-                objContentString += "}";
-                return objContentString;
+                objContentMsg.Append("}");
+                return objContentMsg.ToString();
             }
 
-            objContentString = objType.Name;
-            // inspect the fields of this class and all base classes
+            objContentMsg.Append(objType.Name);
+            // inspect the fields of this class and all base classes               
+            BindingFlags fieldsToInclude = (showPrivate) ? allNonStaticFields : nonStaticPublicFields;
             do {
-                objContentString += "[";
-                FieldInfo[] fields = objType.GetFields(allNonStaticFields); // IMPROVE consider adding static fields?
+                objContentMsg.Append("[");
+                FieldInfo[] fields = objType.GetFields(fieldsToInclude); // IMPROVE consider adding static fields?
                 // AccessibleObject.setAccessible(fields, true); Java equivalent allowing reflection access to private fields
 
                 // get the names and values of all fields
                 foreach (FieldInfo field in fields) {
                     if (!field.IsStatic) {
-                        if (!objContentString.EndsWith("[", StringComparison.OrdinalIgnoreCase)) {  // per FxCop
-                            objContentString += Constants.Comma;
+                        if (!objContentMsg.ToString().EndsWith("[", StringComparison.OrdinalIgnoreCase)) {  // per FxCop
+                            objContentMsg.Append(Constants.Comma);
                         }
-                        objContentString += field.Name + "=";
+                        objContentMsg.Append(field.Name);
+                        objContentMsg.Append("=");
                         try {
                             Type fieldType = field.FieldType;
                             object fieldValue = field.GetValue(obj);
                             if (fieldType.IsPrimitive) {
-                                objContentString += fieldValue;
+                                objContentMsg.Append(fieldValue);
                             }
                             else {
-                                objContentString += ToString(fieldValue);
+                                objContentMsg.Append(ConvertToString(fieldValue));
                             }
                         }
-                        catch (Exception e) {
+                        catch (SystemException e) {
                             Debug.WriteLine(e.StackTrace);
-                            throw new Exception(ErrorMessages.ExceptionRethrow, e);
-                            // IMPROVE add my own General Exception type rather than use Exception
                         }
                     }
                 }
-                objContentString += "]";
+                objContentMsg.Append("]");
                 objType = objType.BaseType;
             }
             while (objType != null);
 
-            return objContentString;
+            return objContentMsg.ToString();
         }
     }
 }

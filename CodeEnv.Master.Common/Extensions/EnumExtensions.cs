@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: EnumHelper.cs
-// TODO - one line to give a brief idea of what the file does.
+// COMMENT - one line to give a brief idea of what the file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -15,7 +15,9 @@ namespace CodeEnv.Master.Common {
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Reflection;
+    using CodeEnv.Master.Resources;
 
     /// <summary>
     /// Static class encapsulating extension methods for Direction, allowing
@@ -23,42 +25,40 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public static class EnumExtensions {
 
-        /// <summary>Gets the string name of the enum constant. Equivalent to enumConstant.toString().</summary>
-        /// <param name="enumConstant">The enum constant.</param>
-        /// <returns>The string name of this enumConstant. </returns>
+        /// <summary>Gets the string name of the enum constant. Equivalent to sourceEnumConstant.toString().</summary>
+        /// <param name="sourceEnumConstant">The enum constant.</param>
+        /// <returns>The string name of this sourceEnumConstant. </returns>
         /// <remarks>Not localizable. For localizable descriptions, use GetDescription().</remarks>
-        public static string GetName(this Enum enumConstant) {
-            Arguments.ValidateNotNull(enumConstant);
-            Type enumType = enumConstant.GetType();
-            return Enum.GetName(enumType, enumConstant);    // OPTIMIZE better performance than enumConstant.ToString()?
+        public static string GetName(this Enum sourceEnumConstant) {
+            //  'this' sourceEnumConstant can never be null without the CLR throwing a Null reference exception
+            Type enumType = sourceEnumConstant.GetType();
+            return Enum.GetName(enumType, sourceEnumConstant);    // OPTIMIZE better performance than sourceEnumConstant.ToString()?
         }
 
         /// <summary>Gets the friendly description.</summary>
-        /// <param friendlyDescription="enumConstant">The named enum constant.</param>
+        /// <param friendlyDescription="sourceEnumConstant">The named enum constant.</param>
         /// <returns>A friendly description as a string or toString() if no <see cref="EnumAttribute"/> is present.</returns>
-        public static string GetDescription(this Enum enumConstant) {
-            Arguments.ValidateNotNull(enumConstant);
-
-            EnumAttribute attribute = GetAttribute(enumConstant);
+        public static string GetDescription(this Enum sourceEnumConstant) {
+            //  'this' sourceEnumConstant can never be null without the CLR throwing a Null reference exception
+            EnumAttribute attribute = GetAttribute(sourceEnumConstant);
             if (attribute == null) {
-                return GetName(enumConstant);
+                return GetName(sourceEnumConstant);
             }
             return attribute.FriendlyDescription;
-            // TODO convert to a localizable version using resources
         }
 
         /// <summary>
-        /// Converts the <see cref="Enum" /> enumType to an <see cref="IList" /> 
+        /// Converts the <see cref="Enum" /> sourceEnumType to an <see cref="IList" /> 
         /// compatible object.
         /// </summary>
-        /// <param friendlyDescription="enumType">The <see cref="Enum"/> Type of the enum.</param>
+        /// <param friendlyDescription="sourceEnumType">The <see cref="Enum"/> Type of the enum.</param>
         /// <returns>An <see cref="IList"/> containing the enumerated
         /// values (key) and descriptions of the provided Type.</returns>
-        public static IList ToList(this Type enumType) {
-            Arguments.ValidateNotNull(enumType);
+        public static IList ToList(this Type sourceEnumType) {
+            //  'this' sourceEnumType can never be null without the CLR throwing a Null reference exception
 
             ArrayList list = new ArrayList();
-            Array enumValues = Enum.GetValues(enumType);
+            Array enumValues = Enum.GetValues(sourceEnumType);
 
             foreach (Enum value in enumValues) {
                 list.Add(new KeyValuePair<Enum, string>(value, GetDescription(value)));
@@ -67,7 +67,11 @@ namespace CodeEnv.Master.Common {
         }
 
         private static EnumAttribute GetAttribute(Enum enumConstant) {
-            return (EnumAttribute)Attribute.GetCustomAttribute(ForValue(enumConstant), typeof(EnumAttribute));
+            EnumAttribute attribute = Attribute.GetCustomAttribute(ForValue(enumConstant), typeof(EnumAttribute)) as EnumAttribute;
+            if (attribute == null) {
+                Debug.WriteLine(ErrorMessages.EnumNoAttribute.Inject(enumConstant.GetName(), typeof(EnumAttribute).Name));
+            }
+            return attribute;
         }
 
         private static MemberInfo ForValue(Enum enumConstant) {

@@ -83,6 +83,8 @@
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>GeneralMessages.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <EmbeddedResource Include="UIMessages.en-CA.resx" />
+    <EmbeddedResource Include="UIMessages.fr-FR.resx" />
     <EmbeddedResource Include="UIMessages.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>UIMessages.Designer.cs</LastGenOutput>

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: Arguments.cs
-// TODO - one line to give a brief idea of what the file does.
+// COMMENT - one line to give a brief idea of what the file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -14,6 +14,7 @@ namespace CodeEnv.Master.Common {
 
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using CodeEnv.Master.Resources;
 
     /// <summary>
@@ -36,7 +37,8 @@ namespace CodeEnv.Master.Common {
         /// <exception cref="ArgumentNullException"></exception>
         public static void ValidateNotNull(object arg) {
             if (arg == null) {
-                throw new ArgumentNullException(ErrorMessages.Null);
+                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                throw new ArgumentNullException(ErrorMessages.Null.Inject(callingMethodName));
             }
         }
 
@@ -47,7 +49,8 @@ namespace CodeEnv.Master.Common {
         /// <exception cref="ArgumentException">Text is null or has no content.</exception>
         public static void ValidateForContent(string text) {
             if (!Utility.CheckForContent(text)) {
-                throw new ArgumentException(ErrorMessages.EmptyOrNullString);
+                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                throw new ArgumentException(ErrorMessages.EmptyOrNullString.Inject(callingMethodName));
             }
         }
 
@@ -60,7 +63,8 @@ namespace CodeEnv.Master.Common {
         /// <exception cref="IllegalArgumentException"></exception>
         public static void ValidateForRange(int number, int low, int high) {
             if (!Utility.IsInRange(number, low, high)) {
-                throw new ArgumentOutOfRangeException(ErrorMessages.OutOfRange.Inject(number, low, high));
+                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                throw new ArgumentOutOfRangeException(ErrorMessages.OutOfRange.Inject(number, low, high, callingMethodName));
             }
         }
 
@@ -73,7 +77,8 @@ namespace CodeEnv.Master.Common {
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         public static void ValidateForRange(float number, float low, float high) {
             if (number < low || number > high) {
-                throw new ArgumentOutOfRangeException(ErrorMessages.OutOfRange.Inject(number, low, high));
+                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                throw new ArgumentOutOfRangeException(ErrorMessages.OutOfRange.Inject(number, low, high, callingMethodName));
             }
         }
 
@@ -84,7 +89,8 @@ namespace CodeEnv.Master.Common {
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         public static void ValidateNotNegative(int number) {
             if (number < Constants.Zero) {
-                throw new ArgumentOutOfRangeException(ErrorMessages.NegativeValue.Inject(number));
+                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                throw new ArgumentOutOfRangeException(ErrorMessages.NegativeValue.Inject(number, callingMethodName));
             }
         }
 
@@ -95,7 +101,8 @@ namespace CodeEnv.Master.Common {
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         public static void ValidateNotNegative(long number) {
             if (number < Constants.ZeroL) {
-                throw new ArgumentOutOfRangeException(ErrorMessages.NegativeValue.Inject(number));
+                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                throw new ArgumentOutOfRangeException(ErrorMessages.NegativeValue.Inject(number, callingMethodName));
             }
         }
 
@@ -106,7 +113,8 @@ namespace CodeEnv.Master.Common {
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         public static void ValidateNotNegative(float number) {
             if (number < Constants.ZeroF) {
-                throw new ArgumentOutOfRangeException(ErrorMessages.NegativeValue.Inject(number));
+                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                throw new ArgumentOutOfRangeException(ErrorMessages.NegativeValue.Inject(number, callingMethodName));
             }
         }
 
@@ -120,7 +128,8 @@ namespace CodeEnv.Master.Common {
         public static void ValidateNotEmpty<T>(ICollection<T> collection) {
             ValidateNotNull(collection);
             if (collection.Count == 0) {
-                throw new ArgumentException(ErrorMessages.CollectionEmpty);
+                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                throw new ArgumentException(ErrorMessages.CollectionEmpty.Inject(callingMethodName));
             }
         }
     }

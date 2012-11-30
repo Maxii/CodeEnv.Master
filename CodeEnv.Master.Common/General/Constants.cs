@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: Constants.cs
-// TODO - one line to give a brief idea of what the file does.
+// COMMENT - one line to give a brief idea of what the file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -34,8 +34,19 @@ namespace CodeEnv.Master.Common {
         public const string PercentNumericFormat = "P00";
 
         // Common Strings
-        public static readonly string UserCurrentWorkingDirectoryPath = System.Environment.CurrentDirectory;
-        public static readonly string NewLine = System.Environment.NewLine;
+        private static string userCurrentWorkingDirectoryPath;
+        public static string UserCurrentWorkingDirectoryPath {
+            get { return userCurrentWorkingDirectoryPath; }
+            private set { userCurrentWorkingDirectoryPath = System.Environment.CurrentDirectory; }
+        }
+
+        private static string newLine;
+        public static string NewLine {
+            get { return newLine; }
+            private set {
+                newLine = System.Environment.NewLine;
+            }
+        }
         public const string Space = " ";
         public const string Period = ".";
         public const string Tab = "\t";
@@ -48,9 +59,18 @@ namespace CodeEnv.Master.Common {
         // Switch Strings
         public const string GodMode = "/GodMode";
 
-        // Common Characters        
-        public static readonly char FileSeparator = Path.DirectorySeparatorChar;
-        public static readonly char PathSeparator = Path.PathSeparator;
+        // Common Characters     
+        private static char fileSeparator;
+        public static char FileSeparator {
+            get { return fileSeparator; }
+            private set { fileSeparator = Path.DirectorySeparatorChar; }
+        }
+
+        private static char pathSeparator;
+        public static char PathSeparator {
+            get { return pathSeparator; }
+            private set { pathSeparator = Path.PathSeparator; }
+        }
         public const char CommaDelimiter = ',';
         public const char SpaceDelimiter = ' ';
         public const char PeriodDelimiter = '.';

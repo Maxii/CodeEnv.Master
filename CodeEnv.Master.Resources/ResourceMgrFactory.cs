@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ResourceMgrFactory.cs
-// TODO - one line to give a brief idea of what the file does.
+// COMMENT - one line to give a brief idea of what the file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -14,6 +14,7 @@ namespace CodeEnv.Master.Resources {
 
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Globalization;
     using System.Reflection;
     using System.Resources;
@@ -25,9 +26,11 @@ namespace CodeEnv.Master.Resources {
     public static class ResourceMgrFactory {
 
         public enum ResourceFileName {
-            ErrorMessages,
-            CommonTerms,
-            UIMessages
+            None = 0,
+            ErrorMessages = 1,
+            GeneralMessages = 2,
+            CommonTerms = 3,
+            UIMessages = 4
         }
 
         private static Dictionary<ResourceFileName, ResourceManager> resourceMgrs = new Dictionary<ResourceFileName, ResourceManager>();
@@ -40,7 +43,8 @@ namespace CodeEnv.Master.Resources {
         /// <exception cref="System.ArgumentOutOfRangeException"></exception>
         public static ResourceManager GetManager(ResourceFileName resxFileName) {
             if (!Enum.IsDefined(typeof(ResourceFileName), resxFileName)) {  // Circular ref w/Enums<> 
-                throw new ArgumentOutOfRangeException(String.Format(CultureInfo.InvariantCulture, ErrorMessages.UndefinedEnum, resxFileName));    // Circular ref w/Inject()
+                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                throw new ArgumentOutOfRangeException(String.Format(CultureInfo.InvariantCulture, ErrorMessages.UndefinedEnum, resxFileName, callingMethodName));    // Circular ref w/Inject()
             }
 
             ResourceManager rm = null;
@@ -66,14 +70,14 @@ namespace CodeEnv.Master.Resources {
         public static string GetString(ResourceFileName resxFileName, string resourceKeyName) {
             ResourceManager rm = GetManager(resxFileName);
             if (!rm.ResourceSetType.Equals(typeof(string))) {
-                throw new ArgumentException(String.Format(CultureInfo.InvariantCulture, ErrorMessages.ResourceNotString, resxFileName));
+                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                throw new ArgumentException(String.Format(CultureInfo.InvariantCulture, ErrorMessages.ResourceNotString, resxFileName, callingMethodName));
             }
             return rm.GetString(resourceKeyName);
         }
 
         /// <summary>
         /// Initializes the strongly typed resource accessor, allowing syntax like StronglyTypedResourceAccessor.NameOfResource.
-        /// TODO improve this to generate an Accessor for EACH .resx Resource file
         /// </summary>
         /// <param name="rootResourceNamespace">The root resource namespace.</param>
         //private void InitializeStrongTypedResourceAccessor(string rootResourceNamespace) {

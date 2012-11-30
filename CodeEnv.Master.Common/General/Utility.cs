@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: General.cs
-// TODO - one line to give a brief idea of what the file does.
+// COMMENT - one line to give a brief idea of what the file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -14,12 +14,12 @@ namespace CodeEnv.Master.Common {
 
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Resources;
-
     using CodeEnv.Master.Resources;
 
     /// <summary>
-    /// TODO 
+    /// COMMENT 
     /// </summary>
     public static class Utility {
 
@@ -35,8 +35,8 @@ namespace CodeEnv.Master.Common {
         /// <exception cref="System.ArgumentException">Low is greater than High.</exception>
         public static bool IsInRange(int number, int low, int high) {
             if (low > high) {
-                string errorMsg = ErrorMessages.LowGreaterThanHigh.Inject(low, high);
-                throw new ArgumentException(errorMsg);
+                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                throw new ArgumentException(ErrorMessages.LowGreaterThanHigh.Inject(low, high, callingMethodName));
             }
             return ((low <= number) && (number <= high));
         }
@@ -44,20 +44,21 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// Parses the boolean.
         /// </summary>
-        /// <param name="boolText">The boolean string.</param>
+        /// <param name="textToParse">The boolean string.</param>
         /// <returns> Returns <c>true</c> if bool parameter equals "true" (ignoring
         /// case), or <c>false</c>  if bool equals "false" (ignoring case).</returns>
         /// <exception cref="System.ArgumentException">Cannot parse into Boolean: 
-        ///                                                    + boolText</exception>
-        public static bool ParseBoolean(string boolText) {
-            if (boolText.Equals("true", StringComparison.OrdinalIgnoreCase)) {
+        ///                                                    + textToParse</exception>
+        public static bool ParseBoolean(string textToParse) {
+            if (textToParse.Equals("true", StringComparison.OrdinalIgnoreCase)) {
                 return true;
             }
-            else if (boolText.Equals("false", StringComparison.OrdinalIgnoreCase)) {
+            else if (textToParse.Equals("false", StringComparison.OrdinalIgnoreCase)) {
                 return false;
             }
             else {
-                throw new ArgumentException(ErrorMessages.NotBoolean.Inject(boolText));
+                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                throw new ArgumentException(ErrorMessages.NotBoolean.Inject(textToParse, callingMethodName));
             }
         }
 
@@ -81,7 +82,8 @@ namespace CodeEnv.Master.Common {
         /// <exception cref="System.MethodAccessException"></exception>
         public static void ValidateAccess(bool accessIsValid) {
             if (!accessIsValid) {
-                throw new MethodAccessException(ErrorMessages.InvalidAccess);
+                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                throw new MethodAccessException(ErrorMessages.InvalidAccess.Inject(callingMethodName));
             }
         }
 
@@ -91,7 +93,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="text">The text to separate.</param>
         /// <param name="delimiter">The delimiter.</param>
         /// <returns></returns>
-        public static IList<String> GetListFromString(String text, char delimiter) {
+        public static IList<String> ConstructListFromString(String text, char delimiter) {
             Arguments.ValidateForContent(text);
             IList<string> result = text.Split(delimiter);
             return result;

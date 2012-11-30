@@ -61,7 +61,7 @@ namespace CodeEnv.Master.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to This collection should not be empty..
+        ///   Looks up a localized string similar to This collection should not be empty.  Calling Method: {0}.
         /// </summary>
         public static string CollectionEmpty {
             get {
@@ -70,7 +70,7 @@ namespace CodeEnv.Master.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to This string should not be null or empty..
+        ///   Looks up a localized string similar to This string should not be null or empty.  Calling Method: {0}.
         /// </summary>
         public static string EmptyOrNullString {
             get {
@@ -79,7 +79,16 @@ namespace CodeEnv.Master.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The following exception was thrown..
+        ///   Looks up a localized string similar to Enum Constant {0} has no attribute of type {1} defined.  Calling Method: {2}.
+        /// </summary>
+        public static string EnumNoAttribute {
+            get {
+                return ResourceManager.GetString("EnumNoAttribute", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The following exception was thrown.  Calling Method: {0}.
         /// </summary>
         public static string ExceptionRethrow {
             get {
@@ -88,7 +97,7 @@ namespace CodeEnv.Master.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Accessing an object or method that is either not initialized, closed or otherwise invalid..
+        ///   Looks up a localized string similar to Accessing an object or method that is either not initialized, closed or otherwise invalid.  Calling Method: {0}.
         /// </summary>
         public static string InvalidAccess {
             get {
@@ -97,7 +106,7 @@ namespace CodeEnv.Master.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The low value {0} is greater than the high value {1}..
+        ///   Looks up a localized string similar to The low value {0} is greater than the high value {1}.  Calling Method: {2}.
         /// </summary>
         public static string LowGreaterThanHigh {
             get {
@@ -106,7 +115,7 @@ namespace CodeEnv.Master.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to This value {0} should not be negative..
+        ///   Looks up a localized string similar to This value {0} should not be negative.  Calling Method: {1}.
         /// </summary>
         public static string NegativeValue {
             get {
@@ -115,7 +124,7 @@ namespace CodeEnv.Master.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to String {0} has no Enum counterpart..
+        ///   Looks up a localized string similar to String {0} has no Enum counterpart.  Calling Method: {1}.
         /// </summary>
         public static string NoEnumForString {
             get {
@@ -124,7 +133,7 @@ namespace CodeEnv.Master.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Expected no exception but got: {0}.
+        ///   Looks up a localized string similar to Expected no exception but got: {0}.  Calling Method: {1}.
         /// </summary>
         public static string NoExceptionExpected {
             get {
@@ -133,7 +142,7 @@ namespace CodeEnv.Master.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The string {0} is not a boolean equivalent..
+        ///   Looks up a localized string similar to The string {0} is not a boolean equivalent.  Calling Method: {1}.
         /// </summary>
         public static string NotBoolean {
             get {
@@ -142,7 +151,7 @@ namespace CodeEnv.Master.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Argument is null..
+        ///   Looks up a localized string similar to Argument is null.  Calling Method: {0}.
         /// </summary>
         public static string Null {
             get {
@@ -151,7 +160,16 @@ namespace CodeEnv.Master.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The value {0} is not within the range {1} to {2}..
+        ///   Looks up a localized string similar to Property or Method called on already disposed object.  Calling Method: {0}.
+        /// </summary>
+        public static string ObjectDisposed {
+            get {
+                return ResourceManager.GetString("ObjectDisposed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The value {0} is not within the range {1} to {2}.  Calling Method: {3}.
         /// </summary>
         public static string OutOfRange {
             get {
@@ -160,7 +178,7 @@ namespace CodeEnv.Master.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The resource {0} you are trying to reach is not of type String..
+        ///   Looks up a localized string similar to The resource {0} you are trying to reach is not of type String.   Calling Method: {1}.
         /// </summary>
         public static string ResourceNotString {
             get {
@@ -169,7 +187,7 @@ namespace CodeEnv.Master.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Enum {0} is not defined..
+        ///   Looks up a localized string similar to Enum Constant {0} is not defined.  Calling Method: {1}.
         /// </summary>
         public static string UndefinedEnum {
             get {

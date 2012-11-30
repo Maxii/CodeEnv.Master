@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: Enums.cs
-// TODO - one line to give a brief idea of what the file does.
+// COMMENT - one line to give a brief idea of what the file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -14,6 +14,7 @@ namespace CodeEnv.Master.Common {
 
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
     using CodeEnv.Master.Resources;
@@ -113,7 +114,8 @@ namespace CodeEnv.Master.Common {
         public static T Parse(string enumName) {
             T parsed = default(T);  // the default enumConstant(null, 0, false) of the generic type T
             if (!SensitiveNames.TryGetValue(enumName, out parsed)) {
-                throw new ArgumentException(ErrorMessages.NoEnumForString.Inject(enumName));
+                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                throw new ArgumentException(ErrorMessages.NoEnumForString.Inject(enumName, callingMethodName));
             }
             return parsed;
         }
@@ -132,7 +134,8 @@ namespace CodeEnv.Master.Common {
 
             T parsed = default(T);  // the default enumConstant(null, 0, false) of the generic type T
             if (!InsensitiveNames.TryGetValue(enumName.ToUpperInvariant(), out parsed)) {
-                throw new ArgumentException(ErrorMessages.NoEnumForString.Inject(enumName));
+                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                throw new ArgumentException(ErrorMessages.NoEnumForString.Inject(enumName, callingMethodName));
             }
             return parsed;
         }

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: App.xaml.cs
-// TODO - one line to give a brief idea of what this file does.
+// COMMENT - one line to give a brief idea of what this file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 

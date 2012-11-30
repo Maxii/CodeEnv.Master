@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ObjectAnalyzerClassTests.cs
-// TODO - one line to give a brief idea of what the file does.
+// COMMENT - one line to give a brief idea of what the file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -146,7 +146,7 @@ namespace CodeEnv.Master.Common {
 
             [TestMethod]
             public void Array() {
-                IList<string> toStringList = Utility.GetListFromString(testTarget.ToString(), Constants.CommaDelimiter);
+                IList<string> toStringList = Utility.ConstructListFromString(testTarget.ToString(), Constants.CommaDelimiter);
                 int testStringCount = 0, testNumberCount = 0;
                 foreach (string s in toStringList) {
                     if (s.Contains(TestString)) {
