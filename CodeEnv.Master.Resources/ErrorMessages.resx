@@ -120,6 +120,9 @@
   <data name="CollectionEmpty" xml:space="preserve">
     <value>This collection should not be empty.  Calling Method: {0}</value>
   </data>
+  <data name="ComponentNotFound" xml:space="preserve">
+    <value>Expected to find component of type {0} but found none. Calling Object: {1}</value>
+  </data>
   <data name="EmptyOrNullString" xml:space="preserve">
     <value>This string should not be null or empty.  Calling Method: {0}</value>
   </data>

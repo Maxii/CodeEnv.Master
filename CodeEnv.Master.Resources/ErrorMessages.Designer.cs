@@ -70,6 +70,15 @@ namespace CodeEnv.Master.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Expected to find component of type {0} but found none. Calling Object: {1}.
+        /// </summary>
+        public static string ComponentNotFound {
+            get {
+                return ResourceManager.GetString("ComponentNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to This string should not be null or empty.  Calling Method: {0}.
         /// </summary>
         public static string EmptyOrNullString {

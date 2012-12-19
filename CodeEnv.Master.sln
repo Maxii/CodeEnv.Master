@@ -14,6 +14,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.Common.Tests
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.Resources", "CodeEnv.Master.Resources\CodeEnv.Master.Resources.csproj", "{30988A11-A4F0-4FDC-82D5-41B87EA410BE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.CommonUnity", "CodeEnv.Master.CommonUnity\CodeEnv.Master.CommonUnity.csproj", "{129DCF86-4FC5-4CAF-AAFE-911EFC560E10}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.UI", "CodeEnv.Master.UI\CodeEnv.Master.UI.csproj", "{728B6864-E4B0-4E95-914E-85F0D2EADDBC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,6 +40,14 @@ Global
 		{30988A11-A4F0-4FDC-82D5-41B87EA410BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{30988A11-A4F0-4FDC-82D5-41B87EA410BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{30988A11-A4F0-4FDC-82D5-41B87EA410BE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{129DCF86-4FC5-4CAF-AAFE-911EFC560E10}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{129DCF86-4FC5-4CAF-AAFE-911EFC560E10}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{129DCF86-4FC5-4CAF-AAFE-911EFC560E10}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{129DCF86-4FC5-4CAF-AAFE-911EFC560E10}.Release|Any CPU.Build.0 = Release|Any CPU
+		{728B6864-E4B0-4E95-914E-85F0D2EADDBC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{728B6864-E4B0-4E95-914E-85F0D2EADDBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{728B6864-E4B0-4E95-914E-85F0D2EADDBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{728B6864-E4B0-4E95-914E-85F0D2EADDBC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

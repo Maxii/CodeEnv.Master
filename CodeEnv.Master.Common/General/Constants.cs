@@ -20,7 +20,6 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public static class Constants {
 
-
         // Composite Formatting for Argument Index 0      see  http://msdn.microsoft.com/en-us/library/txafckwd.aspx 
         // TODO how to structure this so that the index number is insertable?
         public const string StringArgFormatNoDP = "{0:0}";   // "{0:0.}"?

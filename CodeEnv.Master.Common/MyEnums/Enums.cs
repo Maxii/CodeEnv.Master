@@ -78,7 +78,7 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Gets the values. Syntax: <c>var getValues = Enums<MyEnumbers>.GetValues();</c>
+        /// Gets all the values of the Enum Type T.
         /// </summary>
         /// <returns></returns>
         public static IEnumerable<T> GetValues() {

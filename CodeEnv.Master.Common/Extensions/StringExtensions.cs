@@ -10,8 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-using System.Globalization;
 namespace CodeEnv.Master.Common {
+
+    using System.Globalization;
 
     /// <summary>
     /// COMMENT 
