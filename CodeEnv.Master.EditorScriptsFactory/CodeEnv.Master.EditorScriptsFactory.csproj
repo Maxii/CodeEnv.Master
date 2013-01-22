@@ -1,15 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{1557C03E-56EE-4C70-9BD8-AB637D3191CF}</ProjectGuid>
+    <ProjectGuid>{F73E89C2-76BB-41CE-9407-E9043058DB70}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>CodeEnv.Master.Common</RootNamespace>
-    <AssemblyName>CodeEnv.Master.Common</AssemblyName>
+    <RootNamespace>
+    </RootNamespace>
+    <AssemblyName>CodeEnv.Master.EditorScriptsFactory</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -32,16 +34,17 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="PresentationFramework" />
     <Reference Include="System" />
+    <Reference Include="System.Core" />
     <Reference Include="System.Data" />
     <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.Design" />
-    <Reference Include="System.Drawing" />
     <Reference Include="System.XML" />
     <Reference Include="System.Xml.Linq" />
+    <Reference Include="UnityEditor">
+      <HintPath>$(ProgramFiles)\Unity\Editor\Data\Managed\UnityEditor.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>..\..\..\..\..\..\Program Files\Unity\Editor\Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath>$(ProgramFiles)\Unity\Editor\Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -51,28 +54,33 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Events\GameEventManager.cs" />
-    <Compile Include="General\FlagsHelper.cs" />
-    <Compile Include="General\ObjectAnalyzer.cs" />
+    <Compile Include="ThirdParty\FindMissingScripts.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Extensions\EnumExtensions.cs" />
-    <Compile Include="Extensions\GeneralExtensions.cs" />
-    <Compile Include="Extensions\StringExtensions.cs" />
-    <Compile Include="Enums\Direction.cs" />
-    <Compile Include="Enums\Enums.cs" />
-    <Compile Include="Enums\EnumAttribute.cs" />
-    <Compile Include="General\Arguments.cs" />
-    <Compile Include="General\Constants.cs" />
-    <Compile Include="General\Utility.cs">
-      <SubType>Code</SubType>
-    </Compile>
+    <Compile Include="ScriptableObjectTrialAsset.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CodeEnv.Master.Common.Resources\CodeEnv.Master.Common.Resources.csproj">
+    <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common.Resources\CodeEnv.Master.Common.Resources.csproj">
       <Project>{30988a11-a4f0-4fdc-82d5-41b87ea410be}</Project>
       <Name>CodeEnv.Master.Common.Resources</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common.UI\CodeEnv.Master.Common.UI.csproj">
+      <Project>{E694609D-48D7-4E4D-84B9-0B681488625A}</Project>
+      <Name>CodeEnv.Master.Common.UI</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common.Unity\CodeEnv.Master.Common.Unity.csproj">
+      <Project>{129dcf86-4fc5-4caf-aafe-911efc560e10}</Project>
+      <Name>CodeEnv.Master.Common.Unity</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">
+      <Project>{1557c03e-56ee-4c70-9bd8-ab637d3191cf}</Project>
+      <Name>CodeEnv.Master.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CodeEnv.Master.GameScriptsFactory\CodeEnv.Master.GameScriptsFactory.csproj">
+      <Project>{84ab84fa-983b-4fb8-bfd9-34d3b93d8000}</Project>
+      <Name>CodeEnv.Master.ScriptsFactory</Name>
+    </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -15,7 +15,7 @@ namespace CodeEnv.Master.Common {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using CodeEnv.Master.Resources;
+    using CodeEnv.Master.Common.Resources;
 
     /// <summary>
     /// A collection of static utility methods for common argument
@@ -50,7 +50,7 @@ namespace CodeEnv.Master.Common {
         public static void ValidateForContent(string text) {
             if (!Utility.CheckForContent(text)) {
                 string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
-                throw new ArgumentException(ErrorMessages.EmptyOrNullString.Inject(callingMethodName));
+                throw new ArgumentNullException(ErrorMessages.EmptyOrNullString.Inject(callingMethodName));
             }
         }
 
@@ -76,7 +76,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="high">The high.</param>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         public static void ValidateForRange(float number, float low, float high) {
-            if (number < low || number > high) {
+            if (!Utility.IsInRange(number, low, high)) {
                 string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
                 throw new ArgumentOutOfRangeException(ErrorMessages.OutOfRange.Inject(number, low, high, callingMethodName));
             }
@@ -125,7 +125,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="collection">The collection.</param>
         /// <exception cref="ArgumentException">Collection is empty.</exception>
         /// <exception cref="ArgumentNullException">Collection is null.</exception>
-        public static void ValidateNotEmpty<T>(ICollection<T> collection) {
+        public static void ValidateNotNullOrEmpty<T>(ICollection<T> collection) {
             ValidateNotNull(collection);
             if (collection.Count == 0) {
                 string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;

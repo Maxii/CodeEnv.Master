@@ -110,7 +110,6 @@ namespace CodeEnv.Master.Common {
 
         public const bool Won = true;
         public const bool Lost = false;
-
     }
 }
 

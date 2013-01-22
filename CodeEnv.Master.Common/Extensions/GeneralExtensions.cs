@@ -33,7 +33,7 @@ namespace CodeEnv.Master.Common {
         /// <exception cref="System.ArgumentNullException">source</exception>
         public static bool EqualsAnyOf<T>(this T source, params T[] itemsToCompare) {
             //  'this' source can never be null without the CLR throwing a Null reference exception
-            Arguments.ValidateNotEmpty(itemsToCompare);
+            Arguments.ValidateNotNullOrEmpty(itemsToCompare);
             return itemsToCompare.Contains<T>(source);
         }
 
@@ -55,7 +55,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="itemsToPickFrom">The array of items of Type T to pick from.</param>
         /// <returns></returns>
         public static T OneOf<T>(this Random sourceRNG, params T[] itemsToPickFrom) {
-            Arguments.ValidateNotEmpty(itemsToPickFrom);
+            Arguments.ValidateNotNullOrEmpty(itemsToPickFrom);
             return itemsToPickFrom[sourceRNG.Next(itemsToPickFrom.Length)];
         }
 
@@ -71,6 +71,19 @@ namespace CodeEnv.Master.Common {
             foreach (T item in sourceSequence) {
                 actionToExecute(item);
             }
+        }
+
+        /// <summary>
+        /// Checks the range of the number against an allowed variation percentage around the number.
+        /// </summary>
+        /// <param name="number">The number.</param>
+        /// <param name="target">The target value.</param>
+        /// <param name="allowedPercentageVariation">The allowed percentage variation as a whole number. 1.0 = one percent variation.</param>
+        /// <returns></returns>
+        public static bool CheckRange(this float number, float target, float allowedPercentageVariation) {
+            float allowedLow = (100F - allowedPercentageVariation) / 100 * target;
+            float allowedHigh = (100F + allowedPercentageVariation) / 100 * target;
+            return Utility.IsInRange(number, allowedLow, allowedHigh);
         }
 
     }

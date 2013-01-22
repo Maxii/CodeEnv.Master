@@ -16,7 +16,7 @@ namespace CodeEnv.Master.Common {
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Resources;
-    using CodeEnv.Master.Resources;
+    using CodeEnv.Master.Common.Resources;
 
     /// <summary>
     /// COMMENT 
@@ -24,22 +24,41 @@ namespace CodeEnv.Master.Common {
     public static class Utility {
 
         /// <summary>
-        /// Determines whether a enumConstant is in the range low..high, inclusive.
+        /// Determines whether an integer is in the range low..high, inclusive.
         /// </summary>
-        /// <param name="number">The number.</param>
-        /// <param name="low">The acceptable low.</param>
-        /// <param name="high">The acceptable high.</param>
+        /// <param name="number">The int number.</param>
+        /// <param name="low">The int acceptable low.</param>
+        /// <param name="high">The int acceptable high.</param>
         /// <returns>
         ///   <c>true</c> if in range; otherwise, <c>false</c>.
         /// </returns>
-        /// <exception cref="System.ArgumentException">Low is greater than High.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">Low is greater than High.</exception>
         public static bool IsInRange(int number, int low, int high) {
             if (low > high) {
                 string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
-                throw new ArgumentException(ErrorMessages.LowGreaterThanHigh.Inject(low, high, callingMethodName));
+                throw new ArgumentOutOfRangeException(ErrorMessages.LowGreaterThanHigh.Inject(low, high, callingMethodName));
             }
             return ((low <= number) && (number <= high));
         }
+
+        /// <summary>
+        /// Determines whether a float is in the range low..high, inclusive.
+        /// </summary>
+        /// <param name="number">The float number.</param>
+        /// <param name="low">The float acceptable low.</param>
+        /// <param name="high">The float acceptable high.</param>
+        /// <returns>
+        ///   <c>true</c> if in range; otherwise, <c>false</c>.
+        /// </returns>
+        /// <exception cref="System.ArgumentOutOfRangeException">Low is greater than High.</exception>
+        public static bool IsInRange(float number, float low, float high) {
+            if (low > high) {
+                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                throw new ArgumentOutOfRangeException(ErrorMessages.LowGreaterThanHigh.Inject(low, high, callingMethodName));
+            }
+            return ((low <= number) && (number <= high));
+        }
+
 
         /// <summary>
         /// Parses the boolean.
@@ -68,11 +87,10 @@ namespace CodeEnv.Master.Common {
         /// <param name="text">The text.</param>
         /// <returns></returns>
         public static bool CheckForContent(string text) {
-            bool result = true;
             if (String.IsNullOrEmpty(text) || text.Trim().Length == 0) {
-                result = false;
+                return false;
             }
-            return result;
+            return true;
         }
 
         /// <summary>
@@ -85,6 +103,19 @@ namespace CodeEnv.Master.Common {
                 string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
                 throw new MethodAccessException(ErrorMessages.InvalidAccess.Inject(callingMethodName));
             }
+        }
+
+        /// <summary>
+        /// Checks whether the provided ICollection has content.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="collection">The collection.</param>
+        /// <returns>false if null or empty, true otherwise</returns>
+        public static bool CheckForContent<T>(ICollection<T> collection) {
+            if (collection == null || collection.Count == 0) {
+                return false;
+            }
+            return true;
         }
 
         /// <summary>

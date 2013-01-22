@@ -17,7 +17,7 @@ namespace CodeEnv.Master.Common {
     using System.Collections.Generic;
     using System.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using CodeEnv.Master.Resources;
+    using CodeEnv.Master.Common.Resources;
     using System.Globalization;
 
     /// <summary>

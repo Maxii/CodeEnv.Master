@@ -17,7 +17,7 @@ namespace CodeEnv.Master.Common {
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Reflection;
-    using CodeEnv.Master.Resources;
+    using CodeEnv.Master.Common.Resources;
 
     /// <summary>
     /// Static class encapsulating extension methods for Direction, allowing
@@ -25,7 +25,7 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public static class EnumExtensions {
 
-        /// <summary>Gets the string name of the enum constant. Equivalent to sourceEnumConstant.toString().</summary>
+        /// <summary>Gets the string name of the enum constant. Much faster than sourceEnumConstant.ToString().</summary>
         /// <param name="sourceEnumConstant">The enum constant.</param>
         /// <returns>The string name of this sourceEnumConstant. </returns>
         /// <remarks>Not localizable. For localizable descriptions, use GetDescription().</remarks>

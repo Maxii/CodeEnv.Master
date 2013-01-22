@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ObjectAnalyzer.cs
-// Class to convert the supplied object to a string representation that lists all fields.
+// Class for use within ToString() that converts an instance's content to a string.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,17 +19,20 @@ namespace CodeEnv.Master.Common {
     using System.Reflection;
     using System.Security.Permissions;
     using System.Text;
-    using CodeEnv.Master.Resources;
+    using CodeEnv.Master.Common.Resources;
 
     /// <summary>
     /// Class to convert the supplied object to a string
-    /// representation that lists all fields.
+    /// representation that lists all fields, including base class fields. It does
+    /// not show methods.
     /// Syntax:
     /// <c>
     /// public override string ToString() {
     ///	   return new ObjectAnalyzer().ToString(this);
     /// }
     /// </c>
+    /// 
+    /// This class has been successfully tested.
     /// 
     /// @author James L. Evans, derived from Cay Horstmann, CoreJava.
     /// </summary>
@@ -42,6 +45,8 @@ namespace CodeEnv.Master.Common {
         private BindingFlags allNonStaticFields = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
         private BindingFlags nonStaticPublicFields = BindingFlags.Instance | BindingFlags.Public;
         private bool showPrivate = false;
+
+        private static Type systemObjectType = Type.GetType("System.Object");
 
 
         /// <summary>
@@ -128,7 +133,7 @@ namespace CodeEnv.Master.Common {
                 objContentMsg.Append("]");
                 objType = objType.BaseType;
             }
-            while (objType != null);
+            while (objType != systemObjectType);
 
             return objContentMsg.ToString();
         }

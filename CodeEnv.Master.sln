@@ -12,11 +12,19 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.MyWpfApplica
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.Common.Tests", "CodeEnv.Master.Common.Tests\CodeEnv.Master.Common.Tests.csproj", "{67D035D3-27EE-47C3-B3DF-96D43139DB9A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.Resources", "CodeEnv.Master.Resources\CodeEnv.Master.Resources.csproj", "{30988A11-A4F0-4FDC-82D5-41B87EA410BE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.Common.Resources", "CodeEnv.Master.Common.Resources\CodeEnv.Master.Common.Resources.csproj", "{30988A11-A4F0-4FDC-82D5-41B87EA410BE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.CommonUnity", "CodeEnv.Master.CommonUnity\CodeEnv.Master.CommonUnity.csproj", "{129DCF86-4FC5-4CAF-AAFE-911EFC560E10}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.Common.Unity", "CodeEnv.Master.Common.Unity\CodeEnv.Master.Common.Unity.csproj", "{129DCF86-4FC5-4CAF-AAFE-911EFC560E10}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.UI", "CodeEnv.Master.UI\CodeEnv.Master.UI.csproj", "{728B6864-E4B0-4E95-914E-85F0D2EADDBC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.GameScriptsFactory", "CodeEnv.Master.GameScriptsFactory\CodeEnv.Master.GameScriptsFactory.csproj", "{84AB84FA-983B-4FB8-BFD9-34D3B93D8000}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.ExternalMonoBehaviours", "CodeEnv.Master.ExternalMonoBehaviours\CodeEnv.Master.ExternalMonoBehaviours.csproj", "{9C8574A4-64BA-49B1-B66D-7572ECFFFCFB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.Common.Game", "CodeEnv.Master.Common.Game\CodeEnv.Master.Common.Game.csproj", "{60D1CABD-3132-49A7-ACD5-9095ED787B2F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.Common.UI", "CodeEnv.Master.Common.UI\CodeEnv.Master.Common.UI.csproj", "{E694609D-48D7-4E4D-84B9-0B681488625A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.EditorScriptsFactory", "CodeEnv.Master.EditorScriptsFactory\CodeEnv.Master.EditorScriptsFactory.csproj", "{F73E89C2-76BB-41CE-9407-E9043058DB70}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,10 +52,26 @@ Global
 		{129DCF86-4FC5-4CAF-AAFE-911EFC560E10}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{129DCF86-4FC5-4CAF-AAFE-911EFC560E10}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{129DCF86-4FC5-4CAF-AAFE-911EFC560E10}.Release|Any CPU.Build.0 = Release|Any CPU
-		{728B6864-E4B0-4E95-914E-85F0D2EADDBC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{728B6864-E4B0-4E95-914E-85F0D2EADDBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{728B6864-E4B0-4E95-914E-85F0D2EADDBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{728B6864-E4B0-4E95-914E-85F0D2EADDBC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{84AB84FA-983B-4FB8-BFD9-34D3B93D8000}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{84AB84FA-983B-4FB8-BFD9-34D3B93D8000}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{84AB84FA-983B-4FB8-BFD9-34D3B93D8000}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{84AB84FA-983B-4FB8-BFD9-34D3B93D8000}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9C8574A4-64BA-49B1-B66D-7572ECFFFCFB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9C8574A4-64BA-49B1-B66D-7572ECFFFCFB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9C8574A4-64BA-49B1-B66D-7572ECFFFCFB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9C8574A4-64BA-49B1-B66D-7572ECFFFCFB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{60D1CABD-3132-49A7-ACD5-9095ED787B2F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60D1CABD-3132-49A7-ACD5-9095ED787B2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60D1CABD-3132-49A7-ACD5-9095ED787B2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60D1CABD-3132-49A7-ACD5-9095ED787B2F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E694609D-48D7-4E4D-84B9-0B681488625A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E694609D-48D7-4E4D-84B9-0B681488625A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E694609D-48D7-4E4D-84B9-0B681488625A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E694609D-48D7-4E4D-84B9-0B681488625A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F73E89C2-76BB-41CE-9407-E9043058DB70}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F73E89C2-76BB-41CE-9407-E9043058DB70}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F73E89C2-76BB-41CE-9407-E9043058DB70}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F73E89C2-76BB-41CE-9407-E9043058DB70}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

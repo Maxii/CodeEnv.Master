@@ -17,7 +17,7 @@ namespace CodeEnv.Master.MyWpfApplicationPrototype {
     using System.Globalization;
     using System.Threading;
     using System.Windows;
-    using CodeEnv.Master.Resources;
+    using CodeEnv.Master.Common.Resources;
 
     /// <summary>
     /// Interaction logic for MainWindow.xaml
