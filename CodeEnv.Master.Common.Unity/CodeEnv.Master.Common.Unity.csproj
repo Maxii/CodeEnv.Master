@@ -53,32 +53,44 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="General\CameraFacing.cs" />
-    <Compile Include="Core\MonoBehaviourBase.cs" />
-    <Compile Include="Enums\KeyboardAxis.cs" />
-    <Compile Include="Enums\MouseButton.cs" />
-    <Compile Include="Extensions\GameObjectExtensions.cs" />
-    <Compile Include="Input\GameInput.cs" />
+    <Compile Include="Game\Framework\GameDate.cs" />
+    <Compile Include="Game\Framework\GameManager.cs" />
+    <Compile Include="Game\Framework\GameTime.cs" />
+    <Compile Include="Game\Framework\IGameDate.cs" />
+    <Compile Include="Game\GUI\FocusSelectedEvent.cs" />
+    <Compile Include="Generic\Framework\MonoBehaviourBaseSingleton.cs" />
+    <Compile Include="Generic\Math\RandomExtended.cs" />
+    <Compile Include="Generic\Graphics\CameraFacing.cs" />
+    <Compile Include="Generic\Framework\MonoBehaviourBase.cs" />
+    <Compile Include="Generic\IO\KeyboardAxis.cs" />
+    <Compile Include="Generic\IO\MouseButton.cs" />
+    <Compile Include="Generic\Extensions\GameObjectExtensions.cs" />
+    <Compile Include="Generic\IO\GameInput.cs" />
+    <Compile Include="Generic\Extensions\LayerMaskExtensions.cs" />
+    <Compile Include="Generic\Math\Mathfx.cs" />
+    <Compile Include="Generic\IO\PlayerPrefsManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Extensions\TransformExtensions.cs" />
-    <Compile Include="General\UnityConstants.cs" />
-    <Compile Include="UnityUtility.cs" />
+    <Compile Include="Generic\Extensions\TransformExtensions.cs" />
+    <Compile Include="Generic\Framework\UnityConstants.cs" />
+    <Compile Include="Generic\Framework\UnityUtility.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CodeEnv.Master.Common.Game\CodeEnv.Master.Common.Game.csproj">
-      <Project>{60d1cabd-3132-49a7-acd5-9095ed787b2f}</Project>
-      <Name>CodeEnv.Master.Common.Game</Name>
-    </ProjectReference>
     <ProjectReference Include="..\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">
       <Project>{1557c03e-56ee-4c70-9bd8-ab637d3191cf}</Project>
       <Name>CodeEnv.Master.Common</Name>
     </ProjectReference>
-    <ProjectReference Include="..\CodeEnv.Master.Common.Resources\CodeEnv.Master.Common.Resources.csproj">
+    <ProjectReference Include="..\CodeEnv.Master.Common.LocalResources\CodeEnv.Master.Common.LocalResources.csproj">
       <Project>{30988a11-a4f0-4fdc-82d5-41b87ea410be}</Project>
-      <Name>CodeEnv.Master.Common.Resources</Name>
+      <Name>CodeEnv.Master.Common.LocalResources</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Game\Debug\" />
+    <Folder Include="Game\Gameplay\" />
+    <Folder Include="Game\Graphics\" />
+    <Folder Include="Generic\Debug\" />
+    <Folder Include="ThirdParty\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

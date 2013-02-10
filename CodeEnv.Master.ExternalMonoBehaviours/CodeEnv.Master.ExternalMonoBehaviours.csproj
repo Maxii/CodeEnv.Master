@@ -54,28 +54,20 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Game\GlobeGlowAnimator.cs" />
-    <Compile Include="Tools\FpsHUD.cs" />
-    <Compile Include="Game\GlobeManager.cs" />
+    <Compile Include="Generic\Debug\DynamicObjects.cs" />
+    <Compile Include="Generic\Debug\FpsHUD.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ThirdParty\ScaleRelativeToCamera.cs" />
+    <Compile Include="ThirdParty\Note.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">
       <Project>{1557c03e-56ee-4c70-9bd8-ab637d3191cf}</Project>
       <Name>CodeEnv.Master.Common</Name>
     </ProjectReference>
-    <ProjectReference Include="..\CodeEnv.Master.Common.Game\CodeEnv.Master.Common.Game.csproj">
-      <Project>{60d1cabd-3132-49a7-acd5-9095ed787b2f}</Project>
-      <Name>CodeEnv.Master.Common.Game</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\CodeEnv.Master.Common.Resources\CodeEnv.Master.Common.Resources.csproj">
+    <ProjectReference Include="..\CodeEnv.Master.Common.LocalResources\CodeEnv.Master.Common.LocalResources.csproj">
       <Project>{30988a11-a4f0-4fdc-82d5-41b87ea410be}</Project>
-      <Name>CodeEnv.Master.Common.Resources</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\CodeEnv.Master.Common.UI\CodeEnv.Master.Common.UI.csproj">
-      <Project>{e694609d-48d7-4e4d-84b9-0b681488625a}</Project>
-      <Name>CodeEnv.Master.Common.UI</Name>
+      <Name>CodeEnv.Master.Common.LocalResources</Name>
     </ProjectReference>
     <ProjectReference Include="..\CodeEnv.Master.Common.Unity\CodeEnv.Master.Common.Unity.csproj">
       <Project>{129dcf86-4fc5-4caf-aafe-911efc560e10}</Project>
@@ -83,7 +75,16 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Generic\" />
+    <Folder Include="Game\Debug\" />
+    <Folder Include="Game\Framework\" />
+    <Folder Include="Game\Gameplay\" />
+    <Folder Include="Game\Graphics\" />
+    <Folder Include="Game\GUI\" />
+    <Folder Include="Generic\Extensions\" />
+    <Folder Include="Generic\Framework\" />
+    <Folder Include="Generic\Graphics\" />
+    <Folder Include="Generic\IO\" />
+    <Folder Include="Generic\Math\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

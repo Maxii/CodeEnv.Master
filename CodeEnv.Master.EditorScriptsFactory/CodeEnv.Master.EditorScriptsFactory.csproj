@@ -54,18 +54,15 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\NoteEditor.cs" />
     <Compile Include="ThirdParty\FindMissingScripts.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ScriptableObjectTrialAsset.cs" />
+    <Compile Include="Generic\ScriptableObjectTrialAsset.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common.Resources\CodeEnv.Master.Common.Resources.csproj">
+    <ProjectReference Include="..\CodeEnv.Master.Common.LocalResources\CodeEnv.Master.Common.LocalResources.csproj">
       <Project>{30988a11-a4f0-4fdc-82d5-41b87ea410be}</Project>
-      <Name>CodeEnv.Master.Common.Resources</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common.UI\CodeEnv.Master.Common.UI.csproj">
-      <Project>{E694609D-48D7-4E4D-84B9-0B681488625A}</Project>
-      <Name>CodeEnv.Master.Common.UI</Name>
+      <Name>CodeEnv.Master.Common.LocalResources</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common.Unity\CodeEnv.Master.Common.Unity.csproj">
       <Project>{129dcf86-4fc5-4caf-aafe-911efc560e10}</Project>
@@ -75,12 +72,18 @@
       <Project>{1557c03e-56ee-4c70-9bd8-ab637d3191cf}</Project>
       <Name>CodeEnv.Master.Common</Name>
     </ProjectReference>
+    <ProjectReference Include="..\CodeEnv.Master.ExternalMonoBehaviours\CodeEnv.Master.ExternalMonoBehaviours.csproj">
+      <Project>{9c8574a4-64ba-49b1-b66d-7572ecfffcfb}</Project>
+      <Name>CodeEnv.Master.ExternalMonoBehaviours</Name>
+    </ProjectReference>
     <ProjectReference Include="..\CodeEnv.Master.GameScriptsFactory\CodeEnv.Master.GameScriptsFactory.csproj">
       <Project>{84ab84fa-983b-4fb8-bfd9-34d3b93d8000}</Project>
-      <Name>CodeEnv.Master.ScriptsFactory</Name>
+      <Name>CodeEnv.Master.GameScriptsFactory</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Game\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

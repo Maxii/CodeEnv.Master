@@ -19,7 +19,7 @@ using System.Text;
 using UnityEngine;
 using UnityEditor;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Resources;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.Common.Unity;
 
 /// <summary>

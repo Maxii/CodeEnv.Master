@@ -1,12 +1,13 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security;
 
 // Note: Shared assembly information is specified in SharedAssemblyInfo.cs
-// General Information about an assembly is controlled through the following 
+// General Information targetValue an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("CodeEnv.Master.CommonUnity")]
+[assembly: AssemblyTitle("CodeEnv.Master.Common.Unity")]
 
 // The AssemblyCultureAttribute is used by compilers to distinguish between a main assembly and a satellite assembly. 
 // A main assembly contains code and the neutral culture's resources. A satellite assembly contains only resources for a 
@@ -18,4 +19,5 @@ using System.Runtime.InteropServices;
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("98a25a32-a723-465e-aebe-f99da817eab8")]
+
 

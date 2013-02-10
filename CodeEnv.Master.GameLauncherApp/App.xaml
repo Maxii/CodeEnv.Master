@@ -1,0 +1,17 @@
+﻿<Application x:Class="CodeEnv.Master.GameLauncherApp.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Startup="App_Startup"
+             Activated="App_Activated"
+             Deactivated="App_Deactivated"
+             ShutdownMode="OnMainWindowClose"  
+             SessionEnding="App_SessionEnding"
+             Exit="App_Exit"
+             DispatcherUnhandledException="App_DispatcherUnhandledException">
+<!-- ShutdownMode: Both "OnMainWindowClose" and the default "OnLastWindowClose" call Application's Shutdown() method implicitly.
+ The 3rd alternative is "OnExplicitShutdown" where the programmer must explicitly call Shutdown(). -->
+             
+    <Application.Resources>
+
+    </Application.Resources>
+</Application>
