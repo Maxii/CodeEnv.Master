@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GamePauseEvent.cs
+// File: OptionChangeEvent.cs
 // COMMENT - one line to give a brief idea of what the file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -15,14 +15,15 @@ namespace CodeEnv.Master.Common {
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
 
-    public class GamePauseEvent : GameEvent {
+    public class OptionChangeEvent : GameEvent {
 
-        public bool Paused { get; private set; }
+        public OptionSettings Settings { get; private set; }
 
-        public GamePauseEvent(bool paused) {
-            Paused = paused;
+        public OptionChangeEvent(OptionSettings settings) {
+            Settings = settings;
         }
 
         public override string ToString() {

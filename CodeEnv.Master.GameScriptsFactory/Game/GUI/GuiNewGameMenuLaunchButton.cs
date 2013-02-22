@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GuiUniverseSizeSetting.cs
+// File: GuiNewGameMenuLaunchButton.cs
 // COMMENT - one line to give a brief idea of what this file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -25,29 +25,32 @@ using CodeEnv.Master.Common.Unity;
 /// <summary>
 /// COMMENT 
 /// </summary>
-public class GuiUniverseSizeSetting : GuiPopupListBase {
+public class GuiNewGameMenuLaunchButton : GuiMenuAcceptButtonBase {
+
+    private UniverseSize newGameSize;
 
     protected override void Initialize() {
         base.Initialize();
-        popupList.selection = playerPrefsMgr.UniverseSizePref.GetName();
-        tooltip = "Choose the size of the Universe for your game.";
+        tooltip = "Launch New Game with these settings.";
     }
 
-    protected override void OnPopupListSelectionChange(string item) {
-        UniverseSize size;
-        if (!Enums<UniverseSize>.TryParse(item, true, out size)) {
-            WarnOnIncorrectName(item);
-            return;
-        }
+    protected override void OnCheckboxStateChange(bool state) { }
 
-        System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(0);
-        Debug.Log("{0}.{1}() method called.".Inject(GetType(), stackFrame.GetMethod().Name));
-        if (size != UniverseSize.Normal) {
-            Debug.LogError("Universe Size Change is only allowed during New Game Setup.");
+    protected override void OnPopupListSelectionChange(string item) {
+        // UIPopupList.current gives the reference to the sender, but there is nothing except names to distinguish them
+        if (Enums<UniverseSize>.TryParse(item, true, out newGameSize)) {
+            Debug.Log("UniverseSize {0} PopupList change event received by LaunchGameButton.".Inject(item));
             return;
         }
-        GameManager.UniverseSize = size;
-        playerPrefsMgr.UniverseSizePref = size;
+        // more popupLists here
+    }
+
+    protected override void OnSliderValueChange(float value) { }
+
+    protected override void OnButtonClick(GameObject sender) {
+        NewGameSettings newGameSettings = new NewGameSettings();
+        newGameSettings.SizeOfUniverse = newGameSize;
+        eventMgr.Raise<LaunchNewGameEvent>(new LaunchNewGameEvent(newGameSettings));
     }
 
     public override string ToString() {

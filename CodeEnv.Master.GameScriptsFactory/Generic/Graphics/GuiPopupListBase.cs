@@ -6,105 +6,74 @@
 // </copyright> 
 // <summary> 
 // File: GuiPopupListBase.cs
-// Base class for  Gui PopupLists that use Enums built with NGUI.
+//  Generic GuiPopupListBase class that implements PlayerPrefsManager property initialization and Tooltip functionality.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
 // default namespace
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using UnityEngine;
-using UnityEditor;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.Common.Unity;
+using System.Reflection;
 
 /// <summary>
-/// Base class for  Gui PopupLists that use Enums built with NGUI. 
+/// Generic GuiPopupListBase class that implements PlayerPrefsManager property initialization and Tooltip
+/// functionality. Also pre-registers with the NGUI PopupList delegate to receive OnPopupListSelectionChange events.
 /// </summary>
-public abstract class GuiPopupListBase : MonoBehaviourBase, IDisposable {
+public abstract class GuiPopupListBase<T> : GuiTooltip where T : struct {
 
-    protected PlayerPrefsManager playerPrefsMgr;
+    public string propertyName = string.Empty;
     protected UIPopupList popupList;
-    public string tooltip = string.Empty;
-
-    void Awake() {
-        playerPrefsMgr = PlayerPrefsManager.Instance;
-    }
 
     void Start() {
         Initialize();
     }
 
     /// <summary>
-    /// Override to initialize the tooltip message. Remember base.Initialize();
+    /// Can override. Remember base.Initialize(); The value for propertyName must be set before 
+    /// base.Initialize() is called.
     /// </summary>
     protected virtual void Initialize() {
         popupList = gameObject.GetSafeMonoBehaviourComponent<UIPopupList>();
         popupList.onSelectionChange += OnPopupListSelectionChange;
+        InitializePopupList();
     }
 
-    protected abstract void OnPopupListSelectionChange(string item);
+    protected virtual void OnPopupListSelectionChange(string item) { }
 
-    void OnTooltip(bool toShow) {
-        if (Utility.CheckForContent(tooltip)) {
-            if (toShow) {
-                UITooltip.ShowText(tooltip);
+    /// <summary>
+    /// Initializes the PopupList selection with the value held in PlayerPrefsManager. Uses Reflection to find the PlayerPrefsManager
+    /// property named, then creates a Property Delegate to acquire the initialization value.
+    /// </summary>
+    private void InitializePopupList() {
+        if (!string.IsNullOrEmpty(propertyName)) {
+            PropertyInfo propertyInfo = typeof(PlayerPrefsManager).GetProperty(propertyName);
+            if (propertyInfo == null) {
+                Debug.LogError("No PlayerPrefsManager property named {0} found!".Inject(propertyName));
+                return;
             }
-            else {
-                UITooltip.ShowText(null);
-            }
+            Func<T> propertyGet = (Func<T>)Delegate.CreateDelegate(typeof(Func<T>), PlayerPrefsManager.Instance, propertyInfo.GetGetMethod());
+            popupList.selection = propertyGet().ToString();
+        }
+        else {
+            Debug.LogWarning("The PlayerPrefsManager Property has not been named for {0}.".Inject(gameObject.name));
         }
     }
 
-    protected void WarnOnIncorrectName(string name) {
+    protected void WarnOnUnrecognizedItem(string item) {
         System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
         string callerIdMessage = ". Called by {0}.{1}().".Inject(stackFrame.GetFileName(), stackFrame.GetMethod().Name);
-        Debug.LogWarning("Name used in PopupList not found: " + name + callerIdMessage);
+        Debug.LogWarning("Item used in PopupList not found: " + item + callerIdMessage);
     }
 
-    #region IDiposable
-    private bool alreadyDisposed = false;
+    // IDisposable Note: No reason to remove Ngui event listeners OnDestroy() as the EventListener or
+    // Delegate to be removed is attached to this same GameObject that is being destroyed. In addition,
+    // execution is problematic as the gameObject may have already been destroyed.
 
-    /// <summary>
-    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-    /// </summary>
-    public void Dispose() {
-        Dispose(true);
-        GC.SuppressFinalize(this);
+    public override string ToString() {
+        return new ObjectAnalyzer().ToString(this);
     }
-
-    /// <summary>
-    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
-    /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool isDisposing) {
-        // Allows Dispose(isDisposing) to be called more than once
-        if (alreadyDisposed) {
-            return;
-        }
-
-        if (isDisposing) {
-            // free managed resources here including unhooking events
-            popupList.onSelectionChange -= OnPopupListSelectionChange;
-        }
-        // free unmanaged resources here
-        alreadyDisposed = true;
-    }
-
-    //public void ExampleMethod() {
-    //    // throw Exception if called on object that is already disposed
-    //    if(alreadyDisposed) {
-    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-    //    }
-
-    //    // method content here
-    //}
-    #endregion
-
 }
 

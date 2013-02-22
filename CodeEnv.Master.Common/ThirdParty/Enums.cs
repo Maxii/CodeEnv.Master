@@ -128,6 +128,7 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         /// <exception cref="System.ArgumentException"></exception>
         public static T Parse(string enumName, bool ignoreCase) {
+            Arguments.ValidateForContent(enumName);
             if (!ignoreCase) {
                 return Parse(enumName);
             }
@@ -159,6 +160,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="returnValue">The Type T  constant represented by the string name.</param>
         /// <returns><c>true</c> if successful.</returns>
         public static bool TryParse(string enumName, bool ignoreCase, out T returnValue) {
+            Arguments.ValidateForContent(enumName);
             if (!ignoreCase) {
                 return TryParse(enumName, out returnValue);
             }

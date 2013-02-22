@@ -43,7 +43,7 @@ public abstract class MonoBehaviourBaseSingleton<T> : MonoBehaviourBase where T 
                 if (instance == null) {
                     // an instance of this singleton doesn't yet exist so create a temporary one
                     Debug.LogWarning("No instance of {0} found, so a temporary one has been created.".Inject(thisType.ToString()));
-                    GameObject tempGO = new GameObject("Temp Instance of {0}.".Inject(thisType.ToString()), thisType);
+                    GameObject tempGO = new GameObject(thisType.Name, thisType);
                     instance = tempGO.GetComponent<T>();
                     if (instance == null) {
                         Debug.LogError("Problem during the creation of {0}.".Inject(thisType.ToString()));

@@ -13,31 +13,30 @@
 namespace CodeEnv.Master.Common.Unity {
 
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
 
     /// <summary>
     /// SingletonPattern. COMMENT
     /// </summary>
-    public sealed class PlayerPrefsManager {
+    public class PlayerPrefsManager {
 
-        private string universeSizeKey = "Universe Size Preference";
-        private string gameSpeedAfterLoadOptionKey = "Game Speed On Load Option";
-        private string isZoomOutOnCursorOptionKey = "Zoom Out On Cursor Option";
-        private string isRollEnabledOptionKey = "Camera Roll Option";
-        private string isResetOnFocusEnabledOptionKey = "Reset On Focus Option";
-        private string isPauseAfterLoadEnabledOptionKey = "Pause On Load Option";
+        private string sizeOfUniverseKey = "Universe Size Preference";
+        private string gameSpeedOnLoadKey = "Game Speed On Load Option";
+        private string isZoomOutOnCursorEnabledKey = "Zoom Out On Cursor Option";
+        private string isCameraRollEnabledKey = "Camera Roll Option";
+        private string isResetOnFocusEnabledKey = "Reset On Focus Option";
+        private string isPauseAfterLoadEnabledKey = "Pause On Load Option";
 
 
-        public UniverseSize UniverseSizePref { get; set; }
-        public GameClockSpeed GameSpeedOnLoadPref { get; set; }
-        public bool IsZoomOutOnCursorPref { get; set; }
-        public bool IsCameraRollPref { get; set; }
-        public bool IsResetOnFocusPref { get; set; }
-        public bool IsPauseOnLoadPref { get; set; }
+        public UniverseSize SizeOfUniverse { get; private set; }
+        public GameClockSpeed GameSpeedOnLoad { get; private set; }
+        public bool IsZoomOutOnCursorEnabled { get; private set; }
+        public bool IsCameraRollEnabled { get; private set; }
+        public bool IsResetOnFocusEnabled { get; private set; }
+        public bool IsPauseOnLoadEnabled { get; private set; }
+
+        private GameEventManager eventMgr;
 
         #region SingletonPattern
         private static readonly PlayerPrefsManager instance;
@@ -69,6 +68,24 @@ namespace CodeEnv.Master.Common.Unity {
         /// </summary>
         private void Initialize() {
             Retrieve();
+            eventMgr = GameEventManager.Instance;
+            eventMgr.AddListener<OptionChangeEvent>(OnOptionChange);
+            eventMgr.AddListener<LaunchNewGameEvent>(OnLaunchNewGame);
+        }
+
+        private void OnLaunchNewGame(LaunchNewGameEvent e) {
+            NewGameSettings settings = e.GameSettings;
+            SizeOfUniverse = settings.SizeOfUniverse;
+        }
+
+        private void OnOptionChange(OptionChangeEvent e) {
+            OptionSettings settings = e.Settings;
+            GameSpeedOnLoad = settings.GameSpeedOnLoad;
+            IsZoomOutOnCursorEnabled = settings.IsZoomOutOnCursorEnabled;
+            //Debug.Log("At OptionChangeEvent, PlayerPrefsMgr.IsZoomOutOnCursorEnabled = " + IsZoomOutOnCursorEnabled);
+            IsResetOnFocusEnabled = settings.IsResetOnFocusEnabled;
+            IsCameraRollEnabled = settings.IsCameraRollEnabled;
+            IsPauseOnLoadEnabled = settings.IsPauseOnLoadEnabled;
         }
 
         /// <summary>
@@ -77,19 +94,20 @@ namespace CodeEnv.Master.Common.Unity {
         public void Store() {
             // if variable not null/empty or None, convert the value to a string, encrypt it, and using the key, set it 
             string encryptedStringValue = string.Empty;
-            if (UniverseSizePref != UniverseSize.None) {
-                encryptedStringValue = Encrypt(UniverseSizePref.GetName());
-                PlayerPrefs.SetString(universeSizeKey, encryptedStringValue);
+            if (SizeOfUniverse != UniverseSize.None) {
+                encryptedStringValue = Encrypt(SizeOfUniverse.GetName());
+                PlayerPrefs.SetString(sizeOfUniverseKey, encryptedStringValue);
             }
-            if (GameSpeedOnLoadPref != GameClockSpeed.None) {
-                encryptedStringValue = Encrypt(GameSpeedOnLoadPref.GetName());
-                PlayerPrefs.SetString(gameSpeedAfterLoadOptionKey, encryptedStringValue);
+            if (GameSpeedOnLoad != GameClockSpeed.None) {
+                encryptedStringValue = Encrypt(GameSpeedOnLoad.GetName());
+                PlayerPrefs.SetString(gameSpeedOnLoadKey, encryptedStringValue);
             }
-            PlayerPrefs.SetString(isZoomOutOnCursorOptionKey, Encrypt(IsZoomOutOnCursorPref.ToString()));
-            PlayerPrefs.SetString(isRollEnabledOptionKey, Encrypt(IsCameraRollPref.ToString()));
+            //Debug.Log("At Store, PlayerPrefsMgr.IsZoomOutOnCursorEnabled = " + IsZoomOutOnCursorEnabled);
+            PlayerPrefs.SetString(isZoomOutOnCursorEnabledKey, Encrypt(IsZoomOutOnCursorEnabled.ToString()));
+            PlayerPrefs.SetString(isCameraRollEnabledKey, Encrypt(IsCameraRollEnabled.ToString()));
 
-            PlayerPrefs.SetString(isResetOnFocusEnabledOptionKey, Encrypt(IsResetOnFocusPref.ToString()));
-            PlayerPrefs.SetString(isPauseAfterLoadEnabledOptionKey, Encrypt(IsPauseOnLoadPref.ToString()));
+            PlayerPrefs.SetString(isResetOnFocusEnabledKey, Encrypt(IsResetOnFocusEnabled.ToString()));
+            PlayerPrefs.SetString(isPauseAfterLoadEnabledKey, Encrypt(IsPauseOnLoadEnabled.ToString()));
             PlayerPrefs.Save();
         }
 
@@ -102,20 +120,21 @@ namespace CodeEnv.Master.Common.Unity {
         /// </summary>
         public void Retrieve() {
             // for enums, if there is no preference set yet, default would be NONE, so start with NORMAL
-            UniverseSizePref = (PlayerPrefs.HasKey(universeSizeKey)) ? RetrieveEnumPref<UniverseSize>(universeSizeKey) : UniverseSize.Normal;
-            GameSpeedOnLoadPref = (PlayerPrefs.HasKey(gameSpeedAfterLoadOptionKey)) ? RetrieveEnumPref<GameClockSpeed>(gameSpeedAfterLoadOptionKey) : GameClockSpeed.Normal;
+            SizeOfUniverse = (PlayerPrefs.HasKey(sizeOfUniverseKey)) ? RetrieveEnumPref<UniverseSize>(sizeOfUniverseKey) : UniverseSize.Normal;
+            GameSpeedOnLoad = (PlayerPrefs.HasKey(gameSpeedOnLoadKey)) ? RetrieveEnumPref<GameClockSpeed>(gameSpeedOnLoadKey) : GameClockSpeed.Normal;
 
-            if (PlayerPrefs.HasKey(isZoomOutOnCursorOptionKey)) {
-                IsZoomOutOnCursorPref = bool.Parse(Decrypt(PlayerPrefs.GetString(isZoomOutOnCursorOptionKey)));
+            if (PlayerPrefs.HasKey(isZoomOutOnCursorEnabledKey)) {
+                IsZoomOutOnCursorEnabled = bool.Parse(Decrypt(PlayerPrefs.GetString(isZoomOutOnCursorEnabledKey)));
+                //Debug.Log("At Retrieve, PlayerPrefsMgr.IsZoomOutOnCursorEnabled = " + IsZoomOutOnCursorEnabled);
             }
-            if (PlayerPrefs.HasKey(isRollEnabledOptionKey)) {
-                IsCameraRollPref = bool.Parse(Decrypt(PlayerPrefs.GetString(isRollEnabledOptionKey)));
+            if (PlayerPrefs.HasKey(isCameraRollEnabledKey)) {
+                IsCameraRollEnabled = bool.Parse(Decrypt(PlayerPrefs.GetString(isCameraRollEnabledKey)));
             }
-            if (PlayerPrefs.HasKey(isResetOnFocusEnabledOptionKey)) {
-                IsResetOnFocusPref = bool.Parse(Decrypt(PlayerPrefs.GetString(isResetOnFocusEnabledOptionKey)));
+            if (PlayerPrefs.HasKey(isResetOnFocusEnabledKey)) {
+                IsResetOnFocusEnabled = bool.Parse(Decrypt(PlayerPrefs.GetString(isResetOnFocusEnabledKey)));
             }
-            if (PlayerPrefs.HasKey(isPauseAfterLoadEnabledOptionKey)) {
-                IsPauseOnLoadPref = bool.Parse(Decrypt(PlayerPrefs.GetString(isPauseAfterLoadEnabledOptionKey)));
+            if (PlayerPrefs.HasKey(isPauseAfterLoadEnabledKey)) {
+                IsPauseOnLoadEnabled = bool.Parse(Decrypt(PlayerPrefs.GetString(isPauseAfterLoadEnabledKey)));
             }
         }
 
@@ -131,6 +150,53 @@ namespace CodeEnv.Master.Common.Unity {
         private string Decrypt(string encryptedItem) {
             return encryptedItem;   // UNDONE combine key and value into a delimited string, then encrypt/decript
         }
+
+        void OnDestroy() {
+            Dispose();
+        }
+
+        #region IDisposable
+        private bool alreadyDisposed = false;
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose() {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
+        /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
+        /// </summary>
+        /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool isDisposing) {
+            // Allows Dispose(isDisposing) to be called more than once
+            if (alreadyDisposed) {
+                return;
+            }
+
+            if (isDisposing) {
+                // free managed resources here including unhooking events
+                eventMgr.RemoveListener<OptionChangeEvent>(OnOptionChange);
+                eventMgr.RemoveListener<LaunchNewGameEvent>(OnLaunchNewGame);
+            }
+            // free unmanaged resources here
+            alreadyDisposed = true;
+        }
+
+        // Example method showing check for whether the object has been disposed
+        //public void ExampleMethod() {
+        //    // throw Exception if called on object that is already disposed
+        //    if(alreadyDisposed) {
+        //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
+        //    }
+
+        //    // method content here
+        //}
+        #endregion
+
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

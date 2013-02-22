@@ -1,16 +1,16 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 Strategic Forge
+// Copyright © 2012 - 2013 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
 // File: UnityConstants.cs
-// Static class of common constants specific to the Unity Engine.
+// COMMENT - one line to give a brief idea of what the file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-namespace CodeEnv.Master.Common.Unity {
+namespace CodeEnv.Master.Common {
 
     using System;
     using System.Collections.Generic;
@@ -18,7 +18,6 @@ namespace CodeEnv.Master.Common.Unity {
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
     using Microsoft.Win32;
-    using UnityEngine;
 
     public static class UnityConstants {
 
@@ -26,8 +25,8 @@ namespace CodeEnv.Master.Common.Unity {
             get {
                 using (RegistryKey registryKey = Registry.CurrentUser.OpenSubKey(@"Software\Unity Technologies\Unity Editor 3.x\Location")) {
                     //string[] values = registryKey.GetValueNames();    // empty, no name, only default value
-                    string path = (string)registryKey.GetValue(null);
-                    System.Diagnostics.Debug.WriteLine("UnityPathName = " + @path);
+                    string path = (string)registryKey.GetValue(null);   // gets the default value
+                    // System.Diagnostics.Debug.WriteLine("UnityPathName = " + @path);
                     return @path;
                 }
             }
@@ -35,14 +34,6 @@ namespace CodeEnv.Master.Common.Unity {
 
         public static string UnityEntryProjectDir {
             get { return Environment.ExpandEnvironmentVariables(@"%UnityEnvDir%UnityEntry\"); }
-        }
-
-        public static string UnityPocProjectDir {
-            get { return Environment.ExpandEnvironmentVariables(@"%UnityEnvDir%UnityPOC\"); }
-        }
-
-        public static string UnityTrialsProjectDir {
-            get { return Environment.ExpandEnvironmentVariables(@"%UnityEnvDir%UnityTrials\"); }
         }
 
         public const string MouseAxisName_Horizontal = "Mouse X";
@@ -53,8 +44,6 @@ namespace CodeEnv.Master.Common.Unity {
         public const string KeyboardAxisName_Vertical = "Vertical";
 
         public const string Key_Escape = "escape";
-
-        public static readonly Vector3 UniverseOrigin = Vector3.zero;
 
         // Common Texture names used by Unity's builtin shaders
         public const string MainDiffuseTexture = "_MainTex";
@@ -70,5 +59,4 @@ namespace CodeEnv.Master.Common.Unity {
 
     }
 }
-
 

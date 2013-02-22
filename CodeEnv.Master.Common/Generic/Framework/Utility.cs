@@ -15,6 +15,7 @@ namespace CodeEnv.Master.Common {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq.Expressions;
     using System.Resources;
     using CodeEnv.Master.Common.LocalResources;
 
@@ -128,6 +129,18 @@ namespace CodeEnv.Master.Common {
             Arguments.ValidateForContent(text);
             IList<string> result = text.Split(delimiter);
             return result;
+        }
+
+        /// <summary>
+        /// Gets the string name of the property. Usage syntax:
+        /// <c>var propertyname = GetPropertyName( () => myObject.AProperty);</c>
+        /// returns "AProperty".
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="propertyExpression">The property expression.</param>
+        /// <returns></returns>
+        public static string GetPropertyName<T>(Expression<Func<T>> propertyExpression) {
+            return (propertyExpression.Body as MemberExpression).Member.Name;
         }
     }
 }

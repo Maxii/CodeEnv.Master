@@ -88,7 +88,7 @@ namespace CodeEnv.Master.Common {
             else {
                 listenerDelegates[typeof(T)] = listener;
             }
-            Debug.Log("Event Listener for Type {0} added.".Inject(typeof(T)));
+            //Debug.Log("Event Listener for Type {0} added.".Inject(typeof(T)));
         }
 
         /// <summary>
@@ -116,7 +116,7 @@ namespace CodeEnv.Master.Common {
                 else {
                     listenerDelegates[typeof(T)] = delegateAfterRemoval;
                 }
-                Debug.Log("Event Listener for Type {0} removed.".Inject(typeof(T)));
+                //Debug.Log("Event Listener for Type {0} removed.".Inject(typeof(T)));
             }
             else {
                 Debug.LogWarning("Attempt to RemoveListener of Type {0} that is not present.".Inject(typeof(T)));

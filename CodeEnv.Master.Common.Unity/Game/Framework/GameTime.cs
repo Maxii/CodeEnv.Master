@@ -1,4 +1,4 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
 // Copyright © 2012 - 2013 Strategic Forge
 //
@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GameTime.cs
-// GameTime class wrapper around Unity's Time class.
+//  The primary class that keeps track of game time.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,46 +18,23 @@ namespace CodeEnv.Master.Common.Unity {
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
-    using UnityEditor;
-    using System.Text;
-
-    /**
-     * Notes on Unity Time class:
-     *  1. Time.timeScale is normally set to 1.0F, realtime. However, when set to 0.0F:
-     *      - Pauses anything that is framerate independant.
-     *          - These are primarily all physics and time-dependant functions, rigidbody forces and velocities.
-     *          - Additionally the execution of FixedUpdate() is halted.
-     *          - Animations and anything that uses Time.deltaTime since Time.deltaTime is now 0.0F
-     *              - Time.deltaTime is actually time since last frame rendered * timeScale!
-     *      - Update functions are still called every frame and realtimeSinceStartup still accumulates.
-     *      - Rendering still occurs so there are frames.
-     *      - Physics reactions (collisions, etc.) still work. Not clear what affect occurs?
-     *      - Unity GUI elements are still active.
-     * 
-     * 
-     * Thoughts on GameTime:
-     *      1. I want animations to run at normal pace no matter how fast GameTime is moving or if paused.      
-     *      2. I want the camera to always move independant of gameSpeed and while the Game is Paused.
-     *           - Upshot of above = these animations need to use GameTime.DeltaTime that doesn't pause.
-     */
 
     /// <summary>
-    /// This GameTime class wraps UnityEngine.RealTime. All Game time related values should come from
-    /// this class. This class also requires that Unity's Time.TimeScale is always = 1.0F.
+    /// The primary class that keeps track of game time.
     /// </summary>
-    [Serializable]
-    public sealed class GameTime {
+    public class GameTime {
+
 
         public static GameClockSpeed GameSpeed { get; private set; }
 
         /// <value>
         /// The amount of time in seconds elapsed since the last Frame 
-        /// was rendered or zero if the game is paused. Useful for animations
+        /// was rendered or zero if the game is paused or not running. Useful for animations
         /// or other work that should stop while paused.
         /// </value>
         public static float DeltaTimeOrPaused {
             get {
-                if (isPaused) {
+                if (isPaused || !isGameRunning) {
                     return Constants.ZeroF;
                 }
                 else {
@@ -76,46 +53,71 @@ namespace CodeEnv.Master.Common.Unity {
         }
 
         /// <value>
-        /// The real time in seconds since the start of the game.
+        /// The real time in seconds since the Unity Application was launched.
         /// </value>
-        public static float RealTime {
+        public static float RealTime_Unity {
             get { return UnityEngine.Time.realtimeSinceStartup; }
         }
 
         /// <value>
-        /// The real time in seconds since the start of the game less time paused.
+        /// The real time in seconds since a new or saved game was begun. GameClockSpeed
+        /// does not effect this.
         /// </value>
-        public static float RealTimeLessTimePaused {
+        public static float RealTime_Game {
             get {
-                float realTimeInCurrentPause = Constants.ZeroF;
-                if (isPaused) {
-                    realTimeInCurrentPause = RealTime - realTimeCurrentPauseBegan;
+                if (Mathfx.Approx(timeGameBegun, Constants.ZeroF, .01F)) {
+                    return Constants.ZeroF;
                 }
-                return RealTime - cumRealTimePreviouslyPaused - realTimeInCurrentPause;
+                return RealTime_Unity - timeGameBegun;
             }
         }
 
+        /// <value>
+        /// The real time in seconds since a new or saved game was begun.
+        /// Time on hold (paused or not running) is not counted. GameClockSpeed does not effect this.
+        /// </value>
+        public static float RealTime_GamePlay {
+            get {
+                float timeInCurrentHold = Constants.ZeroF;
+                if (isPaused || !isGameRunning) {
+                    timeInCurrentHold = RealTime_Game - timeCurrentHoldBegan;
+                }
+                return RealTime_Game - cumTimeOnHold - timeInCurrentHold;
+            }
+        }
 
+        /// <summary>
+        /// The GameDate in the game. This value takes into account when the game was begun,
+        /// game speed changes and holds.
+        /// </summary>
         private static GameDate date;
         public static IGameDate Date {
             get {
-                if (!isPaused) {
+                if (!isPaused && isGameRunning) {
                     SyncGameClock();
                 }
                 // the only time the date needs to be synced is when it is about to be used
-                date.SyncDateToGameClock(gameClockAtLastSync);
+                date.SyncDateToGameClock(gameDateTimeAtLastSync);
                 return date;
             }
         }
 
-        private static float cumRealTimePreviouslyPaused = Constants.ZeroF;
-        private static float realTimeCurrentPauseBegan = Constants.ZeroF;
-        private static float gameClockAtLastSync = Constants.ZeroF;
-        private static float realTimeAtLastSync = Constants.ZeroF;
+        // time the game was begun in RealTime_Unity units
+        private static float timeGameBegun;
 
+        // fields for tracking the amount of time paused or not running in RealTime_Game units
+        private static float cumTimeOnHold;
+        private static float timeCurrentHoldBegan;
+        // time in seconds used to calculate the Date. Accounts for speed and holds
+        private static float gameDateTimeAtLastSync;
+        // the real time in seconds used to calculate the DateTime above when syncing
+        private static float gameRealTimeAtLastSync;
+
+        private static bool isGameRunning;
         private static bool isPaused;
 
         private GameEventManager eventMgr;
+        private PlayerPrefsManager playerPrefsMgr;
 
         #region SingletonPattern
         private static readonly GameTime instance;
@@ -130,7 +132,7 @@ namespace CodeEnv.Master.Common.Unity {
         }
 
         /// <summary>
-        /// Private constructor that prevents the creation of another externally requested instance of <see cref="GameManager"/>.
+        /// Private constructor that prevents the creation of another externally requested instance of <see cref="GameTime"/>.
         /// </summary>
         private GameTime() {
             Initialize();
@@ -146,44 +148,99 @@ namespace CodeEnv.Master.Common.Unity {
         /// Called once from the constructor, this does all required initialization
         /// </summary>
         private void Initialize() {
-            // Add initialization code here if any
             eventMgr = GameEventManager.Instance;
-            SetupEventListeners();
+            AddEventListeners();
             UnityEngine.Time.timeScale = Constants.OneF;
-            GameSpeed = PlayerPrefsManager.Instance.GameSpeedOnLoadPref;
-            date = new GameDate { DayOfYear = 1, Year = GameValues.StartingGameYear };
+            playerPrefsMgr = PlayerPrefsManager.Instance;
+            date = new GameDate { DayOfYear = 1, Year = TempGameValues.StartingGameYear };
+            GameSpeed = playerPrefsMgr.GameSpeedOnLoad;
+            InitializeForStartScene();
         }
 
-        private void SetupEventListeners() {
-            eventMgr.AddListener<GamePauseEvent>(OnPause);
+        private void InitializeForStartScene() {
+            SceneLevel scene = (SceneLevel)Application.loadedLevel;
+            switch (scene) {
+                case SceneLevel.IntroScene:
+                    isGameRunning = false; // a GameStateChange to Running will change this
+                    break;
+                case SceneLevel.GameScene:
+                    isGameRunning = true;
+                    break;
+                case SceneLevel.AllGuiOnly:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(scene));
+            }
+        }
+
+        private void AddEventListeners() {
             eventMgr.AddListener<GameSpeedChangeEvent>(OnGameSpeedChange);
+            eventMgr.AddListener<PauseGameEvent>(OnPauseGameCommand);
+            eventMgr.AddListener<GameStateChangeEvent>(OnGameStateChange);
+            //eventMgr.AddListener<GameLoadedEvent>(OnGameLoaded);
+        }
+
+        //private void OnGameLoaded(GameLoadedEvent e) {
+        //    GameSpeed = playerPrefsMgr.GameSpeedOnLoad;
+        //}
+
+        private void OnGameStateChange(GameStateChangeEvent e) {
+            if (e.NewState == GameState.Running) {
+                isGameRunning = true;
+                if (!isPaused) {
+                    // establish the game clock's start time
+                    timeGameBegun = RealTime_Unity;
+                    //Debug.Log("OnGameStateChange TimeGameBegun (UnityTime) set to {0}.".Inject(timeGameBegun));
+                }
+                // ifPaused, resume will establish the start time
+            }
+        }
+
+        // the first call to this will come from GameManager setting IsGamePaused to the playerPref onload
+        private void OnPauseGameCommand(PauseGameEvent e) {
+            switch (e.PauseCmd) {
+                case PauseGameCommand.Pause:
+                    if (isGameRunning) {
+                        SyncGameClock();    // update the game clock before pausing
+                        timeCurrentHoldBegan = RealTime_Game;
+                    }
+                    isPaused = true;
+                    break;
+                case PauseGameCommand.Resume:
+                    if (isGameRunning) {
+                        if (Mathfx.Approx(timeGameBegun, Constants.ZeroF, .01F)) {
+                            // If player pref is to start the game paused on load, then the time the game
+                            // clock starts counting is when the player hits the resume button
+                            timeGameBegun = RealTime_Unity;
+                            //Debug.Log("At Resume TimeGameBegun (UnityTime) set to {0}.".Inject(timeGameBegun));
+
+                        }
+                        float timeInCurrentHold = RealTime_Game - timeCurrentHoldBegan;
+                        cumTimeOnHold += timeInCurrentHold;
+                        // Debug.Log("TimeGameBegun (UnityTime) = {0}, TimeCurrentHoldBegan (GameTime) = {1}".Inject(timeGameBegun, timeCurrentHoldBegan));
+                        //Debug.Log("TimeInCurrentHold (GameTime) = {0}, RealTime_Game = {1}.".Inject(timeInCurrentHold, RealTime_Game));
+
+                        timeCurrentHoldBegan = Constants.ZeroF;
+
+                        // ignore the accumulated time during pause when next GameClockSync is requested
+                        gameRealTimeAtLastSync = RealTime_Game;
+                        //Debug.Log("CumTimeOnHold (GameTime) = {0}, GameRealTimeAtLastSync = {1}".Inject(cumTimeOnHold, gameRealTimeAtLastSync));
+                    }
+                    isPaused = false;
+
+                    break;
+                case PauseGameCommand.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(e.PauseCmd));
+            }
         }
 
         private void OnGameSpeedChange(GameSpeedChangeEvent e) {
             if (GameSpeed != e.GameSpeed) {
-                if (!isPaused) {
+                if (!isPaused && isGameRunning) {
                     SyncGameClock();
                 }
                 GameSpeed = e.GameSpeed;
             }
-        }
-
-        private void OnPause(GamePauseEvent e) {
-            bool toPause = e.Paused;
-            Debug.Log("Pause event received. toPause = " + toPause);
-            if (toPause) {
-                SyncGameClock();    // update the game clock before pausing
-                realTimeCurrentPauseBegan = RealTime;
-            }
-            else {  // resume
-                float realTimeInCurrentPause = RealTime - realTimeCurrentPauseBegan;
-                cumRealTimePreviouslyPaused += realTimeInCurrentPause;
-                realTimeCurrentPauseBegan = Constants.ZeroF;
-
-                // ignore the accumulated time during pause when next GameClockSync is requested
-                realTimeAtLastSync = RealTime;
-            }
-            isPaused = toPause;
         }
 
         /// <summary>
@@ -192,14 +249,64 @@ namespace CodeEnv.Master.Common.Unity {
         /// sync the date when a pause or speed change occurs as they don't have any use for the date.
         /// </summary>
         private static void SyncGameClock() {
-            gameClockAtLastSync += GameSpeed.GetSpeedMultiplier() * (RealTime - realTimeAtLastSync);
-            realTimeAtLastSync = RealTime;
-            //Debug.Log("GameClock synced to: " + gameClockAtLastSync);
+            gameDateTimeAtLastSync += GameSpeed.GetSpeedMultiplier() * (RealTime_Game - gameRealTimeAtLastSync);
+            gameRealTimeAtLastSync = RealTime_Game;
+            //Debug.Log("GameClock synced to: " + gameDateTimeAtLastSync);
         }
+
+        void OnDestroy() {
+            Dispose();
+        }
+
+        #region IDisposable
+        private bool alreadyDisposed = false;
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose() {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
+        /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
+        /// </summary>
+        /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool isDisposing) {
+            // Allows Dispose(isDisposing) to be called more than once
+            if (alreadyDisposed) {
+                return;
+            }
+
+            if (isDisposing) {
+                // free managed resources here including unhooking events
+                eventMgr.RemoveListener<GameSpeedChangeEvent>(OnGameSpeedChange);
+                //eventMgr.RemoveListener<GameClockEvent>(OnGameClockCommand);
+                eventMgr.RemoveListener<PauseGameEvent>(OnPauseGameCommand);
+            }
+            // free unmanaged resources here
+            alreadyDisposed = true;
+        }
+
+        // Example method showing check for whether the object has been disposed
+        //public void ExampleMethod() {
+        //    // throw Exception if called on object that is already disposed
+        //    if(alreadyDisposed) {
+        //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
+        //    }
+
+        //    // method content here
+        //}
+        #endregion
+
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
     }
 }
+
 

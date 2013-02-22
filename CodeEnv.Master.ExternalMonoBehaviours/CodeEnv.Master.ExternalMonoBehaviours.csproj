@@ -55,7 +55,6 @@
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Generic\Debug\DynamicObjects.cs" />
-    <Compile Include="Generic\Debug\FpsHUD.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ThirdParty\ScaleRelativeToCamera.cs" />
     <Compile Include="ThirdParty\Note.cs" />

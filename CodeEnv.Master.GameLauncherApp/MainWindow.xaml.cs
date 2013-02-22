@@ -17,6 +17,7 @@ namespace CodeEnv.Master.GameLauncherApp {
     using System.Globalization;
     using System.Threading;
     using System.Windows;
+    using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
     using CodeEnv.Master.Common.Unity;
     using UnityEngine;
@@ -32,8 +33,8 @@ namespace CodeEnv.Master.GameLauncherApp {
         private static string[] cultures = { "en-US", "fr-FR", "en-CA", "en-AU" };
         private static Dictionary<string, string> unityProjectPaths = new Dictionary<string, string>(3) {
             {"UnityEntry (default)", UnityConstants.UnityEntryProjectDir},
-            {"UnityPOC", UnityConstants.UnityPocProjectDir},
-            {"UnityTrials", UnityConstants.UnityTrialsProjectDir}
+            {"UnityPOC", UnityDebugConstants.UnityPocProjectDir},
+            {"UnityTrials", UnityDebugConstants.UnityTrialsProjectDir}
         };
 
 
@@ -50,7 +51,7 @@ namespace CodeEnv.Master.GameLauncherApp {
             string selectedProjectPath = UnityConstants.UnityEntryProjectDir;
 
 
-            // the lambda event handler w/anonamous method
+            // the lambda event handler w/anonomous method
             chgCultureButton.Click += (sender, eventArgs) => {
                 System.Random rng = new System.Random();
                 //string cultureString = RandomExtended<string>.Choice(cultures);  // Can't use this as RandomExtended.Choice calls UnityEngine.Random from outside Unity

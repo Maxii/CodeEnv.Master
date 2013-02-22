@@ -32,8 +32,8 @@ public class NoteEditor : Editor {
     private void Init() {
         note = base.target as Note;
         // FIXME
-        //EditorWindow editorWindow = EditorWindow.GetWindow<>(UnityConstants.InspectorWindowName);
-        //Debug.Log("Editor Window Name = " + editorWindow.name);
+        //EditorWindow editorWindow = EditorWindow.GetWindow<>(TempGameValues.InspectorWindowName);
+        //Debug.Log("Editor Window Name = " + editorWindow.item);
         //textAreaWidth = editorWindow.position.width - 50F;
         textAreaWidth = 400F;
         guiStyle = new GUIStyle();

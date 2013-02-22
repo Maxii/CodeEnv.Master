@@ -19,27 +19,32 @@ using CodeEnv.Master.Common.Unity;
 using UnityEngine;
 
 /// <summary>
-/// Start with this script attached to an empty GO called "Loader". Currently used to attach the camera
-/// control script to the camera. This approach of sharing an object across scenes allows objects and values
+/// This approach of sharing an object across scenes allows objects and values
 /// from one scene to move to another.
 /// </summary>
 [Serializable]
 public class Loader : MonoBehaviourBase {
 
-    private static Loader currentLoader;
+    public static Loader currentInstance;
 
     public int targetFramerate;
 
+#pragma warning disable
+    public UsefulPrefabs usefulPrefabsPrefab;
+    private DebugSettings debugSettings;
+    private GameManager gameMgr;
+#pragma warning restore
+
     //*******************************************************************
-    // GameObjects or values you want to keep between scenes sender here and
-    // can be accessed by Loader.currentLoader.variableName
+    // GameObjects or values you want to keep between scenes go here and
+    // can be accessed by Loader.currentInstance.variableName
     //*******************************************************************
 
     void Awake() {
-        DestroyAnyExtraCopies();
-        UpdateRate = UpdateFrequency.HardlyEver;
-        InitializeUniverseEdge(GameManager.UniverseSize.GetUniverseRadius());
         //Debug.Log("Loader Awake() called. Enabled = " + enabled);
+        DestroyAnyExtraCopies();
+        UpdateRate = UpdateFrequency.Continuous;
+        gameMgr = GameManager.Instance;
     }
 
     /// <summary>
@@ -48,29 +53,13 @@ public class Loader : MonoBehaviourBase {
     /// in memory if you make a scene transition. 
     /// </summary>
     private void DestroyAnyExtraCopies() {
-        if (currentLoader != null && currentLoader != this) {
+        if (currentInstance != null && currentInstance != this) {
             Destroy(gameObject);
         }
         else {
             DontDestroyOnLoad(gameObject);
-            currentLoader = this;
+            currentInstance = this;
         }
-    }
-
-    private void InitializeUniverseEdge(float universeRadius) {
-        string universeEdgeName = Layers.UniverseEdge.GetName();
-        GameObject universeEdgeGo = GameObject.Find(universeEdgeName);
-        if (universeEdgeGo == null) {
-            universeEdgeGo = new GameObject(universeEdgeName);
-            // a new GameObject automatically starts enabled, with only a transform located at the origin
-            SphereCollider universeEdgeCollider = universeEdgeGo.AddComponent<SphereCollider>();
-            // adding a component like SphereCollider starts enabled
-            universeEdgeCollider.radius = universeRadius;
-            //universeEdgeCollider.isTrigger = true;
-        }
-        universeEdgeGo.layer = (int)Layers.UniverseEdge;
-        universeEdgeGo.isStatic = true;
-        universeEdgeGo.transform.parent = DynamicObjects.Folder;
     }
 
     void OnEnable() {
@@ -79,72 +68,35 @@ public class Loader : MonoBehaviourBase {
         // always was called first. Placing this empty method here makes script execution order settings effective.
     }
 
-
     void Start() {
         // For this Start() method to be called, this script must already be attached to a GO,
         // which I assume is an empty Go named "LoaderGo"
+        debugSettings = new DebugSettings(UnityDebugConstants.DebugSettingsPath);
         CheckForPrefabs();
-
-        SetupTargetFramerate();
-        SetupFpsHUD();
-        SetupCamera();
-    }
-
-    //private void WakeGameManager() {
-    //    GameManager.IsGamePaused = false;
-    //    //StartCoroutine(WaitPauseThenResume);
-    //}
-
-    private IEnumerator WaitPauseThenResume() {
-        yield return new WaitForSeconds(5);
-        GameManager.IsGamePaused = true;
-        yield return new WaitForSeconds(1);
-        GameManager.IsGamePaused = false;
+        SetTargetFramerate();
     }
 
     private void CheckForPrefabs() {
-        // Check to make sure UsefulPrefabs is in the scene. If not, load it from the "master" scene.
-        UsefulPrefabs usefulPrefabScript = FindObjectOfType(typeof(UsefulPrefabs)) as UsefulPrefabs;
-        if (!usefulPrefabScript) {
-            Debug.LogError("Prefab container not loaded in scene: " + typeof(UsefulPrefabs));
-            // TODO load it additively from the master scene
-            // eg. EditorApplication.OpenSceneAdditive();
+        // Check to make sure UsefulPrefabs is in the scene. If not, instantiate it from the attached Prefab
+        UsefulPrefabs usefulPrefabs = FindObjectOfType(typeof(UsefulPrefabs)) as UsefulPrefabs;
+        if (!usefulPrefabs) {
+            Debug.LogWarning("{0} instance not present in scene. Instantiating new one.".Inject(typeof(UsefulPrefabs).Name));
+            Arguments.ValidateNotNull(usefulPrefabsPrefab);
+            usefulPrefabs = Instantiate<UsefulPrefabs>(usefulPrefabsPrefab);
         }
+        usefulPrefabs.transform.parent = currentInstance.transform.parent;
     }
 
-    private void SetupTargetFramerate() {
+    private void SetTargetFramerate() {
         // turn off vSync so Unity won't prioritize keeping the framerate at the monitor's refresh rate
         QualitySettings.vSyncCount = 0;
         targetFramerate = 25;
         Application.targetFrameRate = targetFramerate;
     }
 
-    private void SetupFpsHUD() {
-        FpsHUD fpsHud = FindObjectOfType(typeof(FpsHUD)) as FpsHUD;
-        if (!fpsHud) {
-            Debug.LogWarning("There is no FPS HUD present in the scene!");
-            return;
-        }
-        Vector2 upperLeftCornerOfScreen = new Vector2(0.0F, 1.0F);
-        fpsHud.transform.position = upperLeftCornerOfScreen;
-        fpsHud.gameObject.isStatic = true;
+    void OnLevelWasLoaded(int level) {
+        //Debug.Log("Loader OnLevelWasLoaded(level = {0}) called.".Inject(level));
     }
-
-    /// <summary>
-    /// Find the main camera and attach the camera controller to it.
-    /// </summary>
-    private void SetupCamera() {
-        CameraControl cameraControl = Camera.main.gameObject.GetSafeMonoBehaviourComponent<CameraControl>();
-        if (cameraControl == null) {
-            cameraControl = Camera.main.gameObject.AddComponent<CameraControl>();
-            // adding a script component starts disabled       
-        }
-        cameraControl.enabled = true;
-        // control any camera settings I might want to dynamically change outside the Camera
-        Camera.main.farClipPlane = GameManager.UniverseSize.GetUniverseRadius() * 2;
-    }
-
-
 
     void Update() {
         if (ToUpdate()) {
@@ -152,6 +104,10 @@ public class Loader : MonoBehaviourBase {
                 Application.targetFrameRate = targetFramerate;
             }
         }
+    }
+
+    void OnDestroy() {
+        // Debug.Log("A {0} instance is being destroyed.".Inject(this.name));
     }
 
     public override string ToString() {

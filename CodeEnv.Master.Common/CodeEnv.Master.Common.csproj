@@ -51,15 +51,30 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Game\Debug\GameValues.cs" />
+    <Compile Include="Game\Framework\GameLoadedEvent.cs" />
+    <Compile Include="Game\Framework\GameState.cs" />
+    <Compile Include="Game\Framework\GameStateChangeEvent.cs" />
+    <Compile Include="Game\GUI\ExitGameEvent.cs" />
+    <Compile Include="Game\Debug\DebugSettings.cs" />
     <Compile Include="Game\Framework\GameClockSpeed.cs" />
+    <Compile Include="Game\GUI\PauseGameEvent.cs" />
+    <Compile Include="Game\GUI\PauseGameCommand.cs" />
     <Compile Include="Generic\Framework\GameEventManager.cs" />
     <Compile Include="Game\Framework\Layers.cs" />
     <Compile Include="Game\Framework\Tags.cs" />
-    <Compile Include="Game\GUI\GamePauseEvent.cs" />
     <Compile Include="Game\GUI\GameSpeedChangeEvent.cs" />
     <Compile Include="Generic\Extensions\GameSpecificExtensions.cs" />
     <Compile Include="Generic\IO\MyNguiUtilities.cs" />
+    <Compile Include="Game\GUI\LaunchNewGameEvent.cs" />
+    <Compile Include="Game\Framework\NewGameSettings.cs" />
+    <Compile Include="Game\GUI\OptionChangeEvent.cs" />
+    <Compile Include="Game\Framework\OptionSettings.cs" />
+    <Compile Include="Game\GUI\GuiVisibilityCommand.cs" />
+    <Compile Include="Game\Framework\SceneLevel.cs" />
+    <Compile Include="Game\Framework\SceneLevelChangingEvent.cs" />
+    <Compile Include="Game\GUI\GuiPauseCommand.cs" />
+    <Compile Include="Game\GUI\GuiPauseEvent.cs" />
+    <Compile Include="ThirdParty\TextScanner.cs" />
     <Compile Include="ThirdParty\FlagsHelper.cs" />
     <Compile Include="Generic\Debug\ObjectAnalyzer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -74,6 +89,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Game\Framework\UniverseSize.cs" />
+    <Compile Include="Generic\Framework\UnityConstants.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeEnv.Master.Common.LocalResources\CodeEnv.Master.Common.LocalResources.csproj">

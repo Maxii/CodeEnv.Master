@@ -127,12 +127,12 @@ public class GameOptionsGuiManager : GuiManagerBase<GameOptionsGuiManager> {
     }
 
     protected override void InitializeGuiWidgets() {
-        // guiWidgets.cameraRoll.isChecked = playerPrefsMgr.IsCameraRollPref;
-        guiWidgets.pauseAfterLoad.isChecked = playerPrefsMgr.IsPauseOnLoadPref;
-        guiWidgets.resetOnFocus.isChecked = playerPrefsMgr.IsResetOnFocusPref;
-        guiWidgets.zoomOutOnCursor.isChecked = playerPrefsMgr.IsZoomOutOnCursorPref;
-        // guiWidgets.gameSpeedAfterLoad.selection = playerPrefsMgr.GameSpeedOnLoadPref.GetName();
-        guiWidgets.universeSize.selection = playerPrefsMgr.UniverseSizePref.GetName();
+        // guiWidgets.cameraRoll.isChecked = playerPrefsMgr.IsCameraRollEnabled;
+        guiWidgets.pauseAfterLoad.isChecked = playerPrefsMgr.IsPauseOnLoadEnabled;
+        guiWidgets.resetOnFocus.isChecked = playerPrefsMgr.IsResetOnFocusEnabled;
+        guiWidgets.zoomOutOnCursor.isChecked = playerPrefsMgr.IsZoomOutOnCursorEnabled;
+        // guiWidgets.gameSpeedAfterLoad.selection = playerPrefsMgr.GameSpeedOnLoad.GetName();
+        guiWidgets.universeSize.selection = playerPrefsMgr.SizeOfUniverse.GetName();
 
     }
 
@@ -158,7 +158,7 @@ public class GameOptionsGuiManager : GuiManagerBase<GameOptionsGuiManager> {
             return;
         }
         GameManager.UniverseSize = size;
-        playerPrefsMgr.UniverseSizePref = size;
+        playerPrefsMgr.SizeOfUniverse = size;
     }
 
     private void OnGameSpeedAfterLoadOptionChange(string item) {
@@ -172,13 +172,13 @@ public class GameOptionsGuiManager : GuiManagerBase<GameOptionsGuiManager> {
         Debug.Log("{0}.{1}() method called.".Inject(GetType(), stackFrame.GetMethod().Name));
 
         // UNDONE
-        playerPrefsMgr.GameSpeedOnLoadPref = speed;
+        playerPrefsMgr.GameSpeedOnLoad = speed;
         Debug.LogWarning("OnGameSpeedAfterLoadOptionChange() is not yet fully implemented.");
     }
 
     private void OnZoomOutOnCursorOptionChange(bool state) {
         CameraControl.Instance.IsScrollZoomOutOnCursorEnabled = state;
-        playerPrefsMgr.IsZoomOutOnCursorPref = state;
+        playerPrefsMgr.IsZoomOutOnCursorEnabled = state;
 
         System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(0);
         Debug.Log("{0}.{1}() method called.".Inject(GetType(), stackFrame.GetMethod().Name));
@@ -187,7 +187,7 @@ public class GameOptionsGuiManager : GuiManagerBase<GameOptionsGuiManager> {
 
     private void OnResetOnFocusOptionChange(bool state) {
         CameraControl.Instance.IsResetOnFocusEnabled = state;
-        playerPrefsMgr.IsResetOnFocusPref = state;
+        playerPrefsMgr.IsResetOnFocusEnabled = state;
 
         System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(0);
         Debug.Log("{0}.{1}() method called.".Inject(GetType(), stackFrame.GetMethod().Name));
@@ -200,13 +200,13 @@ public class GameOptionsGuiManager : GuiManagerBase<GameOptionsGuiManager> {
         Debug.Log("{0}.{1}() method called.".Inject(GetType(), stackFrame.GetMethod().Name));
 
         // UNDONE
-        playerPrefsMgr.IsPauseOnLoadPref = state;
+        playerPrefsMgr.IsPauseOnLoadEnabled = state;
         Debug.LogWarning("OnPauseAfterReloadOptionChange() is not yet fully implemented.");
     }
 
     private void OnCameraRollOptionChange(bool state) {
         CameraControl.Instance.IsRollEnabled = state;
-        playerPrefsMgr.IsCameraRollPref = state;
+        playerPrefsMgr.IsCameraRollEnabled = state;
 
         System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(0);
         Debug.Log("{0}.{1}() method called.".Inject(GetType(), stackFrame.GetMethod().Name));

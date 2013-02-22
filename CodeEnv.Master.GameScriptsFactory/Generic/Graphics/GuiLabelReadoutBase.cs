@@ -25,10 +25,14 @@ using CodeEnv.Master.Common.Unity;
 /// <summary>
 /// Base class for Dynamic Gui Labels (used as readouts) built with NGUI.
 /// </summary>
-public abstract class GuiLabelReadoutBase : MonoBehaviourBase {
+public abstract class GuiLabelReadoutBase : GuiTooltip {
 
-    public string tooltip = string.Empty;
+    protected GameEventManager eventMgr;
     protected UILabel readoutLabel;
+
+    void Awake() {
+        eventMgr = GameEventManager.Instance;
+    }
 
     void Start() {
         Initialize();
@@ -38,15 +42,5 @@ public abstract class GuiLabelReadoutBase : MonoBehaviourBase {
         readoutLabel = gameObject.GetSafeMonoBehaviourComponent<UILabel>();
     }
 
-    void OnTooltip(bool toShow) {
-        if (Utility.CheckForContent(tooltip)) {
-            if (toShow) {
-                UITooltip.ShowText(tooltip);
-            }
-            else {
-                UITooltip.ShowText(null);
-            }
-        }
-    }
 }
 

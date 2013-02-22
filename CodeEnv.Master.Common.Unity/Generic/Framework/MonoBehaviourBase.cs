@@ -224,7 +224,7 @@ public abstract class MonoBehaviourBase : MonoBehaviour {
 
     /// <summary>
     /// Returns a list of all active loaded MonoBehaviour scripts that implement Interface I. It will return no inactive scripts.
-    ///Please note that this function is very slow.
+    /// Please note that this function is very slow.
     /// </summary>
     /// <typeparam name="I">The Type of Interface.</typeparam>
     /// <returns></returns>
@@ -239,7 +239,6 @@ public abstract class MonoBehaviourBase : MonoBehaviour {
                 list.Add(c as I);
             }
         }
-
         return list;
     }
 

@@ -25,14 +25,15 @@ using CodeEnv.Master.Common.Unity;
 /// <summary>
 /// Base class for  Gui Sliders built with NGUI. 
 /// </summary>
-public abstract class GuiSliderBase : MonoBehaviourBase, IDisposable {
+public abstract class GuiSliderBase : GuiTooltip {
 
+    protected GameEventManager eventMgr;
     protected PlayerPrefsManager playerPrefsMgr;
     protected UISlider slider;
-    public string tooltip = string.Empty;
 
     void Awake() {
         playerPrefsMgr = PlayerPrefsManager.Instance;
+        eventMgr = GameEventManager.Instance;
     }
 
     void Start() {
@@ -49,56 +50,9 @@ public abstract class GuiSliderBase : MonoBehaviourBase, IDisposable {
 
     protected abstract void OnSliderValueChange(float value);
 
-    void OnTooltip(bool toShow) {
-        if (Utility.CheckForContent(tooltip)) {
-            if (toShow) {
-                UITooltip.ShowText(tooltip);
-            }
-            else {
-                UITooltip.ShowText(null);
-            }
-        }
-    }
-
-    #region IDiposable
-    private bool alreadyDisposed = false;
-
-    /// <summary>
-    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-    /// </summary>
-    public void Dispose() {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
-    /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool isDisposing) {
-        // Allows Dispose(isDisposing) to be called more than once
-        if (alreadyDisposed) {
-            return;
-        }
-
-        if (isDisposing) {
-            // free managed resources here including unhooking events
-            slider.onValueChange -= OnSliderValueChange;
-        }
-        // free unmanaged resources here
-        alreadyDisposed = true;
-    }
-
-    //public void ExampleMethod() {
-    //    // throw Exception if called on object that is already disposed
-    //    if(alreadyDisposed) {
-    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-    //    }
-
-    //    // method content here
-    //}
-    #endregion
+    // IDisposable Note: No reason to remove Ngui event listeners OnDestroy() as the EventListener or
+    // Delegate to be removed is attached to this same GameObject that is being destroyed. In addition,
+    // execution is problematic as the gameObject may have already been destroyed.
 
 }
 

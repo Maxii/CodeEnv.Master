@@ -20,7 +20,6 @@ namespace CodeEnv.Master.Common.Unity {
     using UnityEditor;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.Common.Unity;
     using System.IO;
 
     /// <summary>

@@ -27,17 +27,9 @@ using CodeEnv.Master.Common.Unity;
 /// </summary>
 public class GuiGameSpeedReadout : GuiLabelReadoutBase, IDisposable {
 
-    private GameEventManager eventMgr;
-    private PlayerPrefsManager playerPrefsMgr;
-
-    void Awake() {
-        eventMgr = GameEventManager.Instance;
-        playerPrefsMgr = PlayerPrefsManager.Instance;
-    }
-
     protected override void Initialize() {
         base.Initialize();
-        RefreshGameSpeedReadout(playerPrefsMgr.GameSpeedOnLoadPref);
+        RefreshGameSpeedReadout(PlayerPrefsManager.Instance.GameSpeedOnLoad);
         eventMgr.AddListener<GameSpeedChangeEvent>(OnGameSpeedChange);
         tooltip = "The multiple of Normal Speed the game is currently running at.";
     }
@@ -48,6 +40,10 @@ public class GuiGameSpeedReadout : GuiLabelReadoutBase, IDisposable {
 
     private void RefreshGameSpeedReadout(GameClockSpeed clockSpeed) {
         readoutLabel.text = CommonTerms.MultiplySign + clockSpeed.GetSpeedMultiplier().ToString();
+    }
+
+    void OnDestroy() {
+        Dispose();
     }
 
     #region IDisposable
@@ -65,7 +61,7 @@ public class GuiGameSpeedReadout : GuiLabelReadoutBase, IDisposable {
     /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
     /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
     /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+    /// <param item="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
     protected virtual void Dispose(bool isDisposing) {
         // Allows Dispose(isDisposing) to be called more than once
         if (alreadyDisposed) {

@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GuiCameraRollOption.cs
+// File: GuiUniverseSizeSetting.cs
 // COMMENT - one line to give a brief idea of what this file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -25,20 +25,30 @@ using CodeEnv.Master.Common.Unity;
 /// <summary>
 /// COMMENT 
 /// </summary>
-public class GuiCameraRollOption : GuiCheckboxBase {
+[Obsolete]
+public class GuiUniverseSizeSetting : GuiPopupListBase {
 
     protected override void Initialize() {
         base.Initialize();
-        checkbox.isChecked = playerPrefsMgr.IsCameraRollPref;
-        tooltip = "Check this box to enable the camera to roll around its forward axis.";
+        popupList.selection = playerPrefsMgr.SizeOfUniverse.GetName();
+        tooltip = "Choose the size of the Universe for your game.";
     }
 
-    protected override void OnCheckBoxStateChange(bool state) {
-        CameraControl.Instance.IsRollEnabled = state;
-        playerPrefsMgr.IsCameraRollPref = state;
+    protected override void OnPopupListSelectionChange(string item) {
+        UniverseSize size;
+        if (!Enums<UniverseSize>.TryParse(item, true, out size)) {
+            WarnOnIncorrectName(item);
+            return;
+        }
 
         System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(0);
         Debug.Log("{0}.{1}() method called.".Inject(GetType(), stackFrame.GetMethod().Name));
+        if (size != UniverseSize.Normal) {
+            // FIXME
+            Debug.LogError("Universe Size Change is only allowed during New Game Setup.");
+            return;
+        }
+        playerPrefsMgr.SizeOfUniverse = size;
     }
 
     public override string ToString() {

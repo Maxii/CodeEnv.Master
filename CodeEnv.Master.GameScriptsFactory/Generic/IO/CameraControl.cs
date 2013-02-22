@@ -84,14 +84,14 @@ public class CameraControl : MonoBehaviourBaseSingleton<CameraControl>, IDisposa
     // Dragging the mouse with any button held down works offscreen OK, but upon release offscreen, immediately enables edge scrolling and panning
     // Implement Camera controls such as clip planes, FieldOfView, RenderSettings.[flareStrength, haloStrength, ambientLight]
 
-    public bool IsResetOnFocusEnabled { get; set; }
+    public bool IsResetOnFocusEnabled { get; private set; }
     // ScrollWheel always zooms IN on cursor, zooming OUT with the ScrollWheel is directly backwards by default
-    public bool IsScrollZoomOutOnCursorEnabled { get; set; }
+    public bool IsScrollZoomOutOnCursorEnabled { get; private set; }
 
     private bool isRollEnabled;
     public bool IsRollEnabled {
         get { return isRollEnabled; }
-        set { isRollEnabled = value; dragFocusRoll.activate = value; dragFreeRoll.activate = value; keyAllRoll.activate = value; }
+        private set { isRollEnabled = value; dragFocusRoll.activate = value; dragFreeRoll.activate = value; keyAllRoll.activate = value; }
     }
 
     public Settings settings;
@@ -106,8 +106,9 @@ public class CameraControl : MonoBehaviourBaseSingleton<CameraControl>, IDisposa
 
     // Cached references and values
     private Transform targetTransform;
-    private GameEventManager eventManager;
+    private GameEventManager eventMgr;
     private PlayerPrefsManager playerPrefsMgr;
+    private GameManager gameMgr;
     private GameObject dummyTargetGO;
     private Transform cameraTransform;
 
@@ -137,7 +138,14 @@ public class CameraControl : MonoBehaviourBaseSingleton<CameraControl>, IDisposa
     /// </summary>
     void Awake() {
         //Debug.Log("Camera Awake() called. Enabled = " + enabled);
-        Initialize();
+        InitializeReferences();
+    }
+
+    private void InitializeReferences() {
+        gameMgr = GameManager.Instance;
+        eventMgr = GameEventManager.Instance;
+        playerPrefsMgr = PlayerPrefsManager.Instance;
+        cameraTransform = transform;    // cache it! transform is actually GetComponent<Transform>()
     }
 
     /// <summary>
@@ -145,7 +153,12 @@ public class CameraControl : MonoBehaviourBaseSingleton<CameraControl>, IDisposa
     /// </summary>
     void OnEnable() {
         //Debug.Log("Camera OnEnable() called. Enabled = " + enabled);
-        eventManager.AddListener<FocusSelectedEvent>(OnFocusSelected);
+        AddListeners();
+    }
+
+    private void AddListeners() {
+        eventMgr.AddListener<FocusSelectedEvent>(OnFocusSelected);
+        eventMgr.AddListener<OptionChangeEvent>(OnOptionChange);
     }
 
     /// <summary>
@@ -154,6 +167,7 @@ public class CameraControl : MonoBehaviourBaseSingleton<CameraControl>, IDisposa
     /// </summary>
     void Start() {
         //Debug.Log("Camera Start() called. Enabled = " + enabled);
+        InitializeCamera();
     }
 
     /// <summary>
@@ -161,7 +175,7 @@ public class CameraControl : MonoBehaviourBaseSingleton<CameraControl>, IDisposa
     /// enabled state of the camera so it doesn't move when I use the mouse outside of 
     /// the editor window.
     /// </summary>
-    /// <param name="isFocus">if set to <c>true</c> [is focus].</param>
+    /// <param item="isFocus">if set to <c>true</c> [is focus].</param>
     void OnApplicationFocus(bool isFocus) {
         enabled = isFocus;
         //Debug.Log("Camera OnApplicationFocus(" + isFocus + ") called. Enabled = " + enabled);
@@ -171,7 +185,7 @@ public class CameraControl : MonoBehaviourBaseSingleton<CameraControl>, IDisposa
     /// Called when the application is minimized/resumed, this method controls the enabled
     /// state of the camera so it doesn't move when I use the mouse to minimize Unity.
     /// </summary>
-    /// <param name="isPausing">if set to <c>true</c> [is paused].</param>
+    /// <param item="isPausing">if set to <c>true</c> [is toPause].</param>
     void OnApplicationPause(bool isPaused) {
         enabled = !isPaused;
         //Debug.Log("Camera OnApplicationPause(" + isPaused + ") called. Enabled = " + enabled);
@@ -183,24 +197,20 @@ public class CameraControl : MonoBehaviourBaseSingleton<CameraControl>, IDisposa
     /// </summary>
     void OnDisable() {
         //Debug.Log("Camera OnDisable() called. Enabled = " + enabled);
-        eventManager.RemoveListener<FocusSelectedEvent>(OnFocusSelected);
+        RemoveListeners();
     }
 
     protected override void OnApplicationQuit() {
         instance = null;
     }
 
-    // <summary>
-    /// Initializes this instance.
-    /// </summary>
-    private void Initialize() {
+    private void InitializeCamera() {
         InitializeCameraSettings();
         InitializeUpdateRate();
         InitializeNonSerializedFields();
     }
 
     private void InitializeCameraSettings() {
-        universeRadius = GameManager.UniverseSize.GetUniverseRadius();
         // Settings that I might want to dynamically change should be controlled from outside the camera
         // camera.farClipPlane = universeRadius * 2F;
         // This camera will see all layers except for the GUI layer. If I want to add exclusions, I can still do it from the outside
@@ -219,18 +229,14 @@ public class CameraControl : MonoBehaviourBaseSingleton<CameraControl>, IDisposa
     /// </summary>
     private void InitializeNonSerializedFields() {
         // Debug.Log("Camera initializing.");
-        // establish references
-        eventManager = GameEventManager.Instance;
-        playerPrefsMgr = PlayerPrefsManager.Instance;
-        cameraTransform = transform;    // cache it! transform is actually GetComponent<Transform>()
+        universeRadius = gameMgr.UniverseSize.GetUniverseRadius();
         settings = new Settings();
 
-        IsResetOnFocusEnabled = playerPrefsMgr.IsResetOnFocusPref;
-        IsRollEnabled = playerPrefsMgr.IsCameraRollPref;
-        IsScrollZoomOutOnCursorEnabled = playerPrefsMgr.IsZoomOutOnCursorPref;
+        IsResetOnFocusEnabled = playerPrefsMgr.IsResetOnFocusEnabled;
+        IsRollEnabled = playerPrefsMgr.IsCameraRollEnabled;
+        IsScrollZoomOutOnCursorEnabled = playerPrefsMgr.IsZoomOutOnCursorEnabled;
 
-        //InitializeUniverseEdge();   // moved to Loader
-        InitializeDummyTarget();    // do it here as the camera is the only user of the object?
+        InitializeDummyTarget();    // do it here as the camera is the only user of the object
 
         // UNDONE whether starting or continuing saved game, camera position should be focused on the player's starting planet, no rotation
         ResetToWorldspace();
@@ -252,15 +258,25 @@ public class CameraControl : MonoBehaviourBaseSingleton<CameraControl>, IDisposa
         dummyTargetGO.transform.parent = DynamicObjects.Folder;
     }
 
+    #region Event Handlers
     private void OnFocusSelected(FocusSelectedEvent e) {
         //Debug.Log("FocusSelectedEvent received by Camera.");
         SetFocus(e.FocusTransform);
     }
 
+    private void OnOptionChange(OptionChangeEvent e) {
+        OptionSettings settings = e.Settings;
+        IsResetOnFocusEnabled = settings.IsResetOnFocusEnabled;
+        IsRollEnabled = settings.IsCameraRollEnabled;
+        IsScrollZoomOutOnCursorEnabled = settings.IsZoomOutOnCursorEnabled;
+    }
+
+    #endregion
+
     /// <summary>
     /// Sets the focus for the camera.
     /// </summary>
-    /// <param name="focus">The transform of the GO to focus on.</param>
+    /// <param item="focus">The transform of the GO to focus on.</param>
     public void SetFocus(Transform focus) {
         focusTransform = focus;
         ChangeState(CameraState.Focused);
@@ -269,7 +285,7 @@ public class CameraControl : MonoBehaviourBaseSingleton<CameraControl>, IDisposa
     /// <summary>
     /// Changes the CameraState.
     /// </summary>
-    /// <param name="newState">The new state.</param>
+    /// <param item="newState">The new state.</param>
     /// <exception cref="System.NotImplementedException"></exception>
     private void ChangeState(CameraState newState) {
         Arguments.ValidateNotNull(targetTransform);
@@ -560,10 +576,10 @@ public class CameraControl : MonoBehaviourBaseSingleton<CameraControl>, IDisposa
     /// <summary>
     /// Validates the proposed new position of the camera to be within the universe.
     /// </summary>
-    /// <param name="newPosition">The new position.</param>
+    /// <param item="newPosition">The new position.</param>
     /// <returns>if validated, returns newPosition. If not, return the current position.</returns>
     private Vector3 ValidatePosition(Vector3 newPosition) {
-        if ((newPosition - UnityConstants.UniverseOrigin).magnitude >= universeRadius) {
+        if ((newPosition - TempGameValues.UniverseOrigin).magnitude >= universeRadius) {
             Debug.LogError("Camera proposed new position not valid at " + newPosition);
             return cameraTransform.position;
         }
@@ -573,7 +589,7 @@ public class CameraControl : MonoBehaviourBaseSingleton<CameraControl>, IDisposa
     /// <summary>
     /// Manages the display of the cursor during certain movement actions.
     /// </summary>
-    /// <param name="toLockCursor">if set to <c>true</c> [to lock cursor].</param>
+    /// <param item="toLockCursor">if set to <c>true</c> [to lock cursor].</param>
     private void ManageCursorDisplay(bool toLockCursor) {
         if (Input.GetKeyDown(UnityConstants.Key_Escape)) {
             Screen.lockCursor = false;
@@ -600,12 +616,12 @@ public class CameraControl : MonoBehaviourBaseSingleton<CameraControl>, IDisposa
         if (Physics.Raycast(ray, out targetHit, Mathf.Infinity, collideWithAllExceptUniverseEdgeLayerMask.value)) {
             if (targetHit.transform == targetTransform) {
                 // the target under the cursor is the current target object so do nothing
-                //Debug.Log("Existing Target under cursor found. Name = " + targetTransform.name);
+                //Debug.Log("Existing Target under cursor found. Name = " + targetTransform.item);
                 return;
             }
             // else I've got a new target object
             targetTransform = targetHit.transform;
-            //Debug.Log("New non-DummyTarget acquired. Name = " + targetTransform.name);
+            //Debug.Log("New non-DummyTarget acquired. Name = " + targetTransform.item);
             requestedDistanceFromTarget = Vector3.Distance(targetTransform.position, cameraTransform.position);
             distanceFromTarget = requestedDistanceFromTarget;
         }
@@ -618,7 +634,7 @@ public class CameraControl : MonoBehaviourBaseSingleton<CameraControl>, IDisposa
     /// <summary>
     /// Places the dummy target at the edge of the universe in the direction provided.
     /// </summary>
-    /// <param name="direction">The direction.</param>
+    /// <param item="direction">The direction.</param>
     private void PlaceDummyTargetAtUniverseEdgeInDirection(Vector3 direction) {
         if (direction.magnitude == 0F) {
             Debug.LogWarning("Camera Direction Vector to place DummyTarget has no magnitude: " + direction);
@@ -632,7 +648,7 @@ public class CameraControl : MonoBehaviourBaseSingleton<CameraControl>, IDisposa
                 return;
             }
             else {
-                float distanceToUniverseOrigin = (dummyTargetGO.transform.position - UnityConstants.UniverseOrigin).magnitude;
+                float distanceToUniverseOrigin = (dummyTargetGO.transform.position - TempGameValues.UniverseOrigin).magnitude;
                 if (!distanceToUniverseOrigin.CheckRange(universeRadius, allowedPercentageVariation: 1.0F)) {
                     Debug.LogError("Camera's Dummy Target is not located on UniverseEdge! Position = " + dummyTargetGO.transform.position);
                     return;
@@ -660,10 +676,10 @@ public class CameraControl : MonoBehaviourBaseSingleton<CameraControl>, IDisposa
     /// <summary>
     /// Calculates a new rotation derived from the current rotation and the provided EulerAngle arguments.
     /// </summary>
-    /// <param name="xDeg">The x deg.</param>
-    /// <param name="yDeg">The y deg.</param>
-    /// <param name="zDeg">The z deg.</param>
-    /// <param name="adjustedTime">The  elapsed time to use with the Slerp function. Can be adjusted for effect.</param>
+    /// <param item="xDeg">The x deg.</param>
+    /// <param item="yDeg">The y deg.</param>
+    /// <param item="zDeg">The z deg.</param>
+    /// <param item="adjustedTime">The  elapsed time to use with the Slerp function. Can be adjusted for effect.</param>
     /// <returns></returns>
     private Quaternion CalculateCameraRotation(float xDeg, float yDeg, float zDeg, float adjustedTime) {
         // keep rotation values exact as a substitute for the unreliable accuracy that comes from reading EulerAngles from the Quaternion
@@ -674,6 +690,15 @@ public class CameraControl : MonoBehaviourBaseSingleton<CameraControl>, IDisposa
 
         return Quaternion.Slerp(cameraTransform.rotation, desiredRotation, adjustedTime);
         // OPTIMIZE Lerp is faster but not as pretty when the rotation changes are far apart
+    }
+
+    void OnDestroy() {
+        Dispose();
+    }
+
+    private void RemoveListeners() {
+        eventMgr.RemoveListener<FocusSelectedEvent>(OnFocusSelected);
+        eventMgr.RemoveListener<OptionChangeEvent>(OnOptionChange);
     }
 
     #region IDisposable
@@ -691,7 +716,7 @@ public class CameraControl : MonoBehaviourBaseSingleton<CameraControl>, IDisposa
     /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
     /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
     /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+    /// <param item="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
     protected virtual void Dispose(bool isDisposing) {
         // Allows Dispose(isDisposing) to be called more than once
         if (alreadyDisposed) {
@@ -699,12 +724,13 @@ public class CameraControl : MonoBehaviourBaseSingleton<CameraControl>, IDisposa
         }
 
         if (isDisposing) {
-            eventManager.RemoveListener<FocusSelectedEvent>(OnFocusSelected);
             // free managed resources here including unhooking events
+            RemoveListeners();
         }
         // free unmanaged resources here
         alreadyDisposed = true;
     }
+
 
     // Example method showing check for whether the object has been disposed
     //public void ExampleMethod() {

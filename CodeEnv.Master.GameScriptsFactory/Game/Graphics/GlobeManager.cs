@@ -61,7 +61,7 @@ public class GlobeManager : MonoBehaviourBase {
     }
 
     private void AnimateGlobeRotation() {
-        float time = GameTime.RealTime; // TODO convert animation to GameTime.DeltaTime * (int)UpdateRate
+        float time = GameTime.RealTime_Unity; // TODO convert animation to __GameTime.DeltaTime * (int)UpdateRate
         primaryMaterialAnimator.Animate(primaryMaterial, time);
         // Added for IOS compatibility? IMPROVE
         if (optionalSecondMaterial != null) {

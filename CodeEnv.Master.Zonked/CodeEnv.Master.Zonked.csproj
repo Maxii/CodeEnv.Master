@@ -53,8 +53,24 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Framework\GameClockCommand.cs" />
+    <Compile Include="Game\Framework\GameClockEvent.cs" />
+    <Compile Include="Game\GUI\CameraRollOptionChangedEvent.cs" />
+    <Compile Include="Game\GUI\GuiCameraRollOption.cs" />
+    <Compile Include="Game\GUI\GuiCheckboxBase.cs" />
+    <Compile Include="Game\GUI\GuiGameSpeedOnLoadOption.cs" />
+    <Compile Include="Game\GUI\GuiMenuActivate.cs" />
+    <Compile Include="Game\GUI\GuiPauseOnLoadOption.cs" />
+    <Compile Include="Game\GUI\GuiPopupListBase.cs" />
+    <Compile Include="Game\GUI\GuiResetOnFocusOption.cs" />
+    <Compile Include="Game\GUI\GuiUniverseSizeSetting.cs" />
     <Compile Include="Game\GUI\GameClockGuiManager.cs" />
     <Compile Include="Game\GUI\GameOptionsGuiManager.cs" />
+    <Compile Include="Game\GUI\GuiZoomOutOnCursorOption.cs" />
+    <Compile Include="Game\GUI\ResetOnFocusOptionChangedEvent.cs" />
+    <Compile Include="Game\GUI\ZoomOutOnCursorOptionChangedEvent.cs" />
+    <Compile Include="Generic\Debug\FpsReadoutGuiText.cs" />
+    <Compile Include="Generic\Framework\__GameTime.cs" />
     <Compile Include="Generic\Graphics\GuiManagerBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -82,12 +98,9 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Game\Debug\" />
-    <Folder Include="Game\Framework\" />
     <Folder Include="Game\Gameplay\" />
     <Folder Include="Game\Graphics\" />
-    <Folder Include="Generic\Debug\" />
     <Folder Include="Generic\Extensions\" />
-    <Folder Include="Generic\Framework\" />
     <Folder Include="Generic\IO\" />
     <Folder Include="Generic\Math\" />
     <Folder Include="ThirdParty\" />

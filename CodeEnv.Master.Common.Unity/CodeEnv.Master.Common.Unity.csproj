@@ -53,9 +53,9 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Framework\GameTime.cs" />
     <Compile Include="Game\Framework\GameDate.cs" />
     <Compile Include="Game\Framework\GameManager.cs" />
-    <Compile Include="Game\Framework\GameTime.cs" />
     <Compile Include="Game\Framework\IGameDate.cs" />
     <Compile Include="Game\GUI\FocusSelectedEvent.cs" />
     <Compile Include="Generic\Framework\MonoBehaviourBaseSingleton.cs" />
@@ -71,8 +71,9 @@
     <Compile Include="Generic\IO\PlayerPrefsManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Generic\Extensions\TransformExtensions.cs" />
-    <Compile Include="Generic\Framework\UnityConstants.cs" />
+    <Compile Include="Game\Debug\TempGameValues.cs" />
     <Compile Include="Generic\Framework\UnityUtility.cs" />
+    <Compile Include="Generic\Debug\UnityDebugConstants.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">
@@ -85,10 +86,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Game\Debug\" />
     <Folder Include="Game\Gameplay\" />
     <Folder Include="Game\Graphics\" />
-    <Folder Include="Generic\Debug\" />
     <Folder Include="ThirdParty\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

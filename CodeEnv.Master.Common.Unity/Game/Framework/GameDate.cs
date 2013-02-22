@@ -23,9 +23,9 @@ namespace CodeEnv.Master.Common.Unity {
     /// Data container class that holds the game date.
     /// </summary>
     public class GameDate : IGameDate {
-        private int daysPerYear = GameValues.DaysPerGameYear;
-        private float gameDaysPerSecond = GameValues.GameDaysPerSecond;
-        private int startingGameYear = GameValues.StartingGameYear;
+        private int daysPerYear = TempGameValues.DaysPerGameYear;
+        private float gameDaysPerSecond = TempGameValues.GameDaysPerSecond;
+        private int startingGameYear = TempGameValues.StartingGameYear;
 
         public int DayOfYear { get; internal set; }
 
@@ -33,7 +33,7 @@ namespace CodeEnv.Master.Common.Unity {
 
         public string FormattedDate {
             get {
-                return "{0}.{1:D3}".Inject(Year, DayOfYear);
+                return Constants.GameDateFormat.Inject(Year, DayOfYear);
             }
         }
 

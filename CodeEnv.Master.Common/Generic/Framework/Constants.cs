@@ -32,6 +32,8 @@ namespace CodeEnv.Master.Common {
         public const string CurrencyNumericFormat = "C02";
         public const string PercentNumericFormat = "P00";
 
+        public const string GameDateFormat = "{0}.{1:D3}";
+
         // Common Strings
         private static string userCurrentWorkingDirectoryPath;
         public static string UserCurrentWorkingDirectoryPath {
