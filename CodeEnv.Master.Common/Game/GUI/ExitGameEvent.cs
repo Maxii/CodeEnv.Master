@@ -12,7 +12,9 @@
 
 namespace CodeEnv.Master.Common {
 
-    public class ExitGameEvent : GameEvent {
+    public class ExitGameEvent : AGameEvent {
+
+        public ExitGameEvent(object source) : base(source) { }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

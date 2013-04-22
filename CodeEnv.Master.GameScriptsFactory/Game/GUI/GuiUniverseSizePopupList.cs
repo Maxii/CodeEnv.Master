@@ -10,6 +10,10 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LEVEL_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
+
 // default namespace
 
 using CodeEnv.Master.Common;
@@ -17,7 +21,9 @@ using CodeEnv.Master.Common;
 /// <summary>
 /// COMMENT 
 /// </summary>
-public class GuiUniverseSizePopupList : GuiPopupListBase<UniverseSize> {
+public class GuiUniverseSizePopupList : GuiEnumPopupListBase<UniverseSize> {
+
+    protected override void OnPopupListSelectionChange(string item) { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

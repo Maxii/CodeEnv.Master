@@ -5,21 +5,23 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: PauseGameCommand.cs
-// Commands for communicating changes in the Pause state of the game.
+// File: Players.cs
+// COMMENT - one line to give a brief idea of what the file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
 namespace CodeEnv.Master.Common {
 
-    /// <summary>
-    /// Commands for communicating changes in the Pause state of the game.
-    /// They reflect a decision by the GameManager, unlike GuiPauseCommand's which are requests.
-    /// </summary>
-    public enum PauseGameCommand {
-        None,
-        Pause,
-        Resume
+    public enum Players {
+
+        None = 0,
+
+        Opponent_1 = 1,
+
+        Opponent_2 = 2,
+
+        Opponent_3 = 3
+
     }
 }
 

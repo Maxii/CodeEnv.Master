@@ -10,17 +10,15 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LEVEL_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
+
 // default namespace
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEngine;
-using UnityEditor;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.Common.Unity;
+using UnityEngine;
 
 /// <summary>
 /// Base class for GUI Buttons built with NGUI.
@@ -30,29 +28,31 @@ public abstract class GuiButtonBase : GuiTooltip {
     protected GameEventManager eventMgr;
     protected PlayerPrefsManager playerPrefsMgr;
     protected UIButton button;
-    protected bool isInitialized;
 
     void Awake() {
+        InitializeOnAwake();
+    }
+
+    protected virtual void InitializeOnAwake() {
         playerPrefsMgr = PlayerPrefsManager.Instance;
         eventMgr = GameEventManager.Instance;
     }
 
     void Start() {
-        Initialize();
+        InitializeOnStart();
     }
 
     /// <summary>
-    /// Override to initialize the tooltip message. Remember base.Initialize();
+    /// Override to initialize the tooltip message. Remember base.InitializeOnAwake();
     /// </summary>
-    protected virtual void Initialize() {
+    protected virtual void InitializeOnStart() {
         button = gameObject.GetSafeMonoBehaviourComponent<UIButton>();
         UIEventListener.Get(gameObject).onClick += OnButtonClick;  // NGUI general event system
-        isInitialized = true;
     }
 
     protected abstract void OnButtonClick(GameObject sender);
 
-    // IDisposable Note: No reason to remove Ngui event listeners OnDestroy() as the EventListener or
+    // IDisposable Note: No reason to remove Ngui event currentListeners OnDestroy() as the EventListener or
     // Delegate to be removed is attached to this same GameObject that is being destroyed. In addition,
     // execution is problematic as the gameObject may have already been destroyed.
 }

@@ -10,10 +10,14 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LEVEL_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
+
 // default namespace
 
-using UnityEngine;
 using CodeEnv.Master.Common;
+using UnityEngine;
 
 /// <summary>
 /// Standalone and extensible class for all Gui scripts containing Tooltip infrastructure. Can be

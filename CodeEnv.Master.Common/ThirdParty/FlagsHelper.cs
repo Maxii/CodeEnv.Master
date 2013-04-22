@@ -12,12 +12,6 @@
 
 namespace CodeEnv.Master.Common {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-
     /// <summary>
     /// Helper class for logical bitwise combination setting of Enums with the Flag attribute. 
     /// This allows code as below where Names is an enum containing a number of names.
@@ -48,8 +42,6 @@ namespace CodeEnv.Master.Common {
             int flagValue = (int)(object)flag;
             flags = (T)(object)(flagsValue & (~flagValue));
         }
-
-
 
     }
 }

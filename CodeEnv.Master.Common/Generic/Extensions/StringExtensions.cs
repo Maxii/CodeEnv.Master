@@ -12,6 +12,7 @@
 
 namespace CodeEnv.Master.Common {
 
+    using System.Collections.Generic;
     using System.Globalization;
 
     /// <summary>
@@ -32,6 +33,25 @@ namespace CodeEnv.Master.Common {
             Arguments.ValidateForContent(sourceText);
             // IMPROVE see Effective C#, Item 45 Minimize Boxing and Unboxing
             return string.Format(CultureInfo.CurrentCulture, sourceText, itemsToInject);
+        }
+
+        /// <summary>
+        /// Adds the specified delimiter to each string item in the sequence except the last one.
+        /// </summary>
+        /// <param name="sequence">The string sequence.</param>
+        /// <param name="delimiter">The delimiter. Default is ",".</param>
+        /// <returns></returns>
+        public static IEnumerable<string> AddDelimiter(this IEnumerable<string> sequence, string delimiter = Constants.Comma) {
+            Arguments.ValidateNotNull(sequence);
+            IList<string> delimitedList = new List<string>();
+            foreach (string item in sequence) {
+                delimitedList.Add(item + Constants.NewLine);
+            }
+            int lastItemIndex = delimitedList.Count - 1;
+            string lastItem = delimitedList[lastItemIndex];
+            string lastItemWithoutDelineationEnding = lastItem.Replace(Constants.NewLine, string.Empty);
+            delimitedList[lastItemIndex] = lastItemWithoutDelineationEnding;
+            return delimitedList;
         }
 
     }

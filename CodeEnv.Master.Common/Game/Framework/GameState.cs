@@ -24,36 +24,38 @@ namespace CodeEnv.Master.Common {
         None,
 
         /// <summary>
-        /// Reached either at the launch of the Unity Application or from Running,
-        /// this state represents the absense of any game instance. New or saved game
-        /// data can exist in this state as one or the other is required to move to Building.
+        /// Primary focus is on the user making decisions about options, new game
+        /// settings or selecting a saved game to load.
         /// </summary>
-        PreGame,
+        Lobby,
 
         /// <summary>
-        /// Reached only from PreGame, new or saved game data is used to build the 
-        /// world. Completion of the act of building the world advances the state to WaitingForPlayers.
+        /// Primary focus is on use of new game settings to do any preparation
+        /// needed before initiating a Load of the game.
         /// </summary>
         Building,
 
         /// <summary>
-        /// Reached only from Building, this state continues until all the players have indicated
-        /// their readiness, each via a PlayerReady event (TODO). When all players have signalled
-        /// their readiness, the state moves to Launching.
+        /// Primary focus is to allow Unity to load the level for either a new or previously
+        /// saved game. Completion is indicated by OnLevelWasLoaded().
         /// </summary>
-        WaitingForPlayers,
+        Loading,
 
         /// <summary>
-        /// Reached only from WaitingForPlayers, .... When all parts of the game engine indicate
-        /// their readiness, the state advances to Running.
+        /// Primary focus is to allow deserialization of saved games to take place so that objects in the
+        /// level that has just been loaded can have their saved state restored. Completion 
+        /// is indicated by OnDeserialized().
         /// </summary>
-        Launching,
+        Restoring,
 
         /// <summary>
-        /// Reached only from Launching, this is the normal state when the user is playing
-        /// a game instance. Receipt of a AppTermination, CreateNewGameBegun or LoadGameBegun
-        /// event (all TODO), cause the termination of this game instance, resulting in a return to
-        /// the PreGame state.
+        ///  The state just prior to Running, waiting for approval to Run.
+        /// </summary>
+        Waiting,
+
+        /// <summary>
+        /// The normal state when the user is playing a game instance. The user may initiate the save of the game, 
+        /// load a saved game, launch a new game, exit the game or return to the lobby from this state.
         /// </summary>
         Running
 

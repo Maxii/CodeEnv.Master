@@ -6,74 +6,68 @@
 // </copyright> 
 // <summary> 
 // File: GuiPopupListBase.cs
-//  Generic GuiPopupListBase class that implements PlayerPrefsManager property initialization and Tooltip functionality.
+// COMMENT - one line to give a brief idea of what this file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LEVEL_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
+
 // default namespace
 
-using System;
-using UnityEngine;
-using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.Unity;
-using System.Reflection;
 
 /// <summary>
-/// Generic GuiPopupListBase class that implements PlayerPrefsManager property initialization and Tooltip
-/// functionality. Also pre-registers with the NGUI PopupList delegate to receive OnPopupListSelectionChange events.
+/// GuiPopupListBase class pre-wired with Tooltip functionality.
 /// </summary>
-public abstract class GuiPopupListBase<T> : GuiTooltip where T : struct {
+public abstract class GuiPopupListBase : GuiTooltip {
 
-    public string propertyName = string.Empty;
     protected UIPopupList popupList;
 
-    void Start() {
-        Initialize();
+    void Awake() {
+        InitializeOnAwake();
     }
 
-    /// <summary>
-    /// Can override. Remember base.Initialize(); The value for propertyName must be set before 
-    /// base.Initialize() is called.
-    /// </summary>
-    protected virtual void Initialize() {
+    protected virtual void InitializeOnAwake() {
         popupList = gameObject.GetSafeMonoBehaviourComponent<UIPopupList>();
+        ConfigurePopupList();
+        InitializeListValues();
+        InitializeSelection();
+        // don't receive events until initializing is complete
         popupList.onSelectionChange += OnPopupListSelectionChange;
-        InitializePopupList();
     }
-
-    protected virtual void OnPopupListSelectionChange(string item) { }
 
     /// <summary>
-    /// Initializes the PopupList selection with the value held in PlayerPrefsManager. Uses Reflection to find the PlayerPrefsManager
-    /// property named, then creates a Property Delegate to acquire the initialization value.
+    /// Virtual method that does any required configuration of the popupList
+    /// prior to initializing list values or the selection.
     /// </summary>
-    private void InitializePopupList() {
-        if (!string.IsNullOrEmpty(propertyName)) {
-            PropertyInfo propertyInfo = typeof(PlayerPrefsManager).GetProperty(propertyName);
-            if (propertyInfo == null) {
-                Debug.LogError("No PlayerPrefsManager property named {0} found!".Inject(propertyName));
-                return;
-            }
-            Func<T> propertyGet = (Func<T>)Delegate.CreateDelegate(typeof(Func<T>), PlayerPrefsManager.Instance, propertyInfo.GetGetMethod());
-            popupList.selection = propertyGet().ToString();
-        }
-        else {
-            Debug.LogWarning("The PlayerPrefsManager Property has not been named for {0}.".Inject(gameObject.name));
-        }
+    protected virtual void ConfigurePopupList() {
+        popupList.textLabel = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
     }
 
-    protected void WarnOnUnrecognizedItem(string item) {
-        System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
-        string callerIdMessage = ". Called by {0}.{1}().".Inject(stackFrame.GetFileName(), stackFrame.GetMethod().Name);
-        Debug.LogWarning("Item used in PopupList not found: " + item + callerIdMessage);
-    }
+    /// <summary>
+    /// Abstract method to initialize the values in the popupList.
+    /// </summary>
+    protected abstract void InitializeListValues();
 
-    // IDisposable Note: No reason to remove Ngui event listeners OnDestroy() as the EventListener or
+    /// <summary>
+    /// Abstract method for initialiings the PopupList selectionName.
+    /// </summary>
+    /// <remarks>Called in the Awake sequence as UIPopupList will make
+    /// a selectionName change to item[0] in Start() if not already set.
+    /// </remarks>
+    protected abstract void InitializeSelection();
+
+    /// <summary>
+    /// Abstract method called when the popupList selection is changed.
+    /// </summary>
+    /// <param name="item">The name of the selection.</param>
+    protected abstract void OnPopupListSelectionChange(string item);
+
+    // IDisposable Note: No reason to remove Ngui event currentListeners OnDestroy() as the EventListener or
     // Delegate to be removed is attached to this same GameObject that is being destroyed. In addition,
     // execution is problematic as the gameObject may have already been destroyed.
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 }
 

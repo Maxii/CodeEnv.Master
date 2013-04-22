@@ -10,47 +10,82 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LEVEL_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
+
+
 // default namespace
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEngine;
-using UnityEditor;
+using System.Diagnostics;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
-using CodeEnv.Master.Common.Unity;
+using UnityEngine;
 
 /// <summary>
 /// COMMENT 
 /// </summary>
 public class GuiNewGameMenuLaunchButton : GuiMenuAcceptButtonBase {
 
-    private UniverseSize newGameSize;
+    private UniverseSize universeSize;
+    private Players player;
 
-    protected override void Initialize() {
-        base.Initialize();
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
         tooltip = "Launch New Game with these settings.";
     }
 
-    protected override void OnCheckboxStateChange(bool state) { }
+    protected override void CaptureInitializedState() {
+        base.CaptureInitializedState();
+        ValidateState();
+    }
 
-    protected override void OnPopupListSelectionChange(string item) {
-        // UIPopupList.current gives the reference to the sender, but there is nothing except names to distinguish them
-        if (Enums<UniverseSize>.TryParse(item, true, out newGameSize)) {
-            Debug.Log("UniverseSize {0} PopupList change event received by LaunchGameButton.".Inject(item));
-            return;
+    protected override void RecordCheckboxState(string checkboxName, bool checkedState) {
+        // UNDONE
+    }
+
+    protected override void RecordPopupListState(string selectionName) {
+        UniverseSize _universeSize;
+        if (Enums<UniverseSize>.TryParse(selectionName, true, out _universeSize)) {
+            //UnityEngine.Debug.Log("UniverseSize recorded as {0}.".Inject(selectionName));
+            universeSize = _universeSize;
+        }
+        Players _player;
+        if (Enums<Players>.TryParse(selectionName, true, out _player)) {
+            //UnityEngine.Debug.Log("Player recorded as {0}.".Inject(selectionName));
+            player = _player;
         }
         // more popupLists here
     }
 
-    protected override void OnSliderValueChange(float value) { }
+    protected override void RecordSliderState(float sliderValue) {
+        // UNDONE
+    }
+
+    protected override void OnCheckboxStateChange(bool state) {
+        base.OnCheckboxStateChange(state);
+    }
+
+    protected override void OnPopupListSelectionChange(string item) {
+        base.OnPopupListSelectionChange(item);
+        ValidateState();
+    }
+
+    protected override void OnSliderValueChange(float value) {
+        base.OnSliderValueChange(value);
+    }
 
     protected override void OnButtonClick(GameObject sender) {
-        NewGameSettings newGameSettings = new NewGameSettings();
-        newGameSettings.SizeOfUniverse = newGameSize;
-        eventMgr.Raise<LaunchNewGameEvent>(new LaunchNewGameEvent(newGameSettings));
+        GameSettings gameSettings = new GameSettings();
+        gameSettings.IsNewGame = true;
+        gameSettings.SizeOfUniverse = universeSize;
+        gameSettings.Player = player;
+        eventMgr.Raise<BuildNewGameEvent>(new BuildNewGameEvent(this, gameSettings));
+    }
+
+    [Conditional("UNITY_EDITOR")]
+    private void ValidateState() {
+        D.Assert(universeSize != UniverseSize.None, "UniverseSize!");
+        D.Assert(player != Players.None, "Player!");
     }
 
     public override string ToString() {

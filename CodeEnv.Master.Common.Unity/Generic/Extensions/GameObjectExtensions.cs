@@ -10,6 +10,11 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+//#define DEBUG_LEVEL_LOG
+//#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
+//
+
 namespace CodeEnv.Master.Common.Unity {
 
     using System;
@@ -17,7 +22,6 @@ namespace CodeEnv.Master.Common.Unity {
     using System.Linq;
     using System.Text;
     using UnityEngine;
-    using UnityEditor;
     using CodeEnv.Master.Common.LocalResources;
     using CodeEnv.Master.Common;
 
@@ -36,7 +40,7 @@ namespace CodeEnv.Master.Common.Unity {
         public static T GetSafeMonoBehaviourComponent<T>(this GameObject go) where T : MonoBehaviour {
             T component = go.GetComponent<T>();
             if (component == null) {
-                Debug.LogWarning(ErrorMessages.ComponentNotFound.Inject(typeof(T), go));
+                D.Warn(ErrorMessages.ComponentNotFound, typeof(T), go);
             }
             return component;
         }
@@ -51,7 +55,7 @@ namespace CodeEnv.Master.Common.Unity {
         public static T[] GetSafeMonoBehaviourComponents<T>(this GameObject go) where T : MonoBehaviour {
             T[] components = go.GetComponents<T>();
             if (components.Length == 0) {
-                Debug.LogWarning(ErrorMessages.ComponentNotFound.Inject(typeof(T), go));
+                D.Warn(ErrorMessages.ComponentNotFound, typeof(T), go);
             }
             return components;
         }
@@ -66,7 +70,7 @@ namespace CodeEnv.Master.Common.Unity {
         public static T GetSafeMonoBehaviourComponentInChildren<T>(this GameObject go) where T : MonoBehaviour {
             T component = go.GetComponentInChildren<T>();
             if (component == null) {
-                Debug.LogWarning(ErrorMessages.ComponentNotFound.Inject(typeof(T), go));
+                D.Warn(ErrorMessages.ComponentNotFound, typeof(T), go);
             }
             return component;
         }
@@ -81,7 +85,7 @@ namespace CodeEnv.Master.Common.Unity {
         public static T[] GetSafeMonoBehaviourComponentsInChildren<T>(this GameObject go, bool includeInactive = false) where T : MonoBehaviour {
             T[] components = go.GetComponentsInChildren<T>(includeInactive);
             if (components.Length == 0) {
-                Debug.LogWarning(ErrorMessages.ComponentNotFound.Inject(typeof(T), go));
+                D.Warn(ErrorMessages.ComponentNotFound, typeof(T), go);
             }
             return components;
         }

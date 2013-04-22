@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ScriptableObjectTrialAsset.cs
-// Demo class that enables creation of ScriptableObject asset files.
+// File: GuiPlayerPopupList.cs
+// COMMENT - one line to give a brief idea of what this file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,21 +17,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
-using UnityEditor;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.Common.Unity;
 
 /// <summary>
-/// Demo class that establishes an Assets/Create/&lt;YourScriptableObjectAssetClassName&gt; 
-/// MenuItem that enables creation of YourScriptableObjectAssetClassName asset files.
+/// COMMENT 
 /// </summary>
-public class ScriptableObjectTrialAsset {
+public class GuiPlayerPopupList : GuiEnumPopupListBase<Players> {
 
-    [MenuItem(UnityConstants.AssetsCreateMenuItem + "ScriptableObjectTrial")]
-    public static void CreateAsset() {
-        UnityUtility.CreateScriptableObjectAsset<ScriptableObjectTrial>();
-    }
+    protected override void OnPopupListSelectionChange(string item) { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

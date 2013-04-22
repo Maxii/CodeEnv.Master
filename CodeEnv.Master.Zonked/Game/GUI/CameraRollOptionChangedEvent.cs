@@ -18,7 +18,7 @@ namespace CodeEnv.Master.Common.Unity {
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
 
-    public class CameraRollOptionChangedEvent : GameEvent {
+    public class CameraRollOptionChangedEvent : AGameEvent {
 
         public bool IsCameraRollEnabled { get; private set; }
 

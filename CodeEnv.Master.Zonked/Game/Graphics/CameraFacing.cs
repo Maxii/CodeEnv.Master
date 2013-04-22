@@ -10,16 +10,18 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
+
+
 namespace CodeEnv.Master.Common.Unity {
 
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
 
-    [Serializable]
+    [Obsolete]
     public class CameraFacing {
 
         private Transform billboardTransform;

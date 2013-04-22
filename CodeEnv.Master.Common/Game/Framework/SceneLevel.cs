@@ -15,12 +15,9 @@ namespace CodeEnv.Master.Common {
 
     public enum SceneLevel {
 
-        AllGuiOnly = 0,
+        IntroScene = 0,
 
-        IntroScene = 1,
-
-        GameScene = 2
-
+        GameScene = 1
 
     }
 }

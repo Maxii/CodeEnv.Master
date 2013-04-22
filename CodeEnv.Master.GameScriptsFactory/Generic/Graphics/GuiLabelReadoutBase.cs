@@ -10,16 +10,13 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LEVEL_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
+
 // default namespace
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEngine;
-using UnityEditor;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.Common.Unity;
 
 /// <summary>
@@ -31,16 +28,12 @@ public abstract class GuiLabelReadoutBase : GuiTooltip {
     protected UILabel readoutLabel;
 
     void Awake() {
+        InitializeOnAwake();
+    }
+
+    protected virtual void InitializeOnAwake() {
         eventMgr = GameEventManager.Instance;
-    }
-
-    void Start() {
-        Initialize();
-    }
-
-    protected virtual void Initialize() {
         readoutLabel = gameObject.GetSafeMonoBehaviourComponent<UILabel>();
     }
-
 }
 

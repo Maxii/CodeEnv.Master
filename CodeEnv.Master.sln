@@ -5,7 +5,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.Common", "Co
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F3C8D421-1D12-4B2D-B500-B261B04BA5C6}"
 	ProjectSection(SolutionItems) = preProject
-		..\..\CustomTools\Debug Tools\DebugSettings.xml = ..\..\CustomTools\Debug Tools\DebugSettings.xml
 		..\RunBuildMgr.bat = ..\RunBuildMgr.bat
 	EndProjectSection
 EndProject
@@ -25,9 +24,17 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.EditorScript
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ReferencedProjects", "ReferencedProjects", "{63764D99-5C21-4125-9DB9-F76DE1415D52}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomTools.NguiAssemblyGenerator", "..\..\CustomTools\CustomTools.NguiAssemblyGenerator\CustomTools.NguiAssemblyGenerator.csproj", "{F291DB11-FC18-437B-BE1C-65813BAB02A0}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.Zonked", "CodeEnv.Master.Zonked\CodeEnv.Master.Zonked.csproj", "{ADF56DC3-1FAB-4EA4-A28F-8FB1EDC450DC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DataLibrary", "DataLibrary", "{2963CF2F-1606-484D-9F4B-61A9C9872F41}"
+	ProjectSection(SolutionItems) = preProject
+		DataLibrary\DebugSettings.xml = DataLibrary\DebugSettings.xml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Schemas", "Schemas", "{5A9CBCC8-54ED-4987-9001-99015BA18C5C}"
+	ProjectSection(SolutionItems) = preProject
+		DataLibrary\Schemas\DebugSettings.xsd = DataLibrary\Schemas\DebugSettings.xsd
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -67,10 +74,6 @@ Global
 		{F73E89C2-76BB-41CE-9407-E9043058DB70}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F73E89C2-76BB-41CE-9407-E9043058DB70}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F73E89C2-76BB-41CE-9407-E9043058DB70}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F291DB11-FC18-437B-BE1C-65813BAB02A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F291DB11-FC18-437B-BE1C-65813BAB02A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F291DB11-FC18-437B-BE1C-65813BAB02A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F291DB11-FC18-437B-BE1C-65813BAB02A0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{ADF56DC3-1FAB-4EA4-A28F-8FB1EDC450DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{ADF56DC3-1FAB-4EA4-A28F-8FB1EDC450DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 	EndGlobalSection
@@ -78,6 +81,7 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{F291DB11-FC18-437B-BE1C-65813BAB02A0} = {63764D99-5C21-4125-9DB9-F76DE1415D52}
+		{2963CF2F-1606-484D-9F4B-61A9C9872F41} = {F3C8D421-1D12-4B2D-B500-B261B04BA5C6}
+		{5A9CBCC8-54ED-4987-9001-99015BA18C5C} = {2963CF2F-1606-484D-9F4B-61A9C9872F41}
 	EndGlobalSection
 EndGlobal

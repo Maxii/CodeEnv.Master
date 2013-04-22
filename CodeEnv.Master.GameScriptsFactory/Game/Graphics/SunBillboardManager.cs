@@ -5,29 +5,29 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: BillboardManager.cs
+// File: SunBillboardManager.cs
 // Manages the Billboards that are a part of Cellestial Bodies. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
+
+
 // default namespace
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using UnityEngine;
-using UnityEditor;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.Common.Unity;
+using UnityEngine;
 
 /// <summary>
 /// Manages the Billboards that are a part of Cellestial Bodies. Current functionality 
 /// covers CameraFacing.
 /// </summary>
-[Serializable]
-public class BillboardManager : MonoBehaviourBase {
+public class SunBillboardManager : BillboardManager {
 
     private static System.Random rng = new System.Random(); // IMPROVE convert to RandomExtensions
 
@@ -36,24 +36,14 @@ public class BillboardManager : MonoBehaviourBase {
     private Light flareLight;   // can be null if no flares are attached
     private float flareOriginalIntensity;
 
-    private CameraFacing cameraFacing;
-    private Transform billboardTransform;
-    private Transform cameraTransform;
-
-    void Awake() {
-        billboardTransform = transform;
-        UpdateRate = UpdateFrequency.Continuous;
-    }
-
-    void Start() {
-        // Keep at a minimum, an empty Start method so that instances receive the OnDestroy event
-        cameraTransform = Camera.main.transform;
-        cameraFacing = new CameraFacing(billboardTransform, cameraTransform);
+    protected override void InitializeOnStart() {
+        base.InitializeOnStart();
         if (Utility.CheckForContent<Flare>(flares)) {
             // if flares doesn't contain any flares, it means I don't want to use any right now
             CreateFlare();
         }
     }
+
 
     private void CreateFlare() {
         Light[] lights = gameObject.GetComponentsInChildren<Light>();
@@ -64,9 +54,8 @@ public class BillboardManager : MonoBehaviourBase {
             // there is only the primary light attached, so I need to create another for the flare
             // avoid getting the flareLight prefab with Resources.Load("Lights/FlareLight")
             flareLight = Instantiate<Light>(UsefulPrefabs.currentInstance.flareLight);
-            GameObject flareLightGo = flareLight.gameObject;
-            flareLightGo.transform.parent = billboardTransform;
-            flareLightGo.transform.localPosition = Vector3.forward * 2;
+            flareLight.transform.parent = billboardTransform;
+            flareLight.transform.localPosition = Vector3.forward * 2;
         }
         else if (lightCount == 2) {
             flareLight = lights[1];
@@ -80,12 +69,10 @@ public class BillboardManager : MonoBehaviourBase {
         flareOriginalIntensity = flareLight.intensity;
     }
 
-    void Update() {
-        if (ToUpdate()) {
-            cameraFacing.UpdateFacing();
-            if (flareLight) {
-                VaryFlareIntensityByCameraDistance();
-            }
+    protected override void ProcessUpdate() {
+        base.ProcessUpdate();
+        if (flareLight) {
+            VaryFlareIntensityByCameraDistance();
         }
     }
 

@@ -12,7 +12,6 @@
 
 namespace CodeEnv.Master.Common {
 
-    using System;
     using System.IO;
 
     /// <summary>
@@ -35,18 +34,12 @@ namespace CodeEnv.Master.Common {
         public const string GameDateFormat = "{0}.{1:D3}";
 
         // Common Strings
-        private static string userCurrentWorkingDirectoryPath;
         public static string UserCurrentWorkingDirectoryPath {
-            get { return userCurrentWorkingDirectoryPath; }
-            private set { userCurrentWorkingDirectoryPath = System.Environment.CurrentDirectory; }
+            get { return System.Environment.CurrentDirectory; }
         }
 
-        private static string newLine;
         public static string NewLine {
-            get { return newLine; }
-            private set {
-                newLine = System.Environment.NewLine;
-            }
+            get { return System.Environment.NewLine; }
         }
         public const string Space = " ";
         public const string Period = ".";
@@ -61,16 +54,12 @@ namespace CodeEnv.Master.Common {
         public const string GodMode = "/GodMode";
 
         // Common Characters     
-        private static char fileSeparator;
         public static char FileSeparator {
-            get { return fileSeparator; }
-            private set { fileSeparator = Path.DirectorySeparatorChar; }
+            get { return Path.DirectorySeparatorChar; }
         }
 
-        private static char pathSeparator;
         public static char PathSeparator {
-            get { return pathSeparator; }
-            private set { pathSeparator = Path.PathSeparator; }
+            get { return Path.PathSeparator; }
         }
         public const char CommaDelimiter = ',';
         public const char SpaceDelimiter = ' ';

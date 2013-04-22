@@ -18,7 +18,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
@@ -42,6 +42,7 @@
     <Reference Include="System.Xml.Linq" />
     <Reference Include="UnityEngine">
       <HintPath>$(ProgramFiles)\Unity\Editor\Data\Managed\UnityEngine.dll</HintPath>
+      <Private>False</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -51,29 +52,38 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Game\Framework\GameLoadedEvent.cs" />
+    <Compile Include="Game\Framework\AGameEvent.cs" />
+    <Compile Include="Game\Framework\GamePauseStateChangingEvent.cs" />
+    <Compile Include="Game\Framework\GameStateChangingEvent.cs" />
+    <Compile Include="Generic\Debug\AInstanceIdentity.cs" />
+    <Compile Include="Generic\Framework\ElementReadyEvent.cs" />
+    <Compile Include="Generic\Debug\D.cs" />
+    <Compile Include="Game\GUI\LoadSavedGameEvent.cs" />
     <Compile Include="Game\Framework\GameState.cs" />
-    <Compile Include="Game\Framework\GameStateChangeEvent.cs" />
+    <Compile Include="Game\Framework\GameStateChangedEvent.cs" />
     <Compile Include="Game\GUI\ExitGameEvent.cs" />
     <Compile Include="Game\Debug\DebugSettings.cs" />
     <Compile Include="Game\Framework\GameClockSpeed.cs" />
-    <Compile Include="Game\GUI\PauseGameEvent.cs" />
-    <Compile Include="Game\GUI\PauseGameCommand.cs" />
-    <Compile Include="Generic\Framework\GameEventManager.cs" />
+    <Compile Include="Game\GUI\GamePauseStateChangedEvent.cs" />
+    <Compile Include="Game\GUI\GamePauseState.cs" />
     <Compile Include="Game\Framework\Layers.cs" />
     <Compile Include="Game\Framework\Tags.cs" />
     <Compile Include="Game\GUI\GameSpeedChangeEvent.cs" />
     <Compile Include="Generic\Extensions\GameSpecificExtensions.cs" />
     <Compile Include="Generic\IO\MyNguiUtilities.cs" />
-    <Compile Include="Game\GUI\LaunchNewGameEvent.cs" />
-    <Compile Include="Game\Framework\NewGameSettings.cs" />
+    <Compile Include="Game\GUI\BuildNewGameEvent.cs" />
+    <Compile Include="Game\Framework\GameSettings.cs" />
     <Compile Include="Game\GUI\OptionChangeEvent.cs" />
     <Compile Include="Game\Framework\OptionSettings.cs" />
     <Compile Include="Game\GUI\GuiVisibilityCommand.cs" />
     <Compile Include="Game\Framework\SceneLevel.cs" />
     <Compile Include="Game\Framework\SceneLevelChangingEvent.cs" />
-    <Compile Include="Game\GUI\GuiPauseCommand.cs" />
-    <Compile Include="Game\GUI\GuiPauseEvent.cs" />
+    <Compile Include="Game\GUI\PauseRequest.cs" />
+    <Compile Include="Game\GUI\GuiPauseRequestEvent.cs" />
+    <Compile Include="Game\Framework\SceneLevelChangedEvent.cs" />
+    <Compile Include="Generic\Debug\IInstanceIdentity.cs" />
+    <Compile Include="Game\Gameplay\Players.cs" />
+    <Compile Include="Game\GUI\SaveGameEvent.cs" />
     <Compile Include="ThirdParty\TextScanner.cs" />
     <Compile Include="ThirdParty\FlagsHelper.cs" />
     <Compile Include="Generic\Debug\ObjectAnalyzer.cs" />
@@ -98,7 +108,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Game\Gameplay\" />
     <Folder Include="Game\Graphics\" />
     <Folder Include="Generic\Graphics\" />
     <Folder Include="Generic\Math\" />

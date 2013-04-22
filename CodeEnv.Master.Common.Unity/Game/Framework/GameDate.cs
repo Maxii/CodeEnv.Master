@@ -10,14 +10,16 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LEVEL_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
+
+
 namespace CodeEnv.Master.Common.Unity {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
+    using System;
 
     /// <summary>
     /// Data container class that holds the game date.
@@ -41,6 +43,14 @@ namespace CodeEnv.Master.Common.Unity {
             int elapsedDays = Mathf.FloorToInt(gameClock * gameDaysPerSecond);
             Year = startingGameYear + Mathf.FloorToInt(elapsedDays / daysPerYear);
             DayOfYear = 1 + (elapsedDays % daysPerYear);
+        }
+
+        [Obsolete]
+        internal GameDate Clone() {
+            GameDate clone = new GameDate();
+            clone.DayOfYear = this.DayOfYear;
+            clone.Year = this.Year;
+            return clone;
         }
     }
 

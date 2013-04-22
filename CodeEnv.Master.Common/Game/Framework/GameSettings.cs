@@ -5,24 +5,29 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GameStateChangeEvent.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// File: Settings.cs
+// Data container class holding all settings for a new or loaded game.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
 namespace CodeEnv.Master.Common {
 
-    public class GameStateChangeEvent : GameEvent {
 
-        public GameState NewState { get; private set; }
+    /// <summary>
+    /// Data container class holding all settings for a new or loaded game.
+    /// </summary>
+    public class GameSettings {
 
-        public GameStateChangeEvent(GameState newState) {
-            NewState = newState;
-        }
+        public bool IsNewGame { get; set; }
+        public UniverseSize SizeOfUniverse { get; set; }
+        public Players Player { get; set; }
+
+        public GameSettings() { }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
 
     }
 }

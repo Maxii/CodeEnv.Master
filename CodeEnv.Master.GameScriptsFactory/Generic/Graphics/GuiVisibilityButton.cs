@@ -6,9 +6,13 @@
 // </copyright> 
 // <summary> 
 // File: GuiVisibilityButton.cs
-// Allows visibiliity control of all Gui elements in the scene when this button is clicked.
+// Allows visibiliity control of all Gui elements in the startScene when this button is clicked.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
+
+#define DEBUG_LEVEL_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
 
 // default namespace
 
@@ -18,7 +22,7 @@ using CodeEnv.Master.Common.LocalResources;
 using UnityEngine;
 
 /// <summary>
-/// Allows visibiliity control of all Gui elements in the scene
+/// Allows visibiliity control of all Gui elements in the startScene
 /// when this button is clicked.
 /// </summary>
 public class GuiVisibilityButton : GuiButtonBase {
@@ -30,8 +34,8 @@ public class GuiVisibilityButton : GuiButtonBase {
         switch (guiVisibilityCmd) {
             case GuiVisibilityCommand.RestoreUIPanelsVisibility:
             case GuiVisibilityCommand.MakeVisibleUIPanelsInvisible:
-                //Debug.Log("GuiVisibilty value = {0}.".Inject(guiVisibilityCmd));
-                eventMgr.Raise<GuiVisibilityChangeEvent>(new GuiVisibilityChangeEvent(guiVisibilityCmd, guiVisibilityExceptions));
+                //Debug.Log("GuiVisibilty tPrefsValue = {0}.".Inject(guiVisibilityCmd));
+                eventMgr.Raise<GuiVisibilityChangeEvent>(new GuiVisibilityChangeEvent(this, guiVisibilityCmd, guiVisibilityExceptions));
                 break;
             case GuiVisibilityCommand.None:
             default:

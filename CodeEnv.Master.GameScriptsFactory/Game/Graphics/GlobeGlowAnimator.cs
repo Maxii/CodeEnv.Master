@@ -10,10 +10,15 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LEVEL_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
+
+
 using System;
-using UnityEngine;
-using CodeEnv.Master.Common.Unity;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.Unity;
+using UnityEngine;
 
 /// <summary>
 /// Runs the texture that simulates a 'glow' surrounding a globe.
@@ -32,7 +37,7 @@ public class GlobeGlowAnimator : MonoBehaviourBase {
 
     void Awake() {
         glowPanelTransform = transform;
-        UpdateRate = UpdateFrequency.Normal;
+        UpdateRate = UpdateFrequency.Frequent;
     }
 
     void Start() {

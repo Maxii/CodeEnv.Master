@@ -12,17 +12,13 @@
 
 namespace CodeEnv.Master.Common {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
 
-    public class OptionChangeEvent : GameEvent {
+    public class OptionChangeEvent : AGameEvent {
 
         public OptionSettings Settings { get; private set; }
 
-        public OptionChangeEvent(OptionSettings settings) {
+        public OptionChangeEvent(object source, OptionSettings settings)
+            : base(source) {
             Settings = settings;
         }
 

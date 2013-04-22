@@ -17,7 +17,6 @@ namespace CodeEnv.Master.Common.Unity {
     using System.Linq;
     using System.Text;
     using UnityEngine;
-    using UnityEditor;
 
     /// <summary>
     /// TODO 

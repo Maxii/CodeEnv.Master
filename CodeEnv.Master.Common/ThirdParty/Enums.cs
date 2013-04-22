@@ -146,7 +146,8 @@ namespace CodeEnv.Master.Common {
         /// Syntax: <c>MyEnumbers tryParse;     Enums&lt;MyEnumbers&gt;.TryParse("Zero", out tryParse);</c>
         /// </summary>
         /// <param name="enumName">The string name equivalent of a Type T  constant.</param>
-        /// <param name="returnValue">The Type T  constant represented by the string name.</param>
+        /// <param name="returnValue">The Type T  constant represented by the string name. If the parsing
+        /// fails, the value returned is the default value of T.</param>
         /// <returns><c>true</c> if successful.</returns>
         public static bool TryParse(string enumName, out T returnValue) {
             return SensitiveNames.TryGetValue(enumName, out returnValue);
@@ -157,7 +158,8 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="enumName">The string name equivalent of an Type T  constant.</param>
         /// <param name="ignoreCase">if set to <c>true</c> [ignore case].</param>
-        /// <param name="returnValue">The Type T  constant represented by the string name.</param>
+        /// <param name="returnValue">The Type T  constant represented by the string name. If the parsing
+        /// fails, the value returned is the default value of T.</param>
         /// <returns><c>true</c> if successful.</returns>
         public static bool TryParse(string enumName, bool ignoreCase, out T returnValue) {
             Arguments.ValidateForContent(enumName);

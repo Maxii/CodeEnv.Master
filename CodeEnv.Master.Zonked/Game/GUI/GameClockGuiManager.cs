@@ -101,7 +101,7 @@ public class GameClockGuiManager : GuiManagerBase<GameClockGuiManager> {
         speedsOrderedByRisingValue = sortedSpeeds.ToArray<GameClockSpeed>();
         orderedSliderStepValues = MyNguiUtilities.GenerateOrderedSliderStepValues(numberOfSliderSteps);
 
-        // Set Sliders initial value to that associated with GameClockSpeed.Normal
+        // Set Sliders initial tPrefsValue to that associated with GameClockSpeed.Normal
         int indexOfNormalSpeed = speedsOrderedByRisingValue.FindIndex<GameClockSpeed>(s => (s == GameClockSpeed.Normal));
         float sliderValueAtNormalSpeed = orderedSliderStepValues[indexOfNormalSpeed];
         guiElements.gameSpeedSlider.sliderValue = sliderValueAtNormalSpeed;

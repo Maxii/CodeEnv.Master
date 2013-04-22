@@ -78,7 +78,7 @@ public class GameOptionsGuiManager : GuiManagerBase<GameOptionsGuiManager> {
                 if (labelName.Contains("pause")) {
                     guiWidgets.pauseAfterLoad = uiCheckbox;
                 }
-                else if (labelName.Contains("focus")) {
+                else if (labelName.Contains("focusTarget")) {
                     guiWidgets.resetOnFocus = uiCheckbox;
                 }
                 if (labelName.Contains("zoom")) {
@@ -131,7 +131,7 @@ public class GameOptionsGuiManager : GuiManagerBase<GameOptionsGuiManager> {
         guiWidgets.pauseAfterLoad.isChecked = playerPrefsMgr.IsPauseOnLoadEnabled;
         guiWidgets.resetOnFocus.isChecked = playerPrefsMgr.IsResetOnFocusEnabled;
         guiWidgets.zoomOutOnCursor.isChecked = playerPrefsMgr.IsZoomOutOnCursorEnabled;
-        // guiWidgets.gameSpeedAfterLoad.selection = playerPrefsMgr.GameSpeedOnLoad.GetName();
+        // guiWidgets.gameSpeedAfterLoad.selectionName = playerPrefsMgr.GameSpeedOnLoad.GetName();
         guiWidgets.universeSize.selection = playerPrefsMgr.SizeOfUniverse.GetName();
 
     }
@@ -177,7 +177,7 @@ public class GameOptionsGuiManager : GuiManagerBase<GameOptionsGuiManager> {
     }
 
     private void OnZoomOutOnCursorOptionChange(bool state) {
-        CameraControl.Instance.IsScrollZoomOutOnCursorEnabled = state;
+        _CameraControl.Instance.IsScrollZoomOutOnCursorEnabled = state;
         playerPrefsMgr.IsZoomOutOnCursorEnabled = state;
 
         System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(0);
@@ -186,7 +186,7 @@ public class GameOptionsGuiManager : GuiManagerBase<GameOptionsGuiManager> {
     }
 
     private void OnResetOnFocusOptionChange(bool state) {
-        CameraControl.Instance.IsResetOnFocusEnabled = state;
+        _CameraControl.Instance.IsResetOnFocusEnabled = state;
         playerPrefsMgr.IsResetOnFocusEnabled = state;
 
         System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(0);
@@ -205,7 +205,7 @@ public class GameOptionsGuiManager : GuiManagerBase<GameOptionsGuiManager> {
     }
 
     private void OnCameraRollOptionChange(bool state) {
-        CameraControl.Instance.IsRollEnabled = state;
+        _CameraControl.Instance.IsRollEnabled = state;
         playerPrefsMgr.IsCameraRollEnabled = state;
 
         System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(0);

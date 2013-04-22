@@ -6,14 +6,14 @@
 // </copyright> 
 // <summary> 
 // File: GameClockCommand.cs
-// Commands for the clock including Pause, Resume, Start and Stop.
+// Commands for the clock including Paused, Resumed, Start and Stop.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
 namespace CodeEnv.Master.Common {
 
     /// <summary>
-    /// Commands for the clock including Pause, Resume, Start and Stop.
+    /// Commands for the clock including Paused, Resumed, Start and Stop.
     /// </summary>
     public enum GameClockCommand {
 

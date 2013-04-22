@@ -19,11 +19,12 @@ namespace CodeEnv.Master.Common {
     using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
 
-    public class FocusSelectedEvent : GameEvent {
+    public class FocusSelectedEvent : AGameEvent {
 
         public Transform FocusTransform { get; private set; }
 
-        public FocusSelectedEvent(Transform focusTransform) {
+        public FocusSelectedEvent(object source, Transform focusTransform)
+            : base(source) {
             FocusTransform = focusTransform;
         }
 

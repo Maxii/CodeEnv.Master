@@ -10,6 +10,11 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+//#define DEBUG_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
+
+
 namespace CodeEnv.Master.Common.Unity {
 
     using System;
@@ -18,7 +23,6 @@ namespace CodeEnv.Master.Common.Unity {
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
-    using UnityEditor;
 
     public static class GameInput {
 
@@ -183,17 +187,20 @@ namespace CodeEnv.Master.Common.Unity {
 
         public static bool IsScrollWheelMovement(out float value) {
             value = Input.GetAxis(UnityConstants.MouseAxisName_ScrollWheel);
-            return value != 0F;
+            D.Log("Mouse ScrollWheel value = {0:0.0000}.", value);
+            return value != 0F; // No floating point equality issues as value is smoothed by Unity
         }
 
         public static bool IsHorizontalMouseMovement(out float value) {
             value = Input.GetAxis(UnityConstants.MouseAxisName_Horizontal);
-            return value != 0F;
+            D.Log("Mouse Horizontal Movement value = {0:0.0000}.", value);
+            return value != 0F; // No floating point equality issues as value is smoothed by Unity
         }
 
         public static bool IsVerticalMouseMovement(out float value) {
             value = Input.GetAxis(UnityConstants.MouseAxisName_Vertical);
-            return value != 0F;
+            D.Log("Mouse Vertical Movement value = {0:0.0000}.", value);
+            return value != 0F; // No floating point equality issues as value is smoothed by Unity
         }
     }
 }

@@ -12,7 +12,7 @@
 
 namespace CodeEnv.Master.Common {
 
-    public class GameClockEvent : GameEvent {
+    public class GameClockEvent : AGameEvent {
 
         public GameClockCommand ClockCommand { get; private set; }
 

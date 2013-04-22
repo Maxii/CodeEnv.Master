@@ -10,31 +10,32 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LEVEL_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
+
 // default namespace
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEngine;
-using UnityEditor;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
-using CodeEnv.Master.Common.Unity;
+using UnityEngine;
 
 /// <summary>
 /// COMMENT 
 /// </summary>
 public class GuiExitButton : GuiButtonBase {
 
-    protected override void Initialize() {
-        base.Initialize();
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
         tooltip = "Exit the Game.";
+    }
+
+    protected override void InitializeOnStart() {
+        base.InitializeOnStart();
     }
 
     protected override void OnButtonClick(GameObject sender) {
         // UNDONE confirmation popup
-        eventMgr.Raise<ExitGameEvent>(new ExitGameEvent());
+        eventMgr.Raise<ExitGameEvent>(new ExitGameEvent(this));
     }
 
     public override string ToString() {

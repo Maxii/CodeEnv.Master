@@ -13,10 +13,6 @@
 namespace CodeEnv.Master.Common {
 
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
     using Microsoft.Win32;
 
     public static class UnityConstants {

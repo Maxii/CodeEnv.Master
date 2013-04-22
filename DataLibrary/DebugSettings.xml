@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- Be careful where comments are placed! -->
+<Debug>
+  <Boolean>
+    <Setting>
+      <PropertyName>EnableFpsReadout</PropertyName>
+      <PropertyValue>true</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>UnlockAllItems</PropertyName>
+      <PropertyValue>false</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>DisableEnemies</PropertyName>
+      <PropertyValue>false</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>DisableGui</PropertyName>
+      <PropertyValue>false</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>MakePlayerInvincible</PropertyName>
+      <PropertyValue>false</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>DisableAllGameplay</PropertyName>
+      <PropertyValue>false</PropertyValue>
+    </Setting>
+  </Boolean>
+  
+<!-- Short tag format <PropertyName/> is reqd for XmlElement.isEmpty to return true -->
+  <Integer>
+    <Setting>
+      <PropertyName></PropertyName>
+      <PropertyValue>0</PropertyValue>
+    </Setting>
+  </Integer>
+
+  <Float>
+    <Setting>
+      <PropertyName></PropertyName>
+      <PropertyValue>0.0</PropertyValue>   
+    </Setting>
+  </Float>
+
+</Debug>

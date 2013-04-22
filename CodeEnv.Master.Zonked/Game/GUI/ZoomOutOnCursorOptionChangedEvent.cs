@@ -18,7 +18,7 @@ namespace CodeEnv.Master.Common.Unity {
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
 
-    public class ZoomOutOnCursorOptionChangedEvent : GameEvent {
+    public class ZoomOutOnCursorOptionChangedEvent : AGameEvent {
 
         public bool IsZoomOutOnCursorEnabled { get; private set; }
 

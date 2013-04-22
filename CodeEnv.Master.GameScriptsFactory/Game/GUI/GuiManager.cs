@@ -6,36 +6,46 @@
 // </copyright> 
 // <summary> 
 // File: GuiManager.cs
-//  Overall GuiManager that handles enabling/disabling Gui elements based on Debug settings.
+//  Overall GuiManager that handles enabling/disabling Gui elements.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
+
+#define DEBUG_LEVEL_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
 
 // default namespace
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using UnityEngine;
-using UnityEditor;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.Common.Unity;
+using UnityEngine;
 
 /// <summary>
-/// Overall GuiManager that handles enabling/disabling Gui elements based on Debug settings.
+/// Overall GuiManager that handles enabling/disabling Gui elements.
 /// </summary>
 public class GuiManager : MonoBehaviourBaseSingleton<GuiManager>, IDisposable {
 
     private Stack<IList<UIPanel>> stackedPanelsToRestore = new Stack<IList<UIPanel>>();
+    private UIPanel uiRootPanel;
     private GameEventManager eventMgr;
 
     void Awake() {
         eventMgr = GameEventManager.Instance;
+        AddListeners();
     }
 
     void Start() {
         // Note: Components that are not active are not found with GetComponentInChildren()!
+        CheckDebugSettings();
+        uiRootPanel = gameObject.GetSafeMonoBehaviourComponent<UIPanel>();
+    }
+
+    //[System.Diagnostics.Conditional("UNITY_EDITOR")]
+    private void CheckDebugSettings() {
         if (DebugSettings.DisableGui) {
             Camera guiCamera = gameObject.GetSafeMonoBehaviourComponentInChildren<UICamera>().camera;
             guiCamera.enabled = false;
@@ -44,16 +54,21 @@ public class GuiManager : MonoBehaviourBaseSingleton<GuiManager>, IDisposable {
             GameObject fpsReadoutParentGo = gameObject.GetSafeMonoBehaviourComponentInChildren<FpsReadout>().transform.parent.gameObject;
             fpsReadoutParentGo.active = false;
         }
-        eventMgr.AddListener<GuiVisibilityChangeEvent>(OnGuiVisibilityChange);
+    }
+
+    private void AddListeners() {
+        eventMgr.AddListener<GuiVisibilityChangeEvent>(this, OnGuiVisibilityChange);
     }
 
     private void OnGuiVisibilityChange(GuiVisibilityChangeEvent e) {
-        //Debug.Log("OnGuiVisibilityChange event received. GuiVisibilityCmd = {0}.".Inject(e.GuiVisibilityCmd));
+        //Debug.Log("OnGuiVisibilityChange event received. GuiVisibilityCmd = {0}.", e.GuiVisibilityCmd);
         switch (e.GuiVisibilityCmd) {
             case GuiVisibilityCommand.MakeVisibleUIPanelsInvisible:
-                UIPanel[] allActiveGuiPanels = gameObject.GetSafeMonoBehaviourComponentsInChildren<UIPanel>();
-                var panelsToDeactivate = (from p in allActiveGuiPanels where !e.Exceptions.Contains<UIPanel>(p) select p);
-                panelsToDeactivate.ForAll<UIPanel>(p => p.gameObject.active = false);
+                UIPanel[] allActiveUIRootChildPanels = gameObject.GetSafeMonoBehaviourComponentsInChildren<UIPanel>().Except<UIPanel>(uiRootPanel).ToArray<UIPanel>();
+                var panelsToDeactivate = (from p in allActiveUIRootChildPanels where !e.Exceptions.Contains<UIPanel>(p) select p);
+                //panelsToDeactivate.ForAll<UIPanel>(p => p.gameObject.active = false);
+                panelsToDeactivate.ForAll<UIPanel>(p => NGUITools.SetActive(p.gameObject, false));
+
                 stackedPanelsToRestore.Push(panelsToDeactivate.ToList<UIPanel>());
                 break;
             case GuiVisibilityCommand.RestoreUIPanelsVisibility:
@@ -64,13 +79,20 @@ public class GuiManager : MonoBehaviourBaseSingleton<GuiManager>, IDisposable {
                 IList<UIPanel> panelsToRestore = stackedPanelsToRestore.Pop();
                 Arguments.ValidateNotNullOrEmpty<UIPanel>(panelsToRestore);
                 var panelsToReactivate = from p in panelsToRestore where !e.Exceptions.Contains<UIPanel>(p) select p;
-                panelsToReactivate.ForAll<UIPanel>(p => p.gameObject.active = true);
+                //panelsToReactivate.ForAll<UIPanel>(p => p.gameObject.active = true);
+                panelsToReactivate.ForAll<UIPanel>(p => NGUITools.SetActive(p.gameObject, true));
+
                 break;
             case GuiVisibilityCommand.None:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(e.GuiVisibilityCmd));
         }
     }
+
+    private void RemoveListeners() {
+        eventMgr.RemoveListener<GuiVisibilityChangeEvent>(this, OnGuiVisibilityChange);
+    }
+
 
     void OnDestroy() {
         Dispose();
@@ -105,11 +127,12 @@ public class GuiManager : MonoBehaviourBaseSingleton<GuiManager>, IDisposable {
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            eventMgr.RemoveListener<GuiVisibilityChangeEvent>(OnGuiVisibilityChange);
+            RemoveListeners();
         }
         // free unmanaged resources here
         alreadyDisposed = true;
     }
+
 
     // Example method showing check for whether the object has been disposed
     //public void ExampleMethod() {

@@ -12,13 +12,8 @@
 
 namespace CodeEnv.Master.Common {
 
-    using System;
-    using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using System.Text;
-    using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
     /// TextScanner similar to Java's Scanner class that provides for easy syntax progressively reading

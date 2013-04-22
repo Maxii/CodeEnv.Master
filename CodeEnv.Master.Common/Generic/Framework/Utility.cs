@@ -16,7 +16,6 @@ namespace CodeEnv.Master.Common {
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq.Expressions;
-    using System.Resources;
     using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
@@ -123,9 +122,9 @@ namespace CodeEnv.Master.Common {
         /// Generates and returns a list of substrings from the provided text, using the specified delimiter.
         /// </summary>
         /// <param name="text">The text to separate.</param>
-        /// <param name="delimiter">The delimiter.</param>
+        /// <param name="delimiter">The delimiter. Default is a space.</param>
         /// <returns></returns>
-        public static IList<String> ConstructListFromString(String text, char delimiter) {
+        public static IList<string> ConstructListFromString(string text, char delimiter = Constants.SpaceDelimiter) {
             Arguments.ValidateForContent(text);
             IList<string> result = text.Split(delimiter);
             return result;

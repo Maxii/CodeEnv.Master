@@ -5,10 +5,14 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: LaunchNewGameEvent.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// File: GamePauseStateChangingEvent.cs
+// Event indicating the GamePauseState is about to change.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
+
+#define DEBUG_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
 
 namespace CodeEnv.Master.Common {
 
@@ -16,14 +20,17 @@ namespace CodeEnv.Master.Common {
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
 
-    public class LaunchNewGameEvent : GameEvent {
+    /// <summary>
+    /// Event indicating the GamePauseState is about to change.
+    /// </summary>
+    public class GamePauseStateChangingEvent : AGameEvent {
 
-        public NewGameSettings GameSettings { get; private set; }
+        public GamePauseState PauseState { get; private set; }
 
-        public LaunchNewGameEvent(NewGameSettings gameSettings) {
-            GameSettings = gameSettings;
+        public GamePauseStateChangingEvent(object source, GamePauseState pauseState)
+            : base(source) {
+            PauseState = pauseState;
         }
 
         public override string ToString() {

@@ -9,22 +9,20 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LEVEL_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
+
+
 // default namespace
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEngine;
-using UnityEditor;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
-using CodeEnv.Master.Common.Unity;
+using UnityEngine;
 
 
 /// <summary>
 /// Scales an object relative to the distance to the camera. Gives the appearance of the object size being the same
-/// while the camera moves. Useful for GUI objects that appear within the game scene. Often useful when combined with CameraFacing.
+/// while the camera moves. Useful for GUI objects that appear within the game startScene. Often useful when combined with CameraFacing.
 /// 
 ///Usage: Place this script on the gameobject you wish to keep a constant size. Measures the distance from the Camera cameraPlane, 
 ///rather than the camera itself, and uses the initial scale as a basis. Use the public objectScale variable to adjust the object size on the screen.

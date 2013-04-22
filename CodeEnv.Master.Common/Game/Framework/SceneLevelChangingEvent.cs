@@ -6,17 +6,18 @@
 // </copyright> 
 // <summary> 
 // File: SceneLevelChangingEvent.cs
-// Event indicating a SceneLevel change via Application.LoadLevel(sceneLevel) is imminent.
+// Event indicating a SceneLevel change via Application.LoadLevel(level) is imminent.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
 namespace CodeEnv.Master.Common {
 
-    public class SceneLevelChangingEvent : GameEvent {
+    public class SceneLevelChangingEvent : AGameEvent {
 
         public SceneLevel NewSceneLevel { get; private set; }
 
-        public SceneLevelChangingEvent(SceneLevel newLevel) {
+        public SceneLevelChangingEvent(object source, SceneLevel newLevel)
+            : base(source) {
             NewSceneLevel = newLevel;
         }
 

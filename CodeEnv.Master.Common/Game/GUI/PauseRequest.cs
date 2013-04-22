@@ -5,44 +5,44 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GuiPauseCommand.cs
-// Gui Commands for REQUESTING pause-related events from the GameManager.
+// File: PauseRequest.cs
+// Commands for REQUESTING changes in the Pause state of the game.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
 namespace CodeEnv.Master.Common {
 
     /// <summary>
-    /// Gui Commands for REQUESTING pause-related events from the GameManager.
+    /// Commands for REQUESTING changes in the Pause state of the game.
     /// </summary>
-    public enum GuiPauseCommand {
+    public enum PauseRequest {
 
         /// <summary>
-        /// The absense of a GuiPauseCommand.
+        /// The absense of a PauseRequest.
         /// </summary>
         None,
 
         /// <summary>
-        /// Command indicating a user has directly requested a GamePause. This will
+        /// Command indicating the user or program has directly requested a GamePause. This will
         /// always be accomodated.
         /// </summary>
-        UserPause,
+        PriorityPause,
 
         /// <summary>
         /// Command indicating a Gui element has automatically requested a GamePause.
-        /// This will be accomodated if the game is not already paused.
+        /// This will be accomodated if the game is running and not already paused.
         /// </summary>
         GuiAutoPause,
 
         /// <summary>
-        /// Command indicating a user has directly requested an end to the current pause. This
+        /// Command indicating the user or program has directly requested an end to the current pause. This
         /// will always be accomodated.
         /// </summary>
-        UserResume,
+        PriorityResume,
 
         /// <summary>
         /// Command indicating a Gui element has automatically requested an end to the current pause.
-        /// This will be accomodated if the game is not currently in a UserPause.
+        /// This will only be accomodated if the game is running, it is paused, and the pause was requested by GuiAutoPause.
         /// </summary>
         GuiAutoResume
 

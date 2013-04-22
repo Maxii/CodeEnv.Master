@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GuiPopupListBase.cs
+// File: GuiEnumPopupListBase.cs
 // Base class for  Gui PopupLists that use Enums built with NGUI.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -42,7 +42,7 @@ public abstract class GuiPopupListBase : GuiTooltip, IDisposable {
     }
 
     /// <summary>
-    /// Override to initialize the tooltip message. Remember base.Initialize();
+    /// Override to initialize the tooltip message. Remember base.InitializeOnAwake();
     /// </summary>
     protected virtual void Initialize() {
         popupList = gameObject.GetSafeMonoBehaviourComponent<UIPopupList>();

@@ -10,23 +10,30 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LEVEL_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
+
+
 namespace CodeEnv.Master.Common.Unity {
 
     using System;
+    using System.Diagnostics;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
     /// <summary>
     /// SingletonPattern. COMMENT
     /// </summary>
-    public class PlayerPrefsManager {
+    [SerializeAll]
+    public class PlayerPrefsManager : AInstanceIdentity, IInstanceIdentity {
 
         private string sizeOfUniverseKey = "Universe Size Preference";
         private string gameSpeedOnLoadKey = "Game Speed On Load Option";
         private string isZoomOutOnCursorEnabledKey = "Zoom Out On Cursor Option";
         private string isCameraRollEnabledKey = "Camera Roll Option";
         private string isResetOnFocusEnabledKey = "Reset On Focus Option";
-        private string isPauseAfterLoadEnabledKey = "Pause On Load Option";
+        private string isPauseAfterLoadEnabledKey = "Paused On Load Option";
 
 
         public UniverseSize SizeOfUniverse { get; private set; }
@@ -67,25 +74,28 @@ namespace CodeEnv.Master.Common.Unity {
         /// Called once from the constructor, this does all required initialization
         /// </summary>
         private void Initialize() {
+            IncrementInstanceCounter();
             Retrieve();
             eventMgr = GameEventManager.Instance;
-            eventMgr.AddListener<OptionChangeEvent>(OnOptionChange);
-            eventMgr.AddListener<LaunchNewGameEvent>(OnLaunchNewGame);
+            eventMgr.AddListener<OptionChangeEvent>(this, OnOptionChange);
+            eventMgr.AddListener<BuildNewGameEvent>(this, OnBuildNewGame);
         }
 
-        private void OnLaunchNewGame(LaunchNewGameEvent e) {
-            NewGameSettings settings = e.GameSettings;
+        private void OnBuildNewGame(BuildNewGameEvent e) {
+            GameSettings settings = e.Settings;
             SizeOfUniverse = settings.SizeOfUniverse;
+            ValidateState();
         }
 
         private void OnOptionChange(OptionChangeEvent e) {
             OptionSettings settings = e.Settings;
             GameSpeedOnLoad = settings.GameSpeedOnLoad;
             IsZoomOutOnCursorEnabled = settings.IsZoomOutOnCursorEnabled;
-            //Debug.Log("At OptionChangeEvent, PlayerPrefsMgr.IsZoomOutOnCursorEnabled = " + IsZoomOutOnCursorEnabled);
+            //D.Log("At OptionChangeEvent, PlayerPrefsMgr.IsZoomOutOnCursorEnabled = " + IsZoomOutOnCursorEnabled);
             IsResetOnFocusEnabled = settings.IsResetOnFocusEnabled;
             IsCameraRollEnabled = settings.IsCameraRollEnabled;
             IsPauseOnLoadEnabled = settings.IsPauseOnLoadEnabled;
+            ValidateState();
         }
 
         /// <summary>
@@ -102,7 +112,7 @@ namespace CodeEnv.Master.Common.Unity {
                 encryptedStringValue = Encrypt(GameSpeedOnLoad.GetName());
                 PlayerPrefs.SetString(gameSpeedOnLoadKey, encryptedStringValue);
             }
-            //Debug.Log("At Store, PlayerPrefsMgr.IsZoomOutOnCursorEnabled = " + IsZoomOutOnCursorEnabled);
+            //D.Log("At Store, PlayerPrefsMgr.IsZoomOutOnCursorEnabled = " + IsZoomOutOnCursorEnabled);
             PlayerPrefs.SetString(isZoomOutOnCursorEnabledKey, Encrypt(IsZoomOutOnCursorEnabled.ToString()));
             PlayerPrefs.SetString(isCameraRollEnabledKey, Encrypt(IsCameraRollEnabled.ToString()));
 
@@ -125,7 +135,7 @@ namespace CodeEnv.Master.Common.Unity {
 
             if (PlayerPrefs.HasKey(isZoomOutOnCursorEnabledKey)) {
                 IsZoomOutOnCursorEnabled = bool.Parse(Decrypt(PlayerPrefs.GetString(isZoomOutOnCursorEnabledKey)));
-                //Debug.Log("At Retrieve, PlayerPrefsMgr.IsZoomOutOnCursorEnabled = " + IsZoomOutOnCursorEnabled);
+                //D.Log("At Retrieve, PlayerPrefsMgr.IsZoomOutOnCursorEnabled = " + IsZoomOutOnCursorEnabled);
             }
             if (PlayerPrefs.HasKey(isCameraRollEnabledKey)) {
                 IsCameraRollEnabled = bool.Parse(Decrypt(PlayerPrefs.GetString(isCameraRollEnabledKey)));
@@ -142,7 +152,7 @@ namespace CodeEnv.Master.Common.Unity {
             string decryptedStringValue = Decrypt(PlayerPrefs.GetString(key));
             T pref;
             if (!Enums<T>.TryParse(decryptedStringValue, out pref)) {
-                Debug.LogError("Unable to parse Preference {0} of Type {1}.".Inject(decryptedStringValue, typeof(T)));
+                D.Error("Unable to parse Preference {0} of Type {1}.", decryptedStringValue, typeof(T));
             }
             return pref;
         }
@@ -179,8 +189,8 @@ namespace CodeEnv.Master.Common.Unity {
 
             if (isDisposing) {
                 // free managed resources here including unhooking events
-                eventMgr.RemoveListener<OptionChangeEvent>(OnOptionChange);
-                eventMgr.RemoveListener<LaunchNewGameEvent>(OnLaunchNewGame);
+                eventMgr.RemoveListener<OptionChangeEvent>(this, OnOptionChange);
+                eventMgr.RemoveListener<BuildNewGameEvent>(this, OnBuildNewGame);
             }
             // free unmanaged resources here
             alreadyDisposed = true;
@@ -201,6 +211,20 @@ namespace CodeEnv.Master.Common.Unity {
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
+        #region Debug
+
+        [Conditional("UNITY_EDITOR")]
+        private void ValidateState() {
+            // Grab the name of the calling method
+            System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
+            string callerIdMessage = " Called by {0}.{1}().".Inject(stackFrame.GetFileName(), stackFrame.GetMethod().Name);
+
+            D.Assert(SizeOfUniverse != UniverseSize.None, callerIdMessage + " SizeOfUniverse cannot be None.", true);
+            D.Assert(GameSpeedOnLoad != GameClockSpeed.None, callerIdMessage + "GameSpeedOnLoad cannot be None.", true);
+        }
+
+        #endregion
 
     }
 }

@@ -5,27 +5,29 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GuiPauseEvent.cs
-// Event containing a GuiPauseCommand which REQUESTS a GamePauseEvent from GameManager.
+// File: BuildNewGameEvent.cs
+// Event indicating a new game should be built using the attached settings.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
 namespace CodeEnv.Master.Common {
 
     /// <summary>
-    /// Event containing a GuiPauseCommand which REQUESTS a GamePauseEvent from GameManager.
+    ///  Event indicating a new game should be built using the attached settings.
     /// </summary>
-    public class GuiPauseEvent : GameEvent {
+    public class BuildNewGameEvent : AGameEvent {
 
-        public GuiPauseCommand PauseCommand { get; private set; }
+        public GameSettings Settings { get; private set; }
 
-        public GuiPauseEvent(GuiPauseCommand pauseCmd) {
-            PauseCommand = pauseCmd;
+        public BuildNewGameEvent(object source, GameSettings settings)
+            : base(source) {
+            Settings = settings;
         }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
     }
 }
 

@@ -18,7 +18,7 @@ namespace CodeEnv.Master.Common.Unity {
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
 
-    public class ResetOnFocusOptionChangedEvent : GameEvent {
+    public class ResetOnFocusOptionChangedEvent : AGameEvent {
 
         public bool IsResetOnFocusEnabled { get; private set; }
 

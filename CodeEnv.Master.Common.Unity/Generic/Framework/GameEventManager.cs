@@ -10,24 +10,20 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
+#define DEBUG_LOG
+
 namespace CodeEnv.Master.Common {
 
     using System;
     using System.Collections.Generic;
-    using System.Linq;
-    using CodeEnv.Master.Common.LocalResources;
-    using UnityEngine;
-
-    /// <summary>
-    /// Derive GameEventSubclass[es] from GameEvent that carry any parameters that
-    /// objects listening for the event might need to process it.
-    /// </summary>
-    public class GameEvent { }
+    using System.Text;
 
     /// <summary>
     /// Singleton Event Manager.
     /// </summary>
-    [Serializable]
+    [SerializeAll]
     public sealed class GameEventManager {
 
         #region SingletonPattern
@@ -63,12 +59,12 @@ namespace CodeEnv.Master.Common {
         }
 
 
-        public delegate void EventDelegate<T>(T e) where T : GameEvent;
+        public delegate void EventDelegate<T>(T e) where T : AGameEvent;
 
         readonly Dictionary<Type, Delegate> listenerDelegates = new Dictionary<Type, Delegate>();
 
         /// <summary>
-        /// Adds the listener's EventHandler method to the list listening for GameEvent T.
+        /// Adds the listener's EventHandler method to the list listening for AGameEvent T.
         /// Usage on MonoBehaviours:
         ///     void OnEnable() {
         ///        GameEventManager.instance.AddListener&lt;GameEventSubclass&gt;(EventHandlerMethodName);
@@ -78,9 +74,9 @@ namespace CodeEnv.Master.Common {
         ///         handle event...
         ///     }
         /// </summary>
-        /// <typeparam name="T">The Type of GameEvent.</typeparam>
+        /// <typeparam name="T">The Type of AGameEvent.</typeparam>
         /// <param name="listener">The EventDelegate encapsulating the listener's EventHandler method.</param>
-        public void AddListener<T>(EventDelegate<T> listener) where T : GameEvent {
+        public void AddListener<T>(System.Object source, EventDelegate<T> listener) where T : AGameEvent {
             Delegate delegateWithInvocationList;
             if (listenerDelegates.TryGetValue(typeof(T), out delegateWithInvocationList)) {
                 listenerDelegates[typeof(T)] = Delegate.Combine(delegateWithInvocationList, listener);
@@ -88,11 +84,32 @@ namespace CodeEnv.Master.Common {
             else {
                 listenerDelegates[typeof(T)] = listener;
             }
-            //Debug.Log("Event Listener for Type {0} added.".Inject(typeof(T)));
+            //D.Log("{0} Listener added by {1}.", typeof(T).Name, source.GetType().Name);
+            //WriteCompositionToLog<T>(source, listenerDelegates[typeof(T)] as EventDelegate<T>, "Added");
         }
 
+        private void WriteCompositionToLog<T>(System.Object source, EventDelegate<T> currentListeners, string action) where T : AGameEvent {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendFormat("EventListener for {0} ", typeof(T).Name);
+            sb.AppendFormat("{0} by {1} ", action, source.GetType().Name);
+            if (source is IInstanceIdentity) { sb.Append((source as IInstanceIdentity).InstanceID.ToString()); }
+            sb.Append(", Current Listeners now include:");
+            sb.AppendLine();
+            if (currentListeners != null) {
+                foreach (var d in currentListeners.GetInvocationList()) {
+                    sb.AppendFormat("{0} ", d.Target.GetType().Name);
+                    if (d.Target is IInstanceIdentity) { sb.Append((d.Target as IInstanceIdentity).InstanceID.ToString()); }
+                    sb.Append(", ");
+                }
+            }
+            sb.AppendLine();
+            string result = sb.ToString();
+            D.Log(result);
+        }
+
+
         /// <summary>
-        /// Removes the listener's EventHandler method from the list listening for GameEvent T.
+        /// Removes the listener's EventHandler method from the list listening for AGameEvent T.
         /// Usage on MonoBehaviours:
         ///     void OnDisable() {
         ///        GameEventManager.instance.RemoveListener&lt;GameEventSubclass&gt;(EventHandlerMethodName);
@@ -102,62 +119,87 @@ namespace CodeEnv.Master.Common {
         ///         handle event...
         ///     }
         /// </summary>
-        /// <typeparam name="T">The Type of GameEvent.</typeparam>
+        /// <typeparam name="T">The Type of AGameEvent.</typeparam>
         /// <param name="listener">TThe EventDelegate encapsulating the listener's EventHandler method.</param>
-        public void RemoveListener<T>(EventDelegate<T> listener) where T : GameEvent {
+        public void RemoveListener<T>(System.Object source, EventDelegate<T> listener) where T : AGameEvent {
             Delegate delegateWithInvocationList;
             if (listenerDelegates.TryGetValue(typeof(T), out delegateWithInvocationList)) {
                 Delegate delegateAfterRemoval = Delegate.Remove(delegateWithInvocationList, listener);
 
                 if (delegateAfterRemoval == null) {
-                    // no more listeners for this GameEvent type, so remove the key
+                    // no more currentListeners for this AGameEvent type, so remove the key
                     listenerDelegates.Remove(typeof(T));
                 }
                 else {
                     listenerDelegates[typeof(T)] = delegateAfterRemoval;
                 }
-                //Debug.Log("Event Listener for Type {0} removed.".Inject(typeof(T)));
+                //D.Log("{0} Listener removed by {1}.", typeof(T).Name, source.GetType().Name);
+                Delegate currentListeners;
+                if (!listenerDelegates.TryGetValue(typeof(T), out currentListeners)) {
+                    currentListeners = null;
+                }
+                //WriteCompositionToLog<T>(source, currentListeners as EventDelegate<T>, "Removed");
             }
             else {
-                Debug.LogWarning("Attempt to RemoveListener of Type {0} that is not present.".Inject(typeof(T)));
+                D.Log("Attempt to RemoveListener of Type {0} that is not present.", typeof(T));
             }
         }
 
-        public static void RaiseEvent<T>(T gameEvent) where T : GameEvent {
-            instance.Raise<T>(gameEvent);
+        public static void RaiseEvent<T>(T gameEvent) where T : AGameEvent {
+            Instance.Raise<T>(gameEvent);
         }
 
         // <summary>
-        /// Raises (broadcasts) the provided GameEvent instance to all listeners.
+        /// Raises (broadcasts) the provided AGameEvent instance to all currentListeners.
         /// Usage:
         ///     GameEventManager.instance.Raise(new GameEventSubclass());
         /// </summary>
-        /// <typeparam name="T">The Type of GameEvent.</typeparam>
-        /// <param name="gameEvent">The instance of GameEvent to raise.</param>
-        public void Raise<T>(T gameEvent) where T : GameEvent {
+        /// <typeparam name="T">The Type of AGameEvent.</typeparam>
+        /// <param name="gameEvent">The instance of AGameEvent to raise.</param>
+        public void Raise<T>(T gameEvent) where T : AGameEvent {
             Arguments.ValidateNotNull(gameEvent);
 
             Delegate delegateWithInvocationList;
             if (listenerDelegates.TryGetValue(typeof(T), out delegateWithInvocationList)) {
-                // this assignment to callback is the defensive pattern to gaurd against multi-threaded race conditions
+                // this assignment to currentListeners is the defensive pattern to guard against multi-threaded race conditions
                 EventDelegate<T> callback = delegateWithInvocationList as EventDelegate<T>;
                 if (callback != null) {
-                    Debug.Log("Event Raised for Type {0}.".Inject(typeof(T)));
+                    WriteCompositionToLog<T>(gameEvent, callback);
                     callback(gameEvent);
                 }
                 else {
-                    Debug.LogError("Listener for Event of Type {0} is not an EventDelegate!".Inject(typeof(T)));
+                    D.Error("Listener for Event of Type {0} is not an EventDelegate!", typeof(T));
                 }
             }
             else {
-                Debug.LogWarning("Attempt to Raise Event of Type {0} without any Listeners.".Inject(typeof(T)));
+                //D.Warn("Attempt to Raise Event of Type {0} without any Listeners.", typeof(T));
             }
+        }
+
+        private void WriteCompositionToLog<T>(T gameEvent, EventDelegate<T> callback) where T : AGameEvent {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(gameEvent.GetType().Name);
+            object source = gameEvent.Source;
+            sb.AppendFormat(" Raised from {0} ", source.GetType().Name);
+            if (source is IInstanceIdentity) { sb.Append((source as IInstanceIdentity).InstanceID.ToString()); }
+            sb.Append(", Targets include:");
+            sb.AppendLine();
+            foreach (var d in callback.GetInvocationList()) {
+                sb.AppendFormat("{0} ", d.Target.GetType().Name);
+                if (d.Target is IInstanceIdentity) { sb.Append((d.Target as IInstanceIdentity).InstanceID.ToString()); }
+                sb.Append(", ");
+            }
+            sb.AppendLine();
+            sb.Append("Event Contents: ");
+            sb.AppendLine();
+            sb.Append(gameEvent.ToString());
+            string result = sb.ToString();
+            D.Log(result);
         }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
-
     }
 }
 

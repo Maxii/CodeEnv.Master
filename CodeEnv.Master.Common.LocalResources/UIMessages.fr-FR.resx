@@ -120,4 +120,10 @@
   <data name="Hello" xml:space="preserve">
     <value>Bonjour in French from LocalResources Project.</value>
   </data>
+  <data name="PauseButtonLabel" xml:space="preserve">
+    <value>PauseFr</value>
+  </data>
+  <data name="ResumeButtonLabel" xml:space="preserve">
+    <value>ResumeFr</value>
+  </data>
 </root>

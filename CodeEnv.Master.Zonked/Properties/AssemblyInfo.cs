@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 // Note: Shared assembly information is specified in SharedAssemblyInfo.cs
 // General Information about an assembly is controlled through the following 
-// set of attributes. Change these attribute values to modify the information
+// set of attributes. Change these attribute tValues to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("CodeEnv.Master.Zonked")]
 

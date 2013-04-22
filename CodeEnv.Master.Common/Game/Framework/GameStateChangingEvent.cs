@@ -5,22 +5,27 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: PauseGameEvent.cs
-// Event containing a PauseGameCommand from GameManager.
+// File: GameStateChangingEvent.cs
+//  Event called when the GameState is about to be changed.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
+
+#define DEBUG_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
 
 namespace CodeEnv.Master.Common {
 
     /// <summary>
-    /// Event containing a PauseGameCommand from GameManager.
+    /// Event called when the GameState is about to be changed.
     /// </summary>
-    public class PauseGameEvent : GameEvent {
+    public class GameStateChangingEvent : AGameEvent {
 
-        public PauseGameCommand PauseCmd { get; private set; }
+        public GameState NewState { get; private set; }
 
-        public PauseGameEvent(PauseGameCommand pauseCmd) {
-            PauseCmd = pauseCmd;
+        public GameStateChangingEvent(object source, GameState newState)
+            : base(source) {
+            NewState = newState;
         }
 
         public override string ToString() {

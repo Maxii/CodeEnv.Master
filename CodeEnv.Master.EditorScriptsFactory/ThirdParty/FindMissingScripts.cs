@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FindMissingScripts.cs
-// Editor extension that adds a MenuItem to search out any missing scripts in the scene.
+// Editor extension that adds a MenuItem to search out any missing scripts in the startScene.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,7 +23,7 @@ using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.Common.Unity;
 
 /// <summary>
-/// Editor extension that adds a MenuItem to search out any missing scripts in the scene.
+/// Editor extension that adds a MenuItem to search out any missing scripts in the startScene.
 /// </summary>
 public class FindMissingScripts : EditorWindow {
 

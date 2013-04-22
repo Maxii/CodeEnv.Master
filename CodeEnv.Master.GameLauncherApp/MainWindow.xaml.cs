@@ -13,6 +13,8 @@
 namespace CodeEnv.Master.GameLauncherApp {
 
     using System;
+    using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
     using System.Threading;
@@ -20,10 +22,6 @@ namespace CodeEnv.Master.GameLauncherApp {
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
     using CodeEnv.Master.Common.Unity;
-    using UnityEngine;
-    using UnityEditor;
-    using System.Collections;
-    using System.Collections.Generic;
 
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -90,6 +88,8 @@ namespace CodeEnv.Master.GameLauncherApp {
         }
 
         private void LaunchUnity(string projectPath) {
+            System.Diagnostics.Debug.WriteLine(String.Format("Current culture of thread is now {0}", Thread.CurrentThread.CurrentUICulture.DisplayName));
+
             ProcessStartInfo startInfo = new ProcessStartInfo();
             // startInfo.UseShellExecute = false;  // required to use Environment Variables
             startInfo.FileName = UnityConstants.UnityPathName;

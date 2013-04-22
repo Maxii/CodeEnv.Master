@@ -5,26 +5,27 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GameLoadedEvent.cs
-// Event indicating a new or saved game has been loaded and is ready to run.
+// File: SceneLevelChangedEvent.cs
+// COMMENT - one line to give a brief idea of what the file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
 namespace CodeEnv.Master.Common {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
 
-    public class GameLoadedEvent : GameEvent {
+    public class SceneLevelChangedEvent : AGameEvent {
 
-        public GameLoadedEvent() { }
+        public SceneLevel Level { get; private set; }
+
+        public SceneLevelChangedEvent(object source, SceneLevel level)
+            : base(source) {
+            Level = level;
+        }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
 
     }
 }

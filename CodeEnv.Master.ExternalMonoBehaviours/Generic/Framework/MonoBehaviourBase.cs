@@ -10,26 +10,34 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LEVEL_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
+
+
 // default namespace
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using UnityEngine;
-using UnityEditor;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.Unity;
+using UnityEngine;
 
-using System.Collections;
-using System.Diagnostics;
-
-[Serializable]
 /// <summary>
 /// Abstract Base class for types that are derived from MonoBehaviour.
 /// NOTE: Unity will never call the 'overrideable' Awake(), Start(), Update(), LateUpdate(), FixedUpdate(), OnGui(), etc. methods when 
 /// there is a higher derived class in the chain. Unity only calls the method (if implemented) of the highest derived class.
 /// </summary>
 public abstract class MonoBehaviourBase : MonoBehaviour {
+
+    private static int instanceCounter = 0;
+    public int InstanceID { get; set; }
+
+    protected void IncrementInstanceCounter() {
+        InstanceID = System.Threading.Interlocked.Increment(ref instanceCounter);
+    }
 
     /// <value>
     ///  The rate at which ToUpdate() returns true. Default is Continuous.
@@ -51,15 +59,17 @@ public abstract class MonoBehaviourBase : MonoBehaviour {
     /// <returns>true on a pace set by the UpdateRate property</returns>
     protected bool ToUpdate() {
         bool toUpdate = false;
-        if (UpdateRate == UpdateFrequency.Continuous) {
-            toUpdate = true;
-        }
-        else if (updateCounter >= (int)UpdateRate) {    // >= in case UpdateRate gets changed after initialization
-            updateCounter = Constants.Zero;
-            toUpdate = true;
-        }
-        else {
-            updateCounter++;
+        if (GameManager.IsGameRunning) {
+            if (UpdateRate == UpdateFrequency.Continuous) {
+                toUpdate = true;
+            }
+            else if (updateCounter >= (int)UpdateRate) {    // >= in case UpdateRate gets changed after initialization
+                updateCounter = Constants.Zero;
+                toUpdate = true;
+            }
+            else {
+                updateCounter++;
+            }
         }
         return toUpdate;
     }
@@ -68,7 +78,7 @@ public abstract class MonoBehaviourBase : MonoBehaviour {
     // Based on an Action Delegate that encapsulates methods with no parameters that return void, aka 'a task'.
 
     /// <summary>
-    /// Invokes the specified method after the specified time delay without using the error-prone method name string.
+    /// Invokes the specified method after the specified time delay without using the Error-prone method name string.
     /// </summary>
     /// <param name="task">The method to invoke encapsulated as an Action delegate. The method must be parameterless and return void.</param>
     /// <param name="time">The time delay in seconds until the method is invoked.</param>
@@ -77,7 +87,7 @@ public abstract class MonoBehaviourBase : MonoBehaviour {
     }
 
     /// <summary>
-    /// Repeatedly invokes the specified method after the specified time delay without using the error-prone method name string. Can only be terminated 
+    /// Repeatedly invokes the specified method after the specified time delay without using the Error-prone method name string. Can only be terminated 
     /// with CancelInvoke() or CancelInvoke(Task).
     /// </summary>
     /// <param name="task">The method to invoke encapsulated as a Action delegate. The method must be parameterless and return void.</param>
@@ -88,7 +98,7 @@ public abstract class MonoBehaviourBase : MonoBehaviour {
     }
 
     /// <summary>
-    /// Invokes the specified method after a random time delay without using the error-prone method name string.
+    /// Invokes the specified method after a random time delay without using the Error-prone method name string.
     /// </summary>
     /// <param name="task">The method to invoke encapsulated as a Action delegate. The method must be parameterless and return void.</param>
     /// <param name="minTime">The minimun amount of delay time.</param>
@@ -99,7 +109,7 @@ public abstract class MonoBehaviourBase : MonoBehaviour {
     }
 
     /// <summary>
-    /// Repeatedly invokes the specified method after a random time delay without using the error-prone method name string. Can only be terminated 
+    /// Repeatedly invokes the specified method after a random time delay without using the Error-prone method name string. Can only be terminated 
     /// with CancelInvoke() or CancelInvoke(Task).
     /// </summary>
     /// <param name="task">The method to invoke encapsulated as a Action delegate. The method must be parameterless and return void.</param>
@@ -207,20 +217,6 @@ public abstract class MonoBehaviourBase : MonoBehaviour {
     public I GetInterfaceComponent<I>() where I : class {
         return GetComponent(typeof(I)) as I;
     }
-
-    //public static List<I> FindObjectsOfInterface<I>() where I : class {
-    //    MonoBehaviour[] monoBehaviours = FindObjectsOfType(typeof(MonoBehaviour)) as MonoBehaviour[];
-    //    List<I> list = new List<I>();
-
-
-    //    foreach (MonoBehaviour behaviour in monoBehaviours) {
-    //        I component = behaviour.GetComponent(typeof(I)) as I; // this use of GetComponent returns warnings
-    //        if (component != null) {
-    //            list.Add(component);
-    //        }
-    //    }
-    //    return list;
-    //}
 
     /// <summary>
     /// Returns a list of all active loaded MonoBehaviour scripts that implement Interface I. It will return no inactive scripts.

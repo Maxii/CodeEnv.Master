@@ -10,16 +10,17 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LEVEL_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
+
+
 // default namespace
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using UnityEngine;
-using UnityEditor;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.Unity;
+using UnityEngine;
 
 /// <summary>
 /// Manages the instantiation and setup of a prefab menu system.
@@ -49,7 +50,7 @@ public class GuiPrefabLinker : MonoBehaviourBase {
 
         UIPanel prefabUIPanel = prefabClone.GetComponentInChildren<UIPanel>();
         Animation prefabWindowBackAnimation = prefabClone.GetComponentInChildren<Animation>();
-        prefabClone.SetActiveRecursively(false);// FIXME change to NGUITools.setActive()?
+        NGUITools.SetActive(prefabClone, true);  //prefabClone.SetActiveRecursively(true);
 
         UIButtonPlayAnimation[] allLaunchButtonAnimations = launchButtonAnimation.gameObject.GetSafeMonoBehaviourComponents<UIButtonPlayAnimation>();
         UIButtonPlayAnimation launchButtonAnimationWithNullTarget = allLaunchButtonAnimations.Single<UIButtonPlayAnimation>(c => c.target == null);

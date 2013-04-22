@@ -20,7 +20,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
@@ -39,12 +39,9 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.XML" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="UnityEditor">
-      <HintPath>$(ProgramFiles)\Unity\Editor\Data\Managed\UnityEditor.dll</HintPath>
-    </Reference>
     <Reference Include="UnityEngine">
       <HintPath>$(ProgramFiles)\Unity\Editor\Data\Managed\UnityEngine.dll</HintPath>
+      <Private>False</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -55,6 +52,8 @@
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Generic\Debug\DynamicObjects.cs" />
+    <Compile Include="Generic\Framework\MonoBehaviourBase.cs" />
+    <Compile Include="Generic\Framework\MonoBehaviourBaseSingleton.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ThirdParty\ScaleRelativeToCamera.cs" />
     <Compile Include="ThirdParty\Note.cs" />
@@ -80,7 +79,6 @@
     <Folder Include="Game\Graphics\" />
     <Folder Include="Game\GUI\" />
     <Folder Include="Generic\Extensions\" />
-    <Folder Include="Generic\Framework\" />
     <Folder Include="Generic\Graphics\" />
     <Folder Include="Generic\IO\" />
     <Folder Include="Generic\Math\" />

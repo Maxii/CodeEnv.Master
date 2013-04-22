@@ -12,16 +12,13 @@
 
 namespace CodeEnv.Master.Common {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using CodeEnv.Master.Common.LocalResources;
 
-    public class GameSpeedChangeEvent : GameEvent {
+    public class GameSpeedChangeEvent : AGameEvent {
 
         public GameClockSpeed GameSpeed { get; private set; }
 
-        public GameSpeedChangeEvent(GameClockSpeed newSpeed) {
+        public GameSpeedChangeEvent(object source, GameClockSpeed newSpeed)
+            : base(source) {
             GameSpeed = newSpeed;
         }
 

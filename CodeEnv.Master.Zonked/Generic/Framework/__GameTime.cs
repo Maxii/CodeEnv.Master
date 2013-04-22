@@ -37,7 +37,7 @@ namespace CodeEnv.Master.Common.Unity {
      */
 
     /// <summary>
-    /// This __GameTime class wraps UnityEngine.RealTime_Unity. All Game time related values should come from
+    /// This __GameTime class wraps UnityEngine.RealTime_Unity. All Game time related tValues should come from
     /// this class. This class also requires that Unity's Time.TimeScale is always = 1.0F.
     /// </summary>
     [Serializable]
@@ -45,11 +45,11 @@ namespace CodeEnv.Master.Common.Unity {
 
         public static GameClockSpeed GameSpeed { get; private set; }
 
-        /// <value>
+        /// <tPrefsValue>
         /// The amount of time in seconds elapsed since the last Frame 
         /// was rendered or zero if the game is paused. Useful for animations
         /// or other work that should stop while paused.
-        /// </value>
+        /// </tPrefsValue>
         public static float DeltaTimeOrPaused {
             get {
                 if (isPaused) {
@@ -61,25 +61,25 @@ namespace CodeEnv.Master.Common.Unity {
             }
         }
 
-        /// <value>
+        /// <tPrefsValue>
         /// The amount of time in seconds elapsed since the last Frame 
         /// was rendered whether the game is paused or not. Useful for 
         /// animations or other work I want to continue even while the game is paused.
-        /// </value>
+        /// </tPrefsValue>
         public static float DeltaTime {
             get { return UnityEngine.Time.deltaTime; }
         }
 
-        /// <value>
+        /// <tPrefsValue>
         /// The real time in seconds since the start of the game.
-        /// </value>
+        /// </tPrefsValue>
         public static float RealTime {
             get { return UnityEngine.Time.realtimeSinceStartup; }
         }
 
-        /// <value>
+        /// <tPrefsValue>
         /// The real time in seconds since the start of the game less time paused.
-        /// </value>
+        /// </tPrefsValue>
         public static float RealTimeLessTimePaused {
             get {
                 float realTimeInCurrentPause = Constants.ZeroF;
@@ -149,7 +149,7 @@ namespace CodeEnv.Master.Common.Unity {
         }
 
         private void SetupEventListeners() {
-            // eventMgr.AddListener<PauseGameEvent>(OnPause);
+            // eventMgr.AddListener<GamePauseStateChangedEvent>(OnPause);
             // eventMgr.AddListener<GameSpeedChangeEvent>(OnGameSpeedChange);
         }
 
@@ -162,26 +162,26 @@ namespace CodeEnv.Master.Common.Unity {
             }
         }
 
-        private void OnPause(PauseGameEvent e) {
-            //Debug.Log("Pause event received. PauseGameCommand = " + e.PauseCmd);
-            switch (e.PauseCmd) {
-                case PauseGameCommand.Pause:
+        private void OnPause(GamePauseStateChangedEvent e) {
+            //Debug.Log("Paused event received. GamePauseState = " + e.PauseState);
+            switch (e.PauseState) {
+                case GamePauseState.Paused:
                     SyncGameClock();    // update the game clock before pausing
                     realTimeCurrentPauseBegan = RealTime;
                     isPaused = true;
                     break;
-                case PauseGameCommand.Resume:
+                case GamePauseState.Resumed:
                     float realTimeInCurrentPause = RealTime - realTimeCurrentPauseBegan;
                     cumRealTimePreviouslyPaused += realTimeInCurrentPause;
                     realTimeCurrentPauseBegan = Constants.ZeroF;
 
-                    // ignore the accumulated time during pause when next GameClockSync is requested
+                    // _ignore the accumulated time during pause when next GameClockSync is requested
                     realTimeAtLastSync = RealTime;
                     isPaused = false;
                     break;
-                case PauseGameCommand.None:
+                case GamePauseState.None:
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(e.PauseCmd));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(e.PauseState));
             }
         }
 
@@ -193,7 +193,7 @@ namespace CodeEnv.Master.Common.Unity {
         private static void SyncGameClock() {
             gameClockAtLastSync += GameSpeed.GetSpeedMultiplier() * (RealTime - realTimeAtLastSync);
             realTimeAtLastSync = RealTime;
-            //Debug.Log("GameClock synced to: " + gameDateTimeAtLastSync);
+            //Debug.Log("GameClock synced to: " + currentDateTime);
         }
 
         void OnDestroy() {
@@ -224,7 +224,7 @@ namespace CodeEnv.Master.Common.Unity {
 
             if (isDisposing) {
                 // free managed resources here including unhooking events
-                eventMgr.RemoveListener<PauseGameEvent>(OnPause);
+                eventMgr.RemoveListener<GamePauseStateChangedEvent>(OnPause);
                 eventMgr.RemoveListener<GameSpeedChangeEvent>(OnGameSpeedChange);
 
             }

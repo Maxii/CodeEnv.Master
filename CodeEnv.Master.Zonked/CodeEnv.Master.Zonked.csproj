@@ -38,7 +38,6 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.XML" />
-    <Reference Include="System.Xml.Linq" />
     <Reference Include="UnityEditor">
       <HintPath>$(ProgramFiles)\Unity\Editor\Data\Managed\UnityEditor.dll</HintPath>
     </Reference>
@@ -55,6 +54,7 @@
     </Compile>
     <Compile Include="Game\Framework\GameClockCommand.cs" />
     <Compile Include="Game\Framework\GameClockEvent.cs" />
+    <Compile Include="Game\Graphics\CameraFacing.cs" />
     <Compile Include="Game\GUI\CameraRollOptionChangedEvent.cs" />
     <Compile Include="Game\GUI\GuiCameraRollOption.cs" />
     <Compile Include="Game\GUI\GuiCheckboxBase.cs" />
@@ -70,18 +70,17 @@
     <Compile Include="Game\GUI\ResetOnFocusOptionChangedEvent.cs" />
     <Compile Include="Game\GUI\ZoomOutOnCursorOptionChangedEvent.cs" />
     <Compile Include="Generic\Debug\FpsReadoutGuiText.cs" />
+    <Compile Include="Generic\Framework\SceneStartupSequenceEvent.cs" />
+    <Compile Include="Generic\Framework\SceneStartupSequencer.cs" />
     <Compile Include="Generic\Framework\__GameTime.cs" />
     <Compile Include="Generic\Graphics\GuiManagerBase.cs" />
+    <Compile Include="Generic\IO\_CameraControl.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\CustomTools\CustomTools.NguiAssemblyGenerator\CustomTools.NguiAssemblyGenerator.csproj">
-      <Project>{f291db11-fc18-437b-be1c-65813bab02a0}</Project>
-      <Name>CustomTools.NguiAssemblyGenerator</Name>
-    </ProjectReference>
     <ProjectReference Include="..\CodeEnv.Master.Common.LocalResources\CodeEnv.Master.Common.LocalResources.csproj">
       <Project>{30988a11-a4f0-4fdc-82d5-41b87ea410be}</Project>
-      <Name>CodeEnv.Master.Common.Resources</Name>
+      <Name>CodeEnv.Master.Common.LocalResources</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common.Unity\CodeEnv.Master.Common.Unity.csproj">
       <Project>{129dcf86-4fc5-4caf-aafe-911efc560e10}</Project>
@@ -91,6 +90,10 @@
       <Project>{1557c03e-56ee-4c70-9bd8-ab637d3191cf}</Project>
       <Name>CodeEnv.Master.Common</Name>
     </ProjectReference>
+    <ProjectReference Include="..\CodeEnv.Master.ExternalMonoBehaviours\CodeEnv.Master.ExternalMonoBehaviours.csproj">
+      <Project>{9c8574a4-64ba-49b1-b66d-7572ecfffcfb}</Project>
+      <Name>CodeEnv.Master.ExternalMonoBehaviours</Name>
+    </ProjectReference>
     <ProjectReference Include="..\CodeEnv.Master.GameScriptsFactory\CodeEnv.Master.GameScriptsFactory.csproj">
       <Project>{84ab84fa-983b-4fb8-bfd9-34d3b93d8000}</Project>
       <Name>CodeEnv.Master.GameScriptsFactory</Name>
@@ -99,9 +102,7 @@
   <ItemGroup>
     <Folder Include="Game\Debug\" />
     <Folder Include="Game\Gameplay\" />
-    <Folder Include="Game\Graphics\" />
     <Folder Include="Generic\Extensions\" />
-    <Folder Include="Generic\IO\" />
     <Folder Include="Generic\Math\" />
     <Folder Include="ThirdParty\" />
   </ItemGroup>

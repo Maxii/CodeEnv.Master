@@ -30,7 +30,7 @@ public class GuiResetOnFocusOption : GuiCheckboxBase {
     protected override void Initialize() {
         base.Initialize();
         checkbox.isChecked = playerPrefsMgr.IsResetOnFocusEnabled;
-        tooltip = "Check this box if you wish the camera to reset when a focus is selected.";
+        tooltip = "Check this box if you wish the camera to reset when a focusTarget is selected.";
     }
 
     protected override void OnCheckboxStateChange(bool state) {

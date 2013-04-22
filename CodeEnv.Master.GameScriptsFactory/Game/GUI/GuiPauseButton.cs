@@ -6,51 +6,75 @@
 // </copyright> 
 // <summary> 
 // File: GuiPauseButton.cs
-// Custom Gui button control for the main User Pause Button.
+// Custom Gui button control for the main User Paused Button.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
+
+#define DEBUG_LEVEL_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
 
 // default namespace
 
 using System;
+using System.Globalization;
+using System.Threading;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using UnityEngine;
 
 /// <summary>
-/// Custom Gui button control for the main User Pause Button.
+/// Custom Gui button control for the main User Paused Button.
 /// </summary>
 public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
 
 #pragma warning disable
     [SerializeField]
-    private string Warning = "Do not change GuiPauseCommand public variable.";
+    private string Warning = "Do not change PauseRequest public variable.";
 #pragma warning restore
 
     private UILabel pauseButtonLabel;
 
-    protected override void Initialize() {
-        base.Initialize();
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
+        AddListeners();
+        tooltip = "Paused or resume the game.";
+        eventMgr.Raise<ElementReadyEvent>(new ElementReadyEvent(this, isReady: false));
+    }
+
+    private void AddListeners() {
+        eventMgr.AddListener<GamePauseStateChangedEvent>(this, OnPauseGame);
+    }
+
+    protected override void InitializeOnStart() {
+        base.InitializeOnStart();
         pauseButtonLabel = button.GetComponentInChildren<UILabel>();
         UpdateButtonLabel();
-        eventMgr.AddListener<PauseGameEvent>(OnPauseGame);
-        tooltip = "Pause or resume the game.";
+        eventMgr.Raise<ElementReadyEvent>(new ElementReadyEvent(this, isReady: true));
     }
 
     // real game pause and resumption events, not just gui pause events which may or may not result in a pause or resumption
-    private void OnPauseGame(PauseGameEvent e) {
-        pauseCommand = e.PauseCmd == PauseGameCommand.Pause ? GuiPauseCommand.UserPause : GuiPauseCommand.UserResume;
+    private void OnPauseGame(GamePauseStateChangedEvent e) {
+        pauseCommand = e.PauseState == GamePauseState.Paused ? PauseRequest.PriorityPause : PauseRequest.PriorityResume;
         UpdateButtonLabel();
     }
 
     protected override void OnButtonClick(GameObject sender) {
-        // toggle the pauseCommand so the base class sends the correct GuiPauseCommand in the GuiPauseEvent
-        pauseCommand = (pauseCommand == GuiPauseCommand.UserPause) ? GuiPauseCommand.UserResume : GuiPauseCommand.UserPause;
+        // toggle the pauseCommand so the base class sends the correct PauseRequest in the GuiPauseRequestEvent
+        pauseCommand = (pauseCommand == PauseRequest.PriorityPause) ? PauseRequest.PriorityResume : PauseRequest.PriorityPause;
         base.OnButtonClick(sender);
     }
 
     private void UpdateButtonLabel() {
-        pauseButtonLabel.text = (pauseCommand == GuiPauseCommand.UserPause) ? UIMessages.ResumeButtonLabel : UIMessages.PauseButtonLabel;
+        pauseButtonLabel.text = (pauseCommand == PauseRequest.PriorityPause) ? UIMessages.ResumeButtonLabel : UIMessages.PauseButtonLabel;
+    }
+
+    private void RemoveListeners() {
+        eventMgr.RemoveListener<GamePauseStateChangedEvent>(this, OnPauseGame);
+    }
+
+    void OnDestroy() {
+        Dispose();
     }
 
     #region IDisposable
@@ -78,12 +102,13 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            eventMgr.RemoveListener<PauseGameEvent>(OnPauseGame);
+            RemoveListeners();
         }
         // free unmanaged resources here
 
         alreadyDisposed = true;
     }
+
 
     // Example method showing check for whether the object has been disposed
     //public void ExampleMethod() {

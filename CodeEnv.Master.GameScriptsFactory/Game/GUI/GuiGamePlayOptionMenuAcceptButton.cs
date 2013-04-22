@@ -10,17 +10,17 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LEVEL_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
+
+
 // default namespace
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEngine;
-using UnityEditor;
+using System.Diagnostics;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
-using CodeEnv.Master.Common.Unity;
+using UnityEngine;
 
 /// <summary>
 /// COMMENT 
@@ -34,38 +34,57 @@ public class GuiGamePlayOptionMenuAcceptButton : GuiMenuAcceptButtonBase {
 
     private GameClockSpeed gameSpeedOnLoad;
 
-    protected override void Initialize() {
-        base.Initialize();
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
         tooltip = "Click to implement Option changes.";
     }
 
-    protected override void OnCheckboxStateChange(bool state) {
-        string checkboxName = UICheckbox.current.name.ToLower();
-        //Debug.Log("Checkbox Named {0} had a state change to {1}.".Inject(checkboxName, state));
-        if (checkboxName.Contains("roll")) {
-            isCameraRollEnabled = state;
-        }
-        else if (checkboxName.Contains("zoom")) {
-            isZoomOutOnCursorEnabled = state;
-        }
-        else if (checkboxName.Contains("focus")) {
-            isResetOnFocusEnabled = state;
-        }
-        else if (checkboxName.Contains("pause")) {
-            isPauseOnLoadEnabled = state;
-        }
+    protected override void CaptureInitializedState() {
+        base.CaptureInitializedState();
+        ValidateState();
     }
 
-    protected override void OnPopupListSelectionChange(string item) {
-        // UIPopupList.current gives the reference to the sender, but there is nothing except names to distinguish them
-        if (Enums<GameClockSpeed>.TryParse(item, true, out gameSpeedOnLoad)) {
-            //Debug.Log("GameClockSpeedOnLoad {0} PopupList change event received by {1}.".Inject(item, typeof(GuiGamePlayOptionMenuAcceptButton).Name));
-            return;
+    protected override void RecordCheckboxState(string checkboxName, bool checkedState) {
+        if (checkboxName.Contains("roll")) {
+            isCameraRollEnabled = checkedState;
+        }
+        else if (checkboxName.Contains("zoom")) {
+            isZoomOutOnCursorEnabled = checkedState;
+        }
+        else if (checkboxName.Contains("reset")) {
+            isResetOnFocusEnabled = checkedState;
+        }
+        else if (checkboxName.Contains("pause")) {
+            isPauseOnLoadEnabled = checkedState;
+        }
+        // more checkboxes here
+    }
+
+    protected override void RecordPopupListState(string selectionName) {
+        GameClockSpeed _gameSpeedOnLoad;
+        if (Enums<GameClockSpeed>.TryParse(selectionName, true, out _gameSpeedOnLoad)) {
+            //UnityEngine.Debug.Log("GameClockSpeedOnLoad recorded as {0}.".Inject(selectionName));
+            gameSpeedOnLoad = _gameSpeedOnLoad;
         }
         // more popupLists here
     }
 
-    protected override void OnSliderValueChange(float value) { }
+    protected override void RecordSliderState(float sliderValue) {
+        // UNDONE
+    }
+
+    protected override void OnCheckboxStateChange(bool state) {
+        base.OnCheckboxStateChange(state);
+    }
+
+    protected override void OnPopupListSelectionChange(string item) {
+        base.OnPopupListSelectionChange(item);
+        ValidateState();
+    }
+
+    protected override void OnSliderValueChange(float value) {
+        base.OnSliderValueChange(value);
+    }
 
     protected override void OnButtonClick(GameObject sender) {
         OptionSettings settings = new OptionSettings();
@@ -74,7 +93,13 @@ public class GuiGamePlayOptionMenuAcceptButton : GuiMenuAcceptButtonBase {
         settings.IsResetOnFocusEnabled = isResetOnFocusEnabled;
         settings.IsZoomOutOnCursorEnabled = isZoomOutOnCursorEnabled;
         settings.GameSpeedOnLoad = gameSpeedOnLoad;
-        eventMgr.Raise<OptionChangeEvent>(new OptionChangeEvent(settings));
+        ValidateState();
+        eventMgr.Raise<OptionChangeEvent>(new OptionChangeEvent(this, settings));
+    }
+
+    [Conditional("UNITY_EDITOR")]
+    private void ValidateState() {
+        D.Assert(gameSpeedOnLoad != GameClockSpeed.None);
     }
 
     public override string ToString() {
