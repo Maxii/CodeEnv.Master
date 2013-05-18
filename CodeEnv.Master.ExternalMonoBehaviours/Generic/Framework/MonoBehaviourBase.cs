@@ -210,7 +210,7 @@ public abstract class MonoBehaviourBase : MonoBehaviour {
     #endregion
 
     /// <summary>
-    /// Like GetComponent&ltT&gt(), this returns the script component that implements Interface I if the game object has one attached, null if it doesn't. 
+    /// Like GetComponent&lt;T&gt;(), this returns the script component that implements Interface I if the game object has one attached, null if it doesn't. 
     /// </summary>
     /// <typeparam name="I">The Interface Type.</typeparam>
     /// <returns>The script component that implements the Interface I.</returns>

@@ -35,7 +35,7 @@ public class GuiResetOnFocusOption : GuiCheckboxBase {
 
     protected override void OnCheckboxStateChange(bool state) {
         //playerPrefsMgr.IsResetOnFocusEnabled = state;
-        //eventMgr.Raise<ResetOnFocusOptionChangedEvent>(new ResetOnFocusOptionChangedEvent(state));
+        //_eventMgr.Raise<ResetOnFocusOptionChangedEvent>(new ResetOnFocusOptionChangedEvent(state));
         System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(0);
         Debug.Log("{0}.{1}() method called.".Inject(GetType(), stackFrame.GetMethod().Name));
     }

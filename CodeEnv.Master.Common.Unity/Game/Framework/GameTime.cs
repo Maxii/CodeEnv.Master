@@ -214,7 +214,7 @@ namespace CodeEnv.Master.Common.Unity {
         }
 
         public void PrepareToBeginNewGame() {
-            D.Log("GameTime.PrepareForWaiting() called.");
+            D.Log("GameTime.PrepareToBeginNewGame() called.");
             EnableClock(false);
             cumTimeInPriorSessions = Constants.ZeroF;
             timeGameBeganInCurrentSession = Constants.ZeroF;

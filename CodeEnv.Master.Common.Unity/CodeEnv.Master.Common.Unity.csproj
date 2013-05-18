@@ -33,6 +33,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>..\..\..\UnityEnv\Support\NGUI\Library\ScriptAssemblies\Assembly-CSharp.dll</HintPath>
+    </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
       <HintPath>..\..\..\UnityEnv\UnityEntry\Library\ScriptAssemblies\Assembly-CSharp-firstpass.dll</HintPath>
       <Private>False</Private>
@@ -42,6 +45,7 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.XML" />
+    <Reference Include="System.Xml.Linq" />
     <Reference Include="UnityEngine">
       <HintPath>$(ProgramFiles)\Unity\Editor\Data\Managed\UnityEngine.dll</HintPath>
       <Private>False</Private>
@@ -54,11 +58,13 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\_Debug\TempGameValues.cs" />
     <Compile Include="Game\Framework\GameTime.cs" />
     <Compile Include="Game\Framework\GameDate.cs" />
     <Compile Include="Game\Framework\GameManager.cs" />
     <Compile Include="Game\Framework\IGameDate.cs" />
     <Compile Include="Game\GUI\FocusSelectedEvent.cs" />
+    <Compile Include="Generic\_Debug\UnityDebugConstants.cs" />
     <Compile Include="Generic\Framework\GameEventManager.cs" />
     <Compile Include="Generic\Math\RandomExtended.cs" />
     <Compile Include="Generic\IO\KeyboardAxis.cs" />
@@ -68,10 +74,10 @@
     <Compile Include="Generic\Extensions\LayerMaskExtensions.cs" />
     <Compile Include="Generic\Math\Mathfx.cs" />
     <Compile Include="Generic\IO\PlayerPrefsManager.cs" />
+    <Compile Include="Generic\IO\NguiMouseButton.cs" />
+    <Compile Include="Generic\IO\NguiGameInput.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Generic\Extensions\TransformExtensions.cs" />
-    <Compile Include="Game\Debug\TempGameValues.cs" />
-    <Compile Include="Generic\Debug\UnityDebugConstants.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">

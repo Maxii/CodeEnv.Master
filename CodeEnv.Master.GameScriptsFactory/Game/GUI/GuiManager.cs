@@ -52,7 +52,7 @@ public class GuiManager : MonoBehaviourBaseSingleton<GuiManager>, IDisposable {
         }
         if (!DebugSettings.EnableFpsReadout) {
             GameObject fpsReadoutParentGo = gameObject.GetSafeMonoBehaviourComponentInChildren<FpsReadout>().transform.parent.gameObject;
-            fpsReadoutParentGo.active = false;
+            fpsReadoutParentGo.SetActive(false);
         }
     }
 
@@ -118,7 +118,7 @@ public class GuiManager : MonoBehaviourBaseSingleton<GuiManager>, IDisposable {
     /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
     /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
     /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+    /// <arg name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</arg>
     protected virtual void Dispose(bool isDisposing) {
         // Allows Dispose(isDisposing) to be called more than once
         if (alreadyDisposed) {

@@ -244,7 +244,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
     /// enabled state of the camera so it doesn't move when I use the mouse outside of 
     /// the editor window.
     /// </summary>
-    /// <param item="isFocus">if set to <c>true</c> [is focusTarget].</param>
+    /// <arg item="isFocus">if set to <c>true</c> [is focusTarget].</arg>
     void OnApplicationFocus(bool isFocus) {
         //Debug.Log("Camera OnApplicationFocus(" + isFocus + ") called.");
         if (_ignore) {
@@ -258,7 +258,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
     /// Called when the application is minimized/resumed, this method controls the enabled
     /// state of the camera so it doesn't move when I use the mouse to minimize Unity.
     /// </summary>
-    /// <param item="isPausing">if set to <c>true</c> [is toPause].</param>
+    /// <arg item="isPausing">if set to <c>true</c> [is toPause].</arg>
     void OnApplicationPause(bool isPaused) {
         //Debug.Log("Camera OnApplicationPause(" + isPaused + ") called.");
         enabled = !isPaused;
@@ -380,7 +380,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
     /// <summary>
     /// Sets the focusTarget for the camera.
     /// </summary>
-    /// <param item="focusTarget">The transform of the GO to focusTarget on.</param>
+    /// <arg item="focusTarget">The transform of the GO to focusTarget on.</arg>
     private void SetFocus(Transform focus) {
         focusTarget = focus;
         ChangeState(CameraState.Focused);
@@ -389,7 +389,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
     /// <summary>
     /// Changes the CameraState.
     /// </summary>
-    /// <param item="newState">The new state.</param>
+    /// <arg item="newState">The new state.</arg>
     /// <exception cref="System.NotImplementedException"></exception>
     private void ChangeState(CameraState newState) {
         Arguments.ValidateNotNull(target);
@@ -434,7 +434,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
         _xRotation = Vector3.Angle(Vector3.right, cameraTransform.right); // same as 0.0F
         _yRotation = Vector3.Angle(Vector3.up, cameraTransform.up);   // same as 0.0F
         _zRotation = Vector3.Angle(Vector3.forward, cameraTransform.forward); // same as 0.0F
-        //Debug.Log("ResetToWorldSpace called. Worldspace Camera Rotation = " + cameraTransform.rotation);
+        //Debug.Log("ResetToWorldSpace called. Worldspace Camera Rotation = " + _transform.rotation);
         //Debug.Log("FollowTarget Position = " + followTarget.position);
     }
 
@@ -683,7 +683,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
             //_distanceFromTarget = Mathf.Lerp(_distanceFromTarget, _requestedDistanceFromTarget, positionSmoothingDampener * timeSinceLastUpdate);
             //Debug.Log("Actual DistanceFromTarget = " + _distanceFromTarget);
             Vector3 proposedPosition = target.position - (targetDirection * _distanceFromTarget);
-            //Debug.Log("Resulting Camera Position = " + cameraTransform.position);
+            //Debug.Log("Resulting Camera Position = " + _transform.position);
 
             cameraTransform.position = ValidatePosition(proposedPosition);
 
@@ -694,7 +694,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
     /// <summary>
     /// Validates the proposed new position of the camera to be within the universe.
     /// </summary>
-    /// <param item="newPosition">The new position.</param>
+    /// <arg item="newPosition">The new position.</arg>
     /// <returns>if validated, returns newPosition. If not, return the current position.</returns>
     private Vector3 ValidatePosition(Vector3 newPosition) {
         if ((newPosition - TempGameValues.UniverseOrigin).magnitude >= universeRadius) {
@@ -707,7 +707,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
     /// <summary>
     /// Manages the display of the cursor during certain movement actions.
     /// </summary>
-    /// <param item="_toLockCursor">if set to <c>true</c> [to lock cursor].</param>
+    /// <arg item="_toLockCursor">if set to <c>true</c> [to lock cursor].</arg>
     private void ManageCursorDisplay(bool toLockCursor) {
         if (Input.GetKeyDown(UnityConstants.Key_Escape)) {
             Screen.lockCursor = false;
@@ -752,7 +752,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
     /// <summary>
     /// Places the dummy followTarget at the edge of the universe in the direction provided.
     /// </summary>
-    /// <param item="direction">The direction.</param>
+    /// <arg item="direction">The direction.</arg>
     private void PlaceDummyTargetAtUniverseEdgeInDirection(Vector3 direction) {
         if (direction.magnitude == 0F) {
             Debug.LogWarning("Camera Direction Vector to place DummyTarget has no magnitude: " + direction);
@@ -793,10 +793,10 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
     /// <summary>
     /// Calculates a new rotation derived from the current rotation and the provided EulerAngle arguments.
     /// </summary>
-    /// <param item="xDeg">The x deg.</param>
-    /// <param item="yDeg">The y deg.</param>
-    /// <param item="zDeg">The z deg.</param>
-    /// <param item="adjustedTime">The  elapsed time to use with the Slerp function. Can be adjusted for effect.</param>
+    /// <arg item="xDeg">The x deg.</arg>
+    /// <arg item="yDeg">The y deg.</arg>
+    /// <arg item="zDeg">The z deg.</arg>
+    /// <arg item="adjustedTime">The  elapsed time to use with the Slerp function. Can be adjusted for effect.</arg>
     /// <returns></returns>
     private Quaternion CalculateCameraRotation(float xDeg, float yDeg, float zDeg, float adjustedTime) {
         // keep rotation tValues exact as a substitute for the unreliable accuracy that comes from reading EulerAngles from the Quaternion
@@ -834,7 +834,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
     /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
     /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
     /// </summary>
-    /// <param item="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+    /// <arg item="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</arg>
     protected virtual void Dispose(bool isDisposing) {
         // Allows Dispose(isDisposing) to be called more than once
         if (alreadyDisposed) {

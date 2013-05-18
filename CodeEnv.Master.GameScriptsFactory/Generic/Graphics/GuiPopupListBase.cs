@@ -62,7 +62,7 @@ public abstract class GuiPopupListBase : GuiTooltip {
     /// <summary>
     /// Abstract method called when the popupList selection is changed.
     /// </summary>
-    /// <param name="item">The name of the selection.</param>
+    /// <arg name="item">The name of the selection.</arg>
     protected abstract void OnPopupListSelectionChange(string item);
 
     // IDisposable Note: No reason to remove Ngui event currentListeners OnDestroy() as the EventListener or

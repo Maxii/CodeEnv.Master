@@ -51,7 +51,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Generic\Debug\DynamicObjects.cs" />
+    <Compile Include="Generic\_Debug\DynamicObjects.cs" />
     <Compile Include="Generic\Framework\MonoBehaviourBase.cs" />
     <Compile Include="Generic\Framework\MonoBehaviourBaseSingleton.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -73,11 +73,11 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Game\Debug\" />
     <Folder Include="Game\Framework\" />
     <Folder Include="Game\Gameplay\" />
     <Folder Include="Game\Graphics\" />
     <Folder Include="Game\GUI\" />
+    <Folder Include="Game\_Debug\" />
     <Folder Include="Generic\Extensions\" />
     <Folder Include="Generic\Graphics\" />
     <Folder Include="Generic\IO\" />

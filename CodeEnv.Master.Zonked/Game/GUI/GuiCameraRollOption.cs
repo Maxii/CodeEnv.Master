@@ -35,7 +35,7 @@ public class GuiCameraRollOption : GuiCheckboxBase {
 
     protected override void OnCheckboxStateChange(bool state) {
         //playerPrefsMgr.IsCameraRollEnabled = state;
-        //eventMgr.Raise<CameraRollOptionChangedEvent>(new CameraRollOptionChangedEvent(state));
+        //_eventMgr.Raise<CameraRollOptionChangedEvent>(new CameraRollOptionChangedEvent(state));
         System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(0);
         Debug.Log("{0}.{1}() method called.".Inject(GetType(), stackFrame.GetMethod().Name));
     }

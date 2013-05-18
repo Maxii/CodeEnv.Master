@@ -56,7 +56,7 @@ public class BillboardManager : MonoBehaviourBase {
     }
 
     private void PrepareLabel() {
-        string itemName = billboardTransform.parent.name;
+        string itemName = billboardTransform.parent.parent.name;    // FIXME get rid of heirarchy dependancy
         UILabel itemLabel = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
         if (itemLabel != null) {
             itemLabel.text = itemName;

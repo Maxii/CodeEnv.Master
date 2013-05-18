@@ -35,7 +35,7 @@ public class GuiZoomOutOnCursorOption : GuiCheckboxBase {
 
     protected override void OnCheckboxStateChange(bool state) {
         //playerPrefsMgr.IsZoomOutOnCursorEnabled = state;
-        //eventMgr.Raise<ZoomOutOnCursorOptionChangedEvent>(new ZoomOutOnCursorOptionChangedEvent(state));
+        //_eventMgr.Raise<ZoomOutOnCursorOptionChangedEvent>(new ZoomOutOnCursorOptionChangedEvent(state));
         System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(0);
         Debug.Log("{0}.{1}() method called.".Inject(GetType(), stackFrame.GetMethod().Name));
     }

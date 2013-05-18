@@ -38,17 +38,17 @@ namespace CodeEnv.Master.Common {
         public static float GetUniverseRadius(this UniverseSize universeSize) {
             switch (universeSize) {
                 case UniverseSize.Tiny:
-                    return 250F;
+                    return 2500F;
                 case UniverseSize.Small:
-                    return 500F;
+                    return 2500F;
                 case UniverseSize.Normal:
-                    return 1000F;
+                    return 2500F;
                 case UniverseSize.Large:
-                    return 2000F;
+                    return 3000F;
                 case UniverseSize.Enormous:
-                    return 5000F;
+                    return 4000F;
                 case UniverseSize.Gigantic:
-                    return 10000F;
+                    return 5000F;
                 case UniverseSize.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(universeSize));

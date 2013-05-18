@@ -5,22 +5,26 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SceneLevel.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// File: NguiMouseButton.cs
+// Mouse Buttons as defined by Ngui's Event System.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-namespace CodeEnv.Master.Common {
+#define DEBUG_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
 
+namespace CodeEnv.Master.Common.Unity {
 
-    public enum SceneLevel {
+    /// <summary>
+    /// Mouse Buttons as defined by Ngui's Event System.
+    /// </summary>
+    public enum NguiMouseButton {
 
-        None = 0,
-
-        IntroScene = 1,
-
-        GameScene = 2
-
+        Left = -1,
+        Right = -2,
+        Middle = -3,
+        None = -4
     }
 }
 

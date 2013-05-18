@@ -37,7 +37,7 @@ public class GuiSavedGamesPopupList : GuiPopupListBase {
     private void PopulateList() {
         var savedGames = LevelSerializer.SavedGames[LevelSerializer.PlayerName];
         if (savedGames.Count > 0) {
-            popupList.gameObject.active = true;
+            popupList.gameObject.SetActive(true);
             popupList.items.Clear();
             popupList.textLabel.text = "Saved Games";
             foreach (var game in savedGames) {
@@ -46,7 +46,7 @@ public class GuiSavedGamesPopupList : GuiPopupListBase {
         }
         else {
             popupList.textLabel.text = "No Saved Games";
-            popupList.gameObject.active = false;
+            popupList.gameObject.SetActive(false);
         }
     }
 

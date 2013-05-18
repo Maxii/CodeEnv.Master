@@ -69,7 +69,6 @@
     <Compile Include="Game\GUI\GuiZoomOutOnCursorOption.cs" />
     <Compile Include="Game\GUI\ResetOnFocusOptionChangedEvent.cs" />
     <Compile Include="Game\GUI\ZoomOutOnCursorOptionChangedEvent.cs" />
-    <Compile Include="Generic\Debug\FpsReadoutGuiText.cs" />
     <Compile Include="Generic\Framework\SceneStartupSequenceEvent.cs" />
     <Compile Include="Generic\Framework\SceneStartupSequencer.cs" />
     <Compile Include="Generic\Framework\__GameTime.cs" />
@@ -100,10 +99,11 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Game\Debug\" />
     <Folder Include="Game\Gameplay\" />
+    <Folder Include="Game\_Debug\" />
     <Folder Include="Generic\Extensions\" />
     <Folder Include="Generic\Math\" />
+    <Folder Include="Generic\_Debug\" />
     <Folder Include="ThirdParty\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

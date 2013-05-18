@@ -48,7 +48,7 @@ public class Loader : MonoBehaviourBase, IDisposable, IInstanceIdentity {
     //*******************************************************************
 
     void Awake() {
-        Debug.Log("Loader Awake() called.");
+        //Debug.Log("Loader Awake() called.");
         IncrementInstanceCounter();
         if (TryDestroyExtraCopies()) {
             return;
@@ -88,7 +88,7 @@ public class Loader : MonoBehaviourBase, IDisposable, IInstanceIdentity {
 
     private void AddListeners() {
         eventMgr.AddListener<ElementReadyEvent>(this, OnElementReady);
-        //eventMgr.AddListener<GameStateChangedEvent>(this, OnGameStateChange);
+        //_eventMgr.AddListener<GameStateChangedEvent>(this, OnGameStateChange);
     }
 
     //private void OnGameStateChange(GameStateChangedEvent e) {
@@ -104,12 +104,17 @@ public class Loader : MonoBehaviourBase, IDisposable, IInstanceIdentity {
                 Debug.LogError("UnreadyElements already has {0} registered!".Inject(source.name));
             }
             unreadyElements.Add(source);
+            //Debug.Log("{0} has registered with Loader as unready.".Inject(source.name));
         }
         else {
             if (!unreadyElements.Contains(source)) {
                 Debug.LogError("UnreadyElements has no record of {0}!".Inject(source.name));
             }
-            unreadyElements.Remove(source);
+            else {
+                unreadyElements.Remove(source);
+                // Debug.Log("{0} is now ready to Run.".Inject(source.name));
+            }
+
         }
     }
 
@@ -165,7 +170,7 @@ public class Loader : MonoBehaviourBase, IDisposable, IInstanceIdentity {
     private void RemoveListeners() {
         if (eventMgr != null) {
             eventMgr.RemoveListener<ElementReadyEvent>(this, OnElementReady);
-            //eventMgr.RemoveListener<GameStateChangedEvent>(this, OnGameStateChange);
+            //_eventMgr.RemoveListener<GameStateChangedEvent>(this, OnGameStateChange);
         }
     }
 
@@ -185,7 +190,7 @@ public class Loader : MonoBehaviourBase, IDisposable, IInstanceIdentity {
     /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
     /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
     /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+    /// <arg name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</arg>
     protected virtual void Dispose(bool isDisposing) {
         // Allows Dispose(isDisposing) to be called more than once
         if (alreadyDisposed) {

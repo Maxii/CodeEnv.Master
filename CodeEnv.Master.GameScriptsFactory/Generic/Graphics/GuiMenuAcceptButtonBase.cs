@@ -52,7 +52,7 @@ public abstract class GuiMenuAcceptButtonBase : GuiButtonBase, IDisposable {
     }
 
     private void AddListeners() {
-        //eventMgr.AddListener<FirstUpdateEvent>(this, OnFirstUpdate);
+        //_eventMgr.AddListener<FirstUpdateEvent>(this, OnFirstUpdate);
     }
 
     //private void OnFirstUpdate(FirstUpdateEvent e) {
@@ -97,7 +97,7 @@ public abstract class GuiMenuAcceptButtonBase : GuiButtonBase, IDisposable {
     /// Called on a checkbox state change, this base class implementation records
     /// the change via the RecordXXXState methods implemented by the derived class.
     /// </summary>
-    /// <param name="state">if set to <c>true</c> [state].</param>
+    /// <arg name="state">if set to <c>true</c> [state].</arg>
     protected virtual void OnCheckboxStateChange(bool state) {
         string checkboxName = UICheckbox.current.name.ToLower();
         //Debug.Log("Checkbox Named {0} had a state change to {1}.", checkboxName, state);
@@ -108,7 +108,7 @@ public abstract class GuiMenuAcceptButtonBase : GuiButtonBase, IDisposable {
     /// Called on a popupList state change, this base class implementation records
     /// the change via the RecordXXXState methods implemented by the derived class.
     /// </summary>
-    /// <param name="item">The item.</param>
+    /// <arg name="item">The item.</arg>
     protected virtual void OnPopupListSelectionChange(string item) {
         RecordPopupListState(item);
     }
@@ -117,7 +117,7 @@ public abstract class GuiMenuAcceptButtonBase : GuiButtonBase, IDisposable {
     /// Called on a slider state change, this base class implementation records
     /// the change via the RecordXXXState methods implemented by the derived class.
     /// </summary>
-    /// <param name="value">The value.</param>
+    /// <arg name="value">The value.</arg>
     protected virtual void OnSliderValueChange(float value) {
         RecordSliderState(value);
     }
@@ -125,21 +125,21 @@ public abstract class GuiMenuAcceptButtonBase : GuiButtonBase, IDisposable {
     /// <summary>
     /// Derived classes implement this abstract method, recording the state of the checkbox that has the provided name.
     /// </summary>
-    /// <param name="checkboxName">Name of the checkbox in lower case.</param>
-    /// <param name="checkedState">if set to <c>true</c> [checked state].</param>
+    /// <arg name="checkboxName">Name of the checkbox in lower case.</arg>
+    /// <arg name="checkedState">if set to <c>true</c> [checked state].</arg>
     protected abstract void RecordCheckboxState(string checkboxName, bool checkedState);
 
     /// <summary>
     /// Derived classes implement this abstract method, recording the state of the popup list that uses the provided selectionName.
     /// </summary>
-    /// <param name="selectionName">Name of the selectionName.</param>
+    /// <arg name="selectionName">Name of the selectionName.</arg>
     protected abstract void RecordPopupListState(string selectionName);
 
     /// <summary>
     /// Derived classes implement this abstract method, recording the state of the slider.     
     /// UNDONE sliderValue insufficient to select which slider
     /// </summary>
-    /// <param name="sliderValue">The slider value.</param>
+    /// <arg name="sliderValue">The slider value.</arg>
     protected abstract void RecordSliderState(float sliderValue);
 
     // IDisposable Note: No reason to remove Ngui event currentListeners OnDestroy() as the EventListener or
@@ -151,7 +151,7 @@ public abstract class GuiMenuAcceptButtonBase : GuiButtonBase, IDisposable {
     }
 
     private void RemoveListeners() {
-        //eventMgr.RemoveListener<FirstUpdateEvent>(this, OnFirstUpdate);
+        //_eventMgr.RemoveListener<FirstUpdateEvent>(this, OnFirstUpdate);
     }
 
     #region IDisposable
@@ -170,7 +170,7 @@ public abstract class GuiMenuAcceptButtonBase : GuiButtonBase, IDisposable {
     /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
     /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
     /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+    /// <arg name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</arg>
     protected virtual void Dispose(bool isDisposing) {
         // Allows Dispose(isDisposing) to be called more than once
         if (alreadyDisposed) {

@@ -38,8 +38,7 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
         AddListeners();
-        tooltip = "Paused or resume the game.";
-        eventMgr.Raise<ElementReadyEvent>(new ElementReadyEvent(this, isReady: false));
+        tooltip = "Pause or resume the game.";
     }
 
     private void AddListeners() {
@@ -48,6 +47,7 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
 
     protected override void InitializeOnStart() {
         base.InitializeOnStart();
+        eventMgr.Raise<ElementReadyEvent>(new ElementReadyEvent(this, isReady: false));
         pauseButtonLabel = button.GetComponentInChildren<UILabel>();
         UpdateButtonLabel();
         eventMgr.Raise<ElementReadyEvent>(new ElementReadyEvent(this, isReady: true));
@@ -93,7 +93,7 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
     /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
     /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
     /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+    /// <arg name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</arg>
     protected virtual void Dispose(bool isDisposing) {
         // Allows Dispose(isDisposing) to be called more than once
         if (alreadyDisposed) {
