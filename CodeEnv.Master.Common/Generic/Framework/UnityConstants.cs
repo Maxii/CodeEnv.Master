@@ -17,12 +17,12 @@ namespace CodeEnv.Master.Common {
 
     public static class UnityConstants {
 
-        public static string UnityPathName {
+        public static string UnityInstallPath {
             get {
                 using (RegistryKey registryKey = Registry.CurrentUser.OpenSubKey(@"Software\Unity Technologies\Unity Editor 3.x\Location")) {
                     //string[] values = registryKey.GetValueNames();    // empty, no name, only default value
                     string path = (string)registryKey.GetValue(null);   // gets the default value
-                    // System.Diagnostics.Debug.WriteLine("UnityPathName = " + @path);
+                    // System.Diagnostics.Debug.WriteLine("UnityInstallPath = " + @path);
                     return @path;
                 }
             }
@@ -31,6 +31,8 @@ namespace CodeEnv.Master.Common {
         public static string UnityEntryProjectDir {
             get { return Environment.ExpandEnvironmentVariables(@"%UnityEnvDir%UnityEntry\"); }
         }
+
+        public const string DataLibraryDir = @".\Assets\DataLibrary\";
 
         public const string MouseAxisName_Horizontal = "Mouse X";
         public const string MouseAxisName_Vertical = "Mouse Y";

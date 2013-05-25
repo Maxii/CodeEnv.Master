@@ -47,7 +47,7 @@ public class DynamicObjects : MonoBehaviour {
     public static DynamicObjects Instance {
         get {
             if (instance == null) {
-                // Instance is required for the first time, so look for it
+                // values is required for the first time, so look for it
                 instance = GameObject.FindObjectOfType(typeof(DynamicObjects)) as DynamicObjects;
                 if (instance == null) {
                     // no instance created yet, so create one
@@ -73,7 +73,7 @@ public class DynamicObjects : MonoBehaviour {
     }
 
     void Awake() {
-        // If no other MonoBehaviour has requested Instance in an Awake() call executing
+        // If no other MonoBehaviour has requested values in an Awake() call executing
         // before this one, then we are it. There is no reason to search for an object as we must be attached to it.
         if (instance == null) {
             instance = this;
@@ -81,7 +81,7 @@ public class DynamicObjects : MonoBehaviour {
         }
     }
 
-    // Make sure Instance isn't referenced anymore
+    // Make sure values isn't referenced anymore
     void OnApplicationQuit() {
         instance = null;
     }

@@ -26,7 +26,7 @@ using UnityEngine;
 /// attaching any Management folder child objects in the new startScene to this incoming folder, then destroys
 /// the Management folder that was already present in the new startScene.
 /// </summary>
-public class ManagementObjects : MonoBehaviourBaseSingleton<ManagementObjects>, IDisposable {
+public class ManagementObjects : AMonoBehaviourBaseSingleton<ManagementObjects>, IDisposable {
 
     /// <summary>
     /// Gets the ManagementObjects folder.
@@ -71,7 +71,7 @@ public class ManagementObjects : MonoBehaviourBaseSingleton<ManagementObjects>, 
 
     private void TransferChildrenThenDestroy() {
         Debug.Log("{0} has {1} children.".Inject(this.name, transform.childCount));
-        Transform[] transforms = gameObject.GetComponentsInChildren<Transform>(includeInactive: true);   // includes the parent transform
+        Transform[] transforms = gameObject.GetComponentsInChildren<Transform>(includeInactive: true);   // includes the parent t
         foreach (Transform t in transforms) {
             if (t != transform) {
                 t.parent = Instance.transform;
@@ -107,7 +107,7 @@ public class ManagementObjects : MonoBehaviourBaseSingleton<ManagementObjects>, 
         }
     }
 
-    // Make sure Instance isn't referenced anymore
+    // Make sure values isn't referenced anymore
     protected override void OnApplicationQuit() {
         instance = null;
     }

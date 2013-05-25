@@ -23,28 +23,23 @@ using UnityEngine;
 /// Manages a Systems Ecliptic plane.
 /// </summary>
 [RequireComponent(typeof(BoxCollider))]
-public class EclipticPlaneManager : MonoBehaviourBase, ICameraTarget {
-
-    #region ICameraTarget Members
-
-    private float minimumCameraApproachDistance;
-    public float MinimumCameraApproachDistance {
-        get {
-            if (minimumCameraApproachDistance == Constants.ZeroF) {
-                minimumCameraApproachDistance = cameraApproachMinimum;
-            }
-            return minimumCameraApproachDistance;
-        }
-    }
-
-    #endregion
-
-    [SerializeField]
-    private float cameraApproachMinimum = 10F;
+public class EclipticPlaneManager : AMonoBehaviourBase, ICameraTargetable {
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region ICameraTargetable Members
+
+    [SerializeField]
+    private float minimumCameraViewingDistance = 10F;
+    public float MinimumCameraViewingDistance {
+        get {
+            return minimumCameraViewingDistance;
+        }
+    }
+
+    #endregion
 
 }
 

@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- Be careful where comments are placed! -->
+<EnumValues EnumTypeName="GameClockSpeed">
+  <Boolean>
+    <Setting>
+      <PropertyName></PropertyName>
+      <PropertyValue>false</PropertyValue>
+    </Setting>
+  </Boolean>
+
+  <Integer>
+    <Setting>
+      <PropertyName></PropertyName>
+      <PropertyValue>0</PropertyValue>
+    </Setting>
+  </Integer>
+
+  <Float>
+    <Setting>
+      <PropertyName>SlowestMultiplier</PropertyName>
+      <PropertyValue>0.25</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>SlowMultiplier</PropertyName>
+      <PropertyValue>0.5</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>NormalMultiplier</PropertyName>
+      <PropertyValue>1.0</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>FastMultiplier</PropertyName>
+      <PropertyValue>2.0</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>FastestMultiplier</PropertyName>
+      <PropertyValue>4.0</PropertyValue>
+    </Setting>
+  </Float>
+</EnumValues>

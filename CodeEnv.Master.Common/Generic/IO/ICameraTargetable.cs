@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ICameraTarget.cs
-// Marker Interface indicating that the Camera can use this object as a target of camera movement.
+// File: ICameraTargetable.cs
+// Interface indicating that the Camera can use this object as a target for camera movement.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,11 +18,11 @@ namespace CodeEnv.Master.Common {
 
 
     /// <summary>
-    /// Interface indicating that the Camera can use this object as a target of camera movement.
+    /// Interface indicating that the Camera can use this object as a target for camera movement.
     /// </summary>
-    public interface ICameraTarget {
+    public interface ICameraTargetable {
 
-        float MinimumCameraApproachDistance { get; }
+        float MinimumCameraViewingDistance { get; }
 
     }
 }

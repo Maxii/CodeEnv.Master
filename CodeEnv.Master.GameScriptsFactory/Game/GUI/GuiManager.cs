@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// Overall GuiManager that handles enabling/disabling Gui elements.
 /// </summary>
-public class GuiManager : MonoBehaviourBaseSingleton<GuiManager>, IDisposable {
+public class GuiManager : AMonoBehaviourBaseSingleton<GuiManager>, IDisposable {
 
     private Stack<IList<UIPanel>> stackedPanelsToRestore = new Stack<IList<UIPanel>>();
     private UIPanel uiRootPanel;
@@ -46,11 +46,12 @@ public class GuiManager : MonoBehaviourBaseSingleton<GuiManager>, IDisposable {
 
     //[System.Diagnostics.Conditional("UNITY_EDITOR")]
     private void CheckDebugSettings() {
-        if (DebugSettings.DisableGui) {
+        DebugSettings debugSettings = DebugSettings.Instance;
+        if (debugSettings.DisableGui) {
             Camera guiCamera = gameObject.GetSafeMonoBehaviourComponentInChildren<UICamera>().camera;
             guiCamera.enabled = false;
         }
-        if (!DebugSettings.EnableFpsReadout) {
+        if (!debugSettings.EnableFpsReadout) {
             GameObject fpsReadoutParentGo = gameObject.GetSafeMonoBehaviourComponentInChildren<FpsReadout>().transform.parent.gameObject;
             fpsReadoutParentGo.SetActive(false);
         }

@@ -204,15 +204,15 @@ namespace CodeEnv.Master.Common.Unity {
                 ChangeState(GameState.Restoring);
             }
             else {
-                PrepareForWaiting();
+                ResetConditionsForGameStartup();
                 gameTime.PrepareToBeginNewGame();
                 ChangeState(GameState.Waiting);
             }
         }
 
         public void OnDeserialized() {  // Assumes PrepareToResumeSavedGame can only be called AFTER OnLevelWasLoaded
-            D.Log("GameManager.PrepareToResumeSavedGame() called.");
-            PrepareForWaiting();
+            D.Log("GameManager.OnDeserialized() called.");
+            ResetConditionsForGameStartup();
             gameTime.PrepareToResumeSavedGame();
             ChangeState(GameState.Waiting);
         }
@@ -351,7 +351,13 @@ namespace CodeEnv.Master.Common.Unity {
             eventMgr.Raise<GameStateChangedEvent>(new GameStateChangedEvent(this, newState));
         }
 
-        private void PrepareForWaiting() {
+        /// <summary>
+        /// Resets any conditions required for normal game startup. For instance, IsGamePaused
+        /// is normally false while setting up the first game. This may or maynot be the
+        /// current state of IsgamePaused given the numerous ways one can initiate the startup
+        /// of a game instance.
+        /// </summary>
+        private void ResetConditionsForGameStartup() {
             if (IsGamePaused) {
                 ProcessPauseRequest(PauseRequest.PriorityResume);
             }

@@ -10,13 +10,14 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LEVEL_LOG
+#define DEBUG_LOG
 #define DEBUG_LEVEL_WARN
 #define DEBUG_LEVEL_ERROR
 
 // default namespace
 
 using System;
+using System.Text;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.Unity;
 using UnityEngine;
@@ -25,32 +26,7 @@ using UnityEngine;
 /// Manages the spherical globes that are a part of Cellestial Bodies. 
 /// </summary>
 [Serializable, RequireComponent(typeof(SphereCollider), typeof(MeshRenderer))]
-public class GlobeManager : MonoBehaviourBase, IFocus {
-
-    private float minimumCameraApproachDistance;
-    public float MinimumCameraApproachDistance {
-        get {
-            if (minimumCameraApproachDistance == Constants.ZeroF) {
-                minimumCameraApproachDistance = _collider.radius * minimumCameraApproachFactor;
-            }
-            return minimumCameraApproachDistance;
-        }
-    }
-
-    private float optimalCameraApproachDistance;
-    public float OptimalCameraApproachDistance {
-        get {
-            if (optimalCameraApproachDistance == Constants.ZeroF) {
-                optimalCameraApproachDistance = _collider.radius * optimalCameraApproachFactor;
-            }
-            return optimalCameraApproachDistance;
-        }
-    }
-
-    [SerializeField]
-    private float minimumCameraApproachFactor = 4.0F;
-    [SerializeField]
-    private float optimalCameraApproachFactor = 10.0F;
+public class GlobeManager : AMonoBehaviourBase, ICameraFocusable {
 
     [SerializeField]
     private GlobeMaterialAnimator primaryMaterialAnimator = new GlobeMaterialAnimator { xScrollSpeed = 0.015F, yScrollSpeed = 0.015F };
@@ -63,7 +39,10 @@ public class GlobeManager : MonoBehaviourBase, IFocus {
     private SphereCollider _collider;
     private Material _primaryMaterial;
     private Material _optionalSecondMaterial;
-    private Color _startingColor;
+    //private Color _startingColor;
+
+    private StringBuilder hudMsg;
+    private IGuiCursorHud _cursorHud;
 
     void Awake() {
         _eventMgr = GameEventManager.Instance;
@@ -75,10 +54,19 @@ public class GlobeManager : MonoBehaviourBase, IFocus {
     void Start() {
         Renderer globeRenderer = renderer;
         _primaryMaterial = globeRenderer.material;
-        _startingColor = _primaryMaterial.color;
+        //_startingColor = _primaryMaterial.color;
         if (globeRenderer.materials.Length > 1) {
             _optionalSecondMaterial = globeRenderer.materials[1];
         }
+        _cursorHud = GuiCursorHud.Instance;
+        hudMsg = ConstructMsgForHud();
+    }
+
+    private StringBuilder ConstructMsgForHud() {
+        StringBuilder sb = new StringBuilder();
+        sb.AppendLine("GlobeManager to Cursor HUD.");
+        sb.AppendFormat("My name is {0}.", _transform.parent.parent.name);
+        return sb;
     }
 
     void Update() {
@@ -129,18 +117,22 @@ public class GlobeManager : MonoBehaviourBase, IFocus {
 
     void OnHover(bool isOver) {
         if (isOver) {
-            Debug.Log("GlobeManager.OnHover(true) called.");
-            _primaryMaterial.color = Color.black;    // IMPROVE need better highlighting
+            //Debug.Log("GlobeManager.OnHover(true) called.");
+            //_primaryMaterial.color = Color.black;    // IMPROVE need better highlighting
+            //_eventMgr.Raise<CursorHudTextEvent>(new CursorHudTextEvent(this, hudMsg));
+            _cursorHud.Set(hudMsg.ToString());
         }
         else {
-            Debug.Log("GlobeManager.OnHover(false) called.");
-            _primaryMaterial.color = _startingColor;    // IMPROVE need better highlighting
+            //Debug.Log("GlobeManager.OnHover(false) called.");
+            //_primaryMaterial.color = _startingColor;    // IMPROVE need better highlighting
+            //_eventMgr.Raise<CursorHudTextEvent>(new CursorHudTextEvent(this, emptyGlobeInfo));
+            _cursorHud.Clear();
         }
     }
     #endregion
 
     void OnBecameVisible() {
-        //Debug.Log("A GlobeManager has become visible.");
+        //Debug.Log("A GlobeManager has become isTargetVisibleThisFrame.");
         EnableAllScripts(true);
     }
 
@@ -177,6 +169,41 @@ public class GlobeManager : MonoBehaviourBase, IFocus {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region ICameraFocusable Members
+
+    [SerializeField]
+    private float optimalCameraViewingDistanceMultiplier = 10.0F;
+
+    private float _optimalCameraViewingDistance;
+    public float OptimalCameraViewingDistance {
+        get {
+            if (_optimalCameraViewingDistance == Constants.ZeroF) {
+                _optimalCameraViewingDistance = _collider.radius * optimalCameraViewingDistanceMultiplier;
+            }
+            return _optimalCameraViewingDistance;
+        }
+    }
+
+    #endregion
+
+    #region ICameraTargetable Members
+
+    [SerializeField]
+    private float minimumCameraViewingDistanceMultiplier = 4.0F;
+
+    private float _minimumCameraViewingDistance;
+    public float MinimumCameraViewingDistance {
+        get {
+            if (_minimumCameraViewingDistance == Constants.ZeroF) {
+                _minimumCameraViewingDistance = _collider.radius * minimumCameraViewingDistanceMultiplier;
+            }
+            return _minimumCameraViewingDistance;
+        }
+    }
+
+    #endregion
+
 
 }
 

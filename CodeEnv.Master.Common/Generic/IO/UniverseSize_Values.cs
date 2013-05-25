@@ -5,100 +5,101 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: DebugSettings.cs
-// Parses DebugSettings.xml used to provide externalized values to DebugSettings.cs Properties.
+// File: UniverseSize_Values.cs
+// Parses UniverseSize.xml used to provide externalized values for the UniverseSize enum.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LOG
 #define DEBUG_LEVEL_WARN
 #define DEBUG_LEVEL_ERROR
-#define DEBUG_LOG
 
-using System.Xml;
 namespace CodeEnv.Master.Common {
 
+    using System;
+
     /// <summary>
-    /// Parses DebugSettings.xml used to provide externalized values to DebugSettings.cs Properties.
+    /// Parses UniverseSize.xml used to provide externalized values for the UniverseSize enum.
     /// </summary>
-    public sealed class DebugSettings : AValues<DebugSettings> {
+    public sealed class UniverseSize_Values : AEnumValues<UniverseSize_Values> {
 
-        protected override string DocumentName {
-            get { return "DebugSettings"; }
+        /// <summary>
+        /// The type of the enum being supported by this class.
+        /// </summary>
+        protected override Type EnumType {
+            get {
+                return typeof(UniverseSize);
+            }
         }
 
-        private bool _enableFpsReadout;
-        public bool EnableFpsReadout {
+        private float _tinyRadius;
+        public float TinyRadius {
             get {
                 if (!isPropertyValuesInitialized) {
                     InitializePropertyValues();
                 }
-                return _enableFpsReadout;
+                return _tinyRadius;
             }
-            set { _enableFpsReadout = value; }
+            set { _tinyRadius = value; }
         }
 
-        private bool _unlockAllItems;
-        public bool UnlockAllItems {
+        private float _smallRadius;
+        public float SmallRadius {
             get {
                 if (!isPropertyValuesInitialized) {
                     InitializePropertyValues();
                 }
-                return _unlockAllItems;
+                return _smallRadius;
             }
-            set { _unlockAllItems = value; }
+            set { _smallRadius = value; }
         }
 
-        private bool _disableEnemies;
-        public bool DisableEnemies {
+        private float _normalRadius;
+        public float NormalRadius {
             get {
                 if (!isPropertyValuesInitialized) {
                     InitializePropertyValues();
                 }
-                return _disableEnemies;
+                return _normalRadius;
             }
-            set { _disableEnemies = value; }
+            set { _normalRadius = value; }
         }
 
-        private bool _disableGui;
-        public bool DisableGui {
+        private float _largeRadius;
+        public float LargeRadius {
             get {
                 if (!isPropertyValuesInitialized) {
                     InitializePropertyValues();
                 }
-                return _disableGui;
+                return _largeRadius;
             }
-            set { _disableGui = value; }
+            set { _largeRadius = value; }
         }
 
-        private bool _makePlayerInvincible;
-        public bool MakePlayerInvincible {
+        private float _enormousRadius;
+        public float EnormousRadius {
             get {
                 if (!isPropertyValuesInitialized) {
                     InitializePropertyValues();
                 }
-                return _makePlayerInvincible;
+                return _enormousRadius;
             }
-            set { _makePlayerInvincible = value; }
+            set { _enormousRadius = value; }
         }
 
-        private bool _disableAllGameplay;
-        public bool DisableAllGameplay {
+        private float _giganticRadius;
+        public float GiganticRadius {
             get {
                 if (!isPropertyValuesInitialized) {
                     InitializePropertyValues();
                 }
-                return _disableAllGameplay;
+                return _giganticRadius;
             }
-            set { _disableAllGameplay = value; }
+            set { _giganticRadius = value; }
         }
 
-        private DebugSettings() {
+        private UniverseSize_Values() {
             Initialize();
-        }
-
-        protected override bool ValidateDocument(XmlDocument doc) {
-            // TODO
-            return true;
         }
 
         public override string ToString() {

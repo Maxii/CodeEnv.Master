@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GuiFollowerLabel.cs
-// A label that follows a designated GameObject target.
+// A label that follows a designated GameObject currentTarget.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -27,20 +27,20 @@ using CodeEnv.Master.Common.Unity;
 // Warning: Unused and untested. guiCamera is intended to be the Ngui 2D camera.
 
 /// <summary>
-/// A label that follows a designated GameObject target.
+/// A label that follows a designated GameObject currentTarget.
 /// </summary>
 [Obsolete]
-public class GuiFollowerLabel : MonoBehaviourBase {
+public class GuiFollowerLabel : AMonoBehaviourBase {
 
-    // TODO position label on the game object by creating an attachment point
+    // TODO _location label on the game object by creating an attachment point
 
     private Camera mainCamera;
     private Camera guiCamera;
 
     [SerializeField]
     private GameObject followTarget;  // the GameObject the label is to follow
-    private Transform _transform;   // cached transform of the GameObject holding this script
-    private UILabel _label; // cached transform of the label itself. 
+    private Transform _transform;   // cached t of the GameObject holding this script
+    private UILabel _label; // cached t of the label itself. 
 
     public string Text {
         get { return _label.text; }
@@ -58,8 +58,8 @@ public class GuiFollowerLabel : MonoBehaviourBase {
     }
 
     //public Vector3 FontSize {
-    //    get { return _label.transform.localScale; }
-    //    set { _label.transform.localScale = value; }
+    //    get { return _label.t.localScale; }
+    //    set { _label.t.localScale = value; }
     //}
 
     /// <summary>
@@ -93,7 +93,7 @@ public class GuiFollowerLabel : MonoBehaviourBase {
 
         Vector3 position = mainCamera.WorldToViewportPoint(followTarget.transform.position);
         position = guiCamera.ViewportToWorldPoint(position);
-        //position.z = 0.0f;  // keep this hover label within the clip range of the 2D camera
+        //_location.z = 0.0f;  // keep this hover label within the clip range of the 2D camera
         _transform.position = position;
     }
 

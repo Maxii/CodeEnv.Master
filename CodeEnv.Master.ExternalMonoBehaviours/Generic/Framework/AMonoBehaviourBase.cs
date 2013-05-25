@@ -5,15 +5,10 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: MonoBehaviourBase.cs
+// File: AMonoBehaviourBase.cs
 // Abstract Base class for types that are derived from MonoBehaviour.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
-
-#define DEBUG_LEVEL_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
-
 
 // default namespace
 
@@ -30,7 +25,7 @@ using UnityEngine;
 /// NOTE: Unity will never call the 'overrideable' Awake(), Start(), Update(), LateUpdate(), FixedUpdate(), OnGui(), etc. methods when 
 /// there is a higher derived class in the chain. Unity only calls the method (if implemented) of the highest derived class.
 /// </summary>
-public abstract class MonoBehaviourBase : MonoBehaviour {
+public abstract class AMonoBehaviourBase : MonoBehaviour {
 
     private static int instanceCounter = 0;
     public int InstanceID { get; set; }
@@ -219,6 +214,15 @@ public abstract class MonoBehaviourBase : MonoBehaviour {
     }
 
     /// <summary>
+    /// Untested. Like GetComponents&lt;T&gt;(), this returns the script components that implement Interface I if the game object has one or more attached, empty if not. 
+    /// </summary>
+    /// <typeparam name="I">The Type of Interface.</typeparam>
+    /// <returns></returns>
+    public I[] GetInterfaceComponents<I>() where I : class {
+        return ConvertToArray<I>(GetComponents(typeof(I)));
+    }
+
+    /// <summary>
     /// Returns a list of all active loaded MonoBehaviour scripts that implement Interface I. It will return no inactive scripts.
     /// Please note that this function is very slow.
     /// </summary>
@@ -236,6 +240,19 @@ public abstract class MonoBehaviourBase : MonoBehaviour {
             }
         }
         return list;
+    }
+
+    /// <summary>
+    /// Converts a list of type T to an array.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="list">The list.</param>
+    /// <returns>An array of type T.</returns>
+    public static T[] ConvertToArray<T>(IList list) {
+        T[] result = new T[list.Count];
+        list.CopyTo(result, 0);
+        return result;
+
     }
 
     /// <summary>

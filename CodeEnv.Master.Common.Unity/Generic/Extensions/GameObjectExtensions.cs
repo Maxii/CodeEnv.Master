@@ -10,20 +10,15 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LEVEL_LOG
-//#define DEBUG_LEVEL_WARN
+#define DEBUG_LOG
+#define DEBUG_LEVEL_WARN
 #define DEBUG_LEVEL_ERROR
-//
 
 namespace CodeEnv.Master.Common.Unity {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using UnityEngine;
-    using CodeEnv.Master.Common.LocalResources;
     using CodeEnv.Master.Common;
+    using CodeEnv.Master.Common.LocalResources;
+    using UnityEngine;
 
     /// <summary>
     /// TODO 
@@ -35,7 +30,7 @@ namespace CodeEnv.Master.Common.Unity {
         /// Logs a warning if the component cannot be found.
         /// </summary>
         /// <typeparam name="T">Must be a MonoBehaviour.</typeparam>
-        /// <param name="go">The GameObject obstensibly containing the Component.</param>
+        /// <param name="t">The GameObject obstensibly containing the Component.</param>
         /// <returns>The component of type T or null if not found.</returns>
         public static T GetSafeMonoBehaviourComponent<T>(this GameObject go) where T : MonoBehaviour {
             T component = go.GetComponent<T>();
@@ -50,7 +45,7 @@ namespace CodeEnv.Master.Common.Unity {
         /// active MonoBehaviours are returned. Logs a warning if a component cannot be found.
         /// </summary>
         /// <typeparam name="T">Must be a MonoBehaviour.</typeparam>
-        /// <param name="go">The GameObject obstensibly containing the MonoBehaviour Components.</param>
+        /// <param name="t">The GameObject obstensibly containing the MonoBehaviour Components.</param>
         /// <returns>An array of components of type T. Can be empty.</returns>
         public static T[] GetSafeMonoBehaviourComponents<T>(this GameObject go) where T : MonoBehaviour {
             T[] components = go.GetComponents<T>();
@@ -65,7 +60,7 @@ namespace CodeEnv.Master.Common.Unity {
         /// Logs a warning if the component cannot be found.
         /// </summary>
         /// <typeparam name="T">Must be a MonoBehaviour.</typeparam>
-        /// <param name="go">The GameObject obstensibly containing the MonoBehaviour Component.</param>
+        /// <param name="t">The GameObject obstensibly containing the MonoBehaviour Component.</param>
         /// <returns>The component of type T or null if not found.</returns>
         public static T GetSafeMonoBehaviourComponentInChildren<T>(this GameObject go) where T : MonoBehaviour {
             T component = go.GetComponentInChildren<T>();
@@ -80,7 +75,7 @@ namespace CodeEnv.Master.Common.Unity {
         /// Only active MonoBehaviours are returned. Logs a warning if a component cannot be found.
         /// </summary>
         /// <typeparam name="T">Must be a MonoBehaviour.</typeparam>
-        /// <param name="go">The GameObject obstensibly containing the MonoBehaviour Components.</param>
+        /// <param name="t">The GameObject obstensibly containing the MonoBehaviour Components.</param>
         /// <returns>An array of components of type T. Can be empty.</returns>
         public static T[] GetSafeMonoBehaviourComponentsInChildren<T>(this GameObject go, bool includeInactive = false) where T : MonoBehaviour {
             T[] components = go.GetComponentsInChildren<T>(includeInactive);
@@ -88,6 +83,26 @@ namespace CodeEnv.Master.Common.Unity {
                 D.Warn(ErrorMessages.ComponentNotFound, typeof(T), go);
             }
             return components;
+        }
+
+        /// <summary>
+        /// Gets the first interface of type I found in the gameobject's components.
+        /// </summary>
+        /// <typeparam name="I">The Interface type.</typeparam>
+        /// <param name="t">The game object</param>
+        /// <returns>The class of type I found, if any. Can be null.</returns>
+        public static I GetInterface<I>(this GameObject go) where I : class {
+            return go.GetComponent(typeof(I)) as I;
+        }
+
+        /// <summary>
+        /// Gets the first interface of type I found in the gameobject's components or its children.
+        /// </summary>
+        /// <typeparam name="I">The Interface type.</typeparam>
+        /// <param name="t">The game object</param>
+        /// <returns>The class of type I found, if any. Can be null.</returns>
+        public static I GetInterfaceInChildren<I>(this GameObject go) where I : class {
+            return go.GetComponentInChildren(typeof(I)) as I;
         }
 
     }

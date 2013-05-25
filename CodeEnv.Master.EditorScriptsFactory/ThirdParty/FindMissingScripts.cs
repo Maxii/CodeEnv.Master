@@ -57,7 +57,7 @@ public class FindMissingScripts : EditorWindow {
             components_count++;
             if (components[i] == null) {
                 missing_count++;
-                Debug.Log(g.name + " has an empty script attached in position: " + i, g);
+                Debug.Log(g.name + " has an empty script attached in _location: " + i, g);
             }
         }
         // Now recurse through each child GO (if there are any):

@@ -96,8 +96,8 @@ public class GameClockGuiManager : GuiManagerBase<GameClockGuiManager> {
         int numberOfSliderSteps = speeds.Length;
         guiElements.gameSpeedSlider.numberOfSteps = numberOfSliderSteps;
 
-        //var sortedSpeeds = from s in speeds orderby s.GetSpeedMultiplier() select s;   // using Linq Query syntax
-        var sortedSpeeds = speeds.OrderBy(s => s.GetSpeedMultiplier());   // using IEnumerable extension methods and lamba
+        //var sortedSpeeds = from s in speeds orderby s.SpeedMultiplier() select s;   // using Linq Query syntax
+        var sortedSpeeds = speeds.OrderBy(s => s.SpeedMultiplier());   // using IEnumerable extension methods and lamba
         speedsOrderedByRisingValue = sortedSpeeds.ToArray<GameClockSpeed>();
         orderedSliderStepValues = MyNguiUtilities.GenerateOrderedSliderStepValues(numberOfSliderSteps);
 
@@ -110,7 +110,7 @@ public class GameClockGuiManager : GuiManagerBase<GameClockGuiManager> {
     }
 
     private void RefreshGameSpeedReadout(GameClockSpeed clockSpeed) {
-        guiElements.gameSpeedReadout.text = CommonTerms.MultiplySign + clockSpeed.GetSpeedMultiplier().ToString();
+        guiElements.gameSpeedReadout.text = CommonTerms.MultiplySign + clockSpeed.SpeedMultiplier().ToString();
     }
 
     private void OnGameSpeedSliderChange(float gameSpeedSliderValue) {

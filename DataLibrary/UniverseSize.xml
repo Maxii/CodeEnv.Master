@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- Be careful where comments are placed! -->
+<EnumValues EnumTypeName="UniverseSize">
+  <Boolean>
+    <Setting>
+      <PropertyName></PropertyName>
+      <PropertyValue>false</PropertyValue>
+    </Setting>
+  </Boolean>
+
+  <Integer>
+    <Setting>
+      <PropertyName></PropertyName>
+      <PropertyValue>0</PropertyValue>
+    </Setting>
+  </Integer>
+
+  <Float>
+    <Setting>
+      <PropertyName>TinyRadius</PropertyName>
+      <PropertyValue>5000</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>SmallRadius</PropertyName>
+      <PropertyValue>5000</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>NormalRadius</PropertyName>
+      <PropertyValue>5000</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>LargeRadius</PropertyName>
+      <PropertyValue>15000</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>EnormousRadius</PropertyName>
+      <PropertyValue>25000</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>GiganticRadius</PropertyName>
+      <PropertyValue>40000</PropertyValue>
+    </Setting>
+  </Float>
+</EnumValues>

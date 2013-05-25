@@ -28,7 +28,7 @@ using UnityEngine;
 /// needs to be immediately after MonoGameManager and Loader in Unity's Script Execution Order.
 /// </summary>
 [Obsolete]
-public class SceneStartupSequencer : MonoBehaviourBase, IInstanceIdentity {
+public class SceneStartupSequencer : AMonoBehaviourBase, IInstanceIdentity {
 
     private GameEventManager eventMgr;
     private bool isFirstUpdate = true;

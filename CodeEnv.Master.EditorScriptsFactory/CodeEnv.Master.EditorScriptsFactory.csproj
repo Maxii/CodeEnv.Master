@@ -39,6 +39,7 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.XML" />
+    <Reference Include="System.Xml.Linq" />
     <Reference Include="UnityEditor">
       <HintPath>$(ProgramFiles)\Unity\Editor\Data\Managed\UnityEditor.dll</HintPath>
       <Private>False</Private>
@@ -55,6 +56,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\BoxColliderToFit.cs" />
     <Compile Include="Generic\NoteEditor.cs" />
     <Compile Include="ThirdParty\FindMissingScripts.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -75,10 +77,6 @@
     <ProjectReference Include="..\CodeEnv.Master.ExternalMonoBehaviours\CodeEnv.Master.ExternalMonoBehaviours.csproj">
       <Project>{9c8574a4-64ba-49b1-b66d-7572ecfffcfb}</Project>
       <Name>CodeEnv.Master.ExternalMonoBehaviours</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\CodeEnv.Master.GameScriptsFactory\CodeEnv.Master.GameScriptsFactory.csproj">
-      <Project>{84ab84fa-983b-4fb8-bfd9-34d3b93d8000}</Project>
-      <Name>CodeEnv.Master.GameScriptsFactory</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

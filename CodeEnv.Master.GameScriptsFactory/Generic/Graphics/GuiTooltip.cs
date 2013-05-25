@@ -24,7 +24,7 @@ using UnityEngine;
 /// instantiated for just Tooltip functionality but requires a Collider.
 /// </summary>
 [RequireComponent(typeof(Collider))]
-public class GuiTooltip : MonoBehaviourBase {
+public class GuiTooltip : AMonoBehaviourBase {
 
     public string tooltip = string.Empty;
 

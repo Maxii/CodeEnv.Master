@@ -30,7 +30,7 @@ using UnityEngine;
 ///should be done by GameManager. The purpose of this class is to call GameManager.
 /// </summary>
 //[SerializeAll] This is redundant as this Object already has a StoreInformation script on it. It causes duplication of referenced SIngletons when saving
-public class MonoGameManager : MonoBehaviourBaseSingleton<MonoGameManager>, IDisposable, IInstanceIdentity {
+public class MonoGameManager : AMonoBehaviourBaseSingleton<MonoGameManager>, IDisposable, IInstanceIdentity {
 
     private GameManager gameMgr;
     private GameEventManager eventMgr;
@@ -117,7 +117,7 @@ public class MonoGameManager : MonoBehaviourBaseSingleton<MonoGameManager>, IDis
     #endregion
 
     void OnEnable() {
-        // Reqd due to bug in script execution order. Scripts with an OnEnable() method will always be first
+        // TODO - Fixed as of Unity 4.0. Now to test... Reqd due to bug in script execution order. Scripts with an OnEnable() method will always be first
         // in execution order, effectively ignoring execution order project settings. As _CameraControl uses OnEnable(), it 
         // always was called first. Placing this empty method here makes script execution order settings effective.
     }

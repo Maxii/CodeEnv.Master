@@ -191,7 +191,7 @@ namespace CodeEnv.Master.Common.Unity {
         /// sync the date when a pause or speed change occurs as they don't have any use for the date.
         /// </summary>
         private static void SyncGameClock() {
-            gameClockAtLastSync += GameSpeed.GetSpeedMultiplier() * (RealTime - realTimeAtLastSync);
+            gameClockAtLastSync += GameSpeed.SpeedMultiplier() * (RealTime - realTimeAtLastSync);
             realTimeAtLastSync = RealTime;
             //Debug.Log("GameClock synced to: " + currentDateTime);
         }

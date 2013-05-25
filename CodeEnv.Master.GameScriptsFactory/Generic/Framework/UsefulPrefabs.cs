@@ -27,12 +27,12 @@ using UnityEngine;
 /// clone of the Prefab in the startScene. As such, they must be Instantiated before use.
 /// </remarks>
 /// </summary>
-public class UsefulPrefabs : MonoBehaviourBase, IInstanceIdentity {
+public class UsefulPrefabs : AMonoBehaviourBase, IInstanceIdentity {
 
     public static UsefulPrefabs currentInstance;
 
     //*******************************************************************
-    // Prefabs you want to keep between scenes go here and
+    // Prefabs you want to keep between scenes t here and
     // can be accessed by UsefulPrefabs.currentInstance.variableName
     //*******************************************************************
     public Light flareLight;

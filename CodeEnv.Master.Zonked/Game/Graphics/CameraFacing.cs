@@ -35,7 +35,7 @@ namespace CodeEnv.Master.Common.Unity {
         }
 
         public void UpdateFacing() {
-            // Rotates the billboard transform provided so its forward aligns with that of the provided camera's transform, ie. the direction the camera is looking.
+            // Rotates the billboard t provided so its forward aligns with that of the provided camera's t, ie. the direction the camera is looking.
             // In effect, by adopting the camera's forward direction, the billboard is pointing at the camera's focal plane, not at the camera. 
             // It is the camera's focal plane whose image is projected onto the screen so that is what must be 'looked at'.
             Vector3 targetPos = billboardTransform.position + cameraTransform.rotation * (reverseFacing ? Vector3.forward : Vector3.back);

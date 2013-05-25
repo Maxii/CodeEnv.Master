@@ -92,7 +92,7 @@ namespace CodeEnv.Master.GameLauncherApp {
 
             ProcessStartInfo startInfo = new ProcessStartInfo();
             // startInfo.UseShellExecute = false;  // required to use Environment Variables
-            startInfo.FileName = UnityConstants.UnityPathName;
+            startInfo.FileName = UnityConstants.UnityInstallPath;
             startInfo.Arguments = "-projectPath " + projectPath;   // -batchmode is headless, aka no display
             //startInfo.WorkingDirectory = "";    
             startInfo.CreateNoWindow = true;    // no console flashes

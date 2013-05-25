@@ -30,10 +30,10 @@ using UnityEngine;
 /// 
 /// NOTE: No reason that this class needs to be serializable as it has no state that I need to restore when loading a saved game.
 /// The camera will always start back up looking at the initial planet of the player with no rotation in world space. The nested classes
-/// are serializable so that their settings are visible in the inspector. Otherwise, they also don't need to be serializable.
+/// are serializable so that their settings are isTargetVisibleThisFrame in the inspector. Otherwise, they also don't need to be serializable.
 /// </summary>
 [SerializeAll] //This is redundant as this Object already has a StoreInformation script on it. It causes duplication of referenced SIngletons when saving
-public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDisposable, IInstanceIdentity {
+public class _CameraControl : AMonoBehaviourBaseSingleton<_CameraControl>, IDisposable, IInstanceIdentity {
 
     // Focused Zooming: When focused, top and bottom Edge zooming and arrow key zooming cause camera movement in and out from the focused object that is centered on the screen. 
     // ScrollWheel zooming normally does the same if the cursor is pointed at the focused object. If the cursor is pointed somewhere else, scrolling IN moves toward the cursor resulting 
@@ -102,7 +102,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
     // static so it is available to nested classes
     public static float universeRadius;
 
-    // Values held outside LateUpdate() so they retain the last mouseInputValue that was set 
+    // AValues held outside LateUpdate() so they retain the last mouseInputValue that was set 
     // when the movement instruction that was setting it is no longer being called
     public float positionSmoothingDampener = 4.0F;
     public float rotationSmoothingDampener = 4.0F;
@@ -152,7 +152,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
         //if (LevelSerializer.IsDeserializing) { return; }
         eventMgr = GameEventManager.Instance;
         playerPrefsMgr = PlayerPrefsManager.Instance;
-        cameraTransform = transform;    // cache it! transform is actually GetComponent<Transform>()
+        cameraTransform = transform;    // cache it! t is actually GetComponent<Transform>()
         AddListeners();
         eventMgr.Raise<ElementReadyEvent>(new ElementReadyEvent(this, isReady: false));
     }
@@ -304,7 +304,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
         CreateUniverseEdge();
         CreateAndPositionDummyTarget();    // do it here as the camera is the only user of the object
 
-        // UNDONE whether starting or continuing saved game, camera position should be focused on the player's starting planet, no rotation
+        // UNDONE whether starting or continuing saved game, camera _location should be focused on the player's starting planet, no rotation
         ResetToWorldspace();
 
         focusTarget = null;
@@ -380,7 +380,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
     /// <summary>
     /// Sets the focusTarget for the camera.
     /// </summary>
-    /// <arg item="focusTarget">The transform of the GO to focusTarget on.</arg>
+    /// <arg item="focusTarget">The t of the GO to focusTarget on.</arg>
     private void SetFocus(Transform focus) {
         focusTarget = focus;
         ChangeState(CameraState.Focused);
@@ -435,7 +435,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
         _yRotation = Vector3.Angle(Vector3.up, cameraTransform.up);   // same as 0.0F
         _zRotation = Vector3.Angle(Vector3.forward, cameraTransform.forward); // same as 0.0F
         //Debug.Log("ResetToWorldSpace called. Worldspace Camera Rotation = " + _transform.rotation);
-        //Debug.Log("FollowTarget Position = " + followTarget.position);
+        //Debug.Log("FollowTarget location = " + followTarget._location);
     }
 
     void Update() {
@@ -472,17 +472,17 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
                         if (GameInput.IsVerticalMouseMovement(out mouseInputValue)) {
                             _yRotation -= mouseInputValue * dragFocusOrbit.sensitivity * timeSinceLastUpdate;
                         }
-                        //rotationSmoothingDampener = dragFocusOrbit.dampener;
+                        //_cameraRotationDampener = dragFocusOrbit.dampener;
                     }
                     if (edgeFocusOrbit.IsActivated()) {
                         float xMousePosition = Input.mousePosition.x;
                         if (xMousePosition <= settings.activeScreenEdge) {
                             _xRotation -= edgeFocusOrbit.sensitivity * timeSinceLastUpdate;
-                            //rotationSmoothingDampener = edgeFocusOrbit.dampener;
+                            //_cameraRotationDampener = edgeFocusOrbit.dampener;
                         }
                         else if (xMousePosition >= Screen.width - settings.activeScreenEdge) {
                             _xRotation += edgeFocusOrbit.sensitivity * timeSinceLastUpdate;
-                            //rotationSmoothingDampener = edgeFocusOrbit.dampener;
+                            //_cameraRotationDampener = edgeFocusOrbit.dampener;
                         }
                     }
                     if (dragFocusRoll.IsActivated()) {
@@ -490,7 +490,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
                         if (GameInput.IsHorizontalMouseMovement(out mouseInputValue)) {
                             _zRotation -= mouseInputValue * dragFocusRoll.sensitivity * timeSinceLastUpdate;
                         }
-                        //rotationSmoothingDampener = dragFocusRoll.dampener;
+                        //_cameraRotationDampener = dragFocusRoll.dampener;
                     }
                     if (scrollFocusZoom.IsActivated()) {
                         if (GameInput.IsScrollWheelMovement(out mouseInputValue)) {
@@ -505,8 +505,8 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
                             }
                             float positionAccelerationFactor = Mathf.Clamp(Mathf.Abs(_requestedDistanceFromTarget), 0F, settings.MaxSpeedGoverner);
                             _requestedDistanceFromTarget -= mouseInputValue * positionAccelerationFactor * scrollFocusZoom.sensitivity * scrollFocusZoom.TranslationSpeedNormalizer * timeSinceLastUpdate;
-                            //positionSmoothingDampener = scrollFocusZoom.dampener;
-                            //Debug.Log("MaxSpeedGoverner = {0}, mouseInputValue = {1}".Inject(settings.MaxSpeedGoverner, mouseInputValue));
+                            //_cameraPositionDampener = scrollFocusZoom.dampener;
+                            //Debug.Log("MaxSpeedGovernor = {0}, mouseInputValue = {1}".Inject(settings.MaxSpeedGovernor, mouseInputValue));
                             //Debug.Log("positionAccelerationFactor = {0}, _requestedDistanceFromTarget = {1}".Inject(positionAccelerationFactor, _requestedDistanceFromTarget));
                         }
                     }
@@ -515,18 +515,18 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
                         if (yMousePosition <= settings.activeScreenEdge) {
                             float positionAccelerationFactor = Mathf.Clamp(Mathf.Abs(_requestedDistanceFromTarget), 0F, settings.MaxSpeedGoverner);
                             _requestedDistanceFromTarget += positionAccelerationFactor * edgeFocusZoom.sensitivity * edgeFocusZoom.TranslationSpeedNormalizer * timeSinceLastUpdate;
-                            //positionSmoothingDampener = edgeFocusZoom.dampener;
+                            //_cameraPositionDampener = edgeFocusZoom.dampener;
                         }
                         else if (yMousePosition >= Screen.height - settings.activeScreenEdge) {
                             float positionAccelerationFactor = Mathf.Clamp(Mathf.Abs(_requestedDistanceFromTarget), 0F, settings.MaxSpeedGoverner);
                             _requestedDistanceFromTarget -= positionAccelerationFactor * edgeFocusZoom.sensitivity * edgeFocusZoom.TranslationSpeedNormalizer * timeSinceLastUpdate;
-                            //positionSmoothingDampener = edgeFocusZoom.dampener;
+                            //_cameraPositionDampener = edgeFocusZoom.dampener;
                         }
                     }
                     if (keyFocusZoom.IsActivated()) {
                         float positionAccelerationFactor = Mathf.Clamp(Mathf.Abs(_requestedDistanceFromTarget), 0F, settings.MaxSpeedGoverner);
                         _requestedDistanceFromTarget -= Input.GetAxis(keyboardAxesNames[(int)keyFocusZoom.keyboardAxis]) * positionAccelerationFactor * keyFocusZoom.TranslationSpeedNormalizer * keyFocusZoom.sensitivity;
-                        //positionSmoothingDampener = keyFocusZoom.dampener;
+                        //_cameraPositionDampener = keyFocusZoom.dampener;
                     }
                     if (dragFocusZoom.IsActivated()) {
                         toLockCursor = true;
@@ -535,10 +535,10 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
                             float positionAccelerationFactor = Mathf.Clamp(Mathf.Abs(_requestedDistanceFromTarget), 0F, settings.MaxSpeedGoverner);
                             _requestedDistanceFromTarget -= mouseInputValue * positionAccelerationFactor * dragFocusZoom.sensitivity * dragFocusZoom.TranslationSpeedNormalizer * timeSinceLastUpdate;
                         }
-                        //positionSmoothingDampener = dragFocusZoom.dampener;
+                        //_cameraPositionDampener = dragFocusZoom.dampener;
                     }
 
-                    // transform.forward is the camera's current definition of 'forward', ie. WorldSpace's absolute forward adjusted by the camera's rotation (Vector.forward * cameraRotation )   
+                    // t.forward is the camera's current definition of 'forward', ie. WorldSpace's absolute forward adjusted by the camera's rotation (Vector.forward * cameraRotation )   
                     // this is the key that keeps the camera pointed at the followTarget when focused
                     if (targetDirection != cameraTransform.forward) {
                         targetDirection = Vector3.Lerp(targetDirection, cameraTransform.forward, rotationSmoothingDampener * timeSinceLastUpdate);
@@ -551,11 +551,11 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
                         float xMousePosition = Input.mousePosition.x;
                         if (xMousePosition <= settings.activeScreenEdge) {
                             _xRotation -= edgeFreePan.sensitivity * timeSinceLastUpdate;
-                            //rotationSmoothingDampener = edgeFreePan.dampener;
+                            //_cameraRotationDampener = edgeFreePan.dampener;
                         }
                         else if (xMousePosition >= Screen.width - settings.activeScreenEdge) {
                             _xRotation += edgeFreePan.sensitivity * timeSinceLastUpdate;
-                            //rotationSmoothingDampener = edgeFreePan.dampener;
+                            //_cameraRotationDampener = edgeFreePan.dampener;
                         }
                     }
                     if (dragFreeTruck.IsActivated()) {
@@ -564,7 +564,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
                             PlaceDummyTargetAtUniverseEdgeInDirection(cameraTransform.right);
                             _requestedDistanceFromTarget -= mouseInputValue * dragFreeTruck.sensitivity * dragFreeTruck.TranslationSpeedNormalizer * timeSinceLastUpdate;
                         }
-                        //positionSmoothingDampener = dragFreeTruck.dampener;
+                        //_cameraPositionDampener = dragFreeTruck.dampener;
                     }
                     if (dragFreePedestal.IsActivated()) {
                         toLockCursor = true;
@@ -572,7 +572,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
                             PlaceDummyTargetAtUniverseEdgeInDirection(cameraTransform.up);
                             _requestedDistanceFromTarget -= mouseInputValue * dragFreePedestal.sensitivity * dragFreePedestal.TranslationSpeedNormalizer * timeSinceLastUpdate;
                         }
-                        //positionSmoothingDampener = dragFreePedestal.dampener;
+                        //_cameraPositionDampener = dragFreePedestal.dampener;
                     }
 
                     if (dragFreeRoll.IsActivated()) {
@@ -580,7 +580,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
                         if (GameInput.IsHorizontalMouseMovement(out mouseInputValue)) {
                             _zRotation -= mouseInputValue * dragFreeRoll.sensitivity * timeSinceLastUpdate;
                         }
-                        //rotationSmoothingDampener = dragFreeRoll.dampener;
+                        //_cameraRotationDampener = dragFreeRoll.dampener;
                     }
                     if (dragFreePanTilt.IsActivated()) {
                         toLockCursor = true;
@@ -590,7 +590,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
                         if (GameInput.IsVerticalMouseMovement(out mouseInputValue)) {
                             _yRotation -= mouseInputValue * dragFreePanTilt.sensitivity * timeSinceLastUpdate;
                         }
-                        //rotationSmoothingDampener = dragFreePanTilt.dampener;
+                        //_cameraRotationDampener = dragFreePanTilt.dampener;
                     }
                     if (scrollFreeZoom.IsActivated()) {
                         if (GameInput.IsScrollWheelMovement(out mouseInputValue)) {
@@ -610,7 +610,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
                             float positionAccelerationFactor = Mathf.Clamp(Mathf.Abs(_requestedDistanceFromTarget), 0F, settings.MaxSpeedGoverner);
                             _requestedDistanceFromTarget -= mouseInputValue * positionAccelerationFactor * scrollFreeZoom.sensitivity * scrollFreeZoom.TranslationSpeedNormalizer * timeSinceLastUpdate;
                             //Debug.Log("ScrollFreeZoom RequestedDistanceFromTarget = " + _requestedDistanceFromTarget);
-                            //positionSmoothingDampener = scrollFreeZoom.dampener;
+                            //_cameraPositionDampener = scrollFreeZoom.dampener;
                         }
                     }
                     if (edgeFreeZoom.IsActivated()) {
@@ -619,12 +619,12 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
                             PlaceDummyTargetAtUniverseEdgeInDirection(-cameraTransform.forward);
                             _requestedDistanceFromTarget -= edgeFreeZoom.sensitivity * edgeFreeZoom.TranslationSpeedNormalizer * timeSinceLastUpdate;
                             //Debug.Log("EdgeFreeZoom _requestedDistanceFromTarget = " + _requestedDistanceFromTarget);
-                            //positionSmoothingDampener = edgeFreeZoom.dampener;
+                            //_cameraPositionDampener = edgeFreeZoom.dampener;
                         }
                         else if (yMousePosition >= Screen.height - settings.activeScreenEdge) {
                             PlaceDummyTargetAtUniverseEdgeInDirection(cameraTransform.forward);
                             _requestedDistanceFromTarget -= edgeFreeZoom.sensitivity * edgeFreeZoom.TranslationSpeedNormalizer * timeSinceLastUpdate;
-                            //positionSmoothingDampener = edgeFreeZoom.dampener;
+                            //_cameraPositionDampener = edgeFreeZoom.dampener;
                         }
                     }
                     if (dragFreeZoom.IsActivated()) {
@@ -633,7 +633,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
                             PlaceDummyTargetAtUniverseEdgeInDirection(cameraTransform.forward);
                             _requestedDistanceFromTarget -= mouseInputValue * dragFreeZoom.sensitivity * dragFreeZoom.TranslationSpeedNormalizer * timeSinceLastUpdate;
                         }
-                        //positionSmoothingDampener = dragFreeZoom.dampener;
+                        //_cameraPositionDampener = dragFreeZoom.dampener;
                     }
 
                     // Freeform Arrow Keyboard Configurations. Mouse Buttons supercede Arrow Keys. Only Arrow Keys are used as IsActivated() must be governed by 
@@ -641,17 +641,17 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
                     if (keyFreeZoom.IsActivated()) {
                         PlaceDummyTargetAtUniverseEdgeInDirection(cameraTransform.forward);
                         _requestedDistanceFromTarget -= Input.GetAxis(keyboardAxesNames[(int)keyFreeZoom.keyboardAxis]) * keyFreeZoom.sensitivity * keyFreeZoom.TranslationSpeedNormalizer;
-                        //positionSmoothingDampener = keyFreeZoom.dampener;
+                        //_cameraPositionDampener = keyFreeZoom.dampener;
                     }
                     if (keyFreeTruck.IsActivated()) {
                         PlaceDummyTargetAtUniverseEdgeInDirection(cameraTransform.right);
                         _requestedDistanceFromTarget -= Input.GetAxis(keyboardAxesNames[(int)keyFreeTruck.keyboardAxis]) * keyFreeTruck.sensitivity * keyFreeTruck.TranslationSpeedNormalizer;
-                        //positionSmoothingDampener = keyFreeTruck.dampener;
+                        //_cameraPositionDampener = keyFreeTruck.dampener;
                     }
                     if (keyFreePedestal.IsActivated()) {
                         PlaceDummyTargetAtUniverseEdgeInDirection(cameraTransform.up);
                         _requestedDistanceFromTarget -= Input.GetAxis(keyboardAxesNames[(int)keyFreePedestal.keyboardAxis]) * keyFreePedestal.sensitivity * keyFreePedestal.TranslationSpeedNormalizer;
-                        //positionSmoothingDampener = keyFreePedestal.dampener;
+                        //_cameraPositionDampener = keyFreePedestal.dampener;
                     }
 
                     targetDirection = (target.position - cameraTransform.position).normalized;  // needed when another followTarget is picked when in scrollFreeZoom
@@ -664,15 +664,15 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
             // These Arrow Key configurations apply to both freeform and focused states, and at this stage, don't need seperate sensitivity tValues
             if (keyAllPan.IsActivated()) {
                 _xRotation += Input.GetAxis(keyboardAxesNames[(int)keyAllPan.keyboardAxis]) * keyAllPan.sensitivity;
-                //rotationSmoothingDampener = keyFreePan.dampener;
+                //_cameraRotationDampener = keyFreePan.dampener;
             }
             if (keyAllTilt.IsActivated()) {
                 _yRotation -= Input.GetAxis(keyboardAxesNames[(int)keyAllTilt.keyboardAxis]) * keyAllTilt.sensitivity;
-                //rotationSmoothingDampener = keyFreeTilt.dampener;
+                //_cameraRotationDampener = keyFreeTilt.dampener;
             }
             if (keyAllRoll.IsActivated()) {
                 _zRotation -= Input.GetAxis(keyboardAxesNames[(int)keyAllRoll.keyboardAxis]) * keyAllRoll.sensitivity;
-                //rotationSmoothingDampener = keyFreeRoll.dampener;
+                //_cameraRotationDampener = keyFreeRoll.dampener;
             }
 
             cameraTransform.rotation = CalculateCameraRotation(_xRotation, _yRotation, _zRotation, rotationSmoothingDampener * timeSinceLastUpdate);
@@ -680,10 +680,10 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
             _requestedDistanceFromTarget = Mathf.Clamp(_requestedDistanceFromTarget, settings.minimumDistanceFromTarget, Mathf.Infinity);
             _distanceFromTarget = Mathfx.Lerp(_distanceFromTarget, _requestedDistanceFromTarget, positionSmoothingDampener * timeSinceLastUpdate);
 
-            //_distanceFromTarget = Mathf.Lerp(_distanceFromTarget, _requestedDistanceFromTarget, positionSmoothingDampener * timeSinceLastUpdate);
+            //_distanceFromTarget = Mathf.Lerp(_distanceFromTarget, _requestedDistanceFromTarget, _cameraPositionDampener * timeSinceLastUpdate);
             //Debug.Log("Actual DistanceFromTarget = " + _distanceFromTarget);
             Vector3 proposedPosition = target.position - (targetDirection * _distanceFromTarget);
-            //Debug.Log("Resulting Camera Position = " + _transform.position);
+            //Debug.Log("Resulting Camera location = " + _transform._location);
 
             cameraTransform.position = ValidatePosition(proposedPosition);
 
@@ -692,13 +692,13 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
     }
 
     /// <summary>
-    /// Validates the proposed new position of the camera to be within the universe.
+    /// Validates the proposed new _location of the camera to be within the universe.
     /// </summary>
-    /// <arg item="newPosition">The new position.</arg>
-    /// <returns>if validated, returns newPosition. If not, return the current position.</returns>
+    /// <arg item="newPosition">The new _location.</arg>
+    /// <returns>if validated, returns newPosition. If not, return the current _location.</returns>
     private Vector3 ValidatePosition(Vector3 newPosition) {
         if ((newPosition - TempGameValues.UniverseOrigin).magnitude >= universeRadius) {
-            Debug.LogError("Camera proposed new position not valid at " + newPosition);
+            Debug.LogError("Camera proposed new _location not valid at " + newPosition);
             return cameraTransform.position;
         }
         return newPosition;
@@ -768,11 +768,11 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
             else {
                 float distanceToUniverseOrigin = (dummyTarget.position - TempGameValues.UniverseOrigin).magnitude;
                 if (!distanceToUniverseOrigin.CheckRange(universeRadius, allowedPercentageVariation: 1.0F)) {
-                    Debug.LogError("Camera's Dummy FollowTarget is not located on UniverseEdge! Position = " + dummyTarget.position);
+                    Debug.LogError("Camera's Dummy FollowTarget is not located on UniverseEdge! location = " + dummyTarget.position);
                     return;
                 }
                 // the dummy followTarget is already there
-                //Debug.Log("DummyTarget already present at " + dummyTarget.position + ". TargetHit at " + targetHit.transform.position);
+                //Debug.Log("DummyTarget already present at " + dummyTarget._location + ". TargetHit at " + targetHit.t._location);
                 return;
             }
         }
@@ -862,7 +862,7 @@ public class _CameraControl : MonoBehaviourBaseSingleton<_CameraControl>, IDispo
     #endregion
 
     [Serializable]
-    // Settings visible in the Inspector so they can be tweaked
+    // Settings isTargetVisibleThisFrame in the Inspector so they can be tweaked
     public class Settings {
         public float minimumDistanceFromTarget;
         public float optimalDistanceFromTarget;

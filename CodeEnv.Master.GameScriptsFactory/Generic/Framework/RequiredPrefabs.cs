@@ -27,7 +27,7 @@ using UnityEngine;
 /// I think these are a real reference to the prefab in the Project view, not a separate instance
 /// clone of the Prefab in the startScene. As such, they must be Instantiated before use.
 /// </remarks>
-public class RequiredPrefabs : MonoBehaviourBaseSingleton<RequiredPrefabs> {
+public class RequiredPrefabs : AMonoBehaviourBaseSingleton<RequiredPrefabs> {
 
     public SphereCollider UniverseEdgePrefab;
     public Transform CameraDummyTargetPrefab;

@@ -34,7 +34,7 @@ public class NoteEditor : Editor {
         // FIXME
         //EditorWindow editorWindow = EditorWindow.GetWindow<>(TempGameValues.InspectorWindowName);
         //Debug.Log("Editor Window Name = " + editorWindow.item);
-        //textAreaWidth = editorWindow.position.width - 50F;
+        //textAreaWidth = editorWindow._location.width - 50F;
         textAreaWidth = 400F;
         guiStyle = new GUIStyle();
         guiStyle.wordWrap = true;

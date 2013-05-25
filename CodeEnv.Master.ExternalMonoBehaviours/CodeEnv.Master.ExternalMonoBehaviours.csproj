@@ -52,8 +52,8 @@
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Generic\_Debug\DynamicObjects.cs" />
-    <Compile Include="Generic\Framework\MonoBehaviourBase.cs" />
-    <Compile Include="Generic\Framework\MonoBehaviourBaseSingleton.cs" />
+    <Compile Include="Generic\Framework\AMonoBehaviourBase.cs" />
+    <Compile Include="Generic\Framework\AMonoBehaviourBaseSingleton.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ThirdParty\ScaleRelativeToCamera.cs" />
     <Compile Include="ThirdParty\Note.cs" />

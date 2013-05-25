@@ -5,15 +5,14 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: MonoBehaviourBaseSingleton.cs
-// Abstract Base class for types that are derived from MonoBehaviourBase that want to implement the Singleton pattern.
+// File: AMonoBehaviourBaseSingleton.cs
+// Abstract Base class for types that are derived from AMonoBehaviourBase that want to implement the Singleton pattern.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LEVEL_LOG
+#define DEBUG_LOG
 #define DEBUG_LEVEL_WARN
 #define DEBUG_LEVEL_ERROR
-
 
 // default namespace
 
@@ -22,17 +21,17 @@ using CodeEnv.Master.Common;
 using UnityEngine;
 
 /// <summary>
-/// Abstract Base class for types that are derived from MonoBehaviourBase that want to implement the Singleton pattern.
+/// Abstract Base class for types that are derived from AMonoBehaviourBase that want to implement the Singleton pattern.
 /// NOTE: Unity will never call the 'overrideable' Awake(), Start(), Update(), LateUpdate(), FixedUpdate(), OnGui(), etc. methods when 
 /// there is a higher derived class in the chain. Unity only calls the method (if implemented) of the highest derived class.
 /// </summary>
-public abstract class MonoBehaviourBaseSingleton<T> : MonoBehaviourBase where T : MonoBehaviourBase {
+public abstract class AMonoBehaviourBaseSingleton<T> : AMonoBehaviourBase where T : AMonoBehaviourBase {
 
     protected static T instance;
     public static T Instance {
         get {
             if (instance == null) {
-                // Instance is required for the first time, so look for it                        
+                // values is required for the first time, so look for it                        
                 Type thisType = typeof(T);
                 instance = FindObjectOfType(thisType) as T;
                 if (instance == null) {

@@ -28,7 +28,7 @@ using CodeEnv.Master.Common.Unity;
 /// COMMENT 
 /// </summary>
 [Obsolete]
-public class NguiEventFallthruHandler : MonoBehaviourBase {
+public class NguiEventFallthruHandler : AMonoBehaviourBase {
 
     void Start() {
         UICamera.fallThrough = gameObject;

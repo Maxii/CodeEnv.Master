@@ -80,7 +80,7 @@ namespace CodeEnv.Master.GameLauncherApp {
         //    App app = (App)Application.Current;
         //    string appNamespace = app.GetType().Namespace;
         //    string resourceNamespace = appNamespace + Constants.Period + "Resources";
-        //    ResourceMgrFactory.Instance.Initialize(resourceNamespace);
+        //    ResourceMgrFactory.values.Initialize(resourceNamespace);
         //}
 
         /// <summary>

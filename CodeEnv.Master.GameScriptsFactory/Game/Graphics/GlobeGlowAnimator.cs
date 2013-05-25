@@ -24,7 +24,7 @@ using UnityEngine;
 /// Runs the texture that simulates a 'glow' surrounding a globe.
 /// </summary>
 [Serializable]
-public class GlobeGlowAnimator : MonoBehaviourBase {
+public class GlobeGlowAnimator : AMonoBehaviourBase {
     private static Vector2[] materialOrientationChoices = new Vector2[] {
         new Vector2(1, 1),
         new Vector2(1, -1),

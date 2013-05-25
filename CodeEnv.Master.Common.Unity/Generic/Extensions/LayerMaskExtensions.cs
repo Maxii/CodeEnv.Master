@@ -10,6 +10,10 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LOG
+#define DEBUG_LEVEL_WARN
+#define DEBUG_LEVEL_ERROR
+
 namespace CodeEnv.Master.Common.Unity {
 
     using System;

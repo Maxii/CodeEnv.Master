@@ -66,7 +66,11 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
     }
 
     private void UpdateButtonLabel() {
-        pauseButtonLabel.text = (pauseCommand == PauseRequest.PriorityPause) ? UIMessages.ResumeButtonLabel : UIMessages.PauseButtonLabel;
+        if (pauseButtonLabel != null) {
+            // can be null if GamePauseStateChangedEvent arrives during new game start up before Start() is called. It's OK though
+            // as the label will be updated based on the recorded pauseCommand once Start() is called
+            pauseButtonLabel.text = (pauseCommand == PauseRequest.PriorityPause) ? UIMessages.ResumeButtonLabel : UIMessages.PauseButtonLabel;
+        }
     }
 
     private void RemoveListeners() {

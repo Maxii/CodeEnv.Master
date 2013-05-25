@@ -17,43 +17,46 @@ namespace CodeEnv.Master.Common {
 
     public static class GameSpecificExtensions {
 
-        public static float GetSpeedMultiplier(this GameClockSpeed gameSpeed) {
+        public static float SpeedMultiplier(this GameClockSpeed gameSpeed) {
+            GameClockSpeed_Values values = GameClockSpeed_Values.Instance;
             switch (gameSpeed) {
                 case GameClockSpeed.Slowest:
-                    return 0.25F;
+                    return values.SlowestMultiplier;
                 case GameClockSpeed.Slow:
-                    return 0.50F;
+                    return values.SlowMultiplier;
                 case GameClockSpeed.Normal:
-                    return 1.0F;
+                    return values.NormalMultiplier;
                 case GameClockSpeed.Fast:
-                    return 2.0F;
+                    return values.FastMultiplier;
                 case GameClockSpeed.Fastest:
-                    return 4.0F;
+                    return values.FastestMultiplier;
                 case GameClockSpeed.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(gameSpeed));
             }
         }
 
-        public static float GetUniverseRadius(this UniverseSize universeSize) {
+        public static float Radius(this UniverseSize universeSize) {
+            UniverseSize_Values values = UniverseSize_Values.Instance;
             switch (universeSize) {
                 case UniverseSize.Tiny:
-                    return 2500F;
+                    return values.TinyRadius;
                 case UniverseSize.Small:
-                    return 2500F;
+                    return values.SmallRadius;
                 case UniverseSize.Normal:
-                    return 2500F;
+                    return values.NormalRadius;
                 case UniverseSize.Large:
-                    return 3000F;
+                    return values.LargeRadius;
                 case UniverseSize.Enormous:
-                    return 4000F;
+                    return values.EnormousRadius;
                 case UniverseSize.Gigantic:
-                    return 5000F;
+                    return values.GiganticRadius;
                 case UniverseSize.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(universeSize));
             }
         }
+
     }
 }
 

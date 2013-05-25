@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: TextScanner.cs
-// Text Scanner with easy to use syntax for reading text, booleans and values.
+// SbText Scanner with easy to use syntax for reading text, booleans and values.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 

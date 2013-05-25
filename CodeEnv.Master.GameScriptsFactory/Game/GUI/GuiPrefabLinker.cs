@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Manages the instantiation and setup of a prefab menu system.
 /// </summary>
-public class GuiPrefabLinker : MonoBehaviourBase {
+public class GuiPrefabLinker : AMonoBehaviourBase {
 
     public GameObject linkedPrefab;
     public UIButtonPlayAnimation launchButtonAnimation;

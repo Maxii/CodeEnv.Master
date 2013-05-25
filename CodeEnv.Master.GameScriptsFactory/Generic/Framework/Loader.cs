@@ -27,7 +27,7 @@ using UnityEngine;
 /// This approach of sharing an object across scenes allows objects and tValues
 /// from one startScene to move to another.
 /// </summary>
-public class Loader : MonoBehaviourBase, IDisposable, IInstanceIdentity {
+public class Loader : AMonoBehaviourBase, IDisposable, IInstanceIdentity {
 
     public static Loader currentInstance;
 
@@ -43,7 +43,7 @@ public class Loader : MonoBehaviourBase, IDisposable, IInstanceIdentity {
 #pragma warning restore
 
     //*******************************************************************
-    // GameObjects or tValues you want to keep between scenes go here and
+    // GameObjects or tValues you want to keep between scenes t here and
     // can be accessed by Loader.currentInstance.variableName
     //*******************************************************************
 
@@ -63,7 +63,7 @@ public class Loader : MonoBehaviourBase, IDisposable, IInstanceIdentity {
 
     //[System.Diagnostics.Conditional("UNITY_EDITOR")]
     private void LoadDebugSettings() {
-        debugSettings = new DebugSettings(UnityDebugConstants.DebugSettingsPath);
+        debugSettings = DebugSettings.Instance;
     }
 
 

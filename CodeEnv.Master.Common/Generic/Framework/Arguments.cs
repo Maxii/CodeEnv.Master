@@ -46,7 +46,7 @@ namespace CodeEnv.Master.Common {
         /// Validates the provided text is not null and that it contains non-whitespace content.
         /// </summary>
         /// <param name="text">The text.</param>
-        /// <exception cref="ArgumentException">Text is null or has no content.</exception>
+        /// <exception cref="ArgumentException">SbText is null or has no content.</exception>
         public static void ValidateForContent(string text) {
             if (!Utility.CheckForContent(text)) {
                 string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
