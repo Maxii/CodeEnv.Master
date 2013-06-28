@@ -76,6 +76,15 @@ namespace CodeEnv.Master.Common.Unity {
             return t.GetComponentInChildren(typeof(I)) as I;
         }
 
+        public static float DistanceToCamera(this Transform t) {
+            return Vector3.Distance(Camera.main.transform.position, t.position);
+        }
+
+        public static int DistanceToCameraInt(this Transform t) {
+            return (int)Math.Round(t.DistanceToCamera());
+        }
+
+
     }
 }
 

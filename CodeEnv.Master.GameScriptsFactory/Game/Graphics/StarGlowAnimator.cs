@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GlobeGlowAnimator.cs
+// File: StarGlowAnimator.cs
 // Runs the texture that simulates a 'glow' surrounding a globe.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -24,7 +24,7 @@ using UnityEngine;
 /// Runs the texture that simulates a 'glow' surrounding a globe.
 /// </summary>
 [Serializable]
-public class GlobeGlowAnimator : AMonoBehaviourBase {
+public class StarGlowAnimator : AMonoBehaviourBase {
     private static Vector2[] materialOrientationChoices = new Vector2[] {
         new Vector2(1, 1),
         new Vector2(1, -1),

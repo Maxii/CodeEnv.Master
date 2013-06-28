@@ -10,15 +10,13 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LEVEL_LOG
+#define DEBUG_LOG
 #define DEBUG_LEVEL_WARN
 #define DEBUG_LEVEL_ERROR
 
 // default namespace
 
 using System;
-using System.Globalization;
-using System.Threading;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using UnityEngine;

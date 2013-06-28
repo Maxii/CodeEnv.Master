@@ -13,6 +13,7 @@
 namespace CodeEnv.Master.Common {
 
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using CodeEnv.Master.Common.LocalResources;
@@ -130,6 +131,34 @@ namespace CodeEnv.Master.Common {
             if (collection.Count == 0) {
                 string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
                 throw new ArgumentException(ErrorMessages.CollectionEmpty.Inject(callingMethodName));
+            }
+        }
+
+        /// <summary>
+        /// Validates the objects provided are all of Type T.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="args">The args.</param>
+        /// <exception cref="System.ArgumentException"></exception>
+        public static void ValidateType<T>(params object[] args) {
+            foreach (object arg in args) {
+                if (arg.GetType() != typeof(T)) {
+                    string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                    throw new ArgumentException(ErrorMessages.IncorrectType.Inject(arg.GetType(), typeof(T), callingMethodName));
+                }
+            }
+        }
+
+        public static void ValidateTypeAndLength<T>(int length, params object[] args) {
+            if (args.Length != length) {
+                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                throw new ArgumentException(ErrorMessages.IncorrectLength.Inject(args.Length, length, callingMethodName));
+            }
+            foreach (object arg in args) {
+                if (arg.GetType() != typeof(T)) {
+                    string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                    throw new ArgumentException(ErrorMessages.IncorrectType.Inject(arg.GetType(), typeof(T), callingMethodName));
+                }
             }
         }
     }

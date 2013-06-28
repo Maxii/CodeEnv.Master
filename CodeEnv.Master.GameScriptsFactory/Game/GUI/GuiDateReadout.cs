@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LEVEL_LOG
+#define DEBUG_LOG
 #define DEBUG_LEVEL_WARN
 #define DEBUG_LEVEL_ERROR
 
@@ -24,7 +24,7 @@ using CodeEnv.Master.Common.Unity;
 /// <summary>
 /// COMMENT 
 /// </summary>
-public class GuiDateReadout : GuiLabelReadoutBase, IDisposable {
+public class GuiDateReadout : AGuiLabelReadoutBase, IDisposable {
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();

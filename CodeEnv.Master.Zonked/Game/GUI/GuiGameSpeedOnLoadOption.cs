@@ -26,7 +26,7 @@ using CodeEnv.Master.Common.Unity;
 /// COMMENT 
 /// </summary>
 [Obsolete]
-public class GuiGameSpeedOnLoadOption : GuiPopupListBase {
+public class GuiGameSpeedOnLoadOption : AGuiPopupListBase {
 
     protected override void Initialize() {
         base.Initialize();

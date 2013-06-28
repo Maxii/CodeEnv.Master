@@ -26,7 +26,7 @@ using CodeEnv.Master.Common.Unity;
 /// COMMENT 
 /// </summary>
 [Obsolete]
-public class GuiUniverseSizeSetting : GuiPopupListBase {
+public class GuiUniverseSizeSetting : AGuiPopupListBase {
 
     protected override void Initialize() {
         base.Initialize();

@@ -132,6 +132,12 @@
   <data name="ExceptionRethrow" xml:space="preserve">
     <value>The following exception was thrown.  Calling Method: {0}</value>
   </data>
+  <data name="IncorrectLength" xml:space="preserve">
+    <value>Argument length of {0} should be {1}. Calling Method: {2}.</value>
+  </data>
+  <data name="IncorrectType" xml:space="preserve">
+    <value>{0} is not a {1}. Calling Method: {2}.</value>
+  </data>
   <data name="InvalidAccess" xml:space="preserve">
     <value>Accessing an object or method that is either not initialized, closed or otherwise invalid.  Calling Method: {0}</value>
   </data>

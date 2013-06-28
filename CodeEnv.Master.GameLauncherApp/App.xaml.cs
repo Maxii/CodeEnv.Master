@@ -52,7 +52,7 @@ namespace CodeEnv.Master.GameLauncherApp {
         /// Handles the Startup event signifying the Application is now running.
         /// </summary>
         /// <param name="sender">The source of the event.</param>
-        /// <param name="gameEvent">The <see cref="StartupEventArgs" /> instance containing the event data.</param>
+        /// <param name="gameEvent">The <see cref="StartupEventArgs" /> instance containing the event _data.</param>
         private void App_Startup(object sender, StartupEventArgs e) {
             // Process command line args
             // IMPROVE For more robust command line processing approach, see http://msdn.microsoft.com/en-us/library/aa972153(v=vs.90).aspx
@@ -88,7 +88,7 @@ namespace CodeEnv.Master.GameLauncherApp {
         /// has switched from another application by selecting one of this Application'text Windows. This is not a Window.Activated event.
         /// </summary>
         /// <param name="sender">The source of the event.</param>
-        /// <param name="gameEvent">The <see cref="EventArgs" /> instance containing the event data.</param>
+        /// <param name="gameEvent">The <see cref="EventArgs" /> instance containing the event _data.</param>
         private void App_Activated(object sender, EventArgs e) {
             // an Application.Activated event has arrived
             // STUB
@@ -99,7 +99,7 @@ namespace CodeEnv.Master.GameLauncherApp {
         /// has switched from this application by selecting one of another application'text windows. This is not a Window.Deactivated event.       
         /// </summary>
         /// <param name="sender">The source of the event.</param>
-        /// <param name="gameEvent">The <see cref="EventArgs" /> instance containing the event data.</param>
+        /// <param name="gameEvent">The <see cref="EventArgs" /> instance containing the event _data.</param>
         private void App_Deactivated(object sender, EventArgs e) {
             // an Application.Deactivated event has arrived
             // STUB
@@ -110,7 +110,7 @@ namespace CodeEnv.Master.GameLauncherApp {
         /// by logging off, shutting down, restarting or hibernating.
         /// </summary>
         /// <param name="sender">The source of the event.</param>
-        /// <param name="gameEvent">The <see cref="SessionEndingCancelEventArgs" /> instance containing the event data.</param>
+        /// <param name="gameEvent">The <see cref="SessionEndingCancelEventArgs" /> instance containing the event _data.</param>
         private void App_SessionEnding(object sender, SessionEndingCancelEventArgs e) {
             // Ask the user if they want to allow the session to end 
             string msg = string.Format("{0}. End session?", e.ReasonSessionEnding);
@@ -127,7 +127,7 @@ namespace CodeEnv.Master.GameLauncherApp {
         /// wrap-up work before termination.
         /// </summary>
         /// <param name="sender">The source of the event.</param>
-        /// <param name="gameEvent">The <see cref="ExitEventArgs" /> instance containing the event data.</param>
+        /// <param name="gameEvent">The <see cref="ExitEventArgs" /> instance containing the event _data.</param>
         private void App_Exit(object sender, ExitEventArgs e) {
             // UNDONE Persist and store Application-scope propertites to storage?
             // see http://msdn.microsoft.com/en-us/library/ms746696.aspx
@@ -139,7 +139,7 @@ namespace CodeEnv.Master.GameLauncherApp {
         /// Handles the Application.DispatcherUnhandledException event.
         /// </summary>
         /// <param name="sender">The source of the event.</param>
-        /// <param name="gameEvent">The <see cref="DispatcherUnhandledExceptionEventArgs" /> instance containing the event data.</param>
+        /// <param name="gameEvent">The <see cref="DispatcherUnhandledExceptionEventArgs" /> instance containing the event _data.</param>
         private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e) {
             // UNDONE Process unhandled exception
 

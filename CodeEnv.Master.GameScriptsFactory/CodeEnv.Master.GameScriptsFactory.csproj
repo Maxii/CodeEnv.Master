@@ -38,10 +38,8 @@
       <HintPath>..\..\..\UnityEnv\Support\NGUI\Library\ScriptAssemblies\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\UnityEnv\UnityEntry\Library\ScriptAssemblies\Assembly-CSharp-firstpass.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>..\..\..\UnityEnv\Support\UnitySerializer\Library\ScriptAssemblies\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -62,9 +60,9 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Generic\Graphics\GuiCursorHud.cs" />
-    <Compile Include="Generic\Graphics\GuiFollowGo.cs" />
-    <Compile Include="Game\Graphics\EclipticPlaneManager.cs" />
+    <Compile Include="Generic\Graphics\AGuiButtonBase.cs" />
+    <Compile Include="Generic\Graphics\GuiCursorHUD.cs" />
+    <Compile Include="Game\Graphics\OrbitalPlaneManager.cs" />
     <Compile Include="Generic\Graphics\BillboardManager.cs" />
     <Compile Include="Generic\IO\CameraControl.cs" />
     <Compile Include="Generic\_Debug\ManagementObjects.cs" />
@@ -72,40 +70,43 @@
     <Compile Include="Generic\Graphics\GuiVisibilityChangeEvent.cs" />
     <Compile Include="Game\GUI\GuiGamePlayOptionMenuAcceptButton.cs" />
     <Compile Include="Generic\_Debug\FpsReadout.cs" />
-    <Compile Include="Game\Graphics\SunBillboardManager.cs" />
-    <Compile Include="Game\Graphics\GlobeGlowAnimator.cs" />
+    <Compile Include="Game\Graphics\StarBillboardManager.cs" />
+    <Compile Include="Game\Graphics\StarGlowAnimator.cs" />
     <Compile Include="Game\GUI\GuiDateReadout.cs" />
     <Compile Include="Game\GUI\GuiGameSpeedReadout.cs" />
     <Compile Include="Game\GUI\GuiGameSpeedSlider.cs" />
-    <Compile Include="Generic\Graphics\GuiLabelReadoutBase.cs" />
+    <Compile Include="Generic\Graphics\AGuiLabelReadoutBase.cs" />
     <Compile Include="Game\GUI\GuiPauseButton.cs" />
-    <Compile Include="Generic\Graphics\GuiButtonBase.cs" />
-    <Compile Include="Generic\Graphics\GuiEnumSliderBase.cs" />
-    <Compile Include="Game\Graphics\GlobeManager.cs" />
+    <Compile Include="Generic\Graphics\AGuiEnumSliderBase.cs" />
     <Compile Include="Generic\Framework\MonoGameManager.cs" />
     <Compile Include="Game\GUI\GuiManager.cs" />
     <Compile Include="Game\GUI\GuiExitButton.cs" />
     <Compile Include="Game\GUI\GuiNewGameMenuLaunchButton.cs" />
     <Compile Include="Game\GUI\GuiCheckbox.cs" />
     <Compile Include="Generic\Graphics\GuiTooltip.cs" />
-    <Compile Include="Generic\Graphics\GuiEnumPopupListBase.cs" />
+    <Compile Include="Generic\Graphics\AGuiEnumPopupListBase.cs" />
     <Compile Include="Game\GUI\GuiGameSpeedOnLoadPopupList.cs" />
     <Compile Include="Game\GUI\GuiUniverseSizePopupList.cs" />
     <Compile Include="Generic\Graphics\GuiMenuCancelButton.cs" />
     <Compile Include="Game\GUI\GuiPrefabLinker.cs" />
     <Compile Include="Generic\Graphics\GuiPauseResumeOnClick.cs" />
-    <Compile Include="Generic\Graphics\GuiMenuAcceptButtonBase.cs" />
+    <Compile Include="Generic\Graphics\AGuiMenuAcceptButtonBase.cs" />
     <Compile Include="Game\GUI\GuiLoadGameMenuLaunchButton.cs" />
     <Compile Include="Game\GUI\GuiPlayerPopupList.cs" />
     <Compile Include="Game\GUI\GuiSavedGamesPopupList.cs" />
     <Compile Include="Game\GUI\GuiSaveMenuAcceptButton.cs" />
-    <Compile Include="Generic\Graphics\GuiPopupListBase.cs" />
+    <Compile Include="Generic\Graphics\AGuiPopupListBase.cs" />
     <Compile Include="Generic\IO\NguiEventFallthruHandler.cs" />
+    <Compile Include="Generic\Graphics\GuiTrackingLabel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Generic\Framework\Loader.cs" />
     <Compile Include="Generic\Framework\RequiredPrefabs.cs" />
     <Compile Include="Generic\Framework\UsefulPrefabs.cs" />
     <Compile Include="Generic\_Debug\ShipPropulsionManager.cs" />
+    <Compile Include="Generic\Graphics\VisibilityRelay.cs" />
+    <Compile Include="Game\Graphics\StarAnimator.cs" />
+    <Compile Include="Game\Graphics\StarManager.cs" />
+    <Compile Include="Game\Graphics\SystemManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeEnv.Master.Common.Unity\CodeEnv.Master.Common.Unity.csproj">

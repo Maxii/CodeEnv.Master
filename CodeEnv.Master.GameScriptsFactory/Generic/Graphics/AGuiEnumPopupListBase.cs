@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GuiEnumPopupListBase.cs
-//  Generic GuiEnumPopupListBase class that implements PlayerPrefsManager property initialization and Tooltip functionality.
+// File: AGuiEnumPopupListBase.cs
+//  Generic AGuiEnumPopupListBase class that implements PlayerPrefsManager property initialization and Tooltip functionality.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -25,11 +25,11 @@ using CodeEnv.Master.Common.Unity;
 using UnityEngine;
 
 /// <summary>
-/// Generic GuiEnumPopupListBase class that implements PlayerPrefsManager property initialization and Tooltip
+/// Generic AGuiEnumPopupListBase class that implements PlayerPrefsManager property initialization and Tooltip
 /// functionality. Also pre-registers with the NGUI PopupList delegate to receive OnPopupMenuSelectionChange events.
 /// </summary>
 /// <typeparam name="T">The enum Type used in the list.</typeparam>
-public abstract class GuiEnumPopupListBase<T> : GuiPopupListBase where T : struct {
+public abstract class AGuiEnumPopupListBase<T> : AGuiPopupListBase where T : struct {
 
     [Obsolete]
     public string propertyName = string.Empty;

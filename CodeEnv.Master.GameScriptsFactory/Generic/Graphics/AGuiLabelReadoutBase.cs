@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GuiLabelReadoutBase.cs
+// File: AGuiLabelReadoutBase.cs
 // Base class for Dynamic Gui Labels (used as readouts) built with NGUI.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -22,7 +22,7 @@ using CodeEnv.Master.Common.Unity;
 /// <summary>
 /// Base class for Dynamic Gui Labels (used as readouts) built with NGUI.
 /// </summary>
-public abstract class GuiLabelReadoutBase : GuiTooltip {
+public abstract class AGuiLabelReadoutBase : GuiTooltip {
 
     protected GameEventManager eventMgr;
     protected UILabel readoutLabel;

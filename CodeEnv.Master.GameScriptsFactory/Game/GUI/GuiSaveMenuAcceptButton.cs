@@ -10,25 +10,19 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LEVEL_LOG
+#define DEBUG_LOG
 #define DEBUG_LEVEL_WARN
 #define DEBUG_LEVEL_ERROR
-#define UNITY_EDITOR
 
 // default namespace
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEngine;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using UnityEngine;
 
 /// <summary>
 /// COMMENT 
 /// </summary>
-public class GuiSaveMenuAcceptButton : GuiMenuAcceptButtonBase {
+public class GuiSaveMenuAcceptButton : AGuiMenuAcceptButtonBase {
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();

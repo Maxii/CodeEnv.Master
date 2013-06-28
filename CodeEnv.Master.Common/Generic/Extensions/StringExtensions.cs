@@ -14,6 +14,7 @@ namespace CodeEnv.Master.Common {
 
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Text;
 
     /// <summary>
     /// COMMENT 
@@ -52,6 +53,17 @@ namespace CodeEnv.Master.Common {
             string lastItemWithoutDelineationEnding = lastItem.Replace(Constants.NewLine, string.Empty);
             delimitedList[lastItemIndex] = lastItemWithoutDelineationEnding;
             return delimitedList;
+        }
+
+        /// <summary>
+        ///     Clears the contents of the string builder.
+        /// </summary>
+        /// <param name="sb">
+        ///     The <see cref="StringBuilder"/> to clear.
+        /// </param>
+        public static void Clear(this StringBuilder sb) {
+            sb.Length = 0;
+            sb.Capacity = 16;
         }
 
     }

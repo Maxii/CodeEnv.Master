@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LEVEL_LOG
+#define DEBUG_LOG
 #define DEBUG_LEVEL_WARN
 #define DEBUG_LEVEL_ERROR
 
@@ -21,7 +21,7 @@ using CodeEnv.Master.Common;
 /// <summary>
 /// COMMENT 
 /// </summary>
-public class GuiUniverseSizePopupList : GuiEnumPopupListBase<UniverseSize> {
+public class GuiUniverseSizePopupList : AGuiEnumPopupListBase<UniverseSize> {
 
     protected override void OnPopupListSelectionChange(string item) { }
 

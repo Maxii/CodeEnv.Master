@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LEVEL_LOG
+#define DEBUG_LOG
 #define DEBUG_LEVEL_WARN
 #define DEBUG_LEVEL_ERROR
 
@@ -25,18 +25,25 @@ namespace CodeEnv.Master.Common.Unity {
     /// Data container class that holds the game date.
     /// </summary>
     public class GameDate : IGameDate {
-        private int daysPerYear = TempGameValues.DaysPerGameYear;
-        private float gameDaysPerSecond = TempGameValues.GameDaysPerSecond;
-        private int startingGameYear = TempGameValues.StartingGameYear;
 
-        public int DayOfYear { get; internal set; }
+        private static int daysPerYear = TempGameValues.DaysPerGameYear;
+        private static float gameDaysPerSecond = TempGameValues.GameDaysPerSecond;
+        private static int startingGameYear = TempGameValues.StartingGameYear;
 
-        public int Year { get; internal set; }
+        public int DayOfYear { get; private set; }
+
+        public int Year { get; private set; }
 
         public string FormattedDate {
             get {
                 return Constants.GameDateFormat.Inject(Year, DayOfYear);
             }
+        }
+
+        public GameDate(int dayOfYear, int year) {
+            Arguments.ValidateNotNegative(dayOfYear);
+            DayOfYear = dayOfYear;
+            Year = year;
         }
 
         internal void SyncDateToGameClock(float gameClock) {
@@ -45,12 +52,8 @@ namespace CodeEnv.Master.Common.Unity {
             DayOfYear = 1 + (elapsedDays % daysPerYear);
         }
 
-        [Obsolete]
-        internal GameDate Clone() {
-            GameDate clone = new GameDate();
-            clone.DayOfYear = this.DayOfYear;
-            clone.Year = this.Year;
-            return clone;
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
         }
     }
 

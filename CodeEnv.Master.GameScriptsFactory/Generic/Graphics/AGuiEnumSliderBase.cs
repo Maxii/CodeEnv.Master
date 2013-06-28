@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GuiEnumSliderBase.cs
+// File: AGuiEnumSliderBase.cs
 // Base class for  Gui Sliders built with NGUI.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -29,7 +29,7 @@ using UnityEngine;
 /// Generic base class for Gui Sliders that select enum values built with NGUI.
 /// </summary>
 /// <typeparam name="T">The enum type.</typeparam>
-public abstract class GuiEnumSliderBase<T> : GuiTooltip where T : struct {
+public abstract class AGuiEnumSliderBase<T> : GuiTooltip where T : struct {
 
     protected GameEventManager eventMgr;
     private UISlider slider;

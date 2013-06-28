@@ -36,7 +36,7 @@ public class MonoGameManager : AMonoBehaviourBaseSingleton<MonoGameManager>, IDi
     private GameEventManager eventMgr;
 
     void Awake() {
-        //Debug.Log("MonoGameManager Awake() called. Enabled = " + enabled);
+        //Debug.Log("MonoGameManager Awake() called. IsEnabled = " + enabled);
         IncrementInstanceCounter();
         if (TryDestroyExtraCopies()) {
             return;

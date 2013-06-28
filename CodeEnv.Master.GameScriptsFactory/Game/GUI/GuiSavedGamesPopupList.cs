@@ -10,24 +10,18 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LEVEL_LOG
+#define DEBUG_LOG
 #define DEBUG_LEVEL_WARN
 #define DEBUG_LEVEL_ERROR
 
 // default namespace
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEngine;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
 
 /// <summary>
 /// PopupList allowing selection from all games that have been saved.
 /// </summary>
-public class GuiSavedGamesPopupList : GuiPopupListBase {
+public class GuiSavedGamesPopupList : AGuiPopupListBase {
 
     protected override void InitializeListValues() {
         popupList.items.Clear();

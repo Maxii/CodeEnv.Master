@@ -52,7 +52,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Generic\Graphics\CursorHudTextEvent.cs" />
+    <Compile Include="Generic\Graphics\IOnVisible.cs" />
     <Compile Include="Generic\IO\AEnumValues.cs" />
     <Compile Include="Generic\IO\GameClockSpeed_Values.cs" />
     <Compile Include="Game\Framework\AGameEvent.cs" />
@@ -73,7 +73,6 @@
     <Compile Include="Game\Framework\Tags.cs" />
     <Compile Include="Game\GUI\GameSpeedChangeEvent.cs" />
     <Compile Include="Generic\Extensions\GameSpecificExtensions.cs" />
-    <Compile Include="Generic\IO\MyNguiUtilities.cs" />
     <Compile Include="Game\GUI\BuildNewGameEvent.cs" />
     <Compile Include="Game\Framework\GameSettings.cs" />
     <Compile Include="Game\GUI\OptionChangeEvent.cs" />
@@ -87,11 +86,17 @@
     <Compile Include="Generic\_Debug\IInstanceIdentity.cs" />
     <Compile Include="Game\Gameplay\Players.cs" />
     <Compile Include="Game\GUI\SaveGameEvent.cs" />
-    <Compile Include="Generic\IO\ICameraFollowable.cs" />
-    <Compile Include="Generic\IO\ICameraFocusable.cs" />
-    <Compile Include="Generic\IO\ICameraTargetable.cs" />
+    <Compile Include="Generic\Graphics\ICameraFollowable.cs" />
+    <Compile Include="Generic\Graphics\ICameraFocusable.cs" />
+    <Compile Include="Generic\Graphics\ICameraTargetable.cs" />
     <Compile Include="Generic\Graphics\AStringBuilderTextEvent.cs" />
-    <Compile Include="Game\GUI\IGuiCursorHud.cs" />
+    <Compile Include="Generic\Graphics\IZoomToClosest.cs" />
+    <Compile Include="Generic\Graphics\IZoomToFurthest.cs" />
+    <Compile Include="Game\GUI\GuiCursorHudDisplayLineKeys.cs" />
+    <Compile Include="Game\Gameplay\IntelLevel.cs" />
+    <Compile Include="Game\Gameplay\OpeResource.cs" />
+    <Compile Include="Game\Gameplay\OpeYield.cs" />
+    <Compile Include="Game\Gameplay\XResource.cs" />
     <Compile Include="ThirdParty\TextScanner.cs" />
     <Compile Include="ThirdParty\FlagsHelper.cs" />
     <Compile Include="Generic\_Debug\ObjectAnalyzer.cs" />
@@ -110,6 +115,8 @@
     <Compile Include="Generic\Framework\UnityConstants.cs" />
     <Compile Include="Generic\IO\UniverseSize_Values.cs" />
     <Compile Include="Generic\IO\AValues.cs" />
+    <Compile Include="Generic\Graphics\Visibility.cs" />
+    <Compile Include="Game\Gameplay\XYield.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeEnv.Master.Common.LocalResources\CodeEnv.Master.Common.LocalResources.csproj">

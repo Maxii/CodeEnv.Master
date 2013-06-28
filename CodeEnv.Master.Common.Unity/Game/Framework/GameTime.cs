@@ -32,11 +32,11 @@ namespace CodeEnv.Master.Common.Unity {
 
         public static GameClockSpeed GameSpeed { get; private set; }
 
-        /// <value>
+        /// <summary>
         /// The amount of time in seconds elapsed since the last Frame 
         /// was rendered or zero if the game is paused or not running. Useful for animations
         /// or other work that should stop while paused.
-        /// </value>
+        /// </summary>
         public static float DeltaTimeOrPaused {
             get {
                 D.Assert(Instance.isClockEnabled);
@@ -47,20 +47,20 @@ namespace CodeEnv.Master.Common.Unity {
             }
         }
 
-        /// <value>
+        /// <summary>
         /// The amount of time in seconds elapsed since the last Frame 
         /// was rendered whether the game is paused or not. Useful for 
         /// animations or other work I want to continue even while the game is paused.
-        /// </value>
+        /// </summary>
         public static float DeltaTime {
             get { return UnityEngine.Time.deltaTime; }
         }
 
-        /// <value>
+        /// <summary>
         /// The realtime elapsed since this session with Unity started. In a standalone
         /// player, this is the time since the player was started. In the editor, this is the 
         /// time since the Editor Play button was pushed.
-        /// </value>
+        /// </summary>
         public static float TimeInCurrentSession {
             get {
                 float result = Time.time;
@@ -69,22 +69,10 @@ namespace CodeEnv.Master.Common.Unity {
             }
         }
 
-        /// <value>
-        /// The real time in seconds since the Unity Application was launched.
-        /// </value>
-        [Obsolete]
-        // very strange behaviour. it appears to count the time since the last play push, then shortly after the current push, resets to zero to start again
-        public static float RealTime_Unity {
-            get {
-                D.Log("Time.realtimeSinceStartup = {0:0.00}, Time.time = {1:0.00}.", UnityEngine.Time.realtimeSinceStartup, UnityEngine.Time.time);
-                return Time.realtimeSinceStartup;
-            }
-        }
-
-        /// <value>
+        /// <summary>
         /// The real time in seconds since a game instance was originally begun. Any time spent paused 
         /// during the game is included in this value. GameClockSpeed does not effect this.
-        /// </value>
+        /// </summary>
         public static float RealTime_Game {
             get {
                 D.Assert(Instance.isClockEnabled);
@@ -94,10 +82,10 @@ namespace CodeEnv.Master.Common.Unity {
             }
         }
 
-        /// <value>
+        /// <summary>
         /// The real time in seconds since a new or saved game was begun.
         /// Time on hold (paused or not running) is not counted. GameClockSpeed does not effect this.
-        /// </value>
+        /// </summary>
         public static float RealTime_GamePlay {
             get {
                 D.Assert(Instance.isClockEnabled);
@@ -142,7 +130,6 @@ namespace CodeEnv.Master.Common.Unity {
         private float _gameRealTimeAtLastSync;
 
         private bool isClockEnabled;
-        //private bool isPaused;
 
         private GameEventManager eventMgr;
         private PlayerPrefsManager playerPrefsMgr;
@@ -225,7 +212,7 @@ namespace CodeEnv.Master.Common.Unity {
             _savedCurrentDateTime = Constants.ZeroF;
             // don't rely on initialization events from the gui
             GameSpeed = playerPrefsMgr.GameSpeedOnLoad;
-            date = new GameDate { DayOfYear = 1, Year = TempGameValues.StartingGameYear };
+            date = new GameDate(dayOfYear: 1, year: TempGameValues.StartingGameYear);
         }
 
         public void PrepareToSaveGame() {

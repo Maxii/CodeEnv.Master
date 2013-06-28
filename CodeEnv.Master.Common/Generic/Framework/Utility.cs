@@ -13,6 +13,7 @@
 namespace CodeEnv.Master.Common {
 
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq.Expressions;
@@ -141,6 +142,19 @@ namespace CodeEnv.Master.Common {
         public static string GetPropertyName<T>(Expression<Func<T>> propertyExpression) {
             return (propertyExpression.Body as MemberExpression).Member.Name;
         }
+
+        /// <summary>
+        /// Converts a list of type T to an array.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="list">The list.</param>
+        /// <returns>An array of type T.</returns>
+        public static T[] ConvertToArray<T>(IList list) {
+            T[] result = new T[list.Count];
+            list.CopyTo(result, 0);
+            return result;
+        }
+
     }
 }
 

@@ -22,7 +22,7 @@ using UnityEngine;
 /// <summary>
 /// COMMENT 
 /// </summary>
-public class FpsReadout : GuiLabelReadoutBase {
+public class FpsReadout : AGuiLabelReadoutBase {
 
     public float secondsBetweenDisplayRefresh = 0.5F;
 

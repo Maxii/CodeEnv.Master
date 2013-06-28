@@ -25,7 +25,7 @@ using UnityEngine;
 /// Allows visibiliity control of all Gui elements in the startScene
 /// when this button is clicked.
 /// </summary>
-public class GuiVisibilityButton : GuiButtonBase {
+public class GuiVisibilityButton : AGuiButtonBase {
 
     public GuiVisibilityCommand guiVisibilityCmd;
     public UIPanel[] guiVisibilityExceptions;    // Inspector automatically initializes array size

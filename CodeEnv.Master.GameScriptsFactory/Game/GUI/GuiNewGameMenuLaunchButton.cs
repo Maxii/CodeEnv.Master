@@ -10,10 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LEVEL_LOG
+#define DEBUG_LOG
 #define DEBUG_LEVEL_WARN
 #define DEBUG_LEVEL_ERROR
-
 
 // default namespace
 
@@ -24,7 +23,7 @@ using UnityEngine;
 /// <summary>
 /// COMMENT 
 /// </summary>
-public class GuiNewGameMenuLaunchButton : GuiMenuAcceptButtonBase {
+public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
 
     private UniverseSize universeSize;
     private Players player;

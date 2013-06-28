@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GuiEnumPopupListBase.cs
+// File: AGuiEnumPopupListBase.cs
 // Base class for  Gui PopupLists that use Enums built with NGUI.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 

@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GuiMenuAcceptButtonBase.cs
+// File: AGuiMenuAcceptButtonBase.cs
 // Base class for GuiMenuAccept buttons that accumulate changes from its sibling
 // attached menu items before Raising an event with a Settings object attached.
 // </summary> 
@@ -26,7 +26,7 @@ using UnityEngine;
 /// Base class for GuiMenuAccept buttons that accumulate changes from its sibling
 /// attached menu items before Raising an event with a Settings object attached.
 /// </summary>
-public abstract class GuiMenuAcceptButtonBase : GuiButtonBase, IDisposable {
+public abstract class AGuiMenuAcceptButtonBase : AGuiButtonBase, IDisposable {
 
     // Can be empty
     protected UICheckbox[] checkboxes;

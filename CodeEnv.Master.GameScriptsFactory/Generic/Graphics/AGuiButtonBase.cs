@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GuiButtonBase.cs
+// File: AGuiButtonBase.cs
 // Base class for GUI Buttons built with NGUI.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -23,7 +23,7 @@ using UnityEngine;
 /// <summary>
 /// Base class for GUI Buttons built with NGUI.
 /// </summary>
-public abstract class GuiButtonBase : GuiTooltip {
+public abstract class AGuiButtonBase : GuiTooltip {
 
     protected GameEventManager eventMgr;
     protected PlayerPrefsManager playerPrefsMgr;

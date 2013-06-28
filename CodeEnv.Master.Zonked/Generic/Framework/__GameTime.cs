@@ -22,8 +22,8 @@ namespace CodeEnv.Master.Common.Unity {
      *      - Pauses anything that is framerate independant.
      *          - These are primarily all physics and time-dependant functions, rigidbody forces and velocities.
      *          - Additionally the execution of FixedUpdate() is halted.
-     *          - Animations and anything that uses Time.deltaTime since Time.deltaTime is now 0.0F
-     *              - Time.deltaTime is actually time since last frame rendered * timeScale!
+     *          - Animations and anything that uses Time.time since Time.time is now 0.0F
+     *              - Time.time is actually time since last frame rendered * timeScale!
      *      - Update functions are still called every frame and realtimeSinceStartup still accumulates.
      *      - Rendering still occurs so there are frames.
      *      - Physics reactions (collisions, etc.) still work. Not clear what affect occurs?

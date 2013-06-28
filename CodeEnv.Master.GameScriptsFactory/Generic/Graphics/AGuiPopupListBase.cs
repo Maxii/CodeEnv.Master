@@ -5,12 +5,12 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GuiPopupListBase.cs
+// File: AGuiPopupListBase.cs
 // COMMENT - one line to give a brief idea of what this file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LEVEL_LOG
+#define DEBUG_LOG
 #define DEBUG_LEVEL_WARN
 #define DEBUG_LEVEL_ERROR
 
@@ -19,9 +19,9 @@
 using CodeEnv.Master.Common.Unity;
 
 /// <summary>
-/// GuiPopupListBase class pre-wired with Tooltip functionality.
+/// AGuiPopupListBase class pre-wired with Tooltip functionality.
 /// </summary>
-public abstract class GuiPopupListBase : GuiTooltip {
+public abstract class AGuiPopupListBase : GuiTooltip {
 
     protected UIPopupList popupList;
 

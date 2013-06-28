@@ -27,7 +27,7 @@ using UnityEngine;
 /// General-purpose Menu Cancel Button that restores the original state of the menu
 /// to what it was when it was opened.
 /// </summary>
-public class GuiMenuCancelButton : GuiButtonBase, IDisposable {
+public class GuiMenuCancelButton : AGuiButtonBase, IDisposable {
 
     private UICheckbox[] checkboxes;
     private bool[] openingCheckboxesState;

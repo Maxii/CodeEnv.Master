@@ -5,8 +5,9 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: CursorHudTextEvent.cs
-// AGameEvent containing a StringBuilder destined for the CursorHud. 
+// File: IZoomToFurthest.cs
+// Tells the camera when zooming on a game object with this interface to 
+// zoom to the FURTHEST one it encounters in the direction it is zooming.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,20 +18,16 @@
 namespace CodeEnv.Master.Common {
 
     using System;
-    using System.Text;
+    using System.Collections.Generic;
+    using System.Linq;
+    using CodeEnv.Master.Common;
+    using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
-    /// AGameEvent containing a StringBuilder destined for the CursorHud. 
-    /// WARNING - appears to introduce lots of lag.
+    /// Tells the camera when zooming on a game object with this interface to 
+    /// zoom to the FURTHEST one it encounters in the direction it is zooming.
     /// </summary>
-    [Obsolete]
-    public class CursorHudTextEvent : AStringBuilderTextEvent {
-
-        public CursorHudTextEvent(Object source, StringBuilder sb) : base(source, sb) { }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
+    public interface IZoomToFurthest {
 
     }
 }

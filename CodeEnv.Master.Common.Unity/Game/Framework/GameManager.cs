@@ -38,9 +38,9 @@ namespace CodeEnv.Master.Common.Unity {
         /// <summary>
         /// To set use ProcessPauseRequest().
         /// </summary>
-        /// <value>
+        /// <sb>
         /// <c>true</c> if the game is paused; otherwise, <c>false</c>.
-        /// </value>
+        /// </sb>
         public static bool IsGamePaused { get; private set; }
 
         private GameEventManager eventMgr;

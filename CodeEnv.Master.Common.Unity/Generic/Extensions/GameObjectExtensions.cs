@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.Common.Unity {
 
+    using System;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
@@ -35,7 +36,7 @@ namespace CodeEnv.Master.Common.Unity {
         public static T GetSafeMonoBehaviourComponent<T>(this GameObject go) where T : MonoBehaviour {
             T component = go.GetComponent<T>();
             if (component == null) {
-                D.Warn(ErrorMessages.ComponentNotFound, typeof(T), go);
+                D.Log(ErrorMessages.ComponentNotFound, typeof(T), go);
             }
             return component;
         }
@@ -50,7 +51,7 @@ namespace CodeEnv.Master.Common.Unity {
         public static T[] GetSafeMonoBehaviourComponents<T>(this GameObject go) where T : MonoBehaviour {
             T[] components = go.GetComponents<T>();
             if (components.Length == 0) {
-                D.Warn(ErrorMessages.ComponentNotFound, typeof(T), go);
+                D.Log(ErrorMessages.ComponentNotFound, typeof(T), go);
             }
             return components;
         }
@@ -65,7 +66,7 @@ namespace CodeEnv.Master.Common.Unity {
         public static T GetSafeMonoBehaviourComponentInChildren<T>(this GameObject go) where T : MonoBehaviour {
             T component = go.GetComponentInChildren<T>();
             if (component == null) {
-                D.Warn(ErrorMessages.ComponentNotFound, typeof(T), go);
+                D.Log(ErrorMessages.ComponentNotFound, typeof(T), go);
             }
             return component;
         }
@@ -80,7 +81,7 @@ namespace CodeEnv.Master.Common.Unity {
         public static T[] GetSafeMonoBehaviourComponentsInChildren<T>(this GameObject go, bool includeInactive = false) where T : MonoBehaviour {
             T[] components = go.GetComponentsInChildren<T>(includeInactive);
             if (components.Length == 0) {
-                D.Warn(ErrorMessages.ComponentNotFound, typeof(T), go);
+                D.Log(ErrorMessages.ComponentNotFound, typeof(T), go);
             }
             return components;
         }
@@ -104,6 +105,15 @@ namespace CodeEnv.Master.Common.Unity {
         public static I GetInterfaceInChildren<I>(this GameObject go) where I : class {
             return go.GetComponentInChildren(typeof(I)) as I;
         }
+
+        public static float DistanceToCamera(this GameObject go) {
+            return go.transform.DistanceToCamera();
+        }
+
+        public static int DistanceToCameraInt(this GameObject go) {
+            return go.transform.DistanceToCameraInt();
+        }
+
 
     }
 }

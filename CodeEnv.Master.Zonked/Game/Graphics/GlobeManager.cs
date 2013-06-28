@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Manages the spherical globes that are a part of Cellestial Bodies. 
 /// </summary>
-[Serializable, RequireComponent(typeof(SphereCollider), typeof(MeshRenderer))]
+[Obsolete, Serializable, RequireComponent(typeof(SphereCollider), typeof(MeshRenderer))]
 public class GlobeManager : AMonoBehaviourBase, ICameraFocusable {
 
     [SerializeField]
@@ -42,7 +42,7 @@ public class GlobeManager : AMonoBehaviourBase, ICameraFocusable {
     //private Color _startingColor;
 
     private StringBuilder hudMsg;
-    private IGuiCursorHud _cursorHud;
+    private GuiCursorHUD _cursorHud;
 
     void Awake() {
         _eventMgr = GameEventManager.Instance;
@@ -58,7 +58,7 @@ public class GlobeManager : AMonoBehaviourBase, ICameraFocusable {
         if (globeRenderer.materials.Length > 1) {
             _optionalSecondMaterial = globeRenderer.materials[1];
         }
-        _cursorHud = GuiCursorHud.Instance;
+        _cursorHud = GuiCursorHUD.Instance;
         hudMsg = ConstructMsgForHud();
     }
 
@@ -119,7 +119,7 @@ public class GlobeManager : AMonoBehaviourBase, ICameraFocusable {
         if (isOver) {
             //Debug.Log("GlobeManager.OnHover(true) called.");
             //_primaryMaterial.color = Color.black;    // IMPROVE need better highlighting
-            //_eventMgr.Raise<CursorHudTextEvent>(new CursorHudTextEvent(this, hudMsg));
+            //_eventMgr.Raise<CursorHudTextEvent>(new CursorHudTextEvent(this, __hudMsg));
             _cursorHud.Set(hudMsg.ToString());
         }
         else {

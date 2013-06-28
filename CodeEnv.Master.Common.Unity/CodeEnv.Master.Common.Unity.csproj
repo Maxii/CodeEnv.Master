@@ -37,8 +37,7 @@
       <HintPath>..\..\..\UnityEnv\Support\NGUI\Library\ScriptAssemblies\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>..\..\..\UnityEnv\UnityEntry\Library\ScriptAssemblies\Assembly-CSharp-firstpass.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>..\..\..\UnityEnv\Support\UnitySerializer\Library\ScriptAssemblies\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -58,12 +57,19 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Gameplay\AData.cs" />
+    <Compile Include="Game\Gameplay\FleetData.cs" />
+    <Compile Include="Generic\Extensions\GameSpecificExtensions.cs" />
+    <Compile Include="Game\Framework\GameTimePeriod.cs" />
+    <Compile Include="Game\GUI\IGuiTrackingLabel.cs" />
+    <Compile Include="Generic\Graphics\ColoredText.cs" />
     <Compile Include="Game\_Debug\TempGameValues.cs" />
     <Compile Include="Game\Framework\GameTime.cs" />
     <Compile Include="Game\Framework\GameDate.cs" />
     <Compile Include="Game\Framework\GameManager.cs" />
     <Compile Include="Game\Framework\IGameDate.cs" />
-    <Compile Include="Game\GUI\FocusSelectedEvent.cs" />
+    <Compile Include="Generic\IO\FocusSelectedEvent.cs" />
+    <Compile Include="Generic\IO\MyNguiUtilities.cs" />
     <Compile Include="Generic\_Debug\UnityDebugConstants.cs" />
     <Compile Include="Generic\Framework\GameEventManager.cs" />
     <Compile Include="Generic\Math\RandomExtended.cs" />
@@ -76,8 +82,15 @@
     <Compile Include="Generic\IO\PlayerPrefsManager.cs" />
     <Compile Include="Generic\IO\NguiMouseButton.cs" />
     <Compile Include="Generic\IO\NguiGameInput.cs" />
+    <Compile Include="Game\GUI\GuiCursorHudText.cs" />
+    <Compile Include="Generic\Framework\MyNguiConstants.cs" />
+    <Compile Include="Generic\Graphics\IColoredTextList.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Generic\Extensions\TransformExtensions.cs" />
+    <Compile Include="Game\Gameplay\SystemData.cs" />
+    <Compile Include="Generic\Graphics\AGuiCursorHudTextFactory.cs" />
+    <Compile Include="Generic\Graphics\GuiCursorHudTextFactory_Fleet.cs" />
+    <Compile Include="Generic\Graphics\GuiCursorHudTextFactory_System.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">
@@ -90,9 +103,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Game\Gameplay\" />
     <Folder Include="Game\Graphics\" />
-    <Folder Include="Generic\Graphics\" />
     <Folder Include="ThirdParty\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

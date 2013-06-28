@@ -17,13 +17,11 @@
 // default namespace
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using UnityEngine;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
 using CodeEnv.Master.Common.LocalResources;
+using CodeEnv.Master.Common.Unity;
+using UnityEngine;
 
 [RequireComponent(typeof(Camera))]
 /// <summary>
@@ -134,7 +132,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     private float _zRotation;
     private float _requestedDistanceFromTarget;
 
-    // Fields used in algorithms that can vary by target or CameraState
+    // Fields used in algorithms that can vary by Target or CameraState
     private float _minimumDistanceFromTarget;
     private float _optimalDistanceFromTarget;
     private float _cameraPositionDampener;
@@ -256,7 +254,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     /// Called when enabled set to true after the script has been loaded, including after DeSerialization.
     /// </summary>
     void OnEnable() {
-        //Debug.Log("Camera OnEnable() called. Enabled = " + enabled);
+        //Debug.Log("Camera OnEnable() called. IsEnabled = " + enabled);
     }
 
     // temp workaround for funny behaviour with application focusTarget starting GameScene
@@ -385,7 +383,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     }
 
     /// <summary>
-    /// Assign the focus object to be the target and changes the CameraState based on
+    /// Assign the focus object to be the Target and changes the CameraState based on
     /// what interface the object supports.
     /// </summary>
     /// <arg item="focus">The transform of the GO selected as the focus.</arg>
@@ -414,44 +412,44 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     }
 
     /// <summary>
-    /// Changes the current target and targetPoint to the provided newTarget and newTargetPoint.
+    /// Changes the current Target and targetPoint to the provided newTarget and newTargetPoint.
     /// Adjusts any minimum, optimal and actual camera distance settings. 
     /// </summary>
-    /// <param name="newTarget">The new target.</param>
-    /// <param name="newTargetPoint">The new target point.</param>
+    /// <param name="newTarget">The new Target.</param>
+    /// <param name="newTargetPoint">The new Target point.</param>
     private void ChangeTarget(Transform newTarget, Vector3 newTargetPoint) {
         if (newTarget == target && newTarget != dummyTarget) {
             if (Mathfx.Approx(newTargetPoint, targetPoint, settings.smallMovementThreshold)) {
-                // the desired move of the target point on the existing target is too small to respond too
-                Debug.LogWarning("Attempt to change the existing (non-dummy) target {0} to itself.".Inject(newTarget.name));
+                // the desired move of the Target point on the existing Target is too small to respond too
+                Debug.LogWarning("Attempt to change the existing (non-dummy) Target {0} to itself.".Inject(newTarget.name));
                 return;
             }
         }
 
         target = newTarget;
         targetPoint = newTargetPoint;
-        // anytime the target changes, the actual distance to the target should also be reset
+        // anytime the Target changes, the actual distance to the Target should also be reset
         _distanceFromTarget = Vector3.Distance(targetPoint, _transform.position);
-        // the requested distance to the target will vary depending on where the change was initiated from
+        // the requested distance to the Target will vary depending on where the change was initiated from
 
         if (newTarget == dummyTarget) {
             _minimumDistanceFromTarget = settings.minimumDistanceFromDummyTarget;
             //Debug.Log("New Target is the DummyTarget, _minimumDistanceFromTarget = {0}.".Inject(_minimumDistanceFromTarget));
-            // optimal distance settings not used with dummy target
+            // optimal distance settings not used with dummy Target
             return;
         }
 
         ICameraTargetable qualifiedCameraTarget = newTarget.GetInterfaceInChildren<ICameraTargetable>();
         if (qualifiedCameraTarget != null) {
             _minimumDistanceFromTarget = qualifiedCameraTarget.MinimumCameraViewingDistance;
-            Debug.Log("Target {0} _minimumDistanceFromTarget set to {1}.".Inject(newTarget.name, _minimumDistanceFromTarget));
+            //Debug.Log("Target {0} _minimumDistanceFromTarget set to {1}.".Inject(newTarget.name, _minimumDistanceFromTarget));
 
             ICameraFocusable qualifiedCameraFocusTarget = newTarget.GetInterfaceInChildren<ICameraFocusable>();
             if (qualifiedCameraFocusTarget != null) {
                 _optimalDistanceFromTarget = qualifiedCameraFocusTarget.OptimalCameraViewingDistance;
-                Debug.Log("Target {0} _optimalDistanceFromTarget set to {1}.".Inject(newTarget.name, _optimalDistanceFromTarget));
+                //Debug.Log("Target {0} _optimalDistanceFromTarget set to {1}.".Inject(newTarget.name, _optimalDistanceFromTarget));
             }
-            // no reason to know whether the target is followable or not for these values for now
+            // no reason to know whether the Target is followable or not for these values for now
         }
         else {
             Debug.LogError("New Target {0} is not an ICameraTargetable.".Inject(newTarget.name));
@@ -473,7 +471,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
                 _requestedDistanceFromTarget = _optimalDistanceFromTarget;
                 _targetDirection = (targetPoint - _transform.position).normalized;
 
-                // face the selected target
+                // face the selected Target
                 //Debug.Log("Rotation values before ChangeState {0}.".Inject(new Vector3(_xRotation, _yRotation, _zRotation)));
                 Quaternion lookAt = Quaternion.LookRotation(_targetDirection);
                 Vector3 lookAtVector = lookAt.eulerAngles;
@@ -503,7 +501,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
                 break;
             case CameraState.Follow:
                 // no need to update distance or rotation calculated values as UpdateCamera must
-                // update these every frame when following as the target moves
+                // update these every frame when following as the Target moves
 
                 ICameraFollowable icfTarget = target.GetInterface<ICameraFollowable>();
                 _cameraRotationDampener = icfTarget.CameraFollowRotationDampener;
@@ -520,7 +518,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     /// Resets the camera rotation to that of worldspace, no rotation.
     /// </summary>
     public void ResetToWorldspace() {
-        // current and requested distance to target already set
+        // current and requested distance to Target already set
         Quaternion zeroRotation = Quaternion.identity;
         _transform.rotation = zeroRotation;
         Vector3 zeroRotationVector = zeroRotation.eulerAngles;
@@ -563,8 +561,8 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
                     }
                     _toLockCursor = true;
 
-                    // The desired (x,y,z) rotation to LookAt the target and the requested distance from the target
-                    // is set in ChangeState and does not need to be updated to get there as the target doesn't move
+                    // The desired (x,y,z) rotation to LookAt the Target and the requested distance from the Target
+                    // is set in ChangeState and does not need to be updated to get there as the Target doesn't move
 
                     // OPTIMIZE lets me change the values on the fly in the inspector
                     _cameraRotationDampener = settings.focusingRotationDampener;
@@ -606,7 +604,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
                         if (GameInput.IsScrollWheelMovement(out mouseInputValue)) {
                             if (mouseInputValue > 0 || (mouseInputValue < 0 && IsScrollZoomOutOnCursorEnabled)) {
                                 if (TrySetTargetAtScreenPoint(Input.mousePosition)) {
-                                    // there is a new target so it can't be the old focus target
+                                    // there is a new Target so it can't be the old focus Target
                                     ChangeState(CameraState.Freeform);
                                     return;
                                 }
@@ -655,7 +653,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
                     }
 
                     // t.forward is the camera's current definition of 'forward', ie. WorldSpace's absolute forward adjusted by the camera's rotation (Vector.forward * cameraRotation )   
-                    // this is the key that keeps the camera pointed at the target when focused
+                    // this is the key that keeps the camera pointed at the Target when focused
                     _targetDirection = _transform.forward;
 
                     // OPTIMIZE lets me change the values on the fly in the inspector
@@ -707,7 +705,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
                             if (mouseInputValue > 0) {
                                 // Scroll ZoomIN command
                                 if (TrySetTargetAtScreenPoint(Input.mousePosition)) {
-                                    // target was changed so reset requested distance to actual distance
+                                    // Target was changed so reset requested distance to actual distance
                                     _requestedDistanceFromTarget = _distanceFromTarget;
                                 }
                             }
@@ -715,13 +713,13 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
                                 // Scroll ZoomOUT command
                                 if (IsScrollZoomOutOnCursorEnabled) {
                                     if (TrySetTargetAtScreenPoint(Input.mousePosition)) {
-                                        // target was changed so reset requested distance to actual distance
+                                        // Target was changed so reset requested distance to actual distance
                                         _requestedDistanceFromTarget = _distanceFromTarget;
                                     }
                                 }
                                 else {
                                     if (TrySetTargetAtScreenPoint(screenCenter)) {
-                                        // target was changed so reset requested distance to actual distance
+                                        // Target was changed so reset requested distance to actual distance
                                         _requestedDistanceFromTarget = _distanceFromTarget;
                                     }
                                 }
@@ -737,7 +735,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
                         if (yMousePosition <= settings.activeScreenEdge) {
                             // Edge ZoomOUT
                             if (TrySetTargetAtScreenPoint(screenCenter)) {
-                                // target was changed so reset requested distance to actual distance
+                                // Target was changed so reset requested distance to actual distance
                                 _requestedDistanceFromTarget = _distanceFromTarget;
                             }
                             _requestedDistanceFromTarget += edgeFreeZoom.sensitivity * edgeFreeZoom.InputControlSpeedNormalizer * timeSinceLastUpdate;
@@ -747,7 +745,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
                         else if (yMousePosition >= Screen.height - settings.activeScreenEdge) {
                             // Edge ZoomIN
                             if (TrySetTargetAtScreenPoint(screenCenter)) {
-                                // target was changed so reset requested distance to actual distance
+                                // Target was changed so reset requested distance to actual distance
                                 _requestedDistanceFromTarget = _distanceFromTarget;
                             }
                             _requestedDistanceFromTarget -= edgeFreeZoom.sensitivity * edgeFreeZoom.InputControlSpeedNormalizer * timeSinceLastUpdate;
@@ -807,8 +805,8 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
 
                     //showDistanceDebugLog = true;
 
-                    // Smooth lookAt interpolation rotates the camera to continue to lookAt the moving target. These
-                    // values must be continuously updated as the target and camera are moving
+                    // Smooth lookAt interpolation rotates the camera to continue to lookAt the moving Target. These
+                    // values must be continuously updated as the Target and camera are moving
                     targetPoint = target.position;
                     _targetDirection = (targetPoint - _transform.position).normalized;
                     lookAt = Quaternion.LookRotation(_targetDirection).eulerAngles;
@@ -816,10 +814,10 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
                     _yRotation = lookAt.x;
                     _zRotation = lookAt.z;
 
-                    // Smooth follow interpolation as spectator avoids moving away from the target if it turns inside our optimal 
-                    // follow distance. When the target turns and breaks inside the optimal follow distance, stop the camera 
+                    // Smooth follow interpolation as spectator avoids moving away from the Target if it turns inside our optimal 
+                    // follow distance. When the Target turns and breaks inside the optimal follow distance, stop the camera 
                     // from adjusting its position by making the requested distance the same as the actual distance. 
-                    // As soon as the target moves outside of the optimal distance, start following again.
+                    // As soon as the Target moves outside of the optimal distance, start following again.
                     _distanceFromTarget = Vector3.Distance(targetPoint, _transform.position);
                     if (_distanceFromTarget > _optimalDistanceFromTarget) {
                         _requestedDistanceFromTarget = _optimalDistanceFromTarget;
@@ -867,7 +865,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
                 if (dragFreeTruck.IsActivated() || dragFreePedestal.IsActivated()) {
                     return true;
                 }
-                // can also exit on Scroll In on dummy target
+                // can also exit on Scroll In on dummy Target
                 return false;
             case CameraState.Follow:
                 if (Input.GetKey(UnityConstants.Key_Escape)) {
@@ -907,8 +905,8 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
             //Debug.LogWarning("Camera proposed new position not valid at {0}, Distance to Origin is {1}.".Inject(_proposedPosition, magnitude));
             //float currentPositionMagnitude = (_transform.position - TempGameValues.UniverseOrigin).magnitude;
             //Debug.LogWarning("Current position is {0}, Distance to Origin is {1}.".Inject(_transform.position, currentPositionMagnitude));
-            //float targetPositionMagnitude = (target.position - TempGameValues.UniverseOrigin).magnitude;
-            //Debug.LogWarning("target position is {0}, Distance to Origin is {1}.".Inject(target.position, targetPositionMagnitude));
+            //float targetPositionMagnitude = (Target.position - TempGameValues.UniverseOrigin).magnitude;
+            //Debug.LogWarning("Target position is {0}, Distance to Origin is {1}.".Inject(Target.position, targetPositionMagnitude));
             //Debug.LogWarning("_distanceFromTarget is {0}.".Inject(_distanceFromTarget));
             return _transform.position;
         }
@@ -929,14 +927,14 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     }
 
     /// <summary>
-    /// Attempts to assign an object found under the provided screenPoint as the new target. If more than one object is found,
-    /// then the closest object implementing iFocus (typically Cellestial Bodies and Ships) becomes the target. If none of the objects
+    /// Attempts to assign an object found under the provided screenPoint as the new Target. If more than one object is found,
+    /// then the closest object implementing iFocus (typically Cellestial Bodies and Ships) becomes the Target. If none of the objects
     /// found implements iFocus, then the farthest object implementing iCameraTarget is used. If the DummyTarget is found, or no 
-    /// object at all is found, then the DummyTarget becomes the target under the screenPoint at universe edge.
+    /// object at all is found, then the DummyTarget becomes the Target under the screenPoint at universe edge.
     /// </summary>
     /// <param name="screenPoint">The screen point.</param>
     /// <returns>
-    /// true if the target is changed, or if the dummyTarget has its location changed. false if the target remains the same (or if the dummyTarget, its location remains the same).
+    /// true if the Target is changed, or if the dummyTarget has its location changed. false if the Target remains the same (or if the dummyTarget, its location remains the same).
     /// </returns>
     private bool TrySetTargetAtScreenPoint(Vector3 screenPoint) {
         Transform proposedTarget;
@@ -956,44 +954,44 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
 
             // NOTE: As Rigidbodies consume child collider events, a hit on a child collider when there is a rigidbody parent (my current ship heirarchy)
             // involved, will return the transform of the parent, not the child.
-            var iFocusHits = from h in hits where h.transform.GetInterfaceInChildren<ICameraFocusable>() != null select h;
-            if (!iFocusHits.IsNullOrEmpty()) {
-                //Debug.Log("GetInterface finding {0} ICameraFocusable hits.".Inject(iFocusHits.ToArray<RaycastHit>().Length));
-                var closestIFocusHit = iFocusHits.OrderBy(ifh => (ifh.transform.position - _transform.position).magnitude).First();
-                proposedTarget = closestIFocusHit.transform;
+            var zoomToClosestHits = from h in hits where h.transform.GetInterfaceInChildren<IZoomToClosest>() != null select h;
+            if (!zoomToClosestHits.IsNullOrEmpty()) {
+                //Debug.Log("GetInterface finding {0} ICameraFocusable hits.".Inject(zoomToClosestHits.ToArray<RaycastHit>().Length));
+                var closestHit = zoomToClosestHits.OrderBy(ifh => (ifh.transform.position - _transform.position).magnitude).First();
+                proposedTarget = closestHit.transform;
                 proposedTargetPoint = proposedTarget.position;
                 return TryChangeTarget(proposedTarget, proposedTargetPoint);
             }
 
             // no iFocus game objects under the cursor, so check for ICameraTargetable now
-            var iCameraHits = from h in hits where h.transform.GetInterfaceInChildren<ICameraTargetable>() != null select h;
-            if (!iCameraHits.IsNullOrEmpty()) {
-                //Debug.Log("GetInterface finding {0} ICamera hits.".Inject(iCameraHits.ToArray<RaycastHit>().Length));
-                var furthestICameraHit = iCameraHits.OrderBy(ich => (ich.transform.position - _transform.position).magnitude).Last();
-                proposedTarget = furthestICameraHit.transform;
-                proposedTargetPoint = furthestICameraHit.point;
+            var zoomToFurthestHits = from h in hits where h.transform.GetInterfaceInChildren<IZoomToFurthest>() != null select h;
+            if (!zoomToFurthestHits.IsNullOrEmpty()) {
+                //Debug.Log("GetInterface finding {0} ICamera hits.".Inject(zoomToFurthestHits.ToArray<RaycastHit>().Length));
+                var furthestHit = zoomToFurthestHits.OrderBy(ich => (ich.transform.position - _transform.position).magnitude).Last();
+                proposedTarget = furthestHit.transform;
+                proposedTargetPoint = furthestHit.point;
                 return TryChangeTarget(proposedTarget, proposedTargetPoint);
             }
 
             // no iFocus or iCameraTarget game objects under the cursor, yet there are at least 2 hits, so something is wrong
-            Debug.LogError("Found {0} colliders, but none qualified as a camera target.".Inject(hits.Length));
+            Debug.LogError("Found {0} colliders, but none qualified as a camera Target.".Inject(hits.Length));
             return true;
         }
 
-        // no game object encountered under cursor so move the dummy to the edge of the universe and designate it as the target
+        // no game object encountered under cursor so move the dummy to the edge of the universe and designate it as the Target
         return TryPlaceDummyTargetAtUniverseEdgeInDirection(ray.direction);
     }
 
 
 
     /// <summary>
-    /// Attempts to change the target to the proposedTarget. If the existing target is the same
-    /// target, then the change is aborted and the method returns false.
+    /// Attempts to change the Target to the proposedTarget. If the existing Target is the same
+    /// Target, then the change is aborted and the method returns false.
     /// </summary>
-    /// <param name="proposedTarget">The proposed target. Logs an error if the DummyTarget.</param>
-    /// <param name="proposedTargetPoint">The proposed target point.</param>
+    /// <param name="proposedTarget">The proposed Target. Logs an error if the DummyTarget.</param>
+    /// <param name="proposedTargetPoint">The proposed Target point.</param>
     /// <returns>
-    /// true if the target was successfully changed, otherwise false.
+    /// true if the Target was successfully changed, otherwise false.
     /// </returns>
     private bool TryChangeTarget(Transform proposedTarget, Vector3 proposedTargetPoint) {
         if (proposedTarget == dummyTarget) {
@@ -1002,14 +1000,14 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
         }
 
         if (proposedTarget == target) {
-            //Debug.Log("Proposed Target {0} is already the existing target.".Inject(target.name));
+            //Debug.Log("Proposed Target {0} is already the existing Target.".Inject(Target.name));
             if (Mathfx.Approx(proposedTargetPoint, targetPoint, settings.smallMovementThreshold)) {
-                // the desired move of the target point on the existing target is too small to respond too
+                // the desired move of the Target point on the existing Target is too small to respond too
                 return false;
             }
             else {
-                float moveDistanceRqst = (targetPoint - proposedTargetPoint).magnitude;
-                Debug.Log("New requested Camera target point is {0} units from old.".Inject(moveDistanceRqst));
+                //float moveDistanceRqst = (targetPoint - proposedTargetPoint).magnitude;
+                //Debug.Log("New requested Camera Target point is {0} units from old.".Inject(moveDistanceRqst));
             }
         }
         ChangeTarget(proposedTarget, proposedTargetPoint);
@@ -1018,7 +1016,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
 
 
     /// <summary>
-    /// Attempts to place the dummy target at the edge of the universe located in the direction provided.
+    /// Attempts to place the dummy Target at the edge of the universe located in the direction provided.
     /// </summary>
     /// <param name="direction">The direction.</param>
     /// <returns>true if the DummyTarget was placed in a new location. False if it was not moved since it was already there.</returns>
@@ -1036,12 +1034,12 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
             }
 
             float distanceToUniverseOrigin = (dummyTarget.position - TempGameValues.UniverseOrigin).magnitude;
-            //Debug.Log("Dummy target distance to origin = {0}.".Inject(distanceToUniverseOrigin));
+            //Debug.Log("Dummy Target distance to origin = {0}.".Inject(distanceToUniverseOrigin));
             if (!distanceToUniverseOrigin.CheckRange(universeRadius, allowedPercentageVariation: 0.1F)) {
-                Debug.LogError("Camera's Dummy target is not located on UniverseEdge! Position = " + dummyTarget.position);
+                Debug.LogError("Camera's Dummy Target is not located on UniverseEdge! Position = " + dummyTarget.position);
                 return false;
             }
-            // the dummy target is already there
+            // the dummy Target is already there
             //Debug.Log("DummyTarget already present at " + dummyTarget.position + ". TargetHit at " + targetHit.t.position);
             return false;
         }

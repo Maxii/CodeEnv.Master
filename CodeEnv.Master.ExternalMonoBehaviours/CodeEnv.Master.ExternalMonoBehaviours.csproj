@@ -51,6 +51,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\_Debug\DynamicTrackingLabels.cs" />
     <Compile Include="Generic\_Debug\DynamicObjects.cs" />
     <Compile Include="Generic\Framework\AMonoBehaviourBase.cs" />
     <Compile Include="Generic\Framework\AMonoBehaviourBaseSingleton.cs" />

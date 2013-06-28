@@ -42,7 +42,7 @@ namespace CodeEnv.Master.Common {
                 }
                 nextChar = (char)next;
                 if (char.IsWhiteSpace(nextChar)) {
-                    // first white space so sb probably contains a word
+                    // first white space so value probably contains a word
                     break;
                 }
                 sb.Append(nextChar);

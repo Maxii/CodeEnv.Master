@@ -10,10 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LEVEL_LOG
+#define DEBUG_LOG
 #define DEBUG_LEVEL_WARN
 #define DEBUG_LEVEL_ERROR
-
 
 // default namespace
 
@@ -25,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// COMMENT 
 /// </summary>
-public class GuiGamePlayOptionMenuAcceptButton : GuiMenuAcceptButtonBase {
+public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
 
     private bool isCameraRollEnabled;
     private bool isZoomOutOnCursorEnabled;

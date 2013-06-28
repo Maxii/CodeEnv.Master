@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SunBillboardManager.cs
+// File: StarBillboardManager.cs
 // Manages the Billboards that are a part of Cellestial Bodies. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -24,10 +24,9 @@ using CodeEnv.Master.Common.Unity;
 using UnityEngine;
 
 /// <summary>
-/// Manages the Billboards that are a part of Cellestial Bodies. Current functionality 
-/// covers CameraFacing.
+/// Manages the Billboards that are a part of Cellestial Bodies. 
 /// </summary>
-public class SunBillboardManager : BillboardManager {
+public class StarBillboardManager : BillboardManager {
 
     private static System.Random rng = new System.Random(); // IMPROVE convert to RandomExtensions
 

@@ -26,7 +26,7 @@ using UnityEngine;
 /// Gui class that initiates a GuiPauseRequestEvent containing the designated PauseRequest
 /// that can be entered via the Editor.
 /// </summary>
-public class GuiPauseResumeOnClick : GuiButtonBase {
+public class GuiPauseResumeOnClick : AGuiButtonBase {
 
     /// <summary>
     /// The PauseRequest to be issued via event when the button is clicked.

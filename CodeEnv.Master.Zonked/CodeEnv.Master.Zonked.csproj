@@ -55,6 +55,7 @@
     <Compile Include="Game\Framework\GameClockCommand.cs" />
     <Compile Include="Game\Framework\GameClockEvent.cs" />
     <Compile Include="Game\Graphics\CameraFacing.cs" />
+    <Compile Include="Game\Graphics\GlobeManager.cs" />
     <Compile Include="Game\GUI\CameraRollOptionChangedEvent.cs" />
     <Compile Include="Game\GUI\GuiCameraRollOption.cs" />
     <Compile Include="Game\GUI\GuiCheckboxBase.cs" />
@@ -74,6 +75,8 @@
     <Compile Include="Generic\Framework\SceneStartupSequencer.cs" />
     <Compile Include="Generic\Framework\__GameTime.cs" />
     <Compile Include="Generic\Graphics\GuiManagerBase.cs" />
+    <Compile Include="Generic\Graphics\__ColoredTextFactory.cs" />
+    <Compile Include="Generic\Graphics\__GuiCursorHudTextFactory.cs" />
     <Compile Include="Generic\IO\_CameraControl.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

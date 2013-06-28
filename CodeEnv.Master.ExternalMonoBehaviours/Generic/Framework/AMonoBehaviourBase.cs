@@ -205,6 +205,35 @@ public abstract class AMonoBehaviourBase : MonoBehaviour {
     #endregion
 
     /// <summary>
+    /// Gets the single component of Type T that belongs to one of the immediate children of the GameObject.
+    /// Returns null if none found. Throws an exception if more than one is found.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <exception cref="InvalidOperationException" />
+    /// <returns></returns>
+    public T GetComponentInImmediateChildren<T>() where T : Component {
+        T[] tComponents = GetComponentsInImmediateChildren<T>();
+        if (tComponents.IsNullOrEmpty<T>()) {
+            return null;
+        }
+        if (tComponents.Length >= 2) {
+            throw new InvalidOperationException("More than one component found.");
+        }
+        return tComponents[0];
+    }
+
+    /// <summary>
+    /// Gets all the components of Type T that belong to the immediate children of the GameObject. Can be empty.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    public T[] GetComponentsInImmediateChildren<T>() where T : Component {
+        T[] tComponentsInAllChildren = GetComponentsInChildren<T>();
+        var tComponentsInImmediateChildren = from t in tComponentsInAllChildren where t.transform.parent == gameObject.transform select t;
+        return tComponentsInImmediateChildren.ToArray<T>();
+    }
+
+    /// <summary>
     /// Like GetComponent&lt;T&gt;(), this returns the script component that implements Interface I if the game object has one attached, null if it doesn't. 
     /// </summary>
     /// <typeparam name="I">The Interface Type.</typeparam>
@@ -219,7 +248,7 @@ public abstract class AMonoBehaviourBase : MonoBehaviour {
     /// <typeparam name="I">The Type of Interface.</typeparam>
     /// <returns></returns>
     public I[] GetInterfaceComponents<I>() where I : class {
-        return ConvertToArray<I>(GetComponents(typeof(I)));
+        return Utility.ConvertToArray<I>(GetComponents(typeof(I)));
     }
 
     /// <summary>
@@ -240,19 +269,6 @@ public abstract class AMonoBehaviourBase : MonoBehaviour {
             }
         }
         return list;
-    }
-
-    /// <summary>
-    /// Converts a list of type T to an array.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="list">The list.</param>
-    /// <returns>An array of type T.</returns>
-    public static T[] ConvertToArray<T>(IList list) {
-        T[] result = new T[list.Count];
-        list.CopyTo(result, 0);
-        return result;
-
     }
 
     /// <summary>

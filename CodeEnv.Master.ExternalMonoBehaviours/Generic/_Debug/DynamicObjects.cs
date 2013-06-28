@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: DynamicObjects.cs
-// Singleton for easy access to DynamicObjects folder in startScene.
+// Singleton for easy access to DynamicObjects folder in Scene.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,20 +23,19 @@ using CodeEnv.Master.Common.Unity;
 using UnityEngine;
 
 /// <summary>
-/// Singleton for easy access to DynamicObjects folder in startScene.
+/// Singleton for easy access to DynamicObjects folder in Scene.
 /// </summary>
 public class DynamicObjects : MonoBehaviour {
+
+    private static string folderName = typeof(DynamicObjects).Name;
 
     /// <summary>
     /// Gets the DynamicObjects folder.
     /// </summary>
-    /// <value>
-    /// The folder.
-    /// </value>
     public static Transform Folder {
         get {
-            if (Instance.gameObject.name != TempGameValues.DynamicObjectsFolderName) {
-                D.Error("Expecting folder {0} but got {1}.", TempGameValues.DynamicObjectsFolderName, Instance.gameObject.name);
+            if (Instance.gameObject.name != folderName) {
+                D.Error("Expecting folder {0} but got {1}.", folderName, Instance.gameObject.name);
             }
             return Instance.transform;
         }
@@ -47,22 +46,22 @@ public class DynamicObjects : MonoBehaviour {
     public static DynamicObjects Instance {
         get {
             if (instance == null) {
-                // values is required for the first time, so look for it
+                // value is required for the first time, so look for it
                 instance = GameObject.FindObjectOfType(typeof(DynamicObjects)) as DynamicObjects;
                 if (instance == null) {
                     // no instance created yet, so create one
-                    GameObject dynamicObjectsFolder = GameObject.Find(TempGameValues.DynamicObjectsFolderName);
+                    GameObject dynamicObjectsFolder = GameObject.Find(folderName);
                     if (dynamicObjectsFolder != null) {
                         // if our destination folder exists, add our newly created instance to it
                         instance = dynamicObjectsFolder.AddComponent<DynamicObjects>();
                     }
                     else {
-                        // DynamicObjects folder isn't in the startScene, so create it
+                        // DynamicObjects folder isn't in the Scene, so create it
                         D.Warn("No DynamicObjects folder found, so creating one.");
-                        dynamicObjectsFolder = new GameObject(TempGameValues.DynamicObjectsFolderName, typeof(DynamicObjects));
+                        dynamicObjectsFolder = new GameObject(folderName, typeof(DynamicObjects));
                         instance = dynamicObjectsFolder.GetComponent<DynamicObjects>();
                         if (instance == null) {
-                            D.Error("Problem during the creation of {0}.", typeof(DynamicObjects).ToString());
+                            D.Error("Problem during the creation of {0}.", folderName);
                         }
                     }
                 }

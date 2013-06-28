@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GuiCursorHud.cs
+// File: GuiCursorHUD.cs
 // HUD that follows the Cursor on the screen.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -16,7 +16,6 @@
 
 // default namespace
 
-using System;
 using System.Text;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.Unity;
@@ -25,24 +24,22 @@ using UnityEngine;
 /// <summary>
 /// HUD that follows the Cursor on the screen.
 /// </summary>
-public sealed class GuiCursorHud : AMonoBehaviourBaseSingleton<GuiCursorHud>, IGuiCursorHud {
+public sealed class GuiCursorHUD : AMonoBehaviourBaseSingleton<GuiCursorHUD> {
 
     // Camera used to draw this HUD
     public Camera uiCamera;
 
     private Transform _transform;
-    //private GameEventManager _eventMgr;
     private UILabel _label;
 
     void Awake() {
         _transform = transform;
-        //_eventMgr = GameEventManager.Instance;
         UpdateRate = UpdateFrequency.Continuous;
     }
 
     void Start() {
         _label = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
-        _label.depth = 100; // draw on top of everything
+        _label.depth = 100; // draw on top of other Gui Elements in the same Panel
         NGUITools.SetActive(_label.gameObject, false);  //begin deactivated so label doesn't show
         if (uiCamera == null) {
             uiCamera = NGUITools.FindCameraForLayer(gameObject.layer);
@@ -81,28 +78,17 @@ public sealed class GuiCursorHud : AMonoBehaviourBaseSingleton<GuiCursorHud>, IG
         }
     }
 
-    protected override void OnApplicationQuit() {
-        instance = null;
-    }
-
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
-    #region IGuiCursorHud Members
-
-    public void Clear() {
-        Set(string.Empty);
-    }
-
-    public void Set(string textInLabel) {
+    /// <summary>
+    /// Populate the HUD with text.
+    /// </summary>
+    /// <param name="text">The text to place in the HUD.</param>
+    public void Set(string text) {
         if (Instance != null) {
-            if (Utility.CheckForContent(textInLabel)) {
+            if (Utility.CheckForContent(text)) {
                 if (!NGUITools.GetActive(_label.gameObject)) {
                     NGUITools.SetActive(_label.gameObject, true);
                 }
-                _label.text = textInLabel;
+                _label.text = text;
                 _label.MakePixelPerfect();
                 UpdatePosition();
             }
@@ -114,11 +100,36 @@ public sealed class GuiCursorHud : AMonoBehaviourBaseSingleton<GuiCursorHud>, IG
         }
     }
 
-    public void Set(StringBuilder sbHudText) {
-        Set(sbHudText.ToString());
+    /// <summary>
+    /// Populate the HUD with text from the StringBuilder.
+    /// </summary>
+    /// <param name="sb">The StringBuilder containing the text.</param>
+    public void Set(StringBuilder sb) {
+        Set(sb.ToString());
     }
 
-    #endregion
+    /// <summary>
+    /// Populate the HUD with text from the GuiCursorHudText.
+    /// </summary>
+    /// <param name="guiCursorHudText">The GUI cursor hud text.</param>
+    public void Set(GuiCursorHudText guiCursorHudText) {
+        Set(guiCursorHudText.GetText());
+    }
+
+    /// <summary>
+    /// Clear the HUD so only the cursor shows.
+    /// </summary>
+    public void Clear() {
+        Set(string.Empty);
+    }
+
+    protected override void OnApplicationQuit() {
+        instance = null;
+    }
+
+    public override string ToString() {
+        return new ObjectAnalyzer().ToString(this);
+    }
 
 }
 

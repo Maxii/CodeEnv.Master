@@ -15,6 +15,7 @@ namespace CodeEnv.Master.Common {
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text;
 
     /// <summary>
     /// COMMENT 
@@ -145,6 +146,28 @@ namespace CodeEnv.Master.Common {
                 return collection.Count < 1;
             }
             return !enumerable.Any();
+        }
+
+        /// <summary>
+        /// Constructs a string separated by the provided delimiter from the elements of the IEnumerable source.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source">The source.</param>
+        /// <param name="delimiter">The delimiter string. Default is ",".</param>
+        /// <returns></returns>
+        public static string Concatenate<T>(this IEnumerable<T> source, string delimiter = Constants.Comma) {
+            var sb = new StringBuilder();
+            bool first = true;
+            foreach (T t in source) {
+                if (first) {
+                    first = false;
+                }
+                else {
+                    sb.Append(delimiter);
+                }
+                sb.Append(t);
+            }
+            return sb.ToString();
         }
 
     }

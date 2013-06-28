@@ -234,7 +234,7 @@ public class _CameraControl : AMonoBehaviourBaseSingleton<_CameraControl>, IDisp
     /// Called when enabled set to true after the script has been loaded, including after DeSerialization.
     /// </summary>
     void OnEnable() {
-        //Debug.Log("Camera OnEnable() called. Enabled = " + enabled);
+        //Debug.Log("Camera OnEnable() called. IsEnabled = " + enabled);
     }
 
     // temp workaround for funny behaviour with application focusTarget starting GameScene
