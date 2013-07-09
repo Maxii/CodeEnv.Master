@@ -52,7 +52,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Generic\Graphics\IOnVisible.cs" />
+    <Compile Include="CombatStrength.cs" />
+    <Compile Include="Generic\Graphics\IOnVisibleRelayTarget.cs" />
     <Compile Include="Generic\IO\AEnumValues.cs" />
     <Compile Include="Generic\IO\GameClockSpeed_Values.cs" />
     <Compile Include="Game\Framework\AGameEvent.cs" />
@@ -97,6 +98,8 @@
     <Compile Include="Game\Gameplay\OpeResource.cs" />
     <Compile Include="Game\Gameplay\OpeYield.cs" />
     <Compile Include="Game\Gameplay\XResource.cs" />
+    <Compile Include="Generic\Graphics\IColliderRelayTarget.cs" />
+    <Compile Include="Game\Gameplay\SettlementSize.cs" />
     <Compile Include="ThirdParty\TextScanner.cs" />
     <Compile Include="ThirdParty\FlagsHelper.cs" />
     <Compile Include="Generic\_Debug\ObjectAnalyzer.cs" />

@@ -27,11 +27,8 @@ public abstract class AGuiLabelReadoutBase : GuiTooltip {
     protected GameEventManager eventMgr;
     protected UILabel readoutLabel;
 
-    void Awake() {
-        InitializeOnAwake();
-    }
-
-    protected virtual void InitializeOnAwake() {
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
         eventMgr = GameEventManager.Instance;
         readoutLabel = gameObject.GetSafeMonoBehaviourComponent<UILabel>();
     }

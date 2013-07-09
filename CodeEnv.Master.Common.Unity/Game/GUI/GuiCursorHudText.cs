@@ -32,31 +32,41 @@ namespace CodeEnv.Master.Common.Unity {
         // This is needed as the order of Dictionary.Keys is not defined when iterating through it, even if they were added in the right order
         private static IList<GuiCursorHudDisplayLineKeys> _displayLineOrder = new List<GuiCursorHudDisplayLineKeys>() {
                 {GuiCursorHudDisplayLineKeys.Name},
+                {GuiCursorHudDisplayLineKeys.IntelState},
                 {GuiCursorHudDisplayLineKeys.Capacity},
                 {GuiCursorHudDisplayLineKeys.Resources},
                 {GuiCursorHudDisplayLineKeys.Specials}, 
+                {GuiCursorHudDisplayLineKeys.SettlementSize},
+                {GuiCursorHudDisplayLineKeys.SettlementDetails},
                 {GuiCursorHudDisplayLineKeys.Owner},
                 {GuiCursorHudDisplayLineKeys.CombatStrength},
+                {GuiCursorHudDisplayLineKeys.CombatStrengthDetails},
                 {GuiCursorHudDisplayLineKeys.Health}, 
                 {GuiCursorHudDisplayLineKeys.Speed}, 
                 {GuiCursorHudDisplayLineKeys.Composition},
-                {GuiCursorHudDisplayLineKeys.IntelState},
+                {GuiCursorHudDisplayLineKeys.CompositionDetails},
+                {GuiCursorHudDisplayLineKeys.ShipDetails},
                 {GuiCursorHudDisplayLineKeys.Distance}
         };
 
         private static IDictionary<GuiCursorHudDisplayLineKeys, string> _baseDisplayLineContent = new Dictionary<GuiCursorHudDisplayLineKeys, string>() {
 
             {GuiCursorHudDisplayLineKeys.Name, "{0}"},
-            {GuiCursorHudDisplayLineKeys.Distance, "Distance: {0} Units"},  
+            {GuiCursorHudDisplayLineKeys.IntelState, "< {0} >"},
             {GuiCursorHudDisplayLineKeys.Capacity, "Capacity: {0} Slots"},   
             {GuiCursorHudDisplayLineKeys.Resources, "Resources: O: {0}, P: {1}, E: {2}"},
             {GuiCursorHudDisplayLineKeys.Specials, "[800080]Special Resources:[-] {0} {1}"},
-            {GuiCursorHudDisplayLineKeys.IntelState, "< {0} >"},
+            {GuiCursorHudDisplayLineKeys.SettlementSize, "Settlement size: {0}"},
+            {GuiCursorHudDisplayLineKeys.SettlementDetails, "Settlement details: {0}, TBD"},
             {GuiCursorHudDisplayLineKeys.Owner, "Owner: {0}"},
+            {GuiCursorHudDisplayLineKeys.CombatStrength, "Combat Strength: {0}"}, 
+            {GuiCursorHudDisplayLineKeys.CombatStrengthDetails, "Combat details: B: {0}/{1}, M: {2}/{3}, P: {4}/{5}"},
             {GuiCursorHudDisplayLineKeys.Health, "Health: {0} of {1} HP"},  
-            {GuiCursorHudDisplayLineKeys.CombatStrength, "Strength: {0}"}, 
-            {GuiCursorHudDisplayLineKeys.Speed, "Speed: {0} Units per day"},  
-            {GuiCursorHudDisplayLineKeys.Composition, "Class/Design/Qty TBD"}
+            {GuiCursorHudDisplayLineKeys.Speed, "Speed: {0} of {1} Units per day"},  
+            {GuiCursorHudDisplayLineKeys.Composition, "Class/Qty {0}"},
+            {GuiCursorHudDisplayLineKeys.CompositionDetails, "Class/Design/Qty {0}"},
+            {GuiCursorHudDisplayLineKeys.ShipDetails, "Mass: {0}, TurnRate: {1}"},
+            {GuiCursorHudDisplayLineKeys.Distance, "Distance from Camera: {0} Units"} 
         };
 
         private StringBuilder text = new StringBuilder();
@@ -173,8 +183,8 @@ namespace CodeEnv.Master.Common.Unity {
 
             string baseText;
             if (_baseDisplayLineContent.TryGetValue(lineKey, out baseText)) {
-                D.Log("BaseText = {0}", baseText);
-                D.Log("Text Elements = {0}", textElements.Concatenate<string>(Constants.Comma));
+                //D.Log("BaseText = {0}", baseText);
+                //D.Log("Text Elements = {0}", textElements.Concatenate<string>(Constants.Comma));
                 string colorEmbeddedLineText = baseText.Inject(textElements.ToArray<string>());
                 return colorEmbeddedLineText;
             }

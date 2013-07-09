@@ -29,21 +29,57 @@ namespace CodeEnv.Master.Common.Unity {
 
         private static IDictionary<IntelLevel, IList<GuiCursorHudDisplayLineKeys>> _hudLineKeyLookup = new Dictionary<IntelLevel, IList<GuiCursorHudDisplayLineKeys>> {
 
-        {IntelLevel.Unexplored, new List<GuiCursorHudDisplayLineKeys> { GuiCursorHudDisplayLineKeys.Name,
+        {IntelLevel.Unknown, new List<GuiCursorHudDisplayLineKeys> { GuiCursorHudDisplayLineKeys.Name,
                                                                        GuiCursorHudDisplayLineKeys.IntelState,
                                                                        GuiCursorHudDisplayLineKeys.Distance }},
 
-        {IntelLevel.OutOfRange, new List<GuiCursorHudDisplayLineKeys> {   GuiCursorHudDisplayLineKeys.Name,
+        {IntelLevel.OutOfDate, new List<GuiCursorHudDisplayLineKeys> {   GuiCursorHudDisplayLineKeys.Name,
+                                                                       GuiCursorHudDisplayLineKeys.IntelState,
                                                                        GuiCursorHudDisplayLineKeys.Capacity,
                                                                        GuiCursorHudDisplayLineKeys.Resources,
                                                                        GuiCursorHudDisplayLineKeys.Specials,
-                                                                       GuiCursorHudDisplayLineKeys.IntelState,
                                                                        GuiCursorHudDisplayLineKeys.Distance }},
 
-       {IntelLevel.ShortRangeSensors, new List<GuiCursorHudDisplayLineKeys> {GuiCursorHudDisplayLineKeys.Name,
+        {IntelLevel.LongRangeSensors, new List<GuiCursorHudDisplayLineKeys> {GuiCursorHudDisplayLineKeys.Name,
+                                                                       GuiCursorHudDisplayLineKeys.IntelState,
+                                                                            GuiCursorHudDisplayLineKeys.Capacity,
+                                                                          GuiCursorHudDisplayLineKeys.Resources,
+                                                                       GuiCursorHudDisplayLineKeys.Specials,
+                                                                       GuiCursorHudDisplayLineKeys.SettlementSize,
                                                                             GuiCursorHudDisplayLineKeys.Owner,
+                                                                           GuiCursorHudDisplayLineKeys.CombatStrength,
+                                                                           GuiCursorHudDisplayLineKeys.Composition,
                                                                            GuiCursorHudDisplayLineKeys.Speed,
+                                                                           GuiCursorHudDisplayLineKeys.Distance }},
+
+         {IntelLevel.ShortRangeSensors, new List<GuiCursorHudDisplayLineKeys> {GuiCursorHudDisplayLineKeys.Name,
+                                                                       GuiCursorHudDisplayLineKeys.IntelState,
+                                                                            GuiCursorHudDisplayLineKeys.Capacity,
+                                                                          GuiCursorHudDisplayLineKeys.Resources,
+                                                                       GuiCursorHudDisplayLineKeys.Specials,
+                                                                       GuiCursorHudDisplayLineKeys.SettlementDetails,
+                                                                            GuiCursorHudDisplayLineKeys.Owner,
+                                                                           GuiCursorHudDisplayLineKeys.CombatStrengthDetails,
+                                                                           GuiCursorHudDisplayLineKeys.CompositionDetails,
+                                                                           GuiCursorHudDisplayLineKeys.Speed,
+                                                                           GuiCursorHudDisplayLineKeys.ShipDetails,
+                                                                           GuiCursorHudDisplayLineKeys.Distance }},
+
+
+
+       {IntelLevel.Complete, new List<GuiCursorHudDisplayLineKeys> {GuiCursorHudDisplayLineKeys.Name,
+                                                                       GuiCursorHudDisplayLineKeys.IntelState,
+                                                                            GuiCursorHudDisplayLineKeys.Capacity,
+                                                                          GuiCursorHudDisplayLineKeys.Resources,
+                                                                       GuiCursorHudDisplayLineKeys.Specials,
+                                                                       GuiCursorHudDisplayLineKeys.SettlementDetails,
+                                                                            GuiCursorHudDisplayLineKeys.Owner,
+                                                                           GuiCursorHudDisplayLineKeys.CombatStrengthDetails,
+                                                                           GuiCursorHudDisplayLineKeys.CompositionDetails,
+                                                                           GuiCursorHudDisplayLineKeys.Speed,
+                                                                           GuiCursorHudDisplayLineKeys.ShipDetails,
                                                                            GuiCursorHudDisplayLineKeys.Distance }}
+
     };
 
         private IDictionary<IntelLevel, GuiCursorHudText> _guiCursorHudTextCache;
@@ -85,7 +121,7 @@ namespace CodeEnv.Master.Common.Unity {
 
         /// <summary>
         /// Makes a strategy instance of IColoredTextList. Only the keys that use data from this AData are implemented
-        /// in this base class.
+        /// in this base class. The other keys are implemented to act as a catchall for line keys that are processed in derived factories, returning an empty ColoredTextList which is ignored by GuiCursorHudText
         /// </summary>
         /// <param name="intelLevel">The intel level.</param>
         /// <param name="key">The key.</param>
@@ -95,17 +131,33 @@ namespace CodeEnv.Master.Common.Unity {
 
             switch (key) {
                 case GuiCursorHudDisplayLineKeys.Name:
-                    return (_data.Name != null) ? new ColoredTextList_String(_data.Name) : new ColoredTextList_String();
+                    return (_data.Name != null) ? new ColoredTextList_String(_data.Name) : new ColoredTextList();
                 case GuiCursorHudDisplayLineKeys.Distance:
                     // FIXME Vector3 default value is (0,0,0) not null. A System located at (0.0.0) will not get past this test
-                    return (_data.Position != Vector3.zero) ? new ColoredTextList_Distance(_data.Position) : new ColoredTextList_Distance();
+                    return (_data.Position != Vector3.zero) ? new ColoredTextList_Distance(_data.Position) : new ColoredTextList();
                 case GuiCursorHudDisplayLineKeys.Owner:
-                    return (_data.Owner != Players.None) ? new ColoredTextList_Owner(_data.Owner) : new ColoredTextList_Owner();
+                    return (_data.Owner != Players.None) ? new ColoredTextList_Owner(_data.Owner) : new ColoredTextList();
                 case GuiCursorHudDisplayLineKeys.Health:
-                    return (_data.MaxHitPoints != Constants.ZeroF) ? new ColoredTextList_Health(_data.Health, _data.MaxHitPoints) : new ColoredTextList_Health();
+                    return (_data.MaxHitPoints != Constants.ZeroF) ? new ColoredTextList_Health(_data.Health, _data.MaxHitPoints) : new ColoredTextList();
                 case GuiCursorHudDisplayLineKeys.CombatStrength:
                     // {0:0.}    float with zero decimal places, rounded                    
-                    return (_data.CombatStrength != Constants.ZeroF) ? new ColoredTextList<float>(_data.CombatStrength, "{0:0.}") : new ColoredTextList<float>();
+                    return (_data.CombatStrength != null) ? new ColoredTextList<float>("{0:0.}", _data.CombatStrength.Combined) : new ColoredTextList();
+                case GuiCursorHudDisplayLineKeys.CombatStrengthDetails:
+                    return (_data.CombatStrength != null) ? new ColoredTextList_CombatDetails(_data.CombatStrength) : new ColoredTextList();
+                case GuiCursorHudDisplayLineKeys.IntelState:
+                    return (_data.DateHumanPlayerExplored != null) ? new ColoredTextList_Intel(_data.DateHumanPlayerExplored, intelLevel) : new ColoredTextList();
+
+                // The following is a catchall for line keys that are processed in derived factories. An empty ColoredTextList will be returned which will be ignored by GuiCursorHudText
+                case GuiCursorHudDisplayLineKeys.Capacity:
+                case GuiCursorHudDisplayLineKeys.Composition:
+                case GuiCursorHudDisplayLineKeys.CompositionDetails:
+                case GuiCursorHudDisplayLineKeys.Resources:
+                case GuiCursorHudDisplayLineKeys.SettlementDetails:
+                case GuiCursorHudDisplayLineKeys.SettlementSize:
+                case GuiCursorHudDisplayLineKeys.ShipDetails:
+                case GuiCursorHudDisplayLineKeys.Specials:
+                case GuiCursorHudDisplayLineKeys.Speed:
+                    return new ColoredTextList();
                 case GuiCursorHudDisplayLineKeys.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(key));
@@ -118,8 +170,8 @@ namespace CodeEnv.Master.Common.Unity {
 
         #region IColoredTextList Strategy Classes
 
-        public abstract class AColoredTextList : IColoredTextList {
-            protected IList<ColoredText> _list = new List<ColoredText>(3);
+        public class ColoredTextList : IColoredTextList {
+            protected IList<ColoredText> _list = new List<ColoredText>(6);
 
             #region IColoredTextList Members
             public IList<ColoredText> GetList() {
@@ -128,63 +180,74 @@ namespace CodeEnv.Master.Common.Unity {
             #endregion
         }
 
-        public class ColoredTextList<T> : AColoredTextList where T : struct {
+        public class ColoredTextList<T> : ColoredTextList where T : struct {
 
-            public ColoredTextList() { }    // used to create an empty list
-            public ColoredTextList(T value, string format = "{0:G3}") {
-                _list.Add(new ColoredText(format.Inject(value)));
+            public ColoredTextList(params T[] values) : this("{0:G3}", values) { }
+            public ColoredTextList(string format, params T[] values) {
+                foreach (T v in values) {
+                    _list.Add(new ColoredText(format.Inject(v)));
+                }
             }
         }
 
-        public class ColoredTextList_String : AColoredTextList {
+        public class ColoredTextList_String : ColoredTextList {
 
-            public ColoredTextList_String() { }    // used to create an empty list
-            public ColoredTextList_String(string value, string format = "{0}") {
-                _list.Add(new ColoredText(format.Inject(value)));
+            public ColoredTextList_String(params string[] values) {
+                foreach (string v in values) {
+                    _list.Add(new ColoredText(v));
+                }
             }
         }
 
-        public class ColoredTextList_Distance : AColoredTextList {
+        public class ColoredTextList_Distance : ColoredTextList {
 
-            public ColoredTextList_Distance() { }    // used to create an empty list
-            public ColoredTextList_Distance(Vector3 position) {
-                // TODO calculate from SystemData.Position and <code>static GetSelected()<code>
-                float distance = Vector3.Distance(position, TempGameValues.UniverseOrigin);
-                _list.Add(new ColoredText("{0:0.#}".Inject(distance))); // {0:0.#}     float with max one decimal place, rounded
+            public ColoredTextList_Distance(Vector3 position, string format = "{0:0.#}") {
+                // TODO calculate from Data.Position and <code>static GetSelected()<code>
+                float distance = Vector3.Distance(position, Camera.main.transform.position);
+                _list.Add(new ColoredText(format.Inject(distance))); // {0:0.#}     float with max one decimal place, rounded
             }
         }
 
-        public class ColoredTextList_Resources : AColoredTextList {
+        public class ColoredTextList_Resources : ColoredTextList {
 
-            public ColoredTextList_Resources() { }    // used to create an empty list
-            public ColoredTextList_Resources(OpeYield ope) {
-                string organics_formatted = String.Format("{0:0.}", ope.Organics);  // {0:0.}    float with zero decimal places, rounded
-                string particulates_formatted = String.Format("{0:0.}", ope.Particulates);
-                string energy_formatted = String.Format("{0:0.}", ope.Energy);
+            public ColoredTextList_Resources(OpeYield ope, string format = "{0:0.}") {
+                string organics_formatted = format.Inject(ope.Organics);  // {0:0.}    float with zero decimal places, rounded
+                string particulates_formatted = format.Inject(ope.Particulates);
+                string energy_formatted = format.Inject(ope.Energy);
                 _list.Add(new ColoredText(organics_formatted));
                 _list.Add(new ColoredText(particulates_formatted));
                 _list.Add(new ColoredText(energy_formatted));
             }
         }
 
-        public class ColoredTextList_Specials : AColoredTextList {
+        public class ColoredTextList_Specials : ColoredTextList {
 
-            public ColoredTextList_Specials() { }    // used to create an empty list
-            public ColoredTextList_Specials(XYield x) {
+            public ColoredTextList_Specials(XYield x, string valueFormat = "{0:0.}") {
                 // TODO how to handle variable number of XResources
                 IList<XYield.XResourceValuePair> allX = x.GetAllResources();
 
                 string resourceName = allX[0].Resource.GetName();
                 float resourceYield = allX[0].Value;
-                string resourceYield_formatted = String.Format("{0:0.}", resourceYield);    // {0:0.}  float with zero decimal places, rounded
+                string resourceYield_formatted = valueFormat.Inject(resourceYield);    // {0:0.}  float with zero decimal places, rounded
                 _list.Add(new ColoredText(resourceName));
                 _list.Add(new ColoredText(resourceYield_formatted));
             }
         }
 
-        public class ColoredTextList_Intel : AColoredTextList {
+        public class ColoredTextList_CombatDetails : ColoredTextList {
 
-            public ColoredTextList_Intel() { }    // used to create an empty list
+            public ColoredTextList_CombatDetails(CombatStrength cs, string format = "{0:0.}") {
+                _list.Add(new ColoredText(format.Inject(cs.Beam_Offense)));
+                _list.Add(new ColoredText(format.Inject(cs.Beam_Defense)));
+                _list.Add(new ColoredText(format.Inject(cs.Particle_Offense)));
+                _list.Add(new ColoredText(format.Inject(cs.Particle_Defense)));
+                _list.Add(new ColoredText(format.Inject(cs.Missile_Offense)));
+                _list.Add(new ColoredText(format.Inject(cs.Missile_Defense)));
+            }
+        }
+
+        public class ColoredTextList_Intel : ColoredTextList {
+
             public ColoredTextList_Intel(IGameDate exploredDate, IntelLevel intelLevel) {
                 // TODO fill out from HumanPlayer.GetIntelState(System) - need last intel date too
                 GameTimePeriod intelAge = new GameTimePeriod(exploredDate, GameTime.Date);
@@ -195,12 +258,13 @@ namespace CodeEnv.Master.Common.Unity {
             private string ConstructIntelText(IntelLevel intelLevel, GameTimePeriod intelAge) {
                 string intelMsg = intelLevel.GetName();
                 switch (intelLevel) {
-                    case IntelLevel.Unexplored:
+                    case IntelLevel.Unknown:
                     case IntelLevel.LongRangeSensors:
                     case IntelLevel.ShortRangeSensors:
+                    case IntelLevel.Complete:
                         // no data to add
                         break;
-                    case IntelLevel.OutOfRange:
+                    case IntelLevel.OutOfDate:
                         string addendum = String.Format(". Last Intel {0} days ago.", intelAge.FormattedPeriod);
                         intelMsg = intelMsg + addendum;
                         break;
@@ -212,23 +276,21 @@ namespace CodeEnv.Master.Common.Unity {
             }
         }
 
-        public class ColoredTextList_Owner : AColoredTextList {
+        public class ColoredTextList_Owner : ColoredTextList {
 
-            public ColoredTextList_Owner() { }    // used to create an empty list
             public ColoredTextList_Owner(Players player) {
                 _list.Add(new ColoredText(player.GetName(), player.PlayerColor()));
             }
         }
 
-        public class ColoredTextList_Health : AColoredTextList {
+        public class ColoredTextList_Health : ColoredTextList {
 
-            public ColoredTextList_Health() { }    // used to create an empty list
-            public ColoredTextList_Health(float health, float maxHp) {
+            public ColoredTextList_Health(float health, float maxHp, string format = "{0:0.}") {
                 float healthRatio = health / maxHp;
                 Color healthColor = (healthRatio > TempGameValues.InjuredHealthThreshold) ? Color.green :
                             ((healthRatio > TempGameValues.CriticalHealthThreshold) ? Color.yellow : Color.red);
-                string health_formatted = String.Format("{0:0.}", health);  // {0:0.}    float with zero decimal places, rounded
-                string maxHp_formatted = String.Format("{0:0.}", maxHp);
+                string health_formatted = format.Inject(health);  // {0:0.}    float with zero decimal places, rounded
+                string maxHp_formatted = format.Inject(maxHp);
                 _list.Add(new ColoredText(health_formatted, healthColor));
                 _list.Add(new ColoredText(maxHp_formatted, Color.green));
             }

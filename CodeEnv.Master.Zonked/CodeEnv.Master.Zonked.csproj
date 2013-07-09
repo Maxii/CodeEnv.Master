@@ -78,6 +78,7 @@
     <Compile Include="Generic\Graphics\__ColoredTextFactory.cs" />
     <Compile Include="Generic\Graphics\__GuiCursorHudTextFactory.cs" />
     <Compile Include="Generic\IO\_CameraControl.cs" />
+    <Compile Include="Generic\_Debug\FpsReadoutGuiText.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -106,7 +107,6 @@
     <Folder Include="Game\Gameplay\" />
     <Folder Include="Generic\Extensions\" />
     <Folder Include="Generic\Math\" />
-    <Folder Include="Generic\_Debug\" />
     <Folder Include="ThirdParty\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

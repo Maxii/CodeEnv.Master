@@ -21,7 +21,6 @@ using UnityEngine;
 /// <summary>
 /// Manages a Star.
 /// </summary>
-[RequireComponent(typeof(SphereCollider))]
 public class StarManager : AMonoBehaviourBase, ICameraFocusable, IZoomToClosest {
 
     // Cached references
@@ -35,6 +34,7 @@ public class StarManager : AMonoBehaviourBase, ICameraFocusable, IZoomToClosest 
     private IList<GameObject> gosThatCanBeDeactivated;
 
     void Awake() {
+        UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
         _eventMgr = GameEventManager.Instance;
         _transform = transform;
         _collider = collider as SphereCollider;
@@ -51,7 +51,7 @@ public class StarManager : AMonoBehaviourBase, ICameraFocusable, IZoomToClosest 
             //Debug.Log("StarManager.OnHover(false) called.");
             _systemMgr.ClearCursorHUD();
         }
-        _systemMgr.GuiTrackingLabel.IsHighlighted = isOver;
+        _systemMgr.TrackingLabel.IsHighlighted = isOver;
     }
 
     public void EnableHeirarchy(bool toEnable) {
@@ -77,6 +77,10 @@ public class StarManager : AMonoBehaviourBase, ICameraFocusable, IZoomToClosest 
     }
 
     #region ICameraTargetable Members
+
+    public bool IsTargetable {
+        get { return true; }
+    }
 
     [SerializeField]
     private float minimumCameraViewingDistanceMultiplier = 4.0F;

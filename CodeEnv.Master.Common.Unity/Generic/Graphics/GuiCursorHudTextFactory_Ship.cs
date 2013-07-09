@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GuiCursorHudTextFactory_Fleet.cs
-// Factory that makes GuiCursorHudText and IColoredTextList instances for Fleets.
+// File: GuiCursorHudTextFactory_Ship.cs
+// COMMENT - one line to give a brief idea of what the file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,12 +18,9 @@ namespace CodeEnv.Master.Common.Unity {
 
     using CodeEnv.Master.Common;
 
-    /// <summary>
-    /// Factory that makes GuiCursorHudText and IColoredTextList instances for Fleets.
-    /// </summary>
-    public class GuiCursorHudTextFactory_Fleet : AGuiCursorHudTextFactory {
+    public class GuiCursorHudTextFactory_Ship : AGuiCursorHudTextFactory {
 
-        public GuiCursorHudTextFactory_Fleet(FleetData data) : base(data) { }
+        public GuiCursorHudTextFactory_Ship(ShipData data) : base(data) { }
 
         /// <summary>
         /// Makes a strategy instance of IColoredTextList. Only the keys that use data from this FleetData are implemented
@@ -34,16 +31,13 @@ namespace CodeEnv.Master.Common.Unity {
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
         public override IColoredTextList MakeInstance_ColoredTextList(IntelLevel intelLevel, GuiCursorHudDisplayLineKeys key) {
-            FleetData data = _data as FleetData;
+            ShipData data = _data as ShipData;
             switch (key) {
                 case GuiCursorHudDisplayLineKeys.Speed:
-                    return new ColoredTextList<float>("{0:0.#}", data.Speed, data.MaxSpeed);  // fleet will always display speed, even if zero
-                case GuiCursorHudDisplayLineKeys.Composition:
-                    // TODO                        
-                    return (data.Composition != string.Empty) ? new ColoredTextList_String(data.Composition) : new ColoredTextList();
-                case GuiCursorHudDisplayLineKeys.CompositionDetails:
-                    // TODO
-                    return (data.Composition != string.Empty) ? new ColoredTextList_String(data.Composition) : new ColoredTextList();
+                    return new ColoredTextList<float>("{0:0.#}", data.SpeedReadout, data.MaxSpeed);  // ship will always display speed, even if zero
+                case GuiCursorHudDisplayLineKeys.ShipDetails:
+                    // test with max turn rate as ships will always have a non zero value
+                    return data.MaxTurnRate != Constants.ZeroF ? new ColoredTextList<float>("{0:0.}", data.Mass, data.MaxTurnRate) : new ColoredTextList();
                 default:
                     return base.MakeInstance_ColoredTextList(intelLevel, key);
             }
@@ -52,6 +46,7 @@ namespace CodeEnv.Master.Common.Unity {
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
     }
 }
 

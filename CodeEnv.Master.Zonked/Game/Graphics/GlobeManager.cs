@@ -42,7 +42,7 @@ public class GlobeManager : AMonoBehaviourBase, ICameraFocusable {
     //private Color _startingColor;
 
     private StringBuilder hudMsg;
-    private GuiCursorHUD _cursorHud;
+    private GuiCursorHud _cursorHud;
 
     void Awake() {
         _eventMgr = GameEventManager.Instance;
@@ -58,7 +58,7 @@ public class GlobeManager : AMonoBehaviourBase, ICameraFocusable {
         if (globeRenderer.materials.Length > 1) {
             _optionalSecondMaterial = globeRenderer.materials[1];
         }
-        _cursorHud = GuiCursorHUD.Instance;
+        _cursorHud = GuiCursorHud.Instance;
         hudMsg = ConstructMsgForHud();
     }
 

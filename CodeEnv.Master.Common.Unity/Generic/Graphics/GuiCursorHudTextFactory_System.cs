@@ -37,13 +37,16 @@ namespace CodeEnv.Master.Common.Unity {
             SystemData data = _data as SystemData;
             switch (key) {
                 case GuiCursorHudDisplayLineKeys.Capacity:  // {0:00}     int with at least two digits
-                    return (data.Capacity != Constants.Zero) ? new ColoredTextList<int>(data.Capacity, "{0:00}") : new ColoredTextList<int>();
+                    return (data.Capacity != Constants.Zero) ? new ColoredTextList<int>("{0:00}", data.Capacity) : new ColoredTextList();
                 case GuiCursorHudDisplayLineKeys.Resources: // {0:0.}    float with zero decimal places, rounded
-                    return (data.Resources != null) ? new ColoredTextList_Resources(data.Resources) : new ColoredTextList_Resources();
+                    return (data.Resources != null) ? new ColoredTextList_Resources(data.Resources) : new ColoredTextList();
                 case GuiCursorHudDisplayLineKeys.Specials:
-                    return (data.SpecialResources != null) ? new ColoredTextList_Specials(data.SpecialResources) : new ColoredTextList_Specials();
-                case GuiCursorHudDisplayLineKeys.IntelState:
-                    return (data.DateHumanPlayerExplored != null) ? new ColoredTextList_Intel(data.DateHumanPlayerExplored, intelLevel) : new ColoredTextList_Intel();
+                    return (data.SpecialResources != null) ? new ColoredTextList_Specials(data.SpecialResources) : new ColoredTextList();
+                case GuiCursorHudDisplayLineKeys.SettlementSize:
+                    return (data.SettlementSize != SettlementSize.None) ? new ColoredTextList_String(data.SettlementSize.GetName()) : new ColoredTextList();
+                case GuiCursorHudDisplayLineKeys.SettlementDetails:
+                    return (data.SettlementSize != SettlementSize.None) ? new ColoredTextList_String(data.SettlementSize.GetName()) : new ColoredTextList();
+
                 default:
                     return base.MakeInstance_ColoredTextList(intelLevel, key);
             }

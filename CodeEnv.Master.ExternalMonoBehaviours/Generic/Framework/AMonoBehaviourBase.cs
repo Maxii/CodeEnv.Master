@@ -170,7 +170,7 @@ public abstract class AMonoBehaviourBase : MonoBehaviour {
     /// Note: Coroutines run on the object that StartCoroutine() is called on.  So if you are starting a coroutine on a different object it makes a lot of sense to use StartCoroutine 
     /// on that object, not the one you are currently executing.
     /// </summary>
-    /// <param name="task">The method to run as a Coroutine encapsulated as a Func&ltIEnumerator&gt delegate. The method can have no parameters and must return IEnumerator.</param>
+    /// <param name="task">The method to run as a Coroutine encapsulated as a Func&lt;IEnumerator&gt; delegate. The method can have no parameters and must return IEnumerator.</param>
     /// <returns>The Coroutine started.</returns>
     public Coroutine StartCoroutine(Func<IEnumerator> task) {
         return StartCoroutine(task.Method.Name);
@@ -181,7 +181,7 @@ public abstract class AMonoBehaviourBase : MonoBehaviour {
     /// Note: Coroutines run on the object that StartCoroutine() is called on.  So if you are starting a coroutine on a different object it makes a lot of sense to use StartCoroutine 
     /// on that object, not the one you are currently executing.
     /// </summary>
-    /// <param name="task">The method to run as a Coroutine encapsulated as a Func&ltIEnumerator&gt delegate. The method must have one parameter and return IEnumerator.</param>
+    /// <param name="task">The method to run as a Coroutine encapsulated as a Func&lt;IEnumerator&gt; delegate. The method must have one parameter and return IEnumerator.</param>
     /// <param name="value">A single optional value to use as the method's parameter, if any.</param>
     /// <returns>The Coroutine started.</returns>
     public Coroutine StartCoroutine(Func<object, IEnumerator> task, object value) {
@@ -191,14 +191,14 @@ public abstract class AMonoBehaviourBase : MonoBehaviour {
     /// <summary>
     /// Stops the specific Coroutine executing the method contained in task.
     /// </summary>
-    /// <param name="task">The method currently running as a Coroutine encapsulated as a Func&ltIEnumerator&gt delegate. The method can have no parameters and must return IEnumerator.</param>
+    /// <param name="task">The method currently running as a Coroutine encapsulated as a Func&lt;IEnumerator&gt; delegate. The method can have no parameters and must return IEnumerator.</param>
     public void StopCoroutine(Func<IEnumerator> task) {
         StopCoroutine(task.Method.Name);
     }
     /// <summary>
     /// Stops the specific Coroutine executing the method contained in task.
     /// </summary>
-    /// <param name="task">The method currently running as a Coroutine encapsulated as a Func&ltIEnumerator&gt delegate. The method must have one parameter and return IEnumerator.</param>
+    /// <param name="task">The method currently running as a Coroutine encapsulated as a Func&lt;IEnumerator&gt; delegate. The method must have one parameter and return IEnumerator.</param>
     public void StopCoroutine(Func<IEnumerator, object> task) {
         StopCoroutine(task.Method.Name);
     }

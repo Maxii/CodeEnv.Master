@@ -25,11 +25,8 @@ public abstract class AGuiPopupListBase : GuiTooltip {
 
     protected UIPopupList popupList;
 
-    void Awake() {
-        InitializeOnAwake();
-    }
-
-    protected virtual void InitializeOnAwake() {
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
         popupList = gameObject.GetSafeMonoBehaviourComponent<UIPopupList>();
         ConfigurePopupList();
         InitializeListValues();

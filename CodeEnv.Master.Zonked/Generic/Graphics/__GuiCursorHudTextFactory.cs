@@ -31,7 +31,7 @@ namespace CodeEnv.Master.Common.Unity {
 
         private static IDictionary<IntelLevel, IList<GuiCursorHudDisplayLineKeys>> _hudLineKeyLookup = new Dictionary<IntelLevel, IList<GuiCursorHudDisplayLineKeys>> {
 
-        {IntelLevel.Unexplored, new List<GuiCursorHudDisplayLineKeys> { GuiCursorHudDisplayLineKeys.Name,
+        {IntelLevel.Unknown, new List<GuiCursorHudDisplayLineKeys> { GuiCursorHudDisplayLineKeys.Name,
                                                                        GuiCursorHudDisplayLineKeys.IntelState,
                                                                        GuiCursorHudDisplayLineKeys.Distance }},
 
@@ -181,7 +181,7 @@ namespace CodeEnv.Master.Common.Unity {
         private string ConstructIntelText(IntelLevel intelLevel, GameTimePeriod intelAge) {
             string intelMsg = intelLevel.GetName();
             switch (intelLevel) {
-                case IntelLevel.Unexplored:
+                case IntelLevel.Unknown:
                 case IntelLevel.LongRangeSensors:
                 case IntelLevel.ShortRangeSensors:
                     // no data to add

@@ -16,9 +16,6 @@
 
 namespace CodeEnv.Master.Common.Unity {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
@@ -36,15 +33,15 @@ namespace CodeEnv.Master.Common.Unity {
             }
         }
 
-        public GameDate DateHumanPlayerExplored { get; set; }
-
         public int Capacity { get; set; }
 
         public OpeYield Resources { get; set; }
 
         public XYield SpecialResources { get; set; }
 
-        public SystemData() { }
+        public SettlementSize SettlementSize { get; set; }
+
+        public SystemData(Transform t) : base(t) { }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

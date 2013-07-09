@@ -23,7 +23,6 @@ using UnityEngine;
 /// <summary>
 /// Manages a Systems Orbital plane.
 /// </summary>
-[RequireComponent(typeof(BoxCollider))]
 public class OrbitalPlaneManager : AMonoBehaviourBase, ICameraFocusable, IZoomToFurthest {
 
     private GameEventManager _eventMgr;
@@ -31,6 +30,7 @@ public class OrbitalPlaneManager : AMonoBehaviourBase, ICameraFocusable, IZoomTo
     private SystemManager _systemMgr;
 
     void Awake() {
+        UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
         _eventMgr = GameEventManager.Instance;
         _transform = transform;
         _systemMgr = _transform.parent.gameObject.GetSafeMonoBehaviourComponent<SystemManager>();
@@ -43,7 +43,7 @@ public class OrbitalPlaneManager : AMonoBehaviourBase, ICameraFocusable, IZoomTo
         else {
             _systemMgr.ClearCursorHUD();
         }
-        _systemMgr.GuiTrackingLabel.IsHighlighted = isOver;
+        _systemMgr.TrackingLabel.IsHighlighted = isOver;
     }
 
     public override string ToString() {
@@ -51,6 +51,10 @@ public class OrbitalPlaneManager : AMonoBehaviourBase, ICameraFocusable, IZoomTo
     }
 
     #region ICameraTargetable Members
+
+    public bool IsTargetable {
+        get { return true; }
+    }
 
     [SerializeField]
     private float minimumCameraViewingDistance = 10F;

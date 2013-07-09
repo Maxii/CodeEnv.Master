@@ -27,18 +27,23 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public enum GuiCursorHudDisplayLineKeys {
 
-        None = 0,
-        Name = 1,
-        Distance = 2,
-        Capacity = 3,
-        Resources = 4,
-        Specials = 5,
-        IntelState = 6,
-        Owner = 7,
-        Health = 8,
-        CombatStrength = 9,
-        Speed = 10,
-        Composition = 11
+        None,
+        Name,
+        IntelState,
+        Distance,
+        Capacity,
+        Resources,
+        Specials,
+        SettlementSize,
+        SettlementDetails,
+        Owner,
+        Health,
+        CombatStrength,
+        CombatStrengthDetails,
+        Speed,
+        Composition,
+        CompositionDetails,
+        ShipDetails
     }
 }
 

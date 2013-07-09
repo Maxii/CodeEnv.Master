@@ -133,7 +133,7 @@ namespace CodeEnv.Master.Common.Unity {
         private string ConstructIntelText(IntelLevel intelLevel, GameTimePeriod intelAge) {
             string intelMsg = intelLevel.GetName();
             switch (intelLevel) {
-                case IntelLevel.Unexplored:
+                case IntelLevel.Unknown:
                 case IntelLevel.LongRangeSensors:
                 case IntelLevel.ShortRangeSensors:
                     // no data to add

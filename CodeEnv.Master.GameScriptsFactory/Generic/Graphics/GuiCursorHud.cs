@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GuiCursorHUD.cs
+// File: GuiCursorHud.cs
 // HUD that follows the Cursor on the screen.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// HUD that follows the Cursor on the screen.
 /// </summary>
-public sealed class GuiCursorHUD : AMonoBehaviourBaseSingleton<GuiCursorHUD> {
+public sealed class GuiCursorHud : AMonoBehaviourBaseSingleton<GuiCursorHud> {
 
     // Camera used to draw this HUD
     public Camera uiCamera;
@@ -56,25 +56,28 @@ public sealed class GuiCursorHUD : AMonoBehaviourBaseSingleton<GuiCursorHUD> {
     /// Move the HUD to track the cursor.
     /// </summary>
     private void UpdatePosition() {
-        Vector3 cursorPosition = Input.mousePosition;
+        if (NGUITools.GetActive(_label.gameObject)) {
+            Vector3 cursorPosition = Input.mousePosition;
 
-        if (uiCamera != null) {
-            // Since the screen can be of different than expected size, we want to convert
-            // mouse coordinates to view space, then convert that to world position.
-            cursorPosition.x = Mathf.Clamp01(cursorPosition.x / Screen.width);
-            cursorPosition.y = Mathf.Clamp01(cursorPosition.y / Screen.height);
-            _transform.position = uiCamera.ViewportToWorldPoint(cursorPosition);
+            if (uiCamera != null) {
+                // Since the screen can be of different than expected size, we want to convert
+                // mouse coordinates to view space, then convert that to world position.
+                cursorPosition.x = Mathf.Clamp01(cursorPosition.x / Screen.width);
+                cursorPosition.y = Mathf.Clamp01(cursorPosition.y / Screen.height);
+                _transform.position = uiCamera.ViewportToWorldPoint(cursorPosition);
+                // OPTIMIZE why not just use uiCamera.ScreenToWorldPoint(cursorPosition)?
 
-            // For pixel-perfect results
-            if (uiCamera.isOrthoGraphic) {
-                _transform.localPosition = NGUIMath.ApplyHalfPixelOffset(_transform.localPosition, _transform.localScale);
+                // For pixel-perfect results
+                if (uiCamera.isOrthoGraphic) {
+                    _transform.localPosition = NGUIMath.ApplyHalfPixelOffset(_transform.localPosition, _transform.localScale);
+                }
             }
-        }
-        else {
-            // Simple calculation that assumes that the camera is of fixed size
-            cursorPosition.x -= Screen.width * 0.5f;
-            cursorPosition.y -= Screen.height * 0.5f;
-            _transform.localPosition = NGUIMath.ApplyHalfPixelOffset(cursorPosition, _transform.localScale);
+            else {
+                // Simple calculation that assumes that the camera is of fixed size
+                cursorPosition.x -= Screen.width * 0.5f;
+                cursorPosition.y -= Screen.height * 0.5f;
+                _transform.localPosition = NGUIMath.ApplyHalfPixelOffset(cursorPosition, _transform.localScale);
+            }
         }
     }
 
@@ -121,6 +124,10 @@ public sealed class GuiCursorHUD : AMonoBehaviourBaseSingleton<GuiCursorHUD> {
     /// </summary>
     public void Clear() {
         Set(string.Empty);
+    }
+
+    public void SetPivot(UIWidget.Pivot pivot) {
+        _label.pivot = pivot;
     }
 
     protected override void OnApplicationQuit() {

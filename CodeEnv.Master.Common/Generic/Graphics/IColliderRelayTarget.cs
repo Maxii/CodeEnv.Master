@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ICameraTargetable.cs
-//  Interface containing values needed by a gameobject that is a target for camera movement.
+// File: IColliderRelayTarget.cs
+// Interface used on a GameObject that needs to know about another object's Collider events.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -14,17 +14,23 @@
 #define DEBUG_LEVEL_WARN
 #define DEBUG_LEVEL_ERROR
 
+using System;
+
 namespace CodeEnv.Master.Common {
 
 
     /// <summary>
-    /// Interface containing values needed by a gameobject that is a target for camera movement.
+    /// Interface used on a GameObject that needs to know about another object's Collider events.
+    ///<remarks>Typically used on a parent GameObject that is separated from its collider.</remarks>
     /// </summary>
-    public interface ICameraTargetable {
+    [Obsolete]
+    public interface IColliderRelayTarget {
 
-        bool IsTargetable { get; }
+        void OnHover(bool isOver);
 
-        float MinimumCameraViewingDistance { get; }
+        void OnClick();
+
+        void OnDoubleClick();
 
     }
 }

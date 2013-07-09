@@ -36,15 +36,12 @@ public class GuiCheckbox : GuiTooltip {
     public string propertyName = string.Empty;
     protected UICheckbox checkbox;
 
-    void Awake() {
-        InitializeOnAwake();
-    }
-
     /// <summary>
     /// Can override. Remember base.InitializeOnAwake();  The tPrefsValue for propertyName must be set before 
     /// base.InitializeOnAwake() is called.
     /// </summary>
-    protected virtual void InitializeOnAwake() {
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
         checkbox = gameObject.GetSafeMonoBehaviourComponent<UICheckbox>();
         InitializeCheckbox();
         // don't receive events until initializing is complete

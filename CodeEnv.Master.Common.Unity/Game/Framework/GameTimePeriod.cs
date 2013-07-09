@@ -31,6 +31,8 @@ namespace CodeEnv.Master.Common.Unity {
 
         public int Days { get; private set; }
 
+        public int PeriodInDays { get; private set; }
+
         public string FormattedPeriod {
             get {
                 if (Years == Constants.Zero) {
@@ -58,6 +60,7 @@ namespace CodeEnv.Master.Common.Unity {
             Arguments.ValidateNotNegative(years);
             Days = days;
             Years = years;
+            PeriodInDays = years * daysPerYear + days;
             GenerateArtificialStartDate(days, years);
         }
 
@@ -84,6 +87,7 @@ namespace CodeEnv.Master.Common.Unity {
             }
             Years = years;
             Days = days;
+            PeriodInDays = years * daysPerYear + days;
         }
 
         private void GenerateArtificialStartDate(int days, int years) {

@@ -20,13 +20,58 @@ using UnityEngine;
 /// Handles the content, screen location and visibility of a GuiTrackingLabel that tracks a 3D game object. Handles
 /// both moving and fixed 3D objects.
 /// </summary>
-public class GuiTrackingLabel : AMonoBehaviourBase, IGuiTrackingLabel {
+public class GuiTrackingLabel : AMonoBehaviourBase {
+
+    /// <summary>
+    /// Target game object this label tracks.
+    /// </summary>
+    public Transform Target { get; set; }
+
+    /// <summary>
+    /// Gets or sets the offset that defines the Target's pivot point for the Tracking Label in worldspace.
+    /// </summary>
+    public Vector3 TargetPivotOffset { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Vector3 that defines the Tracking Label's offset from the Target's pivot point in Viewport space.
+    /// </summary>
+    public Vector3 OffsetFromPivot { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether this <see cref="GuiTrackingLabel" /> is showing. Allows
+    /// the client to control whether the label displays or not without the label losing knowledge
+    /// of the content of the label that has already been set.
+    /// </summary>
+    public bool IsShowing {
+        get { return enabled; }
+        set {
+            if (this && enabled != value) {
+                EnableWidgets(value);
+                enabled = value;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets whether this <see cref="GuiTrackingLabel"/> is highlighted.
+    /// </summary>
+    private bool _isHighlighted;
+    public bool IsHighlighted {
+        get {
+            return _isHighlighted;
+        }
+        set {
+            _isHighlighted = value;
+            Highlight(value);
+        }
+    }
 
     private Transform _transform;
     private Camera _mainCamera;
     private Camera _uiCamera;
     private UILabel _label; // IMPROVE broaden to UIWidget for icons, sprites...
     private Color _labelNormalColor;
+    private UIWidget[] _widgets;
 
     void Awake() {
         _transform = transform;
@@ -45,6 +90,25 @@ public class GuiTrackingLabel : AMonoBehaviourBase, IGuiTrackingLabel {
         }
 
         _mainCamera = NGUITools.FindCameraForLayer(Target.gameObject.layer);
+        _widgets = gameObject.GetSafeMonoBehaviourComponentsInChildren<UIWidget>();
+    }
+
+    /// <summary>
+    /// Populate the label with the provided text and displays it.
+    /// </summary>
+    /// <param name="text">The text in label.</param>
+    public void Set(string textInLabel) {
+        if (_label != null) {
+            _label.text = textInLabel;
+            _label.MakePixelPerfect();
+        }
+    }
+
+    /// <summary>
+    /// Clears the label of text.
+    /// </summary>
+    public void Clear() {
+        Set(string.Empty);
     }
 
     void LateUpdate() {
@@ -54,11 +118,29 @@ public class GuiTrackingLabel : AMonoBehaviourBase, IGuiTrackingLabel {
     }
 
     private void UpdatePosition() {
-        Vector3 targetPosition = _mainCamera.WorldToViewportPoint(Target.position);
-        targetPosition = _uiCamera.ViewportToWorldPoint(targetPosition);
+        Vector3 targetPosition = _mainCamera.WorldToViewportPoint(Target.position + TargetPivotOffset);
+        targetPosition = _uiCamera.ViewportToWorldPoint(targetPosition + OffsetFromPivot);
         targetPosition.z = 1F;  // positive Z puts the GuiTrackingLabel behind the rest of the UI
         // FIXME: UIRoot  increases the transform.z value from 1 to 200 when the scale is .005!!!!!!!!!
         _transform.position = targetPosition;
+    }
+
+    /// <summary>
+    /// Enables/disables all the UIWidget scripts in the heirarchy.
+    /// </summary>
+    /// <param name="toEnable">if set to <c>true</c> [to enable].</param>
+    private void EnableWidgets(bool toEnable) {
+        if (this) { // for unknown reason, method can get called when this script has already been destroyed
+            foreach (UIWidget w in _widgets) {
+                w.enabled = toEnable;
+            }
+        }
+    }
+
+    private void Highlight(bool toHighlight) {
+        // TODO
+        //Debug.Log("{0} Highlighting changed to {1}.".Inject(gameObject.name, toHighlight));
+        _label.color = toHighlight ? Color.yellow : _labelNormalColor;
     }
 
     // Standalone update position approach that doesn't rely on getting visibility change messages from the Target
@@ -91,66 +173,9 @@ public class GuiTrackingLabel : AMonoBehaviourBase, IGuiTrackingLabel {
     //    }
     //}
 
-    /// <summary>
-    /// Enables/disables all the UIWidget scripts in the heirarchy of the HUD.
-    /// </summary>
-    /// <param name="toEnable">if set to <c>true</c> [to enable].</param>
-    private void EnableWidgets(bool toEnable) {
-        if (this) { // for unknown reason, method can get called when this script has already been destroyed
-            UIWidget[] widgets = gameObject.GetSafeMonoBehaviourComponentsInChildren<UIWidget>();
-            foreach (UIWidget w in widgets) {
-                w.enabled = toEnable;
-            }
-        }
-    }
-
-    private void EnableHighlighting(bool toHighlight) {
-        // TODO
-        //Debug.Log("{0} Highlighting changed to {1}.".Inject(gameObject.name, toHighlight));
-        _label.color = toHighlight ? Color.yellow : _labelNormalColor;
-    }
-
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region IGuiTrackingLabel Members
-
-    public Transform Target { get; set; }
-
-    public bool IsEnabled {
-        get { return enabled; }
-        set {
-            if (this && enabled != value) {
-                EnableWidgets(value);
-                enabled = value;
-            }
-        }
-    }
-
-    private bool highlighted;
-    public bool IsHighlighted {
-        get {
-            return highlighted;
-        }
-        set {
-            highlighted = value;
-            EnableHighlighting(value);
-        }
-    }
-
-    public void Set(string textInLabel) {
-        if (_label != null) {
-            _label.text = textInLabel;
-            _label.MakePixelPerfect();
-        }
-    }
-
-    public void Clear() {
-        Set(string.Empty);
-    }
-
-    #endregion
 
 }
 

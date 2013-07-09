@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IntelLevel.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// Enum defining the levels of System, Settlement, Fleet and Ship Intel available in the game.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,14 +16,45 @@
 
 namespace CodeEnv.Master.Common {
 
+    /// <summary>
+    ///  Enum defining the levels of System, Settlement, Fleet and Ship Intel available in the game.
+    /// </summary>
     public enum IntelLevel {
 
+        /// <summary>
+        /// Default level. Used for catching errors.
+        /// </summary>
         None,
-        Unexplored,
-        //Disturbance,
-        OutOfRange,
+
+        /// <summary>
+        /// Typically the location is unexplored or beyond sensor range. Most knowledge is based
+        /// off of rumor, inuendo or  simple empirical observation from too far away.
+        /// </summary>
+        Unknown,
+
+        /// <summary>
+        /// The location has been visited previously but the only information
+        /// available is what we know doesn't change as the location is not within sensor range.
+        /// </summary>
+        OutOfDate,
+
+        /// <summary>
+        /// The location is within range of long range sensors. While details can't be
+        /// discerned, the information we can detect is current.
+        /// </summary>
         LongRangeSensors,
-        ShortRangeSensors
+
+        /// <summary>
+        /// The location is within range of short range sensors. Many details
+        /// are known and the information we can detect is current.
+        /// </summary>
+        ShortRangeSensors,
+
+        /// <summary>
+        /// The location is completely connected into our real-time knowledge
+        /// systems. We know everything there is to know.
+        /// </summary>
+        Complete
     }
 }
 

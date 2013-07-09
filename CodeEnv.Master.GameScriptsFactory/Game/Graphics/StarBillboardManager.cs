@@ -53,7 +53,7 @@ public class StarBillboardManager : BillboardManager {
             // there is only the primary light attached, so I need to create another for the flare
             // avoid getting the flareLight prefab with Resources.Load("Lights/FlareLight")
             flareLight = Instantiate<Light>(UsefulPrefabs.currentInstance.flareLight);
-            flareLight.transform.parent = billboardTransform;
+            flareLight.transform.parent = _transform;
             flareLight.transform.localPosition = Vector3.forward * 2;
         }
         else if (lightCount == 2) {
@@ -76,7 +76,7 @@ public class StarBillboardManager : BillboardManager {
     }
 
     private void VaryFlareIntensityByCameraDistance() {
-        float flareIntensityFactor = Mathf.Pow(Mathf.Clamp01(-Vector3.Dot(cameraTransform.forward, billboardTransform.forward)), Constants.OneHundredPercent / flareIntensity);
+        float flareIntensityFactor = Mathf.Pow(Mathf.Clamp01(-Vector3.Dot(cameraTransform.forward, _transform.forward)), Constants.OneHundredPercent / flareIntensity);
         flareLight.intensity = flareOriginalIntensity * flareIntensityFactor;
     }
 

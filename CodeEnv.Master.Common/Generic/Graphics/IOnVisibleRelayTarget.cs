@@ -5,9 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IOnVisible.cs
-// Interface used on a GameObject that needs to know when its visibility state changes even if
-// it doesn't have a renderer, implementing OnBecameVisible and OnBecameInvisible.
+// File: IOnVisibleRelayTarget.cs
+// Interface used on a GameObject that needs to know about another object's Renderer events.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,16 +17,10 @@
 namespace CodeEnv.Master.Common {
 
     /// <summary>
-    /// Interface used on a GameObject that needs to know when its visibility state changes even if it doesn't have
-    /// a renderer, implementing OnBecameVisible and OnBecameInvisible.
-    /// <remarks>Used on a parent GameObject that is separated from its mesh and renderer.</remarks>
+    /// Interface used on a GameObject that needs to know about another object's Renderer events.
+    /// <remarks>Typically used on a parent GameObject that is separated from its mesh and renderer.</remarks>
     /// </summary>
-    public interface IOnVisible {
-
-        /// <summary>
-        /// Property that tracks the VisibilityState of the implementing GameObject.
-        /// </summary>
-        Visibility VisibilityState { get; set; }
+    public interface IOnVisibleRelayTarget {
 
         /// <summary>
         /// Called by the child renderer's VisiblityRelay when the renderer becomes visible.

@@ -17,25 +17,26 @@
 namespace CodeEnv.Master.Common.Unity {
 
     using CodeEnv.Master.Common;
+    using UnityEngine;
 
     /// <summary>
     /// All the data associated with a particular fleet.
     /// </summary>
     public class FleetData : AData {
 
-        public FleetData() { }
+        public float MaxSpeed { get; set; }
 
-        private float _speed = 23.5F;
-        public float Speed {
-            get { return _speed; }
-            set { _speed = value; }
-        }
+        public float Speed { get; set; }
 
         // TODO Composition
-        private string _composition = "Composition Test";
+        private string _composition = "TBD";
         public string Composition {
             get { return _composition; }
             set { _composition = value; }
+        }
+
+        public FleetData(Transform t)
+            : base(t) {
         }
 
         public override string ToString() {

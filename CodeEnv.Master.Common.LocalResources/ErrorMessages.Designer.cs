@@ -61,7 +61,7 @@ namespace CodeEnv.Master.Common.LocalResources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to This collection should not be empty.  Calling Method: {0}.
+        ///   Looks up a localized string similar to This collection should not be empty.  Calling Method: {0}..
         /// </summary>
         public static string CollectionEmpty {
             get {
@@ -70,7 +70,7 @@ namespace CodeEnv.Master.Common.LocalResources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Expected to find component of type {0} but found none. Calling Object: {1}.
+        ///   Looks up a localized string similar to Expected to find component of type {0} but found none. Calling Object: {1}..
         /// </summary>
         public static string ComponentNotFound {
             get {
@@ -79,7 +79,7 @@ namespace CodeEnv.Master.Common.LocalResources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to This string should not be null or empty.  Calling Method: {0}.
+        ///   Looks up a localized string similar to This string should not be null or empty.  Calling Method: {0}..
         /// </summary>
         public static string EmptyOrNullString {
             get {
@@ -88,7 +88,7 @@ namespace CodeEnv.Master.Common.LocalResources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Enum Constant {0} has no attribute of type {1} defined.  Calling Method: {2}.
+        ///   Looks up a localized string similar to Enum Constant {0} has no attribute of type {1} defined.  Calling Method: {2}..
         /// </summary>
         public static string EnumNoAttribute {
             get {
@@ -97,7 +97,7 @@ namespace CodeEnv.Master.Common.LocalResources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The following exception was thrown.  Calling Method: {0}.
+        ///   Looks up a localized string similar to The following exception was thrown.  Calling Method: {0}..
         /// </summary>
         public static string ExceptionRethrow {
             get {
@@ -133,7 +133,7 @@ namespace CodeEnv.Master.Common.LocalResources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The low value {0} is greater than the high value {1}.  Calling Method: {2}.
+        ///   Looks up a localized string similar to The low value {0} is greater than the high value {1}.  Calling Method: {2}..
         /// </summary>
         public static string LowGreaterThanHigh {
             get {
@@ -142,7 +142,7 @@ namespace CodeEnv.Master.Common.LocalResources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to This value {0} should not be negative.  Calling Method: {1}.
+        ///   Looks up a localized string similar to This value {0} should not be negative.  Calling Method: {1}..
         /// </summary>
         public static string NegativeValue {
             get {
@@ -151,7 +151,7 @@ namespace CodeEnv.Master.Common.LocalResources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to String {0} has no Enum counterpart.  Calling Method: {1}.
+        ///   Looks up a localized string similar to String {0} has no Enum counterpart.  Calling Method: {1}..
         /// </summary>
         public static string NoEnumForString {
             get {
@@ -160,7 +160,7 @@ namespace CodeEnv.Master.Common.LocalResources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Expected no exception but got: {0}.  Calling Method: {1}.
+        ///   Looks up a localized string similar to Expected no exception but got: {0}.  Calling Method: {1}..
         /// </summary>
         public static string NoExceptionExpected {
             get {
@@ -169,7 +169,7 @@ namespace CodeEnv.Master.Common.LocalResources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The string {0} is not a boolean equivalent.  Calling Method: {1}.
+        ///   Looks up a localized string similar to The string {0} is not a boolean equivalent.  Calling Method: {1}..
         /// </summary>
         public static string NotBoolean {
             get {
@@ -178,7 +178,16 @@ namespace CodeEnv.Master.Common.LocalResources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Argument is null.  Calling Method: {0}.
+        ///   Looks up a localized string similar to Vector {0} is not normalized. Calling Method: {1}..
+        /// </summary>
+        public static string NotNormalized {
+            get {
+                return ResourceManager.GetString("NotNormalized", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Argument is null.  Calling Method: {0}..
         /// </summary>
         public static string Null {
             get {
@@ -187,7 +196,7 @@ namespace CodeEnv.Master.Common.LocalResources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Property or Method called on already disposed object.  Calling Method: {0}.
+        ///   Looks up a localized string similar to Property or Method called on already disposed object.  Calling Method: {0}..
         /// </summary>
         public static string ObjectDisposed {
             get {
@@ -205,7 +214,7 @@ namespace CodeEnv.Master.Common.LocalResources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The resource {0} you are trying to reach is not of type String.   Calling Method: {1}.
+        ///   Looks up a localized string similar to The resource {0} you are trying to reach is not of type String.   Calling Method: {1}..
         /// </summary>
         public static string ResourceNotString {
             get {
@@ -223,7 +232,7 @@ namespace CodeEnv.Master.Common.LocalResources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Enum Constant {0} is not defined.  Calling Method: {1}.
+        ///   Looks up a localized string similar to Enum Constant {0} is not defined.  Calling Method: {1}..
         /// </summary>
         public static string UndefinedEnum {
             get {

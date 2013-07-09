@@ -57,11 +57,11 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Extensions\ColliderExtensions.cs" />
     <Compile Include="Game\Gameplay\AData.cs" />
     <Compile Include="Game\Gameplay\FleetData.cs" />
     <Compile Include="Generic\Extensions\GameSpecificExtensions.cs" />
     <Compile Include="Game\Framework\GameTimePeriod.cs" />
-    <Compile Include="Game\GUI\IGuiTrackingLabel.cs" />
     <Compile Include="Generic\Graphics\ColoredText.cs" />
     <Compile Include="Game\_Debug\TempGameValues.cs" />
     <Compile Include="Game\Framework\GameTime.cs" />
@@ -85,12 +85,17 @@
     <Compile Include="Game\GUI\GuiCursorHudText.cs" />
     <Compile Include="Generic\Framework\MyNguiConstants.cs" />
     <Compile Include="Generic\Graphics\IColoredTextList.cs" />
+    <Compile Include="Game\Gameplay\Navigator.cs" />
+    <Compile Include="Generic\Graphics\GuiCursorHudTextFactory_Ship.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Generic\Extensions\TransformExtensions.cs" />
     <Compile Include="Game\Gameplay\SystemData.cs" />
     <Compile Include="Generic\Graphics\AGuiCursorHudTextFactory.cs" />
     <Compile Include="Generic\Graphics\GuiCursorHudTextFactory_Fleet.cs" />
     <Compile Include="Generic\Graphics\GuiCursorHudTextFactory_System.cs" />
+    <Compile Include="Generic\Extensions\VectorExtensions.cs" />
+    <Compile Include="Generic\Graphics\UnityUtility.cs" />
+    <Compile Include="Game\Gameplay\ShipData.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">

@@ -29,11 +29,8 @@ public abstract class AGuiButtonBase : GuiTooltip {
     protected PlayerPrefsManager playerPrefsMgr;
     protected UIButton button;
 
-    void Awake() {
-        InitializeOnAwake();
-    }
-
-    protected virtual void InitializeOnAwake() {
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
         playerPrefsMgr = PlayerPrefsManager.Instance;
         eventMgr = GameEventManager.Instance;
     }

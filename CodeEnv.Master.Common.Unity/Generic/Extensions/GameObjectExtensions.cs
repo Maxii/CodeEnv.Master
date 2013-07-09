@@ -114,7 +114,6 @@ namespace CodeEnv.Master.Common.Unity {
             return go.transform.DistanceToCameraInt();
         }
 
-
     }
 }
 

@@ -26,7 +26,16 @@ namespace CodeEnv.Master.Common.Unity {
 
         public string Name { get; set; }
 
-        public Vector3 Position { get; set; }
+        /// <summary>
+        /// Readonly. Gets the position of the gameObject containing this data.
+        /// </summary>
+        public Vector3 Position {
+            get {
+                return _transform.position;
+            }
+        }
+
+        public GameDate DateHumanPlayerExplored { get; set; }
 
         public Players Owner { get; set; }
 
@@ -34,9 +43,13 @@ namespace CodeEnv.Master.Common.Unity {
 
         public float MaxHitPoints { get; set; }
 
-        public float CombatStrength { get; set; }
+        public CombatStrength CombatStrength { get; set; }
 
-        public AData() { }
+        private Transform _transform;
+
+        public AData(Transform t) {
+            _transform = t;
+        }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

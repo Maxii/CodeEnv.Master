@@ -16,13 +16,8 @@
 
 // default namespace
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEngine;
-using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.Unity;
+using UnityEngine;
 
 /// <summary>
 /// Instantiable Base class that manages basic Billboard functionality - continuously facing the camera,
@@ -30,18 +25,18 @@ using CodeEnv.Master.Common.Unity;
 /// </summary>
 public class BillboardManager : AMonoBehaviourBase {
 
-    protected Transform billboardTransform;
+    protected Transform _transform;
     protected Transform cameraTransform;
 
-    public bool reverseFacing = false;
-    public bool reverseLabelFacing = false;
+    public bool reverseFacing;
+    public bool reverseLabelFacing;
 
     void Awake() {
         InitializeOnAwake();
     }
 
     protected virtual void InitializeOnAwake() {
-        billboardTransform = transform;
+        _transform = transform;
         UpdateRate = UpdateFrequency.Normal;
     }
 
@@ -56,7 +51,7 @@ public class BillboardManager : AMonoBehaviourBase {
     }
 
     private void PrepareLabel() {
-        string itemName = billboardTransform.parent.parent.name;    // FIXME get rid of heirarchy dependancy
+        string itemName = _transform.parent.parent.name;    // FIXME get rid of heirarchy dependancy
         UILabel itemLabel = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
         if (itemLabel != null) {
             itemLabel.text = itemName;
@@ -80,9 +75,9 @@ public class BillboardManager : AMonoBehaviourBase {
         // Rotates the billboard t provided so its forward aligns with that of the provided camera's t, ie. the direction the camera is looking.
         // In effect, by adopting the camera's forward direction, the billboard is pointing at the camera's focal plane, not at the camera. 
         // It is the camera's focal plane whose image is projected onto the screen so that is what must be 'looked at'.
-        Vector3 targetPos = billboardTransform.position + cameraTransform.rotation * (reverseFacing ? Vector3.forward : Vector3.back);
+        Vector3 targetPos = _transform.position + cameraTransform.rotation * (reverseFacing ? Vector3.forward : Vector3.back);
         Vector3 targetOrientation = cameraTransform.rotation * Vector3.up;
-        billboardTransform.LookAt(targetPos, targetOrientation);
+        _transform.LookAt(targetPos, targetOrientation);
     }
 
 }

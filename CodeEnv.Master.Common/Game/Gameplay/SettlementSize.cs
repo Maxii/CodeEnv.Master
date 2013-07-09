@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ICameraTargetable.cs
-//  Interface containing values needed by a gameobject that is a target for camera movement.
+// File: SettlementSize.cs
+// COMMENT - one line to give a brief idea of what the file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,16 +16,20 @@
 
 namespace CodeEnv.Master.Common {
 
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using CodeEnv.Master.Common;
+    using CodeEnv.Master.Common.LocalResources;
 
-    /// <summary>
-    /// Interface containing values needed by a gameobject that is a target for camera movement.
-    /// </summary>
-    public interface ICameraTargetable {
+    public enum SettlementSize {
 
-        bool IsTargetable { get; }
-
-        float MinimumCameraViewingDistance { get; }
-
+        None,
+        Colony,
+        City,
+        Territory,
+        State,
+        Province
     }
 }
 

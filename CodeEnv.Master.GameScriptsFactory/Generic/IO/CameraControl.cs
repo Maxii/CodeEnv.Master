@@ -23,7 +23,6 @@ using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.Common.Unity;
 using UnityEngine;
 
-[RequireComponent(typeof(Camera))]
 /// <summary>
 /// In Game Camera Controller with Mouse, ScreenEdge and ArrowKey controls enabling Freeform, Focus and Follow capabilities.
 /// 
@@ -97,7 +96,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     }
 
     public Settings settings = new Settings {
-        minimumDistanceFromDummyTarget = 50F, activeScreenEdge = 5F, smallMovementThreshold = 2F, maxSpeedGovernorDivider = 50F,
+        activeScreenEdge = 5F, smallMovementThreshold = 2F, maxSpeedGovernorDivider = 50F,
         focusingPositionDampener = 2.0F, focusingRotationDampener = 1.0F, focusedPositionDampener = 4.0F,
         focusedRotationDampener = 2.0F, freeformPositionDampener = 3.0F, freeformRotationDampener = 2.0F
     };
@@ -163,6 +162,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     /// instance. All game objects have already been initialized so references to other scripts may be established here.
     /// </summary>
     void Awake() {
+        UnityUtility.ValidateComponentPresence<Camera>(gameObject);
         //Debug.Log("CameraControl.Awake() called.");
         InitializeReferences();
     }
@@ -354,6 +354,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
             dummyTarget = new GameObject(dummyTargetName).transform;
             dummyTarget.gameObject.layer = (int)Layers.DummyTarget;
             dummyTarget.gameObject.AddComponent<SphereCollider>();
+            dummyTarget.gameObject.AddComponent<DummyTargetManager>();
         }
         else {
             dummyTarget = Instantiate<Transform>(dummyTargetPrefab);
@@ -364,6 +365,26 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
         dummyTarget.parent = DynamicObjects.Folder;
         dummyTarget.collider.enabled = true;
     }
+
+    private void CreateAndPositionDummyTargetOld() {
+        Transform dummyTargetPrefab = RequiredPrefabs.Instance.CameraDummyTargetPrefab;
+        if (dummyTargetPrefab == null) {
+            Debug.LogWarning("DummyTargetPrefab on RequiredPrefabs is null.");
+            string dummyTargetName = Layers.DummyTarget.GetName();
+            dummyTarget = new GameObject(dummyTargetName).transform;
+            dummyTarget.gameObject.layer = (int)Layers.DummyTarget;
+            dummyTarget.gameObject.AddComponent<SphereCollider>();
+        }
+        else {
+            dummyTarget = Instantiate<Transform>(dummyTargetPrefab);
+        }
+        dummyTarget.collider.enabled = false;
+        // the collider is disabled so the placement algorithm doesn't accidently find it already in front of the camera
+        TryPlaceDummyTargetAtUniverseEdgeInDirection(_transform.forward);
+        dummyTarget.parent = DynamicObjects.Folder;
+        dummyTarget.collider.enabled = true;
+    }
+
 
     void OnDeserialized() {
         //Debug.Log("Camera.OnDeserialized() called.");
@@ -378,7 +399,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     }
 
     private void OnFocusSelected(FocusSelectedEvent e) {
-        Debug.Log("FocusSelectedEvent received by Camera.");
+        Debug.Log("FocusSelectedEvent received. Focus is {0}.".Inject(e.FocusTransform.name));
         SetFocus(e.FocusTransform);
     }
 
@@ -426,6 +447,51 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
             }
         }
 
+        // NOTE: As Rigidbodies consume child collider events, a hit on a child collider when there is a rigidbody parent 
+        // involved, will return the transform of the parent, not the child. By not including inspection of the children for this interface,
+        // I am requiring that the interface be present with the Rigidbody.
+        ICameraTargetable qualifiedCameraTarget = newTarget.GetInterface<ICameraTargetable>();
+        if (qualifiedCameraTarget != null) {
+            if (!qualifiedCameraTarget.IsTargetable) {
+                return;
+            }
+            _minimumDistanceFromTarget = qualifiedCameraTarget.MinimumCameraViewingDistance;
+            //Debug.Log("Target {0} _minimumDistanceFromTarget set to {1}.".Inject(newTarget.name, _minimumDistanceFromTarget));
+
+            ICameraFocusable qualifiedCameraFocusTarget = newTarget.GetInterface<ICameraFocusable>();
+            if (qualifiedCameraFocusTarget != null) {
+                _optimalDistanceFromTarget = qualifiedCameraFocusTarget.OptimalCameraViewingDistance;
+                //Debug.Log("Target {0} _optimalDistanceFromTarget set to {1}.".Inject(newTarget.name, _optimalDistanceFromTarget));
+            }
+            // no reason to know whether the Target is followable or not for these values for now
+        }
+        else {
+            Debug.LogError("New Target {0} is not an ICameraTargetable.".Inject(newTarget.name));
+            return;
+        }
+
+        target = newTarget;
+        targetPoint = newTargetPoint;
+        // anytime the Target changes, the actual distance to the Target should also be reset
+        _distanceFromTarget = Vector3.Distance(targetPoint, _transform.position);
+        // the requested distance to the Target will vary depending on where the change was initiated from
+    }
+
+    /// <summary>
+    /// Changes the current Target and targetPoint to the provided newTarget and newTargetPoint.
+    /// Adjusts any minimum, optimal and actual camera distance settings. 
+    /// </summary>
+    /// <param name="newTarget">The new Target.</param>
+    /// <param name="newTargetPoint">The new Target point.</param>
+    private void ChangeTargetOld(Transform newTarget, Vector3 newTargetPoint) {
+        if (newTarget == target && newTarget != dummyTarget) {
+            if (Mathfx.Approx(newTargetPoint, targetPoint, settings.smallMovementThreshold)) {
+                // the desired move of the Target point on the existing Target is too small to respond too
+                Debug.LogWarning("Attempt to change the existing (non-dummy) Target {0} to itself.".Inject(newTarget.name));
+                return;
+            }
+        }
+
         target = newTarget;
         targetPoint = newTargetPoint;
         // anytime the Target changes, the actual distance to the Target should also be reset
@@ -433,18 +499,21 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
         // the requested distance to the Target will vary depending on where the change was initiated from
 
         if (newTarget == dummyTarget) {
-            _minimumDistanceFromTarget = settings.minimumDistanceFromDummyTarget;
+            //_minimumDistanceFromTarget = settings.minimumDistanceFromDummyTarget;
             //Debug.Log("New Target is the DummyTarget, _minimumDistanceFromTarget = {0}.".Inject(_minimumDistanceFromTarget));
             // optimal distance settings not used with dummy Target
             return;
         }
 
-        ICameraTargetable qualifiedCameraTarget = newTarget.GetInterfaceInChildren<ICameraTargetable>();
+        // NOTE: As Rigidbodies consume child collider events, a hit on a child collider when there is a rigidbody parent 
+        // involved, will return the transform of the parent, not the child. By not including inspection of the children for this interface,
+        // I am requiring that the interface be present with the Rigidbody.
+        ICameraTargetable qualifiedCameraTarget = newTarget.GetInterface<ICameraTargetable>();
         if (qualifiedCameraTarget != null) {
             _minimumDistanceFromTarget = qualifiedCameraTarget.MinimumCameraViewingDistance;
             //Debug.Log("Target {0} _minimumDistanceFromTarget set to {1}.".Inject(newTarget.name, _minimumDistanceFromTarget));
 
-            ICameraFocusable qualifiedCameraFocusTarget = newTarget.GetInterfaceInChildren<ICameraFocusable>();
+            ICameraFocusable qualifiedCameraFocusTarget = newTarget.GetInterface<ICameraFocusable>();
             if (qualifiedCameraFocusTarget != null) {
                 _optimalDistanceFromTarget = qualifiedCameraFocusTarget.OptimalCameraViewingDistance;
                 //Debug.Log("Target {0} _optimalDistanceFromTarget set to {1}.".Inject(newTarget.name, _optimalDistanceFromTarget));
@@ -455,6 +524,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
             Debug.LogError("New Target {0} is not an ICameraTargetable.".Inject(newTarget.name));
         }
     }
+
 
 
     /// <summary>
@@ -937,43 +1007,102 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     /// true if the Target is changed, or if the dummyTarget has its location changed. false if the Target remains the same (or if the dummyTarget, its location remains the same).
     /// </returns>
     private bool TrySetTargetAtScreenPoint(Vector3 screenPoint) {
-        Transform proposedTarget;
-        Vector3 proposedTargetPoint;
+        Transform proposedZoomTarget;
+        Vector3 proposedZoomPoint;
+        Ray ray = camera.ScreenPointToRay(screenPoint);
+        RaycastHit[] hits = Physics.RaycastAll(ray, Mathf.Infinity, collideWithOnlyCameraTargetsLayerMask);
+        hits = (from h in hits where h.transform.GetInterface<ICameraTargetable>() != null && h.transform.GetInterface<ICameraTargetable>().IsTargetable select h).ToArray<RaycastHit>();
+        if (!hits.IsNullOrEmpty<RaycastHit>()) {
+            // one or more object under cursor encountered
+            if (hits.Length == 1) {
+                // the object encountered is likely to be the dummyTarget
+                proposedZoomTarget = hits[0].transform;
+                if (proposedZoomTarget == dummyTarget) {
+                    // the stationary, existing DummyTarget
+                    return false;
+                }
+            }
+
+            // NOTE: As Rigidbodies consume child collider events, a hit on a child collider when there is a rigidbody parent 
+            // involved, will return the transform of the parent, not the child. By not including inspection of the children for this interface,
+            // I am requiring that the interface be present with the Rigidbody.
+            var zoomToClosestHits = from h in hits where h.transform.GetInterface<IZoomToClosest>() != null select h;
+            if (!zoomToClosestHits.IsNullOrEmpty()) {
+                //Debug.Log("GetInterface finding {0} IZoomToClosest hits.".Inject(zoomToClosestHits.ToArray<RaycastHit>().Length));
+                var closestHit = zoomToClosestHits.OrderBy(ifh => (ifh.transform.position - _transform.position).magnitude).First();
+                proposedZoomTarget = closestHit.transform;
+                proposedZoomPoint = proposedZoomTarget.position;
+                return TryChangeTarget(proposedZoomTarget, proposedZoomPoint);
+            }
+
+            // no IZoomToClosest game objects under the cursor, so check for IZoomToFurthest now
+            var zoomToFurthestHits = from h in hits where h.transform.GetInterface<IZoomToFurthest>() != null select h;
+            if (!zoomToFurthestHits.IsNullOrEmpty()) {
+                //Debug.Log("GetInterface finding {0} IZoomToFurthest hits.".Inject(zoomToFurthestHits.ToArray<RaycastHit>().Length));
+                var furthestHit = zoomToFurthestHits.OrderBy(ich => (ich.transform.position - _transform.position).magnitude).Last();
+                proposedZoomTarget = furthestHit.transform;
+                proposedZoomPoint = furthestHit.point;
+                return TryChangeTarget(proposedZoomTarget, proposedZoomPoint);
+            }
+
+            // no DummyTarget, IZoomToClosest or IZoomToFurthest game objects under the cursor, yet there are at least 2 hits, so something is wrong
+            Debug.LogError("Found {0} colliders, but none qualified as a camera Target.".Inject(hits.Length));
+            return true;
+        }
+
+        // no game object encountered under cursor so move the dummy to the edge of the universe and designate it as the Target
+        return TryPlaceDummyTargetAtUniverseEdgeInDirection(ray.direction);
+    }
+
+    /// <summary>
+    /// Attempts to assign an object found under the provided screenPoint as the new Target. If more than one object is found,
+    /// then the closest object implementing iFocus (typically Cellestial Bodies and Ships) becomes the Target. If none of the objects
+    /// found implements iFocus, then the farthest object implementing iCameraTarget is used. If the DummyTarget is found, or no 
+    /// object at all is found, then the DummyTarget becomes the Target under the screenPoint at universe edge.
+    /// </summary>
+    /// <param name="screenPoint">The screen point.</param>
+    /// <returns>
+    /// true if the Target is changed, or if the dummyTarget has its location changed. false if the Target remains the same (or if the dummyTarget, its location remains the same).
+    /// </returns>
+    private bool TrySetTargetAtScreenPointOld(Vector3 screenPoint) {
+        Transform proposedZoomTarget;
+        Vector3 proposedZoomPoint;
         Ray ray = camera.ScreenPointToRay(screenPoint);
         RaycastHit[] hits = Physics.RaycastAll(ray, Mathf.Infinity, collideWithOnlyCameraTargetsLayerMask);
         if (!hits.IsNullOrEmpty<RaycastHit>()) {
             // one or more object under cursor encountered
             if (hits.Length == 1) {
                 // the object encountered is likely to be the dummyTarget
-                proposedTarget = hits[0].transform;
-                if (proposedTarget == dummyTarget) {
+                proposedZoomTarget = hits[0].transform;
+                if (proposedZoomTarget == dummyTarget) {
                     // the stationary, existing DummyTarget
                     return false;
                 }
             }
 
-            // NOTE: As Rigidbodies consume child collider events, a hit on a child collider when there is a rigidbody parent (my current ship heirarchy)
-            // involved, will return the transform of the parent, not the child.
-            var zoomToClosestHits = from h in hits where h.transform.GetInterfaceInChildren<IZoomToClosest>() != null select h;
+            // NOTE: As Rigidbodies consume child collider events, a hit on a child collider when there is a rigidbody parent 
+            // involved, will return the transform of the parent, not the child. By not including inspection of the children for this interface,
+            // I am requiring that the interface be present with the Rigidbody.
+            var zoomToClosestHits = from h in hits where h.transform.GetInterface<IZoomToClosest>() != null select h;
             if (!zoomToClosestHits.IsNullOrEmpty()) {
-                //Debug.Log("GetInterface finding {0} ICameraFocusable hits.".Inject(zoomToClosestHits.ToArray<RaycastHit>().Length));
+                //Debug.Log("GetInterface finding {0} IZoomToClosest hits.".Inject(zoomToClosestHits.ToArray<RaycastHit>().Length));
                 var closestHit = zoomToClosestHits.OrderBy(ifh => (ifh.transform.position - _transform.position).magnitude).First();
-                proposedTarget = closestHit.transform;
-                proposedTargetPoint = proposedTarget.position;
-                return TryChangeTarget(proposedTarget, proposedTargetPoint);
+                proposedZoomTarget = closestHit.transform;
+                proposedZoomPoint = proposedZoomTarget.position;
+                return TryChangeTarget(proposedZoomTarget, proposedZoomPoint);
             }
 
-            // no iFocus game objects under the cursor, so check for ICameraTargetable now
-            var zoomToFurthestHits = from h in hits where h.transform.GetInterfaceInChildren<IZoomToFurthest>() != null select h;
+            // no IZoomToClosest game objects under the cursor, so check for IZoomToFurthest now
+            var zoomToFurthestHits = from h in hits where h.transform.GetInterface<IZoomToFurthest>() != null select h;
             if (!zoomToFurthestHits.IsNullOrEmpty()) {
-                //Debug.Log("GetInterface finding {0} ICamera hits.".Inject(zoomToFurthestHits.ToArray<RaycastHit>().Length));
+                //Debug.Log("GetInterface finding {0} IZoomToFurthest hits.".Inject(zoomToFurthestHits.ToArray<RaycastHit>().Length));
                 var furthestHit = zoomToFurthestHits.OrderBy(ich => (ich.transform.position - _transform.position).magnitude).Last();
-                proposedTarget = furthestHit.transform;
-                proposedTargetPoint = furthestHit.point;
-                return TryChangeTarget(proposedTarget, proposedTargetPoint);
+                proposedZoomTarget = furthestHit.transform;
+                proposedZoomPoint = furthestHit.point;
+                return TryChangeTarget(proposedZoomTarget, proposedZoomPoint);
             }
 
-            // no iFocus or iCameraTarget game objects under the cursor, yet there are at least 2 hits, so something is wrong
+            // no DummyTarget, IZoomToClosest or IZoomToFurthest game objects under the cursor, yet there are at least 2 hits, so something is wrong
             Debug.LogError("Found {0} colliders, but none qualified as a camera Target.".Inject(hits.Length));
             return true;
         }
@@ -983,34 +1112,29 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     }
 
 
-
     /// <summary>
     /// Attempts to change the Target to the proposedTarget. If the existing Target is the same
     /// Target, then the change is aborted and the method returns false.
     /// </summary>
-    /// <param name="proposedTarget">The proposed Target. Logs an error if the DummyTarget.</param>
-    /// <param name="proposedTargetPoint">The proposed Target point.</param>
+    /// <param name="proposedZoomTarget">The proposed Target. Logs an error if the DummyTarget.</param>
+    /// <param name="proposedZoomPoint">The proposed Target point.</param>
     /// <returns>
     /// true if the Target was successfully changed, otherwise false.
     /// </returns>
-    private bool TryChangeTarget(Transform proposedTarget, Vector3 proposedTargetPoint) {
-        if (proposedTarget == dummyTarget) {
+    private bool TryChangeTarget(Transform proposedZoomTarget, Vector3 proposedZoomPoint) {
+        if (proposedZoomTarget == dummyTarget) {
             Debug.LogError("TryChangeTarget must not be used to change to the DummyTarget.");
             return false;
         }
 
-        if (proposedTarget == target) {
+        if (proposedZoomTarget == target) {
             //Debug.Log("Proposed Target {0} is already the existing Target.".Inject(Target.name));
-            if (Mathfx.Approx(proposedTargetPoint, targetPoint, settings.smallMovementThreshold)) {
+            if (Mathfx.Approx(proposedZoomPoint, targetPoint, settings.smallMovementThreshold)) {
                 // the desired move of the Target point on the existing Target is too small to respond too
                 return false;
             }
-            else {
-                //float moveDistanceRqst = (targetPoint - proposedTargetPoint).magnitude;
-                //Debug.Log("New requested Camera Target point is {0} units from old.".Inject(moveDistanceRqst));
-            }
         }
-        ChangeTarget(proposedTarget, proposedTargetPoint);
+        ChangeTarget(proposedZoomTarget, proposedZoomPoint);
         return true;
     }
 
@@ -1021,11 +1145,8 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     /// <param name="direction">The direction.</param>
     /// <returns>true if the DummyTarget was placed in a new location. False if it was not moved since it was already there.</returns>
     private bool TryPlaceDummyTargetAtUniverseEdgeInDirection(Vector3 direction) {
-        if (direction.magnitude == 0F) {
-            Debug.LogError("Camera Direction Vector to place DummyTarget has no magnitude: " + direction);
-            return false;
-        }
-        Ray ray = new Ray(_transform.position, direction.normalized);
+        direction.ValidateNormalized();
+        Ray ray = new Ray(_transform.position, direction);
         RaycastHit targetHit;
         if (Physics.Raycast(ray, out targetHit, Mathf.Infinity, collideWithDummyTargetOnlyLayerMask.value)) {
             if (dummyTarget != targetHit.transform) {
@@ -1033,7 +1154,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
                 return false;
             }
 
-            float distanceToUniverseOrigin = (dummyTarget.position - TempGameValues.UniverseOrigin).magnitude;
+            float distanceToUniverseOrigin = Vector3.Distance(dummyTarget.position, TempGameValues.UniverseOrigin);
             //Debug.Log("Dummy Target distance to origin = {0}.".Inject(distanceToUniverseOrigin));
             if (!distanceToUniverseOrigin.CheckRange(universeRadius, allowedPercentageVariation: 0.1F)) {
                 Debug.LogError("Camera's Dummy Target is not located on UniverseEdge! Position = " + dummyTarget.position);
@@ -1137,7 +1258,6 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     public class Settings {
         public float activeScreenEdge;
         public float smallMovementThreshold;
-        public float minimumDistanceFromDummyTarget;
         public float maxSpeedGovernorDivider;
         // damping
         public float focusingRotationDampener;

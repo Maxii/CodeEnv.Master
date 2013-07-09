@@ -38,7 +38,8 @@
       <HintPath>..\..\..\UnityEnv\Support\NGUI\Library\ScriptAssemblies\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Assembly-CSharp-firstpass">
+    <Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\UnityEnv\Support\UnitySerializer\Library\ScriptAssemblies\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
     <Reference Include="System" />
@@ -46,8 +47,6 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.XML" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="UnityEditor, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL" />
     <Reference Include="UnityEngine">
       <HintPath>$(ProgramFiles)\Unity\Editor\Data\Managed\UnityEngine.dll</HintPath>
       <Private>False</Private>
@@ -60,10 +59,14 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Graphics\FleetIconManager.cs" />
+    <Compile Include="Generic\Framework\ColliderRelay.cs" />
+    <Compile Include="Generic\Graphics\ScaleRelativeToCamera.cs" />
+    <Compile Include="Game\Graphics\FleetManager.cs" />
     <Compile Include="Generic\Graphics\AGuiButtonBase.cs" />
-    <Compile Include="Generic\Graphics\GuiCursorHUD.cs" />
     <Compile Include="Game\Graphics\OrbitalPlaneManager.cs" />
     <Compile Include="Generic\Graphics\BillboardManager.cs" />
+    <Compile Include="Generic\Graphics\GuiCursorHud.cs" />
     <Compile Include="Generic\IO\CameraControl.cs" />
     <Compile Include="Generic\_Debug\ManagementObjects.cs" />
     <Compile Include="Generic\Graphics\GuiVisibilityButton.cs" />
@@ -102,8 +105,8 @@
     <Compile Include="Generic\Framework\Loader.cs" />
     <Compile Include="Generic\Framework\RequiredPrefabs.cs" />
     <Compile Include="Generic\Framework\UsefulPrefabs.cs" />
-    <Compile Include="Generic\_Debug\ShipPropulsionManager.cs" />
-    <Compile Include="Generic\Graphics\VisibilityRelay.cs" />
+    <Compile Include="Game\Graphics\ShipManager.cs" />
+    <Compile Include="Generic\Framework\VisibilityRelay.cs" />
     <Compile Include="Game\Graphics\StarAnimator.cs" />
     <Compile Include="Game\Graphics\StarManager.cs" />
     <Compile Include="Game\Graphics\SystemManager.cs" />
