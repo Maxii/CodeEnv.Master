@@ -36,16 +36,13 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.XML" />
-    <Reference Include="System.Xml.Linq" />
     <Reference Include="UnityEditor">
-      <HintPath>$(ProgramFiles)\Unity\Editor\Data\Managed\UnityEditor.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files\Unity\Editor\Data\Managed\UnityEditor.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>$(ProgramFiles)\Unity\Editor\Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files\Unity\Editor\Data\Managed\UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
@@ -56,27 +53,15 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Generic\BoxColliderToFit.cs" />
     <Compile Include="Generic\NoteEditor.cs" />
+    <Compile Include="ThirdParty\BoxColliderToFit.cs" />
     <Compile Include="ThirdParty\FindMissingScripts.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CodeEnv.Master.Common.LocalResources\CodeEnv.Master.Common.LocalResources.csproj">
-      <Project>{30988a11-a4f0-4fdc-82d5-41b87ea410be}</Project>
-      <Name>CodeEnv.Master.Common.LocalResources</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common.Unity\CodeEnv.Master.Common.Unity.csproj">
-      <Project>{129dcf86-4fc5-4caf-aafe-911efc560e10}</Project>
-      <Name>CodeEnv.Master.Common.Unity</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">
       <Project>{1557c03e-56ee-4c70-9bd8-ab637d3191cf}</Project>
       <Name>CodeEnv.Master.Common</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\CodeEnv.Master.ExternalMonoBehaviours\CodeEnv.Master.ExternalMonoBehaviours.csproj">
-      <Project>{9c8574a4-64ba-49b1-b66d-7572ecfffcfb}</Project>
-      <Name>CodeEnv.Master.ExternalMonoBehaviours</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

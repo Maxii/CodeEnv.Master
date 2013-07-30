@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GuiTrackingLabel.cs
-// Handles the content, screen location and visibility of a GuiTrackingLabel Element attached to a 3D game object.
+// Handles the content, screen location, scale and visibility of a GuiTrackingLabel Element attached to a 3D game object.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,10 +17,33 @@ using CodeEnv.Master.Common.Unity;
 using UnityEngine;
 
 /// <summary>
-/// Handles the content, screen location and visibility of a GuiTrackingLabel that tracks a 3D game object. Handles
+/// Handles the content, screen location, scale and visibility of a GuiTrackingLabel that tracks a 3D game object. Handles
 /// both moving and fixed 3D objects.
 /// </summary>
 public class GuiTrackingLabel : AMonoBehaviourBase {
+
+    /// <summary>
+    /// The distance from the main camera where the natural, 
+    /// unadjusted scale of the object is 1.0.
+    /// </summary>
+    public float ObjectScale = 1000F;
+
+    /// <summary>
+    /// The minimum scale this label can be reduced too
+    /// relative to a starting scale of 1.0.
+    /// </summary>
+    public float MinimumScale = 0.6F;
+
+    /// <summary>
+    /// The maximum scale this label can be increased too, 
+    /// relative to a staring scale of 1.0.
+    /// </summary>
+    public float MaximumScale = 1.0F;
+
+    /// <summary>
+    /// The natural, initial scale of the label.
+    /// </summary>
+    private Vector3 _initialScale;
 
     /// <summary>
     /// Target game object this label tracks.
@@ -37,33 +60,29 @@ public class GuiTrackingLabel : AMonoBehaviourBase {
     /// </summary>
     public Vector3 OffsetFromPivot { get; set; }
 
+    private bool _isShowing;
     /// <summary>
     /// Gets or sets whether this <see cref="GuiTrackingLabel" /> is showing. Allows
     /// the client to control whether the label displays or not without the label losing knowledge
     /// of the content of the label that has already been set.
     /// </summary>
     public bool IsShowing {
-        get { return enabled; }
+        get { return _isShowing; }
         set {
-            if (this && enabled != value) {
-                EnableWidgets(value);
-                enabled = value;
+            if (this) {
+                SetProperty<bool>(ref _isShowing, value, "IsShowing", OnShowingChanged);
             }
         }
     }
 
-    /// <summary>
-    /// Gets or sets whether this <see cref="GuiTrackingLabel"/> is highlighted.
-    /// </summary>
     private bool _isHighlighted;
+    /// <summary>
+    /// Gets or sets whether this <see cref="GuiTrackingLabel"/> is highlighted. If not showing
+    /// does nothing.
+    /// </summary>
     public bool IsHighlighted {
-        get {
-            return _isHighlighted;
-        }
-        set {
-            _isHighlighted = value;
-            Highlight(value);
-        }
+        get { return _isHighlighted; }
+        set { SetProperty<bool>(ref _isHighlighted, value, "IsHighlighted", OnHighlightChanged); }
     }
 
     private Transform _transform;
@@ -79,18 +98,21 @@ public class GuiTrackingLabel : AMonoBehaviourBase {
         _label = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
         _label.depth = -100; // draw below other Gui Elements in the same Panel
         _labelNormalColor = _label.color;
+        _widgets = gameObject.GetSafeMonoBehaviourComponentsInChildren<UIWidget>();
+        enabled = false;    // to match the initial state of _isShowing
         UpdateRate = UpdateFrequency.Continuous;
+
+        _initialScale = _transform.localScale;
     }
 
     void Start() {
         if (Target == null) {
-            Debug.LogError("Target Game Object to track has not been assigned. Destroying {0}.".Inject(gameObject.name));
+            D.Error("Target Game Object to track has not been assigned. Destroying {0}.".Inject(gameObject.name));
             Destroy(gameObject);
             return;
         }
 
         _mainCamera = NGUITools.FindCameraForLayer(Target.gameObject.layer);
-        _widgets = gameObject.GetSafeMonoBehaviourComponentsInChildren<UIWidget>();
     }
 
     /// <summary>
@@ -111,9 +133,10 @@ public class GuiTrackingLabel : AMonoBehaviourBase {
         Set(string.Empty);
     }
 
-    void LateUpdate() {
+    void Update() {
         if (ToUpdate()) {
             UpdatePosition();
+            UpdateScale();
         }
     }
 
@@ -123,6 +146,19 @@ public class GuiTrackingLabel : AMonoBehaviourBase {
         targetPosition.z = 1F;  // positive Z puts the GuiTrackingLabel behind the rest of the UI
         // FIXME: UIRoot  increases the transform.z value from 1 to 200 when the scale is .005!!!!!!!!!
         _transform.position = targetPosition;
+    }
+
+    private void UpdateScale() {
+        float scaler = Mathf.Clamp(ObjectScale / _transform.DistanceToCamera(), MinimumScale, MaximumScale);
+        Vector3 adjustedScale = _initialScale * scaler;
+        adjustedScale.z = 1F;
+        //Logger.Log("New Scale is {0}.".Inject(newScale));
+        _transform.localScale = adjustedScale;
+    }
+
+    private void OnShowingChanged() {
+        enabled = IsShowing;
+        EnableWidgets(IsShowing);
     }
 
     /// <summary>
@@ -137,10 +173,9 @@ public class GuiTrackingLabel : AMonoBehaviourBase {
         }
     }
 
-    private void Highlight(bool toHighlight) {
-        // TODO
-        //Debug.Log("{0} Highlighting changed to {1}.".Inject(gameObject.name, toHighlight));
-        _label.color = toHighlight ? Color.yellow : _labelNormalColor;
+    private void OnHighlightChanged() {
+        _label.color = IsHighlighted ? Color.yellow : _labelNormalColor;
+        //Logger.Log("{0} Highlighting changed to {1}.".Inject(gameObject.name, toHighlight));
     }
 
     // Standalone update position approach that doesn't rely on getting visibility change messages from the Target

@@ -11,8 +11,8 @@
 // -------------------------------------------------------------------------------------------------------------------- 
 
 #define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 // default namespace
 
@@ -38,7 +38,7 @@ public class GuiPrefabLinker : AMonoBehaviourBase {
     /// </summary>
     private void SetupLinkedPrefab() {
         if (linkedPrefab == null || launchButtonAnimation == null) {
-            Debug.LogError("One or more GuiPrefabLinker fields are not set. This is typically the lack of a Launch button instance.");
+            D.Error("One or more GuiPrefabLinker fields are not set. This is typically the lack of a Launch button instance.");
             return;
         }
         GameObject prefabClone = NGUITools.AddChild(gameObject, linkedPrefab);
@@ -63,7 +63,7 @@ public class GuiPrefabLinker : AMonoBehaviourBase {
             launchButton.guiVisibilityExceptions = new UIPanel[1];
         }
         else {
-            Debug.LogWarning("GuiVisibilityExceptions already contains an exception! Now being replaced by {0}.".Inject(prefabUIPanel.name));
+            D.Warn("GuiVisibilityExceptions already contains an exception! Now being replaced by {0}.".Inject(prefabUIPanel.name));
         }
         launchButton.guiVisibilityExceptions[0] = prefabUIPanel;
     }

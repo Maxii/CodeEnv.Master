@@ -11,8 +11,8 @@
 // -------------------------------------------------------------------------------------------------------------------- 
 
 #define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 // default namespace
 
@@ -57,14 +57,14 @@ public class GuiCheckbox : GuiTooltip {
         if (!string.IsNullOrEmpty(propertyName)) {
             PropertyInfo propertyInfo = typeof(PlayerPrefsManager).GetProperty(propertyName);
             if (propertyInfo == null) {
-                Debug.LogError("No PlayerPrefsManager property named {0} found!".Inject(propertyName));
+                D.Error("No PlayerPrefsManager property named {0} found!".Inject(propertyName));
                 return;
             }
             Func<bool> propertyGet = (Func<bool>)Delegate.CreateDelegate(typeof(Func<bool>), PlayerPrefsManager.Instance, propertyInfo.GetGetMethod());
             checkbox.startsChecked = propertyGet(); // startsChecked used as UICheckbox Start() uses it to initialize the checkbox
         }
         else {
-            Debug.LogWarning("No PlayerPrefsManager Property named for {0} so setting false.".Inject(gameObject.name));
+            D.Warn("No PlayerPrefsManager Property named for {0} so setting false.".Inject(gameObject.name));
             checkbox.startsChecked = false;
         }
     }

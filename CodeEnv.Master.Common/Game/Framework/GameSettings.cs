@@ -12,15 +12,14 @@
 
 namespace CodeEnv.Master.Common {
 
-
     /// <summary>
     /// Data container class holding all settings for a new or loaded game.
     /// </summary>
     public class GameSettings {
 
         public bool IsNewGame { get; set; }
-        public UniverseSize SizeOfUniverse { get; set; }
-        public Players Player { get; set; }
+        public UniverseSize UniverseSize { get; set; }
+        public Race PlayerRace { get; set; }
 
         public GameSettings() { }
 

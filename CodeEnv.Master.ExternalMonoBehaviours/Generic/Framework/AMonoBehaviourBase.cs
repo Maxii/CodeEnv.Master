@@ -15,6 +15,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.Unity;
@@ -25,28 +26,66 @@ using UnityEngine;
 /// NOTE: Unity will never call the 'overrideable' Awake(), Start(), Update(), LateUpdate(), FixedUpdate(), OnGui(), etc. methods when 
 /// there is a higher derived class in the chain. Unity only calls the method (if implemented) of the highest derived class.
 /// </summary>
-public abstract class AMonoBehaviourBase : MonoBehaviour {
+public abstract class AMonoBehaviourBase : MonoBehaviour, IInstanceIdentity, IChangeTracking, INotifyPropertyChanged, INotifyPropertyChanging {
 
-    private static int instanceCounter = 0;
+    #region IInstanceIdentity Members
+    private static int _instanceCounter = 0;
     public int InstanceID { get; set; }
 
     protected void IncrementInstanceCounter() {
-        InstanceID = System.Threading.Interlocked.Increment(ref instanceCounter);
+        InstanceID = System.Threading.Interlocked.Increment(ref _instanceCounter);
+    }
+
+    #endregion
+
+    #region ToUpdate
+
+    /// <summary>
+    /// Enum holding settings governing how frequently ToUpdate() will
+    /// return true when called. Used for cutting down the number of times
+    /// Update() or LateUpdate() has to be processed.
+    /// </summary>
+    [Serializable]
+    protected enum UpdateFrequency {
+        None = 0,
+        /// <summary>
+        /// Default. ToUpdate() returns true every time.
+        /// </summary>
+        Continuous = 1,
+        /// <summary>
+        /// ToUpdate() returns true every other time.
+        /// </summary>
+        Frequent = 2,
+        /// <summary>
+        /// ToUpdate() returns true every fourth time.
+        /// </summary>
+        Normal = 4,
+        /// <summary>
+        /// ToUpdate() returns true every eighth time.
+        /// </summary>
+        Infrequent = 8,
+        /// <summary>
+        /// ToUpdate() returns true every sixteenth time.
+        /// </summary>
+        Seldom = 16,
+        Rare = 32,
+        VeryRare = 64,
+        HardlyEver = 128
     }
 
     /// <value>
     ///  The rate at which ToUpdate() returns true. Default is Continuous.
     /// </value>
-    private UpdateFrequency updateRate = UpdateFrequency.Continuous;
+    private UpdateFrequency _updateRate = UpdateFrequency.Continuous;
     protected UpdateFrequency UpdateRate {
-        get { return updateRate; }
+        get { return _updateRate; }
         set {
-            updateRate = value;
-            updateCounter = (int)value; // makes sure ToUpdate() returns true immediately the first time
+            _updateRate = value;
+            _updateCounter = (int)value; // makes sure ToUpdate() returns true immediately the first time
         }
     }
 
-    private int updateCounter = Constants.Zero;
+    private int _updateCounter = Constants.Zero;
 
     /// <summary>
     /// Optionally used inside Update() or LateUpdate() to determine the frequency with which the containing code should be processed.
@@ -54,20 +93,22 @@ public abstract class AMonoBehaviourBase : MonoBehaviour {
     /// <returns>true on a pace set by the UpdateRate property</returns>
     protected bool ToUpdate() {
         bool toUpdate = false;
-        if (GameManager.IsGameRunning) {
+        if (GameManager.Instance.IsGameRunning) {
             if (UpdateRate == UpdateFrequency.Continuous) {
                 toUpdate = true;
             }
-            else if (updateCounter >= (int)UpdateRate) {    // >= in case UpdateRate gets changed after initialization
-                updateCounter = Constants.Zero;
+            else if (_updateCounter >= (int)UpdateRate) {    // >= in case UpdateRate gets changed after initialization
+                _updateCounter = Constants.Zero;
                 toUpdate = true;
             }
             else {
-                updateCounter++;
+                _updateCounter++;
             }
         }
         return toUpdate;
     }
+
+    #endregion
 
     #region Invoke
     // Based on an Action Delegate that encapsulates methods with no parameters that return void, aka 'a task'.
@@ -139,6 +180,8 @@ public abstract class AMonoBehaviourBase : MonoBehaviour {
     }
     #endregion
 
+    #region Instantiate
+
     /// <summary>
     /// Instantiates a clone of the original object at position and rotation.
     /// </summary>
@@ -161,6 +204,8 @@ public abstract class AMonoBehaviourBase : MonoBehaviour {
     public T Instantiate<T>(T original) where T : UnityEngine.Object {
         return (T)UnityEngine.Object.Instantiate(original);
     }
+
+    #endregion
 
     #region Coroutine
     // Based on Func<IEnumerator> and Func<object, IEnumerator> Delegates that encapsulate methods with zero or one parameter that return IEnumerator, aka 'a task'.
@@ -204,6 +249,8 @@ public abstract class AMonoBehaviourBase : MonoBehaviour {
     }
     #endregion
 
+    #region GetComponent
+
     /// <summary>
     /// Gets the single component of Type T that belongs to one of the immediate children of the GameObject.
     /// Returns null if none found. Throws an exception if more than one is found.
@@ -211,7 +258,7 @@ public abstract class AMonoBehaviourBase : MonoBehaviour {
     /// <typeparam name="T"></typeparam>
     /// <exception cref="InvalidOperationException" />
     /// <returns></returns>
-    public T GetComponentInImmediateChildren<T>() where T : Component {
+    public T GetComponentInImmediateChildren<T>() where T : UnityEngine.Component {
         T[] tComponents = GetComponentsInImmediateChildren<T>();
         if (tComponents.IsNullOrEmpty<T>()) {
             return null;
@@ -227,7 +274,7 @@ public abstract class AMonoBehaviourBase : MonoBehaviour {
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public T[] GetComponentsInImmediateChildren<T>() where T : Component {
+    public T[] GetComponentsInImmediateChildren<T>() where T : UnityEngine.Component {
         T[] tComponentsInAllChildren = GetComponentsInChildren<T>();
         var tComponentsInImmediateChildren = from t in tComponentsInAllChildren where t.transform.parent == gameObject.transform select t;
         return tComponentsInImmediateChildren.ToArray<T>();
@@ -251,6 +298,8 @@ public abstract class AMonoBehaviourBase : MonoBehaviour {
         return Utility.ConvertToArray<I>(GetComponents(typeof(I)));
     }
 
+    #endregion
+
     /// <summary>
     /// Returns a list of all active loaded MonoBehaviour scripts that implement Interface I. It will return no inactive scripts.
     /// Please note that this function is very slow.
@@ -262,7 +311,7 @@ public abstract class AMonoBehaviourBase : MonoBehaviour {
         List<I> list = new List<I>();
 
         foreach (MonoBehaviour behaviour in monoBehaviours) {
-            Component[] components = behaviour.GetComponents<Component>();
+            UnityEngine.Component[] components = behaviour.GetComponents<UnityEngine.Component>();
             var iComponents = from c in components where c is I select c;
             foreach (var c in iComponents) {
                 list.Add(c as I);
@@ -282,40 +331,88 @@ public abstract class AMonoBehaviourBase : MonoBehaviour {
         return objects;
     }
 
-    // No need for IDisposable as there are no resources here to clean up
+    #region PropertyChangeTracking
 
     /// <summary>
-    /// Enum holding settings governing how frequently ToUpdate() will
-    /// return true when called. Used for cutting down the number of times
-    /// Update() or LateUpdate() has to be processed.
+    /// Sets the properties backing field to the new value if it has changed and raises PropertyChanged and PropertyChanging
+    /// events to any subscribers. Also provides local method access for doing any additional processing work that should be
+    /// done outside the setter. This is useful when you have dependant properties in the same object that should change as a 
+    /// result of the initial property change.
     /// </summary>
-    [Serializable]
-    protected enum UpdateFrequency {
-        None = 0,
-        /// <summary>
-        /// Default. ToUpdate() returns true every time.
-        /// </summary>
-        Continuous = 1,
-        /// <summary>
-        /// ToUpdate() returns true every other time.
-        /// </summary>
-        Frequent = 2,
-        /// <summary>
-        /// ToUpdate() returns true every fourth time.
-        /// </summary>
-        Normal = 4,
-        /// <summary>
-        /// ToUpdate() returns true every eighth time.
-        /// </summary>
-        Infrequent = 8,
-        /// <summary>
-        /// ToUpdate() returns true every sixteenth time.
-        /// </summary>
-        Seldom = 16,
-        Rare = 32,
-        VeryRare = 64,
-        HardlyEver = 128
+    /// <typeparam name="T">Property Type</typeparam>
+    /// <param name="backingStore">The backing store field.</param>
+    /// <param name="value">The proposed new value.</param>
+    /// <param name="propertyName">Name of the property.</param>
+    /// <param name="onChanged">Optional local method to call when the property is changed.</param>
+    /// <param name="onChanging">Optional local method to call before the property is changed. The proposed new value is provided as the parameter.</param>
+    protected void SetProperty<T>(ref T backingStore, T value, string propertyName, Action onChanged = null, Action<T> onChanging = null) {
+        VerifyCallerIsProperty(propertyName);
+        D.Log("SetProperty called. {0} changed to {1}.", propertyName, value);
+        if (EqualityComparer<T>.Default.Equals(backingStore, value)) {
+            return;
+        }
+        if (onChanging != null) { onChanging(value); }
+        OnPropertyChanging(propertyName);
+
+        backingStore = value;
+
+        if (onChanged != null) { onChanged(); }
+        _isChanged = true;
+        OnPropertyChanged(propertyName);
     }
+
+    protected void OnPropertyChanging(string propertyName) {
+        var handler = PropertyChanging; // threadsafe approach
+        if (handler != null) {
+            handler(this, new PropertyChangingEventArgs(propertyName));
+        }
+    }
+
+    protected void OnPropertyChanged(string propertyName) {
+        var handler = PropertyChanged; // threadsafe approach
+        if (handler != null) {
+            handler(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void VerifyCallerIsProperty(string propertyName) {
+        var stackTrace = new System.Diagnostics.StackTrace();
+        var frame = stackTrace.GetFrames()[2];
+        var caller = frame.GetMethod();
+        if (!caller.Name.Equals("set_" + propertyName, StringComparison.InvariantCulture)) {
+            throw new InvalidOperationException(string.Format("Called SetProperty {0} from {1}", propertyName, caller.Name));
+        }
+    }
+
+    #region IChangeTracking Members
+
+    public void AcceptChanges() {
+        _isChanged = false;
+    }
+
+    private bool _isChanged;
+    public bool IsChanged {
+        get { return _isChanged; }
+    }
+
+    #endregion
+
+    #region INotifyPropertyChanged Members
+
+    public event PropertyChangedEventHandler PropertyChanged;
+
+    #endregion
+
+    #region INotifyPropertyChanging Members
+
+    public event PropertyChangingEventHandler PropertyChanging;
+
+    #endregion
+
+    #endregion
+
+    // No need for IDisposable as there are no resources here to clean up
 
     // An abstract Base has no need for a ToString() method as its derived children have one.
     // ObjectAnalyzer DOES include analysis of base classes in its scope.

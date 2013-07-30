@@ -10,10 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
 //#define DEBUG_LOG
-
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common.Unity {
 
@@ -28,9 +27,30 @@ namespace CodeEnv.Master.Common.Unity {
     /// The primary class that keeps track of game time.
     /// </summary>
     [SerializeAll]
-    public class GameTime {
+    public class GameTime : APropertyChangeTracking {
 
-        public static GameClockSpeed GameSpeed { get; private set; }
+        private GameClockSpeed _gameSpeed;
+        public GameClockSpeed GameSpeed {
+            get { return _gameSpeed; }
+            set {
+                SetProperty<GameClockSpeed>(ref _gameSpeed, value, "GameSpeed", OnGameSpeedChanged, OnGameSpeedChanging);
+            }
+        }
+
+        /// <summary>
+        /// The amount of time in seconds elapsed since the last Frame 
+        /// was rendered or zero if the game is paused or not running. Useful for animations
+        /// or other work that should stop while paused. GameClockSpeed IS factored in.
+        /// </summary>
+        public static float DeltaTimeOrPausedWithGameSpeed {
+            get {
+                D.Assert(Instance._isClockEnabled);
+                if (GameManager.Instance.IsGamePaused) {
+                    return Constants.ZeroF;
+                }
+                return DeltaTimeWithGameSpeed;
+            }
+        }
 
         /// <summary>
         /// The amount of time in seconds elapsed since the last Frame 
@@ -39,8 +59,8 @@ namespace CodeEnv.Master.Common.Unity {
         /// </summary>
         public static float DeltaTimeOrPaused {
             get {
-                D.Assert(Instance.isClockEnabled);
-                if (GameManager.IsGamePaused) {
+                D.Assert(Instance._isClockEnabled);
+                if (GameManager.Instance.IsGamePaused) {
                     return Constants.ZeroF;
                 }
                 return DeltaTime;
@@ -51,6 +71,18 @@ namespace CodeEnv.Master.Common.Unity {
         /// The amount of time in seconds elapsed since the last Frame 
         /// was rendered whether the game is paused or not. Useful for 
         /// animations or other work I want to continue even while the game is paused.
+        /// GameClockSpeed IS factored in.
+        /// </summary>
+        public static float DeltaTimeWithGameSpeed {
+            get { return DeltaTime * Instance._gameSpeedMultiplier; }
+        }
+
+
+        /// <summary>
+        /// The amount of time in seconds elapsed since the last Frame 
+        /// was rendered whether the game is paused or not. Useful for 
+        /// animations or other work I want to continue even while the game is paused.
+        /// GameClockSpeed has no effect.
         /// </summary>
         public static float DeltaTime {
             get { return UnityEngine.Time.deltaTime; }
@@ -59,7 +91,7 @@ namespace CodeEnv.Master.Common.Unity {
         /// <summary>
         /// The realtime elapsed since this session with Unity started. In a standalone
         /// player, this is the time since the player was started. In the editor, this is the 
-        /// time since the Editor Play button was pushed.
+        /// time since the Editor Play button was pushed. GameClockSpeed has no effect.
         /// </summary>
         public static float TimeInCurrentSession {
             get {
@@ -71,12 +103,12 @@ namespace CodeEnv.Master.Common.Unity {
 
         /// <summary>
         /// The real time in seconds since a game instance was originally begun. Any time spent paused 
-        /// during the game is included in this value. GameClockSpeed does not effect this.
+        /// during the game is included in this value. GameClockSpeed has no effect.
         /// </summary>
         public static float RealTime_Game {
             get {
-                D.Assert(Instance.isClockEnabled);
-                float result = Instance.cumTimeInPriorSessions + TimeInCurrentSession - Instance.timeGameBeganInCurrentSession;
+                D.Assert(Instance._isClockEnabled);
+                float result = Instance._cumTimeInPriorSessions + TimeInCurrentSession - Instance._timeGameBeganInCurrentSession;
                 D.Log("RealTime_Game = {0:0.00}.", result);
                 return result;
             }
@@ -84,16 +116,16 @@ namespace CodeEnv.Master.Common.Unity {
 
         /// <summary>
         /// The real time in seconds since a new or saved game was begun.
-        /// Time on hold (paused or not running) is not counted. GameClockSpeed does not effect this.
+        /// Time on hold (paused or not running) is not counted. GameClockSpeed has no effect.
         /// </summary>
         public static float RealTime_GamePlay {
             get {
-                D.Assert(Instance.isClockEnabled);
+                D.Assert(Instance._isClockEnabled);
                 float timeInCurrentPause = Constants.ZeroF;
-                if (GameManager.IsGamePaused) {
-                    timeInCurrentPause = RealTime_Game - Instance.timeCurrentPauseBegan;
+                if (GameManager.Instance.IsGamePaused) {
+                    timeInCurrentPause = RealTime_Game - Instance._timeCurrentPauseBegan;
                 }
-                return RealTime_Game - Instance.cumTimePaused - timeInCurrentPause;
+                return RealTime_Game - Instance._cumTimePaused - timeInCurrentPause;
             }
         }
 
@@ -104,35 +136,40 @@ namespace CodeEnv.Master.Common.Unity {
         private static GameDate date;
         public static IGameDate Date {
             get {
-                D.Assert(Instance.isClockEnabled);
+                D.Assert(Instance._isClockEnabled);
                 Instance.SyncGameClock();
                 // the only time the date needs to be synced is when it is about to be used
-                date.SyncDateToGameClock(Instance.currentDateTime);
+                date.SyncDateToGameClock(Instance._currentDateTime);
                 return date;
             }
         }
 
+        private IList<IDisposable> _subscribers;
+
         // the amount of RealTime_Game time accumulated by a saved game in sessions prior to this one
-        private float cumTimeInPriorSessions;
+        private float _cumTimeInPriorSessions;
 
         // a marker indicating the point in time in this session that the current game was begun
-        private float timeGameBeganInCurrentSession;
+        private float _timeGameBeganInCurrentSession;
 
         // fields for tracking the amount of time paused in RealTime_Game units
-        private float cumTimePaused;
-        private float timeCurrentPauseBegan;
+        private float _cumTimePaused;
+        private float _timeCurrentPauseBegan;
 
         // time in seconds used to calculate the Date. Accounts for speed and pausing
-        private float currentDateTime;
+        private float _currentDateTime;
         private float _savedCurrentDateTime;    // FIXME required to save currentDateTime and then restore it. A bug?
 
         // internal field used to calculate the incremental elapsed time between syncs
         private float _gameRealTimeAtLastSync;
 
-        private bool isClockEnabled;
+        private float _gameSpeedMultiplier;
 
-        private GameEventManager eventMgr;
-        private PlayerPrefsManager playerPrefsMgr;
+        private bool _isClockEnabled;
+
+        private GameEventManager _eventMgr;
+        private PlayerPrefsManager _playerPrefsMgr;
+        private GameManager _gameMgr;
 
         #region SingletonPattern
         private static readonly GameTime instance;
@@ -163,113 +200,117 @@ namespace CodeEnv.Master.Common.Unity {
         /// Called once from the constructor, this does all required initialization
         /// </summary>
         private void Initialize() {
-            eventMgr = GameEventManager.Instance;
+            _gameMgr = GameManager.Instance;
+            _eventMgr = GameEventManager.Instance;
             UnityEngine.Time.timeScale = Constants.OneF;
-            playerPrefsMgr = PlayerPrefsManager.Instance;
+            _playerPrefsMgr = PlayerPrefsManager.Instance;
             PrepareToBeginNewGame();
         }
 
-        private void AddListeners() {
-            eventMgr.AddListener<GameSpeedChangeEvent>(this, OnGameSpeedChange);
-            eventMgr.AddListener<GamePauseStateChangingEvent>(this, OnPauseStateChanging);
+        private void Subscribe() {
+            if (_subscribers == null) {
+                _subscribers = new List<IDisposable>();
+            }
+            _subscribers.Add(_gameMgr.SubscribeToPropertyChanging<GameManager, bool>(gm => gm.IsGamePaused, OnPauseStateChanging));
         }
 
-        private void OnPauseStateChanging(GamePauseStateChangingEvent e) {
-            D.Assert(isClockEnabled);
-            GamePauseState pauseCmd = e.PauseState;
-            switch (pauseCmd) {
-                case GamePauseState.Paused:
-                    SyncGameClock();    // update the game clock before pausing
-                    timeCurrentPauseBegan = RealTime_Game;
-                    break;
-                case GamePauseState.Resumed:
-                    float timeInCurrentPause = RealTime_Game - timeCurrentPauseBegan;
-                    cumTimePaused += timeInCurrentPause;
-                    D.Log("TimeGameBegunInCurrentSession = {0:0.00}, TimeCurrentPauseBegan (GameTime) = {1:0.00}", timeGameBeganInCurrentSession, timeCurrentPauseBegan);
-                    D.Log("TimeInCurrentPause (GameTime) = {0:0.00}, RealTime_Game = {1:0.00}.", timeInCurrentPause, RealTime_Game);
+        private void OnPauseStateChanging() {
+            D.Assert(_isClockEnabled);
+            bool isGamePausedPriorToChange = GameManager.Instance.IsGamePaused;
+            if (isGamePausedPriorToChange) {
+                // we are about to resume play
+                float timeInCurrentPause = RealTime_Game - _timeCurrentPauseBegan;
+                _cumTimePaused += timeInCurrentPause;
+                D.Log("TimeGameBegunInCurrentSession = {0:0.00}, TimeCurrentPauseBegan (GameTime) = {1:0.00}", _timeGameBeganInCurrentSession, _timeCurrentPauseBegan);
+                D.Log("TimeInCurrentPause (GameTime) = {0:0.00}, RealTime_Game = {1:0.00}.", timeInCurrentPause, RealTime_Game);
 
-                    timeCurrentPauseBegan = Constants.ZeroF;
+                _timeCurrentPauseBegan = Constants.ZeroF;
 
-                    // ignore the accumulated time during pause when next GameClockSync is requested
-                    _gameRealTimeAtLastSync = RealTime_Game;
-                    D.Log("CumTimePaused = {0:0.00}, _gameRealTimeAtLastSync = {1:0.00}.", cumTimePaused, _gameRealTimeAtLastSync);
-                    break;
-                case GamePauseState.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(pauseCmd));
+                // ignore the accumulated time during pause when next GameClockSync is requested
+                _gameRealTimeAtLastSync = RealTime_Game;
+                D.Log("CumTimePaused = {0:0.00}, _gameRealTimeAtLastSync = {1:0.00}.", _cumTimePaused, _gameRealTimeAtLastSync);
+            }
+            else {
+                // we are about to pause
+                SyncGameClock();    // update the game clock before pausing
+                _timeCurrentPauseBegan = RealTime_Game;
             }
         }
 
         public void PrepareToBeginNewGame() {
             D.Log("GameTime.PrepareToBeginNewGame() called.");
             EnableClock(false);
-            cumTimeInPriorSessions = Constants.ZeroF;
-            timeGameBeganInCurrentSession = Constants.ZeroF;
-            cumTimePaused = Constants.ZeroF;
-            timeCurrentPauseBegan = Constants.ZeroF;
+            _cumTimeInPriorSessions = Constants.ZeroF;
+            _timeGameBeganInCurrentSession = Constants.ZeroF;
+            _cumTimePaused = Constants.ZeroF;
+            _timeCurrentPauseBegan = Constants.ZeroF;
             _gameRealTimeAtLastSync = Constants.ZeroF;
-            currentDateTime = Constants.ZeroF;
+            _currentDateTime = Constants.ZeroF;
             _savedCurrentDateTime = Constants.ZeroF;
-            // don't rely on initialization events from the gui
-            GameSpeed = playerPrefsMgr.GameSpeedOnLoad;
-            date = new GameDate(dayOfYear: 1, year: TempGameValues.StartingGameYear);
+            // don't wait for the Gui to set GameSpeed. Use the backing field as the Property calls OnGameSpeedChanged()
+            _gameSpeed = _playerPrefsMgr.GameSpeedOnLoad;
+            _gameSpeedMultiplier = _gameSpeed.SpeedMultiplier();
+            date = new GameDate();
         }
 
         public void PrepareToSaveGame() {
             // isClockEnabled is by definition true if a game is about to be saved 
             // timeGameBeganInCurrentSession is important now in synching these values. It will be set to a new value when the clock is started again
             // timeCurrentPauseBegan is important now in synching these values. It will be set to a new value when the clock is paused again
-            cumTimePaused += RealTime_Game - timeCurrentPauseBegan; // cumTimePaused must be updated now so it is current when saved
+            _cumTimePaused += RealTime_Game - _timeCurrentPauseBegan; // cumTimePaused must be updated now so it is current when saved
             // _gameRealTimeAtLastSync is not important to save. It will be set to the current RealTime_Game when the clock is started again
             // currentDateTime is key! It should be accurate as it gets updated at every sync.            
-            D.Log("currentDateTime value being saved is {0:0.00}.", currentDateTime);
-            _savedCurrentDateTime = currentDateTime; // FIXME bug? currentDateTime does not get properly restored
-            cumTimeInPriorSessions = RealTime_Game; // cumTimeInPriorSessions must be updated (last so it doesn't affect other values here) so it is current when saved
-            D.Log("PrepareToSaveGame called. cumTimeInPriorSessions set to {0:0.00}.", cumTimeInPriorSessions);
+            D.Log("currentDateTime value being saved is {0:0.00}.", _currentDateTime);
+            _savedCurrentDateTime = _currentDateTime; // FIXME bug? currentDateTime does not get properly restored
+            _cumTimeInPriorSessions = RealTime_Game; // cumTimeInPriorSessions must be updated (last so it doesn't affect other values here) so it is current when saved
+            D.Log("PrepareToSaveGame called. cumTimeInPriorSessions set to {0:0.00}.", _cumTimeInPriorSessions);
         }
 
         public void PrepareToResumeSavedGame() {
             EnableClock(false); // when saved it was enabled. Disable now pending re-enable on Running
             // cumTimeInPriorSessions was updated before saving, so it should be restored to the right value
-            D.Log("GameTime.PrepareToResumeSavedGame() called. cumTimeInPriorSessions restored to {0:0.0)}.", cumTimeInPriorSessions);
+            D.Log("GameTime.PrepareToResumeSavedGame() called. cumTimeInPriorSessions restored to {0:0.0)}.", _cumTimeInPriorSessions);
             // timeGameBeganInCurrentSession that was saved is irrelevant. It will be updated when the clock is enabled on Running
             // cumTimePaused was updated before saving, so it should be restored to the right value
             // timeCurrentPauseBegan will be set to a new value when the clock is paused again
             // _gameRealTimeAtLastSync will be set to the current RealTime_Game when the clock is started again
 
             // currentDateTime is key! It value when restored should be accurate as it was updated at every sync prior to being saved
-            currentDateTime = _savedCurrentDateTime; // FIXME bug? currentDateTime does not get properly restored
-            D.Log("currentDateTime restored to {0:0.00}.", currentDateTime);
-
-            GameSpeed = playerPrefsMgr.GameSpeedOnLoad; // the speed the clock was running at when saved is not relevant in the following session
+            _currentDateTime = _savedCurrentDateTime; // FIXME bug? currentDateTime does not get properly restored
+            D.Log("currentDateTime restored to {0:0.00}.", _currentDateTime);
+            // don't wait for the Gui to set GameSpeed. Use the backing field as the Property calls OnGameSpeedChanged()
+            _gameSpeed = _playerPrefsMgr.GameSpeedOnLoad; // the speed the clock was running at when saved is not relevant in the following session
+            _gameSpeedMultiplier = _gameSpeed.SpeedMultiplier();
             // date that is saved is fine and should be accurate. It gets recalculated from currentDateTime everytime it is used
         }
 
         public void EnableClock(bool toEnable) {
-            D.Assert(!GameManager.IsGamePaused);    // my practice - enable clock, then pause it
-            isClockEnabled = toEnable;
-            if (toEnable) {
-                AddListeners();
-                StartClock();
-            }
-            else {
-                RemoveListeners();
+            D.Assert(!_gameMgr.IsGamePaused);    // my practice - enable clock, then pause it
+            if (_isClockEnabled != toEnable) {
+                _isClockEnabled = toEnable;
+                if (toEnable) {
+                    Subscribe();
+                    StartClock();
+                }
+                else {
+                    Unsubscribe();
+                }
             }
         }
 
         private void StartClock() {
-            timeGameBeganInCurrentSession = TimeInCurrentSession;
-            D.Log("TimeGameBegunInCurrentSession set to {0:0.00}.", timeGameBeganInCurrentSession);
+            _timeGameBeganInCurrentSession = TimeInCurrentSession;
+            D.Log("TimeGameBegunInCurrentSession set to {0:0.00}.", _timeGameBeganInCurrentSession);
             _gameRealTimeAtLastSync = RealTime_Game;
             SyncGameClock();
         }
 
-        private void OnGameSpeedChange(GameSpeedChangeEvent e) {
-            D.Assert(isClockEnabled);
-            if (GameSpeed != e.GameSpeed) {
-                SyncGameClock();
-                GameSpeed = e.GameSpeed;
-            }
+        private void OnGameSpeedChanging(GameClockSpeed proposedSpeed) {
+            SyncGameClock();
+        }
+
+        private void OnGameSpeedChanged() {
+            _gameSpeedMultiplier = GameSpeed.SpeedMultiplier();
         }
 
         /// <summary>
@@ -278,19 +319,19 @@ namespace CodeEnv.Master.Common.Unity {
         /// sync the date when a pause or speed change occurs as they don't have any use for the date.
         /// </summary>
         private void SyncGameClock() {
-            D.Assert(isClockEnabled);
-            if (GameManager.IsGamePaused) {
+            D.Assert(_isClockEnabled);
+            if (_gameMgr.IsGamePaused) {
                 D.Warn("SyncGameClock called while Paused!");   // it keeps adding to currentDateTime
                 return;
             }
-            currentDateTime += GameSpeed.SpeedMultiplier() * (RealTime_Game - _gameRealTimeAtLastSync);
+            _currentDateTime += GameSpeed.SpeedMultiplier() * (RealTime_Game - _gameRealTimeAtLastSync);
             _gameRealTimeAtLastSync = RealTime_Game;
-            D.Log("GameClock synced to {0:0.00}.", currentDateTime);
+            D.Log("GameClock synced to {0:0.00}.", _currentDateTime);
         }
 
-        private void RemoveListeners() {
-            eventMgr.RemoveListener<GameSpeedChangeEvent>(this, OnGameSpeedChange);
-            eventMgr.RemoveListener<GamePauseStateChangingEvent>(this, OnPauseStateChanging);
+        private void Unsubscribe() {
+            _subscribers.ForAll<IDisposable>(s => s.Dispose());
+            _subscribers.Clear();
         }
 
         #region IDisposable
@@ -317,7 +358,7 @@ namespace CodeEnv.Master.Common.Unity {
 
             if (isDisposing) {
                 // free managed resources here including unhooking events
-                RemoveListeners();
+                Unsubscribe();
             }
             // free unmanaged resources here
             alreadyDisposed = true;

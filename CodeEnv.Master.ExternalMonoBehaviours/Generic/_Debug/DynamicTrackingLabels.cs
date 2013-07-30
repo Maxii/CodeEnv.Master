@@ -11,14 +11,14 @@
 // -------------------------------------------------------------------------------------------------------------------- 
 
 #define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 // default namespace
 
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
 using UnityEngine;
+
 
 /// <summary>
 /// Singleton for easy access to the DynamicTrackingLabels folder in the Scene.

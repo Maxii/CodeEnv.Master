@@ -6,14 +6,13 @@
 // </copyright> 
 // <summary> 
 // File: AGuiEnumPopupListBase.cs
-//  Generic AGuiEnumPopupListBase class that implements PlayerPrefsManager property initialization and Tooltip functionality.
+// Abstract generic class that uses Enums to populate popup lists in the Gui.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LEVEL_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
-
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 // default namespace
 
@@ -25,8 +24,8 @@ using CodeEnv.Master.Common.Unity;
 using UnityEngine;
 
 /// <summary>
-/// Generic AGuiEnumPopupListBase class that implements PlayerPrefsManager property initialization and Tooltip
-/// functionality. Also pre-registers with the NGUI PopupList delegate to receive OnPopupMenuSelectionChange events.
+/// Abstract generic class that uses Enums to populate popup lists in the Gui. Automatically acquires the value held in PlayerPrefsManager 
+/// to initialize the popup list's selection. Also pre-registers with the NGUI PopupList delegate to receive OnPopupMenuSelectionChange events.
 /// </summary>
 /// <typeparam name="T">The enum Type used in the list.</typeparam>
 public abstract class AGuiEnumPopupListBase<T> : AGuiPopupListBase where T : struct {
@@ -58,7 +57,7 @@ public abstract class AGuiEnumPopupListBase<T> : AGuiPopupListBase where T : str
         }
         else {
             popupList.selection = popupList.items[0];
-            Debug.Log("No PlayerPrefsManager property found for {0}, so initializing selectionName to first item in list: {1}.".Inject(typeof(T), popupList.selection));
+            Logger.Log("No PlayerPrefsManager property found for {0}, so initializing selectionName to first item in list: {1}.".Inject(typeof(T), popupList.selection));
         }
     }
 
@@ -72,14 +71,14 @@ public abstract class AGuiEnumPopupListBase<T> : AGuiPopupListBase where T : str
         if (!string.IsNullOrEmpty(propertyName)) {
             PropertyInfo propertyInfo = typeof(PlayerPrefsManager).GetProperty(propertyName);
             if (propertyInfo == null) {
-                Debug.LogError("No PlayerPrefsManager property named {0} found!".Inject(propertyName));
+                D.Error("No PlayerPrefsManager property named {0} found!".Inject(propertyName));
                 return;
             }
             Func<T> propertyGet = (Func<T>)Delegate.CreateDelegate(typeof(Func<T>), PlayerPrefsManager.Instance, propertyInfo.GetGetMethod());
             popupList.selection = propertyGet().ToString();
         }
         else {
-            Debug.LogWarning("The PlayerPrefsManager Property has not been named for {0}.".Inject(gameObject.name));
+            D.Warn("The PlayerPrefsManager Property has not been named for {0}.".Inject(gameObject.name));
         }
     }
 

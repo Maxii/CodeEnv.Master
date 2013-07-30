@@ -11,8 +11,8 @@
 // -------------------------------------------------------------------------------------------------------------------- 
 
 #define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 // default namespace
 
@@ -26,12 +26,12 @@ using UnityEngine;
 /// </summary>
 public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
 
-    private bool isCameraRollEnabled;
-    private bool isZoomOutOnCursorEnabled;
-    private bool isResetOnFocusEnabled;
-    private bool isPauseOnLoadEnabled;
+    private bool _isCameraRollEnabled;
+    private bool _isZoomOutOnCursorEnabled;
+    private bool _isResetOnFocusEnabled;
+    private bool _isPauseOnLoadEnabled;
 
-    private GameClockSpeed gameSpeedOnLoad;
+    private GameClockSpeed _gameSpeedOnLoad;
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
@@ -45,25 +45,25 @@ public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
 
     protected override void RecordCheckboxState(string checkboxName, bool checkedState) {
         if (checkboxName.Contains("roll")) {
-            isCameraRollEnabled = checkedState;
+            _isCameraRollEnabled = checkedState;
         }
         else if (checkboxName.Contains("zoom")) {
-            isZoomOutOnCursorEnabled = checkedState;
+            _isZoomOutOnCursorEnabled = checkedState;
         }
         else if (checkboxName.Contains("reset")) {
-            isResetOnFocusEnabled = checkedState;
+            _isResetOnFocusEnabled = checkedState;
         }
         else if (checkboxName.Contains("pause")) {
-            isPauseOnLoadEnabled = checkedState;
+            _isPauseOnLoadEnabled = checkedState;
         }
         // more checkboxes here
     }
 
     protected override void RecordPopupListState(string selectionName) {
-        GameClockSpeed _gameSpeedOnLoad;
-        if (Enums<GameClockSpeed>.TryParse(selectionName, true, out _gameSpeedOnLoad)) {
-            //UnityEngine.Debug.Log("GameClockSpeedOnLoad recorded as {0}.".Inject(selectionName));
-            gameSpeedOnLoad = _gameSpeedOnLoad;
+        GameClockSpeed gameSpeedOnLoad;
+        if (Enums<GameClockSpeed>.TryParse(selectionName, true, out gameSpeedOnLoad)) {
+            //UnityEngine.Logger.Log("GameClockSpeedOnLoad recorded as {0}.".Inject(selectionName));
+            _gameSpeedOnLoad = gameSpeedOnLoad;
         }
         // more popupLists here
     }
@@ -87,18 +87,18 @@ public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
 
     protected override void OnButtonClick(GameObject sender) {
         OptionSettings settings = new OptionSettings();
-        settings.IsCameraRollEnabled = isCameraRollEnabled;
-        settings.IsPauseOnLoadEnabled = isPauseOnLoadEnabled;
-        settings.IsResetOnFocusEnabled = isResetOnFocusEnabled;
-        settings.IsZoomOutOnCursorEnabled = isZoomOutOnCursorEnabled;
-        settings.GameSpeedOnLoad = gameSpeedOnLoad;
+        settings.IsCameraRollEnabled = _isCameraRollEnabled;
+        settings.IsPauseOnLoadEnabled = _isPauseOnLoadEnabled;
+        settings.IsResetOnFocusEnabled = _isResetOnFocusEnabled;
+        settings.IsZoomOutOnCursorEnabled = _isZoomOutOnCursorEnabled;
+        settings.GameSpeedOnLoad = _gameSpeedOnLoad;
         ValidateState();
-        eventMgr.Raise<OptionChangeEvent>(new OptionChangeEvent(this, settings));
+        eventMgr.Raise<GamePlayOptionsAcceptedEvent>(new GamePlayOptionsAcceptedEvent(this, settings));
     }
 
     [Conditional("UNITY_EDITOR")]
     private void ValidateState() {
-        D.Assert(gameSpeedOnLoad != GameClockSpeed.None);
+        D.Assert(_gameSpeedOnLoad != GameClockSpeed.None);
     }
 
     public override string ToString() {

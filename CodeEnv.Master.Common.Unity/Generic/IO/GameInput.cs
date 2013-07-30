@@ -11,8 +11,8 @@
 // -------------------------------------------------------------------------------------------------------------------- 
 
 //#define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 
 namespace CodeEnv.Master.Common.Unity {
@@ -23,6 +23,7 @@ namespace CodeEnv.Master.Common.Unity {
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
+
 
     public static class GameInput {
 

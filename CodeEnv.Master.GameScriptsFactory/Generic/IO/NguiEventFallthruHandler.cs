@@ -11,8 +11,8 @@
 // -------------------------------------------------------------------------------------------------------------------- 
 
 #define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 // default namespace
 
@@ -83,7 +83,7 @@ public class NguiEventFallthruHandler : AMonoBehaviourBase {
         string touchID = UICamera.currentTouchID.ToString();
         string objectTouched = UICamera.hoveredObject.name;
         string msg = "NguiEventFallthruHandler.{0}({1}) called. TouchID = {2}, GameObject touched = {3}.".Inject(stackFrame.GetMethod().Name, arg, touchID, objectTouched);
-        Debug.Log(msg);
+        Logger.Log(msg);
     }
 
 

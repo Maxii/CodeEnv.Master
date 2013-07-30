@@ -30,6 +30,15 @@ namespace CodeEnv.Master.Common.Unity {
         }
 
         /// <summary>
+        /// Changes a GameColor value into a 6 digit Hex RGB string, ignoring the alpha channel.
+        /// </summary>
+        /// <param name="color">The GameColor.</param>
+        /// <returns></returns>
+        public static string ColorToHex(GameColor color) {
+            return ColorToHex(color.Value());
+        }
+
+        /// <summary>
         /// Changes a Unity Color value into a 6 digit Hex RGB string, ignoring the alpha channel.
         /// <remarks>Note that Color32 and Color implictly convert to each other. You may pass a Color object to this method without first casting it.</remarks>
         /// </summary>

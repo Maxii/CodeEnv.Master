@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: EnumAttribute.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// Uses Attribute metadata to capture whatever values we want to associate with enum values.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -15,10 +15,10 @@ namespace CodeEnv.Master.Common {
     using System;
 
     /// <summary>
-    /// Uses Attribute metadata to capture whatever values we want to associate with each MyEnum Value.
+    /// Uses Attribute metadata to capture whatever values we want to associate with enum values.
     /// </summary>
     /// 
-    /// <remarks>Attribute parameters can only be a) primitive types, b) the Type enumType, c) an enum enumType
+    /// <remarks>Attribute parameters can only be a) primitive types, b) the Type enum, c) an enum enumType
     /// or delegateWithInvocationList) a one-dimensional array of any of these.
     /// <para>Uses Reflection so performance is slow. TODO - use Dictionary lookup after initial use.</para>
     /// </remarks>
@@ -28,12 +28,12 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// Constructor that initializes a new instance of the <see cref="EnumAttribute"/> class.
         /// </summary>
-        /// <param friendlyDescription="friendlyDescription">A user-friendly description.</param>
-        public EnumAttribute(string friendlyDescription) {
-            FriendlyDescription = friendlyDescription;
+        /// <param description="description">An alternative description.</param>
+        public EnumAttribute(string description) {
+            Description = description;
         }
 
-        public string FriendlyDescription { get; private set; }
+        public string Description { get; private set; }
     }
 }
 

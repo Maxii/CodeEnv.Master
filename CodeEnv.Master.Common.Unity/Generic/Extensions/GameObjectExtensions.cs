@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+//#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common.Unity {
 
@@ -25,6 +25,19 @@ namespace CodeEnv.Master.Common.Unity {
     /// TODO 
     /// </summary>
     public static class GameObjectExtensions {
+
+        public static T GetSafeMonoBehaviourComponentInParents<T>(this GameObject go) where T : MonoBehaviour {
+            Transform parent = go.transform.parent;
+            while (parent != null) {
+                T component = parent.gameObject.GetComponent<T>();
+                if (component != null) {
+                    return component;
+                }
+                parent = parent.gameObject.transform.parent;
+            }
+            D.Warn(ErrorMessages.ComponentNotFound, typeof(T), go);
+            return null;
+        }
 
         /// <summary>
         /// Defensive GameObject.GetComponent&lt;&gt;() alternative for acquiring MonoBehaviours. 
@@ -84,26 +97,6 @@ namespace CodeEnv.Master.Common.Unity {
                 D.Log(ErrorMessages.ComponentNotFound, typeof(T), go);
             }
             return components;
-        }
-
-        /// <summary>
-        /// Gets the first interface of type I found in the gameobject's components.
-        /// </summary>
-        /// <typeparam name="I">The Interface type.</typeparam>
-        /// <param name="t">The game object</param>
-        /// <returns>The class of type I found, if any. Can be null.</returns>
-        public static I GetInterface<I>(this GameObject go) where I : class {
-            return go.GetComponent(typeof(I)) as I;
-        }
-
-        /// <summary>
-        /// Gets the first interface of type I found in the gameobject's components or its children.
-        /// </summary>
-        /// <typeparam name="I">The Interface type.</typeparam>
-        /// <param name="t">The game object</param>
-        /// <returns>The class of type I found, if any. Can be null.</returns>
-        public static I GetInterfaceInChildren<I>(this GameObject go) where I : class {
-            return go.GetComponentInChildren(typeof(I)) as I;
         }
 
         public static float DistanceToCamera(this GameObject go) {

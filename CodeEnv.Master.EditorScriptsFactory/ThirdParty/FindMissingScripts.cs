@@ -12,15 +12,10 @@
 
 // default namespace
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEngine;
+#if (UNITY_EDITOR)
 using UnityEditor;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
-using CodeEnv.Master.Common.Unity;
+using UnityEngine;
 
 /// <summary>
 /// Editor extension that adds a MenuItem to search out any missing scripts in the startScene.
@@ -72,4 +67,5 @@ public class FindMissingScripts : EditorWindow {
     }
 
 }
+#endif
 

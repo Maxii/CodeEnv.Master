@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LEVEL_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+//#define 
+#define DEBUG_WARN
+#define DEBUG_ERROR
 //
 // default namespace
 
@@ -50,7 +50,7 @@ public class UsefulPrefabs : AMonoBehaviourBase, IInstanceIdentity {
     /// <returns><c>true</c> if this instance is going to be destroyed, <c>false</c> if not.</returns>
     private bool TryDestroyExtraCopies() {
         if (currentInstance != null && currentInstance != this) {
-            Debug.Log("Extra {0} found. Now destroying.".Inject(this.name));
+            Logger.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceID));
             Destroy(gameObject);
             return true;
         }
@@ -62,7 +62,7 @@ public class UsefulPrefabs : AMonoBehaviourBase, IInstanceIdentity {
     }
 
     void OnDestroy() {
-        Debug.Log("A {0} instance is being destroyed.".Inject(this.name));
+        Debug.Log("{0}_{1} instance is being destroyed.".Inject(this.name, InstanceID));
     }
 
     public override string ToString() {

@@ -11,8 +11,8 @@
 // -------------------------------------------------------------------------------------------------------------------- 
 
 #define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common.Unity {
 
@@ -28,11 +28,11 @@ namespace CodeEnv.Master.Common.Unity {
         public string TextWithEmbeddedColor { get; private set; }
 
         public ColoredText(string text) :
-            this(text, Color.white) {
+            this(text, GameColor.White) {
         }
 
-        public ColoredText(string text, Color color) {
-            if (color != Color.white) {
+        public ColoredText(string text, GameColor color) {
+            if (color != GameColor.White) {
                 string colorHex = MyNguiUtilities.ColorToHex(color);
                 string colorNgui = MyNguiConstants.NguiEmbeddedColorFormat.Inject(colorHex);
                 TextWithEmbeddedColor = colorNgui + text + MyNguiConstants.NguiEmbeddedColorTerminator;

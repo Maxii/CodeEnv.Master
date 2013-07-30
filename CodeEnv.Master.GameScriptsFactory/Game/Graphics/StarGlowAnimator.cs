@@ -10,10 +10,8 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LEVEL_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
-
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 using System;
 using CodeEnv.Master.Common;
@@ -51,7 +49,7 @@ public class StarGlowAnimator : AMonoBehaviourBase {
 
     void Update() {
         if (ToUpdate()) {
-            float adjDeltaTime = GameTime.DeltaTime * (int)UpdateRate;
+            float adjDeltaTime = GameTime.DeltaTimeWithGameSpeed * (int)UpdateRate;
             glowPanelTransform.Rotate(Vector3.up * adjDeltaTime * rotationSpeedAndDirection);
         }
     }

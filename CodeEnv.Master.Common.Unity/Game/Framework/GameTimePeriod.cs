@@ -11,11 +11,12 @@
 // -------------------------------------------------------------------------------------------------------------------- 
 
 #define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common.Unity {
 
+    using System;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -23,14 +24,25 @@ namespace CodeEnv.Master.Common.Unity {
     /// </summary>
     public class GameTimePeriod {
 
-        private static int daysPerYear = TempGameValues.DaysPerGameYear;
+        private static int _daysPerYear = GeneralSettings.Instance.DaysPerYear;
 
         private IGameDate _startDate;
 
+        /// <summary>
+        /// The Year value for this period. Note: The total duration of the
+        /// period is acquired using PeriodInDays.
+        /// </summary>
         public int Years { get; private set; }
 
+        /// <summary>
+        /// The day value for this period. Note: The total duration of the
+        /// period is acquired using PeriodInDays.
+        /// </summary>
         public int Days { get; private set; }
 
+        /// <summary>
+        /// The total duration of the period in Days.
+        /// </summary>
         public int PeriodInDays { get; private set; }
 
         public string FormattedPeriod {
@@ -60,8 +72,8 @@ namespace CodeEnv.Master.Common.Unity {
             Arguments.ValidateNotNegative(years);
             Days = days;
             Years = years;
-            PeriodInDays = years * daysPerYear + days;
-            GenerateArtificialStartDate(days, years);
+            PeriodInDays = years * _daysPerYear + days;
+            //GenerateArtificialStartDate(days, years);
         }
 
         /// <summary>
@@ -74,8 +86,16 @@ namespace CodeEnv.Master.Common.Unity {
             SetPeriodValues(startDate, endDate);
         }
 
+        /// <summary>
+        /// Updates the period to a value reflective of the supplied date. Useful
+        /// when the period was created using IGameDates. Does nothing except issuing
+        /// a warning if the period was created using days and years.
+        /// </summary>
+        /// <param name="currentDate">The current date.</param>
         public void UpdatePeriod(IGameDate currentDate) {
-            SetPeriodValues(_startDate, currentDate);
+            if (_startDate != null) {
+                SetPeriodValues(_startDate, currentDate);
+            }
         }
 
         private void SetPeriodValues(IGameDate startDate, IGameDate endDate) {
@@ -83,20 +103,21 @@ namespace CodeEnv.Master.Common.Unity {
             int days = endDate.DayOfYear - startDate.DayOfYear;
             if (days < 0) {
                 years--;
-                days = daysPerYear + days;
+                days = _daysPerYear + days;
             }
             Years = years;
             Days = days;
-            PeriodInDays = years * daysPerYear + days;
+            PeriodInDays = years * _daysPerYear + days;
         }
 
+        [Obsolete]
         private void GenerateArtificialStartDate(int days, int years) {
-            IGameDate currentDate = GameTime.Date;
+            IGameDate currentDate = GameTime.Date;  // issue when called before the game starts
             int startYear = currentDate.Year - years;
             int startDay = currentDate.DayOfYear - days;
             if (startDay < 0) {
                 startYear--;
-                startDay = daysPerYear + startDay;
+                startDay = _daysPerYear + startDay;
             }
             _startDate = new GameDate(startDay, startYear);
         }

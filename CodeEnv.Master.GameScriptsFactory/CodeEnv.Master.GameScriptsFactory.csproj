@@ -41,11 +41,10 @@
     <Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\UnityEnv\Support\UnitySerializer\Library\ScriptAssemblies\Assembly-CSharp-firstpass.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.XML" />
     <Reference Include="UnityEngine">
       <HintPath>$(ProgramFiles)\Unity\Editor\Data\Managed\UnityEngine.dll</HintPath>
@@ -59,21 +58,19 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Game\Graphics\FleetIconManager.cs" />
-    <Compile Include="Generic\Framework\ColliderRelay.cs" />
+    <Compile Include="Game\Graphics\FleetGraphics.cs" />
+    <Compile Include="Game\Framework\FleetAdmiral.cs" />
+    <Compile Include="Game\Framework\FollowableItem.cs" />
     <Compile Include="Generic\Graphics\ScaleRelativeToCamera.cs" />
-    <Compile Include="Game\Graphics\FleetManager.cs" />
     <Compile Include="Generic\Graphics\AGuiButtonBase.cs" />
-    <Compile Include="Game\Graphics\OrbitalPlaneManager.cs" />
-    <Compile Include="Generic\Graphics\BillboardManager.cs" />
+    <Compile Include="Generic\Graphics\Billboard.cs" />
     <Compile Include="Generic\Graphics\GuiCursorHud.cs" />
     <Compile Include="Generic\IO\CameraControl.cs" />
+    <Compile Include="Generic\_Debug\Logger.cs" />
     <Compile Include="Generic\_Debug\ManagementObjects.cs" />
     <Compile Include="Generic\Graphics\GuiVisibilityButton.cs" />
-    <Compile Include="Generic\Graphics\GuiVisibilityChangeEvent.cs" />
     <Compile Include="Game\GUI\GuiGamePlayOptionMenuAcceptButton.cs" />
     <Compile Include="Generic\_Debug\FpsReadout.cs" />
-    <Compile Include="Game\Graphics\StarBillboardManager.cs" />
     <Compile Include="Game\Graphics\StarGlowAnimator.cs" />
     <Compile Include="Game\GUI\GuiDateReadout.cs" />
     <Compile Include="Game\GUI\GuiGameSpeedReadout.cs" />
@@ -95,21 +92,30 @@
     <Compile Include="Generic\Graphics\GuiPauseResumeOnClick.cs" />
     <Compile Include="Generic\Graphics\AGuiMenuAcceptButtonBase.cs" />
     <Compile Include="Game\GUI\GuiLoadGameMenuLaunchButton.cs" />
-    <Compile Include="Game\GUI\GuiPlayerPopupList.cs" />
     <Compile Include="Game\GUI\GuiSavedGamesPopupList.cs" />
     <Compile Include="Game\GUI\GuiSaveMenuAcceptButton.cs" />
     <Compile Include="Generic\Graphics\AGuiPopupListBase.cs" />
     <Compile Include="Generic\IO\NguiEventFallthruHandler.cs" />
     <Compile Include="Generic\Graphics\GuiTrackingLabel.cs" />
+    <Compile Include="Game\GUI\GuiPlayerColorPopupList.cs" />
+    <Compile Include="Game\GUI\GuiPlayerRacePopupList.cs" />
+    <Compile Include="Generic\Graphics\Orbit.cs" />
+    <Compile Include="Generic\Graphics\OrbitMoveable.cs" />
+    <Compile Include="Game\Framework\OrbitalPlane.cs" />
+    <Compile Include="Generic\Graphics\GuiTrackingLabelFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Generic\Framework\Loader.cs" />
     <Compile Include="Generic\Framework\RequiredPrefabs.cs" />
     <Compile Include="Generic\Framework\UsefulPrefabs.cs" />
-    <Compile Include="Game\Graphics\ShipManager.cs" />
-    <Compile Include="Generic\Framework\VisibilityRelay.cs" />
+    <Compile Include="Generic\Graphics\VisibilityChangedRelay.cs" />
     <Compile Include="Game\Graphics\StarAnimator.cs" />
-    <Compile Include="Game\Graphics\StarManager.cs" />
-    <Compile Include="Game\Graphics\SystemManager.cs" />
+    <Compile Include="Game\Framework\StationaryItem.cs" />
+    <Compile Include="Game\Framework\Star.cs" />
+    <Compile Include="Game\Framework\ShipCaptain.cs" />
+    <Compile Include="Generic\_Debug\__UniverseInitializer.cs" />
+    <Compile Include="Game\Graphics\ShipGraphics.cs" />
+    <Compile Include="Game\Graphics\SystemGraphics.cs" />
+    <Compile Include="Generic\Graphics\StarFlare.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeEnv.Master.Common.Unity\CodeEnv.Master.Common.Unity.csproj">
@@ -130,10 +136,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Game\Framework\" />
     <Folder Include="Game\Gameplay\" />
     <Folder Include="Game\_Debug\" />
-    <Folder Include="Generic\Extensions\" />
     <Folder Include="Generic\Math\" />
     <Folder Include="ThirdParty\" />
   </ItemGroup>

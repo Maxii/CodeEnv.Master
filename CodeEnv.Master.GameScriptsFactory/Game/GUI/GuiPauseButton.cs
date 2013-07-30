@@ -11,14 +11,17 @@
 // -------------------------------------------------------------------------------------------------------------------- 
 
 #define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 // default namespace
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
+using CodeEnv.Master.Common.Unity;
 using UnityEngine;
 
 /// <summary>
@@ -32,15 +35,28 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
 #pragma warning restore
 
     private UILabel pauseButtonLabel;
+    private GameManager _gameMgr;
+    private IList<IDisposable> _subscribers;
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        AddListeners();
+        _gameMgr = GameManager.Instance;
+        Subscribe();
         tooltip = "Pause or resume the game.";
     }
 
-    private void AddListeners() {
-        eventMgr.AddListener<GamePauseStateChangedEvent>(this, OnPauseGame);
+    private void Subscribe() {
+        if (_subscribers == null) {
+            _subscribers = new List<IDisposable>();
+        }
+        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsGamePaused, OnGamePauseChanged));
+    }
+
+    // real game pause and resumption events, not just gui pause events which may or may not result in a pause or resumption
+    private void OnGamePauseChanged() {
+        bool isGamePaused = _gameMgr.IsGamePaused;
+        pauseCommand = isGamePaused ? PauseRequest.PriorityPause : PauseRequest.PriorityResume;
+        UpdateButtonLabel();
     }
 
     protected override void InitializeOnStart() {
@@ -49,12 +65,6 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
         pauseButtonLabel = button.GetComponentInChildren<UILabel>();
         UpdateButtonLabel();
         eventMgr.Raise<ElementReadyEvent>(new ElementReadyEvent(this, isReady: true));
-    }
-
-    // real game pause and resumption events, not just gui pause events which may or may not result in a pause or resumption
-    private void OnPauseGame(GamePauseStateChangedEvent e) {
-        pauseCommand = e.PauseState == GamePauseState.Paused ? PauseRequest.PriorityPause : PauseRequest.PriorityResume;
-        UpdateButtonLabel();
     }
 
     protected override void OnButtonClick(GameObject sender) {
@@ -71,8 +81,9 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
         }
     }
 
-    private void RemoveListeners() {
-        eventMgr.RemoveListener<GamePauseStateChangedEvent>(this, OnPauseGame);
+    private void Unsubscribe() {
+        _subscribers.ForAll<IDisposable>(s => s.Dispose());
+        _subscribers.Clear();
     }
 
     void OnDestroy() {
@@ -104,7 +115,7 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            RemoveListeners();
+            Unsubscribe();
         }
         // free unmanaged resources here
 
@@ -122,7 +133,6 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
     //    // method content here
     //}
     #endregion
-
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

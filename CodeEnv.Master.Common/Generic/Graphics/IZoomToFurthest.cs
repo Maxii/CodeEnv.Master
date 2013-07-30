@@ -6,26 +6,24 @@
 // </copyright> 
 // <summary> 
 // File: IZoomToFurthest.cs
-// Tells the camera when zooming on a game object with this interface to 
-// zoom to the FURTHEST one it encounters in the direction it is zooming.
+// Tells the camera when zooming in a direction containing multiple game objects along
+// a ray, to zoom to the furthest object on the ray with this interface, if no other objects 
+// not holding this interface are present. If any other objects without this interface are
+// present along the ray, the closest one will be the zoom target.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
 #define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-
     /// <summary>
-    /// Tells the camera when zooming on a game object with this interface to 
-    /// zoom to the FURTHEST one it encounters in the direction it is zooming.
+    /// Tells the camera when zooming in a direction containing multiple game objects along
+    /// a ray, to zoom to the furthest object on the ray with this interface, if no other objects 
+    /// not holding this interface are present. If any other objects without this interface are
+    /// present along the ray, the closest one will be the zoom target.
     /// </summary>
     public interface IZoomToFurthest {
 

@@ -42,3 +42,4 @@
     </Setting>
   </Float>
 </EnumValues>
+<!-- Empty property value nodes return the default of the type, but only in this format <PropertyValue/>-->

@@ -11,8 +11,8 @@
 // -------------------------------------------------------------------------------------------------------------------- 
 
 #define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common.Unity {
 
@@ -56,6 +56,32 @@ namespace CodeEnv.Master.Common.Unity {
             return mono.transform;
         }
 
+        public static Transform GetTransformWithInterfaceInParents<I>(this Transform t) where I : class {
+            Transform parent = t.parent;
+            while (parent != null) {
+                I component = parent.gameObject.GetComponent(typeof(I)) as I;
+                if (component != null) {
+                    return parent;
+                }
+                parent = parent.gameObject.transform.parent;
+            }
+            return null;
+        }
+
+        public static I GetInterfaceInParents<I>(this Transform t) where I : class {
+            Transform parent = t.parent;
+            while (parent != null) {
+                I component = parent.GetComponent(typeof(I)) as I;
+                if (component != null) {
+                    return component;
+                }
+                parent = parent.gameObject.transform.parent;
+            }
+            // D.Warn(ErrorMessages.ComponentNotFound, typeof(I), go);
+            return null;
+        }
+
+
         /// <summary>
         /// Gets an interface of type I found in the Transform's peer components.
         /// </summary>
@@ -76,8 +102,22 @@ namespace CodeEnv.Master.Common.Unity {
             return t.GetComponentInChildren(typeof(I)) as I;
         }
 
+        public static Transform GetTransformWithInterfaceInChildren<I>(this Transform transform) where I : class {
+            Transform[] transforms = transform.GetComponentsInChildren<Transform>();
+            return transforms.First<Transform>(t => t.GetInterface<I>() != null);
+        }
+
+        public static Transform[] GetTransformsWithInterfaceInChildren<I>(this Transform transform) where I : class {
+            Transform[] transforms = transform.GetComponentsInChildren<Transform>();
+            return transforms.Where<Transform>(t => t.GetInterface<I>() != null).ToArray<Transform>();
+        }
+
         public static float DistanceToCamera(this Transform t) {
-            return Vector3.Distance(Camera.main.transform.position, t.position);
+            Transform cameraTransform = Camera.main.transform;
+            Plane cameraPlane = new Plane(cameraTransform.forward, cameraTransform.position);
+            float distanceToCamera = cameraPlane.GetDistanceToPoint(t.position);
+            return distanceToCamera;
+            //return Vector3.Distance(Camera.main.transform.position, t.position);
         }
 
         public static int DistanceToCameraInt(this Transform t) {

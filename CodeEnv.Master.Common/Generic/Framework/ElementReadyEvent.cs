@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ElementReadyEvent.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// Event indicating a game elements readiness to Run. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 

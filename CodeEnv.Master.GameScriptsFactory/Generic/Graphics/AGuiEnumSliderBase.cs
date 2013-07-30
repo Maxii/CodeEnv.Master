@@ -10,15 +10,12 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LEVEL_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 // default namespace
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using CodeEnv.Master.Common;
@@ -31,27 +28,27 @@ using UnityEngine;
 /// <typeparam name="T">The enum type.</typeparam>
 public abstract class AGuiEnumSliderBase<T> : GuiTooltip where T : struct {
 
-    protected GameEventManager eventMgr;
-    private UISlider slider;
-    private float[] orderedSliderStepValues;
-    private T[] orderedTValues;
+    protected GameEventManager _eventMgr;
+    private UISlider _slider;
+    private float[] _orderedSliderStepValues;
+    private T[] _orderedTValues;
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        eventMgr = GameEventManager.Instance;
-        slider = gameObject.GetSafeMonoBehaviourComponent<UISlider>();
+        _eventMgr = GameEventManager.Instance;
+        _slider = gameObject.GetSafeMonoBehaviourComponent<UISlider>();
         InitializeSlider();
         InitializeSliderValue();
         // don't receive events until initializing is complete
-        slider.onValueChange += OnSliderValueChange;
+        _slider.onValueChange += OnSliderValueChange;
     }
 
     private void InitializeSlider() {
         T[] tValues = Enums<T>.GetValues().Except<T>(default(T)).ToArray<T>();
         int numberOfSliderSteps = tValues.Length;
-        slider.numberOfSteps = numberOfSliderSteps;
-        orderedTValues = tValues.OrderBy(tv => tv).ToArray<T>();    // assumes T has assigned values in ascending order
-        orderedSliderStepValues = MyNguiUtilities.GenerateOrderedSliderStepValues(numberOfSliderSteps);
+        _slider.numberOfSteps = numberOfSliderSteps;
+        _orderedTValues = tValues.OrderBy(tv => tv).ToArray<T>();    // assumes T has assigned values in ascending order
+        _orderedSliderStepValues = MyNguiUtilities.GenerateOrderedSliderStepValues(numberOfSliderSteps);
     }
 
     private void InitializeSliderValue() {
@@ -60,22 +57,22 @@ public abstract class AGuiEnumSliderBase<T> : GuiTooltip where T : struct {
         if (propertyInfo != null) {
             Func<T> propertyGet = (Func<T>)Delegate.CreateDelegate(typeof(Func<T>), PlayerPrefsManager.Instance, propertyInfo.GetGetMethod());
             T tPrefsValue = propertyGet();
-            int tPrefsValueIndex = orderedTValues.FindIndex<T>(tValue => (tValue.Equals(tPrefsValue)));
-            float sliderValueAtTPrefsValueIndex = orderedSliderStepValues[tPrefsValueIndex];
-            slider.sliderValue = sliderValueAtTPrefsValueIndex;
+            int tPrefsValueIndex = _orderedTValues.FindIndex<T>(tValue => (tValue.Equals(tPrefsValue)));
+            float sliderValueAtTPrefsValueIndex = _orderedSliderStepValues[tPrefsValueIndex];
+            _slider.sliderValue = sliderValueAtTPrefsValueIndex;
         }
         else {
-            slider.sliderValue = orderedSliderStepValues[orderedSliderStepValues.Length - 1];
-            Debug.LogWarning("No PlayerPrefsManager property found for {0}, so initializing slider to : {1}.".Inject(typeof(T), slider.sliderValue));
+            _slider.sliderValue = _orderedSliderStepValues[_orderedSliderStepValues.Length - 1];
+            D.Warn("No PlayerPrefsManager property found for {0}, so initializing slider to : {1}.".Inject(typeof(T), _slider.sliderValue));
         }
     }
 
     // Note: UISlider automatically sends out an event to this method on Start()
     private void OnSliderValueChange(float sliderValue) {
         float tolerance = 0.05F;
-        int index = orderedSliderStepValues.FindIndex<float>(v => Mathfx.Approx(sliderValue, v, tolerance));
+        int index = _orderedSliderStepValues.FindIndex<float>(v => Mathfx.Approx(sliderValue, v, tolerance));
         Arguments.ValidateNotNegative(index);
-        T tValue = orderedTValues[index];
+        T tValue = _orderedTValues[index];
         OnSliderValueChange(tValue);
     }
 

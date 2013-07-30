@@ -6,44 +6,75 @@
 // </copyright> 
 // <summary> 
 // File: PlayerPrefsManager.cs
-// SingletonPattern. COMMENT - one line to give a brief idea of what the file does.
+// Manages saving and acquiring player preference values via UnityEngine.PlayerPrefs. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LEVEL_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 
 namespace CodeEnv.Master.Common.Unity {
 
     using System;
-    using System.Diagnostics;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
+
     /// <summary>
-    /// SingletonPattern. COMMENT
+    /// Manages saving and acquiring player preference values via UnityEngine.PlayerPrefs. Save default location on disk:
+    /// Windows Standalone players: HKCU\Software[company name][product name] key, where company and product names are the names set up in Project Settings.
+    /// Windows Web players: %APPDATA%\Unity\WebPlayerPrefs
     /// </summary>
     [SerializeAll]
-    public class PlayerPrefsManager : AInstanceIdentity, IInstanceIdentity {
+    public class PlayerPrefsManager : APropertyChangeTracking, IInstanceIdentity {
 
-        private string sizeOfUniverseKey = "Universe Size Preference";
-        private string gameSpeedOnLoadKey = "Game Speed On Load Option";
-        private string isZoomOutOnCursorEnabledKey = "Zoom Out On Cursor Option";
-        private string isCameraRollEnabledKey = "Camera Roll Option";
-        private string isResetOnFocusEnabledKey = "Reset On Focus Option";
-        private string isPauseAfterLoadEnabledKey = "Paused On Load Option";
+        private string _universeSizeKey = "Universe Size Preference";
+        private string _playerRaceKey = "Player Race Preference";
+        private string _playerColorKey = "Player Color Preference";
+        //private string[] _playerColorKeys = new string[4] {
+        //    "Player Color Preference - Red",
+        //    "Player Color Preference - Green",
+        //    "Player Color Preference - Blue",
+        //    "Player Color Preference - Alpha"
+        //};
+
+        private string _gameSpeedOnLoadKey = "Game Speed On Load Option";
+        private string _isZoomOutOnCursorEnabledKey = "Zoom Out On Cursor Option";
+        private string _isCameraRollEnabledKey = "Camera Roll Option";
+        private string _isResetOnFocusEnabledKey = "Reset On Focus Option";
+        private string _isPauseAfterLoadEnabledKey = "Paused On Load Option";
 
 
-        public UniverseSize SizeOfUniverse { get; private set; }
-        public GameClockSpeed GameSpeedOnLoad { get; private set; }
-        public bool IsZoomOutOnCursorEnabled { get; private set; }
-        public bool IsCameraRollEnabled { get; private set; }
-        public bool IsResetOnFocusEnabled { get; private set; }
-        public bool IsPauseOnLoadEnabled { get; private set; }
+        // notifications not really needed as nobody cares within a game instance
+        public UniverseSize UniverseSize { get; set; }
+        public GameClockSpeed GameSpeedOnLoad { get; set; }
+        public Races PlayerRace { get; set; }
 
-        private GameEventManager eventMgr;
+        public GameColor PlayerColor { get; set; }
+        public bool IsPauseOnLoadEnabled { get; set; }
+
+        private bool _isZoomOutOnCursorEnabled;
+        public bool IsZoomOutOnCursorEnabled {
+            get { return _isZoomOutOnCursorEnabled; }
+            set { SetProperty<bool>(ref _isZoomOutOnCursorEnabled, value, "IsZoomOutOnCursorEnabled"); }
+        }
+
+        private bool _isCameraRollEnabled;
+        public bool IsCameraRollEnabled {
+            get { return _isCameraRollEnabled; }
+            set { SetProperty<bool>(ref _isCameraRollEnabled, value, "IsCameraRollEnabled"); }
+        }
+
+        private bool _isResetOnFocusEnabled;
+        public bool IsResetOnFocusEnabled {
+            get { return _isResetOnFocusEnabled; }
+            set { SetProperty<bool>(ref _isResetOnFocusEnabled, value, "IsResetOnFocusEnabled"); }
+        }
+
+
+        private GameEventManager _eventMgr;
 
         #region SingletonPattern
         private static readonly PlayerPrefsManager instance;
@@ -76,18 +107,24 @@ namespace CodeEnv.Master.Common.Unity {
         private void Initialize() {
             IncrementInstanceCounter();
             Retrieve();
-            eventMgr = GameEventManager.Instance;
-            eventMgr.AddListener<OptionChangeEvent>(this, OnOptionChange);
-            eventMgr.AddListener<BuildNewGameEvent>(this, OnBuildNewGame);
+            _eventMgr = GameEventManager.Instance;
+            Subscribe();
+        }
+
+        private void Subscribe() {
+            _eventMgr.AddListener<GamePlayOptionsAcceptedEvent>(this, OnGamePlayOptionsAccepted);
+            _eventMgr.AddListener<BuildNewGameEvent>(this, OnBuildNewGame);
         }
 
         private void OnBuildNewGame(BuildNewGameEvent e) {
             GameSettings settings = e.Settings;
-            SizeOfUniverse = settings.SizeOfUniverse;
+            UniverseSize = settings.UniverseSize;
+            PlayerRace = settings.PlayerRace.RaceType;
+            PlayerColor = settings.PlayerRace.Color;
             ValidateState();
         }
 
-        private void OnOptionChange(OptionChangeEvent e) {
+        private void OnGamePlayOptionsAccepted(GamePlayOptionsAcceptedEvent e) {
             OptionSettings settings = e.Settings;
             GameSpeedOnLoad = settings.GameSpeedOnLoad;
             IsZoomOutOnCursorEnabled = settings.IsZoomOutOnCursorEnabled;
@@ -104,47 +141,77 @@ namespace CodeEnv.Master.Common.Unity {
         public void Store() {
             // if variable not null/empty or None, convert the value to a string, encrypt it, and using the key, set it 
             string encryptedStringValue = string.Empty;
-            if (SizeOfUniverse != UniverseSize.None) {
-                encryptedStringValue = Encrypt(SizeOfUniverse.GetName());
-                PlayerPrefs.SetString(sizeOfUniverseKey, encryptedStringValue);
+            if (UniverseSize != UniverseSize.None) {
+                encryptedStringValue = Encrypt(UniverseSize.GetName());
+                PlayerPrefs.SetString(_universeSizeKey, encryptedStringValue);
             }
             if (GameSpeedOnLoad != GameClockSpeed.None) {
                 encryptedStringValue = Encrypt(GameSpeedOnLoad.GetName());
-                PlayerPrefs.SetString(gameSpeedOnLoadKey, encryptedStringValue);
+                PlayerPrefs.SetString(_gameSpeedOnLoadKey, encryptedStringValue);
             }
-            //D.Log("At Store, PlayerPrefsMgr.IsZoomOutOnCursorEnabled = " + IsZoomOutOnCursorEnabled);
-            PlayerPrefs.SetString(isZoomOutOnCursorEnabledKey, Encrypt(IsZoomOutOnCursorEnabled.ToString()));
-            PlayerPrefs.SetString(isCameraRollEnabledKey, Encrypt(IsCameraRollEnabled.ToString()));
+            if (PlayerRace != Races.None) {
+                encryptedStringValue = Encrypt(PlayerRace.GetName());
+                PlayerPrefs.SetString(_playerRaceKey, encryptedStringValue);
+            }
+            if (PlayerColor != GameColor.None) {
+                encryptedStringValue = Encrypt(PlayerColor.GetName());
+                PlayerPrefs.SetString(_playerColorKey, encryptedStringValue);
+            }
 
-            PlayerPrefs.SetString(isResetOnFocusEnabledKey, Encrypt(IsResetOnFocusEnabled.ToString()));
-            PlayerPrefs.SetString(isPauseAfterLoadEnabledKey, Encrypt(IsPauseOnLoadEnabled.ToString()));
+            //if (PlayerColor != Color.clear) {
+            //    for (int i = 0; i < 4; i++) {
+            //        PlayerPrefs.SetFloat(_playerColorKeys[i], Encrypt(PlayerColor[i]));
+            //    }
+            //}
+
+            //D.Log("At Store, PlayerPrefsMgr.IsZoomOutOnCursorEnabled = " + IsZoomOutOnCursorEnabled);
+            PlayerPrefs.SetString(_isZoomOutOnCursorEnabledKey, Encrypt(IsZoomOutOnCursorEnabled.ToString()));
+            PlayerPrefs.SetString(_isCameraRollEnabledKey, Encrypt(IsCameraRollEnabled.ToString()));
+
+            PlayerPrefs.SetString(_isResetOnFocusEnabledKey, Encrypt(IsResetOnFocusEnabled.ToString()));
+            PlayerPrefs.SetString(_isPauseAfterLoadEnabledKey, Encrypt(IsPauseOnLoadEnabled.ToString()));
             PlayerPrefs.Save();
         }
 
-        private string Encrypt(string item) {
-            return item;    // UNDONE combine key and value into a delimited string, then encrypt/decript
-        }
+        // IMPROVE combine key and value into a delimited string, then encrypt/decript   
+        private string Encrypt(string item) { return item; }
+        private float Encrypt(float value) { return value; }
+        private int Encrypt(int value) { return value; }
 
         /// <summary>
         /// Retrieves all PlayerPrefs and makes them accessible as Properties from this instance.
         /// </summary>
         public void Retrieve() {
             // for enums, if there is no preference set yet, default would be NONE, so start with NORMAL
-            SizeOfUniverse = (PlayerPrefs.HasKey(sizeOfUniverseKey)) ? RetrieveEnumPref<UniverseSize>(sizeOfUniverseKey) : UniverseSize.Normal;
-            GameSpeedOnLoad = (PlayerPrefs.HasKey(gameSpeedOnLoadKey)) ? RetrieveEnumPref<GameClockSpeed>(gameSpeedOnLoadKey) : GameClockSpeed.Normal;
+            UniverseSize = PlayerPrefs.HasKey(_universeSizeKey) ? RetrieveEnumPref<UniverseSize>(_universeSizeKey) : UniverseSize.Normal;
+            GameSpeedOnLoad = PlayerPrefs.HasKey(_gameSpeedOnLoadKey) ? RetrieveEnumPref<GameClockSpeed>(_gameSpeedOnLoadKey) : GameClockSpeed.Normal;
+            PlayerRace = PlayerPrefs.HasKey(_playerRaceKey) ? RetrieveEnumPref<Races>(_playerRaceKey) : Races.Human;
+            PlayerColor = PlayerPrefs.HasKey(_playerColorKey) ? RetrieveEnumPref<GameColor>(_playerColorKey) : GameColor.Blue;
 
-            if (PlayerPrefs.HasKey(isZoomOutOnCursorEnabledKey)) {
-                IsZoomOutOnCursorEnabled = bool.Parse(Decrypt(PlayerPrefs.GetString(isZoomOutOnCursorEnabledKey)));
+            //Color color = new Color();
+            //for (int i = 0; i < 4; i++) {
+            //    if (PlayerPrefs.HasKey(_playerColorKeys[i])) {
+            //        color[i] = Decrypt(PlayerPrefs.GetFloat(_playerColorKeys[i]));
+            //        continue;
+            //    }
+            //    color = Color.blue; // default value to go with default Race of Human
+            //    D.Warn("One or more missing PlayerColor keys in PlayerPrefs. Using default color {0}.", color.ToString());
+            //    break;
+            //}
+            //PlayerColor = color;
+
+            if (PlayerPrefs.HasKey(_isZoomOutOnCursorEnabledKey)) {
+                IsZoomOutOnCursorEnabled = bool.Parse(Decrypt(PlayerPrefs.GetString(_isZoomOutOnCursorEnabledKey)));
                 //D.Log("At Retrieve, PlayerPrefsMgr.IsZoomOutOnCursorEnabled = " + IsZoomOutOnCursorEnabled);
             }
-            if (PlayerPrefs.HasKey(isCameraRollEnabledKey)) {
-                IsCameraRollEnabled = bool.Parse(Decrypt(PlayerPrefs.GetString(isCameraRollEnabledKey)));
+            if (PlayerPrefs.HasKey(_isCameraRollEnabledKey)) {
+                IsCameraRollEnabled = bool.Parse(Decrypt(PlayerPrefs.GetString(_isCameraRollEnabledKey)));
             }
-            if (PlayerPrefs.HasKey(isResetOnFocusEnabledKey)) {
-                IsResetOnFocusEnabled = bool.Parse(Decrypt(PlayerPrefs.GetString(isResetOnFocusEnabledKey)));
+            if (PlayerPrefs.HasKey(_isResetOnFocusEnabledKey)) {
+                IsResetOnFocusEnabled = bool.Parse(Decrypt(PlayerPrefs.GetString(_isResetOnFocusEnabledKey)));
             }
-            if (PlayerPrefs.HasKey(isPauseAfterLoadEnabledKey)) {
-                IsPauseOnLoadEnabled = bool.Parse(Decrypt(PlayerPrefs.GetString(isPauseAfterLoadEnabledKey)));
+            if (PlayerPrefs.HasKey(_isPauseAfterLoadEnabledKey)) {
+                IsPauseOnLoadEnabled = bool.Parse(Decrypt(PlayerPrefs.GetString(_isPauseAfterLoadEnabledKey)));
             }
         }
 
@@ -157,12 +224,22 @@ namespace CodeEnv.Master.Common.Unity {
             return pref;
         }
 
-        private string Decrypt(string encryptedItem) {
-            return encryptedItem;   // UNDONE combine key and value into a delimited string, then encrypt/decript
-        }
+        // IMPROVE combine key and value into a delimited string, then encrypt/decript
+        private string Decrypt(string item) { return item; }
+        private float Decrypt(float value) { return value; }
+        private int Decrypt(int value) { return value; }
 
         void OnDestroy() {
             Dispose();
+        }
+
+        private void Unsubscribe() {
+            _eventMgr.RemoveListener<GamePlayOptionsAcceptedEvent>(this, OnGamePlayOptionsAccepted);
+            _eventMgr.RemoveListener<BuildNewGameEvent>(this, OnBuildNewGame);
+        }
+
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
         }
 
         #region IDisposable
@@ -189,12 +266,12 @@ namespace CodeEnv.Master.Common.Unity {
 
             if (isDisposing) {
                 // free managed resources here including unhooking events
-                eventMgr.RemoveListener<OptionChangeEvent>(this, OnOptionChange);
-                eventMgr.RemoveListener<BuildNewGameEvent>(this, OnBuildNewGame);
+                Unsubscribe();
             }
             // free unmanaged resources here
             alreadyDisposed = true;
         }
+
 
         // Example method showing check for whether the object has been disposed
         //public void ExampleMethod() {
@@ -207,25 +284,30 @@ namespace CodeEnv.Master.Common.Unity {
         //}
         #endregion
 
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
         #region Debug
 
-        [Conditional("UNITY_EDITOR")]
+        [System.Diagnostics.Conditional("UNITY_EDITOR")]
         private void ValidateState() {
             // Grab the name of the calling method
             System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
             string callerIdMessage = " Called by {0}.{1}().".Inject(stackFrame.GetFileName(), stackFrame.GetMethod().Name);
 
-            D.Assert(SizeOfUniverse != UniverseSize.None, callerIdMessage + " SizeOfUniverse cannot be None.", true);
+            D.Assert(UniverseSize != UniverseSize.None, callerIdMessage + " SizeOfUniverse cannot be None.", true);
             D.Assert(GameSpeedOnLoad != GameClockSpeed.None, callerIdMessage + "GameSpeedOnLoad cannot be None.", true);
         }
 
         #endregion
 
+        #region IInstanceIdentity Members
+
+        private static int instanceCounter = 0;
+        public int InstanceID { get; set; }
+
+        private void IncrementInstanceCounter() {
+            InstanceID = System.Threading.Interlocked.Increment(ref instanceCounter);
+        }
+
+        #endregion
     }
 }
 

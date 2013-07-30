@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LEVEL_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 // default namespace
 
@@ -24,19 +24,18 @@ using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.Common.Unity;
 using UnityEngine;
 
-
 /// <summary>
 ///MonoBehaviour version of the GameManager which has access to the Unity event system. All the work
 ///should be done by GameManager. The purpose of this class is to call GameManager.
 /// </summary>
 //[SerializeAll] This is redundant as this Object already has a StoreInformation script on it. It causes duplication of referenced SIngletons when saving
-public class MonoGameManager : AMonoBehaviourBaseSingleton<MonoGameManager>, IDisposable, IInstanceIdentity {
+public class MonoGameManager : AMonoBehaviourBaseSingleton<MonoGameManager>, IInstanceIdentity {
 
-    private GameManager gameMgr;
-    private GameEventManager eventMgr;
+    private GameManager _gameMgr;
+    private bool _isInitialized;
 
     void Awake() {
-        //Debug.Log("MonoGameManager Awake() called. IsEnabled = " + enabled);
+        //Logger.Log("MonoGameManager Awake() called. IsEnabled = " + enabled);
         IncrementInstanceCounter();
         if (TryDestroyExtraCopies()) {
             return;
@@ -45,51 +44,46 @@ public class MonoGameManager : AMonoBehaviourBaseSingleton<MonoGameManager>, IDi
         // TODO add choose language GUI
         //string language = "fr-FR";
         // ChangeLanguage(language);
+        _gameMgr = GameManager.Instance;
+        _gameMgr.CompleteInitialization();
 
-        eventMgr = GameEventManager.Instance;
-        AddListeners();
-        gameMgr = GameManager.Instance;
-        AwakeBasedOnStartScene();
+        _isInitialized = true;
+        __AwakeBasedOnStartScene();
+    }
+
+    /// <summary>
+    /// Ensures that no matter how many scenes this Object is
+    /// in (having one dedicated to each scene may be useful for testing) there's only ever one copy
+    /// in memory if you make a scene transition.
+    /// </summary>
+    /// <returns><c>true</c> if this instance is going to be destroyed, <c>false</c> if not.</returns>
+    private bool TryDestroyExtraCopies() {
+        if (_instance != null && _instance != this) {
+            Logger.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceID));
+            Destroy(gameObject);
+            return true;
+        }
+        else {
+            DontDestroyOnLoad(gameObject);
+            _instance = this;
+            return false;
+        }
     }
 
     private void ChangeLanguage(string language) {
         CultureInfo newCulture = new CultureInfo(language);
         Thread.CurrentThread.CurrentCulture = newCulture;
         Thread.CurrentThread.CurrentUICulture = newCulture;
-        Debug.Log("Current culture of thread is {0}.".Inject(Thread.CurrentThread.CurrentUICulture.DisplayName));
-        Debug.Log("Current OS Language of Unity is {0}.".Inject(Application.systemLanguage.GetName()));
-    }
-
-
-    /// <summary>
-    /// Ensures that no matter how many scenes this Object is
-    /// in (having one dedicated to each sscene may be useful for testing) there's only ever one copy
-    /// in memory if you make a scene transition.
-    /// </summary>
-    /// <returns><c>true</c> if this instance is going to be destroyed, <c>false</c> if not.</returns>
-    private bool TryDestroyExtraCopies() {
-        if (instance != null && instance != this) {
-            Debug.Log("Extra {0} found. Now destroying.".Inject(this.name));
-            Destroy(gameObject);
-            return true;
-        }
-        else {
-            DontDestroyOnLoad(gameObject);
-            instance = this;
-            return false;
-        }
-    }
-
-    private void AddListeners() {
-
+        Logger.Log("Current culture of thread is {0}.".Inject(Thread.CurrentThread.CurrentUICulture.DisplayName));
+        Logger.Log("Current OS Language of Unity is {0}.".Inject(Application.systemLanguage.GetName()));
     }
 
     void Start() {
-        StartBasedOnStartScene();
+        __StartBasedOnStartScene();
     }
 
     #region Startup Simulation
-    private void AwakeBasedOnStartScene() {
+    private void __AwakeBasedOnStartScene() {
         SceneLevel startScene = (SceneLevel)Application.loadedLevel;
         switch (startScene) {
             case SceneLevel.IntroScene:
@@ -99,10 +93,10 @@ public class MonoGameManager : AMonoBehaviourBaseSingleton<MonoGameManager>, IDi
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(startScene));
         }
-        gameMgr.AwakeBasedOnStartScene(startScene);
+        _gameMgr.__AwakeBasedOnStartScene(startScene);
     }
 
-    private void StartBasedOnStartScene() {
+    private void __StartBasedOnStartScene() {
         SceneLevel startScene = (SceneLevel)Application.loadedLevel;
         switch (startScene) {
             case SceneLevel.IntroScene:
@@ -112,7 +106,7 @@ public class MonoGameManager : AMonoBehaviourBaseSingleton<MonoGameManager>, IDi
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(startScene));
         }
-        gameMgr.StartBasedOnStartScene(startScene);
+        _gameMgr.StartBasedOnStartScene(startScene);
     }
     #endregion
 
@@ -126,77 +120,28 @@ public class MonoGameManager : AMonoBehaviourBaseSingleton<MonoGameManager>, IDi
     // Wiki: OnLevelWasLoaded is NOT guaranteed to run before all of the Awake calls. In most cases it will, but in some 
     // might produce some unexpected bugs. If you need some code to be executed before Awake calls, use OnDisable instead.
     void OnLevelWasLoaded(int level) {
-        Debug.Log("Loader.OnLevelWasLoaded(level = {0}) called.".Inject(level));
-        if (eventMgr != null) { // event can be called even when gameobject is being destroyed
-            eventMgr.Raise<SceneLevelChangedEvent>(new SceneLevelChangedEvent(this, (SceneLevel)level));
+        if (_isInitialized) { // OnLevelWasLoaded will be called even when this gameobject is immediately destroyed
+            Logger.Log("{0}_{1}.OnLevelWasLoaded(level = {1}) called.".Inject(this.name, InstanceID, level));
+            _gameMgr.OnSceneChanged((SceneLevel)level);
         }
     }
 
     void OnDeserialized() {
-        gameMgr.OnDeserialized();
+        _gameMgr.OnDeserialized();
     }
 
-    // IMPROVE when to add/remove GameManager EventListeners? This removes them.
     void OnDestroy() {
-        Debug.Log("A {0} instance is being destroyed.".Inject(this.name));
-        Dispose();
+        if (_isInitialized) {
+            // no reason to cleanup if this object was immediately destroyed before it was initialized
+            // UNDONE this is the original object so what to do with GameManager, if anything, when this object is destroyed?
+        }
     }
 
     protected override void OnApplicationQuit() {
-        //System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(0);
-        //Debug.Log("{0}.{1}() method called.".Inject(GetType(), stackFrame.GetMethod().Name));
-        instance = null;
+        Debug.Log("ApplicationQuit called.");
+        _gameMgr.Dispose();
+        _instance = null;
     }
-
-    private void RemoveListeners() {
-        if (eventMgr != null) {
-
-        }
-    }
-
-    #region IDisposable
-    [NonSerialized]
-    private bool alreadyDisposed = false;
-
-    /// <summary>
-    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-    /// </summary>
-    public void Dispose() {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
-    /// </summary>
-    /// <arg name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</arg>
-    protected virtual void Dispose(bool isDisposing) {
-        // Allows Dispose(isDisposing) to be called more than once
-        if (alreadyDisposed) {
-            return;
-        }
-
-        if (isDisposing) {
-            // free managed resources here including unhooking events
-            RemoveListeners();
-        }
-        // free unmanaged resources here
-
-        alreadyDisposed = true;
-    }
-
-    // Example method showing check for whether the object has been disposed
-    //public void ExampleMethod() {
-    //    // throw Exception if called on object that is already disposed
-    //    if(alreadyDisposed) {
-    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-    //    }
-
-    //    // method content here
-    //}
-    #endregion
-
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

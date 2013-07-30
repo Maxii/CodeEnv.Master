@@ -10,10 +10,6 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
-
 // default namespace
 
 using System.Diagnostics;
@@ -73,7 +69,7 @@ public class GuiLoadGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
     private void ValidateState() {
         // selectedGameCaption can be empty if there are no saved games
         if (selectedGameCaption == string.Empty) {
-            UnityEngine.Debug.LogWarning("Selected Game Caption to Load is empty.");
+            D.Warn("Selected Game Caption to Load is empty.");
         }
     }
 

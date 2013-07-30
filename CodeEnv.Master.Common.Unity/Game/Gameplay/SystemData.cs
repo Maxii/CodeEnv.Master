@@ -11,8 +11,8 @@
 // -------------------------------------------------------------------------------------------------------------------- 
 
 #define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common.Unity {
 
@@ -23,23 +23,39 @@ namespace CodeEnv.Master.Common.Unity {
     /// <summary>
     /// All the data associated with a particular system.
     /// </summary>
-    public class SystemData : AData {
+    public class SystemData : Data {
 
-        private static string starNameEndsWith = Constants.Space + CommonTerms.Star;
-
-        public string StarName {
-            get {
-                return Name + starNameEndsWith;
+        private int _capacity;
+        public int Capacity {
+            get { return _capacity; }
+            set {
+                SetProperty<int>(ref _capacity, value, "Capacity");
             }
         }
 
-        public int Capacity { get; set; }
+        private OpeYield _resources;
+        public OpeYield Resources {
+            get { return _resources; }
+            set {
+                SetProperty<OpeYield>(ref _resources, value, "Resources");
+            }
+        }
 
-        public OpeYield Resources { get; set; }
+        private XYield _specialResources;
+        public XYield SpecialResources {
+            get { return _specialResources; }
+            set {
+                SetProperty<XYield>(ref _specialResources, value, "SpecialResources");
+            }
+        }
 
-        public XYield SpecialResources { get; set; }
-
-        public SettlementSize SettlementSize { get; set; }
+        private SettlementData _settlement;
+        public SettlementData Settlement {
+            get { return _settlement; }
+            set {
+                SetProperty<SettlementData>(ref _settlement, value, "Settlement");
+            }
+        }
 
         public SystemData(Transform t) : base(t) { }
 

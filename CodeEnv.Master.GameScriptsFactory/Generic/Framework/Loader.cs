@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LEVEL_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 // default namespace
 
@@ -34,12 +34,14 @@ public class Loader : AMonoBehaviourBase, IDisposable, IInstanceIdentity {
     public UsefulPrefabs usefulPrefabsPrefab;
     public int targetFramerate;
 
-    private IList<MonoBehaviour> unreadyElements;
+    private IList<MonoBehaviour> _unreadyElements;
+
+    private GameManager _gameMgr;
+    private GameEventManager _eventMgr;
+    private bool _isInitialized;
 
 #pragma warning disable
-    private DebugSettings debugSettings;
-    private GameManager gameMgr;
-    private GameEventManager eventMgr;
+    private DebugSettings _debugSettings;
 #pragma warning restore
 
     //*******************************************************************
@@ -48,22 +50,23 @@ public class Loader : AMonoBehaviourBase, IDisposable, IInstanceIdentity {
     //*******************************************************************
 
     void Awake() {
-        //Debug.Log("Loader Awake() called.");
+        //Logger.Log("Loader Awake() called.");
         IncrementInstanceCounter();
         if (TryDestroyExtraCopies()) {
             return;
         }
         UpdateRate = UpdateFrequency.Continuous;
-        eventMgr = GameEventManager.Instance;
-        gameMgr = GameManager.Instance;
+        _eventMgr = GameEventManager.Instance;
+        _gameMgr = GameManager.Instance;
         LoadDebugSettings();
-        unreadyElements = new List<MonoBehaviour>();
+        _unreadyElements = new List<MonoBehaviour>();
         AddListeners();
+        _isInitialized = true;
     }
 
     //[System.Diagnostics.Conditional("UNITY_EDITOR")]
     private void LoadDebugSettings() {
-        debugSettings = DebugSettings.Instance;
+        _debugSettings = DebugSettings.Instance;
     }
 
 
@@ -75,7 +78,7 @@ public class Loader : AMonoBehaviourBase, IDisposable, IInstanceIdentity {
     /// <returns><c>true</c> if this instance is going to be destroyed, <c>false</c> if not.</returns>
     private bool TryDestroyExtraCopies() {
         if (currentInstance != null && currentInstance != this) {
-            Debug.Log("Extra {0} found. Now destroying.".Inject(this.name));
+            Logger.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceID));
             Destroy(gameObject);
             return true;
         }
@@ -87,34 +90,27 @@ public class Loader : AMonoBehaviourBase, IDisposable, IInstanceIdentity {
     }
 
     private void AddListeners() {
-        eventMgr.AddListener<ElementReadyEvent>(this, OnElementReady);
-        //_eventMgr.AddListener<GameStateChangedEvent>(this, OnGameStateChange);
+        _eventMgr.AddListener<ElementReadyEvent>(this, OnElementReady);
     }
-
-    //private void OnGameStateChange(GameStateChangedEvent e) {
-    //    state = e.NewState;
-    //    CheckReadyToRun();
-    //}
 
     private void OnElementReady(ElementReadyEvent e) {
         MonoBehaviour source = e.Source as MonoBehaviour;
         if (!e.IsReady) {
             // register the sender
-            if (unreadyElements.Contains(source)) {
-                Debug.LogError("UnreadyElements already has {0} registered!".Inject(source.name));
+            if (_unreadyElements.Contains(source)) {
+                D.Error("UnreadyElements already has {0} registered!".Inject(source.name));
             }
-            unreadyElements.Add(source);
-            //Debug.Log("{0} has registered with Loader as unready.".Inject(source.name));
+            _unreadyElements.Add(source);
+            //Logger.Log("{0} has registered with Loader as unready.".Inject(source.name));
         }
         else {
-            if (!unreadyElements.Contains(source)) {
-                Debug.LogError("UnreadyElements has no record of {0}!".Inject(source.name));
+            if (!_unreadyElements.Contains(source)) {
+                D.Error("UnreadyElements has no record of {0}!".Inject(source.name));
             }
             else {
-                unreadyElements.Remove(source);
-                // Debug.Log("{0} is now ready to Run.".Inject(source.name));
+                _unreadyElements.Remove(source);
+                // Logger.Log("{0} is now ready to Run.".Inject(source.name));
             }
-
         }
     }
 
@@ -133,7 +129,7 @@ public class Loader : AMonoBehaviourBase, IDisposable, IInstanceIdentity {
         // Check to make sure UsefulPrefabs is in the startScene. If not, instantiate it from the attached Prefab
         UsefulPrefabs usefulPrefabs = FindObjectOfType(typeof(UsefulPrefabs)) as UsefulPrefabs;
         if (usefulPrefabs == null) {
-            Debug.LogWarning("{0} instance not present in startScene. Instantiating new one.".Inject(typeof(UsefulPrefabs).Name));
+            D.Warn("{0} instance not present in startScene. Instantiating new one.".Inject(typeof(UsefulPrefabs).Name));
             Arguments.ValidateNotNull(usefulPrefabsPrefab);
             usefulPrefabs = Instantiate<UsefulPrefabs>(usefulPrefabsPrefab);
         }
@@ -157,21 +153,21 @@ public class Loader : AMonoBehaviourBase, IDisposable, IInstanceIdentity {
     }
 
     private void CheckElementReadiness() {
-        if (GameManager.State == GameState.Waiting && unreadyElements.Count == 0) {
-            gameMgr.Run();
+        if (_gameMgr.GameState == GameState.Waiting && _unreadyElements.Count == 0) {
+            _gameMgr.Run();
         }
     }
 
     void OnDestroy() {
-        Debug.Log("A {0} instance is being destroyed.".Inject(this.name));
-        Dispose();
+        if (_isInitialized) {
+            // no reason to cleanup if this object was destroyed before it was initialized.
+            Debug.Log("{0}_{1} instance is disposing.".Inject(this.name, InstanceID));
+            Dispose();
+        }
     }
 
     private void RemoveListeners() {
-        if (eventMgr != null) {
-            eventMgr.RemoveListener<ElementReadyEvent>(this, OnElementReady);
-            //_eventMgr.RemoveListener<GameStateChangedEvent>(this, OnGameStateChange);
-        }
+        _eventMgr.RemoveListener<ElementReadyEvent>(this, OnElementReady);
     }
 
     #region IDisposable

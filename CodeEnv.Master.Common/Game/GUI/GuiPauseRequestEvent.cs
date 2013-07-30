@@ -15,13 +15,10 @@ namespace CodeEnv.Master.Common {
     /// <summary>
     /// Event containing a PauseRequest which REQUESTS a GamePauseEvent from GameManager.
     /// </summary>
-    public class GuiPauseRequestEvent : AGameEvent {
-
-        public PauseRequest PauseRequest { get; private set; }
+    public class GuiPauseRequestEvent : AEnumValueChangeEvent<PauseRequest> {
 
         public GuiPauseRequestEvent(object source, PauseRequest pauseRequest)
-            : base(source) {
-            PauseRequest = pauseRequest;
+            : base(source, pauseRequest) {
         }
 
         public override string ToString() {

@@ -171,6 +171,9 @@
   <data name="ResourceNotString" xml:space="preserve">
     <value>The resource {0} you are trying to reach is not of type String.   Calling Method: {1}.</value>
   </data>
+  <data name="TypeNotExpected" xml:space="preserve">
+    <value>Type {0} was not expected. Calling Method: {1}.</value>
+  </data>
   <data name="UnanticipatedSwitchValue" xml:space="preserve">
     <value>Switch value {0} not anticipated.</value>
   </data>

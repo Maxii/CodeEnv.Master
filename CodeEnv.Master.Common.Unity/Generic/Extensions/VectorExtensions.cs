@@ -11,8 +11,8 @@
 // -------------------------------------------------------------------------------------------------------------------- 
 
 #define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common.Unity {
 
@@ -30,6 +30,32 @@ namespace CodeEnv.Master.Common.Unity {
             if (!Mathfx.Approx(v, v.normalized, 0.01F)) {
                 string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
                 throw new ArgumentOutOfRangeException(ErrorMessages.NotNormalized.Inject(v, callingMethodName));
+            }
+        }
+
+        public static Color Value(this GameColor color) {
+            switch (color) {
+                case GameColor.Black:
+                    return Color.black;
+                case GameColor.Blue:
+                    return Color.blue;
+                case GameColor.Cyan:
+                    return Color.cyan;
+                case GameColor.Green:
+                    return Color.green;
+                case GameColor.Gray:
+                    return Color.gray;
+                case GameColor.Magenta:
+                    return Color.magenta;
+                case GameColor.Red:
+                    return Color.red;
+                case GameColor.White:
+                    return Color.white;
+                case GameColor.Yellow:
+                    return Color.yellow;
+                case GameColor.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(color));
             }
         }
     }

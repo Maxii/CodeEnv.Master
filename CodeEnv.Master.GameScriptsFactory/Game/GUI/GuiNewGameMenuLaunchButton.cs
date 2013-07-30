@@ -6,27 +6,30 @@
 // </copyright> 
 // <summary> 
 // File: GuiNewGameMenuLaunchButton.cs
-// COMMENT - one line to give a brief idea of what this file does.
+// Script for the new game menu launch button.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
 #define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 // default namespace
 
 using System.Diagnostics;
+using System.Text;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.Unity;
 using UnityEngine;
 
 /// <summary>
-/// COMMENT 
+/// Script for the new game menu launch button.
 /// </summary>
 public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
 
-    private UniverseSize universeSize;
-    private Players player;
+    private UniverseSize _universeSize;
+    private Races _playerRace;
+    private GameColor _playerColor;
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
@@ -43,17 +46,20 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
     }
 
     protected override void RecordPopupListState(string selectionName) {
-        UniverseSize _universeSize;
-        if (Enums<UniverseSize>.TryParse(selectionName, true, out _universeSize)) {
-            //UnityEngine.Debug.Log("UniverseSize recorded as {0}.".Inject(selectionName));
-            universeSize = _universeSize;
+        UniverseSize universeSize;
+        if (Enums<UniverseSize>.TryParse(selectionName, true, out universeSize)) {
+            //Logger.Log("UniverseSize recorded as {0}.".Inject(selectionName));
+            _universeSize = universeSize;
         }
-        Players _player;
-        if (Enums<Players>.TryParse(selectionName, true, out _player)) {
-            //UnityEngine.Debug.Log("Player recorded as {0}.".Inject(selectionName));
-            player = _player;
+        Races playerRace;
+        if (Enums<Races>.TryParse(selectionName, true, out playerRace)) {
+            //Logger.Log("Player recorded as {0}.".Inject(selectionName));
+            _playerRace = playerRace;
         }
-        // more popupLists here
+        GameColor playerColor;
+        if (Enums<GameColor>.TryParse(selectionName, true, out playerColor)) {
+            _playerColor = playerColor;
+        }
     }
 
     protected override void RecordSliderState(float sliderValue) {
@@ -76,15 +82,15 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
     protected override void OnButtonClick(GameObject sender) {
         GameSettings gameSettings = new GameSettings();
         gameSettings.IsNewGame = true;
-        gameSettings.SizeOfUniverse = universeSize;
-        gameSettings.Player = player;
+        gameSettings.UniverseSize = _universeSize;
+        gameSettings.PlayerRace = new Race(new RaceStat(_playerRace, "Maxii", new StringBuilder("Maxii description"), _playerColor));
         eventMgr.Raise<BuildNewGameEvent>(new BuildNewGameEvent(this, gameSettings));
     }
 
     [Conditional("UNITY_EDITOR")]
     private void ValidateState() {
-        D.Assert(universeSize != UniverseSize.None, "UniverseSize!");
-        D.Assert(player != Players.None, "Player!");
+        D.Assert(_universeSize != UniverseSize.None, "UniverseSize!");
+        D.Assert(_playerRace != Races.None, "PlayerRace!");
     }
 
     public override string ToString() {

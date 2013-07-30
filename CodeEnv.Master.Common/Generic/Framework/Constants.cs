@@ -20,12 +20,40 @@ namespace CodeEnv.Master.Common {
     public static class Constants {
 
         // Composite Formatting for Argument Index 0      see  http://msdn.microsoft.com/en-us/library/txafckwd.aspx 
-        // TODO how to structure this so that the index number is insertable?
-        public const string StringArgFormatNoDP = "{0:0}";   // "{0:0.}"?
-        public const string StringArgFormatMaxOneDP = "{0:0.#}";
-        public const string StringArgFormatTwoDP = "{0:0.00}"; // read as for Argument Index 0 : Leading/Trailing zeros = 0 . Decimal places = 2
-        public const string StringArgFormatMaxTwoDP = "{0:0.##}";    // read as for Argument Index 0 : Leading/Trailing zeros = 0 . Decimal places = up to 2
-        public const string StringArgFormatMaxFourDP = "{0:0.####}";
+
+        /// <summary>
+        /// Three significant digits.
+        /// </summary>
+        public const string FormatNumber_Default = "{0:G3}";
+
+        /// <summary>
+        /// Minimum 1 digit.
+        /// </summary>
+        public const string FormatInt_1DMin = "{0:0}";
+        /// <summary>
+        /// Minimum 2 digits.
+        /// </summary>
+        public const string FormatInt_2DMin = "{0:00}";
+        /// <summary>
+        /// Zero decimal places, rounded.
+        /// </summary>
+        public const string FormatFloat_0Dp = "{0:0.}";   // "{0:0.}"?
+        /// <summary>
+        /// Up to one decimal place, rounded.
+        /// </summary>
+        public const string FormatFloat_1DpMax = "{0:0.#}";
+        /// <summary>
+        /// Two decimal places, rounded.
+        /// </summary>
+        public const string FormatFloat_2Dp = "{0:0.00}"; // read as for Argument Index 0 : Leading/Trailing zeros = 0 . Decimal places = 2
+        /// <summary>
+        /// Up to two decimal places, rounded.
+        /// </summary>
+        public const string FormatFloat_2DpMax = "{0:0.##}";    // read as for Argument Index 0 : Leading/Trailing zeros = 0 . Decimal places = up to 2
+        /// <summary>
+        /// Up to four decimal places, rounded.
+        /// </summary>
+        public const string FormatFloat_4DpMax = "{0:0.####}";
 
         // Common Numeric Formatting  see http://msdn.microsoft.com/en-us/library/dwhawy9k.aspx
         public const string CurrencyNumericFormat = "C02";
@@ -43,6 +71,7 @@ namespace CodeEnv.Master.Common {
         public static string NewLine {
             get { return System.Environment.NewLine; }
         }
+        public const string Empty = "";
         public const string Space = " ";
         public const string Period = ".";
         public const string Tab = "\t";
@@ -85,6 +114,9 @@ namespace CodeEnv.Master.Common {
         public const int OneKilobyte = 1024;
         public const int OneMegabyte = 1048576;
 
+        public const int DegreesPerRotation = 360;
+        public const int DegreesPerOrbit = 360;
+
         // For monetary calculations
         public const int MoneyDecimalPlaces = 2;
         public const decimal ZeroMoney = 0.00M;
@@ -95,8 +127,8 @@ namespace CodeEnv.Master.Common {
         public const long MicrosecondsPerSecond = 1000000L;
         public const long MillisecondsPerSecond = 1000L;
         public const int SecondsPerMinute = 60;
-        public const int MinutesPerHour = 60;
-        public const int HoursPerDay = 24;
+        //public const int MinutesPerHour = 60;
+        //public const int HoursPerDay = 24;
 
         // Booleans
         public const bool Pass = true;

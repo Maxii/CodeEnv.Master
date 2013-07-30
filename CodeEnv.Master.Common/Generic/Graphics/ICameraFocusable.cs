@@ -14,8 +14,8 @@
 // -------------------------------------------------------------------------------------------------------------------- 
 
 #define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common {
 
@@ -29,7 +29,7 @@ namespace CodeEnv.Master.Common {
 
         float OptimalCameraViewingDistance { get; }
 
-        void OnClick();
+        bool IsFocus { get; set; }
 
     }
 }

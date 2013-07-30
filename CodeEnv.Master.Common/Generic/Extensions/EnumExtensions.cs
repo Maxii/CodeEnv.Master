@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: EnumHelper.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// File: EnumExtensions.cs
+// Static class providing general extension methods for enums.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,9 +19,9 @@ namespace CodeEnv.Master.Common {
     using System.Reflection;
     using CodeEnv.Master.Common.LocalResources;
 
+
     /// <summary>
-    /// Static class encapsulating extension methods for Direction, allowing
-    /// usage like: string friendlyDescription = Direction.FIRST.GetDescription()
+    /// Static class providing general extension methods for enums.
     /// </summary>
     public static class EnumExtensions {
 
@@ -30,34 +30,30 @@ namespace CodeEnv.Master.Common {
         /// <returns>The string name of this sourceEnumConstant. </returns>
         /// <remarks>Not localizable. For localizable descriptions, use GetDescription().</remarks>
         public static string GetName(this Enum sourceEnumConstant) {
-            //  'this' sourceEnumConstant can never be null without the CLR throwing a Null reference exception
             Type enumType = sourceEnumConstant.GetType();
             return Enum.GetName(enumType, sourceEnumConstant);    // OPTIMIZE better performance than sourceEnumConstant.ToString()?
         }
 
-        /// <summary>Gets the friendly description.</summary>
+        /// <summary>Gets the alternative description from the EnumAttribute if present. If not, the name is returned.</summary>
         /// <param friendlyDescription="sourceEnumConstant">The named enum constant.</param>
-        /// <returns>A friendly description as a string or toString() if no <see cref="EnumAttribute"/> is present.</returns>
+        /// <returns>An alternative description as a string or toString() if no <see cref="EnumAttribute"/> is present.</returns>
         public static string GetDescription(this Enum sourceEnumConstant) {
-            //  'this' sourceEnumConstant can never be null without the CLR throwing a Null reference exception
             EnumAttribute attribute = GetAttribute(sourceEnumConstant);
             if (attribute == null) {
                 return GetName(sourceEnumConstant);
             }
-            return attribute.FriendlyDescription;
+            return attribute.Description;
         }
 
         /// <summary>
         /// Converts the <see cref="Enum" /> sourceEnumType to an <see cref="IList" /> 
-        /// compatible object.
+        /// compatible object of Descriptions.
         /// </summary>
         /// <param friendlyDescription="sourceEnumType">The <see cref="Enum"/> Type of the enum.</param>
         /// <returns>An <see cref="IList"/> containing the enumerated
         /// values (key) and descriptions of the provided Type.</returns>
-        public static IList ToList(this Type sourceEnumType) {
-            //  'this' sourceEnumType can never be null without the CLR throwing a Null reference exception
-
-            ArrayList list = new ArrayList();
+        public static IList GetDescriptions(this Type sourceEnumType) {
+            IList list = new ArrayList();
             Array enumValues = Enum.GetValues(sourceEnumType);
 
             foreach (Enum value in enumValues) {
@@ -69,7 +65,7 @@ namespace CodeEnv.Master.Common {
         private static EnumAttribute GetAttribute(Enum enumConstant) {
             EnumAttribute attribute = Attribute.GetCustomAttribute(ForValue(enumConstant), typeof(EnumAttribute)) as EnumAttribute;
             if (attribute == null) {
-                Debug.WriteLine(ErrorMessages.EnumNoAttribute.Inject(enumConstant.GetName(), typeof(EnumAttribute).Name));
+                D.Warn(ErrorMessages.EnumNoAttribute.Inject(enumConstant.GetName(), typeof(EnumAttribute).Name));
             }
             return attribute;
         }

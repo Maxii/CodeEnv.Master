@@ -11,8 +11,8 @@
 // -------------------------------------------------------------------------------------------------------------------- 
 
 #define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 //
 // default namespace
 
@@ -27,7 +27,7 @@ using UnityEngine;
 /// I think these are a real reference to the prefab in the Project view, not a separate instance
 /// clone of the Prefab in the startScene. As such, they must be Instantiated before use.
 /// </remarks>
-public class RequiredPrefabs : AMonoBehaviourBaseSingleton<RequiredPrefabs> {
+public class RequiredPrefabs : AMonoBehaviourBaseSingleton<RequiredPrefabs>, IInstanceIdentity {
 
     public SphereCollider UniverseEdgePrefab;
     public Transform CameraDummyTargetPrefab;
@@ -47,25 +47,24 @@ public class RequiredPrefabs : AMonoBehaviourBaseSingleton<RequiredPrefabs> {
     /// </summary>
     /// <returns><c>true</c> if this instance is going to be destroyed, <c>false</c> if not.</returns>
     private bool TryDestroyExtraCopies() {
-        if (instance != null && instance != this) {
-            Debug.Log("Extra {0} found. Now destroying.".Inject(this.name));
+        if (_instance != null && _instance != this) {
+            Logger.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceID));
             Destroy(gameObject);
             return true;
         }
         else {
             DontDestroyOnLoad(gameObject);
-            instance = this;
+            _instance = this;
             return false;
         }
     }
 
-
-    protected override void OnApplicationQuit() {
-        instance = null;
+    void OnDestroy() {
+        Debug.Log("{0}_{1} instance is being destroyed.".Inject(this.name, InstanceID));
     }
 
-    void OnDestroy() {
-        Debug.Log("A {0} instance is being destroyed.".Inject(this.name));
+    protected override void OnApplicationQuit() {
+        _instance = null;
     }
 
     public override string ToString() {

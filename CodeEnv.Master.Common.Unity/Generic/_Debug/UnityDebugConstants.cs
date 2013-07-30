@@ -13,12 +13,6 @@
 namespace CodeEnv.Master.Common.Unity {
 
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-
-    using UnityEngine;
 
     public static class UnityDebugConstants {
 
@@ -33,9 +27,6 @@ namespace CodeEnv.Master.Common.Unity {
         public static string CustomToolsDir {
             get { return Environment.ExpandEnvironmentVariables(@"%CustomToolsDir%"); }
         }
-
-        // Unity current directory is always the Project root working directory
-        public static readonly string DebugSettingsPath = @".\Assets\DataLibrary\DebugSettings.xml";
 
     }
 }

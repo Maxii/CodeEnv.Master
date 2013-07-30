@@ -10,9 +10,8 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LEVEL_LOG     // Show all messages
-#define DEBUG_LEVEL_WARN    // Show Warnings, Errors and Asserts only
-#define DEBUG_LEVEL_ERROR   // Show Errors and Asserts only
+#define DEBUG_WARN    // Show Warnings, Errors and Asserts only
+#define DEBUG_ERROR   // Show Errors and Asserts only
 #define DEBUG_LOG
 
 namespace CodeEnv.Master.Common {
@@ -31,7 +30,6 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <remarks>Use this when including MyObject.ToString() which contains {} that string.Format() doesn't like.</remarks>
         /// <param name="message">The string message.</param>
-        //[System.Diagnostics.Conditional("DEBUG_LEVEL_LOG")]
         [System.Diagnostics.Conditional("DEBUG_LOG")]
         public static void Log(string message) {
             Debug.Log(message);
@@ -43,7 +41,6 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="format">The message object, typically a composite message string.</param>
         /// <param name="paramList">The paramaters to insert into the composite message string.</param>
-        //[System.Diagnostics.Conditional("DEBUG_LEVEL_LOG")]
         [System.Diagnostics.Conditional("DEBUG_LOG")]
         public static void Log(object format, params object[] paramList) {
             if (format is string) {
@@ -61,7 +58,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="message">The message object, typically a composite message string.</param>
         /// <param name="paramList">The paramaters to insert into the composite message string.</param>
         [System.Diagnostics.Conditional("DEBUG_LOG")]
-        [System.Diagnostics.Conditional("DEBUG_LEVEL_WARN")]
+        [System.Diagnostics.Conditional("DEBUG_WARN")]
         public static void Warn(object format, params object[] paramList) {
             if (format is string) {
                 Debug.LogWarning(string.Format(format as string, paramList));
@@ -78,8 +75,8 @@ namespace CodeEnv.Master.Common {
         /// <param name="message">The message object, typically a composite message string.</param>
         /// <param name="paramList">The paramaters to insert into the composite message string.</param>
         [System.Diagnostics.Conditional("DEBUG_LOG")]
-        [System.Diagnostics.Conditional("DEBUG_LEVEL_WARN")]
-        [System.Diagnostics.Conditional("DEBUG_LEVEL_ERROR")]
+        [System.Diagnostics.Conditional("DEBUG_WARN")]
+        [System.Diagnostics.Conditional("DEBUG_ERROR")]
         public static void Error(object format, params object[] paramList) {
             if (format is string) {
                 Debug.LogError(string.Format(format as string, paramList));
@@ -93,10 +90,9 @@ namespace CodeEnv.Master.Common {
         /// Tests the specified condition and immediately pauses on failure.
         /// </summary>
         /// <param name="condition">if set to <c>true</c> [condition].</param>
-        //[System.Diagnostics.Conditional("UNITY_EDITOR")]
         [System.Diagnostics.Conditional("DEBUG_LOG")]
-        [System.Diagnostics.Conditional("DEBUG_LEVEL_WARN")]
-        [System.Diagnostics.Conditional("DEBUG_LEVEL_ERROR")]
+        [System.Diagnostics.Conditional("DEBUG_WARN")]
+        [System.Diagnostics.Conditional("DEBUG_ERROR")]
         public static void Assert(bool condition) {
             Assert(condition, string.Empty, true);
         }
@@ -107,10 +103,9 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="condition">if set to <c>true</c> [condition].</param>
         /// <param name="assertString">The message to log as an Error on failure.</param>
-        //[System.Diagnostics.Conditional("UNITY_EDITOR")]
         [System.Diagnostics.Conditional("DEBUG_LOG")]
-        [System.Diagnostics.Conditional("DEBUG_LEVEL_WARN")]
-        [System.Diagnostics.Conditional("DEBUG_LEVEL_ERROR")]
+        [System.Diagnostics.Conditional("DEBUG_WARN")]
+        [System.Diagnostics.Conditional("DEBUG_ERROR")]
         public static void Assert(bool condition, string assertString) {
             Assert(condition, assertString, false);
         }
@@ -122,10 +117,9 @@ namespace CodeEnv.Master.Common {
         /// <param name="condition">if set to <c>true</c> [condition].</param>
         /// <param name="assertString">The message to log as an Error on failure.</param>
         /// <param name="pauseOnFail">if set to <c>true</c>, the UnityEditor will [pause on fail].</param>
-        //[System.Diagnostics.Conditional("UNITY_EDITOR")]
         [System.Diagnostics.Conditional("DEBUG_LOG")]
-        [System.Diagnostics.Conditional("DEBUG_LEVEL_WARN")]
-        [System.Diagnostics.Conditional("DEBUG_LEVEL_ERROR")]
+        [System.Diagnostics.Conditional("DEBUG_WARN")]
+        [System.Diagnostics.Conditional("DEBUG_ERROR")]
         public static void Assert(bool condition, string assertString, bool pauseOnFail) {
             if (!condition) {
                 Debug.LogError("Assert failed! " + assertString);

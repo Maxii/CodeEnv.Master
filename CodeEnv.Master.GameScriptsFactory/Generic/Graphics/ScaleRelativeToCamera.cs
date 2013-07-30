@@ -9,10 +9,6 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
-
 // default namespace
 
 using CodeEnv.Master.Common;
@@ -28,8 +24,8 @@ using UnityEngine;
 public class ScaleRelativeToCamera : MonoBehaviour {
 
     public float objectScale = 1.0f;
-    private Transform cameraTransform;
-    private Vector3 initialScale;
+    private Transform _cameraTransform;
+    private Vector3 _initialScale;
     private Transform _transform;
 
     void Awake() {
@@ -39,18 +35,18 @@ public class ScaleRelativeToCamera : MonoBehaviour {
     // set the initial scale, and setup reference camera
     void Start() {
         // record initial scale of the GO and use it as a basis
-        initialScale = _transform.localScale;
+        _initialScale = _transform.localScale;
 
         // if no specific camera, grab the default camera
-        if (cameraTransform == null)
-            cameraTransform = Camera.main.transform;
+        if (_cameraTransform == null)
+            _cameraTransform = Camera.main.transform;
     }
 
     // scale object relative to distance from camera cameraPlane
     void Update() {
-        Plane cameraPlane = new Plane(cameraTransform.forward, cameraTransform.position);
+        Plane cameraPlane = new Plane(_cameraTransform.forward, _cameraTransform.position);
         float distanceToCamera = cameraPlane.GetDistanceToPoint(_transform.position);
-        _transform.localScale = initialScale * distanceToCamera * objectScale;
+        _transform.localScale = _initialScale * distanceToCamera * objectScale;
     }
 
     public override string ToString() {

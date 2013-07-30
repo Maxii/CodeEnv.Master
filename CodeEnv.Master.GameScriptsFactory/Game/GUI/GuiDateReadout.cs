@@ -11,12 +11,14 @@
 // -------------------------------------------------------------------------------------------------------------------- 
 
 #define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 // default namespace
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.Common.Unity;
@@ -26,40 +28,40 @@ using CodeEnv.Master.Common.Unity;
 /// </summary>
 public class GuiDateReadout : AGuiLabelReadoutBase, IDisposable {
 
+    private IList<IDisposable> _subscribers;
+    private GameManager _gameMgr;
+
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        AddListeners();
+        _gameMgr = GameManager.Instance;
+        Subscribe();
         tooltip = "The current date in the game.";
         UpdateRate = UpdateFrequency.Continuous;
+
     }
 
-    private void AddListeners() {
-        eventMgr.AddListener<GamePauseStateChangingEvent>(this, OnPauseStateChanging);
+    private void Subscribe() {
+        if (_subscribers == null) {
+            _subscribers = new List<IDisposable>();
+        }
+        _subscribers.Add(_gameMgr.SubscribeToPropertyChanging<GameManager, bool>(gm => gm.IsGamePaused, OnGamePauseChanging));
     }
-
 
     void Start() {
         //RefreshDateReadout();
     }
 
     void Update() {
-        if (ToUpdate() && !GameManager.IsGamePaused) {
+        if (ToUpdate() && !_gameMgr.IsGamePaused) {
             RefreshDateReadout();
         }
     }
 
-    private void OnPauseStateChanging(GamePauseStateChangingEvent e) {
-        switch (e.PauseState) {
-            case GamePauseState.Paused:
-                // refresh the date in case the game pauses on load
-                RefreshDateReadout();
-                break;
-            case GamePauseState.Resumed:
-                // do nothing
-                break;
-            case GamePauseState.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(e.PauseState));
+    private void OnGamePauseChanging() {
+        bool isGamePausedPriorToChange = _gameMgr.IsGamePaused;
+        if (!isGamePausedPriorToChange) {
+            // we are about to pause so refresh the date in case the game pauses on load
+            RefreshDateReadout();
         }
     }
 
@@ -71,9 +73,11 @@ public class GuiDateReadout : AGuiLabelReadoutBase, IDisposable {
         Dispose();
     }
 
-    private void RemoveListeners() {
-        eventMgr.RemoveListener<GamePauseStateChangingEvent>(this, OnPauseStateChanging);
+    private void Unsubscribe() {
+        _subscribers.ForAll<IDisposable>(s => s.Dispose());
+        _subscribers.Clear();
     }
+
 
     #region IDisposable
     [DoNotSerialize]
@@ -100,7 +104,7 @@ public class GuiDateReadout : AGuiLabelReadoutBase, IDisposable {
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            RemoveListeners();
+            Unsubscribe();
         }
         // free unmanaged resources here
 

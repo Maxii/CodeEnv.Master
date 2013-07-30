@@ -28,8 +28,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.Zonked", "Co
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DataLibrary", "DataLibrary", "{2963CF2F-1606-484D-9F4B-61A9C9872F41}"
 	ProjectSection(SolutionItems) = preProject
+		DataLibrary\AnimationSettings.xml = DataLibrary\AnimationSettings.xml
 		DataLibrary\DebugSettings.xml = DataLibrary\DebugSettings.xml
 		DataLibrary\GameClockSpeed.xml = DataLibrary\GameClockSpeed.xml
+		DataLibrary\GeneralSettings.xml = DataLibrary\GeneralSettings.xml
 		DataLibrary\UniverseSize.xml = DataLibrary\UniverseSize.xml
 	EndProjectSection
 EndProject

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: StarAnimator.cs
-// Animates a Star's globe.
+// Animates a Star's globe to simulate rotation.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,7 +18,7 @@ using CodeEnv.Master.Common.Unity;
 using UnityEngine;
 
 /// <summary>
-/// Animates a Star's globe.
+/// Animates a Star's globe to simulate rotation.
 /// </summary>
 public class StarAnimator : AMonoBehaviourBase {
 
@@ -50,13 +50,13 @@ public class StarAnimator : AMonoBehaviourBase {
     }
 
     private void AnimateGlobeRotation() {
-        float time = GameTime.TimeInCurrentSession;
+        float adjustedDeltaTime = GameTime.DeltaTimeWithGameSpeed * (int)UpdateRate; //GameTime.TimeInCurrentSession;
         if (_primaryMaterial != null) {  // OPTIMIZE can remove. Only needed for testing
-            primaryMaterialAnimator.Animate(_primaryMaterial, time);
+            primaryMaterialAnimator.Animate(_primaryMaterial, adjustedDeltaTime);
         }
         // Added for IOS compatibility? IMPROVE
         if (_optionalSecondMaterial != null) {
-            optionalSecondMaterialAnimator.Animate(_optionalSecondMaterial, time);
+            optionalSecondMaterialAnimator.Animate(_optionalSecondMaterial, adjustedDeltaTime);
         }
     }
 
@@ -65,12 +65,23 @@ public class StarAnimator : AMonoBehaviourBase {
         public float xScrollSpeed = 0.015F;
         public float yScrollSpeed = 0.015F;
 
-        internal void Animate(Material material, float time) {
-            Vector2 textureOffset = new Vector2(xScrollSpeed * time % 1, yScrollSpeed * time % 1);
+        private float _x = Constants.ZeroF;
+        private float _y = Constants.ZeroF;
+
+        internal void Animate(Material material, float deltaTime) {
+            _x += xScrollSpeed * deltaTime % 1;
+            _y += yScrollSpeed * deltaTime % 1;
+            Vector2 textureOffset = new Vector2(_x, _y);
             material.SetTextureOffset(UnityConstants.MainDiffuseTexture, textureOffset);
             material.SetTextureOffset(UnityConstants.NormalMapTexture, textureOffset);
         }
     }
+
+    //internal void Animate(Material material, float time) {
+    //    Vector2 textureOffset = new Vector2(xScrollSpeed * time % 1, yScrollSpeed * time % 1);
+    //    material.SetTextureOffset(UnityConstants.MainDiffuseTexture, textureOffset);
+    //    material.SetTextureOffset(UnityConstants.NormalMapTexture, textureOffset);
+    //}
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

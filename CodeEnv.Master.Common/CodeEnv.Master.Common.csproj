@@ -32,17 +32,16 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="PresentationFramework" />
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>..\..\..\UnityEnv\Support\UnitySerializer\Library\ScriptAssemblies\Assembly-CSharp-firstpass.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.Design" />
-    <Reference Include="System.Drawing" />
     <Reference Include="System.XML" />
     <Reference Include="System.Xml.Linq" />
-    <Reference Include="UnityEngine">
-      <HintPath>$(ProgramFiles)\Unity\Editor\Data\Managed\UnityEngine.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\Program Files\Unity\Editor\Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -52,54 +51,67 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="CombatStrength.cs" />
-    <Compile Include="Generic\Graphics\IOnVisibleRelayTarget.cs" />
-    <Compile Include="Generic\IO\AEnumValues.cs" />
-    <Compile Include="Generic\IO\GameClockSpeed_Values.cs" />
+    <Compile Include="Generic\IO\AnimationSettings.cs" />
+    <Compile Include="Generic\IO\GeneralSettings.cs" />
+    <Compile Include="Generic\Extensions\GameSpeedExtensions.cs" />
+    <Compile Include="Generic\IO\AValuesHelper.cs" />
+    <Compile Include="Generic\Graphics\GameColor.cs" />
+    <Compile Include="Game\Framework\GameSettings.cs" />
+    <Compile Include="Game\Gameplay\DiplomaticRelations.cs" />
+    <Compile Include="Generic\Framework\DisposePropertyChangingSubscription.cs" />
+    <Compile Include="Generic\IO\KeyboardAxis.cs" />
+    <Compile Include="Generic\IO\MouseButton.cs" />
+    <Compile Include="Generic\IO\NguiMouseButton.cs" />
+    <Compile Include="Generic\Framework\APropertyChangeTracking.cs" />
+    <Compile Include="Generic\Framework\AEnumValueChangeEvent.cs" />
+    <Compile Include="Game\Gameplay\CombatStrength.cs" />
+    <Compile Include="Generic\Framework\GameEventManager.cs" />
+    <Compile Include="Generic\IO\AEnumValuesHelper.cs" />
     <Compile Include="Game\Framework\AGameEvent.cs" />
-    <Compile Include="Game\Framework\GamePauseStateChangingEvent.cs" />
-    <Compile Include="Game\Framework\GameStateChangingEvent.cs" />
     <Compile Include="Generic\_Debug\AInstanceIdentity.cs" />
     <Compile Include="Generic\Framework\ElementReadyEvent.cs" />
-    <Compile Include="Generic\_Debug\D.cs" />
     <Compile Include="Game\GUI\LoadSavedGameEvent.cs" />
     <Compile Include="Game\Framework\GameState.cs" />
-    <Compile Include="Game\Framework\GameStateChangedEvent.cs" />
     <Compile Include="Game\GUI\ExitGameEvent.cs" />
     <Compile Include="Game\_Debug\DebugSettings.cs" />
     <Compile Include="Game\Framework\GameClockSpeed.cs" />
-    <Compile Include="Game\GUI\GamePauseStateChangedEvent.cs" />
-    <Compile Include="Game\GUI\GamePauseState.cs" />
     <Compile Include="Game\Framework\Layers.cs" />
     <Compile Include="Game\Framework\Tags.cs" />
-    <Compile Include="Game\GUI\GameSpeedChangeEvent.cs" />
-    <Compile Include="Generic\Extensions\GameSpecificExtensions.cs" />
-    <Compile Include="Game\GUI\BuildNewGameEvent.cs" />
-    <Compile Include="Game\Framework\GameSettings.cs" />
-    <Compile Include="Game\GUI\OptionChangeEvent.cs" />
+    <Compile Include="Game\GUI\GamePlayOptionsAcceptedEvent.cs" />
     <Compile Include="Game\Framework\OptionSettings.cs" />
     <Compile Include="Game\GUI\GuiVisibilityCommand.cs" />
     <Compile Include="Game\Framework\SceneLevel.cs" />
-    <Compile Include="Game\Framework\SceneLevelChangingEvent.cs" />
+    <Compile Include="Game\Framework\SceneChangingEvent.cs" />
     <Compile Include="Game\GUI\PauseRequest.cs" />
     <Compile Include="Game\GUI\GuiPauseRequestEvent.cs" />
-    <Compile Include="Game\Framework\SceneLevelChangedEvent.cs" />
+    <Compile Include="Game\Framework\SceneChangedEvent.cs" />
+    <Compile Include="Generic\_Debug\D.cs" />
     <Compile Include="Generic\_Debug\IInstanceIdentity.cs" />
-    <Compile Include="Game\Gameplay\Players.cs" />
     <Compile Include="Game\GUI\SaveGameEvent.cs" />
     <Compile Include="Generic\Graphics\ICameraFollowable.cs" />
     <Compile Include="Generic\Graphics\ICameraFocusable.cs" />
     <Compile Include="Generic\Graphics\ICameraTargetable.cs" />
     <Compile Include="Generic\Graphics\AStringBuilderTextEvent.cs" />
-    <Compile Include="Generic\Graphics\IZoomToClosest.cs" />
     <Compile Include="Generic\Graphics\IZoomToFurthest.cs" />
-    <Compile Include="Game\GUI\GuiCursorHudDisplayLineKeys.cs" />
+    <Compile Include="Game\GUI\GuiCursorHudLineKeys.cs" />
     <Compile Include="Game\Gameplay\IntelLevel.cs" />
     <Compile Include="Game\Gameplay\OpeResource.cs" />
     <Compile Include="Game\Gameplay\OpeYield.cs" />
     <Compile Include="Game\Gameplay\XResource.cs" />
     <Compile Include="Generic\Graphics\IColliderRelayTarget.cs" />
     <Compile Include="Game\Gameplay\SettlementSize.cs" />
+    <Compile Include="Game\Gameplay\ShipHull.cs" />
+    <Compile Include="Game\Gameplay\SettlementData.cs" />
+    <Compile Include="Generic\Math\Range.cs" />
+    <Compile Include="Game\Gameplay\IQ.cs" />
+    <Compile Include="Game\Gameplay\Races.cs" />
+    <Compile Include="Game\Framework\HumanPlayer.cs" />
+    <Compile Include="Game\Framework\IPlayer.cs" />
+    <Compile Include="Game\Framework\Player.cs" />
+    <Compile Include="Game\Framework\Race.cs" />
+    <Compile Include="Game\Framework\RaceStat.cs" />
+    <Compile Include="Generic\Framework\ISelectable.cs" />
+    <Compile Include="ThirdParty\PropertyHelper.cs" />
     <Compile Include="ThirdParty\TextScanner.cs" />
     <Compile Include="ThirdParty\FlagsHelper.cs" />
     <Compile Include="Generic\_Debug\ObjectAnalyzer.cs" />
@@ -116,10 +128,9 @@
     </Compile>
     <Compile Include="Game\Framework\UniverseSize.cs" />
     <Compile Include="Generic\Framework\UnityConstants.cs" />
-    <Compile Include="Generic\IO\UniverseSize_Values.cs" />
-    <Compile Include="Generic\IO\AValues.cs" />
-    <Compile Include="Generic\Graphics\Visibility.cs" />
     <Compile Include="Game\Gameplay\XYield.cs" />
+    <Compile Include="Generic\Framework\DisposePropertyChangedSubscription.cs" />
+    <Compile Include="Generic\Extensions\UniverseSizeExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeEnv.Master.Common.LocalResources\CodeEnv.Master.Common.LocalResources.csproj">
@@ -129,7 +140,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Game\Graphics\" />
-    <Folder Include="Generic\Math\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

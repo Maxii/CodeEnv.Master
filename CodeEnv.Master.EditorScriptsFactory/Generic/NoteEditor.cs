@@ -12,10 +12,10 @@
 
 // default namespace
 
-using System;
-using UnityEngine;
+#if (UNITY_EDITOR)
+
 using UnityEditor;
-using CodeEnv.Master.Common.Unity;
+using UnityEngine;
 
 /// <summary>
 /// Allows the addition of a custom note field to any GameObject.
@@ -53,3 +53,4 @@ public class NoteEditor : Editor {
     }
 }
 
+#endif

@@ -34,9 +34,6 @@
   <ItemGroup>
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.Design" />
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
@@ -50,6 +47,11 @@
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>CommonTerms.resx</DependentUpon>
+    </Compile>
+    <Compile Include="CursorHudPhrases.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>CursorHudPhrases.resx</DependentUpon>
     </Compile>
     <Compile Include="ErrorMessages.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -78,6 +80,10 @@
     <EmbeddedResource Include="CommonTerms.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>CommonTerms.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CursorHudPhrases.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>CursorHudPhrases.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <EmbeddedResource Include="ErrorMessages.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>

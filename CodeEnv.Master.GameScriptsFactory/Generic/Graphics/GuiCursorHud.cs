@@ -11,8 +11,8 @@
 // -------------------------------------------------------------------------------------------------------------------- 
 
 #define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 // default namespace
 
@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// HUD that follows the Cursor on the screen.
 /// </summary>
-public sealed class GuiCursorHud : AMonoBehaviourBaseSingleton<GuiCursorHud> {
+public class GuiCursorHud : AMonoBehaviourBaseSingleton<GuiCursorHud> {
 
     // Camera used to draw this HUD
     public Camera uiCamera;
@@ -81,6 +81,16 @@ public sealed class GuiCursorHud : AMonoBehaviourBaseSingleton<GuiCursorHud> {
         }
     }
 
+    protected override void OnApplicationQuit() {
+        _instance = null;
+    }
+
+    public override string ToString() {
+        return new ObjectAnalyzer().ToString(this);
+    }
+
+    #region IGuiCursorHud Members
+
     /// <summary>
     /// Populate the HUD with text.
     /// </summary>
@@ -130,13 +140,6 @@ public sealed class GuiCursorHud : AMonoBehaviourBaseSingleton<GuiCursorHud> {
         _label.pivot = pivot;
     }
 
-    protected override void OnApplicationQuit() {
-        instance = null;
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
+    #endregion
 }
 

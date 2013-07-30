@@ -16,27 +16,11 @@ namespace CodeEnv.Master.Common.Unity {
 
     public static class TempGameValues {
 
-        public static readonly Vector3 UniverseOrigin = Vector3.zero;
-
-        public const int StartingGameYear = 2700;
-        public const int DaysPerGameYear = 100;
-        public const float GameDaysPerSecond = 1.0F;
-
         public const int MinFleetTrackingLabelShowDistance = 50;
         public const int MaxFleetTrackingLabelShowDistance = 300;
 
         public const int MinSystemTrackingLabelShowDistance = 100;
         public const int MaxSystemTrackingLabelShowDistance = 2500;
-
-        public const int MaxSystemAnimateDistance = 1000;
-        public const int MaxShipAnimateDistance = 50;
-
-        public const int MaxShipShowDistance = 100;
-
-
-
-        public const float InjuredHealthThreshold = 0.80F;
-        public const float CriticalHealthThreshold = 0.40F;
 
     }
 }

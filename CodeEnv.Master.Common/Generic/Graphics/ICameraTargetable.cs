@@ -11,17 +11,20 @@
 // -------------------------------------------------------------------------------------------------------------------- 
 
 #define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common {
-
 
     /// <summary>
     /// Interface containing values needed by a gameobject that is a target for camera movement.
     /// </summary>
     public interface ICameraTargetable {
 
+        /// <summary>
+        /// Gets a value indicating whether this instance is targetable. e.g. - an ICameraTargetable
+        /// instance should not be targetable if it is not supposed to be visible to the player.
+        /// </summary>
         bool IsTargetable { get; }
 
         float MinimumCameraViewingDistance { get; }

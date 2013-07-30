@@ -11,12 +11,13 @@
 // -------------------------------------------------------------------------------------------------------------------- 
 
 #define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.Common.Unity;
@@ -26,24 +27,30 @@ using CodeEnv.Master.Common.Unity;
 /// </summary>
 public class GuiGameSpeedReadout : AGuiLabelReadoutBase, IDisposable {
 
+    private IList<IDisposable> _subscribers;
+
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        AddListeners();
+        Subscribe();
         tooltip = "The multiple of Normal Speed the game is currently running at.";
         // don't rely on outside events to initialize
         RefreshGameSpeedReadout(PlayerPrefsManager.Instance.GameSpeedOnLoad);
     }
 
-    private void AddListeners() {
-        eventMgr.AddListener<GameSpeedChangeEvent>(this, OnGameSpeedChange);
+    private void Subscribe() {
+        if (_subscribers == null) {
+            _subscribers = new List<IDisposable>();
+        }
+        _subscribers.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
     }
 
-    void OnGameSpeedChange(GameSpeedChangeEvent e) {
-        RefreshGameSpeedReadout(e.GameSpeed);
+    private void OnGameSpeedChanged() {
+        RefreshGameSpeedReadout(GameTime.Instance.GameSpeed);
     }
 
-    private void RemoveListeners() {
-        eventMgr.RemoveListener<GameSpeedChangeEvent>(this, OnGameSpeedChange);
+    private void Unsubscribe() {
+        _subscribers.ForAll<IDisposable>(s => s.Dispose());
+        _subscribers.Clear();
     }
 
     private void RefreshGameSpeedReadout(GameClockSpeed clockSpeed) {
@@ -78,7 +85,7 @@ public class GuiGameSpeedReadout : AGuiLabelReadoutBase, IDisposable {
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            RemoveListeners();
+            Unsubscribe();
         }
         // free unmanaged resources here
         alreadyDisposed = true;

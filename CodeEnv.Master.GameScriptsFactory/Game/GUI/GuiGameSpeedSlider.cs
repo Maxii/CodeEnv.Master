@@ -11,8 +11,8 @@
 // -------------------------------------------------------------------------------------------------------------------- 
 
 #define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 // default namespace
 
@@ -32,7 +32,7 @@ public class GuiGameSpeedSlider : AGuiEnumSliderBase<GameClockSpeed> {
     }
 
     protected override void OnSliderValueChange(GameClockSpeed value) {
-        eventMgr.Raise<GameSpeedChangeEvent>(new GameSpeedChangeEvent(this, value));
+        GameTime.Instance.GameSpeed = value;
     }
 
     public override string ToString() {

@@ -6,62 +6,71 @@
 // </copyright> 
 // <summary> 
 // File: OpeYield.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// Data container holding Organic, Particulate and Energy yields.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
 #define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common {
 
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common.LocalResources;
 
-    public class OpeYield {
 
-        public float Organics { get; set; }
-        public float Particulates { get; set; }
-        public float Energy { get; set; }
+    /// <summary>
+    /// Data container holding Organic, Particulate and Energy yields.
+    /// </summary>
+    public class OpeYield : APropertyChangeTracking {
 
-        public OpeYield() : this(0, 0, 0) { }
+        public class OpeResourceValuePair {
 
-        public OpeYield(float o, float p, float e) {
-            Organics = o;
-            Particulates = p;
-            Energy = e;
+            public OpeResource Resource { get; private set; }
+            public float Value { get; private set; }
+
+            public OpeResourceValuePair(OpeResource opeResource, float value) {
+                Resource = opeResource;
+                Value = value;
+            }
+        }
+
+        private IDictionary<OpeResource, OpeResourceValuePair> resources = new Dictionary<OpeResource, OpeResourceValuePair>();
+
+        public OpeYield() : this(0F, 0F, 0F) { }
+
+        public OpeYield(float organics, float particulates, float energy)
+            : this(new OpeResourceValuePair(OpeResource.Organics, organics), new OpeResourceValuePair(OpeResource.Particulates, particulates),
+            new OpeResourceValuePair(OpeResource.Energy, energy)) { }
+
+        public OpeYield(params OpeResourceValuePair[] opeResourcePairs) {
+            foreach (var opePair in opeResourcePairs) {
+                resources.Add(opePair.Resource, opePair);
+            }
         }
 
         public float GetYield(OpeResource opeResource) {
-            switch (opeResource) {
-                case OpeResource.Organics:
-                    return Organics;
-                case OpeResource.Particulates:
-                    return Particulates;
-                case OpeResource.Energy:
-                    return Energy;
-                case OpeResource.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(opeResource));
+            OpeResourceValuePair valuePair;
+            if (resources.TryGetValue(opeResource, out valuePair)) {
+                return valuePair.Value;
             }
+            D.Error("{0} {1} should be present but is not. Value of 0 returned.", typeof(OpeResource), opeResource);
+            return Constants.ZeroF;
         }
 
-        public void SetYield(OpeResource opeResource, float value) {
-            switch (opeResource) {
-                case OpeResource.Organics:
-                    Organics = value;
-                    break;
-                case OpeResource.Particulates:
-                    Particulates = value;
-                    break;
-                case OpeResource.Energy:
-                    Energy = value;
-                    break;
-                case OpeResource.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(opeResource));
+        public IList<OpeResourceValuePair> GetAllResources() {
+            return resources.Values.ToList<OpeResourceValuePair>();
+        }
+
+        public void ChangeYieldValue(OpeResource opeResource, float value) {
+            if (!resources.Remove(opeResource)) {
+                D.Error("{0} {1} should be present but is not. New Yield value was added.", typeof(OpeResource), opeResource);
             }
+            resources.Add(opeResource, new OpeResourceValuePair(opeResource, value));
+            // TODO raise OpeResourceValueChanged event
         }
 
         public override string ToString() {

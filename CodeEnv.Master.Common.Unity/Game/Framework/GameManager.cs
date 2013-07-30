@@ -6,13 +6,12 @@
 // </copyright> 
 // <summary> 
 // File: GameManager.cs
-// SingletonPattern.  Primary Game Manager 'God' class for the game.
+// Primary Game Manager 'God' class for the game.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LEVEL_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 #define DEBUG_LOG
 
 
@@ -22,33 +21,56 @@ namespace CodeEnv.Master.Common.Unity {
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Text;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
+
 
     /// <summary>
     /// SingletonPattern. Primary Game Manager 'God' class for the game.
     /// </summary>
     [SerializeAll]
-    public class GameManager : AInstanceIdentity, IInstanceIdentity, IDisposable {
+    public class GameManager : APropertyChangeTracking, IInstanceIdentity, IDisposable {
 
-        public static GameState State { get; private set; }
+        public HumanPlayer HumanPlayer { get; private set; }
+
+        private GameState _gameState;
+        public GameState GameState {
+            get { return _gameState; }
+            private set { SetProperty<GameState>(ref _gameState, value, "GameState", InitializeOnGameStateChanged, ValidateConditionsForChangeInGameState); }
+        }
+
         public static GameSettings Settings { get; private set; }
-        public static bool IsGameRunning { get; private set; }
+
+        private bool _isGameRunning;
+        public bool IsGameRunning {
+            get { return _isGameRunning; }
+            private set { SetProperty<bool>(ref _isGameRunning, value, "IsGameRunning"); }
+        }
+
         /// <summary>
         /// To set use ProcessPauseRequest().
         /// </summary>
         /// <sb>
         /// <c>true</c> if the game is paused; otherwise, <c>false</c>.
         /// </sb>
-        public static bool IsGamePaused { get; private set; }
+        private bool _isGamePaused;
+        public bool IsGamePaused {
+            get {
+                return _isGamePaused;
+            }
+            private set {
+                SetProperty<bool>(ref _isGamePaused, value, "IsGamePaused");
+            }
+        }
 
-        private GameEventManager eventMgr;
-        private GameTime gameTime;
-        private PlayerPrefsManager playerPrefsMgr;
+        private GameEventManager _eventMgr;
+        private GameTime _gameTime;
+        private PlayerPrefsManager _playerPrefsMgr;
 
         #region SingletonPattern
-        private static readonly GameManager instance;
+        private static readonly GameManager _instance;
 
         /// <summary>
         /// Explicit static constructor that enables lazy instantiation by telling C# compiler
@@ -56,7 +78,7 @@ namespace CodeEnv.Master.Common.Unity {
         /// </summary>
         static GameManager() {
             // try, catch and resolve any possible exceptions here
-            instance = new GameManager();
+            _instance = new GameManager();
         }
 
         /// <summary>
@@ -68,9 +90,7 @@ namespace CodeEnv.Master.Common.Unity {
 
         /// <summary>Returns the singleton instance of this class.</summary>
         public static GameManager Instance {
-            get {
-                return instance;
-            }
+            get { return _instance; }
         }
         #endregion
 
@@ -78,22 +98,25 @@ namespace CodeEnv.Master.Common.Unity {
         /// Called once from the constructor, this does all required initialization
         /// </summary>
         private void Initialize() {
-            // Add initialization code here if any
+            // Warning! Instance is null until after this is complete!
             IncrementInstanceCounter();
-            eventMgr = GameEventManager.Instance;
-            AddEventListeners();
-            gameTime = GameTime.Instance;
-            playerPrefsMgr = PlayerPrefsManager.Instance;
+            _eventMgr = GameEventManager.Instance;
+            _playerPrefsMgr = PlayerPrefsManager.Instance;
+        }
+
+        public void CompleteInitialization() {
+            Subscribe();    // delay until Instance is initialized
+            _gameTime = GameTime.Instance;   // delay until Instance is initialized
         }
 
         #region Startup Simulation
-        public void AwakeBasedOnStartScene(SceneLevel startScene) {
+        public void __AwakeBasedOnStartScene(SceneLevel startScene) {
             switch (startScene) {
                 case SceneLevel.IntroScene:
-                    ChangeState(GameState.Lobby);
+                    GameState = GameState.Lobby;
                     break;
                 case SceneLevel.GameScene:
-                    SimulateBuildGameFromLobby_Step1();
+                    __SimulateBuildGameFromLobby_Step1();
                     break;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(startScene));
@@ -104,15 +127,17 @@ namespace CodeEnv.Master.Common.Unity {
         /// Temporary method that simulates the launch of a game from the Lobby, for use when
         /// starting in GameScene.
         /// </summary>
-        private void SimulateBuildGameFromLobby_Step1() {
-            State = GameState.Lobby;  // avoids the Illegal state transition Error
-            Settings = new GameSettings {
+        private void __SimulateBuildGameFromLobby_Step1() {
+            GameState = GameState.Lobby;  // avoids the Illegal state transition Error
+            GameState = GameState.Building;
+            GameSettings settings = new GameSettings {
                 IsNewGame = true,
-                SizeOfUniverse = UniverseSize.Normal,
-                Player = Players.Opponent_1,
+                UniverseSize = _playerPrefsMgr.UniverseSize,
+                PlayerRace = new Race(new RaceStat(_playerPrefsMgr.PlayerRace, "Maxii", new StringBuilder("Maxii description"), _playerPrefsMgr.PlayerColor))
             };
-            ChangeState(GameState.Building);
-            ChangeState(GameState.Loading);
+            Settings = settings;
+            HumanPlayer = CreateHumanPlayer(settings);
+            GameState = GameState.Loading;
         }
 
         public void StartBasedOnStartScene(SceneLevel startScene) {
@@ -120,40 +145,47 @@ namespace CodeEnv.Master.Common.Unity {
                 case SceneLevel.IntroScene:
                     break;
                 case SceneLevel.GameScene:
-                    SimulateBuildGameFromLobby_Step2();
+                    __SimulateBuildGameFromLobby_Step2();
                     break;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(startScene));
             }
         }
 
-        private void SimulateBuildGameFromLobby_Step2() {
+        private void __SimulateBuildGameFromLobby_Step2() {
             // GameState.Restoring only applies to loading saved games
-            ChangeState(GameState.Waiting);
+            GameState = GameState.Waiting;
         }
         #endregion
 
-        private void AddEventListeners() {
-            eventMgr.AddListener<ExitGameEvent>(this, OnExitGame);
-            eventMgr.AddListener<BuildNewGameEvent>(this, OnBuildNewGame);
-            eventMgr.AddListener<GuiPauseRequestEvent>(this, OnGuiPauseChangeRequest);
-            eventMgr.AddListener<SceneLevelChangedEvent>(this, OnSceneLevelChanged);
-            eventMgr.AddListener<SaveGameEvent>(this, OnSaveGame);
-            eventMgr.AddListener<LoadSavedGameEvent>(this, OnLoadSavedGame);
+        private void Subscribe() {
+            _eventMgr.AddListener<ExitGameEvent>(this, OnExitGame);
+            _eventMgr.AddListener<BuildNewGameEvent>(this, OnBuildNewGame);
+            _eventMgr.AddListener<GuiPauseRequestEvent>(this, OnGuiPauseChangeRequest);
+            _eventMgr.AddListener<SaveGameEvent>(this, OnSaveGame);
+            _eventMgr.AddListener<LoadSavedGameEvent>(this, OnLoadSavedGame);
         }
 
         private void OnBuildNewGame(BuildNewGameEvent e) {
             D.Log("BuildNewGameEvent received.");
-            Settings = e.Settings;
-            BuildAndLoadNewGame();
+            BuildAndLoadNewGame(e.Settings);
         }
 
-        private void BuildAndLoadNewGame() {
-            ChangeState(GameState.Building);
+        private void BuildAndLoadNewGame(GameSettings settings) {
+            GameState = GameState.Building;
             // building the level begins here when implemented
-            ChangeState(GameState.Loading);
-            eventMgr.Raise<SceneLevelChangingEvent>(new SceneLevelChangingEvent(this, SceneLevel.GameScene));
+            Settings = settings;
+            HumanPlayer = CreateHumanPlayer(settings);
+
+            GameState = GameState.Loading;
+            // tell ManagementObjects to drop its children (including SaveGameManager!) before the scene gets reloaded
+            _eventMgr.Raise<SceneChangingEvent>(new SceneChangingEvent(this, SceneLevel.GameScene));
             Application.LoadLevel((int)SceneLevel.GameScene);
+        }
+
+        private HumanPlayer CreateHumanPlayer(GameSettings gameSettings) {
+            HumanPlayer humanPlayer = new HumanPlayer(gameSettings.PlayerRace);
+            return humanPlayer;
         }
 
         private void OnSaveGame(SaveGameEvent e) {
@@ -162,7 +194,7 @@ namespace CodeEnv.Master.Common.Unity {
 
         private void SaveGame(string gameName) {
             Settings.IsNewGame = false;
-            gameTime.PrepareToSaveGame();
+            _gameTime.PrepareToSaveGame();
             LevelSerializer.SaveGame(gameName);
         }
 
@@ -188,38 +220,40 @@ namespace CodeEnv.Master.Common.Unity {
                 selectedGame = gamesWithID.Single<LevelSerializer.SaveEntry>();
             }
 
-            ChangeState(GameState.Building);
-            ChangeState(GameState.Loading);
+            GameState = GameState.Building;
+            GameState = GameState.Loading;
             // tell ManagementObjects to drop its children (including SaveGameManager!) before the scene gets reloaded
-            eventMgr.Raise<SceneLevelChangingEvent>(new SceneLevelChangingEvent(this, SceneLevel.GameScene));
+            _eventMgr.Raise<SceneChangingEvent>(new SceneChangingEvent(this, SceneLevel.GameScene));
             selectedGame.Load();
         }
 
-        // MonoGameManager raises this event when it receives the OnLevelWasLoaded
-        private void OnSceneLevelChanged(SceneLevelChangedEvent e) {
-            if (e.Level != SceneLevel.GameScene) {
-                D.Error("A SceneLevel change to {0} is currently not implemented.", e.Level.GetName());
+        //MonoGameManager relays the scene value that was loaded when it receives OnLevelWasLoaded
+        public void OnSceneChanged(SceneLevel newScene) {
+            if (newScene != SceneLevel.GameScene) {
+                D.Error("A Scene change to {0} is currently not implemented.", newScene.GetName());
+                return;
             }
+            _eventMgr.Raise<SceneChangedEvent>(new SceneChangedEvent(this, newScene));
             if (LevelSerializer.IsDeserializing || !Settings.IsNewGame) {
-                ChangeState(GameState.Restoring);
+                GameState = GameState.Restoring;
             }
             else {
                 ResetConditionsForGameStartup();
-                gameTime.PrepareToBeginNewGame();
-                ChangeState(GameState.Waiting);
+                _gameTime.PrepareToBeginNewGame();
+                GameState = GameState.Waiting;
             }
         }
 
         public void OnDeserialized() {  // Assumes PrepareToResumeSavedGame can only be called AFTER OnLevelWasLoaded
             D.Log("GameManager.OnDeserialized() called.");
             ResetConditionsForGameStartup();
-            gameTime.PrepareToResumeSavedGame();
-            ChangeState(GameState.Waiting);
+            _gameTime.PrepareToResumeSavedGame();
+            GameState = GameState.Waiting;
         }
 
         private void OnGuiPauseChangeRequest(GuiPauseRequestEvent e) {
             D.Assert(IsGameRunning);
-            ProcessPauseRequest(e.PauseRequest);
+            ProcessPauseRequest(e.NewValue);
         }
 
         // flag indicating whether the current pause was requested directly by the user or program
@@ -267,11 +301,7 @@ namespace CodeEnv.Master.Common.Unity {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(request));
             }
-
-            GamePauseState newPauseState = toPause ? GamePauseState.Paused : GamePauseState.Resumed;
-            eventMgr.Raise<GamePauseStateChangingEvent>(new GamePauseStateChangingEvent(Instance, newPauseState));
             IsGamePaused = toPause;
-            eventMgr.Raise<GamePauseStateChangedEvent>(new GamePauseStateChangedEvent(Instance, newPauseState));
         }
 
         /// <summary>
@@ -280,75 +310,63 @@ namespace CodeEnv.Master.Common.Unity {
         /// has started.
         /// </summary>
         public void Run() {
-            ChangeState(GameState.Running);
+            GameState = GameState.Running;
         }
 
-        public void ChangeState(GameState newState) {
-            CheckForErrorsPriorToStateChange(newState);
-            InitializeNewState(newState);
-        }
-
-        [Conditional("UNITY_EDITOR")]
-        private void CheckForErrorsPriorToStateChange(GameState newState) {
+        //[Conditional("UNITY_EDITOR")]
+        private void ValidateConditionsForChangeInGameState(GameState proposedNewState) {
             bool isError = false;
-            switch (State) {
+            switch (GameState) {
                 case GameState.None:
-                    if (newState != GameState.Lobby) { isError = true; }
+                    if (proposedNewState != GameState.Lobby) { isError = true; }
                     break;
                 case GameState.Lobby:
-                    if (newState != GameState.Building) { isError = true; }
+                    if (proposedNewState != GameState.Building) { isError = true; }
                     break;
                 case GameState.Building:
-                    if (newState != GameState.Loading) { isError = true; }
+                    if (proposedNewState != GameState.Loading) { isError = true; }
                     break;
                 case GameState.Loading:
-                    if (newState != GameState.Restoring && newState != GameState.Waiting) { isError = true; }
+                    if (proposedNewState != GameState.Restoring && proposedNewState != GameState.Waiting) { isError = true; }
                     break;
                 case GameState.Restoring:
-                    if (newState != GameState.Waiting) { isError = true; }
+                    if (proposedNewState != GameState.Waiting) { isError = true; }
                     break;
                 case GameState.Waiting:
-                    if (newState != GameState.Running) { isError = true; }
+                    if (proposedNewState != GameState.Running) { isError = true; }
                     break;
                 case GameState.Running:
-                    if (newState != GameState.Lobby && newState != GameState.Building) { isError = true; }
+                    if (proposedNewState != GameState.Lobby && proposedNewState != GameState.Building) { isError = true; }
                     break;
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(State));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(GameState));
             }
             if (isError) {
-                D.Error("Erroneous GameState transition. Current State = {0}, proposed State = {1}.", State, newState);
+                D.Error("Erroneous GameState transition. Current State = {0}, proposed State = {1}.", GameState, proposedNewState);
             }
         }
 
-        private void InitializeNewState(GameState newState) {
-            eventMgr.Raise<GameStateChangingEvent>(new GameStateChangingEvent(this, newState));
-            State = newState;
-            D.Log("GameState is now {0}.", newState);
-            IsGameRunning = false;
-            switch (newState) {
+        private void InitializeOnGameStateChanged() {
+            switch (GameState) {
                 case GameState.Lobby:
-                    break;
                 case GameState.Building:
-                    break;
                 case GameState.Loading:
-                    break;
                 case GameState.Restoring:
-                    break;
                 case GameState.Waiting:
+                    IsGameRunning = false;
                     break;
                 case GameState.Running:
                     IsGameRunning = true;
-                    gameTime.EnableClock(true);
-                    if (playerPrefsMgr.IsPauseOnLoadEnabled) {
+                    _gameTime.EnableClock(true);
+                    if (_playerPrefsMgr.IsPauseOnLoadEnabled) {
                         ProcessPauseRequest(PauseRequest.PriorityPause);
                     }
                     break;
                 case GameState.None:
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(newState));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(GameState));
             }
-            eventMgr.Raise<GameStateChangedEvent>(new GameStateChangedEvent(this, newState));
+            D.Log("GameState changed to {0}.", GameState.GetName());
         }
 
         /// <summary>
@@ -369,30 +387,28 @@ namespace CodeEnv.Master.Common.Unity {
         }
 
         private void Shutdown() {
-            playerPrefsMgr.Store();
+            _playerPrefsMgr.Store();
             if (Application.isEditor || Application.isWebPlayer) {
                 D.Log("Game Shutdown initiated in Editor or WebPlayer.");
                 return;
             }
             // UNDONE MonoBehaviours will all have OnDestroy() called on Quit, but what about non-MonoBehaviours?
             // Should each use the ExitGameEvent to release their Listeners too?
-            gameTime.Dispose();
+            _gameTime.Dispose();
             Dispose();
             Application.Quit(); // ignored inside Editor or WebPlayer
         }
 
-        //private void CleanupDisposableObjects() {
-        //    IList<IDisposable> disposableObjects = MonoBehaviourBase.FindObjectsOfInterface<IDisposable>();
-        //    disposableObjects.ForAll<IDisposable>(d => d.Dispose());
-        //}
+        private void Unsubscribe() {
+            _eventMgr.RemoveListener<ExitGameEvent>(this, OnExitGame);
+            _eventMgr.RemoveListener<BuildNewGameEvent>(this, OnBuildNewGame);
+            _eventMgr.RemoveListener<GuiPauseRequestEvent>(this, OnGuiPauseChangeRequest);
+            _eventMgr.RemoveListener<SaveGameEvent>(this, OnSaveGame);
+            _eventMgr.RemoveListener<LoadSavedGameEvent>(this, OnLoadSavedGame);
+        }
 
-        private void RemoveEventListeners() {
-            eventMgr.RemoveListener<ExitGameEvent>(this, OnExitGame);
-            eventMgr.RemoveListener<BuildNewGameEvent>(this, OnBuildNewGame);
-            eventMgr.RemoveListener<GuiPauseRequestEvent>(this, OnGuiPauseChangeRequest);
-            eventMgr.RemoveListener<SceneLevelChangedEvent>(this, OnSceneLevelChanged);
-            eventMgr.RemoveListener<SaveGameEvent>(this, OnSaveGame);
-            eventMgr.RemoveListener<LoadSavedGameEvent>(this, OnLoadSavedGame);
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
         }
 
         #region IDisposable
@@ -419,7 +435,7 @@ namespace CodeEnv.Master.Common.Unity {
 
             if (isDisposing) {
                 // free managed resources here including unhooking events
-                RemoveEventListeners();
+                Unsubscribe();
             }
             // free unmanaged resources here
             alreadyDisposed = true;
@@ -437,10 +453,16 @@ namespace CodeEnv.Master.Common.Unity {
         //}
         #endregion
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+        #region IInstanceIdentity Members
+
+        private static int instanceCounter = 0;
+        public int InstanceID { get; set; }
+
+        protected void IncrementInstanceCounter() {
+            InstanceID = System.Threading.Interlocked.Increment(ref instanceCounter);
         }
 
+        #endregion
     }
 }
 

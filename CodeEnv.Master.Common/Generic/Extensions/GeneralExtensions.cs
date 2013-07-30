@@ -10,11 +10,18 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
+
 namespace CodeEnv.Master.Common {
 
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Linq;
+    using System.Linq.Expressions;
+    using System.Reflection;
     using System.Text;
 
     /// <summary>
@@ -169,6 +176,85 @@ namespace CodeEnv.Master.Common {
             }
             return sb.ToString();
         }
+
+
+        #region Generic INotifyPropertyChanged, INotifyPropertyChanging Extensions
+
+        /// <summary>
+        /// Generic extension method that subscribes to SPECIFIC PropertyChanged event notifications from objects that implement 
+        /// INotifyPropertyChanged and use APropertyChangeTracking's SetProperty method in their property setters.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the publisher.</typeparam>
+        /// <typeparam name="TProp">The type of the publisher's property.</typeparam>
+        /// <param name="source">The publisher.</param>
+        /// <param name="propertySelector">The lambda property selector: pub => pub.Property</param>
+        /// <param name="onChanged">The subsciber's no parameter/no return method to call when the property changed.</param>
+        public static IDisposable SubscribeToPropertyChanged<TSource, TProp>(this TSource source, Expression<Func<TSource, TProp>> propertySelector, Action onChanged) where TSource : INotifyPropertyChanged {
+            Arguments.ValidateNotNull(source);
+            Arguments.ValidateNotNull(propertySelector);
+            Arguments.ValidateNotNull(onChanged);
+
+            var subscribedPropertyName = GetPropertyName<TSource, TProp>(propertySelector);
+            PropertyChangedEventHandler handler = (s, e) => {
+                if (string.Equals(e.PropertyName, subscribedPropertyName, StringComparison.InvariantCulture)) {
+                    onChanged();
+                }
+            };
+            source.PropertyChanged += handler;
+            //D.Log("{0}.{1} successfully subscribed by someone to receive changes.", typeof(TSource), subscribedPropertyName);
+            //return System.Reactive.Disposables.Disposable.Create(() => source.PropertyChanged -= handler);    // FIXME Mono 2.0 does not support ReactiveExtensions.dll
+            return new DisposePropertyChangedSubscription<TSource>(source, handler);
+        }
+
+        /// <summary>
+        /// Generic extension method that subscribes to SPECIFIC PropertyChanging event notifications from objects that implement 
+        /// INotifyPropertyChanging and use APropertyChangeTracking's SetProperty method in their property setters.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the publisher.</typeparam>
+        /// <typeparam name="TProp">The type of the publisher's property.</typeparam>
+        /// <param name="source">The publisher.</param>
+        /// <param name="propertySelector">The lambda property selector: pub => pub.Property</param>
+        /// <param name="onChanging">The subsciber's no parameter/no return method to call when the property is in the process of changing. </param>
+        public static IDisposable SubscribeToPropertyChanging<TSource, TProp>(this TSource source, Expression<Func<TSource, TProp>> propertySelector, Action onChanging) where TSource : INotifyPropertyChanging {
+            Arguments.ValidateNotNull(source);
+            Arguments.ValidateNotNull(propertySelector);
+            Arguments.ValidateNotNull(onChanging);
+
+            var subscribedPropertyName = GetPropertyName<TSource, TProp>(propertySelector);
+            PropertyChangingEventHandler handler = (s, e) => {
+                if (string.Equals(e.PropertyName, subscribedPropertyName, StringComparison.InvariantCulture)) {
+                    onChanging();
+                }
+            };
+            source.PropertyChanging += handler;
+            //return System.Reactive.Disposables.Disposable.Create(() => source.PropertyChanging -= handler);   // FIXME Mono 2.0 does not support ReactiveExtensions.dll
+            return new DisposePropertyChangingSubscription<TSource>(source, handler);
+        }
+
+        /// <summary>
+        /// Helper that checks the propertySelector for errors and returns the name of the property it refers to.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source.</typeparam>
+        /// <typeparam name="TProp">The type of the prop.</typeparam>
+        /// <param name="propertySelector">The property selector.</param>
+        /// <returns></returns>
+        /// <exception cref="System.ArgumentException">
+        /// Must be a member accessor;propertySelector
+        /// or
+        /// Must yield a single property on the given object;propertySelector
+        /// </exception>
+        private static string GetPropertyName<TSource, TProp>(Expression<Func<TSource, TProp>> propertySelector) {
+            var memberExpr = propertySelector.Body as MemberExpression;
+            if (memberExpr == null) {
+                throw new ArgumentException("Must be a member accessor", "propertySelector");
+            }
+            var propertyInfo = memberExpr.Member as PropertyInfo;
+            if (propertyInfo == null || propertyInfo.DeclaringType != typeof(TSource)) {
+                throw new ArgumentException("Must yield a single property on the given object", "propertySelector");
+            }
+            return propertyInfo.Name;
+        }
+        #endregion
 
     }
 }

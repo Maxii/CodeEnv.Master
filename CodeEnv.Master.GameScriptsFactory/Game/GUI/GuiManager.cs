@@ -6,13 +6,9 @@
 // </copyright> 
 // <summary> 
 // File: GuiManager.cs
-//  Overall GuiManager that handles enabling/disabling Gui elements.
+// Overall GuiManager that handles the visibility of Gui elements.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
-
-#define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
 
 // default namespace
 
@@ -25,7 +21,7 @@ using CodeEnv.Master.Common.Unity;
 using UnityEngine;
 
 /// <summary>
-/// Overall GuiManager that handles enabling/disabling Gui elements.
+/// Overall GuiManager that handles the visibility of Gui elements.
 /// </summary>
 public class GuiManager : AMonoBehaviourBaseSingleton<GuiManager>, IDisposable {
 
@@ -58,11 +54,11 @@ public class GuiManager : AMonoBehaviourBaseSingleton<GuiManager>, IDisposable {
     }
 
     private void AddListeners() {
-        eventMgr.AddListener<GuiVisibilityChangeEvent>(this, OnGuiVisibilityChange);
+        eventMgr.AddListener<GuiVisibilityButton.GuiVisibilityChangeEvent>(this, OnGuiVisibilityChange);
     }
 
-    private void OnGuiVisibilityChange(GuiVisibilityChangeEvent e) {
-        //Debug.Log("OnGuiVisibilityChange event received. GuiVisibilityCmd = {0}.", e.GuiVisibilityCmd);
+    private void OnGuiVisibilityChange(GuiVisibilityButton.GuiVisibilityChangeEvent e) {
+        //Logger.Log("OnGuiVisibilityChange event received. GuiVisibilityCmd = {0}.", e.GuiVisibilityCmd);
         switch (e.GuiVisibilityCmd) {
             case GuiVisibilityCommand.MakeVisibleUIPanelsInvisible:
                 UIPanel[] allActiveUIRootChildPanels = gameObject.GetSafeMonoBehaviourComponentsInChildren<UIPanel>().Except<UIPanel>(uiRootPanel).ToArray<UIPanel>();
@@ -74,7 +70,7 @@ public class GuiManager : AMonoBehaviourBaseSingleton<GuiManager>, IDisposable {
                 break;
             case GuiVisibilityCommand.RestoreUIPanelsVisibility:
                 if (stackedPanelsToRestore.Count == 0) {
-                    Debug.LogError("The stack holding the lists of UIPanels to restore should not be null or empty!");
+                    D.Error("The stack holding the lists of UIPanels to restore should not be null or empty!");
                 }
                 //Arguments.ValidateNotNullOrEmpty<IList<UIPanel>>(stackedPanelsToRestore);
                 IList<UIPanel> panelsToRestore = stackedPanelsToRestore.Pop();
@@ -91,7 +87,7 @@ public class GuiManager : AMonoBehaviourBaseSingleton<GuiManager>, IDisposable {
     }
 
     private void RemoveListeners() {
-        eventMgr.RemoveListener<GuiVisibilityChangeEvent>(this, OnGuiVisibilityChange);
+        eventMgr.RemoveListener<GuiVisibilityButton.GuiVisibilityChangeEvent>(this, OnGuiVisibilityChange);
     }
 
 
@@ -100,7 +96,7 @@ public class GuiManager : AMonoBehaviourBaseSingleton<GuiManager>, IDisposable {
     }
 
     protected override void OnApplicationQuit() {
-        instance = null;
+        _instance = null;
     }
 
     #region IDisposable

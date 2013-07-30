@@ -30,7 +30,7 @@
   
   <Integer>
     <Setting>
-      <PropertyName></PropertyName>
+      <PropertyName/>
       <PropertyValue>0</PropertyValue>
     </Setting>
   </Integer>
@@ -42,3 +42,4 @@
     </Setting>
   </Float>
 </Values>
+<!-- Elements are only empty if they are in the format <ElementName/> -->

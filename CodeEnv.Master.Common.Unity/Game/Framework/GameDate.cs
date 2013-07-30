@@ -11,8 +11,8 @@
 // -------------------------------------------------------------------------------------------------------------------- 
 
 #define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 
 namespace CodeEnv.Master.Common.Unity {
@@ -26,9 +26,9 @@ namespace CodeEnv.Master.Common.Unity {
     /// </summary>
     public class GameDate : IGameDate {
 
-        private static int daysPerYear = TempGameValues.DaysPerGameYear;
-        private static float gameDaysPerSecond = TempGameValues.GameDaysPerSecond;
-        private static int startingGameYear = TempGameValues.StartingGameYear;
+        private static int _daysPerYear = GeneralSettings.Instance.DaysPerYear;
+        private static float _daysPerSecond = GeneralSettings.Instance.DaysPerSecond;
+        private static int _startingYear = GeneralSettings.Instance.StartingYear;
 
         public int DayOfYear { get; private set; }
 
@@ -40,6 +40,14 @@ namespace CodeEnv.Master.Common.Unity {
             }
         }
 
+        /// <summary>
+        /// Convenience constructor that initializes a new instance of the <see cref="GameDate"/> class
+        /// set to Day 1 of the starting year.
+        /// </summary>
+        public GameDate()
+            : this(Constants.One, _startingYear) {
+        }
+
         public GameDate(int dayOfYear, int year) {
             Arguments.ValidateNotNegative(dayOfYear);
             DayOfYear = dayOfYear;
@@ -47,9 +55,9 @@ namespace CodeEnv.Master.Common.Unity {
         }
 
         internal void SyncDateToGameClock(float gameClock) {
-            int elapsedDays = Mathf.FloorToInt(gameClock * gameDaysPerSecond);
-            Year = startingGameYear + Mathf.FloorToInt(elapsedDays / daysPerYear);
-            DayOfYear = 1 + (elapsedDays % daysPerYear);
+            int elapsedDays = Mathf.FloorToInt(gameClock * _daysPerSecond);
+            Year = _startingYear + Mathf.FloorToInt(elapsedDays / _daysPerYear);
+            DayOfYear = 1 + (elapsedDays % _daysPerYear);
         }
 
         public override string ToString() {

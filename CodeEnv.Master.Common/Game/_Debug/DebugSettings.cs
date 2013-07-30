@@ -10,21 +10,16 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 #define DEBUG_LOG
 
-using System.Xml;
 namespace CodeEnv.Master.Common {
 
     /// <summary>
     /// Parses DebugSettings.xml used to provide externalized values to DebugSettings.cs Properties.
     /// </summary>
-    public sealed class DebugSettings : AValues<DebugSettings> {
-
-        protected override string DocumentName {
-            get { return "DebugSettings"; }
-        }
+    public sealed class DebugSettings : AValuesHelper<DebugSettings> {
 
         private bool _enableFpsReadout;
         public bool EnableFpsReadout {
@@ -34,7 +29,7 @@ namespace CodeEnv.Master.Common {
                 }
                 return _enableFpsReadout;
             }
-            set { _enableFpsReadout = value; }
+            private set { _enableFpsReadout = value; }
         }
 
         private bool _unlockAllItems;
@@ -45,7 +40,7 @@ namespace CodeEnv.Master.Common {
                 }
                 return _unlockAllItems;
             }
-            set { _unlockAllItems = value; }
+            private set { _unlockAllItems = value; }
         }
 
         private bool _disableEnemies;
@@ -56,7 +51,7 @@ namespace CodeEnv.Master.Common {
                 }
                 return _disableEnemies;
             }
-            set { _disableEnemies = value; }
+            private set { _disableEnemies = value; }
         }
 
         private bool _disableGui;
@@ -67,7 +62,7 @@ namespace CodeEnv.Master.Common {
                 }
                 return _disableGui;
             }
-            set { _disableGui = value; }
+            private set { _disableGui = value; }
         }
 
         private bool _makePlayerInvincible;
@@ -78,7 +73,7 @@ namespace CodeEnv.Master.Common {
                 }
                 return _makePlayerInvincible;
             }
-            set { _makePlayerInvincible = value; }
+            private set { _makePlayerInvincible = value; }
         }
 
         private bool _disableAllGameplay;
@@ -89,16 +84,11 @@ namespace CodeEnv.Master.Common {
                 }
                 return _disableAllGameplay;
             }
-            set { _disableAllGameplay = value; }
+            private set { _disableAllGameplay = value; }
         }
 
         private DebugSettings() {
             Initialize();
-        }
-
-        protected override bool ValidateDocument(XmlDocument doc) {
-            // TODO
-            return true;
         }
 
         public override string ToString() {
