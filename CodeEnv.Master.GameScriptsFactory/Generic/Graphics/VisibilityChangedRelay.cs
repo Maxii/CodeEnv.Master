@@ -59,7 +59,7 @@ public class VisibilityChangedRelay : AMonoBehaviourBase {
         for (int i = 0; i < relayTargets.Length; i++) {
             INotifyVisibilityChanged iNotify = _iRelayTargets[i];
             if (iNotify != null) {
-                Logger.Log("{0} is notifying client {1} of becoming Visible.", _transform.name, relayTargets[i].name);
+                //Logger.Log("{0} is notifying client {1} of becoming Visible.", _transform.name, relayTargets[i].name);
                 iNotify.NotifyVisibilityChanged(_transform, isVisible: true);
             }
         }
@@ -78,7 +78,7 @@ public class VisibilityChangedRelay : AMonoBehaviourBase {
             if (t && t.gameObject.activeInHierarchy) {  // avoids NullReferenceException during Inspector shutdown
                 INotifyVisibilityChanged iNotify = _iRelayTargets[i];
                 if (iNotify != null) {
-                    Logger.Log("{0} is notifying client {1} of becoming Invisible.", _transform.name, t.name);
+                    //Logger.Log("{0} is notifying client {1} of becoming Invisible.", _transform.name, t.name);
                     iNotify.NotifyVisibilityChanged(_transform, isVisible: false);
                 }
             }

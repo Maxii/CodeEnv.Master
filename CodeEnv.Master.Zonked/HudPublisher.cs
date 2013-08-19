@@ -25,30 +25,21 @@ namespace CodeEnv.Master.Common.Unity {
     /// </summary>
     public class HudPublisher {
 
-        private IGuiCursorHud _guiCursorHud;
         private GuiCursorHudText _guiCursorHudText;
         private Data _data;
         private GuiCursorHudLineKeys[] _optionalKeys;
 
-        public HudPublisher(IGuiCursorHud guiCursorHud, Data data) {
-            _guiCursorHud = guiCursorHud;
+        public HudPublisher(Data data) {
             _data = data;
         }
 
         /// <summary>
-        /// Displays a new, updated or already existing GuiCursorHudText instance containing 
-        /// the text to display at the cursor.
+        /// Gets a new, updated or simply existing GuiCursorHudText instance containing 
+        /// the text used by the GuiCursorHud display.
         /// </summary>
         /// <param name="intelLevel">The intel level.</param>
-        public void DisplayHudAtCursor(IntelLevel intelLevel) {
-            _guiCursorHud.Set(GetHudText(intelLevel));
-        }
-
-        public void ClearHud() {
-            _guiCursorHud.Clear();
-        }
-
-        private GuiCursorHudText GetHudText(IntelLevel intelLevel) {        // OPTIMIZE Detect individual data property changes and replace them individually
+        /// <returns></returns>
+        public GuiCursorHudText GetHudText(IntelLevel intelLevel) {        // OPTIMIZE Detect individual data property changes and replace them individually
             if (_guiCursorHudText == null || _guiCursorHudText.IntelLevel != intelLevel || _data.IsChanged) {
                 // don't have the right version of GuiCursorHudText so make one
                 _guiCursorHudText = GuiCursorHudTextFactory.MakeInstance(intelLevel, _data);
@@ -88,6 +79,11 @@ namespace CodeEnv.Master.Common.Unity {
                 _guiCursorHudText.Replace(key, coloredTextList);
             }
         }
+
+        //public void ClearCursorHUD() {
+        //    _cursorHud.Clear();
+        //}
+
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

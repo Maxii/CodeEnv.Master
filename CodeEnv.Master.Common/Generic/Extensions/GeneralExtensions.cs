@@ -231,6 +231,23 @@ namespace CodeEnv.Master.Common {
             return new DisposePropertyChangingSubscription<TSource>(source, handler);
         }
 
+        //public static IDisposable SubscribeToPropertyChanging<TSource, TProp>(this TSource source, Expression<Func<TSource, TProp>> propertySelector, Action<TProp> onChanging) where TSource : INotifyPropertyChanging {
+        //    Arguments.ValidateNotNull(source);
+        //    Arguments.ValidateNotNull(propertySelector);
+        //    Arguments.ValidateNotNull(onChanging);
+
+        //    var subscribedPropertyName = GetPropertyName<TSource, TProp>(propertySelector);
+        //    PropertyChangingEventHandler handler = (s, e) => {
+        //        if (string.Equals(e.PropertyName, subscribedPropertyName, StringComparison.InvariantCulture)) {
+        //            onChanging(((PropertyChangingValueEventArgs<TProp>)e).Newvalue);
+        //        }
+        //    };
+        //    source.PropertyChanging += handler;
+        //    //return System.Reactive.Disposables.Disposable.Create(() => source.PropertyChanging -= handler);   // FIXME Mono 2.0 does not support ReactiveExtensions.dll
+        //    return new DisposePropertyChangingSubscription<TSource>(source, handler);
+        //}
+
+
         /// <summary>
         /// Helper that checks the propertySelector for errors and returns the name of the property it refers to.
         /// </summary>

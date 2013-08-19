@@ -51,6 +51,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\AGenericSingleton.cs" />
+    <Compile Include="Game\_Debug\DebugHudLineKeys.cs" />
     <Compile Include="Generic\IO\AnimationSettings.cs" />
     <Compile Include="Generic\IO\GeneralSettings.cs" />
     <Compile Include="Generic\Extensions\GameSpeedExtensions.cs" />
@@ -111,6 +113,8 @@
     <Compile Include="Game\Framework\Race.cs" />
     <Compile Include="Game\Framework\RaceStat.cs" />
     <Compile Include="Generic\Framework\ISelectable.cs" />
+    <Compile Include="Generic\Framework\PauseState.cs" />
+    <Compile Include="PropertyChangingValueEventArgs.cs" />
     <Compile Include="ThirdParty\PropertyHelper.cs" />
     <Compile Include="ThirdParty\TextScanner.cs" />
     <Compile Include="ThirdParty\FlagsHelper.cs" />

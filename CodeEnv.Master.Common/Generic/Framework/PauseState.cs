@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IColoredTextList.cs
-// Interface for strategy objects that provide lists of Colored Text for GuiCursorHudText.
+// File: PauseState.cs
+// The paused state of the game.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -14,19 +14,29 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-namespace CodeEnv.Master.Common.Unity {
-
-    using System.Collections.Generic;
+namespace CodeEnv.Master.Common {
 
     /// <summary>
-    /// Interface for strategy objects that provide lists of Colored Text for GuiCursorHudText.
+    /// The Paused state of the game.
     /// </summary>
-    public interface IColoredTextList {
+    public enum PauseState {
+
+        None,
 
         /// <summary>
-        /// Readonly, gets the list.
+        /// The Game is not paused.
         /// </summary>
-        IList<ColoredText> List { get; }
+        NotPaused,
+
+        /// <summary>
+        /// The game is temporarily paused due to a Gui Element being displayed.
+        /// </summary>
+        GuiAutoPaused,
+
+        /// <summary>
+        /// The game is paused either by the user or by the game.
+        /// </summary>
+        Paused
 
     }
 }

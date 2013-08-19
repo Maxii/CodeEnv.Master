@@ -74,7 +74,6 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     public ArrowKeyboardConfiguration keyFreeRoll = new ArrowKeyboardConfiguration { keyboardAxis = KeyboardAxis.Horizontal, modifiers = new Modifiers { ctrlKeyReqd = true, shiftKeyReqd = true }, activate = true };
     public ArrowKeyboardConfiguration keyFocusRoll = new ArrowKeyboardConfiguration { keyboardAxis = KeyboardAxis.Horizontal, modifiers = new Modifiers { ctrlKeyReqd = true, shiftKeyReqd = true }, activate = true };
 
-
     // LEARNINGS
     // Edge-based requested tValues need to be normalized for framerate using timeSinceLastUpdate as the change per second is the framerate * sensitivity.
     // Key-based requested tValues DONOT need to be normalized for framerate using timeSinceLastUpdate as Input.GetAxis() is not framerate dependant.
@@ -161,7 +160,32 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
         UnityUtility.ValidateComponentPresence<Camera>(gameObject);
         //Logger.Log("CameraControl.Awake() called.");
         InitializeReferences();
+        __InitializeDebugEdgeMovementSettings();
     }
+
+    #region Temporary Editor Debug Controls
+
+    private bool __debugEdgeFocusOrbitPanEnabled;
+    private bool __debugEdgeFocusOrbitTiltEnabled;
+    private bool __debugEdgeFreePanEnabled;
+    private bool __debugEdgeFreeTiltEnabled;
+
+    private void __InitializeDebugEdgeMovementSettings() {
+        __debugEdgeFocusOrbitPanEnabled = edgeFocusOrbitPan.activate;
+        __debugEdgeFocusOrbitTiltEnabled = edgeFocusOrbitTilt.activate;
+        __debugEdgeFreePanEnabled = edgeFreePan.activate;
+        __debugEdgeFreeTiltEnabled = edgeFreeTilt.activate;
+    }
+
+    // called by OnApplicationFocus()
+    private void __EnableEdgePanTiltInEditor(bool toEnable) {
+        edgeFocusOrbitPan.activate = __debugEdgeFocusOrbitPanEnabled && toEnable;
+        edgeFocusOrbitTilt.activate = __debugEdgeFocusOrbitTiltEnabled && toEnable;
+        edgeFreePan.activate = __debugEdgeFreePanEnabled && toEnable;
+        edgeFreeTilt.activate = __debugEdgeFreeTiltEnabled && toEnable;
+    }
+
+    #endregion
 
     private void InitializeReferences() {
         IncrementInstanceCounter();
@@ -276,21 +300,15 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
         //Logger.Log("Camera OnEnable() called. IsEnabled = " + enabled);
     }
 
-    // temp workaround for funny behaviour with application focusTarget starting GameScene
-    private bool _ignore = true;
     /// <summary>
-    /// Called when application goes in/out of focusTarget, this method controls the
-    /// enabled state of the camera so it doesn't move when I use the mouse outside of 
-    /// the editor window.
+    /// Called when application goes in/out of focus, this method controls the
+    /// enabled state of edge pan and tilt so the camera doesn't respond to edge 
+    /// movement commands when the mouse is clicked outside the editor game window.
     /// </summary>
     /// <arg item="isFocus">if set to <c>true</c> [is focusTarget].</arg>
     void OnApplicationFocus(bool isFocus) {
-        //Logger.Log("Camera OnApplicationFocus(" + isFocus + ") called.");
-        if (_ignore) {
-            _ignore = false;
-            return;
-        }
-        enabled = isFocus;
+        //Logger.Log("Camera OnApplicationFocus({0}) called.", isFocus);
+        __EnableEdgePanTiltInEditor(isFocus);
     }
 
     /// <summary>
@@ -482,7 +500,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
 
         Transform previousTarget = _target;
         if (previousTarget != null) {  // _target is null the first time around
-            // if the previous target is IFocusable it might have been in focus so be safe and tell it it is not the focus
+            // if the previous target is IFocusable play it safe and tell it it is not the focus
             ICameraFocusable previousTargetIsFocusable = previousTarget.GetInterface<ICameraFocusable>();
             if (previousTargetIsFocusable != null) {
                 previousTargetIsFocusable.IsFocus = false;
@@ -550,7 +568,16 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(newState));
         }
+        _UpdateDebugHud();
+    }
+
+    [System.Diagnostics.Conditional("UNITY_EDITOR")]
+    private void _UpdateDebugHud() {
         Logger.Log("CameraState changed to " + cameraState);
+        DebugHudText debugHudText = DebugHud.Instance.DebugHudText;
+        //debugHudText.Replace(DebugHudLineKeys.CameraMode, new ColoredTextList<CameraState>(cameraState));
+        debugHudText.Replace(DebugHudLineKeys.CameraMode, cameraState.GetName());
+        DebugHud.Instance.Set(debugHudText);
     }
 
     /// <summary>
@@ -959,12 +986,6 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     private Vector3 ValidatePosition(Vector3 newPosition) {
         float magnitude = (newPosition - GameConstants.UniverseOrigin).magnitude;
         if (magnitude > universeRadius) {
-            //D.Warn("Camera proposed new position not valid at {0}, Distance to Origin is {1}.".Inject(_proposedPosition, magnitude));
-            //float currentPositionMagnitude = (_transform.position - TempGameValues.UniverseOrigin).magnitude;
-            //D.Warn("Current position is {0}, Distance to Origin is {1}.".Inject(_transform.position, currentPositionMagnitude));
-            //float targetPositionMagnitude = (Target.position - TempGameValues.UniverseOrigin).magnitude;
-            //D.Warn("Target position is {0}, Distance to Origin is {1}.".Inject(Target.position, targetPositionMagnitude));
-            //D.Warn("_distanceFromTarget is {0}.".Inject(_distanceFromTarget));
             return _transform.position;
         }
         return newPosition;
@@ -1028,30 +1049,6 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
             proposedZoomTarget = furthestHit.transform;
             proposedZoomPoint = furthestHit.point;
             return TryChangeTarget(proposedZoomTarget, proposedZoomPoint);
-
-
-            //var zoomToClosestHits = from h in hits where h.transform.GetInterface<IZoomToClosest>() != null select h;
-            //if (!zoomToClosestHits.IsNullOrEmpty()) {
-            //    //Logger.Log("GetInterface finding {0} IZoomToClosest hits.".Inject(zoomToClosestHits.ToArray<RaycastHit>().Length));
-            //    var closestHit = zoomToClosestHits.OrderBy(ifh => (ifh.transform.position - _transform.position).magnitude).First();
-            //    proposedZoomTarget = closestHit.transform;
-            //    proposedZoomPoint = proposedZoomTarget.position;
-            //    return TryChangeTarget(proposedZoomTarget, proposedZoomPoint);
-            //}
-
-            //// no IZoomToClosest game objects under the cursor, so check for IZoomToFurthest now
-            //var zoomToFurthestHits = from h in hits where h.transform.GetInterface<IZoomToFurthest>() != null select h;
-            //if (!zoomToFurthestHits.IsNullOrEmpty()) {
-            //    //Logger.Log("GetInterface finding {0} IZoomToFurthest hits.".Inject(zoomToFurthestHits.ToArray<RaycastHit>().Length));
-            //    var furthestHit = zoomToFurthestHits.OrderBy(ich => (ich.transform.position - _transform.position).magnitude).Last();
-            //    proposedZoomTarget = furthestHit.transform;
-            //    proposedZoomPoint = furthestHit.point;
-            //    return TryChangeTarget(proposedZoomTarget, proposedZoomPoint);
-            //}
-
-            //// no DummyTarget, IZoomToClosest or IZoomToFurthest game objects under the cursor, yet there are at least 2 hits, so something is wrong
-            //D.Error("Found {0} colliders, but none qualified as a camera Target.".Inject(hits.Length));
-            //return true;
         }
 
         // no game object encountered under cursor so move the dummy to the edge of the universe and designate it as the Target

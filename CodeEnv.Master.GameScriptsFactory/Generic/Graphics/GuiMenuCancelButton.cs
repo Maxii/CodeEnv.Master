@@ -81,7 +81,7 @@ public class GuiMenuCancelButton : AGuiButtonBase, IDisposable {
         isInitialized = true;
     }
 
-    protected override void OnButtonClick(GameObject sender) {
+    protected override void OnLeftClick() {
         RestoreOpeningState();
     }
 

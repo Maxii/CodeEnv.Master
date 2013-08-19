@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IColoredTextList.cs
-// Interface for strategy objects that provide lists of Colored Text for GuiCursorHudText.
+// File: DebugHudLineKeys.cs
+//  Enum for keys associated with the display of a line of information shown on the DebugHud.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -14,20 +14,15 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-namespace CodeEnv.Master.Common.Unity {
-
-    using System.Collections.Generic;
+namespace CodeEnv.Master.Common {
 
     /// <summary>
-    /// Interface for strategy objects that provide lists of Colored Text for GuiCursorHudText.
+    ///  Enum for keys associated with the display of a line of information shown on the DebugHud.
     /// </summary>
-    public interface IColoredTextList {
+    public enum DebugHudLineKeys {
 
-        /// <summary>
-        /// Readonly, gets the list.
-        /// </summary>
-        IList<ColoredText> List { get; }
-
+        None,
+        CameraMode
     }
 }
 

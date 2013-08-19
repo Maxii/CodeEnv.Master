@@ -58,10 +58,10 @@ public class GuiLoadGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
         base.OnSliderValueChange(value);
     }
 
-    protected override void OnButtonClick(GameObject sender) {
+    protected override void OnLeftClick() {
         if (LevelSerializer.SavedGames.Count > 0) {
             Arguments.ValidateForContent(selectedGameCaption);
-            eventMgr.Raise<LoadSavedGameEvent>(new LoadSavedGameEvent(this, selectedGameCaption));
+            _eventMgr.Raise<LoadSavedGameEvent>(new LoadSavedGameEvent(this, selectedGameCaption));
         }
     }
 

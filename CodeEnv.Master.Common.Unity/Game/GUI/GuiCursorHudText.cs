@@ -52,9 +52,9 @@ namespace CodeEnv.Master.Common.Unity {
 
         private static IDictionary<GuiCursorHudLineKeys, string> _baseDisplayLineContent;
 
-        private StringBuilder text = new StringBuilder();
+        private StringBuilder _text = new StringBuilder();
 
-        private IDictionary<GuiCursorHudLineKeys, IColoredTextList> _data;
+        private IDictionary<GuiCursorHudLineKeys, IColoredTextList> _textLine;
 
         public bool IsDirty { get; private set; }
         public IntelLevel IntelLevel { get; private set; }
@@ -93,9 +93,9 @@ namespace CodeEnv.Master.Common.Unity {
         public GuiCursorHudText(IntelLevel intelLevel)
             : this(intelLevel, new Dictionary<GuiCursorHudLineKeys, IColoredTextList>()) { }
 
-        private GuiCursorHudText(IntelLevel intelLevel, IDictionary<GuiCursorHudLineKeys, IColoredTextList> data) {
+        private GuiCursorHudText(IntelLevel intelLevel, IDictionary<GuiCursorHudLineKeys, IColoredTextList> textLine) {
             IntelLevel = intelLevel;
-            _data = data;
+            _textLine = textLine;
             IsDirty = true;
         }
 
@@ -106,7 +106,7 @@ namespace CodeEnv.Master.Common.Unity {
         /// <param name="textList">The text list.</param>
         /// <exception cref="ArgumentException" >Attempting to add a line key that is already present.</exception>
         public void Add(GuiCursorHudLineKeys lineKey, IColoredTextList textList) {
-            _data.Add(lineKey, textList);
+            _textLine.Add(lineKey, textList);
             //_data[lineKey] = textList;
             IsDirty = true;
         }
@@ -118,14 +118,14 @@ namespace CodeEnv.Master.Common.Unity {
         /// <param name="lineKey">The line key.</param>
         /// <param name="textList">The text elements.</param>
         public void Replace(GuiCursorHudLineKeys lineKey, IColoredTextList textList) {
-            if (_data.ContainsKey(lineKey)) {
-                _data.Remove(lineKey);
+            if (_textLine.ContainsKey(lineKey)) {
+                _textLine.Remove(lineKey);
             }
             Add(lineKey, textList);
         }
 
         public void Clear() {
-            _data.Clear();
+            _textLine.Clear();
             IsDirty = true;
         }
 
@@ -133,18 +133,18 @@ namespace CodeEnv.Master.Common.Unity {
             if (IsDirty) {
                 UpdateText();
             }
-            return text;
+            return _text;
         }
 
         private void UpdateText() {
-            text.Clear();
+            _text.Clear();
             foreach (var key in _displayLineOrder) {
                 IColoredTextList coloredTextList;
-                if (_data.TryGetValue(key, out coloredTextList)) {
-                    if (coloredTextList.GetList().Count == 0) {
+                if (_textLine.TryGetValue(key, out coloredTextList)) {
+                    if (coloredTextList.List.Count == 0) {
                         continue;
                     }
-                    text.AppendLine(ConstructTextLine(key, coloredTextList));
+                    _text.AppendLine(ConstructTextLine(key, coloredTextList));
                 }
             }
             IsDirty = false;
@@ -158,9 +158,9 @@ namespace CodeEnv.Master.Common.Unity {
         /// <returns></returns>
         private string ConstructTextLine(GuiCursorHudLineKeys lineKey, IColoredTextList coloredTextList) {
             IList<string> textElements = new List<string>();
-            foreach (var ct in coloredTextList.GetList()) {
+            foreach (var ct in coloredTextList.List) {
                 textElements.Add(ct.TextWithEmbeddedColor);
-                //Debug.Log("ConstructTextLine called. ColoredTextElement = {0}".Inject(ct.TextWithEmbeddedColor));
+                //D.Log("ConstructTextLine called. ColoredTextElement = {0}".Inject(ct.TextWithEmbeddedColor));
             }
 
             string baseText;

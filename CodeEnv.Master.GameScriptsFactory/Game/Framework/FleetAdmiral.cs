@@ -43,7 +43,6 @@ public class FleetAdmiral : FollowableItem, ISelectable, IDisposable {
     /// </summary>
     private Vector3 _fleetIconPivotOffset;
 
-    private Transform _fleetIcon;
     private Transform _leadShip;
 
     private ShipCaptain[] _shipCaptains;
@@ -52,7 +51,6 @@ public class FleetAdmiral : FollowableItem, ISelectable, IDisposable {
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
         gameObject.name = "Borg Fleet";
-        _fleetIcon = gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>().transform.parent;
         Subscribe();
     }
 

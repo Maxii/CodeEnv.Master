@@ -79,12 +79,12 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
         base.OnSliderValueChange(value);
     }
 
-    protected override void OnButtonClick(GameObject sender) {
+    protected override void OnLeftClick() {
         GameSettings gameSettings = new GameSettings();
         gameSettings.IsNewGame = true;
         gameSettings.UniverseSize = _universeSize;
         gameSettings.PlayerRace = new Race(new RaceStat(_playerRace, "Maxii", new StringBuilder("Maxii description"), _playerColor));
-        eventMgr.Raise<BuildNewGameEvent>(new BuildNewGameEvent(this, gameSettings));
+        _eventMgr.Raise<BuildNewGameEvent>(new BuildNewGameEvent(this, gameSettings));
     }
 
     [Conditional("UNITY_EDITOR")]

@@ -66,7 +66,7 @@ public class GuiDateReadout : AGuiLabelReadoutBase, IDisposable {
     }
 
     private void RefreshDateReadout() {
-        readoutLabel.text = GameTime.Date.FormattedDate;
+        _readoutLabel.text = GameTime.Date.FormattedDate;
     }
 
     void OnDestroy() {

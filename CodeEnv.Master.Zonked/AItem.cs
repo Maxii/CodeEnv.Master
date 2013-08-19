@@ -11,10 +11,6 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
-
 // default namespace
 
 using CodeEnv.Master.Common;
@@ -47,7 +43,8 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable {
     /// Provides the ability to update the text for the GuiCursorHud. Can be null if there
     /// is no data for the GuiCursorHud to show for this item.
     /// </summary>
-    protected HudPublisher HudPublisher { get; set; }
+    protected HudPublisher HudPublisher { get; private set; }
+
 
     protected Collider _collider;
     protected Transform _transform;
@@ -70,18 +67,26 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable {
         InitializeHudPublisher();
     }
 
-    protected abstract void InitializeHudPublisher();
+    private void InitializeHudPublisher() {
+        if (Data != null) {
+            HudPublisher = new HudPublisher(Data);
+        }
+    }
 
     protected virtual void OnHover(bool isOver) {
         if (HudPublisher != null) {
             if (isOver) {
-                HudPublisher.DisplayHudAtCursor(HumanPlayerIntelLevel);
+                DisplayCursorHud();
             }
             else {
-                HudPublisher.ClearHud();
+                ClearCursorHud();
             }
         }
     }
+
+    public abstract void DisplayCursorHud();
+
+    public abstract void ClearCursorHud();
 
     #region ICameraTargetable Members
 
@@ -103,7 +108,6 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable {
     }
 
     #endregion
-
 
 }
 

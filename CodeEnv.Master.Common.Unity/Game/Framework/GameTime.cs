@@ -137,7 +137,9 @@ namespace CodeEnv.Master.Common.Unity {
         public static IGameDate Date {
             get {
                 D.Assert(Instance._isClockEnabled);
-                Instance.SyncGameClock();
+                if (!GameManager.Instance.IsGamePaused) {
+                    Instance.SyncGameClock();   // OK to ask for date while paused (ie. HUD needs), but Syncing clock won't do anything
+                }
                 // the only time the date needs to be synced is when it is about to be used
                 date.SyncDateToGameClock(Instance._currentDateTime);
                 return date;
@@ -212,7 +214,31 @@ namespace CodeEnv.Master.Common.Unity {
                 _subscribers = new List<IDisposable>();
             }
             _subscribers.Add(_gameMgr.SubscribeToPropertyChanging<GameManager, bool>(gm => gm.IsGamePaused, OnPauseStateChanging));
+            // _subscribers.Add(_gameMgr.SubscribeToPropertyChanging<GameManager, PauseState>(gm => gm.PauseState, OnPauseStateChanging));
         }
+
+        //private void OnPauseStateChanging(PauseState newValue) {
+        //    D.Assert(_isClockEnabled);
+        //    bool isGamePausedPriorToChange = GameManager.Instance.IsGamePaused;
+        //    if (isGamePausedPriorToChange) {
+        //        // we are about to resume play
+        //        float timeInCurrentPause = RealTime_Game - _timeCurrentPauseBegan;
+        //        _cumTimePaused += timeInCurrentPause;
+        //        D.Log("TimeGameBegunInCurrentSession = {0:0.00}, TimeCurrentPauseBegan (GameTime) = {1:0.00}", _timeGameBeganInCurrentSession, _timeCurrentPauseBegan);
+        //        D.Log("TimeInCurrentPause (GameTime) = {0:0.00}, RealTime_Game = {1:0.00}.", timeInCurrentPause, RealTime_Game);
+
+        //        _timeCurrentPauseBegan = Constants.ZeroF;
+
+        //        // ignore the accumulated time during pause when next GameClockSync is requested
+        //        _gameRealTimeAtLastSync = RealTime_Game;
+        //        D.Log("CumTimePaused = {0:0.00}, _gameRealTimeAtLastSync = {1:0.00}.", _cumTimePaused, _gameRealTimeAtLastSync);
+        //    }
+        //    else {
+        //        // we are about to pause
+        //        SyncGameClock();    // update the game clock before pausing
+        //        _timeCurrentPauseBegan = RealTime_Game;
+        //    }
+        //}
 
         private void OnPauseStateChanging() {
             D.Assert(_isClockEnabled);

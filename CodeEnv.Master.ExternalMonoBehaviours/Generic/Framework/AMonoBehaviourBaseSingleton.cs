@@ -28,6 +28,8 @@ using UnityEngine;
 /// </summary>
 public abstract class AMonoBehaviourBaseSingleton<T> : AMonoBehaviourBase where T : AMonoBehaviourBase {
 
+    #region Singleton Pattern
+
     protected static T _instance;
     public static T Instance {
         get {
@@ -48,6 +50,8 @@ public abstract class AMonoBehaviourBaseSingleton<T> : AMonoBehaviourBase where 
             return _instance;
         }
     }
+
+    #endregion
 
     /// <summary>
     /// Called when [application quit]. Clients must override and set 

@@ -24,7 +24,7 @@ public class __UniverseInitializer : AMonoBehaviourBase {
 
     private FleetAdmiral[] _fleetsToInitialize;
     private ShipCaptain[] _shipsToInitialize;
-    private AFollowableItem[] _planetsAndMoonsToInitialize;
+    private FollowableItem[] _planetsAndMoonsToInitialize;
     private Star[] _starsToInitialize;
     private OrbitalPlane[] _systemsToInitialize;
 

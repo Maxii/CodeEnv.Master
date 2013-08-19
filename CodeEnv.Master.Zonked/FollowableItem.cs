@@ -13,32 +13,32 @@
 // default namespace
 
 using CodeEnv.Master.Common;
-using UnityEngine;
+using CodeEnv.Master.Common.Unity;
 
 /// <summary>
 /// Lowest level instantiable class for moveable items in the universe that the camera can follow.
+/// Also provides support for the GuiCursorHud if there is Data for the item.
 /// </summary>
-public class FollowableItem : StationaryItem, ICameraFollowable {
+public class FollowableItem : AFollowableItem {
+
+    private GuiCursorHud _guiCursorHud;
+
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
+        _guiCursorHud = GuiCursorHud.Instance;
+    }
+
+    public override void DisplayCursorHud() {
+        _guiCursorHud.Set(HudPublisher.GetHudText(HumanPlayerIntelLevel));
+    }
+
+    public override void ClearCursorHud() {
+        _guiCursorHud.Clear();
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region ICameraFollowable Members
-
-    [SerializeField]
-    private float cameraFollowDistanceDampener = 2.0F;
-    public virtual float CameraFollowDistanceDampener {
-        get { return cameraFollowDistanceDampener; }
-    }
-
-    [SerializeField]
-    private float cameraFollowRotationDampener = 1.0F;
-    public virtual float CameraFollowRotationDampener {
-        get { return cameraFollowRotationDampener; }
-    }
-
-    #endregion
 
 }
 

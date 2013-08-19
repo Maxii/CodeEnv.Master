@@ -33,8 +33,8 @@ public class SystemGraphics : AGraphics {
     private static Color __selectedColor = Color.yellow;
 
     /// <summary>
-    /// The separation between the pivot point on the lead ship and the fleet icon,
-    ///as a Viewport vector. Viewport vector values vary from 0.0F to 1.0F.
+    /// The separation between the pivot point on the 3D object that is tracked
+    /// and the tracking label as a Viewport vector. Viewport vector values vary from 0.0F to 1.0F.
     /// </summary>
     public Vector3 trackingLabelOffsetFromPivot = new Vector3(Constants.ZeroF, 0.02F, Constants.ZeroF);
     public int minTrackingLabelShowDistance = TempGameValues.MinSystemTrackingLabelShowDistance;
@@ -114,18 +114,22 @@ public class SystemGraphics : AGraphics {
                     toShowTrackingLabel = true;
                 }
             }
-            Logger.Log("SystemTrackingLabel.IsShowing = {0}.", toShowTrackingLabel);
+            //Logger.Log("SystemTrackingLabel.IsShowing = {0}.", toShowTrackingLabel);
             _trackingLabel.IsShowing = toShowTrackingLabel;
         }
         return distanceToCamera;
     }
 
     private GuiTrackingLabel InitializeTrackingLabel() {
-        maxTrackingLabelShowDistance = Mathf.RoundToInt(GameManager.Settings.UniverseSize.Radius() * 2);     // TODO so it shows for now
+        __SetTrackingLabelShowDistance();
         Vector3 pivotOffset = new Vector3(Constants.ZeroF, _starManager.transform.collider.bounds.extents.y, Constants.ZeroF);
         GuiTrackingLabel trackingLabel = GuiTrackingLabelFactory.CreateGuiTrackingLabel(Target, pivotOffset, trackingLabelOffsetFromPivot);
         trackingLabel.IsShowing = true;
         return trackingLabel;
+    }
+
+    private void __SetTrackingLabelShowDistance() {
+        maxTrackingLabelShowDistance = Mathf.RoundToInt(GameManager.Settings.UniverseSize.Radius() * 2);     // TODO so it shows for now
     }
 
     public void HighlightTrackingLabel(bool toHighlight) {

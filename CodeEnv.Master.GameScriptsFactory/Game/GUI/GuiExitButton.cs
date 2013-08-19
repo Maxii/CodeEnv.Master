@@ -33,9 +33,9 @@ public class GuiExitButton : AGuiButtonBase {
         base.InitializeOnStart();
     }
 
-    protected override void OnButtonClick(GameObject sender) {
+    protected override void OnLeftClick() {
         // UNDONE confirmation popup
-        eventMgr.Raise<ExitGameEvent>(new ExitGameEvent(this));
+        _eventMgr.Raise<ExitGameEvent>(new ExitGameEvent(this));
     }
 
     public override string ToString() {

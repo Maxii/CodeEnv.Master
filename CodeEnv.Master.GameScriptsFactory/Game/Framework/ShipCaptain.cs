@@ -55,8 +55,8 @@ public class ShipCaptain : FollowableItem {
     }
 
     public void ChangeSpeed(float newRequestedSpeed) {
-        Logger.Log("Current Requested Speed = {0}, New Requested Speed = {1}.", Data.RequestedSpeed, newRequestedSpeed);
         if (Data.RequestedSpeed != newRequestedSpeed) {
+            //Logger.Log("Current Requested Speed = {0}, New Requested Speed = {1}.", Data.RequestedSpeed, newRequestedSpeed);
             Navigator.ChangeSpeed(newRequestedSpeed);
         }
     }

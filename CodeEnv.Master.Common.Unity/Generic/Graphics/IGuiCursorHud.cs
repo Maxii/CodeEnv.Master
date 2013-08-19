@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IColoredTextList.cs
-// Interface for strategy objects that provide lists of Colored Text for GuiCursorHudText.
+// File: IGuiCursorHud.cs
+// Interface for GuiCursorHuds so non-scripts can refer to it.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,17 +16,16 @@
 
 namespace CodeEnv.Master.Common.Unity {
 
-    using System.Collections.Generic;
-
     /// <summary>
-    /// Interface for strategy objects that provide lists of Colored Text for GuiCursorHudText.
+    /// Interface for GuiCursorHuds so non-scripts can refer to it.
     /// </summary>
-    public interface IColoredTextList {
+    public interface IGuiCursorHud : IGuiHud {
 
         /// <summary>
-        /// Readonly, gets the list.
+        /// Populate the HUD with text from the GuiCursorHudText.
         /// </summary>
-        IList<ColoredText> List { get; }
+        /// <param name="guiCursorHudText">The GUI cursor hud text.</param>
+        void Set(GuiCursorHudText guiCursorHudText);
 
     }
 }

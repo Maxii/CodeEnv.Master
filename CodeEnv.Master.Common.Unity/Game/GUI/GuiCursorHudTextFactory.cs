@@ -89,7 +89,7 @@ namespace CodeEnv.Master.Common.Unity {
                                                                            GuiCursorHudLineKeys.Distance }}
     };
 
-        private static IColoredTextList _emptyIColoredTextList = new ColoredTextList();
+        private static IColoredTextList _emptyIColoredTextList = new ColoredTextListBase();
 
         /// <summary>
         /// Makes or acquires an instance of GuiCursorHudText for the IntelLevel derived from the data provided.
@@ -354,36 +354,9 @@ namespace CodeEnv.Master.Common.Unity {
 
         #region IColoredTextList Strategy Classes
 
-        public class ColoredTextList : IColoredTextList {
-            protected IList<ColoredText> _list = new List<ColoredText>(6);
+        // Note: ColoredTextListBase, ColoredTextList<T> and ColoredTextList_String all in separate class files under Common.Unity
 
-            #region IColoredTextList Members
-            public IList<ColoredText> GetList() {
-                return _list;
-            }
-            #endregion
-        }
-
-        public class ColoredTextList<T> : ColoredTextList where T : struct {
-
-            public ColoredTextList(params T[] values) : this(Constants.FormatNumber_Default, values) { }
-            public ColoredTextList(string format, params T[] values) {
-                foreach (T v in values) {
-                    _list.Add(new ColoredText(format.Inject(v)));
-                }
-            }
-        }
-
-        public class ColoredTextList_String : ColoredTextList {
-
-            public ColoredTextList_String(params string[] values) {
-                foreach (string v in values) {
-                    _list.Add(new ColoredText(v));
-                }
-            }
-        }
-
-        public class ColoredTextList_Distance : ColoredTextList {
+        public class ColoredTextList_Distance : ColoredTextListBase {
 
             public ColoredTextList_Distance(Vector3 position, string format = Constants.FormatFloat_1DpMax) {
                 // TODO calculate from Data.Position and <code>static GetSelected()<code>
@@ -393,7 +366,7 @@ namespace CodeEnv.Master.Common.Unity {
             }
         }
 
-        public class ColoredTextList_Resources : ColoredTextList {
+        public class ColoredTextList_Resources : ColoredTextListBase {
 
             public ColoredTextList_Resources(OpeYield ope, string format = Constants.FormatFloat_0Dp) {
                 string organics_formatted = format.Inject(ope.GetYield(OpeResource.Organics));
@@ -405,7 +378,7 @@ namespace CodeEnv.Master.Common.Unity {
             }
         }
 
-        public class ColoredTextList_Specials : ColoredTextList {
+        public class ColoredTextList_Specials : ColoredTextListBase {
 
             public ColoredTextList_Specials(XYield x, string valueFormat = Constants.FormatFloat_1DpMax) {
                 // TODO how to handle variable number of XResources
@@ -419,7 +392,7 @@ namespace CodeEnv.Master.Common.Unity {
             }
         }
 
-        public class ColoredTextList_Combat : ColoredTextList {
+        public class ColoredTextList_Combat : ColoredTextListBase {
 
             public ColoredTextList_Combat(CombatStrength cs, string format = Constants.FormatFloat_0Dp) {
                 _list.Add(new ColoredText(format.Inject(cs.Combined)));
@@ -432,7 +405,7 @@ namespace CodeEnv.Master.Common.Unity {
             }
         }
 
-        public class ColoredTextList_Intel : ColoredTextList {
+        public class ColoredTextList_Intel : ColoredTextListBase {
 
             public ColoredTextList_Intel(IGameDate exploredDate, IntelLevel intelLevel) {
                 GameTimePeriod intelAge = new GameTimePeriod(exploredDate, GameTime.Date);
@@ -461,14 +434,14 @@ namespace CodeEnv.Master.Common.Unity {
             }
         }
 
-        public class ColoredTextList_Owner : ColoredTextList {
+        public class ColoredTextList_Owner : ColoredTextListBase {
 
             public ColoredTextList_Owner(IPlayer player) {
                 _list.Add(new ColoredText(player.LeaderName, player.Color));
             }
         }
 
-        public class ColoredTextList_Health : ColoredTextList {
+        public class ColoredTextList_Health : ColoredTextListBase {
 
             public ColoredTextList_Health(float health, float maxHp, string format = Constants.FormatFloat_1DpMax) {
                 float healthRatio = health / maxHp;
@@ -481,7 +454,7 @@ namespace CodeEnv.Master.Common.Unity {
             }
         }
 
-        public class ColoredTextList_Settlement : ColoredTextList {
+        public class ColoredTextList_Settlement : ColoredTextListBase {
 
             public ColoredTextList_Settlement(SettlementData settlement) {
                 _list.Add(new ColoredText(settlement.SettlementSize.GetName()));
@@ -492,7 +465,7 @@ namespace CodeEnv.Master.Common.Unity {
             }
         }
 
-        public class ColoredTextList_Ship : ColoredTextList {
+        public class ColoredTextList_Ship : ColoredTextListBase {
 
             public ColoredTextList_Ship(ShipData ship, string valueFormat = Constants.FormatFloat_1DpMax) {
                 _list.Add(new ColoredText(ship.Hull.GetName()));
@@ -501,7 +474,7 @@ namespace CodeEnv.Master.Common.Unity {
             }
         }
 
-        public class ColoredTextList_Composition : ColoredTextList {
+        public class ColoredTextList_Composition : ColoredTextListBase {
 
             private static StringBuilder CompositionText = new StringBuilder();
 
@@ -529,7 +502,7 @@ namespace CodeEnv.Master.Common.Unity {
             }
         }
 
-        public class ColoredTextList_Speed : ColoredTextList {
+        public class ColoredTextList_Speed : ColoredTextListBase {
 
             private static string normalSpeedText = "{0}/{1}";
             private static string speedNoMaxText = "{0}";

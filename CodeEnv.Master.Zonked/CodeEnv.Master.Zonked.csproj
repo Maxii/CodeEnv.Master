@@ -52,11 +52,15 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="AFocusableItem.cs" />
+    <Compile Include="AFollowableItem.cs" />
     <Compile Include="AGameObjectManager.cs" />
+    <Compile Include="AItem.cs" />
     <Compile Include="ColliderRelay.cs" />
     <Compile Include="FleetAdmiralIcon.cs" />
     <Compile Include="FleetManager.cs" />
     <Compile Include="FocusableItemControl.cs" />
+    <Compile Include="FollowableItem.cs" />
     <Compile Include="FollowableItemControl.cs" />
     <Compile Include="GameClockCommand.cs" />
     <Compile Include="GameClockEvent.cs" />
@@ -67,7 +71,6 @@
     <Compile Include="GameStateChangedEvent.cs" />
     <Compile Include="GameStateChangingEvent.cs" />
     <Compile Include="GuiVisibilityChangeEvent.cs" />
-    <Compile Include="IGuiCursorHud.cs" />
     <Compile Include="CameraFacing.cs" />
     <Compile Include="GlobeManager.cs" />
     <Compile Include="CameraRollOptionChangedEvent.cs" />
@@ -82,9 +85,11 @@
     <Compile Include="GameClockGuiManager.cs" />
     <Compile Include="GameOptionsGuiManager.cs" />
     <Compile Include="GuiZoomOutOnCursorOption.cs" />
+    <Compile Include="HudPublisher.cs" />
     <Compile Include="IZoomToClosest.cs" />
     <Compile Include="OrbitalPlaneManager.cs" />
     <Compile Include="ResetOnFocusOptionChangedEvent.cs" />
+    <Compile Include="StationaryItem.cs" />
     <Compile Include="SystemManager.cs" />
     <Compile Include="ZoomOutOnCursorOptionChangedEvent.cs" />
     <Compile Include="GuiFollowerLabel.cs" />

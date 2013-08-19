@@ -10,10 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
-#define DEBUG_LOG
-
 
 namespace CodeEnv.Master.Common.Unity {
 
@@ -64,6 +63,17 @@ namespace CodeEnv.Master.Common.Unity {
                 SetProperty<bool>(ref _isGamePaused, value, "IsGamePaused");
             }
         }
+
+        //private PauseState _pauseState;
+        ///// <summary>
+        ///// Gets the PauseState of the game.
+        ///// </summary>
+        //public PauseState PauseState {
+        //    get { return _pauseState; }
+        //    private set {   // to set use ProcessPauseRequest
+        //        SetProperty<PauseState>(ref _pauseState, value, "PauseState");
+        //    }
+        //}
 
         private GameEventManager _eventMgr;
         private GameTime _gameTime;
@@ -256,6 +266,7 @@ namespace CodeEnv.Master.Common.Unity {
             ProcessPauseRequest(e.NewValue);
         }
 
+
         // flag indicating whether the current pause was requested directly by the user or program
         private bool _isPriorityPause;
         private void ProcessPauseRequest(PauseRequest request) {
@@ -303,6 +314,45 @@ namespace CodeEnv.Master.Common.Unity {
             }
             IsGamePaused = toPause;
         }
+
+        //private void ProcessPauseRequest(PauseRequest request) {
+        //    switch (request) {
+        //        case PauseRequest.GuiAutoPause:
+        //            if (PauseState == PauseState.Paused) { return; }
+        //            if (PauseState == PauseState.GuiAutoPaused) {
+        //                D.Warn("Attempt to GuiAutoPause when already paused.");
+        //                return;
+        //            }
+        //            PauseState = PauseState.GuiAutoPaused;
+        //            break;
+        //        case PauseRequest.GuiAutoResume:
+        //            if (PauseState == PauseState.Paused) { return; }
+        //            if (PauseState == PauseState.NotPaused) {
+        //                D.Warn("Attempt to GuiAutoResume when not paused.");
+        //                return;
+        //            }
+        //            PauseState = Common.PauseState.NotPaused;
+        //            break;
+        //        case PauseRequest.PriorityPause:
+        //            if (PauseState == PauseState.Paused) {
+        //                D.Warn("Attempt to PriorityPause when already paused.");
+        //                return;
+        //            }
+        //            PauseState = PauseState.Paused;
+        //            break;
+        //        case PauseRequest.PriorityResume:
+        //            if (PauseState == PauseState.NotPaused) {
+        //                D.Warn("Atttempt to PriorityResume when not paused.");
+        //                return;
+        //            }
+        //            PauseState = PauseState.NotPaused;
+        //            break;
+        //        case PauseRequest.None:
+        //        default:
+        //            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(request));
+        //    }
+        //}
+
 
         /// <summary>
         /// Called from Loader when all conditions are met to run.
@@ -381,6 +431,13 @@ namespace CodeEnv.Master.Common.Unity {
             }
             _isPriorityPause = false;
         }
+
+        //private void ResetConditionsForGameStartup() {
+        //    if (PauseState == Common.PauseState.Paused || PauseState == Common.PauseState.GuiAutoPaused) {
+        //        ProcessPauseRequest(PauseRequest.PriorityResume);
+        //    }
+        //}
+
 
         private void OnExitGame(ExitGameEvent e) {
             Shutdown();

@@ -85,7 +85,7 @@ public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
         base.OnSliderValueChange(value);
     }
 
-    protected override void OnButtonClick(GameObject sender) {
+    protected override void OnLeftClick() {
         OptionSettings settings = new OptionSettings();
         settings.IsCameraRollEnabled = _isCameraRollEnabled;
         settings.IsPauseOnLoadEnabled = _isPauseOnLoadEnabled;
@@ -93,7 +93,7 @@ public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
         settings.IsZoomOutOnCursorEnabled = _isZoomOutOnCursorEnabled;
         settings.GameSpeedOnLoad = _gameSpeedOnLoad;
         ValidateState();
-        eventMgr.Raise<GamePlayOptionsAcceptedEvent>(new GamePlayOptionsAcceptedEvent(this, settings));
+        _eventMgr.Raise<GamePlayOptionsAcceptedEvent>(new GamePlayOptionsAcceptedEvent(this, settings));
     }
 
     [Conditional("UNITY_EDITOR")]

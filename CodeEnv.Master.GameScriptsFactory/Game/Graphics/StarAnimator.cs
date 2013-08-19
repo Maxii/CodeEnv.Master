@@ -62,26 +62,26 @@ public class StarAnimator : AMonoBehaviourBase {
 
     [Serializable]
     public class GlobeMaterialAnimator {
-        public float xScrollSpeed = 0.015F;
-        public float yScrollSpeed = 0.015F;
+        public float xScrollSpeed;
+        public float yScrollSpeed;
 
         private float _x = Constants.ZeroF;
         private float _y = Constants.ZeroF;
 
+        //internal void Animate(Material material, float time) {
+        //    Vector2 textureOffset = new Vector2(xScrollSpeed * time % 1, yScrollSpeed * time % 1);
+        //    material.SetTextureOffset(UnityConstants.MainDiffuseTexture, textureOffset);
+        //    material.SetTextureOffset(UnityConstants.NormalMapTexture, textureOffset);
+        //}
+
         internal void Animate(Material material, float deltaTime) {
-            _x += xScrollSpeed * deltaTime % 1;
-            _y += yScrollSpeed * deltaTime % 1;
+            _x = (_x + (xScrollSpeed * deltaTime)) % 1;
+            _y = (_y + (yScrollSpeed * deltaTime)) % 1;
             Vector2 textureOffset = new Vector2(_x, _y);
             material.SetTextureOffset(UnityConstants.MainDiffuseTexture, textureOffset);
             material.SetTextureOffset(UnityConstants.NormalMapTexture, textureOffset);
         }
     }
-
-    //internal void Animate(Material material, float time) {
-    //    Vector2 textureOffset = new Vector2(xScrollSpeed * time % 1, yScrollSpeed * time % 1);
-    //    material.SetTextureOffset(UnityConstants.MainDiffuseTexture, textureOffset);
-    //    material.SetTextureOffset(UnityConstants.NormalMapTexture, textureOffset);
-    //}
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

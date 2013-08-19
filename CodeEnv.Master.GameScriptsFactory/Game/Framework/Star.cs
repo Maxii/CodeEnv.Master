@@ -21,20 +21,6 @@ using UnityEngine;
 /// </summary>
 public class Star : StationaryItem, ISelectable {
 
-    /// <summary>
-    /// The separation between the pivot point on the star and the system
-    /// label as a Viewport vector. Viewport vector values vary from 0.0F to 1.0F.
-    /// </summary>
-    [SerializeField]
-    private Vector3 _systemLabelOffsetFromPivot = new Vector3(Constants.ZeroF, 0.02F, Constants.ZeroF);
-
-    /// <summary>
-    /// The offset that determines the point on the star from which
-    ///  the System label pivots, as a Worldspace vector.
-    /// </summary>
-    private Vector3 _systemLabelPivotOffset;
-    private UILabel _systemLabel;
-
     private SystemGraphics _systemGraphics;
 
     protected override void InitializeOnAwake() {

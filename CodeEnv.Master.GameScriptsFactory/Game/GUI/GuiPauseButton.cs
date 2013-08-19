@@ -6,11 +6,10 @@
 // </copyright> 
 // <summary> 
 // File: GuiPauseButton.cs
-// Custom Gui button control for the main User Paused Button.
+// Custom Gui button control for the main User Pause Button.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -18,7 +17,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.Common.Unity;
@@ -34,7 +32,7 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
     private string Warning = "Do not change PauseRequest public variable.";
 #pragma warning restore
 
-    private UILabel pauseButtonLabel;
+    private UILabel _pauseButtonLabel;
     private GameManager _gameMgr;
     private IList<IDisposable> _subscribers;
 
@@ -61,23 +59,30 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
 
     protected override void InitializeOnStart() {
         base.InitializeOnStart();
-        eventMgr.Raise<ElementReadyEvent>(new ElementReadyEvent(this, isReady: false));
-        pauseButtonLabel = button.GetComponentInChildren<UILabel>();
+        _eventMgr.Raise<ElementReadyEvent>(new ElementReadyEvent(this, isReady: false));
+        _pauseButtonLabel = _button.GetComponentInChildren<UILabel>();
         UpdateButtonLabel();
-        eventMgr.Raise<ElementReadyEvent>(new ElementReadyEvent(this, isReady: true));
+        _eventMgr.Raise<ElementReadyEvent>(new ElementReadyEvent(this, isReady: true));
     }
 
-    protected override void OnButtonClick(GameObject sender) {
+    protected override void OnLeftClick() {
         // toggle the pauseCommand so the base class sends the correct PauseRequest in the GuiPauseRequestEvent
         pauseCommand = (pauseCommand == PauseRequest.PriorityPause) ? PauseRequest.PriorityResume : PauseRequest.PriorityPause;
-        base.OnButtonClick(sender);
+        base.OnLeftClick();
     }
 
+    // IMPROVE Tested alternative approach to using UIEventListener...
+    //void OnClick() {
+    //    Debug.Log("OnClick() called.");
+    //    pauseCommand = (pauseCommand == PauseRequest.PriorityPause) ? PauseRequest.PriorityResume : PauseRequest.PriorityPause;
+    //    base.OnButtonClick(new GameObject());
+    //}
+
     private void UpdateButtonLabel() {
-        if (pauseButtonLabel != null) {
+        if (_pauseButtonLabel != null) {
             // can be null if GamePauseStateChangedEvent arrives during new game start up before Start() is called. It's OK though
             // as the label will be updated based on the recorded pauseCommand once Start() is called
-            pauseButtonLabel.text = (pauseCommand == PauseRequest.PriorityPause) ? UIMessages.ResumeButtonLabel : UIMessages.PauseButtonLabel;
+            _pauseButtonLabel.text = (pauseCommand == PauseRequest.PriorityPause) ? UIMessages.ResumeButtonLabel : UIMessages.PauseButtonLabel;
         }
     }
 

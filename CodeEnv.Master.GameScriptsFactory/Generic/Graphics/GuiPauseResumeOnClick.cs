@@ -11,7 +11,6 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -33,13 +32,13 @@ public class GuiPauseResumeOnClick : AGuiButtonBase {
     /// </summary>
     public PauseRequest pauseCommand;
 
-    protected override void OnButtonClick(GameObject sender) {
+    protected override void OnLeftClick() {
         switch (pauseCommand) {
             case PauseRequest.GuiAutoPause:
             case PauseRequest.GuiAutoResume:
             case PauseRequest.PriorityResume:
             case PauseRequest.PriorityPause:
-                eventMgr.Raise<GuiPauseRequestEvent>(new GuiPauseRequestEvent(this, pauseCommand));
+                _eventMgr.Raise<GuiPauseRequestEvent>(new GuiPauseRequestEvent(this, pauseCommand));
                 break;
             case PauseRequest.None:
             default:

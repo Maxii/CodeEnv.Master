@@ -10,85 +10,87 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
 // default namespace
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEngine;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using UnityEngine;
 
 /// <summary>
 /// COMMENT 
 /// </summary>
-[Obsolete]
 public class NguiEventFallthruHandler : AMonoBehaviourBase {
 
     void Start() {
+        InitializeOnStart();
+    }
+
+    protected virtual void InitializeOnStart() {
         UICamera.fallThrough = gameObject;
     }
 
-    void OnHover(bool isOver) {
+    protected void OnHover(bool isOver) {
         WriteMessage(isOver.ToString());
     }
 
-    void OnPress(bool isDown) {
+    protected void OnPress(bool isDown) {
         WriteMessage(isDown.ToString());
     }
 
-    void OnSelect(bool selected) {
+    protected void OnSelect(bool selected) {
         WriteMessage(selected.ToString());
     }
 
-    void OnClick() {
+    protected void OnClick() {
         WriteMessage();
     }
 
-    void OnDoubleClick() {
+    protected void OnDoubleClick() {
         WriteMessage();
     }
 
-    void OnDrag(Vector2 delta) {
+    protected void OnDrag(Vector2 delta) {
         WriteMessage(delta.ToString());
     }
 
-    void OnDrop(GameObject go) {
+    protected void OnDrop(GameObject go) {
         WriteMessage(go.name);
     }
 
-    void OnInput(string text) {
+    protected void OnInput(string text) {
         WriteMessage(text);
     }
 
-    void OnTooltip(bool toShow) {
+    protected void OnTooltip(bool toShow) {
         WriteMessage(toShow.ToString());
     }
 
-    void OnScroll(float delta) {
+    protected void OnScroll(float delta) {
         WriteMessage(delta.ToString());
     }
 
-    void OnKey(KeyCode key) {
+    protected void OnKey(KeyCode key) {
         WriteMessage(key.ToString());
     }
 
     private void WriteMessage(string arg = "") {
         System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
-        string touchID = UICamera.currentTouchID.ToString();
-        string objectTouched = UICamera.hoveredObject.name;
-        string msg = "NguiEventFallthruHandler.{0}({1}) called. TouchID = {2}, GameObject touched = {3}.".Inject(stackFrame.GetMethod().Name, arg, touchID, objectTouched);
-        Logger.Log(msg);
+        NguiMouseButton? button = Enums<NguiMouseButton>.CastOrNull(UICamera.currentTouchID);
+        string touchID = (button ?? NguiMouseButton.None).GetName();
+        string gameObjectHit = UICamera.hoveredObject.name;
+        string camera = UICamera.currentCamera.name;
+        string screenPosition = UICamera.lastTouchPosition.ToString();
+        UICamera.lastHit = new RaycastHit();    // clears any gameobject that was hit. Otherwise it is cached until the next hit
+        string msg = @"{0}.{1}({2}) event. MouseButton = {3}, GameObject hit = {4}, Camera = {5}, ScreenPosition = {6}."
+            .Inject(this.GetType().Name, stackFrame.GetMethod().Name, arg, touchID, gameObjectHit, camera, screenPosition);
+        WriteMessageToConsole(msg);
     }
 
-
-
-
+    protected virtual void WriteMessageToConsole(string msg) {
+        D.Warn(msg);
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
