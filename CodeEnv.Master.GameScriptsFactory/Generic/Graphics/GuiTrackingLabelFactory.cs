@@ -6,13 +6,12 @@
 // </copyright> 
 // <summary> 
 // File: GuiTrackingLabelFactory.cs
-// Factory that creates preconfigured GuiTrackingLabels.
+// Singleton Factory that creates preconfigured GuiTrackingLabels.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_LEVEL_WARN
-#define DEBUG_LEVEL_ERROR
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 // default namespace
 
@@ -22,7 +21,7 @@ using CodeEnv.Master.Common.Unity;
 using UnityEngine;
 
 /// <summary>
-/// Factory that creates preconfigured GuiTrackingLabels.
+/// Singleton Factory that creates preconfigured GuiTrackingLabels.
 /// </summary>
 public class GuiTrackingLabelFactory : AMonoBehaviourBaseSingleton<GuiTrackingLabelFactory> {
 
@@ -59,7 +58,7 @@ public class GuiTrackingLabelFactory : AMonoBehaviourBaseSingleton<GuiTrackingLa
         trackingLabel.OffsetFromPivot = offsetFromPivot;
         trackingLabel.Set(target.name);
         NGUITools.SetActive(guiTrackingLabelCloneGO, true);
-        Logger.Log("A new {0} for {1} has been created.".Inject(typeof(GuiTrackingLabel), target.name));
+        //Logger.Log("A new {0} for {1} has been created.".Inject(typeof(GuiTrackingLabel), target.name));
         return trackingLabel;
     }
 
@@ -70,7 +69,6 @@ public class GuiTrackingLabelFactory : AMonoBehaviourBaseSingleton<GuiTrackingLa
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
 
 }
 

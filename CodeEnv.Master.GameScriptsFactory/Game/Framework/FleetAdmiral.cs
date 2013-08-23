@@ -64,7 +64,7 @@ public class FleetAdmiral : FollowableItem, ISelectable, IDisposable {
     protected override void InitializeOnStart() {
         base.InitializeOnStart();
         HumanPlayerIntelLevel = IntelLevel.LongRangeSensors;
-        HudPublisher.SetOptionalUpdateKeys(GuiCursorHudLineKeys.Speed);
+        HudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed);
         InitializeFleet();
     }
 

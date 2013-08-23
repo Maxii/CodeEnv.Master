@@ -27,25 +27,25 @@ namespace CodeEnv.Master.Common.Unity {
 
         public GuiCursorHudTextFactory_Fleet(FleetData data, IntelLevel intelLevel) : base(data, intelLevel) { }
 
-        public override IColoredTextList MakeInstance(GuiCursorHudLineKeys key, float currentSpeed = -1F) {
+        public override IColoredTextList MakeInstance(GuiHudLineKeys key, float currentSpeed = -1F) {
             if (!ValidateKeyAgainstIntelLevel(key)) {
                 return _emptyIColoredTextList;
             }
             FleetData data = _data as FleetData;
             switch (key) {
-                case GuiCursorHudLineKeys.Speed:
+                case GuiHudLineKeys.Speed:
                     return new ColoredTextList_Speed(currentSpeed, data.MaxSpeed);  // fleet will always display speed, even if zero
-                case GuiCursorHudLineKeys.Owner:
+                case GuiHudLineKeys.Owner:
                     return new ColoredTextList_Owner(data.Owner);
-                case GuiCursorHudLineKeys.Health:
+                case GuiHudLineKeys.Health:
                     return new ColoredTextList_Health(data.Health, data.MaxHitPoints);
-                case GuiCursorHudLineKeys.CombatStrength:
+                case GuiHudLineKeys.CombatStrength:
                     return new ColoredTextList<float>(Constants.FormatFloat_0Dp, data.Strength.Combined);
-                case GuiCursorHudLineKeys.CombatStrengthDetails:
+                case GuiHudLineKeys.CombatStrengthDetails:
                     return new ColoredTextList_Combat(data.Strength);
-                case GuiCursorHudLineKeys.Composition:
+                case GuiHudLineKeys.Composition:
                     return new ColoredTextList_Composition(data.Composition);
-                case GuiCursorHudLineKeys.CompositionDetails:
+                case GuiHudLineKeys.CompositionDetails:
                     // TODO
                     return new ColoredTextList_Composition(data.Composition);
                 default:

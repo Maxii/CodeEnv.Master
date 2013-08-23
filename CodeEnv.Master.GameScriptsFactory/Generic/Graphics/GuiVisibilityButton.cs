@@ -47,7 +47,8 @@ public class GuiVisibilityButton : AGuiButtonBase {
     }
 
     /// <summary>
-    /// The GUI visibility command.
+    /// Command that determines whether this button hides other
+    /// Gui elements or restores them.
     /// </summary>
     public GuiVisibilityCommand guiVisibilityCmd;
 
@@ -58,8 +59,8 @@ public class GuiVisibilityButton : AGuiButtonBase {
 
     protected override void OnLeftClick() {
         switch (guiVisibilityCmd) {
-            case GuiVisibilityCommand.RestoreUIPanelsVisibility:
-            case GuiVisibilityCommand.MakeVisibleUIPanelsInvisible:
+            case GuiVisibilityCommand.RestoreInvisibleGuiPanels:
+            case GuiVisibilityCommand.HideVisibleGuiPanels:
                 //Logger.Log("GuiVisibilty tPrefsValue = {0}.".Inject(guiVisibilityCmd));
                 _eventMgr.Raise<GuiVisibilityChangeEvent>(new GuiVisibilityChangeEvent(this, guiVisibilityCmd, guiVisibilityExceptions));
                 break;

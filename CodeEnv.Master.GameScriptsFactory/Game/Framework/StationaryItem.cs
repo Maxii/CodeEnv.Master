@@ -29,7 +29,7 @@ public class StationaryItem : AItem, ICameraFocusable {
     }
 
     protected override void InitializeHudPublisher() {
-        HudPublisher = new HudPublisher(GuiCursorHud.Instance, Data);
+        HudPublisher = new GuiHudPublisher(GuiCursorHud.Instance, Data);
     }
 
     protected virtual void OnClick() {

@@ -27,7 +27,7 @@ using UnityEngine;
 /// This approach of sharing an object across scenes allows objects and tValues
 /// from one startScene to move to another.
 /// </summary>
-public class Loader : AMonoBehaviourBase, IDisposable, IInstanceIdentity {
+public class Loader : AMonoBehaviourBase, IDisposable {
 
     public static Loader currentInstance;
 
@@ -68,7 +68,6 @@ public class Loader : AMonoBehaviourBase, IDisposable, IInstanceIdentity {
     private void LoadDebugSettings() {
         _debugSettings = DebugSettings.Instance;
     }
-
 
     /// <summary>
     /// Ensures that no matter how many scenes this Object is
@@ -170,6 +169,10 @@ public class Loader : AMonoBehaviourBase, IDisposable, IInstanceIdentity {
         _eventMgr.RemoveListener<ElementReadyEvent>(this, OnElementReady);
     }
 
+    public override string ToString() {
+        return new ObjectAnalyzer().ToString(this);
+    }
+
     #region IDisposable
     [NonSerialized]
     private bool alreadyDisposed = false;
@@ -212,11 +215,6 @@ public class Loader : AMonoBehaviourBase, IDisposable, IInstanceIdentity {
     //    // method content here
     //}
     #endregion
-
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

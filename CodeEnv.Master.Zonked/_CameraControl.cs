@@ -33,7 +33,7 @@ using UnityEngine;
 /// are serializable so that their settings are isTargetVisibleThisFrame in the inspector. Otherwise, they also don't need to be serializable.
 /// </summary>
 [SerializeAll] //This is redundant as this Object already has a StoreInformation script on it. It causes duplication of referenced SIngletons when saving
-public class _CameraControl : AMonoBehaviourBaseSingleton<_CameraControl>, IDisposable, IInstanceIdentity {
+public class _CameraControl : AMonoBehaviourBaseSingleton<_CameraControl>, IDisposable {
 
     // Focused Zooming: When focused, top and bottom Edge zooming and arrow key zooming cause camera movement in and out from the focused object that is centered on the screen. 
     // ScrollWheel zooming normally does the same if the cursor is pointed at the focused object. If the cursor is pointed somewhere else, scrolling IN moves toward the cursor resulting 

@@ -17,6 +17,8 @@
 
 // default namespace
 
+using System;
+using System.Collections;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.Unity;
 using UnityEngine;
@@ -47,7 +49,7 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable {
     /// Provides the ability to update the text for the GuiCursorHud. Can be null if there
     /// is no data for the GuiCursorHud to show for this item.
     /// </summary>
-    protected HudPublisher HudPublisher { get; set; }
+    protected GuiHudPublisher HudPublisher { get; set; }
 
     protected Collider _collider;
     protected Transform _transform;
@@ -76,8 +78,13 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable {
         if (HudPublisher != null) {
             if (isOver) {
                 HudPublisher.DisplayHudAtCursor(HumanPlayerIntelLevel);
+                //StartCoroutine<float>(HudPublisher.KeepHudCurrent, 2F);     // NO. Won't start. MethodName = "KeepHudCurrent", same as using separately declared Func<>
+                //StartCoroutine("HudPublisher.KeepHudCurrent", 2F);  // NO. Won't start. MethodName = "HudPublisher.KeepHudCurrent"
+                //StartCoroutine<float>(HudPublisher.KeepHudCurrent(), 2F);   //NO. Won't start. Declares and gets a HudPublisher delegate pointing to KeepHudCurrent(float) from HudPublisher. 
+                StartCoroutine(HudPublisher.KeepHudCurrent(2F));    // THIS WORKS!
             }
             else {
+                StopAllCoroutines();        // THIS WORKS
                 HudPublisher.ClearHud();
             }
         }
@@ -103,7 +110,6 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable {
     }
 
     #endregion
-
 
 }
 

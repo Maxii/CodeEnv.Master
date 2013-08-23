@@ -5,8 +5,9 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: NguiEventFallthruHandler.cs
-// COMMENT - one line to give a brief idea of what this file does.
+// File: NguiFallthruEventHandler.cs
+// Class that catches all Ngui events that are not consumed by other Gui and 
+// Game elements.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,9 +20,11 @@ using CodeEnv.Master.Common;
 using UnityEngine;
 
 /// <summary>
-/// COMMENT 
+/// Class that catches all Ngui events that are not consumed by other Gui and 
+/// Game elements. Note: A gameobject just needs a collider to consume all Ngui
+/// events sent its way. It does not need to implement an event's handler to consume it.
 /// </summary>
-public class NguiEventFallthruHandler : AMonoBehaviourBase {
+public class NguiFallthruEventHandler : AMonoBehaviourBase {
 
     void Start() {
         InitializeOnStart();

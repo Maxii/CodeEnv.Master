@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: HudPublisher.cs
+// File: GuiHudPublisher.cs
 // Manages the content of the text that GuiCursorHud displays and provides
 // some customization and access methods.
 // </summary> 
@@ -23,14 +23,14 @@ namespace CodeEnv.Master.Common.Unity {
     /// Manages the content of the text that GuiCursorHud displays and provides
     /// some customization and access methods.
     /// </summary>
-    public class HudPublisher {
+    public class GuiHudPublisher {
 
-        private IGuiCursorHud _guiCursorHud;
-        private GuiCursorHudText _guiCursorHudText;
+        private IGuiHud _guiCursorHud;
+        private GuiHudText _guiCursorHudText;
         private Data _data;
-        private GuiCursorHudLineKeys[] _optionalKeys;
+        private GuiHudLineKeys[] _optionalKeys;
 
-        public HudPublisher(IGuiCursorHud guiCursorHud, Data data) {
+        public GuiHudPublisher(IGuiHud guiCursorHud, Data data) {
             _guiCursorHud = guiCursorHud;
             _data = data;
         }
@@ -48,17 +48,19 @@ namespace CodeEnv.Master.Common.Unity {
             _guiCursorHud.Clear();
         }
 
-        private GuiCursorHudText GetHudText(IntelLevel intelLevel) {        // OPTIMIZE Detect individual data property changes and replace them individually
+        private GuiHudText GetHudText(IntelLevel intelLevel) {        // OPTIMIZE Detect individual data property changes and replace them individually
             if (_guiCursorHudText == null || _guiCursorHudText.IntelLevel != intelLevel || _data.IsChanged) {
                 // don't have the right version of GuiCursorHudText so make one
-                _guiCursorHudText = GuiCursorHudTextFactory.MakeInstance(intelLevel, _data);
+                _guiCursorHudText = GuiHudTextFactory.MakeInstance(intelLevel, _data);
                 _data.AcceptChanges();   // once we make a new one from current data, it is no longer dirty, if it ever was
             }
             else {
+
+                // IDEA: make this a coroutine and provide a stop coroutine method that the client can call when hover ends
                 // we have the right clean version so simply update the values that routinely change
-                UpdateGuiCursorHudText(intelLevel, GuiCursorHudLineKeys.Distance);
+                UpdateGuiCursorHudText(intelLevel, GuiHudLineKeys.Distance);
                 if (intelLevel == IntelLevel.OutOfDate) {
-                    UpdateGuiCursorHudText(IntelLevel.OutOfDate, GuiCursorHudLineKeys.IntelState);
+                    UpdateGuiCursorHudText(IntelLevel.OutOfDate, GuiHudLineKeys.IntelState);
                 }
                 if (_optionalKeys != null) {
                     UpdateGuiCursorHudText(intelLevel, _optionalKeys);
@@ -72,7 +74,7 @@ namespace CodeEnv.Master.Common.Unity {
         /// LineKeys already automatically handled for all managers include Distance and IntelState.
         /// </summary>
         /// <param name="optionalKeys">The optional keys.</param>
-        public void SetOptionalUpdateKeys(params GuiCursorHudLineKeys[] optionalKeys) {
+        public void SetOptionalUpdateKeys(params GuiHudLineKeys[] optionalKeys) {
             _optionalKeys = optionalKeys;
         }
 
@@ -81,10 +83,10 @@ namespace CodeEnv.Master.Common.Unity {
         /// </summary>
         /// <param name="intelLevel">The intel level.</param>
         /// <param name="keys">The line keys.</param>
-        private void UpdateGuiCursorHudText(IntelLevel intelLevel, params GuiCursorHudLineKeys[] keys) {
+        private void UpdateGuiCursorHudText(IntelLevel intelLevel, params GuiHudLineKeys[] keys) {
             IColoredTextList coloredTextList;
             foreach (var key in keys) {
-                coloredTextList = GuiCursorHudTextFactory.MakeInstance(key, intelLevel, _data);
+                coloredTextList = GuiHudTextFactory.MakeInstance(key, intelLevel, _data);
                 _guiCursorHudText.Replace(key, coloredTextList);
             }
         }

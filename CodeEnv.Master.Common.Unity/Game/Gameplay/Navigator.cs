@@ -34,6 +34,7 @@ namespace CodeEnv.Master.Common.Unity {
         private Rigidbody _rigidbody;
         private GameEventManager _eventMgr;
         private GameTime _gameTime;
+        private GameManager _gameMgr;
         private float _gameSpeedMultiplier;
         private ShipData _data;
 
@@ -56,6 +57,7 @@ namespace CodeEnv.Master.Common.Unity {
             _rigidbody.useGravity = false;
             _eventMgr = GameEventManager.Instance;
             _gameTime = GameTime.Instance;
+            _gameMgr = GameManager.Instance;
             Subscribe();
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
             _thrustHelper = new ThrustHelper(0F, 0F, _data.MaxThrust);
@@ -65,7 +67,7 @@ namespace CodeEnv.Master.Common.Unity {
             if (_subscribers == null) {
                 _subscribers = new List<IDisposable>();
             }
-            _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsGamePaused, OnGamePauseChanged));
+            _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsPaused, OnIsPausedChanged));
             _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
         }
 
@@ -73,16 +75,17 @@ namespace CodeEnv.Master.Common.Unity {
             AdjustForGameSpeed(_gameTime.GameSpeed);
         }
 
-        private void OnGamePauseChanged() {
-            if (GameManager.Instance.IsGamePaused) {
+        private void OnIsPausedChanged() {
+            if (_gameMgr.IsPaused) {
                 _velocityOnPause = _rigidbody.velocity;
                 // no angularVelocity needed as it is always zero?
                 _rigidbody.isKinematic = true;
-                return;
             }
-            _rigidbody.isKinematic = false;
-            _rigidbody.velocity = _velocityOnPause;
-            _rigidbody.WakeUp();
+            else {
+                _rigidbody.isKinematic = false;
+                _rigidbody.velocity = _velocityOnPause;
+                _rigidbody.WakeUp();
+            }
         }
 
         /// <summary>
@@ -96,7 +99,7 @@ namespace CodeEnv.Master.Common.Unity {
             float gameSpeedChangeRatio = _gameSpeedMultiplier / previousGameSpeedMultiplier;
             // must immediately adjust velocity when game speed changes as just adjusting thrust takes
             // a long time to get to increased/decreased velocity
-            if (GameManager.Instance.IsGamePaused) {
+            if (_gameMgr.IsPaused) {
                 _velocityOnPause = _velocityOnPause * gameSpeedChangeRatio;
             }
             else {
@@ -104,6 +107,7 @@ namespace CodeEnv.Master.Common.Unity {
                 // drag should not be adjusted as it will change the velocity that can be supported by the adjusted thrust
             }
         }
+
 
         /// <summary>
         /// Changes the direction the ship is headed in normalized world space coordinates.

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GuiLoadGameMenuLaunchButton.cs
-// COMMENT - one line to give a brief idea of what this file does.
+// Launch button script for the Load[Saved]GameMenu.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,7 +17,7 @@ using CodeEnv.Master.Common;
 using UnityEngine;
 
 /// <summary>
-/// COMMENT 
+/// Launch button script for the Load[Saved]GameMenu.
 /// </summary>
 public class GuiLoadGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
 

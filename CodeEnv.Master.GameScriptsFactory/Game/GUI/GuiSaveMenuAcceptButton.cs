@@ -6,11 +6,10 @@
 // </copyright> 
 // <summary> 
 // File: GuiSaveMenuAcceptButton.cs
-// COMMENT - one line to give a brief idea of what this file does.
+//  Accept button script for the SaveGameMenu.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -20,7 +19,7 @@ using CodeEnv.Master.Common;
 using UnityEngine;
 
 /// <summary>
-/// COMMENT 
+/// Accept button script for the SaveGameMenu.
 /// </summary>
 public class GuiSaveMenuAcceptButton : AGuiMenuAcceptButtonBase {
 

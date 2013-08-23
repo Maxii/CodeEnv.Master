@@ -25,19 +25,19 @@ using UnityEngine;
 /// </summary>
 public class GuiManager : AMonoBehaviourBaseSingleton<GuiManager>, IDisposable {
 
-    private Stack<IList<UIPanel>> stackedPanelsToRestore = new Stack<IList<UIPanel>>();
-    private UIPanel uiRootPanel;
-    private GameEventManager eventMgr;
+    private Stack<IList<UIPanel>> _stackedPanelsToRestore = new Stack<IList<UIPanel>>();
+    private UIPanel _uiRootPanel;
+    private GameEventManager _eventMgr;
 
     void Awake() {
-        eventMgr = GameEventManager.Instance;
+        _eventMgr = GameEventManager.Instance;
         AddListeners();
     }
 
     void Start() {
         // Note: Components that are not active are not found with GetComponentInChildren()!
         CheckDebugSettings();
-        uiRootPanel = gameObject.GetSafeMonoBehaviourComponent<UIPanel>();
+        _uiRootPanel = gameObject.GetSafeMonoBehaviourComponent<UIPanel>();
     }
 
     //[System.Diagnostics.Conditional("UNITY_EDITOR")]
@@ -54,26 +54,26 @@ public class GuiManager : AMonoBehaviourBaseSingleton<GuiManager>, IDisposable {
     }
 
     private void AddListeners() {
-        eventMgr.AddListener<GuiVisibilityButton.GuiVisibilityChangeEvent>(this, OnGuiVisibilityChange);
+        _eventMgr.AddListener<GuiVisibilityButton.GuiVisibilityChangeEvent>(this, OnGuiVisibilityChange);
     }
 
     private void OnGuiVisibilityChange(GuiVisibilityButton.GuiVisibilityChangeEvent e) {
         //Logger.Log("OnGuiVisibilityChange event received. GuiVisibilityCmd = {0}.", e.GuiVisibilityCmd);
         switch (e.GuiVisibilityCmd) {
-            case GuiVisibilityCommand.MakeVisibleUIPanelsInvisible:
-                UIPanel[] allActiveUIRootChildPanels = gameObject.GetSafeMonoBehaviourComponentsInChildren<UIPanel>().Except<UIPanel>(uiRootPanel).ToArray<UIPanel>();
+            case GuiVisibilityCommand.HideVisibleGuiPanels:
+                UIPanel[] allActiveUIRootChildPanels = gameObject.GetSafeMonoBehaviourComponentsInChildren<UIPanel>().Except<UIPanel>(_uiRootPanel).ToArray<UIPanel>();
                 var panelsToDeactivate = (from p in allActiveUIRootChildPanels where !e.Exceptions.Contains<UIPanel>(p) select p);
                 //panelsToDeactivate.ForAll<UIPanel>(p => p.gameObject.active = false);
                 panelsToDeactivate.ForAll<UIPanel>(p => NGUITools.SetActive(p.gameObject, false));
 
-                stackedPanelsToRestore.Push(panelsToDeactivate.ToList<UIPanel>());
+                _stackedPanelsToRestore.Push(panelsToDeactivate.ToList<UIPanel>());
                 break;
-            case GuiVisibilityCommand.RestoreUIPanelsVisibility:
-                if (stackedPanelsToRestore.Count == 0) {
+            case GuiVisibilityCommand.RestoreInvisibleGuiPanels:
+                if (_stackedPanelsToRestore.Count == 0) {
                     D.Error("The stack holding the lists of UIPanels to restore should not be null or empty!");
                 }
                 //Arguments.ValidateNotNullOrEmpty<IList<UIPanel>>(stackedPanelsToRestore);
-                IList<UIPanel> panelsToRestore = stackedPanelsToRestore.Pop();
+                IList<UIPanel> panelsToRestore = _stackedPanelsToRestore.Pop();
                 Arguments.ValidateNotNullOrEmpty<UIPanel>(panelsToRestore);
                 var panelsToReactivate = from p in panelsToRestore where !e.Exceptions.Contains<UIPanel>(p) select p;
                 //panelsToReactivate.ForAll<UIPanel>(p => p.gameObject.active = true);
@@ -87,9 +87,8 @@ public class GuiManager : AMonoBehaviourBaseSingleton<GuiManager>, IDisposable {
     }
 
     private void RemoveListeners() {
-        eventMgr.RemoveListener<GuiVisibilityButton.GuiVisibilityChangeEvent>(this, OnGuiVisibilityChange);
+        _eventMgr.RemoveListener<GuiVisibilityButton.GuiVisibilityChangeEvent>(this, OnGuiVisibilityChange);
     }
-
 
     void OnDestroy() {
         Dispose();
@@ -97,6 +96,10 @@ public class GuiManager : AMonoBehaviourBaseSingleton<GuiManager>, IDisposable {
 
     protected override void OnApplicationQuit() {
         _instance = null;
+    }
+
+    public override string ToString() {
+        return new ObjectAnalyzer().ToString(this);
     }
 
     #region IDisposable
@@ -142,9 +145,5 @@ public class GuiManager : AMonoBehaviourBaseSingleton<GuiManager>, IDisposable {
     //}
     #endregion
 
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 }
 

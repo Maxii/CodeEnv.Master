@@ -32,7 +32,7 @@ namespace CodeEnv.Master.Common.Unity {
         /// day, normalized for game speed.
         /// </summary>
         public float CurrentSpeed {
-            get { return (_gameMgr.IsGamePaused) ? _currentSpeedOnPause : _rigidbody.velocity.magnitude / _gameSpeedMultiplier; }
+            get { return (_gameMgr.IsPaused) ? _currentSpeedOnPause : _rigidbody.velocity.magnitude / _gameSpeedMultiplier; }
         }
 
         private float _requestedSpeed;
@@ -182,13 +182,12 @@ namespace CodeEnv.Master.Common.Unity {
             if (_subscribers == null) {
                 _subscribers = new List<IDisposable>();
             }
-            _subscribers.Add(_gameMgr.SubscribeToPropertyChanging<GameManager, bool>(gm => gm.IsGamePaused, OnPauseStateChanging));
+            _subscribers.Add(_gameMgr.SubscribeToPropertyChanging<GameManager, bool>(gm => gm.IsPaused, OnIsPausedChanging));
             _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
         }
 
-        private void OnPauseStateChanging() {
-            bool isGamePausedPriorToChange = _gameMgr.IsGamePaused;
-            if (!isGamePausedPriorToChange) {
+        private void OnIsPausedChanging(bool isPausing) {
+            if (isPausing) {
                 // game is about to pause
                 _currentSpeedOnPause = CurrentSpeed;
             }

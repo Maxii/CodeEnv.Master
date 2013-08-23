@@ -106,20 +106,20 @@ public class ShipManager : AGameObjectManager<ShipData>, ICameraFollowable, IZoo
         }
     }
 
-    protected override GuiCursorHudLineKeys[] OptionalCursorHudLinesToUpdate() {
-        return new GuiCursorHudLineKeys[1] {
-            GuiCursorHudLineKeys.Speed
+    protected override GuiHudLineKeys[] OptionalCursorHudLinesToUpdate() {
+        return new GuiHudLineKeys[1] {
+            GuiHudLineKeys.Speed
         };
     }
 
-    protected override void UpdateGuiCursorHudText(params GuiCursorHudLineKeys[] keys) {
+    protected override void UpdateGuiCursorHudText(params GuiHudLineKeys[] keys) {
         if (HumanPlayerIntelLevel != _guiCursorHudText.IntelLevel) {
             D.Error("{0} {1} and {2} must be the same.".Inject(typeof(IntelLevel), HumanPlayerIntelLevel.GetName(), _guiCursorHudText.IntelLevel.GetName()));
             return;
         }
         IColoredTextList coloredTextList;
         foreach (var key in keys) {
-            coloredTextList = GuiCursorHudTextFactory.MakeInstance(key, HumanPlayerIntelLevel, Data);
+            coloredTextList = GuiHudTextFactory.MakeInstance(key, HumanPlayerIntelLevel, Data);
             _guiCursorHudText.Replace(key, coloredTextList);
         }
     }

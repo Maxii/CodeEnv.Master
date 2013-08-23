@@ -43,7 +43,7 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable {
     /// Provides the ability to update the text for the GuiCursorHud. Can be null if there
     /// is no data for the GuiCursorHud to show for this item.
     /// </summary>
-    protected HudPublisher HudPublisher { get; private set; }
+    protected GuiHudPublisher HudPublisher { get; private set; }
 
 
     protected Collider _collider;
@@ -69,7 +69,7 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable {
 
     private void InitializeHudPublisher() {
         if (Data != null) {
-            HudPublisher = new HudPublisher(Data);
+            HudPublisher = new GuiHudPublisher(Data);
         }
     }
 

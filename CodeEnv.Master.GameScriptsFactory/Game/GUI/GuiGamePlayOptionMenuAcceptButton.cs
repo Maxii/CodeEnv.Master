@@ -6,11 +6,10 @@
 // </copyright> 
 // <summary> 
 // File: GuiGamePlayOptionMenuAcceptButton.cs
-// COMMENT - one line to give a brief idea of what this file does.
+// Accept button script for the GamePlayOptionsMenu.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -22,7 +21,7 @@ using CodeEnv.Master.Common;
 using UnityEngine;
 
 /// <summary>
-/// COMMENT 
+/// Accept button script for the GamePlayOptionsMenu.
 /// </summary>
 public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
 

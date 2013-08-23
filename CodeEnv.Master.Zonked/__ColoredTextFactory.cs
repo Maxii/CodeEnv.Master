@@ -28,26 +28,26 @@ namespace CodeEnv.Master.Common.Unity {
 
         public __ColoredTextFactory() { }
 
-        public IList<ColoredText> CreateColoredTextList(GuiCursorHudLineKeys key, params System.Object[] args) {
+        public IList<ColoredText> CreateColoredTextList(GuiHudLineKeys key, params System.Object[] args) {
             ColoredText coloredText = null;
             IList<ColoredText> coloredTextList = null;
             switch (key) {
-                case GuiCursorHudLineKeys.PieceName:
+                case GuiHudLineKeys.PieceName:
                     Arguments.ValidateTypeAndLength<string>(1, args);
                     coloredText = new ColoredText(args[0] as string);
                     break;
-                case GuiCursorHudLineKeys.Distance:
+                case GuiHudLineKeys.Distance:
                     // TODO calculate from SystemData.Position and <code>static GetSelected()<code>
                     Arguments.ValidateTypeAndLength<float>(1, args);
                     string distance = String.Format("{0:0.#}", args[0]);    // {0:0.#}     float with max one decimal place, rounded
                     coloredText = new ColoredText(distance);
                     break;
-                case GuiCursorHudLineKeys.Capacity:
+                case GuiHudLineKeys.Capacity:
                     Arguments.ValidateTypeAndLength<int>(1, args);
                     string capacity = String.Format("{0:00}", args[0]); // {0:00}     int with at least two digits
                     coloredText = new ColoredText(capacity);
                     break;
-                case GuiCursorHudLineKeys.Resources:
+                case GuiHudLineKeys.Resources:
                     Arguments.ValidateTypeAndLength<OpeYield>(1, args);
                     OpeYield ope = (OpeYield)args[0];
                     string o = String.Format("{0:0.}", ope.Organics);  // {0:0.}    float with zero decimal places, rounded
@@ -59,7 +59,7 @@ namespace CodeEnv.Master.Common.Unity {
                                 new ColoredText(e)
                             };
                     break;
-                case GuiCursorHudLineKeys.Specials:
+                case GuiHudLineKeys.Specials:
                     // TODO how to handle variable number of XResources
                     Arguments.ValidateTypeAndLength<XYield>(1, args[0]);
                     XYield x = (XYield)args[0];
@@ -74,7 +74,7 @@ namespace CodeEnv.Master.Common.Unity {
                                 new ColoredText(resourceValue)
                             };
                     break;
-                case GuiCursorHudLineKeys.IntelState:
+                case GuiHudLineKeys.IntelState:
                     // TODO fill out from HumanPlayer.GetIntelState(System) - need last intel date too
                     Arguments.ValidateTypeAndLength<IntelLevel>(1, args[0]);
                     Arguments.ValidateTypeAndLength<GameTimePeriod>(1, args[1]);
@@ -83,12 +83,12 @@ namespace CodeEnv.Master.Common.Unity {
                     string intelText = ConstructIntelText(intelLevel, intelAge);
                     coloredText = new ColoredText(intelText);
                     break;
-                case GuiCursorHudLineKeys.Owner:
+                case GuiHudLineKeys.Owner:
                     Arguments.ValidateTypeAndLength<Players>(1, args);
                     Players player = (Players)args[0];
                     coloredText = new ColoredText(player.GetName(), player.PlayerColor());
                     break;
-                case GuiCursorHudLineKeys.Health:
+                case GuiHudLineKeys.Health:
                     Arguments.ValidateTypeAndLength<float>(2, args);
                     float healthValue = (float)args[0]; float maxHpValue = (float)args[1];
                     float healthRatio = healthValue / maxHpValue;
@@ -101,23 +101,23 @@ namespace CodeEnv.Master.Common.Unity {
                                 new ColoredText(maxHp, Color.green)
                             };
                     break;
-                case GuiCursorHudLineKeys.CombatStrength:
+                case GuiHudLineKeys.CombatStrength:
                     Arguments.ValidateTypeAndLength<float>(1, args);
                     string combatStrenth = String.Format("{0:0.}", args[0]);       // {0:0.}    float with zero decimal places, rounded
                     coloredText = new ColoredText(combatStrenth);
                     break;
-                case GuiCursorHudLineKeys.Speed:
+                case GuiHudLineKeys.Speed:
                     // TODO                                                                         // {0:00.0}     float with at least two digits before the one decimal place, rounded
                     Arguments.ValidateTypeAndLength<float>(1, args);
                     string speed = String.Format("{0:00.0}", args[0]);
                     coloredText = new ColoredText(speed);
                     break;
-                case GuiCursorHudLineKeys.Composition:
+                case GuiHudLineKeys.Composition:
                     // TODO
                     Arguments.ValidateTypeAndLength<string>(1, args);
                     coloredText = new ColoredText(args[0] as string);
                     break;
-                case GuiCursorHudLineKeys.None:
+                case GuiHudLineKeys.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(key));
             }

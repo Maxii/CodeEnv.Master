@@ -58,13 +58,13 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Graphics\AGuiButtonBase.cs" />
+    <Compile Include="Generic\Graphics\AHud.cs" />
     <Compile Include="Generic\_Debug\DebugHud.cs" />
     <Compile Include="Game\Framework\FollowableItem.cs" />
     <Compile Include="Game\Graphics\FleetGraphics.cs" />
     <Compile Include="Game\Framework\FleetAdmiral.cs" />
-    <Compile Include="Generic\Graphics\AGuiHud.cs" />
     <Compile Include="Generic\Graphics\ScaleRelativeToCamera.cs" />
-    <Compile Include="Generic\Graphics\AGuiButtonBase.cs" />
     <Compile Include="Generic\Graphics\Billboard.cs" />
     <Compile Include="Generic\Graphics\GuiCursorHud.cs" />
     <Compile Include="Generic\IO\CameraControl.cs" />
@@ -97,7 +97,7 @@
     <Compile Include="Game\GUI\GuiSavedGamesPopupList.cs" />
     <Compile Include="Game\GUI\GuiSaveMenuAcceptButton.cs" />
     <Compile Include="Generic\Graphics\AGuiPopupListBase.cs" />
-    <Compile Include="Generic\IO\NguiEventFallthruHandler.cs" />
+    <Compile Include="Generic\IO\NguiFallthruEventHandler.cs" />
     <Compile Include="Generic\Graphics\GuiTrackingLabel.cs" />
     <Compile Include="Game\GUI\GuiPlayerColorPopupList.cs" />
     <Compile Include="Game\GUI\GuiPlayerRacePopupList.cs" />

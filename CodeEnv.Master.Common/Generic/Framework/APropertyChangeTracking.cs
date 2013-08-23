@@ -58,8 +58,7 @@ namespace CodeEnv.Master.Common {
             D.Log("SetProperty called. {0} changing to {1}.", propertyName, value);
 
             if (onChanging != null) { onChanging(value); }
-            OnPropertyChanging(propertyName);
-            //OnPropertyChanging(propertyName, value);
+            OnPropertyChanging(propertyName, value);
 
             backingStore = value;
 
@@ -75,19 +74,12 @@ namespace CodeEnv.Master.Common {
             }
         }
 
-        protected void OnPropertyChanging(string propertyName) {
+        protected void OnPropertyChanging<T>(string propertyName, T newValue) {
             var handler = PropertyChanging; // threadsafe approach
             if (handler != null) {
-                handler(this, new PropertyChangingEventArgs(propertyName));
+                handler(this, new PropertyChangingValueEventArgs<T>(propertyName, newValue));   // My custom modification to provide the newValue
             }
         }
-
-        //protected void OnPropertyChanging<T>(string propertyName, T newValue) {
-        //    var handler = PropertyChanging; // threadsafe approach
-        //    if (handler != null) {
-        //        handler(this, new PropertyChangingValueEventArgs<T>(propertyName, newValue));
-        //    }
-        //}
 
         protected void OnPropertyChanged(string propertyName) {
             var handler = PropertyChanged; // threadsafe approach

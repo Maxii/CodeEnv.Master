@@ -45,7 +45,7 @@ namespace CodeEnv.Master.Common.Unity {
         public static float DeltaTimeOrPausedWithGameSpeed {
             get {
                 D.Assert(Instance._isClockEnabled);
-                if (GameManager.Instance.IsGamePaused) {
+                if (GameManager.Instance.IsPaused) {
                     return Constants.ZeroF;
                 }
                 return DeltaTimeWithGameSpeed;
@@ -60,7 +60,7 @@ namespace CodeEnv.Master.Common.Unity {
         public static float DeltaTimeOrPaused {
             get {
                 D.Assert(Instance._isClockEnabled);
-                if (GameManager.Instance.IsGamePaused) {
+                if (GameManager.Instance.IsPaused) {
                     return Constants.ZeroF;
                 }
                 return DeltaTime;
@@ -122,27 +122,28 @@ namespace CodeEnv.Master.Common.Unity {
             get {
                 D.Assert(Instance._isClockEnabled);
                 float timeInCurrentPause = Constants.ZeroF;
-                if (GameManager.Instance.IsGamePaused) {
+                if (GameManager.Instance.IsPaused) {
                     timeInCurrentPause = RealTime_Game - Instance._timeCurrentPauseBegan;
                 }
                 return RealTime_Game - Instance._cumTimePaused - timeInCurrentPause;
             }
         }
 
+
+        private static GameDate _date;
         /// <summary>
         /// The GameDate in the game. This value takes into account when the game was begun,
         /// game speed changes and pauses.
         /// </summary>
-        private static GameDate date;
         public static IGameDate Date {
             get {
                 D.Assert(Instance._isClockEnabled);
-                if (!GameManager.Instance.IsGamePaused) {
+                if (!GameManager.Instance.IsPaused) {
                     Instance.SyncGameClock();   // OK to ask for date while paused (ie. HUD needs), but Syncing clock won't do anything
                 }
                 // the only time the date needs to be synced is when it is about to be used
-                date.SyncDateToGameClock(Instance._currentDateTime);
-                return date;
+                _date.SyncDateToGameClock(Instance._currentDateTime);
+                return _date;
             }
         }
 
@@ -174,6 +175,7 @@ namespace CodeEnv.Master.Common.Unity {
         private GameManager _gameMgr;
 
         #region SingletonPattern
+
         private static readonly GameTime instance;
 
         /// <summary>
@@ -213,37 +215,17 @@ namespace CodeEnv.Master.Common.Unity {
             if (_subscribers == null) {
                 _subscribers = new List<IDisposable>();
             }
-            _subscribers.Add(_gameMgr.SubscribeToPropertyChanging<GameManager, bool>(gm => gm.IsGamePaused, OnPauseStateChanging));
-            // _subscribers.Add(_gameMgr.SubscribeToPropertyChanging<GameManager, PauseState>(gm => gm.PauseState, OnPauseStateChanging));
+            _subscribers.Add(_gameMgr.SubscribeToPropertyChanging<GameManager, bool>(gm => gm.IsPaused, OnIsPausedChanging));
         }
 
-        //private void OnPauseStateChanging(PauseState newValue) {
-        //    D.Assert(_isClockEnabled);
-        //    bool isGamePausedPriorToChange = GameManager.Instance.IsGamePaused;
-        //    if (isGamePausedPriorToChange) {
-        //        // we are about to resume play
-        //        float timeInCurrentPause = RealTime_Game - _timeCurrentPauseBegan;
-        //        _cumTimePaused += timeInCurrentPause;
-        //        D.Log("TimeGameBegunInCurrentSession = {0:0.00}, TimeCurrentPauseBegan (GameTime) = {1:0.00}", _timeGameBeganInCurrentSession, _timeCurrentPauseBegan);
-        //        D.Log("TimeInCurrentPause (GameTime) = {0:0.00}, RealTime_Game = {1:0.00}.", timeInCurrentPause, RealTime_Game);
-
-        //        _timeCurrentPauseBegan = Constants.ZeroF;
-
-        //        // ignore the accumulated time during pause when next GameClockSync is requested
-        //        _gameRealTimeAtLastSync = RealTime_Game;
-        //        D.Log("CumTimePaused = {0:0.00}, _gameRealTimeAtLastSync = {1:0.00}.", _cumTimePaused, _gameRealTimeAtLastSync);
-        //    }
-        //    else {
-        //        // we are about to pause
-        //        SyncGameClock();    // update the game clock before pausing
-        //        _timeCurrentPauseBegan = RealTime_Game;
-        //    }
-        //}
-
-        private void OnPauseStateChanging() {
+        private void OnIsPausedChanging(bool isPausing) {
             D.Assert(_isClockEnabled);
-            bool isGamePausedPriorToChange = GameManager.Instance.IsGamePaused;
-            if (isGamePausedPriorToChange) {
+            if (isPausing) {
+                // we are about to pause
+                SyncGameClock();    // update the game clock before pausing
+                _timeCurrentPauseBegan = RealTime_Game;
+            }
+            else {
                 // we are about to resume play
                 float timeInCurrentPause = RealTime_Game - _timeCurrentPauseBegan;
                 _cumTimePaused += timeInCurrentPause;
@@ -255,11 +237,6 @@ namespace CodeEnv.Master.Common.Unity {
                 // ignore the accumulated time during pause when next GameClockSync is requested
                 _gameRealTimeAtLastSync = RealTime_Game;
                 D.Log("CumTimePaused = {0:0.00}, _gameRealTimeAtLastSync = {1:0.00}.", _cumTimePaused, _gameRealTimeAtLastSync);
-            }
-            else {
-                // we are about to pause
-                SyncGameClock();    // update the game clock before pausing
-                _timeCurrentPauseBegan = RealTime_Game;
             }
         }
 
@@ -276,7 +253,7 @@ namespace CodeEnv.Master.Common.Unity {
             // don't wait for the Gui to set GameSpeed. Use the backing field as the Property calls OnGameSpeedChanged()
             _gameSpeed = _playerPrefsMgr.GameSpeedOnLoad;
             _gameSpeedMultiplier = _gameSpeed.SpeedMultiplier();
-            date = new GameDate();
+            _date = new GameDate();
         }
 
         public void PrepareToSaveGame() {
@@ -311,7 +288,7 @@ namespace CodeEnv.Master.Common.Unity {
         }
 
         public void EnableClock(bool toEnable) {
-            D.Assert(!_gameMgr.IsGamePaused);    // my practice - enable clock, then pause it
+            D.Assert(!_gameMgr.IsPaused);    // my practice - enable clock, then pause it
             if (_isClockEnabled != toEnable) {
                 _isClockEnabled = toEnable;
                 if (toEnable) {
@@ -346,7 +323,7 @@ namespace CodeEnv.Master.Common.Unity {
         /// </summary>
         private void SyncGameClock() {
             D.Assert(_isClockEnabled);
-            if (_gameMgr.IsGamePaused) {
+            if (_gameMgr.IsPaused) {
                 D.Warn("SyncGameClock called while Paused!");   // it keeps adding to currentDateTime
                 return;
             }
@@ -358,6 +335,10 @@ namespace CodeEnv.Master.Common.Unity {
         private void Unsubscribe() {
             _subscribers.ForAll<IDisposable>(s => s.Dispose());
             _subscribers.Clear();
+        }
+
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
         }
 
         #region IDisposable
@@ -390,7 +371,6 @@ namespace CodeEnv.Master.Common.Unity {
             alreadyDisposed = true;
         }
 
-
         // Example method showing check for whether the object has been disposed
         //public void ExampleMethod() {
         //    // throw Exception if called on object that is already disposed
@@ -402,10 +382,6 @@ namespace CodeEnv.Master.Common.Unity {
         //}
         #endregion
 
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
     }
 }
 

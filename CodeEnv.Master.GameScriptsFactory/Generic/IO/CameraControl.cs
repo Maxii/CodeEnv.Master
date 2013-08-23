@@ -568,16 +568,13 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(newState));
         }
-        _UpdateDebugHud();
+        _UpdateDebugHud(DebugHudLineKeys.CameraMode, cameraState.GetName());
     }
 
     [System.Diagnostics.Conditional("UNITY_EDITOR")]
-    private void _UpdateDebugHud() {
+    private void _UpdateDebugHud(DebugHudLineKeys key, string text) {
         Logger.Log("CameraState changed to " + cameraState);
-        DebugHudText debugHudText = DebugHud.Instance.DebugHudText;
-        //debugHudText.Replace(DebugHudLineKeys.CameraMode, new ColoredTextList<CameraState>(cameraState));
-        debugHudText.Replace(DebugHudLineKeys.CameraMode, cameraState.GetName());
-        DebugHud.Instance.Set(debugHudText);
+        DebugHud.Instance.Publish(key, text);
     }
 
     /// <summary>

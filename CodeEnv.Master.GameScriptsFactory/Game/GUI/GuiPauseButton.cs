@@ -47,15 +47,15 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
         if (_subscribers == null) {
             _subscribers = new List<IDisposable>();
         }
-        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsGamePaused, OnGamePauseChanged));
+        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsPaused, OnIsPausedChanged));
     }
 
     // real game pause and resumption events, not just gui pause events which may or may not result in a pause or resumption
-    private void OnGamePauseChanged() {
-        bool isGamePaused = _gameMgr.IsGamePaused;
-        pauseCommand = isGamePaused ? PauseRequest.PriorityPause : PauseRequest.PriorityResume;
+    private void OnIsPausedChanged() {
+        pauseCommand = _gameMgr.IsPaused ? PauseRequest.PriorityPause : PauseRequest.PriorityResume;
         UpdateButtonLabel();
     }
+
 
     protected override void InitializeOnStart() {
         base.InitializeOnStart();
@@ -70,13 +70,6 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
         pauseCommand = (pauseCommand == PauseRequest.PriorityPause) ? PauseRequest.PriorityResume : PauseRequest.PriorityPause;
         base.OnLeftClick();
     }
-
-    // IMPROVE Tested alternative approach to using UIEventListener...
-    //void OnClick() {
-    //    Debug.Log("OnClick() called.");
-    //    pauseCommand = (pauseCommand == PauseRequest.PriorityPause) ? PauseRequest.PriorityResume : PauseRequest.PriorityPause;
-    //    base.OnButtonClick(new GameObject());
-    //}
 
     private void UpdateButtonLabel() {
         if (_pauseButtonLabel != null) {
@@ -93,6 +86,10 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
 
     void OnDestroy() {
         Dispose();
+    }
+
+    public override string ToString() {
+        return new ObjectAnalyzer().ToString(this);
     }
 
     #region IDisposable
@@ -138,10 +135,6 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
     //    // method content here
     //}
     #endregion
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

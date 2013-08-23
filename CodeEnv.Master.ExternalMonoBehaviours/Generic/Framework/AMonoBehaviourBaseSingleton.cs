@@ -43,7 +43,7 @@ public abstract class AMonoBehaviourBaseSingleton<T> : AMonoBehaviourBase where 
                     GameObject tempGO = new GameObject(thisType.Name, thisType);
                     _instance = tempGO.GetComponent<T>();
                     if (_instance == null) {
-                        D.Error("Problem during the creation of {0}.", thisType.ToString());
+                        D.Error("Problem during the creation of {0}.", thisType.Name);
                     }
                 }
             }

@@ -56,6 +56,7 @@
     <Compile Include="AFollowableItem.cs" />
     <Compile Include="AGameObjectManager.cs" />
     <Compile Include="AItem.cs" />
+    <Compile Include="ColliderExtensions.cs" />
     <Compile Include="ColliderRelay.cs" />
     <Compile Include="FleetAdmiralIcon.cs" />
     <Compile Include="FleetManager.cs" />
@@ -70,6 +71,7 @@
     <Compile Include="GameSpeedChangeEvent.cs" />
     <Compile Include="GameStateChangedEvent.cs" />
     <Compile Include="GameStateChangingEvent.cs" />
+    <Compile Include="GuiHudPublisher.cs" />
     <Compile Include="GuiVisibilityChangeEvent.cs" />
     <Compile Include="CameraFacing.cs" />
     <Compile Include="GlobeManager.cs" />
@@ -86,11 +88,13 @@
     <Compile Include="GameOptionsGuiManager.cs" />
     <Compile Include="GuiZoomOutOnCursorOption.cs" />
     <Compile Include="HudPublisher.cs" />
+    <Compile Include="IGuiHudPublisher.cs" />
     <Compile Include="IZoomToClosest.cs" />
     <Compile Include="OrbitalPlaneManager.cs" />
     <Compile Include="ResetOnFocusOptionChangedEvent.cs" />
     <Compile Include="StationaryItem.cs" />
     <Compile Include="SystemManager.cs" />
+    <Compile Include="TransformExtensions.cs" />
     <Compile Include="ZoomOutOnCursorOptionChangedEvent.cs" />
     <Compile Include="GuiFollowerLabel.cs" />
     <Compile Include="SceneStartupSequenceEvent.cs" />

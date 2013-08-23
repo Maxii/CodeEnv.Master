@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AGuiHud.cs
+// File: AHud.cs
 // Abstract Singleton Base class for HUDs drawn by the Gui Camera.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -20,13 +20,14 @@ using UnityEngine;
 /// <summary>
 /// Abstract Singleton Base class for HUDs drawn by the Gui Camera.
 /// </summary>
-public abstract class AGuiHud<T> : AMonoBehaviourBaseSingleton<T>, IGuiHud where T : AGuiHud<T> {
+public abstract class AHud<T> : AMonoBehaviourBaseSingleton<T>, IHud where T : AHud<T> {
 
     // Camera used to draw this HUD
     public Camera uiCamera;
 
     protected Transform _transform;
     protected UILabel _label;
+    protected bool _isDisplayEnabled = true;
 
     void Awake() {
         InitializeOnAwake();
@@ -34,14 +35,6 @@ public abstract class AGuiHud<T> : AMonoBehaviourBaseSingleton<T>, IGuiHud where
 
     protected virtual void InitializeOnAwake() {
         _transform = transform;
-        UpdateRate = UpdateFrequency.Continuous;
-    }
-
-    void Start() {
-        InitializeOnStart();
-    }
-
-    protected virtual void InitializeOnStart() {
         _label = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
         _label.depth = 100; // draw on top of other Gui Elements in the same Panel
         NGUITools.SetActive(_label.gameObject, false);  //begin deactivated so label doesn't show
@@ -49,6 +42,12 @@ public abstract class AGuiHud<T> : AMonoBehaviourBaseSingleton<T>, IGuiHud where
             uiCamera = NGUITools.FindCameraForLayer(gameObject.layer);
         }
     }
+
+    void Start() {
+        InitializeOnStart();
+    }
+
+    protected virtual void InitializeOnStart() { }
 
     void Update() {
         if (ToUpdate()) {
@@ -72,7 +71,7 @@ public abstract class AGuiHud<T> : AMonoBehaviourBaseSingleton<T>, IGuiHud where
     #region IGuiHud Members
 
     public void Set(string text) {
-        if (Instance != null) {
+        if (Instance && _isDisplayEnabled) {
             if (Utility.CheckForContent(text)) {
                 if (!NGUITools.GetActive(_label.gameObject)) {
                     NGUITools.SetActive(_label.gameObject, true);
@@ -82,6 +81,7 @@ public abstract class AGuiHud<T> : AMonoBehaviourBaseSingleton<T>, IGuiHud where
                 UpdatePosition();
             }
             else {
+                _label.text = text;
                 if (NGUITools.GetActive(_label.gameObject)) {
                     NGUITools.SetActive(_label.gameObject, false);
                 }

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IGuiHud.cs
-// Interface for GuiHuds so non-scripts can refer to it.
+// Interface for GuiCursorHuds so non-scripts can refer to it.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,29 +16,16 @@
 
 namespace CodeEnv.Master.Common.Unity {
 
-    using System.Text;
-
     /// <summary>
-    /// Interface for GuiHuds so non-scripts can refer to it.
+    /// Interface for GuiCursorHuds so non-scripts can refer to it.
     /// </summary>
-    public interface IGuiHud {
+    public interface IGuiHud : IHud {
 
         /// <summary>
-        /// Populate the HUD with text.
+        /// Populate the HUD with text from the GuiCursorHudText.
         /// </summary>
-        /// <param name="text">The text to place in the HUD.</param>
-        void Set(string text);
-
-        /// <summary>
-        /// Populate the HUD with text from the StringBuilder.
-        /// </summary>
-        /// <param name="sb">The StringBuilder containing the text.</param>
-        void Set(StringBuilder sb);
-
-        /// <summary>
-        /// Clear the HUD.
-        /// </summary>
-        void Clear();
+        /// <param name="guiCursorHudText">The GUI cursor hud text.</param>
+        void Set(GuiHudText guiCursorHudText);
 
     }
 }

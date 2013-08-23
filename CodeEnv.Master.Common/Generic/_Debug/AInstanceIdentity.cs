@@ -18,10 +18,10 @@ namespace CodeEnv.Master.Common {
     /// IncrementInstanceCounter() from either MonoBehaviourBase or this base class. This method contains  
     /// <c>InstanceID = System.Threading.Interlocked.Increment(ref instanceCounter);</c>
     /// </summary>
-    public abstract class AInstanceIdentity {
+    public abstract class AInstanceIdentity : IInstanceIdentity {
 
         private static int instanceCounter = 0;
-        public int InstanceID { get; set; }
+        public int InstanceID { get; protected set; }
 
         protected void IncrementInstanceCounter() {
             InstanceID = System.Threading.Interlocked.Increment(ref instanceCounter);

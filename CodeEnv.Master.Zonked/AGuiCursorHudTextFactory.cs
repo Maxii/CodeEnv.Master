@@ -31,59 +31,59 @@ namespace CodeEnv.Master.Common.Unity {
     [Obsolete]
     public abstract class AGuiCursorHudTextFactory {
 
-        private static IDictionary<IntelLevel, IList<GuiCursorHudLineKeys>> _hudLineKeyLookup = new Dictionary<IntelLevel, IList<GuiCursorHudLineKeys>> {
+        private static IDictionary<IntelLevel, IList<GuiHudLineKeys>> _hudLineKeyLookup = new Dictionary<IntelLevel, IList<GuiHudLineKeys>> {
 
-        {IntelLevel.Unknown, new List<GuiCursorHudLineKeys> { GuiCursorHudLineKeys.PieceName,
-                                                                       GuiCursorHudLineKeys.IntelState,
-                                                                       GuiCursorHudLineKeys.Distance }},
+        {IntelLevel.Unknown, new List<GuiHudLineKeys> { GuiHudLineKeys.PieceName,
+                                                                       GuiHudLineKeys.IntelState,
+                                                                       GuiHudLineKeys.Distance }},
 
-        {IntelLevel.OutOfDate, new List<GuiCursorHudLineKeys> {   GuiCursorHudLineKeys.PieceName,
-                                                                       GuiCursorHudLineKeys.IntelState,
-                                                                       GuiCursorHudLineKeys.Capacity,
-                                                                       GuiCursorHudLineKeys.Resources,
-                                                                       GuiCursorHudLineKeys.Specials,
-                                                                       GuiCursorHudLineKeys.Distance }},
+        {IntelLevel.OutOfDate, new List<GuiHudLineKeys> {   GuiHudLineKeys.PieceName,
+                                                                       GuiHudLineKeys.IntelState,
+                                                                       GuiHudLineKeys.Capacity,
+                                                                       GuiHudLineKeys.Resources,
+                                                                       GuiHudLineKeys.Specials,
+                                                                       GuiHudLineKeys.Distance }},
 
-        {IntelLevel.LongRangeSensors, new List<GuiCursorHudLineKeys> {GuiCursorHudLineKeys.PieceName,
-                                                                       GuiCursorHudLineKeys.IntelState,
-                                                                            GuiCursorHudLineKeys.Capacity,
-                                                                          GuiCursorHudLineKeys.Resources,
-                                                                       GuiCursorHudLineKeys.Specials,
-                                                                       GuiCursorHudLineKeys.SettlementSize,
-                                                                            GuiCursorHudLineKeys.Owner,
-                                                                           GuiCursorHudLineKeys.CombatStrength,
-                                                                           GuiCursorHudLineKeys.Composition,
-                                                                           GuiCursorHudLineKeys.Speed,
-                                                                           GuiCursorHudLineKeys.ShipSize,
-                                                                           GuiCursorHudLineKeys.Distance }},
+        {IntelLevel.LongRangeSensors, new List<GuiHudLineKeys> {GuiHudLineKeys.PieceName,
+                                                                       GuiHudLineKeys.IntelState,
+                                                                            GuiHudLineKeys.Capacity,
+                                                                          GuiHudLineKeys.Resources,
+                                                                       GuiHudLineKeys.Specials,
+                                                                       GuiHudLineKeys.SettlementSize,
+                                                                            GuiHudLineKeys.Owner,
+                                                                           GuiHudLineKeys.CombatStrength,
+                                                                           GuiHudLineKeys.Composition,
+                                                                           GuiHudLineKeys.Speed,
+                                                                           GuiHudLineKeys.ShipSize,
+                                                                           GuiHudLineKeys.Distance }},
 
-         {IntelLevel.ShortRangeSensors, new List<GuiCursorHudLineKeys> {GuiCursorHudLineKeys.PieceName,
-                                                                       GuiCursorHudLineKeys.IntelState,
-                                                                            GuiCursorHudLineKeys.Capacity,
-                                                                          GuiCursorHudLineKeys.Resources,
-                                                                       GuiCursorHudLineKeys.Specials,
-                                                                       GuiCursorHudLineKeys.SettlementDetails,
-                                                                            GuiCursorHudLineKeys.Owner,
-                                                                            GuiCursorHudLineKeys.Health,
-                                                                           GuiCursorHudLineKeys.CombatStrengthDetails,
-                                                                           GuiCursorHudLineKeys.CompositionDetails,
-                                                                           GuiCursorHudLineKeys.Speed,
-                                                                           GuiCursorHudLineKeys.ShipDetails,
-                                                                           GuiCursorHudLineKeys.Distance }},
+         {IntelLevel.ShortRangeSensors, new List<GuiHudLineKeys> {GuiHudLineKeys.PieceName,
+                                                                       GuiHudLineKeys.IntelState,
+                                                                            GuiHudLineKeys.Capacity,
+                                                                          GuiHudLineKeys.Resources,
+                                                                       GuiHudLineKeys.Specials,
+                                                                       GuiHudLineKeys.SettlementDetails,
+                                                                            GuiHudLineKeys.Owner,
+                                                                            GuiHudLineKeys.Health,
+                                                                           GuiHudLineKeys.CombatStrengthDetails,
+                                                                           GuiHudLineKeys.CompositionDetails,
+                                                                           GuiHudLineKeys.Speed,
+                                                                           GuiHudLineKeys.ShipDetails,
+                                                                           GuiHudLineKeys.Distance }},
 
-       {IntelLevel.Complete, new List<GuiCursorHudLineKeys> {GuiCursorHudLineKeys.PieceName,
-                                                                       GuiCursorHudLineKeys.IntelState,
-                                                                            GuiCursorHudLineKeys.Capacity,
-                                                                          GuiCursorHudLineKeys.Resources,
-                                                                       GuiCursorHudLineKeys.Specials,
-                                                                       GuiCursorHudLineKeys.SettlementDetails,
-                                                                            GuiCursorHudLineKeys.Owner,
-                                                                            GuiCursorHudLineKeys.Health,
-                                                                           GuiCursorHudLineKeys.CombatStrengthDetails,
-                                                                           GuiCursorHudLineKeys.CompositionDetails,
-                                                                           GuiCursorHudLineKeys.Speed,
-                                                                           GuiCursorHudLineKeys.ShipDetails,
-                                                                           GuiCursorHudLineKeys.Distance }}
+       {IntelLevel.Complete, new List<GuiHudLineKeys> {GuiHudLineKeys.PieceName,
+                                                                       GuiHudLineKeys.IntelState,
+                                                                            GuiHudLineKeys.Capacity,
+                                                                          GuiHudLineKeys.Resources,
+                                                                       GuiHudLineKeys.Specials,
+                                                                       GuiHudLineKeys.SettlementDetails,
+                                                                            GuiHudLineKeys.Owner,
+                                                                            GuiHudLineKeys.Health,
+                                                                           GuiHudLineKeys.CombatStrengthDetails,
+                                                                           GuiHudLineKeys.CompositionDetails,
+                                                                           GuiHudLineKeys.Speed,
+                                                                           GuiHudLineKeys.ShipDetails,
+                                                                           GuiHudLineKeys.Distance }}
     };
 
         protected static IColoredTextList _emptyIColoredTextList = new ColoredTextList();
@@ -91,7 +91,7 @@ namespace CodeEnv.Master.Common.Unity {
         public IntelLevel IntelLevel { get; set; }
 
         protected Data _data;
-        private IDictionary<IntelLevel, GuiCursorHudText> _guiCursorHudTextCache;
+        private IDictionary<IntelLevel, GuiHudText> _guiCursorHudTextCache;
 
         public AGuiCursorHudTextFactory(Data data, IntelLevel intelLevel) {
             Arguments.ValidateNotNull(data);
@@ -104,9 +104,9 @@ namespace CodeEnv.Master.Common.Unity {
         /// </summary>
         /// <param name="currentSpeed">Current speed of the game object. Can be zero.</param>
         /// <returns></returns>
-        public GuiCursorHudText MakeInstance(float currentSpeed) {
+        public GuiHudText MakeInstance(float currentSpeed) {
             if (_guiCursorHudTextCache == null) {
-                _guiCursorHudTextCache = new Dictionary<IntelLevel, GuiCursorHudText>();
+                _guiCursorHudTextCache = new Dictionary<IntelLevel, GuiHudText>();
             }
 
             if (_data.IsDirty) {
@@ -118,12 +118,12 @@ namespace CodeEnv.Master.Common.Unity {
                 return _guiCursorHudTextCache[IntelLevel];
             }
 
-            IList<GuiCursorHudLineKeys> keys;
+            IList<GuiHudLineKeys> keys;
             if (_hudLineKeyLookup.TryGetValue(IntelLevel, out keys)) {
-                GuiCursorHudText guiCursorHudText = new GuiCursorHudText(IntelLevel);
+                GuiHudText guiCursorHudText = new GuiHudText(IntelLevel);
 
                 IColoredTextList textList;
-                foreach (GuiCursorHudLineKeys key in keys) {
+                foreach (GuiHudLineKeys key in keys) {
                     textList = MakeInstance(key, currentSpeed);
                     guiCursorHudText.Add(key, textList);
                 }
@@ -142,41 +142,41 @@ namespace CodeEnv.Master.Common.Unity {
         /// <param name="currentSpeed">Optional current speed of the game object.</param>
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
-        public virtual IColoredTextList MakeInstance(GuiCursorHudLineKeys key, float currentSpeed = -1F) {
+        public virtual IColoredTextList MakeInstance(GuiHudLineKeys key, float currentSpeed = -1F) {
             switch (key) {
-                case GuiCursorHudLineKeys.PieceName:
+                case GuiHudLineKeys.PieceName:
                     return new ColoredTextList_String(_data.PieceName);
-                case GuiCursorHudLineKeys.Distance:
+                case GuiHudLineKeys.Distance:
                     return new ColoredTextList_Distance(_data.Position);    // returns empty if nothing is selected thereby making distance n/a
-                case GuiCursorHudLineKeys.IntelState:
+                case GuiHudLineKeys.IntelState:
                     return (_data.LastHumanPlayerIntelDate != null) ? new ColoredTextList_Intel(_data.LastHumanPlayerIntelDate, IntelLevel) : _emptyIColoredTextList;
 
                 // The following is a fall through catcher for line keys that aren't processed in derived factories. An empty ColoredTextList will be returned which will be ignored by GuiCursorHudText
-                case GuiCursorHudLineKeys.Owner:
-                case GuiCursorHudLineKeys.Health:
-                case GuiCursorHudLineKeys.CombatStrength:
-                case GuiCursorHudLineKeys.CombatStrengthDetails:
-                case GuiCursorHudLineKeys.Capacity:
-                case GuiCursorHudLineKeys.Resources:
-                case GuiCursorHudLineKeys.Specials:
-                case GuiCursorHudLineKeys.Composition:
-                case GuiCursorHudLineKeys.CompositionDetails:
-                case GuiCursorHudLineKeys.SettlementSize:
-                case GuiCursorHudLineKeys.SettlementDetails:
-                case GuiCursorHudLineKeys.ShipSize:
-                case GuiCursorHudLineKeys.ShipDetails:
+                case GuiHudLineKeys.Owner:
+                case GuiHudLineKeys.Health:
+                case GuiHudLineKeys.CombatStrength:
+                case GuiHudLineKeys.CombatStrengthDetails:
+                case GuiHudLineKeys.Capacity:
+                case GuiHudLineKeys.Resources:
+                case GuiHudLineKeys.Specials:
+                case GuiHudLineKeys.Composition:
+                case GuiHudLineKeys.CompositionDetails:
+                case GuiHudLineKeys.SettlementSize:
+                case GuiHudLineKeys.SettlementDetails:
+                case GuiHudLineKeys.ShipSize:
+                case GuiHudLineKeys.ShipDetails:
                     return _emptyIColoredTextList;
 
                 //Speed should be processed by all derived factories
-                case GuiCursorHudLineKeys.Speed:
-                case GuiCursorHudLineKeys.None:
+                case GuiHudLineKeys.Speed:
+                case GuiHudLineKeys.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(key));
             }
         }
 
-        protected bool ValidateKeyAgainstIntelLevel(GuiCursorHudLineKeys key) {
-            return _hudLineKeyLookup[IntelLevel].Contains<GuiCursorHudLineKeys>(key);
+        protected bool ValidateKeyAgainstIntelLevel(GuiHudLineKeys key) {
+            return _hudLineKeyLookup[IntelLevel].Contains<GuiHudLineKeys>(key);
         }
 
         #region IColoredTextList Strategy Classes

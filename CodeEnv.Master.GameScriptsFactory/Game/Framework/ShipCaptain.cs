@@ -41,7 +41,7 @@ public class ShipCaptain : FollowableItem {
         base.InitializeOnStart();
         __InitializeNavigator();
         HumanPlayerIntelLevel = IntelLevel.ShortRangeSensors;
-        HudPublisher.SetOptionalUpdateKeys(GuiCursorHudLineKeys.Speed);
+        HudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed);
     }
 
     private void __InitializeNavigator() {

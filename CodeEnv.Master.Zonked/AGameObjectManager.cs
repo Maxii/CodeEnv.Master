@@ -26,14 +26,14 @@ using UnityEngine;
 /// </summary>
 public abstract class AGameObjectManager<DataType> : AMonoBehaviourBase, INotifyVisibilityChanged where DataType : Data {
 
-    private static GuiCursorHudLineKeys[] _noOptionalCursorHudLinesToUpdate = new GuiCursorHudLineKeys[0];
+    private static GuiHudLineKeys[] _noOptionalCursorHudLinesToUpdate = new GuiHudLineKeys[0];
 
     public virtual float CurrentSpeed { get { return Constants.ZeroF; } }
     public Vector3 CurrentPosition { get { return Data.Position; } }
     public IntelLevel HumanPlayerIntelLevel { get; set; }
     public DataType Data { get; set; }
 
-    protected GuiCursorHudText _guiCursorHudText;
+    protected GuiHudText _guiCursorHudText;
     protected Transform _transform;
     protected GuiCursorHud _cursorHud;
     public bool IsVisible { get; set; }
@@ -76,14 +76,14 @@ public abstract class AGameObjectManager<DataType> : AMonoBehaviourBase, INotify
     public void DisplayCursorHUD() {        // OPTIMIZE Detect individual data property changes and replace them individually
         if (_guiCursorHudText == null || _guiCursorHudText.IntelLevel != HumanPlayerIntelLevel || Data.IsChanged) {
             // don't have the right version of GuiCursorHudText so make one
-            _guiCursorHudText = GuiCursorHudTextFactory.MakeInstance(HumanPlayerIntelLevel, Data);
+            _guiCursorHudText = GuiHudTextFactory.MakeInstance(HumanPlayerIntelLevel, Data);
             Data.AcceptChanges();   // once we make a new one from current data, it is no longer dirty, if it ever was
         }
         else {
             // we have the right clean version so simply update the values that routinely change
-            UpdateGuiCursorHudText(GuiCursorHudLineKeys.Distance);
+            UpdateGuiCursorHudText(GuiHudLineKeys.Distance);
             if (HumanPlayerIntelLevel == IntelLevel.OutOfDate) {
-                UpdateGuiCursorHudText(GuiCursorHudLineKeys.IntelState);
+                UpdateGuiCursorHudText(GuiHudLineKeys.IntelState);
             }
             if (OptionalCursorHudLinesToUpdate().Length != 0) {
                 UpdateGuiCursorHudText(OptionalCursorHudLinesToUpdate());
@@ -98,7 +98,7 @@ public abstract class AGameObjectManager<DataType> : AMonoBehaviourBase, INotify
     ///an empty array of line keys.
     /// </summary>
     ///<returns></returns>
-    protected virtual GuiCursorHudLineKeys[] OptionalCursorHudLinesToUpdate() {
+    protected virtual GuiHudLineKeys[] OptionalCursorHudLinesToUpdate() {
         return _noOptionalCursorHudLinesToUpdate;
     }
 
@@ -106,7 +106,7 @@ public abstract class AGameObjectManager<DataType> : AMonoBehaviourBase, INotify
     /// Updates the current GuiCursorHudText instance by replacing the lines identified by keys.
     /// </summary>
     /// <param name="keys">The line keys.</param>
-    protected abstract void UpdateGuiCursorHudText(params GuiCursorHudLineKeys[] keys);
+    protected abstract void UpdateGuiCursorHudText(params GuiHudLineKeys[] keys);
 
     public void ClearCursorHUD() {
         _cursorHud.Clear();

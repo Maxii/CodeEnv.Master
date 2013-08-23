@@ -105,8 +105,9 @@ namespace CodeEnv.Master.Common.Unity {
             }
         }
 
+        // IMPROVE a change in Fleet Owner or Composition should be broadcast if changed
         public IDictionary<ShipHull, IList<ShipData>> Composition { get; private set; }
-        public IPlayer Owner { get; private set; }  // IMPROVE a change in Fleet Owner should be notified if it can change
+        public IPlayer Owner { get; private set; }
 
         private IList<ShipData> _shipsData;
         private IDictionary<ShipData, IList<IDisposable>> _subscribers;
@@ -147,15 +148,13 @@ namespace CodeEnv.Master.Common.Unity {
         }
 
         /// <summary>
-        /// Adds or removes shipData from the Composition and notifies subscribers
-        /// of the change.
+        /// Adds or removes shipData from the Composition.
         /// </summary>
         /// <param name="shipData">The ship data.</param>
         /// <param name="toAdd">if set to <c>true</c> [to add].</param>
         private void ChangeComposition(ShipData shipData, bool toAdd) {
             string compositionPropertyName = PropertyHelper<FleetData>.GetPropertyName<IDictionary<ShipHull, IList<ShipData>>>(fd => fd.Composition);
             ShipHull hull = shipData.Hull;
-            OnPropertyChanging(compositionPropertyName);
             if (toAdd) {
                 if (!Composition.Keys.Contains<ShipHull>(hull)) {
                     Composition.Add(hull, new List<ShipData>());
@@ -168,8 +167,8 @@ namespace CodeEnv.Master.Common.Unity {
                     Composition.Remove(hull);
                 }
             }
-            OnPropertyChanged(compositionPropertyName);
         }
+
 
         public void RemoveShip(ShipData shipData) {
             if (_shipsData.Contains(shipData)) {

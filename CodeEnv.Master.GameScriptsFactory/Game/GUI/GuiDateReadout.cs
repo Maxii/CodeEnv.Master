@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GuiDateReadout.cs
-// COMMENT - one line to give a brief idea of what this file does.
+// Date readout class for the Gui, based on Ngui UILabel.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -24,7 +24,7 @@ using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.Common.Unity;
 
 /// <summary>
-/// COMMENT 
+/// Date readout class for the Gui, based on Ngui UILabel.
 /// </summary>
 public class GuiDateReadout : AGuiLabelReadoutBase, IDisposable {
 
@@ -37,29 +37,23 @@ public class GuiDateReadout : AGuiLabelReadoutBase, IDisposable {
         Subscribe();
         tooltip = "The current date in the game.";
         UpdateRate = UpdateFrequency.Continuous;
-
     }
 
     private void Subscribe() {
         if (_subscribers == null) {
             _subscribers = new List<IDisposable>();
         }
-        _subscribers.Add(_gameMgr.SubscribeToPropertyChanging<GameManager, bool>(gm => gm.IsGamePaused, OnGamePauseChanging));
-    }
-
-    void Start() {
-        //RefreshDateReadout();
+        _subscribers.Add(_gameMgr.SubscribeToPropertyChanging<GameManager, bool>(gm => gm.IsPaused, OnIsPausedChanging));
     }
 
     void Update() {
-        if (ToUpdate() && !_gameMgr.IsGamePaused) {
+        if (ToUpdate() && !_gameMgr.IsPaused) {
             RefreshDateReadout();
         }
     }
 
-    private void OnGamePauseChanging() {
-        bool isGamePausedPriorToChange = _gameMgr.IsGamePaused;
-        if (!isGamePausedPriorToChange) {
+    private void OnIsPausedChanging(bool isPausing) {
+        if (isPausing) {
             // we are about to pause so refresh the date in case the game pauses on load
             RefreshDateReadout();
         }
@@ -69,15 +63,18 @@ public class GuiDateReadout : AGuiLabelReadoutBase, IDisposable {
         _readoutLabel.text = GameTime.Date.FormattedDate;
     }
 
-    void OnDestroy() {
-        Dispose();
-    }
-
     private void Unsubscribe() {
         _subscribers.ForAll<IDisposable>(s => s.Dispose());
         _subscribers.Clear();
     }
 
+    void OnDestroy() {
+        Dispose();
+    }
+
+    public override string ToString() {
+        return new ObjectAnalyzer().ToString(this);
+    }
 
     #region IDisposable
     [DoNotSerialize]
@@ -121,11 +118,6 @@ public class GuiDateReadout : AGuiLabelReadoutBase, IDisposable {
     //    // method content here
     //}
     #endregion
-
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GuiCursorHudLineKeys.cs
+// File: GuiHudLineKeys.cs
 // Enum for keys associated with the display of a line of information shown on the GuiCursorHUD.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.Common {
     /// <summary>
     /// Enum for keys associated with the display of a line of information shown on the GuiCursorHUD.
     /// </summary>
-    public enum GuiCursorHudLineKeys {
+    public enum GuiHudLineKeys {
 
         None,
         ItemName,

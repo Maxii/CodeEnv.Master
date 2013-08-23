@@ -51,7 +51,7 @@ public class StarFlare : AMonoBehaviourBase {
         if (lightCount == 1) {
             // there is only the primary light attached, so I need to create another for the flare
             // avoid getting the flareLight prefab with Resources.Load("Lights/FlareLight")
-            _flareLight = Instantiate<Light>(UsefulPrefabs.currentInstance.flareLight);
+            _flareLight = Instantiate<Light>(UsefulPrefabs.Instance.flareLight);
             _flareLight.transform.parent = _transform;
             float radiusOfStar = (gameObject.GetSafeMonoBehaviourComponentInParents<Star>().collider as SphereCollider).radius;
             Vector3 flareLightLocationBehindStar = Vector3.forward * (radiusOfStar + 2F);

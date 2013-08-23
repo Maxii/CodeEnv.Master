@@ -6,11 +6,10 @@
 // </copyright> 
 // <summary> 
 // File: GuiExitButton.cs
-// COMMENT - one line to give a brief idea of what this file does.
+// Exit button script.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -20,7 +19,7 @@ using CodeEnv.Master.Common;
 using UnityEngine;
 
 /// <summary>
-/// COMMENT 
+/// Exit button script.
 /// </summary>
 public class GuiExitButton : AGuiButtonBase {
 

@@ -95,7 +95,7 @@
     <Compile Include="Generic\Graphics\ICameraTargetable.cs" />
     <Compile Include="Generic\Graphics\AStringBuilderTextEvent.cs" />
     <Compile Include="Generic\Graphics\IZoomToFurthest.cs" />
-    <Compile Include="Game\GUI\GuiCursorHudLineKeys.cs" />
+    <Compile Include="Game\GUI\GuiHudLineKeys.cs" />
     <Compile Include="Game\Gameplay\IntelLevel.cs" />
     <Compile Include="Game\Gameplay\OpeResource.cs" />
     <Compile Include="Game\Gameplay\OpeYield.cs" />
@@ -114,7 +114,7 @@
     <Compile Include="Game\Framework\RaceStat.cs" />
     <Compile Include="Generic\Framework\ISelectable.cs" />
     <Compile Include="Generic\Framework\PauseState.cs" />
-    <Compile Include="PropertyChangingValueEventArgs.cs" />
+    <Compile Include="Generic\Framework\PropertyChangingValueEventArgs.cs" />
     <Compile Include="ThirdParty\PropertyHelper.cs" />
     <Compile Include="ThirdParty\TextScanner.cs" />
     <Compile Include="ThirdParty\FlagsHelper.cs" />

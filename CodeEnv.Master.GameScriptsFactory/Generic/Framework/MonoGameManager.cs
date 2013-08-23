@@ -10,7 +10,6 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -29,7 +28,7 @@ using UnityEngine;
 ///should be done by GameManager. The purpose of this class is to call GameManager.
 /// </summary>
 //[SerializeAll] This is redundant as this Object already has a StoreInformation script on it. It causes duplication of referenced SIngletons when saving
-public class MonoGameManager : AMonoBehaviourBaseSingleton<MonoGameManager>, IInstanceIdentity {
+public class MonoGameManager : AMonoBehaviourBaseSingleton<MonoGameManager> {
 
     private GameManager _gameMgr;
     private bool _isInitialized;
@@ -58,7 +57,7 @@ public class MonoGameManager : AMonoBehaviourBaseSingleton<MonoGameManager>, IIn
     /// </summary>
     /// <returns><c>true</c> if this instance is going to be destroyed, <c>false</c> if not.</returns>
     private bool TryDestroyExtraCopies() {
-        if (_instance != null && _instance != this) {
+        if (_instance && _instance != this) {
             Logger.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceID));
             Destroy(gameObject);
             return true;
@@ -130,15 +129,8 @@ public class MonoGameManager : AMonoBehaviourBaseSingleton<MonoGameManager>, IIn
         _gameMgr.OnDeserialized();
     }
 
-    void OnDestroy() {
-        if (_isInitialized) {
-            // no reason to cleanup if this object was immediately destroyed before it was initialized
-            // UNDONE this is the original object so what to do with GameManager, if anything, when this object is destroyed?
-        }
-    }
-
     protected override void OnApplicationQuit() {
-        Debug.Log("ApplicationQuit called.");
+        Logger.Log("ApplicationQuit called.");
         _gameMgr.Dispose();
         _instance = null;
     }

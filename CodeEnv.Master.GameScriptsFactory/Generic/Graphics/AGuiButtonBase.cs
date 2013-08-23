@@ -44,10 +44,16 @@ public abstract class AGuiButtonBase : GuiTooltip {
     /// </summary>
     protected virtual void InitializeOnStart() {
         _button = gameObject.GetSafeMonoBehaviourComponent<UIButton>();
-        UIEventListener.Get(gameObject).onClick += OnButtonClick;  // NGUI general event system
+        //UIEventListener.Get(gameObject).onClick += OnButtonClick;  // NGUI general event system
     }
 
-    private void OnButtonClick(GameObject sender) {
+    //private void OnButtonClick(GameObject sender) {
+    //    if (NguiGameInput.IsLeftMouseButtonClick()) {
+    //        OnLeftClick();
+    //    }
+    //}
+
+    void OnClick() {
         if (NguiGameInput.IsLeftMouseButtonClick()) {
             OnLeftClick();
         }

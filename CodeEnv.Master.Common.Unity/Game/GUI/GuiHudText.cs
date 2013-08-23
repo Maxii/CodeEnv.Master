@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GuiCursorHudText.cs
+// File: GuiHudText.cs
 // Wrapper class for a StringBuilder that holds the text to be displayed in a GuiCursorHUD.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -26,74 +26,74 @@ namespace CodeEnv.Master.Common.Unity {
     /// <summary>
     /// Wrapper class for a StringBuilder that holds the text to be displayed in a GuiCursorHUD.
     /// </summary>
-    public class GuiCursorHudText {
+    public class GuiHudText {
 
         // This is needed as the order of Dictionary.Keys is not defined when iterating through it, even if they were added in the right order
-        private static IList<GuiCursorHudLineKeys> _displayLineOrder = new List<GuiCursorHudLineKeys>() {
-                {GuiCursorHudLineKeys.ItemName},
-                {GuiCursorHudLineKeys.PieceName},
-                {GuiCursorHudLineKeys.IntelState},
-                {GuiCursorHudLineKeys.Capacity},
-                {GuiCursorHudLineKeys.Resources},
-                {GuiCursorHudLineKeys.Specials}, 
-                {GuiCursorHudLineKeys.SettlementSize},
-                {GuiCursorHudLineKeys.SettlementDetails},
-                {GuiCursorHudLineKeys.Owner},
-                {GuiCursorHudLineKeys.CombatStrength},
-                {GuiCursorHudLineKeys.CombatStrengthDetails},
-                {GuiCursorHudLineKeys.Health}, 
-                {GuiCursorHudLineKeys.Speed}, 
-                {GuiCursorHudLineKeys.Composition},
-                {GuiCursorHudLineKeys.CompositionDetails},
-                {GuiCursorHudLineKeys.ShipSize},
-                {GuiCursorHudLineKeys.ShipDetails},
-                {GuiCursorHudLineKeys.Distance}
+        private static IList<GuiHudLineKeys> _displayLineOrder = new List<GuiHudLineKeys>() {
+                {GuiHudLineKeys.ItemName},
+                {GuiHudLineKeys.PieceName},
+                {GuiHudLineKeys.IntelState},
+                {GuiHudLineKeys.Capacity},
+                {GuiHudLineKeys.Resources},
+                {GuiHudLineKeys.Specials}, 
+                {GuiHudLineKeys.SettlementSize},
+                {GuiHudLineKeys.SettlementDetails},
+                {GuiHudLineKeys.Owner},
+                {GuiHudLineKeys.CombatStrength},
+                {GuiHudLineKeys.CombatStrengthDetails},
+                {GuiHudLineKeys.Health}, 
+                {GuiHudLineKeys.Speed}, 
+                {GuiHudLineKeys.Composition},
+                {GuiHudLineKeys.CompositionDetails},
+                {GuiHudLineKeys.ShipSize},
+                {GuiHudLineKeys.ShipDetails},
+                {GuiHudLineKeys.Distance}
         };
 
-        private static IDictionary<GuiCursorHudLineKeys, string> _baseDisplayLineContent;
+        private static IDictionary<GuiHudLineKeys, string> _baseDisplayLineContent;
 
         private StringBuilder _text = new StringBuilder();
 
-        private IDictionary<GuiCursorHudLineKeys, IColoredTextList> _textLine;
+        private IDictionary<GuiHudLineKeys, IColoredTextList> _textLine;
 
         public bool IsDirty { get; private set; }
         public IntelLevel IntelLevel { get; private set; }
 
-        static GuiCursorHudText() {
+        static GuiHudText() {
             _baseDisplayLineContent = InitializeBaseDisplayLineContent();
             D.Assert(_baseDisplayLineContent.Count == _displayLineOrder.Count, "Missing content in list.");
         }
 
-        private static IDictionary<GuiCursorHudLineKeys, string> InitializeBaseDisplayLineContent() {
+        private static IDictionary<GuiHudLineKeys, string> InitializeBaseDisplayLineContent() {
 
             // initialized in static constructor because formats that are dynamically constructed cannot be used in a static initializer
-            IDictionary<GuiCursorHudLineKeys, string> baseDisplayLineContent = new Dictionary<GuiCursorHudLineKeys, string>() {
-                {GuiCursorHudLineKeys.ItemName, "{0}"},
-                {GuiCursorHudLineKeys.PieceName, "{0}"},
-                {GuiCursorHudLineKeys.IntelState, "< {0} >"},
-                {GuiCursorHudLineKeys.Capacity, "Capacity: {0} Slots"},   
-                {GuiCursorHudLineKeys.Resources, "Resources: O: {0}, P: {1}, E: {2}"},
-                {GuiCursorHudLineKeys.Specials, "[800080]Specials:[-] {0} {1}"},
-                {GuiCursorHudLineKeys.SettlementSize, "Settlement: {0}"},
-                {GuiCursorHudLineKeys.SettlementDetails, "Settlement: {0}, P: {1}, C: {2}, OPE: {3}, X: {4}"},
-                {GuiCursorHudLineKeys.Owner, "Owner: {0}"},
-                {GuiCursorHudLineKeys.CombatStrength, "Combat: {0}"}, 
-                {GuiCursorHudLineKeys.CombatStrengthDetails, "Combat: {0}, B: {1}/{2}, M: {3}/{4}, P: {5}/{6}"},
-                {GuiCursorHudLineKeys.Health, "Health: {0} of {1} HP"},  
-                {GuiCursorHudLineKeys.Speed, CursorHudPhrases.Speed},  // the format is dynamically constructed within the ColoredText_Speed class
-                {GuiCursorHudLineKeys.Composition, "{0}"},   // the format is dynamically constructed within the ColoredText_Composition class
-                {GuiCursorHudLineKeys.CompositionDetails, "{0}"}, // the format is dynamically constructed within the ColoredText_Composition class
-                {GuiCursorHudLineKeys.ShipSize, "Size: {0}"},   
-                {GuiCursorHudLineKeys.ShipDetails, "{0}, Mass: {1}, TurnRate: {2}"},
-                {GuiCursorHudLineKeys.Distance, "Distance from Camera: {0} Units"} 
+            IDictionary<GuiHudLineKeys, string> baseDisplayLineContent = new Dictionary<GuiHudLineKeys, string>() {
+                {GuiHudLineKeys.ItemName, "{0}"},
+                {GuiHudLineKeys.PieceName, "{0}"},
+                {GuiHudLineKeys.IntelState, "< {0} >"},
+                {GuiHudLineKeys.Capacity, "Capacity: {0} Slots"},   
+                {GuiHudLineKeys.Resources, "Resources: O: {0}, P: {1}, E: {2}"},
+                {GuiHudLineKeys.Specials, "[800080]Specials:[-] {0} {1}"},
+                {GuiHudLineKeys.SettlementSize, "Settlement: {0}"},
+                {GuiHudLineKeys.SettlementDetails, "Settlement: {0}, P: {1}, C: {2}, OPE: {3}, X: {4}"},
+                {GuiHudLineKeys.Owner, "Owner: {0}"},
+                {GuiHudLineKeys.CombatStrength, "Combat: {0}"}, 
+                {GuiHudLineKeys.CombatStrengthDetails, "Combat: {0}, B: {1}/{2}, M: {3}/{4}, P: {5}/{6}"},
+                {GuiHudLineKeys.Health, "Health: {0} of {1} HP"},  
+                {GuiHudLineKeys.Speed, CursorHudPhrases.Speed},  // the format is dynamically constructed within the ColoredText_Speed class
+                {GuiHudLineKeys.Composition, "{0}"},   // the format is dynamically constructed within the ColoredText_Composition class
+                {GuiHudLineKeys.CompositionDetails, "{0}"}, // the format is dynamically constructed within the ColoredText_Composition class
+                {GuiHudLineKeys.ShipSize, "Size: {0}"},   
+                {GuiHudLineKeys.ShipDetails, "{0}, Mass: {1}, TurnRate: {2}"},
+                {GuiHudLineKeys.Distance, "Distance from Camera: {0} Units"} 
             };
             return baseDisplayLineContent;
         }
 
-        public GuiCursorHudText(IntelLevel intelLevel)
-            : this(intelLevel, new Dictionary<GuiCursorHudLineKeys, IColoredTextList>()) { }
+        public GuiHudText(IntelLevel intelLevel)
+            : this(intelLevel, new Dictionary<GuiHudLineKeys, IColoredTextList>()) { }
 
-        private GuiCursorHudText(IntelLevel intelLevel, IDictionary<GuiCursorHudLineKeys, IColoredTextList> textLine) {
+        private GuiHudText(IntelLevel intelLevel, IDictionary<GuiHudLineKeys, IColoredTextList> textLine) {
             IntelLevel = intelLevel;
             _textLine = textLine;
             IsDirty = true;
@@ -105,7 +105,7 @@ namespace CodeEnv.Master.Common.Unity {
         /// <param name="lineKey">The line key.</param>
         /// <param name="textList">The text list.</param>
         /// <exception cref="ArgumentException" >Attempting to add a line key that is already present.</exception>
-        public void Add(GuiCursorHudLineKeys lineKey, IColoredTextList textList) {
+        public void Add(GuiHudLineKeys lineKey, IColoredTextList textList) {
             _textLine.Add(lineKey, textList);
             //_data[lineKey] = textList;
             IsDirty = true;
@@ -117,7 +117,7 @@ namespace CodeEnv.Master.Common.Unity {
         /// </summary>
         /// <param name="lineKey">The line key.</param>
         /// <param name="textList">The text elements.</param>
-        public void Replace(GuiCursorHudLineKeys lineKey, IColoredTextList textList) {
+        public void Replace(GuiHudLineKeys lineKey, IColoredTextList textList) {
             if (_textLine.ContainsKey(lineKey)) {
                 _textLine.Remove(lineKey);
             }
@@ -156,7 +156,7 @@ namespace CodeEnv.Master.Common.Unity {
         /// <param name="lineKey">The line key.</param>
         /// <param name="coloredTextList">The colored text elements.</param>
         /// <returns></returns>
-        private string ConstructTextLine(GuiCursorHudLineKeys lineKey, IColoredTextList coloredTextList) {
+        private string ConstructTextLine(GuiHudLineKeys lineKey, IColoredTextList coloredTextList) {
             IList<string> textElements = new List<string>();
             foreach (var ct in coloredTextList.List) {
                 textElements.Add(ct.TextWithEmbeddedColor);

@@ -48,32 +48,43 @@ namespace CodeEnv.Master.Common.Unity {
             private set { SetProperty<bool>(ref _isGameRunning, value, "IsGameRunning"); }
         }
 
+        private PauseState _pauseState = PauseState.NotPaused;
         /// <summary>
-        /// To set use ProcessPauseRequest().
+        /// Gets the PauseState of the game. Warning: IsPaused changes AFTER
+        /// PauseState completes its changes and notifications.
         /// </summary>
-        /// <sb>
-        /// <c>true</c> if the game is paused; otherwise, <c>false</c>.
-        /// </sb>
-        private bool _isGamePaused;
-        public bool IsGamePaused {
-            get {
-                return _isGamePaused;
-            }
-            private set {
-                SetProperty<bool>(ref _isGamePaused, value, "IsGamePaused");
+        public PauseState PauseState {
+            get { return _pauseState; }
+            private set {   // to set use ProcessPauseRequest
+                SetProperty<PauseState>(ref _pauseState, value, "PauseState", OnPauseStateChanged);
             }
         }
 
-        //private PauseState _pauseState;
-        ///// <summary>
-        ///// Gets the PauseState of the game.
-        ///// </summary>
-        //public PauseState PauseState {
-        //    get { return _pauseState; }
-        //    private set {   // to set use ProcessPauseRequest
-        //        SetProperty<PauseState>(ref _pauseState, value, "PauseState");
-        //    }
-        //}
+        private void OnPauseStateChanged() {
+            switch (PauseState) {
+                case Common.PauseState.NotPaused:
+                    IsPaused = false;
+                    break;
+                case Common.PauseState.GuiAutoPaused:
+                case Common.PauseState.Paused:
+                    IsPaused = true;
+                    break;
+                case Common.PauseState.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(PauseState));
+            }
+        }
+
+        private bool _isPaused = false;
+        /// <summary>
+        /// Convenience Property indicating whether the game is paused. Automatically set
+        /// as a result of OnPauseStateChanged. Warning: This means OnIsPausedChanging actually
+        /// occurs AFTER the PauseState changes, but always before OnIsPausedChanged.
+        /// </summary>
+        public bool IsPaused {
+            get { return _isPaused; }
+            private set { SetProperty<bool>(ref _isPaused, value, "IsPaused"); }
+        }
 
         private GameEventManager _eventMgr;
         private GameTime _gameTime;
@@ -266,93 +277,43 @@ namespace CodeEnv.Master.Common.Unity {
             ProcessPauseRequest(e.NewValue);
         }
 
-
-        // flag indicating whether the current pause was requested directly by the user or program
-        private bool _isPriorityPause;
         private void ProcessPauseRequest(PauseRequest request) {
-            bool toPause = false;
             switch (request) {
                 case PauseRequest.GuiAutoPause:
-                    if (_isPriorityPause) { return; }
-                    if (!IsGamePaused) {
-                        toPause = true;
-                    }
-                    else {
+                    if (PauseState == PauseState.Paused) { return; }
+                    if (PauseState == PauseState.GuiAutoPaused) {
                         D.Warn("Attempt to GuiAutoPause when already paused.");
+                        return;
                     }
+                    PauseState = PauseState.GuiAutoPaused;
                     break;
                 case PauseRequest.GuiAutoResume:
-                    if (_isPriorityPause) { return; }
-                    if (IsGamePaused) {
-                        toPause = false;
-                    }
-                    else {
+                    if (PauseState == PauseState.Paused) { return; }
+                    if (PauseState == PauseState.NotPaused) {
                         D.Warn("Attempt to GuiAutoResume when not paused.");
+                        return;
                     }
+                    PauseState = Common.PauseState.NotPaused;
                     break;
                 case PauseRequest.PriorityPause:
-                    if (!IsGamePaused) {
-                        toPause = true;
-                        _isPriorityPause = true;
-                    }
-                    else {
+                    if (PauseState == PauseState.Paused) {
                         D.Warn("Attempt to PriorityPause when already paused.");
+                        return;
                     }
+                    PauseState = PauseState.Paused;
                     break;
                 case PauseRequest.PriorityResume:
-                    if (IsGamePaused) {
-                        toPause = false;
-                        _isPriorityPause = false;
-                    }
-                    else {
+                    if (PauseState == PauseState.NotPaused) {
                         D.Warn("Atttempt to PriorityResume when not paused.");
+                        return;
                     }
+                    PauseState = PauseState.NotPaused;
                     break;
                 case PauseRequest.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(request));
             }
-            IsGamePaused = toPause;
         }
-
-        //private void ProcessPauseRequest(PauseRequest request) {
-        //    switch (request) {
-        //        case PauseRequest.GuiAutoPause:
-        //            if (PauseState == PauseState.Paused) { return; }
-        //            if (PauseState == PauseState.GuiAutoPaused) {
-        //                D.Warn("Attempt to GuiAutoPause when already paused.");
-        //                return;
-        //            }
-        //            PauseState = PauseState.GuiAutoPaused;
-        //            break;
-        //        case PauseRequest.GuiAutoResume:
-        //            if (PauseState == PauseState.Paused) { return; }
-        //            if (PauseState == PauseState.NotPaused) {
-        //                D.Warn("Attempt to GuiAutoResume when not paused.");
-        //                return;
-        //            }
-        //            PauseState = Common.PauseState.NotPaused;
-        //            break;
-        //        case PauseRequest.PriorityPause:
-        //            if (PauseState == PauseState.Paused) {
-        //                D.Warn("Attempt to PriorityPause when already paused.");
-        //                return;
-        //            }
-        //            PauseState = PauseState.Paused;
-        //            break;
-        //        case PauseRequest.PriorityResume:
-        //            if (PauseState == PauseState.NotPaused) {
-        //                D.Warn("Atttempt to PriorityResume when not paused.");
-        //                return;
-        //            }
-        //            PauseState = PauseState.NotPaused;
-        //            break;
-        //        case PauseRequest.None:
-        //        default:
-        //            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(request));
-        //    }
-        //}
-
 
         /// <summary>
         /// Called from Loader when all conditions are met to run.
@@ -420,24 +381,16 @@ namespace CodeEnv.Master.Common.Unity {
         }
 
         /// <summary>
-        /// Resets any conditions required for normal game startup. For instance, IsGamePaused
-        /// is normally false while setting up the first game. This may or maynot be the
-        /// current state of IsgamePaused given the numerous ways one can initiate the startup
+        /// Resets any conditions required for normal game startup. For instance, PauseState
+        /// is normally NotPaused while setting up the first game. This may or maynot be the
+        /// current state of PauseState given the numerous ways one can initiate the startup
         /// of a game instance.
         /// </summary>
         private void ResetConditionsForGameStartup() {
-            if (IsGamePaused) {
+            if (IsPaused) {
                 ProcessPauseRequest(PauseRequest.PriorityResume);
             }
-            _isPriorityPause = false;
         }
-
-        //private void ResetConditionsForGameStartup() {
-        //    if (PauseState == Common.PauseState.Paused || PauseState == Common.PauseState.GuiAutoPaused) {
-        //        ProcessPauseRequest(PauseRequest.PriorityResume);
-        //    }
-        //}
-
 
         private void OnExitGame(ExitGameEvent e) {
             Shutdown();
@@ -513,7 +466,7 @@ namespace CodeEnv.Master.Common.Unity {
         #region IInstanceIdentity Members
 
         private static int instanceCounter = 0;
-        public int InstanceID { get; set; }
+        public int InstanceID { get; protected set; }
 
         protected void IncrementInstanceCounter() {
             InstanceID = System.Threading.Interlocked.Increment(ref instanceCounter);

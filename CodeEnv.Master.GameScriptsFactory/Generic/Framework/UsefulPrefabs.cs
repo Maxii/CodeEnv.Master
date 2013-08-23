@@ -27,19 +27,19 @@ using UnityEngine;
 /// clone of the Prefab in the startScene. As such, they must be Instantiated before use.
 /// </remarks>
 /// </summary>
-public class UsefulPrefabs : AMonoBehaviourBase, IInstanceIdentity {
-
-    public static UsefulPrefabs currentInstance;
+public class UsefulPrefabs : AMonoBehaviourBaseSingleton<UsefulPrefabs> {
 
     //*******************************************************************
     // Prefabs you want to keep between scenes t here and
-    // can be accessed by UsefulPrefabs.currentInstance.variableName
+    // can be accessed by UsefulPrefabs.Instance.variableName
     //*******************************************************************
     public Light flareLight;
 
     void Awake() {
-        IncrementInstanceCounter();
-        TryDestroyExtraCopies();
+        if (TryDestroyExtraCopies()) {
+            return;
+        }
+        // TODO other initialization here   
     }
 
     /// <summary>
@@ -49,20 +49,24 @@ public class UsefulPrefabs : AMonoBehaviourBase, IInstanceIdentity {
     /// </summary>
     /// <returns><c>true</c> if this instance is going to be destroyed, <c>false</c> if not.</returns>
     private bool TryDestroyExtraCopies() {
-        if (currentInstance != null && currentInstance != this) {
+        if (_instance && _instance != this) {
             Logger.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceID));
             Destroy(gameObject);
             return true;
         }
         else {
             DontDestroyOnLoad(gameObject);
-            currentInstance = this;
+            _instance = this;
             return false;
         }
     }
 
     void OnDestroy() {
-        Debug.Log("{0}_{1} instance is being destroyed.".Inject(this.name, InstanceID));
+        Logger.Log("{0}_{1} instance is being destroyed.".Inject(this.name, InstanceID));
+    }
+
+    protected override void OnApplicationQuit() {
+        _instance = null;
     }
 
     public override string ToString() {

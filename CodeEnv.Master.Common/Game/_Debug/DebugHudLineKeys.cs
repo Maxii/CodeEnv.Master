@@ -22,7 +22,8 @@ namespace CodeEnv.Master.Common {
     public enum DebugHudLineKeys {
 
         None,
-        CameraMode
+        CameraMode,
+        PauseState
     }
 }
 

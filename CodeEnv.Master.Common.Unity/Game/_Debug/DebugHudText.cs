@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -29,7 +29,8 @@ namespace CodeEnv.Master.Common.Unity {
 
         // This is needed as the order of Dictionary.Keys is not defined when iterating through it, even if they were added in the right order
         private static IList<DebugHudLineKeys> _displayLineOrder = new List<DebugHudLineKeys>() {
-                {DebugHudLineKeys.CameraMode}
+                DebugHudLineKeys.CameraMode, 
+                DebugHudLineKeys.PauseState
         };
 
         private static IDictionary<DebugHudLineKeys, string> _baseDisplayLineContent;
@@ -49,7 +50,8 @@ namespace CodeEnv.Master.Common.Unity {
 
             // initialized in static constructor because formats that are dynamically constructed cannot be used in a static initializer
             IDictionary<DebugHudLineKeys, string> baseDisplayLineContent = new Dictionary<DebugHudLineKeys, string>() {
-                {DebugHudLineKeys.CameraMode, "{0}"}
+                {DebugHudLineKeys.CameraMode, "{0}"},
+                {DebugHudLineKeys.PauseState, "{0}"}
             };
             return baseDisplayLineContent;
         }
@@ -106,7 +108,7 @@ namespace CodeEnv.Master.Common.Unity {
 
         private void UpdateText() {
             _text.Clear();
-            D.Log("UpdateText() called.");
+            //D.Log("UpdateText() called.");
             foreach (var key in _displayLineOrder) {
                 IColoredTextList coloredTextList;
                 if (_textLine.TryGetValue(key, out coloredTextList)) {
@@ -129,13 +131,13 @@ namespace CodeEnv.Master.Common.Unity {
             IList<string> textElements = new List<string>();
             foreach (var ct in coloredTextList.List) {
                 textElements.Add(ct.TextWithEmbeddedColor);
-                D.Log("ConstructTextLine called. ColoredTextElement = {0}".Inject(ct.TextWithEmbeddedColor));
+                //D.Log("ConstructTextLine called. ColoredTextElement = {0}".Inject(ct.TextWithEmbeddedColor));
             }
 
             string baseText;
             if (_baseDisplayLineContent.TryGetValue(lineKey, out baseText)) {
-                D.Log("BaseText = {0}", baseText);
-                D.Log("Text Elements = {0}", textElements.Concatenate<string>(Constants.Comma));
+                //D.Log("BaseText = {0}", baseText);
+                //D.Log("Text Elements = {0}", textElements.Concatenate<string>(Constants.Comma));
                 string colorEmbeddedLineText = baseText.Inject(textElements.ToArray<string>());
                 return colorEmbeddedLineText;
             }
@@ -148,7 +150,6 @@ namespace CodeEnv.Master.Common.Unity {
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
-
 
     }
 }

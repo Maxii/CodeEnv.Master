@@ -301,7 +301,7 @@ namespace CodeEnv.Master.Common.Unity {
         #region IInstanceIdentity Members
 
         private static int instanceCounter = 0;
-        public int InstanceID { get; set; }
+        public int InstanceID { get; protected set; }
 
         private void IncrementInstanceCounter() {
             InstanceID = System.Threading.Interlocked.Increment(ref instanceCounter);

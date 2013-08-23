@@ -39,7 +39,7 @@ public class Logger : AMonoBehaviourBaseSingleton<Logger> {
     /// </summary>
     /// <returns><c>true</c> if this instance is going to be destroyed, <c>false</c> if not.</returns>
     private bool TryDestroyExtraCopies() {
-        if (_instance != null && _instance != this) {
+        if (_instance && _instance != this) {
             // avoid calling Log when the instance is being destroyed
             Debug.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceID));
             Destroy(gameObject);
@@ -58,7 +58,9 @@ public class Logger : AMonoBehaviourBaseSingleton<Logger> {
     /// <remarks>Use this when including MyObject.ToString() which contains {} that string.Format() doesn't like.</remarks>
     /// <param name="message">The string message.</param>
     public static void Log(string message) {
-        _instance.LogIfEnabled(message);
+        if (_instance) {
+            _instance.LogIfEnabled(message);
+        }
     }
 
     private void LogIfEnabled(string message) {
@@ -74,7 +76,9 @@ public class Logger : AMonoBehaviourBaseSingleton<Logger> {
     /// <param name="format">The message object, typically a composite message string.</param>
     /// <param name="paramList">The paramaters to insert into the composite message string.</param>
     public static void Log(object format, params object[] paramList) {
-        _instance.LogIfEnabled(format, paramList);
+        if (_instance) {
+            _instance.LogIfEnabled(format, paramList);
+        }
     }
 
     private void LogIfEnabled(object format, params object[] paramList) {

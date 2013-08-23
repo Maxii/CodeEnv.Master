@@ -6,7 +6,8 @@
 // </copyright> 
 // <summary> 
 // File: PropertyChangingValueEventArgs.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// Custom PropertyChangingEventArgs class that includes the proposed new value
+// of a property just prior to its change.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,13 +19,20 @@ namespace CodeEnv.Master.Common {
 
     using System.ComponentModel;
 
+    /// <summary>
+    /// Custom PropertyChangingEventArgs class that includes the proposed new value
+    /// of a property just prior to its change. IMPORTANT: The client must cast the PropertyChangingEventArgs provided
+    /// by the PropertyChanging delegate to this type in order to get access to NewValue.
+    /// </summary>
+    /// <remarks>http://stackoverflow.com/questions/8577207/better-propertychanged-and-propertychanging-event-handling</remarks>
+    /// <typeparam name="T"></typeparam>
     public class PropertyChangingValueEventArgs<T> : PropertyChangingEventArgs {
 
-        public T Newvalue { get; private set; }
+        public T NewValue { get; private set; }
 
         public PropertyChangingValueEventArgs(string propertyName, T newValue)
             : base(propertyName) {
-            Newvalue = newValue;
+            NewValue = newValue;
         }
 
         public override string ToString() {

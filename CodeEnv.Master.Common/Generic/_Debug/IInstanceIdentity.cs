@@ -20,7 +20,7 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public interface IInstanceIdentity {
 
-        int InstanceID { get; set; }
+        int InstanceID { get; }
     }
 }
 

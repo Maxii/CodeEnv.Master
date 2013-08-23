@@ -29,21 +29,21 @@ namespace CodeEnv.Master.Common.Unity {
     [Obsolete]
     public class __GuiCursorHudTextFactory {
 
-        private static IDictionary<IntelLevel, IList<GuiCursorHudLineKeys>> _hudLineKeyLookup = new Dictionary<IntelLevel, IList<GuiCursorHudLineKeys>> {
+        private static IDictionary<IntelLevel, IList<GuiHudLineKeys>> _hudLineKeyLookup = new Dictionary<IntelLevel, IList<GuiHudLineKeys>> {
 
-        {IntelLevel.Unknown, new List<GuiCursorHudLineKeys> { GuiCursorHudLineKeys.PieceName,
-                                                                       GuiCursorHudLineKeys.IntelState,
-                                                                       GuiCursorHudLineKeys.Distance }},
+        {IntelLevel.Unknown, new List<GuiHudLineKeys> { GuiHudLineKeys.PieceName,
+                                                                       GuiHudLineKeys.IntelState,
+                                                                       GuiHudLineKeys.Distance }},
 
-        {IntelLevel.OutOfRange, new List<GuiCursorHudLineKeys> {   GuiCursorHudLineKeys.PieceName,
-                                                                       GuiCursorHudLineKeys.Capacity,
-                                                                       GuiCursorHudLineKeys.Resources,
-                                                                       GuiCursorHudLineKeys.Specials,
-                                                                       GuiCursorHudLineKeys.IntelState,
-                                                                       GuiCursorHudLineKeys.Distance }}
+        {IntelLevel.OutOfRange, new List<GuiHudLineKeys> {   GuiHudLineKeys.PieceName,
+                                                                       GuiHudLineKeys.Capacity,
+                                                                       GuiHudLineKeys.Resources,
+                                                                       GuiHudLineKeys.Specials,
+                                                                       GuiHudLineKeys.IntelState,
+                                                                       GuiHudLineKeys.Distance }}
     };
 
-        private IDictionary<IntelLevel, GuiCursorHudText> _guiCursorHudTextLookup;
+        private IDictionary<IntelLevel, GuiHudText> _guiCursorHudTextLookup;
 
         private SystemData _data;
 
@@ -56,20 +56,20 @@ namespace CodeEnv.Master.Common.Unity {
         /// </summary>
         /// <param name="intelLevel">The intel level.</param>   
         /// <returns></returns>
-        public GuiCursorHudText MakeInstance_GuiCursorHudText(IntelLevel intelLevel) {
+        public GuiHudText MakeInstance_GuiCursorHudText(IntelLevel intelLevel) {
             if (_guiCursorHudTextLookup == null) {
-                _guiCursorHudTextLookup = new Dictionary<IntelLevel, GuiCursorHudText>();
+                _guiCursorHudTextLookup = new Dictionary<IntelLevel, GuiHudText>();
             }
 
             if (_guiCursorHudTextLookup.ContainsKey(intelLevel)) {
                 return _guiCursorHudTextLookup[intelLevel];
             }
 
-            IList<GuiCursorHudLineKeys> keys;
+            IList<GuiHudLineKeys> keys;
             if (_hudLineKeyLookup.TryGetValue(intelLevel, out keys)) {
-                GuiCursorHudText guiCursorHudText = new GuiCursorHudText(intelLevel);
+                GuiHudText guiCursorHudText = new GuiHudText(intelLevel);
 
-                foreach (GuiCursorHudLineKeys key in keys) {
+                foreach (GuiHudLineKeys key in keys) {
                     IList<ColoredText> coloredTextList = MakeInstance_ColoredTextList(intelLevel, key);
                     guiCursorHudText.Add(key, coloredTextList);
                 }
@@ -87,24 +87,24 @@ namespace CodeEnv.Master.Common.Unity {
         /// <param name="key">The key.</param>
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
-        public IList<ColoredText> MakeInstance_ColoredTextList(IntelLevel intelLevel, GuiCursorHudLineKeys key) {
+        public IList<ColoredText> MakeInstance_ColoredTextList(IntelLevel intelLevel, GuiHudLineKeys key) {
             ColoredText coloredText = null;
             IList<ColoredText> coloredTextList = null;
             switch (key) {
-                case GuiCursorHudLineKeys.PieceName:
+                case GuiHudLineKeys.PieceName:
                     coloredText = new ColoredText(_data.PieceName);
                     break;
-                case GuiCursorHudLineKeys.Distance:
+                case GuiHudLineKeys.Distance:
                     // TODO calculate from SystemData.Position and <code>static GetSelected()<code>
                     float distance = Vector3.Distance(_data.Position, TempGameValues.UniverseOrigin);
                     string distance_formatted = String.Format("{0:0.#}", distance);    // {0:0.#}     float with max one decimal place, rounded
                     coloredText = new ColoredText(distance_formatted);
                     break;
-                case GuiCursorHudLineKeys.Capacity:
+                case GuiHudLineKeys.Capacity:
                     string capacity_formatted = String.Format("{0:00}", _data.Capacity); // {0:00}     int with at least two digits
                     coloredText = new ColoredText(capacity_formatted);
                     break;
-                case GuiCursorHudLineKeys.Resources:
+                case GuiHudLineKeys.Resources:
                     OpeYield ope = _data.Resources;
                     string organics_formatted = String.Format("{0:0.}", ope.Organics);  // {0:0.}    float with zero decimal places, rounded
                     string particulates_formatted = String.Format("{0:0.}", ope.Particulates);
@@ -115,7 +115,7 @@ namespace CodeEnv.Master.Common.Unity {
                                 new ColoredText(energy_formatted)
                             };
                     break;
-                case GuiCursorHudLineKeys.Specials:
+                case GuiHudLineKeys.Specials:
                     // TODO how to handle variable number of XResources
                     XYield x = _data.SpecialResources;
                     IList<XYield.XResourceValuePair> allX = x.GetAllResources();
@@ -129,17 +129,17 @@ namespace CodeEnv.Master.Common.Unity {
                                 new ColoredText(resourceYield_formatted)
                             };
                     break;
-                case GuiCursorHudLineKeys.IntelState:
+                case GuiHudLineKeys.IntelState:
                     // TODO fill out from HumanPlayer.GetIntelState(System) - need last intel date too
                     GameTimePeriod intelAge = new GameTimePeriod(_data.LastHumanPlayerIntelDate, GameTime.Date);
                     string intelText_formatted = ConstructIntelText(intelLevel, intelAge);
                     coloredText = new ColoredText(intelText_formatted);
                     break;
-                case GuiCursorHudLineKeys.Owner:
+                case GuiHudLineKeys.Owner:
                     Players player = _data.Owner;
                     coloredText = new ColoredText(player.GetName(), player.PlayerColor());
                     break;
-                case GuiCursorHudLineKeys.Health:
+                case GuiHudLineKeys.Health:
                     float health = _data.Health; float maxHp = _data.MaxHitPoints;
                     float healthRatio = health / maxHp;
                     Color healthColor = (healthRatio > TempGameValues.InjuredHealthThreshold) ? Color.green :
@@ -151,21 +151,21 @@ namespace CodeEnv.Master.Common.Unity {
                                 new ColoredText(maxHp_formatted, Color.green)
                             };
                     break;
-                case GuiCursorHudLineKeys.CombatStrength:
+                case GuiHudLineKeys.CombatStrength:
                     string combatStrenth_formatted = String.Format("{0:0.}", _data.CombatStrength);       // {0:0.}    float with zero decimal places, rounded
                     coloredText = new ColoredText(combatStrenth_formatted);
                     break;
-                case GuiCursorHudLineKeys.Speed:
+                case GuiHudLineKeys.Speed:
                     // TODO
                     float testSpeed = 23.5F;
                     string speed_formatted = String.Format("{0:00.0}", testSpeed);    // {0:00.0}     float with at least two digits before the one decimal place, rounded
                     coloredText = new ColoredText(speed_formatted);
                     break;
-                case GuiCursorHudLineKeys.Composition:
+                case GuiHudLineKeys.Composition:
                     // TODO                        
                     coloredText = new ColoredText("Composition Test");
                     break;
-                case GuiCursorHudLineKeys.None:
+                case GuiHudLineKeys.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(key));
             }
