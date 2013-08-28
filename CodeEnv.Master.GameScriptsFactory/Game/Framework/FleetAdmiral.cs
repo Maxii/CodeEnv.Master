@@ -21,7 +21,7 @@ using UnityEngine;
 /// <summary>
 /// Runs the operations of a fleet, aka Fleet Command.
 /// </summary>
-public class FleetAdmiral : FollowableItem, ISelectable, IDisposable {
+public class FleetAdmiral : FollowableItem, ISelectable, IHasContextMenu, IDisposable {
 
     public new FleetData Data {
         get { return base.Data as FleetData; }
@@ -32,25 +32,31 @@ public class FleetAdmiral : FollowableItem, ISelectable, IDisposable {
     /// The separation between the pivot point on the lead ship and the fleet icon,
     ///as a Viewport vector. Viewport vector values vary from 0.0F to 1.0F.
     /// </summary>
-    public Vector3 _fleetIconOffsetFromPivot = new Vector3(Constants.ZeroF, 0.02F, Constants.ZeroF);
+    public Vector3 _fleetIconOffsetFromPivot = new Vector3(Constants.ZeroF, 0.03F, Constants.ZeroF);
 
-    public float minIconZoomDistance = 4.0F;
-    public float optimalIconFollowDistance = 10F;
+    public float minFleetViewingDistance = 4.0F;
+    public float optimalFleetViewingDistance = 10F;
+
+    private Transform _leadShip;
+    public Transform LeadShip {
+        get { return _leadShip; }
+        set { SetProperty<Transform>(ref _leadShip, value, "LeadShip", OnLeadShipChanged); }
+    }
+
+    private ShipCaptain[] _shipCaptains;
+    private IList<IDisposable> _subscribers;
 
     /// <summary>
     /// The offset that determines the point on the lead ship from which
     ///  the Fleet Icon pivots, as a Worldspace vector.
     /// </summary>
     private Vector3 _fleetIconPivotOffset;
+    private FleetGraphics _fleetGraphics;
 
-    private Transform _leadShip;
-
-    private ShipCaptain[] _shipCaptains;
-    private IList<IDisposable> _subscribers;
-
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void Awake() {
+        base.Awake();
         gameObject.name = "Borg Fleet";
+        _fleetGraphics = gameObject.GetSafeMonoBehaviourComponentInParents<FleetGraphics>();
         Subscribe();
     }
 
@@ -61,9 +67,10 @@ public class FleetAdmiral : FollowableItem, ISelectable, IDisposable {
         _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, GameState>(gs => gs.GameState, OnGameStateChanged));
     }
 
-    protected override void InitializeOnStart() {
-        base.InitializeOnStart();
-        HumanPlayerIntelLevel = IntelLevel.LongRangeSensors;
+    protected override void Start() {
+        base.Start();
+        __ValidateCtxObjectSettings();
+        PlayerIntelLevel = IntelLevel.LongRangeSensors;
         HudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed);
         InitializeFleet();
     }
@@ -71,13 +78,12 @@ public class FleetAdmiral : FollowableItem, ISelectable, IDisposable {
     private void InitializeFleet() {
         // overall fleet container gameobject is this FleetManager's parent
         _shipCaptains = _transform.parent.gameObject.GetSafeMonoBehaviourComponentsInChildren<ShipCaptain>();
-        AssignLeadShip(_shipCaptains[0].transform);
-        _fleetIconPivotOffset = new Vector3(Constants.ZeroF, _leadShip.collider.bounds.extents.y, Constants.ZeroF);
+        LeadShip = _shipCaptains[0].transform;
+        _fleetIconPivotOffset = new Vector3(Constants.ZeroF, LeadShip.collider.bounds.extents.y, Constants.ZeroF);
     }
 
-    public void AssignLeadShip(Transform leadShip) {
-        _leadShip = leadShip;
-        Data.LeadShipData = leadShip.gameObject.GetSafeMonoBehaviourComponent<ShipCaptain>().Data;
+    private void OnLeadShipChanged() {
+        Data.LeadShipData = LeadShip.gameObject.GetSafeMonoBehaviourComponent<ShipCaptain>().Data;
     }
 
     private void OnGameStateChanged() {
@@ -111,7 +117,9 @@ public class FleetAdmiral : FollowableItem, ISelectable, IDisposable {
     }
 
     void OnDoubleClick() {
-        ChangeFleetHeading(-_transform.right);
+        if (NguiGameInput.IsLeftMouseButtonClick()) {
+            ChangeFleetHeading(-_transform.right);  // turn left
+        }
     }
 
     void Update() {
@@ -121,9 +129,21 @@ public class FleetAdmiral : FollowableItem, ISelectable, IDisposable {
     }
 
     private void TrackLeadShip() {  // OPTIMIZE?
-        Vector3 viewportOffsetLocation = Camera.main.WorldToViewportPoint(_leadShip.position + _fleetIconPivotOffset);
+        Vector3 viewportOffsetLocation = Camera.main.WorldToViewportPoint(LeadShip.position + _fleetIconPivotOffset);
         _transform.position = Camera.main.ViewportToWorldPoint(viewportOffsetLocation + _fleetIconOffsetFromPivot);
-        _transform.rotation = _leadShip.rotation;
+        _transform.rotation = LeadShip.rotation;
+    }
+
+    private void OnIsSelectedChanged() {
+        _fleetGraphics.ChangeHighlighting();
+        if (IsSelected) {
+            _eventMgr.Raise<SelectionEvent>(new SelectionEvent(this, gameObject));
+        }
+    }
+
+    protected override void OnIsFocusChanged() {
+        base.OnIsFocusChanged();
+        _fleetGraphics.ChangeHighlighting();
     }
 
     private void Unsubscribe() {
@@ -147,7 +167,7 @@ public class FleetAdmiral : FollowableItem, ISelectable, IDisposable {
     /// is a factor of the collider bounds which doesn't work for colliders whos
     /// size changes based on the distance to the camera.
     /// </summary>
-    public override float MinimumCameraViewingDistance { get { return minIconZoomDistance; } }
+    public override float MinimumCameraViewingDistance { get { return minFleetViewingDistance; } }
 
     #endregion
 
@@ -158,42 +178,52 @@ public class FleetAdmiral : FollowableItem, ISelectable, IDisposable {
     /// is a factor of the collider bounds which doesn't work for colliders whos
     /// size changes based on the distance to the camera.
     /// </summary>
-    public override float OptimalCameraViewingDistance { get { return optimalIconFollowDistance; } }
+    public override float OptimalCameraViewingDistance { get { return optimalFleetViewingDistance; } }
 
     #endregion
 
     #region ISelectable Members
 
-    public void OnLeftClick() {
-        // TODO does nothing for now
-    }
-
     private bool _isSelected;
     public bool IsSelected {
         get { return _isSelected; }
-        set { SetProperty<bool>(ref _isSelected, value, "IsSelected"); }
+        set { SetProperty<bool>(ref _isSelected, value, "IsSelected", OnIsSelectedChanged); }
+    }
+
+
+    public void OnLeftClick() {
+        IsSelected = true;
     }
 
     #endregion
 
-    #region IDisposable
-    [DoNotSerialize]
-    private bool alreadyDisposed = false;
+    #region IHasContextMenu Members
 
-    /// <summary>
-    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-    /// </summary>
-    public void Dispose() {
-        Dispose(true);
-        GC.SuppressFinalize(this);
+    public void __ValidateCtxObjectSettings() {
+        CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
+        D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
+        UnityUtility.ValidateComponentPresence<Collider>(gameObject);
     }
+
+    public void OnPress(bool isPressed) {
+        if (IsSelected) {
+            //Logger.Log("{0}.OnPress({1}) called.", this.GetType().Name, isPressed);
+            CameraControl.Instance.ContextMenuPickHandler.OnPress(isPressed);
+        }
+    }
+
+    #endregion
+
+    #region IDisposable derived class
+    [NonSerialized]
+    private bool alreadyDisposed = false;
 
     /// <summary>
     /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
     /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
     /// </summary>
     /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool isDisposing) {
+    protected override void Dispose(bool isDisposing) {
         // Allows Dispose(isDisposing) to be called more than once
         if (alreadyDisposed) {
             return;
@@ -206,6 +236,10 @@ public class FleetAdmiral : FollowableItem, ISelectable, IDisposable {
         // free unmanaged resources here
 
         alreadyDisposed = true;
+
+        // Let the base class free its resources.
+        // Base class is reponsible for calling GC.SuppressFinalize()
+        base.Dispose(isDisposing);
     }
 
     // Example method showing check for whether the object has been disposed

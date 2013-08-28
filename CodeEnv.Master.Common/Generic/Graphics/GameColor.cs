@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GameColor.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// My GameColor enum. Use gameColorConstant.Value() to get Unity's Color.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,9 +16,13 @@
 
 namespace CodeEnv.Master.Common {
 
+    /// <summary>
+    /// My GameColor enum. Use gameColorConstant.Value() to get Unity's Color.
+    /// </summary>
     public enum GameColor {
 
         None,
+        Clear,
         Black,
         Blue,
         Cyan,

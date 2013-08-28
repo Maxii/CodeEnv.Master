@@ -26,10 +26,15 @@ public abstract class AGuiLabelReadoutBase : GuiTooltip {
     protected GameEventManager _eventMgr;
     protected UILabel _readoutLabel;
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void Awake() {
+        base.Awake();
         _eventMgr = GameEventManager.Instance;
         _readoutLabel = gameObject.GetSafeMonoBehaviourComponent<UILabel>();
+    }
+
+    protected virtual void RefreshReadout(string text, GameColor color = GameColor.White) {
+        _readoutLabel.text = text;
+        _readoutLabel.color = color.ToUnityColor();
     }
 }
 

@@ -35,7 +35,7 @@ namespace CodeEnv.Master.Common.Unity {
         /// <param name="color">The GameColor.</param>
         /// <returns></returns>
         public static string ColorToHex(GameColor color) {
-            return ColorToHex(color.Value());
+            return ColorToHex(color.ToUnityColor());
         }
 
         /// <summary>

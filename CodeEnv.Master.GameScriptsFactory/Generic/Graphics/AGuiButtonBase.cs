@@ -29,20 +29,14 @@ public abstract class AGuiButtonBase : GuiTooltip {
     protected PlayerPrefsManager _playerPrefsMgr;
     protected UIButton _button;
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void Awake() {
+        base.Awake();
         _playerPrefsMgr = PlayerPrefsManager.Instance;
         _eventMgr = GameEventManager.Instance;
     }
 
-    void Start() {
-        InitializeOnStart();
-    }
-
-    /// <summary>
-    /// Override to initialize the tooltip message. Remember base.InitializeOnAwake();
-    /// </summary>
-    protected virtual void InitializeOnStart() {
+    protected override void Start() {
+        base.Start();
         _button = gameObject.GetSafeMonoBehaviourComponent<UIButton>();
         //UIEventListener.Get(gameObject).onClick += OnButtonClick;  // NGUI general event system
     }

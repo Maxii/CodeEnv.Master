@@ -29,13 +29,14 @@ public class GuiManager : AMonoBehaviourBaseSingleton<GuiManager>, IDisposable {
     private UIPanel _uiRootPanel;
     private GameEventManager _eventMgr;
 
-    void Awake() {
+    protected override void Awake() {
+        base.Awake();
         _eventMgr = GameEventManager.Instance;
         AddListeners();
     }
 
-    void Start() {
-        // Note: Components that are not active are not found with GetComponentInChildren()!
+    protected override void Start() {
+        base.Start();
         CheckDebugSettings();
         _uiRootPanel = gameObject.GetSafeMonoBehaviourComponent<UIPanel>();
     }

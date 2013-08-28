@@ -27,16 +27,17 @@ public class GuiTooltip : AMonoBehaviourBase {
 
     public string tooltip = string.Empty;
 
-    void Awake() {
-        InitializeOnAwake();
-    }
+    private bool _tooltipHasContent;
 
-    protected virtual void InitializeOnAwake() {
-        UnityUtility.ValidateComponentPresence<Collider>(gameObject);
+    protected override void Awake() {
+        base.Awake();
+        if (_tooltipHasContent = Utility.CheckForContent(tooltip)) {
+            UnityUtility.ValidateComponentPresence<Collider>(gameObject);
+        }
     }
 
     void OnTooltip(bool toShow) {
-        if (Utility.CheckForContent(tooltip)) {
+        if (_tooltipHasContent) {
             if (toShow) {
                 UITooltip.ShowText(tooltip);
             }

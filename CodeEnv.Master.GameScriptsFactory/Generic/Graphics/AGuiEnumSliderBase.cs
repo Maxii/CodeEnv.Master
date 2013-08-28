@@ -32,8 +32,8 @@ public abstract class AGuiEnumSliderBase<T> : GuiTooltip where T : struct {
     private float[] _orderedSliderStepValues;
     private T[] _orderedTValues;
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void Awake() {
+        base.Awake();
         _eventMgr = GameEventManager.Instance;
         _slider = gameObject.GetSafeMonoBehaviourComponent<UISlider>();
         InitializeSlider();

@@ -32,8 +32,8 @@ public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
 
     private GameClockSpeed _gameSpeedOnLoad;
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void Awake() {
+        base.Awake();
         tooltip = "Click to implement Option changes.";
     }
 
@@ -49,16 +49,19 @@ public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
         else if (checkboxName.Contains("zoom")) {
             _isZoomOutOnCursorEnabled = checkedState;
         }
-        else if (checkboxName.Contains("reset")) {
+        else if (checkboxName.Contains("focus")) {
             _isResetOnFocusEnabled = checkedState;
         }
         else if (checkboxName.Contains("pause")) {
             _isPauseOnLoadEnabled = checkedState;
         }
+        else {
+            D.Error("Name of Checkbox {0} not found.", checkboxName);
+        }
         // more checkboxes here
     }
 
-    protected override void RecordPopupListState(string selectionName) {
+    protected override void RecordPopupListState(string popupListName, string selectionName) {
         GameClockSpeed gameSpeedOnLoad;
         if (Enums<GameClockSpeed>.TryParse(selectionName, true, out gameSpeedOnLoad)) {
             //UnityEngine.Logger.Log("GameClockSpeedOnLoad recorded as {0}.".Inject(selectionName));
@@ -67,25 +70,13 @@ public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
         // more popupLists here
     }
 
-    protected override void RecordSliderState(float sliderValue) {
-        // UNDONE
-    }
-
-    protected override void OnCheckboxStateChange(bool state) {
-        base.OnCheckboxStateChange(state);
-    }
-
     protected override void OnPopupListSelectionChange(string item) {
         base.OnPopupListSelectionChange(item);
         ValidateState();
     }
 
-    protected override void OnSliderValueChange(float value) {
-        base.OnSliderValueChange(value);
-    }
-
     protected override void OnLeftClick() {
-        OptionSettings settings = new OptionSettings();
+        GamePlayOptionSettings settings = new GamePlayOptionSettings();
         settings.IsCameraRollEnabled = _isCameraRollEnabled;
         settings.IsPauseOnLoadEnabled = _isPauseOnLoadEnabled;
         settings.IsResetOnFocusEnabled = _isResetOnFocusEnabled;

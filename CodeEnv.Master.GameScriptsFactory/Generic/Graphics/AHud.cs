@@ -29,11 +29,8 @@ public abstract class AHud<T> : AMonoBehaviourBaseSingleton<T>, IHud where T : A
     protected UILabel _label;
     protected bool _isDisplayEnabled = true;
 
-    void Awake() {
-        InitializeOnAwake();
-    }
-
-    protected virtual void InitializeOnAwake() {
+    protected override void Awake() {
+        base.Awake();
         _transform = transform;
         _label = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
         _label.depth = 100; // draw on top of other Gui Elements in the same Panel
@@ -43,11 +40,9 @@ public abstract class AHud<T> : AMonoBehaviourBaseSingleton<T>, IHud where T : A
         }
     }
 
-    void Start() {
-        InitializeOnStart();
+    protected override void Start() {
+        base.Start();
     }
-
-    protected virtual void InitializeOnStart() { }
 
     void Update() {
         if (ToUpdate()) {

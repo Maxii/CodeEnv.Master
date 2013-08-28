@@ -27,7 +27,7 @@ using UnityEngine;
 /// Abstract base class for any item in the universe that is ICameraTargetable and
 /// supports viewing data via the GuiCursorHud.
 /// </summary>
-public abstract class AItem : AMonoBehaviourBase, ICameraTargetable {
+public abstract class AItem : AMonoBehaviourBase, ICameraTargetable, IDisposable {
 
     /// <summary>
     /// Gets or sets the data for this item. Clients are responsible for setting in the right sequence as 
@@ -35,13 +35,13 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable {
     /// </summary>
     public Data Data { get; set; }
 
-    private IntelLevel _humanPlayerIntelLevel = IntelLevel.Unknown;
-    public virtual IntelLevel HumanPlayerIntelLevel {
+    private IntelLevel _playerIntelLevel = IntelLevel.Unknown;
+    public virtual IntelLevel PlayerIntelLevel {
         get {
-            return _humanPlayerIntelLevel;
+            return _playerIntelLevel;
         }
         set {
-            SetProperty<IntelLevel>(ref _humanPlayerIntelLevel, value, "HumanPlayerIntelLevel");
+            SetProperty<IntelLevel>(ref _playerIntelLevel, value, "PlayerIntelLevel");
         }
     }
 
@@ -54,21 +54,15 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable {
     protected Collider _collider;
     protected Transform _transform;
 
-    void Awake() {
-        InitializeOnAwake();
-    }
-
-    protected virtual void InitializeOnAwake() {
+    protected override void Awake() {
+        base.Awake();
         UnityUtility.ValidateComponentPresence<Collider>(gameObject);
         _transform = transform;
         _collider = gameObject.GetComponent<Collider>();
     }
 
-    void Start() {
-        InitializeOnStart();
-    }
-
-    protected virtual void InitializeOnStart() {
+    protected override void Start() {
+        base.Start();
         InitializeHudPublisher();
     }
 
@@ -77,17 +71,22 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable {
     protected virtual void OnHover(bool isOver) {
         if (HudPublisher != null) {
             if (isOver) {
-                HudPublisher.DisplayHudAtCursor(HumanPlayerIntelLevel);
+                HudPublisher.DisplayHudAtCursor(PlayerIntelLevel);
                 //StartCoroutine<float>(HudPublisher.KeepHudCurrent, 2F);     // NO. Won't start. MethodName = "KeepHudCurrent", same as using separately declared Func<>
                 //StartCoroutine("HudPublisher.KeepHudCurrent", 2F);  // NO. Won't start. MethodName = "HudPublisher.KeepHudCurrent"
                 //StartCoroutine<float>(HudPublisher.KeepHudCurrent(), 2F);   //NO. Won't start. Declares and gets a HudPublisher delegate pointing to KeepHudCurrent(float) from HudPublisher. 
-                StartCoroutine(HudPublisher.KeepHudCurrent(2F));    // THIS WORKS!
+                //StartCoroutine(HudPublisher.KeepHudCurrent(2F));    // THIS WORKS!
+                StartCoroutine(HudPublisher.KeepHudCurrent());  // THIS WORKS!
             }
             else {
                 StopAllCoroutines();        // THIS WORKS
                 HudPublisher.ClearHud();
             }
         }
+    }
+
+    void OnDestroy() {  // will only be called if derived class doesn't have its own OnDestroy()
+        Dispose();
     }
 
     #region ICameraTargetable Members
@@ -109,6 +108,51 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable {
         }
     }
 
+    #endregion
+
+    // GuiHudPublisher has subscribers that need to be disposed
+    #region IDisposable
+
+    [DoNotSerialize]
+    private bool alreadyDisposed = false;
+
+    /// <summary>
+    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// </summary>
+    public void Dispose() {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
+    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
+    /// </summary>
+    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+    protected virtual void Dispose(bool isDisposing) {
+        // Allows Dispose(isDisposing) to be called more than once
+        if (alreadyDisposed) {
+            return;
+        }
+
+        if (isDisposing) {
+            // free managed resources here including unhooking events
+            HudPublisher.Dispose();
+        }
+        // free unmanaged resources here
+
+        alreadyDisposed = true;
+    }
+
+    // Example method showing check for whether the object has been disposed
+    //public void ExampleMethod() {
+    //    // throw Exception if called on object that is already disposed
+    //    if(alreadyDisposed) {
+    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
+    //    }
+
+    //    // method content here
+    //}
     #endregion
 
 }

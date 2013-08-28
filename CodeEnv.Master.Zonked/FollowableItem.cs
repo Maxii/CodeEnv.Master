@@ -29,7 +29,7 @@ public class FollowableItem : AFollowableItem {
     }
 
     public override void DisplayCursorHud() {
-        _guiCursorHud.Set(HudPublisher.GetHudText(HumanPlayerIntelLevel));
+        _guiCursorHud.Set(HudPublisher.GetHudText(PlayerIntelLevel));
     }
 
     public override void ClearCursorHud() {

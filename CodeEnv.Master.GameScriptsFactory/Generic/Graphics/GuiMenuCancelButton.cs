@@ -34,19 +34,19 @@ public class GuiMenuCancelButton : AGuiButtonBase {
     private string[] _openingPopupListsSelection;
     private bool _isInitialized;
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void Awake() {
+        base.Awake();
         tooltip = "Click to cancel changes.";
     }
 
-    protected override void InitializeOnStart() {
-        base.InitializeOnStart();
+    protected override void Start() {
+        base.Start();
         GameObject buttonParent = gameObject.transform.parent.gameObject;
-        _checkboxes = buttonParent.GetSafeMonoBehaviourComponentsInChildren<UICheckbox>(includeInactive: true);
+        _checkboxes = buttonParent.GetComponentsInChildren<UICheckbox>(includeInactive: true);
         //D.Assert(checkboxes.Length == 0, "There are no checkboxes on Menu {0}.".Inject(buttonParent.name)); 
         _openingCheckboxesState = new bool[_checkboxes.Length];
 
-        _popupLists = buttonParent.GetSafeMonoBehaviourComponentsInChildren<UIPopupList>(includeInactive: true);
+        _popupLists = buttonParent.GetComponentsInChildren<UIPopupList>(includeInactive: true);
         //D.Assert(popupLists.Length == 0, "There are no PopupLists on Menu {0}.".Inject(buttonParent.name)); 
 
         _openingPopupListsSelection = new string[_popupLists.Length];

@@ -25,13 +25,13 @@ public class DebugHud : AHud<DebugHud>, IDebugHud, IDisposable {
 
     private IList<IDisposable> _subscribers;
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void Awake() {
+        base.Awake();
         Subscribe();
     }
 
-    protected override void InitializeOnStart() {
-        base.InitializeOnStart();
+    protected override void Start() {
+        base.Start();
         Logger.Log("DebugHud.Start()");
     }
 
@@ -41,7 +41,7 @@ public class DebugHud : AHud<DebugHud>, IDebugHud, IDisposable {
         if (_subscribers == null) {
             _subscribers = new List<IDisposable>();
         }
-        _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, PauseState>(gm => gm.PauseState, OnPauseStateChanged));
+        //_subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, PauseState>(gm => gm.PauseState, OnPauseStateChanged));
     }
 
     private void OnPauseStateChanged() {

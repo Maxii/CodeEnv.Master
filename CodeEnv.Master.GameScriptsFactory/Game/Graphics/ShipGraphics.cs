@@ -13,12 +13,10 @@
 // default namespace
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.Common.Unity;
+using UnityEngine;
 
 /// <summary>
 /// Handles graphics for a ship.  Assumes location on the same 
@@ -26,27 +24,35 @@ using CodeEnv.Master.Common.Unity;
 /// </summary>
 public class ShipGraphics : AGraphics {
 
-    public bool IsShipShowing { get; private set; }
+    private bool _isShipShowing = true; // start true in case game starts close enough to see the ship
+    public bool IsShipShowing {
+        get { return _isShipShowing; }
+        set { SetProperty<bool>(ref _isShipShowing, value, "IsShipShowing", OnIsShipShowingChanged); }
+    }
 
     public int maxShowDistance;
 
-    private Color _originalShipColor;
+    private Color _originalMainShipColor;
+    private Color _originalSpecularShipColor;
     private Color _hiddenShipColor;
-    private Renderer _renderer;
+    private Renderer _shipRenderer;
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    private ShipCaptain _shipCaptain;
+
+    protected override void Awake() {
+        base.Awake();
         maxAnimateDistance = maxAnimateDistance == Constants.Zero ? AnimationSettings.Instance.MaxShipAnimateDistance : maxAnimateDistance;
         maxShowDistance = AnimationSettings.Instance.MaxShipShowDistance;
-        _renderer = gameObject.GetComponentInChildren<Renderer>();
         Target = transform;
-        IsShipShowing = true;   // start true so first ShowShip(false) will toggle Renderer off if out of show range
+        _shipCaptain = gameObject.GetSafeMonoBehaviourComponent<ShipCaptain>();
+        InitializeHighlighting();
     }
 
-    protected override void InitializeOnStart() {
-        base.InitializeOnStart();
-        _originalShipColor = _renderer.material.color;
-        _hiddenShipColor = new Color(_originalShipColor.r, _originalShipColor.g, _originalShipColor.b, Constants.ZeroF);
+    private void InitializeHighlighting() {
+        _shipRenderer = gameObject.GetComponentInChildren<Renderer>();
+        _originalMainShipColor = _shipRenderer.material.GetColor(UnityConstants.MainMaterialColor);
+        _originalSpecularShipColor = _shipRenderer.material.GetColor(UnityConstants.SpecularMaterialColor);
+        _hiddenShipColor = GameColor.Clear.ToUnityColor();
     }
 
     protected override void RegisterComponentsToDisable() {
@@ -66,39 +72,63 @@ public class ShipGraphics : AGraphics {
                 toShowShip = true;
             }
         }
-        ShowShip(toShowShip);
+        IsShipShowing = toShowShip;
         return distanceToCamera;
     }
 
-    private void ShowShip(bool toShow) {
-        //Logger.Log("ShowShip({0}) called.".Inject(toShow));
-        if (IsShipShowing != toShow) {
-            IsShipShowing = toShow;
-            //ShowShipViaRenderer(toShow);
-            ShowShipViaMaterialColor(toShow);
+    private void OnIsShipShowingChanged() {
+        ChangeHighlighting();
+    }
+
+    public void ChangeHighlighting() {
+        if (!IsVisible) {
+            Highlight(false);
+            return;
         }
+        if (_shipCaptain.IsFocus) {
+            if (_shipCaptain.IsSelected) {
+                Highlight(true, Highlights.Both);
+                return;
+            }
+            Highlight(true, Highlights.Focused);
+            return;
+        }
+        if (_shipCaptain.IsSelected) {
+            Highlight(true, Highlights.Selected);
+            return;
+        }
+        Highlight(true, Highlights.None);
     }
 
-    /// <summary>
-    /// Controls whether the ship can be seen by controlling the alpha value of the material color. 
-    /// <remarks>This approach to hiding the ship works, but it requires use of a shader capable of transparency,
-    /// which doesn't show up well with the current material.</remarks>
-    /// </summary>
-    /// <param name="toShow">if set to <c>true</c> material.alpha = 1.0, otherwise material.alpha = 0.0</param>
-    private void ShowShipViaMaterialColor(bool toShow) {
-        _renderer.material.color = toShow ? _originalShipColor : _hiddenShipColor;
-        //Logger.Log("ShowShipViaMaterialColor({0}) called.".Inject(toShow));
-    }
-
-    /// <summary>
-    /// Controls whether the ship can be seen via the activation state of the renderer gameobject. 
-    /// <remarks>This approach to hiding the ship works, but we lose any benefit of knowing
-    /// when the ship is invisible since, when deactivated, OnBecameVisible/Invisible is not called.</remarks>
-    /// </summary>
-    /// <param name="toShow">if set to <c>true</c> [to activate].</param>
-    private void ShowShipViaRenderer(bool toShow) {
-        _renderer.transform.gameObject.SetActive(toShow);
-        //Logger.Log("ShowShipViaRenderer({0}) called.".Inject(toShow));
+    private void Highlight(bool toShow, Highlights highlight = Highlights.None) {
+        if (!toShow) {
+            _shipRenderer.material.SetColor(UnityConstants.MainMaterialColor, _hiddenShipColor);
+            _shipRenderer.material.SetColor(UnityConstants.SpecularMaterialColor, _hiddenShipColor);
+            return;
+        }
+        switch (highlight) {
+            case Highlights.Focused:
+                _shipRenderer.material.SetColor(UnityConstants.MainMaterialColor, UnityDebugConstants.IsFocusedColor);
+                _shipRenderer.material.SetColor(UnityConstants.SpecularMaterialColor, UnityDebugConstants.IsFocusedColor);
+                break;
+            case Highlights.Selected:
+                _shipRenderer.material.SetColor(UnityConstants.MainMaterialColor, UnityDebugConstants.IsSelectedColor);
+                _shipRenderer.material.SetColor(UnityConstants.SpecularMaterialColor, UnityDebugConstants.IsSelectedColor);
+                break;
+            case Highlights.Both:
+                _shipRenderer.material.SetColor(UnityConstants.MainMaterialColor, UnityDebugConstants.IsFocusAndSelectedColor);
+                _shipRenderer.material.SetColor(UnityConstants.SpecularMaterialColor, UnityDebugConstants.IsFocusAndSelectedColor);
+                break;
+            case Highlights.None:
+                _shipRenderer.material.SetColor(UnityConstants.MainMaterialColor, _originalMainShipColor);
+                _shipRenderer.material.SetColor(UnityConstants.SpecularMaterialColor, _originalSpecularShipColor);
+                break;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(highlight));
+        }
+        // Note: The approach above to hiding the ship works by controlling the alpha value of the material color. It requires use
+        // of a shader capable of transparency. The alternative approach is to deactivate the renderer gameobject, but we lose
+        // any benefit of knowing when the ship is invisible since, when deactivated, OnBecameVisible/Invisible is not called.
     }
 
     public override string ToString() {

@@ -41,6 +41,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Schemas", "Schemas", "{5A9C
 		DataLibrary\Schemas\Values.xsd = DataLibrary\Schemas\Values.xsd
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.MyNguiScriptsFactory", "CodeEnv.Master.MyNguiScriptsFactory\CodeEnv.Master.MyNguiScriptsFactory.csproj", "{69A2B13D-FA26-459E-A302-FAAE50D07B72}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -81,6 +83,10 @@ Global
 		{F73E89C2-76BB-41CE-9407-E9043058DB70}.Release|Any CPU.Build.0 = Release|Any CPU
 		{ADF56DC3-1FAB-4EA4-A28F-8FB1EDC450DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{ADF56DC3-1FAB-4EA4-A28F-8FB1EDC450DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{69A2B13D-FA26-459E-A302-FAAE50D07B72}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{69A2B13D-FA26-459E-A302-FAAE50D07B72}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{69A2B13D-FA26-459E-A302-FAAE50D07B72}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{69A2B13D-FA26-459E-A302-FAAE50D07B72}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

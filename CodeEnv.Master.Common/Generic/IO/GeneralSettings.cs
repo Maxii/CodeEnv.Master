@@ -21,6 +21,12 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public sealed class GeneralSettings : AValuesHelper<GeneralSettings> {
 
+        #region Boolean
+
+        #endregion
+
+        #region Integer
+
         private int _startingYear;
         public int StartingYear {
             get {
@@ -42,6 +48,10 @@ namespace CodeEnv.Master.Common {
             }
             private set { _daysPerYear = value; }
         }
+
+        #endregion
+
+        #region Float
 
         private float _daysPerSecond;
         public float DaysPerSecond {
@@ -75,6 +85,24 @@ namespace CodeEnv.Master.Common {
             }
             private set { _criticalHealthThreshold = value; }
         }
+
+        private float _hudRefreshRate;
+        /// <summary>
+        /// The base rate at which the HUD refreshes constantly changing data.
+        /// UOM = seconds between each refresh.
+        /// </summary>
+        public float HudRefreshRate {
+            get {
+                if (!isPropertyValuesInitialized) {
+                    InitializePropertyValues();
+                }
+                return _hudRefreshRate;
+            }
+            private set { _hudRefreshRate = value; }
+        }
+
+        #endregion
+
 
         private GeneralSettings() {
             Initialize();

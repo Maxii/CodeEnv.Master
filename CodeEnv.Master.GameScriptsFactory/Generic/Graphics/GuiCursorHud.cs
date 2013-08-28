@@ -30,8 +30,8 @@ public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud, IDisposable {
     private IList<IDisposable> _subscribers;
     private GameManager _gameMgr;
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void Awake() {
+        base.Awake();
         _gameMgr = GameManager.Instance;
         Subscribe();
     }

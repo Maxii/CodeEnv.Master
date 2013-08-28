@@ -23,8 +23,8 @@ public class GuiLoadGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
 
     private string selectedGameCaption = string.Empty;
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void Awake() {
+        base.Awake();
         tooltip = "Load and launch the selected Saved Game.";
     }
 
@@ -33,29 +33,14 @@ public class GuiLoadGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
         ValidateState();
     }
 
-    protected override void RecordCheckboxState(string checkboxName, bool checkedState) {
-        //UNDONE
-    }
-
-    protected override void RecordPopupListState(string selectionName) {
+    protected override void RecordPopupListState(string popupListName, string selectionName) {
+        base.RecordPopupListState(popupListName, selectionName);
         selectedGameCaption = selectionName;
     }
 
-    protected override void RecordSliderState(float sliderValue) {
-        // UNDONE
-    }
-
-    protected override void OnCheckboxStateChange(bool state) {
-        base.OnCheckboxStateChange(state);
-    }
-
-    protected override void OnPopupListSelectionChange(string item) {
-        RecordPopupListState(item);
+    protected override void OnPopupListSelectionChange(string selectionName) {
+        base.OnPopupListSelectionChange(selectionName);
         ValidateState();
-    }
-
-    protected override void OnSliderValueChange(float value) {
-        base.OnSliderValueChange(value);
     }
 
     protected override void OnLeftClick() {

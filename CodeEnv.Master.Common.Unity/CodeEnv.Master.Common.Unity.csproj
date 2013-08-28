@@ -55,6 +55,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\SelectionEvent.cs" />
     <Compile Include="Generic\Graphics\ColoredTextList_String.cs" />
     <Compile Include="Generic\Graphics\ColoredTextList.cs" />
     <Compile Include="Generic\Graphics\ColoredTextListBase.cs" />

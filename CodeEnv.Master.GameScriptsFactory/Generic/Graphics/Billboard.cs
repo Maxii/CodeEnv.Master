@@ -10,12 +10,12 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
 // default namespace
 
+using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.Unity;
 using UnityEngine;
 
@@ -31,30 +31,23 @@ public class Billboard : AMonoBehaviourBase {
     public bool reverseFacing;
     public bool reverseLabelFacing;
 
-    void Awake() {
-        InitializeOnAwake();
-    }
-
-    protected virtual void InitializeOnAwake() {
+    protected override void Awake() {
+        base.Awake();
         _transform = transform;
         UpdateRate = UpdateFrequency.Normal;
     }
 
-    void Start() {
-        // Keep at a minimum, an empty Start method so that instances receive the OnDestroy event
-        InitializeOnStart();
-    }
-
-    protected virtual void InitializeOnStart() {
+    protected override void Start() {
+        base.Start();
         cameraTransform = Camera.main.transform;
         TryPrepareLabel();
     }
 
     private bool TryPrepareLabel() {
-        UILabel itemLabel = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
-        if (itemLabel != null) {
+        UIWidget widget = gameObject.GetComponentInChildren<UIWidget>();
+        if (widget && widget as UILabel != null) {
             if (reverseLabelFacing) {
-                itemLabel.transform.forward = -itemLabel.transform.forward;
+                widget.transform.forward = -widget.transform.forward;
             }
             return true;
         }

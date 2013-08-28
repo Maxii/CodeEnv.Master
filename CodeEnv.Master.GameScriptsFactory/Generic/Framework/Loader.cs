@@ -30,26 +30,25 @@ using UnityEngine;
 public class Loader : AMonoBehaviourBase, IDisposable {
 
     public static Loader currentInstance;
-
     public UsefulPrefabs usefulPrefabsPrefab;
-    public int targetFramerate;
+
+    public int TargetFPS = 25;
 
     private IList<MonoBehaviour> _unreadyElements;
+    private IList<IDisposable> _subscribers;
+    private bool _isInitialized;
 
     private GameManager _gameMgr;
     private GameEventManager _eventMgr;
-    private bool _isInitialized;
-
-#pragma warning disable
-    private DebugSettings _debugSettings;
-#pragma warning restore
+    private PlayerPrefsManager _playerPrefsMgr;
 
     //*******************************************************************
     // GameObjects or tValues you want to keep between scenes t here and
     // can be accessed by Loader.currentInstance.variableName
     //*******************************************************************
 
-    void Awake() {
+    protected override void Awake() {
+        base.Awake();
         //Logger.Log("Loader Awake() called.");
         IncrementInstanceCounter();
         if (TryDestroyExtraCopies()) {
@@ -58,16 +57,13 @@ public class Loader : AMonoBehaviourBase, IDisposable {
         UpdateRate = UpdateFrequency.Continuous;
         _eventMgr = GameEventManager.Instance;
         _gameMgr = GameManager.Instance;
-        LoadDebugSettings();
+        _playerPrefsMgr = PlayerPrefsManager.Instance;
+        InitializeQualitySettings();
         _unreadyElements = new List<MonoBehaviour>();
-        AddListeners();
+        Subscribe();
         _isInitialized = true;
     }
 
-    //[System.Diagnostics.Conditional("UNITY_EDITOR")]
-    private void LoadDebugSettings() {
-        _debugSettings = DebugSettings.Instance;
-    }
 
     /// <summary>
     /// Ensures that no matter how many scenes this Object is
@@ -88,8 +84,35 @@ public class Loader : AMonoBehaviourBase, IDisposable {
         }
     }
 
-    private void AddListeners() {
+    private void Subscribe() {
+        if (_subscribers == null) {
+            _subscribers = new List<IDisposable>();
+        }
+        _subscribers.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, int>(ppm => ppm.QualitySetting, OnQualitySettingChanged));
         _eventMgr.AddListener<ElementReadyEvent>(this, OnElementReady);
+    }
+
+    private void InitializeQualitySettings() {
+        // the initial QualitySettingChanged event occurs earlier than we can subscribe so do it manually
+        OnQualitySettingChanged();
+    }
+
+    private void OnQualitySettingChanged() {
+        int newQualitySetting = _playerPrefsMgr.QualitySetting;
+        if (newQualitySetting != QualitySettings.GetQualityLevel()) {
+            QualitySettings.SetQualityLevel(newQualitySetting, applyExpensiveChanges: true);
+        }
+        DebugHud.Instance.Publish(DebugHudLineKeys.GraphicsQuality, QualitySettings.names[newQualitySetting]);
+        CheckDebugSettings(newQualitySetting);
+    }
+
+    //[System.Diagnostics.Conditional("UNITY_EDITOR")]
+    private void CheckDebugSettings(int qualitySetting) {
+        if (DebugSettings.Instance.ForceFpsToTarget) {
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = TargetFPS;
+            DebugHud.Instance.Publish(DebugHudLineKeys.GraphicsQuality, QualitySettings.names[qualitySetting] + ", FpsForcedToTarget");
+        }
     }
 
     private void OnElementReady(ElementReadyEvent e) {
@@ -119,9 +142,9 @@ public class Loader : AMonoBehaviourBase, IDisposable {
         // always was called first. Placing this empty method here makes script execution order settings effective.
     }
 
-    void Start() {
+    protected override void Start() {
+        base.Start();
         CheckForPrefabs();
-        SetTargetFramerate();
     }
 
     private void CheckForPrefabs() {
@@ -135,20 +158,8 @@ public class Loader : AMonoBehaviourBase, IDisposable {
         usefulPrefabs.transform.parent = currentInstance.transform.parent;
     }
 
-    private void SetTargetFramerate() {
-        // turn off vSync so Unity won't prioritize keeping the framerate at the monitor's refresh rate
-        QualitySettings.vSyncCount = 0;
-        targetFramerate = 25;
-        Application.targetFrameRate = targetFramerate;
-    }
-
     void Update() {
         CheckElementReadiness();    // kept outside of ToUpdate() to avoid IsRunning criteria
-        if (ToUpdate()) {
-            if (targetFramerate != 0 && targetFramerate != Application.targetFrameRate) {
-                Application.targetFrameRate = targetFramerate;
-            }
-        }
     }
 
     private void CheckElementReadiness() {
@@ -160,12 +171,14 @@ public class Loader : AMonoBehaviourBase, IDisposable {
     void OnDestroy() {
         if (_isInitialized) {
             // no reason to cleanup if this object was destroyed before it was initialized.
-            Debug.Log("{0}_{1} instance is disposing.".Inject(this.name, InstanceID));
+            Logger.Log("{0}_{1} instance is disposing.".Inject(this.name, InstanceID));
             Dispose();
         }
     }
 
-    private void RemoveListeners() {
+    private void Unsubscribe() {
+        _subscribers.ForAll<IDisposable>(s => s.Dispose());
+        _subscribers.Clear();
         _eventMgr.RemoveListener<ElementReadyEvent>(this, OnElementReady);
     }
 
@@ -198,7 +211,7 @@ public class Loader : AMonoBehaviourBase, IDisposable {
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            RemoveListeners();
+            Unsubscribe();
         }
         // free unmanaged resources here
 

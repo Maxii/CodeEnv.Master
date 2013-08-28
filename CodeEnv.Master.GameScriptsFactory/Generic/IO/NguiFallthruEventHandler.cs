@@ -26,11 +26,8 @@ using UnityEngine;
 /// </summary>
 public class NguiFallthruEventHandler : AMonoBehaviourBase {
 
-    void Start() {
-        InitializeOnStart();
-    }
-
-    protected virtual void InitializeOnStart() {
+    protected override void Start() {
+        base.Start();
         UICamera.fallThrough = gameObject;
     }
 

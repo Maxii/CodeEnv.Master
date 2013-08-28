@@ -17,9 +17,7 @@
 namespace CodeEnv.Master.Common.Unity {
 
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
@@ -33,7 +31,7 @@ namespace CodeEnv.Master.Common.Unity {
             }
         }
 
-        public static Color Value(this GameColor color) {
+        public static Color ToUnityColor(this GameColor color) {
             switch (color) {
                 case GameColor.Black:
                     return Color.black;
@@ -45,6 +43,8 @@ namespace CodeEnv.Master.Common.Unity {
                     return Color.green;
                 case GameColor.Gray:
                     return Color.gray;
+                case GameColor.Clear:
+                    return Color.clear;
                 case GameColor.Magenta:
                     return Color.magenta;
                 case GameColor.Red:

@@ -10,7 +10,6 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -18,9 +17,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.Common.Unity;
 
 /// <summary>
@@ -31,12 +28,12 @@ public class GuiDateReadout : AGuiLabelReadoutBase, IDisposable {
     private IList<IDisposable> _subscribers;
     private GameManager _gameMgr;
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void Awake() {
+        base.Awake();
         _gameMgr = GameManager.Instance;
         Subscribe();
         tooltip = "The current date in the game.";
-        UpdateRate = UpdateFrequency.Continuous;
+        UpdateRate = UpdateFrequency.Normal;
     }
 
     private void Subscribe() {
@@ -48,19 +45,15 @@ public class GuiDateReadout : AGuiLabelReadoutBase, IDisposable {
 
     void Update() {
         if (ToUpdate() && !_gameMgr.IsPaused) {
-            RefreshDateReadout();
+            RefreshReadout(GameTime.Date.FormattedDate);
         }
     }
 
     private void OnIsPausedChanging(bool isPausing) {
         if (isPausing) {
             // we are about to pause so refresh the date in case the game pauses on load
-            RefreshDateReadout();
+            RefreshReadout(GameTime.Date.FormattedDate);
         }
-    }
-
-    private void RefreshDateReadout() {
-        _readoutLabel.text = GameTime.Date.FormattedDate;
     }
 
     private void Unsubscribe() {

@@ -59,15 +59,18 @@ public class GuiVisibilityButton : AGuiButtonBase {
 
     protected override void OnLeftClick() {
         switch (guiVisibilityCmd) {
-            case GuiVisibilityCommand.RestoreInvisibleGuiPanels:
             case GuiVisibilityCommand.HideVisibleGuiPanels:
-                //Logger.Log("GuiVisibilty tPrefsValue = {0}.".Inject(guiVisibilityCmd));
-                _eventMgr.Raise<GuiVisibilityChangeEvent>(new GuiVisibilityChangeEvent(this, guiVisibilityCmd, guiVisibilityExceptions));
+                if (guiVisibilityExceptions.IsNullOrEmpty<UIPanel>()) {
+                    D.Warn("{0} has no GuiVisibilityExceptions listed.", gameObject.name);
+                }
+                break;
+            case GuiVisibilityCommand.RestoreInvisibleGuiPanels:
                 break;
             case GuiVisibilityCommand.None:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(guiVisibilityCmd));
         }
+        _eventMgr.Raise<GuiVisibilityChangeEvent>(new GuiVisibilityChangeEvent(this, guiVisibilityCmd, guiVisibilityExceptions));
     }
 
     public override string ToString() {

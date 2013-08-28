@@ -13,6 +13,7 @@
 namespace CodeEnv.Master.Common.Unity {
 
     using System;
+    using UnityEngine;
 
     public static class UnityDebugConstants {
 
@@ -26,6 +27,18 @@ namespace CodeEnv.Master.Common.Unity {
 
         public static string CustomToolsDir {
             get { return Environment.ExpandEnvironmentVariables(@"%CustomToolsDir%"); }
+        }
+
+        public static Color IsSelectedColor {
+            get { return GameColor.Green.ToUnityColor(); }
+        }
+
+        public static Color IsFocusedColor {
+            get { return GameColor.Blue.ToUnityColor(); }
+        }
+
+        public static Color IsFocusAndSelectedColor {
+            get { return GameColor.Yellow.ToUnityColor(); }
         }
 
     }

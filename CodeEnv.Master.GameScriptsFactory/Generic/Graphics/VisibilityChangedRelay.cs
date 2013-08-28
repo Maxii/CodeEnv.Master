@@ -30,11 +30,12 @@ public class VisibilityChangedRelay : AMonoBehaviourBase {
     private INotifyVisibilityChanged[] _iRelayTargets;
     private Transform _transform;
 
-    void Awake() {
+    protected override void Awake() {
+        base.Awake();
         UnityUtility.ValidateComponentPresence<Renderer>(gameObject);
         _transform = transform;
         if (relayTargets.Length == 0) {
-            Transform relayTarget = _transform.GetTransformWithInterfaceInParents<INotifyVisibilityChanged>();
+            Transform relayTarget = _transform.GetSafeTransformWithInterfaceInParents<INotifyVisibilityChanged>();
             if (relayTarget == null) {
                 D.Warn("No {0} assigned or found for {1}.", typeof(INotifyVisibilityChanged), _transform.name);
                 return;

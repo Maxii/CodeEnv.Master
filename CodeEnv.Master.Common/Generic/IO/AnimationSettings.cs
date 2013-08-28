@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AnimationSettings.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// Parses AnimationSettings.xml providing externalized values to the Properties.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,6 +16,9 @@
 
 namespace CodeEnv.Master.Common {
 
+    /// <summary>
+    /// Parses AnimationSettings.xml providing externalized values to the Properties.
+    /// </summary>
     public sealed class AnimationSettings : AValuesHelper<AnimationSettings> {
 
         private int _maxSystemAnimateDistance;

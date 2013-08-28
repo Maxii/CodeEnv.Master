@@ -14,7 +14,6 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-
 namespace CodeEnv.Master.Common {
 
     using System;

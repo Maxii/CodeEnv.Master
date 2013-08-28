@@ -21,12 +21,12 @@ namespace CodeEnv.Master.Common {
     /// Abstract helper GameEvent class that makes it easier to create events that simply announce
     /// the change in value of an enum.
     /// </summary>
-    /// <typeparam name="EnumType">The type of the Enum value being changed.</typeparam>
-    public abstract class AEnumValueChangeEvent<EnumType> : AGameEvent where EnumType : struct {
+    /// <typeparam name="T">The type of the Enum being changed.</typeparam>
+    public abstract class AEnumValueChangeEvent<T> : AGameEvent where T : struct {
 
-        public EnumType NewValue { get; private set; }
+        public T NewValue { get; private set; }
 
-        public AEnumValueChangeEvent(object source, EnumType newValue)
+        public AEnumValueChangeEvent(object source, T newValue)
             : base(source) {
             NewValue = newValue;
         }

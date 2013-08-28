@@ -33,12 +33,14 @@ public class StarGlowAnimator : AMonoBehaviourBase {
     public int rotationSpeedAndDirection = 2;   // TODO direction needs to be opposite the other Animator
     private Transform glowPanelTransform;
 
-    void Awake() {
+    protected override void Awake() {
+        base.Awake();
         glowPanelTransform = transform;
         UpdateRate = UpdateFrequency.Frequent;
     }
 
-    void Start() {
+    protected override void Start() {
+        base.Start();
         RandomizeMaterialOrientation();
     }
 

@@ -6,7 +6,9 @@
 // </copyright> 
 // <summary> 
 // File: NguiGameInput.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// Static helper class for determining the state of Mouse controls
+// using Ngui's default mouse input values. These input values are 
+// different than Unitys.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,6 +24,11 @@ namespace CodeEnv.Master.Common.Unity {
     using CodeEnv.Master.Common;
     using UnityEngine;
 
+    /// <summary>
+    /// Static helper class for determining the state of Mouse controls
+    /// using Ngui's default mouse input values. These input values are 
+    /// different than Unitys.
+    /// </summary>
     public static class NguiGameInput {
 
         /// <summary>

@@ -19,18 +19,20 @@ using UnityEngine;
 /// <summary>
 /// Manages a stationary Star.
 /// </summary>
-public class Star : StationaryItem, ISelectable {
+public class Star : StationaryItem {
 
     private SystemGraphics _systemGraphics;
+    private SystemManager _systemManager;
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void Awake() {
+        base.Awake();
+        _systemManager = gameObject.GetSafeMonoBehaviourComponentInParents<SystemManager>();
         _systemGraphics = gameObject.GetSafeMonoBehaviourComponentInParents<SystemGraphics>();
     }
 
-    protected override void InitializeOnStart() {
-        base.InitializeOnStart();
-        HumanPlayerIntelLevel = IntelLevel.Complete;
+    protected override void Start() {
+        base.Start();
+        PlayerIntelLevel = IntelLevel.Complete;
     }
 
     protected override void OnHover(bool isOver) {
@@ -41,27 +43,13 @@ public class Star : StationaryItem, ISelectable {
     protected override void OnClick() {
         base.OnClick();
         if (NguiGameInput.IsLeftMouseButtonClick()) {
-            OnLeftClick();
+            _systemManager.OnLeftClick();
         }
     }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region ISelectable Members
-
-    public void OnLeftClick() { // TODO
-        //_systemMgr.HighlightSystem(true, SystemManager.SystemHighlights.Select);
-    }
-
-    private bool _isSelected;
-    public bool IsSelected {
-        get { return _isSelected; }
-        set { SetProperty<bool>(ref _isSelected, value, "IsSelected"); }
-    }
-
-    #endregion
 
 }
 

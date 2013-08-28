@@ -24,7 +24,7 @@ using CodeEnv.Master.Common;
 /// </summary>
 public class NguiGenericEventHandler : NguiFallthruEventHandler {
 
-    protected override void InitializeOnStart() {
+    protected override void Start() {
         UICamera.genericEventHandler = this.gameObject;
     }
 

@@ -34,7 +34,8 @@ public class RequiredPrefabs : AMonoBehaviourBaseSingleton<RequiredPrefabs> {
     public UILabel HudLabelPrefab;
     public GuiTrackingLabel GuiTrackingLabelPrefab;
 
-    void Awake() {
+    protected override void Awake() {
+        base.Awake();
         if (TryDestroyExtraCopies()) {
             return;
         }

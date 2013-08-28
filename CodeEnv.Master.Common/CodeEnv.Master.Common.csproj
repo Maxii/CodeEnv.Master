@@ -51,6 +51,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Graphics\Framerate.cs" />
     <Compile Include="Generic\Framework\AGenericSingleton.cs" />
     <Compile Include="Game\_Debug\DebugHudLineKeys.cs" />
     <Compile Include="Generic\IO\AnimationSettings.cs" />
@@ -80,7 +81,7 @@
     <Compile Include="Game\Framework\Layers.cs" />
     <Compile Include="Game\Framework\Tags.cs" />
     <Compile Include="Game\GUI\GamePlayOptionsAcceptedEvent.cs" />
-    <Compile Include="Game\Framework\OptionSettings.cs" />
+    <Compile Include="Game\Framework\GamePlayOptionSettings.cs" />
     <Compile Include="Game\GUI\GuiVisibilityCommand.cs" />
     <Compile Include="Game\Framework\SceneLevel.cs" />
     <Compile Include="Game\Framework\SceneChangingEvent.cs" />
@@ -115,6 +116,9 @@
     <Compile Include="Generic\Framework\ISelectable.cs" />
     <Compile Include="Generic\Framework\PauseState.cs" />
     <Compile Include="Generic\Framework\PropertyChangingValueEventArgs.cs" />
+    <Compile Include="Game\GUI\GraphicsOptionsAcceptedEvent.cs" />
+    <Compile Include="Generic\IO\GraphicsOptionSettings.cs" />
+    <Compile Include="Generic\Graphics\IHasContextMenu.cs" />
     <Compile Include="ThirdParty\PropertyHelper.cs" />
     <Compile Include="ThirdParty\TextScanner.cs" />
     <Compile Include="ThirdParty\FlagsHelper.cs" />

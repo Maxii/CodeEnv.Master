@@ -26,8 +26,8 @@ using CodeEnv.Master.Common.Unity;
 /// </summary>
 public class GuiGameSpeedSlider : AGuiEnumSliderBase<GameClockSpeed> {
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void Awake() {
+        base.Awake();
         tooltip = "Controls how fast time in the Game progresses.";
     }
 

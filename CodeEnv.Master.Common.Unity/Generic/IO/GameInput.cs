@@ -6,7 +6,8 @@
 // </copyright> 
 // <summary> 
 // File: GameInput.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// Static helper class for determining the state of Mouse controls
+// using Unity's default mouse input values.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,14 +18,14 @@
 
 namespace CodeEnv.Master.Common.Unity {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
 
 
+    /// <summary>
+    /// Static helper class for determining the state of Mouse controls
+    /// using Unity's default mouse input values.
+    /// </summary>
     public static class GameInput {
 
         /// <summary>
@@ -110,9 +111,6 @@ namespace CodeEnv.Master.Common.Unity {
         public static bool IsMiddleMouseButtonClickReleased() {
             return IsMouseButtonClickReleased(MouseButton.Middle);
         }
-
-
-
 
         /// <summary>
         /// Detects whether a mouse button is being held down across multiple frames.

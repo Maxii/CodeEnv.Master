@@ -35,7 +35,8 @@ public class UsefulPrefabs : AMonoBehaviourBaseSingleton<UsefulPrefabs> {
     //*******************************************************************
     public Light flareLight;
 
-    void Awake() {
+    protected override void Awake() {
+        base.Awake();
         if (TryDestroyExtraCopies()) {
             return;
         }

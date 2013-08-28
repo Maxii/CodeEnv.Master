@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GuiGameSpeedOnLoadPopupList.cs
-// COMMENT - one line to give a brief idea of what this file does.
+// Manager for the GameSpeedOnLoad option popupList.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@
 using CodeEnv.Master.Common;
 
 /// <summary>
-/// COMMENT 
+/// Manager for the GameSpeedOnLoad option popupList.
 /// </summary>
 public class GuiGameSpeedOnLoadPopupList : AGuiEnumPopupListBase<GameClockSpeed> {
 

@@ -3,8 +3,8 @@
 <Values>
   <Boolean>
     <Setting>
-      <PropertyName/>
-      <PropertyValue>false</PropertyValue>
+      <PropertyName></PropertyName>
+      <PropertyValue>true</PropertyValue>
     </Setting>
   </Boolean>
 
@@ -17,6 +17,11 @@
       <PropertyName>DaysPerYear</PropertyName>
       <PropertyValue>100</PropertyValue>
     </Setting>
+    <Setting>
+      <PropertyName></PropertyName>
+      <PropertyValue>0</PropertyValue>
+    </Setting>
+
   </Integer>
 
   <Float>
@@ -31,7 +36,12 @@
     <Setting>
       <PropertyName>CriticalHealthThreshold</PropertyName>
       <PropertyValue>0.40</PropertyValue>
+    </Setting>    
+    <Setting>
+      <PropertyName>HudRefreshRate</PropertyName>
+      <PropertyValue>1.0</PropertyValue>
     </Setting>
+
   </Float>
 </Values>
 <!-- Elements are only empty if they are in the format <ElementName/> -->

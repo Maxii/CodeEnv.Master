@@ -23,13 +23,13 @@ using UnityEngine;
 /// </summary>
 public class GuiExitButton : AGuiButtonBase {
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void Awake() {
+        base.Awake();
         tooltip = "Exit the Game.";
     }
 
-    protected override void InitializeOnStart() {
-        base.InitializeOnStart();
+    protected override void Start() {
+        base.Start();
     }
 
     protected override void OnLeftClick() {

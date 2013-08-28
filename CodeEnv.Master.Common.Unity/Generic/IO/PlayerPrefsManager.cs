@@ -33,27 +33,22 @@ namespace CodeEnv.Master.Common.Unity {
         private string _universeSizeKey = "Universe Size Preference";
         private string _playerRaceKey = "Player Race Preference";
         private string _playerColorKey = "Player Color Preference";
-        //private string[] _playerColorKeys = new string[4] {
-        //    "Player Color Preference - Red",
-        //    "Player Color Preference - Green",
-        //    "Player Color Preference - Blue",
-        //    "Player Color Preference - Alpha"
-        //};
 
         private string _gameSpeedOnLoadKey = "Game Speed On Load Option";
         private string _isZoomOutOnCursorEnabledKey = "Zoom Out On Cursor Option";
         private string _isCameraRollEnabledKey = "Camera Roll Option";
         private string _isResetOnFocusEnabledKey = "Reset On Focus Option";
         private string _isPauseAfterLoadEnabledKey = "Paused On Load Option";
+        private string _qualitySettingKey = "Quality Setting Option";
 
 
-        // notifications not really needed as nobody cares within a game instance
-        public UniverseSize UniverseSize { get; set; }
-        public GameClockSpeed GameSpeedOnLoad { get; set; }
-        public Races PlayerRace { get; set; }
+        // notifications not needed as no change will be allowed to affect an existing game instance    // TODO
+        public UniverseSize UniverseSize { get; private set; }
+        public GameClockSpeed GameSpeedOnLoad { get; private set; }
+        public Races PlayerRace { get; private set; }
+        public GameColor PlayerColor { get; private set; }
 
-        public GameColor PlayerColor { get; set; }
-        public bool IsPauseOnLoadEnabled { get; set; }
+        public bool IsPauseOnLoadEnabled { get; private set; }
 
         private bool _isZoomOutOnCursorEnabled;
         public bool IsZoomOutOnCursorEnabled {
@@ -73,8 +68,14 @@ namespace CodeEnv.Master.Common.Unity {
             set { SetProperty<bool>(ref _isResetOnFocusEnabled, value, "IsResetOnFocusEnabled"); }
         }
 
+        private int _qualitySetting;
+        public int QualitySetting {
+            get { return _qualitySetting; }
+            set { SetProperty<int>(ref _qualitySetting, value, "QualitySetting"); }
+        }
 
         private GameEventManager _eventMgr;
+        private GeneralSettings _generalSettings;
 
         #region SingletonPattern
         private static readonly PlayerPrefsManager instance;
@@ -106,14 +107,16 @@ namespace CodeEnv.Master.Common.Unity {
         /// </summary>
         private void Initialize() {
             IncrementInstanceCounter();
-            Retrieve();
+            _generalSettings = GeneralSettings.Instance;
             _eventMgr = GameEventManager.Instance;
+            Retrieve();
             Subscribe();
         }
 
         private void Subscribe() {
             _eventMgr.AddListener<GamePlayOptionsAcceptedEvent>(this, OnGamePlayOptionsAccepted);
             _eventMgr.AddListener<BuildNewGameEvent>(this, OnBuildNewGame);
+            _eventMgr.AddListener<GraphicsOptionsAcceptedEvent>(this, OnGraphicsOptionsAccepted);
         }
 
         private void OnBuildNewGame(BuildNewGameEvent e) {
@@ -125,7 +128,7 @@ namespace CodeEnv.Master.Common.Unity {
         }
 
         private void OnGamePlayOptionsAccepted(GamePlayOptionsAcceptedEvent e) {
-            OptionSettings settings = e.Settings;
+            GamePlayOptionSettings settings = e.Settings;
             GameSpeedOnLoad = settings.GameSpeedOnLoad;
             IsZoomOutOnCursorEnabled = settings.IsZoomOutOnCursorEnabled;
             //D.Log("At OptionChangeEvent, PlayerPrefsMgr.IsZoomOutOnCursorEnabled = " + IsZoomOutOnCursorEnabled);
@@ -133,6 +136,11 @@ namespace CodeEnv.Master.Common.Unity {
             IsCameraRollEnabled = settings.IsCameraRollEnabled;
             IsPauseOnLoadEnabled = settings.IsPauseOnLoadEnabled;
             ValidateState();
+        }
+
+        private void OnGraphicsOptionsAccepted(GraphicsOptionsAcceptedEvent e) {
+            GraphicsOptionSettings settings = e.Settings;
+            QualitySetting = settings.QualitySetting;
         }
 
         /// <summary>
@@ -157,19 +165,13 @@ namespace CodeEnv.Master.Common.Unity {
                 encryptedStringValue = Encrypt(PlayerColor.GetName());
                 PlayerPrefs.SetString(_playerColorKey, encryptedStringValue);
             }
-
-            //if (PlayerColor != Color.clear) {
-            //    for (int i = 0; i < 4; i++) {
-            //        PlayerPrefs.SetFloat(_playerColorKeys[i], Encrypt(PlayerColor[i]));
-            //    }
-            //}
-
             //D.Log("At Store, PlayerPrefsMgr.IsZoomOutOnCursorEnabled = " + IsZoomOutOnCursorEnabled);
             PlayerPrefs.SetString(_isZoomOutOnCursorEnabledKey, Encrypt(IsZoomOutOnCursorEnabled.ToString()));
             PlayerPrefs.SetString(_isCameraRollEnabledKey, Encrypt(IsCameraRollEnabled.ToString()));
-
             PlayerPrefs.SetString(_isResetOnFocusEnabledKey, Encrypt(IsResetOnFocusEnabled.ToString()));
             PlayerPrefs.SetString(_isPauseAfterLoadEnabledKey, Encrypt(IsPauseOnLoadEnabled.ToString()));
+
+            PlayerPrefs.SetInt(_qualitySettingKey, Encrypt(QualitySetting));
             PlayerPrefs.Save();
         }
 
@@ -179,40 +181,25 @@ namespace CodeEnv.Master.Common.Unity {
         private int Encrypt(int value) { return value; }
 
         /// <summary>
-        /// Retrieves all PlayerPrefs and makes them accessible as Properties from this instance.
+        /// Retrieves all PlayerPrefs and makes them accessible as Properties from this instance. This is where
+        /// we set the value at initial startup (there is no preference recorded to disk yet) rather than relying on the default value.
         /// </summary>
+        /// <remarks>I considered externalizing these initial startup values, but as they are only used once, there is little value to the modder
+        /// having access to them.
+        /// </remarks>
         public void Retrieve() {
-            // for enums, if there is no preference set yet, default would be NONE, so start with NORMAL
             UniverseSize = PlayerPrefs.HasKey(_universeSizeKey) ? RetrieveEnumPref<UniverseSize>(_universeSizeKey) : UniverseSize.Normal;
             GameSpeedOnLoad = PlayerPrefs.HasKey(_gameSpeedOnLoadKey) ? RetrieveEnumPref<GameClockSpeed>(_gameSpeedOnLoadKey) : GameClockSpeed.Normal;
             PlayerRace = PlayerPrefs.HasKey(_playerRaceKey) ? RetrieveEnumPref<Races>(_playerRaceKey) : Races.Human;
             PlayerColor = PlayerPrefs.HasKey(_playerColorKey) ? RetrieveEnumPref<GameColor>(_playerColorKey) : GameColor.Blue;
 
-            //Color color = new Color();
-            //for (int i = 0; i < 4; i++) {
-            //    if (PlayerPrefs.HasKey(_playerColorKeys[i])) {
-            //        color[i] = Decrypt(PlayerPrefs.GetFloat(_playerColorKeys[i]));
-            //        continue;
-            //    }
-            //    color = Color.blue; // default value to go with default Race of Human
-            //    D.Warn("One or more missing PlayerColor keys in PlayerPrefs. Using default color {0}.", color.ToString());
-            //    break;
-            //}
-            //PlayerColor = color;
+            IsPauseOnLoadEnabled = (PlayerPrefs.HasKey(_isPauseAfterLoadEnabledKey)) ? bool.Parse(Decrypt(PlayerPrefs.GetString(_isPauseAfterLoadEnabledKey))) : false;
 
-            if (PlayerPrefs.HasKey(_isZoomOutOnCursorEnabledKey)) {
-                IsZoomOutOnCursorEnabled = bool.Parse(Decrypt(PlayerPrefs.GetString(_isZoomOutOnCursorEnabledKey)));
-                //D.Log("At Retrieve, PlayerPrefsMgr.IsZoomOutOnCursorEnabled = " + IsZoomOutOnCursorEnabled);
-            }
-            if (PlayerPrefs.HasKey(_isCameraRollEnabledKey)) {
-                IsCameraRollEnabled = bool.Parse(Decrypt(PlayerPrefs.GetString(_isCameraRollEnabledKey)));
-            }
-            if (PlayerPrefs.HasKey(_isResetOnFocusEnabledKey)) {
-                IsResetOnFocusEnabled = bool.Parse(Decrypt(PlayerPrefs.GetString(_isResetOnFocusEnabledKey)));
-            }
-            if (PlayerPrefs.HasKey(_isPauseAfterLoadEnabledKey)) {
-                IsPauseOnLoadEnabled = bool.Parse(Decrypt(PlayerPrefs.GetString(_isPauseAfterLoadEnabledKey)));
-            }
+            // the initial change notification sent out by these Properties occur so early they won't be heard by anyone so clients must initialize by calling the Properties directly
+            IsZoomOutOnCursorEnabled = (PlayerPrefs.HasKey(_isZoomOutOnCursorEnabledKey)) ? bool.Parse(Decrypt(PlayerPrefs.GetString(_isZoomOutOnCursorEnabledKey))) : true;
+            IsCameraRollEnabled = (PlayerPrefs.HasKey(_isCameraRollEnabledKey)) ? bool.Parse(Decrypt(PlayerPrefs.GetString(_isCameraRollEnabledKey))) : false;
+            IsResetOnFocusEnabled = (PlayerPrefs.HasKey(_isResetOnFocusEnabledKey)) ? bool.Parse(Decrypt(PlayerPrefs.GetString(_isResetOnFocusEnabledKey))) : true;
+            QualitySetting = (PlayerPrefs.HasKey(_qualitySettingKey)) ? Decrypt(PlayerPrefs.GetInt(_qualitySettingKey)) : QualitySettings.GetQualityLevel();
         }
 
         private T RetrieveEnumPref<T>(string key) where T : struct {
@@ -236,6 +223,7 @@ namespace CodeEnv.Master.Common.Unity {
         private void Unsubscribe() {
             _eventMgr.RemoveListener<GamePlayOptionsAcceptedEvent>(this, OnGamePlayOptionsAccepted);
             _eventMgr.RemoveListener<BuildNewGameEvent>(this, OnBuildNewGame);
+            _eventMgr.RemoveListener<GraphicsOptionsAcceptedEvent>(this, OnGraphicsOptionsAccepted);
         }
 
         public override string ToString() {

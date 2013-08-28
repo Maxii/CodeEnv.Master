@@ -32,6 +32,12 @@ using UnityEngine;
 /// </summary>
 public abstract class AMonoBehaviourBase : MonoBehaviour, IInstanceIdentity, IChangeTracking, INotifyPropertyChanged, INotifyPropertyChanging {
 
+    protected virtual void Awake() {
+        useGUILayout = true;    // OPTIMIZE docs suggest = false for better performance
+    }
+
+    protected virtual void Start() { }
+
     #region IInstanceIdentity Members
     private static int _instanceCounter = 0;
     public int InstanceID { get; protected set; }

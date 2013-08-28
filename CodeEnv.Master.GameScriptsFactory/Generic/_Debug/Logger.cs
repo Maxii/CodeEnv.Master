@@ -24,7 +24,8 @@ public class Logger : AMonoBehaviourBaseSingleton<Logger> {
 
     public bool enableScriptLogging;
 
-    void Awake() {
+    protected override void Awake() {
+        base.Awake();
         //Logger.Log("MonoGameManager Awake() called. IsEnabled = " + enabled);
         IncrementInstanceCounter();
         if (TryDestroyExtraCopies()) {

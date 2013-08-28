@@ -30,8 +30,8 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
     private Races _playerRace;
     private GameColor _playerColor;
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void Awake() {
+        base.Awake();
         tooltip = "Launch New Game with these settings.";
     }
 
@@ -40,11 +40,8 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
         ValidateState();
     }
 
-    protected override void RecordCheckboxState(string checkboxName, bool checkedState) {
-        // UNDONE
-    }
-
-    protected override void RecordPopupListState(string selectionName) {
+    protected override void RecordPopupListState(string popupListName, string selectionName) {
+        base.RecordPopupListState(popupListName, selectionName);
         UniverseSize universeSize;
         if (Enums<UniverseSize>.TryParse(selectionName, true, out universeSize)) {
             //Logger.Log("UniverseSize recorded as {0}.".Inject(selectionName));
@@ -59,23 +56,6 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
         if (Enums<GameColor>.TryParse(selectionName, true, out playerColor)) {
             _playerColor = playerColor;
         }
-    }
-
-    protected override void RecordSliderState(float sliderValue) {
-        // UNDONE
-    }
-
-    protected override void OnCheckboxStateChange(bool state) {
-        base.OnCheckboxStateChange(state);
-    }
-
-    protected override void OnPopupListSelectionChange(string item) {
-        base.OnPopupListSelectionChange(item);
-        ValidateState();
-    }
-
-    protected override void OnSliderValueChange(float value) {
-        base.OnSliderValueChange(value);
     }
 
     protected override void OnLeftClick() {

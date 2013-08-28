@@ -31,11 +31,13 @@ public class StarAnimator : AMonoBehaviourBase {
     private Material _primaryMaterial;
     private Material _optionalSecondMaterial;
 
-    void Awake() {
+    protected override void Awake() {
+        base.Awake();
         UpdateRate = UpdateFrequency.Continuous;
     }
 
-    void Start() {
+    protected override void Start() {
+        base.Start();
         Renderer globeRenderer = GetComponentInImmediateChildren<MeshRenderer>();
         _primaryMaterial = globeRenderer.material;
         if (globeRenderer.materials.Length > 1) {

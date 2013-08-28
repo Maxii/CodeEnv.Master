@@ -23,8 +23,8 @@ public class StationaryItem : AItem, ICameraFocusable {
 
     protected GameEventManager _eventMgr;
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void Awake() {
+        base.Awake();
         _eventMgr = GameEventManager.Instance;
     }
 

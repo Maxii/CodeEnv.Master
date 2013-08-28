@@ -366,7 +366,7 @@ public class _CameraControl : AMonoBehaviourBaseSingleton<_CameraControl>, IDisp
     }
 
     private void OnOptionChange(GamePlayOptionsAcceptedEvent e) {
-        OptionSettings settings = e.Settings;
+        GamePlayOptionSettings settings = e.Settings;
         IsResetOnFocusEnabled = settings.IsResetOnFocusEnabled;
         IsRollEnabled = settings.IsCameraRollEnabled;
         IsScrollZoomOutOnCursorEnabled = settings.IsZoomOutOnCursorEnabled;

@@ -48,7 +48,7 @@ namespace CodeEnv.Master.Common.Unity {
             private set { SetProperty<bool>(ref _isGameRunning, value, "IsGameRunning"); }
         }
 
-        private PauseState _pauseState = PauseState.NotPaused;
+        private PauseState _pauseState;
         /// <summary>
         /// Gets the PauseState of the game. Warning: IsPaused changes AFTER
         /// PauseState completes its changes and notifications.
@@ -73,9 +73,10 @@ namespace CodeEnv.Master.Common.Unity {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(PauseState));
             }
+            DebugHud.Publish(DebugHudLineKeys.PauseState, PauseState.GetName());
         }
 
-        private bool _isPaused = false;
+        private bool _isPaused;
         /// <summary>
         /// Convenience Property indicating whether the game is paused. Automatically set
         /// as a result of OnPauseStateChanged. Warning: This means OnIsPausedChanging actually
@@ -85,6 +86,8 @@ namespace CodeEnv.Master.Common.Unity {
             get { return _isPaused; }
             private set { SetProperty<bool>(ref _isPaused, value, "IsPaused"); }
         }
+
+        public IDebugHud DebugHud { get; set; }
 
         private GameEventManager _eventMgr;
         private GameTime _gameTime;
@@ -128,6 +131,11 @@ namespace CodeEnv.Master.Common.Unity {
         public void CompleteInitialization() {
             Subscribe();    // delay until Instance is initialized
             _gameTime = GameTime.Instance;   // delay until Instance is initialized
+
+            // initialize values without initiating change events
+            _pauseState = PauseState.NotPaused;
+            _isPaused = false;
+            DebugHud.Publish(DebugHudLineKeys.PauseState, PauseState.GetName());
         }
 
         #region Startup Simulation
@@ -185,6 +193,7 @@ namespace CodeEnv.Master.Common.Unity {
             _eventMgr.AddListener<GuiPauseRequestEvent>(this, OnGuiPauseChangeRequest);
             _eventMgr.AddListener<SaveGameEvent>(this, OnSaveGame);
             _eventMgr.AddListener<LoadSavedGameEvent>(this, OnLoadSavedGame);
+            _eventMgr.AddListener<SelectionEvent>(this, OnNewSelection);
         }
 
         private void OnBuildNewGame(BuildNewGameEvent e) {
@@ -315,6 +324,14 @@ namespace CodeEnv.Master.Common.Unity {
             }
         }
 
+        private ISelectable _previousSelection;
+        private void OnNewSelection(SelectionEvent e) {
+            if (_previousSelection != null) {
+                _previousSelection.IsSelected = false;
+            }
+            _previousSelection = e.Source;
+        }
+
         /// <summary>
         /// Called from Loader when all conditions are met to run.
         /// Conditions include GameState.Waiting, no UnreadyElements and Update()
@@ -415,6 +432,7 @@ namespace CodeEnv.Master.Common.Unity {
             _eventMgr.RemoveListener<GuiPauseRequestEvent>(this, OnGuiPauseChangeRequest);
             _eventMgr.RemoveListener<SaveGameEvent>(this, OnSaveGame);
             _eventMgr.RemoveListener<LoadSavedGameEvent>(this, OnLoadSavedGame);
+            _eventMgr.RemoveListener<SelectionEvent>(this, OnNewSelection);
         }
 
         public override string ToString() {

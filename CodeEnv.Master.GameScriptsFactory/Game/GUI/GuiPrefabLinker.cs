@@ -18,6 +18,7 @@
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.MyNguiScriptsFactory;
 using UnityEngine;
 
 /// <summary>
@@ -26,9 +27,11 @@ using UnityEngine;
 public class GuiPrefabLinker : AMonoBehaviourBase {
 
     public GameObject linkedPrefab;
-    public UIButtonPlayAnimation launchButtonAnimation;
+    public NguiButtonPlayAnimation launchButtonAnimation;
+    //public UIButtonPlayAnimation launchButtonAnimation;
 
-    void Awake() {
+    protected override void Awake() {
+        base.Awake();
         SetupLinkedPrefab();
     }
 
@@ -53,12 +56,14 @@ public class GuiPrefabLinker : AMonoBehaviourBase {
         Animation prefabWindowBackAnimation = prefabClone.GetComponentInChildren<Animation>();
         NGUITools.SetActive(prefabClone, true);
 
-        UIButtonPlayAnimation[] allLaunchButtonAnimations = launchButtonAnimation.gameObject.GetSafeMonoBehaviourComponents<UIButtonPlayAnimation>();
-        UIButtonPlayAnimation launchButtonAnimationWithNullTarget = allLaunchButtonAnimations.Single<UIButtonPlayAnimation>(c => c.target == null);
+        NguiButtonPlayAnimation[] allLaunchButtonAnimations = launchButtonAnimation.gameObject.GetSafeMonoBehaviourComponents<NguiButtonPlayAnimation>();
+        NguiButtonPlayAnimation launchButtonAnimationWithNullTarget = allLaunchButtonAnimations.Single<NguiButtonPlayAnimation>(c => c.target == null);
+        //UIButtonPlayAnimation[] allLaunchButtonAnimations = launchButtonAnimation.gameObject.GetSafeMonoBehaviourComponents<UIButtonPlayAnimation>();
+        //UIButtonPlayAnimation launchButtonAnimationWithNullTarget = allLaunchButtonAnimations.Single<UIButtonPlayAnimation>(c => c.target == null);
         launchButtonAnimationWithNullTarget.target = prefabWindowBackAnimation;
 
         GuiVisibilityButton launchButton = launchButtonAnimationWithNullTarget.gameObject.GetSafeMonoBehaviourComponent<GuiVisibilityButton>();
-        if (launchButton.guiVisibilityExceptions.Length == 0) {
+        if (!Utility.CheckForContent<UIPanel>(launchButton.guiVisibilityExceptions)) {
             launchButton.guiVisibilityExceptions = new UIPanel[1];
         }
         else {

@@ -5,23 +5,25 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: OptionSettings.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// File: GraphicsOptionSettings.cs
+// Data wrapper class carrying all the settings available from the GraphicsOptionsMenu.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
+
 namespace CodeEnv.Master.Common {
 
-    public class OptionSettings {
+    /// <summary>
+    /// Data wrapper class carrying all the settings available from the GraphicsOptionsMenu.
+    /// </summary>
+    public class GraphicsOptionSettings {
 
-        public bool IsCameraRollEnabled { get; set; }
-        public bool IsZoomOutOnCursorEnabled { get; set; }
-        public bool IsResetOnFocusEnabled { get; set; }
-        public bool IsPauseOnLoadEnabled { get; set; }
+        public int QualitySetting { get; set; }
 
-        public GameClockSpeed GameSpeedOnLoad { get; set; }
-
-        public OptionSettings() { }
+        public GraphicsOptionSettings() { }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

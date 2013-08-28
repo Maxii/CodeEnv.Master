@@ -21,9 +21,9 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public interface ISelectable {
 
-        void OnLeftClick();
-
         bool IsSelected { get; set; }
+
+        void OnLeftClick();
 
     }
 }

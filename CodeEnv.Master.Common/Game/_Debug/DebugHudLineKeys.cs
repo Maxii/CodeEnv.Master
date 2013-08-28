@@ -23,7 +23,8 @@ namespace CodeEnv.Master.Common {
 
         None,
         CameraMode,
-        PauseState
+        PauseState,
+        GraphicsQuality
     }
 }
 

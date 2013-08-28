@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -30,7 +30,8 @@ namespace CodeEnv.Master.Common.Unity {
         // This is needed as the order of Dictionary.Keys is not defined when iterating through it, even if they were added in the right order
         private static IList<DebugHudLineKeys> _displayLineOrder = new List<DebugHudLineKeys>() {
                 DebugHudLineKeys.CameraMode, 
-                DebugHudLineKeys.PauseState
+                DebugHudLineKeys.PauseState,
+                DebugHudLineKeys.GraphicsQuality
         };
 
         private static IDictionary<DebugHudLineKeys, string> _baseDisplayLineContent;
@@ -50,8 +51,9 @@ namespace CodeEnv.Master.Common.Unity {
 
             // initialized in static constructor because formats that are dynamically constructed cannot be used in a static initializer
             IDictionary<DebugHudLineKeys, string> baseDisplayLineContent = new Dictionary<DebugHudLineKeys, string>() {
-                {DebugHudLineKeys.CameraMode, "{0}"},
-                {DebugHudLineKeys.PauseState, "{0}"}
+                {DebugHudLineKeys.CameraMode, "CameraMode: {0}"},
+                {DebugHudLineKeys.PauseState, "{0}"},
+                {DebugHudLineKeys.GraphicsQuality, "Quality: {0}"}
             };
             return baseDisplayLineContent;
         }

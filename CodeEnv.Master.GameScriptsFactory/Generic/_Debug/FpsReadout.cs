@@ -29,8 +29,8 @@ public class FpsReadout : AGuiLabelReadoutBase {
     private int _framesDrawnInInterval = Constants.Zero;
     private float _timeRemainingInInterval;
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void Awake() {
+        base.Awake();
         _timeRemainingInInterval = secondsBetweenDisplayRefresh;
         tooltip = "Current Frames per Second displayed.";
     }
@@ -46,26 +46,25 @@ public class FpsReadout : AGuiLabelReadoutBase {
         if (_timeRemainingInInterval <= Constants.ZeroF) {
             // display two fractional digits (f2 formattedFpsValue)
             float fps = _accumulatedFpsOverInterval / _framesDrawnInInterval;
-            RefreshFpsReadout(fps);
+            RefreshReadout(fps);
             _timeRemainingInInterval = secondsBetweenDisplayRefresh;
             _accumulatedFpsOverInterval = Constants.ZeroF;
             _framesDrawnInInterval = Constants.Zero;
         }
     }
 
-    private void RefreshFpsReadout(float fps) {
+    private void RefreshReadout(float fps) {
         string formattedFpsValue = string.Format("{0:F1} FPS", fps);
 
-        Color color = Color.green;
+        GameColor color = GameColor.Green;
         if (fps < 25) {
-            color = Color.yellow;
+            color = GameColor.Yellow;
         }
-        else if (fps < 10) {
-            color = Color.red;
+        else if (fps < 15) {
+            color = GameColor.Red;
         }
 
-        _readoutLabel.text = formattedFpsValue;
-        _readoutLabel.color = color;
+        RefreshReadout(formattedFpsValue, color);
     }
 
     public override string ToString() {

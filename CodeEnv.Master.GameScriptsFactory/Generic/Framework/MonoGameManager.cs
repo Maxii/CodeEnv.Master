@@ -33,7 +33,8 @@ public class MonoGameManager : AMonoBehaviourBaseSingleton<MonoGameManager> {
     private GameManager _gameMgr;
     private bool _isInitialized;
 
-    void Awake() {
+    protected override void Awake() {
+        base.Awake();
         //Logger.Log("MonoGameManager Awake() called. IsEnabled = " + enabled);
         IncrementInstanceCounter();
         if (TryDestroyExtraCopies()) {
@@ -44,6 +45,7 @@ public class MonoGameManager : AMonoBehaviourBaseSingleton<MonoGameManager> {
         //string language = "fr-FR";
         // ChangeLanguage(language);
         _gameMgr = GameManager.Instance;
+        _gameMgr.DebugHud = DebugHud.Instance;
         _gameMgr.CompleteInitialization();
 
         _isInitialized = true;
@@ -77,7 +79,8 @@ public class MonoGameManager : AMonoBehaviourBaseSingleton<MonoGameManager> {
         Logger.Log("Current OS Language of Unity is {0}.".Inject(Application.systemLanguage.GetName()));
     }
 
-    void Start() {
+    protected override void Start() {
+        base.Start();
         __StartBasedOnStartScene();
     }
 

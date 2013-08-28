@@ -26,6 +26,10 @@
       <PropertyName>DisableAllGameplay</PropertyName>
       <PropertyValue>false</PropertyValue>
     </Setting>
+    <Setting>
+      <PropertyName>ForceFpsToTarget</PropertyName>
+      <PropertyValue>true</PropertyValue>
+    </Setting>
   </Boolean>
   
   <Integer>

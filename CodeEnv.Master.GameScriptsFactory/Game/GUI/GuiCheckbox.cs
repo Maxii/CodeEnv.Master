@@ -10,7 +10,6 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -40,8 +39,8 @@ public class GuiCheckbox : GuiTooltip {
     /// Can override. Remember base.InitializeOnAwake();  The tPrefsValue for propertyName must be set before 
     /// base.InitializeOnAwake() is called.
     /// </summary>
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void Awake() {
+        base.Awake();
         checkbox = gameObject.GetSafeMonoBehaviourComponent<UICheckbox>();
         InitializeCheckbox();
         // don't receive events until initializing is complete
@@ -49,9 +48,9 @@ public class GuiCheckbox : GuiTooltip {
     }
 
     /// <summary>
-    /// Initializes the checkbox state with the tPrefsValue held in the PlayerPrefsManager property named in <c>propertyName</c>, 
-    /// or if propertyName is empty, sets the state to false. Uses Reflection to find the PlayerPrefsManager
-    /// property named, then creates a Property Delegate to acquire the initialization tPrefsValue.
+    /// Initializes the checkbox state with the value held in the PlayerPrefsManager property named in <c>propertyName</c>, 
+    /// or if propertyName is empty, unchecks the checkbox. Uses Reflection to find the PlayerPrefsManager
+    /// property named, then creates a Property Delegate to acquire the initialization value.
     /// </summary>
     private void InitializeCheckbox() {
         if (!string.IsNullOrEmpty(propertyName)) {

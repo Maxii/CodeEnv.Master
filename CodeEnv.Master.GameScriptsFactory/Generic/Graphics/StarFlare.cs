@@ -30,13 +30,15 @@ public class StarFlare : AMonoBehaviourBase {
     private Transform _transform;
     private Transform _mainCamera;
 
-    void Awake() {
+    protected override void Awake() {
+        base.Awake();
         _transform = transform;
         _mainCamera = Camera.main.transform;
         UpdateRate = UpdateFrequency.Seldom;
     }
 
-    void Start() {
+    protected override void Start() {
+        base.Start();
         if (Utility.CheckForContent<Flare>(flares)) {
             // if flares doesn't contain any flares, it means I don't want to use any right now
             CreateFlare();

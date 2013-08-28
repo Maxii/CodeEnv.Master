@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -38,7 +38,7 @@ namespace CodeEnv.Master.Common.Unity {
                 }
                 parent = parent.gameObject.transform.parent;
             }
-            D.Warn(ErrorMessages.ComponentNotFound, typeof(T), go);
+            D.Warn(ErrorMessages.ComponentNotFound, typeof(T).Name, go.name);
             return null;
         }
 
@@ -52,7 +52,7 @@ namespace CodeEnv.Master.Common.Unity {
         public static T GetSafeMonoBehaviourComponent<T>(this GameObject go) where T : MonoBehaviour {
             T component = go.GetComponent<T>();
             if (component == null) {
-                D.Log(ErrorMessages.ComponentNotFound, typeof(T), go);
+                D.Warn(ErrorMessages.ComponentNotFound, typeof(T).Name, go.name);
             }
             return component;
         }
@@ -67,7 +67,7 @@ namespace CodeEnv.Master.Common.Unity {
         public static T[] GetSafeMonoBehaviourComponents<T>(this GameObject go) where T : MonoBehaviour {
             T[] components = go.GetComponents<T>();
             if (components.Length == 0) {
-                D.Log(ErrorMessages.ComponentNotFound, typeof(T), go);
+                D.Warn(ErrorMessages.ComponentNotFound, typeof(T).Name, go.name);
             }
             return components;
         }
@@ -82,7 +82,7 @@ namespace CodeEnv.Master.Common.Unity {
         public static T GetSafeMonoBehaviourComponentInChildren<T>(this GameObject go) where T : MonoBehaviour {
             T component = go.GetComponentInChildren<T>();
             if (component == null) {
-                D.Log(ErrorMessages.ComponentNotFound, typeof(T), go);
+                D.Warn(ErrorMessages.ComponentNotFound, typeof(T).Name, go.name);
             }
             return component;
         }
@@ -97,7 +97,7 @@ namespace CodeEnv.Master.Common.Unity {
         public static T[] GetSafeMonoBehaviourComponentsInChildren<T>(this GameObject go, bool includeInactive = false) where T : MonoBehaviour {
             T[] components = go.GetComponentsInChildren<T>(includeInactive);
             if (components.Length == 0) {
-                D.Log(ErrorMessages.ComponentNotFound, typeof(T), go);
+                D.Warn(ErrorMessages.ComponentNotFound, typeof(T).Name, go.name);
             }
             return components;
         }
@@ -126,9 +126,10 @@ namespace CodeEnv.Master.Common.Unity {
         /// <typeparam name="T"></typeparam>
         /// <param name="t">The t.</param>
         /// <returns>The child t or null if no child of Type T exists.</returns>
-        public static Transform FindChild<T>(this Transform transform) where T : MonoBehaviour {
-            T mono = transform.GetComponentInChildren<T>();
-            if (mono == null || mono.transform == transform) {
+        public static Transform FindSafeChild<T>(this Transform t) where T : MonoBehaviour {
+            T mono = t.GetComponentInChildren<T>();
+            if (mono == null || mono.transform == t) {
+                D.Warn(ErrorMessages.ComponentNotFound, typeof(T).Name, t.name);
                 return null;
             }
             return mono.transform;
@@ -136,7 +137,7 @@ namespace CodeEnv.Master.Common.Unity {
 
         #region GetInterface... Extensions
 
-        public static Transform GetTransformWithInterfaceInParents<I>(this Transform t) where I : class {
+        public static Transform GetSafeTransformWithInterfaceInParents<I>(this Transform t) where I : class {
             Transform parent = t.parent;
             while (parent != null) {
                 I component = parent.gameObject.GetComponent(typeof(I)) as I;
@@ -145,10 +146,11 @@ namespace CodeEnv.Master.Common.Unity {
                 }
                 parent = parent.gameObject.transform.parent;
             }
+            D.Warn(ErrorMessages.ComponentNotFound, typeof(I).Name, t.name);
             return null;
         }
 
-        public static I GetInterfaceInParents<I>(this Transform t) where I : class {
+        public static I GetSafeInterfaceInParents<I>(this Transform t) where I : class {
             Transform parent = t.parent;
             while (parent != null) {
                 I component = parent.GetComponent(typeof(I)) as I;
@@ -157,7 +159,7 @@ namespace CodeEnv.Master.Common.Unity {
                 }
                 parent = parent.gameObject.transform.parent;
             }
-            // D.Warn(ErrorMessages.ComponentNotFound, typeof(I), go);
+            D.Warn(ErrorMessages.ComponentNotFound, typeof(I).Name, t.name);
             return null;
         }
 

@@ -36,8 +36,8 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
     private GameManager _gameMgr;
     private IList<IDisposable> _subscribers;
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void Awake() {
+        base.Awake();
         _gameMgr = GameManager.Instance;
         Subscribe();
         tooltip = "Pause or resume the game.";
@@ -57,8 +57,8 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
     }
 
 
-    protected override void InitializeOnStart() {
-        base.InitializeOnStart();
+    protected override void Start() {
+        base.Start();
         _eventMgr.Raise<ElementReadyEvent>(new ElementReadyEvent(this, isReady: false));
         _pauseButtonLabel = _button.GetComponentInChildren<UILabel>();
         UpdateButtonLabel();

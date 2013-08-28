@@ -39,7 +39,8 @@ public class ManagementObjects : AMonoBehaviourBaseSingleton<ManagementObjects>,
     private Transform _transform;
     private bool _isInitialized;
 
-    void Awake() {
+    protected override void Awake() {
+        base.Awake();
         if (TryDestroyExtraCopies()) {
             return;
         }

@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
-#define DEBUG_LOG
 
 namespace CodeEnv.Master.Common {
 
@@ -85,6 +85,24 @@ namespace CodeEnv.Master.Common {
                 return _disableAllGameplay;
             }
             private set { _disableAllGameplay = value; }
+        }
+
+        private bool _forceFpsToTarget;
+        /// <summary>
+        /// Forces the game to run at the target FPS. Other QualitySettings
+        /// remain the same.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if [restrict FPS automatic target]; otherwise, <c>false</c>.
+        /// </value>
+        public bool ForceFpsToTarget {
+            get {
+                if (!isPropertyValuesInitialized) {
+                    InitializePropertyValues();
+                }
+                return _forceFpsToTarget;
+            }
+            private set { _forceFpsToTarget = value; }
         }
 
         private DebugSettings() {

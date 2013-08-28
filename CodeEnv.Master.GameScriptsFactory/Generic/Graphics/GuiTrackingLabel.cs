@@ -92,7 +92,8 @@ public class GuiTrackingLabel : AMonoBehaviourBase {
     private Color _labelNormalColor;
     private UIWidget[] _widgets;
 
-    void Awake() {
+    protected override void Awake() {
+        base.Awake();
         _transform = transform;
         _uiCamera = NGUITools.FindCameraForLayer(gameObject.layer);
         _label = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
@@ -105,7 +106,8 @@ public class GuiTrackingLabel : AMonoBehaviourBase {
         _initialScale = _transform.localScale;
     }
 
-    void Start() {
+    protected override void Start() {
+        base.Start();
         if (Target == null) {
             D.Error("Target Game Object to track has not been assigned. Destroying {0}.".Inject(gameObject.name));
             Destroy(gameObject);

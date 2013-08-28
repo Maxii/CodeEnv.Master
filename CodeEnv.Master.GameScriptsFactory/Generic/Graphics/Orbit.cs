@@ -78,11 +78,8 @@ public class Orbit : AMonoBehaviourBase {
 
     protected float _gameSpeedMultiplier;
 
-    void Awake() {
-        InitializeOnAwake();
-    }
-
-    protected virtual void InitializeOnAwake() {
+    protected override void Awake() {
+        base.Awake();
         _transform = transform;
         UpdateRate = UpdateFrequency.Continuous;
         orbitPeriod = orbitPeriod ?? new GameTimePeriod(days: 0, years: 1);

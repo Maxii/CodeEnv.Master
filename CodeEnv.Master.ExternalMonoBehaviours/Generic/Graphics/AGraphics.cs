@@ -27,9 +27,17 @@ using UnityEngine;
 /// </summary>
 public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
 
+    public enum Highlights {
+
+        None,
+        Focused,
+        Selected,
+        Both
+
+    }
+
     /// <summary>
-    /// Gets or sets the target to use in determining the distance
-    /// to the camera.
+    /// The transform to use when determining distance to the camera.
     /// </summary>
     protected Transform Target { get; set; }
 
@@ -57,20 +65,14 @@ public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
 
     private IList<Transform> _visibleMeshes = new List<Transform>();    // OPTIMIZE can be simplified to simple incrementing/decrementing counter
 
-    void Awake() {
-        InitializeOnAwake();
-    }
-
-    protected virtual void InitializeOnAwake() {
+    protected override void Awake() {
+        base.Awake();
         _isVisible = true;
         UpdateRate = UpdateFrequency.Seldom;
     }
 
-    void Start() {
-        InitializeOnStart();
-    }
-
-    protected virtual void InitializeOnStart() {
+    protected override void Start() {
+        base.Start();
         if (disableComponentOnCameraDistance.Length == Constants.Zero && disableGameObjectOnCameraDistance.Length == Constants.Zero &&
             disableComponentOnInvisible.Length == Constants.Zero && disableGameObjectOnInvisible.Length == Constants.Zero) {
             RegisterComponentsToDisable();
@@ -85,11 +87,15 @@ public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
 
     void Update() {
         if (ToUpdate()) {
-            EnableBasedOnDistanceToCamera();
+            OnToUpdate();
         }
     }
 
-    private void OnVisibilityChanged() {
+    protected virtual void OnToUpdate() {
+        EnableBasedOnDistanceToCamera();
+    }
+
+    protected virtual void OnIsVisibleChanged() {
         EnableBasedOnVisibility();
         EnableBasedOnDistanceToCamera();
     }
@@ -160,7 +166,7 @@ public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
     private bool _isVisible;
     public bool IsVisible {
         get { return _isVisible; }
-        set { SetProperty<bool>(ref _isVisible, value, "IsVisible", OnVisibilityChanged); }
+        set { SetProperty<bool>(ref _isVisible, value, "IsVisible", OnIsVisibleChanged); }
     }
 
     public void NotifyVisibilityChanged(Transform sender, bool isVisible) {

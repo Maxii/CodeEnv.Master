@@ -19,9 +19,9 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public class GamePlayOptionsAcceptedEvent : AGameEvent {
 
-        public OptionSettings Settings { get; private set; }
+        public GamePlayOptionSettings Settings { get; private set; }
 
-        public GamePlayOptionsAcceptedEvent(object source, OptionSettings settings)
+        public GamePlayOptionsAcceptedEvent(object source, GamePlayOptionSettings settings)
             : base(source) {
             Settings = settings;
         }

@@ -23,20 +23,14 @@ using UnityEngine;
 /// </summary>
 public class GuiSaveMenuAcceptButton : AGuiMenuAcceptButtonBase {
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void Awake() {
+        base.Awake();
         tooltip = "Click to save to PlayerPrefs.";
     }
 
     protected override void OnLeftClick() {
         _eventMgr.Raise<SaveGameEvent>(new SaveGameEvent(this, "Game"));
     }
-
-    protected override void RecordCheckboxState(string checkboxName, bool checkedState) { }
-
-    protected override void RecordPopupListState(string selectionName) { }
-
-    protected override void RecordSliderState(float sliderValue) { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

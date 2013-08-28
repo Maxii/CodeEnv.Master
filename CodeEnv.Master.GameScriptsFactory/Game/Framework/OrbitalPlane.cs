@@ -14,11 +14,12 @@
 
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.Unity;
+using UnityEngine;
 
 /// <summary>
 /// Manages the interaction of the Orbital plane, aka the 'system', with the Player.
 /// </summary>
-public class OrbitalPlane : StationaryItem, ISelectable, IZoomToFurthest {
+public class OrbitalPlane : StationaryItem, IHasContextMenu, IZoomToFurthest {
 
     public new SystemData Data {
         get { return base.Data as SystemData; }
@@ -29,15 +30,18 @@ public class OrbitalPlane : StationaryItem, ISelectable, IZoomToFurthest {
     public float optimalPlaneFocusDistance = 400F;
 
     private SystemGraphics _systemGraphics;
+    private SystemManager _systemManager;
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void Awake() {
+        base.Awake();
+        _systemManager = gameObject.GetSafeMonoBehaviourComponentInParents<SystemManager>();
         _systemGraphics = gameObject.GetSafeMonoBehaviourComponentInParents<SystemGraphics>();
+        __ValidateCtxObjectSettings();
     }
 
-    protected override void InitializeOnStart() {
-        base.InitializeOnStart();
-        HumanPlayerIntelLevel = IntelLevel.Complete;
+    protected override void Start() {
+        base.Start();
+        PlayerIntelLevel = IntelLevel.Complete;
     }
 
     protected override void OnHover(bool isOver) {
@@ -48,12 +52,12 @@ public class OrbitalPlane : StationaryItem, ISelectable, IZoomToFurthest {
     protected override void OnClick() {
         base.OnClick();
         if (NguiGameInput.IsLeftMouseButtonClick()) {
-            OnLeftClick();
+            _systemManager.OnLeftClick();
         }
     }
 
     protected override void OnIsFocusChanged() {
-        _systemGraphics.HighlightSystem(IsFocus, SystemGraphics.SystemHighlights.Focus);
+        _systemGraphics.ChangeHighlighting();
     }
 
     public override string ToString() {
@@ -82,16 +86,19 @@ public class OrbitalPlane : StationaryItem, ISelectable, IZoomToFurthest {
 
     #endregion
 
-    #region ISelectable Members
+    #region IHasContextMenu Members
 
-    public void OnLeftClick() { // TODO
-        //_systemMgr.HighlightSystem(true, SystemManager.SystemHighlights.Select);
+    public void __ValidateCtxObjectSettings() {
+        CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
+        D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
+        UnityUtility.ValidateComponentPresence<Collider>(gameObject);
     }
 
-    private bool _isSelected;
-    public bool IsSelected {
-        get { return _isSelected; }
-        set { SetProperty<bool>(ref _isSelected, value, "IsSelected"); }
+    public void OnPress(bool isPressed) {
+        if (_systemManager.IsSelected) {
+            //Logger.Log("{0}.OnPress({1}) called.", this.GetType().Name, isPressed);
+            CameraControl.Instance.ContextMenuPickHandler.OnPress(isPressed);
+        }
     }
 
     #endregion
