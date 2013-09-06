@@ -50,7 +50,7 @@ namespace CodeEnv.Master.Common.Unity {
 
         private void OnLeadShipChanged() {
             if (!_shipsData.Contains(_leadShipData)) {
-                D.Error("LeadShip {0} assigned not present in Fleet {1}.", _leadShipData.PieceName, PieceName);
+                D.Error("LeadShip {0} assigned not present in Fleet {1}.", _leadShipData.OptionalParentName, OptionalParentName);
             }
         }
 
@@ -112,14 +112,25 @@ namespace CodeEnv.Master.Common.Unity {
         private IList<ShipData> _shipsData;
         private IDictionary<ShipData, IList<IDisposable>> _subscribers;
 
-        public FleetData(Transform t)
-            : base(t) {
+        public FleetData(Transform fleetCommand, string fleetName)
+            : base(fleetCommand, fleetName) {
+            // IMPROVE need a way to validate that the provided transform contains an admiral, use interface?
+            FixNames(fleetName);
             InitializeCollections();
+        }
+
+        private void FixNames(string fleetName) {
+            _transform.name = "FleetCommand";
+            _transform.parent.name = fleetName;
         }
 
         private void InitializeCollections() {
             _shipsData = new List<ShipData>();
             Composition = new SortedDictionary<ShipHull, IList<ShipData>>();
+        }
+
+        protected override void OnNameChanged() {
+            FixNames(Name);
         }
 
         public void AddShip(ShipData shipData) {
@@ -133,7 +144,7 @@ namespace CodeEnv.Master.Common.Unity {
                 UpdatePropertiesDerivedFromTotalFleet();
                 return;
             }
-            D.Warn("Attempting to add {0} {1} that is already present.", typeof(ShipData), shipData.PieceName);
+            D.Warn("Attempting to add {0} {1} that is already present.", typeof(ShipData), shipData.OptionalParentName);
         }
 
         private void ValidateOwner(IPlayer owner) {
@@ -144,7 +155,7 @@ namespace CodeEnv.Master.Common.Unity {
         }
 
         private void SetFleetAssignment(ShipData shipData) {
-            shipData.PieceName = PieceName;
+            shipData.OptionalParentName = Name;
         }
 
         /// <summary>
@@ -170,16 +181,17 @@ namespace CodeEnv.Master.Common.Unity {
         }
 
 
-        public void RemoveShip(ShipData shipData) {
+        public bool RemoveShip(ShipData shipData) {
             if (_shipsData.Contains(shipData)) {
-                _shipsData.Remove(shipData);
+                bool isRemoved = _shipsData.Remove(shipData);
 
                 ChangeComposition(shipData, toAdd: false);
                 Unsubscribe(shipData);
                 UpdatePropertiesDerivedFromTotalFleet();
-                return;
+                return isRemoved;
             }
-            D.Warn("Attempting to remove {0} {1} that is not present.", typeof(ShipData), shipData.PieceName);
+            D.Warn("Attempting to remove {0} {1} that is not present.", typeof(ShipData), shipData.OptionalParentName);
+            return false;
         }
 
         /// <summary>
@@ -194,11 +206,6 @@ namespace CodeEnv.Master.Common.Unity {
             UpdateMaxTurnRate();
         }
 
-        private void UpdateMaxTurnRate() {
-            // MinBy is a MoreLinq Nuget package extension method made available by Radical. I can also get it from
-            // Nuget package manager, but installing it placed alot of things in my solution that I didn't know how to organize
-            MaxTurnRate = _shipsData.MinBy(data => data.MaxTurnRate).MaxTurnRate;
-        }
         private void UpdateHealth() {
             Health = _shipsData.Sum<ShipData>(data => data.Health);
         }
@@ -218,7 +225,21 @@ namespace CodeEnv.Master.Common.Unity {
         private void UpdateMaxSpeed() {
             // MinBy is a MoreLinq Nuget package extension method made available by Radical. I can also get it from
             // Nuget package manager, but installing it placed alot of things in my solution that I didn't know how to organize
+            if (_shipsData.IsNullOrEmpty()) {
+                MaxSpeed = Constants.ZeroF;
+                return;
+            }
             MaxSpeed = _shipsData.MinBy(data => data.MaxSpeed).MaxSpeed;
+        }
+
+        private void UpdateMaxTurnRate() {
+            // MinBy is a MoreLinq Nuget package extension method made available by Radical. I can also get it from
+            // Nuget package manager, but installing it placed alot of things in my solution that I didn't know how to organize
+            if (_shipsData.IsNullOrEmpty()) {
+                MaxTurnRate = Constants.ZeroF;
+                return;
+            }
+            MaxTurnRate = _shipsData.MinBy(data => data.MaxTurnRate).MaxTurnRate;
         }
 
         #region ShipData PropertyChanged Subscription and Methods
@@ -263,8 +284,10 @@ namespace CodeEnv.Master.Common.Unity {
         #endregion
 
         private void Unsubscribe() {
-            foreach (ShipData shipData in _subscribers.Keys) {
-                _subscribers[shipData].ForAll<IDisposable>(d => d.Dispose());
+            IList<ShipData> subscriberKeys = new List<ShipData>(_subscribers.Keys);
+            // copy of key list as you can't remove keys from a list while you are iterating over the list
+            foreach (ShipData shipData in subscriberKeys) {
+                Unsubscribe(shipData);
             }
             _subscribers.Clear();
         }
@@ -315,7 +338,6 @@ namespace CodeEnv.Master.Common.Unity {
         //    // method content here
         //}
         #endregion
-
 
     }
 }

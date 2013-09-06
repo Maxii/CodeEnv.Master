@@ -110,7 +110,7 @@ public class GlobeManager : AMonoBehaviourBase, ICameraFocusable {
     #region NGUI Events
     public void OnClick() {
         //Debug.Log("GlobeManager.OnClick() called.");
-        if (NguiGameInput.IsMiddleMouseButtonClick()) {
+        if (GameInputHelper.IsMiddleMouseButton()) {
             _eventMgr.Raise<FocusSelectedEvent>(new FocusSelectedEvent(this, _transform));
         }
     }

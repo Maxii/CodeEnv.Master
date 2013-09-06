@@ -88,7 +88,7 @@ public class FleetManager : AGameObjectManager<FleetData> {
     protected override void __InitializeData() {
         Data = new FleetData(_transform);
         // there is no ItemName for a fleet
-        Data.PieceName = gameObject.name;
+        Data.OptionalParentName = gameObject.name;
         Data.LastHumanPlayerIntelDate = new GameDate();
 
         foreach (var shipMgr in _shipManagers) {

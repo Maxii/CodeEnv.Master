@@ -37,7 +37,7 @@ namespace CodeEnv.Master.Common.Unity {
         private GameState _gameState;
         public GameState GameState {
             get { return _gameState; }
-            private set { SetProperty<GameState>(ref _gameState, value, "GameState", InitializeOnGameStateChanged, ValidateConditionsForChangeInGameState); }
+            private set { SetProperty<GameState>(ref _gameState, value, "GameState", OnGameStateChanged, OnGameStateChanging); }
         }
 
         public static GameSettings Settings { get; private set; }
@@ -194,6 +194,7 @@ namespace CodeEnv.Master.Common.Unity {
             _eventMgr.AddListener<SaveGameEvent>(this, OnSaveGame);
             _eventMgr.AddListener<LoadSavedGameEvent>(this, OnLoadSavedGame);
             _eventMgr.AddListener<SelectionEvent>(this, OnNewSelection);
+            _eventMgr.AddListener<GameItemDestroyedEvent>(this, OnGameItemDestroyed);
         }
 
         private void OnBuildNewGame(BuildNewGameEvent e) {
@@ -324,20 +325,45 @@ namespace CodeEnv.Master.Common.Unity {
             }
         }
 
-        private ISelectable _previousSelection;
+        private ISelectable _currentSelection;
         private void OnNewSelection(SelectionEvent e) {
-            if (_previousSelection != null) {
-                _previousSelection.IsSelected = false;
+            ISelectable newSelection = e.Source as ISelectable;
+            D.Assert(newSelection != null, "{0} received from {1} that is not {2}.".Inject(typeof(SelectionEvent).Name, e.Source.GetType().Name, typeof(ISelectable).Name));
+            if (_currentSelection != null) {
+                _currentSelection.IsSelected = false;
             }
-            _previousSelection = e.Source;
+            _currentSelection = newSelection;
+        }
+
+        private void OnGameItemDestroyed(GameItemDestroyedEvent e) {
+            ISelectable selectable = e.Source as ISelectable;
+            if (selectable != null) {
+                if (selectable == _currentSelection) {
+                    // the current selection is being destroyed
+                    D.Assert(selectable.IsSelected, "{0} should be selected!".Inject(e.Source.GetType().Name));
+                    selectable.IsSelected = false;
+                    _currentSelection = null;
+                }
+            }
+        }
+
+        private void OnGameStateChanging(GameState newState) {
+            ValidateConditionsForChangeInGameState(newState);
+        }
+
+        private void OnGameStateChanged() {
+            InitializeOnGameStateChanged();
         }
 
         /// <summary>
-        /// Called from Loader when all conditions are met to run.
+        /// Called from Loader when all conditions are met to begin the progression to Running.
         /// Conditions include GameState.Waiting, no UnreadyElements and Update()
         /// has started.
         /// </summary>
-        public void Run() {
+        public void BeginCountdownToRunning() {
+            GameState = GameState.RunningCountdown_3;
+            GameState = GameState.RunningCountdown_2;
+            GameState = GameState.RunningCountdown_1;
             GameState = GameState.Running;
         }
 
@@ -361,6 +387,15 @@ namespace CodeEnv.Master.Common.Unity {
                     if (proposedNewState != GameState.Waiting) { isError = true; }
                     break;
                 case GameState.Waiting:
+                    if (proposedNewState != GameState.RunningCountdown_3) { isError = true; }
+                    break;
+                case GameState.RunningCountdown_3:
+                    if (proposedNewState != GameState.RunningCountdown_2) { isError = true; }
+                    break;
+                case GameState.RunningCountdown_2:
+                    if (proposedNewState != GameState.RunningCountdown_1) { isError = true; }
+                    break;
+                case GameState.RunningCountdown_1:
                     if (proposedNewState != GameState.Running) { isError = true; }
                     break;
                 case GameState.Running:
@@ -381,6 +416,9 @@ namespace CodeEnv.Master.Common.Unity {
                 case GameState.Loading:
                 case GameState.Restoring:
                 case GameState.Waiting:
+                case GameState.RunningCountdown_3:
+                case GameState.RunningCountdown_2:
+                case GameState.RunningCountdown_1:
                     IsGameRunning = false;
                     break;
                 case GameState.Running:
@@ -433,6 +471,7 @@ namespace CodeEnv.Master.Common.Unity {
             _eventMgr.RemoveListener<SaveGameEvent>(this, OnSaveGame);
             _eventMgr.RemoveListener<LoadSavedGameEvent>(this, OnLoadSavedGame);
             _eventMgr.RemoveListener<SelectionEvent>(this, OnNewSelection);
+            _eventMgr.RemoveListener<GameItemDestroyedEvent>(this, OnGameItemDestroyed);
         }
 
         public override string ToString() {

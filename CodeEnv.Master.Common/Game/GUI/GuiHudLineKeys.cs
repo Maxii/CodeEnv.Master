@@ -22,8 +22,8 @@ namespace CodeEnv.Master.Common {
     public enum GuiHudLineKeys {
 
         None,
-        ItemName,
-        PieceName,
+        Name,
+        ParentName,
         IntelState,
         Distance,
         Capacity,

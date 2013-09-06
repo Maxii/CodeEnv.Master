@@ -32,8 +32,8 @@ namespace CodeEnv.Master.Common {
         /// Called when a mouse button is pressed or unpressed on this gameobject. The object
         /// must forward the call to CtxPickHandler on the mainCamera for the ContextMenus to work.
         /// </summary>
-        /// <param name="isPressed">if set to <c>true</c> equivalent to Input.onMouseDown, false to onMouseUp.</param>
-        void OnPress(bool isPressed);
+        /// <param name="isDown">if set to <c>true</c> equivalent to Input.onMouseDown, false to onMouseUp.</param>
+        void OnPress(bool isDown);
 
     }
 }

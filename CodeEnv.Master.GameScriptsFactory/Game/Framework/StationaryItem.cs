@@ -21,25 +21,42 @@ using UnityEngine;
 /// </summary>
 public class StationaryItem : AItem, ICameraFocusable {
 
+    private static bool _isStaticHudPublisherFieldsInitialized;
+
     protected GameEventManager _eventMgr;
 
     protected override void Awake() {
         base.Awake();
+        if (!_isStaticHudPublisherFieldsInitialized) {
+            InitializeStaticHudPublisherFields();
+        }
         _eventMgr = GameEventManager.Instance;
     }
 
-    protected override void InitializeHudPublisher() {
-        HudPublisher = new GuiHudPublisher(GuiCursorHud.Instance, Data);
+    private static void InitializeStaticHudPublisherFields() {
+        AGuiHudPublisher.SetGuiCursorHud(GuiCursorHud.Instance);
+        GuiHudPublisher<Data>.SetFactory(GuiHudTextFactory.Instance);
+        GuiHudPublisher<ShipData>.SetFactory(ShipGuiHudTextFactory.Instance);
+        GuiHudPublisher<FleetData>.SetFactory(FleetGuiHudTextFactory.Instance);
+        GuiHudPublisher<SystemData>.SetFactory(SystemGuiHudTextFactory.Instance);
+        _isStaticHudPublisherFieldsInitialized = true;
+    }
+
+    protected override IGuiHudPublisher InitializeHudPublisher() {
+        return new GuiHudPublisher<Data>(Data);
     }
 
     protected virtual void OnClick() {
-        D.Log("{0}.OnClick() called.", gameObject.name);
-        if (NguiGameInput.IsMiddleMouseButtonClick()) {
+        if (GameInputHelper.IsMiddleMouseButton()) {
             OnMiddleClick();
         }
     }
 
     protected virtual void OnMiddleClick() {
+        DeclareAsFocus();
+    }
+
+    public void DeclareAsFocus() {
         _eventMgr.Raise<FocusSelectedEvent>(new FocusSelectedEvent(this, _transform));
     }
 

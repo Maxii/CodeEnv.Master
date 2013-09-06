@@ -59,10 +59,6 @@ public abstract class AHud<T> : AMonoBehaviourBaseSingleton<T>, IHud where T : A
         _label.pivot = pivot;
     }
 
-    protected override void OnApplicationQuit() {
-        _instance = null;
-    }
-
     #region IGuiHud Members
 
     public void Set(string text) {

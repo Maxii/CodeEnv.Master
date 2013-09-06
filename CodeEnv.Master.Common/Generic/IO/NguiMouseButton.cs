@@ -21,10 +21,10 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public enum NguiMouseButton {
 
+        None = 0,
         Left = -1,
         Right = -2,
-        Middle = -3,
-        None = -4
+        Middle = -3
     }
 }
 

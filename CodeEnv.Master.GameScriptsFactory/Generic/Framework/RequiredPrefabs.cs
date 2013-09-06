@@ -31,7 +31,7 @@ public class RequiredPrefabs : AMonoBehaviourBaseSingleton<RequiredPrefabs> {
 
     public SphereCollider UniverseEdgePrefab;
     public Transform CameraDummyTargetPrefab;
-    public UILabel HudLabelPrefab;
+    //public UILabel HudLabelPrefab;
     public GuiTrackingLabel GuiTrackingLabelPrefab;
 
     protected override void Awake() {
@@ -58,14 +58,6 @@ public class RequiredPrefabs : AMonoBehaviourBaseSingleton<RequiredPrefabs> {
             _instance = this;
             return false;
         }
-    }
-
-    void OnDestroy() {
-        Logger.Log("{0}_{1} instance is being destroyed.".Inject(this.name, InstanceID));
-    }
-
-    protected override void OnApplicationQuit() {
-        _instance = null;
     }
 
     public override string ToString() {

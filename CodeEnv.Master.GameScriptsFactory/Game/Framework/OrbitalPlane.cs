@@ -39,9 +39,12 @@ public class OrbitalPlane : StationaryItem, IHasContextMenu, IZoomToFurthest {
         __ValidateCtxObjectSettings();
     }
 
+    protected override IGuiHudPublisher InitializeHudPublisher() {
+        return new GuiHudPublisher<SystemData>(Data);
+    }
+
     protected override void Start() {
         base.Start();
-        PlayerIntelLevel = IntelLevel.Complete;
     }
 
     protected override void OnHover(bool isOver) {
@@ -51,7 +54,7 @@ public class OrbitalPlane : StationaryItem, IHasContextMenu, IZoomToFurthest {
 
     protected override void OnClick() {
         base.OnClick();
-        if (NguiGameInput.IsLeftMouseButtonClick()) {
+        if (GameInputHelper.IsLeftMouseButton()) {
             _systemManager.OnLeftClick();
         }
     }
@@ -94,10 +97,10 @@ public class OrbitalPlane : StationaryItem, IHasContextMenu, IZoomToFurthest {
         UnityUtility.ValidateComponentPresence<Collider>(gameObject);
     }
 
-    public void OnPress(bool isPressed) {
+    public void OnPress(bool isDown) {
         if (_systemManager.IsSelected) {
             //Logger.Log("{0}.OnPress({1}) called.", this.GetType().Name, isPressed);
-            CameraControl.Instance.ContextMenuPickHandler.OnPress(isPressed);
+            CameraControl.Instance.TryShowContextMenuOnPress(isDown);
         }
     }
 

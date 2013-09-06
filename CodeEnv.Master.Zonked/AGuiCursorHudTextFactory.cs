@@ -33,18 +33,18 @@ namespace CodeEnv.Master.Common.Unity {
 
         private static IDictionary<IntelLevel, IList<GuiHudLineKeys>> _hudLineKeyLookup = new Dictionary<IntelLevel, IList<GuiHudLineKeys>> {
 
-        {IntelLevel.Unknown, new List<GuiHudLineKeys> { GuiHudLineKeys.PieceName,
+        {IntelLevel.Unknown, new List<GuiHudLineKeys> { GuiHudLineKeys.ParentName,
                                                                        GuiHudLineKeys.IntelState,
                                                                        GuiHudLineKeys.Distance }},
 
-        {IntelLevel.OutOfDate, new List<GuiHudLineKeys> {   GuiHudLineKeys.PieceName,
+        {IntelLevel.OutOfDate, new List<GuiHudLineKeys> {   GuiHudLineKeys.ParentName,
                                                                        GuiHudLineKeys.IntelState,
                                                                        GuiHudLineKeys.Capacity,
                                                                        GuiHudLineKeys.Resources,
                                                                        GuiHudLineKeys.Specials,
                                                                        GuiHudLineKeys.Distance }},
 
-        {IntelLevel.LongRangeSensors, new List<GuiHudLineKeys> {GuiHudLineKeys.PieceName,
+        {IntelLevel.LongRangeSensors, new List<GuiHudLineKeys> {GuiHudLineKeys.ParentName,
                                                                        GuiHudLineKeys.IntelState,
                                                                             GuiHudLineKeys.Capacity,
                                                                           GuiHudLineKeys.Resources,
@@ -57,7 +57,7 @@ namespace CodeEnv.Master.Common.Unity {
                                                                            GuiHudLineKeys.ShipSize,
                                                                            GuiHudLineKeys.Distance }},
 
-         {IntelLevel.ShortRangeSensors, new List<GuiHudLineKeys> {GuiHudLineKeys.PieceName,
+         {IntelLevel.ShortRangeSensors, new List<GuiHudLineKeys> {GuiHudLineKeys.ParentName,
                                                                        GuiHudLineKeys.IntelState,
                                                                             GuiHudLineKeys.Capacity,
                                                                           GuiHudLineKeys.Resources,
@@ -71,7 +71,7 @@ namespace CodeEnv.Master.Common.Unity {
                                                                            GuiHudLineKeys.ShipDetails,
                                                                            GuiHudLineKeys.Distance }},
 
-       {IntelLevel.Complete, new List<GuiHudLineKeys> {GuiHudLineKeys.PieceName,
+       {IntelLevel.Complete, new List<GuiHudLineKeys> {GuiHudLineKeys.ParentName,
                                                                        GuiHudLineKeys.IntelState,
                                                                             GuiHudLineKeys.Capacity,
                                                                           GuiHudLineKeys.Resources,
@@ -144,8 +144,8 @@ namespace CodeEnv.Master.Common.Unity {
         /// <exception cref="System.NotImplementedException"></exception>
         public virtual IColoredTextList MakeInstance(GuiHudLineKeys key, float currentSpeed = -1F) {
             switch (key) {
-                case GuiHudLineKeys.PieceName:
-                    return new ColoredTextList_String(_data.PieceName);
+                case GuiHudLineKeys.ParentName:
+                    return new ColoredTextList_String(_data.OptionalParentName);
                 case GuiHudLineKeys.Distance:
                     return new ColoredTextList_Distance(_data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:

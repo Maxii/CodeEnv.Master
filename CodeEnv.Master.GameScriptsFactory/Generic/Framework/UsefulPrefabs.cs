@@ -62,14 +62,6 @@ public class UsefulPrefabs : AMonoBehaviourBaseSingleton<UsefulPrefabs> {
         }
     }
 
-    void OnDestroy() {
-        Logger.Log("{0}_{1} instance is being destroyed.".Inject(this.name, InstanceID));
-    }
-
-    protected override void OnApplicationQuit() {
-        _instance = null;
-    }
-
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

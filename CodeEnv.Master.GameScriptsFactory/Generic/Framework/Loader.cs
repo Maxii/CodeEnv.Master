@@ -136,12 +136,6 @@ public class Loader : AMonoBehaviourBase, IDisposable {
         }
     }
 
-    void OnEnable() {
-        // Reqd due to bug in script execution order. Scripts with an OnEnable() method will always be first
-        // in execution order, effectively ignoring execution order project settings. As _CameraControl uses OnEnable(), it 
-        // always was called first. Placing this empty method here makes script execution order settings effective.
-    }
-
     protected override void Start() {
         base.Start();
         CheckForPrefabs();
@@ -164,14 +158,14 @@ public class Loader : AMonoBehaviourBase, IDisposable {
 
     private void CheckElementReadiness() {
         if (_gameMgr.GameState == GameState.Waiting && _unreadyElements.Count == 0) {
-            _gameMgr.Run();
+            _gameMgr.BeginCountdownToRunning();
         }
     }
 
-    void OnDestroy() {
+    protected override void OnDestroy() {
+        base.OnDestroy();
         if (_isInitialized) {
             // no reason to cleanup if this object was destroyed before it was initialized.
-            Logger.Log("{0}_{1} instance is disposing.".Inject(this.name, InstanceID));
             Dispose();
         }
     }

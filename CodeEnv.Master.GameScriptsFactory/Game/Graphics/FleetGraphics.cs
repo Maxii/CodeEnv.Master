@@ -35,17 +35,15 @@ public class FleetGraphics : AGraphics {
     private UISprite _fleetIcon;
 
     private GuiTrackingLabel _trackingLabel;
-    private FleetAdmiral _admiral;
+    private FleetCommand _fleetCmd;
+    private FleetManager _fleetMgr;
 
     protected override void Awake() {
         base.Awake();
-        _admiral = gameObject.GetSafeMonoBehaviourComponentInChildren<FleetAdmiral>();
-        Target = _admiral.transform;
+        _fleetMgr = gameObject.GetSafeMonoBehaviourComponent<FleetManager>();
+        _fleetCmd = gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>();
+        Target = _fleetCmd.transform;
         InitializeHighlighting();
-    }
-
-    protected override void Start() {
-        base.Start();
     }
 
     protected override void RegisterComponentsToDisable() {
@@ -87,7 +85,7 @@ public class FleetGraphics : AGraphics {
 
     private GuiTrackingLabel InitializeTrackingLabel() {
         // use LeadShip collider for the offset rather than the Admiral collider as the Admiral collider changes scale dynamically. FIXME LeadShips die!!!
-        Vector3 pivotOffset = new Vector3(Constants.ZeroF, _admiral.LeadShip.collider.bounds.extents.y, Constants.ZeroF);
+        Vector3 pivotOffset = new Vector3(Constants.ZeroF, _fleetMgr.LeadShipCaptain.collider.bounds.extents.y, Constants.ZeroF);
         GuiTrackingLabel trackingLabel = GuiTrackingLabelFactory.CreateGuiTrackingLabel(Target, pivotOffset, trackingLabelOffsetFromPivot);
         trackingLabel.IsShowing = true;
         return trackingLabel;
@@ -104,15 +102,15 @@ public class FleetGraphics : AGraphics {
             Highlight(false);
             return;
         }
-        if (_admiral.IsFocus) {
-            if (_admiral.IsSelected) {
+        if (_fleetCmd.IsFocus) {
+            if (_fleetMgr.IsSelected) {
                 Highlight(true, Highlights.Both);
                 return;
             }
             Highlight(true, Highlights.Focused);
             return;
         }
-        if (_admiral.IsSelected) {
+        if (_fleetMgr.IsSelected) {
             Highlight(true, Highlights.Selected);
             return;
         }

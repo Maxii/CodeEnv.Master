@@ -24,15 +24,8 @@ namespace CodeEnv.Master.Common.Unity {
     /// </summary>
     public class SelectionEvent : AGameEvent {
 
-        public new ISelectable Source {
-            get { return base.Source as ISelectable; }
-        }
-
-        public GameObject GameObject { get; private set; }
-
-        public SelectionEvent(ISelectable source, GameObject gameObject)
+        public SelectionEvent(ISelectable source)
             : base(source) {
-            GameObject = gameObject;
         }
 
         public override string ToString() {

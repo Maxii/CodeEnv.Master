@@ -93,10 +93,6 @@ public class Logger : AMonoBehaviourBaseSingleton<Logger> {
         }
     }
 
-    protected override void OnApplicationQuit() {
-        _instance = null;
-    }
-
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

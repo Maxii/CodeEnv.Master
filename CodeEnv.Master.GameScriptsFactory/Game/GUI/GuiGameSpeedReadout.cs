@@ -56,7 +56,8 @@ public class GuiGameSpeedReadout : AGuiLabelReadoutBase, IDisposable {
         RefreshReadout(CommonTerms.MultiplySign + clockSpeed.SpeedMultiplier().ToString());
     }
 
-    void OnDestroy() {
+    protected override void OnDestroy() {
+        base.OnDestroy();
         Dispose();
     }
 

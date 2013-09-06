@@ -104,16 +104,12 @@ public class ManagementObjects : AMonoBehaviourBaseSingleton<ManagementObjects>,
         childrenToReattach.ForAll<Transform>(t => t.parent = _transform);
     }
 
-    void OnDestroy() {
+    protected override void OnDestroy() {
+        base.OnDestroy();
         if (_isInitialized) {
             // no reason to cleanup if this object was destroyed before it was initialized.
-            Logger.Log("{0}_{1} instance is disposing.".Inject(this.name, InstanceID));
             Dispose();
         }
-    }
-
-    protected override void OnApplicationQuit() {
-        _instance = null;
     }
 
     private void Unsubscribe() {

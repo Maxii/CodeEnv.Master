@@ -112,12 +112,6 @@ public class MonoGameManager : AMonoBehaviourBaseSingleton<MonoGameManager> {
     }
     #endregion
 
-    void OnEnable() {
-        // TODO - Fixed as of Unity 4.0. Now to test... Reqd due to bug in script execution order. Scripts with an OnEnable() method will always be first
-        // in execution order, effectively ignoring execution order project settings. As _CameraControl uses OnEnable(), it 
-        // always was called first. Placing this empty method here makes script execution order settings effective.
-    }
-
     // This simply substitutes my own Event for OnLevelWasLoaded so I don't have to use OnLevelWasLoaded anywhere else
     // Wiki: OnLevelWasLoaded is NOT guaranteed to run before all of the Awake calls. In most cases it will, but in some 
     // might produce some unexpected bugs. If you need some code to be executed before Awake calls, use OnDisable instead.
@@ -128,14 +122,13 @@ public class MonoGameManager : AMonoBehaviourBaseSingleton<MonoGameManager> {
         }
     }
 
-    void OnDeserialized() {
+    protected override void OnDeserialized() {
         _gameMgr.OnDeserialized();
     }
 
     protected override void OnApplicationQuit() {
-        Logger.Log("ApplicationQuit called.");
+        base.OnApplicationQuit();
         _gameMgr.Dispose();
-        _instance = null;
     }
 
     public override string ToString() {

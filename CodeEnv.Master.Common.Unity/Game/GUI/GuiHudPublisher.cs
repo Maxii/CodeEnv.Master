@@ -6,12 +6,12 @@
 // </copyright> 
 // <summary> 
 // File: GuiHudPublisher.cs
-// Manages the content of the text that GuiCursorHud displays and provides
+// Manages the content of the text that the GuiCursorHud displays and provides
 // some customization and coroutine-based update methods that keep the text current.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -24,24 +24,30 @@ namespace CodeEnv.Master.Common.Unity {
     using UnityEngine;
 
     /// <summary>
-    /// Manages the content of the text that GuiCursorHud displays and provides
+    /// Manages the content of the text that the GuiCursorHud displays and provides
     /// some customization and coroutine-based update methods that keep the text current.
     /// </summary>
-    public class GuiHudPublisher : IDisposable {
+    /// <typeparam name="DataType">The type of Data used.</typeparam>
+    public class GuiHudPublisher<DataType> : AGuiHudPublisher, IGuiHudPublisher, IDisposable where DataType : Data {
 
-        private static IGuiHud _guiCursorHud;
+        public bool IsHudShowing { get; private set; }
+
+        private static IGuiHudTextFactory<DataType> _guiHudTextFactory;
 
         private GuiHudText _guiCursorHudText;
-        private Data _data;
+        private DataType _data;
         private GuiHudLineKeys[] _optionalKeys;
         private IList<IDisposable> _subscribers;
         private float _hudRefreshRate;  // OPTIMIZE static?
 
-        public GuiHudPublisher(IGuiHud guiHud, Data data) {
-            _guiCursorHud = _guiCursorHud ?? guiHud;
+        public GuiHudPublisher(DataType data) {
             _data = data;
             _hudRefreshRate = GeneralSettings.Instance.HudRefreshRate;
             Subscribe();
+        }
+
+        public static void SetFactory(IGuiHudTextFactory<DataType> factory) {
+            _guiHudTextFactory = factory;
         }
 
         private void Subscribe() {
@@ -57,49 +63,22 @@ namespace CodeEnv.Master.Common.Unity {
             _hudRefreshRate *= speedChangeRatio;
         }
 
-        /// <summary>
-        /// Displays a new, updated or already existing GuiCursorHudText instance containing 
-        /// the text to display at the cursor.
-        /// </summary>
-        /// <param name="intelLevel">The intel level.</param>
         public void DisplayHudAtCursor(IntelLevel intelLevel) {
             PrepareHudText(intelLevel);
             _guiCursorHud.Set(_guiCursorHudText);
+            IsHudShowing = true;
         }
 
         private void PrepareHudText(IntelLevel intelLevel) {        // OPTIMIZE Detect individual data property changes and replace them individually
             if (_guiCursorHudText == null || _guiCursorHudText.IntelLevel != intelLevel || _data.IsChanged) {
                 // don't have the right version of GuiCursorHudText so make one
-                _guiCursorHudText = GuiHudTextFactory.MakeInstance(intelLevel, _data);
+                _guiCursorHudText = _guiHudTextFactory.MakeInstance(intelLevel, _data);
                 _data.AcceptChanges();   // once we make a new one from current data, it is no longer dirty, if it ever was
             }
         }
 
-        /// <summary>
-        /// Coroutine compatible method that keeps the hud text current. 
-        /// </summary>
-        /// <param name="updateFrequency">Seconds between updates.</param>
-        /// <returns></returns>
-        //public IEnumerator KeepHudCurrent(float updateFrequency) {
-        //    IntelLevel intelLevel = _guiCursorHudText.IntelLevel;
-        //    while (true) {
-        //        UpdateGuiCursorHudText(intelLevel, GuiHudLineKeys.Distance);
-        //        if (intelLevel == IntelLevel.OutOfDate) {
-        //            UpdateGuiCursorHudText(IntelLevel.OutOfDate, GuiHudLineKeys.IntelState);
-        //        }
-        //        if (_optionalKeys != null) {
-        //            UpdateGuiCursorHudText(intelLevel, _optionalKeys);
-        //        }
-        //        _guiCursorHud.Set(_guiCursorHudText);
-        //        yield return new WaitForSeconds(updateFrequency);
-        //    }
-        //}
-
-        /// <summary>
-        /// Coroutine compatible method that keeps the hud text current. 
-        /// </summary>
-        /// <returns></returns>
         public IEnumerator KeepHudCurrent() {
+            IsHudShowing = true;
             IntelLevel intelLevel = _guiCursorHudText.IntelLevel;
             while (true) {
                 UpdateGuiCursorHudText(intelLevel, GuiHudLineKeys.Distance);
@@ -122,22 +101,18 @@ namespace CodeEnv.Master.Common.Unity {
         private void UpdateGuiCursorHudText(IntelLevel intelLevel, params GuiHudLineKeys[] keys) {
             IColoredTextList coloredTextList;
             foreach (var key in keys) {
-                coloredTextList = GuiHudTextFactory.MakeInstance(key, intelLevel, _data);
+                coloredTextList = _guiHudTextFactory.MakeInstance(key, intelLevel, _data);
                 _guiCursorHudText.Replace(key, coloredTextList);
             }
         }
 
-        /// <summary>
-        /// Clients can optionally provide additional GuiCursorHudLineKeys they wish to routinely update whenever GetHudText is called.
-        /// LineKeys already automatically handled for all managers include Distance and IntelState.
-        /// </summary>
-        /// <param name="optionalKeys">The optional keys.</param>
         public void SetOptionalUpdateKeys(params GuiHudLineKeys[] optionalKeys) {
             _optionalKeys = optionalKeys;
         }
 
         public void ClearHud() {
             _guiCursorHud.Clear();
+            IsHudShowing = false;
         }
 
         private void Unsubscribe() {

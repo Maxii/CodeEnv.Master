@@ -57,7 +57,8 @@ namespace CodeEnv.Master.Common.Unity {
             }
         }
 
-        public SystemData(Transform t) : base(t) { }
+        public SystemData(Transform systemTransform, string systemName)
+            : base(systemTransform, systemName) { }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

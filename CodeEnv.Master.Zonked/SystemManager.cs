@@ -93,8 +93,8 @@ public class SystemManager : AGameObjectManager<SystemData> {
 
     protected override void __InitializeData() {
         Data = new SystemData(_transform);
-        Data.ItemName = gameObject.GetSafeMonoBehaviourComponentInChildren<Star>().gameObject.name;
-        Data.PieceName = gameObject.name;
+        Data.Name = gameObject.GetSafeMonoBehaviourComponentInChildren<Star>().gameObject.name;
+        Data.OptionalParentName = gameObject.name;
         Data.LastHumanPlayerIntelDate = new GameDate();
         Data.Capacity = 25;
         Data.Resources = new OpeYield(3.1F, 2.0F, 4.8F);

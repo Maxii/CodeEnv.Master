@@ -32,20 +32,21 @@ namespace CodeEnv.Master.Common.Unity {
 
         private static IDictionary<IntelLevel, IList<GuiHudLineKeys>> _hudLineKeyLookup = new Dictionary<IntelLevel, IList<GuiHudLineKeys>> {
 
-        {IntelLevel.Unknown, new List<GuiHudLineKeys> { GuiHudLineKeys.PieceName,
+        {IntelLevel.Unknown, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
+                                                                       GuiHudLineKeys.ParentName,
                                                                        GuiHudLineKeys.IntelState,
                                                                        GuiHudLineKeys.Distance }},
 
-        {IntelLevel.OutOfDate, new List<GuiHudLineKeys> {   GuiHudLineKeys.ItemName,
-                                                                       GuiHudLineKeys.PieceName,
+        {IntelLevel.OutOfDate, new List<GuiHudLineKeys> {   GuiHudLineKeys.Name,
+                                                                       GuiHudLineKeys.ParentName,
                                                                        GuiHudLineKeys.IntelState,
                                                                        GuiHudLineKeys.Capacity,
                                                                        GuiHudLineKeys.Resources,
                                                                        GuiHudLineKeys.Specials,
                                                                        GuiHudLineKeys.Distance }},
 
-        {IntelLevel.LongRangeSensors, new List<GuiHudLineKeys> { GuiHudLineKeys.ItemName,
-                                                                        GuiHudLineKeys.PieceName,
+        {IntelLevel.LongRangeSensors, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
+                                                                        GuiHudLineKeys.ParentName,
                                                                        GuiHudLineKeys.IntelState,
                                                                             GuiHudLineKeys.Capacity,
                                                                           GuiHudLineKeys.Resources,
@@ -58,8 +59,8 @@ namespace CodeEnv.Master.Common.Unity {
                                                                            GuiHudLineKeys.ShipSize,
                                                                            GuiHudLineKeys.Distance }},
 
-         {IntelLevel.ShortRangeSensors, new List<GuiHudLineKeys> { GuiHudLineKeys.ItemName,
-                                                                        GuiHudLineKeys.PieceName,
+         {IntelLevel.ShortRangeSensors, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
+                                                                        GuiHudLineKeys.ParentName,
                                                                        GuiHudLineKeys.IntelState,
                                                                             GuiHudLineKeys.Capacity,
                                                                           GuiHudLineKeys.Resources,
@@ -73,8 +74,8 @@ namespace CodeEnv.Master.Common.Unity {
                                                                            GuiHudLineKeys.ShipDetails,
                                                                            GuiHudLineKeys.Distance }},
 
-       {IntelLevel.Complete, new List<GuiHudLineKeys> { GuiHudLineKeys.ItemName,
-                                                                        GuiHudLineKeys.PieceName,
+       {IntelLevel.Complete, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
+                                                                        GuiHudLineKeys.ParentName,
                                                                        GuiHudLineKeys.IntelState,
                                                                             GuiHudLineKeys.Capacity,
                                                                           GuiHudLineKeys.Resources,
@@ -89,7 +90,7 @@ namespace CodeEnv.Master.Common.Unity {
                                                                            GuiHudLineKeys.Distance }}
     };
 
-        private static IColoredTextList _emptyIColoredTextList = new ColoredTextListBase();
+        private static IColoredTextList _emptyColoredTextList = new ColoredTextListBase();
 
         /// <summary>
         /// Makes or acquires an instance of GuiCursorHudText for the IntelLevel derived from the data provided.
@@ -108,32 +109,6 @@ namespace CodeEnv.Master.Common.Unity {
                     textList = MakeInstance(key, intelLevel, data);
                     guiCursorHudText.Add(key, textList);
                 }
-
-                //if (data is SystemData) {
-                //    SystemData systemData = data as SystemData;
-                //    foreach (GuiCursorHudLineKeys key in keys) {
-                //        textList = MakeSystemInstance(key, intelLevel, systemData);
-                //        guiCursorHudText.Add(key, textList);
-                //    }
-                //}
-                //else if (data is ShipData) {
-                //    ShipData shipData = data as ShipData;
-                //    foreach (GuiCursorHudLineKeys key in keys) {
-                //        textList = MakeShipInstance(key, intelLevel, shipData);
-                //        guiCursorHudText.Add(key, textList);
-                //    }
-                //}
-                //else if (data is FleetData) {
-                //    FleetData fleetData = data as FleetData;
-                //    foreach (GuiCursorHudLineKeys key in keys) {
-                //        textList = MakeFleetInstance(key, intelLevel, fleetData);
-                //        guiCursorHudText.Add(key, textList);
-                //    }
-                //}
-                //else {
-                //    System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
-                //    D.Error(ErrorMessages.TypeNotExpected.Inject(data.GetType(), stackFrame.GetMethod().Name));
-                //}
                 return guiCursorHudText;
             }
             D.Error("{0} {1} Key is not present in Lookup.", typeof(IntelLevel), intelLevel);
@@ -149,17 +124,17 @@ namespace CodeEnv.Master.Common.Unity {
 
         private static IColoredTextList MakeBaseInstance(GuiHudLineKeys key, IntelLevel intelLevel, Data data) {
             if (!ValidateKeyAgainstIntelLevel(key, intelLevel)) {
-                return _emptyIColoredTextList;
+                return _emptyColoredTextList;
             }
             switch (key) {
-                case GuiHudLineKeys.ItemName:
-                    return data.ItemName != string.Empty ? new ColoredTextList_String(data.ItemName) : _emptyIColoredTextList;
-                case GuiHudLineKeys.PieceName:
-                    return new ColoredTextList_String(data.PieceName);
+                case GuiHudLineKeys.Name:
+                    return new ColoredTextList_String(data.Name);
+                case GuiHudLineKeys.ParentName:
+                    return data.OptionalParentName != string.Empty ? new ColoredTextList_String(data.OptionalParentName) : _emptyColoredTextList;
                 case GuiHudLineKeys.Distance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
-                    return (data.LastHumanPlayerIntelDate != null) ? new ColoredTextList_Intel(data.LastHumanPlayerIntelDate, intelLevel) : _emptyIColoredTextList;
+                    return (data.LastHumanPlayerIntelDate != null) ? new ColoredTextList_Intel(data.LastHumanPlayerIntelDate, intelLevel) : _emptyColoredTextList;
 
                 // The following is a fall through catcher for line keys that aren't processed. An empty ColoredTextList will be returned which will be ignored by GuiCursorHudText
                 case GuiHudLineKeys.Owner:
@@ -176,7 +151,7 @@ namespace CodeEnv.Master.Common.Unity {
                 case GuiHudLineKeys.ShipSize:
                 case GuiHudLineKeys.ShipDetails:
                 case GuiHudLineKeys.Speed:
-                    return _emptyIColoredTextList;
+                    return _emptyColoredTextList;
 
                 case GuiHudLineKeys.None:
                 default:
@@ -194,44 +169,43 @@ namespace CodeEnv.Master.Common.Unity {
         /// <exception cref="System.NotImplementedException"></exception>
         private static IColoredTextList MakeSystemInstance(GuiHudLineKeys key, IntelLevel intelLevel, SystemData data) {
             if (!ValidateKeyAgainstIntelLevel(key, intelLevel)) {
-                return _emptyIColoredTextList;
+                return _emptyColoredTextList;
             }
             switch (key) {
-                case GuiHudLineKeys.ItemName:
-                    return data.ItemName != string.Empty ? new ColoredTextList_String(data.ItemName) : _emptyIColoredTextList;
-                case GuiHudLineKeys.PieceName:
-                    return new ColoredTextList_String(data.PieceName);
+                case GuiHudLineKeys.Name:
+                    return new ColoredTextList_String(data.Name);
                 case GuiHudLineKeys.Distance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
-                    return (data.LastHumanPlayerIntelDate != null) ? new ColoredTextList_Intel(data.LastHumanPlayerIntelDate, intelLevel) : _emptyIColoredTextList;
+                    return (data.LastHumanPlayerIntelDate != null) ? new ColoredTextList_Intel(data.LastHumanPlayerIntelDate, intelLevel) : _emptyColoredTextList;
 
                 case GuiHudLineKeys.Owner:
-                    return (data.Settlement != null) ? new ColoredTextList_Owner(data.Settlement.Owner) : _emptyIColoredTextList;
+                    return (data.Settlement != null) ? new ColoredTextList_Owner(data.Settlement.Owner) : _emptyColoredTextList;
                 case GuiHudLineKeys.Health:
-                    return (data.Settlement != null) ? new ColoredTextList_Health(data.Settlement.Health, data.Settlement.MaxHitPoints) : _emptyIColoredTextList;
+                    return (data.Settlement != null) ? new ColoredTextList_Health(data.Settlement.Health, data.Settlement.MaxHitPoints) : _emptyColoredTextList;
                 case GuiHudLineKeys.CombatStrength:
-                    return (data.Settlement != null) ? new ColoredTextList<float>(Constants.FormatFloat_0Dp, data.Settlement.Strength.Combined) : _emptyIColoredTextList;
+                    return (data.Settlement != null) ? new ColoredTextList<float>(Constants.FormatFloat_0Dp, data.Settlement.Strength.Combined) : _emptyColoredTextList;
                 case GuiHudLineKeys.CombatStrengthDetails:
-                    return (data.Settlement != null) ? new ColoredTextList_Combat(data.Settlement.Strength) : _emptyIColoredTextList;
+                    return (data.Settlement != null) ? new ColoredTextList_Combat(data.Settlement.Strength) : _emptyColoredTextList;
                 case GuiHudLineKeys.Capacity:
                     return new ColoredTextList<int>(Constants.FormatInt_2DMin, data.Capacity);
                 case GuiHudLineKeys.Resources:
                     return new ColoredTextList_Resources(data.Resources);
                 case GuiHudLineKeys.Specials:
-                    return (data.SpecialResources != null) ? new ColoredTextList_Specials(data.SpecialResources) : _emptyIColoredTextList;
+                    return (data.SpecialResources != null) ? new ColoredTextList_Specials(data.SpecialResources) : _emptyColoredTextList;
                 case GuiHudLineKeys.SettlementSize:
-                    return (data.Settlement != null) ? new ColoredTextList_String(data.Settlement.SettlementSize.GetName()) : _emptyIColoredTextList;
+                    return (data.Settlement != null) ? new ColoredTextList_String(data.Settlement.SettlementSize.GetName()) : _emptyColoredTextList;
                 case GuiHudLineKeys.SettlementDetails:
-                    return (data.Settlement != null) ? new ColoredTextList_Settlement(data.Settlement) : _emptyIColoredTextList;
+                    return (data.Settlement != null) ? new ColoredTextList_Settlement(data.Settlement) : _emptyColoredTextList;
 
                 // The following is a fall through catcher for line keys that aren't processed. An empty ColoredTextList will be returned which will be ignored by GuiCursorHudText
+                case GuiHudLineKeys.ParentName: // systems do not have parent names
                 case GuiHudLineKeys.Composition:
                 case GuiHudLineKeys.CompositionDetails:
                 case GuiHudLineKeys.ShipSize:
                 case GuiHudLineKeys.ShipDetails:
                 case GuiHudLineKeys.Speed:
-                    return _emptyIColoredTextList;
+                    return _emptyColoredTextList;
 
                 case GuiHudLineKeys.None:
                 default:
@@ -249,16 +223,16 @@ namespace CodeEnv.Master.Common.Unity {
         /// <exception cref="System.NotImplementedException"></exception>
         private static IColoredTextList MakeFleetInstance(GuiHudLineKeys key, IntelLevel intelLevel, FleetData data) {
             if (!ValidateKeyAgainstIntelLevel(key, intelLevel)) {
-                return _emptyIColoredTextList;
+                return _emptyColoredTextList;
             }
             switch (key) {
-                case GuiHudLineKeys.PieceName:
-                    // ships and fleets donot show name if IntelLevel is Unknown
-                    return intelLevel != IntelLevel.Unknown ? new ColoredTextList_String(data.PieceName) : _emptyIColoredTextList;
+                case GuiHudLineKeys.Name:
+                    // fleets donot show name if IntelLevel is Unknown
+                    return intelLevel != IntelLevel.Unknown ? new ColoredTextList_String(data.Name) : _emptyColoredTextList;
                 case GuiHudLineKeys.Distance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
-                    return (data.LastHumanPlayerIntelDate != null) ? new ColoredTextList_Intel(data.LastHumanPlayerIntelDate, intelLevel) : _emptyIColoredTextList;
+                    return (data.LastHumanPlayerIntelDate != null) ? new ColoredTextList_Intel(data.LastHumanPlayerIntelDate, intelLevel) : _emptyColoredTextList;
 
                 case GuiHudLineKeys.Speed:
                     return new ColoredTextList_Speed(data.CurrentSpeed, data.MaxSpeed);  // fleet will always display speed, even if zero
@@ -277,7 +251,7 @@ namespace CodeEnv.Master.Common.Unity {
                     return new ColoredTextList_Composition(data.Composition);
 
                 // The following is a fall through catcher for line keys that aren't processed. An empty ColoredTextList will be returned which will be ignored by GuiCursorHudText
-                case GuiHudLineKeys.ItemName: // fleets donot have itemNames
+                case GuiHudLineKeys.ParentName: // fleets do not have parent names
                 case GuiHudLineKeys.Capacity:
                 case GuiHudLineKeys.Resources:
                 case GuiHudLineKeys.Specials:
@@ -285,7 +259,7 @@ namespace CodeEnv.Master.Common.Unity {
                 case GuiHudLineKeys.SettlementDetails:
                 case GuiHudLineKeys.ShipSize:
                 case GuiHudLineKeys.ShipDetails:
-                    return _emptyIColoredTextList;
+                    return _emptyColoredTextList;
 
                 case GuiHudLineKeys.None:
                 default:
@@ -303,19 +277,19 @@ namespace CodeEnv.Master.Common.Unity {
         /// <exception cref="System.NotImplementedException"></exception>
         private static IColoredTextList MakeShipInstance(GuiHudLineKeys key, IntelLevel intelLevel, ShipData data) {
             if (!ValidateKeyAgainstIntelLevel(key, intelLevel)) {
-                return _emptyIColoredTextList;
+                return _emptyColoredTextList;
             }
             switch (key) {
-                case GuiHudLineKeys.ItemName:
+                case GuiHudLineKeys.Name:
                     // ships donot show name if IntelLevel is Unknown
-                    return intelLevel != IntelLevel.Unknown ? new ColoredTextList_String(data.ItemName) : _emptyIColoredTextList;
-                case GuiHudLineKeys.PieceName:
-                    // ships and fleets donot show name if IntelLevel is Unknown
-                    return intelLevel != IntelLevel.Unknown ? new ColoredTextList_String(data.PieceName) : _emptyIColoredTextList;
+                    return intelLevel != IntelLevel.Unknown ? new ColoredTextList_String(data.Name) : _emptyColoredTextList;
+                case GuiHudLineKeys.ParentName:
+                    // ships donot show name of the fleet if IntelLevel is Unknown
+                    return intelLevel != IntelLevel.Unknown ? new ColoredTextList_String(data.OptionalParentName) : _emptyColoredTextList;
                 case GuiHudLineKeys.Distance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
-                    return (data.LastHumanPlayerIntelDate != null) ? new ColoredTextList_Intel(data.LastHumanPlayerIntelDate, intelLevel) : _emptyIColoredTextList;
+                    return (data.LastHumanPlayerIntelDate != null) ? new ColoredTextList_Intel(data.LastHumanPlayerIntelDate, intelLevel) : _emptyColoredTextList;
 
                 case GuiHudLineKeys.Speed:
                     return new ColoredTextList_Speed(data.CurrentSpeed, data.MaxSpeed);
@@ -340,7 +314,7 @@ namespace CodeEnv.Master.Common.Unity {
                 case GuiHudLineKeys.CompositionDetails:
                 case GuiHudLineKeys.SettlementSize:
                 case GuiHudLineKeys.SettlementDetails:
-                    return _emptyIColoredTextList;
+                    return _emptyColoredTextList;
 
                 case GuiHudLineKeys.None:
                 default:
@@ -423,7 +397,7 @@ namespace CodeEnv.Master.Common.Unity {
                         // no data to add
                         break;
                     case IntelLevel.OutOfDate:
-                        string addendum = String.Format(". Last Intel {0} days ago.", intelAge.FormattedPeriod);
+                        string addendum = String.Format(". Last Intel {0} ago.", intelAge.FormattedPeriod);
                         intelMsg = intelMsg + addendum;
                         break;
                     case IntelLevel.None:

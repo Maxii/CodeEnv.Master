@@ -1,30 +1,27 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ISelectable.cs
-// Interface that supports the ability to select a game object.
+// File: UnityMouseButton.cs
+// Mouse button values as defined in Unity.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
-
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common {
 
     /// <summary>
-    /// Interface that supports the ability to select a game object.
+    /// Mouse buttons in the same order as Unity
     /// </summary>
-    public interface ISelectable {
+    public enum UnityMouseButton {
 
-        bool IsSelected { get; set; }
-
-        void OnLeftClick();
-
+        Left = 0,
+        Right = 1,
+        Middle = 2,
+        None = 3
     }
+
 }
 

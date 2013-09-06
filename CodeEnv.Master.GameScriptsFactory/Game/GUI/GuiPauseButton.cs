@@ -84,7 +84,8 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
         _subscribers.Clear();
     }
 
-    void OnDestroy() {
+    protected override void OnDestroy() {
+        base.OnDestroy();
         Dispose();
     }
 

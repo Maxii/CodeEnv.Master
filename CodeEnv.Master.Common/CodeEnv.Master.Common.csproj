@@ -18,7 +18,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;UNITY_EDITOR</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
@@ -51,6 +51,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\GameItemDestroyedEvent.cs" />
     <Compile Include="Generic\Graphics\Framerate.cs" />
     <Compile Include="Generic\Framework\AGenericSingleton.cs" />
     <Compile Include="Game\_Debug\DebugHudLineKeys.cs" />
@@ -62,8 +63,7 @@
     <Compile Include="Game\Framework\GameSettings.cs" />
     <Compile Include="Game\Gameplay\DiplomaticRelations.cs" />
     <Compile Include="Generic\Framework\DisposePropertyChangingSubscription.cs" />
-    <Compile Include="Generic\IO\KeyboardAxis.cs" />
-    <Compile Include="Generic\IO\MouseButton.cs" />
+    <Compile Include="Generic\IO\UnityMouseButton.cs" />
     <Compile Include="Generic\IO\NguiMouseButton.cs" />
     <Compile Include="Generic\Framework\APropertyChangeTracking.cs" />
     <Compile Include="Generic\Framework\AEnumValueChangeEvent.cs" />
@@ -113,12 +113,12 @@
     <Compile Include="Game\Framework\Player.cs" />
     <Compile Include="Game\Framework\Race.cs" />
     <Compile Include="Game\Framework\RaceStat.cs" />
-    <Compile Include="Generic\Framework\ISelectable.cs" />
     <Compile Include="Generic\Framework\PauseState.cs" />
     <Compile Include="Generic\Framework\PropertyChangingValueEventArgs.cs" />
     <Compile Include="Game\GUI\GraphicsOptionsAcceptedEvent.cs" />
     <Compile Include="Generic\IO\GraphicsOptionSettings.cs" />
     <Compile Include="Generic\Graphics\IHasContextMenu.cs" />
+    <Compile Include="Generic\Extensions\MouseButtonExtensions.cs" />
     <Compile Include="ThirdParty\PropertyHelper.cs" />
     <Compile Include="ThirdParty\TextScanner.cs" />
     <Compile Include="ThirdParty\FlagsHelper.cs" />

@@ -53,9 +53,9 @@ public class GuiMenuCancelButton : AGuiButtonBase {
         CaptureOpeningState();
     }
 
-    void OnEnable() {
+    protected override void OnEnable() {
+        base.OnEnable();
         if (_isInitialized) {
-            //Logger.Log("GuiMenuCancelButton.OnEnable() called.");
             CaptureOpeningState();
         }
     }

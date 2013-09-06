@@ -30,11 +30,6 @@ public class Star : StationaryItem {
         _systemGraphics = gameObject.GetSafeMonoBehaviourComponentInParents<SystemGraphics>();
     }
 
-    protected override void Start() {
-        base.Start();
-        PlayerIntelLevel = IntelLevel.Complete;
-    }
-
     protected override void OnHover(bool isOver) {
         base.OnHover(isOver);
         _systemGraphics.HighlightTrackingLabel(isOver);
@@ -42,7 +37,7 @@ public class Star : StationaryItem {
 
     protected override void OnClick() {
         base.OnClick();
-        if (NguiGameInput.IsLeftMouseButtonClick()) {
+        if (GameInputHelper.IsLeftMouseButton()) {
             _systemManager.OnLeftClick();
         }
     }

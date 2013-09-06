@@ -56,8 +56,8 @@ public class DebugHud : AHud<DebugHud>, IDebugHud, IDisposable {
 
     #endregion
 
-    void OnDestroy() {
-        Logger.Log("DebugHud.OnDestroy().");
+    protected override void OnDestroy() {
+        base.OnDestroy();
         Dispose();
     }
 

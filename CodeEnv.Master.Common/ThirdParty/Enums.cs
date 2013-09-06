@@ -34,6 +34,8 @@ namespace CodeEnv.Master.Common {
     /// <remarks>Courtesy of Damien Guard. http://damieng.com/blog/category/development/net </remarks>
     public static class Enums<T> where T : struct {
 
+        private static Random _rng = new Random();
+
         // Each dIctionary is completely populated for the Type T the first time any of these methods are called for the type.
         private static readonly IEnumerable<T> All = Enum.GetValues(typeof(T)).Cast<T>();
         private static readonly Dictionary<string, T> InsensitiveNames = All.ToDictionary(k => Enum.GetName(typeof(T), k).ToUpperInvariant());  // Upper chg from FxCop
@@ -200,15 +202,16 @@ namespace CodeEnv.Master.Common {
             return null;
         }
 
-        private static Random rng = new Random();
 
         /// <summary>
         /// Gets a random Enum constant selected from all values of type T.
         /// </summary>
+        /// <param name="excludeDefault">if set to <c>true</c> [exclude default].</param>
         /// <returns></returns>
-        public static T GetRandom() {
+        public static T GetRandom(bool excludeDefault = false) {
             T[] values = GetValues().ToArray<T>();
-            return values[rng.Next(values.Length)];
+            values = excludeDefault ? values.Except<T>(default(T)).ToArray() : values;
+            return GetRandom(values);
         }
 
         /// <summary>
@@ -217,7 +220,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="values">The enum values to select from.</param>
         /// <returns></returns>
         public static T GetRandom(T[] values) {
-            return values[rng.Next(values.Length)];
+            return values[_rng.Next(values.Length)];
         }
     }
 }

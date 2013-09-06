@@ -58,16 +58,17 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Framework\FleetManager.cs" />
     <Compile Include="Generic\Graphics\AGuiButtonBase.cs" />
     <Compile Include="Generic\Graphics\AHud.cs" />
+    <Compile Include="Generic\IO\GameInputHelper.cs" />
     <Compile Include="Generic\_Debug\DebugHud.cs" />
     <Compile Include="Game\Framework\FollowableItem.cs" />
     <Compile Include="Game\Graphics\FleetGraphics.cs" />
-    <Compile Include="Game\Framework\FleetAdmiral.cs" />
+    <Compile Include="Game\Framework\FleetCommand.cs" />
     <Compile Include="Generic\Graphics\ScaleRelativeToCamera.cs" />
     <Compile Include="Generic\Graphics\Billboard.cs" />
     <Compile Include="Generic\Graphics\GuiCursorHud.cs" />
-    <Compile Include="Generic\IO\CameraControl.cs" />
     <Compile Include="Generic\_Debug\Logger.cs" />
     <Compile Include="Generic\_Debug\ManagementObjects.cs" />
     <Compile Include="Generic\Graphics\GuiVisibilityButton.cs" />
@@ -97,7 +98,6 @@
     <Compile Include="Game\GUI\GuiSavedGamesPopupList.cs" />
     <Compile Include="Game\GUI\GuiSaveMenuAcceptButton.cs" />
     <Compile Include="Generic\Graphics\AGuiPopupListBase.cs" />
-    <Compile Include="Generic\IO\NguiFallthruEventHandler.cs" />
     <Compile Include="Generic\Graphics\GuiTrackingLabel.cs" />
     <Compile Include="Game\GUI\GuiPlayerColorPopupList.cs" />
     <Compile Include="Game\GUI\GuiPlayerRacePopupList.cs" />
@@ -109,6 +109,7 @@
     <Compile Include="Game\GUI\GuiGraphicsOptionMenuAcceptButton.cs" />
     <Compile Include="Game\GUI\GuiQualitySettingPopupList.cs" />
     <Compile Include="Game\GUI\GuiSelectedReadout.cs" />
+    <Compile Include="Generic\IO\CameraControl.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Generic\Framework\Loader.cs" />
     <Compile Include="Generic\Framework\RequiredPrefabs.cs" />
@@ -123,6 +124,7 @@
     <Compile Include="Generic\Graphics\StarFlare.cs" />
     <Compile Include="Game\Framework\StationaryItem.cs" />
     <Compile Include="Game\Framework\SystemManager.cs" />
+    <Compile Include="ThirdParty\NguiButtonPlayAnimation.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeEnv.Master.Common.Unity\CodeEnv.Master.Common.Unity.csproj">
@@ -141,16 +143,11 @@
       <Project>{9c8574a4-64ba-49b1-b66d-7572ecfffcfb}</Project>
       <Name>CodeEnv.Master.ExternalMonoBehaviours</Name>
     </ProjectReference>
-    <ProjectReference Include="..\CodeEnv.Master.MyNguiScriptsFactory\CodeEnv.Master.MyNguiScriptsFactory.csproj">
-      <Project>{69a2b13d-fa26-459e-a302-faae50d07b72}</Project>
-      <Name>CodeEnv.Master.MyNguiScriptsFactory</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Game\Gameplay\" />
     <Folder Include="Game\_Debug\" />
     <Folder Include="Generic\Math\" />
-    <Folder Include="ThirdParty\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

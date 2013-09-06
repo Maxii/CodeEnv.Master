@@ -63,7 +63,7 @@ namespace CodeEnv.Master.Common.Unity {
         /// </summary>
         /// <param name="list">The list.</param>
         /// <returns></returns>
-        public static T Choice(List<T> list) {
+        public static T Choice(IList<T> list) {
             return list[Random.Range(0, list.Count)];
         }
 
@@ -96,7 +96,7 @@ namespace CodeEnv.Master.Common.Unity {
         /// <param name="list">The list.</param>
         /// <param name="weights">The weights.</param>
         /// <returns></returns>
-        public static T WeightedChoice(List<T> list, int[] weights) {
+        public static T WeightedChoice(IList<T> list, int[] weights) {
             int totalWeight = 0;
             for (int i = 0; i < list.Count; i++) {
                 totalWeight += weights[i];
@@ -139,7 +139,7 @@ namespace CodeEnv.Master.Common.Unity {
         /// </summary>
         /// <param name="list">The list.</param>
         /// <returns></returns>
-        public static List<T> Shuffle(List<T> list) {
+        public static List<T> Shuffle(IList<T> list) {
             List<T> shuffledList = new List<T>(0);
             int listCount = list.Count;
             int elementIndex;

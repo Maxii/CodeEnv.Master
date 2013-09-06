@@ -19,7 +19,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;UNITY_EDITOR</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
@@ -33,9 +33,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\..\UnityEnv\Support\NGUI\Library\ScriptAssemblies\Assembly-CSharp.dll</HintPath>
-    </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
       <HintPath>..\..\..\UnityEnv\Support\UnitySerializer\Library\ScriptAssemblies\Assembly-CSharp-firstpass.dll</HintPath>
       <Private>False</Private>
@@ -55,6 +52,10 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Graphics\AGuiHudPublisher.cs" />
+    <Compile Include="Generic\Graphics\AGuiHudTextFactory.cs" />
+    <Compile Include="Generic\Framework\ISelectable.cs" />
+    <Compile Include="Generic\IO\GameInput.cs" />
     <Compile Include="Generic\Framework\SelectionEvent.cs" />
     <Compile Include="Generic\Graphics\ColoredTextList_String.cs" />
     <Compile Include="Generic\Graphics\ColoredTextList.cs" />
@@ -73,16 +74,14 @@
     <Compile Include="Game\Framework\IGameDate.cs" />
     <Compile Include="Generic\Graphics\IHud.cs" />
     <Compile Include="Generic\Graphics\INotifyVisibilityChanged.cs" />
-    <Compile Include="Generic\IO\FocusSelectedEvent.cs" />
-    <Compile Include="Generic\IO\MyNguiUtilities.cs" />
+    <Compile Include="Game\Framework\FocusSelectedEvent.cs" />
+    <Compile Include="Generic\Framework\MyNguiUtilities.cs" />
     <Compile Include="Generic\_Debug\UnityDebugConstants.cs" />
     <Compile Include="Generic\Math\RandomExtended.cs" />
     <Compile Include="Generic\Extensions\GameObjectExtensions.cs" />
-    <Compile Include="Generic\IO\GameInput.cs" />
     <Compile Include="Generic\Extensions\LayerMaskExtensions.cs" />
     <Compile Include="Generic\Math\Mathfx.cs" />
     <Compile Include="Generic\IO\PlayerPrefsManager.cs" />
-    <Compile Include="Generic\IO\NguiGameInput.cs" />
     <Compile Include="Game\GUI\GuiHudText.cs" />
     <Compile Include="Generic\Framework\MyNguiConstants.cs" />
     <Compile Include="Generic\Graphics\IColoredTextList.cs" />
@@ -90,12 +89,17 @@
     <Compile Include="Generic\Graphics\IGuiHud.cs" />
     <Compile Include="Generic\_Debug\IDebugHud.cs" />
     <Compile Include="Game\GUI\GuiHudPublisher.cs" />
+    <Compile Include="Game\Graphics\GuiHudTextFactory.cs" />
+    <Compile Include="Game\Graphics\FleetGuiHudTextFactory.cs" />
+    <Compile Include="Game\Graphics\ShipGuiHudTextFactory.cs" />
+    <Compile Include="Game\Graphics\SystemGuiHudTextFactory.cs" />
+    <Compile Include="Generic\Graphics\IGuiHudPublisher.cs" />
+    <Compile Include="Generic\Graphics\IGuiHudTextFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\SystemData.cs" />
     <Compile Include="Generic\Extensions\VectorExtensions.cs" />
     <Compile Include="Generic\Framework\UnityUtility.cs" />
     <Compile Include="Game\Gameplay\ShipData.cs" />
-    <Compile Include="Game\GUI\GuiHudTextFactory.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">
@@ -108,7 +112,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Game\Graphics\" />
     <Folder Include="ThirdParty\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -168,14 +168,14 @@ namespace CodeEnv.Master.Common.Unity {
         private GameTime _gameTime;
         private float _gameSpeedMultiplier;
 
-        public ShipData(Transform t)
-            : base(t) {
-            _rigidbody = t.rigidbody;
+        public ShipData(Transform shipTransform, string shipName)
+            : base(shipTransform, shipName) {
+            _rigidbody = shipTransform.rigidbody;
             _gameMgr = GameManager.Instance;
             _gameTime = GameTime.Instance;
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();
             Subscribe();
-            D.Log("ShipData constructor {0} has completed.", t.name);
+            D.Log("ShipData constructor {0} has completed.", shipTransform.name);
         }
 
         private void Subscribe() {

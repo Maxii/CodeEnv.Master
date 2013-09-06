@@ -18,6 +18,7 @@
 using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.Unity;
+using UnityEngine;
 
 /// <summary>
 /// Selection readout class for the Gui, based on Ngui UILabel.
@@ -36,17 +37,30 @@ public class GuiSelectedReadout : AGuiLabelReadoutBase, IDisposable {
 
     private void Subscribe() {
         _eventMgr.AddListener<SelectionEvent>(this, OnNewSelection);
+        _eventMgr.AddListener<GameItemDestroyedEvent>(this, OnGameItemDestroyed);
     }
 
     private void OnNewSelection(SelectionEvent e) {
-        RefreshReadout(e.GameObject.name);
+        ISelectable newSelection = e.Source as ISelectable;
+        RefreshReadout(newSelection.GetData().Name);
+    }
+
+    private void OnGameItemDestroyed(GameItemDestroyedEvent e) {
+        ISelectable selectable = e.Source as ISelectable;
+        if (selectable != null) {
+            if (selectable.IsSelected) {
+                RefreshReadout(string.Empty);
+            }
+        }
     }
 
     private void Unsubscribe() {
         _eventMgr.RemoveListener<SelectionEvent>(this, OnNewSelection);
+        _eventMgr.RemoveListener<GameItemDestroyedEvent>(this, OnGameItemDestroyed);
     }
 
-    void OnDestroy() {
+    protected override void OnDestroy() {
+        base.OnDestroy();
         Dispose();
     }
 

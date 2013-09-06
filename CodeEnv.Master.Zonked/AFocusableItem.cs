@@ -31,7 +31,7 @@ public abstract class AFocusableItem : AItem, ICameraFocusable {
 
     protected virtual void OnClick() {
         D.Log("{0}.OnClick() called.", gameObject.name);
-        if (NguiGameInput.IsMiddleMouseButtonClick()) {
+        if (GameInputHelper.IsMiddleMouseButton()) {
             OnMiddleClick();
         }
     }

@@ -84,7 +84,7 @@ public class FocusableItemControl : AMonoBehaviourBase, ICameraFocusable, IZoomT
 
     public virtual void OnClick() {
         Logger.Log("{0}.OnClick() called.", gameObject.name);
-        if (NguiGameInput.IsMiddleMouseButtonClick()) {
+        if (GameInputHelper.IsMiddleMouseButton()) {
             _eventMgr.Raise<FocusSelectedEvent>(new FocusSelectedEvent(this, _transform));
         }
     }

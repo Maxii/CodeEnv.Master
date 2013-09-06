@@ -30,8 +30,8 @@ namespace CodeEnv.Master.Common.Unity {
 
         // This is needed as the order of Dictionary.Keys is not defined when iterating through it, even if they were added in the right order
         private static IList<GuiHudLineKeys> _displayLineOrder = new List<GuiHudLineKeys>() {
-                {GuiHudLineKeys.ItemName},
-                {GuiHudLineKeys.PieceName},
+                {GuiHudLineKeys.Name},
+                {GuiHudLineKeys.ParentName},
                 {GuiHudLineKeys.IntelState},
                 {GuiHudLineKeys.Capacity},
                 {GuiHudLineKeys.Resources},
@@ -68,8 +68,8 @@ namespace CodeEnv.Master.Common.Unity {
 
             // initialized in static constructor because formats that are dynamically constructed cannot be used in a static initializer
             IDictionary<GuiHudLineKeys, string> baseDisplayLineContent = new Dictionary<GuiHudLineKeys, string>() {
-                {GuiHudLineKeys.ItemName, "{0}"},
-                {GuiHudLineKeys.PieceName, "{0}"},
+                {GuiHudLineKeys.Name, "{0}"},
+                {GuiHudLineKeys.ParentName, "{0}"},
                 {GuiHudLineKeys.IntelState, "< {0} >"},
                 {GuiHudLineKeys.Capacity, "Capacity: {0} Slots"},   
                 {GuiHudLineKeys.Resources, "Resources: O: {0}, P: {1}, E: {2}"},

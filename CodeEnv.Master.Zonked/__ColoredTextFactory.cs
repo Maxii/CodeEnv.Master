@@ -32,7 +32,7 @@ namespace CodeEnv.Master.Common.Unity {
             ColoredText coloredText = null;
             IList<ColoredText> coloredTextList = null;
             switch (key) {
-                case GuiHudLineKeys.PieceName:
+                case GuiHudLineKeys.ParentName:
                     Arguments.ValidateTypeAndLength<string>(1, args);
                     coloredText = new ColoredText(args[0] as string);
                     break;

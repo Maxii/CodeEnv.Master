@@ -18,7 +18,6 @@
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.Unity;
-using CodeEnv.Master.MyNguiScriptsFactory;
 using UnityEngine;
 
 /// <summary>
@@ -28,7 +27,6 @@ public class GuiPrefabLinker : AMonoBehaviourBase {
 
     public GameObject linkedPrefab;
     public NguiButtonPlayAnimation launchButtonAnimation;
-    //public UIButtonPlayAnimation launchButtonAnimation;
 
     protected override void Awake() {
         base.Awake();
@@ -40,7 +38,7 @@ public class GuiPrefabLinker : AMonoBehaviourBase {
     /// </summary>
     private void SetupLinkedPrefab() {
         if (linkedPrefab == null || launchButtonAnimation == null) {
-            D.Error("One or more GuiPrefabLinker fields are not set. This is typically the lack of a Launch button instance.");
+            D.Error("One or more GuiPrefabLinker fields are not set on {0}. This is typically the lack of a Launch button instance.", gameObject.name);
             return;
         }
         GameObject prefabClone = NGUITools.AddChild(gameObject, linkedPrefab);
@@ -58,8 +56,6 @@ public class GuiPrefabLinker : AMonoBehaviourBase {
 
         NguiButtonPlayAnimation[] allLaunchButtonAnimations = launchButtonAnimation.gameObject.GetSafeMonoBehaviourComponents<NguiButtonPlayAnimation>();
         NguiButtonPlayAnimation launchButtonAnimationWithNullTarget = allLaunchButtonAnimations.Single<NguiButtonPlayAnimation>(c => c.target == null);
-        //UIButtonPlayAnimation[] allLaunchButtonAnimations = launchButtonAnimation.gameObject.GetSafeMonoBehaviourComponents<UIButtonPlayAnimation>();
-        //UIButtonPlayAnimation launchButtonAnimationWithNullTarget = allLaunchButtonAnimations.Single<UIButtonPlayAnimation>(c => c.target == null);
         launchButtonAnimationWithNullTarget.target = prefabWindowBackAnimation;
 
         GuiVisibilityButton launchButton = launchButtonAnimationWithNullTarget.gameObject.GetSafeMonoBehaviourComponent<GuiVisibilityButton>();

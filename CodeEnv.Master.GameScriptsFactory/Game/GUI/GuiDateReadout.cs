@@ -61,7 +61,8 @@ public class GuiDateReadout : AGuiLabelReadoutBase, IDisposable {
         _subscribers.Clear();
     }
 
-    void OnDestroy() {
+    protected override void OnDestroy() {
+        base.OnDestroy();
         Dispose();
     }
 

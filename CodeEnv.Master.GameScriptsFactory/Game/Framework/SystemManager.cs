@@ -25,10 +25,12 @@ using CodeEnv.Master.Common.Unity;
 /// </summary>
 public class SystemManager : AMonoBehaviourBase, ISelectable {
 
-    private SystemData _data;
+    /// <summary>
+    /// Used for convenience only. Actual SystemData repository is held by OrbitalPlane.
+    /// </summary>
     public SystemData Data {
-        get { return _data; }
-        set { SetProperty<SystemData>(ref _data, value, "Data", OnSystemDataChanged); }
+        get { return _orbitalPlane.Data; }
+        set { _orbitalPlane.Data = value; }
     }
 
     private IntelLevel _playerIntelLevel;
@@ -39,33 +41,29 @@ public class SystemManager : AMonoBehaviourBase, ISelectable {
 
     private SystemGraphics _systemGraphics;
     private OrbitalPlane _orbitalPlane;
+    private Star _star;
+    private FollowableItem[] _planetsAndMoons;
     private GameEventManager _eventMgr;
 
     protected override void Awake() {
         base.Awake();
         _orbitalPlane = gameObject.GetSafeMonoBehaviourComponentInChildren<OrbitalPlane>();
         _systemGraphics = gameObject.GetSafeMonoBehaviourComponent<SystemGraphics>();
+        _star = gameObject.GetSafeMonoBehaviourComponentInChildren<Star>();
+        _planetsAndMoons = gameObject.GetSafeMonoBehaviourComponentsInChildren<FollowableItem>();
         _eventMgr = GameEventManager.Instance;
-    }
-
-    protected override void Start() {
-        base.Start();
-        PlayerIntelLevel = IntelLevel.Complete;
-    }
-
-
-    private void OnSystemDataChanged() {
-        _orbitalPlane.Data = Data;
     }
 
     private void OnIntelLevelChanged() {
         _orbitalPlane.PlayerIntelLevel = PlayerIntelLevel;
+        _star.PlayerIntelLevel = PlayerIntelLevel;
+        _planetsAndMoons.ForAll<FollowableItem>(pm => pm.PlayerIntelLevel = PlayerIntelLevel);
     }
 
     private void OnIsSelectedChanged() {
         _systemGraphics.ChangeHighlighting();
         if (IsSelected) {
-            _eventMgr.Raise<SelectionEvent>(new SelectionEvent(this, gameObject));
+            _eventMgr.Raise<SelectionEvent>(new SelectionEvent(this));
         }
     }
 
@@ -81,12 +79,14 @@ public class SystemManager : AMonoBehaviourBase, ISelectable {
         set { SetProperty<bool>(ref _isSelected, value, "IsSelected", OnIsSelectedChanged); }
     }
 
+    public Data GetData() {
+        return _orbitalPlane.Data;
+    }
+
     public void OnLeftClick() {
         IsSelected = true;
     }
 
     #endregion
-
-
 }
 

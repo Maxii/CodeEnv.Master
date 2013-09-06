@@ -27,7 +27,7 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
     private GameManager _gameMgr;
     private IList<IDisposable> _subscribers;
 
-    private FleetAdmiral[] _fleetsToInitialize;
+    private FleetManager[] _fleetsToInitialize;
     private ShipCaptain[] _shipsToInitialize;
     private FollowableItem[] _planetsAndMoonsToInitialize;
     private Star[] _starsToInitialize;
@@ -41,14 +41,15 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
     }
 
     private void AcquireGameObjectsRequiringDataToInitialize() {
-        _fleetsToInitialize = gameObject.GetSafeMonoBehaviourComponentsInChildren<FleetAdmiral>();
+        _fleetsToInitialize = gameObject.GetSafeMonoBehaviourComponentsInChildren<FleetManager>();
         _shipsToInitialize = gameObject.GetSafeMonoBehaviourComponentsInChildren<ShipCaptain>();
         // TODO I'll need to pick the ships under each fleet and then add those ships to each fleet when initializing
-        FollowableItem[] allFollowableItems = gameObject.GetSafeMonoBehaviourComponentsInChildren<FollowableItem>();
-        _planetsAndMoonsToInitialize = allFollowableItems.Except<FollowableItem>(_shipsToInitialize)
-            .Except<FollowableItem>(_fleetsToInitialize).ToArray<FollowableItem>();
-        _starsToInitialize = gameObject.GetSafeMonoBehaviourComponentsInChildren<Star>();
         _systemsToInitialize = gameObject.GetSafeMonoBehaviourComponentsInChildren<SystemManager>();
+        _starsToInitialize = gameObject.GetSafeMonoBehaviourComponentsInChildren<Star>();
+        _planetsAndMoonsToInitialize = new FollowableItem[0];
+        foreach (var sys in _systemsToInitialize) {
+            _planetsAndMoonsToInitialize = _planetsAndMoonsToInitialize.Concat<FollowableItem>(sys.gameObject.GetSafeMonoBehaviourComponentsInChildren<FollowableItem>()).ToArray();
+        }
     }
 
     private void Subscribe() {
@@ -65,40 +66,19 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
     }
 
     private void InitializeGameObjectData() {
-        InitializePlanetsAndMoons();
-        InitializeStars();
         InitializeSystems();
+        InitializeStars();
+        InitializePlanetsAndMoons();
         InitializeShips();
         InitializeFleet();
     }
 
-    private void InitializePlanetsAndMoons() {
-        foreach (var item in _planetsAndMoonsToInitialize) {
-            Data data = new Data(item.transform) {
-                ItemName = item.gameObject.name,
-                LastHumanPlayerIntelDate = new GameDate()
-            };
-            item.Data = data;
-        }
-    }
-
-    private void InitializeStars() {
-        foreach (var star in _starsToInitialize) {
-            Data data = new Data(star.transform) {
-                ItemName = star.gameObject.name,
-                PieceName = star.gameObject.GetSafeMonoBehaviourComponentInParents<SystemGraphics>().gameObject.name,
-                LastHumanPlayerIntelDate = new GameDate()
-            };
-            star.Data = data;
-        }
-    }
-
     private void InitializeSystems() {
-        foreach (var sysMgr in _systemsToInitialize) {
+        int sysNumber = 0;
+        foreach (SystemManager sysMgr in _systemsToInitialize) {
             Transform systemTransform = sysMgr.transform;
-            SystemData data = new SystemData(systemTransform) {
-                ItemName = systemTransform.gameObject.GetSafeMonoBehaviourComponentInChildren<Star>().gameObject.name,
-                PieceName = systemTransform.name,
+            SystemData data = new SystemData(systemTransform, "System_" + sysNumber) {
+                // there is no parentName for a System
                 LastHumanPlayerIntelDate = new GameDate(),
                 Capacity = 25,
                 Resources = new OpeYield(3.1F, 2.0F, 4.8F),
@@ -116,14 +96,45 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
                 }
             };
             sysMgr.Data = data;
+            sysMgr.PlayerIntelLevel = Enums<IntelLevel>.GetRandom(excludeDefault: true);
+            Logger.Log("Random PlayerIntelLevel = {0}.", sysMgr.PlayerIntelLevel.GetName());
+            sysNumber++;
+        }
+    }
+
+    private void InitializeStars() {
+        foreach (Star star in _starsToInitialize) {
+            SystemManager sysMgr = star.gameObject.GetSafeMonoBehaviourComponentInParents<SystemManager>();
+            string parentName = sysMgr.Data.Name;
+            string name = parentName + " Star";
+            Data data = new Data(star.transform, name, parentName) {
+                LastHumanPlayerIntelDate = new GameDate()
+            };
+            star.Data = data;
+            // Celestial object PlayerIntelLevel is determined by the IntelLevel of the System
+        }
+    }
+
+    private void InitializePlanetsAndMoons() {
+        int planetNumber = 0;
+        foreach (FollowableItem item in _planetsAndMoonsToInitialize) {
+            SystemManager sysMgr = item.gameObject.GetSafeMonoBehaviourComponentInParents<SystemManager>();
+            string parentName = sysMgr.Data.Name;
+            string name = "Planet_" + planetNumber;
+            Data data = new Data(item.transform, name, parentName) {
+                LastHumanPlayerIntelDate = new GameDate()
+            };
+            item.Data = data;
+            planetNumber++;
+            // Celestial object PlayerIntelLevel is determined by the IntelLevel of the System
         }
     }
 
     private void InitializeShips() {
-        foreach (var ship in _shipsToInitialize) {
-            ShipData data = new ShipData(ship.transform) {
-                ItemName = ship.gameObject.name,
-                // Ship's PieceName gets set when it gets attached to a fleet
+        int shipNumber = 0;
+        foreach (ShipCaptain ship in _shipsToInitialize) {
+            ShipData data = new ShipData(ship.transform, "Ship_" + shipNumber) {
+                // Ship's optionalParentName gets set when it gets attached to a fleet
                 Hull = ShipHull.Destroyer,
                 Strength = new CombatStrength(1f, 2f, 3f, 4f, 5f, 6f),
                 LastHumanPlayerIntelDate = new GameDate(),
@@ -135,14 +146,16 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
             };
             data.MaxThrust = data.Mass * data.Drag * 2F;    // MaxThrust = MaxSpeed * Mass * Drag
             ship.Data = data;
+            shipNumber++;
+            // A ship's PlayerIntelLevel is determined by the IntelLevel of the Fleet
         }
     }
 
     private void InitializeFleet() {
-        var fleet = _fleetsToInitialize[0];
-        FleetData data = new FleetData(fleet.transform) {
-            // there is no ItemName for a fleet
-            PieceName = fleet.gameObject.name,
+        FleetManager fleet = _fleetsToInitialize[0];
+        Transform admiralTransform = fleet.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>().transform;
+        FleetData data = new FleetData(admiralTransform, "Borg Fleet") {
+            // there is no parentName for a fleet
             LastHumanPlayerIntelDate = new GameDate()
         };
 
@@ -150,6 +163,7 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
             data.AddShip(ship.Data);
         }
         fleet.Data = data;
+        fleet.PlayerIntelLevel = IntelLevel.Complete;
     }
 
     private void Unsubscribe() {
@@ -157,7 +171,8 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
         _subscribers.Clear();
     }
 
-    void OnDestroy() {
+    protected override void OnDestroy() {
+        base.OnDestroy();
         Dispose();
     }
 

@@ -48,7 +48,8 @@ public class GuiSavedGamesPopupList : AGuiPopupListBase {
         popupList.selection = "Saved Games";
     }
 
-    void OnEnable() {
+    protected override void OnEnable() {
+        base.OnEnable();
         PopulateList();
     }
 

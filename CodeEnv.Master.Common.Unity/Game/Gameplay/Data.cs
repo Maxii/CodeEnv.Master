@@ -24,20 +24,23 @@ namespace CodeEnv.Master.Common.Unity {
     /// </summary>
     public class Data : APropertyChangeTracking {
 
+        private string _name;
         /// <summary>
-        /// Gets or sets the name of the item. Does not notify of changes
-        /// as I can't see much reason too.
+        /// Gets or sets the name of the item. 
         /// </summary>
-        public string ItemName { get; set; }
+        public string Name {
+            get { return _name; }
+            set { SetProperty<string>(ref _name, value, "Name", OnNameChanged); }
+        }
 
-        private string _pieceName;
+        private string _optionalParentName;
         /// <summary>
-        /// Gets or sets the name of the game piece.
+        /// Gets or sets the name of the Parent of this item. Optional.
         /// </summary>
-        public string PieceName {
-            get { return _pieceName; }
+        public string OptionalParentName {
+            get { return _optionalParentName; }
             set {
-                SetProperty<string>(ref _pieceName, value, "PieceName");
+                SetProperty<string>(ref _optionalParentName, value, "OptionalParentName");
             }
         }
 
@@ -68,8 +71,14 @@ namespace CodeEnv.Master.Common.Unity {
 
         protected Transform _transform;
 
-        public Data(Transform t) {
+        public Data(Transform t, string name, string optionalParentName = "") {
             _transform = t;
+            Name = name;
+            OptionalParentName = optionalParentName;
+        }
+
+        protected virtual void OnNameChanged() {
+            _transform.name = Name;
         }
     }
 }

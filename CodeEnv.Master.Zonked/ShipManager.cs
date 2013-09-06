@@ -67,7 +67,7 @@ public class ShipManager : AGameObjectManager<ShipData>, ICameraFollowable, IZoo
 
     protected override void __InitializeData() {
         Data = new ShipData(_transform);
-        Data.ItemName = gameObject.name;
+        Data.Name = gameObject.name;
         // Ship's PieceName gets set when it gets attached to a fleet
         Data.Hull = ShipHull.Destroyer;
         Data.Strength = new CombatStrength(1f, 2f, 3f, 4f, 5f, 6f);
@@ -232,7 +232,7 @@ public class ShipManager : AGameObjectManager<ShipData>, ICameraFollowable, IZoo
     }
 
     public void OnClick() {
-        if (_isShipShowing && NguiGameInput.IsMiddleMouseButtonClick()) {
+        if (_isShipShowing && GameInputHelper.IsMiddleMouseButton()) {
             _eventMgr.Raise<FocusSelectedEvent>(new FocusSelectedEvent(this, _transform));
         }
     }

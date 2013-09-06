@@ -48,7 +48,7 @@ public class OrbitalPlaneManager : AMonoBehaviourBase, ISelectable, ICameraTarge
 
     public void OnClick() {
         Logger.Log("{0}.OnClick() called.", GetType().Name);
-        if (NguiGameInput.IsLeftMouseButtonClick()) {
+        if (GameInputHelper.IsLeftMouseButton()) {
             OnLeftClick();
         }
     }

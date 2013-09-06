@@ -57,7 +57,10 @@ public abstract class AMonoBehaviourBaseSingleton<T> : AMonoBehaviourBase where 
     /// Called when [application quit]. Clients must override and set 
     /// _instance to null.
     /// </summary>
-    protected abstract void OnApplicationQuit();
+    protected override void OnApplicationQuit() {
+        base.OnApplicationQuit();
+        _instance = null;
+    }
 }
 
 

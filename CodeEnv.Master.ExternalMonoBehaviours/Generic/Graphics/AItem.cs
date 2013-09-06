@@ -29,11 +29,15 @@ using UnityEngine;
 /// </summary>
 public abstract class AItem : AMonoBehaviourBase, ICameraTargetable, IDisposable {
 
+    private Data _data;
     /// <summary>
     /// Gets or sets the data for this item. Clients are responsible for setting in the right sequence as 
     /// one data can be dependant on another data.
     /// </summary>
-    public Data Data { get; set; }
+    public Data Data {
+        get { return _data; }
+        set { SetProperty<Data>(ref _data, value, "Data", OnDataChanged); }
+    }
 
     private IntelLevel _playerIntelLevel = IntelLevel.Unknown;
     public virtual IntelLevel PlayerIntelLevel {
@@ -41,7 +45,7 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable, IDisposable
             return _playerIntelLevel;
         }
         set {
-            SetProperty<IntelLevel>(ref _playerIntelLevel, value, "PlayerIntelLevel");
+            SetProperty<IntelLevel>(ref _playerIntelLevel, value, "PlayerIntelLevel", OnPlayerIntelLevelChanged);
         }
     }
 
@@ -49,7 +53,7 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable, IDisposable
     /// Provides the ability to update the text for the GuiCursorHud. Can be null if there
     /// is no data for the GuiCursorHud to show for this item.
     /// </summary>
-    protected GuiHudPublisher HudPublisher { get; set; }
+    protected IGuiHudPublisher HudPublisher { get; private set; }
 
     protected Collider _collider;
     protected Transform _transform;
@@ -61,16 +65,19 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable, IDisposable
         _collider = gameObject.GetComponent<Collider>();
     }
 
-    protected override void Start() {
-        base.Start();
-        InitializeHudPublisher();
+    protected virtual void OnDataChanged() {
+        HudPublisher = InitializeHudPublisher();
     }
 
-    protected abstract void InitializeHudPublisher();
+    protected abstract IGuiHudPublisher InitializeHudPublisher();
 
     protected virtual void OnHover(bool isOver) {
+        DisplayHud(isOver);
+    }
+
+    private void DisplayHud(bool toDisplay) {
         if (HudPublisher != null) {
-            if (isOver) {
+            if (toDisplay) {
                 HudPublisher.DisplayHudAtCursor(PlayerIntelLevel);
                 //StartCoroutine<float>(HudPublisher.KeepHudCurrent, 2F);     // NO. Won't start. MethodName = "KeepHudCurrent", same as using separately declared Func<>
                 //StartCoroutine("HudPublisher.KeepHudCurrent", 2F);  // NO. Won't start. MethodName = "HudPublisher.KeepHudCurrent"
@@ -79,13 +86,25 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable, IDisposable
                 StartCoroutine(HudPublisher.KeepHudCurrent());  // THIS WORKS!
             }
             else {
-                StopAllCoroutines();        // THIS WORKS
+                StopAllCoroutines();
                 HudPublisher.ClearHud();
             }
         }
     }
 
-    void OnDestroy() {  // will only be called if derived class doesn't have its own OnDestroy()
+    protected virtual void OnPlayerIntelLevelChanged() {
+        if (HudPublisher != null && HudPublisher.IsHudShowing) {
+            // it is currently showing so reinitialize it with new settings
+            DisplayHud(false);
+            DisplayHud(true);
+        }
+    }
+
+    protected override void OnDestroy() {
+        base.OnDestroy();
+        if (HudPublisher.IsHudShowing) {
+            DisplayHud(false);
+        }
         Dispose();
     }
 
@@ -137,7 +156,7 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable, IDisposable
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            HudPublisher.Dispose();
+            (HudPublisher as IDisposable).Dispose();
         }
         // free unmanaged resources here
 

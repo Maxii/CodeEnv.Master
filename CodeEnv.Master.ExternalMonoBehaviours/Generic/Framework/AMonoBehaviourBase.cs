@@ -32,11 +32,65 @@ using UnityEngine;
 /// </summary>
 public abstract class AMonoBehaviourBase : MonoBehaviour, IInstanceIdentity, IChangeTracking, INotifyPropertyChanged, INotifyPropertyChanging {
 
+    protected bool _isApplicationQuiting;
+
+    #region MonoBehaviour Event Methods
+
     protected virtual void Awake() {
         useGUILayout = true;    // OPTIMIZE docs suggest = false for better performance
+        D.Log("{0}.Awake().", this.GetType().Name);
     }
 
-    protected virtual void Start() { }
+    protected virtual void Start() {
+        D.Log("{0}.Start().", this.GetType().Name);
+    }
+
+    /// <summary>
+    /// Called when enabled set to true after the script has been loaded, including after DeSerialization.
+    /// </summary>
+    protected virtual void OnEnable() {
+        D.Log("{0}.OnEnable().", this.GetType().Name);
+    }
+
+    /// <summary>
+    /// Called when enabled set to false. It is also called immediately after OnApplicationQuit() and 
+    /// prior to OnDestroy() and when scripts are reloaded after compilation has finished.
+    /// </summary>
+    protected virtual void OnDisable() {
+        D.Log("{0}.OnDisable().", this.GetType().Name);
+    }
+
+    /// <summary>
+    /// Called when the Application is quiting, followed by OnDisable() and then OnDestroy().
+    /// </summary>
+    protected virtual void OnApplicationQuit() {
+        D.Log("{0}.OnApplicationQuit().", this.GetType().Name);
+        _isApplicationQuiting = true;
+    }
+
+    /// <summary>
+    /// Called as a result of Destroy(gameobject) and following OnDisable() which follows
+    /// OnApplicationQuit().
+    /// </summary>
+    protected virtual void OnDestroy() {
+        D.Log("{0}.OnDestroy().", this.GetType().Name);
+    }
+
+    #endregion
+
+    #region UnitySerializer Event Methods
+
+    /// <summary>
+    /// Called by UnitySerializer the same way normal Unity methods (above) are called,
+    /// it occurs after the level has been loaded but before it starts to run.
+    /// It is used to do any final initialization.
+    /// </summary>
+    protected virtual void OnDeserialized() {
+        D.Log("{0}.OnDeserialized().", this.GetType().Name);
+
+    }
+
+    #endregion
 
     #region IInstanceIdentity Members
     private static int _instanceCounter = 0;

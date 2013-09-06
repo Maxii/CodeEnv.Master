@@ -27,9 +27,9 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public interface ICameraFocusable : ICameraTargetable {
 
-        float OptimalCameraViewingDistance { get; }
-
         bool IsFocus { get; set; }
+
+        float OptimalCameraViewingDistance { get; }
 
     }
 }

@@ -91,12 +91,9 @@ public class GuiManager : AMonoBehaviourBaseSingleton<GuiManager>, IDisposable {
         _eventMgr.RemoveListener<GuiVisibilityButton.GuiVisibilityChangeEvent>(this, OnGuiVisibilityChange);
     }
 
-    void OnDestroy() {
+    protected override void OnDestroy() {
+        base.OnDestroy();
         Dispose();
-    }
-
-    protected override void OnApplicationQuit() {
-        _instance = null;
     }
 
     public override string ToString() {

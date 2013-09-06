@@ -31,11 +31,11 @@ namespace CodeEnv.Master.Common.Unity {
 
         private static IDictionary<IntelLevel, IList<GuiHudLineKeys>> _hudLineKeyLookup = new Dictionary<IntelLevel, IList<GuiHudLineKeys>> {
 
-        {IntelLevel.Unknown, new List<GuiHudLineKeys> { GuiHudLineKeys.PieceName,
+        {IntelLevel.Unknown, new List<GuiHudLineKeys> { GuiHudLineKeys.ParentName,
                                                                        GuiHudLineKeys.IntelState,
                                                                        GuiHudLineKeys.Distance }},
 
-        {IntelLevel.OutOfRange, new List<GuiHudLineKeys> {   GuiHudLineKeys.PieceName,
+        {IntelLevel.OutOfRange, new List<GuiHudLineKeys> {   GuiHudLineKeys.ParentName,
                                                                        GuiHudLineKeys.Capacity,
                                                                        GuiHudLineKeys.Resources,
                                                                        GuiHudLineKeys.Specials,
@@ -91,8 +91,8 @@ namespace CodeEnv.Master.Common.Unity {
             ColoredText coloredText = null;
             IList<ColoredText> coloredTextList = null;
             switch (key) {
-                case GuiHudLineKeys.PieceName:
-                    coloredText = new ColoredText(_data.PieceName);
+                case GuiHudLineKeys.ParentName:
+                    coloredText = new ColoredText(_data.OptionalParentName);
                     break;
                 case GuiHudLineKeys.Distance:
                     // TODO calculate from SystemData.Position and <code>static GetSelected()<code>

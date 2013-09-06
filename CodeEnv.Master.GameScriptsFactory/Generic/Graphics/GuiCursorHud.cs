@@ -102,7 +102,8 @@ public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud, IDisposable {
         _subscribers.Clear();
     }
 
-    void OnDestroy() {
+    protected override void OnDestroy() {
+        base.OnDestroy();
         Dispose();
     }
 
