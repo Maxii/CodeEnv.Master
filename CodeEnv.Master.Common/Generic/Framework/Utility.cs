@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: General.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// General Utilities Class.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ namespace CodeEnv.Master.Common {
     using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
-    /// COMMENT 
+    /// General Utilities Class.
     /// </summary>
     public static class Utility {
 
@@ -153,6 +153,16 @@ namespace CodeEnv.Master.Common {
             T[] result = new T[list.Count];
             list.CopyTo(result, 0);
             return result;
+        }
+
+        /// <summary>
+        /// Splits the provided camel case string into words.
+        /// </summary>
+        /// <see cref="http://stackoverflow.com/questions/773303/splitting-camelcase"/>
+        /// <param name="input">The input.</param>
+        /// <returns></returns>
+        public static string SplitCamelCase(string input) {
+            return System.Text.RegularExpressions.Regex.Replace(input, "(?<=[a-z])([A-Z])", " $1", System.Text.RegularExpressions.RegexOptions.Compiled);
         }
 
     }

@@ -27,7 +27,7 @@ using UnityEngine;
 /// clone of the Prefab in the startScene. As such, they must be Instantiated before use.
 /// </remarks>
 /// </summary>
-public class UsefulPrefabs : AMonoBehaviourBaseSingleton<UsefulPrefabs> {
+public class UsefulPrefabs : AMonoBehaviourBaseSingletonInstanceIdentity<UsefulPrefabs> {
 
     //*******************************************************************
     // Prefabs you want to keep between scenes t here and
@@ -51,7 +51,7 @@ public class UsefulPrefabs : AMonoBehaviourBaseSingleton<UsefulPrefabs> {
     /// <returns><c>true</c> if this instance is going to be destroyed, <c>false</c> if not.</returns>
     private bool TryDestroyExtraCopies() {
         if (_instance && _instance != this) {
-            Logger.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceID));
+            D.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceID));
             Destroy(gameObject);
             return true;
         }

@@ -16,7 +16,7 @@
 // default namespace
 
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -25,7 +25,6 @@ using UnityEngine;
 /// </summary>
 public class Billboard : AMonoBehaviourBase {
 
-    protected Transform _transform;
     protected Transform cameraTransform;
 
     public bool reverseFacing;
@@ -33,8 +32,7 @@ public class Billboard : AMonoBehaviourBase {
 
     protected override void Awake() {
         base.Awake();
-        _transform = transform;
-        UpdateRate = UpdateFrequency.Normal;
+        UpdateRate = FrameUpdateFrequency.Normal;
     }
 
     protected override void Start() {

@@ -46,6 +46,21 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        /// Evaluates the equality of two sequences with an option to ignore order of the members.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source">The source.</param>
+        /// <param name="second">The second.</param>
+        /// <param name="ignoreOrder">if set to <c>true</c> [ignore order].</param>
+        /// <returns></returns>
+        public static bool SequenceEquals<T>(this IEnumerable<T> source, IEnumerable<T> second, bool ignoreOrder = false) {
+            if (ignoreOrder) {
+                return source.OrderBy(s => s).SequenceEqual<T>(second.OrderBy(s => s));
+            }
+            return source.SequenceEqual<T>(second);
+        }
+
+        /// <summary>
         /// Used from an instance of Random to get a 50/50 chance.
         /// </summary>
         /// <param name="sourceRNG">A Random Number Generator instance.</param>

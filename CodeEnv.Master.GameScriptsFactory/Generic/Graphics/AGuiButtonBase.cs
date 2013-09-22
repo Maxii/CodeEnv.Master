@@ -17,7 +17,7 @@
 // default namespace
 
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -38,14 +38,7 @@ public abstract class AGuiButtonBase : GuiTooltip {
     protected override void Start() {
         base.Start();
         _button = gameObject.GetSafeMonoBehaviourComponent<UIButton>();
-        //UIEventListener.Get(gameObject).onClick += OnButtonClick;  // NGUI general event system
     }
-
-    //private void OnButtonClick(GameObject sender) {
-    //    if (NguiGameInput.IsLeftMouseButtonClick()) {
-    //        OnLeftClick();
-    //    }
-    //}
 
     void OnClick() {
         if (GameInputHelper.IsLeftMouseButton()) {

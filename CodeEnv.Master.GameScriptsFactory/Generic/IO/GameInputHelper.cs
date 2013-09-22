@@ -136,5 +136,14 @@ public static class GameInputHelper {
         return value != 0F; // No floating point equality issues as value is smoothed by Unity
     }
 
+    /// <summary>
+    /// Determines whether any of the specified keys are being held down.
+    /// </summary>
+    /// <param name="keys">The keys.</param>
+    /// <returns></returns>
+    public static bool IsKeyDown(params KeyCode[] keys) {
+        return keys.Any(key => Input.GetKey(key));
+    }
+
 }
 

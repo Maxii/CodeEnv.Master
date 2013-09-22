@@ -17,6 +17,7 @@
 // default namespace
 
 using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// Player Race selection popup list in the Gui.

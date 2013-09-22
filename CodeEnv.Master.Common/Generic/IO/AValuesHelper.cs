@@ -26,14 +26,14 @@ namespace CodeEnv.Master.Common {
     /// values to the properties of the derived class.
     /// </summary>
     /// <typeparam name="T">The derived class type.</typeparam>
-    public abstract class AValuesHelper<T> where T : class {
+    public abstract class AValuesHelper<T> : AGenericSingleton<T> where T : class {
 
-        private static string booleanTagName = "Boolean";
-        private static string intTagName = "Integer";
-        private static string floatTagName = "Float";
+        private static string _booleanTagName = "Boolean";
+        private static string _intTagName = "Integer";
+        private static string _floatTagName = "Float";
         private static string _settingTagName = "Setting";
-        private static string propertyNameTagName = "PropertyName";
-        private static string propertyValueTagName = "PropertyValue";
+        private static string _propertyNameTagName = "PropertyName";
+        private static string _propertyValueTagName = "PropertyValue";
 
         /// <summary>
         /// The tag name of the root of the Xml DOM.
@@ -49,26 +49,10 @@ namespace CodeEnv.Master.Common {
 
         private XElement _xElement;
 
-        #region SingletonPattern
-
-        private static T instance;
-
-        /// <summary>Returns the singleton instance of this class.</summary>
-        public static T Instance {
-            get {
-                if (instance == null) {
-                    instance = (T)Activator.CreateInstance(typeof(T), true);
-                }
-                return instance;
-            }
-        }
-
-        #endregion
-
         ///<summary>
         /// IMPORTANT: This must be called from the PRIVATE constructor in the derived class.
         /// </summary>
-        protected virtual void Initialize() {
+        protected override void Initialize() {
             _xElement = LoadAndValidateXElement();
         }
 
@@ -85,13 +69,13 @@ namespace CodeEnv.Master.Common {
         }
 
         protected void InitializePropertyValues() {
-            XElement topNode = _xElement.Element(booleanTagName);
+            XElement topNode = _xElement.Element(_booleanTagName);
             var settingNodes = topNode.Elements(_settingTagName);
             foreach (var settingNode in settingNodes) {
-                XElement propertyNameNode = settingNode.Element(propertyNameTagName);
+                XElement propertyNameNode = settingNode.Element(_propertyNameTagName);
                 if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) {    // Elements.isEmpty is true only if they are in the format <ElementName/> 
                     D.Log("Boolean PropertyName = {0}.", propertyNameNode.Value);
-                    XElement propertyValueNode = settingNode.Element(propertyValueTagName);
+                    XElement propertyValueNode = settingNode.Element(_propertyValueTagName);
                     string propertyValue = "false";
                     if (propertyValueNode.IsEmpty || propertyValueNode.Value.Equals(string.Empty)) {
                         D.Warn("Value of Property {0} is empty, defaulting to {1}.", propertyNameNode.Value, propertyValue);
@@ -104,13 +88,13 @@ namespace CodeEnv.Master.Common {
                 }
             }
 
-            topNode = _xElement.Element(intTagName);
+            topNode = _xElement.Element(_intTagName);
             settingNodes = topNode.Elements(_settingTagName);
             foreach (var settingNode in settingNodes) {
-                XElement propertyNameNode = settingNode.Element(propertyNameTagName);
+                XElement propertyNameNode = settingNode.Element(_propertyNameTagName);
                 if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) {    // Elements.isEmpty is true only if they are in the format <ElementName/> 
                     D.Log("Integer PropertyName = {0}.", propertyNameNode.Value);
-                    XElement propertyValueNode = settingNode.Element(propertyValueTagName);
+                    XElement propertyValueNode = settingNode.Element(_propertyValueTagName);
                     string propertyValue = "0";
                     if (propertyValueNode.IsEmpty || propertyValueNode.Value.Equals(string.Empty)) {
                         D.Warn("Value of Property {0} is empty, defaulting to {1}.", propertyNameNode.Value, propertyValue);
@@ -123,13 +107,13 @@ namespace CodeEnv.Master.Common {
                 }
             }
 
-            topNode = _xElement.Element(floatTagName);
+            topNode = _xElement.Element(_floatTagName);
             settingNodes = topNode.Elements(_settingTagName);
             foreach (var settingNode in settingNodes) {
-                XElement propertyNameNode = settingNode.Element(propertyNameTagName);
+                XElement propertyNameNode = settingNode.Element(_propertyNameTagName);
                 if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) {    // Elements.isEmpty is true only if they are in the format <ElementName/> 
                     D.Log("Float PropertyName = {0}.", propertyNameNode.Value);
-                    XElement propertyValueNode = settingNode.Element(propertyValueTagName);
+                    XElement propertyValueNode = settingNode.Element(_propertyValueTagName);
                     string propertyValue = "0.0";
                     if (propertyValueNode.IsEmpty || propertyValueNode.Value.Equals(string.Empty)) {
                         D.Warn("Value of Property {0} is empty, defaulting to {1}.", propertyNameNode.Value, propertyValue);

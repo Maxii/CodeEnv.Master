@@ -17,7 +17,7 @@
 
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -26,7 +26,7 @@ using UnityEngine;
 public class GuiPrefabLinker : AMonoBehaviourBase {
 
     public GameObject linkedPrefab;
-    public NguiButtonPlayAnimation launchButtonAnimation;
+    public MyNguiButtonPlayAnimation launchButtonAnimation;
 
     protected override void Awake() {
         base.Awake();
@@ -54,8 +54,8 @@ public class GuiPrefabLinker : AMonoBehaviourBase {
         Animation prefabWindowBackAnimation = prefabClone.GetComponentInChildren<Animation>();
         NGUITools.SetActive(prefabClone, true);
 
-        NguiButtonPlayAnimation[] allLaunchButtonAnimations = launchButtonAnimation.gameObject.GetSafeMonoBehaviourComponents<NguiButtonPlayAnimation>();
-        NguiButtonPlayAnimation launchButtonAnimationWithNullTarget = allLaunchButtonAnimations.Single<NguiButtonPlayAnimation>(c => c.target == null);
+        MyNguiButtonPlayAnimation[] allLaunchButtonAnimations = launchButtonAnimation.gameObject.GetSafeMonoBehaviourComponents<MyNguiButtonPlayAnimation>();
+        MyNguiButtonPlayAnimation launchButtonAnimationWithNullTarget = allLaunchButtonAnimations.Single<MyNguiButtonPlayAnimation>(c => c.target == null);
         launchButtonAnimationWithNullTarget.target = prefabWindowBackAnimation;
 
         GuiVisibilityButton launchButton = launchButtonAnimationWithNullTarget.gameObject.GetSafeMonoBehaviourComponent<GuiVisibilityButton>();

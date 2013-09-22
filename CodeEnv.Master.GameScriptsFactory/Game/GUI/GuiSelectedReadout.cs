@@ -17,7 +17,7 @@
 
 using System;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -27,12 +27,11 @@ public class GuiSelectedReadout : AGuiLabelReadoutBase, IDisposable {
 
     protected override void Awake() {
         base.Awake();
-        tooltip = "The currently selected game object.";
+        Subscribe();
     }
 
-    protected override void Start() {
-        base.Start();
-        Subscribe();
+    protected override void InitializeTooltip() {
+        tooltip = "The currently selected game object.";
     }
 
     private void Subscribe() {

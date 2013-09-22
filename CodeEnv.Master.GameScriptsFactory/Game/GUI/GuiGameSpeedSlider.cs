@@ -19,15 +19,14 @@
 using System;
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// COMMENT 
 /// </summary>
 public class GuiGameSpeedSlider : AGuiEnumSliderBase<GameClockSpeed> {
 
-    protected override void Awake() {
-        base.Awake();
+    protected override void InitializeTooltip() {
         tooltip = "Controls how fast time in the Game progresses.";
     }
 

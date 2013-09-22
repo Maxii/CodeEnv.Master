@@ -16,7 +16,7 @@
 // default namespace
 
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -31,10 +31,13 @@ public class GuiTooltip : AMonoBehaviourBase {
 
     protected override void Awake() {
         base.Awake();
+        InitializeTooltip();
         if (_tooltipHasContent = Utility.CheckForContent(tooltip)) {
             UnityUtility.ValidateComponentPresence<Collider>(gameObject);
         }
     }
+
+    protected virtual void InitializeTooltip() { }
 
     void OnTooltip(bool toShow) {
         if (_tooltipHasContent) {

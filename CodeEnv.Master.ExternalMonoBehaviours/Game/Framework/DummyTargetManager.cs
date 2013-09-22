@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: DummyTargetManager.cs
-// Placeholder containing ICameraTargetable interface values.
+// Simple container class placed on the programatically-created DummyTarget holding ICameraTargetable interface values.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,10 +17,11 @@
 // default namespace
 
 using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Placeholder containing ICameraTargetable interface values.
+/// Simple container class placed on the programatically-created DummyTarget holding ICameraTargetable interface values.
 /// </summary>
 public class DummyTargetManager : MonoBehaviour, ICameraTargetable {
 

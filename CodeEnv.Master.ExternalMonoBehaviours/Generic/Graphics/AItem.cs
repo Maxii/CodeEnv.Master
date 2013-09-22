@@ -20,14 +20,14 @@
 using System;
 using System.Collections;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
 /// Abstract base class for any item in the universe that is ICameraTargetable and
 /// supports viewing data via the GuiCursorHud.
 /// </summary>
-public abstract class AItem : AMonoBehaviourBase, ICameraTargetable, IDisposable {
+public abstract class AItem : AMonoBehaviourBase, ICameraTargetable, IHasData, IDisposable {
 
     private Data _data;
     /// <summary>
@@ -49,20 +49,30 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable, IDisposable
         }
     }
 
+    private float _size;
+    /// <summary>
+    /// The [float] size of this object's collider measured as the distance from the 
+    /// min extent to the max extent. As bounds is a bounding box it is the longest 
+    /// diagonal between corners of the box.
+    /// </summary>
+    public float Size {
+        get {
+            if (_size == Constants.ZeroF) {
+                _size = collider.bounds.extents.magnitude * 2F; // Avoid cached _collider as Awake may not have run yet
+            }
+            return _size;
+        }
+    }
+
     /// <summary>
     /// Provides the ability to update the text for the GuiCursorHud. Can be null if there
     /// is no data for the GuiCursorHud to show for this item.
     /// </summary>
     protected IGuiHudPublisher HudPublisher { get; private set; }
 
-    protected Collider _collider;
-    protected Transform _transform;
-
     protected override void Awake() {
         base.Awake();
         UnityUtility.ValidateComponentPresence<Collider>(gameObject);
-        _transform = transform;
-        _collider = gameObject.GetComponent<Collider>();
     }
 
     protected virtual void OnDataChanged() {
@@ -78,15 +88,9 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable, IDisposable
     private void DisplayHud(bool toDisplay) {
         if (HudPublisher != null) {
             if (toDisplay) {
-                HudPublisher.DisplayHudAtCursor(PlayerIntelLevel);
-                //StartCoroutine<float>(HudPublisher.KeepHudCurrent, 2F);     // NO. Won't start. MethodName = "KeepHudCurrent", same as using separately declared Func<>
-                //StartCoroutine("HudPublisher.KeepHudCurrent", 2F);  // NO. Won't start. MethodName = "HudPublisher.KeepHudCurrent"
-                //StartCoroutine<float>(HudPublisher.KeepHudCurrent(), 2F);   //NO. Won't start. Declares and gets a HudPublisher delegate pointing to KeepHudCurrent(float) from HudPublisher. 
-                //StartCoroutine(HudPublisher.KeepHudCurrent(2F));    // THIS WORKS!
-                StartCoroutine(HudPublisher.KeepHudCurrent());  // THIS WORKS!
+                StartCoroutine(HudPublisher.DisplayHudAtCursor(PlayerIntelLevel));
             }
             else {
-                StopAllCoroutines();
                 HudPublisher.ClearHud();
             }
         }
@@ -95,15 +99,15 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable, IDisposable
     protected virtual void OnPlayerIntelLevelChanged() {
         if (HudPublisher != null && HudPublisher.IsHudShowing) {
             // it is currently showing so reinitialize it with new settings
-            DisplayHud(false);
+            HudPublisher.ClearHud();
             DisplayHud(true);
         }
     }
 
     protected override void OnDestroy() {
         base.OnDestroy();
-        if (HudPublisher.IsHudShowing) {
-            DisplayHud(false);
+        if (HudPublisher != null && HudPublisher.IsHudShowing) {
+            HudPublisher.ClearHud();
         }
         Dispose();
     }
@@ -115,16 +119,24 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable, IDisposable
     }
 
     [SerializeField]
-    private float minimumCameraViewingDistanceMultiplier = 4.0F;
+    protected float minimumCameraViewingDistanceMultiplier = 2.0F;
 
     private float _minimumCameraViewingDistance;
-    public virtual float MinimumCameraViewingDistance {
+    public float MinimumCameraViewingDistance {
         get {
             if (_minimumCameraViewingDistance == Constants.ZeroF) {
-                _minimumCameraViewingDistance = _collider.bounds.extents.magnitude * minimumCameraViewingDistanceMultiplier;
+                _minimumCameraViewingDistance = CalcMinimumCameraViewingDistance();
             }
             return _minimumCameraViewingDistance;
         }
+    }
+
+    /// <summary>
+    /// One time calculation of the minimum camera viewing distance.
+    /// </summary>
+    /// <returns></returns>
+    protected virtual float CalcMinimumCameraViewingDistance() {
+        return Size * minimumCameraViewingDistanceMultiplier;
     }
 
     #endregion
@@ -174,5 +186,13 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable, IDisposable
     //}
     #endregion
 
+
+    #region IHasData Members
+
+    public Data GetData() {
+        return Data;
+    }
+
+    #endregion
 }
 

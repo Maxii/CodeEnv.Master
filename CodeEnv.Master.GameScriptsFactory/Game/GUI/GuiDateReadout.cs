@@ -18,7 +18,7 @@
 using System;
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// Date readout class for the Gui, based on Ngui UILabel.
@@ -32,8 +32,11 @@ public class GuiDateReadout : AGuiLabelReadoutBase, IDisposable {
         base.Awake();
         _gameMgr = GameManager.Instance;
         Subscribe();
+        UpdateRate = FrameUpdateFrequency.Normal;
+    }
+
+    protected override void InitializeTooltip() {
         tooltip = "The current date in the game.";
-        UpdateRate = UpdateFrequency.Normal;
     }
 
     private void Subscribe() {

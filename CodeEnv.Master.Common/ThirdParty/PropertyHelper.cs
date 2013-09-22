@@ -24,14 +24,14 @@ namespace CodeEnv.Master.Common {
     /// <summary>
     /// Helper class for Properties.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">The type containing the property.</typeparam>
     public static class PropertyHelper<T> {
 
         /// <summary>
         /// Gets a PropertyInfo from the lambda expression that refers to the class and property.
         /// Usage: PropertyInfo fooBarPropertyInfo = PropertyHelper&lt;Foo&gt;.GetPropertyInfo&lt;BarType&gt;(foo => foo.Bar);
         /// </summary>
-        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <typeparam name="TValue">The type of the property value.</typeparam>
         /// <param name="selector">The selector in the form of a LambdaExpression.</param>
         /// <returns></returns>
         /// <exception cref="System.InvalidOperationException"></exception>

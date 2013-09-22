@@ -40,7 +40,7 @@ public class GameClockGuiManager : GuiManagerBase<GameClockGuiManager> {
     }
 
     void Start() {
-        UpdateRate = UpdateFrequency.Seldom;
+        UpdateRate = FrameUpdateFrequency.Seldom;
         InitializeGui();
     }
 

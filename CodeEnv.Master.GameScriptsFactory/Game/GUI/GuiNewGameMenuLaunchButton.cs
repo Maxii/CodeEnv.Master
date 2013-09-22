@@ -18,7 +18,7 @@
 using System.Diagnostics;
 using System.Text;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -30,8 +30,7 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
     private Races _playerRace;
     private GameColor _playerColor;
 
-    protected override void Awake() {
-        base.Awake();
+    protected override void InitializeTooltip() {
         tooltip = "Launch New Game with these settings.";
     }
 
@@ -44,12 +43,12 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
         base.RecordPopupListState(popupListName, selectionName);
         UniverseSize universeSize;
         if (Enums<UniverseSize>.TryParse(selectionName, true, out universeSize)) {
-            //Logger.Log("UniverseSize recorded as {0}.".Inject(selectionName));
+            //D.Log("UniverseSize recorded as {0}.".Inject(selectionName));
             _universeSize = universeSize;
         }
         Races playerRace;
         if (Enums<Races>.TryParse(selectionName, true, out playerRace)) {
-            //Logger.Log("Player recorded as {0}.".Inject(selectionName));
+            //D.Log("Player recorded as {0}.".Inject(selectionName));
             _playerRace = playerRace;
         }
         GameColor playerColor;

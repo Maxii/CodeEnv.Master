@@ -66,7 +66,7 @@ public class FleetManager : AGameObjectManager<FleetData> {
         _iconCollider = gameObject.GetComponentInChildren<SphereCollider>();
         _billboardTransform = gameObject.GetSafeMonoBehaviourComponentInChildren<Billboard>().transform;
         _fleetIcon = gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>().transform.parent;
-        UpdateRate = UpdateFrequency.Continuous;
+        UpdateRate = FrameUpdateFrequency.Continuous;
     }
 
     protected override void InitializeOnStart() {

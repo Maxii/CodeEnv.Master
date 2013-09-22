@@ -10,13 +10,10 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_WARN
-#define DEBUG_ERROR
-
 // default namespace
 
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// The manager of a System whos primary purpose is to take and execute orders. SystemGraphics handles
@@ -61,7 +58,7 @@ public class SystemManager : AMonoBehaviourBase, ISelectable {
     }
 
     private void OnIsSelectedChanged() {
-        _systemGraphics.ChangeHighlighting();
+        _systemGraphics.AssessHighlighting();
         if (IsSelected) {
             _eventMgr.Raise<SelectionEvent>(new SelectionEvent(this));
         }
@@ -79,12 +76,16 @@ public class SystemManager : AMonoBehaviourBase, ISelectable {
         set { SetProperty<bool>(ref _isSelected, value, "IsSelected", OnIsSelectedChanged); }
     }
 
-    public Data GetData() {
-        return _orbitalPlane.Data;
-    }
-
     public void OnLeftClick() {
         IsSelected = true;
+    }
+
+    #endregion
+
+    #region IHasData Members
+
+    public Data GetData() {
+        return Data;
     }
 
     #endregion

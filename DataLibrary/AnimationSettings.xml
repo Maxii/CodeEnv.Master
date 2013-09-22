@@ -10,16 +10,21 @@
 
   <Integer>
     <Setting>
+      <PropertyName>MaxCelestialObjectAnimateDistanceFactor</PropertyName>
+      <PropertyValue>100</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>MaxShipAnimateDistanceFactor</PropertyName>
+      <PropertyValue>100</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>MaxShipShowDistanceFactor</PropertyName>
+      <PropertyValue>300</PropertyValue>
+    </Setting>
+
+    <Setting>
       <PropertyName>MaxSystemAnimateDistance</PropertyName>
       <PropertyValue>1500</PropertyValue>
-    </Setting>
-    <Setting>
-      <PropertyName>MaxShipAnimateDistance</PropertyName>
-      <PropertyValue>50</PropertyValue>
-    </Setting>
-    <Setting>
-      <PropertyName>MaxShipShowDistance</PropertyName>
-      <PropertyValue>100</PropertyValue>
     </Setting>
   </Integer>
 

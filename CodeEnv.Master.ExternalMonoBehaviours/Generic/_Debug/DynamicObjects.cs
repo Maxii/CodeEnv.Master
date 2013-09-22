@@ -25,19 +25,21 @@ using UnityEngine;
 /// </summary>
 public class DynamicObjects : MonoBehaviour {
 
-    private static string folderName = typeof(DynamicObjects).Name;
+    private static string _folderName = typeof(DynamicObjects).Name;
 
     /// <summary>
     /// Gets the DynamicObjects folder.
     /// </summary>
     public static Transform Folder {
         get {
-            if (Instance.gameObject.name != folderName) {
-                D.Error("Expecting folder {0} but got {1}.", folderName, Instance.gameObject.name);
+            if (Instance.gameObject.name != _folderName) {
+                D.Error("Expecting folder {0} but got {1}.", _folderName, Instance.gameObject.name);
             }
-            return Instance.transform;
+            return Instance._transform;
         }
     }
+
+    private Transform _transform;
 
     #region Custom MonoBehaviour Singleton Pattern
     private static DynamicObjects instance = null;
@@ -48,7 +50,7 @@ public class DynamicObjects : MonoBehaviour {
                 instance = GameObject.FindObjectOfType(typeof(DynamicObjects)) as DynamicObjects;
                 if (instance == null) {
                     // no instance created yet, so create one
-                    GameObject dynamicObjectsFolder = GameObject.Find(folderName);
+                    GameObject dynamicObjectsFolder = GameObject.Find(_folderName);
                     if (dynamicObjectsFolder != null) {
                         // if our destination folder exists, add our newly created instance to it
                         instance = dynamicObjectsFolder.AddComponent<DynamicObjects>();
@@ -56,10 +58,10 @@ public class DynamicObjects : MonoBehaviour {
                     else {
                         // DynamicObjects folder isn't in the Scene, so create it
                         D.Warn("No DynamicObjects folder found, so creating one.");
-                        dynamicObjectsFolder = new GameObject(folderName, typeof(DynamicObjects));
+                        dynamicObjectsFolder = new GameObject(_folderName, typeof(DynamicObjects));
                         instance = dynamicObjectsFolder.GetComponent<DynamicObjects>();
                         if (instance == null) {
-                            D.Error("Problem during the creation of {0}.", folderName);
+                            D.Error("Problem during the creation of {0}.", _folderName);
                         }
                     }
                 }
@@ -85,14 +87,8 @@ public class DynamicObjects : MonoBehaviour {
     #endregion
 
     private void Initialize() {
-        // do any required initialization here as you would normally do in Awake()
-        D.Log("A {0} instance is being initialized.", this.name);
+        _transform = transform;
     }
-
-    void OnDestroy() {
-        D.Log("A {0} instance is being destroyed.", this.name);
-    }
-
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

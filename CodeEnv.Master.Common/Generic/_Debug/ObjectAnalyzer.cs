@@ -39,12 +39,13 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// Tracks objects that have already been visited to avoid infinite recursion.
         /// </summary>
-        private IList<object> visited = new List<object>();
-        private BindingFlags allNonStaticFields = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-        private BindingFlags nonStaticPublicFields = BindingFlags.Instance | BindingFlags.Public;
-        private bool showPrivate = false;
+        private IList<object> _visited = new List<object>();
+        private BindingFlags _allNonStaticFields = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        private BindingFlags _nonStaticPublicFields = BindingFlags.Instance | BindingFlags.Public;
+        private bool _showPrivate = false;
 
-        private static Type systemObjectType = Type.GetType("System.Object");
+        private static Type _systemObjectType = Type.GetType("System.Object");
+        private static DebugSettings _debugSettings = DebugSettings.Instance;
 
 
         /// <summary>
@@ -56,7 +57,9 @@ namespace CodeEnv.Master.Common {
         /// </returns>
         public string ToString(object objectToConvert) {
 #if DEBUG
-            showPrivate = true;
+            if (_debugSettings.EnableVerboseDebugLog) {
+                _showPrivate = true;
+            }
 #endif
             return ConvertToString(objectToConvert);
         }
@@ -67,11 +70,11 @@ namespace CodeEnv.Master.Common {
                 objContentMsg.Append(GeneralMessages.NullObject);
                 return objContentMsg.ToString();
             }
-            if (visited.Contains(obj)) {
+            if (_visited.Contains(obj)) {
                 objContentMsg.Append(Constants.Ellipsis);
                 return objContentMsg.ToString();
             }
-            visited.Add(obj);
+            _visited.Add(obj);
             Type objType = obj.GetType();
             if (objType == typeof(string)) {
                 objContentMsg.Append((string)obj);
@@ -99,7 +102,7 @@ namespace CodeEnv.Master.Common {
 
             objContentMsg.Append(objType.Name);
             // inspect the fields of this class and all base classes               
-            BindingFlags fieldsToInclude = (showPrivate) ? allNonStaticFields : nonStaticPublicFields;
+            BindingFlags fieldsToInclude = (_showPrivate) ? _allNonStaticFields : _nonStaticPublicFields;
             do {
                 objContentMsg.Append("[");
                 FieldInfo[] fields = objType.GetFields(fieldsToInclude); // IMPROVE consider adding static fields?
@@ -135,7 +138,7 @@ namespace CodeEnv.Master.Common {
                 objContentMsg.Append("]");
                 objType = objType.BaseType;
             }
-            while (objType != systemObjectType);
+            while (objType != _systemObjectType);
 
             return objContentMsg.ToString();
         }

@@ -11,13 +11,10 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_WARN
-#define DEBUG_ERROR
-
 // default namespace
 
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -31,6 +28,14 @@ public class NguiGenericEventHandler : AMonoBehaviourBaseSingleton<NguiGenericEv
     public bool LogEvents = false;
 
     private GameInput _gameInput;
+
+    protected override void Awake() {
+        base.Awake();
+        if (Camera.main == null) {
+            // no main camera so no one to talk too
+            Destroy(gameObject);
+        }
+    }
 
     protected override void Start() {
         base.Start();
@@ -54,15 +59,16 @@ public class NguiGenericEventHandler : AMonoBehaviourBaseSingleton<NguiGenericEv
 
     void OnPress(bool isDown) {
         if (IsEventFromGuiLayer()) {
-            return;
+            return; // FIXME OnDragEnd won't be considered if the drag ends over the Gui layer because GuiLayer events are ignored.
         }
         WriteMessage(isDown.ToString());
-        if (!isDown && UICamera.isDragging) {
-            // Deletes any GameInput drag values accumulated from drags using buttons that the camera
-            // doesn't use. FIXME Unfortunately, it won't be called if the wrong button drag started and ended
-            // over the same object because UICamera.isDragging returns false (bug?) in that circumstance.
-            // FIXME Also won't be called if the drag ends over the Gui layer because GuiLayer events are ignored.
-            _gameInput.OnDragEnd();
+        if (!isDown) {
+            if (UICamera.isDragging) {
+                return; // if press is released and UICamera.isDragging flag is set, then this is a dummy event 
+                // sent by Ngui to animate buttons and is NOT the potential end of a drag
+            }
+            // Deletes any GameInput drag values accumulated from drags that haven't been used by the camera (wrong button, etc.)
+            _gameInput.NotifyDragEnded();
         }
     }
 

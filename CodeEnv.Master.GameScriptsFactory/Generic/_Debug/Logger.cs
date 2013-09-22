@@ -5,9 +5,9 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: Logger.cs
+// File: D.cs
 // Logger under Management with enabled button for use in controlling log messages
-// within scripts. Use Logger.Log for all non-scripts.
+// within scripts. Use D.Log for all non-scripts.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,16 +18,14 @@ using UnityEngine;
 
 /// <summary>
 /// Logger under Management with enabled button for use in controlling log messages
-// within scripts. Use Logger.Log for all non-scripts.
+// within scripts. Use D.Log for all non-scripts.
 /// </summary>
-public class Logger : AMonoBehaviourBaseSingleton<Logger> {
+public class Logger : AMonoBehaviourBaseSingletonInstanceIdentity<Logger> {
 
     public bool enableScriptLogging;
 
     protected override void Awake() {
         base.Awake();
-        //Logger.Log("MonoGameManager Awake() called. IsEnabled = " + enabled);
-        IncrementInstanceCounter();
         if (TryDestroyExtraCopies()) {
             return;
         }

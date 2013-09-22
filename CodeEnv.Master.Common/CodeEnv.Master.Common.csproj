@@ -51,16 +51,27 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="ThirdParty\CoroutineNode.cs" />
+    <Compile Include="ThirdParty\Reference.cs" />
+    <Compile Include="ThirdParty\CoroutineScheduler.cs" />
+    <Compile Include="ThirdParty\CustomStringComparer.cs" />
+    <Compile Include="Generic\Graphics\AIcon.cs" />
+    <Compile Include="Game\Graphics\FleetIcon.cs" />
+    <Compile Include="Generic\Extensions\LayerMaskExtensions.cs" />
+    <Compile Include="Generic\Extensions\UnityExtensions.cs" />
+    <Compile Include="Generic\Extensions\VectorExtensions.cs" />
     <Compile Include="Generic\Framework\GameItemDestroyedEvent.cs" />
-    <Compile Include="Generic\Graphics\Framerate.cs" />
+    <Compile Include="Generic\Framework\MyNguiConstants.cs" />
+    <Compile Include="Generic\Framework\MyNguiUtilities.cs" />
+    <Compile Include="Generic\Framework\UnityUtility.cs" />
     <Compile Include="Generic\Framework\AGenericSingleton.cs" />
-    <Compile Include="Game\_Debug\DebugHudLineKeys.cs" />
-    <Compile Include="Generic\IO\AnimationSettings.cs" />
-    <Compile Include="Generic\IO\GeneralSettings.cs" />
-    <Compile Include="Generic\Extensions\GameSpeedExtensions.cs" />
+    <Compile Include="Generic\Graphics\ColoredText.cs" />
+    <Compile Include="Generic\Graphics\ColoredTextList.cs" />
+    <Compile Include="Generic\Graphics\ColoredTextListBase.cs" />
+    <Compile Include="Generic\Graphics\ColoredTextList_String.cs" />
+    <Compile Include="Generic\Graphics\IColoredTextList.cs" />
     <Compile Include="Generic\IO\AValuesHelper.cs" />
     <Compile Include="Generic\Graphics\GameColor.cs" />
-    <Compile Include="Game\Framework\GameSettings.cs" />
     <Compile Include="Game\Gameplay\DiplomaticRelations.cs" />
     <Compile Include="Generic\Framework\DisposePropertyChangingSubscription.cs" />
     <Compile Include="Generic\IO\UnityMouseButton.cs" />
@@ -71,6 +82,8 @@
     <Compile Include="Generic\Framework\GameEventManager.cs" />
     <Compile Include="Generic\IO\AEnumValuesHelper.cs" />
     <Compile Include="Game\Framework\AGameEvent.cs" />
+    <Compile Include="Generic\Math\Mathfx.cs" />
+    <Compile Include="Generic\Math\RandomExtended.cs" />
     <Compile Include="Generic\_Debug\AInstanceIdentity.cs" />
     <Compile Include="Generic\Framework\ElementReadyEvent.cs" />
     <Compile Include="Game\GUI\LoadSavedGameEvent.cs" />
@@ -91,34 +104,20 @@
     <Compile Include="Generic\_Debug\D.cs" />
     <Compile Include="Generic\_Debug\IInstanceIdentity.cs" />
     <Compile Include="Game\GUI\SaveGameEvent.cs" />
-    <Compile Include="Generic\Graphics\ICameraFollowable.cs" />
-    <Compile Include="Generic\Graphics\ICameraFocusable.cs" />
-    <Compile Include="Generic\Graphics\ICameraTargetable.cs" />
     <Compile Include="Generic\Graphics\AStringBuilderTextEvent.cs" />
-    <Compile Include="Generic\Graphics\IZoomToFurthest.cs" />
-    <Compile Include="Game\GUI\GuiHudLineKeys.cs" />
     <Compile Include="Game\Gameplay\IntelLevel.cs" />
-    <Compile Include="Game\Gameplay\OpeResource.cs" />
-    <Compile Include="Game\Gameplay\OpeYield.cs" />
-    <Compile Include="Game\Gameplay\XResource.cs" />
-    <Compile Include="Generic\Graphics\IColliderRelayTarget.cs" />
-    <Compile Include="Game\Gameplay\SettlementSize.cs" />
-    <Compile Include="Game\Gameplay\ShipHull.cs" />
-    <Compile Include="Game\Gameplay\SettlementData.cs" />
     <Compile Include="Generic\Math\Range.cs" />
     <Compile Include="Game\Gameplay\IQ.cs" />
-    <Compile Include="Game\Gameplay\Races.cs" />
-    <Compile Include="Game\Framework\HumanPlayer.cs" />
-    <Compile Include="Game\Framework\IPlayer.cs" />
-    <Compile Include="Game\Framework\Player.cs" />
-    <Compile Include="Game\Framework\Race.cs" />
-    <Compile Include="Game\Framework\RaceStat.cs" />
     <Compile Include="Generic\Framework\PauseState.cs" />
     <Compile Include="Generic\Framework\PropertyChangingValueEventArgs.cs" />
     <Compile Include="Game\GUI\GraphicsOptionsAcceptedEvent.cs" />
     <Compile Include="Generic\IO\GraphicsOptionSettings.cs" />
-    <Compile Include="Generic\Graphics\IHasContextMenu.cs" />
     <Compile Include="Generic\Extensions\MouseButtonExtensions.cs" />
+    <Compile Include="Generic\_Debug\UnityDebugConstants.cs" />
+    <Compile Include="Generic\Graphics\IconFactory.cs" />
+    <Compile Include="Generic\Graphics\IconSection.cs" />
+    <Compile Include="Generic\Graphics\IconSelectionCriteria.cs" />
+    <Compile Include="Generic\Graphics\IIcon.cs" />
     <Compile Include="ThirdParty\PropertyHelper.cs" />
     <Compile Include="ThirdParty\TextScanner.cs" />
     <Compile Include="ThirdParty\FlagsHelper.cs" />
@@ -136,9 +135,8 @@
     </Compile>
     <Compile Include="Game\Framework\UniverseSize.cs" />
     <Compile Include="Generic\Framework\UnityConstants.cs" />
-    <Compile Include="Game\Gameplay\XYield.cs" />
     <Compile Include="Generic\Framework\DisposePropertyChangedSubscription.cs" />
-    <Compile Include="Generic\Extensions\UniverseSizeExtensions.cs" />
+    <Compile Include="Generic\IO\UnityUpdateEvent.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeEnv.Master.Common.LocalResources\CodeEnv.Master.Common.LocalResources.csproj">
@@ -146,9 +144,7 @@
       <Name>CodeEnv.Master.Common.LocalResources</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Game\Graphics\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

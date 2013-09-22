@@ -14,17 +14,16 @@ namespace CodeEnv.Master.Common {
 
     /// <summary>
     /// Abstract class in support of IInstanceIdentity identifying the unique instance of a class.
-    /// Derived client classes wanting GameEventManager to ID the instance should implement the IInstanceIdentity interface and call
-    /// IncrementInstanceCounter() from either MonoBehaviourBase or this base class. This method contains  
-    /// <c>InstanceID = System.Threading.Interlocked.Increment(ref instanceCounter);</c>
+    /// Derived client classes wanting to ID the instance in debug logs should implement the IInstanceIdentity interface and call
+    /// IncrementInstanceCounter() in this base class. 
     /// </summary>
     public abstract class AInstanceIdentity : IInstanceIdentity {
 
-        private static int instanceCounter = 0;
-        public int InstanceID { get; protected set; }
+        private static int _instanceCounter = 0;
+        public int InstanceID { get; private set; }
 
         protected void IncrementInstanceCounter() {
-            InstanceID = System.Threading.Interlocked.Increment(ref instanceCounter);
+            InstanceID = System.Threading.Interlocked.Increment(ref _instanceCounter);
         }
 
     }

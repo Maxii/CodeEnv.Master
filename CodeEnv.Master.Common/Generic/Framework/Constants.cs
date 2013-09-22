@@ -80,6 +80,8 @@ namespace CodeEnv.Master.Common {
         public const string SingleQuote = "'";
         public const string Underscore = "_";
         public const string Ellipsis = "...";
+        public const string SemiColon = ";";
+        public const string Colon = ":";
 
         // Switch Strings
         public const string GodMode = "/GodMode";

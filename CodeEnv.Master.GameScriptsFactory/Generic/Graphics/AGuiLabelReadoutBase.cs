@@ -16,7 +16,7 @@
 // default namespace
 
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// Base class for Dynamic Gui Labels (used as readouts) built with NGUI. Supports Tooltips.

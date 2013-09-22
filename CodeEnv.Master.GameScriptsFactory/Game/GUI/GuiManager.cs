@@ -17,7 +17,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -26,19 +26,22 @@ using UnityEngine;
 public class GuiManager : AMonoBehaviourBaseSingleton<GuiManager>, IDisposable {
 
     private Stack<IList<UIPanel>> _stackedPanelsToRestore = new Stack<IList<UIPanel>>();
-    private UIPanel _uiRootPanel;
+    private UIPanel[] _panelsToAlwaysRemainActive;
     private GameEventManager _eventMgr;
 
     protected override void Awake() {
         base.Awake();
         _eventMgr = GameEventManager.Instance;
+        UIPanel uiRootPanel = gameObject.GetSafeMonoBehaviourComponent<UIRoot>().gameObject.GetSafeMonoBehaviourComponent<UIPanel>();
+        UIPanel tooltipPanel = gameObject.GetSafeMonoBehaviourComponentInChildren<UITooltip>().gameObject.GetSafeMonoBehaviourComponent<UIPanel>();
+        UIPanel fpsDebugPanel = gameObject.GetSafeMonoBehaviourComponentInChildren<FpsReadout>().transform.parent.gameObject.GetSafeMonoBehaviourComponent<UIPanel>();
+        _panelsToAlwaysRemainActive = new UIPanel[3] { uiRootPanel, tooltipPanel, fpsDebugPanel };
         AddListeners();
     }
 
     protected override void Start() {
         base.Start();
         CheckDebugSettings();
-        _uiRootPanel = gameObject.GetSafeMonoBehaviourComponent<UIPanel>();
     }
 
     //[System.Diagnostics.Conditional("UNITY_EDITOR")]
@@ -59,27 +62,29 @@ public class GuiManager : AMonoBehaviourBaseSingleton<GuiManager>, IDisposable {
     }
 
     private void OnGuiVisibilityChange(GuiVisibilityButton.GuiVisibilityChangeEvent e) {
-        //Logger.Log("OnGuiVisibilityChange event received. GuiVisibilityCmd = {0}.", e.GuiVisibilityCmd);
+        D.Log("OnGuiVisibilityChange event received. GuiVisibilityCmd = {0}.", e.GuiVisibilityCmd);
         switch (e.GuiVisibilityCmd) {
             case GuiVisibilityCommand.HideVisibleGuiPanels:
-                UIPanel[] allActiveUIRootChildPanels = gameObject.GetSafeMonoBehaviourComponentsInChildren<UIPanel>().Except<UIPanel>(_uiRootPanel).ToArray<UIPanel>();
-                var panelsToDeactivate = (from p in allActiveUIRootChildPanels where !e.Exceptions.Contains<UIPanel>(p) select p);
-                //panelsToDeactivate.ForAll<UIPanel>(p => p.gameObject.active = false);
-                panelsToDeactivate.ForAll<UIPanel>(p => NGUITools.SetActive(p.gameObject, false));
+                UIPanel[] activeUIRootChildPanelCandidates = gameObject.GetSafeMonoBehaviourComponentsInChildren<UIPanel>().Except<UIPanel>(_panelsToAlwaysRemainActive).ToArray<UIPanel>();
+                var panelsToDeactivate = (from p in activeUIRootChildPanelCandidates where !e.Exceptions.Contains<UIPanel>(p) select p);
+                //panelsToDeactivate.ForAll<UIPanel>(p => NGUITools.SetActive(p.gameObject, false));
+                foreach (var p in panelsToDeactivate) {
+                    NGUITools.SetActive(p.gameObject, false);
+                    D.Log("Deactivating {0}.", p.gameObject.name);
+                }
 
                 _stackedPanelsToRestore.Push(panelsToDeactivate.ToList<UIPanel>());
                 break;
             case GuiVisibilityCommand.RestoreInvisibleGuiPanels:
-                if (_stackedPanelsToRestore.Count == 0) {
-                    D.Error("The stack holding the lists of UIPanels to restore should not be null or empty!");
-                }
-                //Arguments.ValidateNotNullOrEmpty<IList<UIPanel>>(stackedPanelsToRestore);
+                D.Assert(_stackedPanelsToRestore.Count != Constants.Zero, "The stack holding the lists of UIPanels to restore should not be empty!");
                 IList<UIPanel> panelsToRestore = _stackedPanelsToRestore.Pop();
                 Arguments.ValidateNotNullOrEmpty<UIPanel>(panelsToRestore);
                 var panelsToReactivate = from p in panelsToRestore where !e.Exceptions.Contains<UIPanel>(p) select p;
-                //panelsToReactivate.ForAll<UIPanel>(p => p.gameObject.active = true);
-                panelsToReactivate.ForAll<UIPanel>(p => NGUITools.SetActive(p.gameObject, true));
-
+                //panelsToReactivate.ForAll<UIPanel>(p => NGUITools.SetActive(p.gameObject, true));
+                foreach (var p in panelsToReactivate) {
+                    NGUITools.SetActive(p.gameObject, true);
+                    D.Log("Reactivating {0}.", p.gameObject.name);
+                }
                 break;
             case GuiVisibilityCommand.None:
             default:

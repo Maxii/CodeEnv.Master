@@ -26,7 +26,7 @@ using UnityEngine;
 /// attaching any Management folder child objects in the new startScene to this incoming folder, then destroys
 /// the Management folder that was already present in the new startScene.
 /// </summary>
-public class ManagementObjects : AMonoBehaviourBaseSingleton<ManagementObjects>, IDisposable {
+public class ManagementObjects : AMonoBehaviourBaseSingletonInstanceIdentity<ManagementObjects>, IDisposable {
 
     /// <summary>
     /// Gets the ManagementObjects folder transform.
@@ -36,7 +36,6 @@ public class ManagementObjects : AMonoBehaviourBaseSingleton<ManagementObjects>,
     private Transform[] _children;
 
     private GameEventManager _eventMgr;
-    private Transform _transform;
     private bool _isInitialized;
 
     protected override void Awake() {
@@ -44,7 +43,6 @@ public class ManagementObjects : AMonoBehaviourBaseSingleton<ManagementObjects>,
         if (TryDestroyExtraCopies()) {
             return;
         }
-        _transform = transform;
         _eventMgr = GameEventManager.Instance;
         Subscribe();
         _isInitialized = true;
@@ -58,7 +56,7 @@ public class ManagementObjects : AMonoBehaviourBaseSingleton<ManagementObjects>,
     /// <returns><c>true</c> if this instance is going to be destroyed, <c>false</c> if not.</returns>
     private bool TryDestroyExtraCopies() {
         if (_instance && _instance != this) {
-            Logger.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceID));
+            D.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceID));
             TransferChildrenThenDestroy();
             return true;
         }
@@ -70,12 +68,12 @@ public class ManagementObjects : AMonoBehaviourBaseSingleton<ManagementObjects>,
     }
 
     private void TransferChildrenThenDestroy() {
-        Logger.Log("{0} has {1} children.".Inject(this.name, transform.childCount));
+        D.Log("{0} has {1} children.".Inject(this.name, _transform.childCount));
         Transform[] transforms = gameObject.GetComponentsInChildren<Transform>(includeInactive: true);   // includes the parent t
         foreach (Transform t in transforms) {
-            if (t != transform) {
+            if (t != _transform) {
                 t.parent = Instance.transform;
-                Logger.Log("Child [{0}].parent changed to {1}.".Inject(t.name, Instance.name));
+                D.Log("Child [{0}].parent changed to {1}.".Inject(t.name, Instance.name));
             }
         }
         Destroy(gameObject);

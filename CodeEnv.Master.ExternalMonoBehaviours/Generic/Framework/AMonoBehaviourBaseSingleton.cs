@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -54,13 +54,13 @@ public abstract class AMonoBehaviourBaseSingleton<T> : AMonoBehaviourBase where 
     #endregion
 
     /// <summary>
-    /// Called when [application quit]. Clients must override and set 
-    /// _instance to null.
+    /// Called when the Application is quiting, followed by OnDisable() and then OnDestroy().
     /// </summary>
     protected override void OnApplicationQuit() {
         base.OnApplicationQuit();
         _instance = null;
     }
+
 }
 
 

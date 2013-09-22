@@ -13,7 +13,7 @@
 // default namespace
 
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -38,7 +38,7 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu {
         _shipGraphics = gameObject.GetSafeMonoBehaviourComponent<ShipGraphics>();
         _fleetMgr = gameObject.GetSafeMonoBehaviourComponentInParents<FleetManager>();
         _fleetCmd = _fleetMgr.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>();
-        UpdateRate = UpdateFrequency.Infrequent;
+        UpdateRate = FrameUpdateFrequency.Infrequent;
     }
 
     protected override void Start() {
@@ -66,21 +66,14 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu {
     }
 
     public void ChangeHeading(Vector3 newHeading) {
-        if (Data.RequestedHeading != newHeading) {
-            Navigator.ChangeHeading(newHeading);
+        if (Navigator.ChangeHeading(newHeading)) {
+            StartCoroutine(Navigator.ExecuteHeadingChange());
         }
     }
 
     public void ChangeSpeed(float newRequestedSpeed) {
-        if (Data.RequestedSpeed != newRequestedSpeed) {
-            //Logger.Log("Current Requested Speed = {0}, New Requested Speed = {1}.", Data.RequestedSpeed, newRequestedSpeed);
-            Navigator.ChangeSpeed(newRequestedSpeed);
-        }
-    }
-
-    void Update() {
-        if (ToUpdate()) {
-            Navigator.TryProcessHeadingChange((int)UpdateRate);
+        if (Navigator.ChangeSpeed(newRequestedSpeed)) {
+            // IMPROVE ChangeSpeed currently executes this as ApplyThrust is called from FixedUpdate here. Change to execute speed change coroutine like changeHeading?
         }
     }
 
@@ -89,7 +82,7 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu {
     }
 
     private void OnHealthChanged() {
-        Logger.Log("{0} Health = {1}.", Data.Name, Data.Health);
+        D.Log("{0} Health = {1}.", Data.Name, Data.Health);
         if (Data.Health <= Constants.ZeroF) {
             __Die();
         }
@@ -101,7 +94,7 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu {
     }
 
     private void OnIsSelectedChanged() {
-        _shipGraphics.ChangeHighlighting();
+        _shipGraphics.AssessHighlighting();
         if (IsSelected) {
             _eventMgr.Raise<SelectionEvent>(new SelectionEvent(this));
         }
@@ -109,7 +102,7 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu {
 
     protected override void OnIsFocusChanged() {
         base.OnIsFocusChanged();
-        _shipGraphics.ChangeHighlighting();
+        _shipGraphics.AssessHighlighting();
     }
 
     protected override void OnClick() {
@@ -119,8 +112,20 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu {
         }
     }
 
+    void OnDoubleClick() {
+        if (GameInputHelper.IsLeftMouseButton()) {
+            OnLeftDoubleClick();
+        }
+    }
+
+    private void OnLeftDoubleClick() {
+        _fleetMgr.OnLeftClick();
+    }
+
     private void __SimulateAttacked() {
-        __OnHit(Random.Range(1.0F, Data.MaxHitPoints));
+        if (!DebugSettings.Instance.MakePlayerInvincible) {
+            __OnHit(Random.Range(1.0F, Data.MaxHitPoints));
+        }
     }
 
     private void __OnHit(float damage) {
@@ -148,7 +153,7 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu {
 
     public override bool IsTargetable {
         get {
-            return _shipGraphics.IsShipShowing;
+            return _shipGraphics.IsShowShip;
         }
     }
 
@@ -162,13 +167,12 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu {
         set { SetProperty<bool>(ref _isSelected, value, "IsSelected", OnIsSelectedChanged); }
     }
 
-    public Data GetData() {
-        return Data;
-    }
-
     public void OnLeftClick() {
+        if (GameInputHelper.IsKeyDown(KeyCode.LeftAlt, KeyCode.RightAlt)) {
+            __SimulateAttacked();
+            return;
+        }
         IsSelected = true;
-        __SimulateAttacked();
     }
 
     #endregion
@@ -183,7 +187,7 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu {
 
     public void OnPress(bool isDown) {
         if (IsSelected) {
-            //Logger.Log("{0}.OnPress({1}) called.", this.GetType().Name, isPressed);
+            //D.Log("{0}.OnPress({1}) called.", this.GetType().Name, isPressed);
             CameraControl.Instance.TryShowContextMenuOnPress(isDown);
         }
     }

@@ -17,7 +17,7 @@ using System;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -43,12 +43,14 @@ public class SystemGraphics : AGraphics {
 
     private GuiTrackingLabel _trackingLabel;
     private MeshRenderer _systemHighlightRenderer;
+    private GuiTrackingLabelFactory _trackingLabelFactory;
 
     protected override void Awake() {
         base.Awake();
-        Target = transform;
+        Target = _transform;
         _orbitalPlane = gameObject.GetSafeMonoBehaviourComponentInChildren<OrbitalPlane>();
         _systemManager = gameObject.GetSafeMonoBehaviourComponent<SystemManager>();
+        _trackingLabelFactory = GuiTrackingLabelFactory.Instance;
         maxAnimateDistance = AnimationSettings.Instance.MaxSystemAnimateDistance;
         _systemHighlightRenderer = __FindSystemHighlight();
     }
@@ -61,33 +63,31 @@ public class SystemGraphics : AGraphics {
     }
 
     protected override void RegisterComponentsToDisable() {
-        disableComponentOnInvisible = new Component[1] {
-            gameObject.GetSafeMonoBehaviourComponentInChildren<OrbitalPlane>().collider
-        };
-        disableGameObjectOnInvisible = new GameObject[1] { 
-            gameObject.GetSafeMonoBehaviourComponentInChildren<Billboard>().gameObject
-        };
-        disableComponentOnCameraDistance = gameObject.GetComponentsInChildren<Animation>(); // UNCLEAR except under Billboard?
-        disableComponentOnCameraDistance.Union<Component>(gameObject.GetSafeMonoBehaviourComponentsInChildren<Orbit>());
+        disableGameObjectOnInvisible = new GameObject[1] { _systemHighlightRenderer.gameObject };
 
+        Component[] orbitalPlaneCollider = new Component[1] { gameObject.GetSafeMonoBehaviourComponentInChildren<OrbitalPlane>().collider };
         Renderer[] renderersWithoutVisibilityRelays = gameObject.GetComponentsInChildren<Renderer>()
             .Where<Renderer>(r => r.gameObject.GetComponent<VisibilityChangedRelay>() == null).ToArray<Renderer>();
-        disableComponentOnCameraDistance.Union<Component>(renderersWithoutVisibilityRelays);
+        if (disableComponentOnInvisible.IsNullOrEmpty()) {
+            disableComponentOnInvisible = new Component[0];
+        }
+        disableComponentOnInvisible = disableComponentOnInvisible.Union<Component>(renderersWithoutVisibilityRelays)
+            .Union<Component>(orbitalPlaneCollider).ToArray();
     }
 
     protected override void OnIsVisibleChanged() {
         base.OnIsVisibleChanged();
-        ChangeHighlighting();
+        AssessHighlighting();
     }
 
-    public void ChangeHighlighting() {
+    public void AssessHighlighting() {
         if (!IsVisible || (!_systemManager.IsSelected && !_orbitalPlane.IsFocus)) {
-            Highlight(false);
+            Highlight(false, Highlights.None);
             return;
         }
         if (_orbitalPlane.IsFocus) {
             if (_systemManager.IsSelected) {
-                Highlight(true, Highlights.Both);
+                Highlight(true, Highlights.SelectedAndFocus);
                 return;
             }
             Highlight(true, Highlights.Focused);
@@ -96,48 +96,43 @@ public class SystemGraphics : AGraphics {
         Highlight(true, Highlights.Selected);
     }
 
-    private void Highlight(bool toShow, Highlights highlight = Highlights.None) {
+    private void Highlight(bool toShow, Highlights highlight) {
         _systemHighlightRenderer.gameObject.SetActive(toShow);
-        if (!toShow) {
-            return;
-        }
         switch (highlight) {
             case Highlights.Focused:
-                _systemHighlightRenderer.material.SetColor(UnityConstants.MainMaterialColor, UnityDebugConstants.IsFocusedColor);
-                _systemHighlightRenderer.material.SetColor(UnityConstants.OutlineMaterialColor, UnityDebugConstants.IsFocusedColor);
+                _systemHighlightRenderer.material.SetColor(UnityConstants.MainMaterialColor, UnityDebugConstants.FocusedColor.ToUnityColor());
+                _systemHighlightRenderer.material.SetColor(UnityConstants.OutlineMaterialColor, UnityDebugConstants.FocusedColor.ToUnityColor());
                 break;
             case Highlights.Selected:
-                _systemHighlightRenderer.material.SetColor(UnityConstants.MainMaterialColor, UnityDebugConstants.IsSelectedColor);
-                _systemHighlightRenderer.material.SetColor(UnityConstants.OutlineMaterialColor, UnityDebugConstants.IsSelectedColor);
+                _systemHighlightRenderer.material.SetColor(UnityConstants.MainMaterialColor, UnityDebugConstants.SelectedColor.ToUnityColor());
+                _systemHighlightRenderer.material.SetColor(UnityConstants.OutlineMaterialColor, UnityDebugConstants.SelectedColor.ToUnityColor());
                 break;
-            case Highlights.Both:
-                _systemHighlightRenderer.material.SetColor(UnityConstants.MainMaterialColor, UnityDebugConstants.IsFocusAndSelectedColor);
-                _systemHighlightRenderer.material.SetColor(UnityConstants.OutlineMaterialColor, UnityDebugConstants.IsFocusAndSelectedColor);
+            case Highlights.SelectedAndFocus:
+                _systemHighlightRenderer.material.SetColor(UnityConstants.MainMaterialColor, UnityDebugConstants.GeneralHighlightColor.ToUnityColor());
+                _systemHighlightRenderer.material.SetColor(UnityConstants.OutlineMaterialColor, UnityDebugConstants.GeneralHighlightColor.ToUnityColor());
                 break;
             case Highlights.None:
-            // should never occur as there should always be a highlight color if this highlight object is showing
+                // nothing to do as the highlighter should already be inactive
+                break;
+            case Highlights.General:
+            case Highlights.FocusAndGeneral:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(highlight));
         }
     }
 
     protected override int EnableBasedOnDistanceToCamera() {
-        int distanceToCamera = Constants.Zero;
+        int distanceToCamera = base.EnableBasedOnDistanceToCamera();
         if (enableTrackingLabel) {  // allows tester to enable while editor is playing
-            if (_trackingLabel == null) {
-                _trackingLabel = InitializeTrackingLabel();
-            }
-            distanceToCamera = base.EnableBasedOnDistanceToCamera();
+            _trackingLabel = _trackingLabel ?? InitializeTrackingLabel();
             bool toShowTrackingLabel = false;
             if (IsVisible) {
-                if (distanceToCamera == Constants.Zero) {
-                    distanceToCamera = Target.DistanceToCameraInt();
-                }
+                distanceToCamera = distanceToCamera == Constants.Zero ? Target.DistanceToCameraInt() : distanceToCamera;    // not really needed
                 if (Utility.IsInRange(distanceToCamera, minTrackingLabelShowDistance, maxTrackingLabelShowDistance)) {
                     toShowTrackingLabel = true;
                 }
             }
-            //Logger.Log("SystemTrackingLabel.IsShowing = {0}.", toShowTrackingLabel);
+            //D.Log("SystemTrackingLabel.IsShowing = {0}.", toShowTrackingLabel);
             _trackingLabel.IsShowing = toShowTrackingLabel;
         }
         return distanceToCamera;
@@ -147,7 +142,7 @@ public class SystemGraphics : AGraphics {
         __SetTrackingLabelShowDistance();
         Star star = gameObject.GetSafeMonoBehaviourComponentInChildren<Star>();
         Vector3 pivotOffset = new Vector3(Constants.ZeroF, star.transform.collider.bounds.extents.y, Constants.ZeroF);
-        GuiTrackingLabel trackingLabel = GuiTrackingLabelFactory.CreateGuiTrackingLabel(Target, pivotOffset, trackingLabelOffsetFromPivot);
+        GuiTrackingLabel trackingLabel = _trackingLabelFactory.CreateGuiTrackingLabel(Target, pivotOffset, trackingLabelOffsetFromPivot);
         trackingLabel.IsShowing = true;
         return trackingLabel;
     }

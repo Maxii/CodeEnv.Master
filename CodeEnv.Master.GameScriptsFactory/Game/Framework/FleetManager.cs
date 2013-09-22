@@ -20,7 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -29,6 +29,8 @@ using UnityEngine;
 /// and each individual fleet object (command or ship) handles camera interaction and showing Hud info.
 /// </summary>
 public class FleetManager : AMonoBehaviourBase, ISelectable, IDisposable {
+
+    private static IconFactory _iconFactory;
 
     /// <summary>
     /// The separation between the pivot point on the lead ship and the fleet icon,
@@ -62,29 +64,40 @@ public class FleetManager : AMonoBehaviourBase, ISelectable, IDisposable {
     private GameEventManager _eventMgr;
     private FleetGraphics _fleetGraphics;
     private FleetCommand _fleetCmd;
+    private UISprite _fleetIconSprite;
 
     private IList<IDisposable> _subscribers;
 
     // cached transforms
     private Transform _fleetCmdTransform;
-    private Transform _leadShipTransform;
+    public Transform _leadShipTransform;
 
     /// <summary>
     /// The offset that determines the point on the lead ship from which
     ///  the Fleet Icon pivots, as a Worldspace vector.
     /// </summary>
     private Vector3 _fleetIconPivotOffset;
-
+    private IList<IIcon> _fleetIcons;
 
     protected override void Awake() {
         base.Awake();
         _fleetCmd = gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>();
         _fleetCmdTransform = _fleetCmd.transform;
         _fleetGraphics = gameObject.GetSafeMonoBehaviourComponent<FleetGraphics>();
+        _fleetIconSprite = gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>();
         ShipCaptains = gameObject.GetSafeMonoBehaviourComponentsInChildren<ShipCaptain>().ToList();
         _gameMgr = GameManager.Instance;
         _eventMgr = GameEventManager.Instance;
+        InitializeFleetIcon();
         Subscribe();
+    }
+
+    private void InitializeFleetIcon() {
+        _fleetIcons = new List<IIcon>(1);
+        _iconFactory = IconFactory.Instance;    // TODO How to handle which of these icons go to which sprites?
+        _fleetIcons.Add(_iconFactory.MakeInstance<FleetIcon>(IconSection.Bottom, IconSelectionCriteria.None));
+        //_fleetIcons.Add(_iconFactory.MakeInstance<FleetIcon>(IconSection.Top, IconSelectionCriteria.None));
+        _fleetIconSprite.spriteName = _fleetIcons[0].Filename;  // UNDONE
     }
 
     private void Subscribe() {
@@ -92,6 +105,7 @@ public class FleetManager : AMonoBehaviourBase, ISelectable, IDisposable {
             _subscribers = new List<IDisposable>();
         }
         _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.GameState, OnGameStateChanged));
+        _subscribers.Add(_fleetCmd.SubscribeToPropertyChanged<FleetCommand, FleetData>(fc => fc.Data, OnFleetDataChanged));
     }
 
     private void OnGameStateChanged() {
@@ -102,18 +116,25 @@ public class FleetManager : AMonoBehaviourBase, ISelectable, IDisposable {
         }
     }
 
+    private void OnFleetDataChanged() {
+        _subscribers.Add(_fleetCmd.Data.SubscribeToPropertyChanged<FleetData, FleetComposition>(fd => fd.Composition, OnFleetCompositionChanged));
+    }
+
+    private void OnFleetCompositionChanged() {
+        TryChangeFleetIcon();
+    }
+
     void Update() {
         if (ToUpdate()) {
-            TrackLeadShipWithFleetCommand();
+            KeepCommandOverLeadShip();
         }
     }
 
-    private void TrackLeadShipWithFleetCommand() {  // OPTIMIZE?
+    private void KeepCommandOverLeadShip() {  // OPTIMIZE?
         Vector3 viewportOffsetLocation = Camera.main.WorldToViewportPoint(_leadShipTransform.position + _fleetIconPivotOffset);
         _fleetCmdTransform.position = Camera.main.ViewportToWorldPoint(viewportOffsetLocation + _fleetIconOffsetFromPivot);
         _fleetCmdTransform.rotation = _leadShipTransform.rotation;
     }
-
 
     private void OnLeadShipChanged() {
         _leadShipTransform = LeadShipCaptain.transform;
@@ -124,10 +145,28 @@ public class FleetManager : AMonoBehaviourBase, ISelectable, IDisposable {
     private void OnIntelLevelChanged() {
         _fleetCmd.PlayerIntelLevel = PlayerIntelLevel;
         ShipCaptains.ForAll<ShipCaptain>(cap => cap.PlayerIntelLevel = PlayerIntelLevel);
+        TryChangeFleetIcon();
+    }
+
+    private void TryChangeFleetIcon() {
+        // TODO evaluate IntelLevel and Composition
+        // __ChangeFleetIcon();
+    }
+
+    private void __ChangeFleetIcon() {
+        IIcon newIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Top, IconSelectionCriteria.Science);
+        if (_fleetIcons.Contains(newIcon)) {
+            return;
+        }
+        D.Log("Changing {0} {1}.", typeof(FleetIcon).Name, IconSection.Top.GetName());
+        _fleetIcons[0] = newIcon;
+        _fleetIconSprite.spriteName = newIcon.Filename;
+        // TODO swap out new icon for the old icon with the same Section value. Will order matter?
     }
 
     private void OnIsSelectedChanged() {
-        _fleetGraphics.ChangeHighlighting();
+        _fleetGraphics.AssessHighlighting();
+        ShipCaptains.ForAll<ShipCaptain>(sc => sc.gameObject.GetSafeMonoBehaviourComponent<ShipGraphics>().AssessHighlighting());
         if (IsSelected) {
             _eventMgr.Raise<SelectionEvent>(new SelectionEvent(this));
         }
@@ -184,12 +223,16 @@ public class FleetManager : AMonoBehaviourBase, ISelectable, IDisposable {
         set { SetProperty<bool>(ref _isSelected, value, "IsSelected", OnIsSelectedChanged); }
     }
 
-    public Data GetData() {
-        return _fleetCmd.Data;
-    }
-
     public void OnLeftClick() {
         IsSelected = true;
+    }
+
+    #endregion
+
+    #region IHasData Members
+
+    public Data GetData() {
+        return Data;
     }
 
     #endregion

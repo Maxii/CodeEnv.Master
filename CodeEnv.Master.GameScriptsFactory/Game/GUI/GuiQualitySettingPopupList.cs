@@ -16,7 +16,7 @@
 // default namespace
 
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -34,7 +34,7 @@ public class GuiQualitySettingPopupList : AGuiPopupListBase {
     protected override void InitializeListValues() {
         popupList.items.Clear();
         foreach (var name in _qualityNames) {
-            //Logger.Log("Adding QualitySetting name {0}.", name);
+            //D.Log("Adding QualitySetting name {0}.", name);
             popupList.items.Add(name);
         }
     }

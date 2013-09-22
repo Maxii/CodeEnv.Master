@@ -14,7 +14,7 @@
 
 using System;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -33,7 +33,7 @@ public class StarAnimator : AMonoBehaviourBase {
 
     protected override void Awake() {
         base.Awake();
-        UpdateRate = UpdateFrequency.Continuous;
+        UpdateRate = FrameUpdateFrequency.Continuous;
     }
 
     protected override void Start() {

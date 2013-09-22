@@ -16,7 +16,8 @@
 
 // default namespace
 
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// An abstract base class for popup lists used in the Gui, pre-wired with Tooltip functionality.

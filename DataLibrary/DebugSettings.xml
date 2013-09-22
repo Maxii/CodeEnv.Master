@@ -30,6 +30,19 @@
       <PropertyName>ForceFpsToTarget</PropertyName>
       <PropertyValue>true</PropertyValue>
     </Setting>
+    <Setting>
+      <PropertyName>EnableVerboseDebugLog</PropertyName>
+      <PropertyValue>false</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>EnableShipVelocityRays</PropertyName>
+      <PropertyValue>true</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>EnableFleetVelocityRays</PropertyName>
+      <PropertyValue>true</PropertyValue>
+    </Setting>
+
   </Boolean>
   
   <Integer>

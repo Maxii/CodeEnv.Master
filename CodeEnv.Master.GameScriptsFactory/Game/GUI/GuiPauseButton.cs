@@ -19,7 +19,7 @@ using System;
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -40,6 +40,9 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
         base.Awake();
         _gameMgr = GameManager.Instance;
         Subscribe();
+    }
+
+    protected override void InitializeTooltip() {
         tooltip = "Pause or resume the game.";
     }
 

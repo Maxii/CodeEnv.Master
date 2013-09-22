@@ -13,28 +13,34 @@
 // default namespace
 
 using System;
+using System.Collections;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
+using Vectrosity;
 
 /// <summary>
 /// Handles graphics optimization for Fleets. Assumes location is with Fleet
 /// game object, not FleetAdmiral.
 /// </summary>
-public class FleetGraphics : AGraphics {
+public class FleetGraphics : AGraphics, IDisposable {
 
-    public bool enableTrackingLabel = false;
-
-    public Vector3 trackingLabelOffsetFromPivot = new Vector3(Constants.ZeroF, 0.05F, Constants.ZeroF);
-
-    public int minTrackingLabelShowDistance = TempGameValues.MinFleetTrackingLabelShowDistance;
-    public int maxTrackingLabelShowDistance = TempGameValues.MaxFleetTrackingLabelShowDistance;
-
-    private Color __originalFleetIconColor;
     private UISprite _fleetIcon;
 
+    public bool enableTrackingLabel = false;
+    public Vector3 trackingLabelOffsetFromPivot = new Vector3(Constants.ZeroF, 0.05F, Constants.ZeroF);
+    public int minTrackingLabelShowDistance = TempGameValues.MinFleetTrackingLabelShowDistance;
+    public int maxTrackingLabelShowDistance = TempGameValues.MaxFleetTrackingLabelShowDistance;
     private GuiTrackingLabel _trackingLabel;
+    private GuiTrackingLabelFactory _trackingLabelFactory;
+
+    public float circleScaleFactor = .03F;
+    private HighlightCircle _circles;
+    private VectorLineFactory _vectorLineFactory;
+    private VelocityRay _velocityRay;
+
+    // cached references
     private FleetCommand _fleetCmd;
     private FleetManager _fleetMgr;
 
@@ -42,8 +48,11 @@ public class FleetGraphics : AGraphics {
         base.Awake();
         _fleetMgr = gameObject.GetSafeMonoBehaviourComponent<FleetManager>();
         _fleetCmd = gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>();
+        _trackingLabelFactory = GuiTrackingLabelFactory.Instance;
+        _vectorLineFactory = VectorLineFactory.Instance;
         Target = _fleetCmd.transform;
         InitializeHighlighting();
+        maxAnimateDistance = 1; // FIXME maxAnimateDistance not used, this is a dummy value to avoid the warning in AGraphics
     }
 
     protected override void RegisterComponentsToDisable() {
@@ -57,27 +66,20 @@ public class FleetGraphics : AGraphics {
 
     private void InitializeHighlighting() {
         _fleetIcon = gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>();
-        __originalFleetIconColor = _fleetIcon.color;
     }
 
-
     protected override int EnableBasedOnDistanceToCamera() {
-        int distanceToCamera = Constants.Zero;
+        int distanceToCamera = base.EnableBasedOnDistanceToCamera();
         if (enableTrackingLabel) {  // allows tester to enable while editor is playing
-            if (_trackingLabel == null) {
-                _trackingLabel = InitializeTrackingLabel();
-            }
-            distanceToCamera = base.EnableBasedOnDistanceToCamera();
+            _trackingLabel = _trackingLabel ?? InitializeTrackingLabel();
             bool toShowTrackingLabel = false;
             if (IsVisible) {
-                if (distanceToCamera == Constants.Zero) {
-                    distanceToCamera = Target.DistanceToCameraInt();
-                }
+                distanceToCamera = distanceToCamera == Constants.Zero ? Target.DistanceToCameraInt() : distanceToCamera;    // not really needed
                 if (Utility.IsInRange(distanceToCamera, minTrackingLabelShowDistance, maxTrackingLabelShowDistance)) {
                     toShowTrackingLabel = true;
                 }
             }
-            //Logger.Log("FleetTrackingLabel.IsShowing = {0}.", toShowTrackingLabel);
+            //D.Log("FleetTrackingLabel.IsShowing = {0}.", toShowTrackingLabel);
             _trackingLabel.IsShowing = toShowTrackingLabel;
         }
         return distanceToCamera;
@@ -86,7 +88,7 @@ public class FleetGraphics : AGraphics {
     private GuiTrackingLabel InitializeTrackingLabel() {
         // use LeadShip collider for the offset rather than the Admiral collider as the Admiral collider changes scale dynamically. FIXME LeadShips die!!!
         Vector3 pivotOffset = new Vector3(Constants.ZeroF, _fleetMgr.LeadShipCaptain.collider.bounds.extents.y, Constants.ZeroF);
-        GuiTrackingLabel trackingLabel = GuiTrackingLabelFactory.CreateGuiTrackingLabel(Target, pivotOffset, trackingLabelOffsetFromPivot);
+        GuiTrackingLabel trackingLabel = _trackingLabelFactory.CreateGuiTrackingLabel(Target, pivotOffset, trackingLabelOffsetFromPivot);
         trackingLabel.IsShowing = true;
         return trackingLabel;
     }
@@ -97,14 +99,14 @@ public class FleetGraphics : AGraphics {
         }
     }
 
-    public void ChangeHighlighting() {
+    public void AssessHighlighting() {
         if (!IsVisible) {
-            Highlight(false);
+            Highlight(false, Highlights.None);
             return;
         }
         if (_fleetCmd.IsFocus) {
             if (_fleetMgr.IsSelected) {
-                Highlight(true, Highlights.Both);
+                Highlight(true, Highlights.SelectedAndFocus);
                 return;
             }
             Highlight(true, Highlights.Focused);
@@ -117,37 +119,118 @@ public class FleetGraphics : AGraphics {
         Highlight(true, Highlights.None);
     }
 
-    private void Highlight(bool toShow, Highlights highlight = Highlights.None) {
-        _fleetIcon.gameObject.SetActive(toShow);
-        if (!toShow) {
-            return;
-        }
+    private void Highlight(bool toShowFleetIcon, Highlights highlight) {
+        _fleetIcon.gameObject.SetActive(toShowFleetIcon);
+        ShowVelocityRay(toShowFleetIcon);
         switch (highlight) {
             case Highlights.Focused:
-                _fleetIcon.color = UnityDebugConstants.IsFocusedColor;
+                ShowCircle(false, Highlights.Selected);
+                ShowCircle(true, Highlights.Focused);
                 break;
             case Highlights.Selected:
-                _fleetIcon.color = UnityDebugConstants.IsSelectedColor;
+                ShowCircle(true, Highlights.Selected);
+                ShowCircle(false, Highlights.Focused);
                 break;
-            case Highlights.Both:
-                _fleetIcon.color = UnityDebugConstants.IsFocusAndSelectedColor;
+            case Highlights.SelectedAndFocus:
+                ShowCircle(true, Highlights.Selected);
+                ShowCircle(true, Highlights.Focused);
                 break;
             case Highlights.None:
-                _fleetIcon.color = __originalFleetIconColor;
+                ShowCircle(false, Highlights.Selected);
+                ShowCircle(false, Highlights.Focused);
                 break;
+            case Highlights.General:
+            case Highlights.FocusAndGeneral:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(highlight));
         }
     }
 
+    private void ShowCircle(bool toShow, Highlights highlight) {
+        D.Assert(highlight == Highlights.Focused || highlight == Highlights.Selected);
+        if (_circles == null) {
+            float normalizedRadius = Screen.height * circleScaleFactor;
+            _circles = _vectorLineFactory.MakeInstance("FleetCircles", _fleetCmd.transform, normalizedRadius, isRadiusDynamic: false, maxCircles: 2);
+            _circles.Colors = new GameColor[2] { UnityDebugConstants.FocusedColor, UnityDebugConstants.SelectedColor };
+            _circles.Widths = new float[2] { 2F, 2F };
+        }
+        _circles.ShowCircle(toShow, (int)highlight);
+    }
+
+    /// <summary>
+    /// Shows a Vectrosity Ray indicating the course and speed of the fleet.
+    /// </summary>
+    private void ShowVelocityRay(bool toShow) {
+        if (DebugSettings.Instance.EnableFleetVelocityRays) {
+            if (_velocityRay == null) {
+                Reference<float> speedReference = new Reference<float>(() => _fleetCmd.Data.CurrentSpeed);
+                _velocityRay = _vectorLineFactory.MakeInstance("FleetVelocityRay", _fleetCmd.transform, speedReference, GameColor.Green);
+            }
+            _velocityRay.ShowRay(toShow);
+        }
+    }
+
     protected override void OnIsVisibleChanged() {
         base.OnIsVisibleChanged();
-        ChangeHighlighting();
+        AssessHighlighting();
+    }
+
+    protected override void OnDestroy() {
+        base.OnDestroy();
+        Dispose();
     }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region IDisposable
+    [DoNotSerialize]
+    private bool alreadyDisposed = false;
+
+    /// <summary>
+    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// </summary>
+    public void Dispose() {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
+    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
+    /// </summary>
+    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+    protected virtual void Dispose(bool isDisposing) {
+        // Allows Dispose(isDisposing) to be called more than once
+        if (alreadyDisposed) {
+            return;
+        }
+
+        if (isDisposing) {
+            // free managed resources here including unhooking events
+            if (_velocityRay != null) {
+                Destroy(_velocityRay.gameObject);
+            }
+            if (_circles != null) {
+                Destroy(_circles.gameObject);
+            }
+        }
+        // free unmanaged resources here
+
+        alreadyDisposed = true;
+    }
+
+    // Example method showing check for whether the object has been disposed
+    //public void ExampleMethod() {
+    //    // throw Exception if called on object that is already disposed
+    //    if(alreadyDisposed) {
+    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
+    //    }
+
+    //    // method content here
+    //}
+    #endregion
 
 }
 

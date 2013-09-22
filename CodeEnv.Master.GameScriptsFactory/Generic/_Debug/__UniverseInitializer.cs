@@ -16,7 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -27,11 +27,12 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
     private GameManager _gameMgr;
     private IList<IDisposable> _subscribers;
 
-    private FleetManager[] _fleetsToInitialize;
-    private ShipCaptain[] _shipsToInitialize;
-    private FollowableItem[] _planetsAndMoonsToInitialize;
-    private Star[] _starsToInitialize;
-    private SystemManager[] _systemsToInitialize;
+    private FleetManager[] _fleets;
+    private ShipCaptain[] _ships;
+    private FollowableItem[] _planetsAndMoons;
+    private Star[] _stars;
+    private SystemManager[] _systems;
+    private StationaryItem _universeCenter;
 
     protected override void Awake() {
         base.Awake();
@@ -41,15 +42,16 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
     }
 
     private void AcquireGameObjectsRequiringDataToInitialize() {
-        _fleetsToInitialize = gameObject.GetSafeMonoBehaviourComponentsInChildren<FleetManager>();
-        _shipsToInitialize = gameObject.GetSafeMonoBehaviourComponentsInChildren<ShipCaptain>();
+        _fleets = gameObject.GetSafeMonoBehaviourComponentsInChildren<FleetManager>();
+        _ships = gameObject.GetSafeMonoBehaviourComponentsInChildren<ShipCaptain>();
         // TODO I'll need to pick the ships under each fleet and then add those ships to each fleet when initializing
-        _systemsToInitialize = gameObject.GetSafeMonoBehaviourComponentsInChildren<SystemManager>();
-        _starsToInitialize = gameObject.GetSafeMonoBehaviourComponentsInChildren<Star>();
-        _planetsAndMoonsToInitialize = new FollowableItem[0];
-        foreach (var sys in _systemsToInitialize) {
-            _planetsAndMoonsToInitialize = _planetsAndMoonsToInitialize.Concat<FollowableItem>(sys.gameObject.GetSafeMonoBehaviourComponentsInChildren<FollowableItem>()).ToArray();
+        _systems = gameObject.GetSafeMonoBehaviourComponentsInChildren<SystemManager>();
+        _stars = gameObject.GetSafeMonoBehaviourComponentsInChildren<Star>();
+        _planetsAndMoons = new FollowableItem[0];
+        foreach (var sys in _systems) {
+            _planetsAndMoons = _planetsAndMoons.Concat<FollowableItem>(sys.gameObject.GetSafeMonoBehaviourComponentsInChildren<FollowableItem>()).ToArray();
         }
+        _universeCenter = gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenter>();
     }
 
     private void Subscribe() {
@@ -71,11 +73,12 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
         InitializePlanetsAndMoons();
         InitializeShips();
         InitializeFleet();
+        InitializeCenter();
     }
 
     private void InitializeSystems() {
         int sysNumber = 0;
-        foreach (SystemManager sysMgr in _systemsToInitialize) {
+        foreach (SystemManager sysMgr in _systems) {
             Transform systemTransform = sysMgr.transform;
             SystemData data = new SystemData(systemTransform, "System_" + sysNumber) {
                 // there is no parentName for a System
@@ -97,13 +100,13 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
             };
             sysMgr.Data = data;
             sysMgr.PlayerIntelLevel = Enums<IntelLevel>.GetRandom(excludeDefault: true);
-            Logger.Log("Random PlayerIntelLevel = {0}.", sysMgr.PlayerIntelLevel.GetName());
+            D.Log("Random PlayerIntelLevel = {0}.", sysMgr.PlayerIntelLevel.GetName());
             sysNumber++;
         }
     }
 
     private void InitializeStars() {
-        foreach (Star star in _starsToInitialize) {
+        foreach (Star star in _stars) {
             SystemManager sysMgr = star.gameObject.GetSafeMonoBehaviourComponentInParents<SystemManager>();
             string parentName = sysMgr.Data.Name;
             string name = parentName + " Star";
@@ -117,7 +120,7 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
 
     private void InitializePlanetsAndMoons() {
         int planetNumber = 0;
-        foreach (FollowableItem item in _planetsAndMoonsToInitialize) {
+        foreach (FollowableItem item in _planetsAndMoons) {
             SystemManager sysMgr = item.gameObject.GetSafeMonoBehaviourComponentInParents<SystemManager>();
             string parentName = sysMgr.Data.Name;
             string name = "Planet_" + planetNumber;
@@ -132,7 +135,7 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
 
     private void InitializeShips() {
         int shipNumber = 0;
-        foreach (ShipCaptain ship in _shipsToInitialize) {
+        foreach (ShipCaptain ship in _ships) {
             ShipData data = new ShipData(ship.transform, "Ship_" + shipNumber) {
                 // Ship's optionalParentName gets set when it gets attached to a fleet
                 Hull = ShipHull.Destroyer,
@@ -152,18 +155,26 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
     }
 
     private void InitializeFleet() {
-        FleetManager fleet = _fleetsToInitialize[0];
+        FleetManager fleet = _fleets[0];
         Transform admiralTransform = fleet.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>().transform;
         FleetData data = new FleetData(admiralTransform, "Borg Fleet") {
             // there is no parentName for a fleet
             LastHumanPlayerIntelDate = new GameDate()
         };
 
-        foreach (var ship in _shipsToInitialize) {
+        foreach (var ship in _ships) {
             data.AddShip(ship.Data);
         }
         fleet.Data = data;
         fleet.PlayerIntelLevel = IntelLevel.Complete;
+    }
+
+    private void InitializeCenter() {
+        if (_universeCenter) {
+            Data data = new Data(_universeCenter.transform, "UniverseCenter");
+            _universeCenter.Data = data;
+            _universeCenter.PlayerIntelLevel = IntelLevel.Unknown;
+        }
     }
 
     private void Unsubscribe() {

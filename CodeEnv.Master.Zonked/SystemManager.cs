@@ -59,7 +59,7 @@ public class SystemManager : AGameObjectManager<SystemData> {
         _starManager = gameObject.GetSafeMonoBehaviourComponentInChildren<Star>();
         maxAnimateDistance = AnimationSettings.Instance.MaxSystemAnimateDistance;
         _systemHighlightRenderer = __FindSystemHighlight();
-        UpdateRate = UpdateFrequency.Seldom;
+        UpdateRate = FrameUpdateFrequency.Seldom;
         __InitializeData();
     }
 

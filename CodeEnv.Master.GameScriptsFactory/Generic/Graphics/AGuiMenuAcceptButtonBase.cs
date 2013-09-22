@@ -18,7 +18,7 @@
 
 using System;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -87,7 +87,7 @@ public abstract class AGuiMenuAcceptButtonBase : AGuiButtonBase {
     /// <arg name="state">if set to <c>true</c> [state].</arg>
     protected virtual void OnCheckboxStateChange(bool state) {
         string checkboxName = UICheckbox.current.name.ToLower();
-        //Logger.Log("Checkbox Named {0} had a state change to {1}.", checkboxName, state);
+        //D.Log("Checkbox Named {0} had a state change to {1}.", checkboxName, state);
         RecordCheckboxState(checkboxName, state);
     }
 

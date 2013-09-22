@@ -15,7 +15,7 @@
 using System;
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -74,14 +74,12 @@ public class Orbit : AMonoBehaviourBase {
     /// The self rotation speed of the object around its own axis in degrees per second.
     /// </summary>
     protected float _rotationSpeed;
-    protected Transform _transform;
 
     protected float _gameSpeedMultiplier;
 
     protected override void Awake() {
         base.Awake();
-        _transform = transform;
-        UpdateRate = UpdateFrequency.Continuous;
+        UpdateRate = FrameUpdateFrequency.Continuous;
         orbitPeriod = orbitPeriod ?? new GameTimePeriod(days: 0, years: 1);
         rotationPeriod = rotationPeriod ?? new GameTimePeriod(days: 10, years: 0);
         _orbitSpeed = (relativeOrbitSpeed * Constants.DegreesPerOrbit * GeneralSettings.Instance.DaysPerSecond) / orbitPeriod.PeriodInDays;

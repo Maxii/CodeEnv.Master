@@ -23,8 +23,7 @@ public class GuiLoadGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
 
     private string selectedGameCaption = string.Empty;
 
-    protected override void Awake() {
-        base.Awake();
+    protected override void InitializeTooltip() {
         tooltip = "Load and launch the selected Saved Game.";
     }
 

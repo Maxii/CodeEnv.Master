@@ -241,7 +241,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
 
         // This camera will see all layers except for the GUI and DeepSpace layers. If I want to add exclusions, I can still do it from the outside
         camera.cullingMask = LayerMaskExtensions.CreateExclusiveMask(Layers.Gui, Layers.DeepSpace);
-        UpdateRate = UpdateFrequency.Continuous;
+        UpdateRate = FrameUpdateFrequency.Continuous;
     }
 
     private void InitializeCameraPreferences() {

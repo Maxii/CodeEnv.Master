@@ -20,7 +20,7 @@ using System.Globalization;
 using System.Threading;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -28,15 +28,12 @@ using UnityEngine;
 ///should be done by GameManager. The purpose of this class is to call GameManager.
 /// </summary>
 //[SerializeAll] This is redundant as this Object already has a StoreInformation script on it. It causes duplication of referenced SIngletons when saving
-public class MonoGameManager : AMonoBehaviourBaseSingleton<MonoGameManager> {
+public class MonoGameManager : AMonoBehaviourBaseSingletonInstanceIdentity<MonoGameManager> {
 
     private GameManager _gameMgr;
-    private bool _isInitialized;
 
     protected override void Awake() {
         base.Awake();
-        //Logger.Log("MonoGameManager Awake() called. IsEnabled = " + enabled);
-        IncrementInstanceCounter();
         if (TryDestroyExtraCopies()) {
             return;
         }
@@ -48,7 +45,6 @@ public class MonoGameManager : AMonoBehaviourBaseSingleton<MonoGameManager> {
         _gameMgr.DebugHud = DebugHud.Instance;
         _gameMgr.CompleteInitialization();
 
-        _isInitialized = true;
         __AwakeBasedOnStartScene();
     }
 
@@ -60,7 +56,7 @@ public class MonoGameManager : AMonoBehaviourBaseSingleton<MonoGameManager> {
     /// <returns><c>true</c> if this instance is going to be destroyed, <c>false</c> if not.</returns>
     private bool TryDestroyExtraCopies() {
         if (_instance && _instance != this) {
-            Logger.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceID));
+            D.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceID));
             Destroy(gameObject);
             return true;
         }
@@ -75,8 +71,8 @@ public class MonoGameManager : AMonoBehaviourBaseSingleton<MonoGameManager> {
         CultureInfo newCulture = new CultureInfo(language);
         Thread.CurrentThread.CurrentCulture = newCulture;
         Thread.CurrentThread.CurrentUICulture = newCulture;
-        Logger.Log("Current culture of thread is {0}.".Inject(Thread.CurrentThread.CurrentUICulture.DisplayName));
-        Logger.Log("Current OS Language of Unity is {0}.".Inject(Application.systemLanguage.GetName()));
+        D.Log("Current culture of thread is {0}.".Inject(Thread.CurrentThread.CurrentUICulture.DisplayName));
+        D.Log("Current OS Language of Unity is {0}.".Inject(Application.systemLanguage.GetName()));
     }
 
     protected override void Start() {
@@ -112,12 +108,18 @@ public class MonoGameManager : AMonoBehaviourBaseSingleton<MonoGameManager> {
     }
     #endregion
 
+    //void Update() { // UNCLEAR perhaps running coroutine update should be done at end of all updates rather than beginning?
+    //    CoroutineScheduler.UpdateAllCoroutines(Time.frameCount, Time.time);
+    //}
+
     // This simply substitutes my own Event for OnLevelWasLoaded so I don't have to use OnLevelWasLoaded anywhere else
     // Wiki: OnLevelWasLoaded is NOT guaranteed to run before all of the Awake calls. In most cases it will, but in some 
     // might produce some unexpected bugs. If you need some code to be executed before Awake calls, use OnDisable instead.
     void OnLevelWasLoaded(int level) {
-        if (_isInitialized) { // OnLevelWasLoaded will be called even when this gameobject is immediately destroyed
-            Logger.Log("{0}_{1}.OnLevelWasLoaded(level = {1}) called.".Inject(this.name, InstanceID, level));
+        if (enabled) {
+            // OnLevelWasLoaded is called on all active components and at any time. The earliest thing that happens after Destroy(gameObject)
+            // is component disablement. GameObject deactivation happens later, but before OnDestroy()
+            D.Log("{0}_{1}.OnLevelWasLoaded(level = {1}) called.".Inject(this.name, InstanceID, level));
             _gameMgr.OnSceneChanged((SceneLevel)level);
         }
     }

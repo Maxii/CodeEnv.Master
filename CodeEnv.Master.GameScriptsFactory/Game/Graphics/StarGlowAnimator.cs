@@ -15,7 +15,7 @@
 
 using System;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -31,12 +31,10 @@ public class StarGlowAnimator : AMonoBehaviourBase {
     };
 
     public int rotationSpeedAndDirection = 2;   // TODO direction needs to be opposite the other Animator
-    private Transform glowPanelTransform;
 
     protected override void Awake() {
         base.Awake();
-        glowPanelTransform = transform;
-        UpdateRate = UpdateFrequency.Frequent;
+        UpdateRate = FrameUpdateFrequency.Frequent;
     }
 
     protected override void Start() {
@@ -52,7 +50,7 @@ public class StarGlowAnimator : AMonoBehaviourBase {
     void Update() {
         if (ToUpdate()) {
             float adjDeltaTime = GameTime.DeltaTimeWithGameSpeed * (int)UpdateRate;
-            glowPanelTransform.Rotate(Vector3.up * adjDeltaTime * rotationSpeedAndDirection);
+            _transform.Rotate(Vector3.up * adjDeltaTime * rotationSpeedAndDirection);
         }
     }
 

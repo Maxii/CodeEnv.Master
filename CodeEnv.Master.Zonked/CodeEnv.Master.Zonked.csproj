@@ -91,11 +91,14 @@
     <Compile Include="GameOptionsGuiManager.cs" />
     <Compile Include="GuiZoomOutOnCursorOption.cs" />
     <Compile Include="HudPublisher.cs" />
+    <Compile Include="IColliderRelayTarget.cs" />
     <Compile Include="IData.cs" />
     <Compile Include="IGuiHudPublisher.cs" />
     <Compile Include="IZoomToClosest.cs" />
     <Compile Include="KeyboardAxis.cs" />
+    <Compile Include="MyCtxPickHandler.cs" />
     <Compile Include="OrbitalPlaneManager.cs" />
+    <Compile Include="PlayerSettingsSetup.cs" />
     <Compile Include="ResetOnFocusOptionChangedEvent.cs" />
     <Compile Include="StationaryItem.cs" />
     <Compile Include="SystemManager.cs" />
@@ -123,9 +126,9 @@
       <Project>{30988a11-a4f0-4fdc-82d5-41b87ea410be}</Project>
       <Name>CodeEnv.Master.Common.LocalResources</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common.Unity\CodeEnv.Master.Common.Unity.csproj">
+    <ProjectReference Include="..\CodeEnv.Master.GameContent\CodeEnv.Master.GameContent.csproj">
       <Project>{129dcf86-4fc5-4caf-aafe-911efc560e10}</Project>
-      <Name>CodeEnv.Master.Common.Unity</Name>
+      <Name>CodeEnv.Master.GameContent</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">
       <Project>{1557c03e-56ee-4c70-9bd8-ab637d3191cf}</Project>

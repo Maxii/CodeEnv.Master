@@ -25,8 +25,7 @@ public class GuiGraphicsOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
 
     private int _qualitySetting;
 
-    protected override void Awake() {
-        base.Awake();
+    protected override void InitializeTooltip() {
         tooltip = "Click to implement Option changes.";
     }
 
@@ -37,7 +36,7 @@ public class GuiGraphicsOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
 
     protected override void RecordPopupListState(string popupListName, string selectionName) {
         base.RecordPopupListState(popupListName, selectionName);
-        //Logger.Log("SelectionName = {0}.", selectionName);
+        //D.Log("SelectionName = {0}.", selectionName);
         _qualitySetting = QualitySettings.names.IndexOf<string>(selectionName);
         // more popupLists here
     }

@@ -22,6 +22,10 @@ namespace CodeEnv.Master.Common {
     public sealed class DebugSettings : AValuesHelper<DebugSettings> {
 
         private bool _enableFpsReadout;
+        /// <summary>
+        /// Gets a value indicating whether the Frames per 
+        /// Second Readout display will show on the screen.
+        /// </summary>
         public bool EnableFpsReadout {
             get {
                 if (!isPropertyValuesInitialized) {
@@ -104,6 +108,45 @@ namespace CodeEnv.Master.Common {
             }
             private set { _forceFpsToTarget = value; }
         }
+
+        private bool _enableVerboseDebugLog;
+        /// <summary>
+        /// Debug readouts (console, etc.) will be comprehensive
+        /// in their display of data. e.g. ObjectAnalyzer.ToString().
+        /// </summary>
+        public bool EnableVerboseDebugLog {
+            get {
+                if (!isPropertyValuesInitialized) {
+                    InitializePropertyValues();
+                }
+                return _enableVerboseDebugLog;
+            }
+            private set { _enableVerboseDebugLog = value; }
+        }
+
+        private bool _enableShipVelocityRays;
+        public bool EnableShipVelocityRays {
+            get {
+                if (!isPropertyValuesInitialized) {
+                    InitializePropertyValues();
+                }
+                return _enableShipVelocityRays;
+            }
+            private set { _enableShipVelocityRays = value; }
+        }
+
+        private bool _enableFleetVelocityRays;
+        public bool EnableFleetVelocityRays {
+            get {
+                if (!isPropertyValuesInitialized) {
+                    InitializePropertyValues();
+                }
+                return _enableFleetVelocityRays;
+            }
+            private set { _enableFleetVelocityRays = value; }
+        }
+
+
 
         private DebugSettings() {
             Initialize();

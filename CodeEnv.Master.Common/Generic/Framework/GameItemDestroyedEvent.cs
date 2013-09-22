@@ -14,6 +14,7 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
+using UnityEngine;
 namespace CodeEnv.Master.Common {
 
     /// <summary>
@@ -22,7 +23,9 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public class GameItemDestroyedEvent : AGameEvent {
 
-        public GameItemDestroyedEvent(object source) : base(source) { }
+        public GameItemDestroyedEvent(object source)
+            : base(source) {
+        }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

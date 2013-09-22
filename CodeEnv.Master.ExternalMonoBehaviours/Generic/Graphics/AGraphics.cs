@@ -19,7 +19,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -29,10 +29,28 @@ public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
 
     public enum Highlights {
 
-        None,
-        Focused,
-        Selected,
-        Both
+        None = -1,
+        /// <summary>
+        /// The item is the focus.
+        /// </summary>
+        Focused = 0,
+        /// <summary>
+        /// The item is selected..
+        /// </summary>
+        Selected = 1,
+        /// <summary>
+        /// The item is highlighted for other reasons. This is
+        /// typically used on a fleet's ships when the fleet is selected.
+        /// </summary>
+        General = 2,
+        /// <summary>
+        /// The item is both selected and the focus.
+        /// </summary>
+        SelectedAndFocus = 3,
+        /// <summary>
+        /// The item is both the focus and generally highlighted.
+        /// </summary>
+        FocusAndGeneral = 4
 
     }
 
@@ -44,39 +62,41 @@ public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
     public int maxAnimateDistance;
 
     /// <summary>
-    /// The components to disable when invisible.
+    /// The components to disable ONLY when invisible.
     /// </summary>
-    public Component[] disableComponentOnInvisible;
+    protected Component[] disableComponentOnInvisible;
 
     /// <summary>
-    /// The game objects to disable when invisible.
+    /// The game objects to disable ONLY when invisible.
     /// </summary>
-    public GameObject[] disableGameObjectOnInvisible;
+    protected GameObject[] disableGameObjectOnInvisible;
 
     /// <summary>
-    /// The components to disable based on distance from camera.
+    /// The components to disable when invisible AND based on distance from camera.
     /// </summary>
-    public Component[] disableComponentOnCameraDistance;
+    protected Component[] disableComponentOnCameraDistance;
 
     /// <summary>
-    /// The game objects to disable based on distance from camera.
+    /// The game objects to disable when invisible AND based on distance from camera.
     /// </summary>
-    public GameObject[] disableGameObjectOnCameraDistance;
+    protected GameObject[] disableGameObjectOnCameraDistance;
 
     private IList<Transform> _visibleMeshes = new List<Transform>();    // OPTIMIZE can be simplified to simple incrementing/decrementing counter
 
     protected override void Awake() {
         base.Awake();
         _isVisible = true;
-        UpdateRate = UpdateFrequency.Seldom;
+        UpdateRate = FrameUpdateFrequency.Seldom;
     }
 
     protected override void Start() {
         base.Start();
-        if (disableComponentOnCameraDistance.Length == Constants.Zero && disableGameObjectOnCameraDistance.Length == Constants.Zero &&
-            disableComponentOnInvisible.Length == Constants.Zero && disableGameObjectOnInvisible.Length == Constants.Zero) {
-            RegisterComponentsToDisable();
-        }
+        Arguments.ValidateNotNull(Target);
+        RegisterComponentsToDisable();
+        //if (disableComponentOnCameraDistance.Length == Constants.Zero && disableGameObjectOnCameraDistance.Length == Constants.Zero &&
+        //    disableComponentOnInvisible.Length == Constants.Zero && disableGameObjectOnInvisible.Length == Constants.Zero) {
+        //    RegisterComponentsToDisable();
+        //}
     }
 
     /// <summary>
@@ -85,7 +105,7 @@ public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
     /// </summary>
     protected abstract void RegisterComponentsToDisable();
 
-    void Update() {
+    protected virtual void Update() {
         if (ToUpdate()) {
             OnToUpdate();
         }
@@ -102,24 +122,34 @@ public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
 
     private void EnableBasedOnVisibility() {
         D.Log("{0}.EnableBasedOnVisibility() called. IsVisible = {1}.", this.GetType().Name, IsVisible);
-        if (disableComponentOnInvisible.Length != Constants.Zero) {
+        //if (disableComponentOnInvisible.Length != Constants.Zero) {
+        if (!disableComponentOnInvisible.IsNullOrEmpty()) {
+
             disableComponentOnInvisible.Where(c => c is Behaviour).ForAll(c => (c as Behaviour).enabled = IsVisible);
             disableComponentOnInvisible.Where(c => c is Renderer).ForAll(c => (c as Renderer).enabled = IsVisible);
             disableComponentOnInvisible.Where(c => c is Collider).ForAll(c => (c as Collider).enabled = IsVisible);
         }
-        if (disableGameObjectOnInvisible.Length != Constants.Zero) {
+        //if (disableGameObjectOnInvisible.Length != Constants.Zero) {
+        if (!disableGameObjectOnInvisible.IsNullOrEmpty()) {
+
             disableGameObjectOnInvisible.ForAll(go => go.SetActive(IsVisible));
         }
     }
 
+    /// <summary>
+    /// Controls enabled state of components based on the Target's distance from the camera plane.
+    /// </summary>
+    /// <returns>The Target's distance to the camera. Will be zero if not visible.</returns>
     protected virtual int EnableBasedOnDistanceToCamera() {
         int distanceToCamera = Constants.Zero;
-        if (maxAnimateDistance == Constants.Zero || Target == null) {
-            return distanceToCamera;
+        if (maxAnimateDistance == Constants.Zero) {
+            D.Warn("{0}.maxAnimateDistance is 0 on {1}.", this.GetType().Name, gameObject.name);
         }
+
         bool toEnable = false;
         if (IsVisible) {
             distanceToCamera = Target.DistanceToCameraInt();
+            D.Log("{0}.EnableBasedOnDistanceToCamera() called. Distance = {1}.", this.GetType().Name, distanceToCamera);
             if (distanceToCamera < maxAnimateDistance) {
                 toEnable = true;
             }
@@ -131,12 +161,16 @@ public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
     private bool _isPreviouslyEnabled = true;   // assumes all components and game objects start enabled
     private void EnableComponents(bool toEnable) {
         if (_isPreviouslyEnabled != toEnable) {
-            if (disableComponentOnCameraDistance.Length != Constants.Zero) {
+            //if (disableComponentOnCameraDistance.Length != Constants.Zero) {
+            if (!disableComponentOnCameraDistance.IsNullOrEmpty()) {
+
                 disableComponentOnCameraDistance.Where(c => c is Behaviour).ForAll(c => (c as Behaviour).enabled = toEnable);
                 disableComponentOnCameraDistance.Where(c => c is Renderer).ForAll(c => (c as Renderer).enabled = toEnable);
                 disableComponentOnCameraDistance.Where(c => c is Collider).ForAll(c => (c as Collider).enabled = toEnable);
             }
-            if (disableGameObjectOnCameraDistance.Length != Constants.Zero) {
+            //if (disableGameObjectOnCameraDistance.Length != Constants.Zero) {
+            if (!disableGameObjectOnCameraDistance.IsNullOrEmpty()) {
+
                 disableGameObjectOnCameraDistance.ForAll(go => go.SetActive(toEnable));
             }
             _isPreviouslyEnabled = toEnable;
@@ -145,7 +179,7 @@ public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
 
     private void OnAMeshVisibilityChanged(Transform sender, bool isVisible) {
         if (isVisible) {
-            D.Assert(!_visibleMeshes.Contains(sender), "Sender is: {0}.".Inject(sender.name), true);
+            D.Assert(!_visibleMeshes.Contains(sender), "Sender is: {0}.".Inject(sender.name), pauseOnFail: true);
             _visibleMeshes.Add(sender);
         }
         else {
@@ -155,7 +189,7 @@ public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
         }
 
         if (IsVisible == (_visibleMeshes.Count == 0)) {
-            // visibility state is changing
+            // visibility state of this object should now change
             IsVisible = !IsVisible;
             D.Log("{0} isVisible changed to {1}.", gameObject.name, IsVisible);
         }

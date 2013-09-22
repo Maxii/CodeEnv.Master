@@ -1,0 +1,78 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- Be careful where comments are placed! -->
+<Icon IconTypeName="FleetIcon">
+  <Section SectionName="Top">
+    <Selection>
+      <Criteria>None</Criteria>
+      <Filename>FleetIcon_Top_Default</Filename>
+    </Selection>
+    <Selection>
+      <Criteria>Colony</Criteria>
+      <Filename>FleetIcon_Top_ColonyShip</Filename>
+    </Selection>
+    <Selection>
+      <Criteria>Science</Criteria>
+      <Filename>fleetIcon_lv5_sci</Filename>
+    </Selection>
+    <Selection>
+      <Criteria>Troops</Criteria>
+      <Filename>FleetIcon_Top_TroopShip</Filename>
+    </Selection>
+
+    <Selection>
+      <Criteria>Colony</Criteria>
+      <Criteria>Science</Criteria>
+      <Filename>FleetIcon_Top_ColonyShip_ScienceShip</Filename>
+
+    </Selection>
+    <Selection>
+      <Criteria>Colony</Criteria>
+      <Criteria>Troops</Criteria>
+      <Filename>FleetIcon_Top_ColonyShip_TroopShip</Filename>
+    </Selection>
+    <Selection>
+      <Criteria>Troops</Criteria>
+      <Criteria>Science</Criteria>
+      <Filename>FleetIcon_Top_ScienceShip_TroopShip</Filename>
+    </Selection>
+
+    <Selection>
+      <Criteria>Colony</Criteria>
+      <Criteria>Science</Criteria>
+      <Criteria>Troops</Criteria>
+      <Filename>FleetIcon_Top_ColonyShip_ScienceShip_TroopShip</Filename>
+    </Selection>
+  </Section>
+
+  <Section SectionName="Bottom">
+    <Selection>
+      <Criteria>None</Criteria>
+      <Filename>fleetIcon_unknown</Filename>
+    </Selection>
+    <Selection>
+      <Criteria>Strength0</Criteria>
+      <Filename>FleetIcon_Bottom_Strength0</Filename>
+    </Selection>
+    <Selection>
+      <Criteria>Strength1</Criteria>
+      <Filename>FleetIcon_Bottom_Strength1</Filename>
+    </Selection>
+    <Selection>
+      <Criteria>Strength2</Criteria>
+      <Filename>FleetIcon_Bottom_Strength2</Filename>
+    </Selection>
+    <Selection>
+      <Criteria>Strength3</Criteria>
+      <Filename>FleetIcon_Bottom_Strength3</Filename>
+    </Selection>
+    <Selection>
+      <Criteria>Strength4</Criteria>
+      <Filename>FleetIcon_Bottom_Strength4</Filename>
+    </Selection>
+    <Selection>
+      <Criteria>Strength5</Criteria>
+      <Filename>FleetIcon_Bottom_Strength5</Filename>
+    </Selection>
+  </Section>
+</Icon>
+<!-- Empty property value nodes return the default of the type, but only in this format <PropertyValue/>-->

@@ -13,7 +13,7 @@
 // default namespace
 
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -27,14 +27,12 @@ public class StarFlare : AMonoBehaviourBase {
     public float flareIntensity = 1F;
     private Light _flareLight;   // can be null if no flares are attached
     private float _originalIntensity;
-    private Transform _transform;
     private Transform _mainCamera;
 
     protected override void Awake() {
         base.Awake();
-        _transform = transform;
         _mainCamera = Camera.main.transform;
-        UpdateRate = UpdateFrequency.Seldom;
+        UpdateRate = FrameUpdateFrequency.Seldom;
     }
 
     protected override void Start() {

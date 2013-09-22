@@ -20,7 +20,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;DEBUG_LEVEL_LOG DEBUG_LEVEL_WARN DEBUG_LEVEL_ERROR</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;UNITY_EDITOR</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
@@ -53,20 +53,39 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="ThirdParty\AEditorBase.cs" />
+    <Compile Include="Generic\DrawBoundsGizmoEditor.cs" />
+    <Compile Include="Generic\DebugSettingsWindow.cs" />
     <Compile Include="Generic\NoteEditor.cs" />
+    <Compile Include="Game\ExampleEditor.cs" />
     <Compile Include="ThirdParty\BoxColliderToFit.cs" />
     <Compile Include="ThirdParty\FindMissingScripts.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Generic\UnityEditorUtility.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">
       <Project>{1557c03e-56ee-4c70-9bd8-ab637d3191cf}</Project>
       <Name>CodeEnv.Master.Common</Name>
     </ProjectReference>
+    <ProjectReference Include="..\CodeEnv.Master.Common.LocalResources\CodeEnv.Master.Common.LocalResources.csproj">
+      <Project>{30988a11-a4f0-4fdc-82d5-41b87ea410be}</Project>
+      <Name>CodeEnv.Master.Common.LocalResources</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CodeEnv.Master.ExternalMonoBehaviours\CodeEnv.Master.ExternalMonoBehaviours.csproj">
+      <Project>{9c8574a4-64ba-49b1-b66d-7572ecfffcfb}</Project>
+      <Name>CodeEnv.Master.ExternalMonoBehaviours</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CodeEnv.Master.GameContent\CodeEnv.Master.GameContent.csproj">
+      <Project>{129dcf86-4fc5-4caf-aafe-911efc560e10}</Project>
+      <Name>CodeEnv.Master.GameContent</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CodeEnv.Master.GameScriptsFactory\CodeEnv.Master.GameScriptsFactory.csproj">
+      <Project>{84ab84fa-983b-4fb8-bfd9-34d3b93d8000}</Project>
+      <Name>CodeEnv.Master.GameScriptsFactory</Name>
+    </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Game\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

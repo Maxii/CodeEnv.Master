@@ -20,7 +20,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// Abstract generic class that uses Enums to populate popup lists in the Gui. Automatically acquires the value held in PlayerPrefsManager 
@@ -56,7 +56,7 @@ public abstract class AGuiEnumPopupListBase<T> : AGuiPopupListBase where T : str
         }
         else {
             popupList.selection = popupList.items[0];
-            Logger.Log("No PlayerPrefsManager property found for {0}, so initializing selectionName to first item in list: {1}.".Inject(typeof(T), popupList.selection));
+            D.Log("No PlayerPrefsManager property found for {0}, so initializing selectionName to first item in list: {1}.".Inject(typeof(T), popupList.selection));
         }
     }
 

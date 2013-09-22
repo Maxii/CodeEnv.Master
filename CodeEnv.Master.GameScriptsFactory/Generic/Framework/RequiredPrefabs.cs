@@ -10,10 +10,6 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
-//
 // default namespace
 
 using System;
@@ -27,12 +23,13 @@ using UnityEngine;
 /// I think these are a real reference to the prefab in the Project view, not a separate instance
 /// clone of the Prefab in the startScene. As such, they must be Instantiated before use.
 /// </remarks>
-public class RequiredPrefabs : AMonoBehaviourBaseSingleton<RequiredPrefabs> {
+public class RequiredPrefabs : AMonoBehaviourBaseSingletonInstanceIdentity<RequiredPrefabs> {
 
     public SphereCollider UniverseEdgePrefab;
     public Transform CameraDummyTargetPrefab;
-    //public UILabel HudLabelPrefab;
     public GuiTrackingLabel GuiTrackingLabelPrefab;
+    public VelocityRay VelocityRay;
+    public HighlightCircle HighlightCircle;
 
     protected override void Awake() {
         base.Awake();
@@ -49,7 +46,7 @@ public class RequiredPrefabs : AMonoBehaviourBaseSingleton<RequiredPrefabs> {
     /// <returns><c>true</c> if this instance is going to be destroyed, <c>false</c> if not.</returns>
     private bool TryDestroyExtraCopies() {
         if (_instance && _instance != this) {
-            Logger.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceID));
+            D.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceID));
             Destroy(gameObject);
             return true;
         }

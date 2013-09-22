@@ -47,7 +47,7 @@ public class ShipManager : AGameObjectManager<ShipData>, ICameraFollowable, IZoo
         _collider = gameObject.GetComponent<BoxCollider>();
         _renderer = gameObject.GetComponentInChildren<Renderer>();
         _eventMgr = GameEventManager.Instance;
-        UpdateRate = UpdateFrequency.Infrequent;
+        UpdateRate = FrameUpdateFrequency.Infrequent;
         maxAnimateDistance = AnimationSettings.Instance.MaxShipAnimateDistance;
         maxShowDistance = AnimationSettings.Instance.MaxShipShowDistance;
 

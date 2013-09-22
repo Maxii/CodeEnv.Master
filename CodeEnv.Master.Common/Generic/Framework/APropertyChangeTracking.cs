@@ -28,7 +28,6 @@ namespace CodeEnv.Master.Common {
     using System.Collections.Generic;
     using System.ComponentModel;
 
-
     /// <summary>
     /// Abstract base class for classes that wish to communicate changes to their properties. Capabilities include 1) knowing when one or more of their properties have changed ,and 2)
     /// notifying subscribers of said change both before and after it occurs. To subscribe: publisher.SubscribeToPropertyChang{ed, ing]&lt;TSource, TProp&gt;(pub => pub.Foo, OnFooChang[ed, ing]);
@@ -67,10 +66,15 @@ namespace CodeEnv.Master.Common {
             OnPropertyChanged(propertyName);
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [System.Diagnostics.Conditional("UNITY_EDITOR")]
         private static void TryWarn<T>(T backingStore, T value, string propertyName) {
             if (!typeof(T).IsValueType) {
-                D.Warn("{0} BackingStore [{1}] equals [{2}]. Property not changed.", propertyName, backingStore, value);
+                if (DebugSettings.Instance.EnableVerboseDebugLog) {
+                    D.Warn("{0} BackingStore {1} and value {2} are equal. Property not changed.", propertyName, backingStore, value);
+                }
+                else {
+                    D.Warn("{0} BackingStore and value of Type {1} are equal. Property not changed.", propertyName, typeof(T).Name);
+                }
             }
         }
 
@@ -88,13 +92,13 @@ namespace CodeEnv.Master.Common {
             }
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [System.Diagnostics.Conditional("UNITY_EDITOR")]
         private void VerifyCallerIsProperty(string propertyName) {
             var stackTrace = new System.Diagnostics.StackTrace();
             var frame = stackTrace.GetFrames()[2];
             var caller = frame.GetMethod();
             if (!caller.Name.Equals("set_" + propertyName, StringComparison.InvariantCulture)) {
-                throw new InvalidOperationException(string.Format("Called SetProperty {0} from {1}", propertyName, caller.Name));
+                throw new InvalidOperationException("Called SetProperty {0} from {1}.".Inject(propertyName, caller.Name));
             }
         }
 

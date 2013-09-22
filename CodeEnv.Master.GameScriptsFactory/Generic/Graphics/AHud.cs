@@ -14,7 +14,7 @@
 
 using System.Text;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -25,13 +25,11 @@ public abstract class AHud<T> : AMonoBehaviourBaseSingleton<T>, IHud where T : A
     // Camera used to draw this HUD
     public Camera uiCamera;
 
-    protected Transform _transform;
     protected UILabel _label;
     protected bool _isDisplayEnabled = true;
 
     protected override void Awake() {
         base.Awake();
-        _transform = transform;
         _label = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
         _label.depth = 100; // draw on top of other Gui Elements in the same Panel
         NGUITools.SetActive(_label.gameObject, false);  //begin deactivated so label doesn't show

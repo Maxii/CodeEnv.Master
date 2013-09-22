@@ -19,7 +19,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// Generic base class for Gui Sliders that select enum values built with NGUI.

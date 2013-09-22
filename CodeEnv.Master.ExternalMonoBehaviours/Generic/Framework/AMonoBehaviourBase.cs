@@ -22,7 +22,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -30,26 +30,45 @@ using UnityEngine;
 /// NOTE: Unity will never call the 'overrideable' Awake(), Start(), Update(), LateUpdate(), FixedUpdate(), OnGui(), etc. methods when 
 /// there is a higher derived class in the chain. Unity only calls the method (if implemented) of the highest derived class.
 /// </summary>
-public abstract class AMonoBehaviourBase : MonoBehaviour, IInstanceIdentity, IChangeTracking, INotifyPropertyChanged, INotifyPropertyChanging {
+public abstract class AMonoBehaviourBase : MonoBehaviour, IChangeTracking, INotifyPropertyChanged, INotifyPropertyChanging {
 
-    protected bool _isApplicationQuiting;
+    //private static CoroutineScheduler _coroutineScheduler;
+    //public static CoroutineScheduler CoroutineScheduler {
+    //    get {
+    //        if (_coroutineScheduler == null) {
+    //            _coroutineScheduler = new CoroutineScheduler();
+    //        }
+    //        return _coroutineScheduler;
+    //    }
+    //}
+
+    protected static bool _isApplicationQuiting;
+
+    protected virtual void LogEvent(string eventName) {
+        D.Log("{0}.{1}().", this.GetType().Name, eventName);
+    }
+
+    protected Transform _transform;
 
     #region MonoBehaviour Event Methods
+    // Note: When declared in a base class this way, ALL of these events are called by Unity
+    // even if the derived class doesn't declare them and call base.Event()
 
     protected virtual void Awake() {
         useGUILayout = true;    // OPTIMIZE docs suggest = false for better performance
-        D.Log("{0}.Awake().", this.GetType().Name);
+        _transform = transform;
+        LogEvent("Awake");
     }
 
     protected virtual void Start() {
-        D.Log("{0}.Start().", this.GetType().Name);
+        LogEvent("Start");
     }
 
     /// <summary>
     /// Called when enabled set to true after the script has been loaded, including after DeSerialization.
     /// </summary>
     protected virtual void OnEnable() {
-        D.Log("{0}.OnEnable().", this.GetType().Name);
+        LogEvent("OnEnable");
     }
 
     /// <summary>
@@ -57,14 +76,14 @@ public abstract class AMonoBehaviourBase : MonoBehaviour, IInstanceIdentity, ICh
     /// prior to OnDestroy() and when scripts are reloaded after compilation has finished.
     /// </summary>
     protected virtual void OnDisable() {
-        D.Log("{0}.OnDisable().", this.GetType().Name);
+        LogEvent("OnDisable");
     }
 
     /// <summary>
     /// Called when the Application is quiting, followed by OnDisable() and then OnDestroy().
     /// </summary>
     protected virtual void OnApplicationQuit() {
-        D.Log("{0}.OnApplicationQuit().", this.GetType().Name);
+        LogEvent("OnApplicationQuit");
         _isApplicationQuiting = true;
     }
 
@@ -73,7 +92,7 @@ public abstract class AMonoBehaviourBase : MonoBehaviour, IInstanceIdentity, ICh
     /// OnApplicationQuit().
     /// </summary>
     protected virtual void OnDestroy() {
-        D.Log("{0}.OnDestroy().", this.GetType().Name);
+        LogEvent("OnDestroy");
     }
 
     #endregion
@@ -92,56 +111,55 @@ public abstract class AMonoBehaviourBase : MonoBehaviour, IInstanceIdentity, ICh
 
     #endregion
 
-    #region IInstanceIdentity Members
-    private static int _instanceCounter = 0;
-    public int InstanceID { get; protected set; }
-
-    protected void IncrementInstanceCounter() {
-        InstanceID = System.Threading.Interlocked.Increment(ref _instanceCounter);
-    }
-
-    #endregion
-
     #region ToUpdate
 
     /// <summary>
-    /// Enum holding settings governing how frequently ToUpdate() will
-    /// return true when called. Used for cutting down the number of times
-    /// Update() or LateUpdate() has to be processed.
+    /// Enum used to define how many frames will be
+    /// skipped before ToUpdate or the CoroutineScheduler 
+    /// will run.
     /// </summary>
     [Serializable]
-    protected enum UpdateFrequency {
+    public enum FrameUpdateFrequency {
         None = 0,
         /// <summary>
-        /// Default. ToUpdate() returns true every time.
+        /// Default. Every frame.
         /// </summary>
         Continuous = 1,
         /// <summary>
-        /// ToUpdate() returns true every other time.
+        /// Every other frame.
         /// </summary>
         Frequent = 2,
         /// <summary>
-        /// ToUpdate() returns true every fourth time.
+        /// Every fourth frame.
         /// </summary>
         Normal = 4,
         /// <summary>
-        /// ToUpdate() returns true every eighth time.
+        /// Every eighth frame.
         /// </summary>
         Infrequent = 8,
         /// <summary>
-        /// ToUpdate() returns true every sixteenth time.
+        /// Every sixteenth frame.
         /// </summary>
         Seldom = 16,
+        /// <summary>
+        /// Every thirty second frame.
+        /// </summary>
         Rare = 32,
+        /// <summary>
+        /// Every sixty fourth frame.
+        /// </summary>
         VeryRare = 64,
+        /// <summary>
+        /// Every one hundred twenty eighth frame.
+        /// </summary>
         HardlyEver = 128
     }
 
     /// <value>
-    ///  The rate at which ToUpdate() returns true. Default is Continuous.
+    ///  The rate at which ToUpdate() returns true. Default is Continuous (every frame).
     /// </value>
-    private UpdateFrequency _updateRate = UpdateFrequency.Continuous;
-    protected UpdateFrequency UpdateRate {
+    private FrameUpdateFrequency _updateRate = FrameUpdateFrequency.Continuous;
+    protected FrameUpdateFrequency UpdateRate {
         get { return _updateRate; }
         set {
             _updateRate = value;
@@ -158,7 +176,7 @@ public abstract class AMonoBehaviourBase : MonoBehaviour, IInstanceIdentity, ICh
     protected bool ToUpdate() {
         bool toUpdate = false;
         if (GameManager.Instance.IsGameRunning) {
-            if (UpdateRate == UpdateFrequency.Continuous) {
+            if (UpdateRate == FrameUpdateFrequency.Continuous) {
                 toUpdate = true;
             }
             else if (_updateCounter >= (int)UpdateRate) {    // >= in case UpdateRate gets changed after initialization
@@ -310,22 +328,15 @@ public abstract class AMonoBehaviourBase : MonoBehaviour, IInstanceIdentity, ICh
     }
 
     /// <summary>
-    /// Stops the specific Coroutine executing the method contained in task.
+    /// Stops ALL the Coroutines on this behaviour executing the method contained in task.
     /// </summary>
     /// <param name="task">The method currently running as a Coroutine encapsulated as a Func&lt;IEnumerator&gt; delegate. The method can have no parameters and must return IEnumerator.</param>
     protected void StopCoroutine(Func<IEnumerator> task) {
         StopCoroutine(task.Method.Name);
     }
-    /// <summary>
-    /// Stops the specific Coroutine executing the method contained in task.
-    /// </summary>
-    /// <param name="task">The method currently running as a Coroutine encapsulated as a Func&lt;IEnumerator&gt; delegate. The method must have one parameter and return IEnumerator.</param>
-    //public void StopCoroutine(Func<object, IEnumerator> task) {
-    //    StopCoroutine(task.Method.Name);
-    //}
 
     /// <summary>
-    /// Stops the specific Coroutine executing the method contained in task.
+    /// Stops ALL the Coroutines on this behaviour executing the method contained in task.
     /// </summary>
     /// <typeparam name="T">The Type of the value original provided to the task in StartCoroutine.</typeparam>
     /// <param name="task">The method currently running as a Coroutine encapsulated as a Func&lt;IEnumerator&gt; delegate. The method must have one parameter and return IEnumerator..</param>
@@ -418,10 +429,15 @@ public abstract class AMonoBehaviourBase : MonoBehaviour, IInstanceIdentity, ICh
         OnPropertyChanged(propertyName);
     }
 
-    [System.Diagnostics.Conditional("DEBUG")]
+    [System.Diagnostics.Conditional("UNITY_EDITOR")]
     private static void TryWarn<T>(T backingStore, T value, string propertyName) {
         if (!typeof(T).IsValueType) {
-            D.Warn("{0} BackingStore [{1}] equals [{2}]. Property not changed.", propertyName, backingStore, value);
+            if (DebugSettings.Instance.EnableVerboseDebugLog) {
+                D.Warn("{0} BackingStore {1} and value {2} are equal. Property not changed.", propertyName, backingStore, value);
+            }
+            else {
+                D.Warn("{0} BackingStore and value of Type {1} are equal. Property not changed.", propertyName, typeof(T).Name);
+            }
         }
     }
 
@@ -439,13 +455,13 @@ public abstract class AMonoBehaviourBase : MonoBehaviour, IInstanceIdentity, ICh
         }
     }
 
-    [System.Diagnostics.Conditional("DEBUG")]
+    [System.Diagnostics.Conditional("UNITY_EDITOR")]
     private void VerifyCallerIsProperty(string propertyName) {
         var stackTrace = new System.Diagnostics.StackTrace();
         var frame = stackTrace.GetFrames()[2];
         var caller = frame.GetMethod();
         if (!caller.Name.Equals("set_" + propertyName, StringComparison.InvariantCulture)) {
-            throw new InvalidOperationException(string.Format("Called SetProperty {0} from {1}", propertyName, caller.Name));
+            throw new InvalidOperationException("Called SetProperty {0} from {1}.".Inject(propertyName, caller.Name));
         }
     }
 

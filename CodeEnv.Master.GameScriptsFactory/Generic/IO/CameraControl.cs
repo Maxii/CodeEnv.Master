@@ -21,12 +21,12 @@ using System.Linq;
 using UnityEngine;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// Singleton. Camera Control based on Ngui's Event System.
 /// </summary>
-public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
+public class CameraControl : AMonoBehaviourBaseSingletonInstanceIdentity<CameraControl> {
 
     #region Camera Control Configurations
 
@@ -114,7 +114,6 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     private Vector3 _targetPoint;
     private Transform _target;
     private Transform _dummyTarget;
-    private Transform _transform;
 
     private string[] keyboardAxesNames = new string[] { UnityConstants.KeyboardAxisName_Horizontal, UnityConstants.KeyboardAxisName_Vertical };
     private LayerMask collideWithUniverseEdgeOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.UniverseEdge);
@@ -182,17 +181,14 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     protected override void Awake() {
         base.Awake();
         UnityUtility.ValidateComponentPresence<Camera>(gameObject);
-        //Logger.Log("CameraControl.Awake() called.");
         InitializeReferences();
         __InitializeDebugEdgeMovementSettings();
     }
 
     private void InitializeReferences() {
-        IncrementInstanceCounter();
         //if (LevelSerializer.IsDeserializing) { return; }
         _eventMgr = GameEventManager.Instance;
         _playerPrefsMgr = PlayerPrefsManager.Instance;
-        _transform = transform;    // cache it!transformis actually GetComponent<Transform>()
         gameInput = new GameInput();
         Subscribe();
         ValidateActiveConfigurations();
@@ -211,7 +207,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     }
 
     private void InitializeMainCamera() {
-        //Logger.Log("Camera initializing.");
+        //D.Log("Camera initializing.");
         SetCameraSettings();
         InitializeCameraPreferences();
         PositionCameraForGame();
@@ -224,7 +220,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
 
         // This camera will see all layers except for the GUI and DeepSpace layers. If I want to add exclusions, I can still do it from the outside
         camera.cullingMask = LayerMaskExtensions.CreateExclusiveMask(Layers.Gui, Layers.DeepSpace);
-        UpdateRate = UpdateFrequency.Continuous;
+        UpdateRate = FrameUpdateFrequency.Continuous;
     }
 
     private void InitializeCameraPreferences() {
@@ -307,6 +303,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     private void InitializeContextMenuSettings() {
         _contextMenuPickHandler = gameObject.GetSafeMonoBehaviourComponent<CtxPickHandler>();
         _contextMenuPickHandler.dontUseFallThrough = true;
+        _contextMenuPickHandler.pickLayers = LayerMaskExtensions.CreateInclusiveMask(Layers.Default);
         if (_contextMenuPickHandler.menuButton != NguiMouseButton.Right.ToUnityMouseButton()) {
             D.Warn("Context Menu actuator button not set to Right Mouse Button.");
         }
@@ -378,7 +375,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     }
 
     private void OnFocusSelected(FocusSelectedEvent e) {
-        Logger.Log("FocusSelectedEvent received. Focus is {0}.".Inject(e.FocusTransform.name));
+        D.Log("FocusSelectedEvent received. Focus is {0}.".Inject(e.FocusTransform.name));
         SetFocus(e.FocusTransform);
     }
 
@@ -399,7 +396,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     /// </summary>
     /// <arg item="isFocus">if set to <c>true</c> [is focusTarget].</arg>
     void OnApplicationFocus(bool isFocus) {
-        Logger.Log("Camera OnApplicationFocus({0}) called.", isFocus);
+        D.Log("Camera OnApplicationFocus({0}) called.", isFocus);
         __EnableEdgePanTiltInEditor(isFocus);
     }
 
@@ -409,7 +406,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     /// </summary>
     /// <arg item="isPausing">if set to <c>true</c> [is toPause].</arg>
     void OnApplicationPause(bool isPaused) {
-        //Logger.Log("Camera OnApplicationPause(" + isPaused + ") called.");
+        //D.Log("Camera OnApplicationPause(" + isPaused + ") called.");
         enabled = !isPaused;
     }
 
@@ -478,12 +475,12 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
                 return;
             }
             _minimumDistanceFromTarget = qualifiedCameraTarget.MinimumCameraViewingDistance;
-            //Logger.Log("Target {0} _minimumDistanceFromTarget set to {1}.".Inject(newTarget.name, _minimumDistanceFromTarget));
+            //D.Log("Target {0} _minimumDistanceFromTarget set to {1}.".Inject(newTarget.name, _minimumDistanceFromTarget));
 
             ICameraFocusable qualifiedCameraFocusTarget = newTarget.GetInterface<ICameraFocusable>();
             if (qualifiedCameraFocusTarget != null) {
                 _optimalDistanceFromTarget = qualifiedCameraFocusTarget.OptimalCameraViewingDistance;
-                //Logger.Log("Target {0} _optimalDistanceFromTarget set to {1}.".Inject(newTarget.name, _optimalDistanceFromTarget));
+                //D.Log("Target {0} _optimalDistanceFromTarget set to {1}.".Inject(newTarget.name, _optimalDistanceFromTarget));
             }
             // no reason to know whether the Target is followable or not for these values for now
         }
@@ -523,13 +520,13 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
                 _targetDirection = (_targetPoint - _transform.position).normalized;
 
                 // face the selected Target
-                //Logger.Log("Rotation values before ChangeState {0}.".Inject(new Vector3(_xRotation, _yRotation, _zRotation)));
+                //D.Log("Rotation values before ChangeState {0}.".Inject(new Vector3(_xRotation, _yRotation, _zRotation)));
                 Quaternion lookAt = Quaternion.LookRotation(_targetDirection);
                 Vector3 lookAtVector = lookAt.eulerAngles;
                 _xRotation = lookAtVector.y;
                 _yRotation = lookAtVector.x;
                 _zRotation = lookAtVector.z;
-                //Logger.Log("Rotation values after ChangeState {0}.".Inject(new Vector3(_xRotation, _yRotation, _zRotation)));
+                //D.Log("Rotation values after ChangeState {0}.".Inject(new Vector3(_xRotation, _yRotation, _zRotation)));
                 _cameraRotationDampener = settings.focusingRotationDampener;
                 _cameraPositionDampener = settings.focusingPositionDampener;
                 break;
@@ -576,28 +573,24 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
         _xRotation = zeroRotationVector.y;
         _yRotation = zeroRotationVector.x;
         _zRotation = zeroRotationVector.z;
-        //Logger.Log("ResetToWorldSpace called. Worldspace Camera Rotation = {0}.".Inject(new Vector3(_xRotation, _yRotation, _zRotation)));
+        //D.Log("ResetToWorldSpace called. Worldspace Camera Rotation = {0}.".Inject(new Vector3(_xRotation, _yRotation, _zRotation)));
     }
 
     #endregion
 
     /// <summary>
     /// Tries to show the context menu. 
-    /// NOTE: This is a preprocess method for
-    /// ContextMenuPickHandler.OnPress(isDown) which is designed to show
-    /// the context menu if the method is called both times from the same object.
-    /// Unfortunately, that also means the context menu will show if a drag
-    /// starts and ends over the same ISelectable object. Therefore, this 
-    /// preprocess method is here to detect whether a drag is occuring before 
+    /// NOTE: This is a preprocess method for ContextMenuPickHandler.OnPress(isDown) which is designed to show
+    /// the context menu if the method is called both times (isDown = true, then iDown = false) over the same object.
+    /// Unfortunately, that also means the context menu will show if a drag starts and ends over the same 
+    /// ISelectable object. Therefore, this preprocess method is here to detect whether a drag is occurring before 
     /// passing it on to show the context menu.
-    /// FIXME unfortunately, UICamera.isDragging = false when OnPress(false)
-    /// occurs at the end of a drag that started and ended over the same object.
     /// </summary>
     /// <param name="isDown">if set to <c>true</c> [is down].</param>
     public void TryShowContextMenuOnPress(bool isDown) {
-        //if (!UICamera.isDragging) {
-        _contextMenuPickHandler.OnPress(isDown);
-        //}
+        if (!gameInput.IsDragging) {
+            _contextMenuPickHandler.OnPress(isDown);
+        }
     }
 
     #region Update Camera
@@ -616,21 +609,21 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
 
     private void UpdateCamera() {
         if (ToUpdate()) {
-            //Logger.Log("___________________New Frame______________________");
+            //D.Log("___________________New Frame______________________");
             float timeSinceLastUpdate = GameTime.DeltaTime * (int)UpdateRate;
             bool _toLockCursor = false;
             float mouseInputValue = 0F;
             bool showDistanceDebugLog = false;
             Vector3 lookAt = Vector3.zero;
 
-            if (_target == null || _targetPoint == null) {
+            if (_target == null) {
                 ResetAtCurrentLocation();
             }
 
             switch (cameraState) {
                 case CameraState.Focusing:
                     // transition state to allow lookAt to complete. Only entered from OnFocusSelected, when !IsResetOnFocus
-                    //Logger.Log("Focusing. RequestedDistanceFromTarget = {0}.".Inject(_requestedDistanceFromTarget));
+                    //D.Log("Focusing. RequestedDistanceFromTarget = {0}.".Inject(_requestedDistanceFromTarget));
                     //showDistanceDebugLog = true;
                     if (CheckExitConditions()) {
                         // exits to Focused when the lookAt rotation is complete, ie. _targetDirection 'equals' _transform.forward
@@ -648,7 +641,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
                     // no other functionality active 
                     break;
                 case CameraState.Focused:
-                    //Logger.Log("Focused. RequestedDistanceFromTarget = {0}.".Inject(_requestedDistanceFromTarget));
+                    //D.Log("Focused. RequestedDistanceFromTarget = {0}.".Inject(_requestedDistanceFromTarget));
                     //showDistanceDebugLog = true;
                     if (CheckExitConditions()) {
                         ChangeState(CameraState.Freeform);
@@ -694,33 +687,33 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
                         }
                         float translationSpeedGoverner = Mathf.Clamp(Mathf.Abs(_requestedDistanceFromTarget), 0F, settings.MaxSpeedGovernor);
                         _requestedDistanceFromTarget -= mouseInputValue * translationSpeedGoverner * scrollFocusZoom.sensitivity * scrollFocusZoom.InputControlSpeedNormalizer * timeSinceLastUpdate;
-                        //Logger.Log("MaxSpeedGovernor = {0}, mouseInputValue = {1}".Inject(settings.MaxSpeedGovernor, mouseInputValue));
-                        //Logger.Log("ScrollFocusZoom translationSpeedGoverner = {0}, _requestedDistanceFromTarget = {1}".Inject(translationSpeedGoverner, _requestedDistanceFromTarget));
+                        //D.Log("MaxSpeedGovernor = {0}, mouseInputValue = {1}".Inject(settings.MaxSpeedGovernor, mouseInputValue));
+                        //D.Log("ScrollFocusZoom translationSpeedGoverner = {0}, _requestedDistanceFromTarget = {1}".Inject(translationSpeedGoverner, _requestedDistanceFromTarget));
                     }
                     if (edgeFocusZoom.IsActivated()) {
                         float yMousePosition = Input.mousePosition.y;
                         if (yMousePosition <= settings.activeScreenEdge) {
                             float translationSpeedGoverner = Mathf.Clamp(Mathf.Abs(_requestedDistanceFromTarget), 0F, settings.MaxSpeedGovernor);
                             _requestedDistanceFromTarget += translationSpeedGoverner * edgeFocusZoom.sensitivity * edgeFocusZoom.InputControlSpeedNormalizer * timeSinceLastUpdate;
-                            //Logger.Log("edgeFocusZoom translationSpeedGoverner = {0}, _requestedDistanceFromTarget = {1}".Inject(translationSpeedGoverner, _requestedDistanceFromTarget));
+                            //D.Log("edgeFocusZoom translationSpeedGoverner = {0}, _requestedDistanceFromTarget = {1}".Inject(translationSpeedGoverner, _requestedDistanceFromTarget));
                         }
                         else if (yMousePosition >= Screen.height - settings.activeScreenEdge) {
                             float translationSpeedGoverner = Mathf.Clamp(Mathf.Abs(_requestedDistanceFromTarget), 0F, settings.MaxSpeedGovernor);
                             _requestedDistanceFromTarget -= translationSpeedGoverner * edgeFocusZoom.sensitivity * edgeFocusZoom.InputControlSpeedNormalizer * timeSinceLastUpdate;
-                            //Logger.Log("edgeFocusZoom translationSpeedGoverner = {0}, _requestedDistanceFromTarget = {1}".Inject(translationSpeedGoverner, _requestedDistanceFromTarget));
+                            //D.Log("edgeFocusZoom translationSpeedGoverner = {0}, _requestedDistanceFromTarget = {1}".Inject(translationSpeedGoverner, _requestedDistanceFromTarget));
                         }
                     }
                     if (keyFocusZoom.IsActivated()) {
                         float translationSpeedGoverner = Mathf.Clamp(Mathf.Abs(_requestedDistanceFromTarget), 0F, settings.MaxSpeedGovernor);
                         _requestedDistanceFromTarget -= Input.GetAxis(keyboardAxesNames[(int)keyFocusZoom.keyboardAxis]) * translationSpeedGoverner * keyFocusZoom.InputControlSpeedNormalizer * keyFocusZoom.sensitivity;
-                        //Logger.Log("keyFocusZoom translationSpeedGoverner = {0}, _requestedDistanceFromTarget = {1}".Inject(translationSpeedGoverner, _requestedDistanceFromTarget));
+                        //D.Log("keyFocusZoom translationSpeedGoverner = {0}, _requestedDistanceFromTarget = {1}".Inject(translationSpeedGoverner, _requestedDistanceFromTarget));
                     }
                     if (dragFocusZoom.IsActivated()) {
                         mouseInputValue = gameInput.GetDragDelta().y;
-                        //Logger.Log("MouseFocusZoom Vertical Mouse Movement detected.");
+                        //D.Log("MouseFocusZoom Vertical Mouse Movement detected.");
                         float translationSpeedGoverner = Mathf.Clamp(Mathf.Abs(_requestedDistanceFromTarget), 0F, settings.MaxSpeedGovernor);
                         _requestedDistanceFromTarget -= mouseInputValue * translationSpeedGoverner * dragFocusZoom.sensitivity * dragFocusZoom.InputControlSpeedNormalizer * timeSinceLastUpdate;
-                        //Logger.Log("dragFocusZoom translationSpeedGoverner = {0}, _requestedDistanceFromTarget = {1}".Inject(translationSpeedGoverner, _requestedDistanceFromTarget));
+                        //D.Log("dragFocusZoom translationSpeedGoverner = {0}, _requestedDistanceFromTarget = {1}".Inject(translationSpeedGoverner, _requestedDistanceFromTarget));
                     }
                     if (keyFocusPan.IsActivated()) {
                         _xRotation += Input.GetAxis(keyboardAxesNames[(int)keyFreePan.keyboardAxis]) * keyFreePan.sensitivity;
@@ -806,7 +799,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
                         }
                         float translationSpeedGoverner = Mathf.Clamp(Mathf.Abs(_requestedDistanceFromTarget), 0F, settings.MaxSpeedGovernor);
                         _requestedDistanceFromTarget -= mouseInputValue * translationSpeedGoverner * scrollFreeZoom.sensitivity * scrollFreeZoom.InputControlSpeedNormalizer * timeSinceLastUpdate;
-                        //Logger.Log("ScrollFreeZoom translationSpeedGoverner = {0}, _requestedDistanceFromTarget = {1}".Inject(translationSpeedGoverner, _requestedDistanceFromTarget));
+                        //D.Log("ScrollFreeZoom translationSpeedGoverner = {0}, _requestedDistanceFromTarget = {1}".Inject(translationSpeedGoverner, _requestedDistanceFromTarget));
                         //showDistanceDebugLog = true;
                     }
                     if (edgeFreeZoom.IsActivated()) {
@@ -818,7 +811,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
                                 _requestedDistanceFromTarget = _distanceFromTarget;
                             }
                             _requestedDistanceFromTarget += edgeFreeZoom.sensitivity * edgeFreeZoom.InputControlSpeedNormalizer * timeSinceLastUpdate;
-                            //Logger.Log("EdgeFreeZoom _requestedDistanceFromTarget = " + _requestedDistanceFromTarget);
+                            //D.Log("EdgeFreeZoom _requestedDistanceFromTarget = " + _requestedDistanceFromTarget);
                             //showDistanceDebugLog = true;
                         }
                         else if (yMousePosition >= Screen.height - settings.activeScreenEdge) {
@@ -914,13 +907,13 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
             }
 
             _transform.rotation = CalculateCameraRotation(_cameraRotationDampener * timeSinceLastUpdate);
-            //Logger.Log("RequestedDistanceFromTarget = {0}, MinimumDistanceFromTarget = {1}.".Inject(_requestedDistanceFromTarget, settings.minimumDistanceFromTarget));
+            //D.Log("RequestedDistanceFromTarget = {0}, MinimumDistanceFromTarget = {1}.".Inject(_requestedDistanceFromTarget, settings.minimumDistanceFromTarget));
             _requestedDistanceFromTarget = Mathf.Clamp(_requestedDistanceFromTarget, _minimumDistanceFromTarget, Mathf.Infinity);
-            //Logger.Log("RequestedDistanceFromTarget = {0}.".Inject(_requestedDistanceFromTarget));
+            //D.Log("RequestedDistanceFromTarget = {0}.".Inject(_requestedDistanceFromTarget));
 
             _distanceFromTarget = Mathfx.Lerp(_distanceFromTarget, _requestedDistanceFromTarget, _cameraPositionDampener * timeSinceLastUpdate);
             if (showDistanceDebugLog) {
-                Logger.Log("RequestedDistanceFromTarget = {0}, Actual DistanceFromTarget = {1}.".Inject(_requestedDistanceFromTarget, _distanceFromTarget));
+                D.Log("RequestedDistanceFromTarget = {0}, Actual DistanceFromTarget = {1}.".Inject(_requestedDistanceFromTarget, _distanceFromTarget));
                 showDistanceDebugLog = false;
             }
 
@@ -969,8 +962,8 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     /// <arg item="newPosition">The new position.</arg>
     /// <returns>if validated, returns newPosition. If not, return the current position.</returns>
     private Vector3 ValidatePosition(Vector3 newPosition) {
-        float magnitude = (newPosition - GameConstants.UniverseOrigin).magnitude;
-        if (magnitude > universeRadius) {
+        float sqrMagnitude = (newPosition - GameConstants.UniverseOrigin).sqrMagnitude;
+        if (sqrMagnitude > universeRadius * universeRadius) {
             return _transform.position;
         }
         return newPosition;
@@ -1056,7 +1049,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
         }
 
         if (proposedZoomTarget == _target) {
-            //Logger.Log("Proposed Target {0} is already the existing Target.".Inject(Target.name));
+            //D.Log("Proposed Target {0} is already the existing Target.".Inject(Target.name));
             if (Mathfx.Approx(proposedZoomPoint, _targetPoint, settings.smallMovementThreshold)) {
                 // the desired move of the Target point on the existing Target is too small to respond too
                 return false;
@@ -1082,13 +1075,13 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
             }
 
             float distanceToUniverseOrigin = Vector3.Distance(_dummyTarget.position, GameConstants.UniverseOrigin);
-            //Logger.Log("Dummy Target distance to origin = {0}.".Inject(distanceToUniverseOrigin));
+            //D.Log("Dummy Target distance to origin = {0}.".Inject(distanceToUniverseOrigin));
             if (!distanceToUniverseOrigin.CheckRange(universeRadius, allowedPercentageVariation: 0.1F)) {
                 D.Error("Camera's Dummy Target is not located on UniverseEdge! Position = " + _dummyTarget.position);
                 return false;
             }
             // the dummy Target is already there
-            //Logger.Log("DummyTarget already present at " + dummyTarget.position + ". TargetHit at " + targetHit.t.position);
+            //D.Log("DummyTarget already present at " + dummyTarget.position + ". TargetHit at " + targetHit.t.position);
             return false;
         }
 
@@ -1097,7 +1090,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
             Vector3 universeEdgePoint = targetHit.point;
             _dummyTarget.position = universeEdgePoint;
             ChangeTarget(_dummyTarget, _dummyTarget.position);
-            //Logger.Log("New DummyTarget location = " + universeEdgePoint);
+            //D.Log("New DummyTarget location = " + universeEdgePoint);
             _requestedDistanceFromTarget = _distanceFromTarget;
             return true;
         }
@@ -1116,13 +1109,13 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
         _xRotation %= 360;
         _yRotation %= 360;
         _zRotation %= 360;
-        //Logger.Log("Rotation input values: x = {0}, y = {1}, z = {2}.".Inject(_xRotation, _yRotation, _zRotation));
+        //D.Log("Rotation input values: x = {0}, y = {1}, z = {2}.".Inject(_xRotation, _yRotation, _zRotation));
         Quaternion desiredRotation = Quaternion.Euler(_yRotation, _xRotation, _zRotation);
         //Vector3 lookAtVector = desiredRotation.eulerAngles;
         //float xRotation = lookAtVector.y;
         //float yRotation = lookAtVector.x;
         //float zRotation = lookAtVector.z;
-        //Logger.Log("After Quaternion conversion: x = {0}, y = {1}, z = {2}.".Inject(xRotation, yRotation, zRotation));
+        //D.Log("After Quaternion conversion: x = {0}, y = {1}, z = {2}.".Inject(xRotation, yRotation, zRotation));
         Quaternion resultingRotation = Quaternion.Slerp(_transform.rotation, desiredRotation, dampenedTimeSinceLastUpdate);
         // OPTIMIZE Lerp is faster but not as pretty when the rotation changes are far apart
         return resultingRotation;
@@ -1133,32 +1126,32 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     #region Debug
 
     private void CheckScriptCompilerSettings() {
-        Logger.Log("Compiler Preprocessor Settings in {0} follow:".Inject(Instance.GetType().Name) + Constants.NewLine);
+        D.Log("Compiler Preprocessor Settings in {0} follow:".Inject(Instance.GetType().Name) + Constants.NewLine);
 #if DEBUG
-        Logger.Log("DEBUG, ");
+        D.Log("DEBUG, ");
 #endif
 
 #if UNITY_EDITOR
-            Logger.Log("UNITY_EDITOR, ");
+            D.Log("UNITY_EDITOR, ");
 #endif
 
 #if DEBUG_WARN
-        Logger.Log("DEBUG_WARN, ");
+        D.Log("DEBUG_WARN, ");
 #endif
 
 #if DEBUG_ERROR
-        Logger.Log("DEBUG_ERROR, ");
+        D.Log("DEBUG_ERROR, ");
 #endif
 
 #if DEBUG_LOG
-        Logger.Log("DEBUG_LOG, ");
+        D.Log("DEBUG_LOG, ");
 #endif
     }
 
 
     [System.Diagnostics.Conditional("UNITY_EDITOR")]
     private void _UpdateDebugHud(DebugHudLineKeys key, string text) {
-        Logger.Log("CameraState changed to " + cameraState);
+        D.Log("CameraState changed to " + cameraState);
         DebugHud.Instance.Publish(key, text);
     }
 
@@ -1281,7 +1274,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
         }
 
         internal override bool IsActivated() {
-            return base.IsActivated() && gameInput.isDragging && GameInputHelper.IsMouseButtonDown(mouseButton) && !GameInputHelper.IsAnyMouseButtonDownBesides(mouseButton);
+            return base.IsActivated() && gameInput.isDragValueWaiting && GameInputHelper.IsMouseButtonDown(mouseButton) && !GameInputHelper.IsAnyMouseButtonDownBesides(mouseButton);
         }
     }
 
@@ -1297,7 +1290,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
         }
 
         internal override bool IsActivated() {
-            return base.IsActivated() && gameInput.isDragging && GameInputHelper.IsMouseButtonDown(firstMouseButton) && GameInputHelper.IsMouseButtonDown(secondMouseButton);
+            return base.IsActivated() && gameInput.isDragValueWaiting && GameInputHelper.IsMouseButtonDown(firstMouseButton) && GameInputHelper.IsMouseButtonDown(secondMouseButton);
         }
     }
 
@@ -1325,7 +1318,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
         }
 
         internal override bool IsActivated() {
-            return base.IsActivated() && gameInput.isScrolling && !GameInputHelper.IsAnyKeyOrMouseButtonDown();
+            return base.IsActivated() && gameInput.isScrollValueWaiting && !GameInputHelper.IsAnyKeyOrMouseButtonDown();
         }
     }
 

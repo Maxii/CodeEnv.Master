@@ -19,7 +19,7 @@ using System;
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// GameSpeed readout class for the Gui, based on Ngui UILabel.
@@ -31,9 +31,12 @@ public class GuiGameSpeedReadout : AGuiLabelReadoutBase, IDisposable {
     protected override void Awake() {
         base.Awake();
         Subscribe();
-        tooltip = "The multiple of Normal Speed the game is currently running at.";
         // don't rely on outside events to initialize
         RefreshReadout(PlayerPrefsManager.Instance.GameSpeedOnLoad);
+    }
+
+    protected override void InitializeTooltip() {
+        tooltip = "The multiple of Normal Speed the game is currently running at.";
     }
 
     private void Subscribe() {

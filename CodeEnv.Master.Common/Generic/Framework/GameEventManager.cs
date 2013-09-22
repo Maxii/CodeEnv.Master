@@ -20,7 +20,6 @@ namespace CodeEnv.Master.Common {
     using System.Collections.Generic;
     using System.Text;
 
-
     /// <summary>
     /// Singleton Event Manager.
     /// </summary>
@@ -52,17 +51,13 @@ namespace CodeEnv.Master.Common {
         }
         #endregion
 
-        ///<summary>
-        /// Called once from the constructor, this does all required initialization
-        /// </summary>
         private void Initialize() {
             // Add initialization code here if any
         }
 
-
         public delegate void EventDelegate<T>(T e) where T : AGameEvent;
 
-        readonly Dictionary<Type, Delegate> listenerDelegates = new Dictionary<Type, Delegate>();
+        private readonly Dictionary<Type, Delegate> listenerDelegates = new Dictionary<Type, Delegate>();
 
         /// <summary>
         /// Adds the listener's EventHandler method to the list listening for AGameEvent T.
@@ -85,29 +80,34 @@ namespace CodeEnv.Master.Common {
             else {
                 listenerDelegates[typeof(T)] = listener;
             }
-            D.Log("{0} Listener added by {1}.", typeof(T).Name, source.GetType().Name);
-            //WriteCompositionToLog<T>(source, listenerDelegates[typeof(T)] as EventDelegate<T>, "Added");
+            WriteCompositionToLog<T>(source, listenerDelegates[typeof(T)] as EventDelegate<T>, "Added");
         }
 
+        [System.Diagnostics.Conditional("DEBUG_LOG")]
         private void WriteCompositionToLog<T>(System.Object source, EventDelegate<T> currentListeners, string action) where T : AGameEvent {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendFormat("EventListener for {0} ", typeof(T).Name);
-            sb.AppendFormat("{0} by {1} ", action, source.GetType().Name);
-            if (source is IInstanceIdentity) { sb.Append((source as IInstanceIdentity).InstanceID.ToString()); }
-            sb.Append(", Current Listeners now include:");
-            sb.AppendLine();
-            if (currentListeners != null) {
-                foreach (var d in currentListeners.GetInvocationList()) {
-                    sb.AppendFormat("{0} ", d.Target.GetType().Name);
-                    if (d.Target is IInstanceIdentity) { sb.Append((d.Target as IInstanceIdentity).InstanceID.ToString()); }
-                    sb.Append(", ");
+            string result;
+            if (DebugSettings.Instance.EnableVerboseDebugLog) {
+                StringBuilder sb = new StringBuilder();
+                sb.AppendFormat("EventListener for {0} ", typeof(T).Name);
+                sb.AppendFormat("{0} by {1} ", action, source.GetType().Name);
+                if (source is IInstanceIdentity) { sb.Append((source as IInstanceIdentity).InstanceID.ToString()); }
+                sb.Append(", Current Listeners now include:");
+                sb.AppendLine();
+                if (currentListeners != null) {
+                    foreach (var d in currentListeners.GetInvocationList()) {
+                        sb.AppendFormat("{0} ", d.Target.GetType().Name);
+                        if (d.Target is IInstanceIdentity) { sb.Append((d.Target as IInstanceIdentity).InstanceID.ToString()); }
+                        sb.Append(", ");
+                    }
                 }
+                sb.AppendLine();
+                result = sb.ToString();
             }
-            sb.AppendLine();
-            string result = sb.ToString();
+            else {
+                result = "{0} Listener {1} by {2}.".Inject(typeof(T).Name, action, source.GetType().Name);
+            }
             D.Log(result);
         }
-
 
         /// <summary>
         /// Removes the listener's EventHandler method from the list listening for AGameEvent T.
@@ -134,15 +134,14 @@ namespace CodeEnv.Master.Common {
                 else {
                     listenerDelegates[typeof(T)] = delegateAfterRemoval;
                 }
-                //D.Log("{0} Listener removed by {1}.", typeof(T).Name, source.GetType().Name);
                 Delegate currentListeners;
                 if (!listenerDelegates.TryGetValue(typeof(T), out currentListeners)) {
                     currentListeners = null;
                 }
-                //WriteCompositionToLog<T>(source, currentListeners as EventDelegate<T>, "Removed");
+                WriteCompositionToLog<T>(source, currentListeners as EventDelegate<T>, "Removed");
             }
             else {
-                D.Log("Attempt to RemoveListener of Type {0} that is not present.", typeof(T));
+                D.Warn("Attempt to RemoveListener of Type {0} that is not present.", typeof(T));
             }
         }
 
@@ -177,24 +176,31 @@ namespace CodeEnv.Master.Common {
             }
         }
 
+        [System.Diagnostics.Conditional("DEBUG_LOG")]
         private void WriteCompositionToLog<T>(T gameEvent, EventDelegate<T> callback) where T : AGameEvent {
-            StringBuilder sb = new StringBuilder();
-            sb.Append(gameEvent.GetType().Name);
-            object source = gameEvent.Source;
-            sb.AppendFormat(" Raised from {0} ", source.GetType().Name);
-            if (source is IInstanceIdentity) { sb.Append((source as IInstanceIdentity).InstanceID.ToString()); }
-            sb.Append(", Targets include:");
-            sb.AppendLine();
-            foreach (var d in callback.GetInvocationList()) {
-                sb.AppendFormat("{0} ", d.Target.GetType().Name);
-                if (d.Target is IInstanceIdentity) { sb.Append((d.Target as IInstanceIdentity).InstanceID.ToString()); }
-                sb.Append(", ");
+            string result;
+            if (DebugSettings.Instance.EnableVerboseDebugLog) {
+                StringBuilder sb = new StringBuilder();
+                sb.Append(gameEvent.GetType().Name);
+                object source = gameEvent.Source;
+                sb.AppendFormat(" Raised from {0} ", source.GetType().Name);
+                if (source is IInstanceIdentity) { sb.Append((source as IInstanceIdentity).InstanceID.ToString()); }
+                sb.Append(", Targets include:");
+                sb.AppendLine();
+                foreach (var d in callback.GetInvocationList()) {
+                    sb.AppendFormat("{0} ", d.Target.GetType().Name);
+                    if (d.Target is IInstanceIdentity) { sb.Append((d.Target as IInstanceIdentity).InstanceID.ToString()); }
+                    sb.Append(", ");
+                }
+                sb.AppendLine();
+                sb.Append("Event Contents: ");
+                sb.AppendLine();
+                sb.Append(gameEvent.ToString());
+                result = sb.ToString();
             }
-            sb.AppendLine();
-            sb.Append("Event Contents: ");
-            sb.AppendLine();
-            sb.Append(gameEvent.ToString());
-            string result = sb.ToString();
+            else {
+                result = "{0} raised from {1}.".Inject(gameEvent.GetType().Name, gameEvent.Source.GetType().Name);
+            }
             D.Log(result);
         }
 

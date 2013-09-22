@@ -32,8 +32,7 @@ public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
 
     private GameClockSpeed _gameSpeedOnLoad;
 
-    protected override void Awake() {
-        base.Awake();
+    protected override void InitializeTooltip() {
         tooltip = "Click to implement Option changes.";
     }
 
@@ -64,7 +63,7 @@ public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
     protected override void RecordPopupListState(string popupListName, string selectionName) {
         GameClockSpeed gameSpeedOnLoad;
         if (Enums<GameClockSpeed>.TryParse(selectionName, true, out gameSpeedOnLoad)) {
-            //UnityEngine.Logger.Log("GameClockSpeedOnLoad recorded as {0}.".Inject(selectionName));
+            //UnityEngine.D.Log("GameClockSpeedOnLoad recorded as {0}.".Inject(selectionName));
             _gameSpeedOnLoad = gameSpeedOnLoad;
         }
         // more popupLists here

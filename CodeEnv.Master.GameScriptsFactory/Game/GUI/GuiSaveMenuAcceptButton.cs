@@ -23,8 +23,7 @@ using UnityEngine;
 /// </summary>
 public class GuiSaveMenuAcceptButton : AGuiMenuAcceptButtonBase {
 
-    protected override void Awake() {
-        base.Awake();
+    protected override void InitializeTooltip() {
         tooltip = "Click to save to PlayerPrefs.";
     }
 

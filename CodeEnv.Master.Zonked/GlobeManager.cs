@@ -48,7 +48,7 @@ public class GlobeManager : AMonoBehaviourBase, ICameraFocusable {
         _eventMgr = GameEventManager.Instance;
         _transform = transform;
         _collider = collider as SphereCollider;
-        UpdateRate = UpdateFrequency.Continuous;
+        UpdateRate = FrameUpdateFrequency.Continuous;
     }
 
     void Start() {

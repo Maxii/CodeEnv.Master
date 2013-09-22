@@ -21,32 +21,28 @@ using UnityEngine;
 ///Usage: Place this script on the gameobject you wish to keep a constant size. Measures the distance from the Camera cameraPlane, 
 ///rather than the camera itself, and uses the initial scale as a basis. Use the public objectScale variable to adjust the object size on the screen.
 /// </summary>
-public class ScaleRelativeToCamera : MonoBehaviour {
+public class ScaleRelativeToCamera : AMonoBehaviourBase {
 
+    public Vector3 Scale { get; private set; }
+
+    public FrameUpdateFrequency updateRate = FrameUpdateFrequency.Continuous;
     public float objectScale = 1.0f;
-    private Transform _cameraTransform;
+
     private Vector3 _initialScale;
-    private Transform _transform;
 
-    void Awake() {
-        _transform = transform;
-    }
-
-    // set the initial scale, and setup reference camera
-    void Start() {
+    protected override void Awake() {
+        base.Awake();
         // record initial scale of the GO and use it as a basis
         _initialScale = _transform.localScale;
-
-        // if no specific camera, grab the default camera
-        if (_cameraTransform == null)
-            _cameraTransform = Camera.main.transform;
+        UpdateRate = updateRate;
     }
 
-    // scale object relative to distance from camera cameraPlane
+    // scale object relative to distance from camera plane
     void Update() {
-        Plane cameraPlane = new Plane(_cameraTransform.forward, _cameraTransform.position);
-        float distanceToCamera = cameraPlane.GetDistanceToPoint(_transform.position);
-        _transform.localScale = _initialScale * distanceToCamera * objectScale;
+        if (ToUpdate()) {
+            Scale = _initialScale * _transform.DistanceToCamera() * objectScale;
+            _transform.localScale = Scale;
+        }
     }
 
     public override string ToString() {

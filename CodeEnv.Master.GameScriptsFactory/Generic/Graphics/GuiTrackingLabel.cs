@@ -13,7 +13,7 @@
 // default namespace
 
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -85,7 +85,6 @@ public class GuiTrackingLabel : AMonoBehaviourBase {
         set { SetProperty<bool>(ref _isHighlighted, value, "IsHighlighted", OnHighlightChanged); }
     }
 
-    private Transform _transform;
     private Camera _mainCamera;
     private Camera _uiCamera;
     private UILabel _label; // IMPROVE broaden to UIWidget for icons, sprites...
@@ -94,14 +93,13 @@ public class GuiTrackingLabel : AMonoBehaviourBase {
 
     protected override void Awake() {
         base.Awake();
-        _transform = transform;
         _uiCamera = NGUITools.FindCameraForLayer(gameObject.layer);
         _label = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
         _label.depth = -100; // draw below other Gui Elements in the same Panel
         _labelNormalColor = _label.color;
         _widgets = gameObject.GetSafeMonoBehaviourComponentsInChildren<UIWidget>();
         enabled = false;    // to match the initial state of _isShowing
-        UpdateRate = UpdateFrequency.Continuous;
+        UpdateRate = FrameUpdateFrequency.Continuous;
 
         _initialScale = _transform.localScale;
     }
@@ -154,7 +152,7 @@ public class GuiTrackingLabel : AMonoBehaviourBase {
         float scaler = Mathf.Clamp(ObjectScale / _transform.DistanceToCamera(), MinimumScale, MaximumScale);
         Vector3 adjustedScale = _initialScale * scaler;
         adjustedScale.z = 1F;
-        //Logger.Log("New Scale is {0}.".Inject(newScale));
+        //D.Log("New Scale is {0}.".Inject(newScale));
         _transform.localScale = adjustedScale;
     }
 
@@ -177,7 +175,7 @@ public class GuiTrackingLabel : AMonoBehaviourBase {
 
     private void OnHighlightChanged() {
         _label.color = IsHighlighted ? Color.yellow : _labelNormalColor;
-        //Logger.Log("{0} Highlighting changed to {1}.".Inject(gameObject.name, toHighlight));
+        //D.Log("{0} Highlighting changed to {1}.".Inject(gameObject.name, toHighlight));
     }
 
     // Standalone update position approach that doesn't rely on getting visibility change messages from the Target

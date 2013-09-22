@@ -18,7 +18,7 @@
 
 using System;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -34,8 +34,7 @@ public class GuiMenuCancelButton : AGuiButtonBase {
     private string[] _openingPopupListsSelection;
     private bool _isInitialized;
 
-    protected override void Awake() {
-        base.Awake();
+    protected override void InitializeTooltip() {
         tooltip = "Click to cancel changes.";
     }
 

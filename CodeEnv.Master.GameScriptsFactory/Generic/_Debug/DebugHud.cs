@@ -15,7 +15,7 @@
 using System;
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// Singleton stationary HUD supporting Debug data on the screen.
@@ -32,7 +32,7 @@ public class DebugHud : AHud<DebugHud>, IDebugHud, IDisposable {
 
     protected override void Start() {
         base.Start();
-        Logger.Log("DebugHud.Start()");
+        D.Log("DebugHud.Start()");
     }
 
     #region DebugHud Subscriptions

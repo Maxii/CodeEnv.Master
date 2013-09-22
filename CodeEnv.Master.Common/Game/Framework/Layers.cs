@@ -37,7 +37,9 @@ namespace CodeEnv.Master.Common {
         DummyTarget = 10,
 
 
-        DeepSpace = 20
+        DeepSpace = 20,
+
+        Vectrosity = 31
 
     }
 }

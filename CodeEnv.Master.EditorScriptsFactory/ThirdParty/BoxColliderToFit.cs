@@ -10,13 +10,8 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
-
 // default namespace
 
-#if (UNITY_EDITOR)
 using CodeEnv.Master.Common;
 using UnityEditor;
 using UnityEngine;
@@ -24,7 +19,7 @@ using UnityEngine;
 /// <summary>
 /// Editor Class that constructs a single BoxCollider in a parent GameObject that fits around all the child meshes.
 /// </summary>
-public class BoxColliderToFit : AMonoBehaviourBase {
+public class BoxColliderToFit : MonoBehaviour {
 
     /// <summary>
     /// Constructs a single BoxCollider in a parent GameObject that fits around all the child meshes.
@@ -62,5 +57,4 @@ public class BoxColliderToFit : AMonoBehaviourBase {
     }
 
 }
-#endif
 

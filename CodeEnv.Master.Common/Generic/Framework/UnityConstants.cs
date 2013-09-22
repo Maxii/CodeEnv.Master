@@ -32,11 +32,17 @@ namespace CodeEnv.Master.Common {
             }
         }
 
+        /// <summary>
+        /// Gets the unity entry project dir. This only works on my systems which have UnityEnvDir defined as an environment variable
+        /// </summary>
+        [Obsolete]
         public static string UnityEntryProjectDir {
             get { return Environment.ExpandEnvironmentVariables(@"%UnityEnvDir%UnityEntry\"); }
         }
 
         // Note: when using relative vs absolute path notation, Unity current directory is always the Project root working directory
+        // The project folder can always be acquired by System.IO.Directory.GetCurrentDirectory as the editor requires that
+        // the current working directory be set to the project folder at all times.
         public static string DataLibraryDir {
             get { return Application.dataPath + @"\..\DataLibrary\"; }  // \..\ moves up one directory level
         }

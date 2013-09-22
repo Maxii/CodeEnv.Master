@@ -32,6 +32,9 @@ public class FpsReadout : AGuiLabelReadoutBase {
     protected override void Awake() {
         base.Awake();
         _timeRemainingInInterval = secondsBetweenDisplayRefresh;
+    }
+
+    protected override void InitializeTooltip() {
         tooltip = "Current Frames per Second displayed.";
     }
 

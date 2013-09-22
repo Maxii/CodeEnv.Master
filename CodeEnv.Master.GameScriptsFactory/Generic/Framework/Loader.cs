@@ -6,13 +6,9 @@
 // </copyright> 
 // <summary> 
 // File: Loader.cs
-// COMMENT - one line to give a brief idea of what this file does.
+// Manages the initial sequencing of scene startups.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
-
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
 
 // default namespace
 
@@ -20,23 +16,22 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.Unity;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
+using Vectrosity;
 
 /// <summary>
-/// This approach of sharing an object across scenes allows objects and tValues
-/// from one startScene to move to another.
+/// Manages the initial sequencing of scene startups.
 /// </summary>
-public class Loader : AMonoBehaviourBase, IDisposable {
+public class Loader : AMonoBehaviourBaseSingletonInstanceIdentity<Loader>, IDisposable {
 
-    public static Loader currentInstance;
+    //public static Loader currentInstance;
     public UsefulPrefabs usefulPrefabsPrefab;
 
     public int TargetFPS = 25;
 
     private IList<MonoBehaviour> _unreadyElements;
     private IList<IDisposable> _subscribers;
-    private bool _isInitialized;
 
     private GameManager _gameMgr;
     private GameEventManager _eventMgr;
@@ -49,19 +44,17 @@ public class Loader : AMonoBehaviourBase, IDisposable {
 
     protected override void Awake() {
         base.Awake();
-        //Logger.Log("Loader Awake() called.");
-        IncrementInstanceCounter();
         if (TryDestroyExtraCopies()) {
             return;
         }
-        UpdateRate = UpdateFrequency.Continuous;
+        UpdateRate = FrameUpdateFrequency.Continuous;
         _eventMgr = GameEventManager.Instance;
         _gameMgr = GameManager.Instance;
         _playerPrefsMgr = PlayerPrefsManager.Instance;
         InitializeQualitySettings();
+        InitializeVectrosity();
         _unreadyElements = new List<MonoBehaviour>();
         Subscribe();
-        _isInitialized = true;
     }
 
 
@@ -72,14 +65,14 @@ public class Loader : AMonoBehaviourBase, IDisposable {
     /// </summary>
     /// <returns><c>true</c> if this instance is going to be destroyed, <c>false</c> if not.</returns>
     private bool TryDestroyExtraCopies() {
-        if (currentInstance != null && currentInstance != this) {
-            Logger.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceID));
+        if (_instance != null && _instance != this) {
+            D.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceID));
             Destroy(gameObject);
             return true;
         }
         else {
             DontDestroyOnLoad(gameObject);
-            currentInstance = this;
+            _instance = this;
             return false;
         }
     }
@@ -106,6 +99,12 @@ public class Loader : AMonoBehaviourBase, IDisposable {
         CheckDebugSettings(newQualitySetting);
     }
 
+    private void InitializeVectrosity() {
+        VectorLine.useMeshLines = true;
+        VectorLine.useMeshPoints = true;
+        VectorLine.useMeshQuads = true;
+    }
+
     //[System.Diagnostics.Conditional("UNITY_EDITOR")]
     private void CheckDebugSettings(int qualitySetting) {
         if (DebugSettings.Instance.ForceFpsToTarget) {
@@ -123,7 +122,7 @@ public class Loader : AMonoBehaviourBase, IDisposable {
                 D.Error("UnreadyElements already has {0} registered!".Inject(source.name));
             }
             _unreadyElements.Add(source);
-            //Logger.Log("{0} has registered with Loader as unready.".Inject(source.name));
+            D.Log("{0} has registered with Loader as unready.".Inject(source.name));
         }
         else {
             if (!_unreadyElements.Contains(source)) {
@@ -131,7 +130,7 @@ public class Loader : AMonoBehaviourBase, IDisposable {
             }
             else {
                 _unreadyElements.Remove(source);
-                // Logger.Log("{0} is now ready to Run.".Inject(source.name));
+                D.Log("{0} is now ready to Run.".Inject(source.name));
             }
         }
     }
@@ -149,7 +148,7 @@ public class Loader : AMonoBehaviourBase, IDisposable {
             Arguments.ValidateNotNull(usefulPrefabsPrefab);
             usefulPrefabs = Instantiate<UsefulPrefabs>(usefulPrefabsPrefab);
         }
-        usefulPrefabs.transform.parent = currentInstance.transform.parent;
+        usefulPrefabs.transform.parent = Instance.transform.parent;
     }
 
     void Update() {
@@ -164,7 +163,7 @@ public class Loader : AMonoBehaviourBase, IDisposable {
 
     protected override void OnDestroy() {
         base.OnDestroy();
-        if (_isInitialized) {
+        if (gameObject.activeInHierarchy) {
             // no reason to cleanup if this object was destroyed before it was initialized.
             Dispose();
         }
