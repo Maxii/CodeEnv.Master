@@ -97,7 +97,7 @@ public class CameraControl : AMonoBehaviourBaseSingletonInstanceIdentity<CameraC
         focusedRotationDampener = 2.0F, freeformPositionDampener = 3.0F, freeformRotationDampener = 2.0F
     };
 
-    private CtxPickHandler _contextMenuPickHandler;
+    //private CtxPickHandler _contextMenuPickHandler;
 
     // static so it is available to nested classes
     public static float universeRadius;
@@ -211,7 +211,7 @@ public class CameraControl : AMonoBehaviourBaseSingletonInstanceIdentity<CameraC
         SetCameraSettings();
         InitializeCameraPreferences();
         PositionCameraForGame();
-        InitializeContextMenuSettings();
+        //InitializeContextMenuSettings();
     }
 
     private void SetCameraSettings() {
@@ -300,19 +300,19 @@ public class CameraControl : AMonoBehaviourBaseSingletonInstanceIdentity<CameraC
         _zRotation = startingEulerRotation.z;
     }
 
-    private void InitializeContextMenuSettings() {
-        _contextMenuPickHandler = gameObject.GetSafeMonoBehaviourComponent<CtxPickHandler>();
-        _contextMenuPickHandler.dontUseFallThrough = true;
-        _contextMenuPickHandler.pickLayers = LayerMaskExtensions.CreateInclusiveMask(Layers.Default);
-        if (_contextMenuPickHandler.menuButton != NguiMouseButton.Right.ToUnityMouseButton()) {
-            D.Warn("Context Menu actuator button not set to Right Mouse Button.");
-        }
-        // IMPROVE I should be able to use UIEventListener to subscribe to all objects with a CtxObject
-        // using FindObjectsOfType<CtxObject>(), but I can't figure out how to assign ContextMenuPickHandler.OnPress
-        // (a method on a different object) to the UIEventListener delegate. For now, I'm just implementing
-        // OnPress(isPressed) in each object implementing ISelectable, ie. all ISelectable by definition will be able
-        // to receive manual orders and therefore should support context menus.
-    }
+    //private void InitializeContextMenuSettings() {
+    //    _contextMenuPickHandler = gameObject.GetSafeMonoBehaviourComponent<CtxPickHandler>();
+    //    _contextMenuPickHandler.dontUseFallThrough = true;
+    //    _contextMenuPickHandler.pickLayers = LayerMaskExtensions.CreateInclusiveMask(Layers.Default);
+    //    if (_contextMenuPickHandler.menuButton != NguiMouseButton.Right.ToUnityMouseButton()) {
+    //        D.Warn("Context Menu actuator button not set to Right Mouse Button.");
+    //    }
+    //    // IMPROVE I should be able to use UIEventListener to subscribe to all objects with a CtxObject
+    //    // using FindObjectsOfType<CtxObject>(), but I can't figure out how to assign ContextMenuPickHandler.OnPress
+    //    // (a method on a different object) to the UIEventListener delegate. For now, I'm just implementing
+    //    // OnPress(isPressed) in each object implementing ISelectable, ie. all ISelectable by definition will be able
+    //    // to receive manual orders and therefore should support context menus.
+    //}
 
     #endregion
 
@@ -587,11 +587,11 @@ public class CameraControl : AMonoBehaviourBaseSingletonInstanceIdentity<CameraC
     /// passing it on to show the context menu.
     /// </summary>
     /// <param name="isDown">if set to <c>true</c> [is down].</param>
-    public void TryShowContextMenuOnPress(bool isDown) {
-        if (!gameInput.IsDragging) {
-            _contextMenuPickHandler.OnPress(isDown);
-        }
-    }
+    //public void TryShowContextMenuOnPress(bool isDown) {
+    //    if (!gameInput.IsDragging) {
+    //        _contextMenuPickHandler.OnPress(isDown);
+    //    }
+    //}
 
     #region Update Camera
 

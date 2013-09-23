@@ -23,7 +23,8 @@ using CodeEnv.Master.Common;
 /// </summary>
 public class GuiGameSpeedOnLoadPopupList : AGuiEnumPopupListBase<GameClockSpeed> {
 
-    protected override void OnPopupListSelectionChange(string item) { }
+    protected override void OnPopupListSelectionChange() { }
+    //protected override void OnPopupListSelectionChange(string item) { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

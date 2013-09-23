@@ -19,7 +19,7 @@ using UnityEngine;
 /// <summary>
 /// Manages the operation of a ship within a fleet.
 /// </summary>
-public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu {
+public class ShipCaptain : FollowableItem, ISelectable/*, IHasContextMenu*/ {
 
     public new ShipData Data {
         get { return base.Data as ShipData; }
@@ -43,7 +43,7 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu {
 
     protected override void Start() {
         base.Start();
-        __ValidateCtxObjectSettings();
+        // __ValidateCtxObjectSettings();
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
@@ -179,16 +179,16 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu {
 
     #region IHasContextMenu Members
 
-    public void __ValidateCtxObjectSettings() {
-        CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
-        D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
-        UnityUtility.ValidateComponentPresence<Collider>(gameObject);
-    }
+    //public void __ValidateCtxObjectSettings() {
+    //    CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
+    //    D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
+    //    UnityUtility.ValidateComponentPresence<Collider>(gameObject);
+    //}
 
     public void OnPress(bool isDown) {
         if (IsSelected) {
             //D.Log("{0}.OnPress({1}) called.", this.GetType().Name, isPressed);
-            CameraControl.Instance.TryShowContextMenuOnPress(isDown);
+            //CameraControl.Instance.TryShowContextMenuOnPress(isDown);
         }
     }
 

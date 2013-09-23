@@ -33,7 +33,8 @@ public abstract class AGuiPopupListBase : GuiTooltip {
         InitializeListValues();
         InitializeSelection();
         // don't receive events until initializing is complete
-        popupList.onSelectionChange += OnPopupListSelectionChange;
+        EventDelegate.Add(popupList.onChange, OnPopupListSelectionChange);
+        //popupList.onSelectionChange += OnPopupListSelectionChange;
     }
 
     /// <summary>
@@ -57,11 +58,13 @@ public abstract class AGuiPopupListBase : GuiTooltip {
     /// </remarks>
     protected abstract void InitializeSelection();
 
+    protected virtual void OnPopupListSelectionChange() { }
+
     /// <summary>
     /// Method called when the popupList selection is changed. The default implementation does nothing.
     /// </summary>
     /// <arg name="item">The name of the selection.</arg>
-    protected virtual void OnPopupListSelectionChange(string item) { }
+    //protected virtual void OnPopupListSelectionChange(string item) { }
 
     // IDisposable Note: No reason to remove Ngui event currentListeners OnDestroy() as the EventListener or
     // Delegate to be removed is attached to this same GameObject that is being destroyed. In addition,

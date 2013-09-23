@@ -97,6 +97,7 @@
     <Compile Include="IZoomToClosest.cs" />
     <Compile Include="KeyboardAxis.cs" />
     <Compile Include="MyCtxPickHandler.cs" />
+    <Compile Include="MyNguiButtonPlayAnimation.cs" />
     <Compile Include="OrbitalPlaneManager.cs" />
     <Compile Include="PlayerSettingsSetup.cs" />
     <Compile Include="ResetOnFocusOptionChangedEvent.cs" />

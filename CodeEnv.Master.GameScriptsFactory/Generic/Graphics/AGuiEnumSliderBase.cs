@@ -39,7 +39,8 @@ public abstract class AGuiEnumSliderBase<T> : GuiTooltip where T : struct {
         InitializeSlider();
         InitializeSliderValue();
         // don't receive events until initializing is complete
-        _slider.onValueChange += OnSliderValueChange;
+        EventDelegate.Add(_slider.onChange, OnSliderValueChange);
+        //_slider.onValueChange += OnSliderValueChange;
     }
 
     private void InitializeSlider() {
@@ -58,17 +59,20 @@ public abstract class AGuiEnumSliderBase<T> : GuiTooltip where T : struct {
             T tPrefsValue = propertyGet();
             int tPrefsValueIndex = _orderedTValues.FindIndex<T>(tValue => (tValue.Equals(tPrefsValue)));
             float sliderValueAtTPrefsValueIndex = _orderedSliderStepValues[tPrefsValueIndex];
-            _slider.sliderValue = sliderValueAtTPrefsValueIndex;
+            _slider.value = sliderValueAtTPrefsValueIndex;
+            // _slider.sliderValue = sliderValueAtTPrefsValueIndex;
         }
         else {
-            _slider.sliderValue = _orderedSliderStepValues[_orderedSliderStepValues.Length - 1];
-            D.Warn("No PlayerPrefsManager property found for {0}, so initializing slider to : {1}.".Inject(typeof(T), _slider.sliderValue));
+            _slider.value = _orderedSliderStepValues[_orderedSliderStepValues.Length - 1];
+            //_slider.sliderValue = _orderedSliderStepValues[_orderedSliderStepValues.Length - 1];
+            D.Warn("No PlayerPrefsManager property found for {0}, so initializing slider to : {1}.".Inject(typeof(T), _slider.value));
+            // D.Warn("No PlayerPrefsManager property found for {0}, so initializing slider to : {1}.".Inject(typeof(T), _slider.sliderValue));
         }
     }
 
-    // Note: UISlider automatically sends out an event to this method on Start()
-    private void OnSliderValueChange(float sliderValue) {
+    private void OnSliderValueChange() {
         float tolerance = 0.05F;
+        float sliderValue = UISlider.current.value;
         int index = _orderedSliderStepValues.FindIndex<float>(v => Mathfx.Approx(sliderValue, v, tolerance));
         Arguments.ValidateNotNegative(index);
         T tValue = _orderedTValues[index];
@@ -76,6 +80,17 @@ public abstract class AGuiEnumSliderBase<T> : GuiTooltip where T : struct {
     }
 
     protected abstract void OnSliderValueChange(T value);
+
+    // Note: UISlider automatically sends out an event to this method on Start()
+    //private void OnSliderValueChange(float sliderValue) {
+    //    float tolerance = 0.05F;
+    //    int index = _orderedSliderStepValues.FindIndex<float>(v => Mathfx.Approx(sliderValue, v, tolerance));
+    //    Arguments.ValidateNotNegative(index);
+    //    T tValue = _orderedTValues[index];
+    //    OnSliderValueChange(tValue);
+    //}
+
+    //protected abstract void OnSliderValueChange(T value);
 
     // IDisposable Note: No reason to remove Ngui event currentListeners OnDestroy() as the EventListener or
     // Delegate to be removed is attached to this same GameObject that is being destroyed. In addition,

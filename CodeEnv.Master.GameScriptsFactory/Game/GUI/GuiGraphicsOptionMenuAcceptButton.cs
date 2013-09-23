@@ -41,10 +41,15 @@ public class GuiGraphicsOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
         // more popupLists here
     }
 
-    protected override void OnPopupListSelectionChange(string selectionName) {
-        base.OnPopupListSelectionChange(selectionName);
+    protected override void OnPopupListSelectionChange() {
+        base.OnPopupListSelectionChange();
         ValidateState();
     }
+
+    //protected override void OnPopupListSelectionChange(string selectionName) {
+    //    base.OnPopupListSelectionChange(selectionName);
+    //    ValidateState();
+    //}
 
     protected override void OnLeftClick() {
         ValidateState();

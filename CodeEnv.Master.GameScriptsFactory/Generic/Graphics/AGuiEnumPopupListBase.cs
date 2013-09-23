@@ -52,11 +52,14 @@ public abstract class AGuiEnumPopupListBase<T> : AGuiPopupListBase where T : str
         PropertyInfo propertyInfo = propertyInfos.SingleOrDefault<PropertyInfo>(p => p.PropertyType == typeof(T));
         if (propertyInfo != null) {
             Func<T> propertyGet = (Func<T>)Delegate.CreateDelegate(typeof(Func<T>), PlayerPrefsManager.Instance, propertyInfo.GetGetMethod());
-            popupList.selection = propertyGet().ToString();
+            popupList.value = propertyGet().ToString();
+            //popupList.selection = propertyGet().ToString();
         }
         else {
-            popupList.selection = popupList.items[0];
-            D.Log("No PlayerPrefsManager property found for {0}, so initializing selectionName to first item in list: {1}.".Inject(typeof(T), popupList.selection));
+            popupList.value = popupList.items[0];
+            //popupList.selection = popupList.items[0];
+            D.Log("No PlayerPrefsManager property found for {0}, so initializing selectionName to first item in list: {1}.".Inject(typeof(T), popupList.value));
+            //D.Log("No PlayerPrefsManager property found for {0}, so initializing selectionName to first item in list: {1}.".Inject(typeof(T), popupList.selection));
         }
     }
 
@@ -74,7 +77,8 @@ public abstract class AGuiEnumPopupListBase<T> : AGuiPopupListBase where T : str
                 return;
             }
             Func<T> propertyGet = (Func<T>)Delegate.CreateDelegate(typeof(Func<T>), PlayerPrefsManager.Instance, propertyInfo.GetGetMethod());
-            popupList.selection = propertyGet().ToString();
+            popupList.value = propertyGet().ToString();
+            //popupList.selection = propertyGet().ToString();
         }
         else {
             D.Warn("The PlayerPrefsManager Property has not been named for {0}.".Inject(gameObject.name));
