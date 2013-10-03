@@ -36,7 +36,7 @@ namespace CodeEnv.Master.Common {
             Max = max;
         }
 
-        public bool IsInRange(T value) {
+        public bool Contains(T value) {
             return value.CompareTo(Min) >= 0 && value.CompareTo(Max) <= 0;
         }
 

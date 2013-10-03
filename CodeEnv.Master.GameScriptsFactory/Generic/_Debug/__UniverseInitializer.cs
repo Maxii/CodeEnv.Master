@@ -73,7 +73,9 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
         InitializePlanetsAndMoons();
         InitializeShips();
         InitializeFleet();
+        // InitializeHumanFleet();
         InitializeCenter();
+        //InitializeEnemyFleet();
     }
 
     private void InitializeSystems() {
@@ -155,18 +157,20 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
     }
 
     private void InitializeFleet() {
-        FleetManager fleet = _fleets[0];
-        Transform admiralTransform = fleet.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>().transform;
-        FleetData data = new FleetData(admiralTransform, "Borg Fleet") {
-            // there is no parentName for a fleet
-            LastHumanPlayerIntelDate = new GameDate()
-        };
+        if (!_fleets.IsNullOrEmpty()) {
+            FleetManager fleet = _fleets[0];
+            Transform admiralTransform = fleet.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>().transform;
+            FleetData data = new FleetData(admiralTransform, "A Fleet") {
+                // there is no parentName for a fleet
+                LastHumanPlayerIntelDate = new GameDate()
+            };
 
-        foreach (var ship in _ships) {
-            data.AddShip(ship.Data);
+            foreach (var ship in _ships) {
+                data.AddShip(ship.Data);
+            }
+            fleet.Data = data;
+            fleet.PlayerIntelLevel = IntelLevel.Complete;
         }
-        fleet.Data = data;
-        fleet.PlayerIntelLevel = IntelLevel.Complete;
     }
 
     private void InitializeCenter() {
@@ -177,14 +181,18 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
         }
     }
 
-    private void Unsubscribe() {
-        _subscribers.ForAll<IDisposable>(s => s.Dispose());
-        _subscribers.Clear();
-    }
-
     protected override void OnDestroy() {
         base.OnDestroy();
         Dispose();
+    }
+
+    private void Cleanup() {
+        Unsubscribe();
+    }
+
+    private void Unsubscribe() {
+        _subscribers.ForAll<IDisposable>(s => s.Dispose());
+        _subscribers.Clear();
     }
 
     public override string ToString() {
@@ -216,7 +224,7 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            Unsubscribe();
+            Cleanup();
         }
         // free unmanaged resources here
 

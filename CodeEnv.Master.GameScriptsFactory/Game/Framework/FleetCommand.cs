@@ -68,6 +68,7 @@ public class FleetCommand : FollowableItem, IFleetCommand, IHasContextMenu {
     public void __GetFleetUnderway() {
         ChangeFleetHeading(Random.onUnitSphere);
         ChangeFleetSpeed(2.0F);
+        _fleetGraphics.AssessHighlighting();    // temporary initialization location as IsVisible no longer changes initially to force it
     }
 
     public void ReportShipLost(ShipCaptain shipCaptain) {
@@ -85,6 +86,7 @@ public class FleetCommand : FollowableItem, IFleetCommand, IHasContextMenu {
     void OnDoubleClick() {
         if (GameInputHelper.IsLeftMouseButton()) {
             ChangeFleetHeading(-_transform.right);  // turn left
+            ChangeFleetSpeed(Random.Range(Constants.ZeroF, 2.5F));
         }
     }
 
@@ -101,14 +103,15 @@ public class FleetCommand : FollowableItem, IFleetCommand, IHasContextMenu {
     private void OnHealthChanged() {
         D.Log("{0} Health = {1}.", Data.Name, Data.Health);
         if (Data.Health <= Constants.ZeroF) {
-            __Die();
+            Die();
         }
     }
 
-    private void __Die() {
+    private void Die() {
         D.Log("{0} has Died!", Data.Name);
+        _eventMgr.Raise<ItemDeathEvent>(new ItemDeathEvent(this));
         Destroy(gameObject);
-        Destroy(_fleetMgr.gameObject);
+        _fleetMgr.Die();
     }
 
     protected override void OnIsFocusChanged() {
@@ -186,7 +189,7 @@ public class FleetCommand : FollowableItem, IFleetCommand, IHasContextMenu {
     public void OnPress(bool isDown) {
         if (_fleetMgr.IsSelected) {
             //D.Log("{0}.OnPress({1}) called.", this.GetType().Name, isPressed);
-            CameraControl.Instance.TryShowContextMenuOnPress(isDown);
+            CameraControl.Instance.ShowContextMenuOnPress(isDown);
         }
     }
 

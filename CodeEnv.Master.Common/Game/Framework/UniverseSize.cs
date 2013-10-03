@@ -6,12 +6,17 @@
 // </copyright> 
 // <summary> 
 // File: UniverseSize.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// Enum of the different Universe sizes available to play. UniverseSize.Radius() 
+// acquires the radius of the Universe.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
 namespace CodeEnv.Master.Common {
 
+    /// <summary>
+    /// Enum of the different Universe sizes available to play. UniverseSize.Radius() 
+    /// acquires the radius of the Universe.
+    /// </summary>
     public enum UniverseSize {
 
         [EnumAttribute("Error! No Universe size.")]

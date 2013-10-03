@@ -11,9 +11,6 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_WARN
-#define DEBUG_ERROR
-
 // default namespace
 
 using System;
@@ -60,6 +57,7 @@ public class FleetManager : AMonoBehaviourBase, ISelectable, IDisposable {
         set { SetProperty<ShipCaptain>(ref _leadShipCaptain, value, "LeadShipCaptain", OnLeadShipChanged); }
     }
 
+    private SelectionManager _selectionMgr;
     private GameManager _gameMgr;
     private GameEventManager _eventMgr;
     private FleetGraphics _fleetGraphics;
@@ -88,6 +86,7 @@ public class FleetManager : AMonoBehaviourBase, ISelectable, IDisposable {
         ShipCaptains = gameObject.GetSafeMonoBehaviourComponentsInChildren<ShipCaptain>().ToList();
         _gameMgr = GameManager.Instance;
         _eventMgr = GameEventManager.Instance;
+        _selectionMgr = SelectionManager.Instance;
         InitializeFleetIcon();
         Subscribe();
     }
@@ -168,7 +167,7 @@ public class FleetManager : AMonoBehaviourBase, ISelectable, IDisposable {
         _fleetGraphics.AssessHighlighting();
         ShipCaptains.ForAll<ShipCaptain>(sc => sc.gameObject.GetSafeMonoBehaviourComponent<ShipGraphics>().AssessHighlighting());
         if (IsSelected) {
-            _eventMgr.Raise<SelectionEvent>(new SelectionEvent(this));
+            _selectionMgr.CurrentSelection = this;
         }
     }
 
@@ -191,19 +190,25 @@ public class FleetManager : AMonoBehaviourBase, ISelectable, IDisposable {
         D.Assert(isRemoved, "{0} not found.".Inject(shipCaptain.Data.Name));
     }
 
+    public void Die() {
+        if (IsSelected) {
+            _selectionMgr.CurrentSelection = null;
+        }
+        Destroy(gameObject);
+    }
+
     private ShipCaptain SelectBestShip() {
         return ShipCaptains.MaxBy(sc => sc.Data.Health);
     }
 
     protected override void OnDestroy() {
         base.OnDestroy();
-        if (!_isApplicationQuiting) {
-            if (!Application.isLoadingLevel) {
-                // game item has been destroyed in normal play
-                _eventMgr.Raise<GameItemDestroyedEvent>(new GameItemDestroyedEvent(this));
-            }
-            // we aren't quiting so cleanup
-        }
+        Dispose();
+    }
+
+    private void Cleanup() {
+        Unsubscribe();
+        // other cleanup here including any tracking Gui2D elements
     }
 
     private void Unsubscribe() {
@@ -262,7 +267,7 @@ public class FleetManager : AMonoBehaviourBase, ISelectable, IDisposable {
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            Unsubscribe();
+            Cleanup();
         }
         // free unmanaged resources here
 

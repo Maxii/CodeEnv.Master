@@ -24,15 +24,19 @@ using System;
 /// that implement the IOnVisible interface.
 ///<remarks>Used when I wish to separate a mesh and its renderer from a parent GameObject that does most of the work.</remarks>
 /// </summary>
-public class VisibilityChangedRelay : AMonoBehaviourBase {
+public class VisibilityChangedRelay : AMonoBehaviourBase, IDisposable {
 
     public Transform[] relayTargets;
 
     private INotifyVisibilityChanged[] _iRelayTargets;
+    private bool _isGameRunning;
+    private IList<IDisposable> _subscribers;
+    private Renderer _renderer;
 
     protected override void Awake() {
         base.Awake();
-        UnityUtility.ValidateComponentPresence<Renderer>(gameObject);
+        _renderer = UnityUtility.ValidateComponentPresence<Renderer>(gameObject);
+        _renderer.enabled = true;   // renderers do not deliver OnBecameVisible() events if not enabled!!!!!!!!
         if (relayTargets.Length == 0) {
             Transform relayTarget = _transform.GetSafeTransformWithInterfaceInParents<INotifyVisibilityChanged>();
             if (relayTarget != null) {
@@ -56,15 +60,32 @@ public class VisibilityChangedRelay : AMonoBehaviourBase {
             }
             _iRelayTargets[i] = iTarget;
         }
+        Subscribe();
     }
 
-    private bool _isVisible;
+    private void Subscribe() {
+        if (_subscribers == null) {
+            _subscribers = new List<IDisposable>();
+        }
+        _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsGameRunning, OnIsRunningChanged));
+    }
+
+    private void OnIsRunningChanged() {
+        _isGameRunning = GameManager.Instance.IsGameRunning;
+        if (_isGameRunning) {
+            // all relay targets start out initialized with IsVisible = true. This just initializes their list of child meshes that think they are visible
+            OnBecameVisible();
+        }
+    }
+
+    private bool _isVisible;    // starts false so startup OnBecameVisible events don't generate warnings in ValidateVisibiltyChange
     void OnBecameVisible() {
+        //D.Log("{0} VisibilityRelay has received OnBecameVisible().", _transform.name);
         if (ValidateVisibilityChange(isVisible: true)) {
             for (int i = 0; i < relayTargets.Length; i++) {
                 INotifyVisibilityChanged iNotify = _iRelayTargets[i];
                 if (iNotify != null) {
-                    ReportVisibilityChange(_transform.name, relayTargets[i].name, isVisible: true);
+                    LogVisibilityChange(_transform.name, relayTargets[i].name, isVisible: true);
                     iNotify.NotifyVisibilityChanged(_transform, isVisible: true);
                 }
             }
@@ -80,13 +101,14 @@ public class VisibilityChangedRelay : AMonoBehaviourBase {
     }
 
     void OnBecameInvisible() {
+        //D.Log("{0} VisibilityRelay has received OnBecameInvisible().", _transform.name);
         if (ValidateVisibilityChange(isVisible: false)) {
             for (int i = 0; i < relayTargets.Length; i++) {
                 Transform t = relayTargets[i];
                 if (t && t.gameObject.activeInHierarchy) {  // avoids NullReferenceException during Inspector shutdown
                     INotifyVisibilityChanged iNotify = _iRelayTargets[i];
                     if (iNotify != null) {
-                        ReportVisibilityChange(_transform.name, relayTargets[i].name, isVisible: false);
+                        LogVisibilityChange(_transform.name, relayTargets[i].name, isVisible: false);
                         iNotify.NotifyVisibilityChanged(_transform, isVisible: false);
                     }
                 }
@@ -96,33 +118,95 @@ public class VisibilityChangedRelay : AMonoBehaviourBase {
     }
 
     [System.Diagnostics.Conditional("DEBUG_LOG")]
-    private void ReportVisibilityChange(string notifier, string client, bool isVisible) {
+    private void LogVisibilityChange(string notifier, string client, bool isVisible) {
         if (DebugSettings.Instance.EnableVerboseDebugLog) {
             string iNotifyParentName = _transform.GetSafeTransformWithInterfaceInParents<INotifyVisibilityChanged>().name;
             string visibility = isVisible ? "Visible" : "Invisible";
             D.Log("{0} of parent {1} is notifying client {2} of becoming {3}.", notifier, iNotifyParentName, client, visibility);
         }
     }
-
+    // FIXME Recieving a few duplicate OnBecameXXX events during initial scrolling and don't know why
+    // It does not seem to be from other cameras in the scene. Don't know about editor scene camera.
     private bool ValidateVisibilityChange(bool isVisible) {
+        if (!_isGameRunning) {
+            return false;   // see SetupDocs.txt for approach to visibility
+        }
         bool isValid = true;
         string visibility = isVisible ? "Visible" : "Invisible";
         if (isVisible == _isVisible) {
-            D.Warn("Duplicate {0}.OnBecame{1}() received and filtered out.", gameObject.name, visibility);
+            D.LogContext("Duplicate {0}.OnBecame{1}() received and filtered out.".Inject(gameObject.name, visibility), this);
             isValid = false;
         }
         if (gameObject.activeInHierarchy) {
             if (isVisible != renderer.IsVisibleFrom(Camera.main)) {
-                D.Warn("{0}.OnBecame{1}() received from a camera that is not Camera.main.", gameObject.name, visibility);
+                D.WarnContext("{0}.OnBecame{1}() received from a camera that is not Camera.main.".Inject(gameObject.name, visibility), this);
                 isValid = false;
             }
         }
         return isValid;
     }
 
+    protected override void OnDestroy() {
+        base.OnDestroy();
+        Dispose();
+    }
+
+    private void Cleanup() {
+        Unsubscribe();
+        // other cleanup here including any tracking Gui2D elements
+    }
+
+    private void Unsubscribe() {
+        _subscribers.ForAll(d => d.Dispose());
+        _subscribers.Clear();
+    }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region IDisposable
+    [DoNotSerialize]
+    private bool alreadyDisposed = false;
+
+    /// <summary>
+    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// </summary>
+    public void Dispose() {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
+    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
+    /// </summary>
+    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+    protected virtual void Dispose(bool isDisposing) {
+        // Allows Dispose(isDisposing) to be called more than once
+        if (alreadyDisposed) {
+            return;
+        }
+
+        if (isDisposing) {
+            // free managed resources here including unhooking events
+            Cleanup();
+        }
+        // free unmanaged resources here
+
+        alreadyDisposed = true;
+    }
+
+    // Example method showing check for whether the object has been disposed
+    //public void ExampleMethod() {
+    //    // throw Exception if called on object that is already disposed
+    //    if(alreadyDisposed) {
+    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
+    //    }
+
+    //    // method content here
+    //}
+    #endregion
 
 }
 

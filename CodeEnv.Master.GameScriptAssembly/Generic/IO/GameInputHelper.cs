@@ -12,6 +12,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -136,13 +137,51 @@ public static class GameInputHelper {
         return value != 0F; // No floating point equality issues as value is smoothed by Unity
     }
 
+    public static bool IsKeyHeldDown(KeyCode key) {
+        return Input.GetKey(key);
+    }
+
     /// <summary>
     /// Determines whether any of the specified keys are being held down.
     /// </summary>
+    /// <param name="keyHeldDown">The key held down.</param>
     /// <param name="keys">The keys.</param>
     /// <returns></returns>
-    public static bool IsKeyDown(params KeyCode[] keys) {
-        return keys.Any(key => Input.GetKey(key));
+    public static bool TryIsKeyHeldDown(out KeyCode keyHeldDown, params KeyCode[] keys) {
+        keyHeldDown = KeyCode.None;
+        foreach (var key in keys) {
+            if (IsKeyHeldDown(key)) {
+                keyHeldDown = key;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Determines whether this key has been pressed down during this frame.
+    /// </summary>
+    /// <param name="key">The key.</param>
+    /// <returns></returns>
+    public static bool IsKeyDown(KeyCode key) {
+        return Input.GetKeyDown(key);
+    }
+
+    /// <summary>
+    /// Determines whether any of the specified keys were pressed down this frame.
+    /// </summary>
+    /// <param name="keyDown">The key down.</param>
+    /// <param name="keys">The keys.</param>
+    /// <returns></returns>
+    public static bool TryIsKeyDown(out KeyCode keyDown, params KeyCode[] keys) {
+        keyDown = KeyCode.None;
+        foreach (var key in keys) {
+            if (IsKeyDown(key)) {
+                keyDown = key;
+                return true;
+            }
+        }
+        return false;
     }
 
 }

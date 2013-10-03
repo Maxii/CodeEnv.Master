@@ -97,14 +97,18 @@ public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud, IDisposable {
         }
     }
 
-    private void Unsubscribe() {
-        _subscribers.ForAll<IDisposable>(s => s.Dispose());
-        _subscribers.Clear();
-    }
-
     protected override void OnDestroy() {
         base.OnDestroy();
         Dispose();
+    }
+
+    private void Cleanup() {
+        Unsubscribe();
+    }
+
+    private void Unsubscribe() {
+        _subscribers.ForAll<IDisposable>(s => s.Dispose());
+        _subscribers.Clear();
     }
 
     public override string ToString() {
@@ -144,7 +148,7 @@ public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud, IDisposable {
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            Unsubscribe();
+            Cleanup();
         }
         // free unmanaged resources here
 

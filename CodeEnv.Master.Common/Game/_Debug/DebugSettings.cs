@@ -146,6 +146,17 @@ namespace CodeEnv.Master.Common {
             private set { _enableFleetVelocityRays = value; }
         }
 
+        private bool _showSectorGrid;
+        public bool ShowSectorGrid {
+            get {
+                if (!isPropertyValuesInitialized) {
+                    InitializePropertyValues();
+                }
+                return _showSectorGrid;
+            }
+            private set { _showSectorGrid = value; }
+        }
+
 
 
         private DebugSettings() {

@@ -19,14 +19,14 @@ namespace CodeEnv.Master.Common {
     using System;
     using System.Collections.Generic;
     using System.Linq;
-
     using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
-    /// Abstract Generic Singleton Base Class.
+    /// Abstract Generic Singleton Base Class. Derived classes must implement
+    /// a Private Constructor and call Initialize() from it.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public abstract class AGenericSingleton<T> where T : class {
+    public abstract class AGenericSingleton<T> : APropertyChangeTracking where T : class {
 
         #region Singleton Pattern
 

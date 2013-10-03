@@ -27,11 +27,6 @@ namespace CodeEnv.Master.GameContent {
         bool IsSelected { get; set; }
 
         /// <summary>
-        /// Gets the data from this ISelectable object.
-        /// </summary>
-        //Data Data { get; }
-
-        /// <summary>
         /// Called when [left click].
         /// </summary>
         void OnLeftClick();

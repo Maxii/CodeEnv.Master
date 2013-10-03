@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SelectionEvent.cs
-// Event indicating a new Selection has occured.
+// File: PlayerViewMode.cs
+// The viewing mode the display is showing to the player.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,21 +16,14 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using CodeEnv.Master.Common;
-    using UnityEngine;
-
     /// <summary>
-    /// Event indicating a new Selection has occured.
+    /// The viewing mode the display is showing to the player.
     /// </summary>
-    public class SelectionEvent : AGameEvent {
+    public enum PlayerViewMode {
 
-        public SelectionEvent(ISelectable source)
-            : base(source) {
-        }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
+        None = 0,
+        NormalView = 1,
+        SectorView = 2
 
     }
 }

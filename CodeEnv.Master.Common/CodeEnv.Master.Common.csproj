@@ -51,6 +51,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\IO\KeyModifiers.cs" />
     <Compile Include="ThirdParty\CoroutineNode.cs" />
     <Compile Include="ThirdParty\Reference.cs" />
     <Compile Include="ThirdParty\CoroutineScheduler.cs" />
@@ -60,7 +61,7 @@
     <Compile Include="Generic\Extensions\LayerMaskExtensions.cs" />
     <Compile Include="Generic\Extensions\UnityExtensions.cs" />
     <Compile Include="Generic\Extensions\VectorExtensions.cs" />
-    <Compile Include="Generic\Framework\GameItemDestroyedEvent.cs" />
+    <Compile Include="Generic\Framework\ItemDeathEvent.cs" />
     <Compile Include="Generic\Framework\MyNguiConstants.cs" />
     <Compile Include="Generic\Framework\MyNguiUtilities.cs" />
     <Compile Include="Generic\Framework\UnityUtility.cs" />
@@ -137,6 +138,7 @@
     <Compile Include="Generic\Framework\UnityConstants.cs" />
     <Compile Include="Generic\Framework\DisposePropertyChangedSubscription.cs" />
     <Compile Include="Generic\IO\UnityUpdateEvent.cs" />
+    <Compile Include="Generic\Math\Vector3EqualityComparer.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeEnv.Master.Common.LocalResources\CodeEnv.Master.Common.LocalResources.csproj">

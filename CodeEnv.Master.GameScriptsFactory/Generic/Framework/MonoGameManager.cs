@@ -10,12 +10,10 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_WARN
-#define DEBUG_ERROR
-
 // default namespace
 
 using System;
+using System.Collections;
 using System.Globalization;
 using System.Threading;
 using CodeEnv.Master.Common;
@@ -31,6 +29,7 @@ using UnityEngine;
 public class MonoGameManager : AMonoBehaviourBaseSingletonInstanceIdentity<MonoGameManager> {
 
     private GameManager _gameMgr;
+    private GameEventManager _eventMgr;
 
     protected override void Awake() {
         base.Awake();
@@ -42,9 +41,9 @@ public class MonoGameManager : AMonoBehaviourBaseSingletonInstanceIdentity<MonoG
         //string language = "fr-FR";
         // ChangeLanguage(language);
         _gameMgr = GameManager.Instance;
-        _gameMgr.DebugHud = DebugHud.Instance;
         _gameMgr.CompleteInitialization();
-
+        _eventMgr = GameEventManager.Instance;
+        Subscribe();
         __AwakeBasedOnStartScene();
     }
 
@@ -108,9 +107,34 @@ public class MonoGameManager : AMonoBehaviourBaseSingletonInstanceIdentity<MonoG
     }
     #endregion
 
-    //void Update() { // UNCLEAR perhaps running coroutine update should be done at end of all updates rather than beginning?
-    //    CoroutineScheduler.UpdateAllCoroutines(Time.frameCount, Time.time);
-    //}
+    private void Subscribe() {
+        _eventMgr.AddListener<BuildNewGameEvent>(Instance, OnBuildNewGame);
+        _eventMgr.AddListener<LoadSavedGameEvent>(Instance, OnLoadSavedGame);
+    }
+
+    private void OnBuildNewGame(BuildNewGameEvent e) {
+        D.Log("BuildNewGameEvent received.");
+        StartCoroutine<GameSettings>(WaitUntilReadyThenBuildNewGame, e.Settings);
+    }
+
+    private IEnumerator WaitUntilReadyThenBuildNewGame(GameSettings settings) {
+        while (!GuiManager.Instance.ReadyForSceneChange) {
+            yield return null;
+        }
+        _gameMgr.BuildAndLoadNewGame(settings);
+    }
+
+    private void OnLoadSavedGame(LoadSavedGameEvent e) {
+        D.Log("LoadSavedGameEvent received.");
+        StartCoroutine<string>(WaitUntilReadyThenLoadAndRestoreSavedGame, e.GameID);
+    }
+
+    private IEnumerator WaitUntilReadyThenLoadAndRestoreSavedGame(string gameID) {
+        while (!GuiManager.Instance.ReadyForSceneChange) {
+            yield return null;
+        }
+        _gameMgr.LoadAndRestoreSavedGame(gameID);
+    }
 
     // This simply substitutes my own Event for OnLevelWasLoaded so I don't have to use OnLevelWasLoaded anywhere else
     // Wiki: OnLevelWasLoaded is NOT guaranteed to run before all of the Awake calls. In most cases it will, but in some 
@@ -119,8 +143,8 @@ public class MonoGameManager : AMonoBehaviourBaseSingletonInstanceIdentity<MonoG
         if (enabled) {
             // OnLevelWasLoaded is called on all active components and at any time. The earliest thing that happens after Destroy(gameObject)
             // is component disablement. GameObject deactivation happens later, but before OnDestroy()
-            D.Log("{0}_{1}.OnLevelWasLoaded(level = {1}) called.".Inject(this.name, InstanceID, level));
-            _gameMgr.OnSceneChanged((SceneLevel)level);
+            D.Log("{0}_{1}.OnLevelWasLoaded(level = {2}) called.".Inject(this.name, InstanceID, ((SceneLevel)level).GetName()));
+            _gameMgr.OnLevelHasCompletedLoading((SceneLevel)level);
         }
     }
 
@@ -128,14 +152,70 @@ public class MonoGameManager : AMonoBehaviourBaseSingletonInstanceIdentity<MonoG
         _gameMgr.OnDeserialized();
     }
 
-    protected override void OnApplicationQuit() {
-        base.OnApplicationQuit();
-        _gameMgr.Dispose();
+    protected override void OnDestroy() {
+        base.OnDestroy();
+        Dispose();
+    }
+
+    private void Cleanup() {
+        if (enabled) { // The earliest thing that happens after Destroy(gameObject) is component disablement. GameObject deactivation happens later, but before OnDestroy()
+            Unsubscribe();
+            _gameMgr.Dispose();
+            // other cleanup here including any tracking Gui2D elements
+        }
+    }
+
+    private void Unsubscribe() {
+        _eventMgr.RemoveListener<BuildNewGameEvent>(Instance, OnBuildNewGame);
+        _eventMgr.RemoveListener<LoadSavedGameEvent>(Instance, OnLoadSavedGame);
     }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region IDisposable
+    [DoNotSerialize]
+    private bool alreadyDisposed = false;
+
+    /// <summary>
+    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// </summary>
+    public void Dispose() {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
+    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
+    /// </summary>
+    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+    protected virtual void Dispose(bool isDisposing) {
+        // Allows Dispose(isDisposing) to be called more than once
+        if (alreadyDisposed) {
+            return;
+        }
+
+        if (isDisposing) {
+            // free managed resources here including unhooking events
+            Cleanup();
+        }
+        // free unmanaged resources here
+
+        alreadyDisposed = true;
+    }
+
+    // Example method showing check for whether the object has been disposed
+    //public void ExampleMethod() {
+    //    // throw Exception if called on object that is already disposed
+    //    if(alreadyDisposed) {
+    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
+    //    }
+
+    //    // method content here
+    //}
+    #endregion
 
 }
 

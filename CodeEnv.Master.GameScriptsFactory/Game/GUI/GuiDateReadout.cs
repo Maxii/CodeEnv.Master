@@ -59,6 +59,10 @@ public class GuiDateReadout : AGuiLabelReadoutBase, IDisposable {
         }
     }
 
+    private void Cleanup() {
+        Unsubscribe();
+    }
+
     private void Unsubscribe() {
         _subscribers.ForAll<IDisposable>(s => s.Dispose());
         _subscribers.Clear();
@@ -98,7 +102,7 @@ public class GuiDateReadout : AGuiLabelReadoutBase, IDisposable {
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            Unsubscribe();
+            Cleanup();
         }
         // free unmanaged resources here
 

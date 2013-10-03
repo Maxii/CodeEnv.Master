@@ -22,9 +22,9 @@ using CodeEnv.Master.Common;
 using UnityEngine;
 
 /// <summary>
-/// Singleton for easy access to this Management folder in all scenes. Transitions from startScene to startScene
-/// attaching any Management folder child objects in the new startScene to this incoming folder, then destroys
-/// the Management folder that was already present in the new startScene.
+/// Singleton for easy access to this Management folder in all scenes. Transitions from scene to scene
+/// attaching any Management folder child objects in the new scene to this incoming folder, then destroys
+/// the Management folder that was already present in the new scene.
 /// </summary>
 public class ManagementObjects : AMonoBehaviourBaseSingletonInstanceIdentity<ManagementObjects>, IDisposable {
 
@@ -56,7 +56,7 @@ public class ManagementObjects : AMonoBehaviourBaseSingletonInstanceIdentity<Man
     /// <returns><c>true</c> if this instance is going to be destroyed, <c>false</c> if not.</returns>
     private bool TryDestroyExtraCopies() {
         if (_instance && _instance != this) {
-            D.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceID));
+            D.Log("{0}_{1} found as extra. Initiating destruction sequence.", this.name, InstanceID);
             TransferChildrenThenDestroy();
             return true;
         }
@@ -68,12 +68,12 @@ public class ManagementObjects : AMonoBehaviourBaseSingletonInstanceIdentity<Man
     }
 
     private void TransferChildrenThenDestroy() {
-        D.Log("{0} has {1} children.".Inject(this.name, _transform.childCount));
+        D.Log("{0}_{1} has {2} children.".Inject(Instance.name, InstanceID, Folder.childCount));
         Transform[] transforms = gameObject.GetComponentsInChildren<Transform>(includeInactive: true);   // includes the parent t
         foreach (Transform t in transforms) {
-            if (t != _transform) {
+            if (t != Folder) {
                 t.parent = Instance.transform;
-                D.Log("Child [{0}].parent changed to {1}.".Inject(t.name, Instance.name));
+                D.Log("Child [{0}].parent changed to {1}_{2}.".Inject(t.name, Instance.name, InstanceID));
             }
         }
         Destroy(gameObject);
@@ -93,13 +93,23 @@ public class ManagementObjects : AMonoBehaviourBaseSingletonInstanceIdentity<Man
     private void OnSceneChanging(SceneChangingEvent e) {
         // what the scene is changing to is irrelevant
         Transform[] transforms = gameObject.GetComponentsInChildren<Transform>(includeInactive: true);
-        _children = (from t in transforms where t != _transform select t).ToArray<Transform>();
-        _transform.DetachChildren();
+        _children = (from t in transforms where t != Folder select t).ToArray<Transform>();
+        Folder.DetachChildren();
     }
 
     private void OnSceneChanged(SceneChangedEvent e) {
         var childrenToReattach = from t in _children where t != null select t;
-        childrenToReattach.ForAll<Transform>(t => t.parent = _transform);
+        childrenToReattach.ForAll<Transform>(t => t.parent = Folder);
+        __FixGameObjectName();
+    }
+
+    /// <summary>
+    /// Temporary. Changes IntroManagement to GameManagement when transitioning
+    /// from IntroScene to GameScene. Had to change the name of the gameobject to make
+    /// a separate prefab for IntroManagement.
+    /// </summary>
+    private void __FixGameObjectName() {
+        gameObject.name = "GameManagement";
     }
 
     protected override void OnDestroy() {
@@ -108,6 +118,10 @@ public class ManagementObjects : AMonoBehaviourBaseSingletonInstanceIdentity<Man
             // no reason to cleanup if this object was destroyed before it was initialized.
             Dispose();
         }
+    }
+
+    private void Cleanup() {
+        Unsubscribe();
     }
 
     private void Unsubscribe() {
@@ -144,7 +158,7 @@ public class ManagementObjects : AMonoBehaviourBaseSingletonInstanceIdentity<Man
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            Unsubscribe();
+            Cleanup();
         }
         // free unmanaged resources here
 

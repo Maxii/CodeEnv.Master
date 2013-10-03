@@ -41,6 +41,7 @@ public class SystemManager : AMonoBehaviourBase, ISelectable {
     private Star _star;
     private FollowableItem[] _planetsAndMoons;
     private GameEventManager _eventMgr;
+    private SelectionManager _selectionMgr;
 
     protected override void Awake() {
         base.Awake();
@@ -49,6 +50,7 @@ public class SystemManager : AMonoBehaviourBase, ISelectable {
         _star = gameObject.GetSafeMonoBehaviourComponentInChildren<Star>();
         _planetsAndMoons = gameObject.GetSafeMonoBehaviourComponentsInChildren<FollowableItem>();
         _eventMgr = GameEventManager.Instance;
+        _selectionMgr = SelectionManager.Instance;
     }
 
     private void OnIntelLevelChanged() {
@@ -60,7 +62,7 @@ public class SystemManager : AMonoBehaviourBase, ISelectable {
     private void OnIsSelectedChanged() {
         _systemGraphics.AssessHighlighting();
         if (IsSelected) {
-            _eventMgr.Raise<SelectionEvent>(new SelectionEvent(this));
+            _selectionMgr.CurrentSelection = this;
         }
     }
 

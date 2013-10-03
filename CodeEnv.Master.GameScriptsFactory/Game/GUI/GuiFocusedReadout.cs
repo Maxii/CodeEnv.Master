@@ -35,7 +35,7 @@ public class GuiFocusedReadout : AGuiLabelReadoutBase {
 
     private void Subscribe() {
         _eventMgr.AddListener<FocusSelectedEvent>(this, OnFocusSelected);
-        _eventMgr.AddListener<GameItemDestroyedEvent>(this, OnGameItemDestroyed);
+        _eventMgr.AddListener<ItemDeathEvent>(this, OnGameItemDestroyed);
     }
 
     private void OnFocusSelected(FocusSelectedEvent e) {
@@ -56,7 +56,7 @@ public class GuiFocusedReadout : AGuiLabelReadoutBase {
         }
     }
 
-    private void OnGameItemDestroyed(GameItemDestroyedEvent e) {
+    private void OnGameItemDestroyed(ItemDeathEvent e) {
         ICameraFocusable focusable = e.Source as ICameraFocusable;
         CheckRetainedFocusDestroyed(focusable);
     }
@@ -85,7 +85,7 @@ public class GuiFocusedReadout : AGuiLabelReadoutBase {
 
     private void Unsubscribe() {
         _eventMgr.RemoveListener<FocusSelectedEvent>(this, OnFocusSelected);
-        _eventMgr.RemoveListener<GameItemDestroyedEvent>(this, OnGameItemDestroyed);
+        _eventMgr.RemoveListener<ItemDeathEvent>(this, OnGameItemDestroyed);
     }
 
     protected override void OnDestroy() {

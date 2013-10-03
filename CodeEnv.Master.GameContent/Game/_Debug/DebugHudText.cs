@@ -30,6 +30,7 @@ namespace CodeEnv.Master.GameContent {
         // This is needed as the order of Dictionary.Keys is not defined when iterating through it, even if they were added in the right order
         private static IList<DebugHudLineKeys> _displayLineOrder = new List<DebugHudLineKeys>() {
                 DebugHudLineKeys.CameraMode, 
+                DebugHudLineKeys.PlayerViewMode,
                 DebugHudLineKeys.PauseState,
                 DebugHudLineKeys.GraphicsQuality
         };
@@ -52,6 +53,7 @@ namespace CodeEnv.Master.GameContent {
             // initialized in static constructor because formats that are dynamically constructed cannot be used in a static initializer
             IDictionary<DebugHudLineKeys, string> baseDisplayLineContent = new Dictionary<DebugHudLineKeys, string>() {
                 {DebugHudLineKeys.CameraMode, "CameraMode: {0}"},
+                {DebugHudLineKeys.PlayerViewMode, "ViewMode: {0}"},
                 {DebugHudLineKeys.PauseState, "{0}"},
                 {DebugHudLineKeys.GraphicsQuality, "Quality: {0}"}
             };

@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface INotifyVisibilityChanged {
 
-        bool IsVisible { get; set; }
+        bool IsVisible { get; }
 
         void NotifyVisibilityChanged(Transform sender, bool isVisible);
 

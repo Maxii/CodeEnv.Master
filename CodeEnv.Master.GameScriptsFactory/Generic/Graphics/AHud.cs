@@ -38,10 +38,6 @@ public abstract class AHud<T> : AMonoBehaviourBaseSingleton<T>, IHud where T : A
         }
     }
 
-    protected override void Start() {
-        base.Start();
-    }
-
     void Update() {
         if (ToUpdate()) {
             UpdatePosition();

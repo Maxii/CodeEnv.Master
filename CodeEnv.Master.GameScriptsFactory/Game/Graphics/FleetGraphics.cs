@@ -86,7 +86,7 @@ public class FleetGraphics : AGraphics, IDisposable {
     }
 
     private GuiTrackingLabel InitializeTrackingLabel() {
-        // use LeadShip collider for the offset rather than the Admiral collider as the Admiral collider changes scale dynamically. FIXME LeadShips die!!!
+        // use LeadShip collider for the offset rather than the Admiral collider as the Admiral collider changes scale dynamically. 
         Vector3 pivotOffset = new Vector3(Constants.ZeroF, _fleetMgr.LeadShipCaptain.collider.bounds.extents.y, Constants.ZeroF);
         GuiTrackingLabel trackingLabel = _trackingLabelFactory.CreateGuiTrackingLabel(Target, pivotOffset, trackingLabelOffsetFromPivot);
         trackingLabel.IsShowing = true;
@@ -120,7 +120,9 @@ public class FleetGraphics : AGraphics, IDisposable {
     }
 
     private void Highlight(bool toShowFleetIcon, Highlights highlight) {
-        _fleetIcon.gameObject.SetActive(toShowFleetIcon);
+        if (_fleetIcon != null) {
+            _fleetIcon.gameObject.SetActive(toShowFleetIcon);
+        }
         ShowVelocityRay(toShowFleetIcon);
         switch (highlight) {
             case Highlights.Focused:
@@ -148,6 +150,9 @@ public class FleetGraphics : AGraphics, IDisposable {
 
     private void ShowCircle(bool toShow, Highlights highlight) {
         D.Assert(highlight == Highlights.Focused || highlight == Highlights.Selected);
+        if (!toShow && _circles == null) {
+            return;
+        }
         if (_circles == null) {
             float normalizedRadius = Screen.height * circleScaleFactor;
             _circles = _vectorLineFactory.MakeInstance("FleetCircles", _fleetCmd.transform, normalizedRadius, isRadiusDynamic: false, maxCircles: 2);
@@ -162,6 +167,9 @@ public class FleetGraphics : AGraphics, IDisposable {
     /// </summary>
     private void ShowVelocityRay(bool toShow) {
         if (DebugSettings.Instance.EnableFleetVelocityRays) {
+            if (!toShow && _velocityRay == null) {
+                return;
+            }
             if (_velocityRay == null) {
                 Reference<float> speedReference = new Reference<float>(() => _fleetCmd.Data.CurrentSpeed);
                 _velocityRay = _vectorLineFactory.MakeInstance("FleetVelocityRay", _fleetCmd.transform, speedReference, GameColor.Green);
@@ -178,6 +186,21 @@ public class FleetGraphics : AGraphics, IDisposable {
     protected override void OnDestroy() {
         base.OnDestroy();
         Dispose();
+    }
+
+    private void Cleanup() {
+        if (_velocityRay != null) {
+            Destroy(_velocityRay.gameObject);
+            _velocityRay = null;
+        }
+        if (_circles != null) {
+            Destroy(_circles.gameObject);
+            _circles = null;
+        }
+        if (_trackingLabel != null) {
+            Destroy(_trackingLabel.gameObject);
+            _trackingLabel = null;
+        }
     }
 
     public override string ToString() {
@@ -209,12 +232,7 @@ public class FleetGraphics : AGraphics, IDisposable {
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            if (_velocityRay != null) {
-                Destroy(_velocityRay.gameObject);
-            }
-            if (_circles != null) {
-                Destroy(_circles.gameObject);
-            }
+            Cleanup();
         }
         // free unmanaged resources here
 

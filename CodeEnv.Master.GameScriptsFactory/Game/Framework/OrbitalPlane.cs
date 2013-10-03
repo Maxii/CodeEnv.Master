@@ -49,6 +49,7 @@ public class OrbitalPlane : StationaryItem, IHasContextMenu, IZoomToFurthest {
 
     protected override void OnHover(bool isOver) {
         base.OnHover(isOver);
+        D.Log("OrbitalPlane.OnHover({0}), hoveredObject = {1}.".Inject(isOver, UICamera.hoveredObject.name));
         _systemGraphics.HighlightTrackingLabel(isOver);
     }
 
@@ -106,7 +107,7 @@ public class OrbitalPlane : StationaryItem, IHasContextMenu, IZoomToFurthest {
     public void OnPress(bool isDown) {
         if (_systemManager.IsSelected) {
             //D.Log("{0}.OnPress({1}) called.", this.GetType().Name, isPressed);
-            CameraControl.Instance.TryShowContextMenuOnPress(isDown);
+            CameraControl.Instance.ShowContextMenuOnPress(isDown);
         }
     }
 

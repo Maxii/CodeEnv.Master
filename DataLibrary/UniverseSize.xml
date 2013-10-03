@@ -18,7 +18,7 @@
   <Float>
     <Setting>
       <PropertyName>TinyRadius</PropertyName>
-      <PropertyValue>5000</PropertyValue>
+      <PropertyValue>3000</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>SmallRadius</PropertyName>
@@ -26,19 +26,19 @@
     </Setting>
     <Setting>
       <PropertyName>NormalRadius</PropertyName>
-      <PropertyValue>5000</PropertyValue>
+      <PropertyValue>10000</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>LargeRadius</PropertyName>
-      <PropertyValue>15000</PropertyValue>
+      <PropertyValue>20000</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>EnormousRadius</PropertyName>
-      <PropertyValue>25000</PropertyValue>
+      <PropertyValue>40000</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>GiganticRadius</PropertyName>
-      <PropertyValue>40000</PropertyValue>
+      <PropertyValue>80000</PropertyValue>
     </Setting>
   </Float>
 </EnumValues>

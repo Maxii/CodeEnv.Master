@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -49,7 +49,7 @@ public class AMonoBehaviourBaseSingletonInstanceIdentity<T> : AMonoBehaviourBase
 
     private void IncrementInstanceCounter() {
         InstanceID = System.Threading.Interlocked.Increment(ref _instanceCounter);
-        //D.Log("{0}.InstanceID now set to {1}, static counter now {2}.", typeof(T).Name, InstanceID, _instanceCounter);
+        D.Log("{0}.InstanceID now set to {1}, static counter now {2}.", typeof(T).Name, InstanceID, _instanceCounter);
     }
 
     #endregion

@@ -19,6 +19,24 @@ namespace CodeEnv.Master.Common {
     using System;
     using System.Collections;
 
+    ///<example>
+    ///My usage notes: Power the scheduler with my own
+    ///UnityUpdateEvent timed to occur at the end of all
+    ///other updates - use ExecutionOrder on a dedicated
+    ///GameObject with the FramesLastUpdate script
+    ///attached.
+    ///
+    /// private int _lastFrameCountAtUpdate;
+    ///
+    /// private void OnUpdate(UnityUpdateEvent e) {
+    ///   int frameCount = Time.frameCount;
+    ///    if (frameCount != _lastFrameCountAtUpdate) {
+    ///        _coroutineScheduler.UpdateAllCoroutines(frameCount, Time.time);
+    ///        _lastFrameCountAtUpdate = frameCount;
+    ///    }
+    ///}
+    /// </example>
+
     /// <summary>
     /// CoroutineScheduler.cs
     /// 

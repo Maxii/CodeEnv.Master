@@ -25,16 +25,16 @@ namespace CodeEnv.Master.Common {
     public static class VectorExtensions {
 
         public static void ValidateNormalized(this Vector3 v) {
-            if (v.IsSameLength(v.normalized)) {
+            if (!v.IsSame(v.normalized)) {
                 string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
                 throw new ArgumentOutOfRangeException(ErrorMessages.NotNormalized.Inject(v, callingMethodName));
             }
         }
 
         /// <summary>
-        /// Compares the magnitude of 2 vectors for equality, ignoring their direction.
+        /// Compares 2 vectors for equality.
         /// </summary>
-        public static bool IsSameLength(this Vector3 source, Vector3 v) {
+        public static bool IsSame(this Vector3 source, Vector3 v) {
             return Mathfx.Approx(source, v, .0001F);    // 1M times less precise than Unity's built in == comparison
         }
 
@@ -43,13 +43,6 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         public static bool IsSameDirection(this Vector3 source, Vector3 v) {
             return Vector3.Angle(source, v) < .01F;
-        }
-
-        /// <summary>
-        /// Compares the direction and magnitude of 2 vectors for equality.
-        /// </summary>
-        public static bool IsSame(this Vector3 source, Vector3 v) {
-            return source.IsSameDirection(v) && source.IsSameLength(v);
         }
 
         public static Color ToUnityColor(this GameColor color) {

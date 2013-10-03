@@ -33,6 +33,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>..\..\..\UnityEnv\Support\Plugins\Library\ScriptAssemblies\Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
       <HintPath>..\..\..\UnityEnv\Support\UnitySerializer\Library\ScriptAssemblies\Assembly-CSharp-firstpass.dll</HintPath>
       <Private>False</Private>
@@ -44,6 +48,10 @@
       <HintPath>$(ProgramFiles)\Unity\Editor\Data\Managed\UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Vectrosity">
+      <HintPath>..\..\..\UnityEnv\Support\Plugins\Assets\Plugins\Vectrosity.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\AssemblyVersionInfo.cs">
@@ -52,7 +60,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="FleetComposition.cs" />
+    <Compile Include="Generic\Graphics\CubeWireframe.cs" />
+    <Compile Include="Game\Framework\FleetComposition.cs" />
     <Compile Include="Game\Framework\GameSettings.cs" />
     <Compile Include="Game\Framework\HumanPlayer.cs" />
     <Compile Include="Game\Framework\IPlayer.cs" />
@@ -71,6 +80,7 @@
     <Compile Include="Game\_Debug\DebugHudLineKeys.cs" />
     <Compile Include="Generic\Extensions\GameSpeedExtensions.cs" />
     <Compile Include="Generic\Extensions\UniverseSizeExtensions.cs" />
+    <Compile Include="Generic\Framework\SelectionManager.cs" />
     <Compile Include="Generic\Graphics\AGuiHudPublisher.cs" />
     <Compile Include="Generic\Graphics\AGuiHudTextFactory.cs" />
     <Compile Include="Generic\Framework\ISelectable.cs" />
@@ -80,8 +90,6 @@
     <Compile Include="Generic\Graphics\IHasContextMenu.cs" />
     <Compile Include="Generic\Graphics\IZoomToFurthest.cs" />
     <Compile Include="Generic\IO\AnimationSettings.cs" />
-    <Compile Include="Generic\IO\GameInput.cs" />
-    <Compile Include="Generic\Framework\SelectionEvent.cs" />
     <Compile Include="Game\_Debug\DebugHudText.cs" />
     <Compile Include="Game\Framework\GameConstants.cs" />
     <Compile Include="Game\GUI\BuildNewGameEvent.cs" />
@@ -114,6 +122,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\SystemData.cs" />
     <Compile Include="Game\Gameplay\ShipData.cs" />
+    <Compile Include="Game\GUI\PlayerViewMode.cs" />
+    <Compile Include="Generic\IO\SpecialKeys.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">

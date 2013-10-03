@@ -198,6 +198,10 @@ namespace CodeEnv.Master.GameContent {
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();
         }
 
+        private void Cleanup() {
+            Unsubscribe();
+        }
+
         private void Unsubscribe() {
             _subscribers.ForAll<IDisposable>(s => s.Dispose());
             _subscribers.Clear();
@@ -232,7 +236,7 @@ namespace CodeEnv.Master.GameContent {
 
             if (isDisposing) {
                 // free managed resources here including unhooking events
-                Unsubscribe();
+                Cleanup();
             }
             // free unmanaged resources here
 

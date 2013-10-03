@@ -16,6 +16,7 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -25,8 +26,12 @@ using UnityEngine;
 /// </summary>
 public class GuiSelectedReadout : AGuiLabelReadoutBase, IDisposable {
 
+    private IList<IDisposable> _subscribers;
+    private SelectionManager _selectionMgr;
+
     protected override void Awake() {
         base.Awake();
+        _selectionMgr = SelectionManager.Instance;
         Subscribe();
     }
 
@@ -35,32 +40,34 @@ public class GuiSelectedReadout : AGuiLabelReadoutBase, IDisposable {
     }
 
     private void Subscribe() {
-        _eventMgr.AddListener<SelectionEvent>(this, OnNewSelection);
-        _eventMgr.AddListener<GameItemDestroyedEvent>(this, OnGameItemDestroyed);
-    }
-
-    private void OnNewSelection(SelectionEvent e) {
-        ISelectable newSelection = e.Source as ISelectable;
-        RefreshReadout(newSelection.GetData().Name);
-    }
-
-    private void OnGameItemDestroyed(GameItemDestroyedEvent e) {
-        ISelectable selectable = e.Source as ISelectable;
-        if (selectable != null) {
-            if (selectable.IsSelected) {
-                RefreshReadout(string.Empty);
-            }
+        if (_subscribers == null) {
+            _subscribers = new List<IDisposable>();
         }
+        _subscribers.Add(_selectionMgr.SubscribeToPropertyChanged<SelectionManager, ISelectable>(sm => sm.CurrentSelection, OnSelectionChanged));
     }
 
-    private void Unsubscribe() {
-        _eventMgr.RemoveListener<SelectionEvent>(this, OnNewSelection);
-        _eventMgr.RemoveListener<GameItemDestroyedEvent>(this, OnGameItemDestroyed);
+    private void OnSelectionChanged() {
+        string selectionName = string.Empty;
+        ISelectable newSelection = _selectionMgr.CurrentSelection;
+        if (newSelection != null) {
+            selectionName = newSelection.GetData().Name;
+        }
+        RefreshReadout(selectionName);
     }
+
 
     protected override void OnDestroy() {
         base.OnDestroy();
         Dispose();
+    }
+
+    private void Cleanup() {
+        Unsubscribe();
+    }
+
+    private void Unsubscribe() {
+        _subscribers.ForAll<IDisposable>(s => s.Dispose());
+        _subscribers.Clear();
     }
 
     public override string ToString() {
@@ -92,7 +99,7 @@ public class GuiSelectedReadout : AGuiLabelReadoutBase, IDisposable {
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            Unsubscribe();
+            Cleanup();
         }
         // free unmanaged resources here
 
@@ -109,7 +116,6 @@ public class GuiSelectedReadout : AGuiLabelReadoutBase, IDisposable {
     //    // method content here
     //}
     #endregion
-
 
 }
 

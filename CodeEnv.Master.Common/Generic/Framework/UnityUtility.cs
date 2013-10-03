@@ -37,34 +37,46 @@ namespace CodeEnv.Master.Common {
             return false;
         }
 
-        public static void ValidateComponentPresence<T>(GameObject go) where T : Component {
+        public static T ValidateComponentPresence<T>(GameObject go) where T : Component {
             System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
-            D.Assert(go.GetComponent<T>() != null, ErrorMessages.ComponentNotFound.Inject(typeof(T).Name, stackFrame.GetMethod().Name));
+            T component = go.GetComponent<T>();
+            D.Assert(component != null, ErrorMessages.ComponentNotFound.Inject(typeof(T).Name, stackFrame.GetMethod().Name));
+            return component;
         }
 
-        public static void ValidateComponentPresence<T>(Transform t) where T : Component {
+        public static T ValidateComponentPresence<T>(Transform t) where T : Component {
             System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
-            D.Assert(t.GetComponent<T>() != null, ErrorMessages.ComponentNotFound.Inject(typeof(T).Name, stackFrame.GetMethod().Name));
+            T component = t.GetComponent<T>();
+            D.Assert(component != null, ErrorMessages.ComponentNotFound.Inject(typeof(T).Name, stackFrame.GetMethod().Name));
+            return component;
         }
 
-        public static void ValidateMonoBehaviourPresence<T>(GameObject go) where T : MonoBehaviour {
+        public static T ValidateMonoBehaviourPresence<T>(GameObject go) where T : MonoBehaviour {
             System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
-            D.Assert(go.GetSafeMonoBehaviourComponent<T>() != null, ErrorMessages.ComponentNotFound.Inject(typeof(T).Name, stackFrame.GetMethod().Name));
+            T monoBehaviour = go.GetSafeMonoBehaviourComponent<T>();
+            D.Assert(monoBehaviour != null, ErrorMessages.ComponentNotFound.Inject(typeof(T).Name, stackFrame.GetMethod().Name));
+            return monoBehaviour;
         }
 
-        public static void ValidateMonoBehaviourPresence<T>(Transform t) where T : MonoBehaviour {
+        public static T ValidateMonoBehaviourPresence<T>(Transform t) where T : MonoBehaviour {
             System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
-            D.Assert(t.gameObject.GetSafeMonoBehaviourComponent<T>() != null, ErrorMessages.ComponentNotFound.Inject(typeof(T).Name, stackFrame.GetMethod().Name));
+            T monoBehaviour = t.gameObject.GetSafeMonoBehaviourComponent<T>();
+            D.Assert(monoBehaviour != null, ErrorMessages.ComponentNotFound.Inject(typeof(T).Name, stackFrame.GetMethod().Name));
+            return monoBehaviour;
         }
 
-        public static void ValidateInterfacePresence<I>(GameObject go) where I : class {
+        public static I ValidateInterfacePresence<I>(GameObject go) where I : class {
             System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
-            D.Assert(go.GetInterface<I>() != null, ErrorMessages.ComponentNotFound.Inject(typeof(I).Name, stackFrame.GetMethod().Name));
+            I i = go.GetInterface<I>();
+            D.Assert(i != null, ErrorMessages.ComponentNotFound.Inject(typeof(I).Name, stackFrame.GetMethod().Name));
+            return i;
         }
 
-        public static void ValidateInterfacePresence<I>(Transform t) where I : class {
+        public static I ValidateInterfacePresence<I>(Transform t) where I : class {
             System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
-            D.Assert(t.GetInterface<I>() != null, ErrorMessages.ComponentNotFound.Inject(typeof(I).Name, stackFrame.GetMethod().Name));
+            I i = t.GetInterface<I>();
+            D.Assert(i != null, ErrorMessages.ComponentNotFound.Inject(typeof(I).Name, stackFrame.GetMethod().Name));
+            return i;
         }
 
         /// <summary>

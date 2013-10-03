@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
     /// The primary class that keeps track of game time.
     /// </summary>
     [SerializeAll]
-    public class GameTime : APropertyChangeTracking {
+    public class GameTime : APropertyChangeTracking, IDisposable {
 
         private GameClockSpeed _gameSpeed;
         public GameClockSpeed GameSpeed {
@@ -209,12 +209,10 @@ namespace CodeEnv.Master.GameContent {
             UnityEngine.Time.timeScale = Constants.OneF;
             _playerPrefsMgr = PlayerPrefsManager.Instance;
             PrepareToBeginNewGame();
+            _subscribers = new List<IDisposable>(); // placed here because GameTime exists in IntroScene. _subscribers is null when disposing there
         }
 
         private void Subscribe() {
-            if (_subscribers == null) {
-                _subscribers = new List<IDisposable>();
-            }
             _subscribers.Add(_gameMgr.SubscribeToPropertyChanging<GameManager, bool>(gm => gm.IsPaused, OnIsPausedChanging));
         }
 
@@ -332,6 +330,10 @@ namespace CodeEnv.Master.GameContent {
             D.Log("GameClock synced to {0:0.00}.", _currentDateTime);
         }
 
+        private void Cleanup() {
+            Unsubscribe();
+        }
+
         private void Unsubscribe() {
             _subscribers.ForAll<IDisposable>(s => s.Dispose());
             _subscribers.Clear();
@@ -365,7 +367,7 @@ namespace CodeEnv.Master.GameContent {
 
             if (isDisposing) {
                 // free managed resources here including unhooking events
-                Unsubscribe();
+                Cleanup();
             }
             // free unmanaged resources here
             alreadyDisposed = true;

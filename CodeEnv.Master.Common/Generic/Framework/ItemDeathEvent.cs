@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GameItemDestroyedEvent.cs
-// Event indicating an item of play (source) in the game will shortly be destroyed. 
+// File: ItemDeathEvent.cs
+// Event indicating an item in the game has died. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -14,16 +14,14 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-using UnityEngine;
 namespace CodeEnv.Master.Common {
 
     /// <summary>
-    /// Event indicating an item of play (source) in the game will shortly be destroyed. This event
-    /// is not raised when objects are destroyed in scene transitions or when the application is quiting.
+    /// Event indicating an item in the game has died. 
     /// </summary>
-    public class GameItemDestroyedEvent : AGameEvent {
+    public class ItemDeathEvent : AGameEvent {
 
-        public GameItemDestroyedEvent(object source)
+        public ItemDeathEvent(object source)
             : base(source) {
         }
 

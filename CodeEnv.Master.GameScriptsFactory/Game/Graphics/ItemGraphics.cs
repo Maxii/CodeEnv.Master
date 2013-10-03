@@ -91,6 +91,9 @@ public class ItemGraphics : AGraphics, IDisposable {
 
     private void ShowCircle(bool toShow, Highlights highlight) {
         D.Assert(highlight == Highlights.Focused);
+        if (!toShow && _circle == null) {
+            return;
+        }
         if (_circle == null) {
             float normalizedRadius = Screen.height * circleScaleFactor * _item.Size;
             _circle = VectorLineFactory.Instance.MakeInstance("ItemCircle", Target, normalizedRadius, isRadiusDynamic: true, maxCircles: 1, width: 3F, color: UnityDebugConstants.FocusedColor);
@@ -98,14 +101,21 @@ public class ItemGraphics : AGraphics, IDisposable {
         _circle.ShowCircle(toShow, (int)highlight);
     }
 
-    private void Unsubscribe() {
-        _subscribers.ForAll(s => s.Dispose());
-        _subscribers.Clear();
-    }
-
     protected override void OnDestroy() {
         base.OnDestroy();
         Dispose();
+    }
+
+    private void Cleanup() {
+        Unsubscribe();
+        if (_circle != null) {
+            Destroy(_circle.gameObject);
+        }
+    }
+
+    private void Unsubscribe() {
+        _subscribers.ForAll(s => s.Dispose());
+        _subscribers.Clear();
     }
 
     public override string ToString() {
@@ -137,10 +147,7 @@ public class ItemGraphics : AGraphics, IDisposable {
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            Unsubscribe();
-            if (_circle != null) {
-                Destroy(_circle.gameObject);
-            }
+            Cleanup();
         }
         // free unmanaged resources here
 

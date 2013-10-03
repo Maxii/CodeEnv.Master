@@ -72,13 +72,13 @@
       <Project>{30988a11-a4f0-4fdc-82d5-41b87ea410be}</Project>
       <Name>CodeEnv.Master.Common.LocalResources</Name>
     </ProjectReference>
-    <ProjectReference Include="..\CodeEnv.Master.ExternalMonoBehaviours\CodeEnv.Master.ExternalMonoBehaviours.csproj">
-      <Project>{9c8574a4-64ba-49b1-b66d-7572ecfffcfb}</Project>
-      <Name>CodeEnv.Master.ExternalMonoBehaviours</Name>
-    </ProjectReference>
     <ProjectReference Include="..\CodeEnv.Master.GameContent\CodeEnv.Master.GameContent.csproj">
       <Project>{129dcf86-4fc5-4caf-aafe-911efc560e10}</Project>
       <Name>CodeEnv.Master.GameContent</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CodeEnv.Master.GameScriptAssembly\CodeEnv.Master.GameScriptAssembly.csproj">
+      <Project>{9c8574a4-64ba-49b1-b66d-7572ecfffcfb}</Project>
+      <Name>CodeEnv.Master.GameScriptAssembly</Name>
     </ProjectReference>
     <ProjectReference Include="..\CodeEnv.Master.GameScriptsFactory\CodeEnv.Master.GameScriptsFactory.csproj">
       <Project>{84ab84fa-983b-4fb8-bfd9-34d3b93d8000}</Project>

@@ -85,7 +85,6 @@ public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
 
     protected override void Awake() {
         base.Awake();
-        _isVisible = true;
         UpdateRate = FrameUpdateFrequency.Seldom;
     }
 
@@ -93,10 +92,6 @@ public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
         base.Start();
         Arguments.ValidateNotNull(Target);
         RegisterComponentsToDisable();
-        //if (disableComponentOnCameraDistance.Length == Constants.Zero && disableGameObjectOnCameraDistance.Length == Constants.Zero &&
-        //    disableComponentOnInvisible.Length == Constants.Zero && disableGameObjectOnInvisible.Length == Constants.Zero) {
-        //    RegisterComponentsToDisable();
-        //}
     }
 
     /// <summary>
@@ -149,7 +144,8 @@ public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
         bool toEnable = false;
         if (IsVisible) {
             distanceToCamera = Target.DistanceToCameraInt();
-            D.Log("{0}.EnableBasedOnDistanceToCamera() called. Distance = {1}.", this.GetType().Name, distanceToCamera);
+            //D.Log("CameraPlane distance to {2} = {0}, CameraTransformPosition distance = {1}.", distanceToCamera, Vector3.Distance(Camera.main.transform.position, Target.position), Target.name);
+            //D.Log("{0}.EnableBasedOnDistanceToCamera() called. Distance = {1}.", this.GetType().Name, distanceToCamera);
             if (distanceToCamera < maxAnimateDistance) {
                 toEnable = true;
             }
@@ -179,13 +175,14 @@ public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
 
     private void OnAMeshVisibilityChanged(Transform sender, bool isVisible) {
         if (isVisible) {
-            D.Assert(!_visibleMeshes.Contains(sender), "Sender is: {0}.".Inject(sender.name), pauseOnFail: true);
-            _visibleMeshes.Add(sender);
+            // removed assertion tests and warnings as it will take a while to get the lists and state in sync
+            if (!_visibleMeshes.Contains(sender)) {
+                _visibleMeshes.Add(sender);
+            }
         }
         else {
-            if (!_visibleMeshes.Remove(sender)) {
-                D.Warn("{0} was not removed from VisibleMeshes.", sender.name);
-            }
+            _visibleMeshes.Remove(sender);
+            // removed assertion tests and warnings as it will take a while to get the lists and state in sync
         }
 
         if (IsVisible == (_visibleMeshes.Count == 0)) {
@@ -197,10 +194,10 @@ public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
 
     #region INotifyVisibilityChanged Members
 
-    private bool _isVisible;
+    private bool _isVisible = true; // everyone starts out thinking they are visible as it controls the enabled/activated state of key components
     public bool IsVisible {
         get { return _isVisible; }
-        set { SetProperty<bool>(ref _isVisible, value, "IsVisible", OnIsVisibleChanged); }
+        private set { SetProperty<bool>(ref _isVisible, value, "IsVisible", OnIsVisibleChanged); }
     }
 
     public void NotifyVisibilityChanged(Transform sender, bool isVisible) {

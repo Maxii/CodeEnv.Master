@@ -22,17 +22,6 @@ namespace CodeEnv.Master.GameContent {
     public interface IDebugHud : IHud {
 
         /// <summary>
-        /// Gets the debug hud text.
-        /// </summary>
-        DebugHudText DebugHudText { get; }
-
-        /// <summary>
-        /// Populate the HUD with text from the DebugHudText.
-        /// </summary>
-        /// <param name="debugHudText">The DebugHudText.</param>
-        void Set(DebugHudText debugHudText);
-
-        /// <summary>
         /// Simplist way to publishes text for the specified key.
         /// </summary>
         /// <param name="key">The key.</param>

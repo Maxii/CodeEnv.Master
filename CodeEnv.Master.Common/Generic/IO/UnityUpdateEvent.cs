@@ -21,6 +21,7 @@ namespace CodeEnv.Master.Common {
     /// <summary>
     /// Event indicating that the final Unity Update call this frame has just occurred.
     /// </summary>
+    [Obsolete]
     public class UnityUpdateEvent : AGameEvent {
 
         public UnityUpdateEvent(Object source) : base(source) { }

@@ -82,14 +82,18 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
         }
     }
 
-    private void Unsubscribe() {
-        _subscribers.ForAll<IDisposable>(s => s.Dispose());
-        _subscribers.Clear();
-    }
-
     protected override void OnDestroy() {
         base.OnDestroy();
         Dispose();
+    }
+
+    private void Cleanup() {
+        Unsubscribe();
+    }
+
+    private void Unsubscribe() {
+        _subscribers.ForAll<IDisposable>(s => s.Dispose());
+        _subscribers.Clear();
     }
 
     public override string ToString() {
@@ -121,7 +125,7 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            Unsubscribe();
+            Cleanup();
         }
         // free unmanaged resources here
 

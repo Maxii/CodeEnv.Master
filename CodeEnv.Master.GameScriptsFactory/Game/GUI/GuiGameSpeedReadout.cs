@@ -50,11 +50,6 @@ public class GuiGameSpeedReadout : AGuiLabelReadoutBase, IDisposable {
         RefreshReadout(GameTime.Instance.GameSpeed);
     }
 
-    private void Unsubscribe() {
-        _subscribers.ForAll<IDisposable>(s => s.Dispose());
-        _subscribers.Clear();
-    }
-
     private void RefreshReadout(GameClockSpeed clockSpeed) {
         RefreshReadout(CommonTerms.MultiplySign + clockSpeed.SpeedMultiplier().ToString());
     }
@@ -62,6 +57,15 @@ public class GuiGameSpeedReadout : AGuiLabelReadoutBase, IDisposable {
     protected override void OnDestroy() {
         base.OnDestroy();
         Dispose();
+    }
+
+    private void Cleanup() {
+        Unsubscribe();
+    }
+
+    private void Unsubscribe() {
+        _subscribers.ForAll<IDisposable>(s => s.Dispose());
+        _subscribers.Clear();
     }
 
     public override string ToString() {
@@ -92,7 +96,7 @@ public class GuiGameSpeedReadout : AGuiLabelReadoutBase, IDisposable {
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            Unsubscribe();
+            Cleanup();
         }
         // free unmanaged resources here
         alreadyDisposed = true;

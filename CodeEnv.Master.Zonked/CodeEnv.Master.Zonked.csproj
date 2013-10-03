@@ -134,9 +134,9 @@
       <Project>{1557c03e-56ee-4c70-9bd8-ab637d3191cf}</Project>
       <Name>CodeEnv.Master.Common</Name>
     </ProjectReference>
-    <ProjectReference Include="..\CodeEnv.Master.ExternalMonoBehaviours\CodeEnv.Master.ExternalMonoBehaviours.csproj">
+    <ProjectReference Include="..\CodeEnv.Master.GameScriptAssembly\CodeEnv.Master.GameScriptAssembly.csproj">
       <Project>{9c8574a4-64ba-49b1-b66d-7572ecfffcfb}</Project>
-      <Name>CodeEnv.Master.ExternalMonoBehaviours</Name>
+      <Name>CodeEnv.Master.GameScriptAssembly</Name>
     </ProjectReference>
     <ProjectReference Include="..\CodeEnv.Master.GameScriptsFactory\CodeEnv.Master.GameScriptsFactory.csproj">
       <Project>{84ab84fa-983b-4fb8-bfd9-34d3b93d8000}</Project>

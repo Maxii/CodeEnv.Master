@@ -42,6 +42,10 @@
       <PropertyName>EnableFleetVelocityRays</PropertyName>
       <PropertyValue>true</PropertyValue>
     </Setting>
+    <Setting>
+      <PropertyName>ShowSectorGrid</PropertyName>
+      <PropertyValue>false</PropertyValue>
+    </Setting>
 
   </Boolean>
   

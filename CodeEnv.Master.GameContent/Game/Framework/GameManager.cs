@@ -73,7 +73,6 @@ namespace CodeEnv.Master.GameContent {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(PauseState));
             }
-            DebugHud.Publish(DebugHudLineKeys.PauseState, PauseState.GetName());
         }
 
         private bool _isPaused;
@@ -86,8 +85,6 @@ namespace CodeEnv.Master.GameContent {
             get { return _isPaused; }
             private set { SetProperty<bool>(ref _isPaused, value, "IsPaused"); }
         }
-
-        public IDebugHud DebugHud { get; set; }
 
         private GameEventManager _eventMgr;
         private GameTime _gameTime;
@@ -135,7 +132,6 @@ namespace CodeEnv.Master.GameContent {
             // initialize values without initiating change events
             _pauseState = PauseState.NotPaused;
             _isPaused = false;
-            DebugHud.Publish(DebugHudLineKeys.PauseState, PauseState.GetName());
         }
 
         #region Startup Simulation
@@ -189,18 +185,12 @@ namespace CodeEnv.Master.GameContent {
 
         private void Subscribe() {
             _eventMgr.AddListener<ExitGameEvent>(this, OnExitGame);
-            _eventMgr.AddListener<BuildNewGameEvent>(this, OnBuildNewGame);
             _eventMgr.AddListener<GuiPauseRequestEvent>(this, OnGuiPauseChangeRequest);
             _eventMgr.AddListener<SaveGameEvent>(this, OnSaveGame);
-            _eventMgr.AddListener<LoadSavedGameEvent>(this, OnLoadSavedGame);
         }
 
-        private void OnBuildNewGame(BuildNewGameEvent e) {
-            D.Log("BuildNewGameEvent received.");
-            BuildAndLoadNewGame(e.Settings);
-        }
-
-        private void BuildAndLoadNewGame(GameSettings settings) {
+        // called by MonoGameManager when the existing scene is prepared
+        public void BuildAndLoadNewGame(GameSettings settings) {
             GameState = GameState.Building;
             // building the level begins here when implemented
             Settings = settings;
@@ -209,6 +199,7 @@ namespace CodeEnv.Master.GameContent {
             GameState = GameState.Loading;
             // tell ManagementObjects to drop its children (including SaveGameManager!) before the scene gets reloaded
             _eventMgr.Raise<SceneChangingEvent>(new SceneChangingEvent(this, SceneLevel.GameScene));
+            D.Log("Application.LoadLevel({0}) being called.", SceneLevel.GameScene.GetName());
             Application.LoadLevel((int)SceneLevel.GameScene);
         }
 
@@ -227,11 +218,8 @@ namespace CodeEnv.Master.GameContent {
             LevelSerializer.SaveGame(gameName);
         }
 
-        private void OnLoadSavedGame(LoadSavedGameEvent e) {
-            LoadAndRestoreSavedGame(e.GameID);
-        }
-
-        private void LoadAndRestoreSavedGame(string gameID) {
+        // called by MonoGameManager when the existing scene is prepared
+        public void LoadAndRestoreSavedGame(string gameID) {
             var savedGames = LevelSerializer.SavedGames[LevelSerializer.PlayerName];
             var gamesWithID = from g in savedGames where g.Caption == gameID select g;
             if (gamesWithID.IsNullOrEmpty<LevelSerializer.SaveEntry>()) {
@@ -257,7 +245,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         //MonoGameManager relays the scene value that was loaded when it receives OnLevelWasLoaded
-        public void OnSceneChanged(SceneLevel newScene) {
+        public void OnLevelHasCompletedLoading(SceneLevel newScene) {
             if (newScene != SceneLevel.GameScene) {
                 D.Error("A Scene change to {0} is currently not implemented.", newScene.GetName());
                 return;
@@ -429,23 +417,18 @@ namespace CodeEnv.Master.GameContent {
 
         private void Shutdown() {
             _playerPrefsMgr.Store();
-            if (Application.isEditor || Application.isWebPlayer) {
-                D.Log("Game Shutdown initiated in Editor or WebPlayer.");
-                return;
-            }
-            // UNDONE MonoBehaviours will all have OnDestroy() called on Quit, but what about non-MonoBehaviours?
-            // Should each use the ExitGameEvent to release their Listeners too?
-            _gameTime.Dispose();
-            Dispose();
             Application.Quit(); // ignored inside Editor or WebPlayer
+        }
+
+        private void Cleanup() {
+            Unsubscribe();
+            _gameTime.Dispose();
         }
 
         private void Unsubscribe() {
             _eventMgr.RemoveListener<ExitGameEvent>(this, OnExitGame);
-            _eventMgr.RemoveListener<BuildNewGameEvent>(this, OnBuildNewGame);
             _eventMgr.RemoveListener<GuiPauseRequestEvent>(this, OnGuiPauseChangeRequest);
             _eventMgr.RemoveListener<SaveGameEvent>(this, OnSaveGame);
-            _eventMgr.RemoveListener<LoadSavedGameEvent>(this, OnLoadSavedGame);
         }
 
         public override string ToString() {
@@ -476,7 +459,7 @@ namespace CodeEnv.Master.GameContent {
 
             if (isDisposing) {
                 // free managed resources here including unhooking events
-                Unsubscribe();
+                Cleanup();
             }
             // free unmanaged resources here
             alreadyDisposed = true;

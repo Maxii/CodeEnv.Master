@@ -46,6 +46,10 @@ namespace CodeEnv.Master.Common {
             get { return GameColor.White; }
         }
 
+        public static GameColor SectorHighlightColor {
+            get { return GameColor.Yellow; }
+        }
+
     }
 }
 

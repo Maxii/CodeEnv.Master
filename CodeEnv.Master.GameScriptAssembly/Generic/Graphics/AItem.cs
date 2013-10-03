@@ -106,10 +106,16 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable, IHasData, I
 
     protected override void OnDestroy() {
         base.OnDestroy();
-        if (HudPublisher != null && HudPublisher.IsHudShowing) {
-            HudPublisher.ClearHud();
-        }
         Dispose();
+    }
+
+    private void Cleanup() {
+        // if (HudPublisher != null && HudPublisher.IsHudShowing) {
+        //    HudPublisher.ClearHud();
+        //}
+        if (HudPublisher != null) {
+            (HudPublisher as IDisposable).Dispose();
+        }
     }
 
     #region ICameraTargetable Members
@@ -141,7 +147,6 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable, IHasData, I
 
     #endregion
 
-    // GuiHudPublisher has subscribers that need to be disposed
     #region IDisposable
 
     [DoNotSerialize]
@@ -168,7 +173,7 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable, IHasData, I
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            (HudPublisher as IDisposable).Dispose();
+            Cleanup();
         }
         // free unmanaged resources here
 

@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -45,8 +45,6 @@ namespace CodeEnv.Master.GameContent {
         private Vector3 _localTravelDirection = new Vector3(0F, 0F, 1F);
         private float _thrust;
 
-        private bool _isTurning;
-        private bool _isPreviousCoroutineRunning;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Navigator"/> class.
@@ -126,21 +124,23 @@ namespace CodeEnv.Master.GameContent {
             return true;
         }
 
+        private bool _isTurning;
+        private bool _isPreviousHeadingChangeCoroutineRunning;
         /// <summary>
         /// Coroutine method to execute the heading change. Automatically handles the interruption 
         /// of a previous instance of the coroutine before launching another.
         /// </summary>
         /// <returns></returns>
         public IEnumerator ExecuteHeadingChange() {
-            _isTurning = false;    // tell any previous coroutine to exit
-            while (_isPreviousCoroutineRunning) {
+            _isTurning = false;    // tell any previous heading change coroutine to exit
+            while (_isPreviousHeadingChangeCoroutineRunning) {
                 // wait here until any previous coroutine instance exits
                 yield return null;
             }
 
             // we are now cleared to begin this new coroutine instance, so initialize values
             _isTurning = true;
-            _isPreviousCoroutineRunning = true;
+            _isPreviousHeadingChangeCoroutineRunning = true;
 
             float maxTurnRatePerSecond = _data.MaxTurnRate * _generalSettings.DaysPerSecond;
             D.Log("Coming to new heading {0} at {1} radians per day.", _data.RequestedHeading, _data.MaxTurnRate);
@@ -158,7 +158,7 @@ namespace CodeEnv.Master.GameContent {
             else {
                 D.Log("Prior Turn command cancelled. Heading now {0}.", _data.CurrentHeading);
             }
-            _isPreviousCoroutineRunning = false;
+            _isPreviousHeadingChangeCoroutineRunning = false;
         }
 
         private bool IsTurnComplete() {
@@ -167,22 +167,47 @@ namespace CodeEnv.Master.GameContent {
 
         public bool ChangeSpeed(float newSpeedRequest) {
             float newSpeed = Mathf.Clamp(newSpeedRequest, Constants.ZeroF, _data.MaxSpeed);
-            float newSpeedToRequestedSpeedRatio = (_data.RequestedSpeed != Constants.ZeroF) ? newSpeed / _data.RequestedSpeed : Constants.ZeroF;
-            if (!ThrustHelper.SpeedOnTarget.IsInRange(newSpeedToRequestedSpeedRatio)) { // IMPROVE not very intuitive to read
-                _data.RequestedSpeed = newSpeed;
-                D.Log("Adjusting thrust to requested speed {0}.", newSpeed);
-                float thrustNeededToMaintainRequestedSpeed = newSpeed * _data.Mass * _data.Drag;
-                _thrustHelper = new ThrustHelper(newSpeed, thrustNeededToMaintainRequestedSpeed, _data.MaxThrust);
-                _thrust = AdjustThrust();
-                return true;
+            float previousRequestedSpeed = _data.RequestedSpeed;
+            float newSpeedToRequestedSpeedRatio = (previousRequestedSpeed != Constants.ZeroF) ? newSpeed / previousRequestedSpeed : Constants.ZeroF;
+            if (ThrustHelper.SpeedTargetRange.Contains(newSpeedToRequestedSpeedRatio)) {
+                D.Warn("{1} ChangeSpeed Command to {0} (Max = {2}) not executed. Target speed unchanged.", newSpeedRequest, _transform.name, _data.MaxSpeed);
+                return false;
             }
-            D.Warn("Duplicate or over max ChangeSpeed Command to {0} on ship: {1}. MaxSpeed = {2}.", newSpeedRequest, _transform.name, _data.MaxSpeed);
-            return false;
+            _data.RequestedSpeed = newSpeed;
+            float thrustNeededToMaintainRequestedSpeed = newSpeed * _data.Mass * _data.Drag;
+            _thrustHelper = new ThrustHelper(newSpeed, thrustNeededToMaintainRequestedSpeed, _data.MaxThrust);
+            D.Log("Adjusting thrust to achieve requested speed {0}.", newSpeed);
+            _thrust = AdjustThrust();
+            return true;
+        }
+
+        private bool _isUnderPower;
+        private bool _isPreviousUnderPowerCoroutineRunning;
+        /// <summary>
+        /// Coroutine method to execute the speed change. Automatically handles the interruption 
+        /// of a previous instance of the coroutine before launching another.
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerator ExecuteSpeedChange() {
+            _isUnderPower = false;  // tell any previous under power coroutine to exit
+            while (_isPreviousUnderPowerCoroutineRunning) {
+                // wait here until any previous coroutine instance exits
+                yield return null;
+            }
+
+            // we are now cleared to begin this new coroutine instance, so initialize values
+            _isUnderPower = _data.RequestedSpeed != Constants.ZeroF; ;  // the ship needs continuous thrust unless ordered to stop
+            _isPreviousUnderPowerCoroutineRunning = true;
+            while (_isUnderPower) {
+                ApplyThrust();
+                yield return new WaitForFixedUpdate();
+            }
+            _isPreviousUnderPowerCoroutineRunning = false;
         }
 
         /// <summary>
         /// Applies Thrust (direction and magnitude), adjusted for game speed. Clients should
-        /// call this method from FixedUpdate().
+        /// call this method at a pace consistent with FixedUpdate().
         /// </summary>
         public void ApplyThrust() {
             Vector3 gameSpeedAdjustedThrust = _localTravelDirection * _thrust * _gameSpeedMultiplier;
@@ -199,6 +224,10 @@ namespace CodeEnv.Master.GameContent {
             float thrust = _thrustHelper.GetThrust(currentSpeed);
             //D.Log("Current Speed is {0}, > Desired Speed of {1}. New adjusted thrust is {2}.", currentSpeed, requestedSpeed, thrust);
             return thrust;
+        }
+
+        private void Cleanup() {
+            Unsubscribe();
         }
 
         private void Unsubscribe() {
@@ -235,7 +264,7 @@ namespace CodeEnv.Master.GameContent {
 
             if (isDisposing) {
                 // free managed resources here including unhooking events
-                Unsubscribe();
+                Cleanup();
             }
             // free unmanaged resources here
 
@@ -255,7 +284,7 @@ namespace CodeEnv.Master.GameContent {
 
         public class ThrustHelper {
 
-            public static Range<float> SpeedOnTarget = new Range<float>(0.99F, 1.01F);
+            public static Range<float> SpeedTargetRange = new Range<float>(0.99F, 1.01F);
 
             private static Range<float> _speedWayAboveTarget = new Range<float>(1.10F, 10.0F);
             //private static Range<float> _speedModeratelyAboveTarget = new Range<float>(1.10F, 1.25F);
@@ -288,13 +317,13 @@ namespace CodeEnv.Master.GameContent {
                 if (_requestedSpeed == Constants.ZeroF) { return Constants.ZeroF; }
 
                 float sr = currentSpeed / _requestedSpeed;
-                if (SpeedOnTarget.IsInRange(sr)) { return _targetThrust; }
+                if (SpeedTargetRange.Contains(sr)) { return _targetThrust; }
                 //if (_speedSlightlyBelowTarget.IsInRange(sr)) { return _targetThrustPlus; }
-                if (_speedSlightlyAboveTarget.IsInRange(sr)) { return _targetThrustMinus; }
+                if (_speedSlightlyAboveTarget.Contains(sr)) { return _targetThrustMinus; }
                 //if (_speedModeratelyBelowTarget.IsInRange(sr)) { return _targetThrustPlusPlus; }
                 //if (_speedModeratelyAboveTarget.IsInRange(sr)) { return _targetThrustMinusMinus; }
-                if (_speedWayBelowTarget.IsInRange(sr)) { return _maxThrust; }
-                if (_speedWayAboveTarget.IsInRange(sr)) { return Constants.ZeroF; }
+                if (_speedWayBelowTarget.Contains(sr)) { return _maxThrust; }
+                if (_speedWayAboveTarget.Contains(sr)) { return Constants.ZeroF; }
                 return Constants.ZeroF;
             }
         }

@@ -28,18 +28,17 @@ public class NguiGenericEventHandler : AMonoBehaviourBaseSingleton<NguiGenericEv
     public bool LogEvents = false;
 
     private GameInput _gameInput;
+    private PlayerViews _playerViews;
 
     protected override void Awake() {
         base.Awake();
         if (Camera.main == null) {
             // no main camera so no one to talk too
             Destroy(gameObject);
+            return;
         }
-    }
-
-    protected override void Start() {
-        base.Start();
-        _gameInput = CameraControl.gameInput;
+        _gameInput = GameInput.Instance;
+        _playerViews = PlayerViews.Instance;
         AssignEventHandler();
     }
 
@@ -50,15 +49,23 @@ public class NguiGenericEventHandler : AMonoBehaviourBaseSingleton<NguiGenericEv
     // In general, determine WHEN (and where if somewhere else besides GameInput)
     // to send events here. Determine what to do with those events at the destination.
 
+    /// <summary>
+    /// Called when the mouse hovers over a gameobject.
+    /// WARNING: Ngui sends out OnHover(false) events to cleanup after OnHover(true), BUT
+    /// the hoveredObject is no longer the object that it was with OnHover(true).
+    /// Instead, it is the GenericEventHandler. Upshot is that handling OnHover here
+    /// is difficult. Ngui makes it easy if it is handled on the gameobject itself.
+    /// </summary>
+    /// <param name="isOver">if set to <c>true</c> [is over].</param>
     void OnHover(bool isOver) {
-        if (IsEventFromGuiLayer()) {
+        if (IsEventFrom(Layers.Gui2D)) {
             return;
         }
         WriteMessage(isOver.ToString());
     }
 
     void OnPress(bool isDown) {
-        if (IsEventFromGuiLayer()) {
+        if (IsEventFrom(Layers.Gui2D)) {
             return; // FIXME OnDragEnd won't be considered if the drag ends over the Gui layer because GuiLayer events are ignored.
         }
         WriteMessage(isDown.ToString());
@@ -73,28 +80,31 @@ public class NguiGenericEventHandler : AMonoBehaviourBaseSingleton<NguiGenericEv
     }
 
     void OnSelect(bool selected) {
-        if (IsEventFromGuiLayer()) {
+        if (IsEventFrom(Layers.Gui2D)) {
             return;
         }
         WriteMessage(selected.ToString());
     }
 
     void OnClick() {
-        if (IsEventFromGuiLayer()) {
+        if (IsEventFrom(Layers.Gui2D)) {
             return;
         }
         WriteMessage();
+        if (UICamera.hoveredObject == this) {
+            _gameInput.OnClickOnNothing();
+        }
     }
 
     void OnDoubleClick() {
-        if (IsEventFromGuiLayer()) {
+        if (IsEventFrom(Layers.Gui2D)) {
             return;
         }
         WriteMessage();
     }
 
     void OnDrag(Vector2 delta) {
-        if (IsEventFromGuiLayer()) {
+        if (IsEventFrom(Layers.Gui2D)) {
             return;
         }
         WriteMessage(delta.ToString());
@@ -104,28 +114,28 @@ public class NguiGenericEventHandler : AMonoBehaviourBaseSingleton<NguiGenericEv
     }
 
     void OnDrop(GameObject go) {
-        if (IsEventFromGuiLayer()) {
+        if (IsEventFrom(Layers.Gui2D)) {
             return;
         }
         WriteMessage(go.name);
     }
 
     void OnInput(string text) {
-        if (IsEventFromGuiLayer()) {
+        if (IsEventFrom(Layers.Gui2D)) {
             return;
         }
         WriteMessage(text);
     }
 
     void OnTooltip(bool toShow) {
-        if (IsEventFromGuiLayer()) {
+        if (IsEventFrom(Layers.Gui2D)) {
             return;
         }
         WriteMessage(toShow.ToString());
     }
 
     void OnScroll(float delta) {
-        if (IsEventFromGuiLayer() || GameInputHelper.IsAnyKeyOrMouseButtonDown()) {
+        if (IsEventFrom(Layers.Gui2D)) {
             return;
         }
         WriteMessage(delta.ToString());
@@ -133,13 +143,8 @@ public class NguiGenericEventHandler : AMonoBehaviourBaseSingleton<NguiGenericEv
     }
 
     void OnKey(KeyCode key) {
-        // don't test for event on gui layer as I want all arrow key events to 
-        // go to the camera whether the mouse is on the gui or not
-        if (GameInputHelper.IsAnyMouseButtonDown()) {
-            return;
-        }
         WriteMessage();
-        _gameInput.RecordKey(key);
+        // unused. Sends messages only for arrows and WASD?
     }
 
     private void WriteMessage(string arg = "") {
@@ -147,23 +152,22 @@ public class NguiGenericEventHandler : AMonoBehaviourBaseSingleton<NguiGenericEv
             System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
             NguiMouseButton? button = Enums<NguiMouseButton>.CastOrNull(UICamera.currentTouchID);
             string touchID = (button ?? NguiMouseButton.None).GetName();
-            string gameObjectHit = UICamera.hoveredObject.name;
+            string hoveredObject = UICamera.hoveredObject.name;
             string camera = UICamera.currentCamera.name;
             string screenPosition = UICamera.lastTouchPosition.ToString();
             UICamera.lastHit = new RaycastHit();    // clears any gameobject that was hit. Otherwise it is cached until the next hit
-            string msg = @"{0}.{1}({2}) event. MouseButton = {3}, GameObject hit = {4}, Camera = {5}, ScreenPosition = {6}."
-                .Inject(this.GetType().Name, stackFrame.GetMethod().Name, arg, touchID, gameObjectHit, camera, screenPosition);
+            string msg = @"{0}.{1}({2}) event. MouseButton = {3}, HoveredObject = {4}, Camera = {5}, ScreenPosition = {6}."
+                .Inject(this.GetType().Name, stackFrame.GetMethod().Name, arg, touchID, hoveredObject, camera, screenPosition);
             Debug.Log(msg);
         }
     }
 
     /// <summary>
-    /// Tests whether the event is on the Gui Layer and returns true if it is.
+    /// Tests whether the event is from the provided Layer.
     /// </summary>
     /// <returns></returns>
-    private bool IsEventFromGuiLayer() {
-        bool isOnGuiLayer = UICamera.hoveredObject.layer == (int)Layers.Gui;
-        return isOnGuiLayer;
+    private bool IsEventFrom(Layers layer) {
+        return UICamera.hoveredObject.layer == (int)layer;
     }
 
     public override string ToString() {

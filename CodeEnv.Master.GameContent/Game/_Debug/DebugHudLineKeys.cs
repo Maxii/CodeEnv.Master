@@ -23,6 +23,7 @@ namespace CodeEnv.Master.GameContent {
 
         None,
         CameraMode,
+        PlayerViewMode,
         PauseState,
         GraphicsQuality
     }

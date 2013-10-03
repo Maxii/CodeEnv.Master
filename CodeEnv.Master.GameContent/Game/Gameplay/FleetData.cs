@@ -309,6 +309,10 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        private void Cleanup() {
+            Unsubscribe();
+        }
+
         private void Unsubscribe() {
             IList<ShipData> subscriberKeys = new List<ShipData>(_subscribers.Keys);
             // copy of key list as you can't remove keys from a list while you are iterating over the list
@@ -347,7 +351,7 @@ namespace CodeEnv.Master.GameContent {
 
             if (isDisposing) {
                 // free managed resources here including unhooking events
-                Unsubscribe();
+                Cleanup();
             }
             // free unmanaged resources here
 

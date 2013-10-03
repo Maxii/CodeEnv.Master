@@ -166,6 +166,9 @@ public class ShipGraphics : AGraphics, IDisposable {
 
     private void ShowCircle(bool toShow, Highlights highlight) {
         D.Assert(highlight == Highlights.Focused || highlight == Highlights.Selected || highlight == Highlights.General);
+        if (!toShow && _circles == null) {
+            return;
+        }
         if (_circles == null) {
             float normalizedRadius = Screen.height * circleScaleFactor * _shipCaptain.Size;
             _circles = _vectorLineFactory.MakeInstance("ShipCircles", _shipCaptain.transform, normalizedRadius, isRadiusDynamic: true, maxCircles: 3);
@@ -180,6 +183,9 @@ public class ShipGraphics : AGraphics, IDisposable {
     /// </summary>
     private void ShowVelocityRay(bool toShow) {
         if (DebugSettings.Instance.EnableShipVelocityRays) {
+            if (!toShow && _velocityRay == null) {
+                return;
+            }
             if (_velocityRay == null) {
                 var speedReference = new Reference<float>(() => _shipCaptain.Data.CurrentSpeed);
                 _velocityRay = _vectorLineFactory.MakeInstance("ShipVelocityRay", _shipCaptain.transform, speedReference, GameColor.Gray);
@@ -191,6 +197,17 @@ public class ShipGraphics : AGraphics, IDisposable {
     protected override void OnDestroy() {
         base.OnDestroy();
         Dispose();
+    }
+
+    private void Cleanup() {
+        if (_velocityRay != null) {
+            Destroy(_velocityRay.gameObject);
+            _velocityRay = null;
+        }
+        if (_circles != null) {
+            Destroy(_circles.gameObject);
+            _circles = null;
+        }
     }
 
     public override string ToString() {
@@ -222,12 +239,7 @@ public class ShipGraphics : AGraphics, IDisposable {
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            if (_velocityRay != null) {
-                Destroy(_velocityRay.gameObject);
-            }
-            if (_circles != null) {
-                Destroy(_circles.gameObject);
-            }
+            Cleanup();
         }
         // free unmanaged resources here
 

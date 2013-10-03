@@ -65,6 +65,7 @@ namespace CodeEnv.Master.GameContent {
 
         public IEnumerator DisplayHudAtCursor(IntelLevel intelLevel) {
             PrepareHudText(intelLevel);
+            IsHudShowing = true;
             while (IsHudShowing) {
                 UpdateGuiCursorHudText(intelLevel, GuiHudLineKeys.Distance);
                 if (intelLevel == IntelLevel.OutOfDate) {
@@ -84,7 +85,6 @@ namespace CodeEnv.Master.GameContent {
                 _guiCursorHudText = _guiHudTextFactory.MakeInstance(intelLevel, _data);
                 _data.AcceptChanges();   // once we make a new one from current data, it is no longer dirty, if it ever was
             }
-            _guiCursorHud.Set(_guiCursorHudText);
         }
 
         /// <summary>
@@ -105,8 +105,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void ClearHud() {
-            _guiCursorHud.Clear();
             IsHudShowing = false;
+            _guiCursorHud.Clear();
+        }
+
+        private void Cleanup() {
+            IsHudShowing = false;   // turn off any coroutines, but don't clearHud - it is already dead
+            Unsubscribe();
         }
 
         private void Unsubscribe() {
@@ -143,7 +148,7 @@ namespace CodeEnv.Master.GameContent {
 
             if (isDisposing) {
                 // free managed resources here including unhooking events
-                Unsubscribe();
+                Cleanup();
             }
             // free unmanaged resources here
 

@@ -5,55 +5,38 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SelectionManager.cs
-// Singleton. Selection Manager that keeps track of what is selected in the game.
+// File: AVectrosityBase.cs
+// Base class for Vectrosity GameObjects.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
+
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 // default namespace
 
 using System;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.GameContent;
+using Vectrosity;
 
 /// <summary>
-/// Singleton. Selection Manager that keeps track of what is selected in the game. Only one item can be selected at a time.
+/// Base class for Vectrosity GameObjects.
 /// </summary>
-public class SelectionManager : AMonoBehaviourBaseSingleton<SelectionManager>, IDisposable {
+public abstract class AVectrosityBase : AMonoBehaviourBase, IDisposable {
 
-    public ISelectable CurrentSelection { get; private set; }
-
-    private GameEventManager _eventMgr;
-
-    protected override void Awake() {
-        base.Awake();
-        _eventMgr = GameEventManager.Instance;
-        Subscribe();
+    private string _lineName;
+    public string LineName {
+        get { return _lineName; }
+        set { SetProperty<string>(ref _lineName, value, "LineName", OnNameChanged); }
     }
 
-    private void Subscribe() {
-        _eventMgr.AddListener<SelectionEvent>(this, OnNewSelection);
-        _eventMgr.AddListener<GameItemDestroyedEvent>(this, OnGameItemDestroyed);
-    }
+    protected VectorLine _line;
 
-    private void OnNewSelection(SelectionEvent e) {
-        ISelectable newSelection = e.Source as ISelectable;
-        D.Assert(newSelection != null, "{0} received from {1} that is not {2}.".Inject(typeof(SelectionEvent).Name, e.Source.GetType().Name, typeof(ISelectable).Name));
-        if (CurrentSelection != null) {
-            CurrentSelection.IsSelected = false;
-        }
-        CurrentSelection = newSelection;
-    }
-
-    private void OnGameItemDestroyed(GameItemDestroyedEvent e) {
-        ISelectable selectable = e.Source as ISelectable;
-        if (selectable != null) {
-            if (selectable == CurrentSelection) {
-                // the current selection is being destroyed
-                D.Assert(selectable.IsSelected, "{0} should be selected!".Inject(e.Source.GetType().Name));
-                // selectable.IsSelected = false;   // no need as being destroyed. Also, SelectionReadout needs to test for IsSelected
-                CurrentSelection = null;
-            }
+    private void OnNameChanged() {
+        gameObject.name = LineName;
+        if (_line != null) {
+            _line.name = LineName;
         }
     }
 
@@ -62,9 +45,8 @@ public class SelectionManager : AMonoBehaviourBaseSingleton<SelectionManager>, I
         Dispose();
     }
 
-    private void Unsubscribe() {
-        _eventMgr.RemoveListener<SelectionEvent>(this, OnNewSelection);
-        _eventMgr.RemoveListener<GameItemDestroyedEvent>(this, OnGameItemDestroyed);
+    private void Cleanup() {
+        VectorLine.Destroy(ref _line);
     }
 
     public override string ToString() {
@@ -96,7 +78,7 @@ public class SelectionManager : AMonoBehaviourBaseSingleton<SelectionManager>, I
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            Unsubscribe();
+            Cleanup();
         }
         // free unmanaged resources here
 
@@ -113,7 +95,6 @@ public class SelectionManager : AMonoBehaviourBaseSingleton<SelectionManager>, I
     //    // method content here
     //}
     #endregion
-
 
 }
 

@@ -12,6 +12,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -19,7 +20,7 @@ using UnityEngine;
 /// <summary>
 /// Manages the operation of a ship within a fleet.
 /// </summary>
-public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu {
+public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu, IDisposable {
 
     public new ShipData Data {
         get { return base.Data as ShipData; }
@@ -31,6 +32,7 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu {
     private ShipGraphics _shipGraphics;
     private FleetManager _fleetMgr;
     private FleetCommand _fleetCmd;
+    private SelectionManager _selectionMgr;
 
     protected override void Awake() {
         base.Awake();
@@ -38,6 +40,7 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu {
         _shipGraphics = gameObject.GetSafeMonoBehaviourComponent<ShipGraphics>();
         _fleetMgr = gameObject.GetSafeMonoBehaviourComponentInParents<FleetManager>();
         _fleetCmd = _fleetMgr.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>();
+        _selectionMgr = SelectionManager.Instance;
         UpdateRate = FrameUpdateFrequency.Infrequent;
     }
 
@@ -69,34 +72,36 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu {
         if (Navigator.ChangeHeading(newHeading)) {
             StartCoroutine(Navigator.ExecuteHeadingChange());
         }
+        // else TODO
     }
 
     public void ChangeSpeed(float newRequestedSpeed) {
         if (Navigator.ChangeSpeed(newRequestedSpeed)) {
-            // IMPROVE ChangeSpeed currently executes this as ApplyThrust is called from FixedUpdate here. Change to execute speed change coroutine like changeHeading?
+            StartCoroutine(Navigator.ExecuteSpeedChange());
         }
-    }
-
-    void FixedUpdate() {
-        Navigator.ApplyThrust();
+        // else TODO
     }
 
     private void OnHealthChanged() {
         D.Log("{0} Health = {1}.", Data.Name, Data.Health);
         if (Data.Health <= Constants.ZeroF) {
-            __Die();
+            Die();
         }
     }
 
-    private void __Die() {
+    private void Die() {
+        if (IsSelected) {
+            _selectionMgr.CurrentSelection = null;
+        }
         _fleetCmd.ReportShipLost(this);
+        _eventMgr.Raise<ItemDeathEvent>(new ItemDeathEvent(this));
         Destroy(gameObject);
     }
 
     private void OnIsSelectedChanged() {
         _shipGraphics.AssessHighlighting();
         if (IsSelected) {
-            _eventMgr.Raise<SelectionEvent>(new SelectionEvent(this));
+            _selectionMgr.CurrentSelection = this;
         }
     }
 
@@ -124,7 +129,7 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu {
 
     private void __SimulateAttacked() {
         if (!DebugSettings.Instance.MakePlayerInvincible) {
-            __OnHit(Random.Range(1.0F, Data.MaxHitPoints));
+            __OnHit(UnityEngine.Random.Range(1.0F, Data.MaxHitPoints));
         }
     }
 
@@ -134,15 +139,13 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu {
 
     protected override void OnDestroy() {
         base.OnDestroy();
-        if (!_isApplicationQuiting) {
-            if (!Application.isLoadingLevel) {
-                // game item has been destroyed in normal play
-                _eventMgr.Raise<GameItemDestroyedEvent>(new GameItemDestroyedEvent(this));
-            }
-            // we aren't quiting so cleanup
-            Navigator.Dispose();
-            Data.Dispose();
-        }
+        Dispose();
+    }
+
+    private void Cleanup() {
+        // other cleanup here including any tracking Gui2D elements
+        Navigator.Dispose();
+        Data.Dispose();
     }
 
     public override string ToString() {
@@ -168,7 +171,8 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu {
     }
 
     public void OnLeftClick() {
-        if (GameInputHelper.IsKeyDown(KeyCode.LeftAlt, KeyCode.RightAlt)) {
+        KeyCode notUsed;
+        if (GameInputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftAlt, KeyCode.RightAlt)) {
             __SimulateAttacked();
             return;
         }
@@ -188,10 +192,49 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu {
     public void OnPress(bool isDown) {
         if (IsSelected) {
             //D.Log("{0}.OnPress({1}) called.", this.GetType().Name, isPressed);
-            CameraControl.Instance.TryShowContextMenuOnPress(isDown);
+            CameraControl.Instance.ShowContextMenuOnPress(isDown);
         }
     }
 
+    #endregion
+
+    #region IDisposable derived class
+    [NonSerialized]
+    private bool alreadyDisposed = false;
+
+    /// <summary>
+    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
+    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
+    /// </summary>
+    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+    protected override void Dispose(bool isDisposing) {
+        // Allows Dispose(isDisposing) to be called more than once
+        if (alreadyDisposed) {
+            return;
+        }
+
+        if (isDisposing) {
+            // free managed resources here including unhooking events
+            Cleanup();
+        }
+        // free unmanaged resources here
+
+        alreadyDisposed = true;
+
+        // Let the base class free its resources.
+        // Base class is reponsible for calling GC.SuppressFinalize()
+        base.Dispose(isDisposing);
+    }
+
+    // Example method showing check for whether the object has been disposed
+    //public void ExampleMethod() {
+    //    // throw Exception if called on object that is already disposed
+    //    if(alreadyDisposed) {
+    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
+    //    }
+
+    //    // method content here
+    //}
     #endregion
 
 }

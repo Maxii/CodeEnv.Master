@@ -25,6 +25,8 @@ using UnityEngine;
 /// </summary>
 public class GuiManager : AMonoBehaviourBaseSingleton<GuiManager>, IDisposable {
 
+    public bool ReadyForSceneChange { get; private set; }
+
     private Stack<IList<UIPanel>> _stackedPanelsToRestore = new Stack<IList<UIPanel>>();
     private UIPanel[] _panelsToAlwaysRemainActive;
     private GameEventManager _eventMgr;
@@ -36,7 +38,7 @@ public class GuiManager : AMonoBehaviourBaseSingleton<GuiManager>, IDisposable {
         UIPanel tooltipPanel = gameObject.GetSafeMonoBehaviourComponentInChildren<UITooltip>().gameObject.GetSafeMonoBehaviourComponent<UIPanel>();
         UIPanel fpsDebugPanel = gameObject.GetSafeMonoBehaviourComponentInChildren<FpsReadout>().transform.parent.gameObject.GetSafeMonoBehaviourComponent<UIPanel>();
         _panelsToAlwaysRemainActive = new UIPanel[3] { uiRootPanel, tooltipPanel, fpsDebugPanel };
-        AddListeners();
+        Subscribe();
     }
 
     protected override void Start() {
@@ -57,8 +59,28 @@ public class GuiManager : AMonoBehaviourBaseSingleton<GuiManager>, IDisposable {
         }
     }
 
-    private void AddListeners() {
-        _eventMgr.AddListener<GuiVisibilityButton.GuiVisibilityChangeEvent>(this, OnGuiVisibilityChange);
+    private void Subscribe() {
+        _eventMgr.AddListener<GuiVisibilityButton.GuiVisibilityChangeEvent>(Instance, OnGuiVisibilityChange);
+        _eventMgr.AddListener<BuildNewGameEvent>(Instance, OnBuildNewGame);
+        _eventMgr.AddListener<LoadSavedGameEvent>(Instance, OnLoadSavedGame);
+    }
+
+    private void OnLoadSavedGame(LoadSavedGameEvent e) {
+        RestoreAllPanels();
+    }
+
+    private void OnBuildNewGame(BuildNewGameEvent e) {
+        RestoreAllPanels();
+    }
+
+    private void RestoreAllPanels() {
+        foreach (var panelsToRestore in _stackedPanelsToRestore) {
+            foreach (var p in panelsToRestore) {
+                NGUITools.SetActive(p.gameObject, true);
+                D.Log("Reactivating {0}.", p.gameObject.name);
+            }
+        }
+        ReadyForSceneChange = true;
     }
 
     private void OnGuiVisibilityChange(GuiVisibilityButton.GuiVisibilityChangeEvent e) {
@@ -92,13 +114,19 @@ public class GuiManager : AMonoBehaviourBaseSingleton<GuiManager>, IDisposable {
         }
     }
 
-    private void RemoveListeners() {
-        _eventMgr.RemoveListener<GuiVisibilityButton.GuiVisibilityChangeEvent>(this, OnGuiVisibilityChange);
-    }
-
     protected override void OnDestroy() {
         base.OnDestroy();
         Dispose();
+    }
+
+    private void Cleanup() {
+        Unsubscribe();
+    }
+
+    private void Unsubscribe() {
+        _eventMgr.RemoveListener<GuiVisibilityButton.GuiVisibilityChangeEvent>(Instance, OnGuiVisibilityChange);
+        _eventMgr.RemoveListener<BuildNewGameEvent>(Instance, OnBuildNewGame);
+        _eventMgr.RemoveListener<LoadSavedGameEvent>(Instance, OnLoadSavedGame);
     }
 
     public override string ToString() {
@@ -130,7 +158,7 @@ public class GuiManager : AMonoBehaviourBaseSingleton<GuiManager>, IDisposable {
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            RemoveListeners();
+            Cleanup();
         }
         // free unmanaged resources here
         alreadyDisposed = true;

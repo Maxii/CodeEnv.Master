@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// Singleton stationary HUD supporting Debug data on the screen.
@@ -30,28 +31,47 @@ public class DebugHud : AHud<DebugHud>, IDebugHud, IDisposable {
         Subscribe();
     }
 
-    protected override void Start() {
-        base.Start();
-        D.Log("DebugHud.Start()");
-    }
-
-    #region DebugHud Subscriptions
-
     private void Subscribe() {
         if (_subscribers == null) {
             _subscribers = new List<IDisposable>();
         }
-        //_subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, PauseState>(gm => gm.PauseState, OnPauseStateChanged));
+        _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsGameRunning, OnIsGameRunningChanged));
+
+        _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, PauseState>(gm => gm.PauseState, OnPauseStateChanged));
+        _subscribers.Add(PlayerPrefsManager.Instance.SubscribeToPropertyChanged<PlayerPrefsManager, int>(ppm => ppm.QualitySetting, OnQualitySettingChanged));
+        if (Application.loadedLevel == (int)SceneLevel.GameScene) {
+            _subscribers.Add(CameraControl.Instance.SubscribeToPropertyChanged<CameraControl, CameraControl.CameraState>(cc => cc.State, OnCameraStateChanged));
+            _subscribers.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, OnPlayerViewModeChanged));
+        }
+    }
+
+    #region DebugHud Subscriptions
+    // pulling value changes rather than having them pushed here avoids null reference issues when changing scenes
+    private void OnIsGameRunningChanged() {
+        // initialization
+        if (GameManager.Instance.IsGameRunning) {
+            OnPauseStateChanged();
+            OnPlayerViewModeChanged();
+            OnCameraStateChanged();
+            OnQualitySettingChanged();
+        }
     }
 
     private void OnPauseStateChanged() {
-        PauseState newPauseState = GameManager.Instance.PauseState;
-        Publish(DebugHudLineKeys.PauseState, newPauseState.GetName());
+        Publish(DebugHudLineKeys.PauseState, GameManager.Instance.PauseState.GetName());
     }
 
-    private void Unsubscribe() {
-        _subscribers.ForAll<IDisposable>(d => d.Dispose());
-        _subscribers.Clear();
+    private void OnPlayerViewModeChanged() {
+        Publish(DebugHudLineKeys.PlayerViewMode, PlayerViews.Instance.ViewMode.GetName());
+    }
+
+    private void OnCameraStateChanged() {
+        Publish(DebugHudLineKeys.CameraMode, CameraControl.Instance.State.GetName());
+    }
+
+    private void OnQualitySettingChanged() {
+        string forceFpsToTarget = DebugSettings.Instance.ForceFpsToTarget ? ", FpsForcedToTarget" : string.Empty;
+        Publish(DebugHudLineKeys.GraphicsQuality, QualitySettings.names[PlayerPrefsManager.Instance.QualitySetting] + forceFpsToTarget);
     }
 
     #endregion
@@ -61,6 +81,15 @@ public class DebugHud : AHud<DebugHud>, IDebugHud, IDisposable {
         Dispose();
     }
 
+    private void Cleanup() {
+        Unsubscribe();
+    }
+
+    private void Unsubscribe() {
+        _subscribers.ForAll<IDisposable>(d => d.Dispose());
+        _subscribers.Clear();
+    }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
@@ -68,17 +97,13 @@ public class DebugHud : AHud<DebugHud>, IDebugHud, IDisposable {
     #region IDebugHud Members
 
     private DebugHudText _debugHudText;
-    public DebugHudText DebugHudText {
-        get { return _debugHudText = _debugHudText ?? new DebugHudText(); }
-    }
-
-    public void Set(DebugHudText debugHudText) {
-        Set(debugHudText.GetText());
-    }
 
     public void Publish(DebugHudLineKeys key, string text) {
-        DebugHudText.Replace(key, text);
-        Set(DebugHudText);
+        if (_debugHudText == null) {
+            _debugHudText = new DebugHudText();
+        }
+        _debugHudText.Replace(key, text);
+        Set(_debugHudText.GetText());
     }
 
     #endregion
@@ -108,7 +133,7 @@ public class DebugHud : AHud<DebugHud>, IDebugHud, IDisposable {
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            Unsubscribe();
+            Cleanup();
         }
         // free unmanaged resources here
 

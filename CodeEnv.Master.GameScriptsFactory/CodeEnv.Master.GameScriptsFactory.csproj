@@ -35,7 +35,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\..\UnityEnv\Support\NGUI\Library\ScriptAssemblies\Assembly-CSharp.dll</HintPath>
+      <HintPath>..\..\..\UnityEnv\Support\Plugins\Library\ScriptAssemblies\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -51,7 +51,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="Vectrosity">
-      <HintPath>..\..\..\UnityEnv\Support\NGUI\Assets\Plugins\Vectrosity.dll</HintPath>
+      <HintPath>..\..\..\UnityEnv\Support\Plugins\Assets\Plugins\Vectrosity.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
@@ -62,13 +62,17 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\_Debug\DynamicObjects.cs" />
+    <Compile Include="Game\_Debug\DynamicTrackingLabels.cs" />
+    <Compile Include="Game\_Debug\Sectors.cs" />
     <Compile Include="Generic\Framework\FramesLastUpdate.cs" />
     <Compile Include="Game\Framework\FleetManager.cs" />
     <Compile Include="Generic\Graphics\AGuiButtonBase.cs" />
     <Compile Include="Generic\Graphics\AHud.cs" />
     <Compile Include="Generic\Graphics\GuiTooltip.cs" />
     <Compile Include="Generic\Graphics\ScaleRelativeToCamera.cs" />
-    <Compile Include="Generic\IO\GameInputHelper.cs" />
+    <Compile Include="Generic\IO\AGameInputConfiguration.cs" />
+    <Compile Include="Generic\IO\GameInput.cs" />
     <Compile Include="Generic\_Debug\DebugHud.cs" />
     <Compile Include="Generic\Framework\FollowableItem.cs" />
     <Compile Include="Game\Graphics\FleetGraphics.cs" />
@@ -117,7 +121,7 @@
     <Compile Include="Generic\IO\CameraControl.cs" />
     <Compile Include="Game\GUI\GuiFocusedReadout.cs" />
     <Compile Include="Generic\Graphics\HighlightCircle.cs" />
-    <Compile Include="Generic\Graphics\ItemGraphics.cs" />
+    <Compile Include="Game\Graphics\ItemGraphics.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Generic\Framework\Loader.cs" />
     <Compile Include="Generic\Framework\RequiredPrefabs.cs" />
@@ -132,12 +136,13 @@
     <Compile Include="Generic\Graphics\StarFlare.cs" />
     <Compile Include="Generic\Framework\StationaryItem.cs" />
     <Compile Include="Game\Framework\SystemManager.cs" />
-    <Compile Include="Generic\Framework\SelectionManager.cs" />
     <Compile Include="Game\Graphics\StarGraphics.cs" />
+    <Compile Include="Game\Framework\Sector.cs" />
     <Compile Include="ThirdParty\MyNguiButtonPlayAnimation.cs" />
     <Compile Include="Game\Framework\UniverseCenter.cs" />
     <Compile Include="Generic\_Debug\VelocityRay.cs" />
     <Compile Include="Generic\_Debug\VectorLineFactory.cs" />
+    <Compile Include="Generic\IO\PlayerViews.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">
@@ -148,18 +153,17 @@
       <Project>{30988a11-a4f0-4fdc-82d5-41b87ea410be}</Project>
       <Name>CodeEnv.Master.Common.LocalResources</Name>
     </ProjectReference>
-    <ProjectReference Include="..\CodeEnv.Master.ExternalMonoBehaviours\CodeEnv.Master.ExternalMonoBehaviours.csproj">
-      <Project>{9c8574a4-64ba-49b1-b66d-7572ecfffcfb}</Project>
-      <Name>CodeEnv.Master.ExternalMonoBehaviours</Name>
-    </ProjectReference>
     <ProjectReference Include="..\CodeEnv.Master.GameContent\CodeEnv.Master.GameContent.csproj">
       <Project>{129dcf86-4fc5-4caf-aafe-911efc560e10}</Project>
       <Name>CodeEnv.Master.GameContent</Name>
     </ProjectReference>
+    <ProjectReference Include="..\CodeEnv.Master.GameScriptAssembly\CodeEnv.Master.GameScriptAssembly.csproj">
+      <Project>{9c8574a4-64ba-49b1-b66d-7572ecfffcfb}</Project>
+      <Name>CodeEnv.Master.GameScriptAssembly</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Game\Gameplay\" />
-    <Folder Include="Game\_Debug\" />
     <Folder Include="Generic\Math\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

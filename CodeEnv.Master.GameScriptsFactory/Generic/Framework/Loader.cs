@@ -13,6 +13,7 @@
 // default namespace
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
@@ -25,8 +26,7 @@ using Vectrosity;
 /// </summary>
 public class Loader : AMonoBehaviourBaseSingletonInstanceIdentity<Loader>, IDisposable {
 
-    //public static Loader currentInstance;
-    public UsefulPrefabs usefulPrefabsPrefab;
+    //public UsefulPrefabs usefulPrefabsPrefab;
 
     public int TargetFPS = 25;
 
@@ -56,7 +56,6 @@ public class Loader : AMonoBehaviourBaseSingletonInstanceIdentity<Loader>, IDisp
         _unreadyElements = new List<MonoBehaviour>();
         Subscribe();
     }
-
 
     /// <summary>
     /// Ensures that no matter how many scenes this Object is
@@ -95,7 +94,6 @@ public class Loader : AMonoBehaviourBaseSingletonInstanceIdentity<Loader>, IDisp
         if (newQualitySetting != QualitySettings.GetQualityLevel()) {
             QualitySettings.SetQualityLevel(newQualitySetting, applyExpensiveChanges: true);
         }
-        DebugHud.Instance.Publish(DebugHudLineKeys.GraphicsQuality, QualitySettings.names[newQualitySetting]);
         CheckDebugSettings(newQualitySetting);
     }
 
@@ -110,55 +108,45 @@ public class Loader : AMonoBehaviourBaseSingletonInstanceIdentity<Loader>, IDisp
         if (DebugSettings.Instance.ForceFpsToTarget) {
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = TargetFPS;
-            DebugHud.Instance.Publish(DebugHudLineKeys.GraphicsQuality, QualitySettings.names[qualitySetting] + ", FpsForcedToTarget");
         }
     }
 
     private void OnElementReady(ElementReadyEvent e) {
         MonoBehaviour source = e.Source as MonoBehaviour;
         if (!e.IsReady) {
-            // register the sender
-            if (_unreadyElements.Contains(source)) {
-                D.Error("UnreadyElements already has {0} registered!".Inject(source.name));
-            }
+            D.Assert(!_unreadyElements.Contains(source), "UnreadyElements already has {0} registered!".Inject(source.name));
+            bool isFirstUnReady = _unreadyElements.Count == 0f;
+            // register as unready
             _unreadyElements.Add(source);
+            if (isFirstUnReady) {
+                // first unready element to register so start checking for conditions needed to run
+                StartCoroutine(WaitUntilReadyThenRun);
+            }
             D.Log("{0} has registered with Loader as unready.".Inject(source.name));
         }
         else {
-            if (!_unreadyElements.Contains(source)) {
-                D.Error("UnreadyElements has no record of {0}!".Inject(source.name));
-            }
-            else {
-                _unreadyElements.Remove(source);
-                D.Log("{0} is now ready to Run.".Inject(source.name));
-            }
+            D.Assert(_unreadyElements.Contains(source), "UnreadyElements has no record of {0}!".Inject(source.name));
+            _unreadyElements.Remove(source);
+            D.Log("{0} is now ready to Run.".Inject(source.name));
         }
     }
 
-    protected override void Start() {
-        base.Start();
-        CheckForPrefabs();
-    }
+    //private void CheckForPrefabs() {
+    //    // Check to make sure UsefulPrefabs is in the startScene. If not, instantiate it from the attached Prefab
+    //    UsefulPrefabs usefulPrefabs = FindObjectOfType(typeof(UsefulPrefabs)) as UsefulPrefabs;
+    //    if (usefulPrefabs == null) {
+    //        D.Warn("{0} instance not present in scene. Instantiating new one.".Inject(typeof(UsefulPrefabs).Name));
+    //        Arguments.ValidateNotNull(usefulPrefabsPrefab);
+    //        usefulPrefabs = Instantiate<UsefulPrefabs>(usefulPrefabsPrefab);
+    //    }
+    //    usefulPrefabs.transform.parent = Instance.transform.parent;
+    //}
 
-    private void CheckForPrefabs() {
-        // Check to make sure UsefulPrefabs is in the startScene. If not, instantiate it from the attached Prefab
-        UsefulPrefabs usefulPrefabs = FindObjectOfType(typeof(UsefulPrefabs)) as UsefulPrefabs;
-        if (usefulPrefabs == null) {
-            D.Warn("{0} instance not present in startScene. Instantiating new one.".Inject(typeof(UsefulPrefabs).Name));
-            Arguments.ValidateNotNull(usefulPrefabsPrefab);
-            usefulPrefabs = Instantiate<UsefulPrefabs>(usefulPrefabsPrefab);
+    private IEnumerator WaitUntilReadyThenRun() {
+        while (_gameMgr.GameState != GameState.Waiting || _unreadyElements.Count > 0) {
+            yield return null;
         }
-        usefulPrefabs.transform.parent = Instance.transform.parent;
-    }
-
-    void Update() {
-        CheckElementReadiness();    // kept outside of ToUpdate() to avoid IsRunning criteria
-    }
-
-    private void CheckElementReadiness() {
-        if (_gameMgr.GameState == GameState.Waiting && _unreadyElements.Count == 0) {
-            _gameMgr.BeginCountdownToRunning();
-        }
+        _gameMgr.BeginCountdownToRunning();
     }
 
     protected override void OnDestroy() {
@@ -167,6 +155,10 @@ public class Loader : AMonoBehaviourBaseSingletonInstanceIdentity<Loader>, IDisp
             // no reason to cleanup if this object was destroyed before it was initialized.
             Dispose();
         }
+    }
+
+    private void Cleanup() {
+        Unsubscribe();
     }
 
     private void Unsubscribe() {
@@ -204,7 +196,7 @@ public class Loader : AMonoBehaviourBaseSingletonInstanceIdentity<Loader>, IDisp
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            Unsubscribe();
+            Cleanup();
         }
         // free unmanaged resources here
 

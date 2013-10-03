@@ -32,23 +32,16 @@ using UnityEngine;
 /// </summary>
 public abstract class AMonoBehaviourBase : MonoBehaviour, IChangeTracking, INotifyPropertyChanged, INotifyPropertyChanging {
 
-    //private static CoroutineScheduler _coroutineScheduler;
-    //public static CoroutineScheduler CoroutineScheduler {
-    //    get {
-    //        if (_coroutineScheduler == null) {
-    //            _coroutineScheduler = new CoroutineScheduler();
-    //        }
-    //        return _coroutineScheduler;
-    //    }
-    //}
-
     protected static bool _isApplicationQuiting;
+    protected Transform _transform;
+
+    #region Debug
 
     protected virtual void LogEvent(string eventName) {
         D.Log("{0}.{1}().", this.GetType().Name, eventName);
     }
 
-    protected Transform _transform;
+    #endregion
 
     #region MonoBehaviour Event Methods
     // Note: When declared in a base class this way, ALL of these events are called by Unity
