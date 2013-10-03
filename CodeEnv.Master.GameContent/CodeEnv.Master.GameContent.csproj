@@ -33,10 +33,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\..\UnityEnv\Support\Plugins\Library\ScriptAssemblies\Assembly-CSharp.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
       <HintPath>..\..\..\UnityEnv\Support\UnitySerializer\Library\ScriptAssemblies\Assembly-CSharp-firstpass.dll</HintPath>
       <Private>False</Private>
@@ -49,7 +45,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="Vectrosity">
-      <HintPath>..\..\..\UnityEnv\Support\Plugins\Assets\Plugins\Vectrosity.dll</HintPath>
+      <HintPath>..\..\..\UnityEnv\Support\Vectrosity\Assets\Plugins\Vectrosity.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
@@ -126,18 +122,18 @@
     <Compile Include="Generic\IO\SpecialKeys.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">
-      <Project>{1557c03e-56ee-4c70-9bd8-ab637d3191cf}</Project>
-      <Name>CodeEnv.Master.Common</Name>
-    </ProjectReference>
+    <Folder Include="Generic\Math\" />
+    <Folder Include="ThirdParty\" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\CodeEnv.Master.Common.LocalResources\CodeEnv.Master.Common.LocalResources.csproj">
       <Project>{30988a11-a4f0-4fdc-82d5-41b87ea410be}</Project>
       <Name>CodeEnv.Master.Common.LocalResources</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Generic\Math\" />
-    <Folder Include="ThirdParty\" />
+    <ProjectReference Include="..\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">
+      <Project>{1557c03e-56ee-4c70-9bd8-ab637d3191cf}</Project>
+      <Name>CodeEnv.Master.Common</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
