@@ -19,7 +19,7 @@ using UnityEngine;
 /// <summary>
 /// Manages the interaction of the Orbital plane, aka the 'system', with the Player.
 /// </summary>
-public class OrbitalPlane : StationaryItem, IHasContextMenu, IZoomToFurthest {
+public class OrbitalPlane : StationaryItem, /*IHasContextMenu,*/ IZoomToFurthest {
 
     public new SystemData Data {
         get { return base.Data as SystemData; }
@@ -36,7 +36,7 @@ public class OrbitalPlane : StationaryItem, IHasContextMenu, IZoomToFurthest {
         base.Awake();
         _systemManager = gameObject.GetSafeMonoBehaviourComponentInParents<SystemManager>();
         _systemGraphics = gameObject.GetSafeMonoBehaviourComponentInParents<SystemGraphics>();
-        __ValidateCtxObjectSettings();
+        // __ValidateCtxObjectSettings();
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
@@ -98,11 +98,11 @@ public class OrbitalPlane : StationaryItem, IHasContextMenu, IZoomToFurthest {
 
     #region IHasContextMenu Members
 
-    public void __ValidateCtxObjectSettings() {
-        CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
-        D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
-        UnityUtility.ValidateComponentPresence<Collider>(gameObject);
-    }
+    //public void __ValidateCtxObjectSettings() {
+    //    CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
+    //    D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
+    //    UnityUtility.ValidateComponentPresence<Collider>(gameObject);
+    //}
 
     public void OnPress(bool isDown) {
         if (_systemManager.IsSelected) {

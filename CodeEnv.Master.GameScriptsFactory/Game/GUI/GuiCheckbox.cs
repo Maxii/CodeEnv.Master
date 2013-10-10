@@ -33,7 +33,7 @@ public class GuiCheckbox : GuiTooltip {
     /// BEFORE base.InitializeOnAwake() is called.
     /// </summary>
     public string propertyName = string.Empty;
-    protected UICheckbox checkbox;
+    protected UIToggle checkbox;
 
     /// <summary>
     /// Can override. Remember base.InitializeOnAwake();  The tPrefsValue for propertyName must be set before 
@@ -41,10 +41,11 @@ public class GuiCheckbox : GuiTooltip {
     /// </summary>
     protected override void Awake() {
         base.Awake();
-        checkbox = gameObject.GetSafeMonoBehaviourComponent<UICheckbox>();
+        checkbox = gameObject.GetSafeMonoBehaviourComponent<UIToggle>();
         InitializeCheckbox();
         // don't receive events until initializing is complete
-        checkbox.onStateChange += OnCheckboxStateChange;
+        EventDelegate.Add(checkbox.onChange, OnCheckboxStateChange);
+        //checkbox.onStateChange += OnCheckboxStateChange;
     }
 
     /// <summary>
@@ -60,15 +61,18 @@ public class GuiCheckbox : GuiTooltip {
                 return;
             }
             Func<bool> propertyGet = (Func<bool>)Delegate.CreateDelegate(typeof(Func<bool>), PlayerPrefsManager.Instance, propertyInfo.GetGetMethod());
-            checkbox.startsChecked = propertyGet(); // startsChecked used as UICheckbox Start() uses it to initialize the checkbox
+            checkbox.startsActive = propertyGet(); // startsChecked used as UIToggle Start() uses it to initialize the checkbox
+            //checkbox.startsChecked = propertyGet(); // startsChecked used as UIToggle Start() uses it to initialize the checkbox
         }
         else {
             D.Warn("No PlayerPrefsManager Property named for {0} so setting false.".Inject(gameObject.name));
-            checkbox.startsChecked = false;
+            checkbox.startsActive = false;
+            //checkbox.startsChecked = false;
         }
     }
 
-    protected virtual void OnCheckboxStateChange(bool state) { }
+    protected virtual void OnCheckboxStateChange() { }
+    //protected virtual void OnCheckboxStateChange(bool state) { }
 
     // IDisposable Note: No reason to remove Ngui event currentListeners OnDestroy() as the EventListener or
     // Delegate to be removed is attached to this same GameObject that is being destroyed. In addition,

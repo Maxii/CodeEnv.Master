@@ -69,10 +69,15 @@ public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
         // more popupLists here
     }
 
-    protected override void OnPopupListSelectionChange(string item) {
-        base.OnPopupListSelectionChange(item);
+    protected override void OnPopupListSelectionChange() {
+        base.OnPopupListSelectionChange();
         ValidateState();
     }
+
+    //protected override void OnPopupListSelectionChange(string item) {
+    //    base.OnPopupListSelectionChange(item);
+    //    ValidateState();
+    //}
 
     protected override void OnLeftClick() {
         GamePlayOptionSettings settings = new GamePlayOptionSettings();
