@@ -63,19 +63,23 @@ public class FleetManager : AMonoBehaviourBase, ISelectable, IDisposable {
     private FleetGraphics _fleetGraphics;
     private FleetCommand _fleetCmd;
     private UISprite _fleetIconSprite;
+    private Mesh _leadshipMesh;
+    private ScaleRelativeToCamera _fleetIconScaler;
+    private BoxCollider _fleetCmdCollider;
+    private Vector3 _initialCmdColliderSize;
 
     private IList<IDisposable> _subscribers;
 
     // cached transforms
-    private Transform _fleetCmdTransform;
     public Transform _leadShipTransform;
+    private Transform _fleetCmdTransform;
 
-    /// <summary>
-    /// The offset that determines the point on the lead ship from which
-    ///  the Fleet Icon pivots, as a Worldspace vector.
-    /// </summary>
-    private Vector3 _fleetIconPivotOffset;
     private IList<IIcon> _fleetIcons;
+    /// <summary>
+    ///  The distance to the outside perimeter of the mesh of the leadship. The fleetIcon
+    ///  will pivot from a point above (in world space) the lead ship.
+    /// </summary>
+    private float _fleetIconOffsetDistance;
 
     protected override void Awake() {
         base.Awake();
@@ -92,11 +96,17 @@ public class FleetManager : AMonoBehaviourBase, ISelectable, IDisposable {
     }
 
     private void InitializeFleetIcon() {
+        _fleetCmdCollider = _fleetCmd.collider as BoxCollider;
+        _fleetIconScaler = gameObject.GetSafeMonoBehaviourComponentInChildren<ScaleRelativeToCamera>();
+        Vector2 iconSize = _fleetIconScaler.gameObject.GetSafeMonoBehaviourComponent<UISprite>().localSize;
+        _initialCmdColliderSize = new Vector3(iconSize.y, iconSize.y, iconSize.y);
+        _fleetCmdCollider.size = _initialCmdColliderSize;
+
         _fleetIcons = new List<IIcon>(1);
         _iconFactory = IconFactory.Instance;    // TODO How to handle which of these icons go to which sprites?
         _fleetIcons.Add(_iconFactory.MakeInstance<FleetIcon>(IconSection.Bottom, IconSelectionCriteria.None));
         //_fleetIcons.Add(_iconFactory.MakeInstance<FleetIcon>(IconSection.Top, IconSelectionCriteria.None));
-        _fleetIconSprite.spriteName = _fleetIcons[0].Filename;  // UNDONE
+        // _fleetIconSprite.spriteName = _fleetIcons[0].Filename;  // UNDONE
     }
 
     private void Subscribe() {
@@ -125,20 +135,31 @@ public class FleetManager : AMonoBehaviourBase, ISelectable, IDisposable {
 
     void Update() {
         if (ToUpdate()) {
-            KeepCommandOverLeadShip();
+            MaintainCommandOnLeadShip();
         }
     }
 
-    private void KeepCommandOverLeadShip() {  // OPTIMIZE?
-        Vector3 viewportOffsetLocation = Camera.main.WorldToViewportPoint(_leadShipTransform.position + _fleetIconPivotOffset);
-        _fleetCmdTransform.position = Camera.main.ViewportToWorldPoint(viewportOffsetLocation + _fleetIconOffsetFromPivot);
+    //private void KeepCommandOverLeadShip() {  // OPTIMIZE?
+    //    Vector3 viewportOffsetLocation = Camera.main.WorldToViewportPoint(_leadShipTransform.position + _fleetIconPivotOffset);
+    //    _fleetCmdTransform.position = Camera.main.ViewportToWorldPoint(viewportOffsetLocation + _fleetIconOffsetFromPivot);
+    //    _fleetCmdTransform.rotation = _leadShipTransform.rotation;
+    //}
+
+    private void MaintainCommandOnLeadShip() {
+        // place fleet command object coincident with the lead ship so circles, et al align
+        _fleetCmdTransform.position = _leadShipTransform.position;
         _fleetCmdTransform.rotation = _leadShipTransform.rotation;
+        // keep collider size current as fleetIcon size changes
+        _fleetCmdCollider.size = _initialCmdColliderSize * _fleetIconScaler.Scale.magnitude;
     }
+
 
     private void OnLeadShipChanged() {
         _leadShipTransform = LeadShipCaptain.transform;
         _fleetCmd.Data.LeadShipData = LeadShipCaptain.Data;
-        _fleetIconPivotOffset = new Vector3(Constants.ZeroF, _leadShipTransform.collider.bounds.extents.y, Constants.ZeroF);
+        _leadshipMesh = _leadShipTransform.gameObject.GetComponentInChildren<MeshFilter>().mesh;
+        //_fleetIconOffsetDistance = _leadShipTransform.collider.bounds.extents.y;
+        _fleetIconOffsetDistance = _leadshipMesh.bounds.extents.y;
     }
 
     private void OnIntelLevelChanged() {

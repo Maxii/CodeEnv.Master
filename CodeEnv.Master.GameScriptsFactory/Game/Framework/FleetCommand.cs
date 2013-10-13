@@ -20,49 +20,27 @@ using UnityEngine;
 /// Command entity that receives and executes orders for the Fleet. FleetCommand is automatically destroyed
 /// when the health of the fleet reaches Zero.
 /// </summary>
-public class FleetCommand : FollowableItem, IFleetCommand /*, IHasContextMenu */{
+public class FleetCommand : FollowableItem, IFleetCommand, IHasContextMenu {
 
-    public float minFleetViewingDistance = 4.0F;
-    public float optimalFleetViewingDistance = 10F;
-
-    private BoxCollider _boxCollider;
-    private Vector3 _initialColliderSize;
+    public float minFleetViewingDistance = 4F;
+    public float optimalFleetViewingDistance = 6F;
 
     private FleetGraphics _fleetGraphics;
     private FleetManager _fleetMgr;
-    private ScaleRelativeToCamera _fleetIconScaler;
 
     protected override void Awake() {
         base.Awake();
         _fleetMgr = gameObject.GetSafeMonoBehaviourComponentInParents<FleetManager>();
         _fleetGraphics = gameObject.GetSafeMonoBehaviourComponentInParents<FleetGraphics>();
-        _fleetIconScaler = gameObject.GetSafeMonoBehaviourComponentInChildren<ScaleRelativeToCamera>();
-        _boxCollider = collider as BoxCollider;
-        _initialColliderSize = _boxCollider.size;
-        UpdateRate = FrameUpdateFrequency.Infrequent;
     }
 
     protected override void Start() {
         base.Start();
-        // __ValidateCtxObjectSettings();
+        __ValidateCtxObjectSettings();
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
         return new GuiHudPublisher<FleetData>(Data);
-    }
-
-    void Update() {
-        if (ToUpdate()) {
-            KeepColliderSizeCurrent();
-        }
-    }
-
-    /// <summary>
-    /// Keeps the size (scale) of the collider current to match the
-    /// scale of the FleetIcon that constantly changes as the camera moves.
-    /// </summary>
-    private void KeepColliderSizeCurrent() {
-        _boxCollider.size = _initialColliderSize * _fleetIconScaler.Scale.magnitude;
     }
 
     public void __GetFleetUnderway() {
@@ -85,7 +63,8 @@ public class FleetCommand : FollowableItem, IFleetCommand /*, IHasContextMenu */
 
     void OnDoubleClick() {
         if (GameInputHelper.IsLeftMouseButton()) {
-            ChangeFleetHeading(-_transform.right);  // turn left
+            //ChangeFleetHeading(-_transform.right);  // turn left
+            ChangeFleetHeading(Random.insideUnitSphere.normalized);
             ChangeFleetSpeed(Random.Range(Constants.ZeroF, 2.5F));
         }
     }
@@ -143,6 +122,9 @@ public class FleetCommand : FollowableItem, IFleetCommand /*, IHasContextMenu */
     }
 
     public void ChangeFleetSpeed(float newSpeed) {
+        if (DebugSettings.Instance.StopShipMovement) {
+            newSpeed = Constants.ZeroF;
+        }
         foreach (var shipCaptain in _fleetMgr.ShipCaptains) {   // OPTIMIZE with local field?
             shipCaptain.ChangeSpeed(newSpeed);
         }
@@ -180,11 +162,11 @@ public class FleetCommand : FollowableItem, IFleetCommand /*, IHasContextMenu */
 
     #region IHasContextMenu Members
 
-    //public void __ValidateCtxObjectSettings() {
-    //    CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
-    //    D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
-    //    UnityUtility.ValidateComponentPresence<Collider>(gameObject);
-    //}
+    public void __ValidateCtxObjectSettings() {
+        CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
+        D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
+        UnityUtility.ValidateComponentPresence<Collider>(gameObject);
+    }
 
     public void OnPress(bool isDown) {
         if (_fleetMgr.IsSelected) {

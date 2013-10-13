@@ -135,6 +135,7 @@
     <Compile Include="Game\Framework\SystemManager.cs" />
     <Compile Include="Game\Graphics\StarGraphics.cs" />
     <Compile Include="Game\Framework\Sector.cs" />
+    <Compile Include="Generic\Graphics\ScaleSpriteRelativeToCamera.cs" />
     <Compile Include="ThirdParty\MyNguiButtonPlayAnimation.cs" />
     <Compile Include="Game\Framework\UniverseCenter.cs" />
     <Compile Include="Generic\_Debug\VelocityRay.cs" />

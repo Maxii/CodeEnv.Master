@@ -157,6 +157,18 @@ namespace CodeEnv.Master.Common {
             private set { _showSectorGrid = value; }
         }
 
+        private bool _stopShipMovement;
+        public bool StopShipMovement {
+            get {
+                if (!isPropertyValuesInitialized) {
+                    InitializePropertyValues();
+                }
+                return _stopShipMovement;
+            }
+            private set { _stopShipMovement = value; }
+        }
+
+
 
 
         private DebugSettings() {

@@ -47,7 +47,7 @@
   <Section SectionName="Bottom">
     <Selection>
       <Criteria>None</Criteria>
-      <Filename>fleetIcon_unknown</Filename>
+      <Filename>FleetIcon_Unknown</Filename>
     </Selection>
     <Selection>
       <Criteria>Strength0</Criteria>

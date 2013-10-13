@@ -36,8 +36,8 @@ public class GuiManager : AMonoBehaviourBaseSingleton<GuiManager>, IDisposable {
         _eventMgr = GameEventManager.Instance;
         UIPanel uiRootPanel = gameObject.GetSafeMonoBehaviourComponent<UIRoot>().gameObject.GetSafeMonoBehaviourComponent<UIPanel>();
         UIPanel tooltipPanel = gameObject.GetSafeMonoBehaviourComponentInChildren<UITooltip>().gameObject.GetSafeMonoBehaviourComponent<UIPanel>();
-        UIPanel fpsDebugPanel = gameObject.GetSafeMonoBehaviourComponentInChildren<FpsReadout>().transform.parent.gameObject.GetSafeMonoBehaviourComponent<UIPanel>();
-        _panelsToAlwaysRemainActive = new UIPanel[3] { uiRootPanel, tooltipPanel, fpsDebugPanel };
+        UIPanel debugPanel = gameObject.GetSafeMonoBehaviourComponentInChildren<FpsReadout>().gameObject.GetSafeMonoBehaviourComponentInParents<UIPanel>();
+        _panelsToAlwaysRemainActive = new UIPanel[3] { uiRootPanel, tooltipPanel, debugPanel };
         Subscribe();
     }
 

@@ -46,6 +46,11 @@
       <PropertyName>ShowSectorGrid</PropertyName>
       <PropertyValue>false</PropertyValue>
     </Setting>
+    <Setting>
+      <PropertyName>StopShipMovement</PropertyName>
+      <PropertyValue>false</PropertyValue>
+    </Setting>
+
 
   </Boolean>
   
