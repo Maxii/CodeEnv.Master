@@ -27,6 +27,10 @@ public class UniverseCenter : StationaryItem {
 
     #region ICameraFocusable Members
 
+    public override bool IsRetainedFocusEligible {
+        get { return true; }
+    }
+
     protected override float CalcOptimalCameraViewingDistance() {
         return GameManager.Settings.UniverseSize.Radius() * 0.9F;   // IMPROVE
     }

@@ -26,8 +26,9 @@ using UnityEngine;
 public class PlayerViews : AGameInputConfiguration<PlayerViews> {
 
     // Special mode to allow viewing of sectors in space with this key combination activated
-    public PlayerViewModeKeyConfiguration sectorViewMode = new PlayerViewModeKeyConfiguration { key = SpecialKeys.SectorViewMode, viewMode = PlayerViewMode.SectorView, activate = true };
-    public PlayerViewModeKeyConfiguration normalViewMode = new PlayerViewModeKeyConfiguration { key = SpecialKeys.NormalViewMode, viewMode = PlayerViewMode.NormalView, activate = true };
+    public PlayerViewModeKeyConfiguration sectorViewMode = new PlayerViewModeKeyConfiguration { viewModeKey = ViewModeKeys.SectorView, viewMode = PlayerViewMode.SectorView, activate = true };
+    //public PlayerViewModeKeyConfiguration sectorOrderMode = new PlayerViewModeKeyConfiguration { viewModeKey = ViewModeKeys.SectorOrder, viewMode = PlayerViewMode.SectorOrder, activate = true };
+    public PlayerViewModeKeyConfiguration normalViewMode = new PlayerViewModeKeyConfiguration { viewModeKey = ViewModeKeys.NormalView, viewMode = PlayerViewMode.NormalView, activate = true };
 
     private PlayerViewMode _viewMode;
     public PlayerViewMode ViewMode {
@@ -35,16 +36,16 @@ public class PlayerViews : AGameInputConfiguration<PlayerViews> {
         set { SetProperty<PlayerViewMode>(ref _viewMode, value, "ViewMode", OnViewModeChanged); }
     }
 
-    private static SpecialKeys _lastSpecialKeyReceived;
+    // static so nested classes can use it
+    private static ViewModeKeys _lastViewModeKeyPressed;
 
-    private LayerMask _sectorViewModeEventReceiverLayerMask;
-    private LayerMask _sectorViewModeCameraCullingLayerMask;
-    private LayerMask _normalViewModeEventReceiverLayerMask;
-    private LayerMask _normalViewModeCameraCullingLayerMask;
+    //private LayerMask _sectorViewModeEventReceiverLayerMask;
+    //private LayerMask _sectorViewModeCameraCullingLayerMask;
+    //private LayerMask _normalViewModeEventReceiverLayerMask;
+    //private LayerMask _normalViewModeCameraCullingLayerMask;
     private UICamera _mainUICamera;
     private Camera _mainCamera;
 
-    private Sector[] _sectors;
     private IList<IDisposable> _subscribers;
     private PlayerViewModeKeyConfiguration[] _keyConfigs;
 
@@ -53,8 +54,7 @@ public class PlayerViews : AGameInputConfiguration<PlayerViews> {
         _mainCamera = Camera.main;
         _mainUICamera = _mainCamera.gameObject.GetSafeMonoBehaviourComponent<UICamera>();
         _viewMode = PlayerViewMode.NormalView;
-        _keyConfigs = new PlayerViewModeKeyConfiguration[2] { sectorViewMode, normalViewMode };
-        _sectors = Sectors.Folder.gameObject.GetSafeMonoBehaviourComponentsInChildren<Sector>(includeInactive: false);
+        _keyConfigs = new PlayerViewModeKeyConfiguration[] { sectorViewMode, /*sectorOrderMode,*/ normalViewMode };
         Subscribe();
     }
 
@@ -62,7 +62,7 @@ public class PlayerViews : AGameInputConfiguration<PlayerViews> {
         if (_subscribers == null) {
             _subscribers = new List<IDisposable>();
         }
-        _subscribers.Add(gameInput.SubscribeToPropertyChanged<GameInput, KeyCode>(gi => gi.SpecialKeyPressed, OnSpecialKeyPressedChanged));
+        _subscribers.Add(gameInput.SubscribeToPropertyChanged<GameInput, ViewModeKeys>(gi => gi.LastViewModeKeyPressed, OnViewModeKeyPressedChanged));
     }
 
     protected override void Start() {
@@ -72,21 +72,20 @@ public class PlayerViews : AGameInputConfiguration<PlayerViews> {
 
     private void Initialize() {
         // these masks should be acquired after we are sure the camera has set them up properly
-        _normalViewModeEventReceiverLayerMask = _mainUICamera.eventReceiverMask;
-        _normalViewModeCameraCullingLayerMask = _mainCamera.cullingMask;
-        _sectorViewModeEventReceiverLayerMask = _normalViewModeEventReceiverLayerMask.AddToMask(Layers.SectorView);
-        _sectorViewModeCameraCullingLayerMask = _normalViewModeCameraCullingLayerMask.AddToMask(Layers.SectorView);
+        // _normalViewModeEventReceiverLayerMask = _mainUICamera.eventReceiverMask;
+        // _normalViewModeCameraCullingLayerMask = _mainCamera.cullingMask;
+        // _sectorViewModeEventReceiverLayerMask = _normalViewModeEventReceiverLayerMask.AddToMask(Layers.SectorView);
+        // _sectorViewModeCameraCullingLayerMask = _normalViewModeCameraCullingLayerMask.AddToMask(Layers.SectorView);
     }
 
-    private void OnSpecialKeyPressedChanged() {
-        if (ViewMode != PlayerViewMode.NormalView && (SpecialKeys)gameInput.SpecialKeyPressed != SpecialKeys.NormalViewMode) {
-            // we are in a special mode already and the player has hit another special mode key besides the NormalViewMode special key
-            D.Warn("Press the {0} key first to return to {1}.", SpecialKeys.NormalViewMode.GetName(), PlayerViewMode.NormalView);
-            return;
-        }
-        _lastSpecialKeyReceived = (SpecialKeys)gameInput.SpecialKeyPressed;
+    private void OnViewModeKeyPressedChanged() {
+        ChangeViewMode();
+    }
+
+    private void ChangeViewMode() {
+        _lastViewModeKeyPressed = gameInput.LastViewModeKeyPressed;
         PlayerViewModeKeyConfiguration activatedConfig = _keyConfigs.Single(config => config.IsActivated());
-        D.Assert(activatedConfig != null, "Configuration for SpecialKey {0} is null.".Inject(_lastSpecialKeyReceived.GetName()), true);
+        D.Assert(activatedConfig != null, "Configuration for SpecialKey {0} is null.".Inject(_lastViewModeKeyPressed.GetName()), true);
         ViewMode = activatedConfig.viewMode;
     }
 
@@ -95,33 +94,24 @@ public class PlayerViews : AGameInputConfiguration<PlayerViews> {
         switch (ViewMode) {
             case PlayerViewMode.SectorView:
                 // allow the camera to see the sectorViewMode layer so the UICamera can also see it
-                _mainCamera.cullingMask = _sectorViewModeCameraCullingLayerMask;
-                _mainUICamera.eventReceiverMask = _sectorViewModeEventReceiverLayerMask;
-                _sectors.ForAll(s => s.ShowSector(true));
+                //_mainCamera.cullingMask = _sectorViewModeCameraCullingLayerMask;
+                //_mainUICamera.eventReceiverMask = _sectorViewModeEventReceiverLayerMask;
                 break;
             case PlayerViewMode.NormalView:
-                _mainUICamera.eventReceiverMask = _normalViewModeEventReceiverLayerMask;
-                _mainCamera.cullingMask = _normalViewModeCameraCullingLayerMask;
-                _sectors.ForAll(s => s.ShowSector(false));
+                //_mainUICamera.eventReceiverMask = _normalViewModeEventReceiverLayerMask;
+                //_mainCamera.cullingMask = _normalViewModeCameraCullingLayerMask;
                 break;
+            //case PlayerViewMode.SectorOrder:
+            //break;
             case PlayerViewMode.None:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(ViewMode));
         }
     }
 
-    // UNDONE
-    //private bool TryFindCamera(out Sector sector) {
-    //    sector = null;
-    //    Sector[] allSectors = Sectors.Instance.AllSectors;
-    //    foreach (var s in allSectors) {
-    //        if (s.ContainsCamera()) {
-    //            sector = s;
-    //            return true;
-    //        }
-    //    }
-    //    return false;
-    //}
+    void Update() {
+        gameInput.CheckForKeyActivity();
+    }
 
     protected override void OnDestroy() {
         base.OnDestroy();
@@ -145,13 +135,13 @@ public class PlayerViews : AGameInputConfiguration<PlayerViews> {
     #region Nested Classes
 
     [Serializable]
-    // Defines actions associated with the SpecialKeys affecting the PlayerViewMode
+    // Defines actions associated with the keys affecting the PlayerViewMode
     public class PlayerViewModeKeyConfiguration : ConfigurationBase {
         public PlayerViewMode viewMode;
-        public SpecialKeys key;
+        public ViewModeKeys viewModeKey;
 
         public override bool IsActivated() {
-            return base.IsActivated() && key == _lastSpecialKeyReceived;
+            return base.IsActivated() && viewModeKey == _lastViewModeKeyPressed;
         }
     }
 

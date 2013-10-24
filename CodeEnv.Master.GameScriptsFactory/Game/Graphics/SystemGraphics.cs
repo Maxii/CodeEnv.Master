@@ -63,24 +63,19 @@ public class SystemGraphics : AGraphics, IDisposable {
     }
 
     protected override void RegisterComponentsToDisable() {
-        disableGameObjectOnInvisible = new GameObject[1] { _systemHighlightRenderer.gameObject };
+        disableGameObjectOnNotDiscernible = new GameObject[1] { _systemHighlightRenderer.gameObject };
 
         Component[] orbitalPlaneCollider = new Component[1] { gameObject.GetSafeMonoBehaviourComponentInChildren<OrbitalPlane>().collider };
         Renderer[] renderersWithoutVisibilityRelays = gameObject.GetComponentsInChildren<Renderer>()
             .Where<Renderer>(r => r.gameObject.GetComponent<VisibilityChangedRelay>() == null).ToArray<Renderer>();
-        if (disableComponentOnInvisible.IsNullOrEmpty()) {
-            disableComponentOnInvisible = new Component[0];
+        if (disableComponentOnNotDiscernible.IsNullOrEmpty()) {
+            disableComponentOnNotDiscernible = new Component[0];
         }
-        disableComponentOnInvisible = disableComponentOnInvisible.Union<Component>(renderersWithoutVisibilityRelays)
+        disableComponentOnNotDiscernible = disableComponentOnNotDiscernible.Union<Component>(renderersWithoutVisibilityRelays)
             .Union<Component>(orbitalPlaneCollider).ToArray();
     }
 
-    protected override void OnIsVisibleChanged() {
-        base.OnIsVisibleChanged();
-        AssessHighlighting();
-    }
-
-    public void AssessHighlighting() {
+    public override void AssessHighlighting() {
         if (!IsVisible || (!_systemManager.IsSelected && !_orbitalPlane.IsFocus)) {
             Highlight(false, Highlights.None);
             return;
@@ -121,12 +116,13 @@ public class SystemGraphics : AGraphics, IDisposable {
         }
     }
 
-    protected override int EnableBasedOnDistanceToCamera() {
-        int distanceToCamera = base.EnableBasedOnDistanceToCamera();
+    protected override int EnableBasedOnDistanceToCamera(params bool[] conditions) {
+        bool condition = conditions.All<bool>(c => c == true);
+        int distanceToCamera = base.EnableBasedOnDistanceToCamera(condition);
         if (enableTrackingLabel) {  // allows tester to enable while editor is playing
             _trackingLabel = _trackingLabel ?? InitializeTrackingLabel();
             bool toShowTrackingLabel = false;
-            if (IsVisible) {
+            if (condition) {
                 distanceToCamera = distanceToCamera == Constants.Zero ? Target.DistanceToCameraInt() : distanceToCamera;    // not really needed
                 if (Utility.IsInRange(distanceToCamera, minTrackingLabelShowDistance, maxTrackingLabelShowDistance)) {
                     toShowTrackingLabel = true;

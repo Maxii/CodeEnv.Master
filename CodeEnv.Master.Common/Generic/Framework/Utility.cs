@@ -18,6 +18,7 @@ namespace CodeEnv.Master.Common {
     using System.Diagnostics;
     using System.Linq.Expressions;
     using CodeEnv.Master.Common.LocalResources;
+    using UnityEngine;
 
     /// <summary>
     /// General Utilities Class.
@@ -163,6 +164,36 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         public static string SplitCamelCase(string input) {
             return System.Text.RegularExpressions.Regex.Replace(input, "(?<=[a-z])([A-Z])", " $1", System.Text.RegularExpressions.RegexOptions.Compiled);
+        }
+
+        /// <summary>
+        /// Returns a number rounded to the nearest multiple of anothr number (rounds up)
+        /// </summary>
+        /// <param name="number">The number.</param>
+        /// <param name="multiple">The multiple.</param>
+        /// <returns></returns>
+        public static float RoundCeil(float number, float multiple) {
+            return Mathf.Ceil(number / multiple) * multiple;
+        }
+
+        /// <summary>
+        /// Returns a number rounded to the nearest multiple of anothr number (rounds up or down)
+        /// </summary>
+        /// <param name="number">The number.</param>
+        /// <param name="multiple">The multiple.</param>
+        /// <returns></returns>
+        public static float RoundMultiple(float number, float multiple) {
+            return Mathf.Round(number / multiple) * multiple;
+        }
+
+        /// <summary>
+        /// Returns a number rounded to the nearest multiple of anothr number (rounds down)
+        /// </summary>
+        /// <param name="number">The number.</param>
+        /// <param name="multiple">The multiple.</param>
+        /// <returns></returns>
+        public static float RoundFloor(float number, float multiple) {
+            return Mathf.Floor(number / multiple) * multiple;
         }
 
     }

@@ -64,7 +64,7 @@ public abstract class AGameObjectManager<DataType> : AMonoBehaviourBase, INotify
     /// </summary>
     /// <returns></returns>
     protected virtual IntelLevel __InitializeIntelLevel() {
-        return HumanPlayerIntelLevel != IntelLevel.None ? HumanPlayerIntelLevel : IntelLevel.Complete;
+        return HumanPlayerIntelLevel != IntelLevel.Nil ? HumanPlayerIntelLevel : IntelLevel.Complete;
     }
 
     /// <summary>

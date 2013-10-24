@@ -51,6 +51,8 @@
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Generic\IO\KeyModifiers.cs" />
+    <Compile Include="Generic\Framework\Index3D.cs" />
+    <Compile Include="Generic\IO\UnconsumedMouseButtonClick.cs" />
     <Compile Include="ThirdParty\CoroutineNode.cs" />
     <Compile Include="ThirdParty\Reference.cs" />
     <Compile Include="ThirdParty\CoroutineScheduler.cs" />
@@ -138,6 +140,7 @@
     <Compile Include="Generic\Framework\DisposePropertyChangedSubscription.cs" />
     <Compile Include="Generic\IO\UnityUpdateEvent.cs" />
     <Compile Include="Generic\Math\Vector3EqualityComparer.cs" />
+    <Compile Include="Generic\IO\UnconsumedMouseButtonPress.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeEnv.Master.Common.LocalResources\CodeEnv.Master.Common.LocalResources.csproj">
@@ -145,7 +148,9 @@
       <Name>CodeEnv.Master.Common.LocalResources</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="ClassDiagram1.cd" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

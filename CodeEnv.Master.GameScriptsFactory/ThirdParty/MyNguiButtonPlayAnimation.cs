@@ -19,6 +19,7 @@ using UnityEngine;
 using AnimationOrTween;
 using CodeEnv.Master.Common;
 using System.Collections.Generic;
+using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// My mod to limit OnClick to the left mouse button.

@@ -31,6 +31,7 @@ namespace CodeEnv.Master.GameContent {
         private static IList<DebugHudLineKeys> _displayLineOrder = new List<DebugHudLineKeys>() {
                 DebugHudLineKeys.CameraMode, 
                 DebugHudLineKeys.PlayerViewMode,
+                DebugHudLineKeys.SectorIndex,
                 DebugHudLineKeys.PauseState,
                 DebugHudLineKeys.GraphicsQuality
         };
@@ -54,6 +55,7 @@ namespace CodeEnv.Master.GameContent {
             IDictionary<DebugHudLineKeys, string> baseDisplayLineContent = new Dictionary<DebugHudLineKeys, string>() {
                 {DebugHudLineKeys.CameraMode, "CameraMode: {0}"},
                 {DebugHudLineKeys.PlayerViewMode, "ViewMode: {0}"},
+                {DebugHudLineKeys.SectorIndex, "CameraSector: {0}"},
                 {DebugHudLineKeys.PauseState, "{0}"},
                 {DebugHudLineKeys.GraphicsQuality, "Quality: {0}"}
             };

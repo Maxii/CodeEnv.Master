@@ -31,7 +31,7 @@ public class DummyTargetManager : MonoBehaviour, ICameraTargetable {
 
     #region ICameraTargetable Members
 
-    public bool IsTargetable {
+    public bool IsEligible {
         get { return true; }
     }
 

@@ -20,8 +20,7 @@ namespace CodeEnv.Master.Common {
     using UnityEngine;
 
     /// <summary>
-    /// ExtRandom is an extension of the Unity class Random. Its main purpose is to automate common operations desired
-    /// when using the Random class.
+    /// RandomExtended adds more functionality to the Unity class Random.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public static class RandomExtended<T> {
@@ -36,11 +35,21 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        /// Same as Random.Range, but the returned value is between min and max, inclusive.
+        /// Unity's Random.Range does not include max as a possible outcome, unless min == max.
+        /// This means Range(0,1) produces 0 instead of 0 or 1. That's unacceptable per ArenMook.
+        /// </summary>
+        static public int Range(int min, int max) {
+            if (min == max) { return min; }
+            return UnityEngine.Random.Range(min, max + 1);
+        }
+
+        /// <summary>
         /// This method returns either true or false with an equal chance.
         /// </summary>
         /// <returns></returns>
         public static bool SplitChance() {
-            return Random.Range(0, 2) == 0 ? true : false;
+            return Range(0, 1) == 0 ? true : false;
         }
 
         /// <summary>
@@ -50,7 +59,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="probabilitySpace">The probability space.</param>
         /// <returns></returns>
         public static bool Chance(int probabilityFactor, int probabilitySpace) {
-            return Random.Range(0, probabilitySpace) < probabilityFactor ? true : false;
+            return Range(0, probabilitySpace) < probabilityFactor ? true : false;
         }
 
         /// <summary>

@@ -42,8 +42,10 @@ public class DebugHud : AHud<DebugHud>, IDebugHud, IDisposable {
         if (Application.loadedLevel == (int)SceneLevel.GameScene) {
             _subscribers.Add(CameraControl.Instance.SubscribeToPropertyChanged<CameraControl, CameraControl.CameraState>(cc => cc.State, OnCameraStateChanged));
             _subscribers.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, OnPlayerViewModeChanged));
+            _subscribers.Add(CameraControl.Instance.SubscribeToPropertyChanged<CameraControl, Index3D>(cc => cc.SectorIndex, OnCameraSectorIndexChanged));
         }
     }
+
 
     #region DebugHud Subscriptions
     // pulling value changes rather than having them pushed here avoids null reference issues when changing scenes
@@ -54,6 +56,7 @@ public class DebugHud : AHud<DebugHud>, IDebugHud, IDisposable {
             OnPlayerViewModeChanged();
             OnCameraStateChanged();
             OnQualitySettingChanged();
+            OnCameraSectorIndexChanged();
         }
     }
 
@@ -72,6 +75,13 @@ public class DebugHud : AHud<DebugHud>, IDebugHud, IDisposable {
     private void OnQualitySettingChanged() {
         string forceFpsToTarget = DebugSettings.Instance.ForceFpsToTarget ? ", FpsForcedToTarget" : string.Empty;
         Publish(DebugHudLineKeys.GraphicsQuality, QualitySettings.names[PlayerPrefsManager.Instance.QualitySetting] + forceFpsToTarget);
+    }
+
+    private void OnCameraSectorIndexChanged() {
+        Index3D index = CameraControl.Instance.SectorIndex;
+        Sector unused;
+        string text = SectorGrid.TryGetSector(index, out unused) ? index.ToString() : "None";
+        Publish(DebugHudLineKeys.SectorIndex, text);
     }
 
     #endregion

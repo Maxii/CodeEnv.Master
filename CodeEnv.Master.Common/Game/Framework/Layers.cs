@@ -40,7 +40,7 @@ namespace CodeEnv.Master.Common {
 
         DeepSpace = 20,
 
-        Vectrosity = 31
+        Vectrosity2D = 31
 
     }
 }

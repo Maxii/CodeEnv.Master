@@ -25,17 +25,17 @@ namespace CodeEnv.Master.Common {
     /// <typeparam name="TSource">The type of the source.</typeparam>
     public class DisposePropertyChangedSubscription<TSource> : IDisposable where TSource : INotifyPropertyChanged {
 
-        private TSource _source;
+        public TSource Source { get; private set; }
         private PropertyChangedEventHandler _handlerToUnsubscribe;
 
         public DisposePropertyChangedSubscription(TSource source, PropertyChangedEventHandler handlerToUnsubscribe) {
-            _source = source;
+            Source = source;
             _handlerToUnsubscribe = handlerToUnsubscribe;
         }
 
         private void UnsubscribeHandler() {
-            if (_source != null) {
-                _source.PropertyChanged -= _handlerToUnsubscribe;
+            if (Source != null) {
+                Source.PropertyChanged -= _handlerToUnsubscribe;
                 D.Log("PropertyChanged handler unsubscribing from an instance of {0}.", typeof(TSource));
             }
         }

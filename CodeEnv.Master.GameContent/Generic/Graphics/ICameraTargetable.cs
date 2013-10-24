@@ -22,10 +22,10 @@ namespace CodeEnv.Master.GameContent {
     public interface ICameraTargetable {
 
         /// <summary>
-        /// Gets a value indicating whether this instance is currently targetable. e.g. - an ICameraTargetable
-        /// instance should not be targetable when it is not visible to the player.
+        /// Indicates whether this instance is currently eligible to be a camera target for zooming, focusing or following.  
+        /// e.g. - the camera should not know the object exists when it is not visible to the player.
         /// </summary>
-        bool IsTargetable { get; }
+        bool IsEligible { get; }
 
         /// <summary>
         /// Gets the minimum camera viewing distance allowed for this ICameraTargetable object.

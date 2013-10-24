@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AVectrosityBase.cs
-// Base class for Vectrosity GameObjects.
+// File: SelectionManager.cs
+// Singleton. Selection Manager that keeps track of what is selected in the game.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -14,39 +14,61 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-// default namespace
+//namespace CodeEnv.Master.GameContent {
 
 using System;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
-using Vectrosity;
+using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Base class for Vectrosity GameObjects.
+/// Singleton. Selection Manager that keeps track of what is selected in the game. Only one item can be selected at a time.
 /// </summary>
-public abstract class AVectrosityBase : AMonoBehaviourBase, IDisposable {
+public class SelectionManager : AGenericSingleton<SelectionManager>, IDisposable {
 
-    private string _lineName;
-    public string LineName {
-        get { return _lineName; }
-        set { SetProperty<string>(ref _lineName, value, "LineName", OnNameChanged); }
+    private ISelectable _currentSelection;
+    public ISelectable CurrentSelection {
+        get { return _currentSelection; }
+        set { SetProperty<ISelectable>(ref _currentSelection, value, "CurrentSelection", null, OnSelectionChanging); }
     }
 
-    protected VectorLine _line;
+    private IList<IDisposable> _subscribers;
 
-    private void OnNameChanged() {
-        gameObject.name = LineName;
-        if (_line != null) {
-            _line.name = LineName;
+    private SelectionManager() {
+        Initialize();
+    }
+
+    protected override void Initialize() {
+        Subscribe();
+    }
+
+    private void Subscribe() {
+        if (_subscribers == null) {
+            _subscribers = new List<IDisposable>();
+        }
+        _subscribers.Add(GameInput.Instance.SubscribeToPropertyChanged<GameInput, UnconsumedMouseButtonClick>(gi => gi.UnconsumedClick, OnUnconsumedMouseButtonClickChanged));
+    }
+
+    private void OnUnconsumedMouseButtonClickChanged() {
+        if (GameInput.Instance.UnconsumedClick.MouseButton == NguiMouseButton.Left) {
+            CurrentSelection = null;
         }
     }
 
-    protected override void OnDestroy() {
-        base.OnDestroy();
-        Dispose();
+    private void OnSelectionChanging(ISelectable newSelection) {
+        if (CurrentSelection != null) {
+            CurrentSelection.IsSelected = false;
+        }
     }
 
     private void Cleanup() {
-        VectorLine.Destroy(ref _line);
+        Unsubscribe();
+        // other cleanup here including any tracking Gui2D elements
+    }
+
+    private void Unsubscribe() {
+        _subscribers.ForAll(s => s.Dispose());
+        _subscribers.Clear();
     }
 
     public override string ToString() {
@@ -96,5 +118,7 @@ public abstract class AVectrosityBase : AMonoBehaviourBase, IDisposable {
     //}
     #endregion
 
+
 }
+//}
 

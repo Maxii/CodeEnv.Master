@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
@@ -28,12 +29,6 @@ using UnityEngine;
 public class FleetManager : AMonoBehaviourBase, ISelectable, IDisposable {
 
     private static IconFactory _iconFactory;
-
-    /// <summary>
-    /// The separation between the pivot point on the lead ship and the fleet icon,
-    ///as a Viewport vector. Viewport vector values vary from 0.0F to 1.0F.
-    /// </summary>
-    public Vector3 _fleetIconOffsetFromPivot = new Vector3(Constants.ZeroF, 0.03F, Constants.ZeroF);
 
     /// <summary>
     /// Used for convenience only. Actual FleetData repository is held by FleetCommand.
@@ -60,33 +55,28 @@ public class FleetManager : AMonoBehaviourBase, ISelectable, IDisposable {
     private SelectionManager _selectionMgr;
     private GameManager _gameMgr;
     private GameEventManager _eventMgr;
+
     private FleetGraphics _fleetGraphics;
     private FleetCommand _fleetCmd;
-    private UISprite _fleetIconSprite;
-    private Mesh _leadshipMesh;
-    private ScaleRelativeToCamera _fleetIconScaler;
+    private Transform _fleetCmdTransform;
+    private Transform _leadShipTransform;
+
+    private Transform _fleetIconTransform;
+    private Vector3 _fleetIconPivotOffset;
     private BoxCollider _fleetCmdCollider;
-    private Vector3 _initialCmdColliderSize;
+    private UISprite _fleetIconSprite;
+    private ScaleRelativeToCamera _fleetIconScaler;
+    private IIcon _fleetIcon;
+    private Vector3 _iconSize;
 
     private IList<IDisposable> _subscribers;
 
-    // cached transforms
-    public Transform _leadShipTransform;
-    private Transform _fleetCmdTransform;
-
-    private IList<IIcon> _fleetIcons;
-    /// <summary>
-    ///  The distance to the outside perimeter of the mesh of the leadship. The fleetIcon
-    ///  will pivot from a point above (in world space) the lead ship.
-    /// </summary>
-    private float _fleetIconOffsetDistance;
-
     protected override void Awake() {
         base.Awake();
+        enabled = false;    // disabled behaviours aren't updated
         _fleetCmd = gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>();
         _fleetCmdTransform = _fleetCmd.transform;
         _fleetGraphics = gameObject.GetSafeMonoBehaviourComponent<FleetGraphics>();
-        _fleetIconSprite = gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>();
         ShipCaptains = gameObject.GetSafeMonoBehaviourComponentsInChildren<ShipCaptain>().ToList();
         _gameMgr = GameManager.Instance;
         _eventMgr = GameEventManager.Instance;
@@ -96,17 +86,16 @@ public class FleetManager : AMonoBehaviourBase, ISelectable, IDisposable {
     }
 
     private void InitializeFleetIcon() {
+        _fleetIconSprite = gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>();
+        _fleetIconTransform = _fleetIconSprite.transform;
+        _fleetIconScaler = _fleetIconTransform.gameObject.GetSafeMonoBehaviourComponent<ScaleRelativeToCamera>();
         _fleetCmdCollider = _fleetCmd.collider as BoxCollider;
-        _fleetIconScaler = gameObject.GetSafeMonoBehaviourComponentInChildren<ScaleRelativeToCamera>();
-        Vector2 iconSize = _fleetIconScaler.gameObject.GetSafeMonoBehaviourComponent<UISprite>().localSize;
-        _initialCmdColliderSize = new Vector3(iconSize.y, iconSize.y, iconSize.y);
-        _fleetCmdCollider.size = _initialCmdColliderSize;
+        // I need the CmdCollider sitting over the fleet icon to be 3D as it's rotation tracks the Cmd object, not the billboarded icon
+        Vector2 iconSize = _fleetIconSprite.localSize;
+        _iconSize = new Vector3(iconSize.x, iconSize.y, iconSize.x);
 
-        _fleetIcons = new List<IIcon>(1);
-        _iconFactory = IconFactory.Instance;    // TODO How to handle which of these icons go to which sprites?
-        _fleetIcons.Add(_iconFactory.MakeInstance<FleetIcon>(IconSection.Bottom, IconSelectionCriteria.None));
-        //_fleetIcons.Add(_iconFactory.MakeInstance<FleetIcon>(IconSection.Top, IconSelectionCriteria.None));
-        // _fleetIconSprite.spriteName = _fleetIcons[0].Filename;  // UNDONE
+        _iconFactory = IconFactory.Instance;
+        UpdateRate = FrameUpdateFrequency.Normal;
     }
 
     private void Subscribe() {
@@ -121,6 +110,7 @@ public class FleetManager : AMonoBehaviourBase, ISelectable, IDisposable {
         if (_gameMgr.GameState == GameState.Running) {
             // IMPROVE select LeadShipCaptain here for now as Data must be initialized first
             LeadShipCaptain = RandomExtended<ShipCaptain>.Choice(ShipCaptains);
+            enabled = true; // OK to update now
             _fleetCmd.__GetFleetUnderway();
         }
     }
@@ -130,63 +120,93 @@ public class FleetManager : AMonoBehaviourBase, ISelectable, IDisposable {
     }
 
     private void OnFleetCompositionChanged() {
-        TryChangeFleetIcon();
+        AssessFleetIcon();
     }
 
     void Update() {
+        KeepCommandOverLeadShip();
         if (ToUpdate()) {
-            MaintainCommandOnLeadShip();
+            KeepCommandColliderCurrent();
         }
     }
 
-    //private void KeepCommandOverLeadShip() {  // OPTIMIZE?
-    //    Vector3 viewportOffsetLocation = Camera.main.WorldToViewportPoint(_leadShipTransform.position + _fleetIconPivotOffset);
-    //    _fleetCmdTransform.position = Camera.main.ViewportToWorldPoint(viewportOffsetLocation + _fleetIconOffsetFromPivot);
-    //    _fleetCmdTransform.rotation = _leadShipTransform.rotation;
-    //}
-
-    private void MaintainCommandOnLeadShip() {
-        // place fleet command object coincident with the lead ship so circles, et al align
+    private void KeepCommandOverLeadShip() {
         _fleetCmdTransform.position = _leadShipTransform.position;
         _fleetCmdTransform.rotation = _leadShipTransform.rotation;
-        // keep collider size current as fleetIcon size changes
-        _fleetCmdCollider.size = _initialCmdColliderSize * _fleetIconScaler.Scale.magnitude;
+
+        // Notes: _fleetIconPivotOffset is a worldspace offset to the top of the leadship collider and doesn't change with scale, position or rotation
+        // The approach below will also work if we want a viewport offset that is a constant percentage of the viewport
+        //Vector3 viewportOffsetLocation = Camera.main.WorldToViewportPoint(_leadShipTransform.position + _fleetIconPivotOffset);
+        //Vector3 worldOffsetLocation = Camera.main.ViewportToWorldPoint(viewportOffsetLocation + _fleetIconViewportOffset);
+        //_fleetIconTransform.localPosition = worldOffsetLocation - _leadShipTransform.position;
+        _fleetIconTransform.localPosition = _fleetIconPivotOffset;
     }
 
+    private void KeepCommandColliderCurrent() {
+        _fleetCmdCollider.size = Vector3.Scale(_iconSize, _fleetIconScaler.Scale);
+
+        Vector3[] iconWorldCorners = _fleetIconSprite.worldCorners;
+        Vector3 iconWorldCenter = iconWorldCorners[0] + (iconWorldCorners[2] - iconWorldCorners[0]) * 0.5F;
+        // convert icon's world position to the equivalent local position on the fleetCmd transform
+        _fleetCmdCollider.center = _fleetCmdTransform.InverseTransformPoint(iconWorldCenter);
+    }
 
     private void OnLeadShipChanged() {
+        //AssignFleetCmdToLeadShip();
         _leadShipTransform = LeadShipCaptain.transform;
-        _fleetCmd.Data.LeadShipData = LeadShipCaptain.Data;
-        _leadshipMesh = _leadShipTransform.gameObject.GetComponentInChildren<MeshFilter>().mesh;
-        //_fleetIconOffsetDistance = _leadShipTransform.collider.bounds.extents.y;
-        _fleetIconOffsetDistance = _leadshipMesh.bounds.extents.y;
+        _fleetIconPivotOffset = new Vector3(Constants.ZeroF, _leadShipTransform.collider.bounds.extents.y, Constants.ZeroF);
+        Data.LeadShipData = LeadShipCaptain.Data;
+    }
+
+    [Obsolete]  // Ship rigidbody consumes FleetCmd collider ray hits from camera
+    private void AssignFleetCmdToLeadShip() {
+        UnityUtility.AttachChildToParent(_fleetCmd.gameObject, _leadShipCaptain.gameObject);
+        Data.LeadShipData = LeadShipCaptain.Data;
     }
 
     private void OnIntelLevelChanged() {
         _fleetCmd.PlayerIntelLevel = PlayerIntelLevel;
         ShipCaptains.ForAll<ShipCaptain>(cap => cap.PlayerIntelLevel = PlayerIntelLevel);
-        TryChangeFleetIcon();
+        AssessFleetIcon();
     }
 
-    private void TryChangeFleetIcon() {
-        // TODO evaluate IntelLevel and Composition
-        // __ChangeFleetIcon();
-    }
-
-    private void __ChangeFleetIcon() {
-        IIcon newIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Top, IconSelectionCriteria.Science);
-        if (_fleetIcons.Contains(newIcon)) {
-            return;
+    private void AssessFleetIcon() {
+        // TODO evaluate Composition
+        switch (PlayerIntelLevel) {
+            case IntelLevel.Nil:
+                _fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.None);
+                _fleetIconSprite.color = GameColor.Clear.ToUnityColor();    // TODO None should be a completely transparent icon
+                break;
+            case IntelLevel.Unknown:
+                _fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.IntelLevelUnknown);
+                _fleetIconSprite.color = GameColor.White.ToUnityColor();    // may be clear from prior setting
+                break;
+            case IntelLevel.OutOfDate:
+                _fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.IntelLevelUnknown);
+                _fleetIconSprite.color = Data.Owner.Color.ToUnityColor();
+                break;
+            case IntelLevel.LongRangeSensors:
+                _fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.Level5);
+                _fleetIconSprite.color = Data.Owner.Color.ToUnityColor();
+                break;
+            case IntelLevel.ShortRangeSensors:
+            case IntelLevel.Complete:
+                var selectionCriteria = new IconSelectionCriteria[] { IconSelectionCriteria.Level5, IconSelectionCriteria.Science, IconSelectionCriteria.Colony, IconSelectionCriteria.Troop };
+                _fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, selectionCriteria);
+                _fleetIconSprite.color = Data.Owner.Color.ToUnityColor();
+                break;
+            case IntelLevel.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(PlayerIntelLevel));
         }
-        D.Log("Changing {0} {1}.", typeof(FleetIcon).Name, IconSection.Top.GetName());
-        _fleetIcons[0] = newIcon;
-        _fleetIconSprite.spriteName = newIcon.Filename;
-        // TODO swap out new icon for the old icon with the same Section value. Will order matter?
+        _fleetIconSprite.spriteName = _fleetIcon.Filename;
+        D.Log("IntelLevel is {2}, changing {0} to {1}.", typeof(FleetIcon).Name, _fleetIcon.Filename, PlayerIntelLevel.GetName());
     }
 
     private void OnIsSelectedChanged() {
         _fleetGraphics.AssessHighlighting();
         ShipCaptains.ForAll<ShipCaptain>(sc => sc.gameObject.GetSafeMonoBehaviourComponent<ShipGraphics>().AssessHighlighting());
+        //D.Log("ShipCaptains count is {0}.", ShipCaptains.Count);
         if (IsSelected) {
             _selectionMgr.CurrentSelection = this;
         }
@@ -196,10 +216,12 @@ public class FleetManager : AMonoBehaviourBase, ISelectable, IDisposable {
         RemoveShip(shipCaptain);
         if (ShipCaptains.Count > Constants.Zero) {
             if (shipCaptain == LeadShipCaptain) {
-                // LeadShip was destroyed
+                // LeadShip has died
                 LeadShipCaptain = SelectBestShip();
             }
-            _fleetCmd.DeclareAsFocus();
+            if (_fleetGraphics.IsDetectable) {
+                _fleetCmd.IsFocus = true;
+            }
             return;
         }
         // FleetCommand knows when to die
@@ -250,7 +272,14 @@ public class FleetManager : AMonoBehaviourBase, ISelectable, IDisposable {
     }
 
     public void OnLeftClick() {
-        IsSelected = true;
+        if (_fleetGraphics.IsDetectable) {
+            KeyCode notUsed;
+            if (GameInputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftAlt, KeyCode.RightAlt)) {
+                ShipCaptains.ForAll<ShipCaptain>(s => s.__SimulateAttacked());
+                return;
+            }
+            IsSelected = true;
+        }
     }
 
     #endregion

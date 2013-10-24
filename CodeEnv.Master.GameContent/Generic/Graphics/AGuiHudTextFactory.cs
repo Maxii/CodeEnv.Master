@@ -36,6 +36,11 @@ namespace CodeEnv.Master.GameContent {
 
         private static IDictionary<IntelLevel, IList<GuiHudLineKeys>> _hudLineKeyLookup = new Dictionary<IntelLevel, IList<GuiHudLineKeys>> {
 
+        {IntelLevel.Nil, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
+                                                                       GuiHudLineKeys.ParentName,
+                                                                       GuiHudLineKeys.IntelState,
+                                                                       GuiHudLineKeys.Distance }},
+
         {IntelLevel.Unknown, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
                                                                        GuiHudLineKeys.ParentName,
                                                                        GuiHudLineKeys.IntelState,
@@ -204,6 +209,7 @@ namespace CodeEnv.Master.GameContent {
             private string ConstructIntelText(IntelLevel intelLevel, GameTimePeriod intelAge) {
                 string intelMsg = intelLevel.GetName();
                 switch (intelLevel) {
+                    case IntelLevel.Nil:
                     case IntelLevel.Unknown:
                     case IntelLevel.LongRangeSensors:
                     case IntelLevel.ShortRangeSensors:

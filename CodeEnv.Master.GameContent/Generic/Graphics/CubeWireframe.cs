@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: CubeWireframe.cs
-// Class that controls the display of a rectangular box wireframe around a gameobject.
+// Generates a rectangular box wireframe around a gameobject.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,40 +22,9 @@ namespace CodeEnv.Master.GameContent {
     using Vectrosity;
 
     /// <summary>
-    /// Class that controls the display of a rectangular box wireframe around a gameobject. 
-    /// 
+    /// Generates a rectangular box wireframe around a gameobject. 
     /// </summary>
-    public class CubeWireframe : APropertyChangeTracking, IDisposable {
-
-        private Transform _target;
-        /// <summary>
-        /// The transform that this cube wireframe is drawn around.
-        /// </summary>
-        public Transform Target {
-            get { return _target; }
-            set { SetProperty<Transform>(ref _target, value, "Target", OnTargetChanged); }
-        }
-
-        private Transform _parent;
-        /// <summary>
-        /// The parent transform where you want the wireframe line object to reside in the scene.
-        /// </summary>
-        public Transform Parent {
-            get { return _parent; }
-            set { SetProperty<Transform>(ref _parent, value, "Parent", OnParentChanged); }
-        }
-
-        private GameColor _color;
-        public GameColor Color {
-            get { return _color; }
-            set { SetProperty<GameColor>(ref _color, value, "Color", OnColorChanged); }
-        }
-
-        private float _lineWidth;
-        public float LineWidth {
-            get { return _lineWidth; }
-            set { SetProperty<float>(ref _lineWidth, value, "LineWidth", OnLineWidthChanged); }
-        }
+    public class CubeWireframe : A3DVectrosityBase {
 
         private Vector3 _size;
         public Vector3 Size {
@@ -63,59 +32,53 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<Vector3>(ref _size, value, "Size", OnSizeChanged); }
         }
 
-        private string _lineName;
-        public string LineName {
-            get { return _lineName; }
-            set { SetProperty<string>(ref _lineName, value, "LineName", OnLineNameChanged); }
-        }
-
-        private VectorLine _line;
-        private Visibility _visibility;
-
-        public CubeWireframe(string name, Transform target, Vector3 cubeSize, Visibility visibility = Visibility.Static, float width = 1F, GameColor color = GameColor.White) {
-            _lineName = name;
-            _target = target;
-            _size = cubeSize;
-            _visibility = visibility;
-            _lineWidth = width;
-            _color = color;
-        }
-
-        public void Show(bool toShow) {
-            if (!toShow && _line == null) {
-                return;
-            }
-            if (_line == null) {
-                _line = new VectorLine(LineName, new Vector3[24], Color.ToUnityColor(), null, LineWidth, LineType.Discrete);
-                _line.MakeCube(Vector3.zero, Size.x, Size.y, Size.z);
-                if (Parent != null) {
-                    OnParentChanged();
-                }
-                VectorManager.ObjectSetup(Target.gameObject, _line, _visibility, Brightness.None);
-            }
-            _line.active = toShow;
-        }
-
-        private void OnTargetChanged() {
-            VectorManager.ObjectSetup(Target.gameObject, _line, _visibility, Brightness.None);
-        }
-
-        private void OnParentChanged() {
-            if (_line != null) {
-                _line.vectorObject.transform.parent = Parent;
+        /// <summary>
+        /// <c>true</c> if [is mouse over hot spot]; otherwise, <c>false</c>.
+        /// </summary>
+        public bool IsMouseOverHotSpot {
+            get {
+                if (_pointLine == null) { return false; }
+                int unused;
+                return _pointLine.Selected(Input.mousePosition, 40, out unused);
             }
         }
 
-        private void OnColorChanged() {
-            if (_line != null) {
-                _line.SetColor(Color.ToUnityColor());
+        private VectorPoints _pointLine;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CubeWireframe"/> class.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="target">The target.</param>
+        /// <param name="boxSize">Size of the box.</param>
+        /// <param name="parent">The parent to attach the VectorObject too.</param>
+        /// <param name="width">The width.</param>
+        /// <param name="color">The color.</param>
+        public CubeWireframe(string name, Transform target, Vector3 boxSize, Transform parent = null, float width = 1F, GameColor color = GameColor.White)
+            : base(name, new Vector3[24], target, parent, width, color) {
+            _size = boxSize;
+        }
+
+        protected override void Initialize() {
+            base.Initialize();
+            _line.MakeCube(Vector3.zero, Size.x, Size.y, Size.z);
+            Vector3[] centerPoint = new Vector3[] { new Vector3(0F, 0F, 0F) };
+            _pointLine = new VectorPoints("CenterPoint", centerPoint, Color.ToUnityColor(), material, 2F);
+        }
+
+        protected override void Draw3D() {
+            base.Draw3D();
+            if (_target != null) {
+                _pointLine.Draw3D(_target);
+            }
+            else {
+                _pointLine.Draw3D();
             }
         }
 
-        private void OnLineWidthChanged() {
-            if (_line != null) {
-                _line.lineWidth = LineWidth;
-            }
+        public override void Hide() {
+            base.Hide();
+            _pointLine.active = false;
         }
 
         private void OnSizeChanged() {
@@ -124,63 +87,14 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void OnLineNameChanged() {
-            if (_line != null) {
-                _line.name = LineName;
-            }
-        }
-
-        private void Cleanup() {
-            VectorLine.Destroy(ref _line);
+        protected override void Cleanup() {
+            base.Cleanup();
+            VectorLine.Destroy(ref _pointLine);
         }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
-
-        #region IDisposable
-        [DoNotSerialize]
-        private bool alreadyDisposed = false;
-
-        /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-        /// </summary>
-        public void Dispose() {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        /// <summary>
-        /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-        /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
-        /// </summary>
-        /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-        protected virtual void Dispose(bool isDisposing) {
-            // Allows Dispose(isDisposing) to be called more than once
-            if (alreadyDisposed) {
-                return;
-            }
-
-            if (isDisposing) {
-                // free managed resources here including unhooking events
-                Cleanup();
-            }
-            // free unmanaged resources here
-
-            alreadyDisposed = true;
-        }
-
-        // Example method showing check for whether the object has been disposed
-        //public void ExampleMethod() {
-        //    // throw Exception if called on object that is already disposed
-        //    if(alreadyDisposed) {
-        //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-        //    }
-
-        //    // method content here
-        //}
-        #endregion
-
     }
 }
 

@@ -59,10 +59,9 @@
     </Compile>
     <Compile Include="Generic\Extensions\AFolderAccess.cs" />
     <Compile Include="Generic\Framework\AMonoBehaviourBaseSingletonInstanceIdentity.cs" />
-    <Compile Include="Generic\Graphics\AItem.cs" />
+    <Compile Include="Generic\Framework\AItem.cs" />
     <Compile Include="Generic\Graphics\AGraphics.cs" />
     <Compile Include="Game\Framework\DummyTargetManager.cs" />
-    <Compile Include="Generic\Graphics\AVectrosityBase.cs" />
     <Compile Include="Generic\_Debug\DrawBoundsGizmo.cs" />
     <Compile Include="Generic\Framework\AMonoBehaviourBase.cs" />
     <Compile Include="Generic\Framework\AMonoBehaviourBaseSingleton.cs" />

@@ -23,10 +23,18 @@ namespace CodeEnv.Master.Common {
     public enum IconSection {
 
         Base,
+
         Top,
+        Middle,
         Bottom,
+
         Left,
+        Center,
         Right,
+
+        Inside,
+        Outside,
+
         Layer0,
         Layer1
 

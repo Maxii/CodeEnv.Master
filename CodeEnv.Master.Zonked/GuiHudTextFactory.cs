@@ -400,7 +400,7 @@ namespace CodeEnv.Master.Common.Unity {
                         string addendum = String.Format(". Last Intel {0} ago.", intelAge.FormattedPeriod);
                         intelMsg = intelMsg + addendum;
                         break;
-                    case IntelLevel.None:
+                    case IntelLevel.Nil:
                     default:
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(intelLevel));
                 }

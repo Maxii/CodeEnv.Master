@@ -24,6 +24,7 @@ namespace CodeEnv.Master.GameContent {
         None = 0,
         NormalView = 1,
         SectorView = 2
+        //SectorOrder = 3
 
     }
 }

@@ -27,6 +27,11 @@ namespace CodeEnv.Master.Common {
         None,
 
         /// <summary>
+        /// There is zero knowledge concerning this location or object known to this player.
+        /// </summary>
+        Nil,
+
+        /// <summary>
         /// Typically the location is unexplored or beyond sensor range. Most knowledge is based
         /// off of rumor, inuendo or  simple empirical observation from too far away.
         /// </summary>
@@ -34,7 +39,7 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// The location has been visited previously but the only information
-        /// available is what we know doesn't change as the location is not within sensor range.
+        /// available is info that doesn't change as the location is not within sensor range.
         /// </summary>
         OutOfDate,
 

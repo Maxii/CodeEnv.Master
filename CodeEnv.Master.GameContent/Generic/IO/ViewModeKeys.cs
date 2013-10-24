@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SpecialKeys.cs
-// Enum that translates KeyCodes into 'special' named modes.
+// File: ViewModeKeys.cs
+// Enum that translates KeyCodes into named PlayerViewMode keys.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,14 +21,16 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Enum that translates KeyCodes into 'special' named modes.
     /// </summary>
-    public enum SpecialKeys {
+    public enum ViewModeKeys {
 
         //[EnumAttribute("")]
         None = KeyCode.None,
 
-        SectorViewMode = KeyCode.F1,
+        SectorView = KeyCode.F1,
 
-        NormalViewMode = KeyCode.Escape
+        //SectorOrder = KeyCode.F2,
+
+        NormalView = KeyCode.Escape
 
     }
 }

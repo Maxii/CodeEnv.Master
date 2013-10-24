@@ -116,6 +116,46 @@ namespace CodeEnv.Master.Common {
             return didOne;
         }
 
+        /// <summary>
+        /// Attaches the child to the parent, automatically aligning position,
+        /// rotation, scale and layer to that of the parent, aka local position,
+        /// rotation and scale are set to identity values.
+        /// </summary>
+        /// <param name="child">The child.</param>
+        /// <param name="parent">The parent.</param>
+        public static void AttachChildToParent(GameObject child, GameObject parent) {
+            Transform childTransform = child.transform;
+            childTransform.parent = parent.transform;
+            childTransform.localPosition = Vector3.zero;
+            childTransform.localRotation = Quaternion.identity;
+            childTransform.localScale = Vector3.one;
+            child.layer = parent.layer;
+        }
+
+        /// <summary>
+        /// Rounds each value in this Vector3 to the float equivalent of the closest integer.
+        /// </summary>
+        /// <param name="point">The point.</param>
+        /// <returns></returns>
+        public static Vector3 RoundPoint(Vector3 point) {
+            return RoundPoint(point, Vector3.one);
+        }
+
+        /// <summary>
+        /// Rounds each value in this Vector3 to the float equivalent of the closest integer
+        /// multiple of multi.
+        /// </summary>
+        /// <param name="point">The point.</param>
+        /// <param name="multi">The multi.</param>
+        /// <returns></returns>
+        public static Vector3 RoundPoint(Vector3 point, Vector3 multi) {
+            for (int i = 0; i < 3; i++) {
+                point[i] = Utility.RoundMultiple(point[i], multi[i]);
+            }
+            return point;
+        }
+
+
     }
 }
 

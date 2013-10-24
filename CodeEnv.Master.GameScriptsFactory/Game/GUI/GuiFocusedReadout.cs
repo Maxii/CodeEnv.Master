@@ -13,6 +13,7 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -22,7 +23,10 @@ using UnityEngine;
 /// </summary>
 public class GuiFocusedReadout : AGuiLabelReadoutBase {
 
-    private Transform _retainedFocus;
+    private ICameraFocusable _retainedFocus;
+
+
+    private IList<IDisposable> _subscribers;
 
     protected override void Awake() {
         base.Awake();
@@ -34,20 +38,22 @@ public class GuiFocusedReadout : AGuiLabelReadoutBase {
     }
 
     private void Subscribe() {
-        _eventMgr.AddListener<FocusSelectedEvent>(this, OnFocusSelected);
+        if (_subscribers == null) {
+            _subscribers = new List<IDisposable>();
+        }
+        _subscribers.Add(CameraControl.Instance.SubscribeToPropertyChanged<CameraControl, ICameraFocusable>(cc => cc.CurrentFocus, OnFocusChanged));
         _eventMgr.AddListener<ItemDeathEvent>(this, OnGameItemDestroyed);
     }
 
-    private void OnFocusSelected(FocusSelectedEvent e) {
-        Transform focusTransform = e.FocusTransform;
-        TryRetainingFocus(focusTransform);
+    private void OnFocusChanged() {
+        ICameraFocusable focus = CameraControl.Instance.CurrentFocus;
+        TryRetainingFocus(focus);
     }
 
-    private void TryRetainingFocus(Transform focusTransform) {
-        ICameraFocusable focusable = focusTransform.gameObject.GetInterface<ICameraFocusable>();
-        if (focusable.IsRetainedFocusEligible) {
-            _retainedFocus = focusTransform;
-            IHasData iHasData = focusTransform.gameObject.GetInterface<IHasData>();
+    private void TryRetainingFocus(ICameraFocusable focus) {
+        if (focus != null && focus.IsRetainedFocusEligible) {
+            _retainedFocus = focus;
+            IHasData iHasData = (focus as Component).gameObject.GetInterface<IHasData>();
             string focusName = "No Data";
             if (iHasData != null) {
                 focusName = iHasData.GetData().Name;
@@ -63,8 +69,7 @@ public class GuiFocusedReadout : AGuiLabelReadoutBase {
 
     private void CheckRetainedFocusDestroyed(ICameraFocusable focusable) {
         if (focusable != null && focusable.IsRetainedFocusEligible) {
-            Transform focusableTransform = (focusable as Component).transform;
-            if (focusableTransform == _retainedFocus) {
+            if (focusable == _retainedFocus) {
                 RefreshReadout(string.Empty);
                 _retainedFocus = null;
             }
@@ -79,12 +84,13 @@ public class GuiFocusedReadout : AGuiLabelReadoutBase {
 
     private void OnMiddleClick() {
         if (_retainedFocus != null) {
-            _eventMgr.Raise<FocusSelectedEvent>(new FocusSelectedEvent(this, _retainedFocus));
+            _retainedFocus.IsFocus = true;
         }
     }
 
     private void Unsubscribe() {
-        _eventMgr.RemoveListener<FocusSelectedEvent>(this, OnFocusSelected);
+        _subscribers.ForAll(s => s.Dispose());
+        _subscribers.Clear();
         _eventMgr.RemoveListener<ItemDeathEvent>(this, OnGameItemDestroyed);
     }
 

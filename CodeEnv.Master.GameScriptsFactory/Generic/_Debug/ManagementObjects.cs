@@ -72,7 +72,8 @@ public class ManagementObjects : AMonoBehaviourBaseSingletonInstanceIdentity<Man
         Transform[] transforms = gameObject.GetComponentsInChildren<Transform>(includeInactive: true);   // includes the parent t
         foreach (Transform t in transforms) {
             if (t != Folder) {
-                t.parent = Instance.transform;
+                //t.parent = Instance.transform;
+                UnityUtility.AttachChildToParent(t.gameObject, Instance.gameObject);
                 D.Log("Child [{0}].parent changed to {1}_{2}.".Inject(t.name, Instance.name, InstanceID));
             }
         }
@@ -99,7 +100,8 @@ public class ManagementObjects : AMonoBehaviourBaseSingletonInstanceIdentity<Man
 
     private void OnSceneChanged(SceneChangedEvent e) {
         var childrenToReattach = from t in _children where t != null select t;
-        childrenToReattach.ForAll<Transform>(t => t.parent = Folder);
+        //childrenToReattach.ForAll<Transform>(t => t.parent = Folder);
+        childrenToReattach.ForAll<Transform>(t => UnityUtility.AttachChildToParent(t.gameObject, Folder.gameObject));
         __FixGameObjectName();
     }
 

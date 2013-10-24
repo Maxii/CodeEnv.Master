@@ -69,11 +69,13 @@ namespace CodeEnv.Master.Common {
         [System.Diagnostics.Conditional("UNITY_EDITOR")]
         private static void TryWarn<T>(T backingStore, T value, string propertyName) {
             if (!typeof(T).IsValueType) {
-                if (DebugSettings.Instance.EnableVerboseDebugLog) {
-                    D.Warn("{0} BackingStore {1} and value {2} are equal. Property not changed.", propertyName, backingStore, value);
-                }
-                else {
-                    D.Warn("{0} BackingStore and value of Type {1} are equal. Property not changed.", propertyName, typeof(T).Name);
+                if (value != null) {
+                    if (DebugSettings.Instance.EnableVerboseDebugLog) {
+                        D.Warn("{0} BackingStore {1} and value {2} are equal. Property not changed.", propertyName, backingStore, value);
+                    }
+                    else {
+                        D.Warn("{0} BackingStore and value of Type {1} are equal. Property not changed.", propertyName, typeof(T).Name);
+                    }
                 }
             }
         }

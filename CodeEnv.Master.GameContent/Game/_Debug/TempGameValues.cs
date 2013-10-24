@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using CodeEnv.Master.Common;
     using UnityEngine;
 
     public static class TempGameValues {
@@ -25,6 +26,14 @@ namespace CodeEnv.Master.GameContent {
 
         public const int MinSystemTrackingLabelShowDistance = 100;
         public const int MaxSystemTrackingLabelShowDistance = 2500;
+
+        /// <summary>
+        /// The length in world units of a sector side along any of the axis. As a sector
+        /// is a cube, all side lengths are equal.
+        /// </summary>
+        public const float SectorSideLength = 1200F;
+
+        public static readonly Vector3 SectorSize = new Vector3(SectorSideLength, SectorSideLength, SectorSideLength);
 
     }
 }

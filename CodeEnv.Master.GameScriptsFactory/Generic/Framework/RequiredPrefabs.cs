@@ -28,8 +28,7 @@ public class RequiredPrefabs : AMonoBehaviourBaseSingletonInstanceIdentity<Requi
     public SphereCollider UniverseEdgePrefab;
     public Transform CameraDummyTargetPrefab;
     public GuiTrackingLabel GuiTrackingLabelPrefab;
-    public VelocityRay VelocityRay;
-    public HighlightCircle HighlightCircle;
+    public Sector SectorPrefab;
 
     protected override void Awake() {
         base.Awake();

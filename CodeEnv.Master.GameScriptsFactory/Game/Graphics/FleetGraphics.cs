@@ -13,12 +13,11 @@
 // default namespace
 
 using System;
-using System.Collections;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
-using Vectrosity;
 
 /// <summary>
 /// Handles graphics optimization for Fleets. Assumes location is with Fleet
@@ -26,7 +25,17 @@ using Vectrosity;
 /// </summary>
 public class FleetGraphics : AGraphics, IDisposable {
 
-    private UISprite _fleetIcon;
+    private bool _isDetectable = true; // FIXME if starts false, it doesn't get updated right away...
+    /// <summary>
+    /// Gets or sets a value indicating whether the object this graphics script
+    /// is associated with is detectable by the human player. 
+    /// eg. a fleet the human player has no intel about is not detectable.
+    /// </summary>
+    public bool IsDetectable {
+        get { return _isDetectable; }
+        set { SetProperty<bool>(ref _isDetectable, value, "IsDetectable", OnIsDetectableChanged); }
+    }
+
 
     public bool enableTrackingLabel = false;
     public Vector3 trackingLabelOffsetFromPivot = new Vector3(Constants.ZeroF, 0.05F, Constants.ZeroF);
@@ -37,8 +46,8 @@ public class FleetGraphics : AGraphics, IDisposable {
 
     public float circleScaleFactor = .03F;
     private HighlightCircle _circles;
-    private VectorLineFactory _vectorLineFactory;
     private VelocityRay _velocityRay;
+    private UISprite _fleetIcon;
 
     // cached references
     private FleetCommand _fleetCmd;
@@ -49,17 +58,16 @@ public class FleetGraphics : AGraphics, IDisposable {
         _fleetMgr = gameObject.GetSafeMonoBehaviourComponent<FleetManager>();
         _fleetCmd = gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>();
         _trackingLabelFactory = GuiTrackingLabelFactory.Instance;
-        _vectorLineFactory = VectorLineFactory.Instance;
         Target = _fleetCmd.transform;
         InitializeHighlighting();
         maxAnimateDistance = 1; // FIXME maxAnimateDistance not used, this is a dummy value to avoid the warning in AGraphics
     }
 
     protected override void RegisterComponentsToDisable() {
-        disableComponentOnInvisible = new Component[1] { 
+        disableComponentOnNotDiscernible = new Component[1] { 
             Target.collider 
         };
-        disableGameObjectOnInvisible = new GameObject[1] { 
+        disableGameObjectOnNotDiscernible = new GameObject[1] { 
             gameObject.GetSafeMonoBehaviourComponentInChildren<Billboard>().gameObject
         };
     }
@@ -68,12 +76,25 @@ public class FleetGraphics : AGraphics, IDisposable {
         _fleetIcon = gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>();
     }
 
-    protected override int EnableBasedOnDistanceToCamera() {
-        int distanceToCamera = base.EnableBasedOnDistanceToCamera();
+    private void OnIsDetectableChanged() {
+        EnableBasedOnDiscernible(IsVisible, IsDetectable);
+        EnableBasedOnDistanceToCamera(IsVisible, IsDetectable);
+        AssessHighlighting();
+    }
+
+    protected override void OnIsVisibleChanged() {
+        EnableBasedOnDiscernible(IsVisible, IsDetectable);
+        EnableBasedOnDistanceToCamera(IsVisible, IsDetectable);
+        AssessHighlighting();
+    }
+
+    protected override int EnableBasedOnDistanceToCamera(params bool[] conditions) {
+        bool condition = conditions.All<bool>(c => c == true);
+        int distanceToCamera = base.EnableBasedOnDistanceToCamera(condition);
         if (enableTrackingLabel) {  // allows tester to enable while editor is playing
             _trackingLabel = _trackingLabel ?? InitializeTrackingLabel();
             bool toShowTrackingLabel = false;
-            if (IsVisible) {
+            if (condition) {
                 distanceToCamera = distanceToCamera == Constants.Zero ? Target.DistanceToCameraInt() : distanceToCamera;    // not really needed
                 if (Utility.IsInRange(distanceToCamera, minTrackingLabelShowDistance, maxTrackingLabelShowDistance)) {
                     toShowTrackingLabel = true;
@@ -99,8 +120,8 @@ public class FleetGraphics : AGraphics, IDisposable {
         }
     }
 
-    public void AssessHighlighting() {
-        if (!IsVisible) {
+    public override void AssessHighlighting() {
+        if (!IsDetectable || !IsVisible) {
             Highlight(false, Highlights.None);
             return;
         }
@@ -122,6 +143,7 @@ public class FleetGraphics : AGraphics, IDisposable {
     private void Highlight(bool toShowFleetIcon, Highlights highlight) {
         if (_fleetIcon != null) {
             _fleetIcon.gameObject.SetActive(toShowFleetIcon);
+            // TODO audio on/off goes here
         }
         ShowVelocityRay(toShowFleetIcon);
         switch (highlight) {
@@ -155,16 +177,25 @@ public class FleetGraphics : AGraphics, IDisposable {
         }
         if (_circles == null) {
             float normalizedRadius = Screen.height * circleScaleFactor;
-            _circles = _vectorLineFactory.MakeInstance("FleetCircles", _fleetCmd.transform, normalizedRadius, isRadiusDynamic: false, maxCircles: 2);
+            _circles = new HighlightCircle("FleetCircles", _fleetCmd.transform, normalizedRadius, parent: DynamicObjects.Folder,
+                isRadiusDynamic: false, maxCircles: 2);
             _circles.Colors = new GameColor[2] { UnityDebugConstants.FocusedColor, UnityDebugConstants.SelectedColor };
             _circles.Widths = new float[2] { 2F, 2F };
         }
-        _circles.ShowCircle(toShow, (int)highlight);
+        if (toShow) {
+            //D.Log("Fleet attempting to show circle {0}.", highlight.GetName());
+            if (!_circles.IsShowing) {
+                StartCoroutine(_circles.ShowCircles((int)highlight));
+            }
+            else {
+                _circles.AddCircle((int)highlight);
+            }
+        }
+        else if (_circles.IsShowing) {
+            _circles.RemoveCircle((int)highlight);
+        }
     }
 
-    /// <summary>
-    /// Shows a Vectrosity Ray indicating the course and speed of the fleet.
-    /// </summary>
     private void ShowVelocityRay(bool toShow) {
         if (DebugSettings.Instance.EnableFleetVelocityRays) {
             if (!toShow && _velocityRay == null) {
@@ -172,15 +203,18 @@ public class FleetGraphics : AGraphics, IDisposable {
             }
             if (_velocityRay == null) {
                 Reference<float> speedReference = new Reference<float>(() => _fleetCmd.Data.CurrentSpeed);
-                _velocityRay = _vectorLineFactory.MakeInstance("FleetVelocityRay", _fleetCmd.transform, speedReference, GameColor.Green);
+                _velocityRay = new VelocityRay("FleetVelocityRay", _fleetCmd.transform, speedReference, parent: DynamicObjects.Folder,
+                    width: 2F, color: GameColor.Green);
             }
-            _velocityRay.ShowRay(toShow);
+            if (toShow) {
+                if (!_velocityRay.IsShowing) {
+                    StartCoroutine(_velocityRay.Show());
+                }
+            }
+            else if (_velocityRay.IsShowing) {
+                _velocityRay.Hide();
+            }
         }
-    }
-
-    protected override void OnIsVisibleChanged() {
-        base.OnIsVisibleChanged();
-        AssessHighlighting();
     }
 
     protected override void OnDestroy() {
@@ -190,11 +224,11 @@ public class FleetGraphics : AGraphics, IDisposable {
 
     private void Cleanup() {
         if (_velocityRay != null) {
-            Destroy(_velocityRay.gameObject);
+            _velocityRay.Dispose();
             _velocityRay = null;
         }
         if (_circles != null) {
-            Destroy(_circles.gameObject);
+            _circles.Dispose();
             _circles = null;
         }
         if (_trackingLabel != null) {

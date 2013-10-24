@@ -28,7 +28,7 @@ public class ItemGraphics : AGraphics, IDisposable {
 
     public float circleScaleFactor = 1.5F;
 
-    private HighlightCircle _circle;
+    private HighlightCircle _circles;
     private StationaryItem _item;
     private IList<IDisposable> _subscribers;
 
@@ -42,25 +42,23 @@ public class ItemGraphics : AGraphics, IDisposable {
     }
 
     private void Subscribe() {
-        _subscribers = new List<IDisposable>();
+        if (_subscribers == null) {
+            _subscribers = new List<IDisposable>();
+        }
         _subscribers.Add(_item.SubscribeToPropertyChanged<StationaryItem, bool>(i => i.IsFocus, OnItemIsFocusChanged));
     }
+
 
     protected override void RegisterComponentsToDisable() {
         // disable the Animation in the item's mesh, but no other animations
         disableComponentOnCameraDistance = gameObject.GetComponentsInChildren<Animation>().Where(a => a.transform.parent == Target).ToArray();
     }
 
-    protected override void OnIsVisibleChanged() {
-        base.OnIsVisibleChanged();
-        AssessHighlighting();
-    }
-
     private void OnItemIsFocusChanged() {
         AssessHighlighting();
     }
 
-    public void AssessHighlighting() {
+    public override void AssessHighlighting() {
         if (!IsVisible) {
             Highlight(Highlights.None);
             return;
@@ -91,14 +89,25 @@ public class ItemGraphics : AGraphics, IDisposable {
 
     private void ShowCircle(bool toShow, Highlights highlight) {
         D.Assert(highlight == Highlights.Focused);
-        if (!toShow && _circle == null) {
+        if (!toShow && _circles == null) {
             return;
         }
-        if (_circle == null) {
+        if (_circles == null) {
             float normalizedRadius = Screen.height * circleScaleFactor * _item.Size;
-            _circle = VectorLineFactory.Instance.MakeInstance("ItemCircle", Target, normalizedRadius, isRadiusDynamic: true, maxCircles: 1, width: 3F, color: UnityDebugConstants.FocusedColor);
+            _circles = new HighlightCircle("ItemCircle", Target, normalizedRadius, parent: DynamicObjects.Folder, isRadiusDynamic: true, maxCircles: 1, width: 3F, color: UnityDebugConstants.FocusedColor);
         }
-        _circle.ShowCircle(toShow, (int)highlight);
+        if (toShow) {
+            //D.Log("Item attempting to show circle {0}.", highlight.GetName());
+            if (!_circles.IsShowing) {
+                StartCoroutine(_circles.ShowCircles((int)highlight));
+            }
+            else {
+                _circles.AddCircle((int)highlight);
+            }
+        }
+        else if (_circles.IsShowing) {
+            _circles.RemoveCircle((int)highlight);
+        }
     }
 
     protected override void OnDestroy() {
@@ -108,8 +117,8 @@ public class ItemGraphics : AGraphics, IDisposable {
 
     private void Cleanup() {
         Unsubscribe();
-        if (_circle != null) {
-            Destroy(_circle.gameObject);
+        if (_circles != null) {
+            _circles.Dispose();
         }
     }
 

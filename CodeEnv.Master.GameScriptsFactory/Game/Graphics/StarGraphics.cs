@@ -15,7 +15,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -37,9 +36,6 @@ public class StarGraphics : ItemGraphics {
             disableComponentOnCameraDistance = new Component[0];
         }
         disableComponentOnCameraDistance = disableComponentOnCameraDistance.Union(starAnimatingBehaviours).ToArray();
-
-        //D.Log("Contains {0} Components.", disableComponentOnCameraDistance.Length);
-        //disableComponentOnCameraDistance.ForAll(c => { D.Log(c.ToString()); });
     }
 
     public override string ToString() {

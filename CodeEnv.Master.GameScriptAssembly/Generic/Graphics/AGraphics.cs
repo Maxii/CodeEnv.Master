@@ -62,22 +62,22 @@ public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
     public int maxAnimateDistance;
 
     /// <summary>
-    /// The components to disable ONLY when invisible.
+    /// The components to disable when not visible or detectable.
     /// </summary>
-    protected Component[] disableComponentOnInvisible;
+    protected Component[] disableComponentOnNotDiscernible;
 
     /// <summary>
-    /// The game objects to disable ONLY when invisible.
+    /// The game objects to disable when not visible or detectable.
     /// </summary>
-    protected GameObject[] disableGameObjectOnInvisible;
+    protected GameObject[] disableGameObjectOnNotDiscernible;
 
     /// <summary>
-    /// The components to disable when invisible AND based on distance from camera.
+    /// The components to disable when invisible or too far/close to the camera.
     /// </summary>
     protected Component[] disableComponentOnCameraDistance;
 
     /// <summary>
-    /// The game objects to disable when invisible AND based on distance from camera.
+    /// The game objects to disable when invisible or too far/close to the camera.
     /// </summary>
     protected GameObject[] disableGameObjectOnCameraDistance;
 
@@ -96,9 +96,10 @@ public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
 
     /// <summary>
     /// Optional ability to register components and gameobjects to disable programatically.
-    /// Automatically called if the public arrays are empty.
     /// </summary>
     protected abstract void RegisterComponentsToDisable();
+
+    public abstract void AssessHighlighting();
 
     protected virtual void Update() {
         if (ToUpdate()) {
@@ -111,23 +112,23 @@ public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
     }
 
     protected virtual void OnIsVisibleChanged() {
-        EnableBasedOnVisibility();
-        EnableBasedOnDistanceToCamera();
+        EnableBasedOnDiscernible(IsVisible);
+        EnableBasedOnDistanceToCamera(IsVisible);
+        AssessHighlighting();
     }
 
-    private void EnableBasedOnVisibility() {
-        D.Log("{0}.EnableBasedOnVisibility() called. IsVisible = {1}.", this.GetType().Name, IsVisible);
-        //if (disableComponentOnInvisible.Length != Constants.Zero) {
-        if (!disableComponentOnInvisible.IsNullOrEmpty()) {
+    protected void EnableBasedOnDiscernible(params bool[] conditions) {
+        bool condition = conditions.All<bool>(c => c == true);
+        D.Log("{0}.EnableBasedOnDiscernible() called. IsDiscernible = {1}.", this.GetType().Name, condition);
+        if (!disableComponentOnNotDiscernible.IsNullOrEmpty()) {
 
-            disableComponentOnInvisible.Where(c => c is Behaviour).ForAll(c => (c as Behaviour).enabled = IsVisible);
-            disableComponentOnInvisible.Where(c => c is Renderer).ForAll(c => (c as Renderer).enabled = IsVisible);
-            disableComponentOnInvisible.Where(c => c is Collider).ForAll(c => (c as Collider).enabled = IsVisible);
+            disableComponentOnNotDiscernible.Where(c => c is Behaviour).ForAll(c => (c as Behaviour).enabled = condition);
+            disableComponentOnNotDiscernible.Where(c => c is Renderer).ForAll(c => (c as Renderer).enabled = condition);
+            disableComponentOnNotDiscernible.Where(c => c is Collider).ForAll(c => (c as Collider).enabled = condition);
         }
-        //if (disableGameObjectOnInvisible.Length != Constants.Zero) {
-        if (!disableGameObjectOnInvisible.IsNullOrEmpty()) {
+        if (!disableGameObjectOnNotDiscernible.IsNullOrEmpty()) {
 
-            disableGameObjectOnInvisible.ForAll(go => go.SetActive(IsVisible));
+            disableGameObjectOnNotDiscernible.ForAll(go => go.SetActive(condition));
         }
     }
 
@@ -135,14 +136,15 @@ public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
     /// Controls enabled state of components based on the Target's distance from the camera plane.
     /// </summary>
     /// <returns>The Target's distance to the camera. Will be zero if not visible.</returns>
-    protected virtual int EnableBasedOnDistanceToCamera() {
+    protected virtual int EnableBasedOnDistanceToCamera(params bool[] conditions) {
+        bool condition = conditions.All<bool>(c => c == true);
         int distanceToCamera = Constants.Zero;
         if (maxAnimateDistance == Constants.Zero) {
             D.Warn("{0}.maxAnimateDistance is 0 on {1}.", this.GetType().Name, gameObject.name);
         }
 
         bool toEnable = false;
-        if (IsVisible) {
+        if (condition) {
             distanceToCamera = Target.DistanceToCameraInt();
             //D.Log("CameraPlane distance to {2} = {0}, CameraTransformPosition distance = {1}.", distanceToCamera, Vector3.Distance(Camera.main.transform.position, Target.position), Target.name);
             //D.Log("{0}.EnableBasedOnDistanceToCamera() called. Distance = {1}.", this.GetType().Name, distanceToCamera);

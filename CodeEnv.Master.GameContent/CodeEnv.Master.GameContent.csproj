@@ -56,6 +56,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Graphics\A3DVectrosityBase.cs" />
+    <Compile Include="Generic\Graphics\AVectrosityBase.cs" />
     <Compile Include="Generic\Graphics\CubeWireframe.cs" />
     <Compile Include="Game\Framework\FleetComposition.cs" />
     <Compile Include="Game\Framework\GameSettings.cs" />
@@ -76,14 +78,14 @@
     <Compile Include="Game\_Debug\DebugHudLineKeys.cs" />
     <Compile Include="Generic\Extensions\GameSpeedExtensions.cs" />
     <Compile Include="Generic\Extensions\UniverseSizeExtensions.cs" />
-    <Compile Include="Generic\Framework\SelectionManager.cs" />
     <Compile Include="Generic\Graphics\AGuiHudPublisher.cs" />
     <Compile Include="Generic\Graphics\AGuiHudTextFactory.cs" />
     <Compile Include="Generic\Framework\ISelectable.cs" />
+    <Compile Include="Generic\Graphics\CubeWireframe_Alt.cs" />
+    <Compile Include="Generic\Graphics\HighlightCircle.cs" />
     <Compile Include="Generic\Graphics\ICameraFocusable.cs" />
     <Compile Include="Generic\Graphics\ICameraFollowable.cs" />
     <Compile Include="Generic\Graphics\ICameraTargetable.cs" />
-    <Compile Include="Generic\Graphics\IHasContextMenu.cs" />
     <Compile Include="Generic\Graphics\IZoomToFurthest.cs" />
     <Compile Include="Generic\IO\AnimationSettings.cs" />
     <Compile Include="Game\_Debug\DebugHudText.cs" />
@@ -99,7 +101,6 @@
     <Compile Include="Game\Framework\IGameDate.cs" />
     <Compile Include="Generic\Graphics\IHud.cs" />
     <Compile Include="Generic\Graphics\INotifyVisibilityChanged.cs" />
-    <Compile Include="Game\Framework\FocusSelectedEvent.cs" />
     <Compile Include="Generic\IO\GeneralSettings.cs" />
     <Compile Include="Generic\IO\PlayerPrefsManager.cs" />
     <Compile Include="Game\GUI\GuiHudText.cs" />
@@ -115,11 +116,14 @@
     <Compile Include="Generic\_Debug\IDebugHud.cs" />
     <Compile Include="Game\Gameplay\IHasData.cs" />
     <Compile Include="Game\Framework\IFleetCommand.cs" />
+    <Compile Include="Game\Graphics\GridWireframe.cs" />
+    <Compile Include="Game\Graphics\GridWireframe_Alt.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\SystemData.cs" />
     <Compile Include="Game\Gameplay\ShipData.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
-    <Compile Include="Generic\IO\SpecialKeys.cs" />
+    <Compile Include="Generic\IO\ViewModeKeys.cs" />
+    <Compile Include="Game\_Debug\VelocityRay.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Generic\Math\" />

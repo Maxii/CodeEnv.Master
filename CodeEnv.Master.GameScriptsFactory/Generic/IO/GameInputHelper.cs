@@ -6,9 +6,8 @@
 // </copyright> 
 // <summary> 
 // File: GameInputHelper.cs
-// Static helper class for determining the state of Mouse controls
-// using Ngui's default mouse input values. These input values are 
-// different than Unitys.
+// Static helper class for determining the state of Mouse controls using Ngui's default mouse input values.
+//These input values are different than Unitys.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,7 +15,7 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-// default namespace
+//namespace CodeEnv.Master.GameContent {
 
 using System;
 using System.Collections.Generic;
@@ -32,17 +31,26 @@ using UnityEngine;
 public static class GameInputHelper {
 
     /// <summary>
+    /// Gets the NguiMouseButton that is being used to generate the current event.
+    /// Valid only within an Ngui UICamera-generated event.
+    /// </summary>
+    /// <returns></returns>
+    public static NguiMouseButton GetMouseButton() {
+        int currentMouseButton = UICamera.currentTouchID;
+        ValidateCurrentTouchID(currentMouseButton);
+        return (NguiMouseButton)currentMouseButton;
+    }
+
+    /// <summary>
     /// Tests whether the designated mouse button is the current button that is being
-    /// used to generate this event. Valid only within an Ngui UICamera-generated event.
+    /// used to generate the current event. Valid only within an Ngui UICamera-generated event.
     /// </summary>
     /// <param name="mouseButton">The mouse button.</param>
     /// <returns>
     ///   <c>true</c> if the mouseButton is the one that was used to generate the current event; otherwise, <c>false</c>.
     /// </returns>
     public static bool IsMouseButton(NguiMouseButton mouseButton) {
-        int currentMouseButton = UICamera.currentTouchID;
-        ValidateCurrentTouchID(currentMouseButton);
-        return currentMouseButton == (int)mouseButton;
+        return mouseButton == GetMouseButton();
     }
 
     [System.Diagnostics.Conditional("DEBUG")]
@@ -183,6 +191,6 @@ public static class GameInputHelper {
         }
         return false;
     }
-
 }
+//}
 

@@ -134,7 +134,7 @@ public class VisibilityChangedRelay : AMonoBehaviourBase, IDisposable {
         bool isValid = true;
         string visibility = isVisible ? "Visible" : "Invisible";
         if (isVisible == _isVisible) {
-            D.LogContext("Duplicate {0}.OnBecame{1}() received and filtered out.".Inject(gameObject.name, visibility), this);
+            //D.LogContext("Duplicate {0}.OnBecame{1}() received and filtered out.".Inject(gameObject.name, visibility), this);
             isValid = false;
         }
         if (gameObject.activeInHierarchy) {

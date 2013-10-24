@@ -23,21 +23,6 @@ using CodeEnv.Master.Common;
 /// </summary>
 public class Sectors : AFolderAccess<Sectors> {
 
-    // UNDONE
-    //private Sector[] _allSectors;
-    //public Sector[] AllSectors {
-    //    get {
-    //        if (_allSectors == null) {
-    //            _allSectors = AcquireSectors();
-    //        }
-    //        return _allSectors;
-    //    }
-    //}
-
-    //private Sector[] AcquireSectors() {
-    //    return gameObject.GetSafeMonoBehaviourComponentsInChildren<Sector>();
-    //}
-
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

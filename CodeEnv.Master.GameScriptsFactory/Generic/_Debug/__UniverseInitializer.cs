@@ -102,7 +102,7 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
             };
             sysMgr.Data = data;
             sysMgr.PlayerIntelLevel = Enums<IntelLevel>.GetRandom(excludeDefault: true);
-            D.Log("Random PlayerIntelLevel = {0}.", sysMgr.PlayerIntelLevel.GetName());
+            D.Log("{1} random PlayerIntelLevel = {0}.", sysMgr.PlayerIntelLevel.GetName(), data.Name);
             sysNumber++;
         }
     }
@@ -158,8 +158,8 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
 
     private void InitializeFleet() {
         if (!_fleets.IsNullOrEmpty()) {
-            FleetManager fleet = _fleets[0];
-            Transform admiralTransform = fleet.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>().transform;
+            FleetManager fleetMgr = _fleets[0];
+            Transform admiralTransform = fleetMgr.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>().transform;
             FleetData data = new FleetData(admiralTransform, "A Fleet") {
                 // there is no parentName for a fleet
                 LastHumanPlayerIntelDate = new GameDate()
@@ -168,8 +168,10 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
             foreach (var ship in _ships) {
                 data.AddShip(ship.Data);
             }
-            fleet.Data = data;
-            fleet.PlayerIntelLevel = IntelLevel.Complete;
+            fleetMgr.Data = data;
+            fleetMgr.PlayerIntelLevel = RandomExtended<IntelLevel>.Choice(Enums<IntelLevel>.GetValues().Except(default(IntelLevel), IntelLevel.Nil).ToArray());
+            //fleetMgr.PlayerIntelLevel = Enums<IntelLevel>.GetRandom(excludeDefault: false);
+            //fleetMgr.PlayerIntelLevel = IntelLevel.Nil;
         }
     }
 

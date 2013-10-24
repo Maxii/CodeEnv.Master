@@ -13,6 +13,7 @@
 // default namespace
 
 using System;
+using System.Linq;
 using System.Collections;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -26,10 +27,15 @@ using Vectrosity;
 /// </summary>
 public class ShipGraphics : AGraphics, IDisposable {
 
-    private bool _isShowShip = true; // start true in case game starts close enough to see the ship
-    public bool IsShowShip {
-        get { return _isShowShip; }
-        set { SetProperty<bool>(ref _isShowShip, value, "IsShowShip", OnIsShowShipChanged); }
+    private bool _isDetectable = true; // FIXME if starts false, it doesn't get updated right away...
+    /// <summary>
+    /// Gets or sets a value indicating whether the object this graphics script
+    /// is associated with is detectable by the human player. 
+    /// eg. a fleet the human player has no intel about is not detectable.
+    /// </summary>
+    public bool IsDetectable {
+        get { return _isDetectable; }
+        set { SetProperty<bool>(ref _isDetectable, value, "IsDetectable", OnIsDetectableChanged); }
     }
 
     public int maxShowDistance;
@@ -37,11 +43,11 @@ public class ShipGraphics : AGraphics, IDisposable {
     private Color _originalSpecularShipColor;
     private Color _hiddenShipColor;
     private Renderer _shipRenderer;
+    private bool _toShowShipBasedOnDistance;
 
     public float circleScaleFactor = 1.5F;
     private HighlightCircle _circles;
     private VelocityRay _velocityRay;
-    private VectorLineFactory _vectorLineFactory;
 
     // cached references
     private ShipCaptain _shipCaptain;
@@ -54,7 +60,6 @@ public class ShipGraphics : AGraphics, IDisposable {
         maxAnimateDistance = Mathf.RoundToInt(AnimationSettings.Instance.MaxShipAnimateDistanceFactor * _shipCaptain.Size);
         maxShowDistance = Mathf.RoundToInt(AnimationSettings.Instance.MaxShipShowDistanceFactor * _shipCaptain.Size);
         _fleetMgr = gameObject.GetSafeMonoBehaviourComponentInParents<FleetManager>();
-        _vectorLineFactory = VectorLineFactory.Instance;
         InitializeHighlighting();
     }
 
@@ -71,27 +76,42 @@ public class ShipGraphics : AGraphics, IDisposable {
         };
     }
 
-    protected override int EnableBasedOnDistanceToCamera() {
-        int distanceToCamera = base.EnableBasedOnDistanceToCamera();
-        bool toShowShip = false;
-        if (IsVisible) {
+    private void OnIsDetectableChanged() {
+        EnableBasedOnDiscernible(IsVisible, IsDetectable);
+        EnableBasedOnDistanceToCamera(IsVisible, _shipCaptain.PlayerIntelLevel != IntelLevel.Nil);
+        AssessHighlighting();
+    }
+
+    protected override void OnIsVisibleChanged() {
+        EnableBasedOnDiscernible(IsVisible, IsDetectable);
+        EnableBasedOnDistanceToCamera(IsVisible, _shipCaptain.PlayerIntelLevel != IntelLevel.Nil);
+        AssessHighlighting();
+    }
+
+    protected override int EnableBasedOnDistanceToCamera(params bool[] conditions) {
+        bool condition = conditions.All<bool>(c => c == true);
+        int distanceToCamera = base.EnableBasedOnDistanceToCamera(condition);
+        _toShowShipBasedOnDistance = false;
+        if (condition) {
             if (distanceToCamera == Constants.Zero) {
                 distanceToCamera = Target.DistanceToCameraInt();
             }
             if (distanceToCamera < maxShowDistance) {
-                toShowShip = true;
+                _toShowShipBasedOnDistance = true;
             }
         }
-        IsShowShip = toShowShip;
+        AssessDetectability();
         return distanceToCamera;
     }
 
-    private void OnIsShowShipChanged() {
-        AssessHighlighting();
+    public void AssessDetectability() {
+        IsDetectable = _shipCaptain.PlayerIntelLevel != IntelLevel.Nil && _toShowShipBasedOnDistance;
     }
 
-    public void AssessHighlighting() {
-        if (!IsShowShip) {
+    public override void AssessHighlighting() {
+        D.Log("{0}.AssessHighligting(). Ship.IsDescernible = {4}, Ship.IsFocus = {1}, Ship.IsSelected = {2}, Fleet.IsSelected = {3}.",
+            _shipCaptain.Data.Name, _shipCaptain.IsFocus, _shipCaptain.IsSelected, _fleetMgr.IsSelected, IsDetectable && IsVisible);
+        if (!IsDetectable || !IsVisible) {
             Highlight(false, Highlights.None);
             return;
         }
@@ -122,10 +142,12 @@ public class ShipGraphics : AGraphics, IDisposable {
         if (toShowShip) {
             _shipRenderer.material.SetColor(UnityConstants.MainMaterialColor, _originalMainShipColor);
             _shipRenderer.material.SetColor(UnityConstants.SpecularMaterialColor, _originalSpecularShipColor);
+            // TODO audio on goes here
         }
         else {
             _shipRenderer.material.SetColor(UnityConstants.MainMaterialColor, _hiddenShipColor);
             _shipRenderer.material.SetColor(UnityConstants.SpecularMaterialColor, _hiddenShipColor);
+            // TODO audio off goes here
         }
         ShowVelocityRay(toShowShip);
         switch (highlight) {
@@ -171,11 +193,23 @@ public class ShipGraphics : AGraphics, IDisposable {
         }
         if (_circles == null) {
             float normalizedRadius = Screen.height * circleScaleFactor * _shipCaptain.Size;
-            _circles = _vectorLineFactory.MakeInstance("ShipCircles", _shipCaptain.transform, normalizedRadius, isRadiusDynamic: true, maxCircles: 3);
+            _circles = new HighlightCircle("ShipCircles", _shipCaptain.transform, normalizedRadius, parent: DynamicObjects.Folder,
+                isRadiusDynamic: true, maxCircles: 3);
             _circles.Colors = new GameColor[3] { UnityDebugConstants.FocusedColor, UnityDebugConstants.SelectedColor, UnityDebugConstants.GeneralHighlightColor };
             _circles.Widths = new float[3] { 2F, 2F, 1F };
         }
-        _circles.ShowCircle(toShow, (int)highlight);
+        if (toShow) {
+            D.Log("Ship {1} attempting to show circle {0}.", highlight.GetName(), _shipCaptain.Data.Name);
+            if (!_circles.IsShowing) {
+                StartCoroutine(_circles.ShowCircles((int)highlight));
+            }
+            else {
+                _circles.AddCircle((int)highlight);
+            }
+        }
+        else if (_circles.IsShowing) {
+            _circles.RemoveCircle((int)highlight);
+        }
     }
 
     /// <summary>
@@ -188,9 +222,17 @@ public class ShipGraphics : AGraphics, IDisposable {
             }
             if (_velocityRay == null) {
                 var speedReference = new Reference<float>(() => _shipCaptain.Data.CurrentSpeed);
-                _velocityRay = _vectorLineFactory.MakeInstance("ShipVelocityRay", _shipCaptain.transform, speedReference, GameColor.Gray);
+                _velocityRay = new VelocityRay("ShipVelocityRay", _shipCaptain.transform, speedReference, parent: DynamicObjects.Folder,
+                    width: 1F, color: GameColor.Gray);
             }
-            _velocityRay.ShowRay(toShow);
+            if (toShow) {
+                if (!_velocityRay.IsShowing) {
+                    StartCoroutine(_velocityRay.Show());
+                }
+            }
+            else if (_velocityRay.IsShowing) {
+                _velocityRay.Hide();
+            }
         }
     }
 
@@ -201,11 +243,11 @@ public class ShipGraphics : AGraphics, IDisposable {
 
     private void Cleanup() {
         if (_velocityRay != null) {
-            Destroy(_velocityRay.gameObject);
+            _velocityRay.Dispose();
             _velocityRay = null;
         }
         if (_circles != null) {
-            Destroy(_circles.gameObject);
+            _circles.Dispose();
             _circles = null;
         }
     }

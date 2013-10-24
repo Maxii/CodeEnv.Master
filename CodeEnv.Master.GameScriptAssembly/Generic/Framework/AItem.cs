@@ -39,7 +39,7 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable, IHasData, I
         set { SetProperty<Data>(ref _data, value, "Data", OnDataChanged); }
     }
 
-    private IntelLevel _playerIntelLevel = IntelLevel.Unknown;
+    private IntelLevel _playerIntelLevel;
     public virtual IntelLevel PlayerIntelLevel {
         get {
             return _playerIntelLevel;
@@ -110,9 +110,6 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable, IHasData, I
     }
 
     private void Cleanup() {
-        // if (HudPublisher != null && HudPublisher.IsHudShowing) {
-        //    HudPublisher.ClearHud();
-        //}
         if (HudPublisher != null) {
             (HudPublisher as IDisposable).Dispose();
         }
@@ -120,7 +117,7 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable, IHasData, I
 
     #region ICameraTargetable Members
 
-    public virtual bool IsTargetable {
+    public virtual bool IsEligible {
         get { return true; }
     }
 
@@ -190,7 +187,6 @@ public abstract class AItem : AMonoBehaviourBase, ICameraTargetable, IHasData, I
     //    // method content here
     //}
     #endregion
-
 
     #region IHasData Members
 

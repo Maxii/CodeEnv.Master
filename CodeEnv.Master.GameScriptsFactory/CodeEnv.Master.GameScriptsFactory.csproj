@@ -63,6 +63,7 @@
     <Compile Include="Game\_Debug\Sectors.cs" />
     <Compile Include="Generic\Framework\FramesLastUpdate.cs" />
     <Compile Include="Game\Framework\FleetManager.cs" />
+    <Compile Include="Generic\Framework\SelectionManager.cs" />
     <Compile Include="Generic\Graphics\AGuiButtonBase.cs" />
     <Compile Include="Generic\Graphics\AHud.cs" />
     <Compile Include="Generic\Graphics\GuiTooltip.cs" />
@@ -117,8 +118,8 @@
     <Compile Include="Game\GUI\GuiSelectedReadout.cs" />
     <Compile Include="Generic\IO\CameraControl.cs" />
     <Compile Include="Game\GUI\GuiFocusedReadout.cs" />
-    <Compile Include="Generic\Graphics\HighlightCircle.cs" />
     <Compile Include="Game\Graphics\ItemGraphics.cs" />
+    <Compile Include="Generic\Framework\SectorGrid.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Generic\Framework\Loader.cs" />
     <Compile Include="Generic\Framework\RequiredPrefabs.cs" />
@@ -135,12 +136,11 @@
     <Compile Include="Game\Framework\SystemManager.cs" />
     <Compile Include="Game\Graphics\StarGraphics.cs" />
     <Compile Include="Game\Framework\Sector.cs" />
-    <Compile Include="Generic\Graphics\ScaleSpriteRelativeToCamera.cs" />
+    <Compile Include="Game\Graphics\SectorViewer.cs" />
     <Compile Include="ThirdParty\MyNguiButtonPlayAnimation.cs" />
     <Compile Include="Game\Framework\UniverseCenter.cs" />
-    <Compile Include="Generic\_Debug\VelocityRay.cs" />
-    <Compile Include="Generic\_Debug\VectorLineFactory.cs" />
     <Compile Include="Generic\IO\PlayerViews.cs" />
+    <Compile Include="Game\_Debug\Universe.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">
@@ -150,10 +150,17 @@
     <ProjectReference Include="..\..\..\Plugins\Contextual\Contextual.csproj">
       <Project>{4fa683ff-627f-49fe-9046-b1e9049cbe14}</Project>
       <Name>Contextual</Name>
+      <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Plugins\GridFramework\GridFramework.csproj">
+      <Project>{bc58c434-3fa7-45cb-aa08-a398038874db}</Project>
+      <Name>GridFramework</Name>
+      <Private>False</Private>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Plugins\Ngui\Ngui.csproj">
       <Project>{ac0f8b23-dd41-4bab-a967-aa2c33bb1d0b}</Project>
       <Name>Ngui</Name>
+      <Private>False</Private>
     </ProjectReference>
     <ProjectReference Include="..\CodeEnv.Master.Common.LocalResources\CodeEnv.Master.Common.LocalResources.csproj">
       <Project>{30988a11-a4f0-4fdc-82d5-41b87ea410be}</Project>
@@ -171,6 +178,9 @@
   <ItemGroup>
     <Folder Include="Game\Gameplay\" />
     <Folder Include="Generic\Math\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram1.cd" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

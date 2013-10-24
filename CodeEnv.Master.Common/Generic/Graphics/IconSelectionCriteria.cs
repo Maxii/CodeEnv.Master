@@ -16,12 +16,6 @@
 
 namespace CodeEnv.Master.Common {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-
     /// <summary>
     /// Enum of selection criteria that can be used to pick
     /// an icon image. Used in conjuction with IconSection.
@@ -29,12 +23,16 @@ namespace CodeEnv.Master.Common {
     public enum IconSelectionCriteria {
 
         None,
-        Science,
-        Troops,
+        Troop,
         Colony,
-        Strength0,
-        Strength1,
+        Science,
+        Level1,
+        Level2,
+        Level3,
+        Level4,
+        Level5,
         IntelLevelUnknown
+
     }
 }
 

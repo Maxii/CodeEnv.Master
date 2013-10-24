@@ -10,36 +10,36 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
+
+// Don't bother looking for ways to place this in GameContent
+
 using CodeEnv.Master.Common;
-using CodeEnv.Master.GameContent;
 using UnityEngine;
 using System.Linq;
+using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Singleton Game Input class that receives and records Mouse and SpecialKey events not intended for the Gui.
-/// The mouse events come from the Ngui event system and the SpecialKey events come from Unity's Input class.
-/// WARNING: Must remain a MonoBehaviour as Update must run every frame to catch single-shot key strokes
+/// Singleton Game Input class that receives and records Mouse and special Key events not intended for the Gui.
+/// The mouse events come from the Ngui event system and the key events come from Unity's Input class.
 /// </summary>
-public class GameInput : AMonoBehaviourBaseSingleton<GameInput> {
+public class GameInput : AGenericSingleton<GameInput> {
 
-    private SpecialKeys[] _specialKeysExcludingDefault;
-    private KeyCode[] _specialKeyCodesToSearch;
+    private KeyCode[] _viewModeKeyCodesToSearch;
 
-    protected override void Awake() {
-        base.Awake();
+    private GameInput() {
         Initialize();
-        // Must check every frame as Input.isKeyDown is only true during the frame in which it occurs
-        UpdateRate = FrameUpdateFrequency.Continuous;
     }
 
-    protected void Initialize() {
-        _specialKeysExcludingDefault = Enums<SpecialKeys>.GetValues().Except(default(SpecialKeys)).ToArray();
-        _specialKeyCodesToSearch = _specialKeysExcludingDefault.Select(sk => (KeyCode)sk).ToArray<KeyCode>();
+    protected override void Initialize() {
+        ViewModeKeys[] _viewModeKeysExcludingDefault = Enums<ViewModeKeys>.GetValues().Except(default(ViewModeKeys)).ToArray();
+        _viewModeKeyCodesToSearch = _viewModeKeysExcludingDefault.Select(sk => (KeyCode)sk).ToArray<KeyCode>();
     }
 
     #region ScrollWheel
 
-    [HideInInspector]
     public bool isScrollValueWaiting;
     private float _scrollWheelDelta;
     public void RecordScrollWheelMovement(float delta) {
@@ -66,7 +66,6 @@ public class GameInput : AMonoBehaviourBaseSingleton<GameInput> {
 
     public bool IsDragging { get; private set; }
 
-    [HideInInspector]
     public bool isDragValueWaiting;
     private Vector2 _dragDelta;
     public void RecordDrag(Vector2 delta) {
@@ -101,35 +100,57 @@ public class GameInput : AMonoBehaviourBaseSingleton<GameInput> {
 
     #endregion
 
-    #region Clicking
+    #region Clicked
 
-    public void OnClickOnNothing() {
-        if (GameInputHelper.IsLeftMouseButton()) {
-            SelectionManager.Instance.CurrentSelection = null;
+    private UnconsumedMouseButtonClick _unconsumedClick;
+    public UnconsumedMouseButtonClick UnconsumedClick {
+        get { return _unconsumedClick; }
+        set { SetProperty<UnconsumedMouseButtonClick>(ref _unconsumedClick, value, "UnconsumedClick"); }
+    }
+
+    /// <summary>
+    /// Called when a mouse button click event occurs but no collider consumes it.
+    /// </summary>
+    public void RecordUnconsumedClick() {
+        UnconsumedClick = new UnconsumedMouseButtonClick(GameInputHelper.GetMouseButton());
+    }
+
+    #endregion
+
+    #region Pressed
+
+    private UnconsumedMouseButtonPress _unconsumedPress;
+    public UnconsumedMouseButtonPress UnconsumedPress {
+        get { return _unconsumedPress; }
+        set { SetProperty<UnconsumedMouseButtonPress>(ref _unconsumedPress, value, "UnconsumedPress"); }
+    }
+
+    public void RecordUnconsumedPress(bool isDown) {
+        if (!IsDragging) {  // if dragging, the press shouldn't have any meaning except related to terminating a drag
+            UnconsumedPress = new UnconsumedMouseButtonPress(GameInputHelper.GetMouseButton(), isDown);
         }
     }
+
 
     #endregion
 
     #region SpecialKeys
 
     // Ngui KeyEvents didn't work as only one event is sent when keys are held down
-    // Also the approach below was flawed as the key was consumed and reset even if it
-    // wasn't the right key, so it precludes separate algorithms testing for separate keys
+    // and even then, only selected keys were included
 
-    private KeyCode _specialKeyPressed;
-    public KeyCode SpecialKeyPressed {
-        get { return _specialKeyPressed; }
-        set { SetProperty<KeyCode>(ref _specialKeyPressed, value, "SpecialKeyPressed"); }
+    private ViewModeKeys _lastViewModeKeyPressed;
+    public ViewModeKeys LastViewModeKeyPressed {
+        get { return _lastViewModeKeyPressed; }
+        set { SetProperty<ViewModeKeys>(ref _lastViewModeKeyPressed, value, "LastViewModeKeyPressed"); }
     }
 
-    void Update() {
-        if (ToUpdate()) {
-            if (GameInputHelper.IsAnyKeyOrMouseButtonDown()) {
-                KeyCode keyPressed;
-                if (GameInputHelper.TryIsKeyDown(out keyPressed, _specialKeyCodesToSearch)) {
-                    SpecialKeyPressed = keyPressed;
-                }
+    // Must be checked every frame as Input.isKeyDown is only true during the frame in which it occurs
+    public void CheckForKeyActivity() {
+        if (GameInputHelper.IsAnyKeyOrMouseButtonDown()) {
+            KeyCode keyPressed;
+            if (GameInputHelper.TryIsKeyDown(out keyPressed, _viewModeKeyCodesToSearch)) {
+                LastViewModeKeyPressed = (ViewModeKeys)keyPressed;
             }
         }
     }

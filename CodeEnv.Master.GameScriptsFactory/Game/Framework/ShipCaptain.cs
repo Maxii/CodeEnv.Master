@@ -20,7 +20,7 @@ using UnityEngine;
 /// <summary>
 /// Manages the operation of a ship within a fleet.
 /// </summary>
-public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu, IDisposable {
+public class ShipCaptain : FollowableItem, ISelectable, IDisposable {
 
     public new ShipData Data {
         get { return base.Data as ShipData; }
@@ -41,7 +41,6 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu, IDispos
         _fleetMgr = gameObject.GetSafeMonoBehaviourComponentInParents<FleetManager>();
         _fleetCmd = _fleetMgr.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>();
         _selectionMgr = SelectionManager.Instance;
-        UpdateRate = FrameUpdateFrequency.Infrequent;
     }
 
     protected override void Start() {
@@ -49,24 +48,20 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu, IDispos
         __ValidateCtxObjectSettings();
     }
 
-    protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<ShipData>(Data);
+    private void __ValidateCtxObjectSettings() {
+        CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
+        D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
+        UnityUtility.ValidateComponentPresence<Collider>(gameObject);
     }
 
-    protected override void OnDataChanged() {
-        base.OnDataChanged();
-        __InitializeNavigator();
-        HudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed);
-        SubscribeToDataValueChanges();
+    protected override IGuiHudPublisher InitializeHudPublisher() {
+        return new GuiHudPublisher<ShipData>(Data);
     }
 
     private void __InitializeNavigator() {
         Navigator = new Navigator(_transform, Data);
     }
 
-    private void SubscribeToDataValueChanges() {
-        Data.SubscribeToPropertyChanged<ShipData, float>(sd => sd.Health, OnHealthChanged);
-    }
 
     public void ChangeHeading(Vector3 newHeading) {
         if (Navigator.ChangeHeading(newHeading)) {
@@ -82,6 +77,19 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu, IDispos
         // else TODO
     }
 
+    protected override void OnMiddleClick() {
+        if (_shipGraphics.IsDetectable) {
+            IsFocus = true;
+        }
+    }
+
+    protected override void OnDataChanged() {
+        base.OnDataChanged();
+        __InitializeNavigator();
+        HudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed);
+        SubscribeToDataValueChanges();
+    }
+
     private void OnHealthChanged() {
         D.Log("{0} Health = {1}.", Data.Name, Data.Health);
         if (Data.Health <= Constants.ZeroF) {
@@ -89,13 +97,27 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu, IDispos
         }
     }
 
+    private void SubscribeToDataValueChanges() {
+        Data.SubscribeToPropertyChanged<ShipData, float>(sd => sd.Health, OnHealthChanged);
+    }
+
     private void Die() {
         if (IsSelected) {
             _selectionMgr.CurrentSelection = null;
         }
         _fleetCmd.ReportShipLost(this);
+        // let fleetCmd determine whether we are the lead ship first as if so,
+        // they will transfer the focus to the fleet, thereby removing our focus
+        if (IsFocus) {
+            CameraControl.Instance.CurrentFocus = null;
+        }
         _eventMgr.Raise<ItemDeathEvent>(new ItemDeathEvent(this));
         Destroy(gameObject);
+    }
+
+    protected override void OnPlayerIntelLevelChanged() {
+        base.OnPlayerIntelLevelChanged();
+        _shipGraphics.AssessDetectability();
     }
 
     private void OnIsSelectedChanged() {
@@ -108,6 +130,13 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu, IDispos
     protected override void OnIsFocusChanged() {
         base.OnIsFocusChanged();
         _shipGraphics.AssessHighlighting();
+    }
+
+    void OnPress(bool isDown) {
+        if (IsSelected) {
+            //D.Log("{0}.OnPress({1}) called.", this.GetType().Name, isPressed);
+            CameraControl.Instance.ShowContextMenuOnPress(isDown);
+        }
     }
 
     protected override void OnClick() {
@@ -124,10 +153,10 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu, IDispos
     }
 
     private void OnLeftDoubleClick() {
-        _fleetMgr.OnLeftClick();
+        _fleetMgr.IsSelected = true;
     }
 
-    private void __SimulateAttacked() {
+    public void __SimulateAttacked() {
         if (!DebugSettings.Instance.MakePlayerInvincible) {
             __OnHit(UnityEngine.Random.Range(1.0F, Data.MaxHitPoints));
         }
@@ -154,9 +183,9 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu, IDispos
 
     #region ICameraTargetable Members
 
-    public override bool IsTargetable {
+    public override bool IsEligible {
         get {
-            return _shipGraphics.IsShowShip;
+            return _shipGraphics.IsDetectable;
         }
     }
 
@@ -171,28 +200,13 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasContextMenu, IDispos
     }
 
     public void OnLeftClick() {
-        KeyCode notUsed;
-        if (GameInputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftAlt, KeyCode.RightAlt)) {
-            __SimulateAttacked();
-            return;
-        }
-        IsSelected = true;
-    }
-
-    #endregion
-
-    #region IHasContextMenu Members
-
-    public void __ValidateCtxObjectSettings() {
-        CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
-        D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
-        UnityUtility.ValidateComponentPresence<Collider>(gameObject);
-    }
-
-    public void OnPress(bool isDown) {
-        if (IsSelected) {
-            //D.Log("{0}.OnPress({1}) called.", this.GetType().Name, isPressed);
-            CameraControl.Instance.ShowContextMenuOnPress(isDown);
+        if (_shipGraphics.IsDetectable) {
+            KeyCode notUsed;
+            if (GameInputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftAlt, KeyCode.RightAlt)) {
+                __SimulateAttacked();
+                return;
+            }
+            IsSelected = true;
         }
     }
 

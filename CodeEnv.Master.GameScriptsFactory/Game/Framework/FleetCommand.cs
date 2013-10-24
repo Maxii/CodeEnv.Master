@@ -20,7 +20,7 @@ using UnityEngine;
 /// Command entity that receives and executes orders for the Fleet. FleetCommand is automatically destroyed
 /// when the health of the fleet reaches Zero.
 /// </summary>
-public class FleetCommand : FollowableItem, IFleetCommand, IHasContextMenu {
+public class FleetCommand : FollowableItem, IFleetCommand {
 
     public float minFleetViewingDistance = 4F;
     public float optimalFleetViewingDistance = 6F;
@@ -39,6 +39,12 @@ public class FleetCommand : FollowableItem, IFleetCommand, IHasContextMenu {
         __ValidateCtxObjectSettings();
     }
 
+    private void __ValidateCtxObjectSettings() {
+        CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
+        D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
+        UnityUtility.ValidateComponentPresence<Collider>(gameObject);
+    }
+
     protected override IGuiHudPublisher InitializeHudPublisher() {
         return new GuiHudPublisher<FleetData>(Data);
     }
@@ -54,6 +60,18 @@ public class FleetCommand : FollowableItem, IFleetCommand, IHasContextMenu {
         _fleetMgr.ProcessShipRemoval(shipCaptain);
     }
 
+    protected override void OnPlayerIntelLevelChanged() {
+        base.OnPlayerIntelLevelChanged();
+        _fleetGraphics.IsDetectable = PlayerIntelLevel != IntelLevel.Nil;
+    }
+
+    void OnPress(bool isDown) {
+        if (_fleetMgr.IsSelected) {
+            //D.Log("{0}.OnPress({1}) called.", this.GetType().Name, isPressed);
+            CameraControl.Instance.ShowContextMenuOnPress(isDown);
+        }
+    }
+
     protected override void OnClick() {
         base.OnClick();
         if (GameInputHelper.IsLeftMouseButton()) {
@@ -63,7 +81,6 @@ public class FleetCommand : FollowableItem, IFleetCommand, IHasContextMenu {
 
     void OnDoubleClick() {
         if (GameInputHelper.IsLeftMouseButton()) {
-            //ChangeFleetHeading(-_transform.right);  // turn left
             ChangeFleetHeading(Random.insideUnitSphere.normalized);
             ChangeFleetSpeed(Random.Range(Constants.ZeroF, 2.5F));
         }
@@ -88,6 +105,9 @@ public class FleetCommand : FollowableItem, IFleetCommand, IHasContextMenu {
 
     private void Die() {
         D.Log("{0} has Died!", Data.Name);
+        if (IsFocus) {
+            CameraControl.Instance.CurrentFocus = null;
+        }
         _eventMgr.Raise<ItemDeathEvent>(new ItemDeathEvent(this));
         Destroy(gameObject);
         _fleetMgr.Die();
@@ -134,6 +154,12 @@ public class FleetCommand : FollowableItem, IFleetCommand, IHasContextMenu {
 
     #region ICameraTargetable Members
 
+    public override bool IsEligible {
+        get {
+            return _fleetGraphics.IsDetectable;
+        }
+    }
+
     /// <summary>
     /// Overridden because the default implementation returns a value that
     /// is a factor of the collider bounds which doesn't work for colliders whos
@@ -147,7 +173,9 @@ public class FleetCommand : FollowableItem, IFleetCommand, IHasContextMenu {
 
     #region ICameraFocusable Members
 
-    public override bool IsRetainedFocusEligible { get { return true; } }
+    public override bool IsRetainedFocusEligible {
+        get { return _fleetGraphics.IsDetectable; }
+    }
 
     /// <summary>
     /// Overridden because the default implementation returns a value that
@@ -156,23 +184,6 @@ public class FleetCommand : FollowableItem, IFleetCommand, IHasContextMenu {
     /// </summary>
     protected override float CalcOptimalCameraViewingDistance() {
         return optimalFleetViewingDistance;
-    }
-
-    #endregion
-
-    #region IHasContextMenu Members
-
-    public void __ValidateCtxObjectSettings() {
-        CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
-        D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
-        UnityUtility.ValidateComponentPresence<Collider>(gameObject);
-    }
-
-    public void OnPress(bool isDown) {
-        if (_fleetMgr.IsSelected) {
-            //D.Log("{0}.OnPress({1}) called.", this.GetType().Name, isPressed);
-            CameraControl.Instance.ShowContextMenuOnPress(isDown);
-        }
     }
 
     #endregion

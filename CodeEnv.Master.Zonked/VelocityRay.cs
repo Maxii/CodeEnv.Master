@@ -27,10 +27,16 @@ public class VelocityRay : AVectrosityBase {
     /// <summary>
     /// The transform that this VelocityRay is eminating from.
     /// </summary>
-    public Transform Target { private get; set; }
-    public Reference<float> Speed { private get; set; }
+    public Transform Target { get; set; }
+    public Reference<float> Speed { get; set; }
 
-    private GameColor _color;
+    private float _width = 1F;
+    public float Width {
+        get { return _width; }
+        set { SetProperty<float>(ref _width, value, "Width", OnWidthChanged); }
+    }
+
+    private GameColor _color = GameColor.White;
     public GameColor Color {
         get { return _color; }
         set { SetProperty<GameColor>(ref _color, value, "Color", OnColorChanged); }
@@ -38,8 +44,9 @@ public class VelocityRay : AVectrosityBase {
 
     protected override void Awake() {
         base.Awake();
-        _line = new VectorLine(LineName, new Vector3[2], Color.ToUnityColor(), null, 1F);
-        _line.vectorObject.transform.parent = _transform;
+        _line = new VectorLine(LineName, new Vector3[2], Color.ToUnityColor(), null, Width);
+        //_line.vectorObject.transform.parent = _transform;
+        UnityUtility.AttachChildToParent(_line.vectorObject, _transform.gameObject);
         _line.active = false;
     }
 
@@ -71,6 +78,12 @@ public class VelocityRay : AVectrosityBase {
     private void OnColorChanged() {
         if (_line != null) {
             _line.SetColor(Color.ToUnityColor());
+        }
+    }
+
+    private void OnWidthChanged() {
+        if (_line != null) {
+            _line.lineWidth = Width;
         }
     }
 

@@ -91,7 +91,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="sourceSequence">The Sequence of Type T calling the extension.</param>
         /// <param name="actionToExecute">The work to perform on the sequence, usually expressed in lambda form.</param>
         public static void ForAll<T>(this IEnumerable<T> sourceSequence, Action<T> actionToExecute) {
-            foreach (T item in sourceSequence) {
+            foreach (T item in sourceSequence.ToList<T>()) {   // ToList avoids exceptions when the sequence is modified by the action
                 actionToExecute(item);
             }
         }
@@ -192,6 +192,27 @@ namespace CodeEnv.Master.Common {
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Returns true if targetValue is within a reasonable tolerance of the value of source.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="value">The value.</param>
+        /// <returns></returns>
+        public static bool ApproxEquals(this float source, float value) {
+            return Mathfx.Approx(source, value, .001F);
+        }
+
+        /// <summary>
+        /// Populates the source array with the provided value.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="array">The array.</param>
+        /// <param name="value">The value.</param>
+        public static void Populate<T>(this T[] array, T value) {
+            for (int i = 0; i < array.Length; i++) {
+                array[i] = value;
+            }
+        }
 
         #region Generic INotifyPropertyChanged, INotifyPropertyChanging Extensions
 

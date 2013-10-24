@@ -53,14 +53,14 @@ public class StationaryItem : AItem, ICameraFocusable {
     }
 
     protected virtual void OnMiddleClick() {
-        DeclareAsFocus();
+        IsFocus = true;
     }
 
-    public void DeclareAsFocus() {
-        _eventMgr.Raise<FocusSelectedEvent>(new FocusSelectedEvent(this, _transform));
+    protected virtual void OnIsFocusChanged() {
+        if (IsFocus) {
+            CameraControl.Instance.CurrentFocus = this;
+        }
     }
-
-    protected virtual void OnIsFocusChanged() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

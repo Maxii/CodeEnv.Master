@@ -40,7 +40,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     public ScreenEdgeConfiguration edgeFocusZoom = new ScreenEdgeConfiguration { sensitivity = 0.03F, activate = false };
     public MouseScrollWheelConfiguration scrollFocusZoom = new MouseScrollWheelConfiguration { sensitivity = 0.5F, activate = true };
     public ArrowKeyboardConfiguration keyFocusZoom = new ArrowKeyboardConfiguration { keyboardAxis = KeyboardAxis.Vertical, sensitivity = .01F, activate = true };
-    public SimultaneousMouseButtonConfiguration dragFocusZoom = new SimultaneousMouseButtonConfiguration { firstMouseButton = UnityMouseButton.Left, secondMouseButton = UnityMouseButton.Right, sensitivity = 0.01F, activate = true };
+    public SimultaneousMouseButtonDragConfiguration dragFocusZoom = new SimultaneousMouseButtonDragConfiguration { firstMouseButton = UnityMouseButton.Left, secondMouseButton = UnityMouseButton.Right, sensitivity = 0.01F, activate = true };
 
     // Freeform Zooming: When not focused, top and bottom Edge zooming and arrow key zooming cause camera movement forward or backward along the camera's facing.
     // ScrollWheel zooming on the other hand always moves toward the cursor when scrolling IN. By default, scrolling OUT is directly opposite
@@ -48,7 +48,7 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     public ScreenEdgeConfiguration edgeFreeZoom = new ScreenEdgeConfiguration { sensitivity = 10F, activate = false };
     public ArrowKeyboardConfiguration keyFreeZoom = new ArrowKeyboardConfiguration { sensitivity = 10F, keyboardAxis = KeyboardAxis.Vertical, activate = true };
     public MouseScrollWheelConfiguration scrollFreeZoom = new MouseScrollWheelConfiguration { activate = true };
-    public SimultaneousMouseButtonConfiguration dragFreeZoom = new SimultaneousMouseButtonConfiguration { firstMouseButton = UnityMouseButton.Left, secondMouseButton = UnityMouseButton.Right, sensitivity = 2F, activate = true };
+    public SimultaneousMouseButtonDragConfiguration dragFreeZoom = new SimultaneousMouseButtonDragConfiguration { firstMouseButton = UnityMouseButton.Left, secondMouseButton = UnityMouseButton.Right, sensitivity = 2F, activate = true };
 
     // Panning, Tilting and Orbiting: When focused, edge actuation, arrow key pan and tilting and mouse button/movement results in orbiting of the focused object that is centered on the screen. 
     // When not focused the same arrow keys, edge actuation and mouse button/movement results in the camera panning (looking left or right) and tilting (looking up or down) in place.
@@ -61,18 +61,18 @@ public class CameraControl : AMonoBehaviourBaseSingleton<CameraControl> {
     public ArrowKeyboardConfiguration keyFocusPan = new ArrowKeyboardConfiguration { keyboardAxis = KeyboardAxis.Horizontal, sensitivity = 0.5F, activate = true };
     public ArrowKeyboardConfiguration keyFocusTilt = new ArrowKeyboardConfiguration { keyboardAxis = KeyboardAxis.Vertical, modifiers = new Modifiers { ctrlKeyReqd = true, shiftKeyReqd = true }, sensitivity = 0.5F, activate = true };
 
-    public MouseButtonConfiguration dragFocusOrbit = new MouseButtonConfiguration { mouseButton = UnityMouseButton.Right, sensitivity = 40.0F, activate = true };
-    public MouseButtonConfiguration dragFreePanTilt = new MouseButtonConfiguration { mouseButton = UnityMouseButton.Right, sensitivity = 28.0F, activate = true };
+    public MouseButtonDragConfiguration dragFocusOrbit = new MouseButtonDragConfiguration { mouseButton = UnityMouseButton.Right, sensitivity = 40.0F, activate = true };
+    public MouseButtonDragConfiguration dragFreePanTilt = new MouseButtonDragConfiguration { mouseButton = UnityMouseButton.Right, sensitivity = 28.0F, activate = true };
 
     // Truck and Pedestal: Trucking (moving left and right) and Pedestalling (moving up and down) occurs only in Freeform space, repositioning the camera along it's current horizontal and vertical axis'.
-    public MouseButtonConfiguration dragFreeTruck = new MouseButtonConfiguration { mouseButton = UnityMouseButton.Middle, modifiers = new Modifiers { altKeyReqd = true }, sensitivity = 0.2F, activate = true };
-    public MouseButtonConfiguration dragFreePedestal = new MouseButtonConfiguration { mouseButton = UnityMouseButton.Middle, modifiers = new Modifiers { shiftKeyReqd = true }, sensitivity = 0.2F, activate = true };
+    public MouseButtonDragConfiguration dragFreeTruck = new MouseButtonDragConfiguration { mouseButton = UnityMouseButton.Middle, modifiers = new Modifiers { altKeyReqd = true }, sensitivity = 0.2F, activate = true };
+    public MouseButtonDragConfiguration dragFreePedestal = new MouseButtonDragConfiguration { mouseButton = UnityMouseButton.Middle, modifiers = new Modifiers { shiftKeyReqd = true }, sensitivity = 0.2F, activate = true };
     public ArrowKeyboardConfiguration keyFreePedestal = new ArrowKeyboardConfiguration { keyboardAxis = KeyboardAxis.Vertical, modifiers = new Modifiers { ctrlKeyReqd = true }, activate = true };
     public ArrowKeyboardConfiguration keyFreeTruck = new ArrowKeyboardConfiguration { keyboardAxis = KeyboardAxis.Horizontal, modifiers = new Modifiers { ctrlKeyReqd = true }, activate = true };
 
     // Rolling: Focused and freeform rolling results in the same behaviour, rolling around the camera's current forward axis.
-    public MouseButtonConfiguration dragFocusRoll = new MouseButtonConfiguration { mouseButton = UnityMouseButton.Right, modifiers = new Modifiers { altKeyReqd = true }, sensitivity = 40.0F, activate = true };
-    public MouseButtonConfiguration dragFreeRoll = new MouseButtonConfiguration { mouseButton = UnityMouseButton.Right, modifiers = new Modifiers { altKeyReqd = true }, sensitivity = 40.0F, activate = true };
+    public MouseButtonDragConfiguration dragFocusRoll = new MouseButtonDragConfiguration { mouseButton = UnityMouseButton.Right, modifiers = new Modifiers { altKeyReqd = true }, sensitivity = 40.0F, activate = true };
+    public MouseButtonDragConfiguration dragFreeRoll = new MouseButtonDragConfiguration { mouseButton = UnityMouseButton.Right, modifiers = new Modifiers { altKeyReqd = true }, sensitivity = 40.0F, activate = true };
     public ArrowKeyboardConfiguration keyFreeRoll = new ArrowKeyboardConfiguration { keyboardAxis = KeyboardAxis.Horizontal, modifiers = new Modifiers { ctrlKeyReqd = true, shiftKeyReqd = true }, activate = true };
     public ArrowKeyboardConfiguration keyFocusRoll = new ArrowKeyboardConfiguration { keyboardAxis = KeyboardAxis.Horizontal, modifiers = new Modifiers { ctrlKeyReqd = true, shiftKeyReqd = true }, activate = true };
 

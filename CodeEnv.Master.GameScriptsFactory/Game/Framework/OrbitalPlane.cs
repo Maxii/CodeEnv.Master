@@ -19,14 +19,14 @@ using UnityEngine;
 /// <summary>
 /// Manages the interaction of the Orbital plane, aka the 'system', with the Player.
 /// </summary>
-public class OrbitalPlane : StationaryItem, /*IHasContextMenu,*/ IZoomToFurthest {
+public class OrbitalPlane : StationaryItem, IZoomToFurthest {
 
     public new SystemData Data {
         get { return base.Data as SystemData; }
         set { base.Data = value; }
     }
 
-    public float minPlaneZoomDistance = 1.0F;
+    public float minPlaneZoomDistance = 2F;
     public float optimalPlaneFocusDistance = 400F;
 
     private SystemGraphics _systemGraphics;
@@ -36,21 +36,30 @@ public class OrbitalPlane : StationaryItem, /*IHasContextMenu,*/ IZoomToFurthest
         base.Awake();
         _systemManager = gameObject.GetSafeMonoBehaviourComponentInParents<SystemManager>();
         _systemGraphics = gameObject.GetSafeMonoBehaviourComponentInParents<SystemGraphics>();
-        // __ValidateCtxObjectSettings();
+        __ValidateCtxObjectSettings();
+    }
+
+    private void __ValidateCtxObjectSettings() {
+        CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
+        D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
+        UnityUtility.ValidateComponentPresence<Collider>(gameObject);
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
         return new GuiHudPublisher<SystemData>(Data);
     }
 
-    protected override void Start() {
-        base.Start();
-    }
-
     protected override void OnHover(bool isOver) {
         base.OnHover(isOver);
-        D.Log("OrbitalPlane.OnHover({0}), hoveredObject = {1}.".Inject(isOver, UICamera.hoveredObject.name));
+        //D.Log("OrbitalPlane.OnHover({0}), hoveredObject = {1}.".Inject(isOver, UICamera.hoveredObject.name));
         _systemGraphics.HighlightTrackingLabel(isOver);
+    }
+
+    public void OnPress(bool isDown) {
+        if (_systemManager.IsSelected) {
+            //D.Log("{0}.OnPress({1}) called.", this.GetType().Name, isPressed);
+            CameraControl.Instance.ShowContextMenuOnPress(isDown);
+        }
     }
 
     protected override void OnClick() {
@@ -61,6 +70,7 @@ public class OrbitalPlane : StationaryItem, /*IHasContextMenu,*/ IZoomToFurthest
     }
 
     protected override void OnIsFocusChanged() {
+        base.OnIsFocusChanged();
         _systemGraphics.AssessHighlighting();
     }
 
@@ -92,23 +102,6 @@ public class OrbitalPlane : StationaryItem, /*IHasContextMenu,*/ IZoomToFurthest
     /// </summary>
     protected override float CalcOptimalCameraViewingDistance() {
         return optimalPlaneFocusDistance;
-    }
-
-    #endregion
-
-    #region IHasContextMenu Members
-
-    //public void __ValidateCtxObjectSettings() {
-    //    CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
-    //    D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
-    //    UnityUtility.ValidateComponentPresence<Collider>(gameObject);
-    //}
-
-    public void OnPress(bool isDown) {
-        if (_systemManager.IsSelected) {
-            //D.Log("{0}.OnPress({1}) called.", this.GetType().Name, isPressed);
-            CameraControl.Instance.ShowContextMenuOnPress(isDown);
-        }
     }
 
     #endregion

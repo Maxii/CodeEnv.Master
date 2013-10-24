@@ -70,9 +70,21 @@ public class GuiTrackingLabel : AMonoBehaviourBase {
         get { return _isShowing; }
         set {
             if (this) {
-                SetProperty<bool>(ref _isShowing, value, "IsShowing", OnShowingChanged);
+                SetProperty<bool>(ref _isShowing, value, "IsShowing", OnIsShowingChanged);
             }
         }
+    }
+
+    private GameColor _color = GameColor.White;
+    public GameColor Color {
+        get { return _color; }
+        set { SetProperty<GameColor>(ref _color, value, "Color", OnColorChanged); }
+    }
+
+    public GameColor _highlightColor = GameColor.White;
+    public GameColor HighlightColor {
+        get { return _highlightColor; }
+        set { SetProperty<GameColor>(ref _highlightColor, value, "HighlightColor", OnHighlightColorChanged); }
     }
 
     private bool _isHighlighted;
@@ -82,13 +94,12 @@ public class GuiTrackingLabel : AMonoBehaviourBase {
     /// </summary>
     public bool IsHighlighted {
         get { return _isHighlighted; }
-        set { SetProperty<bool>(ref _isHighlighted, value, "IsHighlighted", OnHighlightChanged); }
+        set { SetProperty<bool>(ref _isHighlighted, value, "IsHighlighted", OnIsHighlightedChanged); }
     }
 
     private Camera _mainCamera;
     private Camera _uiCamera;
     private UILabel _label; // IMPROVE broaden to UIWidget for icons, sprites...
-    private Color _labelNormalColor;
     private UIWidget[] _widgets;
 
     protected override void Awake() {
@@ -96,7 +107,7 @@ public class GuiTrackingLabel : AMonoBehaviourBase {
         _uiCamera = NGUITools.FindCameraForLayer(gameObject.layer);
         _label = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
         _label.depth = -100; // draw below other Gui Elements in the same Panel
-        _labelNormalColor = _label.color;
+        _label.color = Color.ToUnityColor();
         _widgets = gameObject.GetSafeMonoBehaviourComponentsInChildren<UIWidget>();
         enabled = false;    // to match the initial state of _isShowing
         UpdateRate = FrameUpdateFrequency.Continuous;
@@ -107,16 +118,16 @@ public class GuiTrackingLabel : AMonoBehaviourBase {
     protected override void Start() {
         base.Start();
         if (Target == null) {
-            D.Error("Target Game Object to track has not been assigned. Destroying {0}.".Inject(gameObject.name));
+            D.Warn("Target Game Object to track has not been assigned. Destroying {0}.".Inject(gameObject.name));
             Destroy(gameObject);
             return;
         }
-
         _mainCamera = NGUITools.FindCameraForLayer(Target.gameObject.layer);
     }
 
     /// <summary>
-    /// Populate the label with the provided text and displays it.
+    /// Populate the label with the provided text. To display
+    /// the text use IsShowing.
     /// </summary>
     /// <param name="text">The text in label.</param>
     public void Set(string textInLabel) {
@@ -127,10 +138,13 @@ public class GuiTrackingLabel : AMonoBehaviourBase {
     }
 
     /// <summary>
-    /// Clears the label of text.
+    /// Clears the label back to its base state:
+    /// Empty content, not highlighted and not showing.
     /// </summary>
     public void Clear() {
         Set(string.Empty);
+        IsHighlighted = false;
+        IsShowing = false;
     }
 
     void Update() {
@@ -156,9 +170,21 @@ public class GuiTrackingLabel : AMonoBehaviourBase {
         _transform.localScale = adjustedScale;
     }
 
-    private void OnShowingChanged() {
+    private void OnIsShowingChanged() {
         enabled = IsShowing;
         EnableWidgets(IsShowing);
+    }
+
+    private void OnColorChanged() {
+        if (!IsHighlighted) {
+            _label.color = Color.ToUnityColor();
+        }
+    }
+
+    private void OnHighlightColorChanged() {
+        if (IsHighlighted) {
+            _label.color = HighlightColor.ToUnityColor();
+        }
     }
 
     /// <summary>
@@ -173,8 +199,8 @@ public class GuiTrackingLabel : AMonoBehaviourBase {
         }
     }
 
-    private void OnHighlightChanged() {
-        _label.color = IsHighlighted ? Color.yellow : _labelNormalColor;
+    private void OnIsHighlightedChanged() {
+        _label.color = IsHighlighted && IsShowing ? HighlightColor.ToUnityColor() : Color.ToUnityColor();
         //D.Log("{0} Highlighting changed to {1}.".Inject(gameObject.name, toHighlight));
     }
 

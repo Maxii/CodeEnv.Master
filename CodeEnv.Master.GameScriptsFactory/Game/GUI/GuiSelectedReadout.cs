@@ -43,10 +43,10 @@ public class GuiSelectedReadout : AGuiLabelReadoutBase, IDisposable {
         if (_subscribers == null) {
             _subscribers = new List<IDisposable>();
         }
-        _subscribers.Add(_selectionMgr.SubscribeToPropertyChanged<SelectionManager, ISelectable>(sm => sm.CurrentSelection, OnSelectionChanged));
+        _subscribers.Add(_selectionMgr.SubscribeToPropertyChanged<SelectionManager, ISelectable>(sm => sm.CurrentSelection, OnCurrentSelectionChanged));
     }
 
-    private void OnSelectionChanged() {
+    private void OnCurrentSelectionChanged() {
         string selectionName = string.Empty;
         ISelectable newSelection = _selectionMgr.CurrentSelection;
         if (newSelection != null) {

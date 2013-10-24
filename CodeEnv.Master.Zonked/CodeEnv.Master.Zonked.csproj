@@ -101,9 +101,13 @@
     <Compile Include="OrbitalPlaneManager.cs" />
     <Compile Include="PlayerSettingsSetup.cs" />
     <Compile Include="ResetOnFocusOptionChangedEvent.cs" />
+    <Compile Include="ScaleSpriteRelativeToCamera.cs" />
+    <Compile Include="Sector.cs" />
     <Compile Include="StationaryItem.cs" />
     <Compile Include="SystemManager.cs" />
     <Compile Include="TransformExtensions.cs" />
+    <Compile Include="VectorLineFactory.cs" />
+    <Compile Include="VelocityRay.cs" />
     <Compile Include="ZoomOutOnCursorOptionChangedEvent.cs" />
     <Compile Include="GuiFollowerLabel.cs" />
     <Compile Include="SceneStartupSequenceEvent.cs" />
