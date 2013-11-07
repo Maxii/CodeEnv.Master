@@ -67,16 +67,17 @@ public class VisibilityChangedRelay : AMonoBehaviourBase, IDisposable {
         if (_subscribers == null) {
             _subscribers = new List<IDisposable>();
         }
-        _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsGameRunning, OnIsRunningChanged));
+        _subscribers.Add(GameStatus.Instance.SubscribeToPropertyChanged<GameStatus, bool>(gs => gs.IsRunning, OnIsRunningChanged));
     }
 
     private void OnIsRunningChanged() {
-        _isGameRunning = GameManager.Instance.IsGameRunning;
+        _isGameRunning = GameStatus.Instance.IsRunning;
         if (_isGameRunning) {
             // all relay targets start out initialized with IsVisible = true. This just initializes their list of child meshes that think they are visible
             OnBecameVisible();
         }
     }
+
 
     private bool _isVisible;    // starts false so startup OnBecameVisible events don't generate warnings in ValidateVisibiltyChange
     void OnBecameVisible() {

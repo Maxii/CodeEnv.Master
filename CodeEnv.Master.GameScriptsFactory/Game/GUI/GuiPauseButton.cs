@@ -33,12 +33,10 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
 #pragma warning restore
 
     private UILabel _pauseButtonLabel;
-    private GameManager _gameMgr;
     private IList<IDisposable> _subscribers;
 
     protected override void Awake() {
         base.Awake();
-        _gameMgr = GameManager.Instance;
         Subscribe();
     }
 
@@ -50,15 +48,14 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
         if (_subscribers == null) {
             _subscribers = new List<IDisposable>();
         }
-        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsPaused, OnIsPausedChanged));
+        _subscribers.Add(GameStatus.Instance.SubscribeToPropertyChanged<GameStatus, bool>(gs => gs.IsPaused, OnIsPausedChanged));
     }
 
     // real game pause and resumption events, not just gui pause events which may or may not result in a pause or resumption
     private void OnIsPausedChanged() {
-        pauseCommand = _gameMgr.IsPaused ? PauseRequest.PriorityPause : PauseRequest.PriorityResume;
+        pauseCommand = GameStatus.Instance.IsPaused ? PauseRequest.PriorityPause : PauseRequest.PriorityResume;
         UpdateButtonLabel();
     }
-
 
     protected override void Start() {
         base.Start();

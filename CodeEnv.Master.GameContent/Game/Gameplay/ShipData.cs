@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
         /// day, normalized for game speed.
         /// </summary>
         public float CurrentSpeed {
-            get { return (_gameMgr.IsPaused) ? _currentSpeedOnPause : _rigidbody.velocity.magnitude / _gameSpeedMultiplier; }
+            get { return (_gameStatus.IsPaused) ? _currentSpeedOnPause : _rigidbody.velocity.magnitude / _gameSpeedMultiplier; }
         }
 
         private float _requestedSpeed;
@@ -149,14 +149,14 @@ namespace CodeEnv.Master.GameContent {
         private float _currentSpeedOnPause;
         private Rigidbody _rigidbody;
         private IList<IDisposable> _subscribers;
-        private GameManager _gameMgr;
+        private GameStatus _gameStatus;
         private GameTime _gameTime;
         private float _gameSpeedMultiplier;
 
         public ShipData(Transform shipTransform, string shipName, float maxHitPoints)
             : base(shipTransform, shipName, maxHitPoints) {
             _rigidbody = shipTransform.rigidbody;
-            _gameMgr = GameManager.Instance;
+            _gameStatus = GameStatus.Instance;
             _gameTime = GameTime.Instance;
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();
             Subscribe();
@@ -167,7 +167,7 @@ namespace CodeEnv.Master.GameContent {
             if (_subscribers == null) {
                 _subscribers = new List<IDisposable>();
             }
-            _subscribers.Add(_gameMgr.SubscribeToPropertyChanging<GameManager, bool>(gm => gm.IsPaused, OnIsPausedChanging));
+            _subscribers.Add(_gameStatus.SubscribeToPropertyChanging<GameStatus, bool>(gs => gs.IsPaused, OnIsPausedChanging));
             _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
         }
 

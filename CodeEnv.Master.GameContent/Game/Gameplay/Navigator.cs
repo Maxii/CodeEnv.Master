@@ -34,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
         private Rigidbody _rigidbody;
         private GameEventManager _eventMgr;
         private GameTime _gameTime;
-        private GameManager _gameMgr;
+        private GameStatus _gameStatus;
         private GeneralSettings _generalSettings;
         private float _gameSpeedMultiplier;
         private ShipData _data;
@@ -58,7 +58,7 @@ namespace CodeEnv.Master.GameContent {
             _rigidbody.useGravity = false;
             _eventMgr = GameEventManager.Instance;
             _gameTime = GameTime.Instance;
-            _gameMgr = GameManager.Instance;
+            _gameStatus = GameStatus.Instance;
             _generalSettings = GeneralSettings.Instance;
             Subscribe();
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
@@ -69,7 +69,7 @@ namespace CodeEnv.Master.GameContent {
             if (_subscribers == null) {
                 _subscribers = new List<IDisposable>();
             }
-            _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsPaused, OnIsPausedChanged));
+            _subscribers.Add(_gameStatus.SubscribeToPropertyChanged<GameStatus, bool>(gs => gs.IsPaused, OnIsPausedChanged));
             _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
         }
 
@@ -78,7 +78,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnIsPausedChanged() {
-            if (_gameMgr.IsPaused) {
+            if (_gameStatus.IsPaused) {
                 _velocityOnPause = _rigidbody.velocity;
                 // no angularVelocity needed as it is always zero?
                 _rigidbody.isKinematic = true;
@@ -101,7 +101,7 @@ namespace CodeEnv.Master.GameContent {
             float gameSpeedChangeRatio = _gameSpeedMultiplier / previousGameSpeedMultiplier;
             // must immediately adjust velocity when game speed changes as just adjusting thrust takes
             // a long time to get to increased/decreased velocity
-            if (_gameMgr.IsPaused) {
+            if (_gameStatus.IsPaused) {
                 _velocityOnPause = _velocityOnPause * gameSpeedChangeRatio;
             }
             else {

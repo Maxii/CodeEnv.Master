@@ -45,7 +45,7 @@ namespace CodeEnv.Master.GameContent {
         public static float DeltaTimeOrPausedWithGameSpeed {
             get {
                 D.Assert(Instance._isClockEnabled);
-                if (GameManager.Instance.IsPaused) {
+                if (GameStatus.Instance.IsPaused) {
                     return Constants.ZeroF;
                 }
                 return DeltaTimeWithGameSpeed;
@@ -60,7 +60,7 @@ namespace CodeEnv.Master.GameContent {
         public static float DeltaTimeOrPaused {
             get {
                 D.Assert(Instance._isClockEnabled);
-                if (GameManager.Instance.IsPaused) {
+                if (GameStatus.Instance.IsPaused) {
                     return Constants.ZeroF;
                 }
                 return DeltaTime;
@@ -122,7 +122,7 @@ namespace CodeEnv.Master.GameContent {
             get {
                 D.Assert(Instance._isClockEnabled);
                 float timeInCurrentPause = Constants.ZeroF;
-                if (GameManager.Instance.IsPaused) {
+                if (GameStatus.Instance.IsPaused) {
                     timeInCurrentPause = RealTime_Game - Instance._timeCurrentPauseBegan;
                 }
                 return RealTime_Game - Instance._cumTimePaused - timeInCurrentPause;
@@ -138,7 +138,7 @@ namespace CodeEnv.Master.GameContent {
         public static IGameDate Date {
             get {
                 D.Assert(Instance._isClockEnabled);
-                if (!GameManager.Instance.IsPaused) {
+                if (!GameStatus.Instance.IsPaused) {
                     Instance.SyncGameClock();   // OK to ask for date while paused (ie. HUD needs), but Syncing clock won't do anything
                 }
                 // the only time the date needs to be synced is when it is about to be used
@@ -172,7 +172,7 @@ namespace CodeEnv.Master.GameContent {
 
         private GameEventManager _eventMgr;
         private PlayerPrefsManager _playerPrefsMgr;
-        private GameManager _gameMgr;
+        private GameStatus _gameStatus;
 
         #region SingletonPattern
 
@@ -204,7 +204,7 @@ namespace CodeEnv.Master.GameContent {
         /// Called once from the constructor, this does all required initialization
         /// </summary>
         private void Initialize() {
-            _gameMgr = GameManager.Instance;
+            _gameStatus = GameStatus.Instance;
             _eventMgr = GameEventManager.Instance;
             UnityEngine.Time.timeScale = Constants.OneF;
             _playerPrefsMgr = PlayerPrefsManager.Instance;
@@ -213,7 +213,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Subscribe() {
-            _subscribers.Add(_gameMgr.SubscribeToPropertyChanging<GameManager, bool>(gm => gm.IsPaused, OnIsPausedChanging));
+            _subscribers.Add(_gameStatus.SubscribeToPropertyChanging<GameStatus, bool>(gs => gs.IsPaused, OnIsPausedChanging));
         }
 
         private void OnIsPausedChanging(bool isPausing) {
@@ -286,7 +286,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void EnableClock(bool toEnable) {
-            D.Assert(!_gameMgr.IsPaused);    // my practice - enable clock, then pause it
+            D.Assert(!_gameStatus.IsPaused);    // my practice - enable clock, then pause it
             if (_isClockEnabled != toEnable) {
                 _isClockEnabled = toEnable;
                 if (toEnable) {
@@ -321,7 +321,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private void SyncGameClock() {
             D.Assert(_isClockEnabled);
-            if (_gameMgr.IsPaused) {
+            if (_gameStatus.IsPaused) {
                 D.Warn("SyncGameClock called while Paused!");   // it keeps adding to currentDateTime
                 return;
             }

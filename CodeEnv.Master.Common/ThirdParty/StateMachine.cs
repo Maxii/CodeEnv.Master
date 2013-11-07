@@ -264,8 +264,8 @@ namespace CodeEnv.Master.Common {
 
         //Retrieves all of the methods for the current state
         private void GetStateMethods() {
-            UnwireEvents();
-            WireEvents();
+            //UnwireEvents();
+            //WireEvents();
         }
 
         /// <summary>

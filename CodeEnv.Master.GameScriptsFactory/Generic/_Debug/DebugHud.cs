@@ -35,7 +35,7 @@ public class DebugHud : AHud<DebugHud>, IDebugHud, IDisposable {
         if (_subscribers == null) {
             _subscribers = new List<IDisposable>();
         }
-        _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, bool>(gm => gm.IsGameRunning, OnIsGameRunningChanged));
+        _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.GameState, OnGameStateChanged));
 
         _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, PauseState>(gm => gm.PauseState, OnPauseStateChanged));
         _subscribers.Add(PlayerPrefsManager.Instance.SubscribeToPropertyChanged<PlayerPrefsManager, int>(ppm => ppm.QualitySetting, OnQualitySettingChanged));
@@ -49,9 +49,9 @@ public class DebugHud : AHud<DebugHud>, IDebugHud, IDisposable {
 
     #region DebugHud Subscriptions
     // pulling value changes rather than having them pushed here avoids null reference issues when changing scenes
-    private void OnIsGameRunningChanged() {
+    private void OnGameStateChanged() {
         // initialization
-        if (GameManager.Instance.IsGameRunning) {
+        if (GameManager.Instance.GameState == GameState.Running) {
             OnPauseStateChanged();
             OnPlayerViewModeChanged();
             OnCameraStateChanged();

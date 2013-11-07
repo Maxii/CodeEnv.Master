@@ -90,7 +90,7 @@ public class MonoGameManager : AMonoBehaviourBaseSingletonInstanceIdentity<MonoG
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(startScene));
         }
-        _gameMgr.__AwakeBasedOnStartScene(startScene);
+        //_gameMgr.__AwakeBasedOnStartScene(startScene);
     }
 
     private void __StartBasedOnStartScene() {
@@ -103,7 +103,7 @@ public class MonoGameManager : AMonoBehaviourBaseSingletonInstanceIdentity<MonoG
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(startScene));
         }
-        _gameMgr.StartBasedOnStartScene(startScene);
+        //_gameMgr.StartBasedOnStartScene(startScene);
     }
     #endregion
 
@@ -149,7 +149,7 @@ public class MonoGameManager : AMonoBehaviourBaseSingletonInstanceIdentity<MonoG
     }
 
     protected override void OnDeserialized() {
-        _gameMgr.OnDeserialized();
+        //_gameMgr.OnDeserialized();
     }
 
     protected override void OnDestroy() {

@@ -26,11 +26,11 @@ using CodeEnv.Master.GameContent;
 public class GuiDateReadout : AGuiLabelReadoutBase, IDisposable {
 
     private IList<IDisposable> _subscribers;
-    private GameManager _gameMgr;
+    private GameStatus _gameStatus;
 
     protected override void Awake() {
         base.Awake();
-        _gameMgr = GameManager.Instance;
+        _gameStatus = GameStatus.Instance;
         Subscribe();
         UpdateRate = FrameUpdateFrequency.Normal;
     }
@@ -43,11 +43,11 @@ public class GuiDateReadout : AGuiLabelReadoutBase, IDisposable {
         if (_subscribers == null) {
             _subscribers = new List<IDisposable>();
         }
-        _subscribers.Add(_gameMgr.SubscribeToPropertyChanging<GameManager, bool>(gm => gm.IsPaused, OnIsPausedChanging));
+        _subscribers.Add(_gameStatus.SubscribeToPropertyChanging<GameStatus, bool>(gs => gs.IsPaused, OnIsPausedChanging));
     }
 
     void Update() {
-        if (ToUpdate() && !_gameMgr.IsPaused) {
+        if (ToUpdate() && !_gameStatus.IsPaused) {
             RefreshReadout(GameTime.Date.FormattedDate);
         }
     }

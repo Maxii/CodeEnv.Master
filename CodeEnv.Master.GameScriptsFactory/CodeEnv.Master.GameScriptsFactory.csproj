@@ -66,7 +66,7 @@
     <Compile Include="Game\_Debug\DynamicObjects.cs" />
     <Compile Include="Game\_Debug\DynamicTrackingLabels.cs" />
     <Compile Include="Game\_Debug\Sectors.cs" />
-    <Compile Include="Generic\Framework\MonoGameManager.cs" />
+    <Compile Include="Generic\Framework\GameManager.cs" />
     <Compile Include="Generic\Framework\SelectionManager.cs" />
     <Compile Include="Generic\Graphics\AGuiButtonBase.cs" />
     <Compile Include="Generic\Graphics\AHud.cs" />
@@ -124,7 +124,7 @@
     <Compile Include="Game\Graphics\SystemPresenter.cs" />
     <Compile Include="Game\Graphics\SystemView.cs" />
     <Compile Include="Generic\Graphics\Presenter.cs" />
-    <Compile Include="TestStateMachine.cs" />
+    <Compile Include="Generic\_Debug\TestStateMachine.cs" />
     <Compile Include="ThirdParty\CoroutineManager.cs" />
     <Compile Include="ThirdParty\Job.cs" />
     <Compile Include="ThirdParty\MyAStarPointGenerator.cs" />

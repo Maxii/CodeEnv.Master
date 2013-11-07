@@ -56,7 +56,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Game\Framework\GameManager.cs" />
+    <Compile Include="Generic\Framework\GameStatus.cs" />
     <Compile Include="Generic\Graphics\A3DVectrosityBase.cs" />
     <Compile Include="Generic\Graphics\AVectrosityBase.cs" />
     <Compile Include="Generic\Graphics\CubeWireframe.cs" />

@@ -109,6 +109,7 @@
     <Compile Include="ItemGraphics.cs" />
     <Compile Include="IZoomToClosest.cs" />
     <Compile Include="KeyboardAxis.cs" />
+    <Compile Include="MonoGameManager.cs" />
     <Compile Include="MyCtxPickHandler.cs" />
     <Compile Include="MyNguiButtonPlayAnimation.cs" />
     <Compile Include="OrbitalPlane.cs" />

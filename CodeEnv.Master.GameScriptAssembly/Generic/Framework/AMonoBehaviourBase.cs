@@ -168,7 +168,7 @@ public abstract class AMonoBehaviourBase : MonoBehaviour, IChangeTracking, INoti
     /// <returns>true on a pace set by the UpdateRate property</returns>
     protected bool ToUpdate() {
         bool toUpdate = false;
-        if (GameManager.Instance.IsGameRunning) {
+        if (GameStatus.Instance.IsRunning) {
             if (UpdateRate == FrameUpdateFrequency.Continuous) {
                 toUpdate = true;
             }
