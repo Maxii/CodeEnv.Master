@@ -105,12 +105,14 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void ClearHud() {
-            IsHudShowing = false;
-            _guiCursorHud.Clear();
+            if (IsHudShowing) {
+                IsHudShowing = false;
+                _guiCursorHud.Clear();
+            }
         }
 
         private void Cleanup() {
-            IsHudShowing = false;   // turn off any coroutines, but don't clearHud - it is already dead
+            ClearHud();
             Unsubscribe();
         }
 

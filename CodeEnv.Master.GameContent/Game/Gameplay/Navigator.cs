@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -116,8 +116,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="newHeading">The new direction in world coordinates, normalized.</param>
         public bool ChangeHeading(Vector3 newHeading) {
             newHeading.ValidateNormalized();
-            if (newHeading.IsSameDirection(_data.RequestedHeading)) {
-                D.Warn("Duplicate ChangeHeading Command to {0} on ship: {1}.", newHeading, _transform.name);
+            if (Mathfx.Approx(newHeading, _data.RequestedHeading, 0.01F)) {
+                //if (newHeading.IsSameDirection(_data.RequestedHeading)) { // too precise
+                D.Warn("Duplicate ChangeHeading Command to {0} on {1}.", newHeading, _data.Name);
                 return false;
             }
             _data.RequestedHeading = newHeading;
@@ -142,26 +143,31 @@ namespace CodeEnv.Master.GameContent {
             _isTurning = true;
             _isPreviousHeadingChangeCoroutineRunning = true;
 
+            int previousFrameCount = Time.frameCount;
             float maxTurnRatePerSecond = _data.MaxTurnRate * _generalSettings.DaysPerSecond;
-            D.Log("Coming to new heading {0} at {1} radians per day.", _data.RequestedHeading, _data.MaxTurnRate);
+            D.Log("New coroutine. {0} coming to heading {1} at {2} radians/day.", _data.Name, _data.RequestedHeading, _data.MaxTurnRate);
             while (_isTurning) {
-                float allowedTurn = maxTurnRatePerSecond * GameTime.DeltaTimeOrPausedWithGameSpeed;
+                int framesSinceLastPass = Time.frameCount - previousFrameCount;
+                previousFrameCount = Time.frameCount;
+                float allowedTurn = maxTurnRatePerSecond * GameTime.DeltaTimeOrPausedWithGameSpeed * framesSinceLastPass;
                 Vector3 newHeading = Vector3.RotateTowards(_data.CurrentHeading, _data.RequestedHeading, allowedTurn, Constants.ZeroF);
                 _transform.rotation = Quaternion.LookRotation(newHeading);
 
                 _isTurning = !IsTurnComplete();
-                yield return null;
+                yield return new WaitForSeconds(0.5F);
             }
             if (IsTurnComplete()) {
-                D.Log("Turn complete. Heading now {0}.", _data.CurrentHeading);
+                D.Log("Turn complete. {0} current heading is {1}.", _data.Name, _data.CurrentHeading);
             }
             else {
-                D.Log("Prior Turn command cancelled. Heading now {0}.", _data.CurrentHeading);
+                D.Log("{0} turn command cancelled. Current Heading is {1}.", _data.Name, _data.CurrentHeading);
             }
             _isPreviousHeadingChangeCoroutineRunning = false;
         }
 
         private bool IsTurnComplete() {
+            D.Log("{0} heading passing {1} toward {2}.", _data.Name, _data.CurrentHeading, _data.RequestedHeading);
+            // don't worry about the turn passing through this test because it is so precise. The coroutine will home on the requested heading until this is satisfied
             return _data.CurrentHeading.IsSameDirection(_data.RequestedHeading);
         }
 
@@ -176,7 +182,7 @@ namespace CodeEnv.Master.GameContent {
             _data.RequestedSpeed = newSpeed;
             float thrustNeededToMaintainRequestedSpeed = newSpeed * _data.Mass * _data.Drag;
             _thrustHelper = new ThrustHelper(newSpeed, thrustNeededToMaintainRequestedSpeed, _data.MaxThrust);
-            D.Log("Adjusting thrust to achieve requested speed {0}.", newSpeed);
+            D.Log("{0} adjusting thrust to achieve requested speed {1}.", _data.Name, newSpeed);
             _thrust = AdjustThrust();
             return true;
         }

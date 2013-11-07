@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IHasData.cs
-// Interface indicating Data can be obtained from this object.
+// File: IFleetViewable.cs
+//  Interface used by FleetPresenters to communicate with their associated FleetViews.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,13 +16,17 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using CodeEnv.Master.Common;
+    using UnityEngine;
+
     /// <summary>
-    /// Interface indicating Data can be obtained from this object.
+    ///  Interface used by FleetPresenters to communicate with their associated FleetViews.
     /// </summary>
-    public interface IHasData {
+    public interface IFleetViewable : IViewable {
 
-        Data GetData();
+        void ChangeFleetIcon(IIcon icon, GameColor color);
 
+        Transform Target { set; }
     }
 }
 

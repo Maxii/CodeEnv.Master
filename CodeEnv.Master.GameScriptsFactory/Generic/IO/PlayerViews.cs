@@ -43,7 +43,7 @@ public class PlayerViews : AGameInputConfiguration<PlayerViews> {
     //private LayerMask _sectorViewModeCameraCullingLayerMask;
     //private LayerMask _normalViewModeEventReceiverLayerMask;
     //private LayerMask _normalViewModeCameraCullingLayerMask;
-    private UICamera _mainUICamera;
+    //private UICamera _mainUICamera;
     private Camera _mainCamera;
 
     private IList<IDisposable> _subscribers;
@@ -52,7 +52,7 @@ public class PlayerViews : AGameInputConfiguration<PlayerViews> {
     protected override void Awake() {
         base.Awake();
         _mainCamera = Camera.main;
-        _mainUICamera = _mainCamera.gameObject.GetSafeMonoBehaviourComponent<UICamera>();
+        //_mainUICamera = _mainCamera.gameObject.GetSafeMonoBehaviourComponent<UICamera>();
         _viewMode = PlayerViewMode.NormalView;
         _keyConfigs = new PlayerViewModeKeyConfiguration[] { sectorViewMode, /*sectorOrderMode,*/ normalViewMode };
         Subscribe();

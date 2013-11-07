@@ -24,15 +24,18 @@ using UnityEngine;
 /// </summary>
 public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
 
+    private static IList<Vector3> _obstacleLocations;
+    public static IList<Vector3> ObstacleLocations { get { return _obstacleLocations; } }
+
     private GameManager _gameMgr;
     private IList<IDisposable> _subscribers;
-
-    private FleetManager[] _fleets;
-    private ShipCaptain[] _ships;
-    private FollowableItem[] _planetsAndMoons;
-    private Star[] _stars;
-    private SystemManager[] _systems;
-    private StationaryItem _universeCenter;
+    private FleetItem[] _fleets;
+    private ShipItem[] _ships;
+    private Item[] _planetoids;
+    private Item[] _stars;
+    private SystemItem[] _systems;
+    private SettlementItem[] _settlements;
+    private Item _universeCenter;
 
     protected override void Awake() {
         base.Awake();
@@ -42,16 +45,19 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
     }
 
     private void AcquireGameObjectsRequiringDataToInitialize() {
-        _fleets = gameObject.GetSafeMonoBehaviourComponentsInChildren<FleetManager>();
-        _ships = gameObject.GetSafeMonoBehaviourComponentsInChildren<ShipCaptain>();
+        _fleets = gameObject.GetSafeMonoBehaviourComponentsInChildren<FleetItem>();
+        _ships = gameObject.GetSafeMonoBehaviourComponentsInChildren<ShipItem>();
         // TODO I'll need to pick the ships under each fleet and then add those ships to each fleet when initializing
-        _systems = gameObject.GetSafeMonoBehaviourComponentsInChildren<SystemManager>();
-        _stars = gameObject.GetSafeMonoBehaviourComponentsInChildren<Star>();
-        _planetsAndMoons = new FollowableItem[0];
-        foreach (var sys in _systems) {
-            _planetsAndMoons = _planetsAndMoons.Concat<FollowableItem>(sys.gameObject.GetSafeMonoBehaviourComponentsInChildren<FollowableItem>()).ToArray();
-        }
-        _universeCenter = gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenter>();
+        _systems = gameObject.GetSafeMonoBehaviourComponentsInChildren<SystemItem>();
+        _settlements = gameObject.GetSafeMonoBehaviourComponentsInChildren<SettlementItem>();
+        Item[] celestialObjects = gameObject.GetSafeMonoBehaviourComponentsInChildren<Item>()
+            .Except(_fleets).Except(_ships).Except(_systems).Except(_settlements).ToArray();
+        _stars = celestialObjects.Where(co => co.gameObject.GetComponent<StarView>() != null).ToArray();
+        _planetoids = celestialObjects.Where(co => co.gameObject.GetComponent<MovingView>() != null).ToArray();
+        _universeCenter = celestialObjects.Single(co => co.gameObject.GetComponent<UniverseCenterView>() != null);
+
+        _obstacleLocations = _systems.Select(s => s.transform.position).ToList();
+        _obstacleLocations.Add(_universeCenter.transform.position);
     }
 
     private void Subscribe() {
@@ -68,99 +74,107 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
     }
 
     private void InitializeGameObjectData() {
-        InitializeSystems();
+        InitializeSystems();    // systems before settements and celestial objects as they need the system name
+        InitializeSettlements();
         InitializeStars();
-        InitializePlanetsAndMoons();
-        InitializeShips();
+        InitializePlanetoids();
+        InitializeShips();  // ships before fleet as fleet data needs ships
         InitializeFleet();
-        // InitializeHumanFleet();
         InitializeCenter();
-        //InitializeEnemyFleet();
+        InitializePlayerIntelLevel();
     }
 
     private void InitializeSystems() {
         int sysNumber = 0;
-        foreach (SystemManager sysMgr in _systems) {
-            Transform systemTransform = sysMgr.transform;
-            SystemData data = new SystemData(systemTransform, "System_" + sysNumber) {
+        foreach (SystemItem system in _systems) {
+            Transform systemTransform = system.transform;
+            string systemName = "System_" + sysNumber;
+            SystemData data = new SystemData(systemTransform, systemName) {
                 // there is no parentName for a System
                 LastHumanPlayerIntelDate = new GameDate(),
                 Capacity = 25,
                 Resources = new OpeYield(3.1F, 2.0F, 4.8F),
                 SpecialResources = new XYield(XResource.Special_1, 0.3F),
-                Settlement = new SettlementData() {
-                    SettlementSize = SettlementSize.City,
-                    Population = 100,
-                    CapacityUsed = 10,
-                    ResourcesUsed = new OpeYield(1.3F, 0.5F, 2.4F),
-                    SpecialResourcesUsed = new XYield(new XYield.XResourceValuePair(XResource.Special_1, 0.2F)),
-                    Strength = new CombatStrength(1f, 2f, 3f, 4f, 5f, 6f),
-                    Health = 38F,
-                    MaxHitPoints = 50F,
-                    Owner = GameManager.Instance.HumanPlayer
-                }
             };
-            sysMgr.Data = data;
-            sysMgr.PlayerIntelLevel = Enums<IntelLevel>.GetRandom(excludeDefault: true);
-            D.Log("{1} random PlayerIntelLevel = {0}.", sysMgr.PlayerIntelLevel.GetName(), data.Name);
+            system.Data = data;
             sysNumber++;
         }
     }
 
-    private void InitializeStars() {
-        foreach (Star star in _stars) {
-            SystemManager sysMgr = star.gameObject.GetSafeMonoBehaviourComponentInParents<SystemManager>();
-            string parentName = sysMgr.Data.Name;
-            string name = parentName + " Star";
-            Data data = new Data(star.transform, name, parentName) {
-                LastHumanPlayerIntelDate = new GameDate()
+    private void InitializeSettlements() {
+        foreach (Item settlement in _settlements) {
+            SystemItem system = settlement.gameObject.GetSafeMonoBehaviourComponentInParents<SystemItem>();
+            string systemName = system.Data.Name;
+            string settlementName = systemName + " Settlement";
+            SettlementData data = new SettlementData(settlement.transform, settlementName, 50F, systemName) {
+                SettlementSize = SettlementSize.City,
+                Population = 100,
+                CapacityUsed = 10,
+                ResourcesUsed = new OpeYield(1.3F, 0.5F, 2.4F),
+                SpecialResourcesUsed = new XYield(new XYield.XResourceValuePair(XResource.Special_1, 0.2F)),
+                Strength = new CombatStrength(1f, 2f, 3f, 4f, 5f, 6f),
+                CurrentHitPoints = 38F,
+                Owner = GameManager.Instance.HumanPlayer
             };
-            star.Data = data;
-            // Celestial object PlayerIntelLevel is determined by the IntelLevel of the System
+            settlement.Data = data;
+            // PlayerIntelLevel is determined by the IntelLevel of the System
+            system.Data.Settlement = data;  // TODO temporary as the SystemHud shows settlement info this way
         }
     }
 
-    private void InitializePlanetsAndMoons() {
-        int planetNumber = 0;
-        foreach (FollowableItem item in _planetsAndMoons) {
-            SystemManager sysMgr = item.gameObject.GetSafeMonoBehaviourComponentInParents<SystemManager>();
-            string parentName = sysMgr.Data.Name;
-            string name = "Planet_" + planetNumber;
-            Data data = new Data(item.transform, name, parentName) {
+    private void InitializeStars() {
+        foreach (Item star in _stars) {
+            SystemItem system = star.gameObject.GetSafeMonoBehaviourComponentInParents<SystemItem>();
+            string systemName = system.Data.Name;
+            string starName = systemName + " Star";
+            Data data = new Data(star.transform, starName, 1000000F, systemName) {
                 LastHumanPlayerIntelDate = new GameDate()
             };
-            item.Data = data;
-            planetNumber++;
-            // Celestial object PlayerIntelLevel is determined by the IntelLevel of the System
+            star.Data = data;
+            // PlayerIntelLevel is determined by the IntelLevel of the System
+        }
+    }
+
+    private void InitializePlanetoids() {
+        int planetoidNumber = 0;
+        foreach (Item planetoid in _planetoids) {
+            SystemItem system = planetoid.gameObject.GetSafeMonoBehaviourComponentInParents<SystemItem>();
+            string systemName = system.Data.Name;
+            string planetName = "Planet_" + planetoidNumber;
+            Data data = new Data(planetoid.transform, planetName, 100000F, systemName) {
+                LastHumanPlayerIntelDate = new GameDate()
+            };
+            planetoid.Data = data;
+            planetoidNumber++;
+            // PlayerIntelLevel is determined by the IntelLevel of the System
         }
     }
 
     private void InitializeShips() {
         int shipNumber = 0;
-        foreach (ShipCaptain ship in _ships) {
-            ShipData data = new ShipData(ship.transform, "Ship_" + shipNumber) {
+        foreach (ShipItem ship in _ships) {
+            string shipName = "Ship_" + shipNumber;
+            ShipData data = new ShipData(ship.transform, shipName, 50F) {
                 // Ship's optionalParentName gets set when it gets attached to a fleet
                 Hull = ShipHull.Destroyer,
                 Strength = new CombatStrength(1f, 2f, 3f, 4f, 5f, 6f),
                 LastHumanPlayerIntelDate = new GameDate(),
-                Health = 38F,
-                MaxHitPoints = 50F,
+                CurrentHitPoints = 38F,
                 Owner = GameManager.Instance.HumanPlayer,
-                MaxTurnRate = 1.0F,
+                MaxTurnRate = 2.0F,
                 RequestedHeading = ship.transform.forward
             };
             data.MaxThrust = data.Mass * data.Drag * 2F;    // MaxThrust = MaxSpeed * Mass * Drag
             ship.Data = data;
             shipNumber++;
-            // A ship's PlayerIntelLevel is determined by the IntelLevel of the Fleet
+            // PlayerIntelLevel is determined by the IntelLevel of the Fleet
         }
     }
 
     private void InitializeFleet() {
         if (!_fleets.IsNullOrEmpty()) {
-            FleetManager fleetMgr = _fleets[0];
-            Transform admiralTransform = fleetMgr.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>().transform;
-            FleetData data = new FleetData(admiralTransform, "A Fleet") {
+            FleetItem fleetMgr = _fleets[0];
+            FleetData data = new FleetData(fleetMgr.transform, "Borg Fleet") {
                 // there is no parentName for a fleet
                 LastHumanPlayerIntelDate = new GameDate()
             };
@@ -169,18 +183,25 @@ public class __UniverseInitializer : AMonoBehaviourBase, IDisposable {
                 data.AddShip(ship.Data);
             }
             fleetMgr.Data = data;
-            fleetMgr.PlayerIntelLevel = RandomExtended<IntelLevel>.Choice(Enums<IntelLevel>.GetValues().Except(default(IntelLevel), IntelLevel.Nil).ToArray());
-            //fleetMgr.PlayerIntelLevel = Enums<IntelLevel>.GetRandom(excludeDefault: false);
-            //fleetMgr.PlayerIntelLevel = IntelLevel.Nil;
         }
     }
 
     private void InitializeCenter() {
         if (_universeCenter) {
-            Data data = new Data(_universeCenter.transform, "UniverseCenter");
+            Data data = new Data(_universeCenter.transform, "UniverseCenter", Mathf.Infinity);
             _universeCenter.Data = data;
-            _universeCenter.PlayerIntelLevel = IntelLevel.Unknown;
         }
+    }
+
+    /// <summary>
+    /// PlayerIntelLevel changes immediately propogate through COs and Ships so initialize this last in case the change pulls Data.
+    /// </summary>
+    private void InitializePlayerIntelLevel() {
+        _systems.ForAll<SystemItem>(sys => sys.gameObject.GetSafeInterface<ISystemViewable>().PlayerIntelLevel
+            = Enums<IntelLevel>.GetRandom(excludeDefault: true));
+        _fleets.ForAll<FleetItem>(f => f.gameObject.GetSafeInterface<IFleetViewable>().PlayerIntelLevel
+            = RandomExtended<IntelLevel>.Choice(Enums<IntelLevel>.GetValues().Except(default(IntelLevel), IntelLevel.Nil).ToArray()));
+        _universeCenter.gameObject.GetSafeInterface<IViewable>().PlayerIntelLevel = Enums<IntelLevel>.GetRandom(excludeDefault: true);
     }
 
     protected override void OnDestroy() {

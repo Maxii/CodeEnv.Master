@@ -84,6 +84,7 @@ public class Loader : AMonoBehaviourBaseSingletonInstanceIdentity<Loader>, IDisp
         _eventMgr.AddListener<ElementReadyEvent>(this, OnElementReady);
     }
 
+
     private void InitializeQualitySettings() {
         // the initial QualitySettingChanged event occurs earlier than we can subscribe so do it manually
         OnQualitySettingChanged();
@@ -115,13 +116,7 @@ public class Loader : AMonoBehaviourBaseSingletonInstanceIdentity<Loader>, IDisp
         MonoBehaviour source = e.Source as MonoBehaviour;
         if (!e.IsReady) {
             D.Assert(!_unreadyElements.Contains(source), "UnreadyElements already has {0} registered!".Inject(source.name));
-            bool isFirstUnReady = _unreadyElements.Count == 0f;
-            // register as unready
             _unreadyElements.Add(source);
-            if (isFirstUnReady) {
-                // first unready element to register so start checking for conditions needed to run
-                StartCoroutine(WaitUntilReadyThenRun);
-            }
             D.Log("{0} has registered with Loader as unready.".Inject(source.name));
         }
         else {
@@ -130,6 +125,48 @@ public class Loader : AMonoBehaviourBaseSingletonInstanceIdentity<Loader>, IDisp
             D.Log("{0} is now ready to Run.".Inject(source.name));
         }
     }
+
+    private void AssessReadinessToProgressGameState() {
+        if (_gameMgr.GameState == GameState.Waiting && _unreadyElements.Count == 0) {
+            enabled = false;    // stops update
+            _gameMgr.__ProgressToRunning();
+        }
+    }
+
+    // Important to use Update to assess readiness to progress the game state beyond waiting as
+    // it makes sure all Awake and Start methods have been called before the first assessment. Most
+    // element readiness reporting needs both of these methods to register and then clear their readiness
+    void Update() {
+        AssessReadinessToProgressGameState();
+    }
+
+    // Bug:  pattern unready, ready, unready, ready starts the coroutine twice!!!!!!!
+    //private void OnElementReady(ElementReadyEvent e) {
+    //    MonoBehaviour source = e.Source as MonoBehaviour;
+    //    if (!e.IsReady) {
+    //        D.Assert(!_unreadyElements.Contains(source), "UnreadyElements already has {0} registered!".Inject(source.name));
+    //        bool isFirstUnReady = _unreadyElements.Count == Constants.Zero;
+    //        // register as unready
+    //        _unreadyElements.Add(source);
+    //        if (isFirstUnReady) {
+    //            // first unready element to register so start checking for conditions needed to run
+    //            StartCoroutine(WaitUntilReadyThenRun);
+    //        }
+    //        D.Log("{0} has registered with Loader as unready.".Inject(source.name));
+    //    }
+    //    else {
+    //        D.Assert(_unreadyElements.Contains(source), "UnreadyElements has no record of {0}!".Inject(source.name));
+    //        _unreadyElements.Remove(source);
+    //        D.Log("{0} is now ready to Run.".Inject(source.name));
+    //    }
+    //}
+
+    //private IEnumerator WaitUntilReadyThenRun() {
+    //    while (_gameMgr.GameState != GameState.Waiting || _unreadyElements.Count > 0) {
+    //        yield return null;
+    //    }
+    //    _gameMgr.GameState = GameState.GeneratingPathGraphs;
+    //}
 
     //private void CheckForPrefabs() {
     //    // Check to make sure UsefulPrefabs is in the startScene. If not, instantiate it from the attached Prefab
@@ -142,12 +179,7 @@ public class Loader : AMonoBehaviourBaseSingletonInstanceIdentity<Loader>, IDisp
     //    usefulPrefabs.transform.parent = Instance.transform.parent;
     //}
 
-    private IEnumerator WaitUntilReadyThenRun() {
-        while (_gameMgr.GameState != GameState.Waiting || _unreadyElements.Count > 0) {
-            yield return null;
-        }
-        _gameMgr.BeginCountdownToRunning();
-    }
+
 
     protected override void OnDestroy() {
         base.OnDestroy();

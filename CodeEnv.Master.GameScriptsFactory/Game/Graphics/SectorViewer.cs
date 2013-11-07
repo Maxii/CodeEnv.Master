@@ -106,7 +106,8 @@ public class SectorViewer : AMonoBehaviourBaseSingleton<SectorViewer>, IDisposab
     private void OnUnconsumedPressChanged() {
         UnconsumedMouseButtonPress pressed = GameInput.Instance.UnconsumedPress;
         if (_viewMode == PlayerViewMode.SectorView && pressed.Button == NguiMouseButton.Right && !pressed.IsDown) {
-            FleetManager selectedFleetMgr = _selectionMgr.CurrentSelection as FleetManager;
+            //FleetManager selectedFleetMgr = _selectionMgr.CurrentSelection as FleetManager;
+            FleetView selectedFleetMgr = _selectionMgr.CurrentSelection as FleetView;
             if (selectedFleetMgr != null && _wireframe.IsMouseOverHotSpot) {
                 _ctxObject.ShowMenu();
             }

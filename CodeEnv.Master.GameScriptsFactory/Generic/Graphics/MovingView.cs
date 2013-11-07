@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FollowableItem.cs
-// Lowest level instantiable class for moveable items in the universe that the camera can follow.
+// File: MovingView.cs
+// A class for managing the UI of a moving object.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,9 +17,9 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Lowest level instantiable class for moveable items in the universe that the camera can follow.
+/// A class for managing the UI of a moving object.
 /// </summary>
-public class FollowableItem : StationaryItem, ICameraFollowable {
+public class MovingView : View, ICameraFollowable {
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: UniverseCenter.cs
-// Universe Center management.
+// File: SettlementItem.cs
+//  The data-holding class for all Settlements in the game.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -14,28 +14,20 @@
 
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
-using UnityEngine;
 
 /// <summary>
-/// Universe Center management.
+/// The data-holding class for all Settlements in the game.
 /// </summary>
-public class UniverseCenter : StationaryItem {
+public class SettlementItem : Item {
+
+    public new SettlementData Data {
+        get { return base.Data as SettlementData; }
+        set { base.Data = value; }
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region ICameraFocusable Members
-
-    public override bool IsRetainedFocusEligible {
-        get { return true; }
-    }
-
-    protected override float CalcOptimalCameraViewingDistance() {
-        return GameManager.Settings.UniverseSize.Radius() * 0.9F;   // IMPROVE
-    }
-
-    #endregion
 
 }
 

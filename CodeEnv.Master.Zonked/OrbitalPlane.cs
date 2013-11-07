@@ -19,6 +19,7 @@ using UnityEngine;
 /// <summary>
 /// Manages the interaction of the Orbital plane, aka the 'system', with the Player.
 /// </summary>
+[System.Obsolete]
 public class OrbitalPlane : StationaryItem, IZoomToFurthest {
 
     public new SystemData Data {

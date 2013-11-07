@@ -29,6 +29,7 @@ using UnityEngine;
 public abstract class AMonoBehaviourBaseSingleton<T> : AMonoBehaviourBase where T : AMonoBehaviourBase {
 
     #region Singleton Pattern
+    // NOTE: Acquiring a reference to T.Instance this way DOES NOT cause Awake() to be called when acquired. Awake() is called on its own schedule.
 
     protected static T _instance;
     public static T Instance {
@@ -49,6 +50,7 @@ public abstract class AMonoBehaviourBaseSingleton<T> : AMonoBehaviourBase where 
                         D.Error("Problem during the creation of {0}.", thisType.Name);
                     }
                 }
+                //D.Log("{0}.Instance found.", typeof(T).Name);
             }
             return _instance;
         }

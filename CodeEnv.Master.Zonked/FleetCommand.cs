@@ -20,6 +20,7 @@ using UnityEngine;
 /// Command entity that receives and executes orders for the Fleet. FleetCommand is automatically destroyed
 /// when the health of the fleet reaches Zero.
 /// </summary>
+[System.Obsolete]
 public class FleetCommand : FollowableItem, IFleetCommand {
 
     public float minFleetViewingDistance = 4F;

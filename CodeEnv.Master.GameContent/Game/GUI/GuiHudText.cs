@@ -79,7 +79,7 @@ namespace CodeEnv.Master.GameContent {
                 {GuiHudLineKeys.Owner, "Owner: {0}"},
                 {GuiHudLineKeys.CombatStrength, "Combat: {0}"}, 
                 {GuiHudLineKeys.CombatStrengthDetails, "Combat: {0}, B: {1}/{2}, M: {3}/{4}, P: {5}/{6}"},
-                {GuiHudLineKeys.Health, "Health: {0} of {1} HP"},  
+                {GuiHudLineKeys.Health, "Health: {0}%, Max {1} HP"},  
                 {GuiHudLineKeys.Speed, CursorHudPhrases.Speed},  // the format is dynamically constructed within the ColoredText_Speed class
                 {GuiHudLineKeys.Composition, "{0}"},   // the format is dynamically constructed within the ColoredText_Composition class
                 {GuiHudLineKeys.CompositionDetails, "{0}"}, // the format is dynamically constructed within the ColoredText_Composition class

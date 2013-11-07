@@ -53,6 +53,40 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        private float _maxHitPoints;
+        public float MaxHitPoints {
+            get { return _maxHitPoints; }
+            set {
+                value = Mathf.Clamp(value, Constants.ZeroF, Mathf.Infinity);
+                SetProperty<float>(ref _maxHitPoints, value, "MaxHitPoints", OnMaxHitPointsChanged, OnMaxHitPointsChanging);
+            }
+        }
+
+        private float _currentHitPoints;
+        /// <summary>
+        /// Gets or sets the current hit points of this item. 
+        /// </summary>
+        public float CurrentHitPoints {
+            get { return _currentHitPoints; }
+            set {
+                value = Mathf.Clamp(value, Constants.ZeroF, MaxHitPoints);
+                SetProperty<float>(ref _currentHitPoints, value, "CurrentHitPoints", OnCurrentHitPointsChanged);
+            }
+        }
+
+
+        private float _health;
+        /// <summary>
+        /// Readonly. Indicates the health of the item, a value between 0 and 1.
+        /// </summary>
+        public float Health {
+            get { return _health; }
+            private set {
+                value = Mathf.Clamp01(value);
+                SetProperty<float>(ref _health, value, "Health");
+            }
+        }
+
         private GameDate _lastHumanPlayerIntelDate;
 
         /// <summary>
@@ -71,15 +105,34 @@ namespace CodeEnv.Master.GameContent {
 
         protected Transform _transform;
 
-        public Data(Transform t, string name, string optionalParentName = "") {
+        public Data(Transform t, string name, float maxHitPoints, string optionalParentName = "") {
             _transform = t;
             Name = name;
+            _maxHitPoints = maxHitPoints;
+            CurrentHitPoints = maxHitPoints;
             OptionalParentName = optionalParentName;
         }
 
         protected virtual void OnNameChanged() {
             _transform.name = Name;
         }
+
+        private void OnMaxHitPointsChanging(float newMaxHitPoints) {
+            if (newMaxHitPoints < MaxHitPoints) {
+                // reduction in max hit points so reduce current hit points to match
+                CurrentHitPoints = Mathf.Clamp(CurrentHitPoints, Constants.ZeroF, newMaxHitPoints);
+                // FIXME changing CurrentHitPoints here sends out a temporary erroneous health change event. The accurate health change event follows shortly
+            }
+        }
+
+        private void OnMaxHitPointsChanged() {
+            Health = MaxHitPoints > Constants.ZeroF ? CurrentHitPoints / MaxHitPoints : Constants.ZeroF;
+        }
+
+        private void OnCurrentHitPointsChanged() {
+            Health = MaxHitPoints > Constants.ZeroF ? CurrentHitPoints / MaxHitPoints : Constants.ZeroF;
+        }
+
     }
 }
 

@@ -130,22 +130,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private float _health;
-        public float Health {
-            get { return _health; }
-            set {
-                SetProperty<float>(ref _health, value, "Health");
-            }
-        }
-
-        private float _maxHitPoints;
-        public float MaxHitPoints {
-            get { return _maxHitPoints; }
-            set {
-                SetProperty<float>(ref _maxHitPoints, value, "MaxHitPoints");
-            }
-        }
-
         private CombatStrength _combatStrength;
         public CombatStrength Strength {
             get { return _combatStrength; }
@@ -169,8 +153,8 @@ namespace CodeEnv.Master.GameContent {
         private GameTime _gameTime;
         private float _gameSpeedMultiplier;
 
-        public ShipData(Transform shipTransform, string shipName)
-            : base(shipTransform, shipName) {
+        public ShipData(Transform shipTransform, string shipName, float maxHitPoints)
+            : base(shipTransform, shipName, maxHitPoints) {
             _rigidbody = shipTransform.rigidbody;
             _gameMgr = GameManager.Instance;
             _gameTime = GameTime.Instance;

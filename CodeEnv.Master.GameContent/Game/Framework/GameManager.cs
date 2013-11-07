@@ -320,15 +320,33 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Called from Loader when all conditions are met to begin the progression to Running.
-        /// Conditions include GameState.Waiting, no UnreadyElements and Update()
-        /// has started.
+        /// Progresses the GameState from the current state in sequence to Running.
         /// </summary>
-        public void BeginCountdownToRunning() {
-            GameState = GameState.RunningCountdown_3;
-            GameState = GameState.RunningCountdown_2;
-            GameState = GameState.RunningCountdown_1;
-            GameState = GameState.Running;
+        /// <exception cref="System.NotImplementedException"></exception>
+        public void __ProgressToRunning() {
+            switch (GameState) {
+                case Common.GameState.Waiting:
+                    GameState = GameState.GeneratingPathGraphs;
+                    GameState = GameState.RunningCountdown_2;
+                    GameState = GameState.RunningCountdown_1;
+                    GameState = GameState.Running;
+                    break;
+                case GameState.GeneratingPathGraphs:
+                    GameState = GameState.RunningCountdown_2;
+                    GameState = GameState.RunningCountdown_1;
+                    GameState = GameState.Running;
+                    break;
+                case GameState.RunningCountdown_2:
+                    GameState = GameState.RunningCountdown_1;
+                    GameState = GameState.Running;
+                    break;
+                case GameState.RunningCountdown_1:
+                    GameState = GameState.Running;
+                    break;
+                // the rest of the states should never change this way
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(GameState));
+            }
         }
 
         //[Conditional("UNITY_EDITOR")]
@@ -351,9 +369,9 @@ namespace CodeEnv.Master.GameContent {
                     if (proposedNewState != GameState.Waiting) { isError = true; }
                     break;
                 case GameState.Waiting:
-                    if (proposedNewState != GameState.RunningCountdown_3) { isError = true; }
+                    if (proposedNewState != GameState.GeneratingPathGraphs) { isError = true; }
                     break;
-                case GameState.RunningCountdown_3:
+                case GameState.GeneratingPathGraphs:
                     if (proposedNewState != GameState.RunningCountdown_2) { isError = true; }
                     break;
                 case GameState.RunningCountdown_2:
@@ -370,9 +388,17 @@ namespace CodeEnv.Master.GameContent {
             }
             if (isError) {
                 D.Error("Erroneous GameState transition. Current State = {0}, proposed State = {1}.", GameState, proposedNewState);
+                return;
             }
         }
 
+        /// <summary>
+        /// Does any initialization called for by a transition to a new GameState. 
+        /// WARNING: Donot change state directly from this method as this initialization
+        /// step occurs prior to sending out the GameStateChanged event to subscribers. Directly changing
+        /// the state within this method changes the state BEFORE the previous state has it's events sent.
+        /// </summary>
+        /// <exception cref="System.NotImplementedException"></exception>
         private void InitializeOnGameStateChanged() {
             switch (GameState) {
                 case GameState.Lobby:
@@ -380,7 +406,7 @@ namespace CodeEnv.Master.GameContent {
                 case GameState.Loading:
                 case GameState.Restoring:
                 case GameState.Waiting:
-                case GameState.RunningCountdown_3:
+                case GameState.GeneratingPathGraphs:
                 case GameState.RunningCountdown_2:
                 case GameState.RunningCountdown_1:
                     IsGameRunning = false;
@@ -396,7 +422,7 @@ namespace CodeEnv.Master.GameContent {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(GameState));
             }
-            D.Log("GameState changed to {0}.", GameState.GetName());
+            D.Log("GameState changed to {0}.", Instance.GameState.GetName());
         }
 
         /// <summary>

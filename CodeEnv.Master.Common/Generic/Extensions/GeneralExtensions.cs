@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -288,6 +288,7 @@ namespace CodeEnv.Master.Common {
             }
             var propertyInfo = memberExpr.Member as PropertyInfo;
             if (propertyInfo == null || propertyInfo.DeclaringType != typeof(TSource)) {
+                D.Error("Property DeclaringType {0}, not equal to TSource Type {1}.", propertyInfo.DeclaringType.Name, typeof(TSource).Name);
                 throw new ArgumentException("Must yield a single property on the given object", "propertySelector");
             }
             return propertyInfo.Name;

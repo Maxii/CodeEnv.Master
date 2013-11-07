@@ -54,14 +54,13 @@ namespace CodeEnv.Master.Common {
         Waiting,
 
         /// <summary>
-        /// The first countdown step in progressing to Running, following being released from Waiting.
-        /// Primary used for sequencing startup progression.
-        /// 
+        /// Primary focus is to allow the AStar Pathfinding system time to generate the overall graph
+        /// from points acquired from SectorGrid's GridFramework.
         /// </summary>
-        RunningCountdown_3,
+        GeneratingPathGraphs,
 
         /// <summary>
-        /// The second countdown step in progressing to Running, following RunningCountdown_3.
+        /// A placeholder countdown step in progressing to Running, following GeneratingPathfindingGraphs.
         /// Primary used for sequencing startup progression.
         /// </summary>
         RunningCountdown_2,

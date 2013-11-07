@@ -64,14 +64,14 @@ public class GuiTrackingLabel : AMonoBehaviourBase {
     /// <summary>
     /// Gets or sets whether this <see cref="GuiTrackingLabel" /> is showing. Allows
     /// the client to control whether the label displays or not without the label losing knowledge
-    /// of the content of the label that has already been set.
+    /// of the content that has already been set.
     /// </summary>
     public bool IsShowing {
         get { return _isShowing; }
         set {
-            if (this) {
-                SetProperty<bool>(ref _isShowing, value, "IsShowing", OnIsShowingChanged);
-            }
+            //if (this) {
+            SetProperty<bool>(ref _isShowing, value, "IsShowing", OnIsShowingChanged);
+            //}
         }
     }
 

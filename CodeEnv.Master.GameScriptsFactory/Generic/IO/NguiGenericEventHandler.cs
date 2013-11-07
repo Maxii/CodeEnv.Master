@@ -28,7 +28,7 @@ public class NguiGenericEventHandler : AMonoBehaviourBaseSingleton<NguiGenericEv
     public bool LogEvents = false;
 
     private GameInput _gameInput;
-    private PlayerViews _playerViews;
+    //private PlayerViews _playerViews;
 
     protected override void Awake() {
         base.Awake();
@@ -38,7 +38,7 @@ public class NguiGenericEventHandler : AMonoBehaviourBaseSingleton<NguiGenericEv
             return;
         }
         _gameInput = GameInput.Instance;
-        _playerViews = PlayerViews.Instance;
+        //_playerViews = PlayerViews.Instance;
         AssignEventHandler();
     }
 

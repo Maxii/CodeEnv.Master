@@ -23,6 +23,7 @@ using UnityEngine;
 /// Handles graphics optimization for Fleets. Assumes location is with Fleet
 /// game object, not FleetAdmiral.
 /// </summary>
+[System.Obsolete]
 public class FleetGraphics : AGraphics, IDisposable {
 
     private bool _isDetectable = true; // FIXME if starts false, it doesn't get updated right away...

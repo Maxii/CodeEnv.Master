@@ -57,8 +57,14 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public SystemData(Transform systemTransform, string systemName)
-            : base(systemTransform, systemName) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SystemData" /> class.
+        /// </summary>
+        /// <param name="transform">The system transform.</param>
+        /// <param name="systemName">Name of the system.</param>
+        /// <param name="maxHitPoints">The maximum hit points.</param>
+        public SystemData(Transform transform, string systemName, float maxHitPoints = Mathf.Infinity)
+            : base(transform, systemName, maxHitPoints) { }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

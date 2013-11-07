@@ -24,6 +24,7 @@ using UnityEngine;
 /// Instantiable, general purpose graphics manager for StationaryItem and FollowableItem celestial objects like planets and moons.
 /// Assumes location on the same game object as the Stationary or FollowableItem.
 /// </summary>
+[System.Obsolete]
 public class ItemGraphics : AGraphics, IDisposable {
 
     public float circleScaleFactor = 1.5F;

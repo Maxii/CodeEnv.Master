@@ -25,6 +25,7 @@ using Vectrosity;
 /// Handles graphics for a ship.  Assumes location on the same 
 /// game object as the ShipCaptain.
 /// </summary>
+[System.Obsolete]
 public class ShipGraphics : AGraphics, IDisposable {
 
     private bool _isDetectable = true; // FIXME if starts false, it doesn't get updated right away...

@@ -39,7 +39,7 @@ namespace CodeEnv.Master.Common {
         /// Unity's Random.Range does not include max as a possible outcome, unless min == max.
         /// This means Range(0,1) produces 0 instead of 0 or 1. That's unacceptable per ArenMook.
         /// </summary>
-        static public int Range(int min, int max) {
+        public static int Range(int min, int max) {
             if (min == max) { return min; }
             return UnityEngine.Random.Range(min, max + 1);
         }

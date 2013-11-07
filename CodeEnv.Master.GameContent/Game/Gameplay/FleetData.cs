@@ -31,36 +31,36 @@ namespace CodeEnv.Master.GameContent {
         /// Readonly. The current speed of the LeadShip of the Fleet
         /// in Units per day, normalized for game speed.
         /// </summary>
-        public float CurrentSpeed { get { return LeadShipData.CurrentSpeed; } }
+        public float CurrentSpeed { get { return FlagshipData.CurrentSpeed; } }
 
         /// <summary>
         /// Readonly. The requested speed of the LeadShip in Units per day.
         /// </summary>
-        public float RequestedSpeed { get { return LeadShipData.RequestedSpeed; } }
+        public float RequestedSpeed { get { return FlagshipData.RequestedSpeed; } }
 
         /// <summary>
         /// Readonly. The normalized requested heading of the LeadShip in worldspace coordinates.
         /// </summary>
-        public Vector3 RequestedHeading { get { return LeadShipData.RequestedHeading; } }
+        public Vector3 RequestedHeading { get { return FlagshipData.RequestedHeading; } }
 
         /// <summary>
         /// Readonly. The real-time, normalized heading of the LeadShip in worldspace coordinates. Equivalent to transform.forward.
         /// </summary>
-        public Vector3 CurrentHeading { get { return LeadShipData.CurrentHeading; } }
+        public Vector3 CurrentHeading { get { return FlagshipData.CurrentHeading; } }
 
-        private ShipData _leadShipData;
-        public ShipData LeadShipData {
+        private ShipData _flagshipData;
+        public ShipData FlagshipData {
             get {
-                return _leadShipData;
+                return _flagshipData;
             }
             set {
-                SetProperty<ShipData>(ref _leadShipData, value, "LeadShipData", OnLeadShipChanged);
+                SetProperty<ShipData>(ref _flagshipData, value, "FlagshipData", OnFlagshipDataChanged);
             }
         }
 
-        private void OnLeadShipChanged() {
-            if (!_shipsData.Contains(_leadShipData)) {
-                D.Error("LeadShip {0} assigned not present in Fleet {1}.", _leadShipData.OptionalParentName, OptionalParentName);
+        private void OnFlagshipDataChanged() {
+            if (!_shipsData.Contains(_flagshipData)) {
+                D.Error("Flagship {0} assigned not present in Fleet {1}.", _flagshipData.OptionalParentName, OptionalParentName);
             }
         }
 
@@ -77,16 +77,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private float _health;
-        public float Health {
-            get {
-                return _health;
-            }
-            private set {
-                SetProperty<float>(ref _health, value, "Health");
-            }
-        }
-
         private float _maxTurnRate;
         /// <summary>
         /// Gets the maximum turn rate of the fleet in radians per day.
@@ -97,16 +87,6 @@ namespace CodeEnv.Master.GameContent {
             }
             private set {
                 SetProperty<float>(ref _maxTurnRate, value, "MaxTurnRate");
-            }
-        }
-
-        private float _maxHitPoints;
-        public float MaxHitPoints {
-            get {
-                return _maxHitPoints;
-            }
-            private set {
-                SetProperty<float>(ref _maxHitPoints, value, "MaxHitPoints");
             }
         }
 
@@ -136,13 +116,13 @@ namespace CodeEnv.Master.GameContent {
         private IDictionary<ShipData, IList<IDisposable>> _subscribers;
 
         public FleetData(Transform fleetCommand, string fleetName)
-            : base(fleetCommand, fleetName) {
-            UnityUtility.ValidateInterfacePresence<IFleetCommand>(fleetCommand);
-            FixNames(fleetName);
+            : base(fleetCommand, fleetName, maxHitPoints: Constants.ZeroF) {
+            // A fleets maxHitPoints are constructed from the sum of the ships in the fleet
+            __FixNames(fleetName);
             InitializeCollections();
         }
 
-        private void FixNames(string fleetName) {
+        private void __FixNames(string fleetName) {
             _transform.name = "FleetCommand";
             _transform.parent.name = fleetName;
         }
@@ -153,7 +133,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override void OnNameChanged() {
-            FixNames(Name);
+            __FixNames(Name);
         }
 
         private void OnOwnerChanged() {
@@ -225,15 +205,11 @@ namespace CodeEnv.Master.GameContent {
         /// ship population of the fleet.
         /// </summary>
         private void UpdatePropertiesDerivedFromTotalFleet() {
-            UpdateHealth();
             UpdateStrength();
+            UpdateCurrentHitPoints();
             UpdateMaxHitPoints();
             UpdateMaxSpeed();
             UpdateMaxTurnRate();
-        }
-
-        private void UpdateHealth() {
-            Health = _shipsData.Sum<ShipData>(data => data.Health);
         }
 
         private void UpdateStrength() {
@@ -242,6 +218,10 @@ namespace CodeEnv.Master.GameContent {
                 sum.AddToTotal(ship.Strength);
             }
             Strength = sum;
+        }
+
+        private void UpdateCurrentHitPoints() {
+            CurrentHitPoints = _shipsData.Sum<ShipData>(data => data.CurrentHitPoints);
         }
 
         private void UpdateMaxHitPoints() {
@@ -275,19 +255,19 @@ namespace CodeEnv.Master.GameContent {
             }
             _subscribers.Add(shipData, new List<IDisposable>());
             IList<IDisposable> shipSubscriptions = _subscribers[shipData];
-            shipSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(sd => sd.Health, OnShipHealthChanged));
-            shipSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(sd => sd.MaxHitPoints, OnShipMaxHitPointsChanged));
+            shipSubscriptions.Add(shipData.SubscribeToPropertyChanged<Data, float>(sd => sd.CurrentHitPoints, OnShipCurrentHitPointsChanged));
+            shipSubscriptions.Add(shipData.SubscribeToPropertyChanged<Data, float>(sd => sd.MaxHitPoints, OnShipMaxHitPointsChanged));
             shipSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(sd => sd.MaxSpeed, OnShipMaxSpeedChanged));
             shipSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(sd => sd.MaxTurnRate, OnShipMaxTurnRateChanged));
             shipSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, CombatStrength>(sd => sd.Strength, OnShipStrengthChanged));
         }
 
-        private void OnShipHealthChanged() {
-            UpdateHealth();
-        }
-
         private void OnShipStrengthChanged() {
             UpdateStrength();
+        }
+
+        private void OnShipCurrentHitPointsChanged() {
+            UpdateCurrentHitPoints();
         }
 
         private void OnShipMaxHitPointsChanged() {

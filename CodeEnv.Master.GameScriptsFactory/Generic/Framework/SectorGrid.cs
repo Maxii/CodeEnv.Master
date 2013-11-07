@@ -26,9 +26,19 @@ using UnityEngine;
 /// </summary>
 public class SectorGrid : AMonoBehaviourBaseSingleton<SectorGrid>, IDisposable {
 
-    public float sectorVisibilityDepth = 3F;
+    /// <summary>
+    /// Readonly. The location of the center of all sectors in world space.
+    /// </summary>
+    public IList<Vector3> SectorCenters { get { return _worldBoxLocations; } }
 
-    public Vector3 gridSize = new Vector3(5F, 5F, 5F);
+    /// <summary>
+    ///  Readonly. The location of the corners of all sectors in world space.
+    /// </summary>
+    public IList<Vector3> SectorCorners { get { return _worldVertexLocations; } }
+
+    public float sectorVisibilityDepth = 2F;
+
+    private Vector3 gridSize; // = new Vector3(5F, 5F, 5F);
 
     private static GFRectGrid _grid;
     private static Vector3 _gridVertexToBoxOffset = new Vector3(0.5F, 0.5F, 0.5F);
@@ -45,18 +55,17 @@ public class SectorGrid : AMonoBehaviourBaseSingleton<SectorGrid>, IDisposable {
 
     protected override void Awake() {
         base.Awake();
-        _grid = InitializeGrid();
+        InitializeGrid();
         ConstructSectors();
         Subscribe();
     }
 
-    private GFRectGrid InitializeGrid() {
-        GFRectGrid grid = UnityUtility.ValidateMonoBehaviourPresence<GFRectGrid>(gameObject);
-        grid.spacing = TempGameValues.SectorSize;
-        grid.size = gridSize;
-        grid.relativeSize = true;
-        grid.renderGrid = false;
-        return grid;
+    private void InitializeGrid() {
+        _grid = UnityUtility.ValidateMonoBehaviourPresence<GFRectGrid>(gameObject);
+        _grid.spacing = TempGameValues.SectorSize;
+        gridSize = _grid.size;        //_grid.size = gridSize;
+        _grid.relativeSize = true;
+        _grid.renderGrid = false;
     }
 
     private void Subscribe() {
@@ -180,7 +189,7 @@ public class SectorGrid : AMonoBehaviourBaseSingleton<SectorGrid>, IDisposable {
                     _gridVertexLocations.Add(gridVertexLocation);
                     _worldVertexLocations.Add(_grid.GridToWorld(gridVertexLocation));
                     if (z.ApproxEquals(zSize) || y.ApproxEquals(ySize) || x.ApproxEquals(xSize)) {
-                        // this is an outside vertex of the grid, so the box is outside the grid
+                        // this is an outside forward, up or right vertex of the grid, so the box would be outside the grid
                         continue;
                     }
 
@@ -226,8 +235,15 @@ public class SectorGrid : AMonoBehaviourBaseSingleton<SectorGrid>, IDisposable {
         //D.Log("Sector added at index {0}.", index);
     }
 
+
+    /// <summary>
+    /// Gets the half value (1.5, 2.5, 1.5) location (in the grid coordinate system)
+    /// associated with this sector index. This will be the center of the sector box.
+    /// </summary>
+    /// <param name="index">The sector index.</param>
+    /// <returns></returns>
     public static Vector3 GetGridBoxLocation(Index3D index) {
-        Vector3 gridBoxLocation = Vector3.zero;
+        Vector3 gridBoxLocation;
         if (!Instance._sectorIndexToGridBoxLookup.TryGetValue(index, out gridBoxLocation)) {
             gridBoxLocation = Instance.CalculateGridBoxLocationFromSectorIndex(index);
             Instance._sectorIndexToGridBoxLookup.Add(index, gridBoxLocation);
@@ -245,6 +261,66 @@ public class SectorGrid : AMonoBehaviourBaseSingleton<SectorGrid>, IDisposable {
         return new Vector3(x, y, z);
     }
 
+    /// <summary>
+    ///  Calculates the location in world space of 8 vertices of a box surrounding the center of a sector.
+    /// </summary>
+    /// <param name="sectorWorldLocation">The world location.</param>
+    /// <param name="distance">The distance.</param>
+    /// <returns></returns>
+    public IList<Vector3> CalcBoxVerticesAroundCenter(Vector3 sectorWorldLocation, float distance) {
+        Index3D index = GetSectorIndex(sectorWorldLocation);
+        return CalcBoxVerticesAroundCenter(index, distance);
+    }
+
+    /// <summary>
+    /// Calculates the location in world space of 8 vertices of a box surrounding the center of a sector.
+    /// </summary>
+    /// <param name="index">The sector index.</param>
+    /// <param name="distance">The relative distance of each vertex from the center of the sector 
+    /// where 0.0 is the sector center and 1.0 is the corner of the sector.</param>
+    /// <returns></returns>
+    public IList<Vector3> CalcBoxVerticesAroundCenter(Index3D index, float distance) {
+        Arguments.ValidateForRange(distance, Constants.ZeroF, 1.0F);
+        IList<Vector3> vertices = new List<Vector3>(8);
+        Vector3 gridBoxLocation = GetGridBoxLocation(index);
+        var xPair = CalcGridLocationPair(gridBoxLocation.x, distance);
+        var yPair = CalcGridLocationPair(gridBoxLocation.y, distance);
+        var zPair = CalcGridLocationPair(gridBoxLocation.z, distance);
+        foreach (var x in xPair) {
+            foreach (var y in yPair) {
+                foreach (var z in zPair) {
+                    Vector3 gridBoxVertex = new Vector3(x, y, z);
+                    vertices.Add(_grid.GridToWorld(gridBoxVertex));
+                }
+            }
+        }
+        return vertices;
+    }
+
+    /// <summary>
+    /// Generates a pair of locations in grid space around the gridAxisValue. One will be
+    /// less than gridAxisValue by a factor of distance * 0.5 (half a box) and the other greater
+    /// than by the same amount.
+    /// </summary>
+    /// <param name="gridAxisValue">The grid axis value between the pair.</param>
+    /// <param name="distance">The relative distance between 0.0 and 1.0.</param>
+    /// <returns></returns>
+    private float[] CalcGridLocationPair(float gridAxisValue, float distance) {
+        Arguments.ValidateForRange(distance, Constants.ZeroF, 1.0F);
+        float[] vertexPair = new float[2];
+        float distanceTowardCorner = 0.5F * distance;
+        vertexPair[0] = gridAxisValue - distanceTowardCorner;
+        vertexPair[1] = gridAxisValue + distanceTowardCorner;
+        return vertexPair;
+    }
+
+    /// <summary>
+    /// Gets the round number (1.0, 1.0, 2.0) location (in the grid coordinate system)
+    /// associated with this sector index. This will be the left, lower, back corner of the 
+    /// sector box.
+    /// </summary>
+    /// <param name="index">The sector index.</param>
+    /// <returns></returns>
     public static Vector3 GetGridVertexLocation(Index3D index) {
         return GetGridBoxLocation(index) - _gridVertexToBoxOffset;
     }

@@ -24,6 +24,7 @@ using UnityEngine;
 /// Handles graphics optimization for Systems. Assumes location is with System
 /// game object.
 /// </summary>
+[System.Obsolete]
 public class SystemGraphics : AGraphics, IDisposable {
 
     public bool enableTrackingLabel = true;

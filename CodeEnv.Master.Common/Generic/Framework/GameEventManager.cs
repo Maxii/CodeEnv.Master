@@ -149,7 +149,7 @@ namespace CodeEnv.Master.Common {
             Instance.Raise<T>(gameEvent);
         }
 
-        // <summary>
+        ///<summary>
         /// Raises (broadcasts) the provided AGameEvent instance to all currentListeners.
         /// Usage:
         ///     GameEventManager.instance.Raise(new GameEventSubclass());

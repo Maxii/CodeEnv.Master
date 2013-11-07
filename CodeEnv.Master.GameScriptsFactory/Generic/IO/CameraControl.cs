@@ -411,7 +411,7 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
                 break;
             case GameState.Building:
             case GameState.Loading:
-            case GameState.RunningCountdown_3:
+            case GameState.GeneratingPathGraphs:
             case GameState.RunningCountdown_2:
             case GameState.RunningCountdown_1:
             case GameState.Running:

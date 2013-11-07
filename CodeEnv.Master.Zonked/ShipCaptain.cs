@@ -20,7 +20,8 @@ using UnityEngine;
 /// <summary>
 /// Manages the operation of a ship within a fleet.
 /// </summary>
-public class ShipCaptain : FollowableItem, ISelectable, IDisposable {
+[System.Obsolete]
+public class ShipCaptain : FollowableItem, ISelectable, IHasData, IDisposable {
 
     public new ShipData Data {
         get { return base.Data as ShipData; }
@@ -163,7 +164,7 @@ public class ShipCaptain : FollowableItem, ISelectable, IDisposable {
     }
 
     private void __OnHit(float damage) {
-        Data.Health = Data.Health - damage;
+        //Data.Health = Data.Health - damage;
     }
 
     protected override void OnDestroy() {

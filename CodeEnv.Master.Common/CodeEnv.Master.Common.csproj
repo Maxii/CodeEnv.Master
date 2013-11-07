@@ -50,12 +50,11 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="ThirdParty\Easing.cs" />
     <Compile Include="Generic\IO\KeyModifiers.cs" />
     <Compile Include="Generic\Framework\Index3D.cs" />
     <Compile Include="Generic\IO\UnconsumedMouseButtonClick.cs" />
-    <Compile Include="ThirdParty\CoroutineNode.cs" />
     <Compile Include="ThirdParty\Reference.cs" />
-    <Compile Include="ThirdParty\CoroutineScheduler.cs" />
     <Compile Include="ThirdParty\CustomStringComparer.cs" />
     <Compile Include="Generic\Graphics\AIcon.cs" />
     <Compile Include="Game\Graphics\FleetIcon.cs" />
@@ -121,6 +120,7 @@
     <Compile Include="Generic\Graphics\IconSelectionCriteria.cs" />
     <Compile Include="Generic\Graphics\IIcon.cs" />
     <Compile Include="ThirdParty\PropertyHelper.cs" />
+    <Compile Include="ThirdParty\StateMachine.cs" />
     <Compile Include="ThirdParty\TextScanner.cs" />
     <Compile Include="ThirdParty\FlagsHelper.cs" />
     <Compile Include="Generic\_Debug\ObjectAnalyzer.cs" />
@@ -147,9 +147,6 @@
       <Project>{30988a11-a4f0-4fdc-82d5-41b87ea410be}</Project>
       <Name>CodeEnv.Master.Common.LocalResources</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="ClassDiagram1.cd" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

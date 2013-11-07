@@ -17,11 +17,12 @@
 namespace CodeEnv.Master.GameContent {
 
     using CodeEnv.Master.Common;
+    using UnityEngine;
 
     /// <summary>
     /// All the data associated with a particular Settlement in a System.
     /// </summary>
-    public class SettlementData : APropertyChangeTracking {
+    public class SettlementData : Data {
 
         private SettlementSize _settlementSize;
         public SettlementSize SettlementSize {
@@ -71,22 +72,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private float _health;
-        public float Health {
-            get { return _health; }
-            set {
-                SetProperty<float>(ref _health, value, "Health");
-            }
-        }
-
-        private float _maxHitPoints;
-        public float MaxHitPoints {
-            get { return _maxHitPoints; }
-            set {
-                SetProperty<float>(ref _maxHitPoints, value, "MaxHitPoints");
-            }
-        }
-
         private CombatStrength _strength;
         public CombatStrength Strength {
             get { return _strength; }
@@ -95,7 +80,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public SettlementData() { }
+        public SettlementData(Transform t, string name, float maxHitPoints, string parentName)
+            : base(t, name, maxHitPoints, parentName) { }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

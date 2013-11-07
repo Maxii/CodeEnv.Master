@@ -25,6 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class supporting graphics optimization for Ships, Fleets and Systems.
 /// </summary>
+[System.Obsolete]
 public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
 
     public enum Highlights {

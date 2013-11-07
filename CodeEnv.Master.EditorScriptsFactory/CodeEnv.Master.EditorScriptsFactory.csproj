@@ -51,6 +51,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\MyAStarPointGeneratorEditor.cs" />
     <Compile Include="ThirdParty\AEditorBase.cs" />
     <Compile Include="Generic\DrawBoundsGizmoEditor.cs" />
     <Compile Include="Generic\DebugSettingsWindow.cs" />
@@ -65,6 +66,16 @@
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">
       <Project>{1557c03e-56ee-4c70-9bd8-ab637d3191cf}</Project>
       <Name>CodeEnv.Master.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Plugins\AStarEditor\AStarEditor.csproj">
+      <Project>{89b92dfd-410d-4e95-bf4e-4a42868c5ae3}</Project>
+      <Name>AStarEditor</Name>
+      <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Plugins\AStar\AStar.csproj">
+      <Project>{7e32bd55-f315-4bde-885c-646841c273f7}</Project>
+      <Name>AStar</Name>
+      <Private>False</Private>
     </ProjectReference>
     <ProjectReference Include="..\CodeEnv.Master.Common.LocalResources\CodeEnv.Master.Common.LocalResources.csproj">
       <Project>{30988a11-a4f0-4fdc-82d5-41b87ea410be}</Project>

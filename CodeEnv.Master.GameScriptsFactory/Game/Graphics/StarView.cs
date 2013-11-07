@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: StarGraphics.cs
-//  Graphics manager for Stars derived from ItemGraphics.
+// File: StarView.cs
+// A class for managing the UI of a system's star.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,10 +18,35 @@ using CodeEnv.Master.Common;
 using UnityEngine;
 
 /// <summary>
-/// Graphics manager for Stars derived from ItemGraphics. 
-/// Assumes location on the same game object as the Star.
+/// A class for managing the UI of a system's star.
 /// </summary>
-public class StarGraphics : ItemGraphics {
+public class StarView : View {
+
+    protected new StarPresenter Presenter {
+        get { return base.Presenter as StarPresenter; }
+        set { base.Presenter = value; }
+    }
+
+    protected override void Awake() {
+        base.Awake();
+        circleScaleFactor = 0.6F;
+    }
+
+    protected override void InitializePresenter() {
+        Presenter = new StarPresenter(this);
+    }
+
+    protected override void OnHover(bool isOver) {
+        base.OnHover(isOver);
+        Presenter.OnHover(isOver);
+    }
+
+    protected override void OnClick() {
+        base.OnClick();
+        if (GameInputHelper.IsLeftMouseButton()) {
+            Presenter.OnLeftClick();
+        }
+    }
 
     protected override void RegisterComponentsToDisable() {
         base.RegisterComponentsToDisable();
@@ -41,6 +66,5 @@ public class StarGraphics : ItemGraphics {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
 }
 

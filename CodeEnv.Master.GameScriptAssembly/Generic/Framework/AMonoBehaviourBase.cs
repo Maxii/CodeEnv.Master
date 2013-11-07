@@ -48,7 +48,7 @@ public abstract class AMonoBehaviourBase : MonoBehaviour, IChangeTracking, INoti
     // even if the derived class doesn't declare them and call base.Event()
 
     protected virtual void Awake() {
-        useGUILayout = true;    // OPTIMIZE docs suggest = false for better performance
+        useGUILayout = false;    // OPTIMIZE docs suggest = false for better performance
         _transform = transform;
         LogEvent("Awake");
     }

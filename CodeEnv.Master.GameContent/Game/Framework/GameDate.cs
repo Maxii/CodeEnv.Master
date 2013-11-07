@@ -25,9 +25,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class GameDate : IGameDate {
 
-        private static int _daysPerYear = GeneralSettings.Instance.DaysPerYear;
-        private static float _daysPerSecond = GeneralSettings.Instance.DaysPerSecond;
-        private static int _startingYear = GeneralSettings.Instance.StartingYear;
+        public static int DaysPerYear = GeneralSettings.Instance.DaysPerYear;
+        public static float DaysPerSecond = GeneralSettings.Instance.DaysPerSecond;
+        public static int StartingYear = GeneralSettings.Instance.StartingYear;
 
         public int DayOfYear { get; private set; }
 
@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
         /// set to Day 1 of the starting year.
         /// </summary>
         public GameDate()
-            : this(Constants.One, _startingYear) {
+            : this(Constants.One, StartingYear) {
         }
 
         public GameDate(int dayOfYear, int year) {
@@ -54,9 +54,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         internal void SyncDateToGameClock(float gameClock) {
-            int elapsedDays = Mathf.FloorToInt(gameClock * _daysPerSecond);
-            Year = _startingYear + Mathf.FloorToInt(elapsedDays / _daysPerYear);
-            DayOfYear = 1 + (elapsedDays % _daysPerYear);
+            int elapsedDays = Mathf.FloorToInt(gameClock * DaysPerSecond);
+            Year = StartingYear + Mathf.FloorToInt(elapsedDays / DaysPerYear);
+            DayOfYear = 1 + (elapsedDays % DaysPerYear);
         }
 
         public override string ToString() {

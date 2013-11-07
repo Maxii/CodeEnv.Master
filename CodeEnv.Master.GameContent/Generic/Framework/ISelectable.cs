@@ -19,17 +19,12 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface that supports the ability to select a game object.
     /// </summary>
-    public interface ISelectable : IHasData {
+    public interface ISelectable {
 
         /// <summary>
         /// Gets or sets a value indicating whether this object [is selected].
         /// </summary>
         bool IsSelected { get; set; }
-
-        /// <summary>
-        /// Called when [left click].
-        /// </summary>
-        void OnLeftClick();
 
     }
 }

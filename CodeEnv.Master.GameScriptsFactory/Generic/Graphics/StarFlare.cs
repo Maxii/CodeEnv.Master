@@ -54,7 +54,8 @@ public class StarFlare : AMonoBehaviourBase {
             _flareLight = Instantiate<Light>(UsefulPrefabs.Instance.flareLight);
             //_flareLight.transform.parent = _transform;
             UnityUtility.AttachChildToParent(_flareLight.gameObject, _transform.gameObject);
-            float radiusOfStar = (gameObject.GetSafeMonoBehaviourComponentInParents<Star>().collider as SphereCollider).radius;
+            //float radiusOfStar = (gameObject.GetSafeMonoBehaviourComponentInParents<Star>().collider as SphereCollider).radius;
+            float radiusOfStar = (gameObject.GetSafeMonoBehaviourComponentInParents<StarView>().collider as SphereCollider).radius;
             Vector3 flareLightLocationBehindStar = Vector3.forward * (radiusOfStar + 2F);
             _flareLight.transform.localPosition = flareLightLocationBehindStar;
         }

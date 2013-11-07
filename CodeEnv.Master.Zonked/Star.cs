@@ -19,6 +19,7 @@ using UnityEngine;
 /// <summary>
 /// Manages a stationary Star.
 /// </summary>
+[System.Obsolete]
 public class Star : StationaryItem {
 
     private SystemGraphics _systemGraphics;

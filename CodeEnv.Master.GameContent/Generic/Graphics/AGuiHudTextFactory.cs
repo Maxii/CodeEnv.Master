@@ -238,10 +238,9 @@ namespace CodeEnv.Master.GameContent {
         public class ColoredTextList_Health : ColoredTextListBase {
 
             public ColoredTextList_Health(float health, float maxHp, string format = Constants.FormatFloat_1DpMax) {
-                float healthRatio = health / maxHp;
-                GameColor healthColor = (healthRatio > GeneralSettings.Instance.InjuredHealthThreshold) ? GameColor.Green :
-                            ((healthRatio > GeneralSettings.Instance.CriticalHealthThreshold) ? GameColor.Yellow : GameColor.Red);
-                string health_formatted = format.Inject(health);
+                GameColor healthColor = (health > GeneralSettings.Instance.InjuredHealthThreshold) ? GameColor.Green :
+                            ((health > GeneralSettings.Instance.CriticalHealthThreshold) ? GameColor.Yellow : GameColor.Red);
+                string health_formatted = format.Inject(health * 100);
                 string maxHp_formatted = format.Inject(maxHp);
                 _list.Add(new ColoredText(health_formatted, healthColor));
                 _list.Add(new ColoredText(maxHp_formatted, GameColor.Green));
