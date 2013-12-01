@@ -56,7 +56,12 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Framework\EngineRoom.cs" />
+    <Compile Include="Generic\Extensions\GameUtility.cs" />
+    <Compile Include="Generic\Framework\FleetOrders.cs" />
+    <Compile Include="Game\Gameplay\FleetState.cs" />
     <Compile Include="Generic\Framework\GameStatus.cs" />
+    <Compile Include="Generic\Framework\ITarget.cs" />
     <Compile Include="Generic\Graphics\A3DVectrosityBase.cs" />
     <Compile Include="Generic\Graphics\AVectrosityBase.cs" />
     <Compile Include="Generic\Graphics\CubeWireframe.cs" />
@@ -100,11 +105,10 @@
     <Compile Include="Game\Framework\GameDate.cs" />
     <Compile Include="Game\Framework\IGameDate.cs" />
     <Compile Include="Generic\Graphics\IHud.cs" />
-    <Compile Include="Generic\Graphics\INotifyVisibilityChanged.cs" />
+    <Compile Include="Generic\Graphics\ICameraLOSChangedClient.cs" />
     <Compile Include="Generic\IO\GeneralSettings.cs" />
     <Compile Include="Generic\IO\PlayerPrefsManager.cs" />
     <Compile Include="Game\GUI\GuiHudText.cs" />
-    <Compile Include="Game\Gameplay\Navigator.cs" />
     <Compile Include="Generic\Graphics\IGuiHud.cs" />
     <Compile Include="Game\GUI\GuiHudPublisher.cs" />
     <Compile Include="Game\Graphics\GuiHudTextFactory.cs" />
@@ -119,16 +123,32 @@
     <Compile Include="Game\Graphics\IFleetViewable.cs" />
     <Compile Include="Game\Graphics\ISystemViewable.cs" />
     <Compile Include="Generic\Graphics\IViewable.cs" />
+    <Compile Include="Game\Gameplay\PlanetoidData.cs" />
+    <Compile Include="Game\Gameplay\PlanetoidType.cs" />
+    <Compile Include="Game\Gameplay\StarData.cs" />
+    <Compile Include="Game\Gameplay\StarType.cs" />
+    <Compile Include="Game\Framework\SystemComposition.cs" />
+    <Compile Include="Game\Graphics\PlanetoidGuiHudTextFactory.cs" />
+    <Compile Include="Game\Graphics\StarGuiHudTextFactory.cs" />
+    <Compile Include="Game\Graphics\SettlementGuiHudTextFactory.cs" />
+    <Compile Include="Game\Gameplay\ShipState.cs" />
+    <Compile Include="Game\Graphics\IShipViewable.cs" />
+    <Compile Include="Generic\Framework\ShipOrders.cs" />
+    <Compile Include="Generic\Framework\ItemOrder.cs" />
+    <Compile Include="Generic\Framework\StationaryLocation.cs" />
+    <Compile Include="ThirdParty\ICoroutineManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\SystemData.cs" />
     <Compile Include="Game\Gameplay\ShipData.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
     <Compile Include="Generic\IO\ViewModeKeys.cs" />
     <Compile Include="Game\_Debug\VelocityRay.cs" />
+    <Compile Include="ThirdParty\Job.cs" />
+    <Compile Include="Generic\Framework\ANavigator.cs" />
+    <Compile Include="Game\Framework\ShipNavigator.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Generic\Math\" />
-    <Folder Include="ThirdParty\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeEnv.Master.Common.LocalResources\CodeEnv.Master.Common.LocalResources.csproj">

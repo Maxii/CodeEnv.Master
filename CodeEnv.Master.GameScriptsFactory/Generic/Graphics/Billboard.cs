@@ -23,7 +23,7 @@ using UnityEngine;
 /// Instantiable Base class that manages basic Billboard functionality - continuously facing the camera,
 /// filling out the attached label, if any.
 /// </summary>
-public class Billboard : AMonoBehaviourBase {
+public class Billboard : AMonoBase {
 
     protected Transform cameraTransform;
 
@@ -52,13 +52,8 @@ public class Billboard : AMonoBehaviourBase {
         return false;
     }
 
-    void Update() {
-        if (ToUpdate()) {
-            ProcessUpdate();
-        }
-    }
-
-    protected virtual void ProcessUpdate() {
+    protected override void OccasionalUpdate() {
+        base.OccasionalUpdate();
         UpdateFacing();
     }
 

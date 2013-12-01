@@ -46,10 +46,17 @@ namespace CodeEnv.Master.GameContent {
 
         private IDictionary<IPlayer, DiplomaticRelations> _diplomaticRelations;
 
+        /// <summary>
+        /// Initializes a new random instance of the <see cref="Player"/> class for testing.
+        /// </summary>
+        public Player()
+            : this(new Race(Enums<Races>.GetRandom(excludeDefault: true)), Enums<IQ>.GetRandom(excludeDefault: true)) { }
+
         public Player(Race race, IQ iq) {
             _race = race;
             IQ = iq;
             IsActive = true;
+            _diplomaticRelations = null;    // TODO gets rid of unused warning
         }
 
         public DiplomaticRelations GetRelations(IPlayer player) {

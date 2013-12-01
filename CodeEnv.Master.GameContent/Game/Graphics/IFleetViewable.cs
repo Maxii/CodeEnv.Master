@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -24,9 +25,14 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IFleetViewable : IViewable {
 
+        event Action onShowCompletion;
+
+        Transform TrackingTarget { set; }
+
         void ChangeFleetIcon(IIcon icon, GameColor color);
 
-        Transform Target { set; }
+        void ShowDying();
+
     }
 }
 

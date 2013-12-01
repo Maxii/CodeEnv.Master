@@ -20,11 +20,11 @@ using UnityEngine;
 /// <summary>
 /// Manages a Systems Orbital plane.
 /// </summary>
-public class OrbitalPlaneManager : AMonoBehaviourBase, ISelectable, ICameraTargetable, IZoomToFurthest {
+public class OrbitalPlaneManager : AMonoBase, ISelectable, ICameraTargetable, IZoomToFurthest {
 
     private GameEventManager _eventMgr;
     private Transform _transform;
-    private SystemManager _systemMgr;
+    private SystemCreator _systemMgr;
     private MeshRenderer _renderer;
 
     void Awake() {
@@ -32,7 +32,7 @@ public class OrbitalPlaneManager : AMonoBehaviourBase, ISelectable, ICameraTarge
         _transform = transform;
         _renderer = gameObject.GetComponentInChildren<MeshRenderer>();
         _eventMgr = GameEventManager.Instance;
-        _systemMgr = gameObject.GetSafeMonoBehaviourComponentInParents<SystemManager>();
+        _systemMgr = gameObject.GetSafeMonoBehaviourComponentInParents<SystemCreator>();
     }
 
     void OnHover(bool isOver) {

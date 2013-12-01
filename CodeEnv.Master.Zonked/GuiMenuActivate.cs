@@ -25,7 +25,7 @@ using CodeEnv.Master.Common.Unity;
 /// <summary>
 /// COMMENT 
 /// </summary>
-public class GuiMenuActivate : AMonoBehaviourBase {
+public class GuiMenuActivate : AMonoBase {
 
     UIButton[] childButtons;
 

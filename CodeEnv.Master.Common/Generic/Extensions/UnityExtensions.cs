@@ -17,8 +17,8 @@
 namespace CodeEnv.Master.Common {
 
     using System;
+    using System.Collections;
     using System.Linq;
-
     using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
 
@@ -27,27 +27,48 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public static class UnityExtensions {
 
-        #region GetSafeMonoBehaviour... Extensions
+        #region GetMonoBehaviour... Extensions
 
         /// <summary>
-        /// Returns the MonoBehaviour of Type T in the GameObject or any of its parents using.
+        /// Returns the MonoBehaviour of Type T in the GameObject or any of its parents.
         /// Logs a warning if the component cannot be found.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="go">The go.</param>
+        /// <param name="excludeSelf">if set to <c>true</c> [exclude self].</param>
         /// <returns></returns>
-        public static T GetSafeMonoBehaviourComponentInParents<T>(this GameObject go) where T : MonoBehaviour {
-            Transform parent = go.transform;
+        public static T GetSafeMonoBehaviourComponentInParents<T>(this GameObject go, bool excludeSelf = false) where T : MonoBehaviour {
+            Transform parent = excludeSelf ? go.transform.parent : go.transform;
             while (parent != null) {
                 T component = parent.gameObject.GetComponent<T>();
                 if (component != null) {
                     return component;
                 }
-                parent = parent.gameObject.transform.parent;
+                parent = parent.parent;
             }
             D.Warn(ErrorMessages.ComponentNotFound, typeof(T).Name, go.name);
             return null;
         }
+
+        /// <summary>
+        /// Returns the Component of Type T in the GameObject or any of its parents.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="go">The go.</param>
+        /// <param name="excludeSelf">if set to <c>true</c> [exclude self].</param>
+        /// <returns></returns>
+        public static T GetComponentInParents<T>(this GameObject go, bool excludeSelf = false) where T : Component {
+            Transform parent = excludeSelf ? go.transform.parent : go.transform;
+            while (parent != null) {
+                T component = parent.gameObject.GetComponent<T>();
+                if (component != null) {
+                    return component;
+                }
+                parent = parent.parent;
+            }
+            return null;
+        }
+
 
         /// <summary>
         /// Defensive GameObject.GetComponent&lt;&gt;() alternative for acquiring MonoBehaviours. 
@@ -133,19 +154,20 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Gets the first transform that contains an interface of Type I in this transform or any of its parents.
-        ///  Logs a warning if the transform cannot be found.
+        /// Logs a warning if the transform cannot be found.
         /// </summary>
         /// <typeparam name="I"></typeparam>
         /// <param name="t">The transform.</param>
+        /// <param name="excludeSelf">if set to <c>true</c> [exclude self].</param>
         /// <returns></returns>
-        public static Transform GetSafeTransformWithInterfaceInParents<I>(this Transform t) where I : class {
-            Transform parent = t;
+        public static Transform GetSafeTransformWithInterfaceInParents<I>(this Transform t, bool excludeSelf = false) where I : class {
+            Transform parent = excludeSelf ? t.parent : t;
             while (parent != null) {
                 I component = parent.gameObject.GetComponent(typeof(I)) as I;
                 if (component != null) {
                     return parent;
                 }
-                parent = parent.gameObject.transform.parent;
+                parent = parent.parent;
             }
             D.Warn(ErrorMessages.ComponentNotFound, typeof(I).Name, t.name);
             return null;
@@ -153,19 +175,20 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Gets the first interface of Type I in this transform or any of its parents.
-        ///  Logs a warning if the interface cannot be found.
+        /// Logs a warning if the interface cannot be found.
         /// </summary>
         /// <typeparam name="I"></typeparam>
         /// <param name="t">The transform.</param>
+        /// <param name="excludeSelf">if set to <c>true</c> [exclude self].</param>
         /// <returns></returns>
-        public static I GetSafeInterfaceInParents<I>(this Transform t) where I : class {
-            Transform parent = t;
+        public static I GetSafeInterfaceInParents<I>(this Transform t, bool excludeSelf = false) where I : class {
+            Transform parent = excludeSelf ? t.parent : t;
             while (parent != null) {
                 I component = parent.GetComponent(typeof(I)) as I;
                 if (component != null) {
                     return component;
                 }
-                parent = parent.gameObject.transform.parent;
+                parent = parent.parent;
             }
             D.Warn(ErrorMessages.ComponentNotFound, typeof(I).Name, t.name);
             return null;
@@ -173,13 +196,14 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Gets the first interface of Type I in this gameobject or any of its parents.
-        ///  Logs a warning if the interface cannot be found.
+        /// Logs a warning if the interface cannot be found.
         /// </summary>
         /// <typeparam name="I"></typeparam>
         /// <param name="go">The gameobject.</param>
+        /// <param name="excludeSelf">if set to <c>true</c> [exclude self].</param>
         /// <returns></returns>
-        public static I GetSafeInterfaceInParents<I>(this GameObject go) where I : class {
-            return go.transform.GetSafeInterfaceInParents<I>();
+        public static I GetSafeInterfaceInParents<I>(this GameObject go, bool excludeSelf = false) where I : class {
+            return go.transform.GetSafeInterfaceInParents<I>(excludeSelf);
         }
 
 
@@ -311,6 +335,7 @@ namespace CodeEnv.Master.Common {
 
         #endregion
 
+
         /// <summary>
         /// Gets the current OnScreen diameter in pixels of this collider. Can be Zero if not
         /// on the screen. WARNING: Do not use to scale an object
@@ -335,12 +360,12 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Determines whether this renderer is visible from (and therefore rendered by) the provided camera.
+        /// Determines whether this renderer is in the line of sight of (and therefore rendered by) the provided camera.
         /// </summary>
         /// <param name="renderer">The renderer.</param>
         /// <param name="camera">The camera.</param>
         /// <returns></returns>
-        public static bool IsVisibleFrom(this Renderer renderer, Camera camera) {
+        public static bool InLineOfSightOf(this Renderer renderer, Camera camera) {
             Plane[] frustrumPlanes = GeometryUtility.CalculateFrustumPlanes(camera);
             return GeometryUtility.TestPlanesAABB(frustrumPlanes, renderer.bounds);
         }

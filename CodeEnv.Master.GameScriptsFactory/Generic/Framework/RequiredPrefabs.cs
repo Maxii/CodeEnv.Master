@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: RequiredPrefabs.cs
-// Singleton container that holds some of the prefabs gauranteed to be used in this startScene. 
+// Singleton container that holds prefabs that are gauranteed to be used in the GameScene.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,18 +17,26 @@ using CodeEnv.Master.Common;
 using UnityEngine;
 
 /// <summary>
-/// Singleton container that holds prefabs that are gauranteed to be used in this startScene.
+/// Singleton container that holds prefabs that are gauranteed to be used in the GameScene.
 /// </summary>
 /// <remarks>
 /// I think these are a real reference to the prefab in the Project view, not a separate instance
 /// clone of the Prefab in the startScene. As such, they must be Instantiated before use.
 /// </remarks>
-public class RequiredPrefabs : AMonoBehaviourBaseSingletonInstanceIdentity<RequiredPrefabs> {
+public class RequiredPrefabs : AMonoBaseSingleton<RequiredPrefabs> {
 
-    public SphereCollider UniverseEdgePrefab;
-    public Transform CameraDummyTargetPrefab;
-    public GuiTrackingLabel GuiTrackingLabelPrefab;
-    public Sector SectorPrefab;
+    public SphereCollider universeEdge;
+    public Transform cameraDummyTarget;
+    public GuiTrackingLabel guiTrackingLabel;
+    public Sector sector;
+
+    public FleetItem fleetCmd;
+    public ShipItem[] ships;
+
+    public SystemItem system; // without the star and settlement
+    public StarItem[] stars;
+    public GameObject[] planets;
+    public GameObject[] settlements;
 
     protected override void Awake() {
         base.Awake();

@@ -16,13 +16,15 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 
 /// <summary>
 /// Singleton. Generic MonoBehaviour Singleton with IInstanceIdentity functionality incorporated. Clients wishing
 /// IInstanceIdentity functionality have no obligations except to inherit from this. 
 /// </summary>
-public class AMonoBehaviourBaseSingletonInstanceIdentity<T> : AMonoBehaviourBaseSingleton<T>, IInstanceIdentity where T : AMonoBehaviourBase {
+[Obsolete]
+public abstract class AMonoBehaviourBaseSingletonInstanceIdentity<T> : AMonoBaseSingleton<T>, IInstanceIdentity where T : AMonoBase {
 
     private string _instanceID;
 

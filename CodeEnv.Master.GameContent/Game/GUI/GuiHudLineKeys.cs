@@ -25,11 +25,28 @@ namespace CodeEnv.Master.GameContent {
         Name,
         ParentName,
         IntelState,
+
+        /// <summary>
+        ///  Info key for distance in Units from the camera. 
+        /// Intended to become distance from Selected.
+        /// </summary>
         Distance,
+
+        /// <summary>
+        ///  Info key for facility?/production? capacity...
+        /// </summary>
         Capacity,
+
+        /// <summary>
+        ///  Info key for density of standard resources.
+        /// </summary>
         Resources,
+
+        /// <summary>
+        /// Info key for density of special resources, if any.
+        /// </summary>
         Specials,
-        SettlementSize,
+
         SettlementDetails,
         Owner,
         Health,
@@ -38,8 +55,13 @@ namespace CodeEnv.Master.GameContent {
         Speed,
         Composition,
         CompositionDetails,
-        ShipSize,
-        ShipDetails
+        ShipDetails,
+
+        /// <summary>
+        ///  Info key for a type - PlanetoidType, StarType,
+        ///  SettlementSize, ShipHull.
+        /// </summary>
+        Type
     }
 }
 

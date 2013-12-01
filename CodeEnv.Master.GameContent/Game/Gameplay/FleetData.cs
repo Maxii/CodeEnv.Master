@@ -115,25 +115,16 @@ namespace CodeEnv.Master.GameContent {
         private IList<ShipData> _shipsData;
         private IDictionary<ShipData, IList<IDisposable>> _subscribers;
 
-        public FleetData(Transform fleetCommand, string fleetName)
-            : base(fleetCommand, fleetName, maxHitPoints: Constants.ZeroF) {
+        public FleetData(string fleetName)
+            : base(fleetName, maxHitPoints: Constants.ZeroF) {
             // A fleets maxHitPoints are constructed from the sum of the ships in the fleet
-            __FixNames(fleetName);
             InitializeCollections();
-        }
-
-        private void __FixNames(string fleetName) {
-            _transform.name = "FleetCommand";
-            _transform.parent.name = fleetName;
         }
 
         private void InitializeCollections() {
             _shipsData = new List<ShipData>();
             Composition = new FleetComposition();
-        }
-
-        protected override void OnNameChanged() {
-            __FixNames(Name);
+            _subscribers = new Dictionary<ShipData, IList<IDisposable>>();
         }
 
         private void OnOwnerChanged() {
@@ -206,8 +197,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private void UpdatePropertiesDerivedFromTotalFleet() {
             UpdateStrength();
+            UpdateMaxHitPoints();   // must preceed current as current uses max as a clamp
             UpdateCurrentHitPoints();
-            UpdateMaxHitPoints();
             UpdateMaxSpeed();
             UpdateMaxTurnRate();
         }
@@ -249,14 +240,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region ShipData PropertyChanged Subscription and Methods
+
         private void Subscribe(ShipData shipData) {
-            if (_subscribers == null) {
-                _subscribers = new Dictionary<ShipData, IList<IDisposable>>();
-            }
             _subscribers.Add(shipData, new List<IDisposable>());
             IList<IDisposable> shipSubscriptions = _subscribers[shipData];
-            shipSubscriptions.Add(shipData.SubscribeToPropertyChanged<Data, float>(sd => sd.CurrentHitPoints, OnShipCurrentHitPointsChanged));
-            shipSubscriptions.Add(shipData.SubscribeToPropertyChanged<Data, float>(sd => sd.MaxHitPoints, OnShipMaxHitPointsChanged));
+            shipSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(sd => sd.CurrentHitPoints, OnShipCurrentHitPointsChanged));
+            shipSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(sd => sd.MaxHitPoints, OnShipMaxHitPointsChanged));
             shipSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(sd => sd.MaxSpeed, OnShipMaxSpeedChanged));
             shipSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(sd => sd.MaxTurnRate, OnShipMaxTurnRateChanged));
             shipSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, CombatStrength>(sd => sd.Strength, OnShipStrengthChanged));

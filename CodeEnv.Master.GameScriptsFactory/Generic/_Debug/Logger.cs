@@ -20,7 +20,7 @@ using UnityEngine;
 /// Logger under Management with enabled button for use in controlling log messages
 // within scripts. Use D.Log for all non-scripts.
 /// </summary>
-public class Logger : AMonoBehaviourBaseSingletonInstanceIdentity<Logger> {
+public class Logger : AMonoBaseSingleton<Logger> {
 
     public bool enableScriptLogging;
 

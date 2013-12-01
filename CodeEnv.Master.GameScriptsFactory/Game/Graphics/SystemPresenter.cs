@@ -35,14 +35,14 @@ public class SystemPresenter : Presenter {
         get { return base.View as ISystemViewable; }
     }
 
-    private IViewable[] _celestialObjectViewsInSystem;
+    private IViewable[] _childViewsInSystem;
 
     public SystemPresenter(IViewable view)
         : base(view) {
-        _celestialObjectViewsInSystem = _viewGameObject.GetSafeInterfacesInChildren<IViewable>().Except(view).ToArray();
+        _childViewsInSystem = _viewGameObject.GetSafeInterfacesInChildren<IViewable>().Except(view).ToArray();
     }
 
-    protected override void InitilizeItemReference() {
+    protected override void InitilizeItemLinkage() {
         Item = UnityUtility.ValidateMonoBehaviourPresence<SystemItem>(_viewGameObject);
     }
 
@@ -50,12 +50,16 @@ public class SystemPresenter : Presenter {
         View.HudPublisher = new GuiHudPublisher<SystemData>(Item.Data);
     }
 
-    protected override void SubscribeToItemDataChanged() {
-        _subscribers.Add(Item.SubscribeToPropertyChanged<SystemItem, SystemData>(i => i.Data, OnItemDataChanged));
+    public void OnPressWhileSelected(bool isDown) {
+        OnPressRequestContextMenu(isDown);
     }
 
-    public void OnPressWhileSelected(bool isDown) {
-        CameraControl.Instance.ShowContextMenuOnPress(isDown);
+    private void OnPressRequestContextMenu(bool isDown) {
+        SettlementData settlement = Item.Data.Settlement;
+        //D.Log("Settlement null = {0}, isHumanOwner = {1}.", settlement == null, settlement.Owner.IsHuman);
+        if (settlement != null && (DebugSettings.Instance.AllowEnemyOrders || settlement.Owner.IsHuman)) {
+            CameraControl.Instance.ShowContextMenuOnPress(isDown);
+        }
     }
 
     public void OnIsSelected() {
@@ -63,7 +67,7 @@ public class SystemPresenter : Presenter {
     }
 
     public void OnPlayerIntelLevelChanged() {
-        _celestialObjectViewsInSystem.ForAll<IViewable>(cov => cov.PlayerIntelLevel = View.PlayerIntelLevel);
+        _childViewsInSystem.ForAll<IViewable>(cov => cov.PlayerIntelLevel = View.PlayerIntelLevel);
     }
 
     public GuiTrackingLabel InitializeTrackingLabel() {
@@ -71,6 +75,20 @@ public class SystemPresenter : Presenter {
         Vector3 pivotOffset = new Vector3(Constants.ZeroF, starView.transform.collider.bounds.extents.y, Constants.ZeroF);
         GuiTrackingLabel trackingLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(_viewGameObject.transform, pivotOffset);
         return trackingLabel;
+    }
+
+    protected override void OnItemDeath(ItemDeathEvent e) {
+        if ((e.Source as SystemItem) == Item) {
+            CleanupOnDeath();
+        }
+    }
+
+    protected override void CleanupOnDeath() {
+        base.CleanupOnDeath();
+        if ((View as ISelectable).IsSelected) {
+            SelectionManager.Instance.CurrentSelection = null;
+        }
+        // TODO initiate death of the system
     }
 
     public override string ToString() {

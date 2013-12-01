@@ -21,11 +21,11 @@ using CodeEnv.Master.Common.Unity;
 /// </summary>
 public class FleetAdmiralIcon : FollowableItem, ISelectable {
 
-    private FleetManager _fleetMgr;
+    private FleetCreator _fleetMgr;
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        _fleetMgr = _transform.parent.parent.gameObject.GetSafeMonoBehaviourComponent<FleetManager>();
+        _fleetMgr = _transform.parent.parent.gameObject.GetSafeMonoBehaviourComponent<FleetCreator>();
     }
 
     //protected override void __InitializeData() {

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FleetComposition.cs
-// Wrapper for Fleet Composition dictionary.
+//  Wrapper for Fleet Composition dictionary containing shipData.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Wrapper for Fleet Composition dictionary.
+    /// Wrapper for Fleet Composition dictionary containing shipData.
     /// </summary>
     public class FleetComposition {
 
@@ -40,40 +40,48 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Copy Constructor. Initializes a new instance of the <see cref="FleetComposition"/> class.
         /// </summary>
-        /// <param name="fleetCompositionToCopy">The fleet composition to copy.</param>
-        public FleetComposition(FleetComposition fleetCompositionToCopy) {
-            _composition = fleetCompositionToCopy._composition;
+        /// <param name="compositionToCopy">The fleet composition to copy.</param>
+        public FleetComposition(FleetComposition compositionToCopy) {
+            _composition = compositionToCopy._composition;
             // UNCLEAR does fleetCompositionToCopy get collected by the garbage collector now?
         }
 
-        public bool AddShip(ShipData shipData) {
-            ShipHull hull = shipData.Hull;
+        public bool AddShip(ShipData data) {
+            ShipHull hull = data.Hull;
             if (!_composition.ContainsKey(hull)) {
                 _composition.Add(hull, new List<ShipData>());
             }
-            if (_composition[hull].Contains(shipData)) {
+            if (_composition[hull].Contains(data)) {
                 return false;
             }
-            _composition[hull].Add(shipData);
+            _composition[hull].Add(data);
             return true;
         }
 
-        public bool RemoveShip(ShipData shipData) {
-            ShipHull hull = shipData.Hull;
-            bool isRemoved = _composition[hull].Remove(shipData);
+        public bool RemoveShip(ShipData data) {
+            ShipHull hull = data.Hull;
+            bool isRemoved = _composition[hull].Remove(data);
             if (_composition[hull].Count == Constants.Zero) {
-                _composition[hull] = null;
+                _composition.Remove(hull);
             }
             return isRemoved;
         }
 
-        public bool ContainsShip(ShipData shipData) {
-            ShipHull hull = shipData.Hull;
-            return _composition[hull].Contains(shipData);
+        public bool ContainsShip(ShipData data) {
+            ShipHull hull = data.Hull;
+            return _composition[hull].Contains(data);
         }
 
         public IList<ShipData> GetShipData(ShipHull hull) {
             return _composition[hull];
+        }
+
+        public IEnumerable<ShipData> GetShipData() {
+            IEnumerable<ShipData> allData = new List<ShipData>();
+            foreach (var hull in Hulls) {
+                allData = allData.Concat(GetShipData(hull));
+            }
+            return allData;
         }
 
         public override string ToString() {

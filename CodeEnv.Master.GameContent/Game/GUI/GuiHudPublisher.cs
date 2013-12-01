@@ -30,11 +30,14 @@ namespace CodeEnv.Master.GameContent {
     /// <typeparam name="DataType">The type of Data used.</typeparam>
     public class GuiHudPublisher<DataType> : AGuiHudPublisher, IGuiHudPublisher, IDisposable where DataType : Data {
 
-        public bool IsHudShowing { get; private set; }
+        public bool IsHudShowing {
+            get { return _job != null && _job.IsRunning; }
+        }
 
         private static IGuiHudTextFactory<DataType> _guiHudTextFactory;
 
         private GuiHudText _guiCursorHudText;
+        private Job _job;
         private DataType _data;
         private GuiHudLineKeys[] _optionalKeys;
         private IList<IDisposable> _subscribers;
@@ -63,10 +66,32 @@ namespace CodeEnv.Master.GameContent {
             _hudRefreshRate *= speedChangeRatio;
         }
 
-        public IEnumerator DisplayHudAtCursor(IntelLevel intelLevel) {
-            PrepareHudText(intelLevel);
-            IsHudShowing = true;
-            while (IsHudShowing) {
+        /// <summary>
+        /// Shows or hides a current GuiCursorHudText
+        /// instance containing the text to display at the cursor.
+        /// </summary>
+        /// <param name="toShow">if set to <c>true</c> shows the hud, otherwise hides it.</param>
+        /// <param name="intelLevel">The intel level.</param>
+        public void ShowHud(bool toShow, IntelLevel intelLevel) {
+            if (toShow) {
+                PrepareHudText(intelLevel);
+                if (_job == null) {
+                    _job = new Job(DisplayHudAtCursor(intelLevel), toStart: true, onJobComplete: delegate {
+                        // TODO
+                    });
+                }
+                else if (!_job.IsRunning) {
+                    _job.Start();
+                }
+            }
+            else if (_job != null && _job.IsRunning) {
+                _job.Kill();
+                _guiCursorHud.Clear();
+            }
+        }
+
+        private IEnumerator DisplayHudAtCursor(IntelLevel intelLevel) {
+            while (true) {
                 UpdateGuiCursorHudText(intelLevel, GuiHudLineKeys.Distance);
                 if (intelLevel == IntelLevel.OutOfDate) {
                     UpdateGuiCursorHudText(IntelLevel.OutOfDate, GuiHudLineKeys.IntelState);
@@ -104,15 +129,11 @@ namespace CodeEnv.Master.GameContent {
             _optionalKeys = optionalKeys;
         }
 
-        public void ClearHud() {
-            if (IsHudShowing) {
-                IsHudShowing = false;
-                _guiCursorHud.Clear();
-            }
-        }
-
         private void Cleanup() {
-            ClearHud();
+            _guiCursorHud.Clear();
+            if (_job != null) {
+                _job.Kill();
+            }
             Unsubscribe();
         }
 

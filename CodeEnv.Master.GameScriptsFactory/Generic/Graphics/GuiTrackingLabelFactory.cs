@@ -58,7 +58,7 @@ public class GuiTrackingLabelFactory : AGenericSingleton<GuiTrackingLabelFactory
     /// <param name="offsetFromPivot">The offset from pivot point in Viewport coordinates.</param>
     /// <returns></returns>
     public GuiTrackingLabel CreateGuiTrackingLabel(Transform target, Vector3 pivotOffset, Vector3 offsetFromPivot) {
-        GameObject guiTrackingLabelPrefab = RequiredPrefabs.Instance.GuiTrackingLabelPrefab.gameObject;
+        GameObject guiTrackingLabelPrefab = RequiredPrefabs.Instance.guiTrackingLabel.gameObject;
         if (guiTrackingLabelPrefab == null) {
             D.Error("Prefab of Type {0} is not present.".Inject(typeof(GuiTrackingLabel).Name));
             return null;

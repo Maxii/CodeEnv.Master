@@ -20,7 +20,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract Singleton Base class for HUDs drawn by the Gui Camera.
 /// </summary>
-public abstract class AHud<T> : AMonoBehaviourBaseSingleton<T>, IHud where T : AHud<T> {
+public abstract class AHud<T> : AMonoBaseSingleton<T>, IHud where T : AHud<T> {
 
     // Camera used to draw this HUD
     public Camera uiCamera;
@@ -38,15 +38,6 @@ public abstract class AHud<T> : AMonoBehaviourBaseSingleton<T>, IHud where T : A
         }
     }
 
-    void Update() {
-        if (ToUpdate()) {
-            UpdatePosition();
-        }
-    }
-
-    /// <summary>
-    /// Move the HUD to track an object. Default remains stationary.
-    /// </summary>
     protected virtual void UpdatePosition() { }
 
     public void SetPivot(UIWidget.Pivot pivot) {

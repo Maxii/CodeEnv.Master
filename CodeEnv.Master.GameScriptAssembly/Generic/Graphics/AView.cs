@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class managing the UI for its object. 
 /// </summary>
-public abstract class AView : AMonoBehaviourBase, IViewable, INotifyVisibilityChanged, ICameraTargetable, IDisposable {
+public abstract class AView : AMonoBase, IViewable, ICameraLOSChangedClient, ICameraTargetable, IDisposable {
 
     public enum Highlights {
 
@@ -55,20 +55,20 @@ public abstract class AView : AMonoBehaviourBase, IViewable, INotifyVisibilityCh
 
     }
 
-    protected float _size;
+    protected float _radius;
     /// <summary>
-    /// The [float] size of this object in units measured as the distance from the 
-    /// min extent to the max extent. As bounds is a bounding box it is the longest 
-    /// diagonal between corners of the box. Most of the time, the collider can be
+    /// The [float] radius of this object in units measured as the distance from the 
+    ///center to the min or max extent. As bounds is a bounding box it is the longest 
+    /// diagonal from the center to a corner of the box. Most of the time, the collider can be
     /// used to calculate this size, assuming it doesn't change size dynmaically. 
     /// Alternatively, a mesh can be used.
     /// </summary>
-    protected virtual float Size {
+    public virtual float Radius {
         get {
-            if (_size == Constants.ZeroF) {
-                _size = collider.bounds.extents.magnitude * 2F; // Avoid cached _collider as Awake may not have run yet
+            if (_radius == Constants.ZeroF) {
+                _radius = _collider.bounds.extents.magnitude;
             }
-            return _size;
+            return _radius;
         }
     }
 
@@ -94,12 +94,15 @@ public abstract class AView : AMonoBehaviourBase, IViewable, INotifyVisibilityCh
     /// </summary>
     protected GameObject[] disableGameObjectOnCameraDistance;
 
-    private IList<Transform> _visibleMeshes = new List<Transform>();    // OPTIMIZE can be simplified to simple incrementing/decrementing counter
+    protected Collider _collider;
+
+    private IList<Transform> _meshesInCameraLOS = new List<Transform>();    // OPTIMIZE can be simplified to simple incrementing/decrementing counter
 
     protected override void Awake() {
         base.Awake();
-        UnityUtility.ValidateComponentPresence<Collider>(gameObject);
+        _collider = UnityUtility.ValidateComponentPresence<Collider>(gameObject);
         UpdateRate = FrameUpdateFrequency.Seldom;
+        enabled = false;
     }
 
     protected override void Start() {
@@ -114,31 +117,24 @@ public abstract class AView : AMonoBehaviourBase, IViewable, INotifyVisibilityCh
     /// </summary>
     protected abstract void RegisterComponentsToDisable();
 
-    protected virtual void Update() {
-        if (ToUpdate()) {
-            OnToUpdate();
-        }
-    }
-
-    protected virtual void OnToUpdate() {
+    protected override void OccasionalUpdate() {
+        base.OccasionalUpdate();
         EnableBasedOnDistanceToCamera();
     }
 
     protected virtual void OnHover(bool isOver) {
-        DisplayHud(isOver);
+        ShowHud(isOver);
     }
 
     protected virtual void OnPlayerIntelLevelChanged() {
         if (HudPublisher != null && HudPublisher.IsHudShowing) {
-            // it is currently showing so reinitialize it with new settings
-            HudPublisher.ClearHud();
-            DisplayHud(true);
+            ShowHud(true);
         }
     }
 
-    protected virtual void OnIsVisibleChanged() {
-        EnableBasedOnDiscernible(IsVisible);
-        EnableBasedOnDistanceToCamera(IsVisible);
+    protected virtual void OnInCameraLOSChanged() {
+        EnableBasedOnDiscernible(InCameraLOS);
+        EnableBasedOnDistanceToCamera(InCameraLOS);
         AssessHighlighting();
     }
 
@@ -196,34 +192,31 @@ public abstract class AView : AMonoBehaviourBase, IViewable, INotifyVisibilityCh
         }
     }
 
-    private void OnAMeshVisibilityChanged(Transform sender, bool isVisible) {
-        if (isVisible) {
+    private void OnMeshNotifingCameraLOSChanged(Transform sender, bool inLOS) {
+        if (inLOS) {
             // removed assertion tests and warnings as it will take a while to get the lists and state in sync
-            if (!_visibleMeshes.Contains(sender)) {
-                _visibleMeshes.Add(sender);
+            if (!_meshesInCameraLOS.Contains(sender)) {
+                _meshesInCameraLOS.Add(sender);
             }
         }
         else {
-            _visibleMeshes.Remove(sender);
+            _meshesInCameraLOS.Remove(sender);
             // removed assertion tests and warnings as it will take a while to get the lists and state in sync
         }
 
-        if (IsVisible == (_visibleMeshes.Count == 0)) {
+        if (InCameraLOS == (_meshesInCameraLOS.Count == 0)) {
             // visibility state of this object should now change
-            IsVisible = !IsVisible;
-            D.Log("{0} isVisible changed to {1}.", gameObject.name, IsVisible);
+            InCameraLOS = !InCameraLOS;
+            D.Log("{0}.InCameraLOS changed to {1}.", gameObject.name, InCameraLOS);
         }
     }
 
-    private void DisplayHud(bool toDisplay) {
+    private void ShowHud(bool toShow) {
         if (HudPublisher != null) {
-            if (toDisplay) {
-                StartCoroutine(HudPublisher.DisplayHudAtCursor(PlayerIntelLevel));
-            }
-            else {
-                HudPublisher.ClearHud();
-            }
+            HudPublisher.ShowHud(toShow, PlayerIntelLevel);
+            return;
         }
+        D.Warn("{0} HudPublisher is null.", gameObject.name);
     }
 
     protected override void OnDestroy() {
@@ -253,16 +246,16 @@ public abstract class AView : AMonoBehaviourBase, IViewable, INotifyVisibilityCh
 
     #endregion
 
-    #region INotifyVisibilityChanged Members
+    #region ICameraLOSChangedClient Members
 
-    private bool _isVisible = true; // everyone starts out thinking they are visible as it controls the enabled/activated state of key components
-    public bool IsVisible {
-        get { return _isVisible; }
-        private set { SetProperty<bool>(ref _isVisible, value, "IsVisible", OnIsVisibleChanged); }
+    private bool _inCameraLOS = true; // everyone starts out thinking they are visible as it controls the enabled/activated state of key components
+    public bool InCameraLOS {
+        get { return _inCameraLOS; }
+        private set { SetProperty<bool>(ref _inCameraLOS, value, "InCameraLOS", OnInCameraLOSChanged); }
     }
 
-    public void NotifyVisibilityChanged(Transform sender, bool isVisible) {
-        OnAMeshVisibilityChanged(sender, isVisible);
+    public void NotifyCameraLOSChanged(Transform sender, bool inLOS) {
+        OnMeshNotifingCameraLOSChanged(sender, inLOS);
     }
 
     #endregion
@@ -274,7 +267,7 @@ public abstract class AView : AMonoBehaviourBase, IViewable, INotifyVisibilityCh
     }
 
     [SerializeField]
-    protected float minimumCameraViewingDistanceMultiplier = 2.0F;
+    protected float minimumCameraViewingDistanceMultiplier = 4.0F;
 
     private float _minimumCameraViewingDistance;
     public float MinimumCameraViewingDistance {
@@ -291,7 +284,7 @@ public abstract class AView : AMonoBehaviourBase, IViewable, INotifyVisibilityCh
     /// </summary>
     /// <returns></returns>
     protected virtual float CalcMinimumCameraViewingDistance() {
-        return Size * minimumCameraViewingDistanceMultiplier;
+        return Radius * minimumCameraViewingDistanceMultiplier;
     }
 
     #endregion

@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -18,7 +18,6 @@ namespace CodeEnv.Master.Common {
 
     using System;
     using System.Diagnostics;
-
     using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
 
@@ -41,8 +40,14 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// Compares the direction of 2 vectors for equality, ignoring their magnitude.
         /// </summary>
-        public static bool IsSameDirection(this Vector3 source, Vector3 v) {
-            return Vector3.Angle(source, v) < .01F;
+        /// <param name="source">The source direction.</param>
+        /// <param name="v">The direction to compare the source to.</param>
+        /// <param name="degreeTolerance">The tolerance of the comparison in degrees.</param>
+        /// <returns></returns>
+        public static bool IsSameDirection(this Vector3 source, Vector3 v, float degreeTolerance) {
+            float angle = Vector3.Angle(source, v);
+            D.Log("Angle = {0} degrees.", angle);
+            return angle < degreeTolerance;
         }
 
         public static Color ToUnityColor(this GameColor color) {

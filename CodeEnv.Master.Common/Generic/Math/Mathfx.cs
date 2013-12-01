@@ -98,7 +98,8 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Will return the nearest point on a line to a point. Useful for making an object follow a track.
+        /// Will return the nearest point on a 'virtual' line to a point. The line is treated as having infinite magnitude
+        /// so the nearest point on this 'virtual' line can be way beyond lineEnd. Useful for making an object follow a track.
         /// </summary>
         /// <param name="lineStart">The line start.</param>
         /// <param name="lineEnd">The line end.</param>
@@ -106,12 +107,13 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         public static Vector3 NearestPoint(Vector3 lineStart, Vector3 lineEnd, Vector3 point) {
             Vector3 lineDirection = Vector3.Normalize(lineEnd - lineStart);
-            float closestPoint = Vector3.Dot((point - lineStart), lineDirection) / Vector3.Dot(lineDirection, lineDirection);
+            float closestPoint = Vector3.Dot((point - lineStart), lineDirection); //WASTE OF CPU POWER - This is always ONE -- Vector3.Dot(lineDirection,lineDirection);
             return lineStart + (closestPoint * lineDirection);
         }
 
         /// <summary>
-        /// Works like NearestPoint except the end of the line is clamped.
+        /// Works like NearestPoint except the line is NOT treated as infinite. The point returned is the 
+        /// nearest point on the line that ends at lineEnd.
         /// </summary>
         /// <param name="lineStart">The line start.</param>
         /// <param name="lineEnd">The line end.</param>
@@ -120,8 +122,26 @@ namespace CodeEnv.Master.Common {
         public static Vector3 NearestPointStrict(Vector3 lineStart, Vector3 lineEnd, Vector3 point) {
             Vector3 fullDirection = lineEnd - lineStart;
             Vector3 lineDirection = Vector3.Normalize(fullDirection);
-            float closestPoint = Vector3.Dot((point - lineStart), lineDirection) / Vector3.Dot(lineDirection, lineDirection);
+            float closestPoint = Vector3.Dot((point - lineStart), lineDirection); //WASTE OF CPU POWER - This is always ONE -- Vector3.Dot(lineDirection,lineDirection);
             return lineStart + (Mathf.Clamp(closestPoint, 0.0f, Vector3.Magnitude(fullDirection)) * lineDirection);
+        }
+
+
+        /// <summary>
+        /// Returns the percentage distance along the line where the nearest point on the line is located.
+        /// 1.0 = 100%. The value can be greater than 1.0 if point is beyond lineEnd.
+        /// </summary>
+        /// <param name="lineStart">The line start.</param>
+        /// <param name="lineEnd">The line end.</param>
+        /// <param name="point">The point.</param>
+        /// <returns></returns>
+        public static float NearestPointFactor(Vector3 lineStart, Vector3 lineEnd, Vector3 point) {
+            Vector3 lineDirection = lineEnd - lineStart;
+            float lineMagnitude = lineDirection.magnitude;
+            lineDirection /= lineMagnitude;    // normalized direction
+
+            float closestPoint = Vector3.Dot((point - lineStart), lineDirection); //Vector3.Dot(lineDirection,lineDirection);
+            return closestPoint / lineMagnitude;
         }
 
         /// <summary>
@@ -188,6 +208,24 @@ namespace CodeEnv.Master.Common {
 
             // Debug.Log("Start: "  + start + "   End: " + end + "  Value: " + value + "  Half: " + half + "  Diff: " + diff + "  Retval: " + retval);
             return retval;
+        }
+
+        /// <summary>
+        /// Returns a collection of Vector3 points (y = 0) that are uniformly distributed around a circle in the xz plane.
+        /// </summary>
+        /// <param name="radius">The radius.</param>
+        /// <param name="numberOfPoints">The number of points.</param>
+        /// <returns></returns>
+        public static Vector3[] UniformPointsOnCircle(float radius, int numberOfPoints) {
+            Vector3[] points = new Vector3[numberOfPoints];
+            float twoPi = (float)(2F * Math.PI);
+            float startAngleInRadians = UnityEngine.Random.Range(0F, twoPi);
+            for (int i = 0; i < numberOfPoints; i++) {
+                float x = radius * Mathf.Cos((i * twoPi / (float)numberOfPoints) + startAngleInRadians);
+                float z = radius * Mathf.Sin((i * twoPi / (float)numberOfPoints) + startAngleInRadians);
+                points[i] = new Vector3(x, 0F, z);
+            }
+            return points;
         }
     }
 }

@@ -62,15 +62,15 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// Adds the listener's EventHandler method to the list listening for AGameEvent T.
         /// Usage on MonoBehaviours:
-        ///     void OnEnable() {
-        ///        GameEventManager.instance.AddListener&lt;GameEventSubclass&gt;(EventHandlerMethodName);
-        ///     }
-        ///     
-        ///     void EventHandlerMethodName(GameEventSubclass event) {
-        ///         handle event...
-        ///     }
+        /// void OnEnable() {
+        /// GameEventManager.instance.AddListener&lt;GameEventSubclass&gt;(EventHandlerMethodName);
+        /// }
+        /// void EventHandlerMethodName(GameEventSubclass event) {
+        /// handle event...
+        /// }
         /// </summary>
         /// <typeparam name="T">The Type of AGameEvent.</typeparam>
+        /// <param name="source">The source.</param>
         /// <param name="listener">The EventDelegate encapsulating the listener's EventHandler method.</param>
         public void AddListener<T>(System.Object source, EventDelegate<T> listener) where T : AGameEvent {
             Delegate delegateWithInvocationList;
@@ -112,15 +112,15 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// Removes the listener's EventHandler method from the list listening for AGameEvent T.
         /// Usage on MonoBehaviours:
-        ///     void OnDisable() {
-        ///        GameEventManager.instance.RemoveListener&lt;GameEventSubclass&gt;(EventHandlerMethodName);
-        ///     }
-        ///    
-        ///     void EventHandlerMethodName(GameEventSubclass event) {
-        ///         handle event...
-        ///     }
+        /// void OnDisable() {
+        /// GameEventManager.instance.RemoveListener&lt;GameEventSubclass&gt;(EventHandlerMethodName);
+        /// }
+        /// void EventHandlerMethodName(GameEventSubclass event) {
+        /// handle event...
+        /// }
         /// </summary>
         /// <typeparam name="T">The Type of AGameEvent.</typeparam>
+        /// <param name="source">The source.</param>
         /// <param name="listener">TThe EventDelegate encapsulating the listener's EventHandler method.</param>
         public void RemoveListener<T>(System.Object source, EventDelegate<T> listener) where T : AGameEvent {
             Delegate delegateWithInvocationList;

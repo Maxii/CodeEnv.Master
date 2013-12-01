@@ -21,7 +21,7 @@ using CodeEnv.Master.GameContent;
 /// Hud info.
 /// </summary>
 [System.Obsolete]
-public class SystemManager : AMonoBehaviourBase, ISelectable, IHasData {
+public class SystemManager : AMonoBase, ISelectable, IHasData {
 
     /// <summary>
     /// Used for convenience only. Actual SystemData repository is held by OrbitalPlane.

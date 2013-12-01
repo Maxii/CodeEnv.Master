@@ -23,7 +23,7 @@ using UnityEngine;
 /// <summary>
 /// Overall GuiManager that handles the visibility of Gui elements.
 /// </summary>
-public class GuiManager : AMonoBehaviourBaseSingleton<GuiManager>, IDisposable {
+public class GuiManager : AMonoBaseSingleton<GuiManager>, IDisposable {
 
     public bool ReadyForSceneChange { get; private set; }
 

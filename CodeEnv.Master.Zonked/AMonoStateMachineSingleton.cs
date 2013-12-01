@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: StateMachine.cs
-// Abstract Base  class for MonoBehaviour State Machines.
+// File: AMonoStateMachineSingleton.cs
+// Singleton. Abstract Typed Base  class for Singleton MonoBehaviour State Machines.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -26,25 +26,13 @@ using CodeEnv.Master.Common;
 using UnityEngine;
 
 /// <summary>
-///  Abstract Typed Base  class for MonoBehaviour State Machines.
+/// Abstract Typed Base  class for Singleton MonoBehaviour State Machines.
 /// </summary>
-/// <typeparam name="T">The Type of the States being used, typically an enum type.</typeparam>
-public abstract class MonoStateMachine<T> : MonoStateMachine {
-
-    public T ActiveState {
-        get {
-            return (T)CurrentState;
-        }
-        set {
-            CurrentState = value;
-        }
-    }
-}
-
-/// <summary>
-///Abstract Base  class for MonoBehaviour State Machines.
-/// </summary>
-public abstract class MonoStateMachine : AMonoBehaviourBase {
+/// <typeparam name="T">The final derived AMonoBase Type</typeparam>
+/// <typeparam name="E">Th State Type being used, typically an enum type.</typeparam>
+public abstract class AMonoStateMachineSingleton<T, E> : AMonoBaseSingleton<T>
+    where T : AMonoBase
+    where E : struct {
 
     /// <summary>
     /// A coroutine executor that can be interrupted
@@ -212,7 +200,7 @@ public abstract class MonoStateMachine : AMonoBehaviourBase {
             else {
                 _stack.Clear();
             }
-            enm.MoveNext();
+            //enm.MoveNext(); // added per author, still getting NRE
         }
 
         /// <summary>
@@ -236,10 +224,13 @@ public abstract class MonoStateMachine : AMonoBehaviourBase {
         }
     }
 
+
+    #region SendMessage
     /// <summary>
-    /// Optimized message broadcasting replacement for SendMessage() that binds the
-    /// message to the current state. Essentially calls all methods anywhere that have the 
-    /// signature "CurrentState_CallingMethodName(param). Usage:
+    /// Optimized messaging replacement for SendMessage() that binds the
+    /// message to the current state. Essentially calls the method on this MonoBehaviour
+    /// instance that has the signature "CurrentState_CallingMethodName(param). 
+    /// Usage:
     ///     void CallingMethodName(param)  { 
     ///         SendStateMessage(param);
     ///     }
@@ -318,6 +309,8 @@ public abstract class MonoStateMachine : AMonoBehaviourBase {
         }
     }
 
+    #endregion
+
     /// <summary>
     /// The enter state coroutine.
     /// </summary>
@@ -377,7 +370,7 @@ public abstract class MonoStateMachine : AMonoBehaviourBase {
     /// The action that should be performed
     /// </param>
     public bool Perform(string action) {
-        return GetComponents<MonoStateMachine>().OrderByDescending(b => b.GetInsistence(action)).First().OnPerform(action);
+        return GetComponents<AMonoStateMachineSingleton<T, E>>().OrderByDescending(b => b.GetInsistence(action)).First().OnPerform(action);
     }
 
     protected override void Awake() {
@@ -390,9 +383,7 @@ public abstract class MonoStateMachine : AMonoBehaviourBase {
 
     #region Default Implementations Of Delegates
 
-    private static IEnumerator DoNothingCoroutine() {
-        yield break;
-    }
+    private static IEnumerator DoNothingCoroutine() { yield break; }
 
     private static void DoNothing() { }
 
@@ -429,7 +420,7 @@ public abstract class MonoStateMachine : AMonoBehaviourBase {
         public Action DoOnClick = DoNothing;
         public Action DoOnDoubleClick = DoNothing;
 
-        public object currentState;
+        public E currentState;
 
         //Stack of the enter state enumerators
         public Stack<IEnumerator> enterStack;
@@ -448,26 +439,16 @@ public abstract class MonoStateMachine : AMonoBehaviourBase {
     [HideInInspector]
     public State state = new State();
 
-    /// <summary>
-    /// Gets or sets the current state
-    /// </summary>
-    /// <value>
-    /// The state to use
-    /// </value>
-    public object CurrentState {
-        get {
-            return state.currentState;
-        }
-        set {
-            SetProperty<object>(ref state.currentState, value, "CurrentState", OnCurrentStateChanged, OnCurrentStateChanging);
-        }
+    public E CurrentState {
+        get { return state.currentState; }
+        protected set { SetProperty<E>(ref state.currentState, value, "CurrentState", OnCurrentStateChanged, OnCurrentStateChanging); }
     }
 
-    private void OnCurrentStateChanging(object newState) {
+    protected virtual void OnCurrentStateChanging(E incomingState) {
         ChangingState();
     }
 
-    private void OnCurrentStateChanged() {
+    protected virtual void OnCurrentStateChanged() {
         ConfigureCurrentState();
     }
 
@@ -487,7 +468,7 @@ public abstract class MonoStateMachine : AMonoBehaviourBase {
     /// <param name='stateToActivate'>
     /// State to activate.
     /// </param>
-    public void Call(object stateToActivate) {
+    public void Call(E stateToActivate) {
         state.time = timeInCurrentState;
         state.enterStack = enterStateCoroutine.CreateStack();
         state.exitStack = exitStateCoroutine.CreateStack();
@@ -532,7 +513,7 @@ public abstract class MonoStateMachine : AMonoBehaviourBase {
     /// <param name='baseState'>
     /// The state to use if there is no waiting calling state
     /// </param>
-    public void Return(object baseState) {
+    public void Return(E baseState) {
         //UnwireEvents();
         if (state.exitState != null) {
             state.exitStateEnumerator = state.exitState();
@@ -564,6 +545,7 @@ public abstract class MonoStateMachine : AMonoBehaviourBase {
     /// </summary>
     private void ConfigureCurrentState() {
         if (state.exitState != null) {
+            // runs the exitState of the PREVIOUS state as the state delegates haven't been changed yet
             exitStateCoroutine.Run(state.exitState());
         }
 
@@ -605,9 +587,17 @@ public abstract class MonoStateMachine : AMonoBehaviourBase {
     /// </summary>
     private Dictionary<object, Dictionary<string, Delegate>> _cache = new Dictionary<object, Dictionary<string, Delegate>>();
 
-    //Creates a delegate for a particular method on the current state machine
-    //if a suitable method is not found then the default is used instead
-    private T ConfigureDelegate<T>(string methodRoot, T Default) where T : class {
+    /// <summary>
+    /// FInds or creates a delegate for the current state and Method name (aka CurrentState_OnClick), or
+    /// if the Method name is not present in this State Machine, then returns Default. Also puts an 
+    /// IEnumerator wrapper around EnterState or ExitState methods that return void rather than
+    /// IEnumerator.
+    /// </summary>
+    /// <typeparam name="D"></typeparam>
+    /// <param name="methodRoot">The method root.</param>
+    /// <param name="Default">The default.</param>
+    /// <returns></returns>
+    private D ConfigureDelegate<D>(string methodRoot, D Default) where D : class {
 
         Dictionary<string, Delegate> lookup;
         if (!_cache.TryGetValue(state.currentState, out lookup)) {
@@ -620,20 +610,20 @@ public abstract class MonoStateMachine : AMonoBehaviourBase {
                 | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.InvokeMethod);
 
             if (mtd != null) {
-                if (typeof(T) == typeof(Func<IEnumerator>) && mtd.ReturnType != typeof(IEnumerator)) {
+                if (typeof(D) == typeof(Func<IEnumerator>) && mtd.ReturnType != typeof(IEnumerator)) {
                     Action a = Delegate.CreateDelegate(typeof(Action), this, mtd) as Action;
                     Func<IEnumerator> func = () => { a(); return null; };
                     returnValue = func;
                 }
                 else
-                    returnValue = Delegate.CreateDelegate(typeof(T), this, mtd);
+                    returnValue = Delegate.CreateDelegate(typeof(D), this, mtd);
             }
             else {
                 returnValue = Default as Delegate;
             }
             lookup[methodRoot] = returnValue;
         }
-        return returnValue as T;
+        return returnValue as D;
 
     }
 
@@ -1055,4 +1045,5 @@ public abstract class MonoStateMachine : AMonoBehaviourBase {
     #endregion
 
 }
+
 

@@ -31,11 +31,11 @@ public class OrbitalPlane : StationaryItem, IZoomToFurthest {
     public float optimalPlaneFocusDistance = 400F;
 
     private SystemGraphics _systemGraphics;
-    private SystemManager _systemManager;
+    private SystemCreator _systemManager;
 
     protected override void Awake() {
         base.Awake();
-        _systemManager = gameObject.GetSafeMonoBehaviourComponentInParents<SystemManager>();
+        _systemManager = gameObject.GetSafeMonoBehaviourComponentInParents<SystemCreator>();
         _systemGraphics = gameObject.GetSafeMonoBehaviourComponentInParents<SystemGraphics>();
         __ValidateCtxObjectSettings();
     }

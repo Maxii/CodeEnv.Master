@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: OpeResource.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// Enum designating the type of standard resource.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,11 +16,17 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    /// <summary>
+    /// Enum designating the type of standard resource.
+    /// </summary>
     public enum OpeResource {
 
         None = 0,
+
         Organics = 1,
+
         Particulates = 2,
+
         Energy = 3
     }
 }

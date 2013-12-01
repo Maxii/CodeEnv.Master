@@ -32,11 +32,12 @@ namespace CodeEnv.Master.GameContent {
         bool IsHudShowing { get; }
 
         /// <summary>
-        /// Coroutine method that continuously displays a current GuiCursorHudText 
+        /// Shows or hides a current GuiCursorHudText 
         /// instance containing the text to display at the cursor.
         /// </summary>
+        /// <param name="toShow">if set to <c>true</c> shows the hud, otherwise hides it.</param>
         /// <param name="intelLevel">The intel level.</param>
-        IEnumerator DisplayHudAtCursor(IntelLevel intelLevel);
+        void ShowHud(bool toShow, IntelLevel intelLevel);
 
         /// <summary>
         /// Clients can optionally provide additional GuiCursorHudLineKeys they wish to routinely update whenever GetHudText is called.
@@ -44,11 +45,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="optionalKeys">The optional keys.</param>
         void SetOptionalUpdateKeys(params GuiHudLineKeys[] optionalKeys);
-
-        /// <summary>
-        /// Clears the IGuiHud.
-        /// </summary>
-        void ClearHud();
 
     }
 }

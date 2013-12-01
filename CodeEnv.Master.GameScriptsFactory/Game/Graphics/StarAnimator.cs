@@ -20,7 +20,7 @@ using UnityEngine;
 /// <summary>
 /// Animates a Star's globe to simulate rotation.
 /// </summary>
-public class StarAnimator : AMonoBehaviourBase {
+public class StarAnimator : AMonoBase {
 
     [SerializeField]
     private GlobeMaterialAnimator primaryMaterialAnimator = new GlobeMaterialAnimator { xScrollSpeed = 0.015F, yScrollSpeed = 0.015F };
@@ -33,7 +33,7 @@ public class StarAnimator : AMonoBehaviourBase {
 
     protected override void Awake() {
         base.Awake();
-        UpdateRate = FrameUpdateFrequency.Continuous;
+        UpdateRate = FrameUpdateFrequency.Frequent;
     }
 
     protected override void Start() {
@@ -45,10 +45,9 @@ public class StarAnimator : AMonoBehaviourBase {
         }
     }
 
-    void Update() {
-        if (ToUpdate()) {
-            AnimateGlobeRotation();
-        }
+    protected override void OccasionalUpdate() {
+        base.OccasionalUpdate();
+        AnimateGlobeRotation();
     }
 
     private void AnimateGlobeRotation() {

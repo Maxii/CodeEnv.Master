@@ -20,7 +20,7 @@ using UnityEngine;
 /// Handles the content, screen location, scale and visibility of a GuiTrackingLabel that tracks a 3D game object. Handles
 /// both moving and fixed 3D objects.
 /// </summary>
-public class GuiTrackingLabel : AMonoBehaviourBase {
+public class GuiTrackingLabel : AMonoBase {
 
     /// <summary>
     /// The distance from the main camera where the natural, 
@@ -147,11 +147,10 @@ public class GuiTrackingLabel : AMonoBehaviourBase {
         IsShowing = false;
     }
 
-    void Update() {
-        if (ToUpdate()) {
-            UpdatePosition();
-            UpdateScale();
-        }
+    protected override void OccasionalUpdate() {
+        base.OccasionalUpdate();
+        UpdatePosition();
+        UpdateScale();
     }
 
     private void UpdatePosition() {

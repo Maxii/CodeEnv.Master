@@ -157,6 +157,17 @@ namespace CodeEnv.Master.Common {
             private set { _stopShipMovement = value; }
         }
 
+        private bool _allowEnemyOrders;
+        public bool AllowEnemyOrders {
+            get {
+                if (!isPropertyValuesInitialized) {
+                    InitializePropertyValues();
+                }
+                return _allowEnemyOrders;
+            }
+            private set { _allowEnemyOrders = value; }
+        }
+
 
 
 

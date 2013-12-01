@@ -21,7 +21,7 @@ using UnityEngine;
 /// Class that catches all Ngui events independant of whether they are consumed
 /// by other Gui and Game elements.
 /// </summary>
-public class NguiGenericEventHandler : AMonoBehaviourBaseSingleton<NguiGenericEventHandler> {
+public class NguiGenericEventHandler : AMonoBaseSingleton<NguiGenericEventHandler> {
 
     // Note: Bug - UICamera.isDragging returns false on OnPress(false) when the drag started and ended over the same object.
 

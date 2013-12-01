@@ -28,7 +28,7 @@ public class MovingView : View, ICameraFollowable {
     #region ICameraFollowable Members
 
     [SerializeField]
-    private float cameraFollowDistanceDampener = 2.0F;
+    private float cameraFollowDistanceDampener = 3.0F;
     public virtual float CameraFollowDistanceDampener {
         get { return cameraFollowDistanceDampener; }
     }

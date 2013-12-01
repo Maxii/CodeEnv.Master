@@ -34,26 +34,102 @@ public class ShipPresenter : Presenter {
         set { base.Item = value; }
     }
 
+    protected new IShipViewable View {
+        get { return base.View as IShipViewable; }
+    }
+
     private IFleetViewable _fleetView;
 
-    public ShipPresenter(IViewable view)
+    public ShipPresenter(IShipViewable view)
         : base(view) {
-        GameObject parentFleet = _viewGameObject.transform.parent.gameObject;
-        _fleetView = parentFleet.GetSafeInterfaceInChildren<IFleetViewable>();
+        FleetCreator fleetMgr = _viewGameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>();
+        _fleetView = fleetMgr.gameObject.GetSafeInterfaceInChildren<IFleetViewable>();
     }
 
-    protected override void InitilizeItemReference() {
+    protected override void InitilizeItemLinkage() {
         Item = UnityUtility.ValidateMonoBehaviourPresence<ShipItem>(_viewGameObject);
-    }
-
-    protected override void SubscribeToItemDataChanged() {
-        _subscribers.Add(Item.SubscribeToPropertyChanged<ShipItem, ShipData>(i => i.Data, OnItemDataChanged));
     }
 
     protected override void InitializeHudPublisher() {
         var hudPublisher = new GuiHudPublisher<ShipData>(Item.Data);
         hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed);
         View.HudPublisher = hudPublisher;
+    }
+
+    protected override void Subscribe() {
+        base.Subscribe();
+        _subscribers.Add(Item.SubscribeToPropertyChanging<ShipItem, ShipState>(s => s.CurrentState, OnShipStateChanging));
+        View.onShowCompletion += Item.OnShowCompletion;
+    }
+
+    private void OnShipStateChanging(ShipState newState) {
+        ShipState previousState = Item.CurrentState;
+        switch (previousState) {
+            case ShipState.Entrenching:
+            case ShipState.Refitting:
+            case ShipState.Repairing:
+                // the state is changing from one of these states so stop the Showing
+                View.StopShowing();
+                break;
+            case ShipState.ShowAttacking:
+            case ShipState.ShowHit:
+            case ShipState.ShowDying:
+                // no need to stop any of these showing as they have already completed
+                break;
+            case ShipState.ProcessOrders:
+            case ShipState.MovingTo:
+            case ShipState.Idling:
+            case ShipState.GoAttack:
+            case ShipState.Dead:
+            case ShipState.Chasing:
+            case ShipState.Attacking:
+            case ShipState.Dying:
+            case ShipState.Joining:
+            case ShipState.TakingDamage:
+            case ShipState.Withdrawing:
+                // do nothing
+                break;
+            case ShipState.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(previousState));
+        }
+
+        switch (newState) {
+            case ShipState.ShowAttacking:
+                View.ShowAttacking();
+                break;
+            case ShipState.ShowHit:
+                View.ShowHit();
+                break;
+            case ShipState.ShowDying:
+                View.ShowDying();
+                break;
+            case ShipState.Entrenching:
+                View.ShowEntrenching();
+                break;
+            case ShipState.Refitting:
+                View.ShowRefitting();
+                break;
+            case ShipState.Repairing:
+                View.ShowRepairing();
+                break;
+            case ShipState.ProcessOrders:
+            case ShipState.MovingTo:
+            case ShipState.Idling:
+            case ShipState.GoAttack:
+            case ShipState.Dead:
+            case ShipState.Chasing:
+            case ShipState.Attacking:
+            case ShipState.Dying:
+            case ShipState.Joining:
+            case ShipState.TakingDamage:
+            case ShipState.Withdrawing:
+                // do nothing
+                break;
+            case ShipState.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(newState));
+        }
     }
 
     public bool IsFleetSelected {
@@ -74,17 +150,23 @@ public class ShipPresenter : Presenter {
     }
 
     public void OnPressWhileSelected(bool isDown) {
-        CameraControl.Instance.ShowContextMenuOnPress(isDown);
+        OnPressRequestContextMenu(isDown);
+    }
+
+    private void OnPressRequestContextMenu(bool isDown) {
+        if (DebugSettings.Instance.AllowEnemyOrders || Item.Data.Owner.IsHuman) {
+            CameraControl.Instance.ShowContextMenuOnPress(isDown);
+        }
     }
 
     protected override void OnItemDeath(ItemDeathEvent e) {
         if ((e.Source as ShipItem) == Item) {
-            Die();
+            CleanupOnDeath();
         }
     }
 
-    protected override void Die() {
-        base.Die();
+    protected override void CleanupOnDeath() {
+        base.CleanupOnDeath();
         if ((View as ISelectable).IsSelected) {
             SelectionManager.Instance.CurrentSelection = null;
         }

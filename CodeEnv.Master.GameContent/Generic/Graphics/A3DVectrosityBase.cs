@@ -68,29 +68,35 @@ namespace CodeEnv.Master.GameContent {
             if (Parent != null) { OnParentChanged(); }
         }
 
-        private bool _isCoroutineRunning;
         /// <summary>
-        /// Shows a directional line indicating the forward direction and speed of Target.
+        /// Shows or hides a line emanating from the target.
         /// </summary>
-        public IEnumerator Show() {
+        /// <param name="toShow">if set to <c>true</c> [automatic show].</param>
+        public virtual void Show(bool toShow) {
             if (_line == null) {
                 Initialize();
             }
-            _line.active = false;
-            while (_isCoroutineRunning) {
-                // wait here until previous coroutine exits
-                yield return null;
+            if (toShow) {
+                if (_job == null) {
+                    _job = new Job(DrawLine(), toStart: true, onJobComplete: delegate {
+                        // TODO
+                    });
+                }
+                else if (!_job.IsRunning) {
+                    _job.Start();
+                }
             }
+            else if (_job != null && _job.IsRunning) {
+                _job.Kill();
+            }
+            _line.active = toShow;
+        }
 
-            _line.active = true;
-            _isCoroutineRunning = true;
-            D.Log("{0} coroutine started.", LineName);
-            while (_line.active) {
+        private IEnumerator DrawLine() {
+            while (true) {
                 Draw3D();
                 yield return null;
             }
-            _isCoroutineRunning = false;
-            D.Log("{0} coroutine finished.", LineName);
         }
 
         protected virtual void Draw3D() {
@@ -100,10 +106,6 @@ namespace CodeEnv.Master.GameContent {
             else {
                 _line.Draw3D();
             }
-        }
-
-        public virtual void Hide() {
-            _line.active = false;
         }
 
         private void OnColorChanged() {

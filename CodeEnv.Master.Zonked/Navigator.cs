@@ -39,19 +39,21 @@ namespace CodeEnv.Master.GameContent {
         private float _gameSpeedMultiplier;
         private ShipData _data;
 
+        private Job _speedJob;
+        private Job _headingJob;
+
         private ThrustHelper _thrustHelper;
         private Vector3 _velocityOnPause;
         // ship always travels forward - the direction it is pointed. Thrust direction is opposite
         private Vector3 _localTravelDirection = new Vector3(0F, 0F, 1F);
         private float _thrust;
 
-
         /// <summary>
-        /// Initializes a new instance of the <see cref="Navigator"/> class.
+        /// Initializes a new instance of the <see cref="ShipNavigator"/> class.
         /// </summary>
         /// <param name="t">Ship Transform</param>
         /// <param name="data">Ship data.</param>
-        public Navigator(Transform t, ShipData data) {
+        public ShipNavigator(Transform t, ShipData data) {
             _transform = t;
             _data = data;
             _rigidbody = t.rigidbody;
@@ -114,6 +116,7 @@ namespace CodeEnv.Master.GameContent {
         /// Changes the direction the ship is headed in normalized world space coordinates.
         /// </summary>
         /// <param name="newHeading">The new direction in world coordinates, normalized.</param>
+        /// <returns><c>true</c> if the command was accepted, <c>false</c> if the command is a duplicate.</returns>
         public bool ChangeHeading(Vector3 newHeading) {
             newHeading.ValidateNormalized();
             if (Mathfx.Approx(newHeading, _data.RequestedHeading, 0.01F)) {
@@ -122,51 +125,39 @@ namespace CodeEnv.Master.GameContent {
                 return false;
             }
             _data.RequestedHeading = newHeading;
+            if (_headingJob != null && _headingJob.IsRunning) {
+                _headingJob.Kill();
+            }
+            _headingJob = new Job(ExecuteHeadingChange(), toStart: true, onJobComplete: (wasKilled) => {
+                string message = "Turn complete. {0} current heading is {1}.";
+                if (wasKilled) {
+                    message = "{0} turn command cancelled. Current Heading is {1}.";
+                }
+                D.Log(message, _data.Name, _data.CurrentHeading);
+            });
             return true;
         }
 
-        private bool _isTurning;
-        private bool _isPreviousHeadingChangeCoroutineRunning;
         /// <summary>
-        /// Coroutine method to execute the heading change. Automatically handles the interruption 
-        /// of a previous instance of the coroutine before launching another.
+        /// Coroutine that executes a heading change. 
         /// </summary>
         /// <returns></returns>
-        public IEnumerator ExecuteHeadingChange() {
-            _isTurning = false;    // tell any previous heading change coroutine to exit
-            while (_isPreviousHeadingChangeCoroutineRunning) {
-                // wait here until any previous coroutine instance exits
-                yield return null;
-            }
-
-            // we are now cleared to begin this new coroutine instance, so initialize values
-            _isTurning = true;
-            _isPreviousHeadingChangeCoroutineRunning = true;
-
+        private IEnumerator ExecuteHeadingChange() {
             int previousFrameCount = Time.frameCount;
             float maxTurnRatePerSecond = _data.MaxTurnRate * _generalSettings.DaysPerSecond;
-            D.Log("New coroutine. {0} coming to heading {1} at {2} radians/day.", _data.Name, _data.RequestedHeading, _data.MaxTurnRate);
-            while (_isTurning) {
+            //D.Log("New coroutine. {0} coming to heading {1} at {2} radians/day.", _data.Name, _data.RequestedHeading, _data.MaxTurnRate);
+            while (!IsTurnComplete()) {
                 int framesSinceLastPass = Time.frameCount - previousFrameCount;
                 previousFrameCount = Time.frameCount;
                 float allowedTurn = maxTurnRatePerSecond * GameTime.DeltaTimeOrPausedWithGameSpeed * framesSinceLastPass;
                 Vector3 newHeading = Vector3.RotateTowards(_data.CurrentHeading, _data.RequestedHeading, allowedTurn, Constants.ZeroF);
                 _transform.rotation = Quaternion.LookRotation(newHeading);
-
-                _isTurning = !IsTurnComplete();
                 yield return new WaitForSeconds(0.5F);
             }
-            if (IsTurnComplete()) {
-                D.Log("Turn complete. {0} current heading is {1}.", _data.Name, _data.CurrentHeading);
-            }
-            else {
-                D.Log("{0} turn command cancelled. Current Heading is {1}.", _data.Name, _data.CurrentHeading);
-            }
-            _isPreviousHeadingChangeCoroutineRunning = false;
         }
 
         private bool IsTurnComplete() {
-            D.Log("{0} heading passing {1} toward {2}.", _data.Name, _data.CurrentHeading, _data.RequestedHeading);
+            //D.Log("{0} heading passing {1} toward {2}.", _data.Name, _data.CurrentHeading, _data.RequestedHeading);
             // don't worry about the turn passing through this test because it is so precise. The coroutine will home on the requested heading until this is satisfied
             return _data.CurrentHeading.IsSameDirection(_data.RequestedHeading);
         }
@@ -184,38 +175,32 @@ namespace CodeEnv.Master.GameContent {
             _thrustHelper = new ThrustHelper(newSpeed, thrustNeededToMaintainRequestedSpeed, _data.MaxThrust);
             D.Log("{0} adjusting thrust to achieve requested speed {1}.", _data.Name, newSpeed);
             _thrust = AdjustThrust();
+
+            if (_speedJob == null || !_speedJob.IsRunning) {
+                _speedJob = new Job(ExecuteSpeedChange(), toStart: true, onJobComplete: delegate {
+                    string message = "{0} thrust stopped.  Coasting speed is {1}.";
+                    D.Log(message, _data.Name, _data.CurrentSpeed);
+                });
+            }
             return true;
         }
 
-        private bool _isUnderPower;
-        private bool _isPreviousUnderPowerCoroutineRunning;
         /// <summary>
-        /// Coroutine method to execute the speed change. Automatically handles the interruption 
-        /// of a previous instance of the coroutine before launching another.
+        /// Coroutine that continuously applies thrust unless RequestedSpeed is Zero.
         /// </summary>
         /// <returns></returns>
-        public IEnumerator ExecuteSpeedChange() {
-            _isUnderPower = false;  // tell any previous under power coroutine to exit
-            while (_isPreviousUnderPowerCoroutineRunning) {
-                // wait here until any previous coroutine instance exits
-                yield return null;
-            }
-
-            // we are now cleared to begin this new coroutine instance, so initialize values
-            _isUnderPower = _data.RequestedSpeed != Constants.ZeroF; ;  // the ship needs continuous thrust unless ordered to stop
-            _isPreviousUnderPowerCoroutineRunning = true;
-            while (_isUnderPower) {
+        private IEnumerator ExecuteSpeedChange() {
+            while (_data.RequestedSpeed != Constants.ZeroF) {
                 ApplyThrust();
                 yield return new WaitForFixedUpdate();
             }
-            _isPreviousUnderPowerCoroutineRunning = false;
         }
 
         /// <summary>
         /// Applies Thrust (direction and magnitude), adjusted for game speed. Clients should
         /// call this method at a pace consistent with FixedUpdate().
         /// </summary>
-        public void ApplyThrust() {
+        private void ApplyThrust() {
             Vector3 gameSpeedAdjustedThrust = _localTravelDirection * _thrust * _gameSpeedMultiplier;
             _rigidbody.AddRelativeForce(gameSpeedAdjustedThrust);
             _thrust = AdjustThrust();
@@ -234,6 +219,12 @@ namespace CodeEnv.Master.GameContent {
 
         private void Cleanup() {
             Unsubscribe();
+            if (_headingJob != null) {
+                _headingJob.Kill();
+            }
+            if (_speedJob != null) {
+                _speedJob.Kill();
+            }
         }
 
         private void Unsubscribe() {

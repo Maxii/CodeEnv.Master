@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AMonoBehaviourBase.cs
+// File: AMonoBase.cs
 // Abstract Base class for types that are derived from MonoBehaviour.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -30,15 +30,16 @@ using UnityEngine;
 /// NOTE: Unity will never call the 'overrideable' Awake(), Start(), Update(), LateUpdate(), FixedUpdate(), OnGui(), etc. methods when 
 /// there is a higher derived class in the chain. Unity only calls the method (if implemented) of the highest derived class.
 /// </summary>
-public abstract class AMonoBehaviourBase : MonoBehaviour, IChangeTracking, INotifyPropertyChanged, INotifyPropertyChanging {
+public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropertyChanged, INotifyPropertyChanging {
 
     protected static bool _isApplicationQuiting;
     protected Transform _transform;
 
     #region Debug
 
-    protected virtual void LogEvent(string eventName) {
-        D.Log("{0}.{1}().", this.GetType().Name, eventName);
+    public virtual void LogEvent() {
+        System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
+        D.Log("{0}.{1}() method called.".Inject(GetType().Name, stackFrame.GetMethod().Name));
     }
 
     #endregion
@@ -50,18 +51,18 @@ public abstract class AMonoBehaviourBase : MonoBehaviour, IChangeTracking, INoti
     protected virtual void Awake() {
         useGUILayout = false;    // OPTIMIZE docs suggest = false for better performance
         _transform = transform;
-        LogEvent("Awake");
+        LogEvent();
     }
 
     protected virtual void Start() {
-        LogEvent("Start");
+        LogEvent();
     }
 
     /// <summary>
     /// Called when enabled set to true after the script has been loaded, including after DeSerialization.
     /// </summary>
     protected virtual void OnEnable() {
-        LogEvent("OnEnable");
+        LogEvent();
     }
 
     /// <summary>
@@ -69,14 +70,14 @@ public abstract class AMonoBehaviourBase : MonoBehaviour, IChangeTracking, INoti
     /// prior to OnDestroy() and when scripts are reloaded after compilation has finished.
     /// </summary>
     protected virtual void OnDisable() {
-        LogEvent("OnDisable");
+        LogEvent();
     }
 
     /// <summary>
     /// Called when the Application is quiting, followed by OnDisable() and then OnDestroy().
     /// </summary>
     protected virtual void OnApplicationQuit() {
-        LogEvent("OnApplicationQuit");
+        LogEvent();
         _isApplicationQuiting = true;
     }
 
@@ -85,7 +86,7 @@ public abstract class AMonoBehaviourBase : MonoBehaviour, IChangeTracking, INoti
     /// OnApplicationQuit().
     /// </summary>
     protected virtual void OnDestroy() {
-        LogEvent("OnDestroy");
+        LogEvent();
     }
 
     #endregion
@@ -104,7 +105,7 @@ public abstract class AMonoBehaviourBase : MonoBehaviour, IChangeTracking, INoti
 
     #endregion
 
-    #region ToUpdate
+    #region Update
 
     /// <summary>
     /// Enum used to define how many frames will be
@@ -163,24 +164,37 @@ public abstract class AMonoBehaviourBase : MonoBehaviour, IChangeTracking, INoti
     private int _updateCounter = Constants.Zero;
 
     /// <summary>
-    /// Optionally used inside Update() or LateUpdate() to determine the frequency with which the containing code should be processed.
+    /// Optionally used inside Update() or LateUpdate() to determine the frequency with which the containing code should be processed. 
+    /// If using inside Update(), consider using the convenience method OccasionalUpdate().
     /// </summary>
     /// <returns>true on a pace set by the UpdateRate property</returns>
     protected bool ToUpdate() {
         bool toUpdate = false;
-        if (GameStatus.Instance.IsRunning) {
-            if (UpdateRate == FrameUpdateFrequency.Continuous) {
-                toUpdate = true;
-            }
-            else if (_updateCounter >= (int)UpdateRate) {    // >= in case UpdateRate gets changed after initialization
-                _updateCounter = Constants.Zero;
-                toUpdate = true;
-            }
-            else {
-                _updateCounter++;
-            }
+        if (UpdateRate == FrameUpdateFrequency.Continuous) {
+            toUpdate = true;
+        }
+        else if (_updateCounter >= (int)UpdateRate) {    // >= in case UpdateRate gets changed after initialization
+            _updateCounter = Constants.Zero;
+            toUpdate = true;
+        }
+        else {
+            _updateCounter++;
         }
         return toUpdate;
+    }
+
+    protected virtual void Update() {
+        //LogEvent();
+        if (ToUpdate()) {
+            OccasionalUpdate();
+        }
+    }
+
+    /// <summary>
+    /// Called at a frequency determined by the setting of UpdateRate.
+    /// </summary>
+    protected virtual void OccasionalUpdate() {
+        //LogEvent();
     }
 
     #endregion
@@ -505,17 +519,6 @@ public abstract class AMonoBehaviourBase : MonoBehaviour, IChangeTracking, INoti
             }
         }
         return list;
-    }
-
-    /// <summary>
-    /// Returns a list of all active loaded objects of Type T. It will return no assets (meshes, textures, prefabs, ...) or inactive objects.
-    ///Please note that this function is very slow.
-    /// </summary>
-    /// <typeparam name="T">The Type of Object.</typeparam>
-    /// <returns></returns>
-    public static T[] FindObjectsOfType<T>() where T : UnityEngine.Object {
-        T[] objects = FindObjectsOfType(typeof(T)) as T[];
-        return objects;
     }
 
     // No need for IDisposable as there are no resources here to clean up

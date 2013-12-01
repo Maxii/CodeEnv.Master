@@ -35,23 +35,22 @@ public class DebugHud : AHud<DebugHud>, IDebugHud, IDisposable {
         if (_subscribers == null) {
             _subscribers = new List<IDisposable>();
         }
-        _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.GameState, OnGameStateChanged));
-
+        _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
         _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, PauseState>(gm => gm.PauseState, OnPauseStateChanged));
         _subscribers.Add(PlayerPrefsManager.Instance.SubscribeToPropertyChanged<PlayerPrefsManager, int>(ppm => ppm.QualitySetting, OnQualitySettingChanged));
         if (Application.loadedLevel == (int)SceneLevel.GameScene) {
-            _subscribers.Add(CameraControl.Instance.SubscribeToPropertyChanged<CameraControl, CameraControl.CameraState>(cc => cc.State, OnCameraStateChanged));
+            _subscribers.Add(CameraControl.Instance.SubscribeToPropertyChanged<CameraControl, CameraControl.CameraState>(cc => cc.CurrentState, OnCameraStateChanged));
             _subscribers.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, OnPlayerViewModeChanged));
             _subscribers.Add(CameraControl.Instance.SubscribeToPropertyChanged<CameraControl, Index3D>(cc => cc.SectorIndex, OnCameraSectorIndexChanged));
         }
     }
 
-
     #region DebugHud Subscriptions
+
     // pulling value changes rather than having them pushed here avoids null reference issues when changing scenes
     private void OnGameStateChanged() {
         // initialization
-        if (GameManager.Instance.GameState == GameState.Running) {
+        if (GameManager.Instance.CurrentState == GameState.Running) {
             OnPauseStateChanged();
             OnPlayerViewModeChanged();
             OnCameraStateChanged();
@@ -69,7 +68,7 @@ public class DebugHud : AHud<DebugHud>, IDebugHud, IDisposable {
     }
 
     private void OnCameraStateChanged() {
-        Publish(DebugHudLineKeys.CameraMode, CameraControl.Instance.State.GetName());
+        Publish(DebugHudLineKeys.CameraMode, CameraControl.Instance.CurrentState.GetName());
     }
 
     private void OnQualitySettingChanged() {

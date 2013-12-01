@@ -24,7 +24,7 @@ using UnityEngine;
 ///  A* Pathfinding AutoPilot for fleets. When engaged, either proceeds directly to the FinalDestination
 ///  or plots a course to it and follows that course until it determines it should proceed directly.
 /// </summary>
-public class FleetAutoPilot : AMonoBehaviourBase, IDisposable {
+public class FleetAutoPilot : AMonoBase, IDisposable {
 
     private Vector3 _finalDestination;
     /// <summary>
@@ -78,8 +78,8 @@ public class FleetAutoPilot : AMonoBehaviourBase, IDisposable {
     /// <param name="destination">The destination.</param>
     public void PlotCourse(Vector3 destination) {
         IsFinalDestinationReached = false;
-        if (!destination.IsSame(FinalDestination)) {
-            FinalDestination = destination;
+        if (!destination.IsSame(Destination)) {
+            Destination = destination;
         }
         else {
             GenerateCourse();
@@ -116,7 +116,7 @@ public class FleetAutoPilot : AMonoBehaviourBase, IDisposable {
     /// </summary>
     /// <returns></returns>
     private IEnumerator EngageCourse() {
-        D.Log("Initiating coroutine to follow course to {0}.", FinalDestination);
+        D.Log("Initiating coroutine to follow course to {0}.", Destination);
         _toContinueFinalApproach = false;
         _toContinueFollowingCourse = false;
         while (_isFollowCourseCoroutineRunning) {
@@ -146,7 +146,7 @@ public class FleetAutoPilot : AMonoBehaviourBase, IDisposable {
         while (_toContinueFollowingCourse && IsEngaged) {
             if (_currentWaypointIndex >= _course.vectorPath.Count) {
                 _toContinueFollowingCourse = false;
-                _fleet.ChangeFleetSpeed(Constants.ZeroF, isManualOverride: false);
+                _fleet.ChangeSpeed(Constants.ZeroF, isManualOverride: false);
                 IsFinalDestinationReached = true;
             }
             else {
@@ -189,7 +189,7 @@ public class FleetAutoPilot : AMonoBehaviourBase, IDisposable {
     /// </summary>
     /// <returns></returns>
     private IEnumerator EngageFinalApproach() {
-        D.Log("Initiating coroutine for Final Approach to {0}.", FinalDestination);
+        D.Log("Initiating coroutine for Final Approach to {0}.", Destination);
         _toContinueFollowingCourse = false;
         _toContinueFinalApproach = false;
         while (_isFinalApproachCoroutineRunning) {
@@ -201,10 +201,10 @@ public class FleetAutoPilot : AMonoBehaviourBase, IDisposable {
             yield break;    // exit immediately
         }
 
-        Vector3 newHeading = (FinalDestination - _fleetData.Position).normalized;
+        Vector3 newHeading = (Destination - _fleetData.Position).normalized;
         AdjustHeadingAndSpeedForTurn(newHeading);
 
-        float halfwayDistance = Vector3.Distance(_fleetData.Position, FinalDestination) * 0.5F;
+        float halfwayDistance = Vector3.Distance(_fleetData.Position, Destination) * 0.5F;
         bool isMidCourseCorrectionMade = false;
         bool isSpeedIncreaseMade = false;
 
@@ -212,10 +212,10 @@ public class FleetAutoPilot : AMonoBehaviourBase, IDisposable {
         _toContinueFinalApproach = true;
         _isFinalApproachCoroutineRunning = true;
         while (_toContinueFinalApproach && IsEngaged) {
-            float distanceToDestination = Vector3.Distance(FinalDestination, _fleetData.Position);
+            float distanceToDestination = Vector3.Distance(Destination, _fleetData.Position);
             //D.Log("Distance to Destination = {0}.", distanceToDestination);
             if (distanceToDestination < _closeEnoughToWaypointDistance) {
-                _fleet.ChangeFleetSpeed(Constants.ZeroF, isManualOverride: false);
+                _fleet.ChangeSpeed(Constants.ZeroF, isManualOverride: false);
                 _toContinueFinalApproach = false;
                 IsFinalDestinationReached = true;
             }
@@ -224,7 +224,7 @@ public class FleetAutoPilot : AMonoBehaviourBase, IDisposable {
                     isSpeedIncreaseMade = IncreaseSpeedOnHeadingConfirmation();
                 }
                 if (!isMidCourseCorrectionMade) {
-                    isMidCourseCorrectionMade = CheckForMidcourseCorrection(FinalDestination, halfwayDistance);
+                    isMidCourseCorrectionMade = CheckForMidcourseCorrection(Destination, halfwayDistance);
                 }
             }
             yield return new WaitForSeconds(1.0F);
@@ -240,13 +240,13 @@ public class FleetAutoPilot : AMonoBehaviourBase, IDisposable {
 
     private void OnCoursePlotCompleted(Path course) {
         if (course.error) {
-            D.Warn("{0} error generating path to {1}. {2}.", _fleetData.Name, FinalDestination, course.errorLog);
+            D.Warn("{0} error generating path to {1}. {2}.", _fleetData.Name, Destination, course.errorLog);
             _course = null;
-            _fleet.OnCoursePlotCompleted(false, FinalDestination);
+            _fleet.OnCoursePlotCompleted(false, Destination);
             return;
         }
         _course = course;
-        _fleet.OnCoursePlotCompleted(true, FinalDestination);
+        _fleet.OnCoursePlotCompleted(true, Destination);
     }
 
     private void OnFinalDestinationChanged() {
@@ -254,7 +254,7 @@ public class FleetAutoPilot : AMonoBehaviourBase, IDisposable {
     }
 
     private void InitiateFinalApproach() {
-        D.Log("Initiating Final Approach. Distance to Destination = {0}.", Vector3.Distance(_fleetData.Position, FinalDestination));
+        D.Log("Initiating Final Approach. Distance to Destination = {0}.", Vector3.Distance(_fleetData.Position, Destination));
         StartCoroutine(EngageFinalApproach);
     }
 
@@ -265,8 +265,8 @@ public class FleetAutoPilot : AMonoBehaviourBase, IDisposable {
     /// <returns><c>true</c> if a direct approach is feasible and shorter than following the course.</returns>
     private bool CheckApproachToFinalDestination() {
         Vector3 currentPosition = _fleetData.Position;
-        Vector3 directionToDestination = (FinalDestination - currentPosition).normalized;
-        float distanceToDestination = Vector3.Distance(currentPosition, FinalDestination);
+        Vector3 directionToDestination = (Destination - currentPosition).normalized;
+        float distanceToDestination = Vector3.Distance(currentPosition, Destination);
         if (Physics.Raycast(currentPosition, directionToDestination, distanceToDestination)) {
             D.Log("Obstacle encountered when checking for Approach to FinalDestination.");
             // there is an obstacle in the way so continue to follow the course
@@ -293,8 +293,8 @@ public class FleetAutoPilot : AMonoBehaviourBase, IDisposable {
     }
 
     private void AdjustHeadingAndSpeedForTurn(Vector3 newHeading) {
-        _fleet.ChangeFleetSpeed(0.1F, isManualOverride: false); // slow for the turn
-        _fleet.ChangeFleetHeading(newHeading, isManualOverride: false);
+        _fleet.ChangeSpeed(0.1F, isManualOverride: false); // slow for the turn
+        _fleet.ChangeHeading(newHeading, isManualOverride: false);
     }
 
     /// <summary>
@@ -304,7 +304,7 @@ public class FleetAutoPilot : AMonoBehaviourBase, IDisposable {
     private bool IncreaseSpeedOnHeadingConfirmation() {
         if (CodeEnv.Master.Common.Mathfx.Approx(_fleetData.CurrentHeading, _fleetData.RequestedHeading, .1F)) {
             // we are close to being on course, so punch it up to warp 9!
-            _fleet.ChangeFleetSpeed(2.0F, isManualOverride: false);
+            _fleet.ChangeSpeed(2.0F, isManualOverride: false);
             return true;
         }
         return false;
@@ -322,7 +322,7 @@ public class FleetAutoPilot : AMonoBehaviourBase, IDisposable {
             Vector3 newHeading = (currentDestination - _fleetData.Position).normalized;
             if (!CodeEnv.Master.Common.Mathfx.Approx(newHeading, _fleetData.RequestedHeading, .01F)) {
                 D.Log("A midcourse correction to {0} is about to be made.", newHeading);
-                _fleet.ChangeFleetHeading(newHeading, isManualOverride: false);
+                _fleet.ChangeHeading(newHeading, isManualOverride: false);
                 return true;
             }
             D.Log("Midcourse correction check made with no change. Heading remains {0}.", _fleetData.RequestedHeading);
@@ -333,11 +333,11 @@ public class FleetAutoPilot : AMonoBehaviourBase, IDisposable {
 
     private void GenerateCourse() {
         Vector3 start = _fleetData.Position;
-        D.Log("Course being plotted. Start = {0}, FinalDestination = {1}.", start, FinalDestination);
+        D.Log("Course being plotted. Start = {0}, FinalDestination = {1}.", start, Destination);
         //Debug.DrawLine(start, Destination, Color.yellow, 20F, false);
         //Path path = new Path(startPosition, targetPosition, null);    // Path is now abstract
         //Path path = PathPool<ABPath>.GetPath();   // don't know how to assign start and target points
-        Path path = ABPath.Construct(start, FinalDestination, null);
+        Path path = ABPath.Construct(start, Destination, null);
 
         // Node qualifying constraint instance that checks that nodes are walkable, and within the seeker-specified
         // max search distance. Tags and area testing are turned off, primarily because I don't yet understand them

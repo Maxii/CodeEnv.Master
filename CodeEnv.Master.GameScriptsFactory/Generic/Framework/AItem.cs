@@ -20,7 +20,7 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// The instantiable, data-holding base class for all objects in the game.
 /// </summary>
-public class Item : AMonoBehaviourBase, IDisposable {
+public abstract class AItem : AMonoBase, IDisposable {
 
     private Data _data;
     /// <summary>
@@ -29,21 +29,30 @@ public class Item : AMonoBehaviourBase, IDisposable {
     /// </summary>
     public Data Data {
         get { return _data; }
-        set { SetProperty<Data>(ref _data, value, "Data", OnDataChanged); }
+        set { SetProperty<Data>(ref _data, value, "Data", OnDataChanged, OnDataChanging); }
     }
+
+    /// <summary>
+    /// The radius in units of the conceptual 'globe' that encompasses this gameObject.
+    /// Used by ship and fleet navigators so they don't run into an item as they approach.
+    /// </summary>
+    public float Radius { get; set; }
 
     protected IList<IDisposable> _subscribers;
 
     protected override void Awake() {
         base.Awake();
-        Subscribe();
+        // Subscribe(); derived classes should initiate Subscribe when their required references are established
+        enabled = false;
     }
 
     protected virtual void Subscribe() {
-        if (_subscribers == null) {
-            _subscribers = new List<IDisposable>();
-        }
+        _subscribers = new List<IDisposable>();
         // Delaying subscriptions from Data until Data is initialized
+    }
+
+    private void OnDataChanging(Data newData) {
+        newData.Transform = _transform; // assign our transform to Data
     }
 
     protected virtual void OnDataChanged() {
@@ -51,7 +60,7 @@ public class Item : AMonoBehaviourBase, IDisposable {
     }
 
     protected virtual void OnHealthChanged() {
-        D.Log("{0} Health = {1}.", Data.Name, Data.Health);
+        //D.Log("{0} Health = {1}.", Data.Name, Data.Health);
         if (Data.Health <= Constants.ZeroF) {
             Die();
         }
@@ -80,10 +89,6 @@ public class Item : AMonoBehaviourBase, IDisposable {
     protected virtual void Unsubscribe() {
         _subscribers.ForAll(d => d.Dispose());
         _subscribers.Clear();
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
     }
 
     #region IDisposable

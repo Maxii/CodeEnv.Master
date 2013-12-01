@@ -27,11 +27,11 @@ public class FleetCommand : FollowableItem, IFleetCommand {
     public float optimalFleetViewingDistance = 6F;
 
     private FleetGraphics _fleetGraphics;
-    private FleetManager _fleetMgr;
+    private FleetCreator _fleetMgr;
 
     protected override void Awake() {
         base.Awake();
-        _fleetMgr = gameObject.GetSafeMonoBehaviourComponentInParents<FleetManager>();
+        _fleetMgr = gameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>();
         _fleetGraphics = gameObject.GetSafeMonoBehaviourComponentInParents<FleetGraphics>();
     }
 

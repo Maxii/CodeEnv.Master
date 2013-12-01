@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: StateMachine.cs
+// File: AStateMachine.cs
 //  Abstract Base class for non-MonoBehaviour state machines.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -27,28 +27,16 @@ namespace CodeEnv.Master.Common {
     /// <summary>
     /// Abstract Base class for non-MonoBehaviour state machines.
     /// </summary>
-    /// <typeparam name="T">The Type of the States being used, typically an enum type.</typeparam>
-    public abstract class StateMachine<T> : StateMachine {
+    /// <typeparam name="E">The  State Type being used, typically an enum type.</typeparam>
+    public abstract class AStateMachine<E> : APropertyChangeTracking where E : struct {
 
-        public T ActiveState {
-            get {
-                return (T)CurrentState;
-            }
-            set {
-                CurrentState = value;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Abstract Base class for non-MonoBehaviour state machines.
-    /// </summary>
-    public abstract class StateMachine : APropertyChangeTracking {
+        #region SendMessage
 
         /// <summary>
-        /// Optimized message broadcasting replacement for SendMessage() that binds the
-        /// message to the current state. Essentially calls all methods anywhere that have the 
-        /// signature "CurrentState_CallingMethodName(param). Usage:
+        /// Optimized messaging replacement for SendMessage() that binds the
+        /// message to the current state. Essentially calls the method on this MonoBehaviour
+        /// instance that has the signature "CurrentState_CallingMethodName(param). 
+        /// Usage:
         ///     void CallingMethodName(param)  { 
         ///         SendStateMessage(param);
         ///     }
@@ -125,6 +113,8 @@ namespace CodeEnv.Master.Common {
             }
         }
 
+        #endregion
+
         /// <summary>
         /// The time that the current state was entered
         /// </summary>
@@ -142,7 +132,7 @@ namespace CodeEnv.Master.Common {
             }
         }
 
-        public StateMachine() { }
+        public AStateMachine() { }
 
         #region Default Implementations Of Delegates
 
@@ -155,7 +145,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         public class State {
 
-            public object currentState;
+            public E currentState;
 
             //The amount of time that was spend in this state when pushed to the stack
             public float time;
@@ -168,27 +158,17 @@ namespace CodeEnv.Master.Common {
         [HideInInspector]
         public State state = new State();
 
-        /// <summary>
-        /// Gets or sets the current state
-        /// </summary>
-        /// <value>
-        /// The state to use
-        /// </value>
-        public object CurrentState {
-            get {
-                return state.currentState;
-            }
-            set {
-                SetProperty<object>(ref state.currentState, value, "currentState", OnCurrentStateChanged, OnCurrentStateChanging);
-            }
+        public E CurrentState {
+            get { return state.currentState; }
+            protected set { SetProperty<E>(ref state.currentState, value, "CurrentState", OnCurrentStateChanged, OnCurrentStateChanging); }
         }
 
-        private void OnCurrentStateChanged() {
-            ConfigureCurrentState();
-        }
-
-        private void OnCurrentStateChanging(object newState) {
+        protected virtual void OnCurrentStateChanging(E incomingState) {
             ChangingState();
+        }
+
+        protected virtual void OnCurrentStateChanged() {
+            ConfigureCurrentState();
         }
 
         [HideInInspector]
@@ -201,13 +181,11 @@ namespace CodeEnv.Master.Common {
         private Stack<State> _stack = new Stack<State>();
 
         /// <summary>
-        /// Call the specified state - activates the new state without deactivating the 
+        /// Call the specified state - activates the new state without deactivating the
         /// current state.  Called states need to execute Return() when they are finished
         /// </summary>
-        /// <param name='stateToActivate'>
-        /// State to activate.
-        /// </param>
-        public void Call(object stateToActivate) {
+        /// <param name="stateToActivate">State to activate.</param>
+        public void Call(E stateToActivate) {
             state.time = timeInCurrentState;
             ChangingState();
 
@@ -234,13 +212,11 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Return from the current state with a specific state to 
+        /// Return from the current state with a specific state to
         /// enter in case this state wasn't entered via Call(state).
         /// </summary>
-        /// <param name='baseState'>
-        /// The state to use if there is no waiting state that called this state.
-        /// </param>
-        public void Return(object baseState) {
+        /// <param name="baseState">The state to use if there is no waiting state that called this state.</param>
+        public void Return(E baseState) {
             if (_stack.Count > 0) {
                 state = _stack.Pop();
             }
@@ -273,8 +249,16 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         private Dictionary<object, Dictionary<string, Delegate>> _cache = new Dictionary<object, Dictionary<string, Delegate>>();
 
-        //Creates a delegate for a particular method on the current state machine
-        //if a suitable method is not found then the default is used instead
+        /// <summary>
+        /// FInds or creates a delegate for the current state and Method name (aka CurrentState_OnClick), or
+        /// if the Method name is not present in this State Machine, then returns Default. Also puts an 
+        /// IEnumerator wrapper around EnterState or ExitState methods that return void rather than
+        /// IEnumerator.
+        /// </summary>
+        /// <typeparam name="D"></typeparam>
+        /// <param name="methodRoot">Substring of the methodName that follows "StateName_", eg EnterState from State1_EnterState.</param>
+        /// <param name="Default">The default delegate to use if a method of the proper name is not found.</param>
+        /// <returns></returns>
         private T ConfigureDelegate<T>(string methodRoot, T Default) where T : class {
 
             Dictionary<string, Delegate> lookup;

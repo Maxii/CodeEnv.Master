@@ -131,8 +131,14 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        public void Add(OpeYield other) {
+            Organics += other.Organics;
+            Particulates += other.Particulates;
+            Energy += other.Energy;
+        }
+
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return "O[{0:0.#}], P[{1:0.#}], E[{2:0.#}]".Inject(Organics, Particulates, Energy);
         }
 
     }

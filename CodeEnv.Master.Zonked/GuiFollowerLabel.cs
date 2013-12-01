@@ -30,7 +30,7 @@ using CodeEnv.Master.Common.Unity;
 /// A label that follows a designated GameObject currentTarget.
 /// </summary>
 [Obsolete]
-public class GuiFollowerLabel : AMonoBehaviourBase {
+public class GuiFollowerLabel : AMonoBase {
 
     // TODO _location label on the game object by creating an attachment point
 

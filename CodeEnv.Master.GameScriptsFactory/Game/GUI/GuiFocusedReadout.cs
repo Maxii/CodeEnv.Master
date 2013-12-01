@@ -53,7 +53,7 @@ public class GuiFocusedReadout : AGuiLabelReadoutBase {
     private void TryRetainingFocus(ICameraFocusable focus) {
         if (focus != null && focus.IsRetainedFocusEligible) {
             _retainedFocus = focus;
-            Item itemWithData = (focus as Component).gameObject.GetSafeMonoBehaviourComponent<Item>();
+            AItem itemWithData = (focus as Component).gameObject.GetSafeMonoBehaviourComponent<AItem>();
             string focusName = "No Data";
             if (itemWithData != null) {
                 focusName = itemWithData.Data.Name;

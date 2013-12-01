@@ -15,6 +15,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -29,6 +30,7 @@ public class StarView : View {
 
     protected override void Awake() {
         base.Awake();
+        (_collider as SphereCollider).radius = TempGameValues.StarRadius;
         circleScaleFactor = 0.6F;
     }
 

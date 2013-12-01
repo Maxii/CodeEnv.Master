@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract generic base class for all managers of 3D interactable objects in the game.
 /// </summary>
-public abstract class AGameObjectManager<DataType> : AMonoBehaviourBase, INotifyVisibilityChanged where DataType : Data {
+public abstract class AGameObjectManager<DataType> : AMonoBase, INotifyVisibilityChanged where DataType : Data {
 
     private static GuiHudLineKeys[] _noOptionalCursorHudLinesToUpdate = new GuiHudLineKeys[0];
 

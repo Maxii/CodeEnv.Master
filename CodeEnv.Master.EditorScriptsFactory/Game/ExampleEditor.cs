@@ -17,6 +17,6 @@ using UnityEditor;
 /// <summary>
 /// Example Custom Editor using EditorBase class.
 /// </summary>
-[CustomEditor(typeof(FleetItem))]
+[CustomEditor(typeof(PlanetoidItem))]
 public class ExampleEditor : AEditorBase<FleetItem> { }
 

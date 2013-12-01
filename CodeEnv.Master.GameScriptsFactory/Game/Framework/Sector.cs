@@ -19,9 +19,24 @@ using UnityEngine;
 /// A placeholder container class for TBD items that will be present in a Sector.
 /// eg. a nebula particle system.
 /// </summary>
-public class Sector : AMonoBehaviourBase {
+public class Sector : AMonoBase {
 
     public Index3D SectorIndex { get; set; }
+
+    /// <summary>
+    /// UNDONE
+    /// The density of matter in space in this sector. Intended to be
+    /// applied to pathfinding points in the sector as a 'penalty' to
+    /// influence path creation. Should also increase drag on a ship
+    /// in the sector to reduce its speed for a given thrust. The value
+    /// should probably be a function of the OpeYield in the sector.
+    /// </summary>
+    public float Density { get; set; }
+
+    protected override void Awake() {
+        base.Awake();
+        Density = 1F;
+    }
 
     /// <summary>
     /// Readonly. Gets the position of this Sector in worldspace.

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: XResource.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// Enum designating the type of special resource.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,11 +16,20 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    /// <summary>
+    /// Enum designating the type of special resource.
+    /// </summary>
     public enum XResource {
 
         None,
+
+        /// <summary>
+        /// The special_1
+        /// </summary>
         Special_1,
+
         Special_2,
+
         Special_3
     }
 }

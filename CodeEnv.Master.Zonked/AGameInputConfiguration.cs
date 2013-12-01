@@ -28,7 +28,7 @@ using CodeEnv.Master.GameContent;
 /// Singleton. Abstract base class holding core GameInput Configuration nested classes.
 /// </summary>
 [Serializable]
-public abstract class AGameInputConfiguration<T> : AMonoBehaviourBaseSingletonInstanceIdentity<T> where T : AMonoBehaviourBase {
+public abstract class AGameInputConfiguration<T> : AMonoBaseSingleton<T> where T : AMonoBase {
 
     public static GameInput gameInput;
 

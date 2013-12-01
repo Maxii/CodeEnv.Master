@@ -200,8 +200,15 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        public void Add(XYield other) {
+            Special_1 += other.Special_1;
+            Special_2 += other.Special_2;
+            Special_3 += other.Special_3;
+        }
+
+
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return "Sp1[{0:0.#}], Sp2[{1:0.#}], Sp3[{2:0.#}]".Inject(Special_1, Special_2, Special_3);
         }
 
     }

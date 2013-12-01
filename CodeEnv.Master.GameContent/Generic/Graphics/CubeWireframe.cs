@@ -66,6 +66,11 @@ namespace CodeEnv.Master.GameContent {
             _pointLine = new VectorPoints("CenterPoint", centerPoint, Color.ToUnityColor(), material, 2F);
         }
 
+        public override void Show(bool toShow) {
+            base.Show(toShow);
+            _pointLine.active = toShow;
+        }
+
         protected override void Draw3D() {
             base.Draw3D();
             if (_target != null) {
@@ -74,11 +79,6 @@ namespace CodeEnv.Master.GameContent {
             else {
                 _pointLine.Draw3D();
             }
-        }
-
-        public override void Hide() {
-            base.Hide();
-            _pointLine.active = false;
         }
 
         private void OnSizeChanged() {

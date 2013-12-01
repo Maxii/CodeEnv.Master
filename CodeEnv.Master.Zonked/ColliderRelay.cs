@@ -24,7 +24,7 @@ using UnityEngine;
 ///<remarks>Obsolete as it can't do anything with Raycasts from the camera.</remarks>
 /// </summary>
 [Obsolete, RequireComponent(typeof(Collider))]
-public class ColliderRelay : AMonoBehaviourBase {
+public class ColliderRelay : AMonoBase {
 
     public Transform[] relayTargets;
 

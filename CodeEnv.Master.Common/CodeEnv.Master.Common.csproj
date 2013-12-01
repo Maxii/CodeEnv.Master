@@ -50,6 +50,14 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="ThirdParty\AStateMachine.cs" />
+    <Compile Include="ThirdParty\ABackgroundTask.cs" />
+    <Compile Include="ThirdParty\ATask.cs" />
+    <Compile Include="ThirdParty\ActionTask.cs" />
+    <Compile Include="Generic\IO\AInputConfigurationBase.cs" />
+    <Compile Include="ThirdParty\ITaskManager.cs" />
+    <Compile Include="ThirdParty\TaskState.cs" />
+    <Compile Include="ThirdParty\Recycler.cs" />
     <Compile Include="ThirdParty\Easing.cs" />
     <Compile Include="Generic\IO\KeyModifiers.cs" />
     <Compile Include="Generic\Framework\Index3D.cs" />
@@ -64,7 +72,7 @@
     <Compile Include="Generic\Framework\ItemDeathEvent.cs" />
     <Compile Include="Generic\Framework\MyNguiConstants.cs" />
     <Compile Include="Generic\Framework\MyNguiUtilities.cs" />
-    <Compile Include="Generic\Framework\UnityUtility.cs" />
+    <Compile Include="Generic\Extensions\UnityUtility.cs" />
     <Compile Include="Generic\Framework\AGenericSingleton.cs" />
     <Compile Include="Generic\Graphics\ColoredText.cs" />
     <Compile Include="Generic\Graphics\ColoredTextList.cs" />
@@ -120,7 +128,6 @@
     <Compile Include="Generic\Graphics\IconSelectionCriteria.cs" />
     <Compile Include="Generic\Graphics\IIcon.cs" />
     <Compile Include="ThirdParty\PropertyHelper.cs" />
-    <Compile Include="ThirdParty\StateMachine.cs" />
     <Compile Include="ThirdParty\TextScanner.cs" />
     <Compile Include="ThirdParty\FlagsHelper.cs" />
     <Compile Include="Generic\_Debug\ObjectAnalyzer.cs" />
@@ -130,9 +137,9 @@
     <Compile Include="Generic\Extensions\StringExtensions.cs" />
     <Compile Include="ThirdParty\Enums.cs" />
     <Compile Include="Generic\Framework\EnumAttribute.cs" />
-    <Compile Include="Generic\Framework\Arguments.cs" />
-    <Compile Include="Generic\Framework\Constants.cs" />
-    <Compile Include="Generic\Framework\Utility.cs">
+    <Compile Include="Generic\Extensions\Arguments.cs" />
+    <Compile Include="Generic\Extensions\Constants.cs" />
+    <Compile Include="Generic\Extensions\Utility.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Game\Framework\UniverseSize.cs" />

@@ -13,6 +13,7 @@
 // default namespace
 
 using System;
+using System.Collections;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -22,7 +23,7 @@ using UnityEngine;
 /// <summary>
 /// A class for managing the UI of a ship.
 /// </summary>
-public class ShipView : MovingView, ISelectable {
+public class ShipView : MovingView, IShipViewable, ISelectable {
 
     protected new ShipPresenter Presenter {
         get { return base.Presenter as ShipPresenter; }
@@ -41,20 +42,24 @@ public class ShipView : MovingView, ISelectable {
     }
 
     public int maxShowDistance;
+    public AudioClip dying;
 
-    private Color _originalMainShipColor;
-    private Color _originalSpecularShipColor;
-    private Color _hiddenShipColor;
-    private Renderer _shipRenderer;
+    private Color _originalMeshColor_Main;
+    private Color _originalMeshColor_Specular;
+    private Color _hiddenMeshColor;
+    private Renderer _renderer;
     private bool _toShowShipBasedOnDistance;
 
+    private Job _showingJob;
+    private AudioSource _audioSource;
     private VelocityRay _velocityRay;
 
     protected override void Awake() {
         base.Awake();
+        _audioSource = UnityUtility.ValidateComponentPresence<AudioSource>(gameObject);
         circleScaleFactor = 1.0F;
-        maxAnimateDistance = Mathf.RoundToInt(AnimationSettings.Instance.MaxShipAnimateDistanceFactor * Size);
-        maxShowDistance = Mathf.RoundToInt(AnimationSettings.Instance.MaxShipShowDistanceFactor * Size);
+        maxAnimateDistance = Mathf.RoundToInt(AnimationSettings.Instance.MaxShipAnimateDistanceFactor * Radius);
+        maxShowDistance = Mathf.RoundToInt(AnimationSettings.Instance.MaxShipShowDistanceFactor * Radius);
         InitializeHighlighting();
     }
 
@@ -64,18 +69,18 @@ public class ShipView : MovingView, ISelectable {
 
     protected override void Start() {
         base.Start();
-        __ValidateCtxObjectSettings();
+        __InitializeContextMenu();
     }
 
-    protected override void OnIsVisibleChanged() {
-        EnableBasedOnDiscernible(IsVisible, IsDetectable);
-        EnableBasedOnDistanceToCamera(IsVisible, PlayerIntelLevel != IntelLevel.Nil);
+    protected override void OnInCameraLOSChanged() {
+        EnableBasedOnDiscernible(InCameraLOS, IsDetectable);
+        EnableBasedOnDistanceToCamera(InCameraLOS, PlayerIntelLevel != IntelLevel.Nil);
         AssessHighlighting();
     }
 
     private void OnIsDetectableChanged() {
-        EnableBasedOnDiscernible(IsVisible, IsDetectable);
-        EnableBasedOnDistanceToCamera(IsVisible, PlayerIntelLevel != IntelLevel.Nil);
+        EnableBasedOnDiscernible(InCameraLOS, IsDetectable);
+        EnableBasedOnDistanceToCamera(InCameraLOS, PlayerIntelLevel != IntelLevel.Nil);
         AssessHighlighting();
     }
 
@@ -136,49 +141,49 @@ public class ShipView : MovingView, ISelectable {
     }
 
     public override void AssessHighlighting() {
-        if (!IsDetectable || !IsVisible) {
-            ShowShip(false);
+        if (!IsDetectable || !InCameraLOS) {
+            ShowMesh(false);
             Highlight(Highlights.None);
             return;
         }
         if (IsFocus) {
             if (IsSelected) {
-                ShowShip(true);
+                ShowMesh(true);
                 Highlight(Highlights.SelectedAndFocus);
                 return;
             }
             if (Presenter.IsFleetSelected) {
-                ShowShip(true);
+                ShowMesh(true);
                 Highlight(Highlights.FocusAndGeneral);
                 return;
             }
-            ShowShip(true);
+            ShowMesh(true);
             Highlight(Highlights.Focused);
             return;
         }
         if (IsSelected) {
-            ShowShip(true);
+            ShowMesh(true);
             Highlight(Highlights.Selected);
             return;
         }
         if (Presenter.IsFleetSelected) {
-            ShowShip(true);
+            ShowMesh(true);
             Highlight(Highlights.General);
             return;
         }
-        ShowShip(true);
+        ShowMesh(true);
         Highlight(Highlights.None);
     }
 
-    private void ShowShip(bool toShow) {
+    private void ShowMesh(bool toShow) {
         if (toShow) {
-            _shipRenderer.material.SetColor(UnityConstants.MainMaterialColor, _originalMainShipColor);
-            _shipRenderer.material.SetColor(UnityConstants.SpecularMaterialColor, _originalSpecularShipColor);
+            _renderer.material.SetColor(UnityConstants.MaterialColor_Main, _originalMeshColor_Main);
+            _renderer.material.SetColor(UnityConstants.MaterialColor_Specular, _originalMeshColor_Specular);
             // TODO audio on goes here
         }
         else {
-            _shipRenderer.material.SetColor(UnityConstants.MainMaterialColor, _hiddenShipColor);
-            _shipRenderer.material.SetColor(UnityConstants.SpecularMaterialColor, _hiddenShipColor);
+            _renderer.material.SetColor(UnityConstants.MaterialColor_Main, _hiddenMeshColor);
+            _renderer.material.SetColor(UnityConstants.MaterialColor_Specular, _hiddenMeshColor);
             // TODO audio off goes here
         }
         ShowVelocityRay(toShow);
@@ -222,7 +227,7 @@ public class ShipView : MovingView, ISelectable {
     }
 
     /// <summary>
-    /// Shows a Vectrosity Ray indicating the course and speed of the ship.
+    /// Shows a Ray indicating the course and speed of the ship.
     /// </summary>
     private void ShowVelocityRay(bool toShow) {
         if (DebugSettings.Instance.EnableShipVelocityRays) {
@@ -234,14 +239,7 @@ public class ShipView : MovingView, ISelectable {
                 _velocityRay = new VelocityRay("ShipVelocity", _transform, shipSpeed, parent: DynamicObjects.Folder,
                     width: 1F, color: GameColor.Gray);
             }
-            if (toShow) {
-                if (!_velocityRay.IsShowing) {
-                    StartCoroutine(_velocityRay.Show());
-                }
-            }
-            else if (_velocityRay.IsShowing) {
-                _velocityRay.Hide();
-            }
+            _velocityRay.Show(toShow);
         }
     }
 
@@ -262,14 +260,16 @@ public class ShipView : MovingView, ISelectable {
     }
 
     private void InitializeHighlighting() {
-        _shipRenderer = gameObject.GetComponentInChildren<Renderer>();
-        _originalMainShipColor = _shipRenderer.material.GetColor(UnityConstants.MainMaterialColor);
-        _originalSpecularShipColor = _shipRenderer.material.GetColor(UnityConstants.SpecularMaterialColor);
-        _hiddenShipColor = GameColor.Clear.ToUnityColor();
+        _renderer = gameObject.GetComponentInChildren<Renderer>();
+        _originalMeshColor_Main = _renderer.material.GetColor(UnityConstants.MaterialColor_Main);
+        _originalMeshColor_Specular = _renderer.material.GetColor(UnityConstants.MaterialColor_Specular);
+        _hiddenMeshColor = GameColor.Clear.ToUnityColor();
     }
 
-    private void __ValidateCtxObjectSettings() {
+    private void __InitializeContextMenu() {    // IMPROVE use of string
         CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
+        CtxMenu shipMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "ShipMenu");
+        ctxObject.contextMenu = shipMenu;
         D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
         UnityUtility.ValidateComponentPresence<Collider>(gameObject);
     }
@@ -285,12 +285,24 @@ public class ShipView : MovingView, ISelectable {
         return new ObjectAnalyzer().ToString(this);
     }
 
+    #region ICameraFocusable Members
+
+    protected override float CalcOptimalCameraViewingDistance() {
+        return Radius * 2.4F;
+    }
+
+    #endregion
+
     #region ICameraTargetable Members
 
     public override bool IsEligible {
         get {
             return IsDetectable;
         }
+    }
+
+    protected override float CalcMinimumCameraViewingDistance() {
+        return Radius * 2.0F;
     }
 
     #endregion
@@ -301,6 +313,57 @@ public class ShipView : MovingView, ISelectable {
     public bool IsSelected {
         get { return _isSelected; }
         set { SetProperty<bool>(ref _isSelected, value, "IsSelected", OnIsSelectedChanged); }
+    }
+
+    #endregion
+
+    #region IShipViewable Members
+
+    public event Action onShowCompletion;
+
+    // these 3 must return onShowCompletion when finished to inform 
+    // ShipItem when it is OK to progress to the next state
+    public void ShowAttacking() {
+        throw new NotImplementedException();
+    }
+
+    public void ShowHit() {
+        throw new NotImplementedException();
+    }
+
+    public void ShowDying() {
+        _showingJob = new Job(ShowingDying(), toStart: true);
+    }
+
+    private IEnumerator ShowingDying() {
+        if (dying != null) {
+            _audioSource.PlayOneShot(dying);
+        }
+        _collider.enabled = false;
+        //animation.Stop();
+        //yield return UnityUtility.PlayAnimation(animation, "die");  // show debree particles for some period of time?
+        yield return null;
+        onShowCompletion();
+    }
+
+    // these 3 run continuously until they are stopped via StopShowing() when
+    // ShipItem state changes from the state that started them
+    public void ShowEntrenching() {
+        throw new NotImplementedException();
+    }
+
+    public void ShowRepairing() {
+        throw new NotImplementedException();
+    }
+
+    public void ShowRefitting() {
+        throw new NotImplementedException();
+    }
+
+    public void StopShowing() {
+        if (_showingJob != null && _showingJob.IsRunning) {
+            _showingJob.Kill();
+        }
     }
 
     #endregion

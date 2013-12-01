@@ -27,7 +27,7 @@ using UnityEngine;
 /// clone of the Prefab in the startScene. As such, they must be Instantiated before use.
 /// </remarks>
 /// </summary>
-public class UsefulPrefabs : AMonoBehaviourBaseSingletonInstanceIdentity<UsefulPrefabs> {
+public class UsefulPrefabs : AMonoBaseSingleton<UsefulPrefabs> {
 
     //*******************************************************************
     // Prefabs you want to keep between scenes t here and

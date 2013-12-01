@@ -21,7 +21,7 @@ using UnityEngine;
 /// <summary>
 /// COMMENT 
 /// </summary>
-public class FleetPathfinderAI : AMonoBehaviourBase {
+public class FleetPathfinderAI : AMonoBase {
 
     public Vector3 pathDestination;
 

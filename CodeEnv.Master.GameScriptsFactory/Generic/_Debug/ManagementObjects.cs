@@ -26,7 +26,7 @@ using UnityEngine;
 /// attaching any Management folder child objects in the new scene to this incoming folder, then destroys
 /// the Management folder that was already present in the new scene.
 /// </summary>
-public class ManagementObjects : AMonoBehaviourBaseSingletonInstanceIdentity<ManagementObjects>, IDisposable {
+public class ManagementObjects : AMonoBaseSingleton<ManagementObjects>, IDisposable {
 
     /// <summary>
     /// Gets the ManagementObjects folder transform.

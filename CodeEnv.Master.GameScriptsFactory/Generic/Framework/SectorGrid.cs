@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// Grid of Sectors. 
 /// </summary>
-public class SectorGrid : AMonoBehaviourBaseSingleton<SectorGrid>, IDisposable {
+public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
 
     /// <summary>
     /// Readonly. The location of the center of all sectors in world space.
@@ -226,7 +226,7 @@ public class SectorGrid : AMonoBehaviourBaseSingleton<SectorGrid>, IDisposable {
     }
 
     private void __AddSector(Index3D index, Vector3 worldPosition) {
-        Sector sectorPrefab = RequiredPrefabs.Instance.SectorPrefab;
+        Sector sectorPrefab = RequiredPrefabs.Instance.sector;
         GameObject sectorGO = NGUITools.AddChild(Sectors.Folder.gameObject, sectorPrefab.gameObject);
         Sector sector = sectorGO.GetSafeMonoBehaviourComponent<Sector>();
         sector.SectorIndex = index;
@@ -393,14 +393,7 @@ public class SectorGrid : AMonoBehaviourBaseSingleton<SectorGrid>, IDisposable {
         }
 
         if (_gridWireframe != null) {
-            if (toShow) {
-                if (!_gridWireframe.IsShowing) {
-                    StartCoroutine(_gridWireframe.Show());
-                }
-            }
-            else if (_gridWireframe.IsShowing) {
-                _gridWireframe.Hide();
-            }
+            _gridWireframe.Show(toShow);
         }
     }
 

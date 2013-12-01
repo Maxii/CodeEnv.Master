@@ -27,7 +27,7 @@ using UnityEngine;
 /// schedule as Unity without being a MonoBehaviour.
 /// </summary>
 [Obsolete]
-public class FramesLastUpdate : AMonoBehaviourBase {
+public class FramesLastUpdate : AMonoBase {
 
     private GameEventManager _eventMgr;
 

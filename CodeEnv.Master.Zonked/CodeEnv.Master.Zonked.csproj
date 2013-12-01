@@ -54,12 +54,20 @@
     </Compile>
     <Compile Include="AFocusableItem.cs" />
     <Compile Include="AFollowableItem.cs" />
+    <Compile Include="AGameInputConfiguration.cs" />
     <Compile Include="AGameObjectManager.cs" />
     <Compile Include="AGraphics.cs" />
     <Compile Include="AItem.cs" />
+    <Compile Include="AMonoBehaviourBaseSingletonInstanceIdentity.cs" />
+    <Compile Include="AMonoStateMachineSingleton.cs" />
+    <Compile Include="ANavigator.cs" />
+    <Compile Include="AStateMachine.cs" />
+    <Compile Include="AutoPilot.cs" />
     <Compile Include="CameraControl.cs" />
+    <Compile Include="CameraControl_1.cs" />
     <Compile Include="ColliderExtensions.cs" />
     <Compile Include="ColliderRelay.cs" />
+    <Compile Include="CoroutineManager.cs" />
     <Compile Include="CoroutineNode.cs" />
     <Compile Include="CoroutineScheduler.cs" />
     <Compile Include="FleetAdmiralIcon.cs" />
@@ -67,7 +75,9 @@
     <Compile Include="FleetAutoPilot2.cs" />
     <Compile Include="FleetCommand.cs" />
     <Compile Include="FleetGraphics.cs" />
+    <Compile Include="FleetItem.cs" />
     <Compile Include="FleetManager.cs" />
+    <Compile Include="FleetNavigator.cs" />
     <Compile Include="FleetPathfinderAI.cs" />
     <Compile Include="FocusableItemControl.cs" />
     <Compile Include="FollowableItem.cs" />
@@ -77,6 +87,7 @@
     <Compile Include="GameClockEvent.cs" />
     <Compile Include="GameInput.cs" />
     <Compile Include="GameManager.cs" />
+    <Compile Include="GameManager_1.cs" />
     <Compile Include="GamePauseState.cs" />
     <Compile Include="GamePauseStateChangeEvent.cs" />
     <Compile Include="GamePauseStateChangingEvent.cs" />
@@ -112,6 +123,7 @@
     <Compile Include="MonoGameManager.cs" />
     <Compile Include="MyCtxPickHandler.cs" />
     <Compile Include="MyNguiButtonPlayAnimation.cs" />
+    <Compile Include="Navigator.cs" />
     <Compile Include="OrbitalPlane.cs" />
     <Compile Include="OrbitalPlaneManager.cs" />
     <Compile Include="PlayerSettingsSetup.cs" />
@@ -120,6 +132,8 @@
     <Compile Include="Sector.cs" />
     <Compile Include="ShipCaptain.cs" />
     <Compile Include="ShipGraphics.cs" />
+    <Compile Include="ShipItem.cs" />
+    <Compile Include="ShipNavigator.cs" />
     <Compile Include="Star.cs" />
     <Compile Include="StarGraphics.cs" />
     <Compile Include="StationaryItem.cs" />

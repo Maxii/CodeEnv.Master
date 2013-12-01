@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public Vector3 Position {
             get {
-                return _transform.position;
+                return Transform.position;
             }
         }
 
@@ -74,13 +74,15 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-
         private float _health;
         /// <summary>
         /// Readonly. Indicates the health of the item, a value between 0 and 1.
         /// </summary>
         public float Health {
-            get { return _health; }
+            get {
+                //D.Log("Health {0}, CurrentHitPoints {1}, MaxHitPoints {2}.", _health, _currentHitPoints, _maxHitPoints);
+                return _health;
+            }
             private set {
                 value = Mathf.Clamp01(value);
                 SetProperty<float>(ref _health, value, "Health");
@@ -88,7 +90,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private GameDate _lastHumanPlayerIntelDate;
-
         /// <summary>
         /// Gets or sets the date the human player last had 
         /// intel on this location. Used only when IntelState is
@@ -103,18 +104,31 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected Transform _transform;
+        private Transform _transform;
+        public Transform Transform {
+            protected get { return _transform; }
+            set { SetProperty<Transform>(ref _transform, value, "Transform", OnTransformChanged); }
+        }
 
-        public Data(Transform t, string name, float maxHitPoints, string optionalParentName = "") {
-            _transform = t;
-            Name = name;
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Data" /> class.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="maxHitPoints">The maximum hit points.</param>
+        /// <param name="optionalParentName">Name of the optional parent.</param>
+        public Data(string name, float maxHitPoints, string optionalParentName = "") {
+            _name = name;
             _maxHitPoints = maxHitPoints;
             CurrentHitPoints = maxHitPoints;
             OptionalParentName = optionalParentName;
         }
 
+        protected virtual void OnTransformChanged() {
+            Transform.name = Name;
+        }
+
         protected virtual void OnNameChanged() {
-            _transform.name = Name;
+            Transform.name = Name;
         }
 
         private void OnMaxHitPointsChanging(float newMaxHitPoints) {

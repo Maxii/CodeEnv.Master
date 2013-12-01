@@ -5,36 +5,37 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GameManager.cs
-// Singleton. The main Manager for the game.
+// File: GameManager_State.cs
+// Singleton. The main manager for the game, implemented as a mono state machine.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
+
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 // default namespace
 
 using System;
 using System.Collections;
+using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Singleton. The main Manager for the game.
+/// Singleton. The main manager for the game, implemented as a mono state machine.
 /// </summary>
-public class GameManager : AMonoBehaviourBaseSingletonInstanceIdentity<GameManager>, IDisposable {
+[SerializeAll]
+public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, IDisposable {
 
     public static GameSettings Settings { get; private set; }
 
     public HumanPlayer HumanPlayer { get; private set; }
-
-    private GameState _gameState;
-    public GameState GameState {
-        get { return _gameState; }
-        private set { SetProperty<GameState>(ref _gameState, value, "GameState", OnGameStateChanged, OnGameStateChanging); }
-    }
 
     private PauseState _pauseState;
     /// <summary>
@@ -92,13 +93,13 @@ public class GameManager : AMonoBehaviourBaseSingletonInstanceIdentity<GameManag
         }
     }
 
-    //private void ChangeLanguage(string language) {
-    //    CultureInfo newCulture = new CultureInfo(language);
-    //    Thread.CurrentThread.CurrentCulture = newCulture;
-    //    Thread.CurrentThread.CurrentUICulture = newCulture;
-    //    D.Log("Current culture of thread is {0}.".Inject(Thread.CurrentThread.CurrentUICulture.DisplayName));
-    //    D.Log("Current OS Language of Unity is {0}.".Inject(Application.systemLanguage.GetName()));
-    //}
+    private void ChangeLanguage(string language) {
+        CultureInfo newCulture = new CultureInfo(language);
+        Thread.CurrentThread.CurrentCulture = newCulture;
+        Thread.CurrentThread.CurrentUICulture = newCulture;
+        D.Log("Current culture of thread is {0}.".Inject(Thread.CurrentThread.CurrentUICulture.DisplayName));
+        D.Log("Current OS Language of Unity is {0}.".Inject(Application.systemLanguage.GetName()));
+    }
 
     private void Subscribe() {
         _eventMgr.AddListener<BuildNewGameEvent>(Instance, OnBuildNewGame);
@@ -119,7 +120,7 @@ public class GameManager : AMonoBehaviourBaseSingletonInstanceIdentity<GameManag
         SceneLevel startScene = (SceneLevel)Application.loadedLevel;
         switch (startScene) {
             case SceneLevel.IntroScene:
-                GameState = GameState.Lobby;
+                CurrentState = GameState.Lobby;
                 break;
             case SceneLevel.GameScene:
                 __SimulateBuildGameFromLobby_Step1();
@@ -147,8 +148,8 @@ public class GameManager : AMonoBehaviourBaseSingletonInstanceIdentity<GameManag
     /// starting in GameScene.
     /// </summary>
     private void __SimulateBuildGameFromLobby_Step1() {
-        GameState = GameState.Lobby;  // avoids the Illegal state transition Error
-        GameState = GameState.Building;
+        CurrentState = GameState.Lobby;  // avoids the Illegal state transition Error
+        CurrentState = GameState.Building;
         GameSettings settings = new GameSettings {
             IsNewGame = true,
             UniverseSize = _playerPrefsMgr.UniverseSize,
@@ -156,12 +157,12 @@ public class GameManager : AMonoBehaviourBaseSingletonInstanceIdentity<GameManag
         };
         Settings = settings;
         HumanPlayer = CreateHumanPlayer(settings);
-        GameState = GameState.Loading;
+        CurrentState = GameState.Loading;
     }
 
     private void __SimulateBuildGameFromLobby_Step2() {
         // GameState.Restoring only applies to loading saved games
-        GameState = GameState.Waiting;
+        CurrentState = GameState.Waiting;
     }
 
     #endregion
@@ -170,23 +171,26 @@ public class GameManager : AMonoBehaviourBaseSingletonInstanceIdentity<GameManag
 
     private void OnBuildNewGame(BuildNewGameEvent e) {
         D.Log("BuildNewGameEvent received.");
-        StartCoroutine<GameSettings>(WaitUntilReadyThenBuildNewGame, e.Settings);
+        new Job(WaitForGuiManager(), toStart: true, onJobComplete: delegate {
+            BuildAndLoadNewGame(e.Settings);
+        });
+        // the above is the anonymous method approach that allows you to ignore parameters if not used
+        // the lambda equivalent: (jobWasKilled) => { BuildAndLoadNewGame(e.Settings); }
     }
 
-    private IEnumerator WaitUntilReadyThenBuildNewGame(GameSettings settings) {
+    private IEnumerator WaitForGuiManager() {
         while (!GuiManager.Instance.ReadyForSceneChange) {
             yield return null;
         }
-        BuildAndLoadNewGame(settings);
     }
 
     private void BuildAndLoadNewGame(GameSettings settings) {
-        GameState = GameState.Building;
+        CurrentState = GameState.Building;
         // building the level begins here when implemented
         Settings = settings;
         HumanPlayer = CreateHumanPlayer(settings);
 
-        GameState = GameState.Loading;
+        CurrentState = GameState.Loading;
         // tell ManagementObjects to drop its children (including SaveGameManager!) before the scene gets reloaded
         _eventMgr.Raise<SceneChangingEvent>(new SceneChangingEvent(this, SceneLevel.GameScene));
         D.Log("Application.LoadLevel({0}) being called.", SceneLevel.GameScene.GetName());
@@ -200,19 +204,32 @@ public class GameManager : AMonoBehaviourBaseSingletonInstanceIdentity<GameManag
 
     #endregion
 
-    #region Saving and Restoring
-
-    private void OnLoadSavedGame(LoadSavedGameEvent e) {
-        D.Log("LoadSavedGameEvent received.");
-        StartCoroutine<string>(WaitUntilReadyThenLoadAndRestoreSavedGame, e.GameID);
-    }
-
-    private IEnumerator WaitUntilReadyThenLoadAndRestoreSavedGame(string gameID) {
-        while (!GuiManager.Instance.ReadyForSceneChange) {
-            yield return null;
+    // This substitutes my own Event for OnLevelWasLoaded so I don't have to use OnLevelWasLoaded anywhere else
+    // Wiki: OnLevelWasLoaded is NOT guaranteed to run before all of the Awake calls. In most cases it will, but in some 
+    // might produce some unexpected bugs. If you need some code to be executed before Awake calls, use OnDisable instead.
+    void OnLevelWasLoaded(int level) {
+        if (enabled) {
+            // OnLevelWasLoaded is called on all active components and at any time. The earliest thing that happens after Destroy(gameObject)
+            // is component disablement. GameObject deactivation happens later, but before OnDestroy()
+            D.Log("{0}_{1}.OnLevelWasLoaded(level = {2}) called.".Inject(this.name, InstanceID, ((SceneLevel)level).GetName()));
+            SceneLevel newScene = (SceneLevel)level;
+            if (newScene != SceneLevel.GameScene) {
+                D.Error("A Scene change to {0} is currently not implemented.", newScene.GetName());
+                return;
+            }
+            _eventMgr.Raise<SceneChangedEvent>(new SceneChangedEvent(this, newScene));
+            if (LevelSerializer.IsDeserializing || !Settings.IsNewGame) {
+                CurrentState = GameState.Restoring;
+            }
+            else {
+                ResetConditionsForGameStartup();
+                _gameTime.PrepareToBeginNewGame();
+                CurrentState = GameState.Waiting;
+            }
         }
-        LoadAndRestoreSavedGame(gameID);
     }
+
+    #region Saving and Restoring
 
     private void OnSaveGame(SaveGameEvent e) {
         SaveGame(e.GameName);
@@ -224,7 +241,13 @@ public class GameManager : AMonoBehaviourBaseSingletonInstanceIdentity<GameManag
         LevelSerializer.SaveGame(gameName);
     }
 
-    // called by MonoGameManager when the existing scene is prepared
+    private void OnLoadSavedGame(LoadSavedGameEvent e) {
+        D.Log("LoadSavedGameEvent received.");
+        new Job(WaitForGuiManager(), toStart: true, onJobComplete: delegate {
+            LoadAndRestoreSavedGame(e.GameID);
+        });
+    }
+
     private void LoadAndRestoreSavedGame(string gameID) {
         var savedGames = LevelSerializer.SavedGames[LevelSerializer.PlayerName];
         var gamesWithID = from g in savedGames where g.Caption == gameID select g;
@@ -243,36 +266,11 @@ public class GameManager : AMonoBehaviourBaseSingletonInstanceIdentity<GameManag
             selectedGame = gamesWithID.Single<LevelSerializer.SaveEntry>();
         }
 
-        GameState = GameState.Building;
-        GameState = GameState.Loading;
+        CurrentState = GameState.Building;
+        CurrentState = GameState.Loading;
         // tell ManagementObjects to drop its children (including SaveGameManager!) before the scene gets reloaded
         _eventMgr.Raise<SceneChangingEvent>(new SceneChangingEvent(this, SceneLevel.GameScene));
         selectedGame.Load();
-    }
-
-    // This substitutes my own Event for OnLevelWasLoaded so I don't have to use OnLevelWasLoaded anywhere else
-    // Wiki: OnLevelWasLoaded is NOT guaranteed to run before all of the Awake calls. In most cases it will, but in some 
-    // might produce some unexpected bugs. If you need some code to be executed before Awake calls, use OnDisable instead.
-    void OnLevelWasLoaded(int level) {
-        if (enabled) {
-            // OnLevelWasLoaded is called on all active components and at any time. The earliest thing that happens after Destroy(gameObject)
-            // is component disablement. GameObject deactivation happens later, but before OnDestroy()
-            D.Log("{0}_{1}.OnLevelWasLoaded(level = {2}) called.".Inject(this.name, InstanceID, ((SceneLevel)level).GetName()));
-            SceneLevel newScene = (SceneLevel)level;
-            if (newScene != SceneLevel.GameScene) {
-                D.Error("A Scene change to {0} is currently not implemented.", newScene.GetName());
-                return;
-            }
-            _eventMgr.Raise<SceneChangedEvent>(new SceneChangedEvent(this, newScene));
-            if (LevelSerializer.IsDeserializing || !Settings.IsNewGame) {
-                GameState = GameState.Restoring;
-            }
-            else {
-                ResetConditionsForGameStartup();
-                _gameTime.PrepareToBeginNewGame();
-                GameState = GameState.Waiting;
-            }
-        }
     }
 
     // Assumes GameTime.PrepareToResumeSavedGame() can only be called AFTER OnLevelWasLoaded
@@ -280,15 +278,27 @@ public class GameManager : AMonoBehaviourBaseSingletonInstanceIdentity<GameManag
         D.Log("GameManager.OnDeserialized() called.");
         ResetConditionsForGameStartup();
         _gameTime.PrepareToResumeSavedGame();
-        GameState = GameState.Waiting;
+        CurrentState = GameState.Waiting;
     }
 
     #endregion
 
+    /// <summary>
+    /// Resets any conditions required for normal game startup. For instance, PauseState
+    /// is normally NotPaused while setting up the first game. This may or maynot be the
+    /// current state of PauseState given the numerous ways one can initiate the startup
+    /// of a game instance.
+    /// </summary>
+    private void ResetConditionsForGameStartup() {
+        if (_gameStatus.IsPaused) {
+            ProcessPauseRequest(PauseRequest.PriorityResume);
+        }
+    }
+
     #region Pausing System
 
     private void OnGuiPauseChangeRequest(GuiPauseRequestEvent e) {
-        D.Assert(GameState == GameState.Running);
+        D.Assert(CurrentState == GameState.Running);
         ProcessPauseRequest(e.NewValue);
     }
 
@@ -349,132 +359,129 @@ public class GameManager : AMonoBehaviourBaseSingletonInstanceIdentity<GameManag
 
     #region GameState System
 
-    private void OnGameStateChanging(GameState newState) {
-        ValidateConditionsForChangeInGameState(newState);
+    protected override void OnCurrentStateChanging(GameState incomingState) {
+        base.OnCurrentStateChanging(incomingState);
     }
 
-    private void OnGameStateChanged() {
-        InitializeOnGameStateChanged();
+    protected override void OnCurrentStateChanged() {
+        base.OnCurrentStateChanged();
     }
 
-    /// <summary>
-    /// Progresses the GameState from the current state in sequence to Running.
-    /// </summary>
-    /// <exception cref="System.NotImplementedException"></exception>
-    public void __ProgressToRunning() {
-        switch (GameState) {
-            case GameState.Waiting:
-                GameState = GameState.GeneratingPathGraphs;
-                GameState = GameState.RunningCountdown_2;
-                GameState = GameState.RunningCountdown_1;
-                GameState = GameState.Running;
-                break;
-            case GameState.GeneratingPathGraphs:
-                GameState = GameState.RunningCountdown_2;
-                GameState = GameState.RunningCountdown_1;
-                GameState = GameState.Running;
-                break;
-            case GameState.RunningCountdown_2:
-                GameState = GameState.RunningCountdown_1;
-                GameState = GameState.Running;
-                break;
-            case GameState.RunningCountdown_1:
-                GameState = GameState.Running;
-                break;
-            // the rest of the states should never change this way
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(GameState));
-        }
+    public void OnLoaderReady() {
+        CurrentState = GameState.GeneratingPathGraphs;
     }
 
-    private void ValidateConditionsForChangeInGameState(GameState proposedNewState) {
-        bool isError = false;
-        switch (GameState) {
-            case GameState.None:
-                if (proposedNewState != GameState.Lobby) { isError = true; }
-                break;
-            case GameState.Lobby:
-                if (proposedNewState != GameState.Building) { isError = true; }
-                break;
-            case GameState.Building:
-                if (proposedNewState != GameState.Loading) { isError = true; }
-                break;
-            case GameState.Loading:
-                if (proposedNewState != GameState.Restoring && proposedNewState != GameState.Waiting) { isError = true; }
-                break;
-            case GameState.Restoring:
-                if (proposedNewState != GameState.Waiting) { isError = true; }
-                break;
-            case GameState.Waiting:
-                if (proposedNewState != GameState.GeneratingPathGraphs) { isError = true; }
-                break;
-            case GameState.GeneratingPathGraphs:
-                if (proposedNewState != GameState.RunningCountdown_2) { isError = true; }
-                break;
-            case GameState.RunningCountdown_2:
-                if (proposedNewState != GameState.RunningCountdown_1) { isError = true; }
-                break;
-            case GameState.RunningCountdown_1:
-                if (proposedNewState != GameState.Running) { isError = true; }
-                break;
-            case GameState.Running:
-                if (proposedNewState != GameState.Lobby && proposedNewState != GameState.Building) { isError = true; }
-                break;
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(GameState));
-        }
-        if (isError) {
-            D.Error("Erroneous GameState transition. Current State = {0}, proposed State = {1}.", GameState, proposedNewState);
-            return;
-        }
+    // NOTE: The sequencing when a change of state is initiated by setting CurrentState = newState
+    // 1. the state we are changing from is recorded as lastState
+    // 2. the event OnCurrentStateChanging(newState) is sent to subscribers
+    // 3. the value of the CurrentState enum is changed to newState
+    // 4. the lastState_ExitState() method is called 
+    //          - while in this method, realize that the CurrentState enum has already changed to newState
+    // 5. the CurrentState's delegates are updated 
+    //          - meaning the EnterState delegate is changed from lastState_EnterState to newState_EnterState
+    // 6. the newState_EnterState() method is called
+    //          - as the event in 7 has not yet been called, you CANNOT set CurrentState = nextState within newState_EnterState()
+    //              - this would initiate the whole cycle above again, BEFORE the event in 7 is called
+    //              - you also can't just use a coroutine to wait then change it as the event is still held up
+    //          - instead, change it in newState_Update() which allows the event in 7 to complete before this change occurs again
+    // 7. the event OnCurrentStateChanged() is sent to subscribers
+    //          - when this event is received, a get_CurrentState property inquiry will properly return newState
+
+    void Lobby_ExitState() {
+        D.Assert(CurrentState == GameState.Building);
     }
 
-    /// <summary>
-    /// Does any initialization called for by a transition to a new GameState. 
-    /// WARNING: Donot change state directly from this method as this initialization
-    /// step occurs prior to sending out the GameStateChanged event to subscribers. Directly changing
-    /// the state within this method changes the state BEFORE the previous state has it's events sent.
-    /// </summary>
-    /// <exception cref="System.NotImplementedException"></exception>
-    private void InitializeOnGameStateChanged() {
-        switch (GameState) {
-            case GameState.Lobby:
-            case GameState.Building:
-            case GameState.Loading:
-            case GameState.Restoring:
-            case GameState.Waiting:
-            case GameState.GeneratingPathGraphs:
-            case GameState.RunningCountdown_2:
-            case GameState.RunningCountdown_1:
-                _gameStatus.IsRunning = false;
-                break;
-            case GameState.Running:
-                _gameStatus.IsRunning = true;
-                _gameTime.EnableClock(true);
-                if (_playerPrefsMgr.IsPauseOnLoadEnabled) {
-                    ProcessPauseRequest(PauseRequest.PriorityPause);
-                }
-                break;
-            case GameState.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(GameState));
-        }
-        D.Log("GameState changed to {0}.", Instance.GameState.GetName());
+    void Building_ExitState() {
+        D.Assert(CurrentState == GameState.Loading);
+    }
+
+    void Loading_ExitState() {
+        D.Assert(CurrentState == GameState.Waiting || CurrentState == GameState.Restoring);
+    }
+
+    void Restoring_ExitState() {
+        D.Assert(CurrentState == GameState.Waiting);
+    }
+
+    void Waiting_ExitState() {
+        LogEvent();
+        D.Assert(CurrentState == GameState.GeneratingPathGraphs);
+    }
+
+    #region GeneratingPathGraphs
+
+    void GeneratingPathGraphs_EnterState() {
+        LogEvent();
+    }
+
+    void GeneratingPathGraphs_Update() {
+        LogEvent();
+        CurrentState = GameState.RunningCountdown_2;
+    }
+
+    void GeneratingPathGraphs_ExitState() {
+        LogEvent();
+        D.Assert(CurrentState == GameState.RunningCountdown_2);
     }
 
     #endregion
 
-    /// <summary>
-    /// Resets any conditions required for normal game startup. For instance, PauseState
-    /// is normally NotPaused while setting up the first game. This may or maynot be the
-    /// current state of PauseState given the numerous ways one can initiate the startup
-    /// of a game instance.
-    /// </summary>
-    private void ResetConditionsForGameStartup() {
-        if (_gameStatus.IsPaused) {
-            ProcessPauseRequest(PauseRequest.PriorityResume);
-        }
+    #region RunningCountdown_2
+
+    void RunningCountdown_2_EnterState() {
+        LogEvent();
     }
+
+    void RunningCountdown_2_Update() {
+        LogEvent();
+        CurrentState = GameState.RunningCountdown_1;
+    }
+
+    void RunningCountdown_2_ExitState() {
+        LogEvent();
+        D.Assert(CurrentState == GameState.RunningCountdown_1);
+    }
+
+    #endregion
+
+    #region RunningCountdown_1
+
+    void RunningCountdown_1_EnterState() {
+        LogEvent();
+    }
+
+    void RunningCountdown_1_Update() {
+        LogEvent();
+        CurrentState = GameState.Running;
+    }
+
+    void RunningCountdown_1_ExitState() {
+        LogEvent();
+        D.Assert(CurrentState == GameState.Running);
+    }
+
+    #endregion
+
+    #region Running
+
+    void Running_EnterState() {
+        LogEvent();
+        _gameTime.EnableClock(true);
+        if (_playerPrefsMgr.IsPauseOnLoadEnabled) {
+            ProcessPauseRequest(PauseRequest.PriorityPause);
+        }
+        _gameStatus.IsRunning = true;
+    }
+
+    void Running_ExitState() {
+        LogEvent();
+        D.Assert(CurrentState == GameState.Lobby || CurrentState == GameState.Building);
+        _gameStatus.IsRunning = false;
+    }
+
+    #endregion
+
+    #endregion
 
     private void OnExitGame(ExitGameEvent e) {
         Shutdown();
@@ -552,6 +559,7 @@ public class GameManager : AMonoBehaviourBaseSingletonInstanceIdentity<GameManag
     //    // method content here
     //}
     #endregion
+
 
 }
 

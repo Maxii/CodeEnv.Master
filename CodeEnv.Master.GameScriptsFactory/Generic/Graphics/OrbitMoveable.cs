@@ -25,16 +25,14 @@ using UnityEngine;
 /// </summary>
 public class OrbitMoveable : Orbit {
 
-    protected override void OnUpdate() {
-        float adjustedDeltaTime = GameTime.DeltaTimeOrPausedWithGameSpeed * (int)UpdateRate;
-        // rotates this parent object (coincident with the position of the moving object to orbit as it is parented to it) around its 
-        // current location in worldspace to simulate orbital movement of the child mesh
-        _transform.RotateAround(_transform.position, _transform.up, _orbitSpeed * adjustedDeltaTime);
-
-        if (rotatingObject != null) {
-            // rotates the child object around its own LOCAL Y axis
-            rotatingObject.Rotate(axisOfRotation * _rotationSpeed * adjustedDeltaTime, relativeTo: Space.Self);
-        }
+    /// <summary>
+    /// Updates the rotation of this object around its current location in worldspace
+    /// (it is coincident with the position of the object being orbited)
+    /// to simulate the orbit of this object's child around the object orbited.
+    /// </summary>
+    /// <param name="deltaTime">The delta time.</param>
+    protected override void UpdateOrbit(float deltaTime) {
+        _transform.RotateAround(_transform.position, _transform.up, _orbitSpeed * deltaTime);
     }
 
     public override string ToString() {

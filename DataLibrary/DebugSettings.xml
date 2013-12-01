@@ -46,6 +46,11 @@
       <PropertyName>StopShipMovement</PropertyName>
       <PropertyValue>false</PropertyValue>
     </Setting>
+    <Setting>
+      <PropertyName>AllowEnemyOrders</PropertyName>
+      <PropertyValue>true</PropertyValue>
+    </Setting>
+
 
 
   </Boolean>

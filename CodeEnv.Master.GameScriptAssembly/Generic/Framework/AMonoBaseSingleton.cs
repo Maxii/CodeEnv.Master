@@ -5,12 +5,12 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AMonoBehaviourBaseSingleton.cs
+// File: AMonoBaseSingleton.cs
 // Abstract Base class for types that are derived from AMonoBehaviourBase that want to implement the Singleton pattern.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -22,11 +22,19 @@ using UnityEngine;
 
 
 /// <summary>
-/// Abstract Base class for types that are derived from AMonoBehaviourBase that want to implement the Singleton pattern.
+/// Abstract Base class for types that are derived from AMonoBehaviourBase that want to implement the Singleton pattern. 
+/// Includes IInstanceIdentity functionality. Clients wishing IInstanceIdentity functionality have no obligations except to inherit from this. 
 /// NOTE: Unity will never call the 'overrideable' Awake(), Start(), Update(), LateUpdate(), FixedUpdate(), OnGui(), etc. methods when 
 /// there is a higher derived class in the chain. Unity only calls the method (if implemented) of the highest derived class.
 /// </summary>
-public abstract class AMonoBehaviourBaseSingleton<T> : AMonoBehaviourBase where T : AMonoBehaviourBase {
+public abstract class AMonoBaseSingleton<T> : AMonoBase, IInstanceIdentity where T : AMonoBase {
+
+    private string _instanceID;
+
+    public override void LogEvent() {
+        System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
+        D.Log("{0}{1}.{2}() method called.".Inject(GetType().Name, _instanceID, stackFrame.GetMethod().Name));
+    }
 
     #region Singleton Pattern
     // NOTE: Acquiring a reference to T.Instance this way DOES NOT cause Awake() to be called when acquired. Awake() is called on its own schedule.
@@ -58,6 +66,17 @@ public abstract class AMonoBehaviourBaseSingleton<T> : AMonoBehaviourBase where 
 
     #endregion
 
+    #region MonoBehaviour Event Methods
+
+    protected override void Awake() {
+        IncrementInstanceCounter();
+        _instanceID = Constants.Underscore + InstanceID;
+        //D.Log("{0}._instanceID string now set to {1}, InstanceID value used was {2}.", typeof(T).Name, _instanceID, InstanceID);
+        base.Awake();
+    }
+
+    #endregion
+
     /// <summary>
     /// Called when the Application is quiting, followed by OnDisable() and then OnDestroy().
     /// </summary>
@@ -65,6 +84,18 @@ public abstract class AMonoBehaviourBaseSingleton<T> : AMonoBehaviourBase where 
         base.OnApplicationQuit();
         _instance = null;
     }
+
+    #region IInstanceIdentity Members
+
+    private static int _instanceCounter = 0;
+    public int InstanceID { get; private set; }
+
+    private void IncrementInstanceCounter() {
+        InstanceID = System.Threading.Interlocked.Increment(ref _instanceCounter);
+        D.Log("{0}.InstanceID now set to {1}, static counter now {2}.", typeof(T).Name, InstanceID, _instanceCounter);
+    }
+
+    #endregion
 
 }
 

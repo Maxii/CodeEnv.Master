@@ -5,9 +5,9 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: INotifyVisibilityChangedcs
-// Interface used on a GameObject that needs to know about another object's Visibility changes
-// that come from its Renderer.
+// File: ICameraLOSChangedClient
+// Interface used on a client that wants to know about any change in whether
+// another object's mesh is in/out of the Line Of Sight of the main camera.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,15 +20,15 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface used on a GameObject that needs to know about another object's Visibility changes that come
-    /// from its Renderer.
+    /// Interface used on a client that wants to know about any change in whether
+    /// another object's mesh is in/out of the Line Of Sight of the main camera.
     /// <remarks>Commonly used on a parent GameObject that is separated from its mesh and renderer.</remarks>
     /// </summary>
-    public interface INotifyVisibilityChanged {
+    public interface ICameraLOSChangedClient {
 
-        bool IsVisible { get; }
+        bool InCameraLOS { get; }
 
-        void NotifyVisibilityChanged(Transform sender, bool isVisible);
+        void NotifyCameraLOSChanged(Transform sender, bool inLOS);
 
     }
 }

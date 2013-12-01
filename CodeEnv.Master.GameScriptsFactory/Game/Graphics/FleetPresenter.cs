@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
@@ -38,9 +39,10 @@ public class FleetPresenter : Presenter {
 
     public FleetPresenter(IFleetViewable view)
         : base(view) {
+        AssignFlagshipAsViewTarget();
     }
 
-    protected override void InitilizeItemReference() {
+    protected override void InitilizeItemLinkage() {
         Item = UnityUtility.ValidateMonoBehaviourPresence<FleetItem>(_viewGameObject);
     }
 
@@ -53,19 +55,51 @@ public class FleetPresenter : Presenter {
     protected override void Subscribe() {
         base.Subscribe();
         _subscribers.Add(Item.SubscribeToPropertyChanged<FleetItem, ShipItem>(f => f.Flagship, OnFlagshipChanged));
-        _subscribers.Add(Item.SubscribeToPropertyChanged<FleetItem, ShipItem>(f => f.LastFleetShipDestroyed, OnFleetMemberDestroyedChanged));
-        // TODO
+        _subscribers.Add(Item.Data.SubscribeToPropertyChanged<FleetData, FleetComposition>(fd => fd.Composition, OnFleetCompositionChanged));
+        _subscribers.Add(Item.SubscribeToPropertyChanged<FleetItem, FleetState>(f => f.CurrentState, OnFleetStateChanged));
+        View.onShowCompletion += Item.OnShowCompletion;
+        Item.onFleetElementDestroyed += OnFleetElementDestroyed;
     }
 
-    private void OnFleetMemberDestroyedChanged() {
-        if (Item.LastFleetShipDestroyed.gameObject.GetSafeInterface<ICameraFocusable>().IsFocus) {
-            // our fleet's ship that was just destroyed was the focus, so change the focus to the fleet
-            (View as ICameraFocusable).IsFocus = true;
+    private void OnFleetStateChanged() {
+        FleetState fleetState = Item.CurrentState;
+        switch (fleetState) {
+            case FleetState.ShowDying:
+                View.ShowDying();
+                break;
+            case FleetState.Attacking:
+            case FleetState.Dead:
+            case FleetState.Disbanding:
+            case FleetState.Dying:
+            case FleetState.Entrenching:
+            case FleetState.GoAttack:
+            case FleetState.GoDisband:
+            case FleetState.GoGuard:
+            case FleetState.GoJoin:
+            case FleetState.GoPatrol:
+            case FleetState.GoRefit:
+            case FleetState.GoRepair:
+            case FleetState.GoRetreat:
+            case FleetState.Guarding:
+            case FleetState.Idling:
+            case FleetState.MovingTo:
+            case FleetState.Patrolling:
+            case FleetState.ProcessOrders:
+            case FleetState.Refitting:
+            case FleetState.Repairing:
+                // do nothing
+                break;
+            case FleetState.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(fleetState));
         }
     }
 
-    protected override void SubscribeToItemDataChanged() {
-        _subscribers.Add(Item.SubscribeToPropertyChanged<FleetItem, FleetData>(f => f.Data, OnItemDataChanged));
+    private void OnFleetElementDestroyed(ShipItem ship) {
+        if (ship.gameObject.GetSafeInterface<ICameraFocusable>().IsFocus) {
+            // our fleet's ship that was just destroyed was the focus, so change the focus to the fleet
+            (View as ICameraFocusable).IsFocus = true;
+        }
     }
 
     public void __SimulateAllShipsAttacked() {
@@ -77,17 +111,31 @@ public class FleetPresenter : Presenter {
     }
 
     public void OnPressWhileSelected(bool isDown) {
-        CameraControl.Instance.ShowContextMenuOnPress(isDown);
+        OnPressRequestContextMenu(isDown);
+    }
+
+    private void OnPressRequestContextMenu(bool isDown) {
+        if (DebugSettings.Instance.AllowEnemyOrders || Item.Data.Owner.IsHuman) {
+            CameraControl.Instance.ShowContextMenuOnPress(isDown);
+        }
+    }
+
+    protected override void OnItemDeath(ItemDeathEvent e) {
+        if ((e.Source as FleetItem) == Item) {
+            CleanupOnDeath();
+        }
+    }
+
+    protected override void CleanupOnDeath() {
+        base.CleanupOnDeath();
+        if ((View as ISelectable).IsSelected) {
+            SelectionManager.Instance.CurrentSelection = null;
+        }
     }
 
     public void __OnLeftDoubleClick() {
-        Item.ChangeFleetHeading(UnityEngine.Random.insideUnitSphere.normalized);
-        Item.ChangeFleetSpeed(UnityEngine.Random.Range(Constants.ZeroF, 2.5F));
-    }
-
-    protected override void OnItemDataChanged() {
-        base.OnItemDataChanged();
-        _subscribers.Add(Item.Data.SubscribeToPropertyChanged<FleetData, FleetComposition>(fd => fd.Composition, OnFleetCompositionChanged));
+        Item.ChangeHeading(UnityEngine.Random.insideUnitSphere.normalized);
+        Item.ChangeSpeed(UnityEngine.Random.Range(Constants.ZeroF, 2.5F));
     }
 
     private void OnFleetCompositionChanged() {
@@ -100,7 +148,7 @@ public class FleetPresenter : Presenter {
     }
 
     private void OnFlagshipChanged() {
-        View.Target = Item.Flagship.transform;
+        AssignFlagshipAsViewTarget();
     }
 
     public void OnIsSelectedChanged() {
@@ -110,32 +158,23 @@ public class FleetPresenter : Presenter {
         Item.Ships.ForAll<ShipItem>(s => s.gameObject.GetSafeMonoBehaviourComponent<ShipView>().AssessHighlighting());
     }
 
-    protected override void OnItemDeath(ItemDeathEvent e) {
-        if ((e.Source as FleetItem) == Item) {
-            Die();
-        }
-    }
-
-    protected override void Die() {
-        base.Die();
-        if ((View as ISelectable).IsSelected) {
-            SelectionManager.Instance.CurrentSelection = null;
-        }
+    private void AssignFlagshipAsViewTarget() {
+        View.TrackingTarget = Item.Flagship.transform;
     }
 
     private IconFactory _iconFactory = IconFactory.Instance;
     private void AssessFleetIcon() {
         IIcon fleetIcon;
-        GameColor color;
+        GameColor color = GameColor.White;
         // TODO evaluate Composition
         switch (View.PlayerIntelLevel) {
             case IntelLevel.Nil:
                 fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.None);
-                color = GameColor.Clear;    // TODO None should be a completely transparent icon
+                //color = GameColor.Clear;    // None should be a completely transparent icon
                 break;
             case IntelLevel.Unknown:
                 fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.IntelLevelUnknown);
-                color = GameColor.White;    // may be clear from prior setting
+                // color = GameColor.White;    // may be clear from prior setting
                 break;
             case IntelLevel.OutOfDate:
                 fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.IntelLevelUnknown);

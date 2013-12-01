@@ -19,7 +19,7 @@ using UnityEngine;
 /// <summary>
 /// Manages a stationary Celestial Object's interaction with the camera.
 /// </summary>
-public class FocusableItemControl : AMonoBehaviourBase, ICameraFocusable, IZoomToClosest {
+public class FocusableItemControl : AMonoBase, ICameraFocusable, IZoomToClosest {
 
     private GameEventManager _eventMgr;
     protected Collider _collider;

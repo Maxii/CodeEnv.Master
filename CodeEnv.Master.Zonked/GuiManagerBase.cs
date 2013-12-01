@@ -26,7 +26,7 @@ using CodeEnv.Master.Common.Unity;
 /// COMMENT 
 /// </summary>
 [Obsolete]
-public abstract class GuiManagerBase<T> : AMonoBehaviourBase where T : AMonoBehaviourBase {
+public abstract class GuiManagerBase<T> : AMonoBase where T : AMonoBase {
 
     /// <summary>
     /// true if a temporary GameObject has been created to host this Singleton.

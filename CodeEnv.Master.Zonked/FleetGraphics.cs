@@ -52,11 +52,11 @@ public class FleetGraphics : AGraphics, IDisposable {
 
     // cached references
     private FleetCommand _fleetCmd;
-    private FleetManager _fleetMgr;
+    private FleetCreator _fleetMgr;
 
     protected override void Awake() {
         base.Awake();
-        _fleetMgr = gameObject.GetSafeMonoBehaviourComponent<FleetManager>();
+        _fleetMgr = gameObject.GetSafeMonoBehaviourComponent<FleetCreator>();
         _fleetCmd = gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>();
         _trackingLabelFactory = GuiTrackingLabelFactory.Instance;
         Target = _fleetCmd.transform;
@@ -78,14 +78,14 @@ public class FleetGraphics : AGraphics, IDisposable {
     }
 
     private void OnIsDetectableChanged() {
-        EnableBasedOnDiscernible(IsVisible, IsDetectable);
-        EnableBasedOnDistanceToCamera(IsVisible, IsDetectable);
+        EnableBasedOnDiscernible(InCameraLOS, IsDetectable);
+        EnableBasedOnDistanceToCamera(InCameraLOS, IsDetectable);
         AssessHighlighting();
     }
 
     protected override void OnIsVisibleChanged() {
-        EnableBasedOnDiscernible(IsVisible, IsDetectable);
-        EnableBasedOnDistanceToCamera(IsVisible, IsDetectable);
+        EnableBasedOnDiscernible(InCameraLOS, IsDetectable);
+        EnableBasedOnDistanceToCamera(InCameraLOS, IsDetectable);
         AssessHighlighting();
     }
 
@@ -122,7 +122,7 @@ public class FleetGraphics : AGraphics, IDisposable {
     }
 
     public override void AssessHighlighting() {
-        if (!IsDetectable || !IsVisible) {
+        if (!IsDetectable || !InCameraLOS) {
             Highlight(false, Highlights.None);
             return;
         }

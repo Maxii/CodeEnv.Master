@@ -28,10 +28,10 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasData, IDisposable {
         set { base.Data = value; }
     }
 
-    public Navigator Navigator { get; private set; }
+    public ShipNavigator Navigator { get; private set; }
 
     private ShipGraphics _shipGraphics;
-    private FleetManager _fleetMgr;
+    private FleetCreator _fleetMgr;
     private FleetCommand _fleetCmd;
     private SelectionManager _selectionMgr;
 
@@ -39,7 +39,7 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasData, IDisposable {
         base.Awake();
         UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
         _shipGraphics = gameObject.GetSafeMonoBehaviourComponent<ShipGraphics>();
-        _fleetMgr = gameObject.GetSafeMonoBehaviourComponentInParents<FleetManager>();
+        _fleetMgr = gameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>();
         _fleetCmd = _fleetMgr.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>();
         _selectionMgr = SelectionManager.Instance;
     }
@@ -60,7 +60,7 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasData, IDisposable {
     }
 
     private void __InitializeNavigator() {
-        Navigator = new Navigator(_transform, Data);
+        Navigator = new ShipNavigator(_transform, Data);
     }
 
 

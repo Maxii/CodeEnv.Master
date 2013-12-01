@@ -126,7 +126,7 @@ namespace Pathfinding {
             var sectorCenters = sectorGrid.SectorCenters;
             IEnumerable<Vector3> graphLocations = corners.Union(sectorCenters);
 
-            IList<Vector3> obstacleLocations = __UniverseInitializer.ObstacleLocations;
+            IList<Vector3> obstacleLocations = FindObstacleLocations();
             graphLocations = graphLocations.Except(obstacleLocations);
 
             IEnumerable<Vector3> pointsAroundObstacles = new List<Vector3>();
@@ -142,6 +142,14 @@ namespace Pathfinding {
             graphLocations = graphLocations.Union(interiorSectorPoints);
 
             return graphLocations.ToList();
+        }
+
+        private IList<Vector3> FindObstacleLocations() {
+            var obstacleLocations = Universe.Folder.gameObject.GetSafeMonoBehaviourComponentsInChildren<SystemCreator>()
+                .Select(sm => sm.transform.position).ToList();
+            obstacleLocations.Add(Universe.Folder.gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterView>().transform.position);
+            D.Log("{0} obstacle locations found.", obstacleLocations.Count);
+            return obstacleLocations;
         }
 
         public override void Scan() {

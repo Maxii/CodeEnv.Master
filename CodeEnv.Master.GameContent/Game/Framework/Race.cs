@@ -18,6 +18,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Linq;
     using System.Collections.Generic;
     using System.Text;
     using CodeEnv.Master.Common;
@@ -38,6 +39,18 @@ namespace CodeEnv.Master.GameContent {
 
         //private IList<Trait> _traits;
         //public IList<Trait> Traits { get { return _traits; } }     // return an unmodifialbe list - ArrayList.ReadOnly?
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Race"/> class for testing.
+        /// </summary>
+        /// <param name="raceType">Type of the race.</param>
+        public Race(Races raceType) {
+            RaceType = raceType;
+            LeaderName = raceType.GetName() + " Leader";
+            Description = new StringBuilder(raceType.GetDescription());
+            Color = RandomExtended<GameColor>.Choice(Enums<GameColor>.GetValues()
+                .Except(default(GameColor), GameColor.Black, GameColor.Clear).ToArray());
+        }
 
         public Race(RaceStat stats) {
             RaceType = stats.Race;

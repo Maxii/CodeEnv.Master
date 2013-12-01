@@ -52,8 +52,8 @@ namespace CodeEnv.Master.GameContent {
                     return new ColoredTextList_Resources(data.Resources);
                 case GuiHudLineKeys.Specials:
                     return (data.SpecialResources != null) ? new ColoredTextList_Specials(data.SpecialResources) : _emptyColoredTextList;
-                case GuiHudLineKeys.SettlementSize:
-                    return (data.Settlement != null) ? new ColoredTextList_String(data.Settlement.SettlementSize.GetName()) : _emptyColoredTextList;
+                case GuiHudLineKeys.Type:
+                    return (data.Settlement != null) ? new ColoredTextList_String(data.Settlement.SettlementSize.GetDescription()) : _emptyColoredTextList;
                 case GuiHudLineKeys.SettlementDetails:
                     return (data.Settlement != null) ? new ColoredTextList_Settlement(data.Settlement) : _emptyColoredTextList;
 
@@ -61,7 +61,6 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.ParentName: // systems do not have parent names
                 case GuiHudLineKeys.Composition:
                 case GuiHudLineKeys.CompositionDetails:
-                case GuiHudLineKeys.ShipSize:
                 case GuiHudLineKeys.ShipDetails:
                 case GuiHudLineKeys.Speed:
                     return _emptyColoredTextList;

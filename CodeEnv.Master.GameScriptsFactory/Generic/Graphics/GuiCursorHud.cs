@@ -34,6 +34,7 @@ public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud, IDisposable {
         base.Awake();
         _gameMgr = GameManager.Instance;
         Subscribe();
+        UpdateRate = FrameUpdateFrequency.Frequent;
     }
 
     private void Subscribe() {
@@ -66,12 +67,15 @@ public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud, IDisposable {
         _isDisplayEnabled = toEnable;
     }
 
+    protected override void OccasionalUpdate() {
+        base.OccasionalUpdate();
+        UpdatePosition();
+    }
 
     /// <summary>
     /// Move the HUD to track the cursor.
     /// </summary>
     protected override void UpdatePosition() {
-        base.UpdatePosition();
         if (NGUITools.GetActive(_label.gameObject)) {
             Vector3 cursorPosition = Input.mousePosition;
 

@@ -4,7 +4,7 @@
   <Section SectionName="Base">
     <Selection>
       <Criteria>None</Criteria>
-      <Filename>FleetIcon_Level1</Filename>
+      <Filename>FleetIcon_Blank</Filename>
     </Selection>
     <Selection>
       <Criteria>IntelLevelUnknown</Criteria>

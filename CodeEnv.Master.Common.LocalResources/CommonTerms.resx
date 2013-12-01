@@ -120,6 +120,9 @@
   <data name="Backward" xml:space="preserve">
     <value>Backward</value>
   </data>
+  <data name="Command" xml:space="preserve">
+    <value>Command</value>
+  </data>
   <data name="Composition" xml:space="preserve">
     <value>Composition</value>
   </data>

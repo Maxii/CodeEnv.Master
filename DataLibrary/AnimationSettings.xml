@@ -11,15 +11,15 @@
   <Integer>
     <Setting>
       <PropertyName>MaxCelestialObjectAnimateDistanceFactor</PropertyName>
-      <PropertyValue>100</PropertyValue>
+      <PropertyValue>200</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>MaxShipAnimateDistanceFactor</PropertyName>
-      <PropertyValue>100</PropertyValue>
+      <PropertyValue>200</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>MaxShipShowDistanceFactor</PropertyName>
-      <PropertyValue>300</PropertyValue>
+      <PropertyValue>600</PropertyValue>
     </Setting>
 
     <Setting>

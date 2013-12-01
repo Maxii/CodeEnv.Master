@@ -39,7 +39,7 @@ namespace CodeEnv.Master.Common {
         }
 
         public CombatStrength() :
-            this(0f, 0f, 0f, 0f, 0f, 0f) {
+            this(0f, 1f, 0f, 1f, 0f, 1f) {
         }
 
         public CombatStrength(params float[] values) {

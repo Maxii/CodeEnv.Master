@@ -23,7 +23,8 @@ using UnityEngine;
 /// <summary>
 /// Provides alternative mode views of the Universe for the player. The first implemented is a view of sectors.
 /// </summary>
-public class PlayerViews : AGameInputConfiguration<PlayerViews> {
+//public class PlayerViews : AGameInputConfiguration<PlayerViews> {
+public class PlayerViews : AMonoBaseSingleton<PlayerViews> {
 
     // Special mode to allow viewing of sectors in space with this key combination activated
     public PlayerViewModeKeyConfiguration sectorViewMode = new PlayerViewModeKeyConfiguration { viewModeKey = ViewModeKeys.SectorView, viewMode = PlayerViewMode.SectorView, activate = true };
@@ -48,11 +49,13 @@ public class PlayerViews : AGameInputConfiguration<PlayerViews> {
 
     private IList<IDisposable> _subscribers;
     private PlayerViewModeKeyConfiguration[] _keyConfigs;
+    private GameInput _gameInput;
 
     protected override void Awake() {
         base.Awake();
         _mainCamera = Camera.main;
         //_mainUICamera = _mainCamera.gameObject.GetSafeMonoBehaviourComponent<UICamera>();
+        _gameInput = GameInput.Instance;
         _viewMode = PlayerViewMode.NormalView;
         _keyConfigs = new PlayerViewModeKeyConfiguration[] { sectorViewMode, /*sectorOrderMode,*/ normalViewMode };
         Subscribe();
@@ -62,7 +65,7 @@ public class PlayerViews : AGameInputConfiguration<PlayerViews> {
         if (_subscribers == null) {
             _subscribers = new List<IDisposable>();
         }
-        _subscribers.Add(gameInput.SubscribeToPropertyChanged<GameInput, ViewModeKeys>(gi => gi.LastViewModeKeyPressed, OnViewModeKeyPressedChanged));
+        _subscribers.Add(_gameInput.SubscribeToPropertyChanged<GameInput, ViewModeKeys>(gi => gi.LastViewModeKeyPressed, OnViewModeKeyPressedChanged));
     }
 
     protected override void Start() {
@@ -83,7 +86,7 @@ public class PlayerViews : AGameInputConfiguration<PlayerViews> {
     }
 
     private void ChangeViewMode() {
-        _lastViewModeKeyPressed = gameInput.LastViewModeKeyPressed;
+        _lastViewModeKeyPressed = _gameInput.LastViewModeKeyPressed;
         PlayerViewModeKeyConfiguration activatedConfig = _keyConfigs.Single(config => config.IsActivated());
         D.Assert(activatedConfig != null, "Configuration for SpecialKey {0} is null.".Inject(_lastViewModeKeyPressed.GetName()), true);
         ViewMode = activatedConfig.viewMode;
@@ -109,8 +112,9 @@ public class PlayerViews : AGameInputConfiguration<PlayerViews> {
         }
     }
 
-    void Update() {
-        gameInput.CheckForKeyActivity();
+    protected override void Update() {
+        base.Update();
+        _gameInput.CheckForKeyActivity();
     }
 
     protected override void OnDestroy() {
@@ -136,7 +140,8 @@ public class PlayerViews : AGameInputConfiguration<PlayerViews> {
 
     [Serializable]
     // Defines actions associated with the keys affecting the PlayerViewMode
-    public class PlayerViewModeKeyConfiguration : ConfigurationBase {
+    public class PlayerViewModeKeyConfiguration : AInputConfigurationBase {
+
         public PlayerViewMode viewMode;
         public ViewModeKeys viewModeKey;
 

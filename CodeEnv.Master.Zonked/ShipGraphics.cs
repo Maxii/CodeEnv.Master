@@ -52,7 +52,7 @@ public class ShipGraphics : AGraphics, IDisposable {
 
     // cached references
     private ShipCaptain _shipCaptain;
-    private FleetManager _fleetMgr;
+    private FleetCreator _fleetMgr;
 
     protected override void Awake() {
         base.Awake();
@@ -60,14 +60,14 @@ public class ShipGraphics : AGraphics, IDisposable {
         _shipCaptain = gameObject.GetSafeMonoBehaviourComponent<ShipCaptain>();
         maxAnimateDistance = Mathf.RoundToInt(AnimationSettings.Instance.MaxShipAnimateDistanceFactor * _shipCaptain.Size);
         maxShowDistance = Mathf.RoundToInt(AnimationSettings.Instance.MaxShipShowDistanceFactor * _shipCaptain.Size);
-        _fleetMgr = gameObject.GetSafeMonoBehaviourComponentInParents<FleetManager>();
+        _fleetMgr = gameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>();
         InitializeHighlighting();
     }
 
     private void InitializeHighlighting() {
         _shipRenderer = gameObject.GetComponentInChildren<Renderer>();
-        _originalMainShipColor = _shipRenderer.material.GetColor(UnityConstants.MainMaterialColor);
-        _originalSpecularShipColor = _shipRenderer.material.GetColor(UnityConstants.SpecularMaterialColor);
+        _originalMainShipColor = _shipRenderer.material.GetColor(UnityConstants.MaterialColor_Main);
+        _originalSpecularShipColor = _shipRenderer.material.GetColor(UnityConstants.MaterialColor_Specular);
         _hiddenShipColor = GameColor.Clear.ToUnityColor();
     }
 
@@ -78,14 +78,14 @@ public class ShipGraphics : AGraphics, IDisposable {
     }
 
     private void OnIsDetectableChanged() {
-        EnableBasedOnDiscernible(IsVisible, IsDetectable);
-        EnableBasedOnDistanceToCamera(IsVisible, _shipCaptain.PlayerIntelLevel != IntelLevel.Nil);
+        EnableBasedOnDiscernible(InCameraLOS, IsDetectable);
+        EnableBasedOnDistanceToCamera(InCameraLOS, _shipCaptain.PlayerIntelLevel != IntelLevel.Nil);
         AssessHighlighting();
     }
 
     protected override void OnIsVisibleChanged() {
-        EnableBasedOnDiscernible(IsVisible, IsDetectable);
-        EnableBasedOnDistanceToCamera(IsVisible, _shipCaptain.PlayerIntelLevel != IntelLevel.Nil);
+        EnableBasedOnDiscernible(InCameraLOS, IsDetectable);
+        EnableBasedOnDistanceToCamera(InCameraLOS, _shipCaptain.PlayerIntelLevel != IntelLevel.Nil);
         AssessHighlighting();
     }
 
@@ -111,8 +111,8 @@ public class ShipGraphics : AGraphics, IDisposable {
 
     public override void AssessHighlighting() {
         D.Log("{0}.AssessHighligting(). Ship.IsDescernible = {4}, Ship.IsFocus = {1}, Ship.IsSelected = {2}, Fleet.IsSelected = {3}.",
-            _shipCaptain.Data.Name, _shipCaptain.IsFocus, _shipCaptain.IsSelected, _fleetMgr.IsSelected, IsDetectable && IsVisible);
-        if (!IsDetectable || !IsVisible) {
+            _shipCaptain.Data.Name, _shipCaptain.IsFocus, _shipCaptain.IsSelected, _fleetMgr.IsSelected, IsDetectable && InCameraLOS);
+        if (!IsDetectable || !InCameraLOS) {
             Highlight(false, Highlights.None);
             return;
         }
@@ -141,13 +141,13 @@ public class ShipGraphics : AGraphics, IDisposable {
 
     private void Highlight(bool toShowShip, Highlights highlight) {
         if (toShowShip) {
-            _shipRenderer.material.SetColor(UnityConstants.MainMaterialColor, _originalMainShipColor);
-            _shipRenderer.material.SetColor(UnityConstants.SpecularMaterialColor, _originalSpecularShipColor);
+            _shipRenderer.material.SetColor(UnityConstants.MaterialColor_Main, _originalMainShipColor);
+            _shipRenderer.material.SetColor(UnityConstants.MaterialColor_Specular, _originalSpecularShipColor);
             // TODO audio on goes here
         }
         else {
-            _shipRenderer.material.SetColor(UnityConstants.MainMaterialColor, _hiddenShipColor);
-            _shipRenderer.material.SetColor(UnityConstants.SpecularMaterialColor, _hiddenShipColor);
+            _shipRenderer.material.SetColor(UnityConstants.MaterialColor_Main, _hiddenShipColor);
+            _shipRenderer.material.SetColor(UnityConstants.MaterialColor_Specular, _hiddenShipColor);
             // TODO audio off goes here
         }
         ShowVelocityRay(toShowShip);

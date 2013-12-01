@@ -21,7 +21,7 @@ using UnityEngine;
 /// <summary>
 /// Generic abstract class providing static access to the folder named after T.
 /// </summary>
-public abstract class AFolderAccess<T> : AMonoBehaviourBaseSingleton<T> where T : AMonoBehaviourBase {
+public abstract class AFolderAccess<T> : AMonoBaseSingleton<T> where T : AMonoBase {
 
     private static string _folderName = typeof(T).Name;
 

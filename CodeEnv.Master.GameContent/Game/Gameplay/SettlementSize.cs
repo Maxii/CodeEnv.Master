@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SettlementSize.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// Enum identifying the alternative sizes of a Settlement.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -14,22 +14,31 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
+using CodeEnv.Master.Common;
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-
+    /// <summary>
+    /// Enum identifying the alternative sizes of a Settlement.
+    /// </summary>
     public enum SettlementSize {
 
         None,
+
+        [EnumAttribute("Small Colony")]
         Colony,
+
+        [EnumAttribute("Growing City")]
         City,
+
+        [EnumAttribute("City State")]
+        CityState,
+
+        [EnumAttribute("Expansive Territory")]
         Territory,
-        State,
+
+        [EnumAttribute("Ruling Province")]
         Province
+
     }
 }
 

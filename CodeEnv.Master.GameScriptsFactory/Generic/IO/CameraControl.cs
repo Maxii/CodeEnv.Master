@@ -6,27 +6,28 @@
 // </copyright> 
 // <summary> 
 // File: CameraControl.cs
-// Singleton. Camera Control based on Ngui's Event System for Mouse events and
-// Unity's Input system for ArrowKeys.
+// Singleton. Main Camera movement control.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
+
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 // default namespace
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
-/// Singleton. Camera Control based on Ngui's Event System for Mouse events and
-/// Unity's Input system for ArrowKeys.
+/// Singleton. Main Camera movement control.
 /// </summary>
-[Serializable]
-public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable {
+public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraControl.CameraState> {
 
     #region Camera Control Configurations
 
@@ -114,13 +115,6 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
         set { SetProperty<ICameraFocusable>(ref _currentFocus, value, "CurrentFocus", OnCurrentFocusChanged, OnCurrentFocusChanging); }
     }
 
-
-    private CameraState _state;
-    public CameraState State {
-        get { return _state; }
-        private set { SetProperty<CameraState>(ref _state, value, "State", OnCameraStateChanged/*, OnCameraStateChanging*/); }
-    }
-
     public Settings settings = new Settings {
         activeScreenEdge = 5F, smallMovementThreshold = 2F,
         focusingPositionDampener = 2.0F, focusingRotationDampener = 1.0F, focusedPositionDampener = 4.0F,
@@ -138,6 +132,8 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
     [DoNotSerialize]    // Serializing this creates duplicates of this object on Save
     private PlayerPrefsManager _playerPrefsMgr;
     private Camera _camera;
+    private GameInput _gameInput;
+    private GameStatus _gameStatus;
 
     private IList<IDisposable> _subscribers;
 
@@ -145,12 +141,12 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
     private Transform _target;
     private Transform _dummyTarget;
 
-    private float universeRadius;
+    private float _universeRadius;
 
     private string[] keyboardAxesNames = new string[] { UnityConstants.KeyboardAxisName_Horizontal, UnityConstants.KeyboardAxisName_Vertical };
-    private LayerMask collideWithUniverseEdgeOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.UniverseEdge);
-    private LayerMask collideWithDummyTargetOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.DummyTarget);
-    private LayerMask collideWithOnlyCameraTargetsLayerMask
+    private LayerMask _collideWithUniverseEdgeOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.UniverseEdge);
+    private LayerMask _collideWithDummyTargetOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.DummyTarget);
+    private LayerMask _collideWithOnlyCameraTargetsLayerMask
         = LayerMaskExtensions.CreateExclusiveMask(Layers.UniverseEdge, Layers.DeepSpace, Layers.Gui2D, Layers.Vectrosity2D);
     private Vector3 _screenCenter = new Vector3(Screen.width / 2, Screen.height / 2, 0F);
 
@@ -170,12 +166,9 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
     private float _cameraPositionDampener;
     private float _cameraRotationDampener;
 
-    public enum CameraUpdateMode { LateUpdate = 0, FixedUpdate = 1, Update = 2 }
-    public CameraUpdateMode updateMode = CameraUpdateMode.LateUpdate;
-
     #endregion
 
-    #region Temporary InEditor Edge Movement Controls
+    #region Temporary UnityEditor Controls
     // Temporary workaround that keeps the edge movement controls
     // from operating when I'm in the Editor but outside the game screen
 
@@ -202,6 +195,13 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
         //D.Log("Edge Pan.active = {0}.", edgeFreePan.activate);
     }
 
+    // Manages enabled as function of the game status and the editor state
+    private bool __isEditorPaused;
+
+    private void __AssessEnabled() {
+        enabled = _gameStatus.IsRunning && !__isEditorPaused;
+    }
+
     #endregion
 
     #region Initialization
@@ -215,12 +215,15 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
         _camera = UnityUtility.ValidateComponentPresence<Camera>(gameObject);
         InitializeReferences();
         __InitializeDebugEdgeMovementSettings();
+        enabled = false;
     }
 
     private void InitializeReferences() {
         //if (LevelSerializer.IsDeserializing) { return; }
         _eventMgr = GameEventManager.Instance;
         _playerPrefsMgr = PlayerPrefsManager.Instance;
+        _gameInput = GameInput.Instance;
+        _gameStatus = GameStatus.Instance;
         Subscribe();
         ValidateActiveConfigurations();
         // need to raise this event in Awake as Start can be too late, since the true version of this event is called
@@ -233,10 +236,11 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
         if (_subscribers == null) {
             _subscribers = new List<IDisposable>();
         }
-        _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.GameState, OnGameStateChanged));
+        _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
         _subscribers.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(pm => pm.IsCameraRollEnabled, OnCameraRollEnabledChanged));
         _subscribers.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(pm => pm.IsResetOnFocusEnabled, OnResetOnFocusEnabledChanged));
         _subscribers.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(pm => pm.IsZoomOutOnCursorEnabled, OnZoomOutOnCursorEnabledChanged));
+        _subscribers.Add(_gameStatus.SubscribeToPropertyChanged<GameStatus, bool>(gs => gs.IsRunning, OnIsRunningChanged));
         //_subscribers.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, OnViewModeChanged));
     }
 
@@ -257,13 +261,14 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
     }
 
     private void InitializeFields() {
-        universeRadius = GameManager.Settings.UniverseSize.Radius();
+        _universeRadius = GameManager.Settings.UniverseSize.Radius();
         UpdateRate = FrameUpdateFrequency.Continuous;
     }
 
     private void SetCameraSettings() {
         // assumes radius of universe is twice that of the galaxy so the furthest system in the galaxy should be at a distance1.5 times the radius of the universe
-        _camera.farClipPlane = universeRadius * 2F;
+        _camera.nearClipPlane = 0.02F;
+        _camera.farClipPlane = _universeRadius * 2F;
         _camera.fieldOfView = 50F;
 
         IList<Layers> layersToInclude = new List<Layers> { Layers.Default, Layers.TransparentFX, Layers.DummyTarget, Layers.UniverseEdge };
@@ -291,8 +296,8 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
         CreateDummyTarget();
 
         // HACK start looking down from a far distance
-        float yElevation = universeRadius * 0.3F;
-        float zDistance = -universeRadius * 0.75F;
+        float yElevation = _universeRadius * 0.3F;
+        float zDistance = -_universeRadius * 0.75F;
         Position = new Vector3(0F, yElevation, zDistance);
         _sectorIndex = SectorGrid.GetSectorIndex(Position);
         _transform.rotation = Quaternion.Euler(new Vector3(20F, 0F, 0F));
@@ -304,7 +309,7 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
 
     private void CreateUniverseEdge() {
         GameObject universeEdge = null;
-        SphereCollider universeEdgePrefab = RequiredPrefabs.Instance.UniverseEdgePrefab;
+        SphereCollider universeEdgePrefab = RequiredPrefabs.Instance.universeEdge;
         if (universeEdgePrefab == null) {
             D.Warn("UniverseEdgePrefab on RequiredPrefabs is null.");
             string universeEdgeName = Layers.UniverseEdge.GetName();
@@ -316,12 +321,12 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
         else {
             universeEdge = NGUITools.AddChild(Universe.Folder.gameObject, universeEdgePrefab.gameObject);
         }
-        (universeEdge.collider as SphereCollider).radius = universeRadius;
+        (universeEdge.collider as SphereCollider).radius = _universeRadius;
         universeEdge.layer = (int)Layers.UniverseEdge;
     }
 
     private void CreateDummyTarget() {
-        Transform dummyTargetPrefab = RequiredPrefabs.Instance.CameraDummyTargetPrefab;
+        Transform dummyTargetPrefab = RequiredPrefabs.Instance.cameraDummyTarget;
         GameObject dummyTarget;
         if (dummyTargetPrefab == null) {
             D.Warn("DummyTargetPrefab on RequiredPrefabs is null.");
@@ -348,7 +353,7 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
         TryPlaceDummyTargetAtUniverseEdgeInDirection(_transform.forward);
         _dummyTarget.collider.enabled = true;
         SyncRotation();
-        State = CameraState.Freeform;
+        CurrentState = CameraState.Freeform;
     }
 
     private void SyncRotation() {
@@ -393,7 +398,7 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
     [DoNotSerialize]
     private bool _restoredGameFlag = false;
     private void OnGameStateChanged() {
-        GameState state = GameManager.Instance.GameState;
+        GameState state = GameManager.Instance.CurrentState;
         switch (state) {
             case GameState.Restoring:
                 // only saved games that are being restored enter Restoring state
@@ -421,6 +426,10 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(state));
         }
+    }
+
+    private void OnIsRunningChanged() {
+        __AssessEnabled();  // allows updating to begin when IsRunning occurs
     }
 
     // Not currently used. Keep this for now as I expect there will be other reasons to modify camera behaviour during special modes.
@@ -499,15 +508,449 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
     /// Called when the application is minimized/resumed, this method controls the enabled
     /// state of the camera so it doesn't move when I use the mouse to minimize Unity.
     /// </summary>
-    /// <arg item="isPausing">if set to <c>true</c> [is toPause].</arg>
+    /// <param name="isPaused">if set to <c>true</c> [is paused].</param>
     void OnApplicationPause(bool isPaused) {
         //D.Log("Camera OnApplicationPause(" + isPaused + ") called.");
-        enabled = !isPaused;
+        __isEditorPaused = isPaused;
+        __AssessEnabled();
     }
 
     #endregion
 
-    #region State
+    #region CameraState Machine
+
+    #region Focusing
+
+    void Focusing_EnterState() {
+        LogEvent();
+        Arguments.ValidateNotNull(_targetPoint);
+
+        _distanceFromTarget = Vector3.Distance(_targetPoint, Position);
+        _requestedDistanceFromTarget = _optimalDistanceFromTarget;
+        _targetDirection = (_targetPoint - Position).normalized;
+
+        // face the selected Target
+        Quaternion lookAt = Quaternion.LookRotation(_targetDirection);
+        Vector3 lookAtVector = lookAt.eulerAngles;
+        _xRotation = lookAtVector.y;
+        _yRotation = lookAtVector.x;
+        _zRotation = lookAtVector.z;
+
+        _cameraRotationDampener = settings.focusingRotationDampener;
+        _cameraPositionDampener = settings.focusingPositionDampener;
+
+        LockCursor(true);
+    }
+
+    //void Focusing_Update() {
+    //    LogEvent();
+    //    UpdateCamera_Focusing();
+    //}
+
+    void Focusing_LateUpdate() {
+        LogEvent();
+        UpdateCamera_Focusing();
+    }
+
+    private void UpdateCamera_Focusing() {
+        // transition process to allow lookAt to complete. Only entered from OnFocusSelected, when !IsResetOnFocus
+        if (_targetDirection.IsSameDirection(_transform.forward, 1F)) {
+            // exits when the lookAt rotation is complete
+            CurrentState = CameraState.Focused;
+            return;
+        }
+
+        // The desired (x,y,z) rotation to LookAt the Target and the requested distance from the Target
+        // is set in EnterState and does not need to be updated to get there as the Target doesn't move
+
+        // no other functionality active 
+        ProcessChanges(GetTimeSinceLastUpdate());
+    }
+
+    void Focusing_ExitState() {
+        LogEvent();
+        LockCursor(false);
+    }
+
+    #endregion
+
+    #region Focused
+
+    void Focused_EnterState() {
+        LogEvent();
+        Arguments.ValidateNotNull(_targetPoint);
+        // entered via OnFocusSelected AND IsResetOnFocusEnabled, OR after Focusing has completed
+        _distanceFromTarget = Vector3.Distance(_targetPoint, Position);
+        _requestedDistanceFromTarget = _optimalDistanceFromTarget;
+        // x,y,z rotation has already been established before entering ??? FIXME where???
+
+        _cameraRotationDampener = settings.focusedRotationDampener;
+        _cameraPositionDampener = settings.focusedPositionDampener;
+    }
+
+    //void Focused_Update() {
+    //    LogEvent();
+    //    UpdateCamera_Focused();
+    //}
+
+    void Focused_LateUpdate() {
+        LogEvent();
+        UpdateCamera_Focused();
+    }
+
+    private void UpdateCamera_Focused() {
+        if (dragFreeTruck.IsActivated() || dragFreePedestal.IsActivated()) {
+            // can also exit on Scroll In on dummy Target
+            CurrentState = CameraState.Freeform;
+            return;
+        }
+
+        float timeSinceLastUpdate = GetTimeSinceLastUpdate();
+        // the input value determined by number of mouseWheel ticks, drag movement delta, screen edge presence or arrow key events
+        float inputValue = 0F;
+        // the clamping value used to constrain distanceChgAllowedPerUnitInput
+        float distanceChgClamp = Mathf.Min(_requestedDistanceFromTarget * 0.5F, settings.MaxDistanceChgAllowedPerUnitInput);
+        // distanceChgAllowedPerUnitInput defines the distanceChange value associated with a normalized unit of input
+        float distanceChgAllowedPerUnitInput = Mathf.Clamp(Mathf.Abs(_requestedDistanceFromTarget), 0F, distanceChgClamp);
+        // the distance change value used to modify _requestedDistanceFromTarget as determined by inputValue and distanceChgAllowedPerUnitInput
+        float distanceChange = 0F;
+
+        if (dragFocusOrbit.IsActivated()) {
+            Vector2 dragDelta = _gameInput.GetDragDelta();
+            inputValue = dragDelta.x;
+            _xRotation += inputValue * dragFocusOrbit.sensitivity * timeSinceLastUpdate;
+            inputValue = dragDelta.y;
+            _yRotation -= inputValue * dragFocusOrbit.sensitivity * timeSinceLastUpdate;
+        }
+        if (edgeFocusOrbitPan.IsActivated()) {
+            float xMousePosition = Input.mousePosition.x;
+            if (xMousePosition <= settings.activeScreenEdge) {
+                _xRotation += edgeFocusOrbitPan.sensitivity * timeSinceLastUpdate;
+            }
+            else if (xMousePosition >= Screen.width - settings.activeScreenEdge) {
+                _xRotation -= edgeFocusOrbitPan.sensitivity * timeSinceLastUpdate;
+            }
+        }
+        if (edgeFocusOrbitTilt.IsActivated()) {
+            float yMousePosition = Input.mousePosition.y;
+            if (yMousePosition <= settings.activeScreenEdge) {
+                _yRotation -= edgeFocusOrbitPan.sensitivity * timeSinceLastUpdate;
+            }
+            else if (yMousePosition >= Screen.height - settings.activeScreenEdge) {
+                _yRotation += edgeFocusOrbitPan.sensitivity * timeSinceLastUpdate;
+            }
+        }
+        if (dragFocusRoll.IsActivated()) {
+            inputValue = _gameInput.GetDragDelta().x;
+            _zRotation += inputValue * dragFocusRoll.sensitivity * timeSinceLastUpdate;
+        }
+        if (scrollFocusZoom.IsActivated()) {
+            inputValue = _gameInput.GetScrollWheelMovement();
+            if (inputValue > 0 || (inputValue < 0 && _isZoomOutOnCursorEnabled)) {
+                if (TrySetTargetAtScreenPoint(Input.mousePosition)) {
+                    // there is a new Target so it can't be the old focus Target
+                    CurrentState = CameraState.Freeform;
+                    return;
+                }
+            }
+            distanceChange = inputValue * scrollFocusZoom.InputTypeNormalizer * scrollFocusZoom.sensitivity * distanceChgAllowedPerUnitInput;
+            _requestedDistanceFromTarget -= distanceChange;
+        }
+        if (edgeFocusZoom.IsActivated()) {
+            inputValue = 1F;
+            float yMousePosition = Input.mousePosition.y;
+            if (yMousePosition <= settings.activeScreenEdge) {
+                distanceChange = inputValue * edgeFocusZoom.sensitivity * edgeFocusZoom.InputTypeNormalizer * timeSinceLastUpdate * distanceChgAllowedPerUnitInput;
+                _requestedDistanceFromTarget += distanceChange;
+            }
+            else if (yMousePosition >= Screen.height - settings.activeScreenEdge) {
+                distanceChange = inputValue * edgeFocusZoom.sensitivity * edgeFocusZoom.InputTypeNormalizer * timeSinceLastUpdate * distanceChgAllowedPerUnitInput;
+                _requestedDistanceFromTarget -= distanceChange;
+            }
+        }
+        if (keyFocusZoom.IsActivated()) {
+            inputValue = Input.GetAxis(keyboardAxesNames[(int)keyFocusZoom.keyboardAxis]);
+            distanceChange = inputValue * keyFocusZoom.InputTypeNormalizer * keyFocusZoom.sensitivity * distanceChgAllowedPerUnitInput;
+            _requestedDistanceFromTarget -= distanceChange;
+        }
+        if (dragFocusZoom.IsActivated()) {
+            inputValue = _gameInput.GetDragDelta().y;
+            distanceChange = inputValue * dragFocusZoom.InputTypeNormalizer * dragFocusZoom.sensitivity * distanceChgAllowedPerUnitInput;
+            _requestedDistanceFromTarget -= distanceChange;
+        }
+        if (keyFocusPan.IsActivated()) {
+            _xRotation += Input.GetAxis(keyboardAxesNames[(int)keyFreePan.keyboardAxis]) * keyFreePan.sensitivity;
+        }
+        if (keyFocusTilt.IsActivated()) {
+            _yRotation -= Input.GetAxis(keyboardAxesNames[(int)keyFreeTilt.keyboardAxis]) * keyFreeTilt.sensitivity;
+        }
+        if (keyFocusRoll.IsActivated()) {
+            _zRotation -= Input.GetAxis(keyboardAxesNames[(int)keyFreeRoll.keyboardAxis]) * keyFreeRoll.sensitivity;
+        }
+
+        // this is the key that keeps the camera pointed at the Target when focused
+        _targetDirection = _transform.forward;
+
+        // OPTIMIZE lets me change the values on the fly in the inspector
+        _cameraRotationDampener = settings.focusedRotationDampener;
+        _cameraPositionDampener = settings.focusedPositionDampener;
+
+        ProcessChanges(timeSinceLastUpdate);
+    }
+
+    void Focused_ExitState() {
+        LogEvent();
+    }
+
+    #endregion
+
+    #region Freeform
+
+    void Freeform_EnterState() {
+        LogEvent();
+        Arguments.ValidateNotNull(_targetPoint);
+        _distanceFromTarget = Vector3.Distance(_targetPoint, Position);
+        _requestedDistanceFromTarget = _distanceFromTarget;
+        // no facing change
+
+        _cameraRotationDampener = settings.freeformRotationDampener;
+        _cameraPositionDampener = settings.freeformPositionDampener;
+
+        CurrentFocus = null;    // will tell the previous focus it is no longer in focus
+    }
+
+    //void Freeform_Update() {
+    //    LogEvent();
+    //    UpdateCamera_Freeform();
+    //}
+
+    void Freeform_LateUpdate() {
+        LogEvent();
+        UpdateCamera_Freeform();
+    }
+
+    private void UpdateCamera_Freeform() {
+        // the only exit condition out of Freeform is the user clicking to follow or focus an object
+        // the event that is generated causes the CameraState to change
+
+        float timeSinceLastUpdate = GetTimeSinceLastUpdate();
+        // the input value determined by number of mouseWheel ticks, drag movement delta, screen edge presence or arrow key events
+        float inputValue = 0F;
+        // the clamping value used to constrain distanceChgAllowedPerUnitInput
+        float distanceChgClamp = Mathf.Min(_requestedDistanceFromTarget * 0.5F, settings.MaxDistanceChgAllowedPerUnitInput);
+        // distanceChgAllowedPerUnitInput defines the distanceChange value associated with a normalized unit of input
+        float distanceChgAllowedPerUnitInput = Mathf.Clamp(Mathf.Abs(_requestedDistanceFromTarget), 0F, distanceChgClamp);
+        // the distance change value used to modify _requestedDistanceFromTarget as determined by inputValue and distanceChgAllowedPerUnitInput
+        float distanceChange = 0F;
+
+        if (edgeFreePan.IsActivated()) {
+            float xMousePosition = Input.mousePosition.x;
+            if (xMousePosition <= settings.activeScreenEdge) {
+                _xRotation -= edgeFreePan.sensitivity * timeSinceLastUpdate;
+            }
+            else if (xMousePosition >= Screen.width - settings.activeScreenEdge) {
+                _xRotation += edgeFreePan.sensitivity * timeSinceLastUpdate;
+            }
+        }
+        if (edgeFreeTilt.IsActivated()) {
+            float yMousePosition = Input.mousePosition.y;
+            if (yMousePosition <= settings.activeScreenEdge) {
+                _yRotation += edgeFreeTilt.sensitivity * timeSinceLastUpdate;
+            }
+            else if (yMousePosition >= Screen.height - settings.activeScreenEdge) {
+                _yRotation -= edgeFreeTilt.sensitivity * timeSinceLastUpdate;
+            }
+        }
+        if (dragFreeTruck.IsActivated()) {
+            inputValue = _gameInput.GetDragDelta().x;
+            TryPlaceDummyTargetAtUniverseEdgeInDirection(_transform.right);
+            distanceChange = inputValue * dragFreeTruck.InputTypeNormalizer * dragFreeTruck.sensitivity * distanceChgAllowedPerUnitInput;
+            _requestedDistanceFromTarget += distanceChange;
+        }
+        if (dragFreePedestal.IsActivated()) {
+            inputValue = _gameInput.GetDragDelta().y;
+            TryPlaceDummyTargetAtUniverseEdgeInDirection(_transform.up);
+            distanceChange = inputValue * dragFreePedestal.InputTypeNormalizer * dragFreePedestal.sensitivity * distanceChgAllowedPerUnitInput;
+            _requestedDistanceFromTarget += distanceChange;
+        }
+        if (dragFreeRoll.IsActivated()) {
+            inputValue = _gameInput.GetDragDelta().x;
+            _zRotation += inputValue * dragFreeRoll.sensitivity * timeSinceLastUpdate;
+        }
+        if (dragFreePanTilt.IsActivated()) {
+            Vector2 dragDelta = _gameInput.GetDragDelta();
+            inputValue = dragDelta.x;
+            _xRotation -= inputValue * dragFreePanTilt.sensitivity * timeSinceLastUpdate;
+            inputValue = dragDelta.y;
+            _yRotation += inputValue * dragFreePanTilt.sensitivity * timeSinceLastUpdate;
+        }
+        if (scrollFreeZoom.IsActivated()) {
+            inputValue = _gameInput.GetScrollWheelMovement();
+            if (inputValue > 0) {
+                // Scroll ZoomIN command
+                if (TrySetTargetAtScreenPoint(Input.mousePosition)) {
+                    // Target was changed 
+                    _requestedDistanceFromTarget = _distanceFromTarget;
+                }
+            }
+            if (inputValue < 0) {
+                // Scroll ZoomOUT command
+                if (_isZoomOutOnCursorEnabled) {
+                    if (TrySetTargetAtScreenPoint(Input.mousePosition)) {
+                        // Target was changed
+                        _requestedDistanceFromTarget = _distanceFromTarget;
+                    }
+                }
+                else {
+                    if (TrySetTargetAtScreenPoint(_screenCenter)) {
+                        // Target was changed
+                        _requestedDistanceFromTarget = _distanceFromTarget;
+                    }
+                }
+            }
+            distanceChange = inputValue * scrollFreeZoom.InputTypeNormalizer * scrollFreeZoom.sensitivity * distanceChgAllowedPerUnitInput;
+            _requestedDistanceFromTarget -= distanceChange;
+        }
+        if (edgeFreeZoom.IsActivated()) {
+            inputValue = 1F;
+            float yMousePosition = Input.mousePosition.y;
+            if (yMousePosition <= settings.activeScreenEdge) {
+                // Edge ZoomOUT
+                if (TrySetTargetAtScreenPoint(_screenCenter)) {
+                    // Target was changed
+                    _requestedDistanceFromTarget = _distanceFromTarget;
+                }
+                distanceChange = inputValue * edgeFreeZoom.sensitivity * edgeFreeZoom.InputTypeNormalizer * timeSinceLastUpdate * distanceChgAllowedPerUnitInput;
+                _requestedDistanceFromTarget += distanceChange;
+            }
+            else if (yMousePosition >= Screen.height - settings.activeScreenEdge) {
+                // Edge ZoomIN
+                if (TrySetTargetAtScreenPoint(_screenCenter)) {
+                    // Target was changed
+                    _requestedDistanceFromTarget = _distanceFromTarget;
+                }
+                distanceChange = inputValue * edgeFreeZoom.sensitivity * edgeFreeZoom.InputTypeNormalizer * timeSinceLastUpdate * distanceChgAllowedPerUnitInput;
+                _requestedDistanceFromTarget -= distanceChange;
+            }
+        }
+        if (dragFreeZoom.IsActivated()) {
+            inputValue = _gameInput.GetDragDelta().y;
+            if (TrySetTargetAtScreenPoint(_screenCenter)) {
+                _requestedDistanceFromTarget = _distanceFromTarget;
+            }
+            distanceChange = inputValue * dragFreeZoom.InputTypeNormalizer * dragFreeZoom.sensitivity * distanceChgAllowedPerUnitInput;
+            _requestedDistanceFromTarget -= distanceChange;
+        }
+
+        // Freeform Arrow Keyboard Configurations. Only Arrow Keys are used as IsActivated() must be governed by 
+        // whether the appropriate key is down to keep the configurations from interfering with each other. 
+        if (keyFreeZoom.IsActivated()) {
+            if (TrySetTargetAtScreenPoint(_screenCenter)) {
+                _requestedDistanceFromTarget = _distanceFromTarget;
+            }
+            inputValue = Input.GetAxis(keyboardAxesNames[(int)keyFreeZoom.keyboardAxis]);
+            distanceChange = inputValue * keyFreeZoom.InputTypeNormalizer * keyFreeZoom.sensitivity * distanceChgAllowedPerUnitInput;
+            _requestedDistanceFromTarget -= distanceChange;
+        }
+        if (keyFreeTruck.IsActivated()) {
+            TryPlaceDummyTargetAtUniverseEdgeInDirection(_transform.right);
+            inputValue = Input.GetAxis(keyboardAxesNames[(int)keyFreeTruck.keyboardAxis]);
+            distanceChange = inputValue * keyFreeTruck.InputTypeNormalizer * keyFreeTruck.sensitivity * distanceChgAllowedPerUnitInput;
+            _requestedDistanceFromTarget -= distanceChange;
+        }
+        if (keyFreePedestal.IsActivated()) {
+            TryPlaceDummyTargetAtUniverseEdgeInDirection(_transform.up);
+            inputValue = Input.GetAxis(keyboardAxesNames[(int)keyFreePedestal.keyboardAxis]);
+            distanceChange = inputValue * keyFreePedestal.InputTypeNormalizer * keyFreePedestal.sensitivity * distanceChgAllowedPerUnitInput;
+            _requestedDistanceFromTarget -= distanceChange;
+        }
+        if (keyFreePan.IsActivated()) {
+            _xRotation += Input.GetAxis(keyboardAxesNames[(int)keyFreePan.keyboardAxis]) * keyFreePan.sensitivity;
+        }
+        if (keyFreeTilt.IsActivated()) {
+            _yRotation -= Input.GetAxis(keyboardAxesNames[(int)keyFreeTilt.keyboardAxis]) * keyFreeTilt.sensitivity;
+        }
+        if (keyFreeRoll.IsActivated()) {
+            _zRotation -= Input.GetAxis(keyboardAxesNames[(int)keyFreeRoll.keyboardAxis]) * keyFreeRoll.sensitivity;
+        }
+
+        _targetDirection = (_targetPoint - Position).normalized;
+
+        // OPTIMIZE lets me change the values on the fly in the inspector
+        _cameraRotationDampener = settings.freeformRotationDampener;
+        _cameraPositionDampener = settings.freeformPositionDampener;
+
+        ProcessChanges(timeSinceLastUpdate);
+    }
+
+    void Freeform_ExitState() {
+        LogEvent();
+    }
+
+    #endregion
+
+    #region Follow
+
+    void Follow_EnterState() {
+        LogEvent();
+        // some values are continuously recalculated in update as the target moves so they don't need to be here too
+
+        D.Log("Follow Target is {0}.", _target.name);
+        ICameraFollowable icfTarget = _target.GetInterface<ICameraFollowable>();
+        _cameraRotationDampener = icfTarget.CameraFollowRotationDampener;
+        _cameraPositionDampener = icfTarget.CameraFollowDistanceDampener;
+    }
+
+    //void Follow_Update() {
+    //    LogEvent();
+    //    UpdateCamera_Follow();
+    //}
+
+    void Follow_LateUpdate() {
+        LogEvent();
+        UpdateCamera_Follow();
+    }
+
+    private void UpdateCamera_Follow() {
+        if (dragFreePanTilt.IsActivated() || scrollFreeZoom.IsActivated()) {
+            CurrentState = CameraState.Freeform;
+            return;
+        }
+
+        // Smooth lookAt interpolation rotates the camera to continue to lookAt the moving Target. These
+        // values must be continuously updated as the Target and camera are moving
+        _targetPoint = _target.position;
+        _targetDirection = (_targetPoint - Position).normalized;
+        Vector3 lookAt = Quaternion.LookRotation(_targetDirection).eulerAngles;
+        _xRotation = lookAt.y;
+        _yRotation = lookAt.x;
+        _zRotation = lookAt.z;
+
+        // Smooth follow interpolation as spectator avoids moving away from the Target if it turns inside our optimal 
+        // follow distance. When the Target turns and breaks inside the optimal follow distance, stop the camera 
+        // from adjusting its position by making the requested distance the same as the actual distance. 
+        // As soon as the Target moves outside of the optimal distance, start following again.
+        _distanceFromTarget = Vector3.Distance(_targetPoint, Position);
+        if (_distanceFromTarget > _optimalDistanceFromTarget) {
+            _requestedDistanceFromTarget = _optimalDistanceFromTarget;
+        }
+        else {
+            _requestedDistanceFromTarget = _distanceFromTarget;
+        }
+
+        // OPTIMIZE lets me change the values on the fly in the inspector
+        ICameraFollowable icfTarget = _target.GetInterface<ICameraFollowable>();
+        _cameraRotationDampener = icfTarget.CameraFollowRotationDampener;
+        _cameraPositionDampener = icfTarget.CameraFollowDistanceDampener;
+
+        ProcessChanges(GetTimeSinceLastUpdate());
+    }
+
+    void Follow_ExitState() {
+        LogEvent();
+    }
+
+    #endregion
 
     /// <summary>
     /// Assign the focus object to be the Target and changes the CameraState based on
@@ -520,7 +963,7 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
 
         ICameraFocusable qualifiedCameraFocusTarget = focus.GetInterface<ICameraFollowable>();
         if (qualifiedCameraFocusTarget != null) {
-            State = CameraState.Follow;
+            CurrentState = CameraState.Follow;
             return;
         }
 
@@ -528,12 +971,12 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
         if (qualifiedCameraFocusTarget != null) {
             if (!_isResetOnFocusEnabled) {
                 // if not resetting world coordinates on focus, the camera just turns to look at the focus
-                State = CameraState.Focusing;
+                CurrentState = CameraState.Focusing;
                 return;
             }
 
             ResetToWorldspace();
-            State = CameraState.Focused;
+            CurrentState = CameraState.Focused;
         }
         else {
             D.Error("Attempting to SetFocus on object that does not implement either ICameraFollowable or ICameraFocusable.");
@@ -554,7 +997,7 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
             }
             // its the same target, it's not the dummy and the target point is different so just change the target point
             // and avoid the checks that follow, including losing the focus on the previous (same as the new) target
-            if (State == CameraState.Focused) {
+            if (CurrentState == CameraState.Focused) {
                 // making targetPoint changes while focused causes disconcerting movement to the object
                 // targetPoint changes on the orbital plane are meant to be used while in freeform
                 return;
@@ -599,59 +1042,6 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
         _requestedDistanceFromTarget = _distanceFromTarget;
     }
 
-    private void OnCameraStateChanged() {
-        Arguments.ValidateNotNull(_targetPoint);
-        switch (State) {
-            case CameraState.Focusing:
-                _distanceFromTarget = Vector3.Distance(_targetPoint, Position);
-                _requestedDistanceFromTarget = _optimalDistanceFromTarget;
-                _targetDirection = (_targetPoint - Position).normalized;
-
-                // face the selected Target
-                //D.Log("Rotation values before ChangeState {0}.".Inject(new Vector3(_xRotation, _yRotation, _zRotation)));
-                Quaternion lookAt = Quaternion.LookRotation(_targetDirection);
-                Vector3 lookAtVector = lookAt.eulerAngles;
-                _xRotation = lookAtVector.y;
-                _yRotation = lookAtVector.x;
-                _zRotation = lookAtVector.z;
-                //D.Log("Rotation values after ChangeState {0}.".Inject(new Vector3(_xRotation, _yRotation, _zRotation)));
-                _cameraRotationDampener = settings.focusingRotationDampener;
-                _cameraPositionDampener = settings.focusingPositionDampener;
-                break;
-            case CameraState.Focused:
-                // entered via OnFocusSelected AND IsResetOnFocusEnabled, OR after Focusing has completed
-                _distanceFromTarget = Vector3.Distance(_targetPoint, Position);
-                _requestedDistanceFromTarget = _optimalDistanceFromTarget;
-                // x,y,z rotation has already been established before entering
-
-                _cameraRotationDampener = settings.focusedRotationDampener;
-                _cameraPositionDampener = settings.focusedPositionDampener;
-                break;
-            case CameraState.Freeform:
-                _distanceFromTarget = Vector3.Distance(_targetPoint, Position);
-                _requestedDistanceFromTarget = _distanceFromTarget;
-                // no facing change
-
-                _cameraRotationDampener = settings.freeformRotationDampener;
-                _cameraPositionDampener = settings.freeformPositionDampener;
-
-                CurrentFocus = null;    // will tell the previous focus it is no longer in focus
-                break;
-            case CameraState.Follow:
-                // no need to update distance or rotation calculated values as UpdateCamera must
-                // update these every frame when following as the Target moves
-
-                D.Log("Target is {0}.", _target.name);
-                ICameraFollowable icfTarget = _target.GetInterface<ICameraFollowable>();
-                _cameraRotationDampener = icfTarget.CameraFollowRotationDampener;
-                _cameraPositionDampener = icfTarget.CameraFollowDistanceDampener;
-                break;
-            case CameraState.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(State));
-        }
-    }
-
     /// <summary>
     /// Resets the camera rotation to that of worldspace, no rotation.
     /// </summary>
@@ -678,386 +1068,37 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
     /// </summary>
     /// <param name="isDown">if set to <c>true</c> [is down].</param>
     public void ShowContextMenuOnPress(bool isDown) {
-        if (!gameInput.IsDragging) {
+        if (!_gameInput.IsDragging) {
             _contextMenuPickHandler.OnPress(isDown);
+            //D.Log("ContextMenu requested.");
         }
     }
 
-    #region Update Camera
+    #region Camera Updating Support
 
-    void Update() {
-        if (updateMode == CameraUpdateMode.Update) { UpdateCamera(); }
+    private float GetTimeSinceLastUpdate() {
+        return GameTime.DeltaTime * (int)UpdateRate;
     }
 
-    void LateUpdate() {
-        if (updateMode == CameraUpdateMode.LateUpdate) { UpdateCamera(); }
-    }
-
-    void FixedUpdate() {
-        if (updateMode == CameraUpdateMode.FixedUpdate) { UpdateCamera(); }
-    }
-
-    private void UpdateCamera() {
-        if (ToUpdate()) {
-            if (_target == null) {
-                ResetAtCurrentLocation();
-            }
-
-            //D.Log("___________________New Frame______________________");
-            float timeSinceLastUpdate = GameTime.DeltaTime * (int)UpdateRate;
-            bool _toLockCursor = false;
-            bool showDistanceDebugLog = false;
-            Vector3 lookAt = Vector3.zero;
-
-            // the input value determined by number of mouseWheel ticks, drag movement delta, screen edge presence or arrow key events
-            float inputValue = 0F;
-            // the clamping value used to constrain distanceChgAllowedPerUnitInput
-            float distanceChgClamp = Mathf.Min(_requestedDistanceFromTarget * 0.5F, settings.MaxDistanceChgAllowedPerUnitInput);
-            // distanceChgAllowedPerUnitInput defines the distanceChange value associated with a normalized unit of input
-            float distanceChgAllowedPerUnitInput = Mathf.Clamp(Mathf.Abs(_requestedDistanceFromTarget), 0F, distanceChgClamp);
-            // the distance change value used to modify _requestedDistanceFromTarget as determined by inputValue and distanceChgAllowedPerUnitInput
-            float distanceChange = 0F;
-
-            switch (State) {
-                case CameraState.Focusing:
-                    // transition state to allow lookAt to complete. Only entered from OnFocusSelected, when !IsResetOnFocus
-                    //D.Log("Focusing. RequestedDistanceFromTarget = {0}.".Inject(_requestedDistanceFromTarget));
-                    //showDistanceDebugLog = true;
-                    if (CheckExitConditions()) {
-                        // exits to Focused when the lookAt rotation is complete, ie. _targetDirection 'equals' _transform.forward
-                        State = CameraState.Focused;
-                        return;
-                    }
-                    _toLockCursor = true;
-
-                    // The desired (x,y,z) rotation to LookAt the Target and the requested distance from the Target
-                    // is set in ChangeState and does not need to be updated to get there as the Target doesn't move
-
-                    // OPTIMIZE lets me change the values on the fly in the inspector
-                    _cameraRotationDampener = settings.focusingRotationDampener;
-                    _cameraPositionDampener = settings.focusingPositionDampener;
-                    // no other functionality active 
-                    break;
-                case CameraState.Focused:
-                    //D.Log("Focused. RequestedDistanceFromTarget = {0}.".Inject(_requestedDistanceFromTarget));
-                    //showDistanceDebugLog = true;
-                    if (CheckExitConditions()) {
-                        State = CameraState.Freeform;
-                        return;
-                    }
-                    if (dragFocusOrbit.IsActivated()) {
-                        Vector2 dragDelta = gameInput.GetDragDelta();
-                        inputValue = dragDelta.x;
-                        _xRotation += inputValue * dragFocusOrbit.sensitivity * timeSinceLastUpdate;
-                        inputValue = dragDelta.y;
-                        _yRotation -= inputValue * dragFocusOrbit.sensitivity * timeSinceLastUpdate;
-                    }
-                    if (edgeFocusOrbitPan.IsActivated()) {
-                        float xMousePosition = Input.mousePosition.x;
-                        if (xMousePosition <= settings.activeScreenEdge) {
-                            _xRotation += edgeFocusOrbitPan.sensitivity * timeSinceLastUpdate;
-                        }
-                        else if (xMousePosition >= Screen.width - settings.activeScreenEdge) {
-                            _xRotation -= edgeFocusOrbitPan.sensitivity * timeSinceLastUpdate;
-                        }
-                    }
-                    if (edgeFocusOrbitTilt.IsActivated()) {
-                        float yMousePosition = Input.mousePosition.y;
-                        if (yMousePosition <= settings.activeScreenEdge) {
-                            _yRotation -= edgeFocusOrbitPan.sensitivity * timeSinceLastUpdate;
-                        }
-                        else if (yMousePosition >= Screen.height - settings.activeScreenEdge) {
-                            _yRotation += edgeFocusOrbitPan.sensitivity * timeSinceLastUpdate;
-                        }
-                    }
-                    if (dragFocusRoll.IsActivated()) {
-                        inputValue = gameInput.GetDragDelta().x;
-                        _zRotation += inputValue * dragFocusRoll.sensitivity * timeSinceLastUpdate;
-                    }
-                    if (scrollFocusZoom.IsActivated()) {
-                        inputValue = gameInput.GetScrollWheelMovement();
-                        if (inputValue > 0 || (inputValue < 0 && _isZoomOutOnCursorEnabled)) {
-                            if (TrySetTargetAtScreenPoint(Input.mousePosition)) {
-                                // there is a new Target so it can't be the old focus Target
-                                State = CameraState.Freeform;
-                                return;
-                            }
-                        }
-                        distanceChange = inputValue * scrollFocusZoom.InputTypeNormalizer * scrollFocusZoom.sensitivity * distanceChgAllowedPerUnitInput;
-                        _requestedDistanceFromTarget -= distanceChange;
-                        //showDistanceDebugLog = true;
-                    }
-                    if (edgeFocusZoom.IsActivated()) {
-                        inputValue = 1F;
-                        float yMousePosition = Input.mousePosition.y;
-                        if (yMousePosition <= settings.activeScreenEdge) {
-                            distanceChange = inputValue * edgeFocusZoom.sensitivity * edgeFocusZoom.InputTypeNormalizer * timeSinceLastUpdate * distanceChgAllowedPerUnitInput;
-                            _requestedDistanceFromTarget += distanceChange;
-                            //D.Log("edgeFocusZoom translationSpeedGoverner = {0}, _requestedDistanceFromTarget = {1}".Inject(translationSpeedGoverner, _requestedDistanceFromTarget));
-                        }
-                        else if (yMousePosition >= Screen.height - settings.activeScreenEdge) {
-                            distanceChange = inputValue * edgeFocusZoom.sensitivity * edgeFocusZoom.InputTypeNormalizer * timeSinceLastUpdate * distanceChgAllowedPerUnitInput;
-                            _requestedDistanceFromTarget -= distanceChange;
-                            //D.Log("edgeFocusZoom translationSpeedGoverner = {0}, _requestedDistanceFromTarget = {1}".Inject(translationSpeedGoverner, _requestedDistanceFromTarget));
-                        }
-                    }
-                    if (keyFocusZoom.IsActivated()) {
-                        inputValue = Input.GetAxis(keyboardAxesNames[(int)keyFocusZoom.keyboardAxis]);
-                        distanceChange = inputValue * keyFocusZoom.InputTypeNormalizer * keyFocusZoom.sensitivity * distanceChgAllowedPerUnitInput;
-                        _requestedDistanceFromTarget -= distanceChange;
-                        //showDistanceDebugLog = true;
-                    }
-                    if (dragFocusZoom.IsActivated()) {
-                        inputValue = gameInput.GetDragDelta().y;
-                        distanceChange = inputValue * dragFocusZoom.InputTypeNormalizer * dragFocusZoom.sensitivity * distanceChgAllowedPerUnitInput;
-                        _requestedDistanceFromTarget -= distanceChange;
-                    }
-                    if (keyFocusPan.IsActivated()) {
-                        _xRotation += Input.GetAxis(keyboardAxesNames[(int)keyFreePan.keyboardAxis]) * keyFreePan.sensitivity;
-                    }
-                    if (keyFocusTilt.IsActivated()) {
-                        _yRotation -= Input.GetAxis(keyboardAxesNames[(int)keyFreeTilt.keyboardAxis]) * keyFreeTilt.sensitivity;
-                    }
-                    if (keyFocusRoll.IsActivated()) {
-                        _zRotation -= Input.GetAxis(keyboardAxesNames[(int)keyFreeRoll.keyboardAxis]) * keyFreeRoll.sensitivity;
-                    }
-
-                    // t.forward is the camera's current definition of 'forward', ie. WorldSpace's absolute forward adjusted by the camera's rotation (Vector.forward * cameraRotation )   
-                    // this is the key that keeps the camera pointed at the Target when focused
-                    _targetDirection = _transform.forward;
-
-                    // OPTIMIZE lets me change the values on the fly in the inspector
-                    _cameraRotationDampener = settings.focusedRotationDampener;
-                    _cameraPositionDampener = settings.focusedPositionDampener;
-                    break;
-                case CameraState.Freeform:
-                    if (edgeFreePan.IsActivated()) {
-                        float xMousePosition = Input.mousePosition.x;
-                        if (xMousePosition <= settings.activeScreenEdge) {
-                            _xRotation -= edgeFreePan.sensitivity * timeSinceLastUpdate;
-                        }
-                        else if (xMousePosition >= Screen.width - settings.activeScreenEdge) {
-                            _xRotation += edgeFreePan.sensitivity * timeSinceLastUpdate;
-                        }
-                    }
-                    if (edgeFreeTilt.IsActivated()) {
-                        float yMousePosition = Input.mousePosition.y;
-                        if (yMousePosition <= settings.activeScreenEdge) {
-                            _yRotation += edgeFreeTilt.sensitivity * timeSinceLastUpdate;
-                        }
-                        else if (yMousePosition >= Screen.height - settings.activeScreenEdge) {
-                            _yRotation -= edgeFreeTilt.sensitivity * timeSinceLastUpdate;
-                        }
-                    }
-                    if (dragFreeTruck.IsActivated()) {
-                        inputValue = gameInput.GetDragDelta().x;
-                        TryPlaceDummyTargetAtUniverseEdgeInDirection(_transform.right);
-                        distanceChange = inputValue * dragFreeTruck.InputTypeNormalizer * dragFreeTruck.sensitivity * distanceChgAllowedPerUnitInput;
-                        _requestedDistanceFromTarget += distanceChange;
-                    }
-                    if (dragFreePedestal.IsActivated()) {
-                        inputValue = gameInput.GetDragDelta().y;
-                        TryPlaceDummyTargetAtUniverseEdgeInDirection(_transform.up);
-                        distanceChange = inputValue * dragFreePedestal.InputTypeNormalizer * dragFreePedestal.sensitivity * distanceChgAllowedPerUnitInput;
-                        _requestedDistanceFromTarget += distanceChange;
-                    }
-                    if (dragFreeRoll.IsActivated()) {
-                        inputValue = gameInput.GetDragDelta().x;
-                        _zRotation += inputValue * dragFreeRoll.sensitivity * timeSinceLastUpdate;
-                    }
-                    if (dragFreePanTilt.IsActivated()) {
-                        Vector2 dragDelta = gameInput.GetDragDelta();
-                        inputValue = dragDelta.x;
-                        _xRotation -= inputValue * dragFreePanTilt.sensitivity * timeSinceLastUpdate;
-                        inputValue = dragDelta.y;
-                        _yRotation += inputValue * dragFreePanTilt.sensitivity * timeSinceLastUpdate;
-                    }
-                    if (scrollFreeZoom.IsActivated()) {
-                        inputValue = gameInput.GetScrollWheelMovement();
-                        if (inputValue > 0) {
-                            // Scroll ZoomIN command
-                            if (TrySetTargetAtScreenPoint(Input.mousePosition)) {
-                                // Target was changed so reset requested distance to actual distance
-                                _requestedDistanceFromTarget = _distanceFromTarget;
-                            }
-                        }
-                        if (inputValue < 0) {
-                            // Scroll ZoomOUT command
-                            if (_isZoomOutOnCursorEnabled) {
-                                if (TrySetTargetAtScreenPoint(Input.mousePosition)) {
-                                    // Target was changed so reset requested distance to actual distance
-                                    _requestedDistanceFromTarget = _distanceFromTarget;
-                                }
-                            }
-                            else {
-                                if (TrySetTargetAtScreenPoint(_screenCenter)) {
-                                    // Target was changed so reset requested distance to actual distance
-                                    _requestedDistanceFromTarget = _distanceFromTarget;
-                                }
-                            }
-                        }
-                        distanceChange = inputValue * scrollFreeZoom.InputTypeNormalizer * scrollFreeZoom.sensitivity * distanceChgAllowedPerUnitInput;
-                        _requestedDistanceFromTarget -= distanceChange;
-                        //showDistanceDebugLog = true;
-                    }
-                    if (edgeFreeZoom.IsActivated()) {
-                        inputValue = 1F;
-                        float yMousePosition = Input.mousePosition.y;
-                        if (yMousePosition <= settings.activeScreenEdge) {
-                            // Edge ZoomOUT
-                            if (TrySetTargetAtScreenPoint(_screenCenter)) {
-                                // Target was changed so reset requested distance to actual distance
-                                _requestedDistanceFromTarget = _distanceFromTarget;
-                            }
-                            distanceChange = inputValue * edgeFreeZoom.sensitivity * edgeFreeZoom.InputTypeNormalizer * timeSinceLastUpdate * distanceChgAllowedPerUnitInput;
-                            _requestedDistanceFromTarget += distanceChange;
-                        }
-                        else if (yMousePosition >= Screen.height - settings.activeScreenEdge) {
-                            // Edge ZoomIN
-                            if (TrySetTargetAtScreenPoint(_screenCenter)) {
-                                // Target was changed so reset requested distance to actual distance
-                                _requestedDistanceFromTarget = _distanceFromTarget;
-                            }
-                            distanceChange = inputValue * edgeFreeZoom.sensitivity * edgeFreeZoom.InputTypeNormalizer * timeSinceLastUpdate * distanceChgAllowedPerUnitInput;
-                            _requestedDistanceFromTarget -= distanceChange;
-                        }
-                    }
-                    if (dragFreeZoom.IsActivated()) {
-                        inputValue = gameInput.GetDragDelta().y;
-                        //D.Log("DragDelta = {0}.", mouseInputValue);
-                        if (TrySetTargetAtScreenPoint(_screenCenter)) {
-                            _requestedDistanceFromTarget = _distanceFromTarget;
-                        }
-                        distanceChange = inputValue * dragFreeZoom.InputTypeNormalizer * dragFreeZoom.sensitivity * distanceChgAllowedPerUnitInput;
-                        _requestedDistanceFromTarget -= distanceChange;
-                        //showDistanceDebugLog = true;
-                    }
-
-                    // Freeform Arrow Keyboard Configurations. Mouse Buttons supercede Arrow Keys. Only Arrow Keys are used as IsActivated() must be governed by 
-                    // whether the appropriate key is down to keep the configurations from interfering with each other. 
-                    if (keyFreeZoom.IsActivated()) {
-                        if (TrySetTargetAtScreenPoint(_screenCenter)) {
-                            _requestedDistanceFromTarget = _distanceFromTarget;
-                        }
-                        inputValue = Input.GetAxis(keyboardAxesNames[(int)keyFreeZoom.keyboardAxis]);
-                        distanceChange = inputValue * keyFreeZoom.InputTypeNormalizer * keyFreeZoom.sensitivity * distanceChgAllowedPerUnitInput;
-                        _requestedDistanceFromTarget -= distanceChange;
-                        //showDistanceDebugLog = true;
-                    }
-                    if (keyFreeTruck.IsActivated()) {
-                        TryPlaceDummyTargetAtUniverseEdgeInDirection(_transform.right);
-                        inputValue = Input.GetAxis(keyboardAxesNames[(int)keyFreeTruck.keyboardAxis]);
-                        distanceChange = inputValue * keyFreeTruck.InputTypeNormalizer * keyFreeTruck.sensitivity * distanceChgAllowedPerUnitInput;
-                        _requestedDistanceFromTarget -= distanceChange;
-                        //showDistanceDebugLog = true;
-                    }
-                    if (keyFreePedestal.IsActivated()) {
-                        TryPlaceDummyTargetAtUniverseEdgeInDirection(_transform.up);
-                        inputValue = Input.GetAxis(keyboardAxesNames[(int)keyFreePedestal.keyboardAxis]);
-                        distanceChange = inputValue * keyFreePedestal.InputTypeNormalizer * keyFreePedestal.sensitivity * distanceChgAllowedPerUnitInput;
-                        _requestedDistanceFromTarget -= distanceChange;
-                        //showDistanceDebugLog = true;
-                    }
-                    if (keyFreePan.IsActivated()) {
-                        _xRotation += Input.GetAxis(keyboardAxesNames[(int)keyFreePan.keyboardAxis]) * keyFreePan.sensitivity;
-                    }
-                    if (keyFreeTilt.IsActivated()) {
-                        _yRotation -= Input.GetAxis(keyboardAxesNames[(int)keyFreeTilt.keyboardAxis]) * keyFreeTilt.sensitivity;
-                    }
-                    if (keyFreeRoll.IsActivated()) {
-                        _zRotation -= Input.GetAxis(keyboardAxesNames[(int)keyFreeRoll.keyboardAxis]) * keyFreeRoll.sensitivity;
-                    }
-
-                    _targetDirection = (_targetPoint - Position).normalized;
-
-                    // OPTIMIZE lets me change the values on the fly in the inspector
-                    _cameraRotationDampener = settings.freeformRotationDampener;
-                    _cameraPositionDampener = settings.freeformPositionDampener;
-                    break;
-                case CameraState.Follow:    // Follow as Spectator, not Chase
-                    if (CheckExitConditions()) {
-                        // exit on Mouse Scroll, Pan/Tilt or Key Escape
-                        State = CameraState.Freeform;
-                        return;
-                    }
-
-                    //showDistanceDebugLog = true;
-
-                    // Smooth lookAt interpolation rotates the camera to continue to lookAt the moving Target. These
-                    // values must be continuously updated as the Target and camera are moving
-                    _targetPoint = _target.position;
-                    _targetDirection = (_targetPoint - Position).normalized;
-                    lookAt = Quaternion.LookRotation(_targetDirection).eulerAngles;
-                    _xRotation = lookAt.y;
-                    _yRotation = lookAt.x;
-                    _zRotation = lookAt.z;
-
-                    // Smooth follow interpolation as spectator avoids moving away from the Target if it turns inside our optimal 
-                    // follow distance. When the Target turns and breaks inside the optimal follow distance, stop the camera 
-                    // from adjusting its position by making the requested distance the same as the actual distance. 
-                    // As soon as the Target moves outside of the optimal distance, start following again.
-                    _distanceFromTarget = Vector3.Distance(_targetPoint, Position);
-                    if (_distanceFromTarget > _optimalDistanceFromTarget) {
-                        _requestedDistanceFromTarget = _optimalDistanceFromTarget;
-                    }
-                    else {
-                        _requestedDistanceFromTarget = _distanceFromTarget;
-                    }
-
-                    // OPTIMIZE lets me change the values on the fly in the inspector
-                    ICameraFollowable icfTarget = _target.GetInterface<ICameraFollowable>();
-                    _cameraRotationDampener = icfTarget.CameraFollowRotationDampener;
-                    _cameraPositionDampener = icfTarget.CameraFollowDistanceDampener;
-                    break;
-                case CameraState.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(State));
-            }
-
-            _transform.rotation = CalculateCameraRotation(_cameraRotationDampener * timeSinceLastUpdate);
-            //D.Log("RequestedDistanceFromTarget = {0}, MinimumDistanceFromTarget = {1}.".Inject(_requestedDistanceFromTarget, settings.minimumDistanceFromTarget));
-            _requestedDistanceFromTarget = Mathf.Clamp(_requestedDistanceFromTarget, _minimumDistanceFromTarget, Mathf.Infinity);
-            //D.Log("RequestedDistanceFromTarget = {0}.".Inject(_requestedDistanceFromTarget));
-
-            if (showDistanceDebugLog) {
-                D.Log("RequestedDistanceFromTarget = {0}, Actual Start DistanceFromTarget = {1}.".Inject(_requestedDistanceFromTarget, _distanceFromTarget));
-                showDistanceDebugLog = false;
-            }
-            _distanceFromTarget = Mathfx.Lerp(_distanceFromTarget, _requestedDistanceFromTarget, _cameraPositionDampener * timeSinceLastUpdate);
-
-            Vector3 proposedPosition = _targetPoint - (_targetDirection * _distanceFromTarget);
-            ProcessPositionChange(proposedPosition);
-
-            ManageCursorDisplay(_toLockCursor);
+    private void LockCursor(bool toLockCursor) {
+        if (toLockCursor && !Screen.lockCursor) {
+            Screen.lockCursor = true;   // cursor disappears
+        }
+        else if (Screen.lockCursor && !toLockCursor) {
+            Screen.lockCursor = false;  // cursor reappears in the center of the screen
         }
     }
 
-    private bool CheckExitConditions() {
-        switch (State) {
-            case CameraState.Focusing:
-                if (Mathfx.Approx(_targetDirection, _transform.forward, .01F)) {
-                    return true;
-                }
-                return false;
-            case CameraState.Focused:
-                if (dragFreeTruck.IsActivated() || dragFreePedestal.IsActivated()) {
-                    return true;
-                }
-                // can also exit on Scroll In on dummy Target
-                return false;
-            case CameraState.Follow:
-                if (dragFreePanTilt.IsActivated()) {
-                    return true;
-                }
-                if (scrollFreeZoom.IsActivated()) {
-                    return true;
-                }
-                return false;
-            case CameraState.Freeform:
-            case CameraState.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(State));
-        }
+    private void ProcessChanges(float deltaTime) {
+        _transform.rotation = CalculateCameraRotation(_cameraRotationDampener * deltaTime);
+        //D.Log("RequestedDistanceFromTarget = {0}, MinimumDistanceFromTarget = {1}.".Inject(_requestedDistanceFromTarget, settings.minimumDistanceFromTarget));
+        _requestedDistanceFromTarget = Mathf.Clamp(_requestedDistanceFromTarget, _minimumDistanceFromTarget, Mathf.Infinity);
+        //D.Log("RequestedDistanceFromTarget = {0}.".Inject(_requestedDistanceFromTarget));
+
+        _distanceFromTarget = Mathfx.Lerp(_distanceFromTarget, _requestedDistanceFromTarget, _cameraPositionDampener * deltaTime);
+
+        Vector3 proposedPosition = _targetPoint - (_targetDirection * _distanceFromTarget);
+        ExecutePositionChange(proposedPosition);
     }
 
     /// <summary>
@@ -1066,7 +1107,7 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
     /// sector boundary.
     /// </summary>
     /// <param name="proposedPosition">The proposed position.</param>
-    private void ProcessPositionChange(Vector3 proposedPosition) {
+    private void ExecutePositionChange(Vector3 proposedPosition) {
         Vector3 currentPosition = Position;
         if (currentPosition.IsSame(proposedPosition) || !ValidatePosition(proposedPosition)) {
             return;
@@ -1085,23 +1126,10 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
     /// <returns> </returns>
     private bool ValidatePosition(Vector3 proposedPosition) {
         float sqrMagnitude = (proposedPosition - GameConstants.UniverseOrigin).sqrMagnitude;
-        if (sqrMagnitude > universeRadius * universeRadius) {
+        if (sqrMagnitude > _universeRadius * _universeRadius) {
             return false;
         }
         return true;
-    }
-
-    /// <summary>
-    /// Manages the display of the cursor during certain movement actions.
-    /// </summary>
-    /// <param name="toLockCursor">if set to <c>true</c> [automatic lock cursor].</param>
-    private void ManageCursorDisplay(bool toLockCursor) {
-        if (toLockCursor && !Screen.lockCursor) {
-            Screen.lockCursor = true;   // cursor disappears
-        }
-        else if (Screen.lockCursor && !toLockCursor) {
-            Screen.lockCursor = false;  // cursor reappears in the center of the screen
-        }
     }
 
     /// <summary>
@@ -1118,7 +1146,7 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
         Transform proposedZoomTarget;
         Vector3 proposedZoomPoint;
         Ray ray = _camera.ScreenPointToRay(screenPoint);
-        RaycastHit[] hits = Physics.RaycastAll(ray, Mathf.Infinity, collideWithOnlyCameraTargetsLayerMask);
+        RaycastHit[] hits = Physics.RaycastAll(ray, Mathf.Infinity, _collideWithOnlyCameraTargetsLayerMask);
         //foreach (var hit in hits) {
         //    D.Log("ICameraTargetable RaycastHit {0}.", hit.transform.name);
         //}
@@ -1154,6 +1182,7 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
             var furthestHit = zoomToFurthestHits.OrderBy(h => (h.transform.position - Position).sqrMagnitude).Last();
             proposedZoomTarget = furthestHit.transform;
             proposedZoomPoint = furthestHit.point;
+            //D.Log("IZoomToFurthest furthest hit at {0}.", proposedZoomPoint);
             return TryChangeTarget(proposedZoomTarget, proposedZoomPoint);
         }
 
@@ -1179,6 +1208,7 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
 
         if (proposedZoomTarget == _target) {
             //D.Log("Proposed Target {0} is already the existing Target.".Inject(proposedZoomTarget.name));
+            //D.Log("TargetPoint movement proposed is {0}, Threshold is {1}..", Vector3.Distance(proposedZoomPoint, _targetPoint), settings.smallMovementThreshold);
             if (!Mathfx.Approx(proposedZoomPoint, _targetPoint, settings.smallMovementThreshold)) {
                 // the desired move of the Target point on the existing Target is large enough to respond too
                 ChangeTarget(proposedZoomTarget, proposedZoomPoint);
@@ -1198,7 +1228,7 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
         direction.ValidateNormalized();
         Ray ray = new Ray(Position, direction);
         RaycastHit targetHit;
-        if (Physics.Raycast(ray, out targetHit, Mathf.Infinity, collideWithDummyTargetOnlyLayerMask.value)) {
+        if (Physics.Raycast(ray, out targetHit, Mathf.Infinity, _collideWithDummyTargetOnlyLayerMask.value)) {
             if (_dummyTarget != targetHit.transform) {
                 D.Error("Camera should find DummyTarget, but it is: " + targetHit.transform.name);
                 return false;
@@ -1206,7 +1236,7 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
 
             float distanceToUniverseOrigin = Vector3.Distance(_dummyTarget.position, GameConstants.UniverseOrigin);
             //D.Log("Dummy Target distance to origin = {0}.".Inject(distanceToUniverseOrigin));
-            if (!distanceToUniverseOrigin.CheckRange(universeRadius, allowedPercentageVariation: 0.1F)) {
+            if (!distanceToUniverseOrigin.CheckRange(_universeRadius, allowedPercentageVariation: 0.1F)) {
                 D.Error("Camera's Dummy Target is not located on UniverseEdge! Position = " + _dummyTarget.position);
                 return false;
             }
@@ -1215,8 +1245,8 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
             return false;
         }
 
-        Vector3 pointOutsideUniverse = ray.GetPoint(universeRadius * 2);
-        if (Physics.Raycast(pointOutsideUniverse, -ray.direction, out targetHit, Mathf.Infinity, collideWithUniverseEdgeOnlyLayerMask.value)) {
+        Vector3 pointOutsideUniverse = ray.GetPoint(_universeRadius * 2);
+        if (Physics.Raycast(pointOutsideUniverse, -ray.direction, out targetHit, Mathf.Infinity, _collideWithUniverseEdgeOnlyLayerMask.value)) {
             Vector3 universeEdgePoint = targetHit.point;
             _dummyTarget.position = universeEdgePoint;
             ChangeTarget(_dummyTarget, _dummyTarget.position);
@@ -1289,7 +1319,6 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
     }
 
     private void Unsubscribe() {
-        //_eventMgr.RemoveListener<FocusSelectedEvent>(this, OnFocusSelected);
         _subscribers.ForAll<IDisposable>(s => s.Dispose());
         _subscribers.Clear();
     }
@@ -1400,7 +1429,7 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
         }
 
         public override bool IsActivated() {
-            return base.IsActivated() && gameInput.isDragValueWaiting && GameInputHelper.IsMouseButtonDown(mouseButton)
+            return base.IsActivated() && _gameInput.isDragValueWaiting && GameInputHelper.IsMouseButtonDown(mouseButton)
                 && !GameInputHelper.IsAnyMouseButtonDownBesides(mouseButton);
         }
     }
@@ -1417,7 +1446,7 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
         }
 
         public override bool IsActivated() {
-            return base.IsActivated() && gameInput.isDragValueWaiting && GameInputHelper.IsMouseButtonDown(firstMouseButton)
+            return base.IsActivated() && _gameInput.isDragValueWaiting && GameInputHelper.IsMouseButtonDown(firstMouseButton)
                 && GameInputHelper.IsMouseButtonDown(secondMouseButton);
         }
     }
@@ -1443,7 +1472,7 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
         }
 
         public override bool IsActivated() {
-            return base.IsActivated() && gameInput.isScrollValueWaiting && !GameInputHelper.IsAnyMouseButtonDown();
+            return base.IsActivated() && _gameInput.isScrollValueWaiting && !GameInputHelper.IsAnyMouseButtonDown();
         }
     }
 
@@ -1483,7 +1512,9 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
     }
 
     [Serializable]
-    public abstract class CameraConfigurationBase : ConfigurationBase {
+    public abstract class CameraConfigurationBase : AInputConfigurationBase {
+
+        protected static GameInput _gameInput = GameInput.Instance;
 
         /// <summary>
         /// This factor is used to normalize the translation movement speed of different input controls (keys, screen edge and mouse dragging)
@@ -1505,11 +1536,9 @@ public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable
         public virtual float InputTypeNormalizer {
             get { return 1F; }
         }
-
     }
 
     #endregion
-
 
 }
 

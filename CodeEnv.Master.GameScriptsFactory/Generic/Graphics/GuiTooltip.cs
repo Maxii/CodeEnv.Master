@@ -23,7 +23,7 @@ using UnityEngine;
 /// Standalone and extensible class for all Gui scripts containing Tooltip infrastructure. Can be
 /// instantiated for just Tooltip functionality but requires a Collider.
 /// </summary>
-public class GuiTooltip : AMonoBehaviourBase {
+public class GuiTooltip : AMonoBase {
 
     public string tooltip = string.Empty;
 

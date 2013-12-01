@@ -20,7 +20,7 @@ using UnityEngine;
 /// Scales Ngui3 WIdget height and width relative to camera distance rather than the gameobject transform's scale.
 /// </summary>
 [Obsolete]
-public class ScaleSpriteRelativeToCamera : AMonoBehaviourBase {
+public class ScaleSpriteRelativeToCamera : AMonoBase {
 
     public FrameUpdateFrequency updateRate = FrameUpdateFrequency.Continuous;
     public float spriteScale = 1.0F;

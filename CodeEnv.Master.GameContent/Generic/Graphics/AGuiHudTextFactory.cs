@@ -33,21 +33,23 @@ namespace CodeEnv.Master.GameContent {
         where ClassType : class
         where DataType : Data {
 
-
         private static IDictionary<IntelLevel, IList<GuiHudLineKeys>> _hudLineKeyLookup = new Dictionary<IntelLevel, IList<GuiHudLineKeys>> {
 
         {IntelLevel.Nil, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
                                                                        GuiHudLineKeys.ParentName,
+                                                                       GuiHudLineKeys.Type,
                                                                        GuiHudLineKeys.IntelState,
                                                                        GuiHudLineKeys.Distance }},
 
         {IntelLevel.Unknown, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
                                                                        GuiHudLineKeys.ParentName,
+                                                                       GuiHudLineKeys.Type,
                                                                        GuiHudLineKeys.IntelState,
                                                                        GuiHudLineKeys.Distance }},
 
         {IntelLevel.OutOfDate, new List<GuiHudLineKeys> {   GuiHudLineKeys.Name,
                                                                        GuiHudLineKeys.ParentName,
+                                                                       GuiHudLineKeys.Type,
                                                                        GuiHudLineKeys.IntelState,
                                                                        GuiHudLineKeys.Capacity,
                                                                        GuiHudLineKeys.Resources,
@@ -56,20 +58,20 @@ namespace CodeEnv.Master.GameContent {
 
         {IntelLevel.LongRangeSensors, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
                                                                         GuiHudLineKeys.ParentName,
+                                                                       GuiHudLineKeys.Type,
                                                                        GuiHudLineKeys.IntelState,
                                                                             GuiHudLineKeys.Capacity,
                                                                           GuiHudLineKeys.Resources,
                                                                        GuiHudLineKeys.Specials,
-                                                                       GuiHudLineKeys.SettlementSize,
                                                                             GuiHudLineKeys.Owner,
                                                                            GuiHudLineKeys.CombatStrength,
                                                                            GuiHudLineKeys.Composition,
                                                                            GuiHudLineKeys.Speed,
-                                                                           GuiHudLineKeys.ShipSize,
                                                                            GuiHudLineKeys.Distance }},
 
          {IntelLevel.ShortRangeSensors, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
                                                                         GuiHudLineKeys.ParentName,
+                                                                       GuiHudLineKeys.Type,
                                                                        GuiHudLineKeys.IntelState,
                                                                             GuiHudLineKeys.Capacity,
                                                                           GuiHudLineKeys.Resources,
@@ -85,6 +87,7 @@ namespace CodeEnv.Master.GameContent {
 
        {IntelLevel.Complete, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
                                                                         GuiHudLineKeys.ParentName,
+                                                                       GuiHudLineKeys.Type,
                                                                        GuiHudLineKeys.IntelState,
                                                                             GuiHudLineKeys.Capacity,
                                                                           GuiHudLineKeys.Resources,
@@ -147,7 +150,7 @@ namespace CodeEnv.Master.GameContent {
 
         #region IColoredTextList Strategy Classes
 
-        // Note: ColoredTextListBase, ColoredTextList<T> and ColoredTextList_String all in separate class files under Common.Unity
+        // Note: ColoredTextListBase, ColoredTextList<T> and ColoredTextList_String all in separate class files under Common
 
         public class ColoredTextList_Distance : ColoredTextListBase {
 

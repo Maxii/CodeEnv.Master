@@ -193,6 +193,16 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        /// Shuffles the specified source.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source">The source.</param>
+        /// <returns></returns>
+        public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> source) {
+            return RandomExtended<T>.Shuffle(source.ToArray());
+        }
+
+        /// <summary>
         /// Returns true if targetValue is within a reasonable tolerance of the value of source.
         /// </summary>
         /// <param name="source">The source.</param>
@@ -287,9 +297,12 @@ namespace CodeEnv.Master.Common {
                 throw new ArgumentException("Must be a member accessor", "propertySelector");
             }
             var propertyInfo = memberExpr.Member as PropertyInfo;
-            if (propertyInfo == null || propertyInfo.DeclaringType != typeof(TSource)) {
-                D.Error("Property DeclaringType {0}, not equal to TSource Type {1}.", propertyInfo.DeclaringType.Name, typeof(TSource).Name);
-                throw new ArgumentException("Must yield a single property on the given object", "propertySelector");
+            if (propertyInfo == null) {
+                throw new ArgumentException("No property named {0} of type {1} present on Type {2}.".Inject(memberExpr.Member.Name, typeof(TProp), typeof(TSource)));
+            }
+            if (propertyInfo.DeclaringType != typeof(TSource) && !typeof(TSource).IsSubclassOf(propertyInfo.DeclaringType)) {
+                // my modification that allows a base class to hold the Property rather than just the derived class
+                D.Error("TSource Type [{0}] not equal to or derived from  Property DeclaringType {1}.", typeof(TSource).Name, propertyInfo.DeclaringType.Name);
             }
             return propertyInfo.Name;
         }

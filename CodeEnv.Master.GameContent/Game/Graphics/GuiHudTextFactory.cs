@@ -50,11 +50,10 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Capacity:
                 case GuiHudLineKeys.Resources:
                 case GuiHudLineKeys.Specials:
-                case GuiHudLineKeys.SettlementSize:
                 case GuiHudLineKeys.SettlementDetails:
                 case GuiHudLineKeys.Composition:
                 case GuiHudLineKeys.CompositionDetails:
-                case GuiHudLineKeys.ShipSize:
+                case GuiHudLineKeys.Type:
                 case GuiHudLineKeys.ShipDetails:
                 case GuiHudLineKeys.Speed:
                     return _emptyColoredTextList;

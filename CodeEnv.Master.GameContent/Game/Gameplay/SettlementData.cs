@@ -80,8 +80,17 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public SettlementData(Transform t, string name, float maxHitPoints, string parentName)
-            : base(t, name, maxHitPoints, parentName) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SettlementData"/> class.
+        /// </summary>
+        /// <param name="size">The size.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="maxHitPoints">The maximum hit points.</param>
+        /// <param name="parentName">Name of the parent.</param>
+        public SettlementData(SettlementSize size, string name, float maxHitPoints, string parentName)
+            : base(name, maxHitPoints, parentName) {
+            _settlementSize = size;
+        }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

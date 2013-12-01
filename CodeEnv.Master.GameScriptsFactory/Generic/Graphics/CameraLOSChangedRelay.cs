@@ -5,9 +5,9 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: VisibilityChangedRelay.cs
-// Simple script that relays changes in its Renderer's visibility state to one or more Target gameobjects
-// that implement the IOnVisible interface.
+// File: CameraLOSChangedRelay.cs
+// Conveys changes in its Renderer's 'visibility state' (in or out of the camera's line of sight) to 
+// one or more client gameobjects that implement the ICameraLOSChangedClient interface.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,18 +18,19 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 using System;
+using System.Linq;
 
 /// <summary>
-/// Simple script that relays changes in its Renderer's visibility state to one or more Target gameobjects
-/// that implement the IOnVisible interface.
+/// Conveys changes in its Renderer's 'visibility state' (in or out of the camera's line of sight) to 
+/// one or more client gameobjects that implement the ICameraLOSChangedClient interface.
 ///<remarks>Used when I wish to separate a mesh and its renderer from a parent GameObject that does most of the work.</remarks>
 /// </summary>
-public class VisibilityChangedRelay : AMonoBehaviourBase, IDisposable {
+public class CameraLOSChangedRelay : AMonoBase, IDisposable {
 
-    public Transform[] relayTargets;
+    public List<Transform> relayTargets;
 
-    private INotifyVisibilityChanged[] _iRelayTargets;
-    private bool _isGameRunning;
+    private IList<ICameraLOSChangedClient> _iRelayTargets;
+    private bool _isRunning;
     private IList<IDisposable> _subscribers;
     private Renderer _renderer;
 
@@ -37,28 +38,28 @@ public class VisibilityChangedRelay : AMonoBehaviourBase, IDisposable {
         base.Awake();
         _renderer = UnityUtility.ValidateComponentPresence<Renderer>(gameObject);
         _renderer.enabled = true;   // renderers do not deliver OnBecameVisible() events if not enabled!!!!!!!!
-        if (relayTargets.Length == 0) {
-            Transform relayTarget = _transform.GetSafeTransformWithInterfaceInParents<INotifyVisibilityChanged>();
+        relayTargets = relayTargets ?? new List<Transform>();
+        if (relayTargets.Count == 0) {
+            Transform relayTarget = _transform.GetSafeTransformWithInterfaceInParents<ICameraLOSChangedClient>();
             if (relayTarget != null) {
-                D.Warn("{0} {1} target field is not assigned. Automatically assigning {1} as target.", _transform.name, this.GetType().Name, relayTarget);
+                D.Warn("{0} {1} target field is not assigned. Automatically assigning {2} as target.", _transform.name, this.GetType().Name, relayTarget.name);
             }
             else {
-                D.Warn("No {0} assigned or found for {1}.", typeof(INotifyVisibilityChanged), _transform.name);
+                D.Warn("No {0} assigned or found for {1}.", typeof(ICameraLOSChangedClient), _transform.name);
                 return;
             }
-            relayTargets = new Transform[1] { relayTarget };
+            relayTargets.Add(relayTarget);
         }
 
-        int length = relayTargets.Length;
-        _iRelayTargets = new INotifyVisibilityChanged[length];
+        _iRelayTargets = new List<ICameraLOSChangedClient>();
 
-        for (int i = 0; i < length; i++) {
-            INotifyVisibilityChanged iTarget = relayTargets[i].GetInterface<INotifyVisibilityChanged>();
+        foreach (var target in relayTargets) {
+            ICameraLOSChangedClient iTarget = target.GetInterface<ICameraLOSChangedClient>();
             if (iTarget == null) {
-                D.Warn("{0} is not an {1}.", relayTargets[i].name, typeof(INotifyVisibilityChanged));
+                D.Warn("{0} is not an {1}.", target.name, typeof(ICameraLOSChangedClient));
                 continue;
             }
-            _iRelayTargets[i] = iTarget;
+            _iRelayTargets.Add(iTarget);
         }
         Subscribe();
     }
@@ -70,24 +71,35 @@ public class VisibilityChangedRelay : AMonoBehaviourBase, IDisposable {
         _subscribers.Add(GameStatus.Instance.SubscribeToPropertyChanged<GameStatus, bool>(gs => gs.IsRunning, OnIsRunningChanged));
     }
 
+    public void AddTarget(params Transform[] targets) {
+        foreach (var target in targets) {
+            // validate target is a INotify... and that it is not already present
+            var iTarget = target.gameObject.GetSafeInterface<ICameraLOSChangedClient>();
+            if (iTarget != null && !relayTargets.Contains(target)) {
+                // add it to the lists
+                relayTargets.Add(target);
+                _iRelayTargets.Add(iTarget);
+            }
+        }
+    }
+
     private void OnIsRunningChanged() {
-        _isGameRunning = GameStatus.Instance.IsRunning;
-        if (_isGameRunning) {
+        _isRunning = GameStatus.Instance.IsRunning;
+        if (_isRunning) {
             // all relay targets start out initialized with IsVisible = true. This just initializes their list of child meshes that think they are visible
             OnBecameVisible();
         }
     }
 
-
-    private bool _isVisible;    // starts false so startup OnBecameVisible events don't generate warnings in ValidateVisibiltyChange
+    private bool _inCameraLOS;    // starts false so startup OnBecameVisible events don't generate warnings in ValidateVisibiltyChange
     void OnBecameVisible() {
         //D.Log("{0} VisibilityRelay has received OnBecameVisible().", _transform.name);
-        if (ValidateVisibilityChange(isVisible: true)) {
-            for (int i = 0; i < relayTargets.Length; i++) {
-                INotifyVisibilityChanged iNotify = _iRelayTargets[i];
-                if (iNotify != null) {
-                    LogVisibilityChange(_transform.name, relayTargets[i].name, isVisible: true);
-                    iNotify.NotifyVisibilityChanged(_transform, isVisible: true);
+        if (ValidateCameraLOSChange(inLOS: true)) {
+            for (int i = 0; i < relayTargets.Count; i++) {
+                ICameraLOSChangedClient client = _iRelayTargets[i];
+                if (client != null) {
+                    LogCameraLOSChange(_transform.name, relayTargets[i].name, inLOS: true);
+                    client.NotifyCameraLOSChanged(_transform, inLOS: true);
                 }
             }
             // more efficient and easier but can't provide the client target name for debug
@@ -97,49 +109,50 @@ public class VisibilityChangedRelay : AMonoBehaviourBase, IDisposable {
             //        D.Log("{0} has notified a client of becoming Visible.", _transform.name);
             //    }
             //}
-            _isVisible = true;
+            _inCameraLOS = true;
         }
     }
 
     void OnBecameInvisible() {
         //D.Log("{0} VisibilityRelay has received OnBecameInvisible().", _transform.name);
-        if (ValidateVisibilityChange(isVisible: false)) {
-            for (int i = 0; i < relayTargets.Length; i++) {
+        if (ValidateCameraLOSChange(inLOS: false)) {
+            for (int i = 0; i < relayTargets.Count; i++) {
                 Transform t = relayTargets[i];
                 if (t && t.gameObject.activeInHierarchy) {  // avoids NullReferenceException during Inspector shutdown
-                    INotifyVisibilityChanged iNotify = _iRelayTargets[i];
-                    if (iNotify != null) {
-                        LogVisibilityChange(_transform.name, relayTargets[i].name, isVisible: false);
-                        iNotify.NotifyVisibilityChanged(_transform, isVisible: false);
+                    ICameraLOSChangedClient client = _iRelayTargets[i];
+                    if (client != null) {
+                        LogCameraLOSChange(_transform.name, relayTargets[i].name, inLOS: false);
+                        client.NotifyCameraLOSChanged(_transform, inLOS: false);
                     }
                 }
             }
-            _isVisible = false;
+            _inCameraLOS = false;
         }
     }
 
     [System.Diagnostics.Conditional("DEBUG_LOG")]
-    private void LogVisibilityChange(string notifier, string client, bool isVisible) {
+    private void LogCameraLOSChange(string notifier, string client, bool inLOS) {
         if (DebugSettings.Instance.EnableVerboseDebugLog) {
-            string iNotifyParentName = _transform.GetSafeTransformWithInterfaceInParents<INotifyVisibilityChanged>().name;
-            string visibility = isVisible ? "Visible" : "Invisible";
+            string iNotifyParentName = _transform.GetSafeTransformWithInterfaceInParents<ICameraLOSChangedClient>().name;
+            string visibility = inLOS ? "InCameraLOS" : "OutOfCameraLOS";
             D.Log("{0} of parent {1} is notifying client {2} of becoming {3}.", notifier, iNotifyParentName, client, visibility);
         }
     }
+
     // FIXME Recieving a few duplicate OnBecameXXX events during initial scrolling and don't know why
     // It does not seem to be from other cameras in the scene. Don't know about editor scene camera.
-    private bool ValidateVisibilityChange(bool isVisible) {
-        if (!_isGameRunning) {
+    private bool ValidateCameraLOSChange(bool inLOS) {
+        if (!_isRunning) {
             return false;   // see SetupDocs.txt for approach to visibility
         }
         bool isValid = true;
-        string visibility = isVisible ? "Visible" : "Invisible";
-        if (isVisible == _isVisible) {
+        string visibility = inLOS ? "Visible" : "Invisible";
+        if (inLOS == _inCameraLOS) {
             //D.LogContext("Duplicate {0}.OnBecame{1}() received and filtered out.".Inject(gameObject.name, visibility), this);
             isValid = false;
         }
         if (gameObject.activeInHierarchy) {
-            if (isVisible != renderer.IsVisibleFrom(Camera.main)) {
+            if (inLOS != renderer.InLineOfSightOf(Camera.main)) {
                 D.WarnContext("{0}.OnBecame{1}() received from a camera that is not Camera.main.".Inject(gameObject.name, visibility), this);
                 isValid = false;
             }

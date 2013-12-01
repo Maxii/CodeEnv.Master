@@ -27,13 +27,6 @@ using UnityEngine;
 /// </summary>
 public class Presenter : IDisposable {
 
-    protected IViewable View { get; private set; }
-
-    protected Item Item { get; set; }
-
-    protected IList<IDisposable> _subscribers;
-    protected GameObject _viewGameObject;
-
     static Presenter() {
         InitializeHudPublishers();
     }
@@ -44,53 +37,54 @@ public class Presenter : IDisposable {
         GuiHudPublisher<ShipData>.SetFactory(ShipGuiHudTextFactory.Instance);
         GuiHudPublisher<FleetData>.SetFactory(FleetGuiHudTextFactory.Instance);
         GuiHudPublisher<SystemData>.SetFactory(SystemGuiHudTextFactory.Instance);
+        GuiHudPublisher<StarData>.SetFactory(StarGuiHudTextFactory.Instance);
+        GuiHudPublisher<PlanetoidData>.SetFactory(PlanetoidGuiHudTextFactory.Instance);
+        GuiHudPublisher<SettlementData>.SetFactory(SettlementGuiHudTextFactory.Instance);
     }
 
+    protected IViewable View { get; private set; }
+
+    protected AItem Item { get; set; }
+
+    protected GameObject _viewGameObject;
     protected GameEventManager _eventMgr;
+    protected IList<IDisposable> _subscribers;
 
     public Presenter(IViewable view) {
         View = view;
         _viewGameObject = (view as Component).gameObject;
-        InitilizeItemReference();
+        InitilizeItemLinkage();
+        // the following use ItemData so Views should only be enabled after ItemData is set
         Subscribe();
+        InitializeHudPublisher();
     }
 
-    protected virtual void InitilizeItemReference() {
-        Item = UnityUtility.ValidateMonoBehaviourPresence<Item>(_viewGameObject);
+    protected virtual void InitilizeItemLinkage() {
+        Item = UnityUtility.ValidateMonoBehaviourPresence<AItem>(_viewGameObject);
+        Item.Radius = View.Radius;
     }
 
     protected virtual void Subscribe() {
-        if (_subscribers == null) {
-            _subscribers = new List<IDisposable>();
-        }
-        SubscribeToItemDataChanged();
+        _subscribers = new List<IDisposable>();
         _eventMgr = GameEventManager.Instance;
         _eventMgr.AddListener<ItemDeathEvent>(this, OnItemDeath);
-    }
-
-    protected virtual void SubscribeToItemDataChanged() {
-        _subscribers.Add(Item.SubscribeToPropertyChanged<Item, Data>(i => i.Data, OnItemDataChanged));
     }
 
     protected virtual void InitializeHudPublisher() {
         View.HudPublisher = new GuiHudPublisher<Data>(Item.Data);
     }
 
-    protected virtual void OnItemDataChanged() {
-        InitializeHudPublisher();
+    protected virtual void OnItemDeath(ItemDeathEvent e) {
+        if ((e.Source as AItem) == Item) {
+            CleanupOnDeath();
+        }
     }
 
     public void OnIsFocus() {
         CameraControl.Instance.CurrentFocus = View as ICameraFocusable;
     }
 
-    protected virtual void OnItemDeath(ItemDeathEvent e) {
-        if ((e.Source as Item) == Item) {
-            Die();
-        }
-    }
-
-    protected virtual void Die() {
+    protected virtual void CleanupOnDeath() {
         if ((View as ICameraFocusable).IsFocus) {
             CameraControl.Instance.CurrentFocus = null;
         }
@@ -102,7 +96,7 @@ public class Presenter : IDisposable {
     }
 
     protected virtual void Unsubscribe() {
-        _subscribers.ForAll(d => d.Dispose());
+        _subscribers.ForAll(s => s.Dispose());
         _subscribers.Clear();
         _eventMgr.RemoveListener<ItemDeathEvent>(this, OnItemDeath);
     }

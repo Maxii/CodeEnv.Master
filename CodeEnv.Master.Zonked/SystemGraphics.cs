@@ -32,7 +32,7 @@ public class SystemGraphics : AGraphics, IDisposable {
     private static string __highlightName = "SystemHighlightMesh";  // IMPROVE
 
     private OrbitalPlane _orbitalPlane;
-    private SystemManager _systemManager;
+    private SystemCreator _systemManager;
 
     /// <summary>
     /// The separation between the pivot point on the 3D object that is tracked
@@ -50,7 +50,7 @@ public class SystemGraphics : AGraphics, IDisposable {
         base.Awake();
         Target = _transform;
         _orbitalPlane = gameObject.GetSafeMonoBehaviourComponentInChildren<OrbitalPlane>();
-        _systemManager = gameObject.GetSafeMonoBehaviourComponent<SystemManager>();
+        _systemManager = gameObject.GetSafeMonoBehaviourComponent<SystemCreator>();
         _trackingLabelFactory = GuiTrackingLabelFactory.Instance;
         maxAnimateDistance = AnimationSettings.Instance.MaxSystemAnimateDistance;
         _systemHighlightRenderer = __FindSystemHighlight();
@@ -68,7 +68,7 @@ public class SystemGraphics : AGraphics, IDisposable {
 
         Component[] orbitalPlaneCollider = new Component[1] { gameObject.GetSafeMonoBehaviourComponentInChildren<OrbitalPlane>().collider };
         Renderer[] renderersWithoutVisibilityRelays = gameObject.GetComponentsInChildren<Renderer>()
-            .Where<Renderer>(r => r.gameObject.GetComponent<VisibilityChangedRelay>() == null).ToArray<Renderer>();
+            .Where<Renderer>(r => r.gameObject.GetComponent<CameraLOSChangedRelay>() == null).ToArray<Renderer>();
         if (disableComponentOnNotDiscernible.IsNullOrEmpty()) {
             disableComponentOnNotDiscernible = new Component[0];
         }
@@ -77,7 +77,7 @@ public class SystemGraphics : AGraphics, IDisposable {
     }
 
     public override void AssessHighlighting() {
-        if (!IsVisible || (!_systemManager.IsSelected && !_orbitalPlane.IsFocus)) {
+        if (!InCameraLOS || (!_systemManager.IsSelected && !_orbitalPlane.IsFocus)) {
             Highlight(false, Highlights.None);
             return;
         }
@@ -96,16 +96,16 @@ public class SystemGraphics : AGraphics, IDisposable {
         _systemHighlightRenderer.gameObject.SetActive(toShow);
         switch (highlight) {
             case Highlights.Focused:
-                _systemHighlightRenderer.material.SetColor(UnityConstants.MainMaterialColor, UnityDebugConstants.FocusedColor.ToUnityColor());
-                _systemHighlightRenderer.material.SetColor(UnityConstants.OutlineMaterialColor, UnityDebugConstants.FocusedColor.ToUnityColor());
+                _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Main, UnityDebugConstants.FocusedColor.ToUnityColor());
+                _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Outline, UnityDebugConstants.FocusedColor.ToUnityColor());
                 break;
             case Highlights.Selected:
-                _systemHighlightRenderer.material.SetColor(UnityConstants.MainMaterialColor, UnityDebugConstants.SelectedColor.ToUnityColor());
-                _systemHighlightRenderer.material.SetColor(UnityConstants.OutlineMaterialColor, UnityDebugConstants.SelectedColor.ToUnityColor());
+                _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Main, UnityDebugConstants.SelectedColor.ToUnityColor());
+                _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Outline, UnityDebugConstants.SelectedColor.ToUnityColor());
                 break;
             case Highlights.SelectedAndFocus:
-                _systemHighlightRenderer.material.SetColor(UnityConstants.MainMaterialColor, UnityDebugConstants.GeneralHighlightColor.ToUnityColor());
-                _systemHighlightRenderer.material.SetColor(UnityConstants.OutlineMaterialColor, UnityDebugConstants.GeneralHighlightColor.ToUnityColor());
+                _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Main, UnityDebugConstants.GeneralHighlightColor.ToUnityColor());
+                _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Outline, UnityDebugConstants.GeneralHighlightColor.ToUnityColor());
                 break;
             case Highlights.None:
                 // nothing to do as the highlighter should already be inactive

@@ -20,7 +20,7 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// The manager for the AStar Pathfinding system. 
 /// </summary>
-public class AStarPathManager : AMonoBehaviourBase, IDisposable {
+public class AStarPathManager : AMonoBase, IDisposable {
 
     private IList<IDisposable> _subscribers;
     private AstarPath _astarPath;
@@ -35,7 +35,7 @@ public class AStarPathManager : AMonoBehaviourBase, IDisposable {
         if (_subscribers == null) {
             _subscribers = new List<IDisposable>();
         }
-        _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.GameState, OnGameStateChanged));
+        _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
         AstarPath.OnLatePostScan += OnGraphScansCompleted;
     }
 
@@ -50,7 +50,7 @@ public class AStarPathManager : AMonoBehaviourBase, IDisposable {
     }
 
     private void OnGameStateChanged() {
-        if (GameManager.Instance.GameState == GameState.GeneratingPathGraphs) {
+        if (GameManager.Instance.CurrentState == GameState.GeneratingPathGraphs) {
             AstarPath.active.Scan();
         }
     }

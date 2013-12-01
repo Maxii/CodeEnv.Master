@@ -32,11 +32,11 @@ namespace CodeEnv.Master.GameContent {
         private static IList<GuiHudLineKeys> _displayLineOrder = new List<GuiHudLineKeys>() {
                 {GuiHudLineKeys.Name},
                 {GuiHudLineKeys.ParentName},
+                {GuiHudLineKeys.Type},
                 {GuiHudLineKeys.IntelState},
                 {GuiHudLineKeys.Capacity},
                 {GuiHudLineKeys.Resources},
                 {GuiHudLineKeys.Specials}, 
-                {GuiHudLineKeys.SettlementSize},
                 {GuiHudLineKeys.SettlementDetails},
                 {GuiHudLineKeys.Owner},
                 {GuiHudLineKeys.CombatStrength},
@@ -45,7 +45,6 @@ namespace CodeEnv.Master.GameContent {
                 {GuiHudLineKeys.Speed}, 
                 {GuiHudLineKeys.Composition},
                 {GuiHudLineKeys.CompositionDetails},
-                {GuiHudLineKeys.ShipSize},
                 {GuiHudLineKeys.ShipDetails},
                 {GuiHudLineKeys.Distance}
         };
@@ -70,11 +69,11 @@ namespace CodeEnv.Master.GameContent {
             IDictionary<GuiHudLineKeys, string> baseDisplayLineContent = new Dictionary<GuiHudLineKeys, string>() {
                 {GuiHudLineKeys.Name, "{0}"},
                 {GuiHudLineKeys.ParentName, "{0}"},
+                {GuiHudLineKeys.Type, "Type: {0}"},
                 {GuiHudLineKeys.IntelState, "< {0} >"},
                 {GuiHudLineKeys.Capacity, "Capacity: {0} Slots"},   
                 {GuiHudLineKeys.Resources, "Resources: O: {0}, P: {1}, E: {2}"},
-                {GuiHudLineKeys.Specials, "[800080]Specials:[-] {0} {1}"},
-                {GuiHudLineKeys.SettlementSize, "Settlement: {0}"},
+                {GuiHudLineKeys.Specials, "[800080]Specials:[-] {0} {1}..."},
                 {GuiHudLineKeys.SettlementDetails, "Settlement: {0}, P: {1}, C: {2}, OPE: {3}, X: {4}"},
                 {GuiHudLineKeys.Owner, "Owner: {0}"},
                 {GuiHudLineKeys.CombatStrength, "Combat: {0}"}, 
@@ -83,7 +82,6 @@ namespace CodeEnv.Master.GameContent {
                 {GuiHudLineKeys.Speed, CursorHudPhrases.Speed},  // the format is dynamically constructed within the ColoredText_Speed class
                 {GuiHudLineKeys.Composition, "{0}"},   // the format is dynamically constructed within the ColoredText_Composition class
                 {GuiHudLineKeys.CompositionDetails, "{0}"}, // the format is dynamically constructed within the ColoredText_Composition class
-                {GuiHudLineKeys.ShipSize, "Size: {0}"},   
                 {GuiHudLineKeys.ShipDetails, "{0}, Mass: {1}, TurnRate: {2}"},
                 {GuiHudLineKeys.Distance, "Distance from Camera: {0} Units"} 
             };

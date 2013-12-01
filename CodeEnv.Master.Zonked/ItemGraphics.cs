@@ -60,7 +60,7 @@ public class ItemGraphics : AGraphics, IDisposable {
     }
 
     public override void AssessHighlighting() {
-        if (!IsVisible) {
+        if (!InCameraLOS) {
             Highlight(Highlights.None);
             return;
         }

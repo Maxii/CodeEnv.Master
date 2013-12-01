@@ -14,6 +14,7 @@
 // default namespace
 
 using System;
+using System.Collections;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -33,7 +34,7 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
 
     private bool _isDetectable = true; // FIXME if starts false, it doesn't get updated right away...
     /// <summary>
-    /// Gets or sets a value indicating whether the object this graphics script
+    /// Indicates whether the item this view
     /// is associated with is detectable by the human player. 
     /// eg. a fleet the human player has no intel about is not detectable.
     /// </summary>
@@ -42,13 +43,22 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
         set { SetProperty<bool>(ref _isDetectable, value, "IsDetectable", OnIsDetectableChanged); }
     }
 
+
+    /// <summary>
+    /// The [float] radius of this object in units measured as the distance from the
+    /// center to the min or max extent. As bounds is a bounding box it is the longest
+    /// diagonal from the center to a corner of the box.    
+    /// Note the override - a fleet's collider and mesh (icon) both scale, thus AView's implementation can't be used
+    /// </summary>
+    public override float Radius { get { return 1.0F; } }   // TODO should reflect the rough radius of the fleet
+
     public bool enableTrackingLabel = false;
     public Vector3 trackingLabelOffsetFromPivot = new Vector3(Constants.ZeroF, 0.05F, Constants.ZeroF);
     public int minTrackingLabelShowDistance = TempGameValues.MinFleetTrackingLabelShowDistance;
     public int maxTrackingLabelShowDistance = TempGameValues.MaxFleetTrackingLabelShowDistance;
-    public float minFleetViewingDistance = 4F;
-    public float optimalFleetViewingDistance = 6F;
+    public AudioClip dying;
 
+    private AudioSource _audioSource;
     private GuiTrackingLabel _trackingLabel;
     private Vector3 _trackingLabelPivotOffset;
 
@@ -56,7 +66,6 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
 
     private Transform _fleetIconTransform;
     private Vector3 _fleetIconPivotOffset;
-    private BoxCollider _collider;
     private UISprite _fleetIconSprite;
     private ScaleRelativeToCamera _fleetIconScaler;
     private IIcon _fleetIcon;   // IMPROVE not really used for now
@@ -64,8 +73,11 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
 
     protected override void Awake() {
         base.Awake();
+        _audioSource = UnityUtility.ValidateComponentPresence<AudioSource>(gameObject);
         _isCirclesRadiusDynamic = false;
         circleScaleFactor = 0.03F;
+        minimumCameraViewingDistanceMultiplier = 0.8F;
+        optimalCameraViewingDistanceMultiplier = 1.2F;
         maxAnimateDistance = 1; // FIXME maxAnimateDistance not used, this is a dummy value to avoid the warning in AGraphics
         InitializeFleetIcon();
         UpdateRate = FrameUpdateFrequency.Normal;
@@ -77,7 +89,7 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
 
     protected override void Start() {
         base.Start();
-        __ValidateCtxObjectSettings();
+        __InitializeContextMenu();
     }
 
     protected override void RegisterComponentsToDisable() {
@@ -89,23 +101,23 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
         };
     }
 
-    private void OnTargetChanged() {
-        _fleetIconPivotOffset = new Vector3(Constants.ZeroF, Target.collider.bounds.extents.y, Constants.ZeroF);
-        _trackingLabelPivotOffset = new Vector3(Constants.ZeroF, Target.collider.bounds.extents.y, Constants.ZeroF);
+    private void OnTrackingTargetChanged() {
+        _fleetIconPivotOffset = new Vector3(Constants.ZeroF, TrackingTarget.collider.bounds.extents.y, Constants.ZeroF);
+        _trackingLabelPivotOffset = new Vector3(Constants.ZeroF, TrackingTarget.collider.bounds.extents.y, Constants.ZeroF);
         if (_trackingLabel != null) {
             _trackingLabel.TargetPivotOffset = _trackingLabelPivotOffset;
         }
     }
 
     private void OnIsDetectableChanged() {
-        EnableBasedOnDiscernible(IsVisible, IsDetectable);
-        EnableBasedOnDistanceToCamera(IsVisible, IsDetectable);
+        EnableBasedOnDiscernible(InCameraLOS, IsDetectable);
+        EnableBasedOnDistanceToCamera(InCameraLOS, IsDetectable);
         AssessHighlighting();
     }
 
-    protected override void OnIsVisibleChanged() {
-        EnableBasedOnDiscernible(IsVisible, IsDetectable);
-        EnableBasedOnDistanceToCamera(IsVisible, IsDetectable);
+    protected override void OnInCameraLOSChanged() {
+        EnableBasedOnDiscernible(InCameraLOS, IsDetectable);
+        EnableBasedOnDistanceToCamera(InCameraLOS, IsDetectable);
         AssessHighlighting();
     }
 
@@ -150,25 +162,20 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
         }
     }
 
-    protected override void OnIsFocusChanged() {
-        base.OnIsFocusChanged();
-        AssessHighlighting();
-    }
-
     protected override void Update() {
         base.Update();
         KeepViewOverTarget();
     }
 
-    protected override void OnToUpdate() {
-        base.OnToUpdate();
+    protected override void OccasionalUpdate() {
+        base.OccasionalUpdate();
         KeepColliderOverFleetIcon();
     }
 
     private void KeepViewOverTarget() {
-        if (Target != null) {
-            _transform.position = Target.position;
-            _transform.rotation = Target.rotation;
+        if (TrackingTarget != null) {
+            _transform.position = TrackingTarget.position;
+            _transform.rotation = TrackingTarget.rotation;
 
             // Notes: _fleetIconPivotOffset is a worldspace offset to the top of the leadship collider and doesn't change with scale, position or rotation
             // The approach below will also work if we want a viewport offset that is a constant percentage of the viewport
@@ -181,13 +188,13 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
 
     // starts getting called upon IsRunning
     private void KeepColliderOverFleetIcon() {
-        _collider.size = Vector3.Scale(_iconSize, _fleetIconScaler.Scale);
+        (_collider as BoxCollider).size = Vector3.Scale(_iconSize, _fleetIconScaler.Scale);
         //D.Log("Fleet collider size now = {0}.", _collider.size);
 
         Vector3[] iconWorldCorners = _fleetIconSprite.worldCorners;
         Vector3 iconWorldCenter = iconWorldCorners[0] + (iconWorldCorners[2] - iconWorldCorners[0]) * 0.5F;
         // convert icon's world position to the equivalent local position on the fleetCmd transform
-        _collider.center = _transform.InverseTransformPoint(iconWorldCenter);
+        (_collider as BoxCollider).center = _transform.InverseTransformPoint(iconWorldCenter);
     }
 
     protected override int EnableBasedOnDistanceToCamera(params bool[] conditions) {
@@ -210,7 +217,7 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
 
     private GuiTrackingLabel InitializeTrackingLabel() {
         // use LeadShip collider for the offset rather than the FleetCmd collider as the FleetCmd collider changes scale dynamically. 
-        _trackingLabelPivotOffset = new Vector3(Constants.ZeroF, Target.collider.bounds.extents.y, Constants.ZeroF);
+        _trackingLabelPivotOffset = new Vector3(Constants.ZeroF, TrackingTarget.collider.bounds.extents.y, Constants.ZeroF);
         GuiTrackingLabel trackingLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(_transform, _trackingLabelPivotOffset, trackingLabelOffsetFromPivot);
         return trackingLabel;
     }
@@ -222,7 +229,7 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
     }
 
     public override void AssessHighlighting() {
-        if (!IsDetectable || !IsVisible) {
+        if (!IsDetectable || !InCameraLOS) {
             ShowFleetIcon(false);
             Highlight(Highlights.None);
             return;
@@ -289,14 +296,7 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
                 _velocityRay = new VelocityRay("FleetVelocityRay", _transform, fleetSpeed, parent: DynamicObjects.Folder,
                     width: 2F, color: GameColor.Green);
             }
-            if (toShow) {
-                if (!_velocityRay.IsShowing) {
-                    StartCoroutine(_velocityRay.Show());
-                }
-            }
-            else if (_velocityRay.IsShowing) {
-                _velocityRay.Hide();
-            }
+            _velocityRay.Show(toShow);
         }
     }
 
@@ -304,10 +304,12 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
         return Screen.height * circleScaleFactor;
     }
 
-    private void __ValidateCtxObjectSettings() {
+    private void __InitializeContextMenu() {      // IMPROVE use of string
         CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
+        CtxMenu generalMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "GeneralMenu");
+        ctxObject.contextMenu = generalMenu;
         D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
-        _collider = UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
+        UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
         //D.Log("Initial Fleet collider size = {0}.", _collider.size);
     }
 
@@ -338,14 +340,31 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
 
     #region IFleetViewable Members
 
-    private Transform _target;
+    public event Action onShowCompletion;
+
+    public void ShowDying() {
+        new Job(ShowingDying(), toStart: true);
+    }
+
+    private IEnumerator ShowingDying() {
+        if (dying != null) {
+            _audioSource.PlayOneShot(dying);
+        }
+        _collider.enabled = false;
+        //animation.Stop();
+        //yield return UnityUtility.PlayAnimation(animation, "die");  // show debree particles for some period of time?
+        yield return null;
+        onShowCompletion();
+    }
+
+    private Transform _trackingTarget;
     /// <summary>
-    /// The target transform that this FleetView stays tracks in worldspace. This is
+    /// The target transform that this FleetView tracks in worldspace. This is
     /// typically the flagship of the fleet.
     /// </summary>
-    public Transform Target {
-        private get { return _target; }
-        set { SetProperty<Transform>(ref _target, value, "Target", OnTargetChanged); }
+    public Transform TrackingTarget {
+        private get { return _trackingTarget; }
+        set { SetProperty<Transform>(ref _trackingTarget, value, "TrackingTarget", OnTrackingTargetChanged); }
     }
 
     public void ChangeFleetIcon(IIcon icon, GameColor color) {
@@ -364,15 +383,6 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
         }
     }
 
-    /// <summary>
-    /// Overridden because the default implementation returns a value that
-    /// is a factor of the collider bounds which doesn't work for colliders whos
-    /// size changes based on the distance to the camera.
-    /// </summary>
-    protected override float CalcMinimumCameraViewingDistance() {
-        return minFleetViewingDistance;
-    }
-
     #endregion
 
     #region ICameraFocusable Members
@@ -386,9 +396,9 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
     /// is a factor of the collider bounds which doesn't work for colliders whos
     /// size changes based on the distance to the camera.
     /// </summary>
-    protected override float CalcOptimalCameraViewingDistance() {
-        return optimalFleetViewingDistance;
-    }
+    //protected override float CalcOptimalCameraViewingDistance() {
+    //    return optimalFleetViewingDistance;
+    //}
 
     #endregion
 

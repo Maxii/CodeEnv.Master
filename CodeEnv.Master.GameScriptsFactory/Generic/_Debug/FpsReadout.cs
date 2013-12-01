@@ -38,7 +38,8 @@ public class FpsReadout : AGuiLabelReadoutBase {
         tooltip = "Current Frames per Second displayed.";
     }
 
-    void Update() {
+    protected override void Update() {
+        base.Update();
         // this is a tool, so I'll simply use Unity RealTime_Unity
         float timeSinceLastUpdate = Time.deltaTime;
         _timeRemainingInInterval -= timeSinceLastUpdate;

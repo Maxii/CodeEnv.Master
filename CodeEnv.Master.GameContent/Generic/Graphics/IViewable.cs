@@ -31,6 +31,12 @@ namespace CodeEnv.Master.GameContent {
 
         IntelLevel PlayerIntelLevel { get; set; }
 
+        /// <summary>
+        /// The radius in units of the conceptual 'globe' that
+        /// encompasses this gameObject.
+        /// </summary>
+        float Radius { get; }
+
     }
 }
 

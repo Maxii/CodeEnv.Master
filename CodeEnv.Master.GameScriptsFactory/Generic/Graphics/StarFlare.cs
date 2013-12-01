@@ -19,7 +19,7 @@ using UnityEngine;
 /// <summary>
 /// Varies a Star's flare style and intensity as a function of distance from the camera.
 /// </summary>
-public class StarFlare : AMonoBehaviourBase {
+public class StarFlare : AMonoBase {
 
     private static System.Random rng = new System.Random(); // IMPROVE convert to RandomExtensions
 
@@ -71,11 +71,10 @@ public class StarFlare : AMonoBehaviourBase {
         _originalIntensity = _flareLight.intensity;
     }
 
-    void Update() {
-        if (ToUpdate()) {
-            if (_flareLight != null) {
-                VaryFlareIntensityByCameraDistance();
-            }
+    protected override void OccasionalUpdate() {
+        base.OccasionalUpdate();
+        if (_flareLight != null) {
+            VaryFlareIntensityByCameraDistance();
         }
     }
 

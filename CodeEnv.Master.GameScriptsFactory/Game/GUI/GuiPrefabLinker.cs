@@ -23,7 +23,7 @@ using UnityEngine;
 /// <summary>
 /// Manages the instantiation and setup of a prefab Gui menu system.
 /// </summary>
-public class GuiPrefabLinker : AMonoBehaviourBase {
+public class GuiPrefabLinker : AMonoBase {
 
     public GameObject linkedPrefab;
     public MyNguiButtonPlayAnimation launchButtonAnimation;

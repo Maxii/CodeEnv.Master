@@ -28,7 +28,7 @@ using UnityEngine;
 /// supports viewing data via the GuiCursorHud.
 /// </summary>
 [System.Obsolete]
-public abstract class AItem : AMonoBehaviourBase, ICameraTargetable, IHasData, IDisposable {
+public abstract class AItem : AMonoBase, ICameraTargetable, IHasData, IDisposable {
 
     private Data _data;
     /// <summary>

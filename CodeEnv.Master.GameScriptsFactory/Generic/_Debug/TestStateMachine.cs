@@ -24,54 +24,54 @@ using UnityEngine;
 /// <summary>
 /// COMMENT 
 /// </summary>
-public class TestStateMachine : MonoStateMachine<TestEnum> {
+public class TestStateMachine : AMonoStateMachine<TestEnum> {
 
-    public event Action EventTest;
+    //public event Action EventTest;
 
     protected override void Awake() {
         base.Awake();
-        D.Log("Awake");
+        LogEvent();
 
-        ActiveState = TestEnum.Test1;
+        CurrentState = TestEnum.Test1;
     }
 
     protected override void Start() {
         base.Start();
-        D.Log("Start");
+        LogEvent();
 
-        ActiveState = TestEnum.Test2;
+        CurrentState = TestEnum.Test2;
     }
 
 
     IEnumerator Test1_EnterState() {
-        D.Log("Test1_EnterState");
+        LogEvent();
         yield return null;
     }
 
     IEnumerator Test1_ExitState() {
-        D.Log("Test1_ExitState");
+        LogEvent();
         yield return null;
     }
 
     IEnumerator Test2_EnterState() {
-        D.Log("Test2_EnterState");
+        LogEvent();
         //EventTest();  // Wiring has been disconnected
         yield return null;
     }
 
     IEnumerator Test2_ExitState() {
-        D.Log("Test2_ExitState");
+        LogEvent();
         yield return null;
     }
 
     void Test2_OnEventTest_StateMachineTestObject() {
         D.Log("EventTest event received on Test2_OnEventTest_StateMachineTestObject().");
-        ActiveState = TestEnum.Test1;
+        CurrentState = TestEnum.Test1;
     }
 
     //void Test2_OnEventTest() {
     //    D.Log("EventTest event received on Test2_OnEventTest().");
-    //    ActiveState = TestEnum.Test1;
+    //    CurrentState = TestEnum.Test1;
     //}
 
 

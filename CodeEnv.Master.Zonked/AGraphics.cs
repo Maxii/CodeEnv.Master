@@ -26,7 +26,7 @@ using UnityEngine;
 /// Abstract base class supporting graphics optimization for Ships, Fleets and Systems.
 /// </summary>
 [System.Obsolete]
-public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
+public abstract class AGraphics : AMonoBase, ICameraLOSChangedClient {
 
     public enum Highlights {
 
@@ -113,8 +113,8 @@ public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
     }
 
     protected virtual void OnIsVisibleChanged() {
-        EnableBasedOnDiscernible(IsVisible);
-        EnableBasedOnDistanceToCamera(IsVisible);
+        EnableBasedOnDiscernible(InCameraLOS);
+        EnableBasedOnDistanceToCamera(InCameraLOS);
         AssessHighlighting();
     }
 
@@ -176,7 +176,7 @@ public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
         }
     }
 
-    private void OnAMeshVisibilityChanged(Transform sender, bool isVisible) {
+    private void OnMeshNotifingCameraLOSChanged(Transform sender, bool isVisible) {
         if (isVisible) {
             // removed assertion tests and warnings as it will take a while to get the lists and state in sync
             if (!_visibleMeshes.Contains(sender)) {
@@ -188,23 +188,23 @@ public abstract class AGraphics : AMonoBehaviourBase, INotifyVisibilityChanged {
             // removed assertion tests and warnings as it will take a while to get the lists and state in sync
         }
 
-        if (IsVisible == (_visibleMeshes.Count == 0)) {
+        if (InCameraLOS == (_visibleMeshes.Count == 0)) {
             // visibility state of this object should now change
-            IsVisible = !IsVisible;
-            D.Log("{0} isVisible changed to {1}.", gameObject.name, IsVisible);
+            InCameraLOS = !InCameraLOS;
+            D.Log("{0} isVisible changed to {1}.", gameObject.name, InCameraLOS);
         }
     }
 
-    #region INotifyVisibilityChanged Members
+    #region ICameraLOSChangedClient Members
 
-    private bool _isVisible = true; // everyone starts out thinking they are visible as it controls the enabled/activated state of key components
-    public bool IsVisible {
-        get { return _isVisible; }
-        private set { SetProperty<bool>(ref _isVisible, value, "IsVisible", OnIsVisibleChanged); }
+    private bool _inCameraLOS = true; // everyone starts out thinking they are visible as it controls the enabled/activated state of key components
+    public bool InCameraLOS {
+        get { return _inCameraLOS; }
+        private set { SetProperty<bool>(ref _inCameraLOS, value, "InCameraLOS", OnIsVisibleChanged); }
     }
 
-    public void NotifyVisibilityChanged(Transform sender, bool isVisible) {
-        OnAMeshVisibilityChanged(sender, isVisible);
+    public void NotifyCameraLOSChanged(Transform sender, bool inLOS) {
+        OnMeshNotifingCameraLOSChanged(sender, inLOS);
     }
 
     #endregion

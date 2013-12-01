@@ -164,6 +164,19 @@ namespace CodeEnv.Master.Common {
 
             return shuffledList;
         }
+
+        /// <summary>
+        /// Get a random point on a circle.
+        /// </summary>
+        /// <param name="radius">The radius.</param>
+        /// <returns></returns>
+        public static Vector2 OnCircle(float radius) {
+            float randomAngle = Random.Range(0F, 360F);
+            float angleRadians = randomAngle * Mathf.PI / 180F;
+            float x = radius * Mathf.Cos(angleRadians);
+            float y = radius * Mathf.Sin(angleRadians);
+            return new Vector2(x, y);
+        }
     }
 }
 

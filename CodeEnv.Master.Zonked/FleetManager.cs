@@ -27,7 +27,7 @@ using UnityEngine;
 /// and each individual fleet object (command or ship) handles camera interaction and showing Hud info.
 /// </summary>
 [System.Obsolete]
-public class FleetManager : AMonoBehaviourBase, ISelectable, IHasData, IDisposable {
+public class FleetManager : AMonoBase, ISelectable, IHasData, IDisposable {
 
     private static IconFactory _iconFactory;
 

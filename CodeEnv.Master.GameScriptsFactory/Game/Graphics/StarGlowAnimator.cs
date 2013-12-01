@@ -22,7 +22,7 @@ using UnityEngine;
 /// Runs the texture that simulates a 'glow' surrounding a globe.
 /// </summary>
 [Serializable]
-public class StarGlowAnimator : AMonoBehaviourBase {
+public class StarGlowAnimator : AMonoBase {
     private static Vector2[] materialOrientationChoices = new Vector2[] {
         new Vector2(1, 1),
         new Vector2(1, -1),
@@ -47,11 +47,10 @@ public class StarGlowAnimator : AMonoBehaviourBase {
         renderer.material.SetTextureScale(UnityConstants.MainDiffuseTexture, materialOrientation);
     }
 
-    void Update() {
-        if (ToUpdate()) {
-            float adjDeltaTime = GameTime.DeltaTimeWithGameSpeed * (int)UpdateRate;
-            _transform.Rotate(Vector3.up * adjDeltaTime * rotationSpeedAndDirection);
-        }
+    protected override void OccasionalUpdate() {
+        base.OccasionalUpdate();
+        float adjDeltaTime = GameTime.DeltaTimeWithGameSpeed * (int)UpdateRate;
+        _transform.Rotate(Vector3.up * adjDeltaTime * rotationSpeedAndDirection);
     }
 
     public override string ToString() {

@@ -22,7 +22,7 @@ using UnityEngine;
 /// <summary>
 /// Operates the context menu and highlighting for a sector.
 /// </summary>
-public class Sector : AMonoBehaviourBase, IHasContextMenu {
+public class Sector : AMonoBase, IHasContextMenu {
 
     public string Name { get; set; }    // UNDONE
 
@@ -174,7 +174,7 @@ public class Sector : AMonoBehaviourBase, IHasContextMenu {
     }
 
     public void OnPress(bool isDown) {
-        FleetManager selectedFleetMgr = _selectionMgr.CurrentSelection as FleetManager;
+        FleetCreator selectedFleetMgr = _selectionMgr.CurrentSelection as FleetCreator;
         //string fleetName = fleetMgr != null ? fleetMgr.name : "null";
         //D.Log("Sector.OnPress({0}), fleetMgr is {1}.", isDown, fleetName);
         if (selectedFleetMgr != null) {

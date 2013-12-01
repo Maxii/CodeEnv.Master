@@ -10,19 +10,33 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
+
 // default namespace
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// The data-holding class for all fleets in the game.
+/// The data-holding class for all fleets in the game. Includes a state machine.
 /// </summary>
-public class FleetItem : Item {
+public class FleetItem : AItemStateMachine<FleetState>, ITarget {
+
+    public event Action<ShipItem> onFleetElementDestroyed;
+
+    private ItemOrder<FleetOrders> _currentOrder;
+    public ItemOrder<FleetOrders> CurrentOrder {
+        get { return _currentOrder; }
+        set { SetProperty<ItemOrder<FleetOrders>>(ref _currentOrder, value, "CurrentOrder", OnOrdersChanged); }
+    }
 
     public new FleetData Data {
         get { return base.Data as FleetData; }
@@ -32,98 +46,53 @@ public class FleetItem : Item {
     private ShipItem _flagship;
     public ShipItem Flagship {
         get { return _flagship; }
-        set { SetProperty<ShipItem>(ref _flagship, value, "Flagship", OnFlagshipChanged); }
-    }
-
-    private ShipItem _lastFleetShipDestroyed;
-    /// <summary>
-    /// The most recent member of this fleet that has been destroyed. Can be 
-    /// null if no ships belonging to this fleet have been destroyed.
-    /// </summary>
-    public ShipItem LastFleetShipDestroyed {
-        get { return _lastFleetShipDestroyed; }
-        set { SetProperty<ShipItem>(ref _lastFleetShipDestroyed, value, "LastFleetShipDestroyed", OnLastFleetShipDestroyedChanged); }
+        set { SetProperty<ShipItem>(ref _flagship, value, "Flagship", OnFlagshipChanged, OnFlagshipChanging); }
     }
 
     public IList<ShipItem> Ships { get; private set; }
-
-    private bool __engageAutoPilotOnCourseSuccess;
+    public FleetNavigator Navigator { get; private set; }
 
     private GameManager _gameMgr;
-    //private FleetAutoPilot _autoPilot;
-    private FleetAutoPilot _autoPilot;
 
     protected override void Awake() {
         base.Awake();
-        GameObject fleetParent = _transform.parent.gameObject;
-        Ships = fleetParent.GetSafeMonoBehaviourComponentsInChildren<ShipItem>().ToList();
+        Ships = new List<ShipItem>();
+        _gameMgr = GameManager.Instance;
+        Subscribe();
+    }
+
+    protected override void Start() {
+        base.Start();
+        Initialize();
+    }
+
+    private void Initialize() {
+        InitializeNavigator();
+        CurrentState = FleetState.Idling;
+    }
+
+    private void InitializeNavigator() {
+        Navigator = new FleetNavigator(this, gameObject.GetSafeMonoBehaviourComponent<Seeker>());
+        Navigator.onDestinationReached += OnDestinationReached;
+        Navigator.onCourseTrackingError += OnFleetTrackingError;
+        Navigator.onCoursePlotFailure += OnCoursePlotFailure;
+        Navigator.onCoursePlotSuccess += OnCoursePlotSuccess;
     }
 
     protected override void Subscribe() {
         base.Subscribe();
-        _gameMgr = GameManager.Instance;
-        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.GameState, OnGameStateChanged));
+        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
     }
 
-    private void OnFinalDestinationReachedChanged() {
-        if (_autoPilot.IsFinalDestinationReached) {
-            D.Log("AutoPilot FinalDestination {0} reached.", _autoPilot.FinalDestination);
-            __PlotRandomCourseAndEngageAutoPilot();
-        }
-    }
-
-    private void OnGameStateChanged() {
-        if (_gameMgr.GameState == GameState.Running) {
-            // IMPROVE select LeadShipCaptain here for now as Data must be initialized first
-            Flagship = RandomExtended<ShipItem>.Choice(Ships);
-            __GetFleetUnderway();
-        }
-    }
-
-    protected override void OnDataChanged() {
-        base.OnDataChanged();
-        InitializeAutoPilot();
-    }
-
-    private void OnFlagshipChanged() {
-        Data.FlagshipData = Flagship.Data;
-    }
-
-    public void OnCoursePlotCompleted(bool isSuccessful, Vector3 Destination) {
-        if (isSuccessful) {
-            if (__engageAutoPilotOnCourseSuccess) {
-                _autoPilot.Engage();
-                __engageAutoPilotOnCourseSuccess = false;
-            }
-            else {
-                D.Log("Course plotted, awaiting engagement order.");
-            }
-        }
-        else {
-            __PlotRandomCourseAndEngageAutoPilot();
-        }
-    }
-
-    public void __GetFleetUnderway() {
-        __PlotRandomCourseAndEngageAutoPilot();
-        //ChangeFleetHeading(UnityEngine.Random.onUnitSphere);
-        //ChangeFleetSpeed(2.0F);
-    }
-
-    private void __PlotRandomCourseAndEngageAutoPilot() {
-        _autoPilot.PlotCourse(UnityEngine.Random.onUnitSphere * 200F);
-        __engageAutoPilotOnCourseSuccess = true;
-    }
-
-    public bool ChangeFleetHeading(Vector3 newHeading, bool isManualOverride = true) {
+    public bool ChangeHeading(Vector3 newHeading, bool isManualOverride = true) {
         if (DebugSettings.Instance.StopShipMovement) {
-            _autoPilot.Disengage();
+            Navigator.Disengage();
             return false;
         }
         if (isManualOverride) {
-            _autoPilot.Disengage();
+            Navigator.Disengage();
         }
-        if (Mathfx.Approx(newHeading, Data.RequestedHeading, .01F)) {
+        if (newHeading.IsSameDirection(Data.RequestedHeading, .1F)) {
             D.Warn("Duplicate ChangeHeading Command to {0} on {1}.", newHeading, Data.Name);
             return false;
         }
@@ -134,13 +103,13 @@ public class FleetItem : Item {
         return true;
     }
 
-    public bool ChangeFleetSpeed(float newSpeed, bool isManualOverride = true) {
+    public bool ChangeSpeed(float newSpeed, bool isManualOverride = true) {
         if (DebugSettings.Instance.StopShipMovement) {
-            _autoPilot.Disengage();
+            Navigator.Disengage();
             return false;
         }
         if (isManualOverride) {
-            _autoPilot.Disengage();
+            Navigator.Disengage();
         }
         if (Mathfx.Approx(newSpeed, Data.RequestedSpeed, .01F)) {
             D.Warn("Duplicate ChangeSpeed Command to {0} on {1}.", newSpeed, Data.Name);
@@ -153,22 +122,33 @@ public class FleetItem : Item {
         return true;
     }
 
-    private void OnLastFleetShipDestroyedChanged() {
-        D.Log("{0} acknowledging {1} has been lost.", this.GetType().Name, LastFleetShipDestroyed.name);
-        ProcessShipRemoval(LastFleetShipDestroyed);
+    /// <summary>
+    /// Adds the ship to this fleet including parenting if needed.
+    /// </summary>
+    /// <param name="ship">The ship.</param>
+    public void AddShip(ShipItem ship) {
+        Ships.Add(ship);
+        Data.AddShip(ship.Data);
+        Transform parentFleetTransform = gameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>().transform;
+        if (ship.transform.parent != parentFleetTransform) {
+            ship.transform.parent = parentFleetTransform;   // local position, rotation and scale are auto adjusted to keep ship unchanged in worldspace
+        }
+        // TODO consider changing flagship
     }
 
-    private void InitializeAutoPilot() {
-        //_autoPilot = gameObject.AddComponent<FleetAutoPilot>();
-        _autoPilot = new FleetAutoPilot(this, gameObject.GetSafeMonoBehaviourComponent<Seeker>());
-        _subscribers.Add(_autoPilot.SubscribeToPropertyChanged<FleetAutoPilot, bool>(ap => ap.IsFinalDestinationReached, OnFinalDestinationReachedChanged));
-    }
-
-    private void ProcessShipRemoval(ShipItem ship) {
+    public void ReportShipLost(ShipItem ship) {
+        D.Log("{0} acknowledging {1} has been lost.", Data.Name, ship.Data.Name);
         RemoveShip(ship);
+        onFleetElementDestroyed(ship);
+    }
+
+    public void RemoveShip(ShipItem ship) {
+        bool isRemoved = Ships.Remove(ship);
+        isRemoved = isRemoved && Data.RemoveShip(ship.Data);
+        D.Assert(isRemoved, "{0} not found.".Inject(ship.Data.Name));
         if (Ships.Count > Constants.Zero) {
             if (ship == Flagship) {
-                // LeadShip has died
+                // Flagship has died
                 Flagship = SelectBestShip();
             }
             return;
@@ -176,10 +156,39 @@ public class FleetItem : Item {
         // Fleet knows when to die
     }
 
-    private void RemoveShip(ShipItem ship) {
-        bool isRemoved = Ships.Remove(ship);
-        isRemoved = isRemoved && Data.RemoveShip(ship.Data);
-        D.Assert(isRemoved, "{0} not found.".Inject(ship.Data.Name));
+    private void OnGameStateChanged() {
+        //D.Log("FleetItem.OnGameStateChanged event recieved. GameState = {0}.", _gameMgr.CurrentState);
+        if (_gameMgr.CurrentState == GameState.Running) {
+            __GetFleetUnderway();
+        }
+    }
+
+    private void OnFlagshipChanging(ShipItem newFlagship) {
+        if (Flagship != null) {
+            Flagship.IsFlagship = false;
+            Flagship.Navigator.onCourseTrackingError -= OnFlagshipTrackingError;
+        }
+    }
+
+    private void OnFlagshipChanged() {
+        Flagship.IsFlagship = true;
+        Data.FlagshipData = Flagship.Data;
+        Flagship.Navigator.onCourseTrackingError += OnFlagshipTrackingError;
+    }
+
+    private void __GetFleetUnderway() {
+        //var destination = new StationaryLocation(UnityEngine.Random.onUnitSphere * 200F);
+        var destination = FindObjectOfType<SettlementItem>();
+        CurrentOrder = new ItemOrder<FleetOrders>(FleetOrders.MoveTo, destination, Data.MaxSpeed);
+    }
+
+    private void AllStop() {
+        var allStop = new ItemOrder<ShipOrders>(ShipOrders.AllStop);
+        Ships.ForAll(s => s.CurrentOrder = allStop);
+    }
+
+    protected override void Die() {
+        CurrentState = FleetState.Dying;
     }
 
     private ShipItem SelectBestShip() {
@@ -191,8 +200,287 @@ public class FleetItem : Item {
         Data.Dispose();
     }
 
+    // subscriptions contained completely within this gameobject (both subscriber
+    // and subscribee) donot have to be cleaned up as all instances are destroyed
+
+    #region FleetStates
+
+    #region Idle
+
+    void Idling_EnterState() {
+        D.Log("{0} Idling_EnterState", Data.Name);
+        //CurrentOrder = null;
+        //if (Data.RequestedSpeed != Constants.ZeroF) {
+        //    ChangeSpeed(Constants.ZeroF);
+        //}
+        // register as available
+    }
+
+    void Idling_OnOrdersChanged() {
+        CurrentState = FleetState.ProcessOrders;
+    }
+
+    void Idling_ExitState() {
+        // register as unavailable
+    }
+
+    void Idling_OnDetectedEnemy() { }
+
+
+    #endregion
+
+    #region ProcessOrders
+
+    private ItemOrder<FleetOrders> _orderBeingExecuted;
+    private bool _isNewOrderWaiting;
+
+    void ProcessOrders_EnterState() { }
+
+    void ProcessOrders_Update() {
+        // I got to this state one of two ways:
+        // 1. there has been a new order issued, or
+        // 2. the last new order (_orderBeingExecuted) has been completed
+        _isNewOrderWaiting = _orderBeingExecuted != CurrentOrder;
+        if (_isNewOrderWaiting) {
+            FleetOrders order = CurrentOrder.Order;
+            switch (order) {
+                case FleetOrders.AllStop:
+                    AllStop();
+                    CurrentState = FleetState.Idling;
+                    break;
+                case FleetOrders.Attack:
+
+                    break;
+                case FleetOrders.Disband:
+
+                    break;
+                case FleetOrders.DisbandAt:
+
+                    break;
+                case FleetOrders.Guard:
+
+                    break;
+                case FleetOrders.JoinFleetAt:
+
+                    break;
+                case FleetOrders.MoveTo:
+                    Call(FleetState.MovingTo);
+                    break;
+                case FleetOrders.Patrol:
+
+                    break;
+                case FleetOrders.RefitAt:
+
+                    break;
+                case FleetOrders.Repair:
+
+                    break;
+                case FleetOrders.RepairAt:
+
+                    break;
+                case FleetOrders.Retreat:
+
+                    break;
+                case FleetOrders.RetreatTo:
+
+                    break;
+                case FleetOrders.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
+            }
+            _orderBeingExecuted = CurrentOrder;
+        }
+        else {
+            // there is no new order so the return to this state must be after the last new order has been completed
+            CurrentState = FleetState.Idling;
+        }
+    }
+
+    #endregion
+
+    #region Move
+
+    void MovingTo_EnterState() {
+        Navigator.PlotCourse(CurrentOrder.Target, CurrentOrder.Speed);
+    }
+
+    void MovingTo_OnCoursePlotSuccess() {
+        Navigator.Engage();
+    }
+
+    void MovingTo_OnDestinationReached() {
+        //CurrentOrder = new ItemOrder<FleetOrders>(FleetOrders.AllStop);
+        Return();
+    }
+
+    void MovingTo_OnOrdersChanged() {
+        Return(FleetState.ProcessOrders);
+    }
+
+    void MovingTo_OnCoursePlotFailure() {
+        Return(FleetState.Idling);
+    }
+
+    void MovingTo_OnFleetTrackingError() {
+        Return(FleetState.Idling);
+    }
+
+    void MovingTo_OnFlagshipTrackingError() {
+        Navigator.Disengage();
+        Return(FleetState.Idling);
+    }
+
+    void MovingTo_ExitState() {
+        Navigator.Disengage();
+    }
+
+    #endregion
+
+    #region Patrol
+
+    void GoPatrol_EnterState() { }
+
+    void GoPatrol_OnDetectedEnemy() { }
+
+    void Patrolling_EnterState() { }
+
+    void Patrolling_OnDetectedEnemy() { }
+
+    #endregion
+
+    #region Guard
+
+    void GoGuard_EnterState() { }
+
+    void Guarding_EnterState() { }
+
+    #endregion
+
+    #region Entrench
+
+    void Entrenching_EnterState() { }
+
+    #endregion
+
+    #region Attack
+
+    void GoAttack_EnterState() { }
+
+    void Attacking_EnterState() { }
+
+    #endregion
+
+    #region Repair
+
+    void GoRepair_EnterState() { }
+
+    void Repairing_EnterState() { }
+
+    #endregion
+
+    #region Retreat
+
+    void GoRetreat_EnterState() { }
+
+    #endregion
+
+    #region Refit
+
+    void GoRefit_EnterState() { }
+
+    void Refitting_EnterState() { }
+
+    #endregion
+
+    #region Disband
+
+    void GoDisband_EnterState() { }
+
+    void Disbanding_EnterState() { }
+
+    #endregion
+
+    #region Die
+
+    void Dying_EnterState() {
+        Call(FleetState.ShowDying);
+        CurrentState = FleetState.Dead;
+    }
+
+    void ShowDying_EnterState() {
+        // View is showing Dying
+    }
+
+    void ShowDying_OnShowCompletion() {
+        Return();
+    }
+
+    IEnumerator Dead_EnterState() {
+        D.Log("{0} has Died!", Data.Name);
+        GameEventManager.Instance.Raise<ItemDeathEvent>(new ItemDeathEvent(this));
+        yield return new WaitForSeconds(3);
+        Destroy(gameObject);
+    }
+
+    #endregion
+
+
+    # region Callbacks
+
+    public void OnShowCompletion() { RelayToCurrentState(); }
+
+    void OnCoursePlotFailure() { RelayToCurrentState(); }
+
+    void OnCoursePlotSuccess() { RelayToCurrentState(); }
+
+    void OnDestinationReached() {
+        D.Log("{0} Destination {1} reached.", Data.Name, Navigator.Target.Name);
+        RelayToCurrentState();
+    }
+
+    void OnFleetTrackingError() {
+        // the final waypoint is not close enough and we can't directly approach the Destination
+        RelayToCurrentState();
+    }
+
+    void OnFlagshipTrackingError() {
+        // the Flagship reports the fleet has missed or can't catch a target
+        RelayToCurrentState();
+    }
+
+    void OnOrdersChanged() {
+        if (CurrentOrder != null) {
+            D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
+            RelayToCurrentState();
+        }
+    }
+
+
+    void OnDetectedEnemy() {  // TODO connect to sensors when I get them
+        RelayToCurrentState();
+    }
+
+    #endregion
+
+    #endregion
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region ITarget Members
+
+    public string Name {
+        get { return Data.Name; }
+    }
+
+    public Vector3 Position {
+        get { return Data.Position; }
+    }
+
+    public bool IsMovable { get { return true; } }
+
+    #endregion
+
 }
 

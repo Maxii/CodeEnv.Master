@@ -78,40 +78,54 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Coroutine method that shows a circle around Target.
+        /// Shows or hides a circle around a target.
         /// </summary>
-        /// <param name="index">The index of the circle.</param>
-        /// <returns></returns>
-        public IEnumerator ShowCircles(int index) {
+        /// <param name="toShow">if set to <c>true</c> the circle with this index will show.</param>
+        /// <param name="index">The index of the circle to show or hide.</param>
+        public void Show(bool toShow, int index) {
             Arguments.ValidateForRange(index, Constants.Zero, MaxCircles - 1);
             if (_line == null) { Initialize(); }
 
-            _circlesToShow[index] = true;
-            // D.Log("Circle {0} added to {1}.", index, LineName);
-
-            if (!_line.active) {
-                _line.active = true;
-                D.Log("{0} coroutine started.", LineName);
-                while (_line.active) {
-                    Vector2 screenPoint = Camera.main.WorldToScreenPoint(Target.position);
-                    float distanceToCamera = IsRadiusDynamic ? Target.DistanceToCamera() : 1F;
-                    //float distanceToCamera = Camera.main.transform.InverseTransformPoint(Target.position).z;
-                    for (int circleIndex = 0; circleIndex < MaxCircles; circleIndex++) {
-                        if (_circlesToShow[circleIndex]) {
-                            //float radius = NormalizedRadius + (circleIndex * _circleSeparation) / distanceToCamera;
-                            float radius = (NormalizedRadius / distanceToCamera) + (circleIndex * _circleSeparation);
-
-                            int startpointIndex = _segmentsPerCircle * circleIndex * 2;
-                            _line.MakeCircle(screenPoint, radius, _segmentsPerCircle, startpointIndex);
-                        }
-                    }
-                    _line.Draw();
-                    yield return null;
+            if (toShow) {
+                if (_job == null) {
+                    _job = new Job(DrawCircles(), toStart: true, onJobComplete: delegate {
+                        D.Log("{0} coroutine finished.", LineName);
+                        // TODO
+                    });
                 }
-                D.Log("{0} coroutine finished.", LineName);
+                else if (!_job.IsRunning) {
+                    _job.Start();
+                }
+                AddCircle(index);
+                _line.active = true;
             }
-            else {
-                D.Warn("{0} coroutine is already running. To add this circle, use AddCircle({1}).", LineName, index);
+            else
+                if (_job != null && _job.IsRunning) {
+                    RemoveCircle(index);
+                }
+        }
+
+
+        /// <summary>
+        /// Coroutine method that draws one or more circles around Target.
+        /// </summary>
+        /// <returns></returns>
+        private IEnumerator DrawCircles() {
+            while (true) {
+                Vector2 screenPoint = Camera.main.WorldToScreenPoint(Target.position);
+                float distanceToCamera = IsRadiusDynamic ? Target.DistanceToCamera() : 1F;
+                //float distanceToCamera = Camera.main.transform.InverseTransformPoint(Target.position).z;
+                for (int circleIndex = 0; circleIndex < MaxCircles; circleIndex++) {
+                    if (_circlesToShow[circleIndex]) {
+                        //float radius = NormalizedRadius + (circleIndex * _circleSeparation) / distanceToCamera;
+                        float radius = (NormalizedRadius / distanceToCamera) + (circleIndex * _circleSeparation);
+
+                        int startpointIndex = _segmentsPerCircle * circleIndex * 2;
+                        _line.MakeCircle(screenPoint, radius, _segmentsPerCircle, startpointIndex);
+                    }
+                }
+                _line.Draw();
+                yield return null;
             }
         }
 
@@ -119,7 +133,7 @@ namespace CodeEnv.Master.GameContent {
         /// Adds the circle with this index to the coroutine that is showing the circles.
         /// </summary>
         /// <param name="index">The index.</param>
-        public void AddCircle(int index) {
+        private void AddCircle(int index) {
             _circlesToShow[index] = true;
         }
 
@@ -128,7 +142,7 @@ namespace CodeEnv.Master.GameContent {
         /// If this is the last circle showing, the coroutine will be terminated.
         /// </summary>
         /// <param name="index">The index.</param>
-        public void RemoveCircle(int index) {
+        private void RemoveCircle(int index) {
             if (_circlesToShow[index]) {
                 _circlesToShow[index] = false;
                 //D.Log("Circle {0} removed from {1}.", index, LineName);
@@ -136,10 +150,56 @@ namespace CodeEnv.Master.GameContent {
                 _line.ZeroPoints();
                 if (_circlesToShow.Where(cShowing => cShowing == true).IsNullOrEmpty()) {
                     //D.Log("Line {0} no longer active.", LineName);
+                    _job.Kill();
                     _line.active = false;
                 }
             }
         }
+
+        public void Clear() {
+            _line.ZeroPoints();
+            _circlesToShow.ForAll(c => c = false);
+            _job.Kill();
+            _line.active = false;
+        }
+
+        ///// <summary>
+        ///// Coroutine method that shows a circle around Target.
+        ///// </summary>
+        ///// <param name="index">The index of the circle.</param>
+        ///// <returns></returns>
+        //public IEnumerator ShowCircles(int index) {
+        //    Arguments.ValidateForRange(index, Constants.Zero, MaxCircles - 1);
+        //    if (_line == null) { Initialize(); }
+
+        //    _circlesToShow[index] = true;
+        //    // D.Log("Circle {0} added to {1}.", index, LineName);
+
+        //    if (!_line.active) {
+        //        _line.active = true;
+        //        D.Log("{0} coroutine started.", LineName);
+        //        while (_line.active) {
+        //            Vector2 screenPoint = Camera.main.WorldToScreenPoint(Target.position);
+        //            float distanceToCamera = IsRadiusDynamic ? Target.DistanceToCamera() : 1F;
+        //            //float distanceToCamera = Camera.main.transform.InverseTransformPoint(Target.position).z;
+        //            for (int circleIndex = 0; circleIndex < MaxCircles; circleIndex++) {
+        //                if (_circlesToShow[circleIndex]) {
+        //                    //float radius = NormalizedRadius + (circleIndex * _circleSeparation) / distanceToCamera;
+        //                    float radius = (NormalizedRadius / distanceToCamera) + (circleIndex * _circleSeparation);
+
+        //                    int startpointIndex = _segmentsPerCircle * circleIndex * 2;
+        //                    _line.MakeCircle(screenPoint, radius, _segmentsPerCircle, startpointIndex);
+        //                }
+        //            }
+        //            _line.Draw();
+        //            yield return null;
+        //        }
+        //        D.Log("{0} coroutine finished.", LineName);
+        //    }
+        //    else {
+        //        D.Warn("{0} coroutine is already running. To add this circle, use AddCircle({1}).", LineName, index);
+        //    }
+        //}
 
         protected override void Initialize() {
             int points = MaxCircles * _segmentsPerCircle * 2;   // 2 points per segment for a discrete line
@@ -195,12 +255,6 @@ namespace CodeEnv.Master.GameContent {
                 D.Warn("{0} width count {1} does not match Circle count {2}. Defaulting to {3}.", LineName, length, MaxCircles, Widths[0]);
                 _line.SetColor(GameColor.White.ToUnityColor());
             }
-        }
-
-        public void Clear() {
-            _line.ZeroPoints();
-            _circlesToShow.ForAll(c => c = false);
-            _line.active = false;
         }
 
         public override string ToString() {

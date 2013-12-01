@@ -26,14 +26,18 @@ public class View : AView, ICameraFocusable {
 
     protected Presenter Presenter { get; set; }
 
-    public float circleScaleFactor = 1.5F;
+    public float circleScaleFactor = 3.0F;
     protected bool _isCirclesRadiusDynamic = true;
     private HighlightCircle _circles;
 
     protected override void Awake() {
         base.Awake();
-        InitializePresenter();
-        maxAnimateDistance = Mathf.RoundToInt(AnimationSettings.Instance.MaxCelestialObjectAnimateDistanceFactor * Size);
+        maxAnimateDistance = Mathf.RoundToInt(AnimationSettings.Instance.MaxCelestialObjectAnimateDistanceFactor * Radius);
+    }
+
+    protected override void Start() {
+        base.Start();
+        InitializePresenter();  // moved from Awake as some Presenters need immediate access to this Behaviour's parent which may not yet be assigned if Instantiated at runtime
     }
 
     protected virtual void InitializePresenter() {
@@ -63,7 +67,7 @@ public class View : AView, ICameraFocusable {
     }
 
     public override void AssessHighlighting() {
-        if (!IsVisible) {
+        if (!InCameraLOS) {
             Highlight(Highlights.None);
             return;
         }
@@ -103,30 +107,19 @@ public class View : AView, ICameraFocusable {
             _circles.Colors = new GameColor[3] { UnityDebugConstants.FocusedColor, UnityDebugConstants.SelectedColor, UnityDebugConstants.GeneralHighlightColor };
             _circles.Widths = new float[3] { 2F, 2F, 1F };
         }
-        if (toShow) {
-            D.Log("{0} attempting to show circle {1}.", gameObject.name, highlight.GetName());
-            if (!_circles.IsShowing) {
-                StartCoroutine(_circles.ShowCircles((int)highlight));
-            }
-            else {
-                _circles.AddCircle((int)highlight);
-            }
-        }
-        else if (_circles.IsShowing) {
-            _circles.RemoveCircle((int)highlight);
-        }
+        //string showHide = toShow ? "showing" : "not showing";
+        //D.Log("{0} {1} circle {2}.", gameObject.name, showHide, highlight.GetName());
+        _circles.Show(toShow, (int)highlight);
     }
 
     protected virtual float calcNormalizedCircleRadius() {
-        return Screen.height * circleScaleFactor * Size;
+        return Screen.height * circleScaleFactor * Radius;
     }
 
     protected override void Cleanup() {
         base.Cleanup();
-        if (_circles != null) {
-            _circles.Dispose();
-        }
-        Presenter.Dispose();
+        if (_circles != null) { _circles.Dispose(); }
+        if (Presenter != null) { Presenter.Dispose(); } // avoid NRE if stopped quickly
     }
 
     public override string ToString() {
@@ -136,7 +129,7 @@ public class View : AView, ICameraFocusable {
     #region ICameraFocusable Members
 
     [SerializeField]
-    protected float optimalCameraViewingDistanceMultiplier = 5F;
+    protected float optimalCameraViewingDistanceMultiplier = 8F;
 
     private float _optimalCameraViewingDistance;
     public float OptimalCameraViewingDistance {
@@ -153,7 +146,7 @@ public class View : AView, ICameraFocusable {
     /// </summary>
     /// <returns></returns>
     protected virtual float CalcOptimalCameraViewingDistance() {
-        return Size * optimalCameraViewingDistanceMultiplier;
+        return Radius * optimalCameraViewingDistanceMultiplier;
     }
 
     public virtual bool IsRetainedFocusEligible { get { return false; } }

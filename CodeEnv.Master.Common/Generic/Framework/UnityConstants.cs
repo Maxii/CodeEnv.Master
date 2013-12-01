@@ -62,11 +62,11 @@ namespace CodeEnv.Master.Common {
         public const string ReflectionCubeMapTexture = "_Cube";
 
         // Common Color names used by Unity's builtin shaders - use with material.SetColor(name, Color)
-        public const string MainMaterialColor = "_Color";   // the main color of a material, can also be accessed via color property
-        public const string SpecularMaterialColor = "_SpecColor"; // the specular color of a material, used in specular/vertexlit shaders
-        public const string EmissiveMaterialColor = "_Emission"; // the emissive color of a material, used in vertexlit shaders
-        public const string ReflectionMaterialColor = "_ReflectColor";  // the reflection color of a material, used in reflective shaders
-        public const string OutlineMaterialColor = "_OutlineColor"; // the outline color of a material, typically used in toon shaders?
+        public const string MaterialColor_Main = "_Color";   // the main color of a material, can also be accessed via color property
+        public const string MaterialColor_Specular = "_SpecColor"; // the specular color of a material, used in specular/vertexlit shaders
+        public const string MaterialColor_Emissive = "_Emission"; // the emissive color of a material, used in vertexlit shaders
+        public const string MaterialColor_Reflection = "_ReflectColor";  // the reflection color of a material, used in reflective shaders
+        public const string MaterialColor_Outline = "_OutlineColor"; // the outline color of a material, typically used in toon shaders?
 
         public const string AssetFolderName = "Assets";
         public const string AssetExtension = ".asset";

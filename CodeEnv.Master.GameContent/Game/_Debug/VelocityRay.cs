@@ -44,6 +44,10 @@ namespace CodeEnv.Master.GameContent {
             _line.points3[1] = Vector3.forward * _speed.Value;
             base.Draw3D();
         }
+
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
+        }
     }
 }
 

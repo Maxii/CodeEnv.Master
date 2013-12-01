@@ -16,13 +16,19 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// The data-holding class for all Systems in the game.
+/// The data-holding class for all Systems in the game.  
+/// WARNING: Donot change name to "System", a protected word.
 /// </summary>
-public class SystemItem : Item {
-    // WARNING: Donot change this to "System", a protected word
+public class SystemItem : AItem {
+
     public new SystemData Data {
         get { return base.Data as SystemData; }
         set { base.Data = value; }
+    }
+
+    protected override void Awake() {
+        base.Awake();
+        Subscribe();
     }
 
     public override string ToString() {

@@ -24,6 +24,7 @@ namespace CodeEnv.Master.GameContent {
     public enum ShipHull {
 
         None,
+
         [EnumAttribute("F")]
         Fighter,
 
@@ -40,7 +41,23 @@ namespace CodeEnv.Master.GameContent {
         Dreadnaught,
 
         [EnumAttribute("CV")]
-        Carrier
+        Carrier,
+
+        [EnumAttribute("CO")]
+        Colonizer,
+
+        [EnumAttribute("SS")]
+        Science,
+
+        [EnumAttribute("TR")]
+        Troop,
+
+        [EnumAttribute("SP")]
+        Support,
+
+        [EnumAttribute("SC")]
+        Scout
+
 
     }
 }

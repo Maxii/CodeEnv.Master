@@ -51,7 +51,7 @@ namespace CodeEnv.Master.GameContent {
                     return new ColoredTextList<float>(Constants.FormatFloat_0Dp, data.Strength.Combined);
                 case GuiHudLineKeys.CombatStrengthDetails:
                     return new ColoredTextList_Combat(data.Strength);
-                case GuiHudLineKeys.ShipSize:
+                case GuiHudLineKeys.Type:
                     return new ColoredTextList_String(data.Hull.GetDescription());
                 case GuiHudLineKeys.ShipDetails:
                     return new ColoredTextList_Ship(data);
@@ -62,7 +62,6 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Specials:
                 case GuiHudLineKeys.Composition:
                 case GuiHudLineKeys.CompositionDetails:
-                case GuiHudLineKeys.SettlementSize:
                 case GuiHudLineKeys.SettlementDetails:
                     return _emptyColoredTextList;
 

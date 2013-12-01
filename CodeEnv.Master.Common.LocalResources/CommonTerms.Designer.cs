@@ -70,6 +70,15 @@ namespace CodeEnv.Master.Common.LocalResources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Command.
+        /// </summary>
+        public static string Command {
+            get {
+                return ResourceManager.GetString("Command", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Composition.
         /// </summary>
         public static string Composition {

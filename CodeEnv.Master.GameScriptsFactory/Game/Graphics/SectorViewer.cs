@@ -26,7 +26,7 @@ using UnityEngine;
 /// Singleton that displays the highlighted wireframe of a sector and provides a context menu for fleet commands
 /// relevant to the highlighted sector.
 /// </summary>
-public class SectorViewer : AMonoBehaviourBaseSingleton<SectorViewer>, IDisposable {
+public class SectorViewer : AMonoBaseSingleton<SectorViewer>, IDisposable {
 
     public int distanceInSectorsFromCamera = 2;
 
@@ -50,6 +50,7 @@ public class SectorViewer : AMonoBehaviourBaseSingleton<SectorViewer>, IDisposab
     private GuiTrackingLabel _sectorIDLabel;
 
     private PlayerViewMode _viewMode;
+    private Job _sectorViewJob;
 
     private IList<IDisposable> _subscribers;
 
@@ -130,9 +131,12 @@ public class SectorViewer : AMonoBehaviourBaseSingleton<SectorViewer>, IDisposab
         switch (_viewMode) {
             case PlayerViewMode.SectorView:
                 DynamicallySubscribe(true);
-                if (!_toViewSectorUnderMouse) {
-                    StartCoroutine(ShowSectorUnderMouse());
+                if (_sectorViewJob == null) {
+                    _sectorViewJob = new Job(ShowSectorUnderMouse(), toStart: false, onJobComplete: delegate {
+                        // TODO
+                    });
                 }
+                _sectorViewJob.Start();
                 _collider.enabled = false;
                 break;
             //case PlayerViewMode.SectorOrder:
@@ -144,7 +148,10 @@ public class SectorViewer : AMonoBehaviourBaseSingleton<SectorViewer>, IDisposab
             case PlayerViewMode.NormalView:
                 // turn off wireframe
                 DynamicallySubscribe(false);
-                _toViewSectorUnderMouse = false;
+                if (_sectorViewJob != null && _sectorViewJob.IsRunning) {
+                    _sectorViewJob.Kill();
+                    ShowSector(false);
+                }
                 _collider.enabled = false;
                 _ctxObject.HideMenu();
                 break;
@@ -154,17 +161,15 @@ public class SectorViewer : AMonoBehaviourBaseSingleton<SectorViewer>, IDisposab
         }
     }
 
-    private bool _toViewSectorUnderMouse;
     private IEnumerator ShowSectorUnderMouse() {
-        _toViewSectorUnderMouse = true;
-        while (_toViewSectorUnderMouse) {
+        while (true) {
             Vector3 mousePosition = Input.mousePosition;
             mousePosition.z = _distanceToHighlightedSector;
             Vector3 mouseWorldPoint = Camera.main.ScreenToWorldPoint(mousePosition);
             Index3D sectorIndexUnderMouse = SectorGrid.GetSectorIndex(mouseWorldPoint);
             bool toShow;
-            Sector sector;
-            if (toShow = SectorGrid.TryGetSector(sectorIndexUnderMouse, out sector)) {
+            Sector notUsed;
+            if (toShow = SectorGrid.TryGetSector(sectorIndexUnderMouse, out notUsed)) {
                 if (!Location.Equals(sectorIndexUnderMouse)) {
                     Location = sectorIndexUnderMouse; // avoid the SetProperty equivalent warnings
                 }
@@ -172,10 +177,9 @@ public class SectorViewer : AMonoBehaviourBaseSingleton<SectorViewer>, IDisposab
             ShowSector(toShow);
             yield return null;
         }
-        ShowSector(false);
     }
 
-    public void ShowSector(bool toShow) {
+    private void ShowSector(bool toShow) {
         if (!toShow && _wireframe == null) {
             return;
         }
@@ -186,14 +190,7 @@ public class SectorViewer : AMonoBehaviourBaseSingleton<SectorViewer>, IDisposab
         if (_sectorIDLabel == null) {
             _sectorIDLabel = InitializeSectorIDLabel();
         }
-        if (toShow) {
-            if (!_wireframe.IsShowing) {
-                StartCoroutine(_wireframe.Show());
-            }
-        }
-        else if (_wireframe.IsShowing) {
-            _wireframe.Hide();
-        }
+        _wireframe.Show(toShow);
         _sectorIDLabel.IsShowing = toShow;
     }
 
@@ -209,6 +206,9 @@ public class SectorViewer : AMonoBehaviourBaseSingleton<SectorViewer>, IDisposab
         if (_sectorIDLabel != null) {
             Destroy(_sectorIDLabel.gameObject);
             _sectorIDLabel = null;
+        }
+        if (_sectorViewJob != null) {
+            _sectorViewJob.Kill();
         }
         Unsubscribe();
     }

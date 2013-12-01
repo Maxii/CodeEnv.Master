@@ -24,7 +24,7 @@ using UnityEngine;
 ///  A class for managing the elements of a system's UI, those, that are not already handled by 
 ///  the UI classes for stars, planets and moons.
 /// </summary>
-public class SystemView : View, ISystemViewable, ISelectable {
+public class SystemView : View, ISystemViewable, ISelectable, IZoomToFurthest {
 
     private static string __highlightName = "SystemHighlightMesh";  // IMPROVE
 
@@ -58,7 +58,7 @@ public class SystemView : View, ISystemViewable, ISelectable {
 
     protected override void Start() {
         base.Start();
-        __ValidateCtxObjectSettings();
+        __InitializeContextMenu();
     }
 
     protected override void InitializePresenter() {
@@ -71,7 +71,7 @@ public class SystemView : View, ISystemViewable, ISelectable {
         Component[] orbitalPlaneCollider = new Component[1] { collider };
 
         Renderer[] renderersWithoutVisibilityRelays = gameObject.GetComponentsInChildren<Renderer>()
-            .Where<Renderer>(r => r.gameObject.GetComponent<VisibilityChangedRelay>() == null).ToArray<Renderer>();
+            .Where<Renderer>(r => r.gameObject.GetComponent<CameraLOSChangedRelay>() == null).ToArray<Renderer>();
         if (disableComponentOnNotDiscernible.IsNullOrEmpty()) {
             disableComponentOnNotDiscernible = new Component[0];
         }
@@ -114,7 +114,7 @@ public class SystemView : View, ISystemViewable, ISelectable {
     }
 
     public override void AssessHighlighting() {
-        if (!IsVisible || (!IsSelected && !IsFocus)) {
+        if (!InCameraLOS || (!IsSelected && !IsFocus)) {
             _systemHighlightRenderer.gameObject.SetActive(false);
             Highlight(Highlights.None);
             return;
@@ -136,16 +136,16 @@ public class SystemView : View, ISystemViewable, ISelectable {
     protected override void Highlight(Highlights highlight) {
         switch (highlight) {
             case Highlights.Focused:
-                _systemHighlightRenderer.material.SetColor(UnityConstants.MainMaterialColor, UnityDebugConstants.FocusedColor.ToUnityColor());
-                _systemHighlightRenderer.material.SetColor(UnityConstants.OutlineMaterialColor, UnityDebugConstants.FocusedColor.ToUnityColor());
+                _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Main, UnityDebugConstants.FocusedColor.ToUnityColor());
+                _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Outline, UnityDebugConstants.FocusedColor.ToUnityColor());
                 break;
             case Highlights.Selected:
-                _systemHighlightRenderer.material.SetColor(UnityConstants.MainMaterialColor, UnityDebugConstants.SelectedColor.ToUnityColor());
-                _systemHighlightRenderer.material.SetColor(UnityConstants.OutlineMaterialColor, UnityDebugConstants.SelectedColor.ToUnityColor());
+                _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Main, UnityDebugConstants.SelectedColor.ToUnityColor());
+                _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Outline, UnityDebugConstants.SelectedColor.ToUnityColor());
                 break;
             case Highlights.SelectedAndFocus:
-                _systemHighlightRenderer.material.SetColor(UnityConstants.MainMaterialColor, UnityDebugConstants.GeneralHighlightColor.ToUnityColor());
-                _systemHighlightRenderer.material.SetColor(UnityConstants.OutlineMaterialColor, UnityDebugConstants.GeneralHighlightColor.ToUnityColor());
+                _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Main, UnityDebugConstants.GeneralHighlightColor.ToUnityColor());
+                _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Outline, UnityDebugConstants.GeneralHighlightColor.ToUnityColor());
                 break;
             case Highlights.None:
                 // nothing to do as the highlighter should already be inactive
@@ -188,8 +188,10 @@ public class SystemView : View, ISystemViewable, ISelectable {
         return renderer;
     }
 
-    private void __ValidateCtxObjectSettings() {
+    private void __InitializeContextMenu() {      // IMPROVE use of string
         CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
+        CtxMenu generalMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "GeneralMenu");
+        ctxObject.contextMenu = generalMenu;
         D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
         UnityUtility.ValidateComponentPresence<Collider>(gameObject);
     }

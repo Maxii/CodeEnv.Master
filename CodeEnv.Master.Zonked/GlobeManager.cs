@@ -26,7 +26,7 @@ using UnityEngine;
 /// Manages the spherical globes that are a part of Cellestial Bodies. 
 /// </summary>
 [Obsolete, Serializable, RequireComponent(typeof(SphereCollider), typeof(MeshRenderer))]
-public class GlobeManager : AMonoBehaviourBase, ICameraFocusable {
+public class GlobeManager : AMonoBase, ICameraFocusable {
 
     [SerializeField]
     private GlobeMaterialAnimator primaryMaterialAnimator = new GlobeMaterialAnimator { xScrollSpeed = 0.015F, yScrollSpeed = 0.015F };
