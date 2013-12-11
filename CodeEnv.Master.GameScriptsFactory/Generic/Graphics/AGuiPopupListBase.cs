@@ -42,7 +42,12 @@ public abstract class AGuiPopupListBase : GuiTooltip {
     /// prior to initializing list values or the selection.
     /// </summary>
     protected virtual void ConfigurePopupList() {
-        popupList.textLabel = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
+        //popupList.textLabel = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
+        // popupList.textLabel is no longer needed as the same can be achieved by choosing a
+        // On[Value]Change notification targeting a label's SetCurrentSelection method.
+        // If your code was list.textLabel = myLabel, change it to: EventDelegate.Add(list.onChange, lbl.SetCurrentSelection);
+        UILabel label = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
+        EventDelegate.Add(popupList.onChange, label.SetCurrentSelection);
     }
 
     /// <summary>

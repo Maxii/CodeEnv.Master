@@ -129,13 +129,19 @@ public class ShipItem : AItemStateMachine<ShipState>, ITarget {
 
     #region ShipStates
 
-    #region Idle
+    #region Idling
 
     void Idling_EnterState() {
         D.Log("{0} Idling_EnterState", Data.Name);
         //CurrentOrder = null;
         //ChangeSpeed(Constants.ZeroF);
         // TODO register as available
+    }
+
+    void Idling_OnHit(float damage) {
+        // TODO inform fleet of hit
+        _hitDamage = damage;
+        Call(ShipState.TakingDamage);
     }
 
     void Idling_OnOrdersChanged() {
@@ -154,9 +160,9 @@ public class ShipItem : AItemStateMachine<ShipState>, ITarget {
     private bool _isNewOrderWaiting;
 
     void ProcessOrders_Update() {
-        // I got to this state one of two ways:
-        // 1. there has been a new order issued, or
-        // 2. the last new order (_orderBeingExecuted) has been completed
+        // I got to this state only one way - there was a new order issued.
+        // This switch should never use Call(state) as there is no 'state' to
+        // return to in ProcessOrders to resume. It is a transition state.
         _isNewOrderWaiting = _orderBeingExecuted != CurrentOrder;
         if (_isNewOrderWaiting) {
             ShipOrders order = CurrentOrder.Order;
@@ -168,23 +174,27 @@ public class ShipItem : AItemStateMachine<ShipState>, ITarget {
                 case ShipOrders.Attack:
                     CurrentState = ShipState.GoAttack;
                     break;
+                case ShipOrders.StopAttack:
+                    // issued when peace declared while attacking
+                    CurrentState = ShipState.Idling;
+                    break;
                 case ShipOrders.Disband:
-                    Call(ShipState.Disbanding);
+                    CurrentState = ShipState.Disbanding;
                     break;
                 case ShipOrders.Entrench:
-                    Call(ShipState.Entrenching);
+                    CurrentState = ShipState.Entrenching;
                     break;
                 case ShipOrders.MoveTo:
-                    Call(ShipState.MovingTo);
+                    CurrentState = ShipState.MovingTo;
                     break;
                 case ShipOrders.Repair:
-                    Call(ShipState.Repairing);
+                    CurrentState = ShipState.Repairing;
                     break;
                 case ShipOrders.Refit:
-                    Call(ShipState.Refitting);
+                    CurrentState = ShipState.Refitting;
                     break;
                 case ShipOrders.JoinFleetAt:
-                    Call(ShipState.Joining);
+                    CurrentState = ShipState.Joining;
                     break;
                 case ShipOrders.None:
                 default:
@@ -194,13 +204,16 @@ public class ShipItem : AItemStateMachine<ShipState>, ITarget {
         }
         else {
             // there is no new order so the return to this state must be after the last new order has been completed
+            D.Assert(false, "Should be no Return() here.");
             CurrentState = ShipState.Idling;
         }
     }
 
+    // Transition state so _OnHit and _OnOrdersChanged cannot occur here
+
     #endregion
 
-    #region Move
+    #region MovingTo
 
     void MovingTo_EnterState() {
         Navigator.PlotCourse(CurrentOrder.Target, CurrentOrder.Speed);
@@ -210,30 +223,37 @@ public class ShipItem : AItemStateMachine<ShipState>, ITarget {
         Navigator.Engage();
     }
 
-    void MovingTo_OnDestinationReached() {
-        Return(ShipState.Idling);
+    void MovingTo_OnHit(float damage) {
+        // TODO inform fleet of hit
+        _hitDamage = damage;
+        Call(ShipState.TakingDamage);
     }
 
     void MovingTo_OnOrdersChanged() {
-        Return(ShipState.ProcessOrders);
+        CurrentState = ShipState.ProcessOrders;
     }
 
     void MovingTo_OnCoursePlotFailure() {
-        Return();
+        CurrentState = ShipState.Idling;
     }
 
     void MovingTo_OnCourseTrackingError() {
-        Return();
+        CurrentState = ShipState.Idling;
+    }
+
+    void MovingTo_OnDestinationReached() {
+        CurrentState = ShipState.Idling;
     }
 
     void MovingTo_ExitState() {
         Navigator.Disengage();
-        // TODO ship retains its current speed and heading
+        // ship retains its current speed and heading
     }
 
     #endregion
 
     #region Chasing
+    // only called from GoAttack
 
     void Chasing_EnterState() {
         // take attack target and engage autopilot
@@ -241,6 +261,11 @@ public class ShipItem : AItemStateMachine<ShipState>, ITarget {
 
     void Chasing_Update() {
         // TODO track and close on target
+    }
+
+    void Chasing_OnHit(float damage) {
+        _hitDamage = damage;
+        Call(ShipState.TakingDamage);
     }
 
     void Chasing_OnOrdersChanged() {
@@ -253,18 +278,27 @@ public class ShipItem : AItemStateMachine<ShipState>, ITarget {
 
     void Chasing_ExitState() {
         D.Log("Chasing_ExitState");
-        //AutoPilot.Disengage();
         Navigator.Disengage();
     }
 
     #endregion
 
-    #region Join
+    #region Joining
 
     void Joining_EnterState() {
         // TODO detach from fleet and create temp FleetCmd
         // issue a JoinFleetAt order to our new fleet
         Return();
+    }
+
+    void Joining_OnHit(float damage) {
+        // TODO inform fleet of hit
+        _hitDamage = damage;
+        Call(ShipState.TakingDamage);
+    }
+
+    void Joining_OnOrdersChanged() {
+        CurrentState = ShipState.ProcessOrders;
     }
 
     void Joining_ExitState() {
@@ -273,7 +307,7 @@ public class ShipItem : AItemStateMachine<ShipState>, ITarget {
 
     #endregion
 
-    #region Attack
+    #region GoAttack
 
     private ITarget _target;
 
@@ -301,25 +335,55 @@ public class ShipItem : AItemStateMachine<ShipState>, ITarget {
         }
     }
 
+    // Transition state so _OnHit and _OnOrdersChanged cannot occur here
+
+    #endregion
+
+    #region Attacking
+
     void Attacking_EnterState() {
         // launch a salvo at  _target 
         Call(ShipState.ShowAttacking);
-        Return();
+        Return();   // to GoAttack
+    }
+
+    // Transition state so _OnHit and _OnOrdersChanged cannot occur here
+
+    #endregion
+
+    #region ShowAttacking
+
+    void ShowAttacking_OnHit(float damage) {
+        // View can not 'queue' show animations so just apply the damage
+        // and wait for ShowXXX_OnCompletion to return to caller
+        Data.CurrentHitPoints -= damage;
     }
 
     void ShowAttacking_OnShowCompletion() {
         // VIew shows the attack here
-        Return();
+        Return();   // to Attacking
     }
 
     #endregion
 
+
     #region TakingDamage
 
-    void TakingDamage_OnHit(float damage) {
-        Data.CurrentHitPoints -= damage;
+    private float _hitDamage;
+
+    void TakingDamage_EnterState() {
+        Data.CurrentHitPoints -= _hitDamage;
+        _hitDamage = 0F;
         Call(ShipState.ShowHit);
         Return();   // returns to the state we were in when the OnHit event arrived
+    }
+
+    // TakingDamage is a transition state so _OnHit cannot occur here
+
+    void ShowHit_OnHit(float damage) {
+        // View can not 'queue' show animations so just apply the damage
+        // and wait for ShowXXX_OnCompletion to return to caller
+        Data.CurrentHitPoints -= damage;
     }
 
     void ShowHit_OnShowCompletion() {
@@ -329,19 +393,25 @@ public class ShipItem : AItemStateMachine<ShipState>, ITarget {
 
     #endregion
 
-    #region Withdraw
+    #region Withdrawing
+    // only called from GoAttack
 
     void Withdrawing_EnterState() {
         // TODO withdraw to rear, evade
     }
 
+    void Withdrawing_OnHit(float damage) {
+        _hitDamage = damage;
+        Call(ShipState.TakingDamage);
+    }
+
     void Withdrawing_OnOrdersChanged() {
-        CurrentState = ShipState.ProcessOrders;
+        Return();
     }
 
     #endregion
 
-    #region Entrench
+    #region Entrenching
 
     //IEnumerator Entrenching_EnterState() {
     //    // TODO ShipView shows animation while in this state
@@ -353,8 +423,14 @@ public class ShipItem : AItemStateMachine<ShipState>, ITarget {
     //    Return();
     //}
 
+    void Entrenching_OnHit(float damage) {
+        // TODO inform fleet of hit
+        _hitDamage = damage;
+        Call(ShipState.TakingDamage);
+    }
+
     void Entrenching_OnOrdersChanged() {
-        Return();
+        CurrentState = ShipState.ProcessOrders;
     }
 
     void Entrenching_ExitState() {
@@ -363,7 +439,7 @@ public class ShipItem : AItemStateMachine<ShipState>, ITarget {
 
     #endregion
 
-    #region Repair
+    #region Repairing
 
     //IEnumerator Repairing_EnterState() {
     //    // TODO ShipView shows animation while in this state
@@ -375,8 +451,14 @@ public class ShipItem : AItemStateMachine<ShipState>, ITarget {
     //    Return();
     //}
 
+    void Repairing_OnHit(float damage) {
+        // TODO inform fleet of hit
+        _hitDamage = damage;
+        Call(ShipState.TakingDamage);
+    }
+
     void Repairing_OnOrdersChanged() {
-        Return();
+        CurrentState = ShipState.ProcessOrders;
     }
 
     void Repairing_ExitState() {
@@ -385,7 +467,7 @@ public class ShipItem : AItemStateMachine<ShipState>, ITarget {
 
     #endregion
 
-    #region Refit
+    #region Refitting
 
     //IEnumerator Refitting_EnterState() {
     //    // TODO ShipView shows animation while in this state
@@ -397,8 +479,14 @@ public class ShipItem : AItemStateMachine<ShipState>, ITarget {
     //    Return();
     //}
 
+    void Refitting_OnHit(float damage) {
+        // TODO inform fleet of hit
+        _hitDamage = damage;
+        Call(ShipState.TakingDamage);
+    }
+
     void Refitting_OnOrdersChanged() {
-        Return();
+        CurrentState = ShipState.ProcessOrders;
     }
 
     void Refitting_ExitState() {
@@ -407,12 +495,23 @@ public class ShipItem : AItemStateMachine<ShipState>, ITarget {
 
     #endregion
 
-    #region Disband
+    #region Disbanding
+    // UNDONE not clear how this works
 
     void Disbanding_EnterState() {
         // TODO detach from fleet and create temp FleetCmd
         // issue a Disband order to our new fleet
-        Return();
+        Return();   // ??
+    }
+
+    void Disbanding_OnHit(float damage) {
+        // TODO inform fleet of hit
+        _hitDamage = damage;
+        Call(ShipState.TakingDamage);
+    }
+
+    void Disbanding_OnOrdersChanged() {
+        CurrentState = ShipState.ProcessOrders; // ??
     }
 
     void Disbanding_ExitState() {
@@ -421,12 +520,17 @@ public class ShipItem : AItemStateMachine<ShipState>, ITarget {
 
     #endregion
 
-    #region Die
+    #region Dying
+    // async state change on health <= 0 event
 
     void Dying_EnterState() {
         Call(ShipState.ShowDying);
         CurrentState = ShipState.Dead;
     }
+
+    #endregion
+
+    #region ShowDying
 
     void ShowDying_EnterState() {
         // View is showing Dying
@@ -435,6 +539,10 @@ public class ShipItem : AItemStateMachine<ShipState>, ITarget {
     void ShowDying_OnShowCompletion() {
         Return();
     }
+
+    #endregion
+
+    #region Dead
 
     IEnumerator Dead_EnterState() {
         D.Log("{0} has Died!", Data.Name);
@@ -458,7 +566,6 @@ public class ShipItem : AItemStateMachine<ShipState>, ITarget {
     }
 
     void OnHit(float damage) {
-        Call(ShipState.TakingDamage);
         RelayToCurrentState(damage);    // IMPROVE add Action delegate to RelayToCurrentState
     }
 
@@ -471,7 +578,7 @@ public class ShipItem : AItemStateMachine<ShipState>, ITarget {
 
     void OnDestinationReached() {
         D.Log("{0} reached Destination {1}.", Data.Name, Navigator.Target.Name);
-        RelayToCurrentState();  // TODO
+        RelayToCurrentState();
     }
 
     void OnCourseTrackingError() { RelayToCurrentState(); }

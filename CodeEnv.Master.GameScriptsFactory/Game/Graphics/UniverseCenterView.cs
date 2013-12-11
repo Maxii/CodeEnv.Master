@@ -12,17 +12,24 @@
 
 // default namespace
 
+using System.Linq;
+
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 ///A class for managing the UI of the object at the center of the universe.
 /// </summary>
 public class UniverseCenterView : View {
 
+    private SphereCollider _keepoutCollider;
+
     protected override void Awake() {
         base.Awake();
         circleScaleFactor = 5F;
+        _keepoutCollider = gameObject.GetComponentsInChildren<SphereCollider>().Single(c => c.gameObject.layer == (int)Layers.CelestialObjectKeepout);
+        _keepoutCollider.radius = (_collider as SphereCollider).radius * TempGameValues.KeepoutRadiusMultiplier;
     }
 
     public override string ToString() {

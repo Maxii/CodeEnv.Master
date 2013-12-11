@@ -33,13 +33,15 @@ public class GuiSavedGamesPopupList : AGuiPopupListBase {
         if (savedGames.Count > 0) {
             popupList.gameObject.SetActive(true);
             popupList.items.Clear();
-            popupList.textLabel.text = "Saved Games";
+            //popupList.textLabel.text = "Saved Games"; // deprecated in 3.0.6
+            popupList.value = "Saved Games";
             foreach (var game in savedGames) {
                 popupList.items.Add(game.Caption);
             }
         }
         else {
-            popupList.textLabel.text = "No Saved Games";
+            //popupList.textLabel.text = "No Saved Games";  // deprecated in 3.0.6
+            popupList.value = "No Saved Games";
             popupList.gameObject.SetActive(false);
         }
     }

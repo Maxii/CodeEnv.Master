@@ -343,7 +343,11 @@ public class ShipView : MovingView, IShipViewable, ISelectable {
         //animation.Stop();
         //yield return UnityUtility.PlayAnimation(animation, "die");  // show debree particles for some period of time?
         yield return null;
-        onShowCompletion();
+
+        var sc = onShowCompletion;
+        if (sc != null) {
+            sc();
+        }
     }
 
     // these 3 run continuously until they are stopped via StopShowing() when

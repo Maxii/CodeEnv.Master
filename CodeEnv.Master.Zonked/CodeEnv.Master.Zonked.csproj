@@ -140,6 +140,8 @@
     <Compile Include="SystemGraphics.cs" />
     <Compile Include="SystemManager.cs" />
     <Compile Include="TransformExtensions.cs" />
+    <Compile Include="UnconsumedMouseButtonClick.cs" />
+    <Compile Include="UnconsumedMouseButtonPress.cs" />
     <Compile Include="UniverseCenter.cs" />
     <Compile Include="VectorLineFactory.cs" />
     <Compile Include="VelocityRay.cs" />

@@ -24,6 +24,7 @@ using UnityEngine;
 public class NguiGenericEventHandler : AMonoBaseSingleton<NguiGenericEventHandler> {
 
     // Note: Bug - UICamera.isDragging returns false on OnPress(false) when the drag started and ended over the same object.
+    // still true after new Drag events???
 
     public bool LogEvents = false;
 
@@ -64,23 +65,35 @@ public class NguiGenericEventHandler : AMonoBaseSingleton<NguiGenericEventHandle
         WriteMessage(isOver.ToString());
     }
 
+    // my hack that made told me when a drag was occuring before Ngui fixed it with the new drag events
+    //void OnPress(bool isDown) {
+    //    if (IsEventFrom(Layers.Gui2D)) {
+    //        return; // FIXME OnDragEnd won't be considered if the drag ends over the Gui layer because GuiLayer events are ignored.
+    //    }
+    //    WriteMessage(isDown.ToString());
+    //    if (!isDown) {
+    //        if (UICamera.isDragging) {
+    //            return; // if press is released and UICamera.isDragging flag is set, then this is a dummy event 
+    //            // sent by Ngui to animate buttons and is NOT the potential end of a drag
+    //        }
+    //        // Deletes any GameInput drag values accumulated from drags that haven't been used by the camera (wrong button, etc.)
+    //        _gameInput.NotifyDragEnded();
+    //    }
+    //    if (UICamera.hoveredObject == gameObject) {
+    //        _gameInput.RecordUnconsumedPress(isDown);
+    //    }
+    //}
+
     void OnPress(bool isDown) {
         if (IsEventFrom(Layers.Gui2D)) {
             return; // FIXME OnDragEnd won't be considered if the drag ends over the Gui layer because GuiLayer events are ignored.
         }
         WriteMessage(isDown.ToString());
-        if (!isDown) {
-            if (UICamera.isDragging) {
-                return; // if press is released and UICamera.isDragging flag is set, then this is a dummy event 
-                // sent by Ngui to animate buttons and is NOT the potential end of a drag
-            }
-            // Deletes any GameInput drag values accumulated from drags that haven't been used by the camera (wrong button, etc.)
-            _gameInput.NotifyDragEnded();
-        }
+
         if (UICamera.hoveredObject == gameObject) {
+            // the target of the press is this generic event handler, so this press wasn't consumed by another gameobject
             _gameInput.RecordUnconsumedPress(isDown);
         }
-
     }
 
     void OnSelect(bool selected) {
@@ -95,7 +108,9 @@ public class NguiGenericEventHandler : AMonoBaseSingleton<NguiGenericEventHandle
             return;
         }
         WriteMessage();
+
         if (UICamera.hoveredObject == gameObject) {
+            // the target of the click is this generic event handler, so this click wasn't consumed by another gameobject
             _gameInput.RecordUnconsumedClick();
         }
     }
@@ -107,21 +122,45 @@ public class NguiGenericEventHandler : AMonoBaseSingleton<NguiGenericEventHandle
         WriteMessage();
     }
 
+    void OnDragStart() {
+        if (IsEventFrom(Layers.Gui2D)) {
+            return;
+        }
+        WriteMessage();
+        // turn off the click notification that would normally occur once the drag is complete
+        UICamera.currentTouch.clickNotification = UICamera.ClickNotification.None;
+        _gameInput.IsDragging = true;
+    }
+
     void OnDrag(Vector2 delta) {
         if (IsEventFrom(Layers.Gui2D)) {
             return;
         }
         WriteMessage(delta.ToString());
-        // turn off the click notification that would normally occur once the drag is complete
-        UICamera.currentTouch.clickNotification = UICamera.ClickNotification.None;
+
         _gameInput.RecordDrag(delta);
     }
 
-    void OnDrop(GameObject go) {
+    void OnDragOver(GameObject draggedObject) {
         if (IsEventFrom(Layers.Gui2D)) {
             return;
         }
-        WriteMessage(go.name);
+        WriteMessage(draggedObject.name);
+    }
+
+    void OnDragOut(GameObject draggedObject) {
+        if (IsEventFrom(Layers.Gui2D)) {
+            return;
+        }
+        WriteMessage(draggedObject.name);
+    }
+
+    void OnDragEnd() {
+        if (IsEventFrom(Layers.Gui2D)) {
+            return;
+        }
+        WriteMessage();
+        _gameInput.NotifyDragEnded();
     }
 
     void OnInput(string text) {

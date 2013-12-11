@@ -29,6 +29,8 @@ namespace CodeEnv.Master.GameContent {
 
         Attack,
 
+        StopAttack,
+
         Repair,
 
         Entrench,

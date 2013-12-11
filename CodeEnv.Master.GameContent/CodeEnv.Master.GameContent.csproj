@@ -145,7 +145,7 @@
     <Compile Include="Game\_Debug\VelocityRay.cs" />
     <Compile Include="ThirdParty\Job.cs" />
     <Compile Include="Generic\Framework\ANavigator.cs" />
-    <Compile Include="Game\Framework\ShipNavigator.cs" />
+    <Compile Include="Game\Gameplay\ShipNavigator.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Generic\Math\" />

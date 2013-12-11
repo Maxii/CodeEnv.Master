@@ -39,9 +39,23 @@ namespace CodeEnv.Master.GameContent {
 
         public const float SystemRadius = 120F;
 
+        /// <summary>
+        /// The radius of the star sphere.
+        /// </summary>
         public const float StarRadius = 10F;
 
-        public const int SystemOrbitSlots = 8;
+        /// <summary>
+        /// The multiplier used to determine the radius of the keepoutZone around celestial objects.
+        /// </summary>
+        public const float KeepoutRadiusMultiplier = 2.5F;
+
+        /// <summary>
+        /// The radius of the keepout zone around the center of a star. Used to avoid
+        /// ships, planets and moons getting unrealistically close.
+        /// </summary>
+        public const float StarKeepoutRadius = StarRadius * KeepoutRadiusMultiplier;
+
+        public const int SystemOrbitSlots = 7;
 
         public static float __GetMass(ShipHull hull) {
             switch (hull) {

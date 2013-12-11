@@ -134,6 +134,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     private Camera _camera;
     private GameInput _gameInput;
     private GameStatus _gameStatus;
+    private UICamera _eventDispatcher;
 
     private IList<IDisposable> _subscribers;
 
@@ -147,7 +148,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     private LayerMask _collideWithUniverseEdgeOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.UniverseEdge);
     private LayerMask _collideWithDummyTargetOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.DummyTarget);
     private LayerMask _collideWithOnlyCameraTargetsLayerMask
-        = LayerMaskExtensions.CreateExclusiveMask(Layers.UniverseEdge, Layers.DeepSpace, Layers.Gui2D, Layers.Vectrosity2D);
+        = LayerMaskExtensions.CreateExclusiveMask(Layers.UniverseEdge, Layers.DeepSpace, Layers.Gui2D, Layers.Vectrosity2D, Layers.CelestialObjectKeepout);
     private Vector3 _screenCenter = new Vector3(Screen.width / 2, Screen.height / 2, 0F);
 
     // Continuously calculated, actual Camera values
@@ -214,6 +215,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         base.Awake();
         _camera = UnityUtility.ValidateComponentPresence<Camera>(gameObject);
         InitializeReferences();
+        InitializeEventDispatcher();
         __InitializeDebugEdgeMovementSettings();
         enabled = false;
     }
@@ -230,6 +232,11 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         // when the GameState changes to Waiting, which can occur before Start. We have to rely on Loader.Awake
         // being called first via ScriptExecutionOrder.
         _eventMgr.Raise<ElementReadyEvent>(new ElementReadyEvent(this, isReady: false));
+    }
+
+    private void InitializeEventDispatcher() {
+        _eventDispatcher = gameObject.GetSafeMonoBehaviourComponent<UICamera>();
+        EnableEvents(false);
     }
 
     private void Subscribe() {
@@ -291,6 +298,10 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         keyFreeRoll.activate = toEnable;
     }
 
+    private void EnableEvents(bool toEnable) {
+        _eventDispatcher.eventReceiverMask = toEnable ? -1 : 0;
+    }
+
     private void PositionCameraForGame() {
         CreateUniverseEdge();
         CreateDummyTarget();
@@ -350,7 +361,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     private void ResetAtCurrentLocation() {
         _dummyTarget.collider.enabled = false;
         // the collider is disabled so the placement algorithm doesn't accidently find it already in front of the camera
-        TryPlaceDummyTargetAtUniverseEdgeInDirection(_transform.forward);
+        PlaceDummyTargetAtUniverseEdgeInDirection(_transform.forward);
         _dummyTarget.collider.enabled = true;
         SyncRotation();
         CurrentState = CameraState.Freeform;
@@ -430,6 +441,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
 
     private void OnIsRunningChanged() {
         __AssessEnabled();  // allows updating to begin when IsRunning occurs
+        EnableEvents(_gameStatus.IsRunning);
     }
 
     // Not currently used. Keep this for now as I expect there will be other reasons to modify camera behaviour during special modes.
@@ -763,13 +775,13 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         }
         if (dragFreeTruck.IsActivated()) {
             inputValue = _gameInput.GetDragDelta().x;
-            TryPlaceDummyTargetAtUniverseEdgeInDirection(_transform.right);
+            PlaceDummyTargetAtUniverseEdgeInDirection(_transform.right);
             distanceChange = inputValue * dragFreeTruck.InputTypeNormalizer * dragFreeTruck.sensitivity * distanceChgAllowedPerUnitInput;
             _requestedDistanceFromTarget += distanceChange;
         }
         if (dragFreePedestal.IsActivated()) {
             inputValue = _gameInput.GetDragDelta().y;
-            TryPlaceDummyTargetAtUniverseEdgeInDirection(_transform.up);
+            PlaceDummyTargetAtUniverseEdgeInDirection(_transform.up);
             distanceChange = inputValue * dragFreePedestal.InputTypeNormalizer * dragFreePedestal.sensitivity * distanceChgAllowedPerUnitInput;
             _requestedDistanceFromTarget += distanceChange;
         }
@@ -853,13 +865,13 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
             _requestedDistanceFromTarget -= distanceChange;
         }
         if (keyFreeTruck.IsActivated()) {
-            TryPlaceDummyTargetAtUniverseEdgeInDirection(_transform.right);
+            PlaceDummyTargetAtUniverseEdgeInDirection(_transform.right);
             inputValue = Input.GetAxis(keyboardAxesNames[(int)keyFreeTruck.keyboardAxis]);
             distanceChange = inputValue * keyFreeTruck.InputTypeNormalizer * keyFreeTruck.sensitivity * distanceChgAllowedPerUnitInput;
             _requestedDistanceFromTarget -= distanceChange;
         }
         if (keyFreePedestal.IsActivated()) {
-            TryPlaceDummyTargetAtUniverseEdgeInDirection(_transform.up);
+            PlaceDummyTargetAtUniverseEdgeInDirection(_transform.up);
             inputValue = Input.GetAxis(keyboardAxesNames[(int)keyFreePedestal.keyboardAxis]);
             distanceChange = inputValue * keyFreePedestal.InputTypeNormalizer * keyFreePedestal.sensitivity * distanceChgAllowedPerUnitInput;
             _requestedDistanceFromTarget -= distanceChange;
@@ -1187,7 +1199,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         }
 
         // no game object encountered under cursor so move the dummy to the edge of the universe and designate it as the Target
-        return TryPlaceDummyTargetAtUniverseEdgeInDirection(ray.direction);
+        return PlaceDummyTargetAtUniverseEdgeInDirection(ray.direction);
     }
 
     /// <summary>
@@ -1224,7 +1236,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     /// </summary>
     /// <param name="direction">The direction.</param>
     /// <returns>true if the DummyTarget was placed in a new location. False if it was not moved since it was already there.</returns>
-    private bool TryPlaceDummyTargetAtUniverseEdgeInDirection(Vector3 direction) {
+    private bool PlaceDummyTargetAtUniverseEdgeInDirection(Vector3 direction) {
         direction.ValidateNormalized();
         Ray ray = new Ray(Position, direction);
         RaycastHit targetHit;

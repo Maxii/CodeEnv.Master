@@ -19,6 +19,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using Pathfinding;
@@ -63,7 +64,8 @@ public class FleetNavigator : ANavigator {
     private Vector3 _targetPositionAtLastPlot;
     private float _targetMovementReplotThresholdDistanceSqrd = 10000;   // 100 units
 
-    private Path _course;
+    private List<Vector3> _course = new List<Vector3>();
+
     private int _currentWaypointIndex;
 
     private Seeker _seeker;
@@ -103,8 +105,13 @@ public class FleetNavigator : ANavigator {
             D.Warn("A course to {0} has not been plotted. PlotCourse to a destination, then Engage.");
             return;
         }
-        if (CheckDirectApproachToDestination()) {
-            InitiateDirectCourse();
+        if (CheckTargetIsLocal()) {
+            if (CheckApproachTo(Destination)) {
+                InitiateHomingCourseToTarget();
+            }
+            else {
+                InitiateCourseAroundObstacleTo(Destination);
+            }
             return;
         }
         _pilotJob = new Job(EngageWaypointCourse(), true);
@@ -122,28 +129,41 @@ public class FleetNavigator : ANavigator {
         }
 
         _currentWaypointIndex = 0;
-        Vector3 currentWaypointPosition = _course.vectorPath[_currentWaypointIndex];
-        __MoveShipsTo(new StationaryLocation(currentWaypointPosition));
+        Vector3 currentWaypointPosition = _course[_currentWaypointIndex];
+        //__MoveShipsTo(new StationaryLocation(currentWaypointPosition));   // this location is the starting point, already there
 
-        while (_currentWaypointIndex < _course.vectorPath.Count) {
+        while (_currentWaypointIndex < _course.Count) {
             //D.Log("Distance to Waypoint_{0} = {1}.", _currentWaypointIndex, distanceToWaypoint);
             float distanceToWaypointSqrd = Vector3.SqrMagnitude(currentWaypointPosition - Data.Position);
             if (distanceToWaypointSqrd < _closeEnoughDistanceSqrd) {
-                if (CheckDirectApproachToDestination()) {
-                    D.Log("{0} initiating direct approach to {1} from waypoint {2}.", Data.Name, Target.Name, _currentWaypointIndex);
-                    InitiateDirectCourse();
+                if (CheckTargetIsLocal()) {
+                    if (CheckApproachTo(Destination)) {
+                        D.Log("{0} initiating homing course to {1} from waypoint {2}.", Data.Name, Target.Name, _currentWaypointIndex);
+                        InitiateHomingCourseToTarget();
+                    }
+                    else {
+                        D.Log("{0} initiating course around obstacle to {1} from waypoint {2}.", Data.Name, Target.Name, _currentWaypointIndex);
+                        InitiateCourseAroundObstacleTo(Destination);
+                    }
                 }
                 else {
                     _currentWaypointIndex++;
-                    if (_currentWaypointIndex == _course.vectorPath.Count) {
+                    if (_currentWaypointIndex == _course.Count) {
                         // arrived at final waypoint
                         D.Log("{0} has reached final waypoint {1} at {2}.", Data.Name, _currentWaypointIndex - 1, currentWaypointPosition);
                         continue;
                     }
                     D.Log("Waypoint_{0} at {1} reached. Current destination is now Waypoint_{2} at {3}.",
-                        _currentWaypointIndex - 1, currentWaypointPosition, _currentWaypointIndex, _course.vectorPath[_currentWaypointIndex]);
-                    currentWaypointPosition = _course.vectorPath[_currentWaypointIndex];
-                    __MoveShipsTo(new StationaryLocation(currentWaypointPosition));
+                        _currentWaypointIndex - 1, currentWaypointPosition, _currentWaypointIndex, _course[_currentWaypointIndex]);
+                    currentWaypointPosition = _course[_currentWaypointIndex];
+                    if (CheckApproachTo(currentWaypointPosition)) {
+                        __MoveShipsTo(new StationaryLocation(currentWaypointPosition));
+                    }
+                    else {
+                        Vector3 waypointToAvoidObstacle = GetWaypointAroundObstacleTo(currentWaypointPosition);
+                        _course.Insert(_currentWaypointIndex, waypointToAvoidObstacle);
+                        currentWaypointPosition = waypointToAvoidObstacle;
+                    }
                 }
             }
             else if (IsCourseReplotNeeded) {
@@ -154,54 +174,81 @@ public class FleetNavigator : ANavigator {
 
         if (Vector3.SqrMagnitude(Destination - Data.Position) < _closeEnoughDistanceSqrd) {
             // the final waypoint turns out to be located close enough to the Destination although a direct approach can't be made 
-            onDestinationReached();
+            var dr = onDestinationReached;
+            if (dr != null) {
+                dr();
+            }
         }
         else {
             // the final waypoint is not close enough and we can't directly approach the Destination
             D.Warn("Final waypoint reached, but {0} from {1} with obstacles in between.", Vector3.Distance(Destination, Data.Position), Target.Name);
-            onCourseTrackingError();
+            var cte = onCourseTrackingError;
+            if (cte != null) {
+                cte();
+            }
         }
     }
 
     /// <summary>
-    /// Engages execution of a direct path to the Target. No A* course is used.
+    /// Engages the ships of the fleet to home-in on the Target. No A* course is used.
     /// </summary>
     /// <returns></returns>
-    private IEnumerator EngageDirectCourse() {
+    private IEnumerator EngageHomingCourseToTarget() {
         __MoveShipsTo(Target);
         while (Vector3.SqrMagnitude(Destination - Data.Position) > _closeEnoughDistanceSqrd) {
             yield return new WaitForSeconds(_courseUpdatePeriod);
         }
-        //D.Log("Direct Approach coroutine ended.");
-        onDestinationReached();
+
+        var dr = onDestinationReached;
+        if (dr != null) {
+            dr();
+        }
+    }
+
+    /// <summary>
+    /// Engages the ships of the fleet to home-in on the stationary location. No A* course is used.
+    /// </summary>
+    /// <param name="stationaryLocation">The stationary location.</param>
+    /// <returns></returns>
+    private IEnumerator EngageHomingCourseTo(Vector3 stationaryLocation) {
+        __MoveShipsTo(new StationaryLocation(stationaryLocation));
+        while (Vector3.SqrMagnitude(stationaryLocation - Data.Position) > _closeEnoughDistanceSqrd) {
+            yield return new WaitForSeconds(_courseUpdatePeriod);
+        }
+        D.Log("{0} has arrived at {1}.", Data.Name, stationaryLocation);
     }
 
     private void OnCoursePlotCompleted(Path course) {
-        if (_course != null) { _course.Release(this); }
+        _course.Clear();
 
-        if (course.error) {
-            _course = null;
-        }
-        else {
-            _course = course;
-            _course.Claim(this);
+        if (!course.error) {
+            _course.AddRange(course.vectorPath);
         }
 
         if (!_isCourseReplot) {
-            if (onCoursePlotFailure != null && _course == null) {
-                onCoursePlotFailure();
+            if (_course.Count == 0) {
+                var cpf = onCoursePlotFailure;
+                if (cpf != null) {
+                    cpf();
+                }
             }
-            else if (onCoursePlotSuccess != null && _course != null) {
-                onCoursePlotSuccess();
+            else {
+                var cps = onCoursePlotSuccess;
+                if (cps != null) {
+                    cps();
+                }
             }
         }
         else {
-            if (_course != null) {
+            if (_course.Count != 0) {
                 InitializeTargetValues();
                 Engage();
             }
             else {
-                onCoursePlotFailure();
+                var cpf = onCoursePlotFailure;
+                if (cpf != null) {
+                    cpf();
+                }
                 D.Warn("{0}'s course to {1} couldn't be replotted.", Data.Name, Target.Name);
             }
         }
@@ -209,33 +256,59 @@ public class FleetNavigator : ANavigator {
 
     protected override void OnDestinationReached() {
         base.OnDestinationReached();
-        _course.Release(this);
-        _course = null;
+        _course.Clear();
     }
 
     protected override void OnCourseTrackingError() {
         base.OnCourseTrackingError();
-        _course.Release(this);
-        _course = null;
+        _course.Clear();
     }
 
-    private void InitiateDirectCourse() {
-        D.Log("Initiating direct course. Distance to Destination = {0}.", Vector3.Distance(Data.Position, Destination));
+    private void InitiateHomingCourseToTarget() {
+        D.Log("Initiating homing course to Target. Distance to target = {0}.", Vector3.Distance(Data.Position, Destination));
         if (_pilotJob != null && _pilotJob.IsRunning) {
             _pilotJob.Kill();
         }
-        _pilotJob = new Job(EngageDirectCourse(), true);
+        _pilotJob = new Job(EngageHomingCourseToTarget(), true);
+    }
+
+    protected void InitiateCourseAroundObstacleTo(Vector3 location) {
+        D.Log("Initiating obstacle avoidance course. Distance to destination = {0}.", Vector3.Distance(Data.Position, location));
+        if (_pilotJob != null && _pilotJob.IsRunning) {
+            _pilotJob.Kill();
+        }
+
+        Vector3 waypointAroundObstacle = GetWaypointAroundObstacleTo(location);
+        _pilotJob = new Job(EngageHomingCourseTo(waypointAroundObstacle), true);
+        _pilotJob.CreateAndAddChildJob(EngageHomingCourseToTarget());
     }
 
     /// <summary>
-    /// Checks whether the pilot should approach the final Destination directly rather than follow the course.
+    /// Checks the distance to the target to determine if it is close 
+    /// enough to attempt a direct approach.
     /// </summary>
-    /// <returns><c>true</c> if a direct approach is feasible and shorter than following the course.</returns>
-    protected override bool CheckDirectApproachToDestination() {
-        if (!base.CheckDirectApproachToDestination()) {
+    /// <returns>returns true if the target is local to the sector.</returns>
+    private bool CheckTargetIsLocal() {
+        float distanceToDestination = Vector3.Magnitude(Destination - Data.Position);
+        float maxDirectApproachDistance = TempGameValues.SectorSideLength;
+        if (distanceToDestination > maxDirectApproachDistance) {
+            // limit direct approaches to within a sector so we normally follow the pathfinder course
+            D.Warn("{0} direct approach distance {1} to {2} exceeds maxiumum of {3}.", Data.Name, distanceToDestination, Target.Name, maxDirectApproachDistance);
             return false;
         }
         return true;
+    }
+
+    /// <summary>
+    /// Checks whether the pilot can approach the provided location directly.
+    /// </summary>
+    /// <param name="location">The location to approach.</param>
+    /// <returns>
+    ///   <c>true</c> if there is nothing obstructing a direct approach.
+    /// </returns>
+    protected override bool CheckApproachTo(Vector3 location) {
+        return base.CheckApproachTo(location);
+
         // NOTE: approach below will be important once path penalty values are incorporated
         // For now, it will always be faster to go direct if there are no obstacles
 
@@ -302,13 +375,6 @@ public class FleetNavigator : ANavigator {
     private void __MoveShipsTo(ITarget target) {
         ItemOrder<ShipOrders> moveToOrder = new ItemOrder<ShipOrders>(ShipOrders.MoveTo, target, Speed);
         _fleet.Ships.ForAll(s => s.CurrentOrder = moveToOrder);
-    }
-
-    protected override void Cleanup() {
-        base.Cleanup();
-        if (_course != null) {
-            _course.Release(this);
-        }
     }
 
     public override string ToString() {

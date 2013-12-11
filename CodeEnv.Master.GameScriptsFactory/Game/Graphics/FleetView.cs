@@ -354,7 +354,11 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
         //animation.Stop();
         //yield return UnityUtility.PlayAnimation(animation, "die");  // show debree particles for some period of time?
         yield return null;
-        onShowCompletion();
+
+        var sc = onShowCompletion;
+        if (sc != null) {
+            sc();
+        }
     }
 
     private Transform _trackingTarget;

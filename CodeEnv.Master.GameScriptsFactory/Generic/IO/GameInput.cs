@@ -20,6 +20,7 @@ using CodeEnv.Master.Common;
 using UnityEngine;
 using System.Linq;
 using CodeEnv.Master.GameContent;
+using System;
 
 /// <summary>
 /// Singleton Game Input class that receives and records Mouse and special Key events not intended for the Gui.
@@ -64,14 +65,13 @@ public class GameInput : AGenericSingleton<GameInput> {
 
     #region Dragging
 
-    public bool IsDragging { get; private set; }
+    public bool IsDragging { get; set; }
 
     public bool isDragValueWaiting;
     private Vector2 _dragDelta;
     public void RecordDrag(Vector2 delta) {
         _dragDelta = delta;
         isDragValueWaiting = true;
-        IsDragging = true;
     }
 
     public Vector2 GetDragDelta() {
@@ -102,35 +102,34 @@ public class GameInput : AGenericSingleton<GameInput> {
 
     #region Clicked
 
-    private UnconsumedMouseButtonClick _unconsumedClick;
-    public UnconsumedMouseButtonClick UnconsumedClick {
-        get { return _unconsumedClick; }
-        set { SetProperty<UnconsumedMouseButtonClick>(ref _unconsumedClick, value, "UnconsumedClick"); }
-    }
+    // used by SelectionManager to clear the Selection when an unconsumed click occurs
+    public event Action<NguiMouseButton> onUnconsumedClick;
 
     /// <summary>
     /// Called when a mouse button click event occurs but no collider consumes it.
     /// </summary>
     public void RecordUnconsumedClick() {
-        UnconsumedClick = new UnconsumedMouseButtonClick(GameInputHelper.GetMouseButton());
+        var d = onUnconsumedClick;
+        if (d != null) {
+            d(GameInputHelper.GetMouseButton());
+        }
     }
 
     #endregion
 
     #region Pressed
 
-    private UnconsumedMouseButtonPress _unconsumedPress;
-    public UnconsumedMouseButtonPress UnconsumedPress {
-        get { return _unconsumedPress; }
-        set { SetProperty<UnconsumedMouseButtonPress>(ref _unconsumedPress, value, "UnconsumedPress"); }
-    }
+    // used by SectorVIewer to open a contextMenu without using a collider
+    public event Action<NguiMouseButton, bool> onUnconsumedPress;
 
     public void RecordUnconsumedPress(bool isDown) {
         if (!IsDragging) {  // if dragging, the press shouldn't have any meaning except related to terminating a drag
-            UnconsumedPress = new UnconsumedMouseButtonPress(GameInputHelper.GetMouseButton(), isDown);
+            var d = onUnconsumedPress;
+            if (d != null) {
+                d(GameInputHelper.GetMouseButton(), isDown);
+            }
         }
     }
-
 
     #endregion
 
@@ -139,18 +138,17 @@ public class GameInput : AGenericSingleton<GameInput> {
     // Ngui KeyEvents didn't work as only one event is sent when keys are held down
     // and even then, only selected keys were included
 
-    private ViewModeKeys _lastViewModeKeyPressed;
-    public ViewModeKeys LastViewModeKeyPressed {
-        get { return _lastViewModeKeyPressed; }
-        set { SetProperty<ViewModeKeys>(ref _lastViewModeKeyPressed, value, "LastViewModeKeyPressed"); }
-    }
+    // activates ViewMode in PlayerViews
+    public event Action<ViewModeKeys> onViewModeKeyPressed;
 
-    // Must be checked every frame as Input.isKeyDown is only true during the frame in which it occurs
     public void CheckForKeyActivity() {
         if (GameInputHelper.IsAnyKeyOrMouseButtonDown()) {
             KeyCode keyPressed;
             if (GameInputHelper.TryIsKeyDown(out keyPressed, _viewModeKeyCodesToSearch)) {
-                LastViewModeKeyPressed = (ViewModeKeys)keyPressed;
+                var d = onViewModeKeyPressed;
+                if (d != null) {
+                    d((ViewModeKeys)keyPressed);
+                }
             }
         }
     }

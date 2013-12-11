@@ -103,11 +103,17 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="speed">The speed.</param>
         public override void PlotCourse(ITarget target, float speed) {
             base.PlotCourse(target, speed);
-            if (CheckDirectApproachToDestination()) {
-                onCoursePlotSuccess();
+            if (CheckApproachTo(Destination)) {
+                var cps = onCoursePlotSuccess;
+                if (cps != null) {
+                    cps();
+                }
             }
             else {
-                onCoursePlotFailure();
+                var cpf = onCoursePlotFailure;
+                if (cpf != null) {
+                    cpf();
+                }
             }
         }
 
@@ -117,7 +123,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public override void Engage() {
             base.Engage();
-            _pilotJob = new Job(EngageDirectCourse(), true);
+            _pilotJob = new Job(EngageHomingCourseToTarget(), true);
         }
 
         /// <summary>
@@ -180,10 +186,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Engages autopilot execution of a direct path to the Destination. No A* course is used.
+        /// Engages pilot execution of a direct homing course to the Target. No A* course is used.
         /// </summary>
         /// <returns></returns>
-        private IEnumerator EngageDirectCourse() {
+        private IEnumerator EngageHomingCourseToTarget() {
             //D.Log("Initiating coroutine for approach to {0}.", Destination);
             Vector3 newHeading = (Destination - Data.Position).normalized;
             ChangeHeading(newHeading, isManualOverride: false);
@@ -207,14 +213,20 @@ namespace CodeEnv.Master.GameContent {
                 }
                 if (CheckSeparation(distanceToDestinationSqrd, ref previousDistanceSqrd)) {
                     // we've missed the target or its getting away
-                    D.Warn("{0} separating from {1}. DistanceSqrd = {2}, previousSqrd = {3}.", Data.Name, Target.Name, distanceToDestinationSqrd, previousDistanceSqrd);
-                    onCourseTrackingError();
+                    var cte = onCourseTrackingError;
+                    if (cte != null) {
+                        cte();
+                    }
                     yield break;
                 }
                 distanceToDestinationSqrd = Vector3.SqrMagnitude(Destination - Data.Position);
                 yield return new WaitForSeconds(_courseUpdatePeriod);
             }
-            onDestinationReached();
+
+            var dr = onDestinationReached;
+            if (dr != null) {
+                dr();
+            }
         }
 
         private void AdjustHeadingAndSpeedForTurn(Vector3 newHeading) {
@@ -290,7 +302,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <returns></returns>
         private IEnumerator ExecuteHeadingChange() {
-            int previousFrameCount = Time.frameCount;
+            int previousFrameCount = Time.frameCount - 1;   // FIXME makes initial framesSinceLastPass = 1
             float maxRadianTurnRatePerSecond = Mathf.Deg2Rad * Data.MaxTurnRate * _generalSettings.DaysPerSecond;
             //D.Log("New coroutine. {0} coming to heading {1} at {2} radians/day.", _data.Name, _data.RequestedHeading, _data.MaxTurnRate);
             while (!IsTurnComplete) {
@@ -299,7 +311,7 @@ namespace CodeEnv.Master.GameContent {
                 float allowedTurn = maxRadianTurnRatePerSecond * GameTime.DeltaTimeOrPausedWithGameSpeed * framesSinceLastPass;
                 Vector3 newHeading = Vector3.RotateTowards(Data.CurrentHeading, Data.RequestedHeading, allowedTurn, maxMagnitudeDelta: 1F);
                 // maxMagnitudeDelta > 0F appears to be important. Otherwise RotateTowards can stop rotating when it gets very close
-                //D.Warn("AllowedTurn = {0}, CurrentHeading = {1}, ReqHeading = {2}, NewHeading = {3}", allowedTurn, Data.CurrentHeading, Data.RequestedHeading, newHeading);
+                //D.Log("AllowedTurn = {0:0.0000}, CurrentHeading = {1}, ReqHeading = {2}, NewHeading = {3}", allowedTurn, Data.CurrentHeading, Data.RequestedHeading, newHeading);
                 _transform.rotation = Quaternion.LookRotation(newHeading);
                 yield return null; // new WaitForSeconds(0.5F);
             }

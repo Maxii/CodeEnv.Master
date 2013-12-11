@@ -39,6 +39,7 @@ namespace CodeEnv.Master.Common {
 
 
         DeepSpace = 20,
+        CelestialObjectKeepout = 21,
 
         Vectrosity2D = 31
 

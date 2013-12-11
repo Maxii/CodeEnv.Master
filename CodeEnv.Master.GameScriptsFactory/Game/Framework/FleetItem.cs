@@ -139,7 +139,11 @@ public class FleetItem : AItemStateMachine<FleetState>, ITarget {
     public void ReportShipLost(ShipItem ship) {
         D.Log("{0} acknowledging {1} has been lost.", Data.Name, ship.Data.Name);
         RemoveShip(ship);
-        onFleetElementDestroyed(ship);
+
+        var fed = onFleetElementDestroyed;
+        if (fed != null) {
+            fed(ship);
+        }
     }
 
     public void RemoveShip(ShipItem ship) {
@@ -251,6 +255,9 @@ public class FleetItem : AItemStateMachine<FleetState>, ITarget {
                 case FleetOrders.Attack:
 
                     break;
+                case FleetOrders.StopAttack:
+
+                    break;
                 case FleetOrders.Disband:
 
                     break;
@@ -264,7 +271,7 @@ public class FleetItem : AItemStateMachine<FleetState>, ITarget {
 
                     break;
                 case FleetOrders.MoveTo:
-                    Call(FleetState.MovingTo);
+                    CurrentState = FleetState.MovingTo;
                     break;
                 case FleetOrders.Patrol:
 
@@ -292,13 +299,14 @@ public class FleetItem : AItemStateMachine<FleetState>, ITarget {
         }
         else {
             // there is no new order so the return to this state must be after the last new order has been completed
+            D.Assert(false, "Should be no Return() here.");
             CurrentState = FleetState.Idling;
         }
     }
 
     #endregion
 
-    #region Move
+    #region MovingTo
 
     void MovingTo_EnterState() {
         Navigator.PlotCourse(CurrentOrder.Target, CurrentOrder.Speed);
@@ -309,25 +317,23 @@ public class FleetItem : AItemStateMachine<FleetState>, ITarget {
     }
 
     void MovingTo_OnDestinationReached() {
-        //CurrentOrder = new ItemOrder<FleetOrders>(FleetOrders.AllStop);
-        Return();
+        CurrentOrder = new ItemOrder<FleetOrders>(FleetOrders.AllStop);
     }
 
     void MovingTo_OnOrdersChanged() {
-        Return(FleetState.ProcessOrders);
+        CurrentState = FleetState.ProcessOrders;
     }
 
     void MovingTo_OnCoursePlotFailure() {
-        Return(FleetState.Idling);
+        CurrentState = FleetState.Idling;
     }
 
     void MovingTo_OnFleetTrackingError() {
-        Return(FleetState.Idling);
+        CurrentState = FleetState.Idling;
     }
 
     void MovingTo_OnFlagshipTrackingError() {
-        Navigator.Disengage();
-        Return(FleetState.Idling);
+        CurrentState = FleetState.Idling;
     }
 
     void MovingTo_ExitState() {
@@ -400,12 +406,16 @@ public class FleetItem : AItemStateMachine<FleetState>, ITarget {
 
     #endregion
 
-    #region Die
+    #region Dying
 
     void Dying_EnterState() {
         Call(FleetState.ShowDying);
         CurrentState = FleetState.Dead;
     }
+
+    #endregion
+
+    #region ShowDying
 
     void ShowDying_EnterState() {
         // View is showing Dying
@@ -415,6 +425,10 @@ public class FleetItem : AItemStateMachine<FleetState>, ITarget {
         Return();
     }
 
+    #endregion
+
+    #region Dead
+
     IEnumerator Dead_EnterState() {
         D.Log("{0} has Died!", Data.Name);
         GameEventManager.Instance.Raise<ItemDeathEvent>(new ItemDeathEvent(this));
@@ -423,6 +437,7 @@ public class FleetItem : AItemStateMachine<FleetState>, ITarget {
     }
 
     #endregion
+
 
 
     # region Callbacks

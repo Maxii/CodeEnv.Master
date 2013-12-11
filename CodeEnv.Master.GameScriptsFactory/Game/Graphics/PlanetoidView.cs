@@ -16,6 +16,8 @@
 
 // default namespace
 
+using System.Linq;
+
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -28,6 +30,14 @@ public class PlanetoidView : MovingView {
     protected new PlanetoidPresenter Presenter {
         get { return base.Presenter as PlanetoidPresenter; }
         set { base.Presenter = value; }
+    }
+
+    private SphereCollider _keepoutCollider;
+
+    protected override void Awake() {
+        base.Awake();
+        _keepoutCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
+        _keepoutCollider.radius = (_collider as SphereCollider).radius * TempGameValues.KeepoutRadiusMultiplier;
     }
 
     protected override void InitializePresenter() {

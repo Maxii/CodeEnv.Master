@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Capacity:
                     return new ColoredTextList<int>(Constants.FormatInt_2DMin, data.Capacity);
                 case GuiHudLineKeys.Resources:
-                    return new ColoredTextList_Resources(data.Resources);
+                    return (data.Resources != null) ? new ColoredTextList_Resources(data.Resources) : _emptyColoredTextList;
                 case GuiHudLineKeys.Specials:
                     return (data.SpecialResources != null) ? new ColoredTextList_Specials(data.SpecialResources) : _emptyColoredTextList;
 

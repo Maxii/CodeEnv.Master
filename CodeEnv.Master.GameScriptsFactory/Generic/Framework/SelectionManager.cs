@@ -43,14 +43,12 @@ public class SelectionManager : AGenericSingleton<SelectionManager>, IDisposable
     }
 
     private void Subscribe() {
-        if (_subscribers == null) {
-            _subscribers = new List<IDisposable>();
-        }
-        _subscribers.Add(GameInput.Instance.SubscribeToPropertyChanged<GameInput, UnconsumedMouseButtonClick>(gi => gi.UnconsumedClick, OnUnconsumedMouseButtonClickChanged));
+        _subscribers = new List<IDisposable>();
+        GameInput.Instance.onUnconsumedClick += OnUnconsumedMouseButtonClick;
     }
 
-    private void OnUnconsumedMouseButtonClickChanged() {
-        if (GameInput.Instance.UnconsumedClick.MouseButton == NguiMouseButton.Left) {
+    private void OnUnconsumedMouseButtonClick(NguiMouseButton button) {
+        if (button == NguiMouseButton.Left) {
             CurrentSelection = null;
         }
     }
@@ -69,6 +67,7 @@ public class SelectionManager : AGenericSingleton<SelectionManager>, IDisposable
     private void Unsubscribe() {
         _subscribers.ForAll(s => s.Dispose());
         _subscribers.Clear();
+        GameInput.Instance.onUnconsumedClick -= OnUnconsumedMouseButtonClick;
     }
 
     public override string ToString() {

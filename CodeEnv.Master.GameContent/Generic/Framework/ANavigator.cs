@@ -49,6 +49,8 @@ namespace CodeEnv.Master.GameContent {
 
         protected Data Data { get; private set; }
 
+        protected static LayerMask _keepoutOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.CelestialObjectKeepout);
+
         /// <summary>
         /// The duration in seconds between course updates. The default is
         /// every second at normal gamespeed.
@@ -61,7 +63,7 @@ namespace CodeEnv.Master.GameContent {
         /// The tolerance value used to test whether separation between 2 items is increasing. This 
         /// is a squared value.
         /// </summary>
-        private float _separationTestToleranceDistanceSqrd;
+        private float __separationTestToleranceDistanceSqrd;
 
         protected IList<IDisposable> _subscribers;
         private GameTime _gameTime;
@@ -132,22 +134,65 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Checks whether the pilot can approach the Destination directly.
+        /// Checks whether the pilot can approach the provided location directly.
         /// </summary>
-        /// <returns><c>true</c> if there is nothing obstructing a direct approach.</returns>
-        protected virtual bool CheckDirectApproachToDestination() {
+        /// <param name="location">The location to approach.</param>
+        /// <returns>
+        ///   <c>true</c> if there is nothing obstructing a direct approach.
+        /// </returns>
+        protected virtual bool CheckApproachTo(Vector3 location) {
             Vector3 currentPosition = Data.Position;
-            Vector3 directionToDestination = (Destination - currentPosition).normalized;
-            float rayDistance = Vector3.Distance(currentPosition, Destination) - Target.Radius - _closeEnoughDistance;
+            Vector3 vectorToLocation = location - currentPosition;
+            float distanceToLocation = vectorToLocation.magnitude;
+            Vector3 directionToLocation = vectorToLocation.normalized;
+            float rayDistance = distanceToLocation - _closeEnoughDistance;
             float clampedRayDistance = Mathf.Clamp(rayDistance, Constants.ZeroF, Mathf.Infinity);
             RaycastHit hitInfo;
-            if (Physics.Raycast(currentPosition, directionToDestination, out hitInfo, clampedRayDistance)) {
-                D.Warn("{0} obstacle encountered when checking approach to Destination.", hitInfo.collider.name);
-                D.Warn("RayDistance = {0}, TargetRadius = {1:0.00}, CloseEnoughDistance = {2}.", rayDistance, Target.Radius, _closeEnoughDistance);
-                // there is an obstacle in the way so continue to follow the course
+            if (Physics.Raycast(currentPosition, directionToLocation, out hitInfo, clampedRayDistance, _keepoutOnlyLayerMask.value)) {
+                D.Warn("{0} encountered obstacle {1} when checking approach to {2}.", Data.Name, hitInfo.collider.name, location);
+                // there is a keepout zone obstacle in the way 
                 return false;
             }
             return true;
+        }
+
+        /// <summary>
+        /// Finds the obstacle in the way of approaching location and develops and
+        /// returns a waypoint location that will avoid it.
+        /// </summary>
+        /// <param name="location">The location we are trying to reach that has an obstacle in the way.</param>
+        /// <returns>A waypoint location that will avoid the obstacle.</returns>
+        protected Vector3 GetWaypointAroundObstacleTo(Vector3 location) {
+            Vector3 currentPosition = Data.Position;
+            Vector3 vectorToLocation = location - currentPosition;
+            float distanceToLocation = vectorToLocation.magnitude;
+            Vector3 directionToLocation = vectorToLocation.normalized;
+
+            Vector3 waypoint = Vector3.zero;
+
+            Ray ray = new Ray(currentPosition, directionToLocation);
+            RaycastHit hitInfo;
+            if (Physics.Raycast(ray, out hitInfo, distanceToLocation, _keepoutOnlyLayerMask.value)) {
+                // found a keepout zone, so find the point on the other side of the zone where the ray came out
+                Vector3 rayEntryPoint = hitInfo.point;
+                float keepoutRadius = (hitInfo.collider as SphereCollider).radius;
+                float maxKeepoutDiameter = TempGameValues.StarKeepoutRadius * 2F;
+                Vector3 pointBeyondKeepoutZone = ray.GetPoint(hitInfo.distance + maxKeepoutDiameter);
+                if (Physics.Raycast(pointBeyondKeepoutZone, -ray.direction, out hitInfo, maxKeepoutDiameter, _keepoutOnlyLayerMask.value)) {
+                    Vector3 rayExitPoint = hitInfo.point;
+                    Vector3 halfWayPointInsideKeepoutZone = rayEntryPoint + (rayExitPoint - rayEntryPoint) / 2F;
+                    Vector3 obstacleCenter = hitInfo.collider.transform.position;
+                    waypoint = obstacleCenter + (halfWayPointInsideKeepoutZone - obstacleCenter).normalized * (keepoutRadius + _closeEnoughDistance);
+                    D.Log("{0}'s waypoint to avoid obstacle = {1}.", Data.Name, waypoint);
+                }
+                else {
+                    D.Error("{0} did not find a ray exit point when casting through {1}.", Data.Name, hitInfo.collider.name);
+                }
+            }
+            else {
+                D.Error("{0} did not find an obstacle.", Data.Name);
+            }
+            return waypoint;
         }
 
         /// <summary>
@@ -155,9 +200,11 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="distanceToCurrentDestinationSqrd">The distance automatic current destination SQRD.</param>
         /// <param name="previousDistanceSqrd">The previous distance SQRD.</param>
-        /// <returns>true if the separation distance is increasing.</returns>
+        /// <returns>true if the seperation distance is increasing.</returns>
         protected bool CheckSeparation(float distanceToCurrentDestinationSqrd, ref float previousDistanceSqrd) {
-            if (distanceToCurrentDestinationSqrd > previousDistanceSqrd + _separationTestToleranceDistanceSqrd) {
+            if (distanceToCurrentDestinationSqrd > previousDistanceSqrd + __separationTestToleranceDistanceSqrd) {
+                D.Warn("{0} separating from {1}. DistanceSqrd = {2}, previousSqrd = {3}, tolerance = {4}.",
+    Data.Name, Target.Name, distanceToCurrentDestinationSqrd, previousDistanceSqrd, __separationTestToleranceDistanceSqrd);
                 return true;
             }
             if (distanceToCurrentDestinationSqrd < previousDistanceSqrd) {
@@ -174,7 +221,7 @@ namespace CodeEnv.Master.GameContent {
         /// <returns>SpeedFactor, a multiple of Speed used in the calculations. Simply a convenience for derived classes.</returns>
         protected virtual float InitializeTargetValues() {
             float speedFactor = Speed * 3F;
-            _separationTestToleranceDistanceSqrd = speedFactor * speedFactor;
+            __separationTestToleranceDistanceSqrd = speedFactor * speedFactor;   // FIXME needs work - courseUpdatePeriod???
             _closeEnoughDistance = Target.Radius + speedFactor;  // IMPROVE range should be a factor too
             _closeEnoughDistanceSqrd = _closeEnoughDistance * _closeEnoughDistance;
             return speedFactor;

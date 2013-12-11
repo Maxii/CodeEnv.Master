@@ -40,7 +40,8 @@
     <Reference Include="System.XML" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="UnityEngine">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Unity\Editor\Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files\Unity\Editor\Data\Managed\UnityEngine.dll</HintPath>
+      <Private>False</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -61,7 +62,6 @@
     <Compile Include="ThirdParty\Easing.cs" />
     <Compile Include="Generic\IO\KeyModifiers.cs" />
     <Compile Include="Generic\Framework\Index3D.cs" />
-    <Compile Include="Generic\IO\UnconsumedMouseButtonClick.cs" />
     <Compile Include="ThirdParty\Reference.cs" />
     <Compile Include="ThirdParty\CustomStringComparer.cs" />
     <Compile Include="Generic\Graphics\AIcon.cs" />
@@ -147,7 +147,6 @@
     <Compile Include="Generic\Framework\DisposePropertyChangedSubscription.cs" />
     <Compile Include="Generic\IO\UnityUpdateEvent.cs" />
     <Compile Include="Generic\Math\Vector3EqualityComparer.cs" />
-    <Compile Include="Generic\IO\UnconsumedMouseButtonPress.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeEnv.Master.Common.LocalResources\CodeEnv.Master.Common.LocalResources.csproj">

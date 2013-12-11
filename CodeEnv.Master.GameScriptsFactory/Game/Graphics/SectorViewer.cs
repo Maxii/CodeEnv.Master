@@ -71,15 +71,13 @@ public class SectorViewer : AMonoBaseSingleton<SectorViewer>, IDisposable {
     private void DynamicallySubscribe(bool toSubscribe) {
         if (toSubscribe) {
             _subscribers.Add(CameraControl.Instance.SubscribeToPropertyChanged<CameraControl, Index3D>(cc => cc.SectorIndex, OnCameraSectorIndexChanged));
-            _subscribers.Add(GameInput.Instance.SubscribeToPropertyChanged<GameInput, UnconsumedMouseButtonPress>(gi => gi.UnconsumedPress, OnUnconsumedPressChanged));
+            GameInput.Instance.onUnconsumedPress += OnUnconsumedPress;
         }
         else {
             IDisposable d = _subscribers.Single(s => s as DisposePropertyChangedSubscription<CameraControl> != null);
             _subscribers.Remove(d);
             d.Dispose();
-            d = _subscribers.Single(s => s as DisposePropertyChangedSubscription<GameInput> != null);
-            _subscribers.Remove(d);
-            d.Dispose();
+            GameInput.Instance.onUnconsumedPress -= OnUnconsumedPress;
         }
     }
 
@@ -104,10 +102,8 @@ public class SectorViewer : AMonoBaseSingleton<SectorViewer>, IDisposable {
         return sectorIDLabel;
     }
 
-    private void OnUnconsumedPressChanged() {
-        UnconsumedMouseButtonPress pressed = GameInput.Instance.UnconsumedPress;
-        if (_viewMode == PlayerViewMode.SectorView && pressed.Button == NguiMouseButton.Right && !pressed.IsDown) {
-            //FleetManager selectedFleetMgr = _selectionMgr.CurrentSelection as FleetManager;
+    private void OnUnconsumedPress(NguiMouseButton button, bool isDown) {
+        if (_viewMode == PlayerViewMode.SectorView && button == NguiMouseButton.Right && !isDown) {
             FleetView selectedFleetMgr = _selectionMgr.CurrentSelection as FleetView;
             if (selectedFleetMgr != null && _wireframe.IsMouseOverHotSpot) {
                 _ctxObject.ShowMenu();

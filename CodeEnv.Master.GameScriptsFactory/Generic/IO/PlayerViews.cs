@@ -23,7 +23,6 @@ using UnityEngine;
 /// <summary>
 /// Provides alternative mode views of the Universe for the player. The first implemented is a view of sectors.
 /// </summary>
-//public class PlayerViews : AGameInputConfiguration<PlayerViews> {
 public class PlayerViews : AMonoBaseSingleton<PlayerViews> {
 
     // Special mode to allow viewing of sectors in space with this key combination activated
@@ -62,10 +61,8 @@ public class PlayerViews : AMonoBaseSingleton<PlayerViews> {
     }
 
     private void Subscribe() {
-        if (_subscribers == null) {
-            _subscribers = new List<IDisposable>();
-        }
-        _subscribers.Add(_gameInput.SubscribeToPropertyChanged<GameInput, ViewModeKeys>(gi => gi.LastViewModeKeyPressed, OnViewModeKeyPressedChanged));
+        _subscribers = new List<IDisposable>();
+        _gameInput.onViewModeKeyPressed += OnViewModeKeyPressed;
     }
 
     protected override void Start() {
@@ -81,12 +78,12 @@ public class PlayerViews : AMonoBaseSingleton<PlayerViews> {
         // _sectorViewModeCameraCullingLayerMask = _normalViewModeCameraCullingLayerMask.AddToMask(Layers.SectorView);
     }
 
-    private void OnViewModeKeyPressedChanged() {
-        ChangeViewMode();
+    private void OnViewModeKeyPressed(ViewModeKeys key) {
+        ChangeViewMode(key);
     }
 
-    private void ChangeViewMode() {
-        _lastViewModeKeyPressed = _gameInput.LastViewModeKeyPressed;
+    private void ChangeViewMode(ViewModeKeys key) {
+        _lastViewModeKeyPressed = key;
         PlayerViewModeKeyConfiguration activatedConfig = _keyConfigs.Single(config => config.IsActivated());
         D.Assert(activatedConfig != null, "Configuration for SpecialKey {0} is null.".Inject(_lastViewModeKeyPressed.GetName()), true);
         ViewMode = activatedConfig.viewMode;
@@ -130,6 +127,7 @@ public class PlayerViews : AMonoBaseSingleton<PlayerViews> {
     private void Unsubscribe() {
         _subscribers.ForAll(d => d.Dispose());
         _subscribers.Clear();
+        _gameInput.onViewModeKeyPressed -= OnViewModeKeyPressed;
     }
 
     public override string ToString() {

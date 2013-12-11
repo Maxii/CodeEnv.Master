@@ -25,6 +25,16 @@ namespace CodeEnv.Master.GameContent {
 
         AllStop,
 
+        Attack,
+
+        Disband,
+
+        DisbandAt,
+
+        Guard,
+
+        JoinFleetAt,
+
         /// <summary>
         /// Move to an ITarget or location.
         /// </summary>
@@ -32,25 +42,17 @@ namespace CodeEnv.Master.GameContent {
 
         Patrol,
 
-        Guard,
-
-        Attack,
+        RefitAt,
 
         Repair,
 
         RepairAt,
 
-        RefitAt,
-
         Retreat,
 
         RetreatTo,
 
-        Disband,
-
-        DisbandAt,
-
-        JoinFleetAt
+        StopAttack
 
     }
 }

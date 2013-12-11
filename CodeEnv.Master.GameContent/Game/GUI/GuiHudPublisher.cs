@@ -37,7 +37,9 @@ namespace CodeEnv.Master.GameContent {
         private static IGuiHudTextFactory<DataType> _guiHudTextFactory;
 
         private GuiHudText _guiCursorHudText;
+
         private Job _job;
+
         private DataType _data;
         private GuiHudLineKeys[] _optionalKeys;
         private IList<IDisposable> _subscribers;

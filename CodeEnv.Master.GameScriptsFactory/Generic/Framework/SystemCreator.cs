@@ -388,7 +388,7 @@ public class SystemCreator : AMonoBase, IDisposable {
             planetsToDestroy.ForAll(p => {
                 _planets.Remove(p);
                 _composition.RemovePlanet(p.Data);
-                D.Warn("Destroying Planet {0}.", p.gameObject.name);
+                D.Log("Destroying Planet {0}.", p.gameObject.name);
                 Destroy(p);
             });
         }
@@ -437,10 +437,10 @@ public class SystemCreator : AMonoBase, IDisposable {
 
     private void GenerateOrbitSlotStartLocation() {
         _orbitSlots = new Vector3[_numberOfOrbitSlots];
-        float systemRadiusAvailableForOrbits = TempGameValues.SystemRadius - TempGameValues.StarRadius;
+        float systemRadiusAvailableForOrbits = TempGameValues.SystemRadius - TempGameValues.StarKeepoutRadius;
         float slotSpacing = systemRadiusAvailableForOrbits / _numberOfOrbitSlots;
         for (int i = 0; i < _numberOfOrbitSlots; i++) {
-            float orbitRadius = TempGameValues.StarRadius + slotSpacing * (i + 1);
+            float orbitRadius = TempGameValues.StarKeepoutRadius + slotSpacing * (i + 1);
             Vector2 startOrbitPoint2D = RandomExtended<float>.OnCircle(orbitRadius);
             _orbitSlots[i] = new Vector3(startOrbitPoint2D.x, 0F, startOrbitPoint2D.y);
         }
