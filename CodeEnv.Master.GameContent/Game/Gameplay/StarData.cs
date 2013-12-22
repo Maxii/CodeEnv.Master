@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// All the data associated with a particular star.
     /// </summary>
-    public class StarData : Data {
+    public class StarData : AData {
 
         public StarType StarType { get; private set; }
 
@@ -54,10 +54,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="type">The type.</param>
         /// <param name="name">The name.</param>
-        /// <param name="maxHitPoints">The maximum hit points.</param>
         /// <param name="parentName">Name of the parent.</param>
-        public StarData(StarType type, string name, float maxHitPoints, string parentName)
-            : base(name, maxHitPoints, parentName) {
+        public StarData(StarType type, string name, string parentName)
+            : base(name, parentName) {
             StarType = type;
         }
 

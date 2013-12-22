@@ -37,7 +37,6 @@ namespace CodeEnv.Master.GameContent {
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
                     return (data.LastHumanPlayerIntelDate != null) ? new ColoredTextList_Intel(data.LastHumanPlayerIntelDate, intelLevel) : _emptyColoredTextList;
-
                 case GuiHudLineKeys.Owner:
                     return (data.Settlement != null) ? new ColoredTextList_Owner(data.Settlement.Owner) : _emptyColoredTextList;
                 case GuiHudLineKeys.Health:
@@ -62,6 +61,8 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Composition:
                 case GuiHudLineKeys.CompositionDetails:
                 case GuiHudLineKeys.ShipDetails:
+                case GuiHudLineKeys.SectorIndex:
+                case GuiHudLineKeys.Density:
                 case GuiHudLineKeys.Speed:
                     return _emptyColoredTextList;
 

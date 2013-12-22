@@ -38,7 +38,8 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
     //private SettlementItem[] _settlements;
     //private Item[] _stars;
     //private Item[] _planetoids;
-    private Item _universeCenter;
+    private UniverseCenterItem _universeCenter;
+    private StarBaseItem[] _starBases;
 
     protected override void Awake() {
         base.Awake();
@@ -67,7 +68,8 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
         //_stars = celestialObjects.Where(co => co.gameObject.GetComponent<StarView>() != null).ToArray();
         //_planetoids = celestialObjects.Where(co => co.gameObject.GetComponent<MovingView>() != null).ToArray();
         //_universeCenter = celestialObjects.Single(co => co.gameObject.GetComponent<UniverseCenterView>() != null);
-        _universeCenter = gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterView>().gameObject.GetSafeMonoBehaviourComponent<Item>();
+        _universeCenter = gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterItem>();
+        _starBases = gameObject.GetSafeMonoBehaviourComponentsInChildren<StarBaseItem>();
 
         //_obstacleLocations = _systems.Select(s => s.transform.position).ToList();
         //_obstacleLocations.Add(_universeCenter.transform.position);
@@ -95,6 +97,7 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
         //InitializeStars();
         //InitializePlanetoids();
         InitializeCenter();
+        InitializeStarBases();
 
         //InitializeFleets();
     }
@@ -175,11 +178,32 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
 
     private void InitializeCenter() {
         if (_universeCenter) {
-            Data data = new Data("UniverseCenter", Mathf.Infinity);
+            Data data = new Data("UniverseCenter");
 
             _universeCenter.Data = data;
             _universeCenter.enabled = true;
             _universeCenter.gameObject.GetSafeMonoBehaviourComponent<UniverseCenterView>().enabled = true;
+        }
+    }
+
+    private void InitializeStarBases() {
+        if (!_starBases.IsNullOrEmpty()) {
+            int baseCount = 0;
+            foreach (var starBase in _starBases) {
+                StarBaseData data = new StarBaseData("StarBase_{0}".Inject(baseCount), 50F);
+                data.LastHumanPlayerIntelDate = new GameDate();
+                data.Strength = new CombatStrength();
+                data.MaxTurnRate = 90F;
+                data.Owner = GameManager.Instance.HumanPlayer;
+
+                starBase.Data = data;
+                starBase.enabled = true;
+                var sb = starBase.gameObject.GetSafeMonoBehaviourComponent<StarBaseView>();
+                if (sb != null) {
+                    sb.enabled = true;
+                }
+                baseCount++;
+            }
         }
     }
 
@@ -244,6 +268,7 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
         //_fleetMgrs.ForAll<FleetManager>(fm => fm.gameObject.GetSafeInterfaceInChildren<IFleetViewable>().PlayerIntelLevel
         //    = RandomExtended<IntelLevel>.Choice(Enums<IntelLevel>.GetValues().Except(default(IntelLevel), IntelLevel.Nil).ToArray()));
         //= IntelLevel.Nil);
+        _starBases.ForAll<StarBaseItem>(sb => sb.gameObject.GetSafeInterface<IStarBaseViewable>().PlayerIntelLevel = IntelLevel.Complete);
     }
 
     protected override void OnDestroy() {

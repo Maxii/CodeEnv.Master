@@ -61,7 +61,10 @@ namespace CodeEnv.Master.GameContent {
         ///  Info key for a type - PlanetoidType, StarType,
         ///  SettlementSize, ShipHull.
         /// </summary>
-        Type
+        Type,
+
+        SectorIndex,
+        Density
     }
 }
 

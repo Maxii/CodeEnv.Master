@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     [System.Obsolete]
     public interface IHasData {
 
-        Data GetData();
+        AMortalData GetData();
 
     }
 }

@@ -58,9 +58,11 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Graphics\AMortalFocusablePresenter.cs" />
     <Compile Include="Game\Framework\FleetItem.cs" />
-    <Compile Include="Generic\Framework\AItemStateMachine.cs" />
+    <Compile Include="Generic\Framework\AMortalItemStateMachine.cs" />
     <Compile Include="Generic\Framework\FleetCreator.cs" />
+    <Compile Include="Generic\Graphics\APresenter.cs" />
     <Compile Include="Generic\IO\CameraControl.cs" />
     <Compile Include="Generic\Framework\GameManager.cs" />
     <Compile Include="Game\Framework\AStarPathManager.cs" />
@@ -118,12 +120,11 @@
     <Compile Include="Game\GUI\GuiSelectedReadout.cs" />
     <Compile Include="Game\GUI\GuiFocusedReadout.cs" />
     <Compile Include="Generic\Framework\SectorGrid.cs" />
-    <Compile Include="Generic\Framework\AItem.cs" />
-    <Compile Include="Generic\Graphics\MovingView.cs" />
+    <Compile Include="Generic\Graphics\AFollowableView.cs" />
     <Compile Include="Game\Framework\SystemItem.cs" />
     <Compile Include="Game\Graphics\SystemPresenter.cs" />
     <Compile Include="Game\Graphics\SystemView.cs" />
-    <Compile Include="Generic\Graphics\Presenter.cs" />
+    <Compile Include="Generic\Graphics\AFocusablePresenter.cs" />
     <Compile Include="Generic\_Debug\TestStateMachine.cs" />
     <Compile Include="Game\Framework\PlanetoidItem.cs" />
     <Compile Include="Game\Framework\StarItem.cs" />
@@ -133,7 +134,12 @@
     <Compile Include="Game\Graphics\SettlementPresenter.cs" />
     <Compile Include="Game\Graphics\SettlementView.cs" />
     <Compile Include="Game\Framework\ShipItem.cs" />
-    <Compile Include="Game\Framework\Item.cs" />
+    <Compile Include="Game\Graphics\SectorPresenter.cs" />
+    <Compile Include="Game\Graphics\SectorView.cs" />
+    <Compile Include="Generic\Framework\AMortalItem.cs" />
+    <Compile Include="Game\Framework\StarBaseItem.cs" />
+    <Compile Include="Game\Graphics\StarBaseView.cs" />
+    <Compile Include="Game\Graphics\StarBasePresenter.cs" />
     <Compile Include="ThirdParty\MyAStarPointGenerator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Generic\Framework\Loader.cs" />
@@ -143,8 +149,8 @@
     <Compile Include="Game\Graphics\StarAnimator.cs" />
     <Compile Include="Generic\_Debug\__UniverseInitializer.cs" />
     <Compile Include="Generic\Graphics\StarFlare.cs" />
-    <Compile Include="Game\Framework\Sector.cs" />
-    <Compile Include="Game\Graphics\SectorViewer.cs" />
+    <Compile Include="Game\Framework\SectorItem.cs" />
+    <Compile Include="Game\Graphics\SectorExaminer.cs" />
     <Compile Include="Game\Graphics\ShipPresenter.cs" />
     <Compile Include="Game\Graphics\ShipView.cs" />
     <Compile Include="Game\Graphics\StarPresenter.cs" />
@@ -154,8 +160,10 @@
     <Compile Include="Generic\IO\PlayerViews.cs" />
     <Compile Include="Game\_Debug\Universe.cs" />
     <Compile Include="Game\Graphics\UniverseCenterView.cs" />
-    <Compile Include="Generic\Graphics\View.cs" />
-    <Compile Include="Game\Gameplay\FleetNavigator.cs" />
+    <Compile Include="Game\Framework\FleetNavigator.cs" />
+    <Compile Include="Game\Framework\UniverseCenterItem.cs" />
+    <Compile Include="Generic\Graphics\AFocusableView.cs" />
+    <Compile Include="Game\Graphics\UniverseCenterPresenter.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">
@@ -196,6 +204,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Game\Gameplay\" />
     <Folder Include="Generic\Math\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

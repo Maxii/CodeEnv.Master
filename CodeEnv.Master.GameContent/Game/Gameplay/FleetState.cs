@@ -16,13 +16,6 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using UnityEngine;
-
     /// <summary>
     /// Enum defining the states a Fleet can operate in.
     /// </summary>

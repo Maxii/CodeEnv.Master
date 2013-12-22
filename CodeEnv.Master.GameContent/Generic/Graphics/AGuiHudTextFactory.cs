@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
     /// <typeparam name="DataType">The type of Data.</typeparam>
     public abstract class AGuiHudTextFactory<ClassType, DataType> : AGenericSingleton<ClassType>, IGuiHudTextFactory<DataType>
         where ClassType : class
-        where DataType : Data {
+        where DataType : AData {
 
         private static IDictionary<IntelLevel, IList<GuiHudLineKeys>> _hudLineKeyLookup = new Dictionary<IntelLevel, IList<GuiHudLineKeys>> {
 
@@ -39,12 +39,14 @@ namespace CodeEnv.Master.GameContent {
                                                                        GuiHudLineKeys.ParentName,
                                                                        GuiHudLineKeys.Type,
                                                                        GuiHudLineKeys.IntelState,
+                                                                       GuiHudLineKeys.SectorIndex,
                                                                        GuiHudLineKeys.Distance }},
 
         {IntelLevel.Unknown, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
                                                                        GuiHudLineKeys.ParentName,
                                                                        GuiHudLineKeys.Type,
                                                                        GuiHudLineKeys.IntelState,
+                                                                       GuiHudLineKeys.SectorIndex,
                                                                        GuiHudLineKeys.Distance }},
 
         {IntelLevel.OutOfDate, new List<GuiHudLineKeys> {   GuiHudLineKeys.Name,
@@ -54,6 +56,8 @@ namespace CodeEnv.Master.GameContent {
                                                                        GuiHudLineKeys.Capacity,
                                                                        GuiHudLineKeys.Resources,
                                                                        GuiHudLineKeys.Specials,
+                                                                       GuiHudLineKeys.SectorIndex,
+                                                                       GuiHudLineKeys.Density,
                                                                        GuiHudLineKeys.Distance }},
 
         {IntelLevel.LongRangeSensors, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
@@ -66,6 +70,8 @@ namespace CodeEnv.Master.GameContent {
                                                                             GuiHudLineKeys.Owner,
                                                                            GuiHudLineKeys.CombatStrength,
                                                                            GuiHudLineKeys.Composition,
+                                                                       GuiHudLineKeys.SectorIndex,
+                                                                       GuiHudLineKeys.Density,
                                                                            GuiHudLineKeys.Speed,
                                                                            GuiHudLineKeys.Distance }},
 
@@ -81,7 +87,9 @@ namespace CodeEnv.Master.GameContent {
                                                                             GuiHudLineKeys.Health,
                                                                            GuiHudLineKeys.CombatStrengthDetails,
                                                                            GuiHudLineKeys.CompositionDetails,
-                                                                           GuiHudLineKeys.Speed,
+                                                                        GuiHudLineKeys.SectorIndex,
+                                                                       GuiHudLineKeys.Density,
+                                                                          GuiHudLineKeys.Speed,
                                                                            GuiHudLineKeys.ShipDetails,
                                                                            GuiHudLineKeys.Distance }},
 
@@ -97,6 +105,8 @@ namespace CodeEnv.Master.GameContent {
                                                                             GuiHudLineKeys.Health,
                                                                            GuiHudLineKeys.CombatStrengthDetails,
                                                                            GuiHudLineKeys.CompositionDetails,
+                                                                       GuiHudLineKeys.SectorIndex,
+                                                                       GuiHudLineKeys.Density,
                                                                            GuiHudLineKeys.Speed,
                                                                            GuiHudLineKeys.ShipDetails,
                                                                            GuiHudLineKeys.Distance }}

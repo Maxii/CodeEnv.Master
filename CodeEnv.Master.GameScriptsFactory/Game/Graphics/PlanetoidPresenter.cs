@@ -22,22 +22,24 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// An MVPresenter associated with a PlanetoidView.
 /// </summary>
-public class PlanetoidPresenter : Presenter {
+public class PlanetoidPresenter : AMortalFocusablePresenter {
 
-    protected new PlanetoidItem Item {
+    public new PlanetoidItem Item {
         get { return base.Item as PlanetoidItem; }
-        set { base.Item = value; }
+        protected set { base.Item = value; }
     }
 
-    public PlanetoidPresenter(IViewable view) : base(view) { }
-
-    protected override void InitilizeItemLinkage() {
-        Item = UnityUtility.ValidateMonoBehaviourPresence<PlanetoidItem>(_viewGameObject);
+    public PlanetoidPresenter(IViewable view)
+        : base(view) {
+        Subscribe();
     }
 
-    protected override void InitializeHudPublisher() {
-        var hudPublisher = new GuiHudPublisher<PlanetoidData>(Item.Data);
-        View.HudPublisher = hudPublisher;
+    protected override AItem InitilizeItemLinkage() {
+        return UnityUtility.ValidateMonoBehaviourPresence<PlanetoidItem>(_viewGameObject);
+    }
+
+    protected override IGuiHudPublisher InitializeHudPublisher() {
+        return new GuiHudPublisher<PlanetoidData>(Item.Data);
     }
 
     protected override void OnItemDeath(ItemDeathEvent e) {
@@ -50,7 +52,6 @@ public class PlanetoidPresenter : Presenter {
         base.CleanupOnDeath();
         // TODO initiate death of a planet...
     }
-
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

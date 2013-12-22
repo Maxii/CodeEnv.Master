@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: MovingView.cs
-// A class for managing the UI of a moving object.
+// File: AFollowableView.cs
+// Abstract class managing the UI View for a followable object.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,13 +17,9 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// A class for managing the UI of a moving object.
+/// Abstract class managing the UI View for a followable object.
 /// </summary>
-public class MovingView : View, ICameraFollowable {
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
+public abstract class AFollowableView : AFocusableView, ICameraFollowable {
 
     #region ICameraFollowable Members
 

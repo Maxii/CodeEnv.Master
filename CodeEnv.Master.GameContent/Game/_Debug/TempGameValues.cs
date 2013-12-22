@@ -23,11 +23,9 @@ namespace CodeEnv.Master.GameContent {
 
     public static class TempGameValues {
 
-        public const int MinFleetTrackingLabelShowDistance = 50;
-        public const int MaxFleetTrackingLabelShowDistance = 300;
+        public const int MinTrackingLabelShowDistance = 50;
+        public const int MaxTrackingLabelShowDistance = 5000;
 
-        public const int MinSystemTrackingLabelShowDistance = 100;
-        public const int MaxSystemTrackingLabelShowDistance = 2500;
 
         /// <summary>
         /// The length in world units of a sector side along any of the axis. As a sector
@@ -35,9 +33,22 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public const float SectorSideLength = 1200F;
 
+        /// <summary>
+        /// The length in world units of the diagonal across a sector side. Sqrt(SectorSIdeLengthSqrd x 2).
+        /// </summary>
+        public static readonly float SectorSideDiagonalLength = SectorSideLength * Mathf.Sqrt(2F);    // 1697.06
+
+        /// <summary>
+        /// The length in world units of the diagonal across a sector, aka the longest distance between corners.
+        /// Sqrt(SectorSideLengthSqrd + SectorSideDiagonalLenghtSqrd).
+        /// </summary>
+        public static readonly float SectorDiagonalLength = (float)Math.Sqrt(Math.Pow(SectorSideLength, 2F) + Math.Pow(SectorSideDiagonalLength, 2F));    // 2078.46
+
         public static readonly Vector3 SectorSize = new Vector3(SectorSideLength, SectorSideLength, SectorSideLength);
 
         public const float SystemRadius = 120F;
+
+        public const float UniverseCenterRadius = 20F;
 
         /// <summary>
         /// The radius of the star sphere.

@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -156,9 +156,9 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     private Vector3 _targetDirection;
 
     // Desired Camera values requested via input controls
-    private float _xRotation;    // EulerAngles
-    private float _yRotation;
-    private float _zRotation;
+    private float _xAxisRotation;    // EulerAngles
+    private float _yAxisRotation;
+    private float _zAxisRotation;
     private float _requestedDistanceFromTarget;
 
     // Fields used in algorithms that can vary by Target or CameraState
@@ -296,6 +296,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         dragFocusRoll.activate = toEnable;
         dragFreeRoll.activate = toEnable;
         keyFreeRoll.activate = toEnable;
+        keyFocusRoll.activate = toEnable;
     }
 
     private void EnableEvents(bool toEnable) {
@@ -370,16 +371,16 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     private void SyncRotation() {
         Quaternion startingRotation = _transform.rotation;
         Vector3 startingEulerRotation = startingRotation.eulerAngles;
-        // don't understand why y and x are reversed
-        _xRotation = startingEulerRotation.y;
-        _yRotation = startingEulerRotation.x;
-        _zRotation = startingEulerRotation.z;
+        _xAxisRotation = startingEulerRotation.x;
+        _yAxisRotation = startingEulerRotation.y;
+        _zAxisRotation = startingEulerRotation.z;
     }
 
     private void InitializeContextMenuSettings() {
         _contextMenuPickHandler = gameObject.GetSafeMonoBehaviourComponent<CtxPickHandler>();
         _contextMenuPickHandler.dontUseFallThrough = true;
-        _contextMenuPickHandler.pickLayers = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.SectorView);
+        //_contextMenuPickHandler.pickLayers = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.SectorView);
+        _contextMenuPickHandler.pickLayers = LayerMaskExtensions.CreateInclusiveMask(Layers.Default);
         if (_contextMenuPickHandler.menuButton != NguiMouseButton.Right.ToUnityMouseButton()) {
             D.Warn("Context Menu actuator button not set to Right Mouse Button.");
         }
@@ -544,9 +545,9 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         // face the selected Target
         Quaternion lookAt = Quaternion.LookRotation(_targetDirection);
         Vector3 lookAtVector = lookAt.eulerAngles;
-        _xRotation = lookAtVector.y;
-        _yRotation = lookAtVector.x;
-        _zRotation = lookAtVector.z;
+        _yAxisRotation = lookAtVector.y;
+        _xAxisRotation = lookAtVector.x;
+        _zAxisRotation = lookAtVector.z;
 
         _cameraRotationDampener = settings.focusingRotationDampener;
         _cameraPositionDampener = settings.focusingPositionDampener;
@@ -555,14 +556,17 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     }
 
     //void Focusing_Update() {
-    //    LogEvent();
     //    UpdateCamera_Focusing();
     //}
 
     void Focusing_LateUpdate() {
-        LogEvent();
         UpdateCamera_Focusing();
     }
+
+    void Focusing_FixedUpdate() {
+        UpdateCamera_Focusing();
+    }
+
 
     private void UpdateCamera_Focusing() {
         // transition process to allow lookAt to complete. Only entered from OnFocusSelected, when !IsResetOnFocus
@@ -601,14 +605,17 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     }
 
     //void Focused_Update() {
-    //    LogEvent();
     //    UpdateCamera_Focused();
     //}
 
     void Focused_LateUpdate() {
-        LogEvent();
         UpdateCamera_Focused();
     }
+
+    void Focused_FixedUpdate() {
+        UpdateCamera_Focused();
+    }
+
 
     private void UpdateCamera_Focused() {
         if (dragFreeTruck.IsActivated() || dragFreePedestal.IsActivated()) {
@@ -630,31 +637,31 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         if (dragFocusOrbit.IsActivated()) {
             Vector2 dragDelta = _gameInput.GetDragDelta();
             inputValue = dragDelta.x;
-            _xRotation += inputValue * dragFocusOrbit.sensitivity * timeSinceLastUpdate;
+            _yAxisRotation += inputValue * dragFocusOrbit.sensitivity * timeSinceLastUpdate;
             inputValue = dragDelta.y;
-            _yRotation -= inputValue * dragFocusOrbit.sensitivity * timeSinceLastUpdate;
+            _xAxisRotation -= inputValue * dragFocusOrbit.sensitivity * timeSinceLastUpdate;
         }
         if (edgeFocusOrbitPan.IsActivated()) {
             float xMousePosition = Input.mousePosition.x;
             if (xMousePosition <= settings.activeScreenEdge) {
-                _xRotation += edgeFocusOrbitPan.sensitivity * timeSinceLastUpdate;
+                _yAxisRotation += edgeFocusOrbitPan.sensitivity * timeSinceLastUpdate;
             }
             else if (xMousePosition >= Screen.width - settings.activeScreenEdge) {
-                _xRotation -= edgeFocusOrbitPan.sensitivity * timeSinceLastUpdate;
+                _yAxisRotation -= edgeFocusOrbitPan.sensitivity * timeSinceLastUpdate;
             }
         }
         if (edgeFocusOrbitTilt.IsActivated()) {
             float yMousePosition = Input.mousePosition.y;
             if (yMousePosition <= settings.activeScreenEdge) {
-                _yRotation -= edgeFocusOrbitPan.sensitivity * timeSinceLastUpdate;
+                _xAxisRotation -= edgeFocusOrbitPan.sensitivity * timeSinceLastUpdate;
             }
             else if (yMousePosition >= Screen.height - settings.activeScreenEdge) {
-                _yRotation += edgeFocusOrbitPan.sensitivity * timeSinceLastUpdate;
+                _xAxisRotation += edgeFocusOrbitPan.sensitivity * timeSinceLastUpdate;
             }
         }
         if (dragFocusRoll.IsActivated()) {
             inputValue = _gameInput.GetDragDelta().x;
-            _zRotation += inputValue * dragFocusRoll.sensitivity * timeSinceLastUpdate;
+            _zAxisRotation += inputValue * dragFocusRoll.sensitivity * timeSinceLastUpdate;
         }
         if (scrollFocusZoom.IsActivated()) {
             inputValue = _gameInput.GetScrollWheelMovement();
@@ -691,13 +698,13 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
             _requestedDistanceFromTarget -= distanceChange;
         }
         if (keyFocusPan.IsActivated()) {
-            _xRotation += Input.GetAxis(keyboardAxesNames[(int)keyFreePan.keyboardAxis]) * keyFreePan.sensitivity;
+            _yAxisRotation += Input.GetAxis(keyboardAxesNames[(int)keyFreePan.keyboardAxis]) * keyFreePan.sensitivity;
         }
         if (keyFocusTilt.IsActivated()) {
-            _yRotation -= Input.GetAxis(keyboardAxesNames[(int)keyFreeTilt.keyboardAxis]) * keyFreeTilt.sensitivity;
+            _xAxisRotation -= Input.GetAxis(keyboardAxesNames[(int)keyFreeTilt.keyboardAxis]) * keyFreeTilt.sensitivity;
         }
         if (keyFocusRoll.IsActivated()) {
-            _zRotation -= Input.GetAxis(keyboardAxesNames[(int)keyFreeRoll.keyboardAxis]) * keyFreeRoll.sensitivity;
+            _zAxisRotation -= Input.GetAxis(keyboardAxesNames[(int)keyFreeRoll.keyboardAxis]) * keyFreeRoll.sensitivity;
         }
 
         // this is the key that keeps the camera pointed at the Target when focused
@@ -732,14 +739,17 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     }
 
     //void Freeform_Update() {
-    //    LogEvent();
     //    UpdateCamera_Freeform();
     //}
 
-    void Freeform_LateUpdate() {
-        LogEvent();
+    //void Freeform_LateUpdate() {
+    //    UpdateCamera_Freeform();
+    //}
+
+    void Freeform_FixedUpdate() {
         UpdateCamera_Freeform();
     }
+
 
     private void UpdateCamera_Freeform() {
         // the only exit condition out of Freeform is the user clicking to follow or focus an object
@@ -758,19 +768,19 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         if (edgeFreePan.IsActivated()) {
             float xMousePosition = Input.mousePosition.x;
             if (xMousePosition <= settings.activeScreenEdge) {
-                _xRotation -= edgeFreePan.sensitivity * timeSinceLastUpdate;
+                _yAxisRotation -= edgeFreePan.sensitivity * timeSinceLastUpdate;
             }
             else if (xMousePosition >= Screen.width - settings.activeScreenEdge) {
-                _xRotation += edgeFreePan.sensitivity * timeSinceLastUpdate;
+                _yAxisRotation += edgeFreePan.sensitivity * timeSinceLastUpdate;
             }
         }
         if (edgeFreeTilt.IsActivated()) {
             float yMousePosition = Input.mousePosition.y;
             if (yMousePosition <= settings.activeScreenEdge) {
-                _yRotation += edgeFreeTilt.sensitivity * timeSinceLastUpdate;
+                _xAxisRotation += edgeFreeTilt.sensitivity * timeSinceLastUpdate;
             }
             else if (yMousePosition >= Screen.height - settings.activeScreenEdge) {
-                _yRotation -= edgeFreeTilt.sensitivity * timeSinceLastUpdate;
+                _xAxisRotation -= edgeFreeTilt.sensitivity * timeSinceLastUpdate;
             }
         }
         if (dragFreeTruck.IsActivated()) {
@@ -787,14 +797,14 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         }
         if (dragFreeRoll.IsActivated()) {
             inputValue = _gameInput.GetDragDelta().x;
-            _zRotation += inputValue * dragFreeRoll.sensitivity * timeSinceLastUpdate;
+            _zAxisRotation += inputValue * dragFreeRoll.sensitivity * timeSinceLastUpdate;
         }
         if (dragFreePanTilt.IsActivated()) {
             Vector2 dragDelta = _gameInput.GetDragDelta();
             inputValue = dragDelta.x;
-            _xRotation -= inputValue * dragFreePanTilt.sensitivity * timeSinceLastUpdate;
+            _yAxisRotation -= inputValue * dragFreePanTilt.sensitivity * timeSinceLastUpdate;
             inputValue = dragDelta.y;
-            _yRotation += inputValue * dragFreePanTilt.sensitivity * timeSinceLastUpdate;
+            _xAxisRotation += inputValue * dragFreePanTilt.sensitivity * timeSinceLastUpdate;
         }
         if (scrollFreeZoom.IsActivated()) {
             inputValue = _gameInput.GetScrollWheelMovement();
@@ -877,13 +887,13 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
             _requestedDistanceFromTarget -= distanceChange;
         }
         if (keyFreePan.IsActivated()) {
-            _xRotation += Input.GetAxis(keyboardAxesNames[(int)keyFreePan.keyboardAxis]) * keyFreePan.sensitivity;
+            _yAxisRotation += Input.GetAxis(keyboardAxesNames[(int)keyFreePan.keyboardAxis]) * keyFreePan.sensitivity;
         }
         if (keyFreeTilt.IsActivated()) {
-            _yRotation -= Input.GetAxis(keyboardAxesNames[(int)keyFreeTilt.keyboardAxis]) * keyFreeTilt.sensitivity;
+            _xAxisRotation -= Input.GetAxis(keyboardAxesNames[(int)keyFreeTilt.keyboardAxis]) * keyFreeTilt.sensitivity;
         }
         if (keyFreeRoll.IsActivated()) {
-            _zRotation -= Input.GetAxis(keyboardAxesNames[(int)keyFreeRoll.keyboardAxis]) * keyFreeRoll.sensitivity;
+            _zAxisRotation -= Input.GetAxis(keyboardAxesNames[(int)keyFreeRoll.keyboardAxis]) * keyFreeRoll.sensitivity;
         }
 
         _targetDirection = (_targetPoint - Position).normalized;
@@ -914,12 +924,14 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     }
 
     //void Follow_Update() {
-    //    LogEvent();
     //    UpdateCamera_Follow();
     //}
 
-    void Follow_LateUpdate() {
-        LogEvent();
+    //void Follow_LateUpdate() {
+    //    UpdateCamera_Follow();
+    //}
+
+    void Follow_FixedUpdate() {
         UpdateCamera_Follow();
     }
 
@@ -933,10 +945,13 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         // values must be continuously updated as the Target and camera are moving
         _targetPoint = _target.position;
         _targetDirection = (_targetPoint - Position).normalized;
+        // This places camera directly above target. I want it above and behind...
+        //_targetDirection = ((_targetPoint - Position) - _target.up * 0.5F).normalized; 
+
         Vector3 lookAt = Quaternion.LookRotation(_targetDirection).eulerAngles;
-        _xRotation = lookAt.y;
-        _yRotation = lookAt.x;
-        _zRotation = lookAt.z;
+        _yAxisRotation = lookAt.y;
+        _xAxisRotation = lookAt.x;
+        _zAxisRotation = lookAt.z;
 
         // Smooth follow interpolation as spectator avoids moving away from the Target if it turns inside our optimal 
         // follow distance. When the Target turns and breaks inside the optimal follow distance, stop the camera 
@@ -1043,7 +1058,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         }
 
         AssignTarget(newTarget, newTargetPoint);
-        D.Log("Camera target changed to {0}.", _target.name);
+        //D.Log("Camera target changed to {0}.", _target.name);
     }
 
     private void AssignTarget(Transform newTarget, Vector3 newTargetPoint) {
@@ -1062,9 +1077,9 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         Quaternion zeroRotation = Quaternion.identity;
         _transform.rotation = zeroRotation;
         Vector3 zeroRotationVector = zeroRotation.eulerAngles;
-        _xRotation = zeroRotationVector.y;
-        _yRotation = zeroRotationVector.x;
-        _zRotation = zeroRotationVector.z;
+        _xAxisRotation = zeroRotationVector.x;
+        _yAxisRotation = zeroRotationVector.y;
+        _zAxisRotation = zeroRotationVector.z;
         //D.Log("ResetToWorldSpace called. Worldspace Camera Rotation = {0}.".Inject(new Vector3(_xRotation, _yRotation, _zRotation)));
     }
 
@@ -1103,6 +1118,8 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
 
     private void ProcessChanges(float deltaTime) {
         _transform.rotation = CalculateCameraRotation(_cameraRotationDampener * deltaTime);
+        //_transform.localRotation = CalculateCameraRotation(_cameraRotationDampener * deltaTime);
+
         //D.Log("RequestedDistanceFromTarget = {0}, MinimumDistanceFromTarget = {1}.".Inject(_requestedDistanceFromTarget, settings.minimumDistanceFromTarget));
         _requestedDistanceFromTarget = Mathf.Clamp(_requestedDistanceFromTarget, _minimumDistanceFromTarget, Mathf.Infinity);
         //D.Log("RequestedDistanceFromTarget = {0}.".Inject(_requestedDistanceFromTarget));
@@ -1277,17 +1294,32 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     /// <returns></returns>
     private Quaternion CalculateCameraRotation(float dampenedTimeSinceLastUpdate) {
         // keep rotation values exact as a substitute for the unreliable? accuracy that comes from reading EulerAngles from the Quaternion
-        _xRotation %= 360;
-        _yRotation %= 360;
-        _zRotation %= 360;
-        //D.Log("Rotation input values: x = {0}, y = {1}, z = {2}.".Inject(_xRotation, _yRotation, _zRotation));
-        Quaternion desiredRotation = Quaternion.Euler(_yRotation, _xRotation, _zRotation);
-        //Vector3 lookAtVector = desiredRotation.eulerAngles;
-        //float xRotation = lookAtVector.y;
-        //float yRotation = lookAtVector.x;
-        //float zRotation = lookAtVector.z;
-        //D.Log("After Quaternion conversion: x = {0}, y = {1}, z = {2}.".Inject(xRotation, yRotation, zRotation));
-        Quaternion resultingRotation = Quaternion.Slerp(_transform.rotation, desiredRotation, dampenedTimeSinceLastUpdate);
+        _xAxisRotation %= 360;
+        _yAxisRotation %= 360;
+        _zAxisRotation %= 360;
+
+        Vector3 desiredFacingDirection = new Vector3(_xAxisRotation, _yAxisRotation, _zAxisRotation);
+        //desiredFacingDirection = Quaternion.LookRotation(desiredFacingDirection, _transform.up).eulerAngles;
+        //desiredFacingDirection = Quaternion.LookRotation(desiredFacingDirection).eulerAngles;
+        //desiredFacingDirection = _transform.InverseTransformDirection(desiredFacingDirection);
+
+        //D.Log("Desired Facing: {0}.", desiredFacingDirection);
+
+        Quaternion startingRotation = _transform.rotation;
+
+        // This approach DOES generate a desired local rotation from the angles BUT it continues to change,
+        // always staying in front of the changes from the slerp. This is because .right, .up and .forward continuously 
+        // change. This results in a slow and continuous movement across the screen
+        //Quaternion xQuaternion = Quaternion.AngleAxis(Mathf.Deg2Rad * _xAxisRotation, _transform.right);
+        //Quaternion yQuaternion = Quaternion.AngleAxis(Mathf.Deg2Rad * _yAxisRotation, _transform.up);
+        //Quaternion zQuaternion = Quaternion.AngleAxis(Mathf.Deg2Rad * _zAxisRotation, _transform.forward);
+        //Quaternion desiredRotation = startingRotation * xQuaternion * yQuaternion * zQuaternion;
+
+        Quaternion desiredRotation = Quaternion.Euler(desiredFacingDirection);
+        //Quaternion desiredRotation = startingRotation * Quaternion.FromToRotation(_transform.forward, desiredFacingDirection);
+        //D.Log("Desired Rotation: {0}.", desiredRotation.eulerAngles);
+
+        Quaternion resultingRotation = Quaternion.Slerp(startingRotation, desiredRotation, dampenedTimeSinceLastUpdate);
         // OPTIMIZE Lerp is faster but not as pretty when the rotation changes are far apart
         return resultingRotation;
     }

@@ -22,7 +22,7 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// The data-holding class for all planetoids in the game.
 /// </summary>
-public class PlanetoidItem : AItem {
+public class PlanetoidItem : AMortalItem {
 
     public new PlanetoidData Data {
         get { return base.Data as PlanetoidData; }

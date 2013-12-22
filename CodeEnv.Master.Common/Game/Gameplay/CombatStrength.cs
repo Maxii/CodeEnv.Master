@@ -38,6 +38,9 @@ namespace CodeEnv.Master.Common {
             }
         }
 
+        /// <summary>
+        /// Convenience constructor that makes a basic defensive CombatStrength.
+        /// </summary>
         public CombatStrength() :
             this(0f, 1f, 0f, 1f, 0f, 1f) {
         }

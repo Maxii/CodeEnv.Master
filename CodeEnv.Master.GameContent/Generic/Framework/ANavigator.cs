@@ -29,6 +29,23 @@ namespace CodeEnv.Master.GameContent {
     public abstract class ANavigator : APropertyChangeTracking, IDisposable {
 
         /// <summary>
+        /// Optional events for notification of the course plot being completed. 
+        /// </summary>
+        public event Action onCoursePlotFailure;
+        public event Action onCoursePlotSuccess;
+
+        /// <summary>
+        /// Optional event for notification of destination reached.
+        /// </summary>
+        public event Action onDestinationReached;
+
+        /// <summary>
+        /// Optional event for notification of when the pilot 
+        /// detects an error while trying to get to the target. 
+        /// </summary>
+        public event Action onCourseTrackingError;
+
+        /// <summary>
         /// The ITarget this navigator is trying to reach. Can simply be a location.
         /// </summary>
         public ITarget Target { get; private set; }
@@ -47,7 +64,7 @@ namespace CodeEnv.Master.GameContent {
             get { return _pilotJob != null && _pilotJob.IsRunning; }
         }
 
-        protected Data Data { get; private set; }
+        protected AMortalData Data { get; private set; }
 
         protected static LayerMask _keepoutOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.CelestialObjectKeepout);
 
@@ -74,7 +91,7 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="ANavigator" /> class.
         /// </summary>
         /// <param name="data">Item data.</param>
-        public ANavigator(Data data) {
+        public ANavigator(AMortalData data) {
             Data = data;
             _gameTime = GameTime.Instance;
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
@@ -87,13 +104,31 @@ namespace CodeEnv.Master.GameContent {
             _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
         }
 
+        protected void OnCoursePlotFailure() {
+            if (onCoursePlotFailure != null) {
+                onCoursePlotFailure();
+            }
+        }
+
+        protected void OnCoursePlotSuccess() {
+            if (onCoursePlotSuccess != null) {
+                onCoursePlotSuccess();
+            }
+        }
+
         protected virtual void OnDestinationReached() {
-            D.Log("{0} has reached Destination {1}. Actual proximity {2} units.", Data.Name, Target.Name, Vector3.Distance(Destination, Data.Position));
             _pilotJob.Kill();
+            D.Log("{0} has reached Destination {1}. Actual proximity {2} units.", Data.Name, Target.Name, Vector3.Distance(Destination, Data.Position));
+            if (onDestinationReached != null) {
+                onDestinationReached();
+            }
         }
 
         protected virtual void OnCourseTrackingError() {
             _pilotJob.Kill();
+            if (onCourseTrackingError != null) {
+                onCourseTrackingError();
+            }
         }
 
         private void OnGameSpeedChanged() {
@@ -174,6 +209,7 @@ namespace CodeEnv.Master.GameContent {
             RaycastHit hitInfo;
             if (Physics.Raycast(ray, out hitInfo, distanceToLocation, _keepoutOnlyLayerMask.value)) {
                 // found a keepout zone, so find the point on the other side of the zone where the ray came out
+                string obstacleName = hitInfo.collider.name;
                 Vector3 rayEntryPoint = hitInfo.point;
                 float keepoutRadius = (hitInfo.collider as SphereCollider).radius;
                 float maxKeepoutDiameter = TempGameValues.StarKeepoutRadius * 2F;
@@ -186,7 +222,7 @@ namespace CodeEnv.Master.GameContent {
                     D.Log("{0}'s waypoint to avoid obstacle = {1}.", Data.Name, waypoint);
                 }
                 else {
-                    D.Error("{0} did not find a ray exit point when casting through {1}.", Data.Name, hitInfo.collider.name);
+                    D.Error("{0} did not find a ray exit point when casting through {1}.", Data.Name, obstacleName);    // hitInfo is null
                 }
             }
             else {

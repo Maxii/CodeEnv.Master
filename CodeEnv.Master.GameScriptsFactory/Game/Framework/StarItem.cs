@@ -29,10 +29,7 @@ public class StarItem : AItem {
         set { base.Data = value; }
     }
 
-    protected override void Awake() {
-        base.Awake();
-        Subscribe();
-    }
+    protected override void SubscribeToDataValueChanges() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

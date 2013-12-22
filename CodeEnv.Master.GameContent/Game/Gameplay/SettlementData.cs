@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// All the data associated with a particular Settlement in a System.
     /// </summary>
-    public class SettlementData : Data {
+    public class SettlementData : AMortalData {
 
         private SettlementSize _settlementSize;
         public SettlementSize SettlementSize {

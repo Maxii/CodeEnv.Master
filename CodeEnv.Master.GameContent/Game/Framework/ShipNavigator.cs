@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -29,24 +29,6 @@ namespace CodeEnv.Master.GameContent {
         protected override Vector3 Destination {
             get { return Target.Position + Data.FormationPosition; }
         }
-
-        /// <summary>
-        /// Optional events for notification of the course plot being completed. 
-        /// </summary>
-        public event Action onCoursePlotFailure;
-        public event Action onCoursePlotSuccess;
-
-        /// <summary>
-        /// Optional event for notification of destination reached.
-        /// </summary>
-        public event Action onDestinationReached;
-
-        /// <summary>
-        /// Optional event for notification of when the pilot 
-        /// detects an error while trying to get to the target. The principal error tested for is
-        /// the separation between the ship and its target which should not grow.
-        /// </summary>
-        public event Action onCourseTrackingError;
 
         private bool IsTurnComplete {
             get {
@@ -88,12 +70,6 @@ namespace CodeEnv.Master.GameContent {
             Subscribe();
         }
 
-        protected override void Subscribe() {
-            base.Subscribe();
-            onDestinationReached += OnDestinationReached;
-            onCourseTrackingError += OnCourseTrackingError;
-        }
-
         /// <summary>
         /// Plots a direct course to the target and notifies the ship of the outcome via the
         /// onCoursePlotSuccess/Failure events if set. The actual location is adjusted for the ship's
@@ -104,16 +80,10 @@ namespace CodeEnv.Master.GameContent {
         public override void PlotCourse(ITarget target, float speed) {
             base.PlotCourse(target, speed);
             if (CheckApproachTo(Destination)) {
-                var cps = onCoursePlotSuccess;
-                if (cps != null) {
-                    cps();
-                }
+                OnCoursePlotSuccess();
             }
             else {
-                var cpf = onCoursePlotFailure;
-                if (cpf != null) {
-                    cpf();
-                }
+                OnCoursePlotFailure();
             }
         }
 
@@ -181,10 +151,6 @@ namespace CodeEnv.Master.GameContent {
             return _engineRoom.ChangeSpeed(newSpeedRequest);
         }
 
-        protected override void OnDestinationReached() {
-            base.OnDestinationReached();
-        }
-
         /// <summary>
         /// Engages pilot execution of a direct homing course to the Target. No A* course is used.
         /// </summary>
@@ -213,20 +179,14 @@ namespace CodeEnv.Master.GameContent {
                 }
                 if (CheckSeparation(distanceToDestinationSqrd, ref previousDistanceSqrd)) {
                     // we've missed the target or its getting away
-                    var cte = onCourseTrackingError;
-                    if (cte != null) {
-                        cte();
-                    }
+                    OnCourseTrackingError();
                     yield break;
                 }
                 distanceToDestinationSqrd = Vector3.SqrMagnitude(Destination - Data.Position);
                 yield return new WaitForSeconds(_courseUpdatePeriod);
             }
 
-            var dr = onDestinationReached;
-            if (dr != null) {
-                dr();
-            }
+            OnDestinationReached();
         }
 
         private void AdjustHeadingAndSpeedForTurn(Vector3 newHeading) {

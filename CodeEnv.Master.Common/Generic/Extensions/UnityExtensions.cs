@@ -81,6 +81,19 @@ namespace CodeEnv.Master.Common {
             return components.Single(c => c.transform.parent == go.transform);
         }
 
+        /// <summary>
+        /// Gets the components of Type T in  immediate children. Does not include components
+        /// of type T in the gameobject itself. 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="go">The source gameobject.</param>
+        /// <returns>The components of type T or an empty array if none exists.</returns>
+        public static T[] GetComponentsInImmediateChildren<T>(this GameObject go) where T : Component {
+            T[] components = go.GetComponentsInChildren<T>();
+            return components.Where(c => c.transform.parent == go.transform).ToArray();
+        }
+
+
 
         /// <summary>
         /// Defensive GameObject.GetComponent&lt;&gt;() alternative for acquiring MonoBehaviours. 

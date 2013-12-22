@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AItemStateMachine.cs
-// Abstract Base class for Item State Machines to inherit from.
+// File: AMortalItemStateMachine.cs
+// Abstract Base class for MortalItem State Machines to inherit from.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -26,11 +26,10 @@ using CodeEnv.Master.Common;
 using UnityEngine;
 
 /// <summary>
-///  Abstract Base class for Item State Machines to inherit from.
+///  Abstract Base class for MortalItem State Machines to inherit from.
 /// </summary>
 /// <typeparam name="E">Th State Type being used, typically an enum type.</typeparam>
-public abstract class AItemStateMachine<E> : AItem where E : struct {
-
+public abstract class AMortalItemStateMachine<E> : AMortalItem where E : struct {
 
     /// <summary>
     /// A coroutine executor that can be interrupted
@@ -436,7 +435,7 @@ public abstract class AItemStateMachine<E> : AItem where E : struct {
     }
 
     protected virtual void OnCurrentStateChanged() {
-        D.Log("{0} CurrentState changed to {1}.", Data.Name, CurrentState.ToString());
+        //D.Log("{0} CurrentState changed to {1}.", Data.Name, CurrentState.ToString());
         ConfigureCurrentState();
     }
 

@@ -170,7 +170,7 @@ public class SystemCreator : AMonoBase, IDisposable {
 
     private StarData CreateStarData(StarType sType) {
         string starName = _systemName + Constants.Space + CommonTerms.Star;
-        StarData data = new StarData(sType, starName, 1000000F, _systemName) {
+        StarData data = new StarData(sType, starName, _systemName) {
             Capacity = 100,
             Resources = new OpeYield(0F, 0F, 100F),
             SpecialResources = new XYield(XResource.Special_3, 0.3F),

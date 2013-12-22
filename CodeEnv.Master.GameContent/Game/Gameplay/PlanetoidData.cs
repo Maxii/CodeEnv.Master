@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// All the data associated with a particular Planetoid in a System.
     /// </summary>
-    public class PlanetoidData : Data {
+    public class PlanetoidData : AMortalData {
 
         public PlanetoidType PlanetoidType { get; private set; }
 

@@ -30,14 +30,14 @@ using UnityEngine;
 [System.Obsolete]
 public abstract class AItem : AMonoBase, ICameraTargetable, IHasData, IDisposable {
 
-    private Data _data;
+    private AMortalData _data;
     /// <summary>
     /// Gets or sets the data for this item. Clients are responsible for setting in the right sequence as 
     /// one data can be dependant on another data.
     /// </summary>
-    public Data Data {
+    public AMortalData Data {
         get { return _data; }
-        set { SetProperty<Data>(ref _data, value, "Data", OnDataChanged); }
+        set { SetProperty<AMortalData>(ref _data, value, "Data", OnDataChanged); }
     }
 
     private IntelLevel _playerIntelLevel;
@@ -191,7 +191,7 @@ public abstract class AItem : AMonoBase, ICameraTargetable, IHasData, IDisposabl
 
     #region IHasData Members
 
-    public Data GetData() {
+    public AMortalData GetData() {
         return Data;
     }
 

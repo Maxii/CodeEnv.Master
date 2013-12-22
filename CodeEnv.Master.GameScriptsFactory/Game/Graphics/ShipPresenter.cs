@@ -27,11 +27,11 @@ using UnityEngine;
 /// <summary>
 /// An MVPresenter associated with a ShipView.
 /// </summary>
-public class ShipPresenter : Presenter {
+public class ShipPresenter : AMortalFocusablePresenter {
 
-    protected new ShipItem Item {
+    public new ShipItem Item {
         get { return base.Item as ShipItem; }
-        set { base.Item = value; }
+        protected set { base.Item = value; }
     }
 
     protected new IShipViewable View {
@@ -44,16 +44,17 @@ public class ShipPresenter : Presenter {
         : base(view) {
         FleetCreator fleetMgr = _viewGameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>();
         _fleetView = fleetMgr.gameObject.GetSafeInterfaceInChildren<IFleetViewable>();
+        Subscribe();
     }
 
-    protected override void InitilizeItemLinkage() {
-        Item = UnityUtility.ValidateMonoBehaviourPresence<ShipItem>(_viewGameObject);
+    protected override AItem InitilizeItemLinkage() {
+        return UnityUtility.ValidateMonoBehaviourPresence<ShipItem>(_viewGameObject);
     }
 
-    protected override void InitializeHudPublisher() {
+    protected override IGuiHudPublisher InitializeHudPublisher() {
         var hudPublisher = new GuiHudPublisher<ShipData>(Item.Data);
         hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed);
-        View.HudPublisher = hudPublisher;
+        return hudPublisher;
     }
 
     protected override void Subscribe() {
@@ -149,11 +150,7 @@ public class ShipPresenter : Presenter {
         SelectionManager.Instance.CurrentSelection = View as ISelectable;
     }
 
-    public void OnPressWhileSelected(bool isDown) {
-        OnPressRequestContextMenu(isDown);
-    }
-
-    private void OnPressRequestContextMenu(bool isDown) {
+    public void RequestContextMenu(bool isDown) {
         if (DebugSettings.Instance.AllowEnemyOrders || Item.Data.Owner.IsHuman) {
             CameraControl.Instance.ShowContextMenuOnPress(isDown);
         }

@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SectorViewer.cs
+// File: SectorExaminer.cs
 //  Singleton that displays the highlighted wireframe of a sector and provides a context menu for fleet commands
 // relevant to the highlighted sector.
 // </summary> 
@@ -26,7 +26,7 @@ using UnityEngine;
 /// Singleton that displays the highlighted wireframe of a sector and provides a context menu for fleet commands
 /// relevant to the highlighted sector.
 /// </summary>
-public class SectorViewer : AMonoBaseSingleton<SectorViewer>, IDisposable {
+public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
 
     public int distanceInSectorsFromCamera = 2;
 
@@ -40,13 +40,15 @@ public class SectorViewer : AMonoBaseSingleton<SectorViewer>, IDisposable {
         private set { SetProperty<Index3D>(ref _location, value, "Location", OnLocationChanged); }
     }
 
-    private string _sectorIDLabelText;
     private float _distanceToHighlightedSector;
     private SelectionManager _selectionMgr;
     private CubeWireframe _wireframe;
-    private BoxCollider _collider;
+    private BoxCollider _centerCollider;
+
+    private bool _isContextMenuShowing;
     private CtxObject _ctxObject;
 
+    private string _sectorIDLabelText;
     private GuiTrackingLabel _sectorIDLabel;
 
     private PlayerViewMode _viewMode;
@@ -58,64 +60,124 @@ public class SectorViewer : AMonoBaseSingleton<SectorViewer>, IDisposable {
         base.Awake();
         _selectionMgr = SelectionManager.Instance;
         _distanceToHighlightedSector = distanceInSectorsFromCamera * TempGameValues.SectorSideLength;
+        InitializeCenterCollider();
         Subscribe();
     }
 
+    private void InitializeCenterCollider() {
+        _centerCollider = UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
+        float colliderSideLength = TempGameValues.SectorSideLength / 30F;
+        _centerCollider.size = new Vector3(colliderSideLength, colliderSideLength, colliderSideLength);   // 40x40x40 center collider
+        _centerCollider.enabled = false;
+    }
+
     private void Subscribe() {
-        if (_subscribers == null) {
-            _subscribers = new List<IDisposable>();
-        }
+        _subscribers = new List<IDisposable>();
         _subscribers.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, OnPlayerViewModeChanged));
     }
 
     private void DynamicallySubscribe(bool toSubscribe) {
         if (toSubscribe) {
             _subscribers.Add(CameraControl.Instance.SubscribeToPropertyChanged<CameraControl, Index3D>(cc => cc.SectorIndex, OnCameraSectorIndexChanged));
-            GameInput.Instance.onUnconsumedPress += OnUnconsumedPress;
+            //GameInput.Instance.onUnconsumedPress += OnUnconsumedPress;
         }
         else {
             IDisposable d = _subscribers.Single(s => s as DisposePropertyChangedSubscription<CameraControl> != null);
             _subscribers.Remove(d);
             d.Dispose();
-            GameInput.Instance.onUnconsumedPress -= OnUnconsumedPress;
+            //GameInput.Instance.onUnconsumedPress -= OnUnconsumedPress;
         }
     }
 
     protected override void Start() {
         base.Start();
         __ValidateCtxObjectSettings();
-        _collider.size = TempGameValues.SectorSize;
-        _collider.enabled = false;  // interferes with Ngui event system (Click, etc.) when on
     }
 
-    private void __ValidateCtxObjectSettings() {
-        _ctxObject = UnityUtility.ValidateMonoBehaviourPresence<CtxObject>(gameObject);
-        D.Assert(_ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
-        _collider = UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
+    void OnHover(bool isOver) {
+        if (_viewMode == PlayerViewMode.SectorView) {
+            D.Log("SectorExaminer calling Sector {0}.ShowHud({1}).", Location, isOver);
+            SectorGrid.GetSector(Location).gameObject.GetSafeMonoBehaviourComponent<SectorView>().ShowHud(isOver);
+        }
     }
 
-    private GuiTrackingLabel InitializeSectorIDLabel() {
-        GuiTrackingLabel sectorIDLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(_transform);
-        sectorIDLabel.Color = UnityDebugConstants.SectorHighlightColor;
-        _sectorIDLabelText = "Sector {0}" + Constants.NewLine + "GridBox {1}.".Inject(Location, SectorGrid.GetGridBoxLocation(Location));
-        sectorIDLabel.Set(_sectorIDLabelText);
-        return sectorIDLabel;
+    #region ContextMenu
+
+    void OnPress(bool isDown) {
+        if (GameInputHelper.IsRightMouseButton() && !isDown) {
+            OnRightPressRelease();
+        }
     }
 
-    private void OnUnconsumedPress(NguiMouseButton button, bool isDown) {
-        if (_viewMode == PlayerViewMode.SectorView && button == NguiMouseButton.Right && !isDown) {
-            FleetView selectedFleetMgr = _selectionMgr.CurrentSelection as FleetView;
-            if (selectedFleetMgr != null && _wireframe.IsMouseOverHotSpot) {
+    private void OnRightPressRelease() {
+        if (_viewMode == PlayerViewMode.SectorView) {
+            FleetView selectedFleetView = _selectionMgr.CurrentSelection as FleetView;
+            if (selectedFleetView != null) {
                 _ctxObject.ShowMenu();
             }
         }
     }
 
+    ///// <summary>
+    ///// Called when a mouse button is pressed and is not consumed by another object. This implementation
+    ///// is a custom context menu picker for the SectorViewer.
+    ///// </summary>
+    ///// <param name="button">The Ngui mousebutton.</param>
+    ///// <param name="isDown">if set to <c>true</c> [is down].</param>
+    //private void OnUnconsumedPress(NguiMouseButton button, bool isDown) {
+    //    if (_viewMode == PlayerViewMode.SectorView && button == NguiMouseButton.Right && !isDown) {
+    //        FleetView selectedFleetView = _selectionMgr.CurrentSelection as FleetView;
+    //        if (selectedFleetView != null && _wireframe.IsMouseOverHotSpot) {
+    //            _ctxObject.ShowMenu();
+    //        }
+    //    }
+    //}
+
+    private void __ValidateCtxObjectSettings() {    // IMPROVE string use
+        _ctxObject = UnityUtility.ValidateMonoBehaviourPresence<CtxObject>(gameObject);
+        CtxMenu sectorMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "SectorMenu");
+        _ctxObject.contextMenu = sectorMenu;
+        D.Assert(_ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
+        UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
+
+        EventDelegate.Add(_ctxObject.onShow, OnContextMenuShow);
+        EventDelegate.Add(_ctxObject.onSelection, OnContextMenuSelection);
+        EventDelegate.Add(_ctxObject.onHide, OnContextMenuHide);
+    }
+
+    private void OnContextMenuShow() {
+        _isContextMenuShowing = true;
+    }
+
+    private void OnContextMenuSelection() {
+        int menuId = CtxObject.current.selectedItem;
+        FleetView selectedFleetView = _selectionMgr.CurrentSelection as FleetView;
+        FleetItem selectedFleetItem = selectedFleetView.Presenter.Item;
+        if (menuId == 4) {  // UNDONE
+            Vector3 centerOfSector = SectorGrid.GetSector(Location).Position;
+            selectedFleetItem.CurrentOrder = new ItemOrder<FleetOrders>(FleetOrders.MoveTo, centerOfSector);
+        }
+    }
+
+    private void OnContextMenuHide() {
+        _isContextMenuShowing = false;
+    }
+
+    #endregion
+
+    private void UpdateSectorIDLabel() {
+        if (_sectorIDLabel == null) {
+            _sectorIDLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(_transform, GuiTrackingLabelFactory.LabelPlacement.OverTarget);
+            _sectorIDLabel.Color = UnityDebugConstants.SectorHighlightColor;
+        }
+        _sectorIDLabelText = "Sector {0}" + Constants.NewLine + "GridBox {1}.".Inject(Location, SectorGrid.GetGridBoxLocation(Location));
+        _sectorIDLabel.Set(_sectorIDLabelText);
+    }
+
+
     private void OnLocationChanged() {
         _transform.position = SectorGrid.GetSector(Location).Position;
-        if (_sectorIDLabel != null) {
-            _sectorIDLabel.Set(_sectorIDLabelText);
-        }
+        UpdateSectorIDLabel();
     }
 
     private void OnCameraSectorIndexChanged() {
@@ -133,23 +195,23 @@ public class SectorViewer : AMonoBaseSingleton<SectorViewer>, IDisposable {
                     });
                 }
                 _sectorViewJob.Start();
-                _collider.enabled = false;
+                _centerCollider.enabled = true;
                 break;
-            //case PlayerViewMode.SectorOrder:
-            //    if (!_toViewSectorUnderMouse) {
-            //        StartCoroutine(ShowSectorUnderMouse());
-            //    }
-            //    _collider.enabled = true;
-            //    break;
             case PlayerViewMode.NormalView:
-                // turn off wireframe
+                // turn off wireframe, collider, contextMenu and Hud
                 DynamicallySubscribe(false);
                 if (_sectorViewJob != null && _sectorViewJob.IsRunning) {
                     _sectorViewJob.Kill();
                     ShowSector(false);
                 }
-                _collider.enabled = false;
+                _centerCollider.enabled = false;
                 _ctxObject.HideMenu();
+
+                // OPTIMIZE cache sector and sectorView
+                SectorView sectorView = SectorGrid.GetSector(Location).gameObject.GetSafeMonoBehaviourComponent<SectorView>();
+                if (sectorView.HudPublisher.IsHudShowing) {
+                    sectorView.ShowHud(false);
+                }
                 break;
             case PlayerViewMode.None:
             default:
@@ -159,18 +221,20 @@ public class SectorViewer : AMonoBaseSingleton<SectorViewer>, IDisposable {
 
     private IEnumerator ShowSectorUnderMouse() {
         while (true) {
-            Vector3 mousePosition = Input.mousePosition;
-            mousePosition.z = _distanceToHighlightedSector;
-            Vector3 mouseWorldPoint = Camera.main.ScreenToWorldPoint(mousePosition);
-            Index3D sectorIndexUnderMouse = SectorGrid.GetSectorIndex(mouseWorldPoint);
-            bool toShow;
-            Sector notUsed;
-            if (toShow = SectorGrid.TryGetSector(sectorIndexUnderMouse, out notUsed)) {
-                if (!Location.Equals(sectorIndexUnderMouse)) {
-                    Location = sectorIndexUnderMouse; // avoid the SetProperty equivalent warnings
+            if (!_isContextMenuShowing) {   // don't change highlighted sector while context menu is showing
+                Vector3 mousePosition = Input.mousePosition;
+                mousePosition.z = _distanceToHighlightedSector;
+                Vector3 mouseWorldPoint = Camera.main.ScreenToWorldPoint(mousePosition);
+                Index3D sectorIndexUnderMouse = SectorGrid.GetSectorIndex(mouseWorldPoint);
+                bool toShow;
+                SectorItem notUsed;
+                if (toShow = SectorGrid.TryGetSector(sectorIndexUnderMouse, out notUsed)) {
+                    if (!Location.Equals(sectorIndexUnderMouse)) {
+                        Location = sectorIndexUnderMouse; // avoid the SetProperty equivalent warnings
+                    }
                 }
+                ShowSector(toShow);
             }
-            ShowSector(toShow);
             yield return null;
         }
     }
@@ -184,7 +248,7 @@ public class SectorViewer : AMonoBaseSingleton<SectorViewer>, IDisposable {
                 width: 2F, color: UnityDebugConstants.SectorHighlightColor);
         }
         if (_sectorIDLabel == null) {
-            _sectorIDLabel = InitializeSectorIDLabel();
+            UpdateSectorIDLabel();
         }
         _wireframe.Show(toShow);
         _sectorIDLabel.IsShowing = toShow;

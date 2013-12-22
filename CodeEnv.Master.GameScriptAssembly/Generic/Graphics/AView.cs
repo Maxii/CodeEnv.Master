@@ -6,11 +6,11 @@
 // </copyright> 
 // <summary> 
 // File: AView.cs
-// Abstract base class managing the UI for its object. 
+// Abstract base class managing the UI View for its AItem. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -20,175 +20,46 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract base class managing the UI for its object. 
+/// Abstract base class managing the UI View for its AItem. 
 /// </summary>
-public abstract class AView : AMonoBase, IViewable, ICameraLOSChangedClient, ICameraTargetable, IDisposable {
+public abstract class AView : AMonoBase, IViewable, ICameraLOSChangedClient, IDisposable {
 
-    public enum Highlights {
-
-        None = -1,
-        /// <summary>
-        /// The item is the focus.
-        /// </summary>
-        Focused = 0,
-        /// <summary>
-        /// The item is selected..
-        /// </summary>
-        Selected = 1,
-        /// <summary>
-        /// The item is highlighted for other reasons. This is
-        /// typically used on a fleet's ships when the fleet is selected.
-        /// </summary>
-        General = 2,
-        /// <summary>
-        /// The item is both selected and the focus.
-        /// </summary>
-        SelectedAndFocus = 3,
-        /// <summary>
-        /// The item is both the focus and generally highlighted.
-        /// </summary>
-        FocusAndGeneral = 4
-
+    private ViewDisplayMode _displayMode = ViewDisplayMode.ThreeDAnimation; // start up showing all, then sync up
+    protected ViewDisplayMode DisplayMode {
+        get { return _displayMode; }
+        set { SetProperty<ViewDisplayMode>(ref _displayMode, value, "DisplayMode", OnDisplayModeChanged, OnDisplayModeChanging); }
     }
 
-    protected float _radius;
-    /// <summary>
-    /// The [float] radius of this object in units measured as the distance from the 
-    ///center to the min or max extent. As bounds is a bounding box it is the longest 
-    /// diagonal from the center to a corner of the box. Most of the time, the collider can be
-    /// used to calculate this size, assuming it doesn't change size dynmaically. 
-    /// Alternatively, a mesh can be used.
-    /// </summary>
-    public virtual float Radius {
-        get {
-            if (_radius == Constants.ZeroF) {
-                _radius = _collider.bounds.extents.magnitude;
-            }
-            return _radius;
-        }
-    }
-
-    public int maxAnimateDistance;
-
-    /// <summary>
-    /// The components to disable when not visible or detectable.
-    /// </summary>
-    protected Component[] disableComponentOnNotDiscernible;
-
-    /// <summary>
-    /// The game objects to disable when not visible or detectable.
-    /// </summary>
-    protected GameObject[] disableGameObjectOnNotDiscernible;
-
-    /// <summary>
-    /// The components to disable when invisible or too far/close to the camera.
-    /// </summary>
-    protected Component[] disableComponentOnCameraDistance;
-
-    /// <summary>
-    /// The game objects to disable when invisible or too far/close to the camera.
-    /// </summary>
-    protected GameObject[] disableGameObjectOnCameraDistance;
-
-    protected Collider _collider;
+    private ViewDisplayMode _cameraDistanceGeneratedDisplayMode = ViewDisplayMode.ThreeDAnimation;  // start up showing all, then sync up
 
     private IList<Transform> _meshesInCameraLOS = new List<Transform>();    // OPTIMIZE can be simplified to simple incrementing/decrementing counter
 
     protected override void Awake() {
         base.Awake();
-        _collider = UnityUtility.ValidateComponentPresence<Collider>(gameObject);
-        UpdateRate = FrameUpdateFrequency.Seldom;
         enabled = false;
     }
 
-    protected override void Start() {
-        base.Start();
-        RegisterComponentsToDisable();
-    }
-
-    public abstract void AssessHighlighting();
-
-    /// <summary>
-    /// Optional ability to register components and gameobjects to disable programatically.
-    /// </summary>
-    protected abstract void RegisterComponentsToDisable();
-
-    protected override void OccasionalUpdate() {
-        base.OccasionalUpdate();
-        EnableBasedOnDistanceToCamera();
-    }
-
-    protected virtual void OnHover(bool isOver) {
-        ShowHud(isOver);
-    }
-
     protected virtual void OnPlayerIntelLevelChanged() {
+        AssessDisplayMode();
         if (HudPublisher != null && HudPublisher.IsHudShowing) {
             ShowHud(true);
         }
     }
 
     protected virtual void OnInCameraLOSChanged() {
-        EnableBasedOnDiscernible(InCameraLOS);
-        EnableBasedOnDistanceToCamera(InCameraLOS);
-        AssessHighlighting();
+        AssessDisplayMode();
     }
 
-    protected void EnableBasedOnDiscernible(params bool[] conditions) {
-        bool condition = conditions.All<bool>(c => c == true);
-        D.Log("{0}.EnableBasedOnDiscernible() called. IsDiscernible = {1}.", this.GetType().Name, condition);
-        if (!disableComponentOnNotDiscernible.IsNullOrEmpty()) {
+    protected virtual void OnDisplayModeChanging(ViewDisplayMode newMode) { }
 
-            disableComponentOnNotDiscernible.Where(c => c is Behaviour).ForAll(c => (c as Behaviour).enabled = condition);
-            disableComponentOnNotDiscernible.Where(c => c is Renderer).ForAll(c => (c as Renderer).enabled = condition);
-            disableComponentOnNotDiscernible.Where(c => c is Collider).ForAll(c => (c as Collider).enabled = condition);
-        }
-        if (!disableGameObjectOnNotDiscernible.IsNullOrEmpty()) {
-
-            disableGameObjectOnNotDiscernible.ForAll(go => go.SetActive(condition));
-        }
-    }
-
-    /// <summary>
-    /// Controls enabled state of components based on the Target's distance from the camera plane.
-    /// </summary>
-    /// <returns>The Target's distance to the camera. Will be zero if not visible.</returns>
-    protected virtual int EnableBasedOnDistanceToCamera(params bool[] conditions) {
-        bool condition = conditions.All<bool>(c => c == true);
-        int distanceToCamera = Constants.Zero;
-        if (maxAnimateDistance == Constants.Zero) {
-            D.Warn("{0}.maxAnimateDistance is 0 on {1}.", this.GetType().Name, gameObject.name);
-        }
-
-        bool toEnable = false;
-        if (condition) {
-            distanceToCamera = _transform.DistanceToCameraInt();
-            //D.Log("CameraPlane distance to {2} = {0}, CameraTransformPosition distance = {1}.", distanceToCamera, Vector3.Distance(Camera.main.transform.position, Target.position), Target.name);
-            //D.Log("{0}.EnableBasedOnDistanceToCamera() called. Distance = {1}.", this.GetType().Name, distanceToCamera);
-            if (distanceToCamera < maxAnimateDistance) {
-                toEnable = true;
-            }
-        }
-        EnableComponents(toEnable);
-        return distanceToCamera;
-    }
-
-    private bool _isPreviouslyEnabled = true;   // assumes all components and game objects start enabled
-    private void EnableComponents(bool toEnable) {
-        if (_isPreviouslyEnabled != toEnable) {
-            if (!disableComponentOnCameraDistance.IsNullOrEmpty()) {
-                disableComponentOnCameraDistance.Where(c => c is Behaviour).ForAll(c => (c as Behaviour).enabled = toEnable);
-                disableComponentOnCameraDistance.Where(c => c is Renderer).ForAll(c => (c as Renderer).enabled = toEnable);
-                disableComponentOnCameraDistance.Where(c => c is Collider).ForAll(c => (c as Collider).enabled = toEnable);
-            }
-            if (!disableGameObjectOnCameraDistance.IsNullOrEmpty()) {
-                disableGameObjectOnCameraDistance.ForAll(go => go.SetActive(toEnable));
-            }
-            _isPreviouslyEnabled = toEnable;
+    protected virtual void OnDisplayModeChanged() {
+        if (DisplayMode == ViewDisplayMode.Hide) {
+            ShowHud(false);
         }
     }
 
@@ -207,11 +78,21 @@ public abstract class AView : AMonoBase, IViewable, ICameraLOSChangedClient, ICa
         if (InCameraLOS == (_meshesInCameraLOS.Count == 0)) {
             // visibility state of this object should now change
             InCameraLOS = !InCameraLOS;
-            D.Log("{0}.InCameraLOS changed to {1}.", gameObject.name, InCameraLOS);
+            //D.Log("{0}.InCameraLOS changed to {1}.", gameObject.name, InCameraLOS);
         }
     }
 
-    private void ShowHud(bool toShow) {
+    private void AssessDisplayMode() {
+        if (!InCameraLOS || PlayerIntelLevel == IntelLevel.Nil || _cameraDistanceGeneratedDisplayMode == ViewDisplayMode.Hide) {
+            DisplayMode = ViewDisplayMode.Hide;
+            return;
+        }
+        if (InCameraLOS && PlayerIntelLevel != IntelLevel.Nil) {
+            DisplayMode = _cameraDistanceGeneratedDisplayMode;
+        }
+    }
+
+    public void ShowHud(bool toShow) {
         if (HudPublisher != null) {
             HudPublisher.ShowHud(toShow, PlayerIntelLevel);
             return;
@@ -232,6 +113,8 @@ public abstract class AView : AMonoBase, IViewable, ICameraLOSChangedClient, ICa
 
     #region IViewable Members
 
+    public abstract float Radius { get; }
+
     private IntelLevel _playerIntelLevel;
     public virtual IntelLevel PlayerIntelLevel {
         get {
@@ -243,6 +126,11 @@ public abstract class AView : AMonoBase, IViewable, ICameraLOSChangedClient, ICa
     }
 
     public IGuiHudPublisher HudPublisher { get; set; }
+
+    public void RecordDesiredDisplayModeDerivedFromCameraDistance(ViewDisplayMode cameraDistanceGeneratedDisplayMode) {
+        _cameraDistanceGeneratedDisplayMode = cameraDistanceGeneratedDisplayMode;
+        AssessDisplayMode();
+    }
 
     #endregion
 
@@ -256,35 +144,6 @@ public abstract class AView : AMonoBase, IViewable, ICameraLOSChangedClient, ICa
 
     public void NotifyCameraLOSChanged(Transform sender, bool inLOS) {
         OnMeshNotifingCameraLOSChanged(sender, inLOS);
-    }
-
-    #endregion
-
-    #region ICameraTargetable Members
-
-    public virtual bool IsEligible {
-        get { return true; }
-    }
-
-    [SerializeField]
-    protected float minimumCameraViewingDistanceMultiplier = 4.0F;
-
-    private float _minimumCameraViewingDistance;
-    public float MinimumCameraViewingDistance {
-        get {
-            if (_minimumCameraViewingDistance == Constants.ZeroF) {
-                _minimumCameraViewingDistance = CalcMinimumCameraViewingDistance();
-            }
-            return _minimumCameraViewingDistance;
-        }
-    }
-
-    /// <summary>
-    /// One time calculation of the minimum camera viewing distance.
-    /// </summary>
-    /// <returns></returns>
-    protected virtual float CalcMinimumCameraViewingDistance() {
-        return Radius * minimumCameraViewingDistanceMultiplier;
     }
 
     #endregion

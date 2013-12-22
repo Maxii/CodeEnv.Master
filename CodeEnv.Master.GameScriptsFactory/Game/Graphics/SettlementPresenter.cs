@@ -16,28 +16,58 @@
 
 // default namespace
 
+
+using System;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
 ///  An MVPresenter associated with a Settlement View.
 /// </summary>
-public class SettlementPresenter : Presenter {
+public class SettlementPresenter : AMortalFocusablePresenter {
 
-    protected new SettlementItem Item {
+    public new SettlementItem Item {
         get { return base.Item as SettlementItem; }
-        set { base.Item = value; }
+        protected set { base.Item = value; }
     }
 
-    public SettlementPresenter(IViewable view) : base(view) { }
-
-    protected override void InitilizeItemLinkage() {
-        Item = UnityUtility.ValidateMonoBehaviourPresence<SettlementItem>(_viewGameObject);
+    protected new ISettlementViewable View {
+        get { return base.View as ISettlementViewable; }
     }
 
-    protected override void InitializeHudPublisher() {
-        var hudPublisher = new GuiHudPublisher<SettlementData>(Item.Data);
-        View.HudPublisher = hudPublisher;
+    public SettlementPresenter(ISettlementViewable view)
+        : base(view) {
+        Subscribe();
+    }
+
+    protected override AItem InitilizeItemLinkage() {
+        return UnityUtility.ValidateMonoBehaviourPresence<SettlementItem>(_viewGameObject);
+    }
+
+    protected override IGuiHudPublisher InitializeHudPublisher() {
+        return new GuiHudPublisher<SettlementData>(Item.Data);
+    }
+
+    protected override void Subscribe() {
+        base.Subscribe();
+        _subscribers.Add(Item.SubscribeToPropertyChanged<SettlementItem, SettlementState>(sb => sb.CurrentState, OnSettlementStateChanged));
+        View.onShowCompletion += Item.OnShowCompletion;
+    }
+
+    private void OnSettlementStateChanged() {
+        SettlementState state = Item.CurrentState;
+        switch (state) {
+            case SettlementState.ShowDying:
+                View.ShowDying();
+                break;
+            case SettlementState.Idling:
+                // do nothing
+                break;
+            case SettlementState.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(state));
+        }
     }
 
     protected override void OnItemDeath(ItemDeathEvent e) {

@@ -119,19 +119,24 @@ public class GameInput : AGenericSingleton<GameInput> {
 
     #region Pressed
 
-    // used by SectorVIewer to open a contextMenu without using a collider
-    public event Action<NguiMouseButton, bool> onUnconsumedPress;
+    // Previously used by SectorExaminer to open a contextMenu without using a collider.
+    // This works but I replaced the Wireframe Mouse hot spot with a small collider instead
+    // as the same approach using onUnconsumedHover was unreliable due to the way Ngui
+    // spams onHover events
 
-    public void RecordUnconsumedPress(bool isDown) {
-        if (!IsDragging) {  // if dragging, the press shouldn't have any meaning except related to terminating a drag
-            var d = onUnconsumedPress;
-            if (d != null) {
-                d(GameInputHelper.GetMouseButton(), isDown);
-            }
-        }
-    }
+    //public event Action<NguiMouseButton, bool> onUnconsumedPress;
+
+    //public void RecordUnconsumedPress(bool isDown) {
+    //    if (!IsDragging) {  // if dragging, the press shouldn't have any meaning except related to terminating a drag
+    //        var d = onUnconsumedPress;
+    //        if (d != null) {
+    //            d(GameInputHelper.GetMouseButton(), isDown);
+    //        }
+    //    }
+    //}
 
     #endregion
+
 
     #region SpecialKeys
 

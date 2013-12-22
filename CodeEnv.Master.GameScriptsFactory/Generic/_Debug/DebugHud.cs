@@ -78,7 +78,7 @@ public class DebugHud : AHud<DebugHud>, IDebugHud, IDisposable {
 
     private void OnCameraSectorIndexChanged() {
         Index3D index = CameraControl.Instance.SectorIndex;
-        Sector unused;
+        SectorItem unused;
         string text = SectorGrid.TryGetSector(index, out unused) ? index.ToString() : "None";
         Publish(DebugHudLineKeys.SectorIndex, text);
     }

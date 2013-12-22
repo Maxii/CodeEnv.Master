@@ -57,12 +57,13 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\AItem.cs" />
+    <Compile Include="Generic\Graphics\AView.cs" />
     <Compile Include="ThirdParty\TaskManager.cs" />
     <Compile Include="ThirdParty\CoroutineManager.cs" />
     <Compile Include="ThirdParty\AMonoStateMachineSingleton.cs" />
     <Compile Include="Generic\Extensions\AFolderAccess.cs" />
     <Compile Include="Game\Framework\DummyTargetManager.cs" />
-    <Compile Include="Generic\Graphics\AView.cs" />
     <Compile Include="Generic\_Debug\DrawBoundsGizmo.cs" />
     <Compile Include="Generic\Framework\AMonoBase.cs" />
     <Compile Include="Generic\Framework\AMonoBaseSingleton.cs" />

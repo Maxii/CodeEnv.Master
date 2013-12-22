@@ -37,6 +37,10 @@ namespace CodeEnv.Master.GameContent {
             Speed = speed;
         }
 
+        public ItemOrder(T order, Vector3 targetLocation)
+            : this(order, new StationaryLocation(targetLocation), 2F) {
+        }
+
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }

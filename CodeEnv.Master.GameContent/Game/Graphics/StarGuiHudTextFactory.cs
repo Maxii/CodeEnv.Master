@@ -41,8 +41,6 @@ namespace CodeEnv.Master.GameContent {
                     return (data.LastHumanPlayerIntelDate != null) ? new ColoredTextList_Intel(data.LastHumanPlayerIntelDate, intelLevel) : _emptyColoredTextList;
                 case GuiHudLineKeys.Type:
                     return new ColoredTextList_String(data.StarType.GetDescription());
-                case GuiHudLineKeys.Health:
-                    return new ColoredTextList_Health(data.Health, data.MaxHitPoints);
                 case GuiHudLineKeys.Capacity:
                     return new ColoredTextList<int>(Constants.FormatInt_2DMin, data.Capacity);
                 case GuiHudLineKeys.Resources:
@@ -51,6 +49,7 @@ namespace CodeEnv.Master.GameContent {
                     return (data.SpecialResources != null) ? new ColoredTextList_Specials(data.SpecialResources) : _emptyColoredTextList;
 
                 // The following is a fall through catcher for line keys that aren't processed. An empty ColoredTextList will be returned which will be ignored by GuiCursorHudText
+                case GuiHudLineKeys.Health:
                 case GuiHudLineKeys.Owner:
                 case GuiHudLineKeys.CombatStrength:
                 case GuiHudLineKeys.CombatStrengthDetails:
@@ -58,6 +57,8 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Composition:
                 case GuiHudLineKeys.CompositionDetails:
                 case GuiHudLineKeys.ShipDetails:
+                case GuiHudLineKeys.SectorIndex:
+                case GuiHudLineKeys.Density:
                 case GuiHudLineKeys.Speed:
                     return _emptyColoredTextList;
 

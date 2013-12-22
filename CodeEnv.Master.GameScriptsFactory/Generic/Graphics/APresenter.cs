@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: Presenter.cs
-// An instantiable base MVPresenter associated with a View.
+// File: APresenter.cs
+// MVPresenter base class associated with an AView.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,71 +23,95 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// An instantiable base MVPresenter associated with a View.
+/// MVPresenter base class associated with an AView.
 /// </summary>
-public class Presenter : IDisposable {
+public abstract class APresenter : APropertyChangeTracking, IDisposable {
 
-    static Presenter() {
+    static APresenter() {
         InitializeHudPublishers();
     }
 
     private static void InitializeHudPublishers() {
         AGuiHudPublisher.SetGuiCursorHud(GuiCursorHud.Instance);
         GuiHudPublisher<Data>.SetFactory(GuiHudTextFactory.Instance);
+        GuiHudPublisher<SectorData>.SetFactory(SectorGuiHudTextFactory.Instance);
         GuiHudPublisher<ShipData>.SetFactory(ShipGuiHudTextFactory.Instance);
         GuiHudPublisher<FleetData>.SetFactory(FleetGuiHudTextFactory.Instance);
         GuiHudPublisher<SystemData>.SetFactory(SystemGuiHudTextFactory.Instance);
         GuiHudPublisher<StarData>.SetFactory(StarGuiHudTextFactory.Instance);
         GuiHudPublisher<PlanetoidData>.SetFactory(PlanetoidGuiHudTextFactory.Instance);
         GuiHudPublisher<SettlementData>.SetFactory(SettlementGuiHudTextFactory.Instance);
+        GuiHudPublisher<StarBaseData>.SetFactory(StarBaseGuiHudTextFactory.Instance);
     }
 
     protected IViewable View { get; private set; }
 
-    protected AItem Item { get; set; }
-
-    protected GameObject _viewGameObject;
-    protected GameEventManager _eventMgr;
-    protected IList<IDisposable> _subscribers;
-
-    public Presenter(IViewable view) {
-        View = view;
-        _viewGameObject = (view as Component).gameObject;
-        InitilizeItemLinkage();
-        // the following use ItemData so Views should only be enabled after ItemData is set
-        Subscribe();
-        InitializeHudPublisher();
+    private AItem _item;
+    public AItem Item {
+        get { return _item; }
+        protected set { SetProperty<AItem>(ref _item, value, "Item", OnItemChanged); }
     }
 
-    protected virtual void InitilizeItemLinkage() {
-        Item = UnityUtility.ValidateMonoBehaviourPresence<AItem>(_viewGameObject);
-        Item.Radius = View.Radius;
+    private float _3dAnimationsTo3dDisplayModeTransitionDistanceInSectors;
+    private float _3dTo2dDisplayModeTransitionDistanceInSectors;
+    private float _2dToNoneDisplayModeTransitionDistanceInSectors;
+    private ViewDisplayMode _cameraDistanceGeneratedDisplayMode;
+
+    protected IList<IDisposable> _subscribers;
+
+    protected GameObject _viewGameObject;
+
+    public APresenter(IViewable view) {
+        View = view;
+        _viewGameObject = (view as Component).gameObject;
+        Item = InitilizeItemLinkage();
+        // the following use ItemData so Views should only be enabled to create this Presenter after ItemData is set
+        View.HudPublisher = InitializeHudPublisher();
+        InitializeDisplayModeTransitionDistances();
+    }
+
+    protected abstract AItem InitilizeItemLinkage();
+
+    protected abstract IGuiHudPublisher InitializeHudPublisher();
+
+    private void InitializeDisplayModeTransitionDistances() {
+        _2dToNoneDisplayModeTransitionDistanceInSectors = View.Radius * AnimationSettings.Instance.CameraDistanceThresholdFactor_2dToNoneDisplayMode;
+        _3dTo2dDisplayModeTransitionDistanceInSectors = View.Radius * AnimationSettings.Instance.CameraDistanceThresholdFactor_3dTo2dDisplayMode;
+        _3dAnimationsTo3dDisplayModeTransitionDistanceInSectors = View.Radius * AnimationSettings.Instance.CameraDistanceThresholdFactor_3dAnimationsTo3dDisplayMode;
     }
 
     protected virtual void Subscribe() {
         _subscribers = new List<IDisposable>();
-        _eventMgr = GameEventManager.Instance;
-        _eventMgr.AddListener<ItemDeathEvent>(this, OnItemDeath);
+        _subscribers.Add(CameraControl.Instance.SubscribeToPropertyChanged<CameraControl, Index3D>(cc => cc.SectorIndex, OnCameraSectorIndexChanged));
     }
 
-    protected virtual void InitializeHudPublisher() {
-        View.HudPublisher = new GuiHudPublisher<Data>(Item.Data);
-    }
+    private void OnCameraSectorIndexChanged() {
+        Index3D cameraSector = CameraControl.Instance.SectorIndex;
+        Index3D viewSector = SectorGrid.GetSectorIndex(Item.Data.Position);
+        float distanceInSectorsToCamera = SectorGrid.GetDistanceInSectors(viewSector, cameraSector);
+        ViewDisplayMode desiredDisplayMode;
+        //D.Log("CameraDistances {0}, {1}, {2}, {3}.", distanceToCamera, _show2DIconDistance, _show3DMeshDistance, _showAnimationsDistance);
+        if (distanceInSectorsToCamera > _2dToNoneDisplayModeTransitionDistanceInSectors) {
+            desiredDisplayMode = ViewDisplayMode.Hide;
+        }
+        else if (distanceInSectorsToCamera > _3dTo2dDisplayModeTransitionDistanceInSectors) {
+            desiredDisplayMode = ViewDisplayMode.TwoD;
+        }
+        else if (distanceInSectorsToCamera > _3dAnimationsTo3dDisplayModeTransitionDistanceInSectors) {
+            desiredDisplayMode = ViewDisplayMode.ThreeD;
+        }
+        else {
+            desiredDisplayMode = ViewDisplayMode.ThreeDAnimation;
+        }
 
-    protected virtual void OnItemDeath(ItemDeathEvent e) {
-        if ((e.Source as AItem) == Item) {
-            CleanupOnDeath();
+        if (desiredDisplayMode != _cameraDistanceGeneratedDisplayMode) {
+            View.RecordDesiredDisplayModeDerivedFromCameraDistance(desiredDisplayMode);
+            _cameraDistanceGeneratedDisplayMode = desiredDisplayMode;
         }
     }
 
-    public void OnIsFocus() {
-        CameraControl.Instance.CurrentFocus = View as ICameraFocusable;
-    }
-
-    protected virtual void CleanupOnDeath() {
-        if ((View as ICameraFocusable).IsFocus) {
-            CameraControl.Instance.CurrentFocus = null;
-        }
+    private void OnItemChanged() {
+        Item.Radius = View.Radius;
     }
 
     protected virtual void Cleanup() {
@@ -98,11 +122,6 @@ public class Presenter : IDisposable {
     protected virtual void Unsubscribe() {
         _subscribers.ForAll(s => s.Dispose());
         _subscribers.Clear();
-        _eventMgr.RemoveListener<ItemDeathEvent>(this, OnItemDeath);
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
     }
 
     #region IDisposable
@@ -149,4 +168,5 @@ public class Presenter : IDisposable {
     #endregion
 
 }
+
 

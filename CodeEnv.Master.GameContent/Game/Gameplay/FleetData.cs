@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// All the data associated with a particular fleet.
     /// </summary>
-    public class FleetData : Data, IDisposable {
+    public class FleetData : AMortalData, IDisposable {
 
         /// <summary>
         /// Readonly. The current speed of the LeadShip of the Fleet

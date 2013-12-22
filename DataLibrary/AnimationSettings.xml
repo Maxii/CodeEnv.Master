@@ -10,21 +10,16 @@
 
   <Integer>
     <Setting>
-      <PropertyName>MaxCelestialObjectAnimateDistanceFactor</PropertyName>
-      <PropertyValue>200</PropertyValue>
+      <PropertyName>CameraDistanceThresholdFactor_3dAnimationsTo3dDisplayMode</PropertyName>
+      <PropertyValue>2</PropertyValue>
     </Setting>
     <Setting>
-      <PropertyName>MaxShipAnimateDistanceFactor</PropertyName>
-      <PropertyValue>200</PropertyValue>
+      <PropertyName>CameraDistanceThresholdFactor_3dTo2dDisplayMode</PropertyName>
+      <PropertyValue>5</PropertyValue>
     </Setting>
     <Setting>
-      <PropertyName>MaxShipShowDistanceFactor</PropertyName>
-      <PropertyValue>600</PropertyValue>
-    </Setting>
-
-    <Setting>
-      <PropertyName>MaxSystemAnimateDistance</PropertyName>
-      <PropertyValue>1500</PropertyValue>
+      <PropertyName>CameraDistanceThresholdFactor_2dToNoneDisplayMode</PropertyName>
+      <PropertyValue>20</PropertyValue>
     </Setting>
   </Integer>
 

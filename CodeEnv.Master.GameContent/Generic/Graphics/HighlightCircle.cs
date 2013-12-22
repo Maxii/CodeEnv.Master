@@ -145,11 +145,11 @@ namespace CodeEnv.Master.GameContent {
         private void RemoveCircle(int index) {
             if (_circlesToShow[index]) {
                 _circlesToShow[index] = false;
-                //D.Log("Circle {0} removed from {1}.", index, LineName);
+                D.Log("Circle {0} removed from {1}.", index, LineName);
                 // Note: selectively zeroing only points for this circle draws a line to (0,0)
                 _line.ZeroPoints();
                 if (_circlesToShow.Where(cShowing => cShowing == true).IsNullOrEmpty()) {
-                    //D.Log("Line {0} no longer active.", LineName);
+                    D.Log("Line {0} no longer active.", LineName);
                     _job.Kill();
                     _line.active = false;
                 }

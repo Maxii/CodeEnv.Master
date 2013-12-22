@@ -5,10 +5,14 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: Item.cs
-// The instantiable, data-holding base class for all objects in the game.
+// File: AMortalItem.cs
+// Abstract base class for an AItem that can die.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
+
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
 
 // default namespace
 
@@ -18,45 +22,22 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// The instantiable, data-holding base class for all objects in the game.
+/// Abstract base class for an AItem that can die. 
 /// </summary>
-public abstract class AItem : AMonoBase, IDisposable {
+public abstract class AMortalItem : AItem, IDisposable {
 
-    private Data _data;
-    /// <summary>
-    /// Gets or sets the data for this item. Clients are responsible for setting in the right sequence as 
-    /// one data can be dependant on another data.
-    /// </summary>
-    public Data Data {
-        get { return _data; }
-        set { SetProperty<Data>(ref _data, value, "Data", OnDataChanged, OnDataChanging); }
+    public new AMortalData Data {
+        get { return base.Data as AMortalData; }
+        set { base.Data = value; }
     }
-
-    /// <summary>
-    /// The radius in units of the conceptual 'globe' that encompasses this gameObject.
-    /// Used by ship and fleet navigators so they don't run into an item as they approach.
-    /// </summary>
-    public float Radius { get; set; }
 
     protected IList<IDisposable> _subscribers;
 
-    protected override void Awake() {
-        base.Awake();
-        // Subscribe(); derived classes should initiate Subscribe when their required references are established
-        enabled = false;
-    }
+    // Derived classes should call Subscribe() from Awake() after any required references are established
 
     protected virtual void Subscribe() {
         _subscribers = new List<IDisposable>();
-        // Delaying subscriptions from Data until Data is initialized
-    }
-
-    private void OnDataChanging(Data newData) {
-        newData.Transform = _transform; // assign our transform to Data
-    }
-
-    protected virtual void OnDataChanged() {
-        SubscribeToDataValueChanges();
+        // Subscriptions to data value changes should be done on SubscribeToDataValueChanges()
     }
 
     protected virtual void OnHealthChanged() {
@@ -66,8 +47,8 @@ public abstract class AItem : AMonoBase, IDisposable {
         }
     }
 
-    protected virtual void SubscribeToDataValueChanges() {
-        _subscribers.Add(Data.SubscribeToPropertyChanged<Data, float>(d => d.Health, OnHealthChanged));
+    protected override void SubscribeToDataValueChanges() {
+        _subscribers.Add(Data.SubscribeToPropertyChanged<AMortalData, float>(d => d.Health, OnHealthChanged));
     }
 
     protected virtual void Die() {

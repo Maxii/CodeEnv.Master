@@ -28,7 +28,7 @@ public class RequiredPrefabs : AMonoBaseSingleton<RequiredPrefabs> {
     public SphereCollider universeEdge;
     public Transform cameraDummyTarget;
     public GuiTrackingLabel guiTrackingLabel;
-    public Sector sector;
+    public SectorItem sector;
 
     public FleetItem fleetCmd;
     public ShipItem[] ships;

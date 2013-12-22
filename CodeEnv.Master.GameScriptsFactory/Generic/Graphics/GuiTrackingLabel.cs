@@ -58,7 +58,11 @@ public class GuiTrackingLabel : AMonoBase {
     /// <summary>
     /// Gets or sets the Vector3 that defines the Tracking Label's offset from the Target's pivot point in Viewport space.
     /// </summary>
-    public Vector3 OffsetFromPivot { get; set; }
+    public Vector3 ViewportOffsetFromPivot { get; set; }
+
+    public float MaximumShowDistance { get; set; }
+
+    public float MinimumShowDistance { get; set; }
 
     private bool _isShowing;
     /// <summary>
@@ -68,11 +72,7 @@ public class GuiTrackingLabel : AMonoBase {
     /// </summary>
     public bool IsShowing {
         get { return _isShowing; }
-        set {
-            //if (this) {
-            SetProperty<bool>(ref _isShowing, value, "IsShowing", OnIsShowingChanged);
-            //}
-        }
+        set { SetProperty<bool>(ref _isShowing, value, "IsShowing", OnIsShowingChanged); }
     }
 
     private GameColor _color = GameColor.White;
@@ -109,8 +109,8 @@ public class GuiTrackingLabel : AMonoBase {
         _label.depth = -100; // draw below other Gui Elements in the same Panel
         _label.color = Color.ToUnityColor();
         _widgets = gameObject.GetSafeMonoBehaviourComponentsInChildren<UIWidget>();
-        enabled = false;    // to match the initial state of _isShowing
-        UpdateRate = FrameUpdateFrequency.Continuous;
+        //normally enabled to allow OccasionalUpdate to evaluate distance to camera
+        UpdateRate = FrameUpdateFrequency.Normal;
 
         _initialScale = _transform.localScale;
     }
@@ -149,20 +149,34 @@ public class GuiTrackingLabel : AMonoBase {
 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
-        UpdatePosition();
-        UpdateScale();
+        if (TryUpdate()) {
+            IsShowing = true;
+        }
+        else {
+            IsShowing = false;
+        }
+    }
+
+    private bool TryUpdate() {
+        float distanceToCamera = Target.DistanceToCamera();
+        if (Utility.IsInRange(distanceToCamera, MinimumShowDistance, MaximumShowDistance)) {
+            UpdatePosition();
+            UpdateScale(distanceToCamera);
+            return true;
+        }
+        return false;
     }
 
     private void UpdatePosition() {
         Vector3 targetPosition = _mainCamera.WorldToViewportPoint(Target.position + TargetPivotOffset);
-        targetPosition = _uiCamera.ViewportToWorldPoint(targetPosition + OffsetFromPivot);
+        targetPosition = _uiCamera.ViewportToWorldPoint(targetPosition + ViewportOffsetFromPivot);
         targetPosition.z = 1F;  // positive Z puts the GuiTrackingLabel behind the rest of the UI
         // FIXME: UIRoot  increases the transform.z value from 1 to 200 when the scale is .005!!!!!!!!!
         _transform.position = targetPosition;
     }
 
-    private void UpdateScale() {
-        float scaler = Mathf.Clamp(ObjectScale / _transform.DistanceToCamera(), MinimumScale, MaximumScale);
+    private void UpdateScale(float distanceToCamera) {
+        float scaler = Mathf.Clamp(ObjectScale / distanceToCamera, MinimumScale, MaximumScale);
         Vector3 adjustedScale = _initialScale * scaler;
         adjustedScale.z = 1F;
         //D.Log("New Scale is {0}.".Inject(newScale));
@@ -170,7 +184,7 @@ public class GuiTrackingLabel : AMonoBase {
     }
 
     private void OnIsShowingChanged() {
-        enabled = IsShowing;
+        // must stay enabled to allow OccasionalUpdate to test distance to camera
         EnableWidgets(IsShowing);
     }
 

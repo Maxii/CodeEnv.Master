@@ -28,7 +28,7 @@
     </Setting>
     <Setting>
       <PropertyName>ForceFpsToTarget</PropertyName>
-      <PropertyValue>true</PropertyValue>
+      <PropertyValue>false</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>EnableVerboseDebugLog</PropertyName>

@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// All the data associated with a particular ship.
     /// <remarks>MaxSpeed = MaxThrust / (Mass * Drag)</remarks>
     /// </summary>
-    public class ShipData : Data, IDisposable {
+    public class ShipData : AMortalData, IDisposable {
 
         /// <summary>
         /// The local position of this ship within the fleet formation.
@@ -177,9 +177,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Subscribe() {
-            if (_subscribers == null) {
-                _subscribers = new List<IDisposable>();
-            }
+            _subscribers = new List<IDisposable>();
             _subscribers.Add(_gameStatus.SubscribeToPropertyChanging<GameStatus, bool>(gs => gs.IsPaused, OnIsPausedChanging));
             _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
         }

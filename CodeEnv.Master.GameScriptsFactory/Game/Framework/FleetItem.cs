@@ -28,7 +28,7 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all fleets in the game. Includes a state machine.
 /// </summary>
-public class FleetItem : AItemStateMachine<FleetState>, ITarget {
+public class FleetItem : AMortalItemStateMachine<FleetState>, ITarget {
 
     public event Action<ShipItem> onFleetElementDestroyed;
 
@@ -212,7 +212,6 @@ public class FleetItem : AItemStateMachine<FleetState>, ITarget {
     #region Idle
 
     void Idling_EnterState() {
-        D.Log("{0} Idling_EnterState", Data.Name);
         //CurrentOrder = null;
         //if (Data.RequestedSpeed != Constants.ZeroF) {
         //    ChangeSpeed(Constants.ZeroF);

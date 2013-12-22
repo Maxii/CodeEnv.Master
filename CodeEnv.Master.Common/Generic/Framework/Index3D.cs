@@ -15,6 +15,7 @@
 #define DEBUG_ERROR
 
 using System;
+using UnityEngine;
 namespace CodeEnv.Master.Common {
 
     /// <summary>
@@ -35,7 +36,6 @@ namespace CodeEnv.Master.Common {
             Y = y;
             Z = z;
         }
-
 
         // Override object.Equals on reference types when you do not want your
         // reference type to obey reference semantics, as defined by System.Object.

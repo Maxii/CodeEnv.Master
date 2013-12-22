@@ -23,6 +23,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+    <CodeAnalysisRuleSet>BasicCorrectnessRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -53,16 +54,22 @@
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="AFocusableItem.cs" />
+    <Compile Include="AFocusablePresenter.cs" />
+    <Compile Include="AFocusableView.cs" />
     <Compile Include="AFollowableItem.cs" />
+    <Compile Include="AFollowableView.cs" />
     <Compile Include="AGameInputConfiguration.cs" />
     <Compile Include="AGameObjectManager.cs" />
     <Compile Include="AGraphics.cs" />
     <Compile Include="AItem.cs" />
     <Compile Include="AMonoBehaviourBaseSingletonInstanceIdentity.cs" />
     <Compile Include="AMonoStateMachineSingleton.cs" />
+    <Compile Include="AMortalFocusablePresenter.cs" />
     <Compile Include="ANavigator.cs" />
+    <Compile Include="APresenter.cs" />
     <Compile Include="AStateMachine.cs" />
     <Compile Include="AutoPilot.cs" />
+    <Compile Include="AView.cs" />
     <Compile Include="CameraControl.cs" />
     <Compile Include="CameraControl_1.cs" />
     <Compile Include="ColliderExtensions.cs" />
@@ -79,6 +86,8 @@
     <Compile Include="FleetManager.cs" />
     <Compile Include="FleetNavigator.cs" />
     <Compile Include="FleetPathfinderAI.cs" />
+    <Compile Include="FleetPresenter.cs" />
+    <Compile Include="FleetView.cs" />
     <Compile Include="FocusableItemControl.cs" />
     <Compile Include="FollowableItem.cs" />
     <Compile Include="FollowableItemControl.cs" />
@@ -115,9 +124,15 @@
     <Compile Include="IColliderRelayTarget.cs" />
     <Compile Include="IData.cs" />
     <Compile Include="IFleetCommand.cs" />
+    <Compile Include="IFleetViewable.cs" />
     <Compile Include="IGuiHudPublisher.cs" />
     <Compile Include="IHasData.cs" />
+    <Compile Include="ISettlementViewable.cs" />
+    <Compile Include="IShipViewable.cs" />
+    <Compile Include="IStarBaseViewable.cs" />
+    <Compile Include="ISystemViewable.cs" />
     <Compile Include="ItemGraphics.cs" />
+    <Compile Include="IViewable.cs" />
     <Compile Include="IZoomToClosest.cs" />
     <Compile Include="KeyboardAxis.cs" />
     <Compile Include="MonoGameManager.cs" />
@@ -126,25 +141,42 @@
     <Compile Include="Navigator.cs" />
     <Compile Include="OrbitalPlane.cs" />
     <Compile Include="OrbitalPlaneManager.cs" />
+    <Compile Include="PlanetoidPresenter.cs" />
+    <Compile Include="PlanetoidView.cs" />
     <Compile Include="PlayerSettingsSetup.cs" />
     <Compile Include="ResetOnFocusOptionChangedEvent.cs" />
     <Compile Include="ScaleSpriteRelativeToCamera.cs" />
     <Compile Include="Sector.cs" />
+    <Compile Include="SectorPresenter.cs" />
+    <Compile Include="SectorView.cs" />
+    <Compile Include="SettlementPresenter.cs" />
+    <Compile Include="SettlementView.cs" />
     <Compile Include="ShipCaptain.cs" />
     <Compile Include="ShipGraphics.cs" />
     <Compile Include="ShipItem.cs" />
     <Compile Include="ShipNavigator.cs" />
+    <Compile Include="ShipPresenter.cs" />
+    <Compile Include="ShipView.cs" />
     <Compile Include="Star.cs" />
+    <Compile Include="StarBasePresenter.cs" />
+    <Compile Include="StarBaseView.cs" />
     <Compile Include="StarGraphics.cs" />
+    <Compile Include="StarPresenter.cs" />
+    <Compile Include="StarView.cs" />
     <Compile Include="StationaryItem.cs" />
     <Compile Include="SystemGraphics.cs" />
     <Compile Include="SystemManager.cs" />
+    <Compile Include="SystemPresenter.cs" />
+    <Compile Include="SystemView.cs" />
     <Compile Include="TransformExtensions.cs" />
     <Compile Include="UnconsumedMouseButtonClick.cs" />
     <Compile Include="UnconsumedMouseButtonPress.cs" />
     <Compile Include="UniverseCenter.cs" />
+    <Compile Include="UniverseCenterPresenter.cs" />
+    <Compile Include="UniverseCenterView.cs" />
     <Compile Include="VectorLineFactory.cs" />
     <Compile Include="VelocityRay.cs" />
+    <Compile Include="View.cs" />
     <Compile Include="ZoomOutOnCursorOptionChangedEvent.cs" />
     <Compile Include="GuiFollowerLabel.cs" />
     <Compile Include="SceneStartupSequenceEvent.cs" />

@@ -48,7 +48,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     private IDictionary<Vector3, Index3D> _gridBoxToSectorIndexLookup;
     private IDictionary<Index3D, Vector3> _sectorIndexToGridBoxLookup;
     private IList<Vector3> _worldBoxLocations;
-    private static IDictionary<Index3D, Sector> _sectors;
+    private static IDictionary<Index3D, SectorItem> _sectors;
 
     private GridWireframe _gridWireframe;
     private IList<IDisposable> _subscribers;
@@ -144,7 +144,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
 
         Vector3 renderFrom = new Vector3(xRenderFrom, yRenderFrom, zRenderFrom);
         Vector3 renderTo = new Vector3(xRenderTo, yRenderTo, zRenderTo);
-        D.Log("CameraGridLoc {2}, RenderFrom {0}, RenderTo {1}.", renderFrom, renderTo, gridLocOfCamera);
+        //D.Log("CameraGridLoc {2}, RenderFrom {0}, RenderTo {1}.", renderFrom, renderTo, gridLocOfCamera);
 
         gridPoints = _grid.GetVectrosityPoints(renderFrom, renderTo);
         _transform.position = tempPosition;
@@ -177,7 +177,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
         _gridBoxToSectorIndexLookup = new Dictionary<Vector3, Index3D>();
         _sectorIndexToGridBoxLookup = new Dictionary<Index3D, Vector3>();
         _worldBoxLocations = new List<Vector3>();
-        _sectors = new Dictionary<Index3D, Sector>();
+        _sectors = new Dictionary<Index3D, SectorItem>();
 
         float xSize = _grid.size.x;
         float ySize = _grid.size.y;
@@ -226,11 +226,24 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     }
 
     private void __AddSector(Index3D index, Vector3 worldPosition) {
-        Sector sectorPrefab = RequiredPrefabs.Instance.sector;
+        SectorItem sectorPrefab = RequiredPrefabs.Instance.sector;
         GameObject sectorGO = NGUITools.AddChild(Sectors.Folder.gameObject, sectorPrefab.gameObject);
-        Sector sector = sectorGO.GetSafeMonoBehaviourComponent<Sector>();
-        sector.SectorIndex = index;
+        // sector.Awake() runs immediately here, then disables itself
+        SectorItem sector = sectorGO.GetSafeMonoBehaviourComponent<SectorItem>();
+
+        SectorData data = new SectorData(index);
+        data.LastHumanPlayerIntelDate = new GameDate();
+        data.Density = 1F;
+        sector.Data = data;
+        // IMPROVE use data values in place of sector values
+
         sectorGO.transform.position = worldPosition;
+        SectorView view = sectorGO.GetSafeMonoBehaviourComponent<SectorView>();
+        view.PlayerIntelLevel = IntelLevel.Complete;
+        sector.enabled = true;
+        view.enabled = true;
+
+
         _sectors.Add(index, sector);
         //D.Log("Sector added at index {0}.", index);
     }
@@ -337,18 +350,25 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
         return index;
     }
 
-    public static bool TryGetSector(Index3D index, out Sector sector) {
+    public static bool TryGetSector(Index3D index, out SectorItem sector) {
         return _sectors.TryGetValue(index, out sector);
     }
 
-    public static Sector GetSector(Index3D index) {
-        Sector sector;
+    public static SectorItem GetSector(Index3D index) {
+        SectorItem sector;
         if (!_sectors.TryGetValue(index, out sector)) {
             D.Warn("No Sector at {0}, returning null.", index);
         }
         return sector;
     }
 
+    /// <summary>
+    /// Gets the indexes of the neighbors to this sector index. A sector must
+    /// occupy the index location to be included. The sector at center is
+    /// not included.
+    /// </summary>
+    /// <param name="center">The center.</param>
+    /// <returns></returns>
     public static IList<Index3D> GetNeighbors(Index3D center) {
         IList<Index3D> neighbors = new List<Index3D>();
         int[] xValuePair = CalcNeighborPair(center.X);
@@ -357,7 +377,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
         foreach (var x in xValuePair) {
             foreach (var y in yValuePair) {
                 foreach (var z in zValuePair) {
-                    Sector unused;
+                    SectorItem unused;
                     Index3D index = new Index3D(x, y, z);
                     if (TryGetSector(index, out unused)) {
                         neighbors.Add(index);
@@ -376,12 +396,34 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
         return valuePair;
     }
 
-    public static IList<Sector> GetSectorNeighbors(Index3D center) {
-        IList<Sector> neighborSectors = new List<Sector>();
+    /// <summary>
+    /// Gets the neighboring sectors to this sector index. A sector must
+    /// occupy the index location to be included. The sector at center is
+    /// not included.
+    /// </summary>
+    /// <param name="center">The center.</param>
+    /// <returns></returns>
+    public static IList<SectorItem> GetSectorNeighbors(Index3D center) {
+        IList<SectorItem> neighborSectors = new List<SectorItem>();
         foreach (var index in GetNeighbors(center)) {
             neighborSectors.Add(GetSector(index));
         }
         return neighborSectors;
+    }
+
+    /// <summary>
+    /// Gets the distance in sectors between the center of the sectors located at these two indexes.
+    /// Example: the distance between (1, 1, 1) and (1, 1, 2) is 1.0. The distance between 
+    /// (1, 1, 1) and (1, 2, 2) is 1.414, and the distance between (-1, 1, 1) and (1, 1, 1) is 1.0
+    /// as indexes have no 0 value.
+    /// </summary>
+    /// <param name="first">The first.</param>
+    /// <param name="second">The second.</param>
+    /// <returns></returns>
+    public static float GetDistanceInSectors(Index3D first, Index3D second) {
+        Vector3 firstGridBoxLoc = GetGridBoxLocation(first);
+        Vector3 secondGridBoxLoc = GetGridBoxLocation(second);
+        return Vector3.Distance(firstGridBoxLoc, secondGridBoxLoc);
     }
 
     public void ShowSectorGrid(bool toShow) {

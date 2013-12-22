@@ -26,11 +26,11 @@ using UnityEngine;
 /// <summary>
 /// An MVPresenter associated with a FleetView.
 /// </summary>
-public class FleetPresenter : Presenter {
+public class FleetPresenter : AMortalFocusablePresenter {
 
-    protected new FleetItem Item {
+    public new FleetItem Item {
         get { return base.Item as FleetItem; }
-        set { base.Item = value; }
+        protected set { base.Item = value; }
     }
 
     protected new IFleetViewable View {
@@ -39,17 +39,17 @@ public class FleetPresenter : Presenter {
 
     public FleetPresenter(IFleetViewable view)
         : base(view) {
-        AssignFlagshipAsViewTarget();
+        Subscribe();
     }
 
-    protected override void InitilizeItemLinkage() {
-        Item = UnityUtility.ValidateMonoBehaviourPresence<FleetItem>(_viewGameObject);
+    protected override AItem InitilizeItemLinkage() {
+        return UnityUtility.ValidateMonoBehaviourPresence<FleetItem>(_viewGameObject);
     }
 
-    protected override void InitializeHudPublisher() {
+    protected override IGuiHudPublisher InitializeHudPublisher() {
         var hudPublisher = new GuiHudPublisher<FleetData>(Item.Data);
         hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed);
-        View.HudPublisher = hudPublisher;
+        return hudPublisher;
     }
 
     protected override void Subscribe() {
@@ -110,11 +110,7 @@ public class FleetPresenter : Presenter {
         return new Reference<float>(() => Item.Data.CurrentSpeed);
     }
 
-    public void OnPressWhileSelected(bool isDown) {
-        OnPressRequestContextMenu(isDown);
-    }
-
-    private void OnPressRequestContextMenu(bool isDown) {
+    public void RequestContextMenu(bool isDown) {
         if (DebugSettings.Instance.AllowEnemyOrders || Item.Data.Owner.IsHuman) {
             CameraControl.Instance.ShowContextMenuOnPress(isDown);
         }
@@ -133,7 +129,7 @@ public class FleetPresenter : Presenter {
         }
     }
 
-    public void __OnLeftDoubleClick() {
+    public void __RandomChangeOfHeadingAndSpeed() {
         Item.ChangeHeading(UnityEngine.Random.insideUnitSphere.normalized);
         Item.ChangeSpeed(UnityEngine.Random.Range(Constants.ZeroF, 2.5F));
     }
@@ -142,24 +138,24 @@ public class FleetPresenter : Presenter {
         AssessFleetIcon();
     }
 
-    public void OnIntelLevelChanged() {
+    public void NotifyShipsOfIntelLevelChange() {
         Item.Ships.ForAll<ShipItem>(sc => sc.gameObject.GetSafeMonoBehaviourComponent<ShipView>().PlayerIntelLevel = View.PlayerIntelLevel);
         AssessFleetIcon();
     }
 
     private void OnFlagshipChanged() {
-        AssignFlagshipAsViewTarget();
+        View.TrackingTarget = GetFlagship();
     }
 
     public void OnIsSelectedChanged() {
         if ((View as ISelectable).IsSelected) {
             SelectionManager.Instance.CurrentSelection = View as ISelectable;
         }
-        Item.Ships.ForAll<ShipItem>(s => s.gameObject.GetSafeMonoBehaviourComponent<ShipView>().AssessHighlighting());
+        Item.Ships.ForAll(s => s.gameObject.GetSafeMonoBehaviourComponent<ShipView>().AssessHighlighting());
     }
 
-    private void AssignFlagshipAsViewTarget() {
-        View.TrackingTarget = Item.Flagship.transform;
+    public Transform GetFlagship() {
+        return Item.Flagship.transform;
     }
 
     private IconFactory _iconFactory = IconFactory.Instance;

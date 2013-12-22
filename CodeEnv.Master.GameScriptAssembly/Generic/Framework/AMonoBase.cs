@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -51,18 +51,18 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     protected virtual void Awake() {
         useGUILayout = false;    // OPTIMIZE docs suggest = false for better performance
         _transform = transform;
-        LogEvent();
+        //LogEvent();
     }
 
     protected virtual void Start() {
-        LogEvent();
+        //LogEvent();
     }
 
     /// <summary>
     /// Called when enabled set to true after the script has been loaded, including after DeSerialization.
     /// </summary>
     protected virtual void OnEnable() {
-        LogEvent();
+        //LogEvent();
     }
 
     /// <summary>
@@ -70,14 +70,14 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// prior to OnDestroy() and when scripts are reloaded after compilation has finished.
     /// </summary>
     protected virtual void OnDisable() {
-        LogEvent();
+        //LogEvent();
     }
 
     /// <summary>
     /// Called when the Application is quiting, followed by OnDisable() and then OnDestroy().
     /// </summary>
     protected virtual void OnApplicationQuit() {
-        LogEvent();
+        //LogEvent();
         _isApplicationQuiting = true;
     }
 
@@ -86,7 +86,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// OnApplicationQuit().
     /// </summary>
     protected virtual void OnDestroy() {
-        LogEvent();
+        //LogEvent();
     }
 
     #endregion
@@ -114,7 +114,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// </summary>
     [Serializable]
     public enum FrameUpdateFrequency {
-        None = 0,
+        Never = 0,
         /// <summary>
         /// Default. Every frame.
         /// </summary>
@@ -150,9 +150,9 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     }
 
     /// <value>
-    ///  The rate at which ToUpdate() returns true. Default is Continuous (every frame).
+    ///  The rate at which ToUpdate() returns true, calling OccasionalUpdate(). Default is Never.
     /// </value>
-    private FrameUpdateFrequency _updateRate = FrameUpdateFrequency.Continuous;
+    private FrameUpdateFrequency _updateRate;  // = FrameUpdateFrequency.Continuous;
     protected FrameUpdateFrequency UpdateRate {
         get { return _updateRate; }
         set {
@@ -169,18 +169,18 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// </summary>
     /// <returns>true on a pace set by the UpdateRate property</returns>
     protected bool ToUpdate() {
-        bool toUpdate = false;
+        if (UpdateRate == FrameUpdateFrequency.Never) {
+            return false;
+        }
         if (UpdateRate == FrameUpdateFrequency.Continuous) {
-            toUpdate = true;
+            return true;
         }
-        else if (_updateCounter >= (int)UpdateRate) {    // >= in case UpdateRate gets changed after initialization
+        if (_updateCounter >= (int)UpdateRate) {    // >= in case UpdateRate gets changed after initialization
             _updateCounter = Constants.Zero;
-            toUpdate = true;
+            return true;
         }
-        else {
-            _updateCounter++;
-        }
-        return toUpdate;
+        _updateCounter++;
+        return false;
     }
 
     protected virtual void Update() {
@@ -424,7 +424,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
             TryWarn<T>(backingStore, value, propertyName);
             return;
         }
-        D.Log("SetProperty called. {0} changing to {1}.", propertyName, value);
+        //D.Log("SetProperty called. {0} changing to {1}.", propertyName, value);
 
         if (onChanging != null) { onChanging(value); }
         OnPropertyChanging(propertyName, value);

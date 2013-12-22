@@ -40,8 +40,8 @@ public class FleetGraphics : AGraphics, IDisposable {
 
     public bool enableTrackingLabel = false;
     public Vector3 trackingLabelOffsetFromPivot = new Vector3(Constants.ZeroF, 0.05F, Constants.ZeroF);
-    public int minTrackingLabelShowDistance = TempGameValues.MinFleetTrackingLabelShowDistance;
-    public int maxTrackingLabelShowDistance = TempGameValues.MaxFleetTrackingLabelShowDistance;
+    public int minTrackingLabelShowDistance = TempGameValues.MinTrackingLabelShowDistance;
+    public int maxTrackingLabelShowDistance = TempGameValues.MaxTrackingLabelShowDistance;
     private GuiTrackingLabel _trackingLabel;
     private GuiTrackingLabelFactory _trackingLabelFactory;
 

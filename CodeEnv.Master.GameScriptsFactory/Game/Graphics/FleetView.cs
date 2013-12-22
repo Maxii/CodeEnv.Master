@@ -25,42 +25,18 @@ using UnityEngine;
 /// A class for managing the elements of a fleet's UI, those that are not already handled by 
 ///  the UI classes for ships.
 /// </summary>
-public class FleetView : MovingView, IFleetViewable, ISelectable {
+public class FleetView : AFollowableView, IFleetViewable, ISelectable {
 
-    protected new FleetPresenter Presenter {
+    public new FleetPresenter Presenter {
         get { return base.Presenter as FleetPresenter; }
-        set { base.Presenter = value; }
+        protected set { base.Presenter = value; }
     }
-
-    private bool _isDetectable = true; // FIXME if starts false, it doesn't get updated right away...
-    /// <summary>
-    /// Indicates whether the item this view
-    /// is associated with is detectable by the human player. 
-    /// eg. a fleet the human player has no intel about is not detectable.
-    /// </summary>
-    public bool IsDetectable {
-        get { return _isDetectable; }
-        set { SetProperty<bool>(ref _isDetectable, value, "IsDetectable", OnIsDetectableChanged); }
-    }
-
-
-    /// <summary>
-    /// The [float] radius of this object in units measured as the distance from the
-    /// center to the min or max extent. As bounds is a bounding box it is the longest
-    /// diagonal from the center to a corner of the box.    
-    /// Note the override - a fleet's collider and mesh (icon) both scale, thus AView's implementation can't be used
-    /// </summary>
-    public override float Radius { get { return 1.0F; } }   // TODO should reflect the rough radius of the fleet
 
     public bool enableTrackingLabel = false;
-    public Vector3 trackingLabelOffsetFromPivot = new Vector3(Constants.ZeroF, 0.05F, Constants.ZeroF);
-    public int minTrackingLabelShowDistance = TempGameValues.MinFleetTrackingLabelShowDistance;
-    public int maxTrackingLabelShowDistance = TempGameValues.MaxFleetTrackingLabelShowDistance;
-    public AudioClip dying;
-
-    private AudioSource _audioSource;
     private GuiTrackingLabel _trackingLabel;
-    private Vector3 _trackingLabelPivotOffset;
+
+    public AudioClip dying;
+    private AudioSource _audioSource;
 
     private VelocityRay _velocityRay;
 
@@ -71,65 +47,110 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
     private IIcon _fleetIcon;   // IMPROVE not really used for now
     private Vector3 _iconSize;
 
+    private CtxObject _ctxObject;
+    private Billboard _billboard;
+
     protected override void Awake() {
         base.Awake();
         _audioSource = UnityUtility.ValidateComponentPresence<AudioSource>(gameObject);
+        _billboard = gameObject.GetSafeMonoBehaviourComponentInChildren<Billboard>();
         _isCirclesRadiusDynamic = false;
         circleScaleFactor = 0.03F;
         minimumCameraViewingDistanceMultiplier = 0.8F;
         optimalCameraViewingDistanceMultiplier = 1.2F;
-        maxAnimateDistance = 1; // FIXME maxAnimateDistance not used, this is a dummy value to avoid the warning in AGraphics
         InitializeFleetIcon();
         UpdateRate = FrameUpdateFrequency.Normal;
+    }
+
+    protected override void Start() {
+        base.Start();
+        __InitializeContextMenu();
+        InitializeTrackingTarget();
     }
 
     protected override void InitializePresenter() {
         Presenter = new FleetPresenter(this);
     }
 
-    protected override void Start() {
-        base.Start();
-        __InitializeContextMenu();
+    private void InitializeTrackingTarget() {
+        TrackingTarget = Presenter.GetFlagship();
     }
 
-    protected override void RegisterComponentsToDisable() {
-        disableComponentOnNotDiscernible = new Component[1] { 
-            collider 
-        };
-        disableGameObjectOnNotDiscernible = new GameObject[1] { 
-            gameObject.GetSafeMonoBehaviourComponentInChildren<Billboard>().gameObject
-        };
-    }
-
-    private void OnTrackingTargetChanged() {
-        _fleetIconPivotOffset = new Vector3(Constants.ZeroF, TrackingTarget.collider.bounds.extents.y, Constants.ZeroF);
-        _trackingLabelPivotOffset = new Vector3(Constants.ZeroF, TrackingTarget.collider.bounds.extents.y, Constants.ZeroF);
-        if (_trackingLabel != null) {
-            _trackingLabel.TargetPivotOffset = _trackingLabelPivotOffset;
+    protected override void OnDisplayModeChanging(ViewDisplayMode newMode) {
+        base.OnDisplayModeChanging(newMode);
+        ViewDisplayMode previousMode = DisplayMode;
+        switch (previousMode) {
+            case ViewDisplayMode.Hide:
+                if (_trackingLabel != null) {
+                    _trackingLabel.gameObject.SetActive(true);
+                }
+                _collider.enabled = true;
+                _billboard.gameObject.SetActive(true);
+                ShowFleetIcon(true);
+                break;
+            case ViewDisplayMode.TwoD:
+                Show2DIcon(false);
+                break;
+            case ViewDisplayMode.ThreeD:
+                if (newMode != ViewDisplayMode.ThreeDAnimation) { Show3DMesh(false); }
+                break;
+            case ViewDisplayMode.ThreeDAnimation:
+                if (newMode != ViewDisplayMode.ThreeD) { Show3DMesh(false); }
+                break;
+            case ViewDisplayMode.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(previousMode));
         }
     }
 
-    private void OnIsDetectableChanged() {
-        EnableBasedOnDiscernible(InCameraLOS, IsDetectable);
-        EnableBasedOnDistanceToCamera(InCameraLOS, IsDetectable);
-        AssessHighlighting();
+    protected override void OnDisplayModeChanged() {
+        base.OnDisplayModeChanged();
+        switch (DisplayMode) {
+            case ViewDisplayMode.Hide:
+                if (_trackingLabel != null) {
+                    _trackingLabel.gameObject.SetActive(false);
+                }
+                _collider.enabled = false;
+                _billboard.gameObject.SetActive(false);
+                ShowFleetIcon(false);
+                break;
+            case ViewDisplayMode.TwoD:
+                Show2DIcon(true);
+                break;
+            case ViewDisplayMode.ThreeD:
+                Show3DMesh(true);
+                break;
+            case ViewDisplayMode.ThreeDAnimation:
+                Show3DMesh(true);
+                break;
+            case ViewDisplayMode.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(DisplayMode));
+        }
     }
 
-    protected override void OnInCameraLOSChanged() {
-        EnableBasedOnDiscernible(InCameraLOS, IsDetectable);
-        EnableBasedOnDistanceToCamera(InCameraLOS, IsDetectable);
-        AssessHighlighting();
+
+    private void OnTrackingTargetChanged() {
+        _fleetIconPivotOffset = new Vector3(Constants.ZeroF, TrackingTarget.collider.bounds.extents.y, Constants.ZeroF);
+        InitializeTrackingLabel();
     }
 
     protected override void OnPlayerIntelLevelChanged() {
         base.OnPlayerIntelLevelChanged();
-        IsDetectable = PlayerIntelLevel != IntelLevel.Nil;
-        Presenter.OnIntelLevelChanged();
+        Presenter.NotifyShipsOfIntelLevelChange();
     }
 
     void OnPress(bool isDown) {
-        if (IsSelected) {
-            Presenter.OnPressWhileSelected(isDown);
+        if (GameInputHelper.IsRightMouseButton()) {
+            OnRightPress(isDown);
+        }
+    }
+
+    private void OnRightPress(bool isDown) {
+        if (DisplayMode != ViewDisplayMode.Hide) {
+            if (IsSelected) {
+                Presenter.RequestContextMenu(isDown);
+            }
         }
     }
 
@@ -141,7 +162,7 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
     }
 
     private void OnLeftClick() {
-        if (IsDetectable) {
+        if (DisplayMode != ViewDisplayMode.Hide) {
             KeyCode notUsed;
             if (GameInputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftAlt, KeyCode.RightAlt)) {
                 Presenter.__SimulateAllShipsAttacked();
@@ -158,7 +179,13 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
 
     void OnDoubleClick() {
         if (GameInputHelper.IsLeftMouseButton()) {
-            Presenter.__OnLeftDoubleClick();
+            OnLeftDoubleClick();
+        }
+    }
+
+    private void OnLeftDoubleClick() {
+        if (DisplayMode != ViewDisplayMode.Hide) {
+            Presenter.__RandomChangeOfHeadingAndSpeed();
         }
     }
 
@@ -186,7 +213,6 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
         }
     }
 
-    // starts getting called upon IsRunning
     private void KeepColliderOverFleetIcon() {
         (_collider as BoxCollider).size = Vector3.Scale(_iconSize, _fleetIconScaler.Scale);
         //D.Log("Fleet collider size now = {0}.", _collider.size);
@@ -197,29 +223,12 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
         (_collider as BoxCollider).center = _transform.InverseTransformPoint(iconWorldCenter);
     }
 
-    protected override int EnableBasedOnDistanceToCamera(params bool[] conditions) {
-        bool condition = conditions.All<bool>(c => c == true);
-        int distanceToCamera = base.EnableBasedOnDistanceToCamera(condition);
-        if (enableTrackingLabel) {  // allows tester to enable while editor is playing
-            _trackingLabel = _trackingLabel ?? InitializeTrackingLabel();
-            bool toShowTrackingLabel = false;
-            if (condition) {
-                distanceToCamera = distanceToCamera == Constants.Zero ? _transform.DistanceToCameraInt() : distanceToCamera;    // not really needed
-                if (Utility.IsInRange(distanceToCamera, minTrackingLabelShowDistance, maxTrackingLabelShowDistance)) {
-                    toShowTrackingLabel = true;
-                }
-            }
-            //D.Log("FleetTrackingLabel.IsShowing = {0}.", toShowTrackingLabel);
-            _trackingLabel.IsShowing = toShowTrackingLabel;
+    private void InitializeTrackingLabel() {
+        if (enableTrackingLabel) {
+            float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
+            string fleetName = Presenter.Item.Data.Name;
+            _trackingLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(TrackingTarget, GuiTrackingLabelFactory.LabelPlacement.AboveTarget, minShowDistance, Mathf.Infinity, fleetName);
         }
-        return distanceToCamera;
-    }
-
-    private GuiTrackingLabel InitializeTrackingLabel() {
-        // use LeadShip collider for the offset rather than the FleetCmd collider as the FleetCmd collider changes scale dynamically. 
-        _trackingLabelPivotOffset = new Vector3(Constants.ZeroF, TrackingTarget.collider.bounds.extents.y, Constants.ZeroF);
-        GuiTrackingLabel trackingLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(_transform, _trackingLabelPivotOffset, trackingLabelOffsetFromPivot);
-        return trackingLabel;
     }
 
     public void HighlightTrackingLabel(bool toHighlight) {
@@ -229,27 +238,22 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
     }
 
     public override void AssessHighlighting() {
-        if (!IsDetectable || !InCameraLOS) {
-            ShowFleetIcon(false);
+        if (DisplayMode == ViewDisplayMode.Hide) {
             Highlight(Highlights.None);
             return;
         }
         if (IsFocus) {
             if (IsSelected) {
-                ShowFleetIcon(true);
                 Highlight(Highlights.SelectedAndFocus);
                 return;
             }
-            ShowFleetIcon(true);
             Highlight(Highlights.Focused);
             return;
         }
         if (IsSelected) {
-            ShowFleetIcon(true);
             Highlight(Highlights.Selected);
             return;
         }
-        ShowFleetIcon(true);
         Highlight(Highlights.None);
     }
 
@@ -300,18 +304,47 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
         }
     }
 
+    private void Show2DIcon(bool toShow) {
+        // TODO Is the fleetIcon as strategic different from this?
+    }
+
+    private void Show3DMesh(bool toShow) {
+        // TODO probably no 3D mesh to show
+    }
+
     protected override float calcNormalizedCircleRadius() {
         return Screen.height * circleScaleFactor;
     }
 
+    #region ContextMenu
+
     private void __InitializeContextMenu() {      // IMPROVE use of string
-        CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
+        _ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
         CtxMenu generalMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "GeneralMenu");
-        ctxObject.contextMenu = generalMenu;
-        D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
+        _ctxObject.contextMenu = generalMenu;
+        D.Assert(_ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
         UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
         //D.Log("Initial Fleet collider size = {0}.", _collider.size);
+        EventDelegate.Add(_ctxObject.onShow, OnContextMenuShow);
+        EventDelegate.Add(_ctxObject.onSelection, OnContextMenuSelection);
+        EventDelegate.Add(_ctxObject.onHide, OnContextMenuHide);
     }
+
+    private void OnContextMenuShow() {
+        // UNDONE
+    }
+
+    private void OnContextMenuSelection() {
+        // int itemId = CtxObject.current.selectedItem;
+        // D.Log("{0} selected context menu item {1}.", _transform.name, itemId);
+        // UNDONE
+    }
+
+    private void OnContextMenuHide() {
+        // UNDONE
+    }
+
+    #endregion
 
     private void InitializeFleetIcon() {
         _fleetIconSprite = gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>();
@@ -377,13 +410,21 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
         _fleetIconSprite.color = color.ToUnityColor();
     }
 
+    /// <summary>
+    /// The [float] radius of this object in units measured as the distance from the
+    /// center to the min or max extent. As bounds is a bounding box it is the longest
+    /// diagonal from the center to a corner of the box.    
+    /// Note the override - a fleet's collider and mesh (icon) both scale, thus AView's implementation can't be used
+    /// </summary>
+    public override float Radius { get { return 1.0F; } }   // TODO should reflect the rough radius of the fleet
+
     #endregion
 
     #region ICameraTargetable Members
 
     public override bool IsEligible {
         get {
-            return IsDetectable;
+            return DisplayMode != ViewDisplayMode.Hide;
         }
     }
 
@@ -392,7 +433,7 @@ public class FleetView : MovingView, IFleetViewable, ISelectable {
     #region ICameraFocusable Members
 
     public override bool IsRetainedFocusEligible {
-        get { return IsDetectable; }
+        get { return PlayerIntelLevel != IntelLevel.Nil; }
     }
 
     /// <summary>

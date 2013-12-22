@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all ships in the game. Includes a state machine.
 /// </summary>
-public class ShipItem : AItemStateMachine<ShipState>, ITarget {
+public class ShipItem : AMortalItemStateMachine<ShipState>, ITarget {
 
     public bool IsFlagship { get; set; }
 
@@ -132,7 +132,6 @@ public class ShipItem : AItemStateMachine<ShipState>, ITarget {
     #region Idling
 
     void Idling_EnterState() {
-        D.Log("{0} Idling_EnterState", Data.Name);
         //CurrentOrder = null;
         //ChangeSpeed(Constants.ZeroF);
         // TODO register as available
@@ -365,7 +364,6 @@ public class ShipItem : AItemStateMachine<ShipState>, ITarget {
     }
 
     #endregion
-
 
     #region TakingDamage
 

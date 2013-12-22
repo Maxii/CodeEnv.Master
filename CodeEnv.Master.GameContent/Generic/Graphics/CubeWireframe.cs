@@ -32,17 +32,20 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<Vector3>(ref _size, value, "Size", OnSizeChanged); }
         }
 
-        /// <summary>
-        /// <c>true</c> if [is mouse over hot spot]; otherwise, <c>false</c>.
-        /// </summary>
-        public bool IsMouseOverHotSpot {
-            get {
-                if (_pointLine == null) { return false; }
-                int unused;
-                return _pointLine.Selected(Input.mousePosition, 40, out unused);
-            }
-        }
+        ///// <summary>
+        ///// <c>true</c> if [is mouse over hot spot]; otherwise, <c>false</c>.
+        ///// </summary>
+        //public bool IsMouseOverHotSpot {
+        //    get {
+        //        if (_pointLine == null) { return false; }
+        //        int unused;
+        //        return _pointLine.Selected(Input.mousePosition, 40, out unused);
+        //    }
+        //}
 
+        /// <summary>
+        /// The visual center point of the wireframe.
+        /// </summary>
         private VectorPoints _pointLine;
 
         /// <summary>

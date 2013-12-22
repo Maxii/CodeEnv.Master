@@ -24,7 +24,7 @@ using UnityEngine;
 /// </summary>
 public class View : AView, ICameraFocusable {
 
-    protected Presenter Presenter { get; set; }
+    public AFocusablePresenter Presenter { get; protected set; }
 
     public float circleScaleFactor = 3.0F;
     protected bool _isCirclesRadiusDynamic = true;
@@ -41,7 +41,7 @@ public class View : AView, ICameraFocusable {
     }
 
     protected virtual void InitializePresenter() {
-        Presenter = new Presenter(this);
+        Presenter = new AFocusablePresenter(this);
     }
 
     protected override void RegisterComponentsToDisable() {

@@ -35,7 +35,7 @@ namespace CodeEnv.Master.Common {
         Gui2D = 8,
         UniverseEdge = 9,
         DummyTarget = 10,
-        SectorView = 11,
+        SectorView = 11,  // Unused
 
 
         DeepSpace = 20,

@@ -35,23 +35,6 @@ public class FleetNavigator : ANavigator {
         get { return Target.Position; }
     }
 
-    /// <summary>
-    /// Optional events for notification of the course plot being completed. 
-    /// </summary>
-    public event Action onCoursePlotFailure;
-    public event Action onCoursePlotSuccess;
-
-    /// <summary>
-    /// Optional event for notification of the FLEET's Target being reached.
-    /// </summary>
-    public event Action onDestinationReached;
-
-    /// <summary>
-    /// Optional event for notification of when the pilot heading for Target reaches the
-    /// final waypoint but cannot approach the Target due to interference.
-    /// </summary>
-    public event Action onCourseTrackingError;
-
     protected new FleetData Data { get { return base.Data as FleetData; } }
 
     private bool IsCourseReplotNeeded {
@@ -81,8 +64,6 @@ public class FleetNavigator : ANavigator {
     protected override void Subscribe() {
         base.Subscribe();
         _seeker.pathCallback += OnCoursePlotCompleted;
-        onDestinationReached += OnDestinationReached;
-        onCourseTrackingError += OnCourseTrackingError;
     }
 
     /// <summary>
@@ -122,7 +103,7 @@ public class FleetNavigator : ANavigator {
     /// </summary>
     /// <returns></returns>
     private IEnumerator EngageWaypointCourse() {
-        //D.Log("Initiating coroutine to follow course to {0}.", Destination);
+        D.Log("{0} initiating coroutine to follow course to {1}.", Data.Name, Destination);
         if (_course == null) {
             D.Error("{0}'s course to {1} is null. Exiting coroutine.", Data.Name, Destination);
             yield break;    // exit immediately
@@ -133,8 +114,8 @@ public class FleetNavigator : ANavigator {
         //__MoveShipsTo(new StationaryLocation(currentWaypointPosition));   // this location is the starting point, already there
 
         while (_currentWaypointIndex < _course.Count) {
-            //D.Log("Distance to Waypoint_{0} = {1}.", _currentWaypointIndex, distanceToWaypoint);
             float distanceToWaypointSqrd = Vector3.SqrMagnitude(currentWaypointPosition - Data.Position);
+            //D.Log("{0} distance to Waypoint_{1} = {2}.", Data.Name, _currentWaypointIndex, Mathf.Sqrt(distanceToWaypointSqrd));
             if (distanceToWaypointSqrd < _closeEnoughDistanceSqrd) {
                 if (CheckTargetIsLocal()) {
                     if (CheckApproachTo(Destination)) {
@@ -153,7 +134,7 @@ public class FleetNavigator : ANavigator {
                         D.Log("{0} has reached final waypoint {1} at {2}.", Data.Name, _currentWaypointIndex - 1, currentWaypointPosition);
                         continue;
                     }
-                    D.Log("Waypoint_{0} at {1} reached. Current destination is now Waypoint_{2} at {3}.",
+                    D.Log("{0} has reached Waypoint_{1} at {2}. Current destination is now Waypoint_{3} at {4}.", Data.Name,
                         _currentWaypointIndex - 1, currentWaypointPosition, _currentWaypointIndex, _course[_currentWaypointIndex]);
                     currentWaypointPosition = _course[_currentWaypointIndex];
                     if (CheckApproachTo(currentWaypointPosition)) {
@@ -174,18 +155,12 @@ public class FleetNavigator : ANavigator {
 
         if (Vector3.SqrMagnitude(Destination - Data.Position) < _closeEnoughDistanceSqrd) {
             // the final waypoint turns out to be located close enough to the Destination although a direct approach can't be made 
-            var dr = onDestinationReached;
-            if (dr != null) {
-                dr();
-            }
+            OnDestinationReached();
         }
         else {
             // the final waypoint is not close enough and we can't directly approach the Destination
-            D.Warn("Final waypoint reached, but {0} from {1} with obstacles in between.", Vector3.Distance(Destination, Data.Position), Target.Name);
-            var cte = onCourseTrackingError;
-            if (cte != null) {
-                cte();
-            }
+            D.Warn("{0} reached final waypoint, but {1} from {2} with obstacles in between.", Data.Name, Vector3.Distance(Destination, Data.Position), Target.Name);
+            OnCourseTrackingError();
         }
     }
 
@@ -198,11 +173,7 @@ public class FleetNavigator : ANavigator {
         while (Vector3.SqrMagnitude(Destination - Data.Position) > _closeEnoughDistanceSqrd) {
             yield return new WaitForSeconds(_courseUpdatePeriod);
         }
-
-        var dr = onDestinationReached;
-        if (dr != null) {
-            dr();
-        }
+        OnDestinationReached();
     }
 
     /// <summary>
@@ -227,16 +198,10 @@ public class FleetNavigator : ANavigator {
 
         if (!_isCourseReplot) {
             if (_course.Count == 0) {
-                var cpf = onCoursePlotFailure;
-                if (cpf != null) {
-                    cpf();
-                }
+                OnCoursePlotFailure();
             }
             else {
-                var cps = onCoursePlotSuccess;
-                if (cps != null) {
-                    cps();
-                }
+                OnCoursePlotSuccess();
             }
         }
         else {
@@ -245,11 +210,8 @@ public class FleetNavigator : ANavigator {
                 Engage();
             }
             else {
-                var cpf = onCoursePlotFailure;
-                if (cpf != null) {
-                    cpf();
-                }
                 D.Warn("{0}'s course to {1} couldn't be replotted.", Data.Name, Target.Name);
+                OnCoursePlotFailure();
             }
         }
     }
@@ -293,7 +255,7 @@ public class FleetNavigator : ANavigator {
         float maxDirectApproachDistance = TempGameValues.SectorSideLength;
         if (distanceToDestination > maxDirectApproachDistance) {
             // limit direct approaches to within a sector so we normally follow the pathfinder course
-            D.Warn("{0} direct approach distance {1} to {2} exceeds maxiumum of {3}.", Data.Name, distanceToDestination, Target.Name, maxDirectApproachDistance);
+            D.Log("{0} direct approach distance {1} to {2} exceeds maxiumum of {3}.", Data.Name, distanceToDestination, Target.Name, maxDirectApproachDistance);
             return false;
         }
         return true;

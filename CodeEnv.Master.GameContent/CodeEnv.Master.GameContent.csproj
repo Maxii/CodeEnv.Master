@@ -56,9 +56,11 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Gameplay\StarBaseState.cs" />
+    <Compile Include="Generic\Framework\AData.cs" />
     <Compile Include="Game\Framework\EngineRoom.cs" />
     <Compile Include="Generic\Extensions\GameUtility.cs" />
-    <Compile Include="Generic\Framework\FleetOrders.cs" />
+    <Compile Include="Game\Gameplay\FleetOrders.cs" />
     <Compile Include="Game\Gameplay\FleetState.cs" />
     <Compile Include="Generic\Framework\GameStatus.cs" />
     <Compile Include="Generic\Framework\ITarget.cs" />
@@ -97,7 +99,7 @@
     <Compile Include="Game\_Debug\DebugHudText.cs" />
     <Compile Include="Game\Framework\GameConstants.cs" />
     <Compile Include="Game\GUI\BuildNewGameEvent.cs" />
-    <Compile Include="Game\Gameplay\Data.cs" />
+    <Compile Include="Generic\Framework\AMortalData.cs" />
     <Compile Include="Game\Gameplay\FleetData.cs" />
     <Compile Include="Game\Framework\GameTimePeriod.cs" />
     <Compile Include="Game\_Debug\TempGameValues.cs" />
@@ -133,9 +135,19 @@
     <Compile Include="Game\Graphics\SettlementGuiHudTextFactory.cs" />
     <Compile Include="Game\Gameplay\ShipState.cs" />
     <Compile Include="Game\Graphics\IShipViewable.cs" />
-    <Compile Include="Generic\Framework\ShipOrders.cs" />
+    <Compile Include="Game\Gameplay\ShipOrders.cs" />
     <Compile Include="Generic\Framework\ItemOrder.cs" />
     <Compile Include="Generic\Framework\StationaryLocation.cs" />
+    <Compile Include="Game\Gameplay\SectorData.cs" />
+    <Compile Include="Game\Gameplay\Data.cs" />
+    <Compile Include="Game\Graphics\SectorGuiHudTextFactory.cs" />
+    <Compile Include="Game\Graphics\IStarBaseViewable.cs" />
+    <Compile Include="Game\Gameplay\StarBaseData.cs" />
+    <Compile Include="Game\Gameplay\StarBaseOrders.cs" />
+    <Compile Include="Game\Graphics\StarBaseGuiHudTextFactory.cs" />
+    <Compile Include="Game\Graphics\ISettlementViewable.cs" />
+    <Compile Include="Game\Gameplay\SettlementOrders.cs" />
+    <Compile Include="Game\Gameplay\SettlementState.cs" />
     <Compile Include="ThirdParty\ICoroutineManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\SystemData.cs" />
@@ -145,7 +157,8 @@
     <Compile Include="Game\_Debug\VelocityRay.cs" />
     <Compile Include="ThirdParty\Job.cs" />
     <Compile Include="Generic\Framework\ANavigator.cs" />
-    <Compile Include="Game\Gameplay\ShipNavigator.cs" />
+    <Compile Include="Game\Framework\ShipNavigator.cs" />
+    <Compile Include="Generic\Graphics\ViewDisplayMode.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Generic\Math\" />

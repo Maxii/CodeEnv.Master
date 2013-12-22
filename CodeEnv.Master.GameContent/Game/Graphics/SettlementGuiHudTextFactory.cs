@@ -60,6 +60,8 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Composition:
                 case GuiHudLineKeys.CompositionDetails:
                 case GuiHudLineKeys.ShipDetails:
+                case GuiHudLineKeys.SectorIndex:
+                case GuiHudLineKeys.Density:
                 case GuiHudLineKeys.Speed:
                     return _emptyColoredTextList;
 

@@ -14,6 +14,7 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -24,69 +25,128 @@ using UnityEngine;
 ///  A class for managing the elements of a system's UI, those, that are not already handled by 
 ///  the UI classes for stars, planets and moons.
 /// </summary>
-public class SystemView : View, ISystemViewable, ISelectable, IZoomToFurthest {
+public class SystemView : AFocusableView, ISystemViewable, ISelectable, IZoomToFurthest {
 
     private static string __highlightName = "SystemHighlightMesh";  // IMPROVE
 
-    protected new SystemPresenter Presenter {
+    public new SystemPresenter Presenter {
         get { return base.Presenter as SystemPresenter; }
-        set { base.Presenter = value; }
+        protected set { base.Presenter = value; }
     }
 
     public bool enableTrackingLabel = true;
-    /// <summary>
-    /// The separation between the pivot point on the 3D object that is tracked
-    /// and the tracking label as a Viewport vector. Viewport vector values vary from 0.0F to 1.0F.
-    /// </summary>
-    public Vector3 trackingLabelOffsetFromPivot = new Vector3(Constants.ZeroF, 0.02F, Constants.ZeroF);
-    public int minTrackingLabelShowDistance = TempGameValues.MinSystemTrackingLabelShowDistance;
-    public int maxTrackingLabelShowDistance = TempGameValues.MaxSystemTrackingLabelShowDistance;
+    private GuiTrackingLabel _trackingLabel;
 
     public float minPlaneZoomDistance = 2F;
     public float optimalPlaneFocusDistance = 400F;
 
-
-    private GuiTrackingLabel _trackingLabel;
+    private CtxObject _ctxObject;
     private MeshRenderer _systemHighlightRenderer;
+    private IEnumerable<Renderer> _renderersWithNoCameraLOSRelay;
 
     protected override void Awake() {
         base.Awake();
-        maxAnimateDistance = AnimationSettings.Instance.MaxSystemAnimateDistance;
-        maxTrackingLabelShowDistance = Mathf.RoundToInt(GameManager.Settings.UniverseSize.Radius() * 2);     // TODO so it shows for now
         _systemHighlightRenderer = __FindSystemHighlight();
+        _renderersWithNoCameraLOSRelay = gameObject.GetComponentsInChildren<Renderer>()
+            .Where(r => r.gameObject.GetComponent<CameraLOSChangedRelay>() == null).Except(_systemHighlightRenderer);
     }
 
     protected override void Start() {
         base.Start();
         __InitializeContextMenu();
+        InitializeTrackingLabel();
     }
 
     protected override void InitializePresenter() {
-        base.InitializePresenter();
         Presenter = new SystemPresenter(this);
     }
 
-    protected override void RegisterComponentsToDisable() {
-        disableGameObjectOnNotDiscernible = new GameObject[1] { _systemHighlightRenderer.gameObject };
-        Component[] orbitalPlaneCollider = new Component[1] { collider };
-
-        Renderer[] renderersWithoutVisibilityRelays = gameObject.GetComponentsInChildren<Renderer>()
-            .Where<Renderer>(r => r.gameObject.GetComponent<CameraLOSChangedRelay>() == null).ToArray<Renderer>();
-        if (disableComponentOnNotDiscernible.IsNullOrEmpty()) {
-            disableComponentOnNotDiscernible = new Component[0];
+    protected override void OnDisplayModeChanging(ViewDisplayMode newMode) {
+        base.OnDisplayModeChanging(newMode);
+        ViewDisplayMode previousMode = DisplayMode;
+        switch (previousMode) {
+            case ViewDisplayMode.Hide:
+                if (_trackingLabel != null) {
+                    _trackingLabel.gameObject.SetActive(true);
+                }
+                _collider.enabled = true;
+                _systemHighlightRenderer.gameObject.SetActive(true);
+                // other renderers are handled by their own Views
+                break;
+            case ViewDisplayMode.TwoD:
+                Show2DIcon(false);
+                break;
+            case ViewDisplayMode.ThreeD:
+                if (newMode != ViewDisplayMode.ThreeDAnimation) {
+                    Show3DMesh(false);
+                    EnableSystemRenderersWithNoCameraLOSRelay(false);
+                }
+                break;
+            case ViewDisplayMode.ThreeDAnimation:
+                if (newMode != ViewDisplayMode.ThreeD) {
+                    Show3DMesh(false);
+                    EnableSystemRenderersWithNoCameraLOSRelay(false);
+                }
+                _systemHighlightRenderer.animation.enabled = false;
+                break;
+            case ViewDisplayMode.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(previousMode));
         }
-        disableComponentOnNotDiscernible = disableComponentOnNotDiscernible.Union<Component>(renderersWithoutVisibilityRelays)
-            .Union<Component>(orbitalPlaneCollider).ToArray();
+    }
+
+    protected override void OnDisplayModeChanged() {
+        base.OnDisplayModeChanged();
+        switch (DisplayMode) {
+            case ViewDisplayMode.Hide:
+                if (_trackingLabel != null) {
+                    _trackingLabel.gameObject.SetActive(false);
+                }
+                _collider.enabled = false;
+                _systemHighlightRenderer.gameObject.SetActive(false);
+                break;
+            case ViewDisplayMode.TwoD:
+                Show2DIcon(true);
+                break;
+            case ViewDisplayMode.ThreeD:
+                Show3DMesh(true);
+                EnableSystemRenderersWithNoCameraLOSRelay(true);
+                break;
+            case ViewDisplayMode.ThreeDAnimation:
+                Show3DMesh(true);
+                EnableSystemRenderersWithNoCameraLOSRelay(true);
+                _systemHighlightRenderer.animation.enabled = true;
+                break;
+            case ViewDisplayMode.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(DisplayMode));
+        }
+    }
+
+    private void EnableSystemRenderersWithNoCameraLOSRelay(bool toEnable) {
+        if (!_renderersWithNoCameraLOSRelay.IsNullOrEmpty()) {
+            _renderersWithNoCameraLOSRelay.ForAll(r => r.enabled = toEnable);
+        }
     }
 
     protected override void OnHover(bool isOver) {
         base.OnHover(isOver);
-        HighlightTrackingLabel(isOver);
+        if (DisplayMode != ViewDisplayMode.Hide) {
+            HighlightTrackingLabel(isOver);
+        }
     }
 
     void OnPress(bool isDown) {
-        if (IsSelected) {
-            Presenter.OnPressWhileSelected(isDown);
+        if (GameInputHelper.IsRightMouseButton()) {
+            OnRightPress(isDown);
+        }
+    }
+
+    private void OnRightPress(bool isDown) {
+        if (DisplayMode != ViewDisplayMode.Hide) {
+            if (IsSelected) {
+                Presenter.RequestContextMenu(isDown);
+            }
         }
     }
 
@@ -98,7 +158,9 @@ public class SystemView : View, ISystemViewable, ISelectable, IZoomToFurthest {
     }
 
     private void OnLeftClick() {
-        IsSelected = true;
+        if (DisplayMode != ViewDisplayMode.Hide) {
+            IsSelected = true;
+        }
     }
 
     protected override void OnPlayerIntelLevelChanged() {
@@ -114,41 +176,44 @@ public class SystemView : View, ISystemViewable, ISelectable, IZoomToFurthest {
     }
 
     public override void AssessHighlighting() {
-        if (!InCameraLOS || (!IsSelected && !IsFocus)) {
-            _systemHighlightRenderer.gameObject.SetActive(false);
+        if (DisplayMode == ViewDisplayMode.Hide) {
             Highlight(Highlights.None);
             return;
         }
         if (IsFocus) {
             if (IsSelected) {
-                _systemHighlightRenderer.gameObject.SetActive(true);
                 Highlight(Highlights.SelectedAndFocus);
                 return;
             }
-            _systemHighlightRenderer.gameObject.SetActive(true);
             Highlight(Highlights.Focused);
             return;
         }
-        _systemHighlightRenderer.gameObject.SetActive(true);
-        Highlight(Highlights.Selected);
+        if (IsSelected) {
+            Highlight(Highlights.Selected);
+            return;
+        }
+        Highlight(Highlights.None);
     }
 
     protected override void Highlight(Highlights highlight) {
         switch (highlight) {
             case Highlights.Focused:
+                _systemHighlightRenderer.gameObject.SetActive(true);
                 _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Main, UnityDebugConstants.FocusedColor.ToUnityColor());
                 _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Outline, UnityDebugConstants.FocusedColor.ToUnityColor());
                 break;
             case Highlights.Selected:
+                _systemHighlightRenderer.gameObject.SetActive(true);
                 _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Main, UnityDebugConstants.SelectedColor.ToUnityColor());
                 _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Outline, UnityDebugConstants.SelectedColor.ToUnityColor());
                 break;
             case Highlights.SelectedAndFocus:
+                _systemHighlightRenderer.gameObject.SetActive(true);
                 _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Main, UnityDebugConstants.GeneralHighlightColor.ToUnityColor());
                 _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Outline, UnityDebugConstants.GeneralHighlightColor.ToUnityColor());
                 break;
             case Highlights.None:
-                // nothing to do as the highlighter should already be inactive
+                _systemHighlightRenderer.gameObject.SetActive(false);
                 break;
             case Highlights.General:
             case Highlights.FocusAndGeneral:
@@ -157,28 +222,19 @@ public class SystemView : View, ISystemViewable, ISelectable, IZoomToFurthest {
         }
     }
 
-    protected override int EnableBasedOnDistanceToCamera(params bool[] conditions) {
-        bool condition = conditions.All<bool>(c => c == true);
-        int distanceToCamera = base.EnableBasedOnDistanceToCamera(condition);
-        if (enableTrackingLabel) {  // allows tester to enable while editor is playing
-            _trackingLabel = _trackingLabel ?? InitializeTrackingLabel();
-            bool toShowTrackingLabel = false;
-            if (condition) {
-                distanceToCamera = distanceToCamera == Constants.Zero ? _transform.DistanceToCameraInt() : distanceToCamera;    // not really needed
-                if (Utility.IsInRange(distanceToCamera, minTrackingLabelShowDistance, maxTrackingLabelShowDistance)) {
-                    toShowTrackingLabel = true;
-                }
-            }
-            //D.Log("SystemTrackingLabel.IsShowing = {0}.", toShowTrackingLabel);
-            _trackingLabel.IsShowing = toShowTrackingLabel;
-        }
-        return distanceToCamera;
+    private void Show3DMesh(bool toShow) {
+        // TODO System orbital plane mesh always shows for now
     }
 
-    private GuiTrackingLabel InitializeTrackingLabel() {
-        GuiTrackingLabel trackingLabel = Presenter.InitializeTrackingLabel();
-        trackingLabel.OffsetFromPivot = trackingLabelOffsetFromPivot;
-        return trackingLabel;
+    private void Show2DIcon(bool toShow) {
+        // TODO not clear there will be one
+    }
+
+    private void InitializeTrackingLabel() {
+        if (enableTrackingLabel) {
+            float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
+            _trackingLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(_transform, GuiTrackingLabelFactory.LabelPlacement.AboveTarget, minShowDistance);
+        }
     }
 
     private MeshRenderer __FindSystemHighlight() {
@@ -188,13 +244,35 @@ public class SystemView : View, ISystemViewable, ISelectable, IZoomToFurthest {
         return renderer;
     }
 
+    #region ContextMenu
+
     private void __InitializeContextMenu() {      // IMPROVE use of string
-        CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
+        _ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
         CtxMenu generalMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "GeneralMenu");
-        ctxObject.contextMenu = generalMenu;
-        D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
+        _ctxObject.contextMenu = generalMenu;
+        D.Assert(_ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
         UnityUtility.ValidateComponentPresence<Collider>(gameObject);
+
+        EventDelegate.Add(_ctxObject.onShow, OnContextMenuShow);
+        EventDelegate.Add(_ctxObject.onSelection, OnContextMenuSelection);
+        EventDelegate.Add(_ctxObject.onHide, OnContextMenuHide);
     }
+
+    private void OnContextMenuShow() {
+        // UNDONE
+    }
+
+    private void OnContextMenuSelection() {
+        // int itemId = CtxObject.current.selectedItem;
+        // D.Log("{0} selected context menu item {1}.", _transform.name, itemId);
+        // UNDONE
+    }
+
+    private void OnContextMenuHide() {
+        // UNDONE
+    }
+
+    #endregion
 
     protected override void Cleanup() {
         base.Cleanup();

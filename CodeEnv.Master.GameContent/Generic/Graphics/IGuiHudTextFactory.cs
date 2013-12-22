@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// Interface for GuiHudTextFactorys that make GuiHudText instances for display by the IGuiHud.
     /// </summary>
     /// <typeparam name="DataType">The type of Data.</typeparam>
-    public interface IGuiHudTextFactory<DataType> where DataType : Data {
+    public interface IGuiHudTextFactory<DataType> where DataType : AData {
 
         /// <summary>
         /// Makes or acquires an instance of GuiCursorHudText for the IntelLevel derived from the data provided.

@@ -7,7 +7,7 @@
 // <summary> 
 // File: GuiHudTextFactory.cs
 // Factory that makes GuiCursorHudText and IColoredTextList instances 
-// for limited interaction game objects like planets and moons.
+// for eye candy game objects.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Factory that makes GuiCursorHudText and IColoredTextList instances 
-    /// for limited interaction game objects like planets and moons.
+    /// for eye candy game objects.
     /// </summary>
     public class GuiHudTextFactory : AGuiHudTextFactory<GuiHudTextFactory, Data> {
 
@@ -55,6 +55,8 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.CompositionDetails:
                 case GuiHudLineKeys.Type:
                 case GuiHudLineKeys.ShipDetails:
+                case GuiHudLineKeys.SectorIndex:
+                case GuiHudLineKeys.Density:
                 case GuiHudLineKeys.Speed:
                     return _emptyColoredTextList;
 

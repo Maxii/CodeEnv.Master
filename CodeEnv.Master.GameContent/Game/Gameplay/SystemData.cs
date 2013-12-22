@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// All the data associated with a particular system.
     /// </summary>
-    public class SystemData : Data, IDisposable {
+    public class SystemData : AData, IDisposable {
 
         /// <summary>
         /// Readonly. The orbital start position (in local space) of any current or
@@ -92,7 +92,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="systemName">Name of the system.</param>
         /// <param name="composition">The composition.</param>
         public SystemData(string systemName, SystemComposition composition)
-            : base(systemName, Mathf.Infinity) {
+            : base(systemName) {
             Composition = composition;
             _settlement = composition.SettlementData;
             Subscribe();

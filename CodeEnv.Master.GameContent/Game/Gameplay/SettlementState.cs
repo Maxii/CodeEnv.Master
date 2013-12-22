@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: Item.cs
-// Universe Center Item.
+// File: SettlementState.cs
+// Enum defining the states a Settlement can operate in.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -14,23 +14,20 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-// default namespace
+namespace CodeEnv.Master.GameContent {
 
-using CodeEnv.Master.Common;
+    /// <summary>
+    /// Enum defining the states a Settlement can operate in.
+    /// </summary>
+    public enum SettlementState {
 
-/// <summary>
-/// Universe Center Item.
-/// </summary>
-public class Item : AItem {
+        None,
+        Idling,
+        ShowDying,
+        Dying,
+        ProcessOrders,
+        Dead
 
-    protected override void Awake() {
-        base.Awake();
-        Subscribe();
     }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
 }
 

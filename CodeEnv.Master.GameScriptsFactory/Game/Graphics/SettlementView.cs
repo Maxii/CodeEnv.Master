@@ -17,6 +17,8 @@
 // default namespace
 
 using System;
+using System.Collections;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
@@ -25,72 +27,79 @@ using UnityEngine;
 /// <summary>
 /// A class for managing the UI of a Settlement.
 /// </summary>
-public class SettlementView : MovingView {
+public class SettlementView : AFollowableView, ISettlementViewable {
 
-    protected new SettlementPresenter Presenter {
+    public new SettlementPresenter Presenter {
         get { return base.Presenter as SettlementPresenter; }
-        set { base.Presenter = value; }
+        protected set { base.Presenter = value; }
     }
 
-    private bool _isDetectable = true; // FIXME if starts false, it doesn't get updated right away...
-    /// <summary>
-    /// Indicates whether the item this view
-    /// is associated with is detectable by the human player. 
-    /// </summary>
-    public bool IsDetectable {
-        get { return _isDetectable; }
-        set { SetProperty<bool>(ref _isDetectable, value, "IsDetectable", OnIsDetectableChanged); }
-    }
+    public AudioClip dying;
+    private AudioSource _audioSource;
 
     private Color _originalMeshColor_Main;
     private Color _originalMeshColor_Specular;
     private Color _hiddenMeshColor;
     private Renderer _renderer;
 
+    private Animation _animation;
+
     protected override void Awake() {
         base.Awake();
+        _audioSource = UnityUtility.ValidateComponentPresence<AudioSource>(gameObject);
+        _animation = gameObject.GetComponentInChildren<Animation>();
         circleScaleFactor = 1.0F;
-        maxAnimateDistance = Mathf.RoundToInt(AnimationSettings.Instance.MaxShipAnimateDistanceFactor * Radius);
-        InitializeHighlighting();
+        InitializeMesh();
     }
 
     protected override void InitializePresenter() {
         Presenter = new SettlementPresenter(this);
     }
 
-    private void OnIsDetectableChanged() {
-        EnableBasedOnDiscernible(InCameraLOS, IsDetectable);
-        EnableBasedOnDistanceToCamera(InCameraLOS, IsDetectable);
-        AssessHighlighting();
-    }
-
-    protected override void OnInCameraLOSChanged() {
-        EnableBasedOnDiscernible(InCameraLOS, IsDetectable);
-        EnableBasedOnDistanceToCamera(InCameraLOS, IsDetectable);
-        AssessHighlighting();
-    }
-
-    protected override void OnPlayerIntelLevelChanged() {
-        base.OnPlayerIntelLevelChanged();
-        IsDetectable = PlayerIntelLevel != IntelLevel.Nil;
-    }
-
-    public override void AssessHighlighting() {
-        if (!IsDetectable || !InCameraLOS) {
-            ShowMesh(false);
-            Highlight(Highlights.None);
-            return;
+    protected override void OnDisplayModeChanging(ViewDisplayMode newMode) {
+        base.OnDisplayModeChanging(newMode);
+        ViewDisplayMode previousMode = DisplayMode;
+        switch (previousMode) {
+            case ViewDisplayMode.Hide:
+                break;
+            case ViewDisplayMode.TwoD:
+                Show2DIcon(false);
+                break;
+            case ViewDisplayMode.ThreeD:
+                if (newMode != ViewDisplayMode.ThreeDAnimation) { Show3DMesh(false); }
+                break;
+            case ViewDisplayMode.ThreeDAnimation:
+                if (newMode != ViewDisplayMode.ThreeD) { Show3DMesh(false); }
+                _animation.enabled = false;
+                break;
+            case ViewDisplayMode.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(previousMode));
         }
-        if (IsFocus) {
-            ShowMesh(true);
-            Highlight(Highlights.Focused);
-            return;
-        }
-        ShowMesh(true);
-        Highlight(Highlights.None);
     }
 
-    private void ShowMesh(bool toShow) {
+    protected override void OnDisplayModeChanged() {
+        base.OnDisplayModeChanged();
+        switch (DisplayMode) {
+            case ViewDisplayMode.Hide:
+                break;
+            case ViewDisplayMode.TwoD:
+                Show2DIcon(true);
+                break;
+            case ViewDisplayMode.ThreeD:
+                Show3DMesh(true);
+                break;
+            case ViewDisplayMode.ThreeDAnimation:
+                Show3DMesh(true);
+                _animation.enabled = true;
+                break;
+            case ViewDisplayMode.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(DisplayMode));
+        }
+    }
+
+    private void Show3DMesh(bool toShow) {
         if (toShow) {
             _renderer.material.SetColor(UnityConstants.MaterialColor_Main, _originalMeshColor_Main);
             _renderer.material.SetColor(UnityConstants.MaterialColor_Specular, _originalMeshColor_Specular);
@@ -103,24 +112,12 @@ public class SettlementView : MovingView {
         }
     }
 
-    protected override void Highlight(Highlights highlight) {
-        switch (highlight) {
-            case Highlights.Focused:
-                ShowCircle(true, Highlights.Focused);
-                break;
-            case Highlights.None:
-                ShowCircle(false, Highlights.Focused);
-                break;
-            case Highlights.Selected:
-            case Highlights.SelectedAndFocus:
-            case Highlights.General:
-            case Highlights.FocusAndGeneral:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(highlight));
-        }
+    private void Show2DIcon(bool toShow) {
+        Show3DMesh(toShow);
+        // TODO
     }
 
-    private void InitializeHighlighting() {
+    private void InitializeMesh() {
         _renderer = gameObject.GetComponentInChildren<Renderer>();
         _originalMeshColor_Main = _renderer.material.GetColor(UnityConstants.MaterialColor_Main);
         _originalMeshColor_Specular = _renderer.material.GetColor(UnityConstants.MaterialColor_Specular);
@@ -130,6 +127,51 @@ public class SettlementView : MovingView {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region ISettlementViewable Members
+
+    public event Action onShowCompletion;
+
+    public void ShowAttacking() {
+        // TODO
+    }
+
+    public void ShowHit() {
+        // TODO
+    }
+
+    public void ShowRepairing() {
+        // TODO
+    }
+
+    public void ShowRefitting() {
+        // TODO
+    }
+
+    public void StopShowing() {
+        // TODO
+    }
+
+    public void ShowDying() {
+        new Job(ShowingDying(), toStart: true);
+    }
+
+    private IEnumerator ShowingDying() {
+        if (dying != null) {
+            _audioSource.PlayOneShot(dying);
+        }
+        _collider.enabled = false;
+        //animation.Stop();
+        //yield return UnityUtility.PlayAnimation(animation, "die");  // show debree particles for some period of time?
+        yield return null;
+
+        var sc = onShowCompletion;
+        if (sc != null) {
+            sc();
+        }
+    }
+
+    #endregion
 
 }
 

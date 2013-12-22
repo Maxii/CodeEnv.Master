@@ -46,6 +46,8 @@ namespace CodeEnv.Master.GameContent {
                 {GuiHudLineKeys.Composition},
                 {GuiHudLineKeys.CompositionDetails},
                 {GuiHudLineKeys.ShipDetails},
+                {GuiHudLineKeys.SectorIndex},
+                {GuiHudLineKeys.Density},
                 {GuiHudLineKeys.Distance}
         };
 
@@ -83,6 +85,8 @@ namespace CodeEnv.Master.GameContent {
                 {GuiHudLineKeys.Composition, "{0}"},   // the format is dynamically constructed within the ColoredText_Composition class
                 {GuiHudLineKeys.CompositionDetails, "{0}"}, // the format is dynamically constructed within the ColoredText_Composition class
                 {GuiHudLineKeys.ShipDetails, "{0}, Mass: {1}, TurnRate: {2}"},
+                {GuiHudLineKeys.SectorIndex, "Sector {0}"},
+                {GuiHudLineKeys.Density, "Density: {0}"},
                 {GuiHudLineKeys.Distance, "Distance from Camera: {0} Units"} 
             };
             return baseDisplayLineContent;

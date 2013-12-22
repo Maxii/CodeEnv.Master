@@ -23,51 +23,56 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public sealed class AnimationSettings : AValuesHelper<AnimationSettings> {
 
-        private int _maxCelestialObjectAnimateDistanceFactor;
-        public int MaxCelestialObjectAnimateDistanceFactor {
+        private int _cameraDistanceThresholdFactor_3dAnimationsTo3dDisplayMode;
+        /// <summary>
+        /// The factor to use in generating the distance (in sectors) from the camera where a View
+        /// makes the Display mode transition from showing a 3D representation of
+        /// the object with Animations running to a 3D representation without animations.
+        /// </summary>
+        public int CameraDistanceThresholdFactor_3dAnimationsTo3dDisplayMode {
             get {
                 if (!isPropertyValuesInitialized) {
                     InitializePropertyValues();
                 }
-                return _maxCelestialObjectAnimateDistanceFactor;
+                return _cameraDistanceThresholdFactor_3dAnimationsTo3dDisplayMode;
             }
-            private set { _maxCelestialObjectAnimateDistanceFactor = value; }
+            private set { _cameraDistanceThresholdFactor_3dAnimationsTo3dDisplayMode = value; }
         }
 
-        private int _maxShipAnimateDistanceFactor;
-        public int MaxShipAnimateDistanceFactor {
+
+        private int _cameraDistanceThresholdFactor_3dTo2dDisplayMode;
+        /// <summary>
+        /// The factor to use in generating the distance (in sectors) from the camera where a View
+        /// makes the Display mode transition from showing a 3D representation of
+        /// the object to a 2D representation.
+        /// </summary>
+        public int CameraDistanceThresholdFactor_3dTo2dDisplayMode {
             get {
                 if (!isPropertyValuesInitialized) {
                     InitializePropertyValues();
                 }
-                return _maxShipAnimateDistanceFactor;
+                return _cameraDistanceThresholdFactor_3dTo2dDisplayMode;
             }
-            private set { _maxShipAnimateDistanceFactor = value; }
+            private set { _cameraDistanceThresholdFactor_3dTo2dDisplayMode = value; }
         }
 
 
-        private int _maxSystemAnimateDistance;
-        public int MaxSystemAnimateDistance {
+        private int _cameraDistanceThresholdFactor_2dToNoneDisplayMode;
+        /// <summary>
+        /// The factor to use in generating the distance (in sectors) from the camera where a View
+        /// makes the Display mode transition from showing a 2D representation of
+        /// the object to not showing it at all.
+        /// </summary>
+        public int CameraDistanceThresholdFactor_2dToNoneDisplayMode {
             get {
                 if (!isPropertyValuesInitialized) {
                     InitializePropertyValues();
                 }
-                return _maxSystemAnimateDistance;
+                return _cameraDistanceThresholdFactor_2dToNoneDisplayMode;
             }
-            private set { _maxSystemAnimateDistance = value; }
+            private set { _cameraDistanceThresholdFactor_2dToNoneDisplayMode = value; }
         }
 
-
-        private int _maxShipShowDistanceFactor;
-        public int MaxShipShowDistanceFactor {
-            get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
-                return _maxShipShowDistanceFactor;
-            }
-            private set { _maxShipShowDistanceFactor = value; }
-        }
 
         private AnimationSettings() {
             Initialize();
