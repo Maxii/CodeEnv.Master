@@ -275,14 +275,23 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     private void SetCameraSettings() {
         // assumes radius of universe is twice that of the galaxy so the furthest system in the galaxy should be at a distance1.5 times the radius of the universe
         _camera.nearClipPlane = 0.02F;
-        _camera.farClipPlane = _universeRadius * 2F;
         _camera.fieldOfView = 50F;
 
-        IList<Layers> layersToInclude = new List<Layers> { Layers.Default, Layers.TransparentFX, Layers.DummyTarget, Layers.UniverseEdge };
-        // Note on Layers.SectorView - I will dynamically add and remove Layers.SectorView when going in and out of SectorViewMode so the UICamera.EventReceiverMask will work. 
-        // That way my camera rays only encounter the sector's colliders (assuming they are left on) when in that mode. The colliders don't interfere with scrolling or anything as the 
-        // sector gameobjects aren't ICameraTargetable, but leaving the camera to figure that out takes more work
+        IList<Layers> layersToInclude = new List<Layers> { 
+            Layers.Default, Layers.TransparentFX, Layers.DummyTarget, Layers.UniverseEdge,
+            Layers.Ships, Layers.BasesSettlements, Layers.Planetoids, Layers.Stars
+        };
         _camera.cullingMask = LayerMaskExtensions.CreateInclusiveMask(layersToInclude.ToArray());
+
+        _camera.farClipPlane = _universeRadius * 2F;
+        //_camera.layerCullSpherical = true;
+        float[] cullDistances = new float[32];
+        cullDistances[(int)Layers.Ships] = TempGameValues.ShipRadius_Max * AnimationSettings.Instance.ShipLayerCullingDistanceFactor;   // 5
+        cullDistances[(int)Layers.BasesSettlements] = TempGameValues.StarBaseRadius * AnimationSettings.Instance.StarBaseSettlementLayerCullingDistanceFactor;  // 100
+        cullDistances[(int)Layers.Planetoids] = TempGameValues.PlanetoidRadius_Max * AnimationSettings.Instance.PlanetoidLayerCullingDistanceFactor; // 500
+        cullDistances[(int)Layers.Stars] = TempGameValues.StarRadius * AnimationSettings.Instance.StarLayerCullingDistanceFactor; // 3000
+
+        _camera.layerCullDistances = cullDistances;
     }
 
     private void InitializeCameraPreferences() {

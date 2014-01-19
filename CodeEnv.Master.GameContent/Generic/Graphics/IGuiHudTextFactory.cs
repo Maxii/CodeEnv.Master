@@ -27,19 +27,20 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Makes or acquires an instance of GuiCursorHudText for the IntelLevel derived from the data provided.
         /// </summary>
-        /// <param name="intelLevel">The intel level.</param>
+        /// <param name="intel">The intel.</param>
         /// <param name="data">The _data.</param>
         /// <returns></returns>
-        GuiHudText MakeInstance(IntelLevel intelLevel, DataType data);
+        GuiHudText MakeInstance(Intel intel, DataType data);
 
         /// <summary>
         /// Makes an instance of IColoredTextList for display by the IGuiHud.
         /// </summary>
         /// <param name="key">The key.</param>
-        /// <param name="intelLevel">The intel level.</param>
+        /// <param name="intel">The intel.</param>
         /// <param name="data">The data.</param>
         /// <returns></returns>
-        IColoredTextList MakeInstance(GuiHudLineKeys key, IntelLevel intelLevel, DataType data);
+        IColoredTextList MakeInstance(GuiHudLineKeys key, Intel intel, DataType data);
+
     }
 }
 

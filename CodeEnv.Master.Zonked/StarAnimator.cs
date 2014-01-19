@@ -20,6 +20,7 @@ using UnityEngine;
 /// <summary>
 /// Animates a Star's globe to simulate rotation.
 /// </summary>
+[Obsolete]
 public class StarAnimator : AMonoBase {
 
     [SerializeField]

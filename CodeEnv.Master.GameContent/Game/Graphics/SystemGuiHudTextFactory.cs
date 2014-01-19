@@ -29,14 +29,14 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IntelLevel intelLevel, SystemData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, Intel intel, SystemData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.Name);
                 case GuiHudLineKeys.Distance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
-                    return (data.LastHumanPlayerIntelDate != null) ? new ColoredTextList_Intel(data.LastHumanPlayerIntelDate, intelLevel) : _emptyColoredTextList;
+                    return (intel.DateStamp != null) ? new ColoredTextList_Intel(intel) : _emptyColoredTextList;
                 case GuiHudLineKeys.Owner:
                     return (data.Settlement != null) ? new ColoredTextList_Owner(data.Settlement.Owner) : _emptyColoredTextList;
                 case GuiHudLineKeys.Health:
@@ -51,8 +51,8 @@ namespace CodeEnv.Master.GameContent {
                     return new ColoredTextList_Resources(data.Resources);
                 case GuiHudLineKeys.Specials:
                     return (data.SpecialResources != null) ? new ColoredTextList_Specials(data.SpecialResources) : _emptyColoredTextList;
-                case GuiHudLineKeys.Type:
-                    return (data.Settlement != null) ? new ColoredTextList_String(data.Settlement.SettlementSize.GetDescription()) : _emptyColoredTextList;
+                case GuiHudLineKeys.Category:
+                    return (data.Settlement != null) ? new ColoredTextList_String(data.Settlement.Category.GetDescription()) : _emptyColoredTextList;
                 case GuiHudLineKeys.SettlementDetails:
                     return (data.Settlement != null) ? new ColoredTextList_Settlement(data.Settlement) : _emptyColoredTextList;
 

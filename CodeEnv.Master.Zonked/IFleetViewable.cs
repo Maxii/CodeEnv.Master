@@ -23,15 +23,16 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     ///  Interface used by FleetPresenters to communicate with their associated FleetViews.
     /// </summary>
-    public interface IFleetViewable : IViewable {
+    public interface IFleetViewable : ICommandViewable {
+        //public interface IFleetViewable : IViewable {
 
-        event Action onShowCompletion;
+        //event Action onShowCompletion;
 
-        Transform TrackingTarget { set; }
+        //Transform TrackingTarget { set; }
 
-        void ChangeFleetIcon(IIcon icon, GameColor color);
+        //void ChangeFleetIcon(IIcon icon, GameColor color);
 
-        void ShowDying();
+        //void ShowDying();
 
     }
 }

@@ -20,7 +20,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Enum identifying the alternative sizes of a Settlement.
     /// </summary>
-    public enum SettlementSize {
+    public enum SettlementCategory {
 
         None,
 

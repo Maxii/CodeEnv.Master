@@ -386,13 +386,27 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Determines whether this renderer is in the line of sight of (and therefore rendered by) the provided camera.
+        /// Does not take into account layer-specific farClipPlanes and my approach to a workaround is not reliable.
         /// </summary>
         /// <param name="renderer">The renderer.</param>
         /// <param name="camera">The camera.</param>
         /// <returns></returns>
+        [Obsolete]
         public static bool InLineOfSightOf(this Renderer renderer, Camera camera) {
             Plane[] frustrumPlanes = GeometryUtility.CalculateFrustumPlanes(camera);
-            return GeometryUtility.TestPlanesAABB(frustrumPlanes, renderer.bounds);
+            bool inDefaultFrustrum = GeometryUtility.TestPlanesAABB(frustrumPlanes, renderer.bounds);
+            if (inDefaultFrustrum) {
+                int layer = renderer.gameObject.layer;
+                float layerCullingDistance = Camera.main.layerCullDistances[layer];
+                if (layerCullingDistance != Constants.ZeroF) {
+                    float sqrDistanceToRenderer = Vector3.SqrMagnitude(renderer.transform.position - camera.transform.position);
+                    if (sqrDistanceToRenderer > Mathf.Pow(layerCullingDistance, 2F)) {
+                        // outside layer farClipPlane
+                        return false;
+                    }
+                }
+            }
+            return inDefaultFrustrum;
         }
 
     }

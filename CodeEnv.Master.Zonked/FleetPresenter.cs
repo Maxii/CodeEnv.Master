@@ -41,7 +41,7 @@ public class FleetPresenter : AMortalFocusablePresenter {
         : base(view) {
     }
 
-    protected override AItem InitilizeItemLinkage() {
+    protected override AItem AcquireItemReference() {
         return UnityUtility.ValidateMonoBehaviourPresence<FleetItem>(_viewGameObject);
     }
 

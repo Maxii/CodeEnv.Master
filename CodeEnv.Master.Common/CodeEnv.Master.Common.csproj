@@ -51,6 +51,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Gameplay\IntelScope.cs" />
+    <Compile Include="Game\Gameplay\IntelSource.cs" />
     <Compile Include="ThirdParty\AStateMachine.cs" />
     <Compile Include="ThirdParty\ABackgroundTask.cs" />
     <Compile Include="ThirdParty\ATask.cs" />
@@ -114,7 +116,6 @@
     <Compile Include="Generic\_Debug\IInstanceIdentity.cs" />
     <Compile Include="Game\GUI\SaveGameEvent.cs" />
     <Compile Include="Generic\Graphics\AStringBuilderTextEvent.cs" />
-    <Compile Include="Game\Gameplay\IntelLevel.cs" />
     <Compile Include="Generic\Math\Range.cs" />
     <Compile Include="Game\Gameplay\IQ.cs" />
     <Compile Include="Generic\Framework\PauseState.cs" />

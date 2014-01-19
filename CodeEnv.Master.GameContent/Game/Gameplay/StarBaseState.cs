@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: StarBaseState.cs
-// Enum defining the states a StarBase can operate in.
+// File: StarbaseState.cs
+// Enum defining the states a Starbase can operate in.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,15 +17,15 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Enum defining the states a StarBase can operate in.
+    /// Enum defining the states a Starbase can operate in.
     /// </summary>
-    public enum StarBaseState {
+    public enum StarbaseState {
 
         None,
         Idling,
-        ShowDying,
-        Dying,
         ProcessOrders,
+        Dying,
+        ShowDying,
         Dead
 
     }

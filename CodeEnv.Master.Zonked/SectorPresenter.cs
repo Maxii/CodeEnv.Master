@@ -31,7 +31,7 @@ public class SectorPresenter : APresenter {
 
     public SectorPresenter(IViewable view) : base(view) { }
 
-    protected override AItem InitilizeItemLinkage() {
+    protected override AItem AcquireItemReference() {
         return UnityUtility.ValidateMonoBehaviourPresence<SectorItem>(_viewGameObject);
     }
 

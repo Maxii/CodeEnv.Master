@@ -90,7 +90,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         }
         if (GameManager.Instance.CurrentState == GameState.RunningCountdown_1) {
             __SetIntelLevel();
-            DestroySystemManager();
+            DestroySystemCreator();
         }
     }
 
@@ -110,7 +110,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         _composition = new SystemComposition();
         foreach (var planet in _planets) {
             Transform transformCarryingPlanetType = planet.transform.parent.parent;
-            PlanetoidType pType = GetType<PlanetoidType>(transformCarryingPlanetType);
+            PlanetoidCategory pType = GetType<PlanetoidCategory>(transformCarryingPlanetType);
             string planetName = planet.gameObject.name; // if already in scene, the planet should already be named for its system and orbit
             PlanetoidData data = CreatePlanetData(pType, planetName);
             _composition.AddPlanet(data);
@@ -118,13 +118,13 @@ public class SystemCreator : AMonoBase, IDisposable {
 
         _star = gameObject.GetSafeMonoBehaviourComponentInChildren<StarItem>();
         Transform transformCarryingStarType = _star.transform;
-        StarType starType = GetType<StarType>(transformCarryingStarType);
+        StarCategory starType = GetType<StarCategory>(transformCarryingStarType);
         _composition.StarData = CreateStarData(starType);
 
         _settlement = gameObject.GetComponentInChildren<SettlementItem>();
         if (_settlement != null) {  // FIXME if provided system has no Settlement, the orbital slot reserved will be Vector3.zero
             Transform transformCarryingSettlementSize = _settlement.transform.parent.parent;
-            SettlementSize size = GetType<SettlementSize>(transformCarryingSettlementSize);
+            SettlementCategory size = GetType<SettlementCategory>(transformCarryingSettlementSize);
             _composition.SettlementData = CreateSettlementData(size);
             _composition.SettlementOrbitSlot = _settlement.transform.localPosition;
         }
@@ -138,48 +138,46 @@ public class SystemCreator : AMonoBase, IDisposable {
         int planetCount = RandomExtended<int>.Range(0, orbitSlotsAvailableForPlanets);
         for (int i = 0; i < planetCount; i++) {
 
-            IEnumerable<PlanetoidType> planetoidTypesToExclude = new PlanetoidType[] { default(PlanetoidType), 
-                PlanetoidType.Moon_001, PlanetoidType.Moon_002, PlanetoidType.Moon_003, PlanetoidType.Moon_004, PlanetoidType.Moon_005 };
-            PlanetoidType planetType = RandomExtended<PlanetoidType>.Choice(Enums<PlanetoidType>.GetValues().Except(planetoidTypesToExclude).ToArray());
+            IEnumerable<PlanetoidCategory> planetoidTypesToExclude = new PlanetoidCategory[] { default(PlanetoidCategory), 
+                PlanetoidCategory.Moon_001, PlanetoidCategory.Moon_002, PlanetoidCategory.Moon_003, PlanetoidCategory.Moon_004, PlanetoidCategory.Moon_005 };
+            PlanetoidCategory planetType = RandomExtended<PlanetoidCategory>.Choice(Enums<PlanetoidCategory>.GetValues().Except(planetoidTypesToExclude).ToArray());
 
             string planetName = "{0}, rest deferred until orbit assigned.".Inject(planetType.GetName());
             PlanetoidData planetData = CreatePlanetData(planetType, planetName);
             _composition.AddPlanet(planetData);
         }
 
-        StarType starType = Enums<StarType>.GetRandom(excludeDefault: true);
+        StarCategory starType = Enums<StarCategory>.GetRandom(excludeDefault: true);
         StarData starData = CreateStarData(starType);
         _composition.StarData = starData;
 
-        SettlementSize size = Enums<SettlementSize>.GetRandom(excludeDefault: false);   // allows no Settlement
-        if (size != SettlementSize.None) {
+        SettlementCategory size = Enums<SettlementCategory>.GetRandom(excludeDefault: false);   // allows no Settlement
+        if (size != SettlementCategory.None) {
             SettlementData settlementData = CreateSettlementData(size);
             _composition.SettlementData = settlementData;
         }
     }
 
-    private PlanetoidData CreatePlanetData(PlanetoidType pType, string planetName) {
+    private PlanetoidData CreatePlanetData(PlanetoidCategory pType, string planetName) {
         PlanetoidData data = new PlanetoidData(pType, planetName, 100000F, _systemName) {
             Capacity = 25,
             Resources = new OpeYield(3.1F, 2.0F, 4.8F),
             SpecialResources = new XYield(XResource.Special_1, 0.3F),
-            LastHumanPlayerIntelDate = new GameDate(),
         };
         return data;
     }
 
-    private StarData CreateStarData(StarType sType) {
+    private StarData CreateStarData(StarCategory sType) {
         string starName = _systemName + Constants.Space + CommonTerms.Star;
         StarData data = new StarData(sType, starName, _systemName) {
             Capacity = 100,
             Resources = new OpeYield(0F, 0F, 100F),
             SpecialResources = new XYield(XResource.Special_3, 0.3F),
-            LastHumanPlayerIntelDate = new GameDate()
         };
         return data;
     }
 
-    private SettlementData CreateSettlementData(SettlementSize size) {
+    private SettlementData CreateSettlementData(SettlementCategory size) {
         string settlementName = _systemName + Constants.Space + size.GetName();
         SettlementData data = new SettlementData(size, settlementName, 50F, _systemName) {
             Population = 100,
@@ -247,7 +245,7 @@ public class SystemCreator : AMonoBase, IDisposable {
     }
 
     private void BuildStar() {
-        StarType starType = _composition.StarData.StarType;
+        StarCategory starType = _composition.StarData.Category;
         GameObject starPrefab = RequiredPrefabs.Instance.stars.First(sp => sp.gameObject.name == starType.GetName()).gameObject;
         GameObject systemGo = _system.gameObject;
         GameObject starGo = UnityUtility.AddChild(systemGo, starPrefab);
@@ -257,7 +255,7 @@ public class SystemCreator : AMonoBase, IDisposable {
     private void BuildSettlement() {
         SettlementData data = _composition.SettlementData;
         if (data != null) {
-            SettlementSize size = data.SettlementSize;
+            SettlementCategory size = data.Category;
             GameObject settlementPrefab = RequiredPrefabs.Instance.settlements.First(sp => sp.gameObject.name == size.GetName());
             string nameOfSettlementSize = settlementPrefab.name;
             GameObject systemGo = _system.gameObject;
@@ -268,10 +266,10 @@ public class SystemCreator : AMonoBase, IDisposable {
     }
 
     private void InitializePlanets() {
-        IDictionary<PlanetoidType, Stack<PlanetoidData>> typeLookup = new Dictionary<PlanetoidType, Stack<PlanetoidData>>();
+        IDictionary<PlanetoidCategory, Stack<PlanetoidData>> typeLookup = new Dictionary<PlanetoidCategory, Stack<PlanetoidData>>();
         foreach (var planet in _planets) {
             Transform transformCarryingPlanetType = planet.transform.parent.parent; // top level planetarySystem go holding orbits, planet and moons
-            PlanetoidType pType = GetType<PlanetoidType>(transformCarryingPlanetType);
+            PlanetoidCategory pType = GetType<PlanetoidCategory>(transformCarryingPlanetType);
 
             Stack<PlanetoidData> dataStack;
             if (!typeLookup.TryGetValue(pType, out dataStack)) {
@@ -293,10 +291,8 @@ public class SystemCreator : AMonoBase, IDisposable {
                 foreach (var moon in moons) {
                     string planetName = planet.Data.Name;
                     string moonName = planetName + _moonLetters[letterIndex];
-                    PlanetoidType moonType = GetType<PlanetoidType>(moon.transform);
-                    PlanetoidData data = new PlanetoidData(moonType, moonName, 10000F, _systemName) {
-                        LastHumanPlayerIntelDate = new GameDate()
-                    };
+                    PlanetoidCategory moonType = GetType<PlanetoidCategory>(moon.transform);
+                    PlanetoidData data = new PlanetoidData(moonType, moonName, 10000F, _systemName) { };
                     moon.Data = data;
                     letterIndex++;
                     // include the System and moon as a target in any child with a CameraLOSChangedRelay
@@ -311,13 +307,13 @@ public class SystemCreator : AMonoBase, IDisposable {
         _star.Data = _composition.StarData; // automatically assigns the transform to data and aligns the transform's name to held by data
         // include the System and Star as a target in any child with a CameraLOSChangedRelay
         _star.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().AddTarget(_system.transform, _star.transform);
-        // PlayerIntelLevel is determined by the IntelLevel of the System
+        // PlayerIntel is determined by the Intel of the System
     }
 
     private void InitializeSettlement() {
         if (_settlement != null) {
             _settlement.Data = _composition.SettlementData;
-            // PlayerIntelLevel is determined by the IntelLevel of the System
+            // PlayerIntel is determined by the Intel of the System
             // SystemData gets settlement data assigned to it when it is created via the composition
             // include the System and Settlement as a target in any child with a CameraLOSChangedRelay
             _settlement.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().AddTarget(_system.transform, _settlement.transform);
@@ -348,26 +344,26 @@ public class SystemCreator : AMonoBase, IDisposable {
         IList<PlanetoidItem> planetsToDestroy = null;
         Stack<int>[] slots;
         foreach (var planet in _planets) {
-            var pType = planet.Data.PlanetoidType;
+            var pType = planet.Data.Category;
             switch (pType) {
-                case PlanetoidType.Volcanic:
+                case PlanetoidCategory.Volcanic:
                     slots = new Stack<int>[] { innerStack, midStack };
                     break;
-                case PlanetoidType.Terrestrial:
+                case PlanetoidCategory.Terrestrial:
                     slots = new Stack<int>[] { midStack, innerStack, outerStack };
                     break;
-                case PlanetoidType.Ice:
+                case PlanetoidCategory.Ice:
                     slots = new Stack<int>[] { outerStack, midStack };
                     break;
-                case PlanetoidType.GasGiant:
+                case PlanetoidCategory.GasGiant:
                     slots = new Stack<int>[] { outerStack, midStack };
                     break;
-                case PlanetoidType.Moon_001:
-                case PlanetoidType.Moon_002:
-                case PlanetoidType.Moon_003:
-                case PlanetoidType.Moon_004:
-                case PlanetoidType.Moon_005:
-                case PlanetoidType.None:
+                case PlanetoidCategory.Moon_001:
+                case PlanetoidCategory.Moon_002:
+                case PlanetoidCategory.Moon_003:
+                case PlanetoidCategory.Moon_004:
+                case PlanetoidCategory.Moon_005:
+                case PlanetoidCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(pType));
             }
@@ -406,10 +402,7 @@ public class SystemCreator : AMonoBase, IDisposable {
     }
 
     private void InitializeSystem() {
-        SystemData data = new SystemData(_systemName, _composition) {  // the data in composition should stay current as data values are changed
-            // there is no parentName for a System
-            LastHumanPlayerIntelDate = new GameDate(),
-        };
+        SystemData data = new SystemData(_systemName, _composition);
         _system.Data = data;
         // include the System as a target in any child with a CameraLOSChangedRelay
         _system.gameObject.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(r => r.AddTarget(_system.transform));
@@ -432,7 +425,7 @@ public class SystemCreator : AMonoBase, IDisposable {
     }
 
     private void __SetIntelLevel() {
-        _system.gameObject.GetSafeInterface<ISystemViewable>().PlayerIntelLevel = IntelLevel.Complete; // Enums<IntelLevel>.GetRandom(excludeDefault: true);
+        _system.gameObject.GetSafeInterface<IViewable>().PlayerIntel = new Intel(IntelScope.Comprehensive, IntelSource.InfoNet);
     }
 
     private void GenerateOrbitSlotStartLocation() {
@@ -450,7 +443,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         return Enums<T>.Parse(transformWithTypeName.name);
     }
 
-    private void DestroySystemManager() {
+    private void DestroySystemCreator() {
         foreach (Transform child in _transform) {
             child.parent = _systemsFolder;
         }

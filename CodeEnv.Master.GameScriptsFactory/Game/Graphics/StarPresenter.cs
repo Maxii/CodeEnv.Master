@@ -30,14 +30,14 @@ public class StarPresenter : AFocusablePresenter {
         protected set { base.Item = value; }
     }
 
-    private ISystemViewable _systemView;
+    private SystemView _systemView;
 
     public StarPresenter(IViewable view)
         : base(view) {
-        _systemView = _viewGameObject.GetSafeInterfaceInParents<ISystemViewable>();
+        _systemView = _viewGameObject.GetSafeMonoBehaviourComponentInParents<SystemView>();
     }
 
-    protected override AItem InitilizeItemLinkage() {
+    protected override AItem AcquireItemReference() {
         return UnityUtility.ValidateMonoBehaviourPresence<StarItem>(_viewGameObject);
     }
 
@@ -46,7 +46,7 @@ public class StarPresenter : AFocusablePresenter {
     }
 
     public void OnHover(bool isOver) {
-        _systemView.HighlightTrackingLabel(isOver);
+        (_systemView as IHighlightTrackingLabel).HighlightTrackingLabel(isOver);
     }
 
     public void OnLeftClick() {

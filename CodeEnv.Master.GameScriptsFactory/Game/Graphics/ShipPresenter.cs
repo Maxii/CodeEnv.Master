@@ -34,20 +34,34 @@ public class ShipPresenter : AMortalFocusablePresenter {
         protected set { base.Item = value; }
     }
 
-    protected new IShipViewable View {
-        get { return base.View as IShipViewable; }
+    //protected new IShipViewable View {
+    //    get { return base.View as IShipViewable; }
+    //}
+
+    protected new IElementViewable View {
+        get { return base.View as IElementViewable; }
     }
 
-    private IFleetViewable _fleetView;
+    //private IFleetViewable _fleetView;
+    private ICommandViewable _fleetView;
 
-    public ShipPresenter(IShipViewable view)
+    //public ShipPresenter(IShipViewable view)
+    //    : base(view) {
+    //    FleetCreator fleetMgr = _viewGameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>();
+    //    _fleetView = fleetMgr.gameObject.GetSafeInterfaceInChildren<IFleetViewable>();
+    //    Subscribe();
+    //}
+
+    public ShipPresenter(IElementViewable view)
         : base(view) {
         FleetCreator fleetMgr = _viewGameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>();
-        _fleetView = fleetMgr.gameObject.GetSafeInterfaceInChildren<IFleetViewable>();
+        //_fleetView = fleetMgr.gameObject.GetSafeInterfaceInChildren<IFleetViewable>();
+        _fleetView = fleetMgr.gameObject.GetSafeInterfaceInChildren<ICommandViewable>();
         Subscribe();
     }
 
-    protected override AItem InitilizeItemLinkage() {
+
+    protected override AItem AcquireItemReference() {
         return UnityUtility.ValidateMonoBehaviourPresence<ShipItem>(_viewGameObject);
     }
 
@@ -66,7 +80,6 @@ public class ShipPresenter : AMortalFocusablePresenter {
     private void OnShipStateChanging(ShipState newState) {
         ShipState previousState = Item.CurrentState;
         switch (previousState) {
-            case ShipState.Entrenching:
             case ShipState.Refitting:
             case ShipState.Repairing:
                 // the state is changing from one of these states so stop the Showing
@@ -77,6 +90,7 @@ public class ShipPresenter : AMortalFocusablePresenter {
             case ShipState.ShowDying:
                 // no need to stop any of these showing as they have already completed
                 break;
+            case ShipState.Entrenching:
             case ShipState.ProcessOrders:
             case ShipState.MovingTo:
             case ShipState.Idling:
@@ -106,7 +120,7 @@ public class ShipPresenter : AMortalFocusablePresenter {
                 View.ShowDying();
                 break;
             case ShipState.Entrenching:
-                View.ShowEntrenching();
+                //View.ShowEntrenching();   // no current plans to show entrenching animation at this stage
                 break;
             case ShipState.Refitting:
                 View.ShowRefitting();

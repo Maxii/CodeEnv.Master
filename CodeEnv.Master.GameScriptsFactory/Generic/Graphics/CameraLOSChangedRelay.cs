@@ -19,6 +19,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 using System;
 using System.Linq;
+using System.Text;
 
 /// <summary>
 /// Conveys changes in its Renderer's 'visibility state' (in or out of the camera's line of sight) to 
@@ -87,14 +88,23 @@ public class CameraLOSChangedRelay : AMonoBase, IDisposable {
         _isRunning = GameStatus.Instance.IsRunning;
         if (_isRunning) {
             // all relay targets start out initialized with IsVisible = true. This just initializes their list of child meshes that think they are visible
-            OnBecameVisible();
+            InitializeAsVisible();
         }
     }
 
-    private bool _inCameraLOS;    // starts false so startup OnBecameVisible events don't generate warnings in ValidateVisibiltyChange
+    private bool __isInitialization;
+    /// <summary>
+    /// Initializes all ICameraLOSChangedClients as InCameraLOS whether they are or not.
+    /// </summary>
+    private void InitializeAsVisible() {
+        __isInitialization = true;
+        OnBecameVisible();
+        __isInitialization = false;
+    }
+
     void OnBecameVisible() {
-        //D.Log("{0} VisibilityRelay has received OnBecameVisible().", _transform.name);
-        if (ValidateCameraLOSChange(inLOS: true)) {
+        //D.Log("{0} CameraLOSChangedRelay has received OnBecameVisible(). IsRunning = {1}, IsInitialization = {2}.", _transform.name, _isRunning, __isInitialization);
+        if (__isInitialization || ValidateCameraLOSChange(inLOS: true)) {
             for (int i = 0; i < relayTargets.Count; i++) {
                 ICameraLOSChangedClient client = _iRelayTargets[i];
                 if (client != null) {
@@ -109,12 +119,11 @@ public class CameraLOSChangedRelay : AMonoBase, IDisposable {
             //        D.Log("{0} has notified a client of becoming Visible.", _transform.name);
             //    }
             //}
-            _inCameraLOS = true;
         }
     }
 
     void OnBecameInvisible() {
-        //D.Log("{0} VisibilityRelay has received OnBecameInvisible().", _transform.name);
+        //D.Log("{0} CameraLOSChangedRelay has received OnBecameInvisible(). IsRunning = {1}.", _transform.name, _isRunning);
         if (ValidateCameraLOSChange(inLOS: false)) {
             for (int i = 0; i < relayTargets.Count; i++) {
                 Transform t = relayTargets[i];
@@ -126,7 +135,6 @@ public class CameraLOSChangedRelay : AMonoBase, IDisposable {
                     }
                 }
             }
-            _inCameraLOS = false;
         }
     }
 
@@ -146,17 +154,17 @@ public class CameraLOSChangedRelay : AMonoBase, IDisposable {
             return false;   // see SetupDocs.txt for approach to visibility
         }
         bool isValid = true;
-        string visibility = inLOS ? "Visible" : "Invisible";
-        if (inLOS == _inCameraLOS) {
-            //D.LogContext("Duplicate {0}.OnBecame{1}() received and filtered out.".Inject(gameObject.name, visibility), this);
-            isValid = false;
-        }
-        if (gameObject.activeInHierarchy) {
-            if (inLOS != renderer.InLineOfSightOf(Camera.main)) {
-                D.WarnContext("{0}.OnBecame{1}() received from a camera that is not Camera.main.".Inject(gameObject.name, visibility), this);
-                isValid = false;
-            }
-        }
+        //string visibility = inLOS ? "Visible" : "Invisible";
+        //if (gameObject.activeInHierarchy) {
+        //    if (inLOS != renderer.InLineOfSightOf(Camera.main)) {                         // FIXME this test does not reliably work
+        //        StringBuilder sb = new StringBuilder("CameraLOSState: ");
+        //        foreach (Camera c in Camera.allCameras) {
+        //            sb.AppendFormat("{0}.inLOS = {1}, ", c.name, renderer.InLineOfSightOf(c));
+        //        }
+        //        D.WarnContext("{0}.OnBecame{1}() error. {2}.".Inject(gameObject.name, visibility, sb.ToString()), this);
+        //        isValid = false;
+        //    }
+        //}
         return isValid;
     }
 

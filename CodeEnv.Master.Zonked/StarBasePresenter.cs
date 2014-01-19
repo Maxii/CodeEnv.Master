@@ -38,9 +38,10 @@ public class StarBasePresenter : AMortalFocusablePresenter {
 
     public StarBasePresenter(IStarBaseViewable view)
         : base(view) {
+        Subscribe();
     }
 
-    protected override AItem InitilizeItemLinkage() {
+    protected override AItem AcquireItemReference() {
         return UnityUtility.ValidateMonoBehaviourPresence<StarBaseItem>(_viewGameObject);
     }
 
@@ -50,20 +51,20 @@ public class StarBasePresenter : AMortalFocusablePresenter {
 
     protected override void Subscribe() {
         base.Subscribe();
-        _subscribers.Add(Item.SubscribeToPropertyChanged<StarBaseItem, StarBaseState>(sb => sb.CurrentState, OnStarBaseStateChanged));
+        _subscribers.Add(Item.SubscribeToPropertyChanged<StarBaseItem, StarbaseState>(sb => sb.CurrentState, OnStarBaseStateChanged));
         View.onShowCompletion += Item.OnShowCompletion;
     }
 
     private void OnStarBaseStateChanged() {
-        StarBaseState state = Item.CurrentState;
+        StarbaseState state = Item.CurrentState;
         switch (state) {
-            case StarBaseState.ShowDying:
+            case StarbaseState.ShowDying:
                 View.ShowDying();
                 break;
-            case StarBaseState.Idling:
+            case StarbaseState.Idling:
                 // do nothing
                 break;
-            case StarBaseState.None:
+            case StarbaseState.None:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(state));
         }

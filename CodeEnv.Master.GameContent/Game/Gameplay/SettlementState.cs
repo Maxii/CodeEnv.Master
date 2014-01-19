@@ -23,9 +23,9 @@ namespace CodeEnv.Master.GameContent {
 
         None,
         Idling,
-        ShowDying,
-        Dying,
         ProcessOrders,
+        Dying,
+        ShowDying,
         Dead
 
     }

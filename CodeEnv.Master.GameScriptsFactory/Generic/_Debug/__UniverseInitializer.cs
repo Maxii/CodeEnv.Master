@@ -39,7 +39,8 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
     //private Item[] _stars;
     //private Item[] _planetoids;
     private UniverseCenterItem _universeCenter;
-    private StarBaseItem[] _starBases;
+    //private StarBaseItem[] _starBases;
+    //private FacilityItem[] _facilities;
 
     protected override void Awake() {
         base.Awake();
@@ -69,7 +70,8 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
         //_planetoids = celestialObjects.Where(co => co.gameObject.GetComponent<MovingView>() != null).ToArray();
         //_universeCenter = celestialObjects.Single(co => co.gameObject.GetComponent<UniverseCenterView>() != null);
         _universeCenter = gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterItem>();
-        _starBases = gameObject.GetSafeMonoBehaviourComponentsInChildren<StarBaseItem>();
+        //_starBases = gameObject.GetSafeMonoBehaviourComponentsInChildren<StarBaseItem>();
+        //_facilities = gameObject.GetSafeMonoBehaviourComponentsInChildren<FacilityItem>();
 
         //_obstacleLocations = _systems.Select(s => s.transform.position).ToList();
         //_obstacleLocations.Add(_universeCenter.transform.position);
@@ -87,7 +89,8 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
             InitializeGameObjectData();
         }
         if (_gameMgr.CurrentState == GameState.RunningCountdown_2) {
-            InitializePlayerIntelLevel();
+            //InitializePlayerIntelLevel();
+            InitializePlayerIntel();
         }
     }
 
@@ -97,7 +100,8 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
         //InitializeStars();
         //InitializePlanetoids();
         InitializeCenter();
-        InitializeStarBases();
+        //InitializeStarBases();
+        //InitializeFacilities();
 
         //InitializeFleets();
     }
@@ -186,26 +190,47 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
         }
     }
 
-    private void InitializeStarBases() {
-        if (!_starBases.IsNullOrEmpty()) {
-            int baseCount = 0;
-            foreach (var starBase in _starBases) {
-                StarBaseData data = new StarBaseData("StarBase_{0}".Inject(baseCount), 50F);
-                data.LastHumanPlayerIntelDate = new GameDate();
-                data.Strength = new CombatStrength();
-                data.MaxTurnRate = 90F;
-                data.Owner = GameManager.Instance.HumanPlayer;
+    //private void InitializeStarBases() {
+    //    if (!_starBases.IsNullOrEmpty()) {
+    //        int count = 0;
+    //        foreach (var sbi in _starBases) {
+    //            StarBaseData data = new StarBaseData("StarBase_{0}".Inject(count), 50F);
+    //            data.Strength = new CombatStrength();
+    //            data.Owner = GameManager.Instance.HumanPlayer;
+    //            data.Size = StarBaseSize.DistrictBase;
 
-                starBase.Data = data;
-                starBase.enabled = true;
-                var sb = starBase.gameObject.GetSafeMonoBehaviourComponent<StarBaseView>();
-                if (sb != null) {
-                    sb.enabled = true;
-                }
-                baseCount++;
-            }
-        }
-    }
+    //            sbi.Data = data;
+    //            sbi.enabled = true;
+    //            var sbv = sbi.gameObject.GetSafeMonoBehaviourComponent<StarBaseView>();
+    //            if (sbv != null) {
+    //                sbv.enabled = true;
+    //            }
+    //            count++;
+    //        }
+    //    }
+    //}
+
+    //private void InitializeFacilities() {
+    //    if (!_facilities.IsNullOrEmpty()) {
+    //        int count = 0;
+    //        foreach (var fi in _facilities) {
+    //            FacilityData data = new FacilityData("Facility {0}".Inject(count), 50F);
+    //            data.Strength = new CombatStrength();
+    //            data.Owner = GameManager.Instance.HumanPlayer;
+    //            data.Type = FacilityType.Economic;
+
+    //            fi.Data = data;
+    //            fi.enabled = true;
+    //            var fv = fi.gameObject.GetSafeMonoBehaviourComponent<FacilityView>();
+    //            if (fv != null) {
+    //                fv.enabled = true;
+    //            }
+    //            count++;
+    //        }
+    //    }
+    //}
+
+
 
     // **************** New Section now randomly instantiates fleets of ships rather than just find pre-existing ones ********************************
 
@@ -261,14 +286,17 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
     /// <summary>
     /// PlayerIntelLevel changes immediately propogate through COs and Ships so initialize this last in case the change pulls Data.
     /// </summary>
-    private void InitializePlayerIntelLevel() {
+    private void InitializePlayerIntel() {
         //_systemMgrs.ForAll<SystemManager>(sm => sm.gameObject.GetSafeInterfaceInChildren<ISystemViewable>().PlayerIntelLevel
         //    = Enums<IntelLevel>.GetRandom(excludeDefault: true));
-        _universeCenter.gameObject.GetSafeInterface<IViewable>().PlayerIntelLevel = Enums<IntelLevel>.GetRandom(excludeDefault: true);
+        if (_universeCenter != null) {  // allows me to deactivate it
+            _universeCenter.gameObject.GetSafeInterface<IViewable>().PlayerIntel = new Intel(IntelScope.Comprehensive, IntelSource.InfoNet);
+        }
         //_fleetMgrs.ForAll<FleetManager>(fm => fm.gameObject.GetSafeInterfaceInChildren<IFleetViewable>().PlayerIntelLevel
         //    = RandomExtended<IntelLevel>.Choice(Enums<IntelLevel>.GetValues().Except(default(IntelLevel), IntelLevel.Nil).ToArray()));
         //= IntelLevel.Nil);
-        _starBases.ForAll<StarBaseItem>(sb => sb.gameObject.GetSafeInterface<IStarBaseViewable>().PlayerIntelLevel = IntelLevel.Complete);
+        //_starBases.ForAll<StarBaseItem>(sbi => sbi.gameObject.GetSafeInterface<IStarBaseViewable>().PlayerIntel = new Intel(IntelScope.Comprehensive, IntelSource.InfoNet));
+        //_facilities.ForAll<FacilityItem>(fi => fi.gameObject.GetSafeInterface<IFacilityViewable>().PlayerIntel = new Intel(IntelScope.Comprehensive, IntelSource.InfoNet));
     }
 
     protected override void OnDestroy() {

@@ -29,18 +29,18 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IntelLevel intelLevel, ShipData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, Intel intel, ShipData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
-                    // ships donot show name if IntelLevel is Unknown
-                    return intelLevel != IntelLevel.Unknown ? new ColoredTextList_String(data.Name) : _emptyColoredTextList;
+                    // ships donot show name if IntelScope is simply Aware
+                    return intel.Scope != IntelScope.Aware ? new ColoredTextList_String(data.Name) : _emptyColoredTextList;
                 case GuiHudLineKeys.ParentName:
                     // ships donot show name of the fleet if IntelLevel is Unknown
-                    return intelLevel != IntelLevel.Unknown ? new ColoredTextList_String(data.OptionalParentName) : _emptyColoredTextList;
+                    return intel.Scope != IntelScope.Aware ? new ColoredTextList_String(data.OptionalParentName) : _emptyColoredTextList;
                 case GuiHudLineKeys.Distance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
-                    return (data.LastHumanPlayerIntelDate != null) ? new ColoredTextList_Intel(data.LastHumanPlayerIntelDate, intelLevel) : _emptyColoredTextList;
+                    return (intel.DateStamp != null) ? new ColoredTextList_Intel(intel) : _emptyColoredTextList;
                 case GuiHudLineKeys.Speed:
                     return new ColoredTextList_Speed(data.CurrentSpeed, data.MaxSpeed);
                 case GuiHudLineKeys.Owner:
@@ -51,8 +51,8 @@ namespace CodeEnv.Master.GameContent {
                     return new ColoredTextList<float>(Constants.FormatFloat_0Dp, data.Strength.Combined);
                 case GuiHudLineKeys.CombatStrengthDetails:
                     return new ColoredTextList_Combat(data.Strength);
-                case GuiHudLineKeys.Type:
-                    return new ColoredTextList_String(data.Hull.GetDescription());
+                case GuiHudLineKeys.Category:
+                    return new ColoredTextList_String(data.ElementCategory.GetDescription());
                 case GuiHudLineKeys.ShipDetails:
                     return new ColoredTextList_Ship(data);
 

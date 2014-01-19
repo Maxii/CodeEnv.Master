@@ -29,36 +29,52 @@ using UnityEngine;
 /// </summary>
 public abstract class AView : AMonoBase, IViewable, ICameraLOSChangedClient, IDisposable {
 
-    private ViewDisplayMode _displayMode = ViewDisplayMode.ThreeDAnimation; // start up showing all, then sync up
-    protected ViewDisplayMode DisplayMode {
-        get { return _displayMode; }
-        set { SetProperty<ViewDisplayMode>(ref _displayMode, value, "DisplayMode", OnDisplayModeChanged, OnDisplayModeChanging); }
-    }
-
-    private ViewDisplayMode _cameraDistanceGeneratedDisplayMode = ViewDisplayMode.ThreeDAnimation;  // start up showing all, then sync up
-
     private IList<Transform> _meshesInCameraLOS = new List<Transform>();    // OPTIMIZE can be simplified to simple incrementing/decrementing counter
+    private IList<IDisposable> _subscribers;
 
     protected override void Awake() {
         base.Awake();
         enabled = false;
     }
 
-    protected virtual void OnPlayerIntelLevelChanged() {
-        AssessDisplayMode();
+    protected override void Start() {
+        base.Start();
+        InitializePresenter();  // moved from Awake as some Presenters need immediate access to this Behaviour's parent which may not yet be assigned if Instantiated at runtime
+    }
+
+    protected abstract void InitializePresenter();
+
+    protected virtual void Subscribe() {
+        if (_subscribers == null) {
+            _subscribers = new List<IDisposable>();
+        }
+        _subscribers.Add(PlayerIntel.SubscribeToPropertyChanged<Intel, IntelSource>(pi => pi.Source, OnPlayerIntelContentChanged));
+    }
+
+    private void OnPlayerIntelChanging(Intel newIntel) {
+        Unsubscribe();
+    }
+
+
+    private void OnPlayerIntelChanged() {
+        Subscribe();
+        OnPlayerIntelContentChanged();
+    }
+
+    protected virtual void OnPlayerIntelContentChanged() {
+        AssessDiscernability();
         if (HudPublisher != null && HudPublisher.IsHudShowing) {
             ShowHud(true);
         }
     }
 
     protected virtual void OnInCameraLOSChanged() {
-        AssessDisplayMode();
+        AssessDiscernability();
     }
 
-    protected virtual void OnDisplayModeChanging(ViewDisplayMode newMode) { }
-
-    protected virtual void OnDisplayModeChanged() {
-        if (DisplayMode == ViewDisplayMode.Hide) {
+    protected virtual void OnIsDiscernibleChanged() {
+        D.Log("{0}.OnIsDiscernibleChanged(), isDiscernible = {1}.", _transform.name, IsDiscernible);
+        if (!IsDiscernible) {
             ShowHud(false);
         }
     }
@@ -77,27 +93,23 @@ public abstract class AView : AMonoBase, IViewable, ICameraLOSChangedClient, IDi
 
         if (InCameraLOS == (_meshesInCameraLOS.Count == 0)) {
             // visibility state of this object should now change
+            D.Log("{0}.InCameraLOS changed to {1}.", gameObject.name, !InCameraLOS);
             InCameraLOS = !InCameraLOS;
-            //D.Log("{0}.InCameraLOS changed to {1}.", gameObject.name, InCameraLOS);
         }
     }
 
-    private void AssessDisplayMode() {
-        if (!InCameraLOS || PlayerIntelLevel == IntelLevel.Nil || _cameraDistanceGeneratedDisplayMode == ViewDisplayMode.Hide) {
-            DisplayMode = ViewDisplayMode.Hide;
-            return;
-        }
-        if (InCameraLOS && PlayerIntelLevel != IntelLevel.Nil) {
-            DisplayMode = _cameraDistanceGeneratedDisplayMode;
-        }
+    protected virtual void AssessDiscernability() {
+        //D.Log("{0}.{1}.AssessDiscernability() called. PlayerIntel.Source = {2}.", _transform.parent.name, _transform.name, PlayerIntel.Source.GetName());
+        IsDiscernible = InCameraLOS && PlayerIntel.Source != IntelSource.None;
     }
 
     public void ShowHud(bool toShow) {
-        if (HudPublisher != null) {
-            HudPublisher.ShowHud(toShow, PlayerIntelLevel);
+        if (!enabled) { return; }
+        if (HudPublisher == null) {
+            D.Warn("{0} HudPublisher is null.", gameObject.name);
             return;
         }
-        D.Warn("{0} HudPublisher is null.", gameObject.name);
+        HudPublisher.ShowHud(toShow, PlayerIntel);
     }
 
     protected override void OnDestroy() {
@@ -109,34 +121,39 @@ public abstract class AView : AMonoBase, IViewable, ICameraLOSChangedClient, IDi
         if (HudPublisher != null) {
             (HudPublisher as IDisposable).Dispose();
         }
+        Unsubscribe();
+    }
+
+    protected void Unsubscribe() {
+        if (_subscribers != null) {
+            _subscribers.ForAll(s => s.Dispose());
+            _subscribers.Clear();
+        }
     }
 
     #region IViewable Members
 
     public abstract float Radius { get; }
 
-    private IntelLevel _playerIntelLevel;
-    public virtual IntelLevel PlayerIntelLevel {
-        get {
-            return _playerIntelLevel;
-        }
-        set {
-            SetProperty<IntelLevel>(ref _playerIntelLevel, value, "PlayerIntelLevel", OnPlayerIntelLevelChanged);
-        }
+    private Intel _playerIntel;
+    public Intel PlayerIntel {
+        get { return _playerIntel; }
+        set { SetProperty<Intel>(ref _playerIntel, value, "PlayerIntel", OnPlayerIntelChanged, OnPlayerIntelChanging); }
     }
 
     public IGuiHudPublisher HudPublisher { get; set; }
 
-    public void RecordDesiredDisplayModeDerivedFromCameraDistance(ViewDisplayMode cameraDistanceGeneratedDisplayMode) {
-        _cameraDistanceGeneratedDisplayMode = cameraDistanceGeneratedDisplayMode;
-        AssessDisplayMode();
+    private bool _isDiscernible;
+    public bool IsDiscernible {
+        get { return _isDiscernible; }
+        set { SetProperty<bool>(ref _isDiscernible, value, "IsDiscernible", OnIsDiscernibleChanged); }
     }
 
     #endregion
 
     #region ICameraLOSChangedClient Members
 
-    private bool _inCameraLOS = true; // everyone starts out thinking they are visible as it controls the enabled/activated state of key components
+    private bool _inCameraLOS;  // = true; // everyone starts out thinking they are visible as it controls the enabled/activated state of key components
     public bool InCameraLOS {
         get { return _inCameraLOS; }
         private set { SetProperty<bool>(ref _inCameraLOS, value, "InCameraLOS", OnInCameraLOSChanged); }

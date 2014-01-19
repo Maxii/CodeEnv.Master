@@ -23,54 +23,60 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public sealed class AnimationSettings : AValuesHelper<AnimationSettings> {
 
-        private int _cameraDistanceThresholdFactor_3dAnimationsTo3dDisplayMode;
+        private int _shipLayerCullingDistanceFactor;
         /// <summary>
-        /// The factor to use in generating the distance (in sectors) from the camera where a View
-        /// makes the Display mode transition from showing a 3D representation of
-        /// the object with Animations running to a 3D representation without animations.
+        /// The multiplication factor to use in generating the farClipPlane distance for the named layer.
         /// </summary>
-        public int CameraDistanceThresholdFactor_3dAnimationsTo3dDisplayMode {
+        public int ShipLayerCullingDistanceFactor {
             get {
                 if (!isPropertyValuesInitialized) {
                     InitializePropertyValues();
                 }
-                return _cameraDistanceThresholdFactor_3dAnimationsTo3dDisplayMode;
+                return _shipLayerCullingDistanceFactor;
             }
-            private set { _cameraDistanceThresholdFactor_3dAnimationsTo3dDisplayMode = value; }
+            private set { _shipLayerCullingDistanceFactor = value; }
         }
 
-
-        private int _cameraDistanceThresholdFactor_3dTo2dDisplayMode;
+        private int _starBaseSettlementLayerCullingDistanceFactor;
         /// <summary>
-        /// The factor to use in generating the distance (in sectors) from the camera where a View
-        /// makes the Display mode transition from showing a 3D representation of
-        /// the object to a 2D representation.
+        /// The multiplication factor to use in generating the farClipPlane distance for the named layer.
         /// </summary>
-        public int CameraDistanceThresholdFactor_3dTo2dDisplayMode {
+        public int StarBaseSettlementLayerCullingDistanceFactor {
             get {
                 if (!isPropertyValuesInitialized) {
                     InitializePropertyValues();
                 }
-                return _cameraDistanceThresholdFactor_3dTo2dDisplayMode;
+                return _starBaseSettlementLayerCullingDistanceFactor;
             }
-            private set { _cameraDistanceThresholdFactor_3dTo2dDisplayMode = value; }
+            private set { _starBaseSettlementLayerCullingDistanceFactor = value; }
         }
 
-
-        private int _cameraDistanceThresholdFactor_2dToNoneDisplayMode;
+        private int _planetoidLayerCullingDistanceFactor;
         /// <summary>
-        /// The factor to use in generating the distance (in sectors) from the camera where a View
-        /// makes the Display mode transition from showing a 2D representation of
-        /// the object to not showing it at all.
+        /// The multiplication factor to use in generating the farClipPlane distance for the named layer.
         /// </summary>
-        public int CameraDistanceThresholdFactor_2dToNoneDisplayMode {
+        public int PlanetoidLayerCullingDistanceFactor {
             get {
                 if (!isPropertyValuesInitialized) {
                     InitializePropertyValues();
                 }
-                return _cameraDistanceThresholdFactor_2dToNoneDisplayMode;
+                return _planetoidLayerCullingDistanceFactor;
             }
-            private set { _cameraDistanceThresholdFactor_2dToNoneDisplayMode = value; }
+            private set { _planetoidLayerCullingDistanceFactor = value; }
+        }
+
+        private int _starLayerCullingDistanceFactor;
+        /// <summary>
+        /// The multiplication factor to use in generating the farClipPlane distance for the named layer.
+        /// </summary>
+        public int StarLayerCullingDistanceFactor {
+            get {
+                if (!isPropertyValuesInitialized) {
+                    InitializePropertyValues();
+                }
+                return _starLayerCullingDistanceFactor;
+            }
+            private set { _starLayerCullingDistanceFactor = value; }
         }
 
 

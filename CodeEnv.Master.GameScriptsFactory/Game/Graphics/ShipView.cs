@@ -23,39 +23,33 @@ using UnityEngine;
 /// <summary>
 /// A class for managing the UI of a ship.
 /// </summary>
-public class ShipView : AFollowableView, IShipViewable, ISelectable {
+public class ShipView : AElementView, ISelectable {
+    //public class ShipView : AFollowableView, IShipViewable, ISelectable {
 
     public new ShipPresenter Presenter {
         get { return base.Presenter as ShipPresenter; }
         protected set { base.Presenter = value; }
     }
 
-    //public int maxShowDistance;
-    //private bool _toShowShipBasedOnDistance;
+    //public AudioClip dying;
+    //private AudioSource _audioSource;
 
-    public AudioClip dying;
-    private AudioSource _audioSource;
-
-    private Color _originalMeshColor_Main;
-    private Color _originalMeshColor_Specular;
-    private Color _hiddenMeshColor;
-    private Renderer _renderer;
+    //private Color _originalMeshColor_Main;
+    //private Color _originalMeshColor_Specular;
+    //private Color _hiddenMeshColor;
+    //private Renderer _renderer;
 
     private CtxObject _ctxObject;
 
-    private Job _showingJob;
+    //private Job _showingJob;
     private VelocityRay _velocityRay;
-    private Animation _animation;
 
-    protected override void Awake() {
-        base.Awake();
-        _audioSource = UnityUtility.ValidateComponentPresence<AudioSource>(gameObject);
-        _animation = gameObject.GetComponentInChildren<Animation>();
-        circleScaleFactor = 1.0F;
-        //maxAnimateDistance = Mathf.RoundToInt(AnimationSettings.Instance.MaxShipAnimateDistanceFactor * Radius);
-        //maxShowDistance = Mathf.RoundToInt(AnimationSettings.Instance.MaxShipShowDistanceFactor * Radius);
-        InitializeMesh();
-    }
+    //protected override void Awake() {
+    //    base.Awake();
+    //    _audioSource = UnityUtility.ValidateComponentPresence<AudioSource>(gameObject);
+    //    circleScaleFactor = 1.0F;
+    //    InitializeMesh();
+    //}
 
     protected override void InitializePresenter() {
         Presenter = new ShipPresenter(this);
@@ -96,23 +90,50 @@ public class ShipView : AFollowableView, IShipViewable, ISelectable {
 
     #endregion
 
-    protected override void OnClick() {
-        base.OnClick();
-        if (GameInputHelper.IsLeftMouseButton()) {
-            OnLeftClick();
-        }
+    //protected override void OnClick() {
+    //    base.OnClick();
+    //    if (IsDiscernible) {
+    //        if (GameInputHelper.IsLeftMouseButton()) {
+    //            KeyCode notUsed;
+    //            if (GameInputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftAlt, KeyCode.RightAlt)) {
+    //                OnAltLeftClick();
+    //            }
+    //            else { 
+    //                OnLeftClick(); 
+    //            }
+    //        }
+    //    }
+    //}
+
+    //private void OnLeftClick() {
+    //    IsSelected = true;
+    //}
+
+    protected override void OnLeftClick() {
+        base.OnLeftClick();
+        IsSelected = true;
     }
 
-    private void OnLeftClick() {
-        if (DisplayMode != ViewDisplayMode.Hide) {
-            KeyCode notUsed;
-            if (GameInputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftAlt, KeyCode.RightAlt)) {
-                Presenter.__SimulateAttacked();
-                return;
-            }
-            IsSelected = true;
-        }
+    protected override void OnAltLeftClick() {
+        base.OnAltLeftClick();
+        Presenter.__SimulateAttacked();
     }
+
+    //private void OnAltLeftClick() {
+    //    Presenter.__SimulateAttacked();
+    //}
+
+    //protected override void OnIsDiscernibleChanged() {
+    //    base.OnIsDiscernibleChanged();
+    //    ShowMesh(IsDiscernible);
+    //    ShowVelocityRay(IsDiscernible);
+    //}
+
+    protected override void OnIsDiscernibleChanged() {
+        base.OnIsDiscernibleChanged();
+        ShowVelocityRay(IsDiscernible);
+    }
+
 
     private void OnIsSelectedChanged() {
         if (IsSelected) {
@@ -128,7 +149,7 @@ public class ShipView : AFollowableView, IShipViewable, ISelectable {
     }
 
     private void OnRightPress(bool isDown) {
-        if (DisplayMode != ViewDisplayMode.Hide) {
+        if (IsDiscernible) {
             if (IsSelected) {
                 Presenter.RequestContextMenu(isDown);
             }
@@ -142,56 +163,18 @@ public class ShipView : AFollowableView, IShipViewable, ISelectable {
     }
 
     private void OnLeftDoubleClick() {
-        if (DisplayMode != ViewDisplayMode.Hide) {
-            Presenter.IsFleetSelected = true;
+        if (IsDiscernible) {
+            SelectFleet();
         }
     }
 
-    protected override void OnDisplayModeChanging(ViewDisplayMode newMode) {
-        base.OnDisplayModeChanging(newMode);
-        ViewDisplayMode previousMode = DisplayMode;
-        switch (previousMode) {
-            case ViewDisplayMode.Hide:
-                break;
-            case ViewDisplayMode.TwoD:
-                Show2DIcon(false);
-                break;
-            case ViewDisplayMode.ThreeD:
-                if (newMode != ViewDisplayMode.ThreeDAnimation) { Show3DMesh(false); }
-                break;
-            case ViewDisplayMode.ThreeDAnimation:
-                if (newMode != ViewDisplayMode.ThreeD) { Show3DMesh(false); }
-                _animation.enabled = false;
-                break;
-            case ViewDisplayMode.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(previousMode));
-        }
+    private void SelectFleet() {
+        Presenter.IsFleetSelected = true;
     }
 
-    protected override void OnDisplayModeChanged() {
-        base.OnDisplayModeChanged();
-        switch (DisplayMode) {
-            case ViewDisplayMode.Hide:
-                break;
-            case ViewDisplayMode.TwoD:
-                Show2DIcon(true);
-                break;
-            case ViewDisplayMode.ThreeD:
-                Show3DMesh(true);
-                break;
-            case ViewDisplayMode.ThreeDAnimation:
-                Show3DMesh(true);
-                _animation.enabled = true;
-                break;
-            case ViewDisplayMode.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(DisplayMode));
-        }
-    }
 
     public override void AssessHighlighting() {
-        if (DisplayMode == ViewDisplayMode.Hide) {
+        if (!IsDiscernible) {
             Highlight(Highlights.None);
             return;
         }
@@ -255,24 +238,20 @@ public class ShipView : AFollowableView, IShipViewable, ISelectable {
         }
     }
 
-    private void Show3DMesh(bool toShow) {
-        if (toShow) {
-            _renderer.material.SetColor(UnityConstants.MaterialColor_Main, _originalMeshColor_Main);
-            _renderer.material.SetColor(UnityConstants.MaterialColor_Specular, _originalMeshColor_Specular);
-            // TODO audio on goes here
-        }
-        else {
-            _renderer.material.SetColor(UnityConstants.MaterialColor_Main, _hiddenMeshColor);
-            _renderer.material.SetColor(UnityConstants.MaterialColor_Specular, _hiddenMeshColor);
-            // TODO audio off goes here
-        }
-        ShowVelocityRay(toShow);
-    }
+    //private void ShowMesh(bool toShow) {
+    //    if (toShow) {
+    //        _renderer.material.SetColor(UnityConstants.MaterialColor_Main, _originalMeshColor_Main);
+    //        _renderer.material.SetColor(UnityConstants.MaterialColor_Specular, _originalMeshColor_Specular);
+    //        // TODO audio on goes here
+    //    }
+    //    else {
+    //        _renderer.material.SetColor(UnityConstants.MaterialColor_Main, _hiddenMeshColor);
+    //        _renderer.material.SetColor(UnityConstants.MaterialColor_Specular, _hiddenMeshColor);
+    //        // TODO audio off goes here
+    //    }
+    //    //ShowVelocityRay(toShow);
+    //}
 
-    private void Show2DIcon(bool toShow) {
-        Show3DMesh(toShow);
-        // TODO probably won't have one
-    }
     /// <summary>
     /// Shows a Ray indicating the course and speed of the ship.
     /// </summary>
@@ -290,12 +269,12 @@ public class ShipView : AFollowableView, IShipViewable, ISelectable {
         }
     }
 
-    private void InitializeMesh() {
-        _renderer = gameObject.GetComponentInChildren<Renderer>();
-        _originalMeshColor_Main = _renderer.material.GetColor(UnityConstants.MaterialColor_Main);
-        _originalMeshColor_Specular = _renderer.material.GetColor(UnityConstants.MaterialColor_Specular);
-        _hiddenMeshColor = GameColor.Clear.ToUnityColor();
-    }
+    //private void InitializeMesh() {
+    //    _renderer = gameObject.GetComponentInChildren<Renderer>();
+    //    _originalMeshColor_Main = _renderer.material.GetColor(UnityConstants.MaterialColor_Main);
+    //    _originalMeshColor_Specular = _renderer.material.GetColor(UnityConstants.MaterialColor_Specular);
+    //    _hiddenMeshColor = GameColor.Clear.ToUnityColor();
+    //}
 
     protected override void Cleanup() {
         base.Cleanup();
@@ -308,27 +287,27 @@ public class ShipView : AFollowableView, IShipViewable, ISelectable {
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region ICameraFocusable Members
+    //#region ICameraFocusable Members
 
-    protected override float CalcOptimalCameraViewingDistance() {
-        return Radius * 2.4F;
-    }
+    //protected override float CalcOptimalCameraViewingDistance() {
+    //    return Radius * 2.4F;
+    //}
 
-    #endregion
+    //#endregion
 
-    #region ICameraTargetable Members
+    //#region ICameraTargetable Members
 
-    public override bool IsEligible {
-        get {
-            return PlayerIntelLevel != IntelLevel.Nil;
-        }
-    }
+    //public override bool IsEligible {
+    //    get {
+    //        return PlayerIntel.Source != IntelSource.None;
+    //    }
+    //}
 
-    protected override float CalcMinimumCameraViewingDistance() {
-        return Radius * 2.0F;
-    }
+    //protected override float CalcMinimumCameraViewingDistance() {
+    //    return Radius * 2.0F;
+    //}
 
-    #endregion
+    //#endregion
 
     #region ISelectable Members
 
@@ -340,60 +319,60 @@ public class ShipView : AFollowableView, IShipViewable, ISelectable {
 
     #endregion
 
-    #region IShipViewable Members
+    //#region IShipViewable Members
 
-    public event Action onShowCompletion;
+    //public event Action onShowCompletion;
 
-    // these 3 must return onShowCompletion when finished to inform 
-    // ShipItem when it is OK to progress to the next state
-    public void ShowAttacking() {
-        throw new NotImplementedException();
-    }
+    //// these 3 must return onShowCompletion when finished to inform 
+    //// ShipItem when it is OK to progress to the next state
+    //public void ShowAttacking() {
+    //    throw new NotImplementedException();
+    //}
 
-    public void ShowHit() {
-        throw new NotImplementedException();
-    }
+    //public void ShowHit() {
+    //    throw new NotImplementedException();
+    //}
 
-    public void ShowDying() {
-        _showingJob = new Job(ShowingDying(), toStart: true);
-    }
+    //public void ShowDying() {
+    //    _showingJob = new Job(ShowingDying(), toStart: true);
+    //}
 
-    private IEnumerator ShowingDying() {
-        if (dying != null) {
-            _audioSource.PlayOneShot(dying);
-        }
-        _collider.enabled = false;
-        //animation.Stop();
-        //yield return UnityUtility.PlayAnimation(animation, "die");  // show debree particles for some period of time?
-        yield return null;
+    //private IEnumerator ShowingDying() {
+    //    if (dying != null) {
+    //        _audioSource.PlayOneShot(dying);
+    //    }
+    //    _collider.enabled = false;
+    //    //animation.Stop();
+    //    //yield return UnityUtility.PlayAnimation(animation, "die");  // show debree particles for some period of time?
+    //    yield return null;
 
-        var sc = onShowCompletion;
-        if (sc != null) {
-            sc();
-        }
-    }
+    //    var sc = onShowCompletion;
+    //    if (sc != null) {
+    //        sc();
+    //    }
+    //}
 
-    // these 3 run continuously until they are stopped via StopShowing() when
-    // ShipItem state changes from the state that started them
-    public void ShowEntrenching() {
-        throw new NotImplementedException();
-    }
+    //// these 3 run continuously until they are stopped via StopShowing() when
+    //// ShipItem state changes from the state that started them
+    //public void ShowEntrenching() {
+    //    throw new NotImplementedException();
+    //}
 
-    public void ShowRepairing() {
-        throw new NotImplementedException();
-    }
+    //public void ShowRepairing() {
+    //    throw new NotImplementedException();
+    //}
 
-    public void ShowRefitting() {
-        throw new NotImplementedException();
-    }
+    //public void ShowRefitting() {
+    //    throw new NotImplementedException();
+    //}
 
-    public void StopShowing() {
-        if (_showingJob != null && _showingJob.IsRunning) {
-            _showingJob.Kill();
-        }
-    }
+    //public void StopShowing() {
+    //    if (_showingJob != null && _showingJob.IsRunning) {
+    //        _showingJob.Kill();
+    //    }
+    //}
 
-    #endregion
+    //#endregion
 
 }
 

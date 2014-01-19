@@ -28,8 +28,8 @@ using UnityEngine;
 /// <summary>
 ///  Abstract Base class for MortalItem State Machines to inherit from.
 /// </summary>
-/// <typeparam name="E">Th State Type being used, typically an enum type.</typeparam>
-public abstract class AMortalItemStateMachine<E> : AMortalItem where E : struct {
+/// <typeparam name="StateType">The State Type being used by this StateMachine.</typeparam>
+public abstract class AMortalItemStateMachine<StateType> : AMortalItem where StateType : struct {
 
     /// <summary>
     /// A coroutine executor that can be interrupted
@@ -387,7 +387,7 @@ public abstract class AMortalItemStateMachine<E> : AMortalItem where E : struct 
         public Action DoOnClick = DoNothing;
         public Action DoOnDoubleClick = DoNothing;
 
-        public E currentState;
+        public StateType currentState;
 
         //Stack of the enter state enumerators
         public Stack<IEnumerator> enterStack;
@@ -425,12 +425,12 @@ public abstract class AMortalItemStateMachine<E> : AMortalItem where E : struct 
     /// 7. the event OnCurrentStateChanged() is sent to subscribers
     ///          - when this event is received, a get_CurrentState property inquiry will properly return newState
     /// </summary>
-    public E CurrentState {
+    public StateType CurrentState {
         get { return state.currentState; }
-        protected set { SetProperty<E>(ref state.currentState, value, "CurrentState", OnCurrentStateChanged, OnCurrentStateChanging); }
+        protected set { SetProperty<StateType>(ref state.currentState, value, "CurrentState", OnCurrentStateChanged, OnCurrentStateChanging); }
     }
 
-    protected virtual void OnCurrentStateChanging(E incomingState) {
+    protected virtual void OnCurrentStateChanging(StateType incomingState) {
         ChangingState();
     }
 
@@ -455,7 +455,7 @@ public abstract class AMortalItemStateMachine<E> : AMortalItem where E : struct 
     /// <param name='stateToActivate'>
     /// State to activate.
     /// </param>
-    public void Call(E stateToActivate) {
+    public void Call(StateType stateToActivate) {
         state.time = timeInCurrentState;
         state.enterStack = enterStateCoroutine.CreateStack();
         state.exitStack = exitStateCoroutine.CreateStack();
@@ -500,7 +500,7 @@ public abstract class AMortalItemStateMachine<E> : AMortalItem where E : struct 
     /// <param name='baseState'>
     /// The state to use if there is no waiting calling state
     /// </param>
-    public void Return(E baseState) {
+    public void Return(StateType baseState) {
         //UnwireEvents();
         if (state.exitState != null) {
             state.exitStateEnumerator = state.exitState();

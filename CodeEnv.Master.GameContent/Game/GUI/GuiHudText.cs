@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
         private static IList<GuiHudLineKeys> _displayLineOrder = new List<GuiHudLineKeys>() {
                 {GuiHudLineKeys.Name},
                 {GuiHudLineKeys.ParentName},
-                {GuiHudLineKeys.Type},
+                {GuiHudLineKeys.Category},
                 {GuiHudLineKeys.IntelState},
                 {GuiHudLineKeys.Capacity},
                 {GuiHudLineKeys.Resources},
@@ -58,7 +58,9 @@ namespace CodeEnv.Master.GameContent {
         private IDictionary<GuiHudLineKeys, IColoredTextList> _textLine;
 
         public bool IsDirty { get; private set; }
-        public IntelLevel IntelLevel { get; private set; }
+        //public IntelLevel IntelLevel { get; private set; }
+
+        public Intel Intel { get; private set; }
 
         static GuiHudText() {
             _baseDisplayLineContent = InitializeBaseDisplayLineContent();
@@ -71,7 +73,7 @@ namespace CodeEnv.Master.GameContent {
             IDictionary<GuiHudLineKeys, string> baseDisplayLineContent = new Dictionary<GuiHudLineKeys, string>() {
                 {GuiHudLineKeys.Name, "{0}"},
                 {GuiHudLineKeys.ParentName, "{0}"},
-                {GuiHudLineKeys.Type, "Type: {0}"},
+                {GuiHudLineKeys.Category, "Type: {0}"},
                 {GuiHudLineKeys.IntelState, "< {0} >"},
                 {GuiHudLineKeys.Capacity, "Capacity: {0} Slots"},   
                 {GuiHudLineKeys.Resources, "Resources: O: {0}, P: {1}, E: {2}"},
@@ -92,14 +94,24 @@ namespace CodeEnv.Master.GameContent {
             return baseDisplayLineContent;
         }
 
-        public GuiHudText(IntelLevel intelLevel)
-            : this(intelLevel, new Dictionary<GuiHudLineKeys, IColoredTextList>()) { }
+        //public GuiHudText(IntelLevel intelLevel)
+        //    : this(intelLevel, new Dictionary<GuiHudLineKeys, IColoredTextList>()) { }
 
-        private GuiHudText(IntelLevel intelLevel, IDictionary<GuiHudLineKeys, IColoredTextList> textLine) {
-            IntelLevel = intelLevel;
+        //private GuiHudText(IntelLevel intelLevel, IDictionary<GuiHudLineKeys, IColoredTextList> textLine) {
+        //    IntelLevel = intelLevel;
+        //    _textLine = textLine;
+        //    IsDirty = true;
+        //}
+
+        public GuiHudText(Intel intel)
+            : this(intel, new Dictionary<GuiHudLineKeys, IColoredTextList>()) { }
+
+        private GuiHudText(Intel intel, IDictionary<GuiHudLineKeys, IColoredTextList> textLine) {
+            Intel = intel;
             _textLine = textLine;
             IsDirty = true;
         }
+
 
         /// <summary>
         /// Adds the specified key and text list to this GuiCursorHudText.

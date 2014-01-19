@@ -31,7 +31,7 @@ public class UniverseCenterPresenter : AFocusablePresenter {
 
     public UniverseCenterPresenter(IViewable view) : base(view) { }
 
-    protected override AItem InitilizeItemLinkage() {
+    protected override AItem AcquireItemReference() {
         return UnityUtility.ValidateMonoBehaviourPresence<UniverseCenterItem>(_viewGameObject);
     }
 

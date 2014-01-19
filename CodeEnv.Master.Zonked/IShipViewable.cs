@@ -23,6 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IShipViewable : IViewable {
 
+
         event Action onShowCompletion;
 
         void ShowAttacking();
@@ -31,14 +32,11 @@ namespace CodeEnv.Master.GameContent {
 
         void ShowDying();
 
-        void ShowEntrenching();
-
         void ShowRepairing();
 
         void ShowRefitting();
 
         void StopShowing();
-
     }
 }
 

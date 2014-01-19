@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PlanetoidData : AMortalData {
 
-        public PlanetoidType PlanetoidType { get; private set; }
+        public PlanetoidCategory Category { get; private set; }
 
         private int _capacity;
         public int Capacity {
@@ -49,9 +49,16 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public PlanetoidData(PlanetoidType type, string name, float maxHitPoints, string parentName)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PlanetoidData"/> class.
+        /// </summary>
+        /// <param name="category">The category of planet.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="maxHitPoints">The maximum hit points.</param>
+        /// <param name="parentName">Name of the parent.</param>
+        public PlanetoidData(PlanetoidCategory category, string name, float maxHitPoints, string parentName)
             : base(name, maxHitPoints, parentName) {
-            PlanetoidType = type;
+            Category = category;
         }
 
         public override string ToString() {

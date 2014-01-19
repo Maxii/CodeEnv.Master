@@ -29,16 +29,15 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IntelLevel intelLevel, FleetData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, Intel intel, FleetData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
-                    // fleets donot show name if IntelLevel is Unknown
-                    return intelLevel != IntelLevel.Unknown ? new ColoredTextList_String(data.Name) : _emptyColoredTextList;
+                    // fleets donot show name if IntelScope is simply Aware
+                    return intel.Scope != IntelScope.Aware ? new ColoredTextList_String(data.Name) : _emptyColoredTextList;
                 case GuiHudLineKeys.Distance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
-                    return (data.LastHumanPlayerIntelDate != null) ? new ColoredTextList_Intel(data.LastHumanPlayerIntelDate, intelLevel) : _emptyColoredTextList;
-
+                    return (intel.DateStamp != null) ? new ColoredTextList_Intel(intel) : _emptyColoredTextList;
                 case GuiHudLineKeys.Speed:
                     return new ColoredTextList_Speed(data.CurrentSpeed, data.MaxSpeed);  // fleet will always display speed, even if zero
                 case GuiHudLineKeys.Owner:
@@ -61,7 +60,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Resources:
                 case GuiHudLineKeys.Specials:
                 case GuiHudLineKeys.SettlementDetails:
-                case GuiHudLineKeys.Type:
+                case GuiHudLineKeys.Category:
                 case GuiHudLineKeys.SectorIndex:
                 case GuiHudLineKeys.Density:
                 case GuiHudLineKeys.ShipDetails:

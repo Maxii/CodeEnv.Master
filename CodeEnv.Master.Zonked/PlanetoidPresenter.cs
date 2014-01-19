@@ -31,7 +31,7 @@ public class PlanetoidPresenter : AMortalFocusablePresenter {
 
     public PlanetoidPresenter(IViewable view) : base(view) { }
 
-    protected override AItem InitilizeItemLinkage() {
+    protected override AItem AcquireItemReference() {
         return UnityUtility.ValidateMonoBehaviourPresence<PlanetoidItem>(_viewGameObject);
     }
 

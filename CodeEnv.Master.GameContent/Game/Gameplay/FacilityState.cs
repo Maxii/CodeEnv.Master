@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: StarType.cs
-// Type of Star.
+// File: FacilityState.cs
+// Enum defining the states a Facility can operate in.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -14,21 +14,19 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-using CodeEnv.Master.Common;
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Type of Star.
+    /// Enum defining the states a Facility can operate in.
     /// </summary>
-    public enum StarType {
+    public enum FacilityState {
 
         None,
-
-        [EnumAttribute("G")]
-        Star_001,
-
-        [EnumAttribute("Red Dwarf")]
-        Star_002
+        Idling,
+        ProcessOrders,
+        Dying,
+        ShowDying,
+        Dead
 
     }
 }

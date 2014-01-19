@@ -25,7 +25,7 @@ using UnityEngine;
 ///  A class for managing the elements of a system's UI, those, that are not already handled by 
 ///  the UI classes for stars, planets and moons.
 /// </summary>
-public class SystemView : AFocusableView, ISystemViewable, ISelectable, IZoomToFurthest {
+public class SystemView : AFocusableView, ISelectable, IZoomToFurthest, IHighlightTrackingLabel {
 
     private static string __highlightName = "SystemHighlightMesh";  // IMPROVE
 
@@ -42,13 +42,10 @@ public class SystemView : AFocusableView, ISystemViewable, ISelectable, IZoomToF
 
     private CtxObject _ctxObject;
     private MeshRenderer _systemHighlightRenderer;
-    private IEnumerable<Renderer> _renderersWithNoCameraLOSRelay;
 
     protected override void Awake() {
         base.Awake();
         _systemHighlightRenderer = __FindSystemHighlight();
-        _renderersWithNoCameraLOSRelay = gameObject.GetComponentsInChildren<Renderer>()
-            .Where(r => r.gameObject.GetComponent<CameraLOSChangedRelay>() == null).Except(_systemHighlightRenderer);
     }
 
     protected override void Start() {
@@ -61,77 +58,19 @@ public class SystemView : AFocusableView, ISystemViewable, ISelectable, IZoomToF
         Presenter = new SystemPresenter(this);
     }
 
-    protected override void OnDisplayModeChanging(ViewDisplayMode newMode) {
-        base.OnDisplayModeChanging(newMode);
-        ViewDisplayMode previousMode = DisplayMode;
-        switch (previousMode) {
-            case ViewDisplayMode.Hide:
-                if (_trackingLabel != null) {
-                    _trackingLabel.gameObject.SetActive(true);
-                }
-                _collider.enabled = true;
-                _systemHighlightRenderer.gameObject.SetActive(true);
-                // other renderers are handled by their own Views
-                break;
-            case ViewDisplayMode.TwoD:
-                Show2DIcon(false);
-                break;
-            case ViewDisplayMode.ThreeD:
-                if (newMode != ViewDisplayMode.ThreeDAnimation) {
-                    Show3DMesh(false);
-                    EnableSystemRenderersWithNoCameraLOSRelay(false);
-                }
-                break;
-            case ViewDisplayMode.ThreeDAnimation:
-                if (newMode != ViewDisplayMode.ThreeD) {
-                    Show3DMesh(false);
-                    EnableSystemRenderersWithNoCameraLOSRelay(false);
-                }
-                _systemHighlightRenderer.animation.enabled = false;
-                break;
-            case ViewDisplayMode.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(previousMode));
+    protected override void OnIsDiscernibleChanged() {
+        base.OnIsDiscernibleChanged();
+        if (_trackingLabel != null) {
+            _trackingLabel.gameObject.SetActive(IsDiscernible);
         }
-    }
-
-    protected override void OnDisplayModeChanged() {
-        base.OnDisplayModeChanged();
-        switch (DisplayMode) {
-            case ViewDisplayMode.Hide:
-                if (_trackingLabel != null) {
-                    _trackingLabel.gameObject.SetActive(false);
-                }
-                _collider.enabled = false;
-                _systemHighlightRenderer.gameObject.SetActive(false);
-                break;
-            case ViewDisplayMode.TwoD:
-                Show2DIcon(true);
-                break;
-            case ViewDisplayMode.ThreeD:
-                Show3DMesh(true);
-                EnableSystemRenderersWithNoCameraLOSRelay(true);
-                break;
-            case ViewDisplayMode.ThreeDAnimation:
-                Show3DMesh(true);
-                EnableSystemRenderersWithNoCameraLOSRelay(true);
-                _systemHighlightRenderer.animation.enabled = true;
-                break;
-            case ViewDisplayMode.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(DisplayMode));
-        }
-    }
-
-    private void EnableSystemRenderersWithNoCameraLOSRelay(bool toEnable) {
-        if (!_renderersWithNoCameraLOSRelay.IsNullOrEmpty()) {
-            _renderersWithNoCameraLOSRelay.ForAll(r => r.enabled = toEnable);
-        }
+        _collider.enabled = IsDiscernible;
+        // no reason to manage orbitalPlane LineRenderers as they don't render when not visible to the camera
+        // other renderers are handled by their own Views
     }
 
     protected override void OnHover(bool isOver) {
         base.OnHover(isOver);
-        if (DisplayMode != ViewDisplayMode.Hide) {
+        if (IsDiscernible) {
             HighlightTrackingLabel(isOver);
         }
     }
@@ -143,7 +82,7 @@ public class SystemView : AFocusableView, ISystemViewable, ISelectable, IZoomToF
     }
 
     private void OnRightPress(bool isDown) {
-        if (DisplayMode != ViewDisplayMode.Hide) {
+        if (IsDiscernible) {
             if (IsSelected) {
                 Presenter.RequestContextMenu(isDown);
             }
@@ -158,15 +97,16 @@ public class SystemView : AFocusableView, ISystemViewable, ISelectable, IZoomToF
     }
 
     private void OnLeftClick() {
-        if (DisplayMode != ViewDisplayMode.Hide) {
+        if (IsDiscernible) {
             IsSelected = true;
         }
     }
 
-    protected override void OnPlayerIntelLevelChanged() {
-        base.OnPlayerIntelLevelChanged();
-        Presenter.OnPlayerIntelLevelChanged();
+    protected override void OnPlayerIntelContentChanged() {
+        base.OnPlayerIntelContentChanged();
+        Presenter.NotifySystemElementsOfIntelChange();
     }
+
 
     private void OnIsSelectedChanged() {
         if (IsSelected) {
@@ -176,7 +116,7 @@ public class SystemView : AFocusableView, ISystemViewable, ISelectable, IZoomToF
     }
 
     public override void AssessHighlighting() {
-        if (DisplayMode == ViewDisplayMode.Hide) {
+        if (!IsDiscernible) {
             Highlight(Highlights.None);
             return;
         }
@@ -196,6 +136,8 @@ public class SystemView : AFocusableView, ISystemViewable, ISelectable, IZoomToF
     }
 
     protected override void Highlight(Highlights highlight) {
+        //D.Log("{0}.Highlight({1}) called. IsDiscernible = {2}, SystemHighlightRendererGO.activeSelf = {3}.",
+        //gameObject.name, highlight, IsDiscernible, _systemHighlightRenderer.gameObject.activeSelf);
         switch (highlight) {
             case Highlights.Focused:
                 _systemHighlightRenderer.gameObject.SetActive(true);
@@ -222,14 +164,6 @@ public class SystemView : AFocusableView, ISystemViewable, ISelectable, IZoomToF
         }
     }
 
-    private void Show3DMesh(bool toShow) {
-        // TODO System orbital plane mesh always shows for now
-    }
-
-    private void Show2DIcon(bool toShow) {
-        // TODO not clear there will be one
-    }
-
     private void InitializeTrackingLabel() {
         if (enableTrackingLabel) {
             float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
@@ -240,7 +174,7 @@ public class SystemView : AFocusableView, ISystemViewable, ISelectable, IZoomToF
     private MeshRenderer __FindSystemHighlight() {
         MeshRenderer[] meshes = gameObject.GetComponentsInChildren<MeshRenderer>();
         MeshRenderer renderer = meshes.Single<MeshRenderer>(m => m.gameObject.name == __highlightName);
-        renderer.gameObject.SetActive(false);
+        //renderer.gameObject.SetActive(false);
         return renderer;
     }
 
@@ -285,7 +219,7 @@ public class SystemView : AFocusableView, ISystemViewable, ISelectable, IZoomToF
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region ISystemViewable Members
+    #region IHighlightTrackingLabel Members
 
     public void HighlightTrackingLabel(bool toHighlight) {
         if (_trackingLabel != null) {   // can be gap between checking enableTrackingLabel and instantiating it

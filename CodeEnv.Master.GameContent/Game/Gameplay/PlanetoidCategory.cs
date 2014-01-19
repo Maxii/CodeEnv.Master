@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: PlanetoidType.cs
-// Enum denoting types of planetoids including both planets and moons.
+// File: PlanetoidCategory.cs
+// Enum denoting kinds of planetoids including both planets and moons.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,9 +18,9 @@ using CodeEnv.Master.Common;
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Enum denoting types of planetoids including both planets and moons.
+    /// Enum denoting kinds of planetoids including both planets and moons.
     /// </summary>
-    public enum PlanetoidType {
+    public enum PlanetoidCategory {
 
         None,
 

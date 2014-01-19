@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// A class for managing the UI of a planetoid.
 /// </summary>
-public class PlanetoidView : AFollowableView {
+public class PlanetoidView : AFocusableView, ICameraFollowable {
 
     public new PlanetoidPresenter Presenter {
         get { return base.Presenter as PlanetoidPresenter; }
@@ -35,77 +35,36 @@ public class PlanetoidView : AFollowableView {
     }
 
     private SphereCollider _keepoutCollider;
-    private IEnumerable<Animation> _animations;
 
     protected override void Awake() {
         base.Awake();
         _keepoutCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
         _keepoutCollider.radius = (_collider as SphereCollider).radius * TempGameValues.KeepoutRadiusMultiplier;
-        _animations = gameObject.GetComponentsInImmediateChildren<Animation>();
     }
 
     protected override void InitializePresenter() {
         Presenter = new PlanetoidPresenter(this);
     }
 
-    protected override void OnDisplayModeChanging(ViewDisplayMode newMode) {
-        base.OnDisplayModeChanging(newMode);
-        ViewDisplayMode previousMode = DisplayMode;
-        switch (previousMode) {
-            case ViewDisplayMode.Hide:
-                break;
-            case ViewDisplayMode.TwoD:
-                Show2DIcon(false);
-                break;
-            case ViewDisplayMode.ThreeD:
-                if (newMode != ViewDisplayMode.ThreeDAnimation) {
-                    Show3DMesh(false);
-                }
-                break;
-            case ViewDisplayMode.ThreeDAnimation:
-                if (newMode != ViewDisplayMode.ThreeD) {
-                    Show3DMesh(false);
-                }
-                _animations.ForAll(a => a.enabled = false);
-                break;
-            case ViewDisplayMode.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(previousMode));
-        }
-    }
-
-    protected override void OnDisplayModeChanged() {
-        base.OnDisplayModeChanged();
-        switch (DisplayMode) {
-            case ViewDisplayMode.Hide:
-                break;
-            case ViewDisplayMode.TwoD:
-                Show2DIcon(true);
-                break;
-            case ViewDisplayMode.ThreeD:
-                Show3DMesh(true);
-                break;
-            case ViewDisplayMode.ThreeDAnimation:
-                Show3DMesh(true);
-                _animations.ForAll(a => a.enabled = true);
-                break;
-            case ViewDisplayMode.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(DisplayMode));
-        }
-    }
-
-    private void Show3DMesh(bool toShow) {
-        // TODO Planetoid mesh always shows at this point
-    }
-
-    private void Show2DIcon(bool toShow) {
-        // TODO
-    }
-
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region ICameraFollowable Members
+
+    [SerializeField]
+    private float cameraFollowDistanceDampener = 3.0F;
+    public virtual float CameraFollowDistanceDampener {
+        get { return cameraFollowDistanceDampener; }
+    }
+
+    [SerializeField]
+    private float cameraFollowRotationDampener = 1.0F;
+    public virtual float CameraFollowRotationDampener {
+        get { return cameraFollowRotationDampener; }
+    }
+
+    #endregion
 
 }
 

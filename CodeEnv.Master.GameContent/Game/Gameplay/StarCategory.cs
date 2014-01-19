@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IShipViewable.cs
-// Interface used by ShipPresenters to communicate with their associated ShipViews.
+// File: StarCategory.cs
+// Category of Star.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -14,30 +14,21 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
+using CodeEnv.Master.Common;
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-
     /// <summary>
-    ///  Interface used by ShipPresenters to communicate with their associated ShipViews.
+    /// Category of Star.
     /// </summary>
-    public interface IShipViewable : IViewable {
+    public enum StarCategory {
 
-        event Action onShowCompletion;
+        None,
 
-        void ShowAttacking();
+        [EnumAttribute("G")]
+        Star_001,
 
-        void ShowHit();
-
-        void ShowDying();
-
-        void ShowEntrenching();
-
-        void ShowRepairing();
-
-        void ShowRefitting();
-
-        void StopShowing();
+        [EnumAttribute("Red Dwarf")]
+        Star_002
 
     }
 }

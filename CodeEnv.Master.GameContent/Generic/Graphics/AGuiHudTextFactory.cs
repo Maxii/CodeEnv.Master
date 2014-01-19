@@ -33,36 +33,25 @@ namespace CodeEnv.Master.GameContent {
         where ClassType : class
         where DataType : AData {
 
-        private static IDictionary<IntelLevel, IList<GuiHudLineKeys>> _hudLineKeyLookup = new Dictionary<IntelLevel, IList<GuiHudLineKeys>> {
+        private static IDictionary<IntelScope, IList<GuiHudLineKeys>> _hudLineKeyLookup = new Dictionary<IntelScope, IList<GuiHudLineKeys>> {
 
-        {IntelLevel.Nil, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
+        {IntelScope.None, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
                                                                        GuiHudLineKeys.ParentName,
-                                                                       GuiHudLineKeys.Type,
+                                                                       GuiHudLineKeys.Category,
                                                                        GuiHudLineKeys.IntelState,
                                                                        GuiHudLineKeys.SectorIndex,
                                                                        GuiHudLineKeys.Distance }},
 
-        {IntelLevel.Unknown, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
+        {IntelScope.Aware, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
                                                                        GuiHudLineKeys.ParentName,
-                                                                       GuiHudLineKeys.Type,
+                                                                       GuiHudLineKeys.Category,
                                                                        GuiHudLineKeys.IntelState,
                                                                        GuiHudLineKeys.SectorIndex,
                                                                        GuiHudLineKeys.Distance }},
 
-        {IntelLevel.OutOfDate, new List<GuiHudLineKeys> {   GuiHudLineKeys.Name,
-                                                                       GuiHudLineKeys.ParentName,
-                                                                       GuiHudLineKeys.Type,
-                                                                       GuiHudLineKeys.IntelState,
-                                                                       GuiHudLineKeys.Capacity,
-                                                                       GuiHudLineKeys.Resources,
-                                                                       GuiHudLineKeys.Specials,
-                                                                       GuiHudLineKeys.SectorIndex,
-                                                                       GuiHudLineKeys.Density,
-                                                                       GuiHudLineKeys.Distance }},
-
-        {IntelLevel.LongRangeSensors, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
+        {IntelScope.Minimal, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
                                                                         GuiHudLineKeys.ParentName,
-                                                                       GuiHudLineKeys.Type,
+                                                                       GuiHudLineKeys.Category,
                                                                        GuiHudLineKeys.IntelState,
                                                                             GuiHudLineKeys.Capacity,
                                                                           GuiHudLineKeys.Resources,
@@ -75,9 +64,9 @@ namespace CodeEnv.Master.GameContent {
                                                                            GuiHudLineKeys.Speed,
                                                                            GuiHudLineKeys.Distance }},
 
-         {IntelLevel.ShortRangeSensors, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
+         {IntelScope.Moderate, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
                                                                         GuiHudLineKeys.ParentName,
-                                                                       GuiHudLineKeys.Type,
+                                                                       GuiHudLineKeys.Category,
                                                                        GuiHudLineKeys.IntelState,
                                                                             GuiHudLineKeys.Capacity,
                                                                           GuiHudLineKeys.Resources,
@@ -93,9 +82,9 @@ namespace CodeEnv.Master.GameContent {
                                                                            GuiHudLineKeys.ShipDetails,
                                                                            GuiHudLineKeys.Distance }},
 
-       {IntelLevel.Complete, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
+       {IntelScope.Comprehensive, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
                                                                         GuiHudLineKeys.ParentName,
-                                                                       GuiHudLineKeys.Type,
+                                                                       GuiHudLineKeys.Category,
                                                                        GuiHudLineKeys.IntelState,
                                                                             GuiHudLineKeys.Capacity,
                                                                           GuiHudLineKeys.Resources,
@@ -112,51 +101,53 @@ namespace CodeEnv.Master.GameContent {
                                                                            GuiHudLineKeys.Distance }}
     };
 
+
         protected static IColoredTextList _emptyColoredTextList = new ColoredTextListBase();
 
         protected override void Initialize() {
             // TODO do any initialization here
         }
 
-        public GuiHudText MakeInstance(IntelLevel intelLevel, DataType data) {
+        public GuiHudText MakeInstance(Intel intel, DataType data) {
             Arguments.ValidateNotNull(data);
             IList<GuiHudLineKeys> keys;
-            if (_hudLineKeyLookup.TryGetValue(intelLevel, out keys)) {
-                GuiHudText guiCursorHudText = new GuiHudText(intelLevel);
+            if (_hudLineKeyLookup.TryGetValue(intel.Scope, out keys)) {
+                GuiHudText guiCursorHudText = new GuiHudText(intel);
                 IColoredTextList textList;
 
                 foreach (GuiHudLineKeys key in keys) {
-                    textList = MakeInstance(key, intelLevel, data);
+                    textList = MakeInstance(key, intel, data);
                     guiCursorHudText.Add(key, textList);
                 }
                 return guiCursorHudText;
             }
-            D.Error("{0} {1} Key is not present in Lookup.", typeof(IntelLevel), intelLevel);
+            D.Error("{0} {1} Key is not present in Lookup.", typeof(IntelScope), intel.Scope.GetName());
             return null;
         }
 
-        public IColoredTextList MakeInstance(GuiHudLineKeys key, IntelLevel intelLevel, DataType data) {
-            if (!ValidateKeyAgainstIntelLevel(key, intelLevel)) {
+        public IColoredTextList MakeInstance(GuiHudLineKeys key, Intel intel, DataType data) {
+            if (!ValidateKeyAgainstIntelLevel(key, intel)) {
                 return _emptyColoredTextList;
             }
-            return MakeTextInstance(key, intelLevel, data);
+            return MakeTextInstance(key, intel, data);
         }
 
-        protected abstract IColoredTextList MakeTextInstance(GuiHudLineKeys key, IntelLevel intelLevel, DataType data);
+        protected abstract IColoredTextList MakeTextInstance(GuiHudLineKeys key, Intel intel, DataType data);
 
         /// <summary>
-        /// Validates the key against intel level, warning and returning false if the key provided is not a key
-        /// that is present in the key lookup list associated with this IntelLevel. Usage:
-        /// <code>if(!ValidateKeyAgainstIntelLevel(key, intelLevel) {
+        /// Validates the key against intel, warning and returning false if the key provided is not a key
+        /// that is present in the key lookup list associated with this Intel. Usage:
+        /// <code>if(!ValidateKeyAgainstIntelLevel(key, intel) {
         /// return _emptyColoredTextList
         /// }</code>
         /// </summary>
         /// <param name="key">The key.</param>
-        /// <param name="intelLevel">The intel level.</param>
+        /// <param name="intel">The intel.</param>
         /// <returns></returns>
-        private static bool ValidateKeyAgainstIntelLevel(GuiHudLineKeys key, IntelLevel intelLevel) {
-            return _hudLineKeyLookup[intelLevel].Contains<GuiHudLineKeys>(key);
+        private static bool ValidateKeyAgainstIntelLevel(GuiHudLineKeys key, Intel intel) {
+            return _hudLineKeyLookup[intel.Scope].Contains<GuiHudLineKeys>(key);
         }
+
 
         #region IColoredTextList Strategy Classes
 
@@ -213,29 +204,27 @@ namespace CodeEnv.Master.GameContent {
 
         public class ColoredTextList_Intel : ColoredTextListBase {
 
-            public ColoredTextList_Intel(IGameDate exploredDate, IntelLevel intelLevel) {
-                GameTimePeriod intelAge = new GameTimePeriod(exploredDate, GameTime.Date);
-                string intelText_formatted = ConstructIntelText(intelLevel, intelAge);
+            public ColoredTextList_Intel(Intel intel) {
+                GameTimePeriod intelAge = new GameTimePeriod(intel.DateStamp, GameTime.Date);
+                string intelText_formatted = ConstructIntelText(intel, intelAge);
                 _list.Add(new ColoredText(intelText_formatted));
             }
 
-            private string ConstructIntelText(IntelLevel intelLevel, GameTimePeriod intelAge) {
-                string intelMsg = intelLevel.GetName();
-                switch (intelLevel) {
-                    case IntelLevel.Nil:
-                    case IntelLevel.Unknown:
-                    case IntelLevel.LongRangeSensors:
-                    case IntelLevel.ShortRangeSensors:
-                    case IntelLevel.Complete:
-                        // no data to add
-                        break;
-                    case IntelLevel.OutOfDate:
+            private string ConstructIntelText(Intel intel, GameTimePeriod intelAge) {
+                string intelMsg = intel.Scope.GetName();
+                switch (intel.Source) {
+                    case IntelSource.None:
                         string addendum = String.Format(". Last Intel {0} ago.", intelAge.FormattedPeriod);
                         intelMsg = intelMsg + addendum;
                         break;
-                    case IntelLevel.None:
+                    case IntelSource.LongRangeSensors:
+                    case IntelSource.MediumRangeSensors:
+                    case IntelSource.ShortRangeSensors:
+                    case IntelSource.InfoNet:
+                        // data is current so no addendum to add
+                        break;
                     default:
-                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(intelLevel));
+                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(intel.Source));
                 }
                 return intelMsg;
             }
@@ -263,7 +252,7 @@ namespace CodeEnv.Master.GameContent {
         public class ColoredTextList_Settlement : ColoredTextListBase {
 
             public ColoredTextList_Settlement(SettlementData settlement) {
-                _list.Add(new ColoredText(settlement.SettlementSize.GetName()));
+                _list.Add(new ColoredText(settlement.Category.GetName()));
                 _list.Add(new ColoredText(settlement.Population.ToString()));
                 _list.Add(new ColoredText(settlement.CapacityUsed.ToString()));
                 _list.Add(new ColoredText("TBD"));  // OPE Used need format
@@ -274,7 +263,7 @@ namespace CodeEnv.Master.GameContent {
         public class ColoredTextList_Ship : ColoredTextListBase {
 
             public ColoredTextList_Ship(ShipData ship, string valueFormat = Constants.FormatFloat_1DpMax) {
-                _list.Add(new ColoredText(ship.Hull.GetName()));
+                _list.Add(new ColoredText(ship.ElementCategory.GetName()));
                 _list.Add(new ColoredText(valueFormat.Inject(ship.Mass)));
                 _list.Add(new ColoredText(valueFormat.Inject(ship.MaxTurnRate)));
             }
@@ -292,13 +281,13 @@ namespace CodeEnv.Master.GameContent {
                 CompositionText.Clear();
                 CompositionText.Append(CommonTerms.Composition);
                 CompositionText.Append(": ");
-                IList<ShipHull> shipHulls = composition.Hulls;
+                IList<ShipCategory> shipHulls = composition.ElementCategories;
                 foreach (var hull in shipHulls) {
-                    int count = composition.GetShipData(hull).Count;
+                    int count = composition.GetData(hull).Count;
                     CompositionText.AppendFormat("{0}[", hull.GetDescription());
                     CompositionText.AppendFormat(format, count);
 
-                    if (hull != shipHulls.First<ShipHull>() && hull != shipHulls.Last<ShipHull>()) {
+                    if (hull != shipHulls.First<ShipCategory>() && hull != shipHulls.Last<ShipCategory>()) {
                         CompositionText.Append("], ");
                         continue;
                     }

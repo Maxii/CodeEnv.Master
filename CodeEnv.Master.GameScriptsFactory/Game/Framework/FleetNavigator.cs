@@ -334,10 +334,16 @@ public class FleetNavigator : ANavigator {
         return speedFactor;
     }
 
+    //private void __MoveShipsTo(ITarget target) {
+    //    ItemOrder<ShipOrders> moveToOrder = new ItemOrder<ShipOrders>(ShipOrders.MoveTo, target, Speed);
+    //    _fleet.Ships.ForAll(s => s.CurrentOrder = moveToOrder);
+    //}
+
     private void __MoveShipsTo(ITarget target) {
         ItemOrder<ShipOrders> moveToOrder = new ItemOrder<ShipOrders>(ShipOrders.MoveTo, target, Speed);
-        _fleet.Ships.ForAll(s => s.CurrentOrder = moveToOrder);
+        _fleet.Elements.ForAll(s => s.CurrentOrder = moveToOrder);
     }
+
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

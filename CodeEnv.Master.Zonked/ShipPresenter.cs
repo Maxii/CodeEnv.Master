@@ -46,7 +46,7 @@ public class ShipPresenter : AMortalFocusablePresenter {
         _fleetView = fleetMgr.gameObject.GetSafeInterfaceInChildren<IFleetViewable>();
     }
 
-    protected override AItem InitilizeItemLinkage() {
+    protected override AItem AcquireItemReference() {
         return UnityUtility.ValidateMonoBehaviourPresence<ShipItem>(_viewGameObject);
     }
 

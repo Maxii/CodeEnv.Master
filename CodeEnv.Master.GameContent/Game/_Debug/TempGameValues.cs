@@ -48,12 +48,20 @@ namespace CodeEnv.Master.GameContent {
 
         public const float SystemRadius = 120F;
 
-        public const float UniverseCenterRadius = 20F;
+        public const float UniverseCenterRadius = 50F;
 
         /// <summary>
         /// The radius of the star sphere.
         /// </summary>
-        public const float StarRadius = 10F;
+        public const float StarRadius = 10F;    // 10 x 300(factor) = 3000(cullingDistance)
+
+        public const float PlanetoidRadius_Max = 5.0F;  // Moons are 0.2 - 1.0, Planets 1.0 - 5.0   // 5 x 200(factor) = 1000(cullingDistance)
+
+        public const float StarBaseRadius = 0.5F;
+
+        public const float SettlementRadius = 1.0F; // 1 x 50(factor) = 50(cullingDistance)
+
+        public const float ShipRadius_Max = 0.2F;   // range is 0.04 - 0.2      // 0.2 x 25(factor) = 5(cullingDistance)
 
         /// <summary>
         /// The multiplier used to determine the radius of the keepoutZone around celestial objects.
@@ -66,27 +74,29 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public const float StarKeepoutRadius = StarRadius * KeepoutRadiusMultiplier;
 
+        public const float MaxKeepoutRadius = UniverseCenterRadius * KeepoutRadiusMultiplier;
+
         public const int SystemOrbitSlots = 7;
 
-        public static float __GetMass(ShipHull hull) {
+        public static float __GetMass(ShipCategory hull) {
             switch (hull) {
-                case ShipHull.Fighter:
+                case ShipCategory.Fighter:
                     return 10F;
-                case ShipHull.Frigate:
+                case ShipCategory.Frigate:
                     return 50F;
-                case ShipHull.Destroyer:
+                case ShipCategory.Destroyer:
                     return 100F;
-                case ShipHull.Cruiser:
+                case ShipCategory.Cruiser:
                     return 200F;
-                case ShipHull.Dreadnaught:
+                case ShipCategory.Dreadnaught:
                     return 400F;
-                case ShipHull.Carrier:
+                case ShipCategory.Carrier:
                     return 500F;
-                case ShipHull.Colonizer:
-                case ShipHull.Science:
-                case ShipHull.Scout:
-                case ShipHull.Troop:
-                case ShipHull.None:
+                case ShipCategory.Colonizer:
+                case ShipCategory.Science:
+                case ShipCategory.Scout:
+                case ShipCategory.Troop:
+                case ShipCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hull));
             }

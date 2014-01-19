@@ -147,7 +147,10 @@ namespace Pathfinding {
         private IList<Vector3> FindObstacleLocations() {
             var obstacleLocations = Universe.Folder.gameObject.GetSafeMonoBehaviourComponentsInChildren<SystemCreator>()
                 .Select(sm => sm.transform.position).ToList();
-            obstacleLocations.Add(Universe.Folder.gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterView>().transform.position);
+            var universeCenterView = Universe.Folder.gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterView>();
+            if (universeCenterView != null) {   // allows me to deactivate UniverseCenter
+                obstacleLocations.Add(universeCenterView.transform.position);
+            }
             D.Log("{0} obstacle locations found.", obstacleLocations.Count);
             return obstacleLocations;
         }

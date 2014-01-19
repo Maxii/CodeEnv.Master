@@ -83,10 +83,10 @@ public class FleetCreator : AMonoBase, IDisposable {
         __isHumanFleetCreated = true;
         _composition = new FleetComposition();
         foreach (var ship in _ships) {
-            ShipHull hull = GetShipHull(ship);
+            ShipCategory hull = GetShipHull(ship);
             string shipName = ship.gameObject.name;
             ShipData data = CreateShipData(hull, shipName, owner);
-            _composition.AddShip(data);
+            _composition.Add(data);
         }
     }
 
@@ -101,27 +101,25 @@ public class FleetCreator : AMonoBase, IDisposable {
         }
         _composition = new FleetComposition();
 
-        ShipHull[] __hullsToConsider = new ShipHull[] { ShipHull.Carrier, ShipHull.Cruiser, ShipHull.Destroyer, ShipHull.Dreadnaught, ShipHull.Frigate };
+        ShipCategory[] __hullsToConsider = new ShipCategory[] { ShipCategory.Carrier, ShipCategory.Cruiser, ShipCategory.Destroyer, ShipCategory.Dreadnaught, ShipCategory.Frigate };
 
         //determine how many ships of what hull for the fleet, then build shipdata and add to composition
         int shipCount = RandomExtended<int>.Range(1, maxShips);
         for (int i = 0; i < shipCount; i++) {
-            ShipHull hull = RandomExtended<ShipHull>.Choice(__hullsToConsider);
+            ShipCategory hull = RandomExtended<ShipCategory>.Choice(__hullsToConsider);
             int shipHullIndex = GetShipHullIndex(hull);
             string shipName = hull.GetName() + Constants.Underscore + shipHullIndex;
             ShipData shipData = CreateShipData(hull, shipName, owner);
-            _composition.AddShip(shipData);
+            _composition.Add(shipData);
         }
     }
 
-    private ShipData CreateShipData(ShipHull hull, string shipName, IPlayer owner) {
+    private ShipData CreateShipData(ShipCategory hull, string shipName, IPlayer owner) {
         float mass = TempGameValues.__GetMass(hull);
         float drag = 0.1F;
-        ShipData shipData = new ShipData(shipName, 50F, mass, drag) {
+        ShipData shipData = new ShipData(hull, shipName, 50F, mass, drag) {
             // Ship's optionalParentName gets set when it gets attached to a fleet
-            Hull = hull,
             Strength = new CombatStrength(),
-            LastHumanPlayerIntelDate = new GameDate(),
             CurrentHitPoints = UnityEngine.Random.Range(25F, 50F),
             MaxTurnRate = UnityEngine.Random.Range(45F, 315F),
             Owner = owner,
@@ -164,11 +162,11 @@ public class FleetCreator : AMonoBase, IDisposable {
 
     private void BuildShips() {
         _ships = new List<ShipItem>();
-        foreach (var hull in _composition.Hulls) {
+        foreach (var hull in _composition.ElementCategories) {
             GameObject hullPrefab = RequiredPrefabs.Instance.ships.First(p => p.gameObject.name == hull.GetName()).gameObject;
             string hullName = hullPrefab.name;
 
-            _composition.GetShipData(hull).ForAll(sd => {
+            _composition.GetData(hull).ForAll(sd => {
                 GameObject shipGo = UnityUtility.AddChild(gameObject, hullPrefab);
                 shipGo.name = hullName; // get rid of (Clone) in name
                 ShipItem ship = shipGo.GetSafeMonoBehaviourComponent<ShipItem>();
@@ -179,12 +177,12 @@ public class FleetCreator : AMonoBase, IDisposable {
     }
 
     private void InitializeShips() {
-        IDictionary<ShipHull, Stack<ShipData>> typeLookup = new Dictionary<ShipHull, Stack<ShipData>>();
+        IDictionary<ShipCategory, Stack<ShipData>> typeLookup = new Dictionary<ShipCategory, Stack<ShipData>>();
         foreach (var ship in _ships) {
-            ShipHull hull = GetShipHull(ship);
+            ShipCategory hull = GetShipHull(ship);
             Stack<ShipData> dataStack;
             if (!typeLookup.TryGetValue(hull, out dataStack)) {
-                dataStack = new Stack<ShipData>(_composition.GetShipData(hull));
+                dataStack = new Stack<ShipData>(_composition.GetData(hull));
                 typeLookup.Add(hull, dataStack);
             }
             ship.Data = dataStack.Pop();  // automatically adds the ship's transform to Data when set
@@ -196,12 +194,29 @@ public class FleetCreator : AMonoBase, IDisposable {
         _fleetCmd = fleetCmdGo.GetSafeMonoBehaviourComponent<FleetItem>();
     }
 
+    //private void InitializeFleet() {
+    //    _fleetCmd.Data = new FleetData(_fleetName);    // automatically adds the fleetCmd transform to Data when set
+
+    //    // add each ship to the fleet
+    //    _ships.ForAll(ship => _fleetCmd.AddShip(ship));
+    //    // include FleetCmd as a target in each ship's CameraLOSChangedRelay
+    //    _ships.ForAll(ship => ship.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().AddTarget(_fleetCmd.transform));
+    //}
+
+    ///// <summary>
+    ///// Selects and marks the flagship so formation creation knows which ship it is.
+    ///// Once enabled, the flagship will assign itself to its FleetCmd once it has initialized
+    ///// its Navigator to receive the immediate callback from FleetCmd.
+    ///// </summary>
+    //private void SelectFlagship() {
+    //    RandomExtended<ShipItem>.Choice(_ships).IsFlagship = true;
+    //}
+
     private void InitializeFleet() {
-        string fleetCmdName = _fleetName + Constants.Space + CommonTerms.Command;
-        _fleetCmd.Data = new FleetData(fleetCmdName);    // automatically adds the fleetCmd transform to Data when set
+        _fleetCmd.Data = new FleetData(_fleetName);    // automatically adds the fleetCmd transform to Data when set
 
         // add each ship to the fleet
-        _ships.ForAll(ship => _fleetCmd.AddShip(ship));
+        _ships.ForAll(ship => _fleetCmd.AddElement(ship));
         // include FleetCmd as a target in each ship's CameraLOSChangedRelay
         _ships.ForAll(ship => ship.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().AddTarget(_fleetCmd.transform));
     }
@@ -212,8 +227,9 @@ public class FleetCreator : AMonoBase, IDisposable {
     /// its Navigator to receive the immediate callback from FleetCmd.
     /// </summary>
     private void SelectFlagship() {
-        RandomExtended<ShipItem>.Choice(_ships).IsFlagship = true;
+        RandomExtended<ShipItem>.Choice(_ships).IsHQElement = true;
     }
+
 
     /// <summary>
     /// Randomly positions the ships of the fleet in a spherical globe around this location.
@@ -228,11 +244,39 @@ public class FleetCreator : AMonoBase, IDisposable {
         // fleetCmd will relocate itsef once it selects its flagship
     }
 
+    //private void PositionFleetElementsInCircle(float radius) {
+    //    Vector3 fleetCenter = _transform.position;
+    //    Stack<Vector3> localFormationPositions = new Stack<Vector3>(Mathfx.UniformPointsOnCircle(radius, _ships.Count - 1));
+    //    foreach (var ship in _ships) {
+    //        if (ship.IsFlagship) {
+    //            ship.transform.position = fleetCenter;
+    //        }
+    //        else {
+    //            Vector3 localFormationPosition = localFormationPositions.Pop();
+    //            ship.transform.position = fleetCenter + localFormationPosition;
+    //        }
+    //    }
+    //}
+
+    //private void AssignFormationPositions() {
+    //    ShipItem flagship = _ships.Single(s => s.IsFlagship);
+    //    Vector3 flagshipPosition = flagship.transform.position;
+    //    foreach (var ship in _ships) {
+    //        if (ship.IsFlagship) {
+    //            ship.Data.FormationPosition = Vector3.zero;
+    //            D.Log("Flagship is {0}.", ship.Data.Name);
+    //            continue;
+    //        }
+    //        ship.Data.FormationPosition = ship.transform.position - flagshipPosition;
+    //        //D.Log("{0}.FormationPosition = {1}.", ship.Data.Name, ship.Data.FormationPosition);
+    //    }
+    //}
+
     private void PositionFleetElementsInCircle(float radius) {
         Vector3 fleetCenter = _transform.position;
         Stack<Vector3> localFormationPositions = new Stack<Vector3>(Mathfx.UniformPointsOnCircle(radius, _ships.Count - 1));
         foreach (var ship in _ships) {
-            if (ship.IsFlagship) {
+            if (ship.IsHQElement) {
                 ship.transform.position = fleetCenter;
             }
             else {
@@ -243,21 +287,23 @@ public class FleetCreator : AMonoBase, IDisposable {
     }
 
     private void AssignFormationPositions() {
-        ShipItem flagship = _ships.Single(s => s.IsFlagship);
+        ShipItem flagship = _ships.Single(s => s.IsHQElement);
         Vector3 flagshipPosition = flagship.transform.position;
         foreach (var ship in _ships) {
-            if (ship.IsFlagship) {
+            if (ship.IsHQElement) {
                 ship.Data.FormationPosition = Vector3.zero;
                 D.Log("Flagship is {0}.", ship.Data.Name);
                 continue;
             }
             ship.Data.FormationPosition = ship.transform.position - flagshipPosition;
-            D.Log("{0}.FormationPosition = {1}.", ship.Data.Name, ship.Data.FormationPosition);
+            //D.Log("{0}.FormationPosition = {1}.", ship.Data.Name, ship.Data.FormationPosition);
         }
     }
 
+
     private void __SetIntelLevel() {
-        _fleetCmd.gameObject.GetSafeInterface<IFleetViewable>().PlayerIntelLevel = IntelLevel.Complete;
+        _fleetCmd.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel = new Intel(IntelScope.Comprehensive, IntelSource.InfoNet);
+        //_fleetCmd.gameObject.GetSafeInterface<IFleetViewable>().PlayerIntel = new Intel(IntelScope.Comprehensive, IntelSource.InfoNet);
         //RandomExtended<IntelLevel>.Choice(Enums<IntelLevel>.GetValues().Except(default(IntelLevel), IntelLevel.Nil).ToArray());
     }
 
@@ -269,15 +315,15 @@ public class FleetCreator : AMonoBase, IDisposable {
         _fleetCmd.gameObject.GetSafeMonoBehaviourComponent<FleetView>().enabled = true;
     }
 
-    private ShipHull GetShipHull(ShipItem ship) {
-        return Enums<ShipHull>.Parse(ship.gameObject.name);
+    private ShipCategory GetShipHull(ShipItem ship) {
+        return Enums<ShipCategory>.Parse(ship.gameObject.name);
     }
 
-    private int GetShipHullIndex(ShipHull hull) {
-        if (!_composition.Hulls.Contains(hull)) {
+    private int GetShipHullIndex(ShipCategory hull) {
+        if (!_composition.ElementCategories.Contains(hull)) {
             return 1;
         }
-        return _composition.GetShipData(hull).Count + 1;
+        return _composition.GetData(hull).Count + 1;
     }
 
     protected override void OnDestroy() {

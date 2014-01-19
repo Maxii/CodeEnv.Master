@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: StarBaseItem.cs
-// The data-holding class for all StarBases in the game. Includes a state machine.
+// File: StarbaseItem.cs
+// The data-holding class for all Starbases in the game. Includes a state machine. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,74 +18,149 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// The data-holding class for all StarBases in the game. Includes a state machine.
+/// The data-holding class for all Starbases in the game. Includes a state machine. 
 /// </summary>
-public class StarBaseItem : AMortalItemStateMachine<StarBaseState>, ITarget {
+public class StarbaseItem : ACommandItem<FacilityItem, FacilityCategory, FacilityData, FacilityState, StarbaseData, StarbaseComposition, StarbaseState> {
+    //public class StarbaseItem : AMortalItemStateMachine<StarbaseState>, ITarget {
 
-    private ItemOrder<StarBaseOrders> _currentOrder;
-    public ItemOrder<StarBaseOrders> CurrentOrder {
+    //public event Action<FacilityItem> onFleetElementDestroyed;
+
+    //public string FleetName { get { return Data.OptionalParentName; } }
+
+    private ItemOrder<StarbaseOrders> _currentOrder;
+    public ItemOrder<StarbaseOrders> CurrentOrder {
         get { return _currentOrder; }
-        set { SetProperty<ItemOrder<StarBaseOrders>>(ref _currentOrder, value, "CurrentOrder", OnOrdersChanged); }
+        set { SetProperty<ItemOrder<StarbaseOrders>>(ref _currentOrder, value, "CurrentOrder", OnOrdersChanged); }
     }
 
-    public new StarBaseData Data {
-        get { return base.Data as StarBaseData; }
-        set { base.Data = value; }
-    }
+    //public new StarbaseData Data {
+    //    get { return base.Data as StarbaseData; }
+    //    set { base.Data = value; }
+    //}
 
-    private GameManager _gameMgr;
+    //private FacilityItem _flagship;
+    //public FacilityItem Flagship {
+    //    get { return _flagship; }
+    //    set { SetProperty<FacilityItem>(ref _flagship, value, "Flagship", OnFlagshipChanged, OnFlagshipChanging); }
+    //}
+
+    //public IList<FacilityItem> Ships { get; private set; }
 
     protected override void Awake() {
         base.Awake();
-        _gameMgr = GameManager.Instance;
+        //Ships = new List<FacilityItem>();
         Subscribe();
     }
 
-    protected override void Start() {
-        base.Start();
-        Initialize();
+    //protected override void Start() {
+    //    base.Start();
+    //    Initialize();
+    //}
+
+    //private void Initialize() {
+    //    CurrentState = StarbaseState.Idling;
+    //}
+
+
+    protected override void Initialize() {
+        CurrentState = StarbaseState.Idling;
     }
 
-    private void Initialize() {
-        CurrentState = StarBaseState.Idling;
-    }
+    ///// <summary>
+    ///// Adds the ship to this fleet including parenting if needed.
+    ///// </summary>
+    ///// <param name="ship">The ship.</param>
+    //public void AddShip(FacilityItem ship) {
+    //    Ships.Add(ship);
+    //    Data.Add(ship.Data);
+    //    Transform parentFleetTransform = gameObject.GetSafeMonoBehaviourComponentInParents<StarbaseCreator>().transform;
+    //    if (ship.transform.parent != parentFleetTransform) {
+    //        ship.transform.parent = parentFleetTransform;   // local position, rotation and scale are auto adjusted to keep ship unchanged in worldspace
+    //    }
+    //    // TODO consider changing flagship
+    //}
 
-    protected override void Subscribe() {
-        base.Subscribe();
-        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
-    }
+    //public void ReportShipLost(FacilityItem ship) {
+    //    D.Log("{0} acknowledging {1} has been lost.", Data.Name, ship.Data.Name);
+    //    RemoveShip(ship);
 
-    private void OnGameStateChanged() {
-        // TODO
+    //    var fed = onFleetElementDestroyed;
+    //    if (fed != null) {
+    //        fed(ship);
+    //    }
+    //}
+
+    //public void RemoveShip(FacilityItem ship) {
+    //    bool isRemoved = Ships.Remove(ship);
+    //    isRemoved = isRemoved && Data.Remove(ship.Data);
+    //    D.Assert(isRemoved, "{0} not found.".Inject(ship.Data.Name));
+    //    if (Ships.Count > Constants.Zero) {
+    //        if (ship == Flagship) {
+    //            // Flagship has died
+    //            Flagship = SelectBestShip();
+    //        }
+    //        return;
+    //    }
+    //    // Fleet knows when to die
+    //}
+
+    //private void OnFlagshipChanging(FacilityItem newFlagship) {
+    //    if (Flagship != null) {
+    //        Flagship.IsFlagship = false;
+    //    }
+    //}
+
+    //private void OnFlagshipChanged() {
+    //    Flagship.IsFlagship = true;
+    //    Data.HQItemData = Flagship.Data;
+    //}
+
+    protected override FacilityItem SelectHQElement() {
+        return Elements.MaxBy<FacilityItem, float>(e => e.Radius);
     }
 
     protected override void Die() {
-        CurrentState = StarBaseState.Dying;
+        CurrentState = StarbaseState.Dying;
     }
+
+    //private FacilityItem SelectBestShip() {
+    //    return Ships.MaxBy(s => s.Data.Health);
+    //}
+
+    //protected override void Cleanup() {
+    //    base.Cleanup();
+    //    Data.Dispose();
+    //}
 
     // subscriptions contained completely within this gameobject (both subscriber
     // and subscribee) donot have to be cleaned up as all instances are destroyed
 
-    #region StarBaseStates
+    #region FleetStates
 
     #region Idle
 
     void Idling_EnterState() {
-        // TODO register as available
+        //CurrentOrder = null;
+        //if (Data.RequestedSpeed != Constants.ZeroF) {
+        //    ChangeSpeed(Constants.ZeroF);
+        //}
+        // register as available
     }
 
     void Idling_OnOrdersChanged() {
-        CurrentState = StarBaseState.ProcessOrders;
+        CurrentState = StarbaseState.ProcessOrders;
     }
 
     void Idling_ExitState() {
-        // TODO register as unavailable
+        // register as unavailable
     }
 
     void Idling_OnDetectedEnemy() { }
@@ -95,7 +170,7 @@ public class StarBaseItem : AMortalItemStateMachine<StarBaseState>, ITarget {
 
     #region ProcessOrders
 
-    private ItemOrder<StarBaseOrders> _orderBeingExecuted;
+    private ItemOrder<StarbaseOrders> _orderBeingExecuted;
     private bool _isNewOrderWaiting;
 
     void ProcessOrders_EnterState() { }
@@ -106,30 +181,24 @@ public class StarBaseItem : AMortalItemStateMachine<StarBaseState>, ITarget {
         // 2. the last new order (_orderBeingExecuted) has been completed
         _isNewOrderWaiting = _orderBeingExecuted != CurrentOrder;
         if (_isNewOrderWaiting) {
-            StarBaseOrders order = CurrentOrder.Order;
+            StarbaseOrders order = CurrentOrder.Order;
             switch (order) {
-                case StarBaseOrders.Attack:
+                case StarbaseOrders.Attack:
 
                     break;
-                case StarBaseOrders.StopAttack:
+                case StarbaseOrders.StopAttack:
 
                     break;
-                case StarBaseOrders.Disband:
+                case StarbaseOrders.Disband:
 
                     break;
-                case StarBaseOrders.DisbandAt:
+                case StarbaseOrders.Repair:
 
                     break;
-                case StarBaseOrders.RefitAt:
+                case StarbaseOrders.Refit:
 
                     break;
-                case StarBaseOrders.Repair:
-
-                    break;
-                case StarBaseOrders.RepairAt:
-
-                    break;
-                case StarBaseOrders.None:
+                case StarbaseOrders.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
             }
@@ -138,7 +207,7 @@ public class StarBaseItem : AMortalItemStateMachine<StarBaseState>, ITarget {
         else {
             // there is no new order so the return to this state must be after the last new order has been completed
             D.Assert(false, "Should be no Return() here.");
-            CurrentState = StarBaseState.Idling;
+            CurrentState = StarbaseState.Idling;
         }
     }
 
@@ -157,12 +226,6 @@ public class StarBaseItem : AMortalItemStateMachine<StarBaseState>, ITarget {
     void GoRepair_EnterState() { }
 
     void Repairing_EnterState() { }
-
-    #endregion
-
-    #region Retreat
-
-    void GoRetreat_EnterState() { }
 
     #endregion
 
@@ -185,8 +248,8 @@ public class StarBaseItem : AMortalItemStateMachine<StarBaseState>, ITarget {
     #region Dying
 
     void Dying_EnterState() {
-        Call(StarBaseState.ShowDying);
-        CurrentState = StarBaseState.Dead;
+        Call(StarbaseState.ShowDying);
+        CurrentState = StarbaseState.Dead;
     }
 
     #endregion
@@ -241,15 +304,17 @@ public class StarBaseItem : AMortalItemStateMachine<StarBaseState>, ITarget {
 
     #region ITarget Members
 
-    public string Name {
-        get { return Data.Name; }
-    }
+    //public string Name {
+    //    get { return Data.Name; }
+    //}
 
-    public Vector3 Position {
-        get { return Data.Position; }
-    }
+    //public Vector3 Position {
+    //    get { return Data.Position; }
+    //}
 
-    public bool IsMovable { get { return false; } }
+    //public bool IsMovable { get { return true; } }
+
+    public override bool IsMovable { get { return false; } }
 
     #endregion
 

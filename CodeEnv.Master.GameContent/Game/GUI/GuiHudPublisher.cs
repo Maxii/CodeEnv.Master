@@ -74,11 +74,11 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="toShow">if set to <c>true</c> shows the hud, otherwise hides it.</param>
         /// <param name="intelLevel">The intel level.</param>
-        public void ShowHud(bool toShow, IntelLevel intelLevel) {
+        public void ShowHud(bool toShow, Intel intel) {
             if (toShow) {
-                PrepareHudText(intelLevel);
+                PrepareHudText(intel);
                 if (_job == null) {
-                    _job = new Job(DisplayHudAtCursor(intelLevel), toStart: true, onJobComplete: delegate {
+                    _job = new Job(DisplayHudAtCursor(intel), toStart: true, onJobComplete: delegate {
                         // TODO
                     });
                 }
@@ -92,24 +92,25 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private IEnumerator DisplayHudAtCursor(IntelLevel intelLevel) {
+        private IEnumerator DisplayHudAtCursor(Intel intel) {
             while (true) {
-                UpdateGuiCursorHudText(intelLevel, GuiHudLineKeys.Distance);
-                if (intelLevel == IntelLevel.OutOfDate) {
-                    UpdateGuiCursorHudText(IntelLevel.OutOfDate, GuiHudLineKeys.IntelState);
+                UpdateGuiCursorHudText(intel, GuiHudLineKeys.Distance);
+                if (intel.Source == IntelSource.None) {
+                    // update number of days readout since intel was current
+                    UpdateGuiCursorHudText(intel, GuiHudLineKeys.IntelState);
                 }
                 if (_optionalKeys != null) {
-                    UpdateGuiCursorHudText(intelLevel, _optionalKeys);
+                    UpdateGuiCursorHudText(intel, _optionalKeys);
                 }
                 _guiCursorHud.Set(_guiCursorHudText);
                 yield return new WaitForSeconds(_hudRefreshRate);
             }
         }
 
-        private void PrepareHudText(IntelLevel intelLevel) {        // OPTIMIZE Detect individual data property changes and replace them individually
-            if (_guiCursorHudText == null || _guiCursorHudText.IntelLevel != intelLevel || _data.IsChanged) {
+        private void PrepareHudText(Intel intel) {        // OPTIMIZE Detect individual data property changes and replace them individually
+            if (_guiCursorHudText == null || _guiCursorHudText.Intel != intel || _data.IsChanged) {
                 // don't have the right version of GuiCursorHudText so make one
-                _guiCursorHudText = _guiHudTextFactory.MakeInstance(intelLevel, _data);
+                _guiCursorHudText = _guiHudTextFactory.MakeInstance(intel, _data);
                 _data.AcceptChanges();   // once we make a new one from current data, it is no longer dirty, if it ever was
             }
         }
@@ -119,10 +120,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="intelLevel">The intel level.</param>
         /// <param name="keys">The line keys.</param>
-        private void UpdateGuiCursorHudText(IntelLevel intelLevel, params GuiHudLineKeys[] keys) {
+        private void UpdateGuiCursorHudText(Intel intel, params GuiHudLineKeys[] keys) {
             IColoredTextList coloredTextList;
             foreach (var key in keys) {
-                coloredTextList = _guiHudTextFactory.MakeInstance(key, intelLevel, _data);
+                coloredTextList = _guiHudTextFactory.MakeInstance(key, intel, _data);
                 _guiCursorHudText.Replace(key, coloredTextList);
             }
         }

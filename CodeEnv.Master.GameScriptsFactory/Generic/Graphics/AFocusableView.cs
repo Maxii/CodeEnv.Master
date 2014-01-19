@@ -68,22 +68,17 @@ public abstract class AFocusableView : AView, ICameraFocusable {
         _collider = UnityUtility.ValidateComponentPresence<Collider>(gameObject);
     }
 
-    protected override void Start() {
-        base.Start();
-        InitializePresenter();  // moved from Awake as some Presenters need immediate access to this Behaviour's parent which may not yet be assigned if Instantiated at runtime
-    }
-
-    protected abstract void InitializePresenter();
-
     protected virtual void OnHover(bool isOver) {
-        if (DisplayMode != ViewDisplayMode.Hide) {
-            ShowHud(isOver);
+        //D.Log("{0}.OnHover({1}) called.", _transform.name, isOver);
+        if (IsDiscernible && isOver) {
+            ShowHud(true);
+            return;
         }
+        ShowHud(false);
     }
 
-    protected override void OnDisplayModeChanged() {
-        base.OnDisplayModeChanged();
-        //D.Log("{0} ViewDisplayMode now {1}.", Presenter.Item.Data.Name, DisplayMode.GetName());
+    protected override void OnIsDiscernibleChanged() {
+        base.OnIsDiscernibleChanged();
         AssessHighlighting();
     }
 
@@ -94,7 +89,7 @@ public abstract class AFocusableView : AView, ICameraFocusable {
     }
 
     protected virtual void OnMiddleClick() {
-        if (DisplayMode != ViewDisplayMode.Hide) {
+        if (IsDiscernible) {
             IsFocus = true;
         }
     }
@@ -107,7 +102,7 @@ public abstract class AFocusableView : AView, ICameraFocusable {
     }
 
     public virtual void AssessHighlighting() {
-        if (DisplayMode == ViewDisplayMode.Hide) {
+        if (!IsDiscernible) {
             Highlight(Highlights.None);
             return;
         }

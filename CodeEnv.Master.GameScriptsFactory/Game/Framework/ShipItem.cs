@@ -26,9 +26,10 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all ships in the game. Includes a state machine.
 /// </summary>
-public class ShipItem : AMortalItemStateMachine<ShipState>, ITarget {
+public class ShipItem : AElement<ShipCategory, ShipData, ShipState> {
+    //public class ShipItem : AMortalItemStateMachine<ShipState>, ITarget {
 
-    public bool IsFlagship { get; set; }
+    //public bool IsFlagship { get; set; }
 
     private ItemOrder<ShipOrders> _currentOrder;
     public ItemOrder<ShipOrders> CurrentOrder {
@@ -36,10 +37,10 @@ public class ShipItem : AMortalItemStateMachine<ShipState>, ITarget {
         set { SetProperty<ItemOrder<ShipOrders>>(ref _currentOrder, value, "CurrentOrder", OnOrdersChanged); }
     }
 
-    public new ShipData Data {
-        get { return base.Data as ShipData; }
-        set { base.Data = value; }
-    }
+    //public new ShipData Data {
+    //    get { return base.Data as ShipData; }
+    //    set { base.Data = value; }
+    //}
 
     public ShipNavigator Navigator { get; private set; }
 
@@ -47,26 +48,39 @@ public class ShipItem : AMortalItemStateMachine<ShipState>, ITarget {
 
     protected override void Awake() {
         base.Awake();
-        UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
+        //UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
         Subscribe();
     }
 
-    protected override void Start() {
-        base.Start();
+    //protected override void Start() {
+    //    base.Start();
+    //    var fleetParent = gameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>();
+    //    _fleet = fleetParent.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetItem>();
+    //    Initialize();
+    //}
+
+    protected override void Initialize() {
         var fleetParent = gameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>();
         _fleet = fleetParent.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetItem>();
-        Initialize();
-    }
 
-    private void Initialize() {
         InitializeNavigator();
         // when a fleet is initially built, the ship already selected to be the flagship assigns itself
         // to fleet command once it has initialized its Navigator to receive the immediate callback
-        if (IsFlagship) {
-            _fleet.Flagship = this;
+        if (IsHQElement) {
+            _fleet.HQElement = this;
         }
         CurrentState = ShipState.Idling;
     }
+
+    //private void Initialize() {
+    //    InitializeNavigator();
+    //    // when a fleet is initially built, the ship already selected to be the flagship assigns itself
+    //    // to fleet command once it has initialized its Navigator to receive the immediate callback
+    //    if (IsFlagship) {
+    //        _fleet.Flagship = this;
+    //    }
+    //    CurrentState = ShipState.Idling;
+    //}
 
     private void InitializeNavigator() {
         Navigator = new ShipNavigator(_transform, Data);
@@ -97,10 +111,17 @@ public class ShipItem : AMortalItemStateMachine<ShipState>, ITarget {
     }
 
     protected override void Die() {
-        _fleet.ReportShipLost(this);
+        _fleet.ReportElementLost(this);
         // let fleetCmd process the loss before the destroyed ship starts processing its state changes
         CurrentState = ShipState.Dying;
     }
+
+
+    //protected override void Die() {
+    //    _fleet.ReportShipLost(this);
+    //    // let fleetCmd process the loss before the destroyed ship starts processing its state changes
+    //    CurrentState = ShipState.Dying;
+    //}
 
     #region Velocity Debugger
 
@@ -588,25 +609,25 @@ public class ShipItem : AMortalItemStateMachine<ShipState>, ITarget {
     protected override void Cleanup() {
         base.Cleanup();
         Navigator.Dispose();
-        Data.Dispose();
+        //Data.Dispose();
     }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region ITarget Members
+    //#region ITarget Members
 
-    public string Name {
-        get { return Data.Name; }
-    }
+    //public string Name {
+    //    get { return Data.Name; }
+    //}
 
-    public Vector3 Position {
-        get { return Data.Position; }
-    }
+    //public Vector3 Position {
+    //    get { return Data.Position; }
+    //}
 
-    public bool IsMovable { get { return true; } }
+    //public bool IsMovable { get { return true; } }
 
-    #endregion
+    //#endregion
 }
 

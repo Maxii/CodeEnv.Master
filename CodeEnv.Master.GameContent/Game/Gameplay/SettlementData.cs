@@ -24,13 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SettlementData : AMortalData {
 
-        private SettlementSize _settlementSize;
-        public SettlementSize SettlementSize {
-            get { return _settlementSize; }
-            set {
-                SetProperty<SettlementSize>(ref _settlementSize, value, "SettlementSize");
-            }
-        }
+        public SettlementCategory Category { get; private set; }
 
         private int _population;
         public int Population {
@@ -83,13 +77,13 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Initializes a new instance of the <see cref="SettlementData"/> class.
         /// </summary>
-        /// <param name="size">The size.</param>
+        /// <param name="category">The size.</param>
         /// <param name="name">The name.</param>
         /// <param name="maxHitPoints">The maximum hit points.</param>
         /// <param name="parentName">Name of the parent.</param>
-        public SettlementData(SettlementSize size, string name, float maxHitPoints, string parentName)
+        public SettlementData(SettlementCategory category, string name, float maxHitPoints, string parentName)
             : base(name, maxHitPoints, parentName) {
-            _settlementSize = size;
+            Category = category;
         }
 
         public override string ToString() {

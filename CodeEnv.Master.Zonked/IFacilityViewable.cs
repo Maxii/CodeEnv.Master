@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IStarBaseViewable.cs
-// Interface used by a StarBasePresenter to communicate with their associated StarBaseView.
+// File: IFacilityViewable.cs
+// Interface used by a FacilityPresenter to communicate with their associated FacilityView.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,9 +19,9 @@ namespace CodeEnv.Master.GameContent {
     using System;
 
     /// <summary>
-    /// Interface used by a StarBasePresenter to communicate with their associated StarBaseView.
+    /// Interface used by a FacilityPresenter to communicate with their associated FacilityView.
     /// </summary>
-    public interface IStarBaseViewable : IViewable {
+    public interface IFacilityViewable : IViewable {
 
         event Action onShowCompletion;
 
@@ -36,8 +36,6 @@ namespace CodeEnv.Master.GameContent {
         void ShowRefitting();
 
         void StopShowing();
-
-        void HighlightTrackingLabel(bool toHighlight);
 
     }
 }

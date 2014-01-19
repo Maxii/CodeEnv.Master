@@ -37,6 +37,11 @@ namespace CodeEnv.Master.Common {
         DummyTarget = 10,
         SectorView = 11,  // Unused
 
+        Ships = 14,
+        BasesSettlements = 15,
+        Planetoids = 16,
+        Stars = 17,
+
 
         DeepSpace = 20,
         CelestialObjectKeepout = 21,

@@ -26,6 +26,11 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public abstract class AMortalFocusablePresenter : AFocusablePresenter {
 
+    public new AMortalItem Item {
+        get { return base.Item as AMortalItem; }
+        protected set { base.Item = value; }
+    }
+
     protected GameEventManager _eventMgr;
 
     public AMortalFocusablePresenter(IViewable view)
@@ -36,6 +41,13 @@ public abstract class AMortalFocusablePresenter : AFocusablePresenter {
     protected override void Subscribe() {
         base.Subscribe();
         _eventMgr.AddListener<ItemDeathEvent>(this, OnItemDeath);
+    }
+
+    public bool IsDetectable {
+        get { return true; }
+        // TODO assess detectability of this view for the HumanPlayer
+        // include Item.StealthMode, Item.Owner and whether in range
+        // of humanPlayer's sensors
     }
 
     protected abstract void OnItemDeath(ItemDeathEvent e);

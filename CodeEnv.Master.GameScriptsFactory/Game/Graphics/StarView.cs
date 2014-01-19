@@ -25,6 +25,9 @@ using UnityEngine;
 /// </summary>
 public class StarView : AFocusableView {
 
+    private static LayerMask _starLightCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
+        Layers.Ships, Layers.BasesSettlements, Layers.Planetoids, Layers.Stars);
+
     public new StarPresenter Presenter {
         get { return base.Presenter as StarPresenter; }
         protected set { base.Presenter = value; }
@@ -32,9 +35,6 @@ public class StarView : AFocusableView {
 
     private SphereCollider _keepoutCollider;
     private Light _starLight;
-    private IEnumerable<StarGlowAnimator> _glowAnimators;
-    private StarAnimator _starAnimator;
-    private Animation _animation;
     private Billboard _billboard;
 
     protected override void Awake() {
@@ -44,10 +44,7 @@ public class StarView : AFocusableView {
         _keepoutCollider = gameObject.GetComponentsInChildren<SphereCollider>().Single(c => c.gameObject.layer == (int)Layers.CelestialObjectKeepout);
         _keepoutCollider.radius = (_collider as SphereCollider).radius * TempGameValues.KeepoutRadiusMultiplier;
         _starLight = gameObject.GetComponentInChildren<Light>();
-        _glowAnimators = gameObject.GetSafeMonoBehaviourComponentsInChildren<StarGlowAnimator>();
         _billboard = gameObject.GetSafeMonoBehaviourComponentInChildren<Billboard>();
-        _animation = gameObject.GetComponentInChildren<Animation>();
-        _starAnimator = gameObject.GetSafeMonoBehaviourComponent<StarAnimator>();
     }
 
     protected override void InitializePresenter() {
@@ -61,7 +58,7 @@ public class StarView : AFocusableView {
 
     protected override void OnHover(bool isOver) {
         base.OnHover(isOver);
-        if (DisplayMode != ViewDisplayMode.Hide) {
+        if (IsDiscernible) {
             Presenter.OnHover(isOver);
         }
     }
@@ -74,71 +71,20 @@ public class StarView : AFocusableView {
     }
 
     private void OnLeftClick() {
-        if (DisplayMode != ViewDisplayMode.Hide) {
+        if (IsDiscernible) {
             Presenter.OnLeftClick();
         }
     }
 
-    protected override void OnDisplayModeChanging(ViewDisplayMode newMode) {
-        base.OnDisplayModeChanging(newMode);
-        ViewDisplayMode previousMode = DisplayMode;
-        switch (previousMode) {
-            case ViewDisplayMode.Hide:
-                _billboard.enabled = true;
-                break;
-            case ViewDisplayMode.TwoD:
-                Show2DIcon(false);
-                break;
-            case ViewDisplayMode.ThreeD:
-                if (newMode != ViewDisplayMode.ThreeDAnimation) { Show3DMesh(false); }
-                break;
-            case ViewDisplayMode.ThreeDAnimation:
-                if (newMode != ViewDisplayMode.ThreeD) { Show3DMesh(false); }
-                _glowAnimators.ForAll(ga => ga.gameObject.SetActive(false));
-                _starAnimator.enabled = false;
-                _animation.enabled = false;
-                break;
-            case ViewDisplayMode.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(previousMode));
-        }
-    }
-
-    protected override void OnDisplayModeChanged() {
-        base.OnDisplayModeChanged();
-        switch (DisplayMode) {
-            case ViewDisplayMode.Hide:
-                _billboard.enabled = false;
-                break;
-            case ViewDisplayMode.TwoD:
-                Show2DIcon(true);
-                break;
-            case ViewDisplayMode.ThreeD:
-                Show3DMesh(true);
-                break;
-            case ViewDisplayMode.ThreeDAnimation:
-                Show3DMesh(true);
-                _glowAnimators.ForAll(ga => ga.gameObject.SetActive(true));
-                _starAnimator.enabled = true;
-                _animation.enabled = true;
-                break;
-            case ViewDisplayMode.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(DisplayMode));
-        }
-    }
-
-    private void Show3DMesh(bool toShow) {
-        // TODO Star mesh shows all the time for now
-    }
-
-    private void Show2DIcon(bool toShow) {
-        // TODO need icon 
+    protected override void OnIsDiscernibleChanged() {
+        base.OnIsDiscernibleChanged();
+        _billboard.enabled = IsDiscernible;
     }
 
     private void InitializeStarSettings() {
         _starLight.range = GameManager.Settings.UniverseSize.Radius();
         _starLight.intensity = 0.5F;
+        _starLight.cullingMask = _starLightCullingMask;
     }
 
     public override string ToString() {

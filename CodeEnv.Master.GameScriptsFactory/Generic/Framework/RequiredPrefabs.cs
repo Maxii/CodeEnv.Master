@@ -33,6 +33,9 @@ public class RequiredPrefabs : AMonoBaseSingleton<RequiredPrefabs> {
     public FleetItem fleetCmd;
     public ShipItem[] ships;
 
+    public StarbaseItem starbaseCmd;
+    public FacilityItem[] facilities;
+
     public SystemItem system; // without the star and settlement
     public StarItem[] stars;
     public GameObject[] planets;

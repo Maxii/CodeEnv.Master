@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// A class for managing the UI of a Settlement.
 /// </summary>
-public class SettlementView : AFollowableView, ISettlementViewable {
+public class SettlementView : AFocusableView, ICameraFollowable, ISettlementViewable {
 
     public new SettlementPresenter Presenter {
         get { return base.Presenter as SettlementPresenter; }
@@ -42,12 +42,9 @@ public class SettlementView : AFollowableView, ISettlementViewable {
     private Color _hiddenMeshColor;
     private Renderer _renderer;
 
-    private Animation _animation;
-
     protected override void Awake() {
         base.Awake();
         _audioSource = UnityUtility.ValidateComponentPresence<AudioSource>(gameObject);
-        _animation = gameObject.GetComponentInChildren<Animation>();
         circleScaleFactor = 1.0F;
         InitializeMesh();
     }
@@ -56,50 +53,19 @@ public class SettlementView : AFollowableView, ISettlementViewable {
         Presenter = new SettlementPresenter(this);
     }
 
-    protected override void OnDisplayModeChanging(ViewDisplayMode newMode) {
-        base.OnDisplayModeChanging(newMode);
-        ViewDisplayMode previousMode = DisplayMode;
-        switch (previousMode) {
-            case ViewDisplayMode.Hide:
-                break;
-            case ViewDisplayMode.TwoD:
-                Show2DIcon(false);
-                break;
-            case ViewDisplayMode.ThreeD:
-                if (newMode != ViewDisplayMode.ThreeDAnimation) { Show3DMesh(false); }
-                break;
-            case ViewDisplayMode.ThreeDAnimation:
-                if (newMode != ViewDisplayMode.ThreeD) { Show3DMesh(false); }
-                _animation.enabled = false;
-                break;
-            case ViewDisplayMode.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(previousMode));
-        }
+    protected override void OnIsDiscernibleChanged() {
+        base.OnIsDiscernibleChanged();
+        ShowMesh(IsDiscernible);
     }
 
-    protected override void OnDisplayModeChanged() {
-        base.OnDisplayModeChanged();
-        switch (DisplayMode) {
-            case ViewDisplayMode.Hide:
-                break;
-            case ViewDisplayMode.TwoD:
-                Show2DIcon(true);
-                break;
-            case ViewDisplayMode.ThreeD:
-                Show3DMesh(true);
-                break;
-            case ViewDisplayMode.ThreeDAnimation:
-                Show3DMesh(true);
-                _animation.enabled = true;
-                break;
-            case ViewDisplayMode.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(DisplayMode));
-        }
+    private void InitializeMesh() {
+        _renderer = gameObject.GetComponentInChildren<Renderer>();
+        _originalMeshColor_Main = _renderer.material.GetColor(UnityConstants.MaterialColor_Main);
+        _originalMeshColor_Specular = _renderer.material.GetColor(UnityConstants.MaterialColor_Specular);
+        _hiddenMeshColor = GameColor.Clear.ToUnityColor();
     }
 
-    private void Show3DMesh(bool toShow) {
+    private void ShowMesh(bool toShow) {
         if (toShow) {
             _renderer.material.SetColor(UnityConstants.MaterialColor_Main, _originalMeshColor_Main);
             _renderer.material.SetColor(UnityConstants.MaterialColor_Specular, _originalMeshColor_Specular);
@@ -112,21 +78,25 @@ public class SettlementView : AFollowableView, ISettlementViewable {
         }
     }
 
-    private void Show2DIcon(bool toShow) {
-        Show3DMesh(toShow);
-        // TODO
-    }
-
-    private void InitializeMesh() {
-        _renderer = gameObject.GetComponentInChildren<Renderer>();
-        _originalMeshColor_Main = _renderer.material.GetColor(UnityConstants.MaterialColor_Main);
-        _originalMeshColor_Specular = _renderer.material.GetColor(UnityConstants.MaterialColor_Specular);
-        _hiddenMeshColor = GameColor.Clear.ToUnityColor();
-    }
-
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region ICameraFollowable Members
+
+    [SerializeField]
+    private float cameraFollowDistanceDampener = 3.0F;
+    public virtual float CameraFollowDistanceDampener {
+        get { return cameraFollowDistanceDampener; }
+    }
+
+    [SerializeField]
+    private float cameraFollowRotationDampener = 1.0F;
+    public virtual float CameraFollowRotationDampener {
+        get { return cameraFollowRotationDampener; }
+    }
+
+    #endregion
 
     #region ISettlementViewable Members
 

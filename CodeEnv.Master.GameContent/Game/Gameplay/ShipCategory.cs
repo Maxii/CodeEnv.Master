@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ShipHull.cs
-// Size of ship hulls in ascending mass order.
+// File: ShipCategory.cs
+// General classification type of ships.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,9 +19,9 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Size of ship hulls in ascending mass order.
+    /// General classification type of ships.
     /// </summary>
-    public enum ShipHull {
+    public enum ShipCategory {
 
         None,
 

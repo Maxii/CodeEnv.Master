@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: StarBaseOrders.cs
-// The orders that can be issued to a StarBase.
+// File: StarbaseOrders.cs
+// The orders that can be issued to a Starbase.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,9 +17,9 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// The orders that can be issued to a StarBase.
+    /// The orders that can be issued to a Starbase.
     /// </summary>
-    public enum StarBaseOrders {
+    public enum StarbaseOrders {
 
         None,
 
@@ -27,13 +27,9 @@ namespace CodeEnv.Master.GameContent {
 
         Disband,
 
-        DisbandAt,
-
-        RefitAt,
+        Refit,
 
         Repair,
-
-        RepairAt,
 
         StopAttack
 

@@ -53,21 +53,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private GameDate _lastHumanPlayerIntelDate;
-        /// <summary>
-        /// Gets or sets the date the human player last had 
-        /// intel on this location. Used only when IntelState is
-        /// OutOfDate to derive the age of the last intel, 
-        /// this property only needs to be updated
-        /// when the intel state changes to OutOfDate.
-        /// </summary>
-        public GameDate LastHumanPlayerIntelDate {
-            get { return _lastHumanPlayerIntelDate; }
-            set {
-                SetProperty<GameDate>(ref _lastHumanPlayerIntelDate, value, "LastHumanPlayerIntelDate");
-            }
-        }
-
         private Transform _transform;
         public Transform Transform {
             protected get { return _transform; }

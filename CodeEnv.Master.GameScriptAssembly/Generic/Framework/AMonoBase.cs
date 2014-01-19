@@ -470,7 +470,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
         var frame = stackTrace.GetFrames()[2];
         var caller = frame.GetMethod();
         if (!caller.Name.Equals("set_" + propertyName, StringComparison.InvariantCulture)) {
-            throw new InvalidOperationException("Called SetProperty {0} from {1}.".Inject(propertyName, caller.Name));
+            throw new InvalidOperationException("Called SetProperty {0} from {1}. Check spelling of Property.".Inject(propertyName, caller.Name));
         }
     }
 

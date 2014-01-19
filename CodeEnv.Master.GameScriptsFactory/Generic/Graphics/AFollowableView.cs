@@ -12,6 +12,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -19,6 +20,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract class managing the UI View for a followable object.
 /// </summary>
+[Obsolete]
 public abstract class AFollowableView : AFocusableView, ICameraFollowable {
 
     #region ICameraFollowable Members

@@ -90,7 +90,6 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
         PlayerViewMode viewMode = PlayerViews.Instance.ViewMode;
         switch (viewMode) {
             case PlayerViewMode.SectorView:
-                //case PlayerViewMode.SectorOrder:
                 ShowSectorGrid(true);
                 DynamicallySubscribe(true);
                 break;
@@ -232,22 +231,20 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
         SectorItem sector = sectorGO.GetSafeMonoBehaviourComponent<SectorItem>();
 
         SectorData data = new SectorData(index);
-        data.LastHumanPlayerIntelDate = new GameDate();
         data.Density = 1F;
         sector.Data = data;
         // IMPROVE use data values in place of sector values
 
         sectorGO.transform.position = worldPosition;
         SectorView view = sectorGO.GetSafeMonoBehaviourComponent<SectorView>();
-        view.PlayerIntelLevel = IntelLevel.Complete;
+        //view.PlayerIntel = new Intel(IntelScope.Comprehensive, IntelFreshness.Realtime);
+        view.PlayerIntel = new Intel(IntelScope.Comprehensive, IntelSource.InfoNet);
         sector.enabled = true;
         view.enabled = true;
-
 
         _sectors.Add(index, sector);
         //D.Log("Sector added at index {0}.", index);
     }
-
 
     /// <summary>
     /// Gets the half value (1.5, 2.5, 1.5) location (in the grid coordinate system)

@@ -21,9 +21,9 @@ using UnityEngine;
 /// <summary>
 /// Class that simulates the movement of an object orbiting around a stationary
 /// location. Both orbital movement and self rotation of the orbiting object are implemented.
-/// Assumes this script is attached to a parent of [rotatingObject] whose position is coincident
-/// with that of the stationary object it is orbiting. This script simulates
-/// orbital movement of [rotatingObject] by rotating this parent object.
+/// Assumes this script is attached to the parent of an orbiting object. The position  of this
+/// parent should be coincident with that of the stationary object the orbiting object is orbiting. 
+/// This script simulates orbital movement of the orbiting object by rotating this parent object.
 /// </summary>
 public class Orbit : AMonoBase, IDisposable {
 
@@ -44,49 +44,18 @@ public class Orbit : AMonoBase, IDisposable {
     public GameTimePeriod orbitPeriod;
 
     /// <summary>
-    /// The axis of self rotation in local space.
-    /// </summary>
-    public Vector3 axisOfRotation = Vector3.up;
-
-    /// <summary>
-    /// The self rotation speed of the object on its own axis. A value of 1 means
-    /// a single rotation will take one Day.
-    /// </summary>
-    public float relativeRotationSpeed = 1.0F;
-
-    /// <summary>
-    /// The duration of one rotation of the object on its own axis.
-    /// </summary>
-    public GameTimePeriod rotationPeriod;
-
-    /// <summary>
-    /// The object that is to self rotate at [rotationSpeed]. Can be null if the object is not
-    /// to self rotate.
-    /// </summary>
-    public Transform rotatingObject;
-
-    /// <summary>
     /// The orbit speed of the object around the stationary location in degrees per second.
     /// </summary>
     protected float _orbitSpeed;
 
-    /// <summary>
-    /// The self rotation speed of the object around its own axis in degrees per second.
-    /// </summary>
-    protected float _rotationSpeed;
-
-    protected float _gameSpeedMultiplier;
     private GameStatus _gameStatus;
-
     private IList<IDisposable> _subscribers;
 
     protected override void Awake() {
         base.Awake();
         _gameStatus = GameStatus.Instance;
         orbitPeriod = orbitPeriod ?? new GameTimePeriod(days: 0, years: 1);
-        rotationPeriod = rotationPeriod ?? new GameTimePeriod(days: 10, years: 0);
         _orbitSpeed = (relativeOrbitSpeed * Constants.DegreesPerOrbit * GeneralSettings.Instance.DaysPerSecond) / orbitPeriod.PeriodInDays;
-        _rotationSpeed = (relativeRotationSpeed * Constants.DegreesPerRotation * GeneralSettings.Instance.DaysPerSecond) / rotationPeriod.PeriodInDays;
         Subscribe();
         UpdateRate = FrameUpdateFrequency.Frequent;
         enabled = false;
@@ -105,12 +74,10 @@ public class Orbit : AMonoBase, IDisposable {
 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
-        float deltaTime = GameTime.DeltaTimeOrPausedWithGameSpeed * (int)UpdateRate;
+        float deltaTime = GameTime.DeltaTimeOrPausedWithGameSpeed * (int)UpdateRate;    // stops the orbit when paused
         if (!_gameStatus.IsPaused) {
-            // we want the rotation of the object to continue as it is just eye candy, but not its position within the system
             UpdateOrbit(deltaTime);
         }
-        UpdateRotation(deltaTime);
     }
 
     /// <summary>
@@ -120,16 +87,6 @@ public class Orbit : AMonoBase, IDisposable {
     /// <param name="deltaTime">The delta time.</param>
     protected virtual void UpdateOrbit(float deltaTime) {
         _transform.Rotate(axisOfOrbit * _orbitSpeed * deltaTime, relativeTo: Space.Self);
-    }
-
-    /// <summary>
-    /// Updates the rotation of 'rotatingObject' around its own local Y axis.
-    /// </summary>
-    /// <param name="deltaTime">The delta time.</param>
-    private void UpdateRotation(float deltaTime) {
-        if (rotatingObject != null) {
-            rotatingObject.Rotate(axisOfRotation * _rotationSpeed * deltaTime, relativeTo: Space.Self);
-        }
     }
 
     protected override void OnDestroy() {

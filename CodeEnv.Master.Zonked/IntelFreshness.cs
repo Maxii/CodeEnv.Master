@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ISystemViewable.cs
-//  Interface used by SystemPresenters to communicate with their associated SystemViews.
+// File: IntelFreshness.cs
+// How current the IntelLevel held about an object is.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -14,14 +14,21 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-namespace CodeEnv.Master.GameContent {
+namespace CodeEnv.Master.Common {
 
     /// <summary>
-    ///  Interface used by SystemPresenters to communicate with their associated SystemViews.
+    /// How current the IntelLevel held about an object is.
     /// </summary>
-    public interface ISystemViewable : IViewable {
+    public enum IntelFreshness {
 
-        void HighlightTrackingLabel(bool toHighlight);
+        None,
+
+        OutOfDate,
+
+        //Current,  // IMPROVE Install timer that auto moves from Current to OutOfDate?
+
+        Realtime
+
 
     }
 }

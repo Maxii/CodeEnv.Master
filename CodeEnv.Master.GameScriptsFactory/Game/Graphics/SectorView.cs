@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// A class for managing the UI of a Sector.
 /// </summary>
-public class SectorView : AView, IViewable {
+public class SectorView : AView {
 
     public SectorPresenter Presenter { get; private set; }
 
@@ -47,71 +47,11 @@ public class SectorView : AView, IViewable {
         }
     }
 
-    // private Animation _animation;    // TODO meshes and animations need to be added to sectors
+    // TODO meshes and animations need to be added to sectors
+    // UNCLEAR include a separate CullingLayer for Sector meshes and animations?
 
-    protected override void Awake() {
-        base.Awake();
-        // _animation = gameObject.GetComponentInChildren<Animation>();
-    }
-
-    protected override void Start() {
-        base.Start();
-        InitializePresenter();  // moved from Awake as some Presenters need immediate access to this Behaviour's parent which may not yet be assigned if Instantiated at runtime
-    }
-
-    protected virtual void InitializePresenter() {
+    protected override void InitializePresenter() {
         Presenter = new SectorPresenter(this);
-    }
-
-    protected override void OnDisplayModeChanging(ViewDisplayMode newMode) {
-        base.OnDisplayModeChanging(newMode);
-        ViewDisplayMode previousMode = DisplayMode;
-        switch (previousMode) {
-            case ViewDisplayMode.Hide:
-                break;
-            case ViewDisplayMode.TwoD:
-                Show2DIcon(false);
-                break;
-            case ViewDisplayMode.ThreeD:
-                if (newMode != ViewDisplayMode.ThreeDAnimation) { Show3DMesh(false); }
-                break;
-            case ViewDisplayMode.ThreeDAnimation:
-                if (newMode != ViewDisplayMode.ThreeD) { Show3DMesh(false); }
-                //_animation.enabled = false;
-                break;
-            case ViewDisplayMode.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(previousMode));
-        }
-    }
-
-    protected override void OnDisplayModeChanged() {
-        base.OnDisplayModeChanged();
-        switch (DisplayMode) {
-            case ViewDisplayMode.Hide:
-                break;
-            case ViewDisplayMode.TwoD:
-                Show2DIcon(true);
-                break;
-            case ViewDisplayMode.ThreeD:
-                Show3DMesh(true);
-                break;
-            case ViewDisplayMode.ThreeDAnimation:
-                Show3DMesh(true);
-                //_animation.enabled = true;
-                break;
-            case ViewDisplayMode.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(DisplayMode));
-        }
-    }
-
-    private void Show3DMesh(bool toShow) {
-        // TODO need a sector mesh 
-    }
-
-    private void Show2DIcon(bool toShow) {
-        // TODO unclear whether sector meshes will have icons
     }
 
     public override string ToString() {

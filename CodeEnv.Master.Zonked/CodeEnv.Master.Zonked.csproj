@@ -123,10 +123,13 @@
     <Compile Include="HudPublisher.cs" />
     <Compile Include="IColliderRelayTarget.cs" />
     <Compile Include="IData.cs" />
+    <Compile Include="IFacilityViewable.cs" />
     <Compile Include="IFleetCommand.cs" />
     <Compile Include="IFleetViewable.cs" />
     <Compile Include="IGuiHudPublisher.cs" />
     <Compile Include="IHasData.cs" />
+    <Compile Include="IntelFreshness.cs" />
+    <Compile Include="IntelLevel.cs" />
     <Compile Include="ISettlementViewable.cs" />
     <Compile Include="IShipViewable.cs" />
     <Compile Include="IStarBaseViewable.cs" />
@@ -158,8 +161,13 @@
     <Compile Include="ShipPresenter.cs" />
     <Compile Include="ShipView.cs" />
     <Compile Include="Star.cs" />
+    <Compile Include="StarAnimator.cs" />
+    <Compile Include="StarBaseData.cs" />
+    <Compile Include="StarBaseGuiHudTextFactory.cs" />
+    <Compile Include="StarBaseItem.cs" />
     <Compile Include="StarBasePresenter.cs" />
     <Compile Include="StarBaseView.cs" />
+    <Compile Include="StarGlowAnimator.cs" />
     <Compile Include="StarGraphics.cs" />
     <Compile Include="StarPresenter.cs" />
     <Compile Include="StarView.cs" />
@@ -177,6 +185,7 @@
     <Compile Include="VectorLineFactory.cs" />
     <Compile Include="VelocityRay.cs" />
     <Compile Include="View.cs" />
+    <Compile Include="ViewDisplayMode.cs" />
     <Compile Include="ZoomOutOnCursorOptionChangedEvent.cs" />
     <Compile Include="GuiFollowerLabel.cs" />
     <Compile Include="SceneStartupSequenceEvent.cs" />

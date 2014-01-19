@@ -251,7 +251,7 @@ namespace CodeEnv.Master.GameContent {
             // don't wait for the Gui to set GameSpeed. Use the backing field as the Property calls OnGameSpeedChanged()
             _gameSpeed = _playerPrefsMgr.GameSpeedOnLoad;
             _gameSpeedMultiplier = _gameSpeed.SpeedMultiplier();
-            _date = new GameDate();
+            _date = new GameDate(GameDate.PresetDateSelector.Start);
         }
 
         public void PrepareToSaveGame() {

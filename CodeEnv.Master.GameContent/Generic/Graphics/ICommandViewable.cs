@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IFleetViewable.cs
-//  Interface used by FleetPresenters to communicate with their associated FleetViews.
+// File: ICommandViewable.cs
+// COMMENT - one line to give a brief idea of what the file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,13 +17,16 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
+    using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
 
     /// <summary>
-    ///  Interface used by FleetPresenters to communicate with their associated FleetViews.
+    /// 
     /// </summary>
-    public interface IFleetViewable : IViewable {
+    public interface ICommandViewable : IViewable {
 
         event Action onShowCompletion;
 

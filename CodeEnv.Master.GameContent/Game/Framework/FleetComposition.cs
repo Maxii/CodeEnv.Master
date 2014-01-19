@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FleetComposition.cs
-//  Wrapper for Fleet Composition dictionary containing shipData.
+// Wrapper for Fleet Composition dictionary containing shipData.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,66 +23,83 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Wrapper for Fleet Composition dictionary containing shipData.
     /// </summary>
-    public class FleetComposition {
+    public class FleetComposition : AComposition<ShipCategory, ShipData> {
+        //public class FleetComposition {
 
-        public IList<ShipHull> Hulls {
-            get {
-                return _composition.Keys.ToList();
-            }
-        }
+        ///// <summary>
+        ///// The Categories of the Items present in this Composition.
+        ///// </summary>
+        //public IList<ShipCategory> Categories {
+        //    get {
+        //        return _composition.Keys.ToList();
+        //    }
+        //}
 
-        private IDictionary<ShipHull, IList<ShipData>> _composition;
+        //private IDictionary<ShipCategory, IList<ShipData>> _composition;
 
-        public FleetComposition() {
-            _composition = new SortedDictionary<ShipHull, IList<ShipData>>();
-        }
+        //public FleetComposition() {
+        //    _composition = new SortedDictionary<ShipCategory, IList<ShipData>>();
+        //}
+
+        public FleetComposition() : base() { }
 
         /// <summary>
         /// Copy Constructor. Initializes a new instance of the <see cref="FleetComposition"/> class.
         /// </summary>
         /// <param name="compositionToCopy">The fleet composition to copy.</param>
-        public FleetComposition(FleetComposition compositionToCopy) {
-            _composition = compositionToCopy._composition;
+        public FleetComposition(FleetComposition compositionToCopy)
+            : base(compositionToCopy) {
+            //_composition = compositionToCopy._composition;
             // UNCLEAR does fleetCompositionToCopy get collected by the garbage collector now?
         }
 
-        public bool AddShip(ShipData data) {
-            ShipHull hull = data.Hull;
-            if (!_composition.ContainsKey(hull)) {
-                _composition.Add(hull, new List<ShipData>());
-            }
-            if (_composition[hull].Contains(data)) {
-                return false;
-            }
-            _composition[hull].Add(data);
-            return true;
-        }
+        ///// <summary>
+        ///// Copy Constructor. Initializes a new instance of the <see cref="FleetComposition"/> class.
+        ///// </summary>
+        ///// <param name="compositionToCopy">The fleet composition to copy.</param>
+        //public FleetComposition(FleetComposition compositionToCopy) {
+        //    _composition = compositionToCopy._composition;
+        //    // UNCLEAR does fleetCompositionToCopy get collected by the garbage collector now?
+        //}
 
-        public bool RemoveShip(ShipData data) {
-            ShipHull hull = data.Hull;
-            bool isRemoved = _composition[hull].Remove(data);
-            if (_composition[hull].Count == Constants.Zero) {
-                _composition.Remove(hull);
-            }
-            return isRemoved;
-        }
 
-        public bool ContainsShip(ShipData data) {
-            ShipHull hull = data.Hull;
-            return _composition[hull].Contains(data);
-        }
+        //public bool Add(ShipData data) {
+        //    ShipCategory hull = data.Category;
+        //    if (!_composition.ContainsKey(hull)) {
+        //        _composition.Add(hull, new List<ShipData>());
+        //    }
+        //    if (_composition[hull].Contains(data)) {
+        //        return false;
+        //    }
+        //    _composition[hull].Add(data);
+        //    return true;
+        //}
 
-        public IList<ShipData> GetShipData(ShipHull hull) {
-            return _composition[hull];
-        }
+        //public bool Remove(ShipData data) {
+        //    ShipCategory hull = data.Category;
+        //    bool isRemoved = _composition[hull].Remove(data);
+        //    if (_composition[hull].Count == Constants.Zero) {
+        //        _composition.Remove(hull);
+        //    }
+        //    return isRemoved;
+        //}
 
-        public IEnumerable<ShipData> GetShipData() {
-            IEnumerable<ShipData> allData = new List<ShipData>();
-            foreach (var hull in Hulls) {
-                allData = allData.Concat(GetShipData(hull));
-            }
-            return allData;
-        }
+        //public bool Contains(ShipData data) {
+        //    ShipCategory hull = data.Category;
+        //    return _composition[hull].Contains(data);
+        //}
+
+        //public IList<ShipData> GetData(ShipCategory hull) {
+        //    return _composition[hull];
+        //}
+
+        //public IEnumerable<ShipData> GetAllData() {
+        //    IEnumerable<ShipData> allData = new List<ShipData>();
+        //    foreach (var hull in Categories) {
+        //        allData = allData.Concat(GetData(hull));
+        //    }
+        //    return allData;
+        //}
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

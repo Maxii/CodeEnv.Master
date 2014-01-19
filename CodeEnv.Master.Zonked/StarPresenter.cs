@@ -37,7 +37,7 @@ public class StarPresenter : AFocusablePresenter {
         _systemView = _viewGameObject.GetSafeInterfaceInParents<ISystemViewable>();
     }
 
-    protected override AItem InitilizeItemLinkage() {
+    protected override AItem AcquireItemReference() {
         return UnityUtility.ValidateMonoBehaviourPresence<StarItem>(_viewGameObject);
     }
 

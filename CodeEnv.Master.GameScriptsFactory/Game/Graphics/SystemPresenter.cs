@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
@@ -31,18 +32,14 @@ public class SystemPresenter : AFocusablePresenter {
         protected set { base.Item = value; }
     }
 
-    protected new ISystemViewable View {
-        get { return base.View as ISystemViewable; }
-    }
-
-    private IViewable[] _childViewsInSystem;
+    private IEnumerable<IViewable> _childViewsInSystem;
 
     public SystemPresenter(IViewable view)
         : base(view) {
-        _childViewsInSystem = _viewGameObject.GetSafeInterfacesInChildren<IViewable>().Except(view).ToArray();
+        _childViewsInSystem = _viewGameObject.GetSafeInterfacesInChildren<IViewable>().Except(view);
     }
 
-    protected override AItem InitilizeItemLinkage() {
+    protected override AItem AcquireItemReference() {
         return UnityUtility.ValidateMonoBehaviourPresence<SystemItem>(_viewGameObject);
     }
 
@@ -62,8 +59,8 @@ public class SystemPresenter : AFocusablePresenter {
         SelectionManager.Instance.CurrentSelection = View as ISelectable;
     }
 
-    public void OnPlayerIntelLevelChanged() {
-        _childViewsInSystem.ForAll<IViewable>(cov => cov.PlayerIntelLevel = View.PlayerIntelLevel);
+    public void NotifySystemElementsOfIntelChange() {
+        _childViewsInSystem.ForAll<IViewable>(cov => cov.PlayerIntel = View.PlayerIntel);
     }
 
     public override string ToString() {

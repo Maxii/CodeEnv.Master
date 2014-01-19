@@ -41,7 +41,9 @@ public abstract class APresenter : APropertyChangeTracking, IDisposable {
         GuiHudPublisher<StarData>.SetFactory(StarGuiHudTextFactory.Instance);
         GuiHudPublisher<PlanetoidData>.SetFactory(PlanetoidGuiHudTextFactory.Instance);
         GuiHudPublisher<SettlementData>.SetFactory(SettlementGuiHudTextFactory.Instance);
-        GuiHudPublisher<StarBaseData>.SetFactory(StarBaseGuiHudTextFactory.Instance);
+        //GuiHudPublisher<StarBaseData>.SetFactory(StarBaseGuiHudTextFactory.Instance);
+        GuiHudPublisher<FacilityData>.SetFactory(FacilityGuiHudTextFactory.Instance);
+        GuiHudPublisher<StarbaseData>.SetFactory(StarbaseGuiHudTextFactory.Instance);
     }
 
     protected IViewable View { get; private set; }
@@ -52,11 +54,6 @@ public abstract class APresenter : APropertyChangeTracking, IDisposable {
         protected set { SetProperty<AItem>(ref _item, value, "Item", OnItemChanged); }
     }
 
-    private float _3dAnimationsTo3dDisplayModeTransitionDistanceInSectors;
-    private float _3dTo2dDisplayModeTransitionDistanceInSectors;
-    private float _2dToNoneDisplayModeTransitionDistanceInSectors;
-    private ViewDisplayMode _cameraDistanceGeneratedDisplayMode;
-
     protected IList<IDisposable> _subscribers;
 
     protected GameObject _viewGameObject;
@@ -64,50 +61,18 @@ public abstract class APresenter : APropertyChangeTracking, IDisposable {
     public APresenter(IViewable view) {
         View = view;
         _viewGameObject = (view as Component).gameObject;
-        Item = InitilizeItemLinkage();
+        Item = AcquireItemReference();
         // the following use ItemData so Views should only be enabled to create this Presenter after ItemData is set
         View.HudPublisher = InitializeHudPublisher();
-        InitializeDisplayModeTransitionDistances();
     }
 
-    protected abstract AItem InitilizeItemLinkage();
+    protected abstract AItem AcquireItemReference();
 
     protected abstract IGuiHudPublisher InitializeHudPublisher();
 
-    private void InitializeDisplayModeTransitionDistances() {
-        _2dToNoneDisplayModeTransitionDistanceInSectors = View.Radius * AnimationSettings.Instance.CameraDistanceThresholdFactor_2dToNoneDisplayMode;
-        _3dTo2dDisplayModeTransitionDistanceInSectors = View.Radius * AnimationSettings.Instance.CameraDistanceThresholdFactor_3dTo2dDisplayMode;
-        _3dAnimationsTo3dDisplayModeTransitionDistanceInSectors = View.Radius * AnimationSettings.Instance.CameraDistanceThresholdFactor_3dAnimationsTo3dDisplayMode;
-    }
-
     protected virtual void Subscribe() {
         _subscribers = new List<IDisposable>();
-        _subscribers.Add(CameraControl.Instance.SubscribeToPropertyChanged<CameraControl, Index3D>(cc => cc.SectorIndex, OnCameraSectorIndexChanged));
-    }
-
-    private void OnCameraSectorIndexChanged() {
-        Index3D cameraSector = CameraControl.Instance.SectorIndex;
-        Index3D viewSector = SectorGrid.GetSectorIndex(Item.Data.Position);
-        float distanceInSectorsToCamera = SectorGrid.GetDistanceInSectors(viewSector, cameraSector);
-        ViewDisplayMode desiredDisplayMode;
-        //D.Log("CameraDistances {0}, {1}, {2}, {3}.", distanceToCamera, _show2DIconDistance, _show3DMeshDistance, _showAnimationsDistance);
-        if (distanceInSectorsToCamera > _2dToNoneDisplayModeTransitionDistanceInSectors) {
-            desiredDisplayMode = ViewDisplayMode.Hide;
-        }
-        else if (distanceInSectorsToCamera > _3dTo2dDisplayModeTransitionDistanceInSectors) {
-            desiredDisplayMode = ViewDisplayMode.TwoD;
-        }
-        else if (distanceInSectorsToCamera > _3dAnimationsTo3dDisplayModeTransitionDistanceInSectors) {
-            desiredDisplayMode = ViewDisplayMode.ThreeD;
-        }
-        else {
-            desiredDisplayMode = ViewDisplayMode.ThreeDAnimation;
-        }
-
-        if (desiredDisplayMode != _cameraDistanceGeneratedDisplayMode) {
-            View.RecordDesiredDisplayModeDerivedFromCameraDistance(desiredDisplayMode);
-            _cameraDistanceGeneratedDisplayMode = desiredDisplayMode;
-        }
+        //_subscribers.Add(CameraControl.Instance.SubscribeToPropertyChanged<CameraControl, Index3D>(cc => cc.SectorIndex, OnCameraSectorIndexChanged));
     }
 
     private void OnItemChanged() {

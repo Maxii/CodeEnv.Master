@@ -36,8 +36,8 @@ namespace CodeEnv.Master.GameContent {
         /// instance containing the text to display at the cursor.
         /// </summary>
         /// <param name="toShow">if set to <c>true</c> shows the hud, otherwise hides it.</param>
-        /// <param name="intelLevel">The intel level.</param>
-        void ShowHud(bool toShow, IntelLevel intelLevel);
+        /// <param name="intel">The intel.</param>
+        void ShowHud(bool toShow, Intel intel);
 
         /// <summary>
         /// Clients can optionally provide additional GuiCursorHudLineKeys they wish to routinely update whenever GetHudText is called.

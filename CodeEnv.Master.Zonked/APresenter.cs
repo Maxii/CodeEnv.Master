@@ -57,12 +57,12 @@ public abstract class APresenter : APropertyChangeTracking {
     public APresenter(IViewable view) {
         View = view;
         _viewGameObject = (view as Component).gameObject;
-        Item = InitilizeItemLinkage();
+        Item = AcquireItemReference();
         // the following use ItemData so Views should only be enabled to create this Presenter after ItemData is set
         View.HudPublisher = InitializeHudPublisher();
     }
 
-    protected abstract AItem InitilizeItemLinkage();
+    protected abstract AItem AcquireItemReference();
 
     protected abstract IGuiHudPublisher InitializeHudPublisher();
 

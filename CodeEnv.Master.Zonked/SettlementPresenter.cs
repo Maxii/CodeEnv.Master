@@ -39,7 +39,7 @@ public class SettlementPresenter : AMortalFocusablePresenter {
     public SettlementPresenter(ISettlementViewable view)
         : base(view) { }
 
-    protected override AItem InitilizeItemLinkage() {
+    protected override AItem AcquireItemReference() {
         return UnityUtility.ValidateMonoBehaviourPresence<SettlementItem>(_viewGameObject);
     }
 

@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public bool IsRunning {
             get { return _isRunning; }
-            set { SetProperty<bool>(ref _isRunning, value, "IsRunning"); }
+            set { SetProperty<bool>(ref _isRunning, value, "IsRunning", OnIsRunningChanged); }
         }
 
         private bool _isPaused;
@@ -58,6 +58,9 @@ namespace CodeEnv.Master.GameContent {
             // TODO do any initialization here
         }
 
+        private void OnIsRunningChanged() {
+            D.Log("{0}.IsRunning changed to {1}.", Instance.GetType().Name, IsRunning);
+        }
     }
 }
 

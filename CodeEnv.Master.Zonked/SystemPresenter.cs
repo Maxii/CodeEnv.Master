@@ -42,7 +42,7 @@ public class SystemPresenter : AFocusablePresenter {
         _childViewsInSystem = _viewGameObject.GetSafeInterfacesInChildren<IViewable>().Except(view).ToArray();
     }
 
-    protected override AItem InitilizeItemLinkage() {
+    protected override AItem AcquireItemReference() {
         return UnityUtility.ValidateMonoBehaviourPresence<SystemItem>(_viewGameObject);
     }
 

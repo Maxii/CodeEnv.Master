@@ -25,12 +25,15 @@ namespace CodeEnv.Master.GameContent {
     /// All the data associated with a particular ship.
     /// <remarks>MaxSpeed = MaxThrust / (Mass * Drag)</remarks>
     /// </summary>
-    public class ShipData : AMortalData, IDisposable {
+    public class ShipData : AElementData<ShipCategory>, IDisposable {
+        //public class ShipData : AMortalData, IDisposable {
+
+        //public ShipCategory Category { get; private set; }
 
         /// <summary>
         /// The local position of this ship within the fleet formation.
         /// </summary>
-        public Vector3 FormationPosition { get; set; }
+        //public Vector3 FormationPosition { get; set; }
 
         /// <summary>
         /// Readonly. Gets the current speed of the ship in Units per
@@ -53,11 +56,6 @@ namespace CodeEnv.Master.GameContent {
                 SetProperty<float>(ref _requestedSpeed, value, "RequestedSpeed");
             }
         }
-
-        /// <summary>
-        /// The mass of the ship.
-        /// </summary>
-        public float Mass { get; set; }
 
         private float _drag;
         /// <summary>
@@ -123,29 +121,23 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private IPlayer _owner;
-        public IPlayer Owner {
-            get { return _owner; }
-            set {
-                SetProperty<IPlayer>(ref _owner, value, "Owner");
-            }
-        }
+        //private IPlayer _owner;
+        //public IPlayer Owner {
+        //    get { return _owner; }
+        //    set {
+        //        SetProperty<IPlayer>(ref _owner, value, "Owner");
+        //    }
+        //}
 
-        private CombatStrength _combatStrength;
-        public CombatStrength Strength {
-            get { return _combatStrength; }
-            set {
-                SetProperty<CombatStrength>(ref _combatStrength, value, "Strength");
-            }
-        }
+        //private CombatStrength _combatStrength;
+        //public CombatStrength Strength {
+        //    get { return _combatStrength; }
+        //    set {
+        //        SetProperty<CombatStrength>(ref _combatStrength, value, "Strength");
+        //    }
+        //}
 
-        private ShipHull _hull;
-        public ShipHull Hull {
-            get { return _hull; }
-            set {
-                SetProperty<ShipHull>(ref _hull, value, "Hull");
-            }
-        }
+        //public float Mass { get; private set; }
 
         private float _currentSpeedOnPause;
         private Rigidbody _rigidbody;
@@ -157,13 +149,15 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Initializes a new instance of the <see cref="ShipData" /> class.
         /// </summary>
+        /// <param name="category">The category of ship.</param>
         /// <param name="shipName">Name of the ship.</param>
         /// <param name="maxHitPoints">The maximum hit points.</param>
         /// <param name="mass">The mass.</param>
         /// <param name="drag">The drag.</param>
-        public ShipData(string shipName, float maxHitPoints, float mass, float drag)
-            : base(shipName, maxHitPoints) {
-            Mass = mass;
+        public ShipData(ShipCategory category, string shipName, float maxHitPoints, float mass, float drag)
+            : base(category, shipName, maxHitPoints, mass) {
+            //Category = category;
+            // Mass = mass;
             _drag = drag;   // avoid OnDragChanged as the rigidbody is not yet known
             Initialize();
         }

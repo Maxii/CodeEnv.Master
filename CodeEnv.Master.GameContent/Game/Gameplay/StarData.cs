@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class StarData : AData {
 
-        public StarType StarType { get; private set; }
+        public StarCategory Category { get; private set; }
 
         private int _capacity;
         public int Capacity {
@@ -52,12 +52,12 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Initializes a new instance of the <see cref="StarData"/> class.
         /// </summary>
-        /// <param name="type">The type.</param>
+        /// <param name="category">The category of Star.</param>
         /// <param name="name">The name.</param>
         /// <param name="parentName">Name of the parent.</param>
-        public StarData(StarType type, string name, string parentName)
+        public StarData(StarCategory category, string name, string parentName)
             : base(name, parentName) {
-            StarType = type;
+            Category = category;
         }
 
         public override string ToString() {

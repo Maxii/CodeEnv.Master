@@ -73,7 +73,7 @@ public class SettlementItem : AMortalItemStateMachine<SettlementState>, ITarget 
     #region Idle
 
     void Idling_EnterState() {
-        D.Log("{0} Idling_EnterState", Data.Name);
+        //D.Log("{0} Idling_EnterState", Data.Name);
         // TODO register as available
     }
 

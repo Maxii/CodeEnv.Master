@@ -16,7 +16,6 @@
 
 // default namespace
 
-
 using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -41,7 +40,7 @@ public class SettlementPresenter : AMortalFocusablePresenter {
         Subscribe();
     }
 
-    protected override AItem InitilizeItemLinkage() {
+    protected override AItem AcquireItemReference() {
         return UnityUtility.ValidateMonoBehaviourPresence<SettlementItem>(_viewGameObject);
     }
 

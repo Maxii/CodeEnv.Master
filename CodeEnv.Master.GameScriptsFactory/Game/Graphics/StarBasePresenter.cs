@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: StarBasePresenter.cs
-// An MVPresenter associated with a StarBaseView.
+// File: StarbasePresenter.cs
+// An MVPresenter associated with a StarbaseView.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,65 +23,103 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// An MVPresenter associated with a StarBaseView.
+/// An MVPresenter associated with a StarbaseView.
 /// </summary>
-public class StarBasePresenter : AMortalFocusablePresenter {
+public class StarbasePresenter : AMortalFocusablePresenter {
 
-    public new StarBaseItem Item {
-        get { return base.Item as StarBaseItem; }
+    public new StarbaseItem Item {
+        get { return base.Item as StarbaseItem; }
         protected set { base.Item = value; }
     }
 
-    protected new IStarBaseViewable View {
-        get { return base.View as IStarBaseViewable; }
+    //protected new IStarbaseViewable View {
+    //    get { return base.View as IStarbaseViewable; }
+    //}
+
+    //public StarbasePresenter(IStarbaseViewable view)
+    //    : base(view) {
+    //    Subscribe();
+    //}
+
+    protected new ICommandViewable View {
+        get { return base.View as ICommandViewable; }
     }
 
-    public StarBasePresenter(IStarBaseViewable view)
+    public StarbasePresenter(ICommandViewable view)
         : base(view) {
         Subscribe();
     }
 
-    protected override AItem InitilizeItemLinkage() {
-        return UnityUtility.ValidateMonoBehaviourPresence<StarBaseItem>(_viewGameObject);
+
+    protected override AItem AcquireItemReference() {
+        return UnityUtility.ValidateMonoBehaviourPresence<StarbaseItem>(_viewGameObject);
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<StarBaseData>(Item.Data);
+        return new GuiHudPublisher<StarbaseData>(Item.Data);
     }
+
+    //protected override void Subscribe() {
+    //    base.Subscribe();
+    //    _subscribers.Add(Item.SubscribeToPropertyChanged<StarbaseItem, FacilityItem>(f => f.Flagship, OnFlagshipChanged));
+    //    _subscribers.Add(Item.Data.SubscribeToPropertyChanged<StarbaseData, StarbaseComposition>(fd => fd.Composition, OnFleetCompositionChanged));
+    //    _subscribers.Add(Item.SubscribeToPropertyChanged<StarbaseItem, StarbaseState>(f => f.CurrentState, OnFleetStateChanged));
+    //    View.onShowCompletion += Item.OnShowCompletion;
+    //    Item.onFleetElementDestroyed += OnFleetElementDestroyed;
+    //}
 
     protected override void Subscribe() {
         base.Subscribe();
-        _subscribers.Add(Item.SubscribeToPropertyChanged<StarBaseItem, StarBaseState>(sb => sb.CurrentState, OnStarBaseStateChanged));
+        _subscribers.Add(Item.SubscribeToPropertyChanged<StarbaseItem, FacilityItem>(f => f.HQElement, OnFlagshipChanged));
+        _subscribers.Add(Item.Data.SubscribeToPropertyChanged<StarbaseData, StarbaseComposition>(fd => fd.Composition, OnFleetCompositionChanged));
+        _subscribers.Add(Item.SubscribeToPropertyChanged<StarbaseItem, StarbaseState>(f => f.CurrentState, OnFleetStateChanged));
         View.onShowCompletion += Item.OnShowCompletion;
+        Item.onElementDestroyed += OnFleetElementDestroyed;
     }
 
-    private void OnStarBaseStateChanged() {
-        StarBaseState state = Item.CurrentState;
-        switch (state) {
-            case StarBaseState.ShowDying:
+
+    private void OnFleetStateChanged() {
+        StarbaseState fleetState = Item.CurrentState;
+        switch (fleetState) {
+            case StarbaseState.ShowDying:
                 View.ShowDying();
                 break;
-            case StarBaseState.Idling:
+            case StarbaseState.Dead:
+            case StarbaseState.Dying:
+            case StarbaseState.Idling:
+            case StarbaseState.ProcessOrders:
                 // do nothing
                 break;
-            case StarBaseState.None:
+            case StarbaseState.None:
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(state));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(fleetState));
         }
     }
 
-    public void OnPressWhileSelected(bool isDown) {
-        OnPressRequestContextMenu(isDown);
+    private void OnFleetElementDestroyed(FacilityItem ship) {
+        if (ship.gameObject.GetSafeInterface<ICameraFocusable>().IsFocus) {
+            // our fleet's ship that was just destroyed was the focus, so change the focus to the fleet
+            (View as ICameraFocusable).IsFocus = true;
+        }
     }
 
-    private void OnPressRequestContextMenu(bool isDown) {
+    //public void __SimulateAllShipsAttacked() {
+    //    Item.Ships.ForAll<FacilityItem>(s => s.__SimulateAttacked());
+    //}
+
+    public void __SimulateAllShipsAttacked() {
+        Item.Elements.ForAll<FacilityItem>(s => s.__SimulateAttacked());
+    }
+
+
+    public void RequestContextMenu(bool isDown) {
         if (DebugSettings.Instance.AllowEnemyOrders || Item.Data.Owner.IsHuman) {
             CameraControl.Instance.ShowContextMenuOnPress(isDown);
         }
     }
 
     protected override void OnItemDeath(ItemDeathEvent e) {
-        if ((e.Source as StarBaseItem) == Item) {
+        if ((e.Source as StarbaseItem) == Item) {
             CleanupOnDeath();
         }
     }
@@ -93,10 +131,77 @@ public class StarBasePresenter : AMortalFocusablePresenter {
         }
     }
 
+    private void OnFleetCompositionChanged() {
+        AssessFleetIcon();
+    }
+
+    //public void NotifyShipsOfIntelChange() {
+    //    Item.Ships.ForAll<FacilityItem>(sc => sc.gameObject.GetSafeMonoBehaviourComponent<FacilityView>().PlayerIntel = View.PlayerIntel);
+    //    AssessFleetIcon();
+    //}
+
+    public void NotifyShipsOfIntelChange() {
+        Item.Elements.ForAll<FacilityItem>(sc => sc.gameObject.GetSafeMonoBehaviourComponent<FacilityView>().PlayerIntel = View.PlayerIntel);
+        AssessFleetIcon();
+    }
+
+
+    private void OnFlagshipChanged() {
+        View.TrackingTarget = GetFlagship();
+    }
+
+    //public void OnIsSelectedChanged() {
+    //    if ((View as ISelectable).IsSelected) {
+    //        SelectionManager.Instance.CurrentSelection = View as ISelectable;
+    //    }
+    //    Item.Ships.ForAll(s => s.gameObject.GetSafeMonoBehaviourComponent<ShipView>().AssessHighlighting());
+    //}
+
+    //public Transform GetFlagship() {
+    //    return Item.Flagship.transform;
+    //}
+
     public void OnIsSelectedChanged() {
         if ((View as ISelectable).IsSelected) {
             SelectionManager.Instance.CurrentSelection = View as ISelectable;
         }
+        Item.Elements.ForAll(s => s.gameObject.GetSafeMonoBehaviourComponent<FacilityView>().AssessHighlighting());
+    }
+
+    public Transform GetFlagship() {
+        return Item.HQElement.transform;
+    }
+
+
+    private IconFactory _iconFactory = IconFactory.Instance;
+    private void AssessFleetIcon() {
+        IIcon fleetIcon;
+        GameColor color = GameColor.White;
+        // TODO evaluate Composition
+        switch (View.PlayerIntel.Scope) {
+            case IntelScope.None:
+                fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.None);
+                //color = GameColor.Clear;    // None should be a completely transparent icon
+                break;
+            case IntelScope.Aware:
+                fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.IntelLevelUnknown);
+                // color = GameColor.White;    // may be clear from prior setting
+                break;
+            case IntelScope.Minimal:
+            case IntelScope.Moderate:
+                fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.Level5);
+                color = Item.Data.Owner.Color;
+                break;
+            case IntelScope.Comprehensive:
+                var selectionCriteria = new IconSelectionCriteria[] { IconSelectionCriteria.Level5, IconSelectionCriteria.Science, IconSelectionCriteria.Colony, IconSelectionCriteria.Troop };
+                fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, selectionCriteria);
+                color = Item.Data.Owner.Color;
+                break;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(View.PlayerIntel.Scope));
+        }
+        D.Log("IntelScope is {2}, changing {0} to {1}.", typeof(FleetIcon).Name, fleetIcon.Filename, View.PlayerIntel.Scope.GetName());
+        View.ChangeFleetIcon(fleetIcon, color);
     }
 
     public override string ToString() {

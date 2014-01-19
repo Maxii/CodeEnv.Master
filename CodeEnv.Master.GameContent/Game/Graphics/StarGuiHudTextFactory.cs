@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IntelLevel intelLevel, StarData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, Intel intel, StarData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.Name);
@@ -38,9 +38,9 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Distance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
-                    return (data.LastHumanPlayerIntelDate != null) ? new ColoredTextList_Intel(data.LastHumanPlayerIntelDate, intelLevel) : _emptyColoredTextList;
-                case GuiHudLineKeys.Type:
-                    return new ColoredTextList_String(data.StarType.GetDescription());
+                    return (intel.DateStamp != null) ? new ColoredTextList_Intel(intel) : _emptyColoredTextList;
+                case GuiHudLineKeys.Category:
+                    return new ColoredTextList_String(data.Category.GetDescription());
                 case GuiHudLineKeys.Capacity:
                     return new ColoredTextList<int>(Constants.FormatInt_2DMin, data.Capacity);
                 case GuiHudLineKeys.Resources:

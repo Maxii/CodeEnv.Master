@@ -27,22 +27,11 @@ using UnityEngine;
 /// <summary>
 /// A class for managing the elements of a StarBase's UI. 
 /// </summary>
-public class StarBaseView : AFocusableView, IStarBaseViewable, ISelectable {
+public class StarBaseView : AFocusableView, IStarBaseViewable, ISelectable, IHighlightTrackingLabel {
 
     public new StarBasePresenter Presenter {
         get { return base.Presenter as StarBasePresenter; }
         protected set { base.Presenter = value; }
-    }
-
-    private bool _isDetectable = true; // FIXME if starts false, it doesn't get updated right away...
-    /// <summary>
-    /// Indicates whether the item this view
-    /// is associated with is detectable by the human player. 
-    /// eg. a fleet the human player has no intel about is not detectable.
-    /// </summary>
-    public bool IsDetectable {
-        get { return _isDetectable; }
-        set { SetProperty<bool>(ref _isDetectable, value, "IsDetectable", OnIsDetectableChanged); }
     }
 
     public bool enableTrackingLabel;
@@ -62,8 +51,7 @@ public class StarBaseView : AFocusableView, IStarBaseViewable, ISelectable {
         base.Awake();
         _audioSource = UnityUtility.ValidateComponentPresence<AudioSource>(gameObject);
         circleScaleFactor = 1.0F;
-        maxAnimateDistance = Mathf.RoundToInt(AnimationSettings.Instance.MaxShipAnimateDistanceFactor * Radius);
-        InitializeHighlighting();
+        InitializeMesh();
     }
 
     protected override void InitializePresenter() {
@@ -76,26 +64,19 @@ public class StarBaseView : AFocusableView, IStarBaseViewable, ISelectable {
         InitializeTrackingLabel();
     }
 
-    private void OnIsDetectableChanged() {
-        EnableBasedOnDiscernible(InCameraLOS, IsDetectable);
-        EnableBasedOnDistanceToCamera(InCameraLOS, IsDetectable);
-        AssessHighlighting();
-    }
-
-    protected override void OnInCameraLOSChanged() {
-        EnableBasedOnDiscernible(InCameraLOS, IsDetectable);
-        EnableBasedOnDistanceToCamera(InCameraLOS, IsDetectable);
-        AssessHighlighting();
-    }
-
-    protected override void OnPlayerIntelLevelChanged() {
-        base.OnPlayerIntelLevelChanged();
-        AssessDetectability();
+    protected override void OnIsDiscernibleChanged() {
+        base.OnIsDiscernibleChanged();
+        if (_trackingLabel != null) {
+            _trackingLabel.gameObject.SetActive(IsDiscernible);
+        }
+        ShowMesh(IsDiscernible);
     }
 
     void OnPress(bool isDown) {
-        if (IsSelected) {
-            Presenter.OnPressWhileSelected(isDown);
+        if (IsDiscernible) {
+            if (IsSelected) {
+                Presenter.OnPressWhileSelected(isDown);
+            }
         }
     }
 
@@ -107,7 +88,7 @@ public class StarBaseView : AFocusableView, IStarBaseViewable, ISelectable {
     }
 
     private void OnLeftClick() {
-        if (IsDetectable) {
+        if (IsDiscernible) {
             IsSelected = true;
         }
     }
@@ -121,50 +102,27 @@ public class StarBaseView : AFocusableView, IStarBaseViewable, ISelectable {
         if (enableTrackingLabel) {
             float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
             _trackingLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(_transform, GuiTrackingLabelFactory.LabelPlacement.AboveTarget, minShowDistance);
-            disableGameObjectOnNotDiscernible = disableGameObjectOnNotDiscernible.Union(new GameObject[] { _trackingLabel.gameObject });
-            //disableComponentOnNotDiscernible = disableComponentOnNotDiscernible.Union(new Component[] { _trackingLabel });
         }
     }
 
-    public void AssessDetectability() {
-        IsDetectable = PlayerIntelLevel != IntelLevel.Nil;
-    }
-
     public override void AssessHighlighting() {
-        if (!IsDetectable || !InCameraLOS) {
-            ShowMesh(false);
+        if (!IsDiscernible) {
             Highlight(Highlights.None);
             return;
         }
         if (IsFocus) {
             if (IsSelected) {
-                ShowMesh(true);
                 Highlight(Highlights.SelectedAndFocus);
                 return;
             }
-            ShowMesh(true);
             Highlight(Highlights.Focused);
             return;
         }
         if (IsSelected) {
-            ShowMesh(true);
             Highlight(Highlights.Selected);
             return;
         }
         Highlight(Highlights.None);
-    }
-
-    private void ShowMesh(bool toShow) {
-        if (toShow) {
-            _renderer.material.SetColor(UnityConstants.MaterialColor_Main, _originalMeshColor_Main);
-            _renderer.material.SetColor(UnityConstants.MaterialColor_Specular, _originalMeshColor_Specular);
-            // TODO audio on goes here
-        }
-        else {
-            _renderer.material.SetColor(UnityConstants.MaterialColor_Main, _hiddenMeshColor);
-            _renderer.material.SetColor(UnityConstants.MaterialColor_Specular, _hiddenMeshColor);
-            // TODO audio off goes here
-        }
     }
 
     protected override void Highlight(Highlights highlight) {
@@ -192,11 +150,24 @@ public class StarBaseView : AFocusableView, IStarBaseViewable, ISelectable {
         }
     }
 
-    private void InitializeHighlighting() {
+    private void InitializeMesh() {
         _renderer = gameObject.GetComponentInChildren<Renderer>();
         _originalMeshColor_Main = _renderer.material.GetColor(UnityConstants.MaterialColor_Main);
         _originalMeshColor_Specular = _renderer.material.GetColor(UnityConstants.MaterialColor_Specular);
         _hiddenMeshColor = GameColor.Clear.ToUnityColor();
+    }
+
+    private void ShowMesh(bool toShow) {
+        if (toShow) {
+            _renderer.material.SetColor(UnityConstants.MaterialColor_Main, _originalMeshColor_Main);
+            _renderer.material.SetColor(UnityConstants.MaterialColor_Specular, _originalMeshColor_Specular);
+            // TODO audio on goes here
+        }
+        else {
+            _renderer.material.SetColor(UnityConstants.MaterialColor_Main, _hiddenMeshColor);
+            _renderer.material.SetColor(UnityConstants.MaterialColor_Specular, _hiddenMeshColor);
+            // TODO audio off goes here
+        }
     }
 
     protected override float calcNormalizedCircleRadius() {
@@ -287,6 +258,10 @@ public class StarBaseView : AFocusableView, IStarBaseViewable, ISelectable {
         }
     }
 
+    #endregion
+
+    #region IHighlightTrackingLabel Members
+
     public void HighlightTrackingLabel(bool toHighlight) {
         if (_trackingLabel != null) {   // can be gap between checking enableTrackingLabel and instantiating it
             _trackingLabel.IsHighlighted = toHighlight;
@@ -299,7 +274,7 @@ public class StarBaseView : AFocusableView, IStarBaseViewable, ISelectable {
 
     public override bool IsEligible {
         get {
-            return IsDetectable;
+            return IsDiscernible;
         }
     }
 
@@ -308,7 +283,9 @@ public class StarBaseView : AFocusableView, IStarBaseViewable, ISelectable {
     #region ICameraFocusable Members
 
     public override bool IsRetainedFocusEligible {
-        get { return IsDetectable; }
+        get {
+            return PlayerIntel.Scope != IntelScope.None;
+        }
     }
 
     #endregion

@@ -10,16 +10,20 @@
 
   <Integer>
     <Setting>
-      <PropertyName>CameraDistanceThresholdFactor_3dAnimationsTo3dDisplayMode</PropertyName>
-      <PropertyValue>2</PropertyValue>
+      <PropertyName>ShipLayerCullingDistanceFactor</PropertyName>
+      <PropertyValue>25</PropertyValue>
     </Setting>
     <Setting>
-      <PropertyName>CameraDistanceThresholdFactor_3dTo2dDisplayMode</PropertyName>
-      <PropertyValue>5</PropertyValue>
+      <PropertyName>StarBaseSettlementLayerCullingDistanceFactor</PropertyName>
+      <PropertyValue>150</PropertyValue>
     </Setting>
     <Setting>
-      <PropertyName>CameraDistanceThresholdFactor_2dToNoneDisplayMode</PropertyName>
-      <PropertyValue>20</PropertyValue>
+      <PropertyName>PlanetoidLayerCullingDistanceFactor</PropertyName>
+      <PropertyValue>200</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>StarLayerCullingDistanceFactor</PropertyName>
+      <PropertyValue>300</PropertyValue>
     </Setting>
   </Integer>
 

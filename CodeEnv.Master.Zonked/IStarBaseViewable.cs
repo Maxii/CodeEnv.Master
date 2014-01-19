@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IStarBaseViewable.cs
-// Interface used by a StarBasePresenter to communicate with their associated StarBaseView.
+// File: IStarbaseViewable.cs
+// Interface used by StarbasePresenters to communicate with their associated StarbaseVIews.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,27 +17,23 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using CodeEnv.Master.Common;
+    using UnityEngine;
 
     /// <summary>
-    /// Interface used by a StarBasePresenter to communicate with their associated StarBaseView.
+    /// Interface used by StarbasePresenters to communicate with their associated StarbaseVIews.
     /// </summary>
-    public interface IStarBaseViewable : IViewable {
+    public interface IStarbaseViewable : ICommandViewable {
+        //public interface IStarbaseViewable : IViewable {
 
-        event Action onShowCompletion;
+        //event Action onShowCompletion;
 
-        void ShowAttacking();
+        //Transform TrackingTarget { set; }
 
-        void ShowHit();
+        //void ChangeFleetIcon(IIcon icon, GameColor color);
 
-        void ShowDying();
+        //void ShowDying();
 
-        void ShowRepairing();
-
-        void ShowRefitting();
-
-        void StopShowing();
-
-        void HighlightTrackingLabel(bool toHighlight);
 
     }
 }

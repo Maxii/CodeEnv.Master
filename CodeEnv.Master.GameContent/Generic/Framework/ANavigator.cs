@@ -209,10 +209,10 @@ namespace CodeEnv.Master.GameContent {
             RaycastHit hitInfo;
             if (Physics.Raycast(ray, out hitInfo, distanceToLocation, _keepoutOnlyLayerMask.value)) {
                 // found a keepout zone, so find the point on the other side of the zone where the ray came out
-                string obstacleName = hitInfo.collider.name;
+                string obstacleName = hitInfo.collider.transform.parent.name + "." + hitInfo.collider.name;
                 Vector3 rayEntryPoint = hitInfo.point;
                 float keepoutRadius = (hitInfo.collider as SphereCollider).radius;
-                float maxKeepoutDiameter = TempGameValues.StarKeepoutRadius * 2F;
+                float maxKeepoutDiameter = TempGameValues.MaxKeepoutRadius * 2F;
                 Vector3 pointBeyondKeepoutZone = ray.GetPoint(hitInfo.distance + maxKeepoutDiameter);
                 if (Physics.Raycast(pointBeyondKeepoutZone, -ray.direction, out hitInfo, maxKeepoutDiameter, _keepoutOnlyLayerMask.value)) {
                     Vector3 rayExitPoint = hitInfo.point;

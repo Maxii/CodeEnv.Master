@@ -28,9 +28,12 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all fleets in the game. Includes a state machine.
 /// </summary>
-public class FleetItem : AMortalItemStateMachine<FleetState>, ITarget {
+public class FleetItem : ACommandItem<ShipItem, ShipCategory, ShipData, ShipState, FleetData, FleetComposition, FleetState> {
+    //public class FleetItem : AMortalItemStateMachine<FleetState>, ITarget {
 
-    public event Action<ShipItem> onFleetElementDestroyed;
+    //public event Action<ShipItem> onFleetElementDestroyed;
+
+    //public string FleetName { get { return Data.OptionalParentName; } }
 
     private ItemOrder<FleetOrders> _currentOrder;
     public ItemOrder<FleetOrders> CurrentOrder {
@@ -38,35 +41,37 @@ public class FleetItem : AMortalItemStateMachine<FleetState>, ITarget {
         set { SetProperty<ItemOrder<FleetOrders>>(ref _currentOrder, value, "CurrentOrder", OnOrdersChanged); }
     }
 
-    public new FleetData Data {
-        get { return base.Data as FleetData; }
-        set { base.Data = value; }
-    }
+    //public new FleetData Data {
+    //    get { return base.Data as FleetData; }
+    //    set { base.Data = value; }
+    //}
 
-    private ShipItem _flagship;
-    public ShipItem Flagship {
-        get { return _flagship; }
-        set { SetProperty<ShipItem>(ref _flagship, value, "Flagship", OnFlagshipChanged, OnFlagshipChanging); }
-    }
+    //private ShipItem _flagship;
+    //public ShipItem Flagship {
+    //    get { return _flagship; }
+    //    set { SetProperty<ShipItem>(ref _flagship, value, "Flagship", OnFlagshipChanged, OnFlagshipChanging); }
+    //}
 
-    public IList<ShipItem> Ships { get; private set; }
+    //public IList<ShipItem> Ships { get; private set; }
     public FleetNavigator Navigator { get; private set; }
-
-    private GameManager _gameMgr;
 
     protected override void Awake() {
         base.Awake();
-        Ships = new List<ShipItem>();
-        _gameMgr = GameManager.Instance;
+        //Ships = new List<ShipItem>();
         Subscribe();
     }
 
-    protected override void Start() {
-        base.Start();
-        Initialize();
-    }
+    //protected override void Start() {
+    //    base.Start();
+    //    Initialize();
+    //}
 
-    private void Initialize() {
+    //private void Initialize() {
+    //    InitializeNavigator();
+    //    CurrentState = FleetState.Idling;
+    //}
+
+    protected override void Initialize() {
         InitializeNavigator();
         CurrentState = FleetState.Idling;
     }
@@ -81,8 +86,46 @@ public class FleetItem : AMortalItemStateMachine<FleetState>, ITarget {
 
     protected override void Subscribe() {
         base.Subscribe();
-        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
+        _subscribers.Add(GameStatus.Instance.SubscribeToPropertyChanged<GameStatus, bool>(gs => gs.IsRunning, OnIsRunningChanged));
     }
+
+    //public bool ChangeHeading(Vector3 newHeading, bool isManualOverride = true) {
+    //    if (DebugSettings.Instance.StopShipMovement) {
+    //        Navigator.Disengage();
+    //        return false;
+    //    }
+    //    if (isManualOverride) {
+    //        Navigator.Disengage();
+    //    }
+    //    if (newHeading.IsSameDirection(Data.RequestedHeading, .1F)) {
+    //        D.Warn("Duplicate ChangeHeading Command to {0} on {1}.", newHeading, Data.Name);
+    //        return false;
+    //    }
+    //    D.Log("Fleet Requested Heading was {0}, now {1}.", Data.RequestedHeading, newHeading);
+    //    foreach (var ship in Ships) {
+    //        ship.ChangeHeading(newHeading);
+    //    }
+    //    return true;
+    //}
+
+    //public bool ChangeSpeed(float newSpeed, bool isManualOverride = true) {
+    //    if (DebugSettings.Instance.StopShipMovement) {
+    //        Navigator.Disengage();
+    //        return false;
+    //    }
+    //    if (isManualOverride) {
+    //        Navigator.Disengage();
+    //    }
+    //    if (Mathfx.Approx(newSpeed, Data.RequestedSpeed, .01F)) {
+    //        D.Warn("Duplicate ChangeSpeed Command to {0} on {1}.", newSpeed, Data.Name);
+    //        return false;
+    //    }
+    //    D.Log("Fleet Requested Speed was {0}, now {1}.", Data.RequestedSpeed, newSpeed);
+    //    foreach (var ship in Ships) {
+    //        ship.ChangeSpeed(newSpeed);
+    //    }
+    //    return true;
+    //}
 
     public bool ChangeHeading(Vector3 newHeading, bool isManualOverride = true) {
         if (DebugSettings.Instance.StopShipMovement) {
@@ -97,7 +140,7 @@ public class FleetItem : AMortalItemStateMachine<FleetState>, ITarget {
             return false;
         }
         D.Log("Fleet Requested Heading was {0}, now {1}.", Data.RequestedHeading, newHeading);
-        foreach (var ship in Ships) {
+        foreach (var ship in Elements) {
             ship.ChangeHeading(newHeading);
         }
         return true;
@@ -116,93 +159,115 @@ public class FleetItem : AMortalItemStateMachine<FleetState>, ITarget {
             return false;
         }
         D.Log("Fleet Requested Speed was {0}, now {1}.", Data.RequestedSpeed, newSpeed);
-        foreach (var ship in Ships) {
+        foreach (var ship in Elements) {
             ship.ChangeSpeed(newSpeed);
         }
         return true;
     }
 
-    /// <summary>
-    /// Adds the ship to this fleet including parenting if needed.
-    /// </summary>
-    /// <param name="ship">The ship.</param>
-    public void AddShip(ShipItem ship) {
-        Ships.Add(ship);
-        Data.AddShip(ship.Data);
-        Transform parentFleetTransform = gameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>().transform;
-        if (ship.transform.parent != parentFleetTransform) {
-            ship.transform.parent = parentFleetTransform;   // local position, rotation and scale are auto adjusted to keep ship unchanged in worldspace
-        }
-        // TODO consider changing flagship
-    }
 
-    public void ReportShipLost(ShipItem ship) {
-        D.Log("{0} acknowledging {1} has been lost.", Data.Name, ship.Data.Name);
-        RemoveShip(ship);
+    ///// <summary>
+    ///// Adds the ship to this fleet including parenting if needed.
+    ///// </summary>
+    ///// <param name="ship">The ship.</param>
+    //public void AddShip(ShipItem ship) {
+    //    Ships.Add(ship);
+    //    Data.AddShip(ship.Data);
+    //    Transform parentFleetTransform = gameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>().transform;
+    //    if (ship.transform.parent != parentFleetTransform) {
+    //        ship.transform.parent = parentFleetTransform;   // local position, rotation and scale are auto adjusted to keep ship unchanged in worldspace
+    //    }
+    //    // TODO consider changing flagship
+    //}
 
-        var fed = onFleetElementDestroyed;
-        if (fed != null) {
-            fed(ship);
-        }
-    }
+    //public void ReportShipLost(ShipItem ship) {
+    //    D.Log("{0} acknowledging {1} has been lost.", Data.Name, ship.Data.Name);
+    //    RemoveShip(ship);
 
-    public void RemoveShip(ShipItem ship) {
-        bool isRemoved = Ships.Remove(ship);
-        isRemoved = isRemoved && Data.RemoveShip(ship.Data);
-        D.Assert(isRemoved, "{0} not found.".Inject(ship.Data.Name));
-        if (Ships.Count > Constants.Zero) {
-            if (ship == Flagship) {
-                // Flagship has died
-                Flagship = SelectBestShip();
-            }
-            return;
-        }
-        // Fleet knows when to die
-    }
+    //    var fed = onFleetElementDestroyed;
+    //    if (fed != null) {
+    //        fed(ship);
+    //    }
+    //}
 
-    private void OnGameStateChanged() {
+    //public void RemoveShip(ShipItem ship) {
+    //    bool isRemoved = Ships.Remove(ship);
+    //    isRemoved = isRemoved && Data.RemoveShip(ship.Data);
+    //    D.Assert(isRemoved, "{0} not found.".Inject(ship.Data.Name));
+    //    if (Ships.Count > Constants.Zero) {
+    //        if (ship == Flagship) {
+    //            // Flagship has died
+    //            Flagship = SelectBestShip();
+    //        }
+    //        return;
+    //    }
+    //    // Fleet knows when to die
+    //}
+
+    private void OnIsRunningChanged() {
         //D.Log("FleetItem.OnGameStateChanged event recieved. GameState = {0}.", _gameMgr.CurrentState);
-        if (_gameMgr.CurrentState == GameState.Running) {
+        if (GameStatus.Instance.IsRunning) {
             __GetFleetUnderway();
         }
     }
 
-    private void OnFlagshipChanging(ShipItem newFlagship) {
-        if (Flagship != null) {
-            Flagship.IsFlagship = false;
-            Flagship.Navigator.onCourseTrackingError -= OnFlagshipTrackingError;
+    //private void OnFlagshipChanging(ShipItem newFlagship) {
+    //    if (Flagship != null) {
+    //        Flagship.IsFlagship = false;
+    //        Flagship.Navigator.onCourseTrackingError -= OnFlagshipTrackingError;
+    //    }
+    //}
+
+    //private void OnFlagshipChanged() {
+    //    Flagship.IsFlagship = true;
+    //    Data.FlagshipData = Flagship.Data;
+    //    Flagship.Navigator.onCourseTrackingError += OnFlagshipTrackingError;
+    //}
+
+    protected override void OnHQElementChanging(ShipItem newElement) {
+        base.OnHQElementChanging(newElement);
+        if (HQElement != null) {
+            HQElement.Navigator.onCourseTrackingError -= OnFlagshipTrackingError;
         }
     }
 
-    private void OnFlagshipChanged() {
-        Flagship.IsFlagship = true;
-        Data.FlagshipData = Flagship.Data;
-        Flagship.Navigator.onCourseTrackingError += OnFlagshipTrackingError;
+    protected override void OnHQElementChanged() {
+        base.OnHQElementChanged();
+        HQElement.Navigator.onCourseTrackingError += OnFlagshipTrackingError;
     }
 
     private void __GetFleetUnderway() {
-        //var destination = new StationaryLocation(UnityEngine.Random.onUnitSphere * 200F);
-        var destination = FindObjectOfType<SettlementItem>();
+        ITarget destination = FindObjectOfType<SettlementItem>();
+        if (destination == null) {
+            // in case Settlements are disabled
+            destination = new StationaryLocation(UnityEngine.Random.onUnitSphere * 200F);
+        }
         CurrentOrder = new ItemOrder<FleetOrders>(FleetOrders.MoveTo, destination, Data.MaxSpeed);
     }
 
+    //private void AllStop() {
+    //    var allStop = new ItemOrder<ShipOrders>(ShipOrders.AllStop);
+    //    Ships.ForAll(s => s.CurrentOrder = allStop);
+    //}
+
     private void AllStop() {
         var allStop = new ItemOrder<ShipOrders>(ShipOrders.AllStop);
-        Ships.ForAll(s => s.CurrentOrder = allStop);
+        Elements.ForAll(s => s.CurrentOrder = allStop);
     }
+
 
     protected override void Die() {
         CurrentState = FleetState.Dying;
     }
 
-    private ShipItem SelectBestShip() {
-        return Ships.MaxBy(s => s.Data.Health);
-    }
+    //private ShipItem SelectBestShip() {
+    //    return Ships.MaxBy(s => s.Data.Health);
+    //}
 
-    protected override void Cleanup() {
-        base.Cleanup();
-        Data.Dispose();
-    }
+    //protected override void Cleanup() {
+    //    base.Cleanup();
+    //    Data.Dispose();
+    //}
 
     // subscriptions contained completely within this gameobject (both subscriber
     // and subscribee) donot have to be cleaned up as all instances are destroyed
@@ -482,19 +547,19 @@ public class FleetItem : AMortalItemStateMachine<FleetState>, ITarget {
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region ITarget Members
+    //#region ITarget Members
 
-    public string Name {
-        get { return Data.Name; }
-    }
+    //public string Name {
+    //    get { return Data.Name; }
+    //}
 
-    public Vector3 Position {
-        get { return Data.Position; }
-    }
+    //public Vector3 Position {
+    //    get { return Data.Position; }
+    //}
 
-    public bool IsMovable { get { return true; } }
+    //public bool IsMovable { get { return true; } }
 
-    #endregion
+    //#endregion
 
 }
 
