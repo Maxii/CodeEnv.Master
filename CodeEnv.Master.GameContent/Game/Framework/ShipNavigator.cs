@@ -43,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
         /// The number of update cycles between course checks while the target is
         /// beyond the _courseCheckDistanceThreshold.
         /// </summary>
-        private int _courseCheckPeriod;
+        private int _courseCheckFreqPeriod;
 
         /// <summary>
         /// The _course check distance threshold SQRD
@@ -160,7 +160,7 @@ namespace CodeEnv.Master.GameContent {
             Vector3 newHeading = (Destination - Data.Position).normalized;
             ChangeHeading(newHeading, isManualOverride: false);
 
-            int courseCheckPeriod = _courseCheckPeriod;
+            int courseCheckPeriod = _courseCheckFreqPeriod;
             bool isSpeedIncreaseMade = false;
 
             float distanceToDestinationSqrd = Vector3.SqrMagnitude(Destination - Data.Position);
@@ -228,7 +228,7 @@ namespace CodeEnv.Master.GameContent {
                         return true;
                     }
                 }
-                checkCount = _courseCheckPeriod;
+                checkCount = _courseCheckFreqPeriod;
             }
             else {
                 checkCount--;
@@ -245,15 +245,16 @@ namespace CodeEnv.Master.GameContent {
         /// </returns>
         protected override float InitializeTargetValues() {
             float speedFactor = base.InitializeTargetValues();
-            _courseCheckPeriod = Mathf.RoundToInt(1000 / (speedFactor * 5));  // higher speeds mean fewer periods between course checks, aka more frequent checks
+            //D.Log("{0}.speedFactor = {1}.", Data.Name, speedFactor);
+            _courseCheckFreqPeriod = Mathf.RoundToInt(1000 / (speedFactor * 5));  // higher speeds mean fewer periods between course checks, aka more frequent checks
             _courseCheckDistanceThresholdSqrd = speedFactor * speedFactor;   // higher speeds mean course checks become continuous further away
             if (!Target.IsMovable) {
                 // the target doesn't move so course checks are much less important
-                _courseCheckPeriod *= 5;
+                _courseCheckFreqPeriod *= 5;
                 _courseCheckDistanceThresholdSqrd /= 5F;
             }
             _courseCheckDistanceThresholdSqrd = Mathf.Max(_courseCheckDistanceThresholdSqrd, _closeEnoughDistanceSqrd * 2);
-            D.Log("{0}: CourseCheckPeriod = {1}, CourseCheckDistanceThreshold = {2}.", Data.Name, _courseCheckPeriod, Mathf.Sqrt(_courseCheckDistanceThresholdSqrd));
+            D.Log("{0}: CourseCheckPeriod = {1}, CourseCheckDistanceThreshold = {2}.", Data.Name, _courseCheckFreqPeriod, Mathf.Sqrt(_courseCheckDistanceThresholdSqrd));
             return speedFactor;
         }
 

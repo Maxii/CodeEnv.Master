@@ -288,7 +288,7 @@ public abstract class ACommandView : AFocusableView, ICommandViewable, ISelectab
         set { SetProperty<Transform>(ref _trackingTarget, value, "TrackingTarget", OnTrackingTargetChanged); }
     }
 
-    public void ChangeFleetIcon(IIcon icon, GameColor color) {
+    public void ChangeIcon(IIcon icon, GameColor color) {
         _fleetIcon = icon;
         _fleetIconSprite.spriteName = icon.Filename;
         _fleetIconSprite.color = color.ToUnityColor();

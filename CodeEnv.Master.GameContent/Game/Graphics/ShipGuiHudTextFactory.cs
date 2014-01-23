@@ -52,7 +52,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.CombatStrengthDetails:
                     return new ColoredTextList_Combat(data.Strength);
                 case GuiHudLineKeys.Category:
-                    return new ColoredTextList_String(data.ElementCategory.GetDescription());
+                    return new ColoredTextList_String(data.Category.GetDescription());
                 case GuiHudLineKeys.ShipDetails:
                     return new ColoredTextList_Ship(data);
 

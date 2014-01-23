@@ -78,7 +78,7 @@ public class StarbaseView : ACommandView, IHighlightTrackingLabel {
     //}
 
     protected override void InitializeTrackingTarget() {
-        TrackingTarget = Presenter.GetFlagship();
+        TrackingTarget = Presenter.GetHQElementTransform();
     }
 
     protected override void OnIsDiscernibleChanged() {
@@ -103,7 +103,7 @@ public class StarbaseView : ACommandView, IHighlightTrackingLabel {
 
     protected override void OnPlayerIntelContentChanged() {
         base.OnPlayerIntelContentChanged();
-        Presenter.NotifyShipsOfIntelChange();
+        Presenter.NotifyElementsOfIntelChange();
     }
 
     //void OnPress(bool isDown) {
@@ -144,7 +144,7 @@ public class StarbaseView : ACommandView, IHighlightTrackingLabel {
 
     protected override void OnAltLeftClick() {
         base.OnAltLeftClick();
-        Presenter.__SimulateAllShipsAttacked();
+        Presenter.__SimulateAllElementsAttacked();
     }
 
     //private void OnIsSelectedChanged() {

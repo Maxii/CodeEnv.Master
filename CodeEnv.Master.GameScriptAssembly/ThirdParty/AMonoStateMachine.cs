@@ -438,6 +438,7 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
         ConfigureCurrentState();
     }
 
+
     [HideInInspector]
     /// <summary>
     /// The last state.

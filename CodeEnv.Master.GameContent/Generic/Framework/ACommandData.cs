@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ACommandData.cs
-// Abstract generic base class for data associated with Command Items that have an ElementType under command.
+// Abstract base class for data associated with Command Items that have an ElementType under command.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,29 +23,17 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
-    /// Abstract generic base class for data associated with Command Items that have an ElementType under command.
+    /// Abstract base class for data associated with Command Items that have an ElementType under command.
     /// </summary>
-    /// <typeparam name="ElementCategoryType">The Type that defines the possible sub-categories of an Element, eg. a ShipItem can be sub-categorized as a Frigate which is defined within the ShipCategory Type.</typeparam>
-    /// <typeparam name="ElementDataType">The type of Data associated with the ElementType used under this Command.</typeparam>
-    /// <typeparam name="CommandCompositionType">The Type of the Composition component of this Command.</typeparam>
-    public abstract class ACommandData<ElementCategoryType, ElementDataType, CommandCompositionType> : AMortalData, IDisposable
-        where ElementCategoryType : struct
-        where ElementDataType : AElementData<ElementCategoryType>
-        where CommandCompositionType : AComposition<ElementCategoryType, ElementDataType> {
+    public abstract class ACommandData : AMortalData, IDisposable {
 
-        private ElementDataType _hqElementData;
-        public ElementDataType HQElementData {
+        private AElementData _hqElementData;
+        public AElementData HQElementData {
             get {
                 return _hqElementData;
             }
             set {
-                SetProperty<ElementDataType>(ref _hqElementData, value, "HQElementData", OnHQElementDataChanged);
-            }
-        }
-
-        private void OnHQElementDataChanged() {
-            if (!_elementsData.Contains(_hqElementData)) {
-                D.Error("HQ Element {0} assigned not present in Command {1}.", _hqElementData.OptionalParentName, OptionalParentName);
+                SetProperty<AElementData>(ref _hqElementData, value, "HQElementData", OnHQElementDataChanged);
             }
         }
 
@@ -59,23 +47,18 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private CommandCompositionType _composition;
-        public CommandCompositionType Composition {
-            get { return _composition; }
-            private set { SetProperty<CommandCompositionType>(ref _composition, value, "Composition"); }
-        }
-
         private IPlayer _owner;
         public IPlayer Owner {
             get { return _owner; }
             set { SetProperty<IPlayer>(ref _owner, value, "Owner", OnOwnerChanged); }
         }
 
-        protected IList<ElementDataType> _elementsData;
-        protected IDictionary<ElementDataType, IList<IDisposable>> _subscribers;
+        // NOTE: Using new to overwrite a list of base types does not work!!
+        protected IList<AElementData> ElementsData { get; private set; }
+        protected IDictionary<AElementData, IList<IDisposable>> _subscribers;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ACommandData{ElementCategoryType, ElementDataType, CommandCompositionType}"/> class.
+        /// Initializes a new instance of the <see cref="ACommandData"/> class.
         /// </summary>
         /// <param name="cmdParentName">Name of the parent of this Command, eg. the FleetName for a FleetCommand.</param>
         public ACommandData(string cmdParentName)
@@ -85,9 +68,17 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void InitializeCollections() {
-            _elementsData = new List<ElementDataType>();
-            Composition = Activator.CreateInstance<CommandCompositionType>();
-            _subscribers = new Dictionary<ElementDataType, IList<IDisposable>>();
+            ElementsData = new List<AElementData>();
+            _subscribers = new Dictionary<AElementData, IList<IDisposable>>();
+            InitializeComposition();
+        }
+
+        protected abstract void InitializeComposition();
+
+        private void OnHQElementDataChanged() {
+            if (!ElementsData.Contains(_hqElementData)) {
+                D.Error("HQ Element {0} assigned not present in Command {1}.", _hqElementData.OptionalParentName, OptionalParentName);
+            }
         }
 
         private void OnOwnerChanged() {
@@ -95,19 +86,20 @@ namespace CodeEnv.Master.GameContent {
             D.Log("{0} Owner has changed to {1}.", OptionalParentName, Owner.LeaderName);
         }
 
-        public void AddElement(ElementDataType elementData) {
-            if (!_elementsData.Contains(elementData)) {
+        public void AddElement(AElementData elementData) {
+            if (!ElementsData.Contains(elementData)) {
                 ValidateOwner(elementData.Owner);
                 UpdateElementParentName(elementData);
-                _elementsData.Add(elementData);
+                ElementsData.Add(elementData);
 
                 ChangeComposition(elementData, toAdd: true);
                 Subscribe(elementData);
                 UpdatePropertiesDerivedFromCombinedElements();
                 return;
             }
-            D.Warn("Attempting to add {0} {1} that is already present.", typeof(ElementDataType), elementData.OptionalParentName);
+            D.Warn("Attempting to add {0} {1} that is already present.", typeof(AElementData), elementData.OptionalParentName);
         }
+
 
         private void ValidateOwner(IPlayer owner) {
             if (Owner == null) {
@@ -117,40 +109,23 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(Owner == owner, "Owners {0} and {1} are different.".Inject(Owner.LeaderName, owner.LeaderName));
         }
 
-        private void UpdateElementParentName(ElementDataType elementData) {
+        private void UpdateElementParentName(AElementData elementData) {
             // TODO something more than just assigning a parent name?
             elementData.OptionalParentName = OptionalParentName;
         }
 
-        /// <summary>
-        /// Adds or removes Element Data from the Composition.
-        /// </summary>
-        /// <param name="elementData">The data.</param>
-        /// <param name="toAdd">if set to <c>true</c> add the element, otherwise remove it.</param>
-        private void ChangeComposition(ElementDataType elementData, bool toAdd) {
-            bool isChanged = false;
-            if (toAdd) {
-                isChanged = Composition.Add(elementData);
-            }
-            else {
-                isChanged = Composition.Remove(elementData);
-            }
+        protected abstract void ChangeComposition(AElementData elementData, bool toAdd);
 
-            if (isChanged) {
-                Composition = Activator.CreateInstance(typeof(CommandCompositionType), Composition) as CommandCompositionType;
-            }
-        }
-
-        public bool RemoveElement(ElementDataType elementData) {
-            if (_elementsData.Contains(elementData)) {
-                bool isRemoved = _elementsData.Remove(elementData);
+        public bool RemoveElement(AElementData elementData) {
+            if (ElementsData.Contains(elementData)) {
+                bool isRemoved = ElementsData.Remove(elementData);
 
                 ChangeComposition(elementData, toAdd: false);
                 Unsubscribe(elementData);
                 UpdatePropertiesDerivedFromCombinedElements();
                 return isRemoved;
             }
-            D.Warn("Attempting to remove {0} {1} that is not present.", typeof(ElementDataType), elementData.OptionalParentName);
+            D.Warn("Attempting to remove {0} {1} that is not present.", typeof(AElementData), elementData.OptionalParentName);
             return false;
         }
 
@@ -165,28 +140,29 @@ namespace CodeEnv.Master.GameContent {
 
         private void UpdateStrength() {
             CombatStrength sum = new CombatStrength();
-            foreach (var eData in _elementsData) {
+            foreach (var eData in ElementsData) {
                 sum.AddToTotal(eData.Strength);
             }
             Strength = sum;
         }
 
         private void UpdateCurrentHitPoints() {
-            CurrentHitPoints = _elementsData.Sum<ElementDataType>(ed => ed.CurrentHitPoints);
+            CurrentHitPoints = ElementsData.Sum<AElementData>(ed => ed.CurrentHitPoints);
         }
 
         private void UpdateMaxHitPoints() {
-            MaxHitPoints = _elementsData.Sum<ElementDataType>(ed => ed.MaxHitPoints);
+            MaxHitPoints = ElementsData.Sum<AElementData>(ed => ed.MaxHitPoints);
         }
+
 
         #region ElementData PropertyChanged Subscription and Methods
 
-        protected virtual void Subscribe(ElementDataType elementData) {
+        protected virtual void Subscribe(AElementData elementData) {
             _subscribers.Add(elementData, new List<IDisposable>());
             IList<IDisposable> anElementsSubscriptions = _subscribers[elementData];
-            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<ElementDataType, float>(ed => ed.CurrentHitPoints, OnElementCurrentHitPointsChanged));
-            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<ElementDataType, float>(ed => ed.MaxHitPoints, OnElementMaxHitPointsChanged));
-            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<ElementDataType, CombatStrength>(ed => ed.Strength, OnElementStrengthChanged));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AElementData, float>(ed => ed.CurrentHitPoints, OnElementCurrentHitPointsChanged));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AElementData, float>(ed => ed.MaxHitPoints, OnElementMaxHitPointsChanged));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AElementData, CombatStrength>(ed => ed.Strength, OnElementStrengthChanged));
         }
 
         private void OnElementStrengthChanged() {
@@ -201,7 +177,7 @@ namespace CodeEnv.Master.GameContent {
             UpdateMaxHitPoints();
         }
 
-        private void Unsubscribe(ElementDataType elementData) {
+        private void Unsubscribe(AElementData elementData) {
             _subscribers[elementData].ForAll<IDisposable>(d => d.Dispose());
             _subscribers.Remove(elementData);
         }
@@ -213,13 +189,14 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Unsubscribe() {
-            IList<ElementDataType> subscriberKeys = new List<ElementDataType>(_subscribers.Keys);
+            IList<AElementData> subscriberKeys = new List<AElementData>(_subscribers.Keys);
             // copy of key list as you can't remove keys from a list while you are iterating over the list
-            foreach (ElementDataType eData in subscriberKeys) {
+            foreach (AElementData eData in subscriberKeys) {
                 Unsubscribe(eData);
             }
             _subscribers.Clear();
         }
+
 
         #region IDisposable
         [DoNotSerialize]

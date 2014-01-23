@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -146,6 +146,7 @@ namespace CodeEnv.Master.GameContent {
         public virtual void PlotCourse(ITarget target, float speed) {
             Target = target;
             Speed = speed;
+            D.Assert(speed != Constants.ZeroF, "Designated speed to new target {0} is 0!".Inject(target.Name));
             InitializeTargetValues();
         }
 

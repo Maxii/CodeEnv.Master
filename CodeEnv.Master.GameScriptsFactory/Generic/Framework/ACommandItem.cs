@@ -25,28 +25,15 @@ using UnityEngine;
 /// <summary>
 /// Abstract, generic base class for a CommandItem. A CommandItem is an object that commands Elements.
 /// </summary>
-/// <typeparam name="ElementType">The Type of Element used under this Command.</typeparam>
-/// <typeparam name="ElementCategoryType">The Type that defines the possible sub-categories of an Element, eg. a ShipItem can be sub-categorized as a Frigate which is defined within the ShipCategory Type.</typeparam>
-/// <typeparam name="ElementDataType">The type of Data associated with the ElementType used under this Command.</typeparam>
-/// <typeparam name="ElementStateType">The State Type being used by the ElementType's StateMachine.</typeparam>
-/// <typeparam name="CommandDataType">The Type of Data associated with this Command.</typeparam>
-/// <typeparam name="CommandCompositionType">The Type of the Composition component of this Command.</typeparam>
-/// <typeparam name="CommandStateType">The State Type being used by this CommandItem's StateMachine.</typeparam>
-public abstract class ACommandItem<ElementType, ElementCategoryType, ElementDataType, ElementStateType, CommandDataType, CommandCompositionType, CommandStateType> : AMortalItemStateMachine<CommandStateType>, ITarget
-    where ElementType : AElement<ElementCategoryType, ElementDataType, ElementStateType>
-    where ElementCategoryType : struct
-    where ElementDataType : AElementData<ElementCategoryType>
-    where ElementStateType : struct
-    where CommandDataType : ACommandData<ElementCategoryType, ElementDataType, CommandCompositionType>
-    where CommandCompositionType : AComposition<ElementCategoryType, ElementDataType>
-    where CommandStateType : struct {
+/// <typeparam name="ElementType">The Type of Element this Command is composed of.</typeparam>
+public abstract class ACommandItem<ElementType> : AMortalItemStateMachine, ITarget where ElementType : AElement {
 
     public event Action<ElementType> onElementDestroyed;
 
     public string PieceName { get { return Data.OptionalParentName; } }
 
-    public new CommandDataType Data {
-        get { return base.Data as CommandDataType; }
+    public new ACommandData Data {
+        get { return base.Data as ACommandData; }
         set { base.Data = value; }
     }
 
@@ -56,7 +43,7 @@ public abstract class ACommandItem<ElementType, ElementCategoryType, ElementData
         set { SetProperty<ElementType>(ref _hqElement, value, "HQElement", OnHQElementChanged, OnHQElementChanging); }
     }
 
-    public IList<ElementType> Elements { get; private set; }
+    public IList<ElementType> Elements { get; set; }
 
     protected override void Awake() {
         base.Awake();
@@ -82,7 +69,7 @@ public abstract class ACommandItem<ElementType, ElementCategoryType, ElementData
         if (element.transform.parent != parentTransform) {
             element.transform.parent = parentTransform;   // local position, rotation and scale are auto adjusted to keep ship unchanged in worldspace
         }
-        // TODO consider changing flagship
+        // TODO consider changing HQElement
     }
 
     public void ReportElementLost(ElementType element) {

@@ -147,7 +147,7 @@ public class FleetPresenter : AMortalFocusablePresenter {
     }
 
     private void OnFlagshipChanged() {
-        View.TrackingTarget = GetFlagship();
+        View.TrackingTarget = GetHQElementTransform();
     }
 
     public void OnIsSelectedChanged() {
@@ -194,7 +194,7 @@ public class FleetPresenter : AMortalFocusablePresenter {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(View.PlayerIntelLevel));
         }
         D.Log("IntelLevel is {2}, changing {0} to {1}.", typeof(FleetIcon).Name, fleetIcon.Filename, View.PlayerIntelLevel.GetName());
-        View.ChangeFleetIcon(fleetIcon, color);
+        View.ChangeIcon(fleetIcon, color);
     }
 
     public override string ToString() {

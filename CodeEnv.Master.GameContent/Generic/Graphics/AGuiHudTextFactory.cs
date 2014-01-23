@@ -263,7 +263,7 @@ namespace CodeEnv.Master.GameContent {
         public class ColoredTextList_Ship : ColoredTextListBase {
 
             public ColoredTextList_Ship(ShipData ship, string valueFormat = Constants.FormatFloat_1DpMax) {
-                _list.Add(new ColoredText(ship.ElementCategory.GetName()));
+                _list.Add(new ColoredText(ship.Category.GetName()));
                 _list.Add(new ColoredText(valueFormat.Inject(ship.Mass)));
                 _list.Add(new ColoredText(valueFormat.Inject(ship.MaxTurnRate)));
             }
@@ -281,7 +281,7 @@ namespace CodeEnv.Master.GameContent {
                 CompositionText.Clear();
                 CompositionText.Append(CommonTerms.Composition);
                 CompositionText.Append(": ");
-                IList<ShipCategory> shipHulls = composition.ElementCategories;
+                IList<ShipCategory> shipHulls = composition.Categories;
                 foreach (var hull in shipHulls) {
                     int count = composition.GetData(hull).Count;
                     CompositionText.AppendFormat("{0}[", hull.GetDescription());

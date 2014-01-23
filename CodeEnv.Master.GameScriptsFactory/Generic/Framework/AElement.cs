@@ -24,18 +24,12 @@ using UnityEngine;
 /// <summary>
 /// Abstract, generic base class for an Element. An Element is an object that is under the command of a CommandItem.
 /// </summary>
-/// <typeparam name="ElementCategoryType">The Type that defines the possible sub-categories of an Element, eg. a ShipItem can be sub-categorized as a Frigate which is defined within the ShipCategory Type.</typeparam>
-/// <typeparam name="ElementDataType">The type of Data associated with the ElementType used under this Command.</typeparam>
-/// <typeparam name="ElementStateType">The State Type being used by this Element's StateMachine.</typeparam>
-public abstract class AElement<ElementCategoryType, ElementDataType, ElementStateType> : AMortalItemStateMachine<ElementStateType>, ITarget
-    where ElementCategoryType : struct
-    where ElementDataType : AElementData<ElementCategoryType>
-    where ElementStateType : struct {
+public abstract class AElement : AMortalItemStateMachine, ITarget {
 
     public bool IsHQElement { get; set; }
 
-    public new ElementDataType Data {
-        get { return base.Data as ElementDataType; }
+    public new AElementData Data {
+        get { return base.Data as AElementData; }
         set { base.Data = value; }
     }
 

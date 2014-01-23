@@ -57,7 +57,6 @@
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Generic\Framework\ACommandData.cs" />
-    <Compile Include="Generic\Framework\AComposition.cs" />
     <Compile Include="Generic\Framework\AElementData.cs" />
     <Compile Include="Game\Graphics\FacilityGuiHudTextFactory.cs" />
     <Compile Include="Game\Gameplay\FacilityCategory.cs" />

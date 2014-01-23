@@ -22,33 +22,9 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// All the data associated with a particular Facility.
     /// </summary>
-    //public class FacilityData : AMortalData {
-    public class FacilityData : AElementData<FacilityCategory> {
+    public class FacilityData : AElementData {
 
-        //public FacilityCategory Category { get; private set; }
-
-        ///// <summary>
-        ///// The local position of this Facility within the Starbase.
-        ///// </summary>
-        //public Vector3 FormationPosition { get; set; }
-
-        //private IPlayer _owner;
-        //public IPlayer Owner {
-        //    get { return _owner; }
-        //    set {
-        //        SetProperty<IPlayer>(ref _owner, value, "Owner");
-        //    }
-        //}
-
-        //private CombatStrength _combatStrength;
-        //public CombatStrength Strength {
-        //    get { return _combatStrength; }
-        //    set {
-        //        SetProperty<CombatStrength>(ref _combatStrength, value, "Strength");
-        //    }
-        //}
-
-        //public float Mass { get; private set; }
+        public FacilityCategory Category { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FacilityData" /> class.
@@ -58,9 +34,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="maxHitPoints">The maximum hit points.</param>
         /// <param name="mass">The mass.</param>
         public FacilityData(FacilityCategory category, string name, float maxHitPoints, float mass)
-            : base(category, name, maxHitPoints, mass) {
-            //Category = category;
-            //Mass = mass;
+            : base(name, maxHitPoints, mass) {
+            Category = category;
         }
 
         public override string ToString() {

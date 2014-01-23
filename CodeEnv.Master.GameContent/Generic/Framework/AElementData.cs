@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ADefendedData.cs
-// Abstract generic base class for data associated with Elements (Items under a Command) that can engage in combat.
+// Abstract base class for data associated with Elements (Items under a Command).
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,12 +20,9 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Abstract generic base class for data associated with Elements (Items under a Command).
+    /// Abstract base class for data associated with Elements (Items under a Command).
     /// </summary>
-    /// <typeparam name="ElementCategoryType">The Type that defines the possible sub-categories of an Element, eg. a ShipItem can be sub-categorized as a Frigate which is defined within the ShipCategory Type.</typeparam>
-    public abstract class AElementData<ElementCategoryType> : AMortalData where ElementCategoryType : struct {
-
-        public ElementCategoryType ElementCategory { get; private set; }
+    public abstract class AElementData : AMortalData {
 
         /// <summary>
         /// The local position of this Element relative to HQ.
@@ -54,18 +51,17 @@ namespace CodeEnv.Master.GameContent {
         public float Mass { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AElementData{ElementCategoryType}"/> class.
+        /// Initializes a new instance of the <see cref="AElementData" /> class.
         /// </summary>
-        /// <param name="category">The Category of this Element instance.</param>
         /// <param name="name">The name of the Element.</param>
         /// <param name="maxHitPoints">The maximum hit points.</param>
         /// <param name="mass">The mass.</param>
         /// <param name="optionalParentName">Name of the optional parent.</param>
-        public AElementData(ElementCategoryType category, string name, float maxHitPoints, float mass, string optionalParentName = "")
+        public AElementData(string name, float maxHitPoints, float mass, string optionalParentName = "")
             : base(name, maxHitPoints, optionalParentName) {
-            ElementCategory = category;
             Mass = mass;
         }
+
 
     }
 }

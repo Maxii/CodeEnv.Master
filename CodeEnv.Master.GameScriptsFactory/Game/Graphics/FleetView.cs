@@ -77,7 +77,7 @@ public class FleetView : ACommandView, ICameraFollowable, IHighlightTrackingLabe
     //}
 
     protected override void InitializeTrackingTarget() {
-        TrackingTarget = Presenter.GetFlagship();
+        TrackingTarget = Presenter.GetHQElementTransform();
     }
 
     protected override void OnIsDiscernibleChanged() {
@@ -103,7 +103,7 @@ public class FleetView : ACommandView, ICameraFollowable, IHighlightTrackingLabe
 
     protected override void OnPlayerIntelContentChanged() {
         base.OnPlayerIntelContentChanged();
-        Presenter.NotifyShipsOfIntelChange();
+        Presenter.NotifyElementsOfIntelChange();
     }
 
     //void OnPress(bool isDown) {
@@ -144,7 +144,7 @@ public class FleetView : ACommandView, ICameraFollowable, IHighlightTrackingLabe
 
     protected override void OnAltLeftClick() {
         base.OnAltLeftClick();
-        Presenter.__SimulateAllShipsAttacked();
+        Presenter.__SimulateAllElementsAttacked();
     }
 
     //private void OnIsSelectedChanged() {

@@ -33,15 +33,6 @@ public class FleetPresenter : AMortalFocusablePresenter {
         protected set { base.Item = value; }
     }
 
-    //protected new IFleetViewable View {
-    //    get { return base.View as IFleetViewable; }
-    //}
-
-    //public FleetPresenter(IFleetViewable view)
-    //    : base(view) {
-    //    Subscribe();
-    //}
-
     protected new ICommandViewable View {
         get { return base.View as ICommandViewable; }
     }
@@ -50,7 +41,6 @@ public class FleetPresenter : AMortalFocusablePresenter {
         : base(view) {
         Subscribe();
     }
-
 
     protected override AItem AcquireItemReference() {
         return UnityUtility.ValidateMonoBehaviourPresence<FleetItem>(_viewGameObject);
@@ -62,28 +52,18 @@ public class FleetPresenter : AMortalFocusablePresenter {
         return hudPublisher;
     }
 
-    //protected override void Subscribe() {
-    //    base.Subscribe();
-    //    _subscribers.Add(Item.SubscribeToPropertyChanged<FleetItem, ShipItem>(f => f.Flagship, OnFlagshipChanged));
-    //    _subscribers.Add(Item.Data.SubscribeToPropertyChanged<FleetData, FleetComposition>(fd => fd.Composition, OnFleetCompositionChanged));
-    //    _subscribers.Add(Item.SubscribeToPropertyChanged<FleetItem, FleetState>(f => f.CurrentState, OnFleetStateChanged));
-    //    View.onShowCompletion += Item.OnShowCompletion;
-    //    Item.onFleetElementDestroyed += OnFleetElementDestroyed;
-    //}
-
     protected override void Subscribe() {
         base.Subscribe();
-        _subscribers.Add(Item.SubscribeToPropertyChanged<FleetItem, ShipItem>(f => f.HQElement, OnFlagshipChanged));
-        _subscribers.Add(Item.Data.SubscribeToPropertyChanged<FleetData, FleetComposition>(fd => fd.Composition, OnFleetCompositionChanged));
+        _subscribers.Add(Item.SubscribeToPropertyChanged<FleetItem, ShipItem>(f => f.HQElement, OnHQElementChanged));
+        _subscribers.Add(Item.Data.SubscribeToPropertyChanged<FleetData, FleetComposition>(fd => fd.Composition, OnCompositionChanged));
         _subscribers.Add(Item.SubscribeToPropertyChanged<FleetItem, FleetState>(f => f.CurrentState, OnFleetStateChanged));
         View.onShowCompletion += Item.OnShowCompletion;
         Item.onElementDestroyed += OnFleetElementDestroyed;
     }
 
-
     private void OnFleetStateChanged() {
-        FleetState fleetState = Item.CurrentState;
-        switch (fleetState) {
+        FleetState state = Item.CurrentState;
+        switch (state) {
             case FleetState.ShowDying:
                 View.ShowDying();
                 break;
@@ -111,25 +91,20 @@ public class FleetPresenter : AMortalFocusablePresenter {
                 break;
             case FleetState.None:
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(fleetState));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(state));
         }
     }
 
-    private void OnFleetElementDestroyed(ShipItem ship) {
-        if (ship.gameObject.GetSafeInterface<ICameraFocusable>().IsFocus) {
+    private void OnFleetElementDestroyed(AElement element) {
+        if (element.gameObject.GetSafeInterface<ICameraFocusable>().IsFocus) {
             // our fleet's ship that was just destroyed was the focus, so change the focus to the fleet
             (View as ICameraFocusable).IsFocus = true;
         }
     }
 
-    //public void __SimulateAllShipsAttacked() {
-    //    Item.Ships.ForAll<ShipItem>(s => s.__SimulateAttacked());
-    //}
-
-    public void __SimulateAllShipsAttacked() {
+    public void __SimulateAllElementsAttacked() {
         Item.Elements.ForAll<ShipItem>(s => s.__SimulateAttacked());
     }
-
 
     public Reference<float> GetFleetSpeed() {
         return new Reference<float>(() => Item.Data.CurrentSpeed);
@@ -159,35 +134,18 @@ public class FleetPresenter : AMortalFocusablePresenter {
         Item.ChangeSpeed(UnityEngine.Random.Range(Constants.ZeroF, 2.5F));
     }
 
-    private void OnFleetCompositionChanged() {
-        AssessFleetIcon();
+    private void OnCompositionChanged() {
+        AssessIcon();
     }
 
-    //public void NotifyShipsOfIntelChange() {
-    //    Item.Ships.ForAll<ShipItem>(sc => sc.gameObject.GetSafeMonoBehaviourComponent<ShipView>().PlayerIntel = View.PlayerIntel);
-    //    AssessFleetIcon();
-    //}
-
-    public void NotifyShipsOfIntelChange() {
-        Item.Elements.ForAll<ShipItem>(sc => sc.gameObject.GetSafeMonoBehaviourComponent<ShipView>().PlayerIntel = View.PlayerIntel);
-        AssessFleetIcon();
+    public void NotifyElementsOfIntelChange() {
+        Item.Elements.ForAll(sc => sc.gameObject.GetSafeMonoBehaviourComponent<ShipView>().PlayerIntel = View.PlayerIntel);
+        AssessIcon();
     }
 
-
-    private void OnFlagshipChanged() {
-        View.TrackingTarget = GetFlagship();
+    private void OnHQElementChanged() {
+        View.TrackingTarget = GetHQElementTransform();
     }
-
-    //public void OnIsSelectedChanged() {
-    //    if ((View as ISelectable).IsSelected) {
-    //        SelectionManager.Instance.CurrentSelection = View as ISelectable;
-    //    }
-    //    Item.Ships.ForAll(s => s.gameObject.GetSafeMonoBehaviourComponent<ShipView>().AssessHighlighting());
-    //}
-
-    //public Transform GetFlagship() {
-    //    return Item.Flagship.transform;
-    //}
 
     public void OnIsSelectedChanged() {
         if ((View as ISelectable).IsSelected) {
@@ -196,40 +154,39 @@ public class FleetPresenter : AMortalFocusablePresenter {
         Item.Elements.ForAll(s => s.gameObject.GetSafeMonoBehaviourComponent<ShipView>().AssessHighlighting());
     }
 
-    public Transform GetFlagship() {
+    public Transform GetHQElementTransform() {
         return Item.HQElement.transform;
     }
 
-
     private IconFactory _iconFactory = IconFactory.Instance;
-    private void AssessFleetIcon() {
-        IIcon fleetIcon;
+    private void AssessIcon() {
+        IIcon icon;
         GameColor color = GameColor.White;
         // TODO evaluate Composition
         switch (View.PlayerIntel.Scope) {
             case IntelScope.None:
-                fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.None);
+                icon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.None);
                 //color = GameColor.Clear;    // None should be a completely transparent icon
                 break;
             case IntelScope.Aware:
-                fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.IntelLevelUnknown);
+                icon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.IntelLevelUnknown);
                 // color = GameColor.White;    // may be clear from prior setting
                 break;
             case IntelScope.Minimal:
             case IntelScope.Moderate:
-                fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.Level5);
+                icon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.Level5);
                 color = Item.Data.Owner.Color;
                 break;
             case IntelScope.Comprehensive:
                 var selectionCriteria = new IconSelectionCriteria[] { IconSelectionCriteria.Level5, IconSelectionCriteria.Science, IconSelectionCriteria.Colony, IconSelectionCriteria.Troop };
-                fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, selectionCriteria);
+                icon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, selectionCriteria);
                 color = Item.Data.Owner.Color;
                 break;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(View.PlayerIntel.Scope));
         }
-        D.Log("IntelScope is {2}, changing {0} to {1}.", typeof(FleetIcon).Name, fleetIcon.Filename, View.PlayerIntel.Scope.GetName());
-        View.ChangeFleetIcon(fleetIcon, color);
+        D.Log("IntelScope is {2}, changing {0} to {1}.", typeof(FleetIcon).Name, icon.Filename, View.PlayerIntel.Scope.GetName());
+        View.ChangeIcon(icon, color);
     }
 
     public override string ToString() {

@@ -22,7 +22,8 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all Settlements in the game. Includes a state machine.
 /// </summary>
-public class SettlementItem : AMortalItemStateMachine<SettlementState>, ITarget {
+public class SettlementItem : AMortalItemStateMachine, ITarget {
+    //public class SettlementItem : AMortalItemStateMachine<SettlementState>, ITarget {
 
     public new SettlementData Data {
         get { return base.Data as SettlementData; }
@@ -33,6 +34,11 @@ public class SettlementItem : AMortalItemStateMachine<SettlementState>, ITarget 
     public ItemOrder<SettlementOrders> CurrentOrder {
         get { return _currentOrder; }
         set { SetProperty<ItemOrder<SettlementOrders>>(ref _currentOrder, value, "CurrentOrder", OnOrdersChanged); }
+    }
+
+    public new SettlementState CurrentState {
+        get { return (SettlementState)base.CurrentState; }
+        set { base.CurrentState = value; }
     }
 
     private GameManager _gameMgr;

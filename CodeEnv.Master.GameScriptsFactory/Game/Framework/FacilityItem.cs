@@ -24,74 +24,41 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all Facilities in the game. Includes a state machine.
 /// </summary>
-public class FacilityItem : AElement<FacilityCategory, FacilityData, FacilityState> {
-    //public class FacilityItem : AMortalItemStateMachine<FacilityState>, ITarget {
+public class FacilityItem : AElement {
 
-    //public bool IsFlagship { get; set; }
+    public new FacilityData Data {
+        get { return base.Data as FacilityData; }
+        set { base.Data = value; }
+    }
 
-    //public new FacilityData Data {
-    //    get { return base.Data as FacilityData; }
-    //    set { base.Data = value; }
-    //}
+    private FacilityState _currentState;
+    public new FacilityState CurrentState {
+        get { return _currentState; }
+        set { SetProperty<FacilityState>(ref _currentState, value, "CurrentState", OnCurrentStateChanged); }
+    }
 
-    //private ItemOrder<SettlementOrders> _currentOrder;
-    //public ItemOrder<SettlementOrders> CurrentOrder {
-    //    get { return _currentOrder; }
-    //    set { SetProperty<ItemOrder<SettlementOrders>>(ref _currentOrder, value, "CurrentOrder", OnOrdersChanged); }
-    //}
+    private void OnCurrentStateChanged() {
+        base.CurrentState = _currentState;
+    }
 
-    //private GameManager _gameMgr;
-    private StarbaseItem _fleet;
+    private StarbaseItem _starbase;
 
     protected override void Awake() {
         base.Awake();
-        //_gameMgr = GameManager.Instance;
         Subscribe();
     }
-
-    //protected override void Start() {
-    //    base.Start();
-    //    Initialize();
-    //}
-
-    //private void Initialize() {
-    //    // when a Starbase is initially built, the facility already selected to be the flagship assigns itself
-    //    // to Starbase command. As Starbase Command will immediately callback, Facility must do any
-    //    // required initialization now, before the callback takes place
-    //    var fleetParent = gameObject.GetSafeMonoBehaviourComponentInParents<StarbaseCreator>();
-    //    _fleet = fleetParent.gameObject.GetSafeMonoBehaviourComponentInChildren<StarbaseItem>();
-    //    if (IsFlagship) {
-    //        _fleet.Flagship = this;
-    //    }
-    //    CurrentState = FacilityState.Idling;
-    //}
 
     protected override void Initialize() {
         // when a Starbase is initially built, the facility already selected to be the HQ assigns itself
         // to Starbase command. As Starbase Command will immediately callback, Facility must do any
         // required initialization now, before the callback takes place
-        var fleetParent = gameObject.GetSafeMonoBehaviourComponentInParents<StarbaseCreator>();
-        _fleet = fleetParent.gameObject.GetSafeMonoBehaviourComponentInChildren<StarbaseItem>();
+        var parent = gameObject.GetSafeMonoBehaviourComponentInParents<StarbaseCreator>();
+        _starbase = parent.gameObject.GetSafeMonoBehaviourComponentInChildren<StarbaseItem>();
         if (IsHQElement) {
-            //_fleet.Flagship = this;
-            _fleet.HQElement = this;
+            _starbase.HQElement = this;
         }
         CurrentState = FacilityState.Idling;
     }
-
-    //protected override void Subscribe() {
-    //    base.Subscribe();
-    //    _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
-    //}
-
-    //private void OnGameStateChanged() {
-    //    // TODO
-    //}
-
-    //protected override void OnDataChanged() {
-    //    base.OnDataChanged();
-    //    rigidbody.mass = Data.Mass;
-    //}
 
     public void __SimulateAttacked() {
         if (!DebugSettings.Instance.MakePlayerInvincible) {
@@ -100,20 +67,10 @@ public class FacilityItem : AElement<FacilityCategory, FacilityData, FacilitySta
     }
 
     protected override void Die() {
-        _fleet.ReportElementLost(this);
-        // let fleetCmd process the loss before the destroyed ship starts processing its state changes
+        _starbase.ReportElementLost(this);
+        // let starbaseCmd process the loss before the destroyed facility starts processing its state changes
         CurrentState = FacilityState.Dying;
     }
-
-
-    //protected override void Die() {
-    //    _fleet.ReportShipLost(this);
-    //    // let fleetCmd process the loss before the destroyed ship starts processing its state changes
-    //    CurrentState = FacilityState.Dying;
-    //}
-
-    // subscriptions contained completely within this gameobject (both subscriber
-    // and subscribee) donot have to be cleaned up as all instances are destroyed
 
     #region FacilityStates
 
@@ -223,23 +180,11 @@ public class FacilityItem : AElement<FacilityCategory, FacilityData, FacilitySta
 
     #endregion
 
-
-
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
 
     #region ITarget Members
-
-    //public string Name {
-    //    get { return Data.Name; }
-    //}
-
-    //public Vector3 Position {
-    //    get { return Data.Position; }
-    //}
-
-    //public bool IsMovable { get { return true; } }
 
     public override bool IsMovable { get { return false; } }
 

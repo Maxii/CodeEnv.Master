@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
 
         Transform TrackingTarget { set; }
 
-        void ChangeFleetIcon(IIcon icon, GameColor color);
+        void ChangeIcon(IIcon icon, GameColor color);
 
         void ShowDying();
 

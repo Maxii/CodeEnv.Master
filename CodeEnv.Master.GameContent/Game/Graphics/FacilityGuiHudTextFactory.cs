@@ -41,7 +41,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.IntelState:
                     return (intel.DateStamp != null) ? new ColoredTextList_Intel(intel) : _emptyColoredTextList;
                 case GuiHudLineKeys.Category:
-                    return new ColoredTextList_String(data.ElementCategory.GetDescription());
+                    return new ColoredTextList_String(data.Category.GetDescription());
                 case GuiHudLineKeys.Health:
                     return new ColoredTextList_Health(data.Health, data.MaxHitPoints);
 

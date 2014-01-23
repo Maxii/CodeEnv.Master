@@ -92,7 +92,7 @@ public class FleetView : AFollowableView, IFleetViewable, ISelectable {
     }
 
     private void InitializeTrackingTarget() {
-        TrackingTarget = Presenter.GetFlagship();
+        TrackingTarget = Presenter.GetHQElementTransform();
     }
 
     protected override void RegisterComponentsToDisable() {
@@ -141,7 +141,7 @@ public class FleetView : AFollowableView, IFleetViewable, ISelectable {
         if (IsDetectable) {
             KeyCode notUsed;
             if (GameInputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftAlt, KeyCode.RightAlt)) {
-                Presenter.__SimulateAllShipsAttacked();
+                Presenter.__SimulateAllElementsAttacked();
                 return;
             }
             IsSelected = true;
@@ -377,7 +377,7 @@ public class FleetView : AFollowableView, IFleetViewable, ISelectable {
         set { SetProperty<Transform>(ref _trackingTarget, value, "TrackingTarget", OnTrackingTargetChanged); }
     }
 
-    public void ChangeFleetIcon(IIcon icon, GameColor color) {
+    public void ChangeIcon(IIcon icon, GameColor color) {
         _fleetIcon = icon;
         _fleetIconSprite.spriteName = icon.Filename;
         _fleetIconSprite.color = color.ToUnityColor();

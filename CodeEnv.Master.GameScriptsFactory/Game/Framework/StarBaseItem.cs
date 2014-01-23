@@ -18,8 +18,6 @@
 
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
@@ -28,12 +26,7 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all Starbases in the game. Includes a state machine. 
 /// </summary>
-public class StarbaseItem : ACommandItem<FacilityItem, FacilityCategory, FacilityData, FacilityState, StarbaseData, StarbaseComposition, StarbaseState> {
-    //public class StarbaseItem : AMortalItemStateMachine<StarbaseState>, ITarget {
-
-    //public event Action<FacilityItem> onFleetElementDestroyed;
-
-    //public string FleetName { get { return Data.OptionalParentName; } }
+public class StarbaseItem : ACommandItem<FacilityItem> {
 
     private ItemOrder<StarbaseOrders> _currentOrder;
     public ItemOrder<StarbaseOrders> CurrentOrder {
@@ -41,107 +34,33 @@ public class StarbaseItem : ACommandItem<FacilityItem, FacilityCategory, Facilit
         set { SetProperty<ItemOrder<StarbaseOrders>>(ref _currentOrder, value, "CurrentOrder", OnOrdersChanged); }
     }
 
-    //public new StarbaseData Data {
-    //    get { return base.Data as StarbaseData; }
-    //    set { base.Data = value; }
-    //}
+    public new StarbaseData Data {
+        get { return base.Data as StarbaseData; }
+        set { base.Data = value; }
+    }
 
-    //private FacilityItem _flagship;
-    //public FacilityItem Flagship {
-    //    get { return _flagship; }
-    //    set { SetProperty<FacilityItem>(ref _flagship, value, "Flagship", OnFlagshipChanged, OnFlagshipChanging); }
-    //}
+    private StarbaseState _currentState;
+    public new StarbaseState CurrentState {
+        get { return _currentState; }
+        set { SetProperty<StarbaseState>(ref _currentState, value, "CurrentState", OnCurrentStateChanged); }
+    }
 
-    //public IList<FacilityItem> Ships { get; private set; }
+    private void OnCurrentStateChanged() {
+        base.CurrentState = _currentState;
+    }
 
     protected override void Awake() {
         base.Awake();
-        //Ships = new List<FacilityItem>();
         Subscribe();
     }
-
-    //protected override void Start() {
-    //    base.Start();
-    //    Initialize();
-    //}
-
-    //private void Initialize() {
-    //    CurrentState = StarbaseState.Idling;
-    //}
-
 
     protected override void Initialize() {
         CurrentState = StarbaseState.Idling;
     }
 
-    ///// <summary>
-    ///// Adds the ship to this fleet including parenting if needed.
-    ///// </summary>
-    ///// <param name="ship">The ship.</param>
-    //public void AddShip(FacilityItem ship) {
-    //    Ships.Add(ship);
-    //    Data.Add(ship.Data);
-    //    Transform parentFleetTransform = gameObject.GetSafeMonoBehaviourComponentInParents<StarbaseCreator>().transform;
-    //    if (ship.transform.parent != parentFleetTransform) {
-    //        ship.transform.parent = parentFleetTransform;   // local position, rotation and scale are auto adjusted to keep ship unchanged in worldspace
-    //    }
-    //    // TODO consider changing flagship
-    //}
-
-    //public void ReportShipLost(FacilityItem ship) {
-    //    D.Log("{0} acknowledging {1} has been lost.", Data.Name, ship.Data.Name);
-    //    RemoveShip(ship);
-
-    //    var fed = onFleetElementDestroyed;
-    //    if (fed != null) {
-    //        fed(ship);
-    //    }
-    //}
-
-    //public void RemoveShip(FacilityItem ship) {
-    //    bool isRemoved = Ships.Remove(ship);
-    //    isRemoved = isRemoved && Data.Remove(ship.Data);
-    //    D.Assert(isRemoved, "{0} not found.".Inject(ship.Data.Name));
-    //    if (Ships.Count > Constants.Zero) {
-    //        if (ship == Flagship) {
-    //            // Flagship has died
-    //            Flagship = SelectBestShip();
-    //        }
-    //        return;
-    //    }
-    //    // Fleet knows when to die
-    //}
-
-    //private void OnFlagshipChanging(FacilityItem newFlagship) {
-    //    if (Flagship != null) {
-    //        Flagship.IsFlagship = false;
-    //    }
-    //}
-
-    //private void OnFlagshipChanged() {
-    //    Flagship.IsFlagship = true;
-    //    Data.HQItemData = Flagship.Data;
-    //}
-
-    protected override FacilityItem SelectHQElement() {
-        return Elements.MaxBy<FacilityItem, float>(e => e.Radius);
-    }
-
     protected override void Die() {
         CurrentState = StarbaseState.Dying;
     }
-
-    //private FacilityItem SelectBestShip() {
-    //    return Ships.MaxBy(s => s.Data.Health);
-    //}
-
-    //protected override void Cleanup() {
-    //    base.Cleanup();
-    //    Data.Dispose();
-    //}
-
-    // subscriptions contained completely within this gameobject (both subscriber
-    // and subscribee) donot have to be cleaned up as all instances are destroyed
 
     #region FleetStates
 
@@ -303,16 +222,6 @@ public class StarbaseItem : ACommandItem<FacilityItem, FacilityCategory, Facilit
     }
 
     #region ITarget Members
-
-    //public string Name {
-    //    get { return Data.Name; }
-    //}
-
-    //public Vector3 Position {
-    //    get { return Data.Position; }
-    //}
-
-    //public bool IsMovable { get { return true; } }
 
     public override bool IsMovable { get { return false; } }
 

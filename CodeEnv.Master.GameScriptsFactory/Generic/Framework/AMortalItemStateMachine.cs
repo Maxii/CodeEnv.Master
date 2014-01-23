@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -27,9 +27,11 @@ using UnityEngine;
 
 /// <summary>
 ///  Abstract Base class for MortalItem State Machines to inherit from.
+///  NOTE: Is not generic as this is so deep in the Item heirarchy, that I was forced
+///  to pass the StateType through MANY layers, making it difficult to create abstract
+///  classes.
 /// </summary>
-/// <typeparam name="StateType">The State Type being used by this StateMachine.</typeparam>
-public abstract class AMortalItemStateMachine<StateType> : AMortalItem where StateType : struct {
+public abstract class AMortalItemStateMachine : AMortalItem {
 
     /// <summary>
     /// A coroutine executor that can be interrupted
@@ -387,7 +389,8 @@ public abstract class AMortalItemStateMachine<StateType> : AMortalItem where Sta
         public Action DoOnClick = DoNothing;
         public Action DoOnDoubleClick = DoNothing;
 
-        public StateType currentState;
+        public object currentState;
+        //public StateType currentState;
 
         //Stack of the enter state enumerators
         public Stack<IEnumerator> enterStack;
@@ -425,18 +428,17 @@ public abstract class AMortalItemStateMachine<StateType> : AMortalItem where Sta
     /// 7. the event OnCurrentStateChanged() is sent to subscribers
     ///          - when this event is received, a get_CurrentState property inquiry will properly return newState
     /// </summary>
-    public StateType CurrentState {
+    public object CurrentState {
         get { return state.currentState; }
-        protected set { SetProperty<StateType>(ref state.currentState, value, "CurrentState", OnCurrentStateChanged, OnCurrentStateChanging); }
-    }
-
-    protected virtual void OnCurrentStateChanging(StateType incomingState) {
-        ChangingState();
-    }
-
-    protected virtual void OnCurrentStateChanged() {
-        //D.Log("{0} CurrentState changed to {1}.", Data.Name, CurrentState.ToString());
-        ConfigureCurrentState();
+        set {
+            if (state.currentState != null && state.currentState.Equals(value)) {
+                return;
+            }
+            ChangingState();
+            state.currentState = value;
+            D.Log("{0} setting CurrentState to {1}.", Data.Name, value.ToString());
+            ConfigureCurrentState();
+        }
     }
 
     [HideInInspector]
@@ -452,10 +454,8 @@ public abstract class AMortalItemStateMachine<StateType> : AMortalItem where Sta
     /// Call the specified state - activates the new state without deactivating the 
     /// current state.  Called states need to execute Return() when they are finished
     /// </summary>
-    /// <param name='stateToActivate'>
-    /// State to activate.
-    /// </param>
-    public void Call(StateType stateToActivate) {
+    /// <param name='stateToActivate'> State to activate. </param>
+    public void Call(object stateToActivate) {
         state.time = timeInCurrentState;
         state.enterStack = enterStateCoroutine.CreateStack();
         state.exitStack = exitStateCoroutine.CreateStack();
@@ -500,7 +500,7 @@ public abstract class AMortalItemStateMachine<StateType> : AMortalItem where Sta
     /// <param name='baseState'>
     /// The state to use if there is no waiting calling state
     /// </param>
-    public void Return(StateType baseState) {
+    public void Return(object baseState) {
         //UnwireEvents();
         if (state.exitState != null) {
             state.exitStateEnumerator = state.exitState();

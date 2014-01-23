@@ -334,12 +334,8 @@ public class FleetNavigator : ANavigator {
         return speedFactor;
     }
 
-    //private void __MoveShipsTo(ITarget target) {
-    //    ItemOrder<ShipOrders> moveToOrder = new ItemOrder<ShipOrders>(ShipOrders.MoveTo, target, Speed);
-    //    _fleet.Ships.ForAll(s => s.CurrentOrder = moveToOrder);
-    //}
-
     private void __MoveShipsTo(ITarget target) {
+        D.Assert(Speed != Constants.ZeroF, "{0} moving Ships to {1} at Speed of 0!".Inject(Data.Name, target.Name));
         ItemOrder<ShipOrders> moveToOrder = new ItemOrder<ShipOrders>(ShipOrders.MoveTo, target, Speed);
         _fleet.Elements.ForAll(s => s.CurrentOrder = moveToOrder);
     }

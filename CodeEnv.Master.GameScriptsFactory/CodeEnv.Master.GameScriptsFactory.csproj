@@ -58,8 +58,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Generic\Graphics\ACommandView.cs" />
     <Compile Include="Generic\Framework\ACreator.cs" />
+    <Compile Include="Generic\Graphics\ACommandView.cs" />
     <Compile Include="Generic\Graphics\AElementView.cs" />
     <Compile Include="Generic\Framework\ACommandItem.cs" />
     <Compile Include="Game\Framework\FacilityItem.cs" />

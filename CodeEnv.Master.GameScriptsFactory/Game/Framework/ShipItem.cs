@@ -26,10 +26,7 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all ships in the game. Includes a state machine.
 /// </summary>
-public class ShipItem : AElement<ShipCategory, ShipData, ShipState> {
-    //public class ShipItem : AMortalItemStateMachine<ShipState>, ITarget {
-
-    //public bool IsFlagship { get; set; }
+public class ShipItem : AElement {
 
     private ItemOrder<ShipOrders> _currentOrder;
     public ItemOrder<ShipOrders> CurrentOrder {
@@ -37,10 +34,20 @@ public class ShipItem : AElement<ShipCategory, ShipData, ShipState> {
         set { SetProperty<ItemOrder<ShipOrders>>(ref _currentOrder, value, "CurrentOrder", OnOrdersChanged); }
     }
 
-    //public new ShipData Data {
-    //    get { return base.Data as ShipData; }
-    //    set { base.Data = value; }
-    //}
+    public new ShipData Data {
+        get { return base.Data as ShipData; }
+        set { base.Data = value; }
+    }
+
+    private ShipState _currentState;
+    public new ShipState CurrentState {
+        get { return _currentState; }
+        set { SetProperty<ShipState>(ref _currentState, value, "CurrentState", OnCurrentStateChanged); }
+    }
+
+    private void OnCurrentStateChanged() {
+        base.CurrentState = _currentState;
+    }
 
     public ShipNavigator Navigator { get; private set; }
 
@@ -48,20 +55,12 @@ public class ShipItem : AElement<ShipCategory, ShipData, ShipState> {
 
     protected override void Awake() {
         base.Awake();
-        //UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
         Subscribe();
     }
 
-    //protected override void Start() {
-    //    base.Start();
-    //    var fleetParent = gameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>();
-    //    _fleet = fleetParent.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetItem>();
-    //    Initialize();
-    //}
-
     protected override void Initialize() {
-        var fleetParent = gameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>();
-        _fleet = fleetParent.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetItem>();
+        var parent = gameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>();
+        _fleet = parent.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetItem>();
 
         InitializeNavigator();
         // when a fleet is initially built, the ship already selected to be the flagship assigns itself
@@ -71,16 +70,6 @@ public class ShipItem : AElement<ShipCategory, ShipData, ShipState> {
         }
         CurrentState = ShipState.Idling;
     }
-
-    //private void Initialize() {
-    //    InitializeNavigator();
-    //    // when a fleet is initially built, the ship already selected to be the flagship assigns itself
-    //    // to fleet command once it has initialized its Navigator to receive the immediate callback
-    //    if (IsFlagship) {
-    //        _fleet.Flagship = this;
-    //    }
-    //    CurrentState = ShipState.Idling;
-    //}
 
     private void InitializeNavigator() {
         Navigator = new ShipNavigator(_transform, Data);
@@ -115,13 +104,6 @@ public class ShipItem : AElement<ShipCategory, ShipData, ShipState> {
         // let fleetCmd process the loss before the destroyed ship starts processing its state changes
         CurrentState = ShipState.Dying;
     }
-
-
-    //protected override void Die() {
-    //    _fleet.ReportShipLost(this);
-    //    // let fleetCmd process the loss before the destroyed ship starts processing its state changes
-    //    CurrentState = ShipState.Dying;
-    //}
 
     #region Velocity Debugger
 
@@ -609,25 +591,11 @@ public class ShipItem : AElement<ShipCategory, ShipData, ShipState> {
     protected override void Cleanup() {
         base.Cleanup();
         Navigator.Dispose();
-        //Data.Dispose();
+        Data.Dispose();
     }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    //#region ITarget Members
-
-    //public string Name {
-    //    get { return Data.Name; }
-    //}
-
-    //public Vector3 Position {
-    //    get { return Data.Position; }
-    //}
-
-    //public bool IsMovable { get { return true; } }
-
-    //#endregion
 }
 
