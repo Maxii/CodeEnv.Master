@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ACreator.cs
-// COMMENT - one line to give a brief idea of what this file does.
+//  Abstract, generic base class for Element/Command Creators.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,15 +20,21 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// COMMENT 
+/// Abstract, generic base class for Element/Command Creators.
 /// </summary>
-public abstract class ACreator<ElementType, CommandType, CompositionType> : AMonoBase, IDisposable
+/// <typeparam name="ElementType">The Type of Element contained in the Command.</typeparam>
+/// <typeparam name="ElementCategoryType">The Type holding the Element's Categories.</typeparam>
+/// <typeparam name="ElementDataType">The Type of the Element's Data.</typeparam>
+/// <typeparam name="CommandType">The Type of the Command.</typeparam>
+/// <typeparam name="CompositionType">The Type of the Composition within the Command.</typeparam>
+public abstract class ACreator<ElementType, ElementCategoryType, ElementDataType, CommandType, CompositionType> : AMonoBase, IDisposable
     where ElementType : AElement
+    where ElementCategoryType : struct
+    where ElementDataType : AElementData
     where CommandType : ACommandItem<ElementType>
     where CompositionType : class, new() {
 
@@ -78,11 +84,45 @@ public abstract class ACreator<ElementType, CommandType, CompositionType> : AMon
         }
     }
 
-    protected abstract void CreateCompositionFromChildren();
+    private void CreateCompositionFromChildren() {
+        _elements = gameObject.GetSafeMonoBehaviourComponentsInChildren<ElementType>();
+        IPlayer owner = GameManager.Instance.HumanPlayer;
+        __isHumanOwnedCreated = true;
+        _composition = Activator.CreateInstance<CompositionType>();
+        foreach (var element in _elements) {
+            ElementCategoryType category = DeriveCategory(element);
+            string elementName = element.gameObject.name;
+            ElementDataType elementData = CreateElementData(category, elementName, owner);
+            AddDataToComposition(elementData);
+        }
+    }
 
-    protected abstract void CreateRandomComposition();
+    private void CreateRandomComposition() {
+        IPlayer owner;
+        if (!__isHumanOwnedCreated) {
+            owner = GameManager.Instance.HumanPlayer;
+            __isHumanOwnedCreated = true;
+        }
+        else {
+            owner = GetNonHumanOwner();
+        }
+        _composition = Activator.CreateInstance<CompositionType>();
 
+        ElementCategoryType[] validHQCategories = GetValidHQElementCategories();
 
+        ElementCategoryType[] validCategories = GetValidElementCategories();
+
+        int elementCount = RandomExtended<int>.Range(1, maxElements);
+        for (int i = 0; i < elementCount; i++) {
+            ElementCategoryType elementCategory = (i == 0) ? RandomExtended<ElementCategoryType>.Choice(validHQCategories) : RandomExtended<ElementCategoryType>.Choice(validCategories);
+            int elementInstanceIndex = GetCurrentCount(elementCategory) + 1;
+            string elementInstanceName = elementCategory.ToString() + Constants.Underscore + elementInstanceIndex;
+            ElementDataType elementData = CreateElementData(elementCategory, elementInstanceName, owner);
+            AddDataToComposition(elementData);
+        }
+    }
+
+    protected abstract ElementDataType CreateElementData(ElementCategoryType category, string elementName, IPlayer owner);
 
     private void DeployPiece() {
         if (_isPreset) {
@@ -111,9 +151,33 @@ public abstract class ACreator<ElementType, CommandType, CompositionType> : AMon
         AssignFormationPositions();
     }
 
-    protected abstract void BuildElements();
+    private void BuildElements() {
+        _elements = new List<ElementType>();
+        foreach (var elementCategory in GetCompositionCategories()) {
+            GameObject elementPrefabGo = GetElementPrefabs().First(go => go.name == elementCategory.ToString());
+            string elementCategoryName = elementPrefabGo.name;
 
-    protected abstract void InitializeElements();
+            GetCompositionData(elementCategory).ForAll(data => {
+                GameObject elementGoClone = UnityUtility.AddChild(gameObject, elementPrefabGo);
+                elementGoClone.name = elementCategoryName; // get rid of (Clone) in name
+                ElementType element = elementGoClone.GetSafeMonoBehaviourComponent<ElementType>();
+                _elements.Add(element);
+            });
+        }
+    }
+
+    private void InitializeElements() {
+        IDictionary<ElementCategoryType, Stack<ElementDataType>> dataStackLookup = new Dictionary<ElementCategoryType, Stack<ElementDataType>>();
+        foreach (var element in _elements) {
+            ElementCategoryType elementCategory = DeriveCategory(element);
+            Stack<ElementDataType> elementDataStack;
+            if (!dataStackLookup.TryGetValue(elementCategory, out elementDataStack)) {
+                elementDataStack = new Stack<ElementDataType>(GetCompositionData(elementCategory));
+                dataStackLookup.Add(elementCategory, elementDataStack);
+            }
+            element.Data = elementDataStack.Pop();  // automatically adds the element's transform to Data when set
+        }
+    }
 
     private void AcquireCommand() {
         if (_isPreset) {
@@ -125,11 +189,12 @@ public abstract class ACreator<ElementType, CommandType, CompositionType> : AMon
         }
     }
 
-    protected abstract GameObject GetCommandPrefab();
-
-    protected abstract void InitializePiece();
-
-    protected abstract void MarkHQElement();
+    private void InitializePiece() {
+        AddCommandDataToCommand();    // automatically adds the command transform to Data when set
+        _elements.ForAll(element => _command.AddElement(element));
+        // include command as a target in each element's CameraLOSChangedRelay
+        _elements.ForAll(element => element.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().AddTarget(_command.transform));
+    }
 
     protected abstract void PositionElements();
 
@@ -160,10 +225,21 @@ public abstract class ACreator<ElementType, CommandType, CompositionType> : AMon
         }
     }
 
+    protected abstract void MarkHQElement();
 
-    protected abstract void AssignFormationPositions();
-
-    protected abstract void __InitializeCommandIntel();
+    private void AssignFormationPositions() {
+        ElementType hqElement = _elements.Single(s => s.IsHQElement);
+        Vector3 hqPosition = hqElement.transform.position;
+        foreach (var element in _elements) {
+            if (element.IsHQElement) {
+                element.Data.FormationPosition = Vector3.zero;
+                D.Log("HQ Element is {0}.", element.Data.Name);
+                continue;
+            }
+            element.Data.FormationPosition = element.transform.position - hqPosition;
+            //D.Log("{0}.FormationPosition = {1}.", ship.Data.Name, ship.Data.FormationPosition);
+        }
+    }
 
     private void EnablePiece() {
         // elements need to run their Start first to initialize and assign the designated HQElement to the Command before Command is enabled and runs its Start
@@ -173,6 +249,32 @@ public abstract class ACreator<ElementType, CommandType, CompositionType> : AMon
     }
 
     protected abstract void EnableViews();
+
+    protected abstract void __InitializeCommandIntel();
+
+    private ElementCategoryType DeriveCategory(ElementType element) {
+        return Enums<ElementCategoryType>.Parse(element.gameObject.name);
+    }
+
+    private int GetCurrentCount(ElementCategoryType elementCategory) {
+        if (!GetCompositionCategories().Contains(elementCategory)) {
+            return 0;
+        }
+        return GetCompositionData(elementCategory).Count;
+    }
+
+    protected virtual IPlayer GetNonHumanOwner() {
+        return new Player(new Race(Enums<Races>.GetRandom(excludeDefault: true)), IQ.Normal);
+    }
+
+    protected abstract void AddDataToComposition(ElementDataType elementData);
+    protected abstract IList<ElementDataType> GetCompositionData(ElementCategoryType elementCategory);
+    protected abstract IList<ElementCategoryType> GetCompositionCategories();
+    protected abstract IEnumerable<GameObject> GetElementPrefabs();
+    protected abstract GameObject GetCommandPrefab();
+    protected abstract void AddCommandDataToCommand();
+    protected abstract ElementCategoryType[] GetValidHQElementCategories();
+    protected abstract ElementCategoryType[] GetValidElementCategories();
 
     protected override void OnDestroy() {
         base.OnDestroy();
