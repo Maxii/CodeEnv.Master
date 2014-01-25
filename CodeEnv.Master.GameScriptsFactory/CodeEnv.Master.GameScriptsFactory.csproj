@@ -145,10 +145,10 @@
     <Compile Include="Game\Graphics\SectorView.cs" />
     <Compile Include="Generic\Framework\AMortalItem.cs" />
     <Compile Include="Generic\Graphics\Revolve.cs" />
-    <Compile Include="Generic\Framework\StarbaseCreator.cs" />
-    <Compile Include="Game\Framework\StarbaseItem.cs" />
-    <Compile Include="Game\Graphics\StarbasePresenter.cs" />
-    <Compile Include="Game\Graphics\StarbaseView.cs" />
+    <Compile Include="Generic\Framework\StarbaseCreator_.cs" />
+    <Compile Include="Game\Framework\StarbaseItem_.cs" />
+    <Compile Include="Game\Graphics\StarbasePresenter_.cs" />
+    <Compile Include="Game\Graphics\StarbaseView_.cs" />
     <Compile Include="Generic\Framework\SettlementCreator.cs" />
     <Compile Include="ThirdParty\MyAStarPointGenerator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
