@@ -42,7 +42,7 @@ public abstract class ACreator<ElementType, ElementCategoryType, ElementDataType
 
     public int maxElements = 8;
 
-    protected string _pieceName;
+    public string PieceName { get; private set; }
 
     protected CompositionType _composition;
     protected IList<ElementType> _elements;
@@ -52,26 +52,38 @@ public abstract class ACreator<ElementType, ElementCategoryType, ElementDataType
 
     protected override void Awake() {
         base.Awake();
-        _pieceName = gameObject.name;   // the name of the fleet is carried by the name of the FleetMgr gameobject
+        PieceName = GetPieceName();
         _isPreset = _transform.childCount > 0;
-        CreateComposition();
-        Subscribe();
+        if (!GameStatus.Instance.IsRunning) {
+            Subscribe();
+        }
+        else {
+            Initiate();
+        }
     }
 
     private void Subscribe() {
-        if (_subscribers == null) {
-            _subscribers = new List<IDisposable>();
-        }
+        _subscribers = new List<IDisposable>();
         _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
+    }
+
+    private void Initiate() {
+        CreateComposition();
+        DeployPiece();
+        EnablePiece();
+        __InitializeCommandIntel();
+        OnCreationComplete();
     }
 
     private void OnGameStateChanged() {
         if (GameManager.Instance.CurrentState == GameState.RunningCountdown_2) {
+            CreateComposition();
             DeployPiece();
             EnablePiece();  // must make View operational before starting state changes within it
         }
         if (GameManager.Instance.CurrentState == GameState.RunningCountdown_1) {
             __InitializeCommandIntel();
+            OnCreationComplete();
         }
     }
 
@@ -206,7 +218,7 @@ public abstract class ACreator<ElementType, ElementCategoryType, ElementDataType
     protected bool PositionElementsRandomlyInSphere(float radius) {  // FIXME need to set FormationPosition
         GameObject[] elementGos = _elements.Select(s => s.gameObject).ToArray();
         Vector3 pieceCenter = _transform.position;
-        D.Log("Radius of Sphere occupied by {0} of count {1} is {2}.", _pieceName, elementGos.Length, radius);
+        D.Log("Radius of Sphere occupied by {0} of count {1} is {2}.", PieceName, elementGos.Length, radius);
         return UnityUtility.PositionRandomWithinSphere(pieceCenter, radius, elementGos);
         // fleetCmd will relocate itsef once it selects its flagship
     }
@@ -267,6 +279,11 @@ public abstract class ACreator<ElementType, ElementCategoryType, ElementDataType
         return new Player(new Race(Enums<Races>.GetRandom(excludeDefault: true)), IQ.Normal);
     }
 
+    protected virtual string GetPieceName() {
+        // usually, the name of the piece is carried by the name of the gameobject where this creator is located
+        return _transform.name;
+    }
+
     protected abstract void AddDataToComposition(ElementDataType elementData);
     protected abstract IList<ElementDataType> GetCompositionData(ElementCategoryType elementCategory);
     protected abstract IList<ElementCategoryType> GetCompositionCategories();
@@ -275,6 +292,7 @@ public abstract class ACreator<ElementType, ElementCategoryType, ElementDataType
     protected abstract void AddCommandDataToCommand();
     protected abstract ElementCategoryType[] GetValidHQElementCategories();
     protected abstract ElementCategoryType[] GetValidElementCategories();
+    protected abstract void OnCreationComplete();
 
     protected override void OnDestroy() {
         base.OnDestroy();
@@ -287,8 +305,10 @@ public abstract class ACreator<ElementType, ElementCategoryType, ElementDataType
     }
 
     private void Unsubscribe() {
-        _subscribers.ForAll(d => d.Dispose());
-        _subscribers.Clear();
+        if (_subscribers != null) {
+            _subscribers.ForAll(d => d.Dispose());
+            _subscribers.Clear();
+        }
     }
 
     #region IDisposable

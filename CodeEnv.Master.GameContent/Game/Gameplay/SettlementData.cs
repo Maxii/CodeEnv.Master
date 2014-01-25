@@ -22,9 +22,9 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// All the data associated with a particular Settlement in a System.
     /// </summary>
-    public class SettlementData : AMortalData {
+    public class SettlementData : ACommandData {
 
-        public SettlementCategory Category { get; private set; }
+        public SettlementCategory Category { get; set; }
 
         private int _population;
         public int Population {
@@ -58,33 +58,44 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private IPlayer _owner;
-        public IPlayer Owner {
-            get { return _owner; }
-            set {
-                SetProperty<IPlayer>(ref _owner, value, "Owner");
+        public new FacilityData HQElementData {
+            get { return base.HQElementData as FacilityData; }
+            set { base.HQElementData = value; }
+        }
+
+        private BaseComposition _composition;
+        public BaseComposition Composition {
+            get { return _composition; }
+            private set { SetProperty<BaseComposition>(ref _composition, value, "Composition"); }
+        }
+
+        ///// <summary>
+        ///// Initializes a new instance of the <see cref="StarbaseData"/> class.
+        ///// </summary>
+        ///// <param name="starbaseName">Name of the starbase.</param>
+        public SettlementData(string settlementName) : base(settlementName) { }
+
+        protected override void InitializeComposition() {
+            Composition = new BaseComposition();
+        }
+
+        protected override void ChangeComposition(AElementData elementData, bool toAdd) {
+            bool isChanged = false;
+            if (toAdd) {
+                isChanged = Composition.Add(elementData as FacilityData);
+            }
+            else {
+                isChanged = Composition.Remove(elementData as FacilityData);
+            }
+
+            if (isChanged) {
+                Composition = new BaseComposition(Composition);
             }
         }
 
-        private CombatStrength _strength;
-        public CombatStrength Strength {
-            get { return _strength; }
-            set {
-                SetProperty<CombatStrength>(ref _strength, value, "Strength");
-            }
-        }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SettlementData"/> class.
-        /// </summary>
-        /// <param name="category">The size.</param>
-        /// <param name="name">The name.</param>
-        /// <param name="maxHitPoints">The maximum hit points.</param>
-        /// <param name="parentName">Name of the parent.</param>
-        public SettlementData(SettlementCategory category, string name, float maxHitPoints, string parentName)
-            : base(name, maxHitPoints, parentName) {
-            Category = category;
-        }
+
+
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

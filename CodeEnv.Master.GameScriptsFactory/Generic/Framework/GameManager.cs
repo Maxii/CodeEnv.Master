@@ -361,6 +361,7 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
 
     protected override void OnCurrentStateChanging(GameState incomingState) {
         base.OnCurrentStateChanging(incomingState);
+        D.Log("{0}.CurrentState changing from {1} to {2}.", typeof(GameManager).Name, CurrentState.GetName(), incomingState.GetName());
     }
 
     protected override void OnCurrentStateChanged() {

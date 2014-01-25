@@ -151,7 +151,7 @@
     <Compile Include="Generic\Graphics\IHighlightTrackingLabel.cs" />
     <Compile Include="Generic\Framework\Intel.cs" />
     <Compile Include="Game\Gameplay\StarbaseCategory.cs" />
-    <Compile Include="Game\Framework\StarbaseComposition.cs" />
+    <Compile Include="Game\Framework\BaseComposition.cs" />
     <Compile Include="Game\Gameplay\StarbaseData.cs" />
     <Compile Include="Game\Graphics\StarbaseGuiHudTextFactory.cs" />
     <Compile Include="Generic\Graphics\ICommandViewable.cs" />

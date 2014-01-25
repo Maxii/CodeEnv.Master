@@ -377,7 +377,7 @@ public class FleetView : AFollowableView, IFleetViewable, ISelectable {
         set { SetProperty<Transform>(ref _trackingTarget, value, "TrackingTarget", OnTrackingTargetChanged); }
     }
 
-    public void ChangeIcon(IIcon icon, GameColor color) {
+    public void ChangeCmdIcon(IIcon icon, GameColor color) {
         _fleetIcon = icon;
         _fleetIconSprite.spriteName = icon.Filename;
         _fleetIconSprite.color = color.ToUnityColor();

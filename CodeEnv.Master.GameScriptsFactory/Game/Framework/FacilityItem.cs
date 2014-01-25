@@ -41,7 +41,7 @@ public class FacilityItem : AElement {
         base.CurrentState = _currentState;
     }
 
-    private StarbaseItem _starbase;
+    private ACommandItem<FacilityItem> _command;
 
     protected override void Awake() {
         base.Awake();
@@ -49,13 +49,13 @@ public class FacilityItem : AElement {
     }
 
     protected override void Initialize() {
-        // when a Starbase is initially built, the facility already selected to be the HQ assigns itself
-        // to Starbase command. As Starbase Command will immediately callback, Facility must do any
+        // when a Starbase or Settlement is initially built, the facility already selected to be the HQ assigns itself
+        // to the command. As Command will immediately callback, Facility must do any
         // required initialization now, before the callback takes place
-        var parent = gameObject.GetSafeMonoBehaviourComponentInParents<StarbaseCreator>();
-        _starbase = parent.gameObject.GetSafeMonoBehaviourComponentInChildren<StarbaseItem>();
+        var parent = _transform.parent;
+        _command = parent.gameObject.GetSafeMonoBehaviourComponentInChildren<ACommandItem<FacilityItem>>();
         if (IsHQElement) {
-            _starbase.HQElement = this;
+            _command.HQElement = this;
         }
         CurrentState = FacilityState.Idling;
     }
@@ -67,8 +67,8 @@ public class FacilityItem : AElement {
     }
 
     protected override void Die() {
-        _starbase.ReportElementLost(this);
-        // let starbaseCmd process the loss before the destroyed facility starts processing its state changes
+        _command.ReportElementLost(this);
+        // let Cmd process the loss before the destroyed facility starts processing its state changes
         CurrentState = FacilityState.Dying;
     }
 

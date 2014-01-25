@@ -52,7 +52,7 @@ public class StarbasePresenter : AMortalFocusablePresenter {
     protected override void Subscribe() {
         base.Subscribe();
         _subscribers.Add(Item.SubscribeToPropertyChanged<StarbaseItem, AElement>(sb => sb.HQElement, OnHQElementChanged));
-        _subscribers.Add(Item.Data.SubscribeToPropertyChanged<StarbaseData, StarbaseComposition>(sbd => sbd.Composition, OnCompositionChanged));
+        _subscribers.Add(Item.Data.SubscribeToPropertyChanged<StarbaseData, BaseComposition>(sbd => sbd.Composition, OnCompositionChanged));
         _subscribers.Add(Item.SubscribeToPropertyChanged<StarbaseItem, StarbaseState>(sb => sb.CurrentState, OnStarbaseStateChanged));
         View.onShowCompletion += Item.OnShowCompletion;
         Item.onElementDestroyed += OnStarbaseElementDestroyed;
@@ -87,7 +87,6 @@ public class StarbasePresenter : AMortalFocusablePresenter {
         Item.Elements.ForAll<FacilityItem>(s => s.__SimulateAttacked());
     }
 
-
     public void RequestContextMenu(bool isDown) {
         if (DebugSettings.Instance.AllowEnemyOrders || Item.Data.Owner.IsHuman) {
             CameraControl.Instance.ShowContextMenuOnPress(isDown);
@@ -108,12 +107,12 @@ public class StarbasePresenter : AMortalFocusablePresenter {
     }
 
     private void OnCompositionChanged() {
-        AssessIcon();
+        AssessCmdIcon();
     }
 
-    public void NotifyElementsOfIntelChange() {
+    public void OnPlayerIntelChanged() {
         Item.Elements.ForAll<FacilityItem>(sc => sc.gameObject.GetSafeMonoBehaviourComponent<FacilityView>().PlayerIntel = View.PlayerIntel);
-        AssessIcon();
+        AssessCmdIcon();
     }
 
 
@@ -133,7 +132,7 @@ public class StarbasePresenter : AMortalFocusablePresenter {
     }
 
     private IconFactory _iconFactory = IconFactory.Instance;
-    private void AssessIcon() {
+    private void AssessCmdIcon() {
         IIcon icon;
         GameColor color = GameColor.White;
         // TODO evaluate Composition
@@ -160,7 +159,7 @@ public class StarbasePresenter : AMortalFocusablePresenter {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(View.PlayerIntel.Scope));
         }
         D.Log("IntelScope is {2}, changing {0} to {1}.", typeof(FleetIcon).Name, icon.Filename, View.PlayerIntel.Scope.GetName());
-        View.ChangeIcon(icon, color);
+        View.ChangeCmdIcon(icon, color);
     }
 
     public override string ToString() {

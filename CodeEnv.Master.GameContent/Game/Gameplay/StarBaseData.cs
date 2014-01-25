@@ -34,10 +34,10 @@ namespace CodeEnv.Master.GameContent {
             set { base.HQElementData = value; }
         }
 
-        private StarbaseComposition _composition;
-        public StarbaseComposition Composition {
+        private BaseComposition _composition;
+        public BaseComposition Composition {
             get { return _composition; }
-            private set { SetProperty<StarbaseComposition>(ref _composition, value, "Composition"); }
+            private set { SetProperty<BaseComposition>(ref _composition, value, "Composition"); }
         }
 
         ///// <summary>
@@ -47,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
         public StarbaseData(string starbaseName) : base(starbaseName) { }
 
         protected override void InitializeComposition() {
-            Composition = new StarbaseComposition();
+            Composition = new BaseComposition();
         }
 
         protected override void ChangeComposition(AElementData elementData, bool toAdd) {
@@ -60,7 +60,7 @@ namespace CodeEnv.Master.GameContent {
             }
 
             if (isChanged) {
-                Composition = new StarbaseComposition(Composition);
+                Composition = new BaseComposition(Composition);
             }
 
         }

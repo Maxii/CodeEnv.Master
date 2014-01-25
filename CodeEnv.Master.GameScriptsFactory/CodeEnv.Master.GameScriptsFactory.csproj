@@ -149,6 +149,7 @@
     <Compile Include="Game\Framework\StarbaseItem.cs" />
     <Compile Include="Game\Graphics\StarbasePresenter.cs" />
     <Compile Include="Game\Graphics\StarbaseView.cs" />
+    <Compile Include="Generic\Framework\SettlementCreator.cs" />
     <Compile Include="ThirdParty\MyAStarPointGenerator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Generic\Framework\Loader.cs" />

@@ -11,7 +11,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -30,6 +30,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SystemComposition {
 
+        private Vector3 _settlementOrbitSlot;
         /// <summary>
         /// The orbital start position (in local space) of any current or
         /// future settlement. The transform holding the SettlementItem has
@@ -38,7 +39,13 @@ namespace CodeEnv.Master.GameContent {
         /// WARNING: Can be Vector3.zero if a system that starts in the scene
         /// contains no Settlement.
         /// </summary>
-        public Vector3 SettlementOrbitSlot { get; set; }
+        public Vector3 SettlementOrbitSlot {
+            get { return _settlementOrbitSlot; }
+            set {
+                _settlementOrbitSlot = value;
+                D.Log("System's SettlementOrbitSlot set to {0}.", _settlementOrbitSlot);
+            }
+        }
 
         public SettlementData SettlementData { get; set; }
 

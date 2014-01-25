@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: StarbaseCreator.cs
-// Initialization class that deploys a Starbase at the location of this StarbaseCreator.
+// File: SettlementCreator.cs
+//  Initialization class that deploys a Settlement that is available for assignment to a System.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -24,9 +24,10 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Initialization class that deploys a Starbase at the location of this StarbaseCreator. 
+///  Initialization class that deploys a Settlement that is available for assignment to a System.
+///  When assigned, the Settlement relocates to the orbital slot for Settlements held open by the System.
 /// </summary>
-public class StarbaseCreator : ACreator<FacilityItem, FacilityCategory, FacilityData, StarbaseItem, BaseComposition> {
+public class SettlementCreator : ACreator<FacilityItem, FacilityCategory, FacilityData, SettlementItem, BaseComposition> {
 
     protected override FacilityData CreateElementData(FacilityCategory elementCategory, string elementInstanceName, IPlayer owner) {
         FacilityData elementData = new FacilityData(elementCategory, elementInstanceName, maxHitPoints: 50F, mass: 10000F) {   // TODO mass variation
@@ -63,11 +64,16 @@ public class StarbaseCreator : ACreator<FacilityItem, FacilityCategory, Facility
     }
 
     protected override GameObject GetCommandPrefab() {
-        return RequiredPrefabs.Instance.starbaseCmd.gameObject;
+        return RequiredPrefabs.Instance.settlementCmd.gameObject;
     }
 
     protected override void AddCommandDataToCommand() {
-        _command.Data = new StarbaseData(PieceName);
+        _command.Data = new SettlementData(PieceName) {
+            Population = 100,
+            CapacityUsed = 10,
+            ResourcesUsed = new OpeYield(1.3F, 0.5F, 2.4F),
+            SpecialResourcesUsed = new XYield(new XYield.XResourceValuePair(XResource.Special_1, 0.2F))
+        };
     }
 
     protected override void MarkHQElement() {
@@ -86,14 +92,24 @@ public class StarbaseCreator : ACreator<FacilityItem, FacilityCategory, Facility
 
     protected override void EnableViews() {
         _elements.ForAll(e => e.gameObject.GetSafeMonoBehaviourComponent<FacilityView>().enabled = true);
-        _command.gameObject.GetSafeMonoBehaviourComponent<StarbaseView>().enabled = true;
+        _command.gameObject.GetSafeMonoBehaviourComponent<SettlementView>().enabled = true;
     }
 
     protected override void __InitializeCommandIntel() {
-        _command.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel = new Intel(IntelScope.Comprehensive, IntelSource.InfoNet);
+        // Settlements assume the intel state of their system when assigned
     }
 
-    protected override void OnCreationComplete() { }
+    protected override void OnCreationComplete() {
+        SystemItem localSystem = gameObject.GetComponentInParents<SystemItem>();
+        if (localSystem != null) {
+            // A Settlement that has been assigned to a System before it is finished being created
+            // may need to be reinitialized
+            localSystem.InitializeSettlement(_command);
+        }
+        else {
+            D.Log("{0} Creation completed but not yet assigned to a System.", PieceName);
+        }
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

@@ -194,7 +194,7 @@ public class FleetPresenter : AMortalFocusablePresenter {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(View.PlayerIntelLevel));
         }
         D.Log("IntelLevel is {2}, changing {0} to {1}.", typeof(FleetIcon).Name, fleetIcon.Filename, View.PlayerIntelLevel.GetName());
-        View.ChangeIcon(fleetIcon, color);
+        View.ChangeCmdIcon(fleetIcon, color);
     }
 
     public override string ToString() {

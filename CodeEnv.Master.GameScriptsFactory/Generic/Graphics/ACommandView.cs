@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ACommandView.cs
-// COMMENT - one line to give a brief idea of what this file does.
+//  Abstract base class for managing the UI of a Command.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,7 +18,6 @@
 
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -26,19 +25,18 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// COMMENT 
+/// Abstract base class for managing the UI of a Command.
 /// </summary>
 public abstract class ACommandView : AFocusableView, ICommandViewable, ISelectable {
 
     public AudioClip dying;
     private AudioSource _audioSource;
 
-    protected Transform _fleetIconTransform;
-    protected Vector3 _fleetIconPivotOffset;
-    private UISprite _fleetIconSprite;
-    private ScaleRelativeToCamera _fleetIconScaler;
-    private IIcon _fleetIcon;   // IMPROVE not really used for now
-    private Vector3 _iconSize;
+    protected Vector3 _cmdIconPivotOffset;
+    protected UISprite _cmdIconSprite;
+    private ScaleRelativeToCamera _cmdIconScaler;
+    private IIcon _cmdIcon;   // IMPROVE not really used for now
+    private Vector3 _cmdIconSize;
 
     private CtxObject _ctxObject;
     private Billboard _billboard;
@@ -51,7 +49,7 @@ public abstract class ACommandView : AFocusableView, ICommandViewable, ISelectab
         circleScaleFactor = 0.03F;
         minimumCameraViewingDistanceMultiplier = 0.8F;
         optimalCameraViewingDistanceMultiplier = 1.2F;
-        InitializeFleetIcon();
+        InitializeCmdIcon();
         UpdateRate = FrameUpdateFrequency.Normal;
     }
 
@@ -63,19 +61,17 @@ public abstract class ACommandView : AFocusableView, ICommandViewable, ISelectab
 
     protected abstract void InitializeTrackingTarget();
 
-
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
         _collider.enabled = IsDiscernible;
         _billboard.gameObject.SetActive(IsDiscernible);
-        ShowFleetIcon(IsDiscernible);
+        ShowCommandIcon(IsDiscernible);
     }
 
     protected virtual void OnTrackingTargetChanged() {
-        _fleetIconPivotOffset = new Vector3(Constants.ZeroF, TrackingTarget.collider.bounds.extents.y, Constants.ZeroF);
-        KeepColliderOverFleetIcon();
+        _cmdIconPivotOffset = new Vector3(Constants.ZeroF, TrackingTarget.collider.bounds.extents.y, Constants.ZeroF);
+        KeepColliderOverIcon();
     }
-
 
     void OnPress(bool isDown) {
         if (IsDiscernible) {
@@ -132,28 +128,14 @@ public abstract class ACommandView : AFocusableView, ICommandViewable, ISelectab
 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
-        KeepColliderOverFleetIcon();
+        KeepColliderOverIcon();
     }
 
-    protected void KeepViewOverTarget() {
-        if (TrackingTarget != null) {
-            _transform.position = TrackingTarget.position;
-            _transform.rotation = TrackingTarget.rotation;
-
-            // Notes: _fleetIconPivotOffset is a worldspace offset to the top of the leadship collider and doesn't change with scale, position or rotation
-            // The approach below will also work if we want a viewport offset that is a constant percentage of the viewport
-            //Vector3 viewportOffsetLocation = Camera.main.WorldToViewportPoint(_leadShipTransform.position + _fleetIconPivotOffset);
-            //Vector3 worldOffsetLocation = Camera.main.ViewportToWorldPoint(viewportOffsetLocation + _fleetIconViewportOffset);
-            //_fleetIconTransform.localPosition = worldOffsetLocation - _leadShipTransform.position;
-            _fleetIconTransform.localPosition = _fleetIconPivotOffset;
-        }
-    }
-
-    private void KeepColliderOverFleetIcon() {
-        (_collider as BoxCollider).size = Vector3.Scale(_iconSize, _fleetIconScaler.Scale);
+    private void KeepColliderOverIcon() {
+        (_collider as BoxCollider).size = Vector3.Scale(_cmdIconSize, _cmdIconScaler.Scale);
         //D.Log("Fleet collider size now = {0}.", _collider.size);
 
-        Vector3[] iconWorldCorners = _fleetIconSprite.worldCorners;
+        Vector3[] iconWorldCorners = _cmdIconSprite.worldCorners;
         Vector3 iconWorldCenter = iconWorldCorners[0] + (iconWorldCorners[2] - iconWorldCorners[0]) * 0.5F;
         // convert icon's world position to the equivalent local position on the fleetCmd transform
         (_collider as BoxCollider).center = _transform.InverseTransformPoint(iconWorldCenter);
@@ -179,10 +161,9 @@ public abstract class ACommandView : AFocusableView, ICommandViewable, ISelectab
         Highlight(Highlights.None);
     }
 
-
-    private void ShowFleetIcon(bool toShow) {
-        if (_fleetIconSprite != null) {
-            _fleetIconSprite.gameObject.SetActive(toShow);
+    private void ShowCommandIcon(bool toShow) {
+        if (_cmdIconSprite != null) {
+            _cmdIconSprite.gameObject.SetActive(toShow);
             // TODO audio on/off goes here
         }
     }
@@ -246,13 +227,12 @@ public abstract class ACommandView : AFocusableView, ICommandViewable, ISelectab
 
     #endregion
 
-    private void InitializeFleetIcon() {
-        _fleetIconSprite = gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>();
-        _fleetIconTransform = _fleetIconSprite.transform;
-        _fleetIconScaler = _fleetIconTransform.gameObject.GetSafeMonoBehaviourComponent<ScaleRelativeToCamera>();
+    protected virtual void InitializeCmdIcon() {
+        _cmdIconSprite = gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>();
+        _cmdIconScaler = _cmdIconSprite.gameObject.GetSafeMonoBehaviourComponent<ScaleRelativeToCamera>();
         // I need the collider sitting over the fleet icon to be 3D as it's rotation tracks the Cmd object, not the billboarded icon
-        Vector2 iconSize = _fleetIconSprite.localSize;
-        _iconSize = new Vector3(iconSize.x, iconSize.y, iconSize.x);
+        Vector2 iconSize = _cmdIconSprite.localSize;
+        _cmdIconSize = new Vector3(iconSize.x, iconSize.y, iconSize.x);
     }
 
     #region ICommandViewable Members
@@ -288,10 +268,10 @@ public abstract class ACommandView : AFocusableView, ICommandViewable, ISelectab
         set { SetProperty<Transform>(ref _trackingTarget, value, "TrackingTarget", OnTrackingTargetChanged); }
     }
 
-    public void ChangeIcon(IIcon icon, GameColor color) {
-        _fleetIcon = icon;
-        _fleetIconSprite.spriteName = icon.Filename;
-        _fleetIconSprite.color = color.ToUnityColor();
+    public void ChangeCmdIcon(IIcon icon, GameColor color) {
+        _cmdIcon = icon;
+        _cmdIconSprite.spriteName = icon.Filename;
+        _cmdIconSprite.color = color.ToUnityColor();
     }
 
     /// <summary>

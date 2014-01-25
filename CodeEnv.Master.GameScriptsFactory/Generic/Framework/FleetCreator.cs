@@ -39,7 +39,7 @@ public class FleetCreator : ACreator<ShipItem, ShipCategory, ShipData, FleetItem
             Strength = new CombatStrength(),
             CurrentHitPoints = UnityEngine.Random.Range(25F, 50F),
             Owner = owner,
-            MaxTurnRate = UnityEngine.Random.RandomRange(45F, 315F),
+            MaxTurnRate = UnityEngine.Random.Range(45F, 315F),
             MaxThrust = mass * drag * UnityEngine.Random.Range(2F, 5F) // MaxThrust = Mass * Drag * MaxSpeed;
         };
         return elementData;
@@ -74,7 +74,7 @@ public class FleetCreator : ACreator<ShipItem, ShipCategory, ShipData, FleetItem
     }
 
     protected override void AddCommandDataToCommand() {
-        _command.Data = new FleetData(_pieceName);
+        _command.Data = new FleetData(PieceName);
     }
 
     protected override void MarkHQElement() {
@@ -99,6 +99,8 @@ public class FleetCreator : ACreator<ShipItem, ShipCategory, ShipData, FleetItem
         _elements.ForAll(e => e.gameObject.GetSafeMonoBehaviourComponent<ShipView>().enabled = true);
         _command.gameObject.GetSafeMonoBehaviourComponent<FleetView>().enabled = true;
     }
+
+    protected override void OnCreationComplete() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

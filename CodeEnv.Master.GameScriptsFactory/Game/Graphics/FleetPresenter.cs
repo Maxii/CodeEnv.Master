@@ -186,7 +186,7 @@ public class FleetPresenter : AMortalFocusablePresenter {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(View.PlayerIntel.Scope));
         }
         D.Log("IntelScope is {2}, changing {0} to {1}.", typeof(FleetIcon).Name, icon.Filename, View.PlayerIntel.Scope.GetName());
-        View.ChangeIcon(icon, color);
+        View.ChangeCmdIcon(icon, color);
     }
 
     public override string ToString() {

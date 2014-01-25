@@ -104,7 +104,7 @@ public class SystemView : AFocusableView, ISelectable, IZoomToFurthest, IHighlig
 
     protected override void OnPlayerIntelContentChanged() {
         base.OnPlayerIntelContentChanged();
-        Presenter.NotifySystemElementsOfIntelChange();
+        Presenter.OnPlayerIntelChanged();
     }
 
 

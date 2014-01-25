@@ -30,16 +30,18 @@ public class RequiredPrefabs : AMonoBaseSingleton<RequiredPrefabs> {
     public GuiTrackingLabel guiTrackingLabel;
     public SectorItem sector;
 
+    public Orbit orbit;
+
     public FleetItem fleetCmd;
     public ShipItem[] ships;
 
+    public SettlementItem settlementCmd;
     public StarbaseItem starbaseCmd;
     public FacilityItem[] facilities;
 
     public SystemItem system; // without the star and settlement
     public StarItem[] stars;
     public GameObject[] planets;
-    public GameObject[] settlements;
 
     protected override void Awake() {
         base.Awake();

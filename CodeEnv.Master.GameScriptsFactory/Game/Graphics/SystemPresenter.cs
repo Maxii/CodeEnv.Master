@@ -32,12 +32,7 @@ public class SystemPresenter : AFocusablePresenter {
         protected set { base.Item = value; }
     }
 
-    private IEnumerable<IViewable> _childViewsInSystem;
-
-    public SystemPresenter(IViewable view)
-        : base(view) {
-        _childViewsInSystem = _viewGameObject.GetSafeInterfacesInChildren<IViewable>().Except(view);
-    }
+    public SystemPresenter(IViewable view) : base(view) { }
 
     protected override AItem AcquireItemReference() {
         return UnityUtility.ValidateMonoBehaviourPresence<SystemItem>(_viewGameObject);
@@ -59,8 +54,10 @@ public class SystemPresenter : AFocusablePresenter {
         SelectionManager.Instance.CurrentSelection = View as ISelectable;
     }
 
-    public void NotifySystemElementsOfIntelChange() {
-        _childViewsInSystem.ForAll<IViewable>(cov => cov.PlayerIntel = View.PlayerIntel);
+    public void OnPlayerIntelChanged() {
+        // construct list each time as Settlement Views (Cmd and elements) can change over time
+        IEnumerable<IViewable> childViewsInSystem = _viewGameObject.GetSafeInterfacesInChildren<IViewable>().Except(View);
+        childViewsInSystem.ForAll<IViewable>(v => v.PlayerIntel = View.PlayerIntel);
     }
 
     public override string ToString() {

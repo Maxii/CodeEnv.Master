@@ -186,7 +186,7 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Instantiates an object and adds it to the specified parent with all local
-        /// values reset. WARNING: Awake() can be called immediately after Instantiation, even before
+        /// values reset. Removes Clone from name. WARNING: Awake() can be called immediately after Instantiation, even before
         /// being attached to a parent.
         /// </summary>
         /// <param name="parent">The object to parent too. If null, the object is instantiated without a parent.</param>
@@ -194,6 +194,7 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         static public GameObject AddChild(GameObject parent, GameObject prefab) {
             GameObject clone = GameObject.Instantiate(prefab) as GameObject;
+            clone.name = prefab.name;
             D.Log("Instantiated {0} and parented to {1}. Awake() can preceed this!", prefab.name, parent.name);
             if (clone != null && parent != null) {
                 AttachChildToParent(clone, parent);

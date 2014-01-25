@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: StarbaseComposition.cs
-// Wrapper for Starbase Composition dictionary containing FacilityData.
+// File: BaseComposition.cs
+// Wrapper for Starbase and Settlement Composition dictionary containing FacilityData.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,9 +21,9 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Wrapper for Starbase Composition dictionary containing FacilityData.
+    /// Wrapper for Starbase and Settlement Composition dictionary containing FacilityData.
     /// </summary>
-    public class StarbaseComposition {
+    public class BaseComposition {
 
         /// <summary>
         /// The Categories of the Items present in this Composition.
@@ -36,15 +36,15 @@ namespace CodeEnv.Master.GameContent {
 
         private IDictionary<FacilityCategory, IList<FacilityData>> _composition;
 
-        public StarbaseComposition() {
+        public BaseComposition() {
             _composition = new SortedDictionary<FacilityCategory, IList<FacilityData>>();
         }
 
         /// <summary>
-        /// Copy Constructor. Initializes a new instance of the <see cref="StarbaseComposition"/> class.
+        /// Copy Constructor. Initializes a new instance of the <see cref="BaseComposition"/> class.
         /// </summary>
-        /// <param name="compositionToCopy">The StarbaseComposition to copy.</param>
-        public StarbaseComposition(StarbaseComposition compositionToCopy) {
+        /// <param name="compositionToCopy">The BaseComposition to copy.</param>
+        public BaseComposition(BaseComposition compositionToCopy) {
             _composition = compositionToCopy._composition;
             // UNCLEAR does compositionToCopy get collected by the garbage collector now?
         }

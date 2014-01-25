@@ -34,13 +34,15 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
     //private FleetManager[] _fleetMgrs;
     //private SystemManager[] _systemMgrs;
 
-    //private SystemItem[] _systems;
+    private SystemCreator[] _systemCreators;
     //private SettlementItem[] _settlements;
     //private Item[] _stars;
     //private Item[] _planetoids;
     private UniverseCenterItem _universeCenter;
     //private StarBaseItem[] _starBases;
     //private FacilityItem[] _facilities;
+    private Stack<SettlementCreator> _settlementCreators;
+
 
     protected override void Awake() {
         base.Awake();
@@ -58,8 +60,9 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
         //Item[] excludedSystemElements = _systemMgrs.Where(sMgr => sMgr.transform.childCount > 0)
         // .SelectMany(sm => sm.gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetoidItem>()).ToArray();
 
-        //_systems = gameObject.GetSafeMonoBehaviourComponentsInChildren<SystemItem>();
+        _systemCreators = gameObject.GetSafeMonoBehaviourComponentsInChildren<SystemCreator>();
         //_settlements = gameObject.GetSafeMonoBehaviourComponentsInChildren<SettlementItem>();
+        _settlementCreators = new Stack<SettlementCreator>(gameObject.GetSafeMonoBehaviourComponentsInChildren<SettlementCreator>());
 
         //Item[] celestialObjects = gameObject.GetSafeMonoBehaviourComponentsInChildren<Item>()
         //.Except(excludedSystemElements).Except(_settlements).Except(excludedFleetElements).ToArray();
@@ -88,8 +91,8 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
         if (_gameMgr.CurrentState == GameState.GeneratingPathGraphs) {
             InitializeGameObjectData();
         }
-        if (_gameMgr.CurrentState == GameState.RunningCountdown_2) {
-            //InitializePlayerIntelLevel();
+        if (_gameMgr.CurrentState == GameState.RunningCountdown_1) {
+            AssignSettlementsToSystems();   // must occur after SystemData has been set...
             InitializePlayerIntel();
         }
     }
@@ -187,6 +190,21 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
             _universeCenter.Data = data;
             _universeCenter.enabled = true;
             _universeCenter.gameObject.GetSafeMonoBehaviourComponent<UniverseCenterView>().enabled = true;
+        }
+    }
+
+    private void AssignSettlementsToSystems() {
+        foreach (var sysCreator in _systemCreators) {
+            if (!_settlementCreators.IsNullOrEmpty()) {
+                var settlementCreator = _settlementCreators.Pop();
+                sysCreator.gameObject.GetComponentInChildren<SystemItem>().AssignSettlement(settlementCreator);
+            }
+        }
+
+        if (!_settlementCreators.IsNullOrEmpty()) {
+            foreach (var settlementCreator in _settlementCreators) {
+                settlementCreator.gameObject.SetActive(false);
+            }
         }
     }
 

@@ -22,8 +22,7 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all Settlements in the game. Includes a state machine.
 /// </summary>
-public class SettlementItem : AMortalItemStateMachine, ITarget {
-    //public class SettlementItem : AMortalItemStateMachine<SettlementState>, ITarget {
+public class SettlementItem : ACommandItem<FacilityItem> {
 
     public new SettlementData Data {
         get { return base.Data as SettlementData; }
@@ -36,43 +35,28 @@ public class SettlementItem : AMortalItemStateMachine, ITarget {
         set { SetProperty<ItemOrder<SettlementOrders>>(ref _currentOrder, value, "CurrentOrder", OnOrdersChanged); }
     }
 
+    private SettlementState _currentState;
     public new SettlementState CurrentState {
-        get { return (SettlementState)base.CurrentState; }
-        set { base.CurrentState = value; }
+        get { return _currentState; }
+        set { SetProperty<SettlementState>(ref _currentState, value, "CurrentState", OnCurrentStateChanged); }
     }
 
-    private GameManager _gameMgr;
+    private void OnCurrentStateChanged() {
+        base.CurrentState = _currentState;
+    }
 
     protected override void Awake() {
         base.Awake();
-        _gameMgr = GameManager.Instance;
         Subscribe();
     }
 
-    protected override void Start() {
-        base.Start();
-        Initialize();
-    }
-
-    private void Initialize() {
+    protected override void Initialize() {
         CurrentState = SettlementState.Idling;
-    }
-
-    protected override void Subscribe() {
-        base.Subscribe();
-        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
-    }
-
-    private void OnGameStateChanged() {
-        // TODO
     }
 
     protected override void Die() {
         CurrentState = SettlementState.Dying;
     }
-
-    // subscriptions contained completely within this gameobject (both subscriber
-    // and subscribee) donot have to be cleaned up as all instances are destroyed
 
     #region SettlementStates
 
@@ -236,24 +220,9 @@ public class SettlementItem : AMortalItemStateMachine, ITarget {
 
     #endregion
 
-
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region ITarget Members
-
-    public string Name {
-        get { return Data.Name; }
-    }
-
-    public Vector3 Position {
-        get { return Data.Position; }
-    }
-
-    public bool IsMovable { get { return true; } }
-
-    #endregion
 
 }
 

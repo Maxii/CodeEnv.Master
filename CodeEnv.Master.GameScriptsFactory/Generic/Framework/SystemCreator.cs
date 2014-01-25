@@ -63,7 +63,9 @@ public class SystemCreator : AMonoBase, IDisposable {
     private StarItem _star;
     private IList<PlanetoidItem> _planets;
     private IEnumerable<PlanetoidItem> _moons;
-    private SettlementItem _settlement; // can be null
+
+    // Removed Settlement treatment. Now built separately like a Starbase and assigned to a system
+
     private IList<IDisposable> _subscribers;
     private bool _isExistingSystem;
 
@@ -85,21 +87,23 @@ public class SystemCreator : AMonoBase, IDisposable {
 
     private void OnGameStateChanged() {
         if (GameManager.Instance.CurrentState == GameState.GeneratingPathGraphs) {
-            DeploySystem();
+            DeploySystem(); // TODO deploy systems before generate path graph to generate interference?
             EnableSystem(); // must make View operational before starting state changes (like IntelLevel) within it 
         }
-        if (GameManager.Instance.CurrentState == GameState.RunningCountdown_1) {
+        if (GameManager.Instance.CurrentState == GameState.RunningCountdown_2) {
             __SetIntelLevel();
-            DestroySystemCreator();
+        }
+        if (GameManager.Instance.CurrentState == GameState.Running) {
+            DestroySystemCreator(); // destruction deferred so __UniverseInitializer can complete its work
         }
     }
 
     private void CreateSystemComposition() {
+        GenerateOrbitSlotStartLocation();
         if (_isExistingSystem) {
             CreateCompositionFromChildren();
         }
         else {
-            GenerateOrbitSlotStartLocation();
             CreateRandomComposition();
         }
     }
@@ -120,14 +124,6 @@ public class SystemCreator : AMonoBase, IDisposable {
         Transform transformCarryingStarType = _star.transform;
         StarCategory starType = GetType<StarCategory>(transformCarryingStarType);
         _composition.StarData = CreateStarData(starType);
-
-        _settlement = gameObject.GetComponentInChildren<SettlementItem>();
-        if (_settlement != null) {  // FIXME if provided system has no Settlement, the orbital slot reserved will be Vector3.zero
-            Transform transformCarryingSettlementSize = _settlement.transform.parent.parent;
-            SettlementCategory size = GetType<SettlementCategory>(transformCarryingSettlementSize);
-            _composition.SettlementData = CreateSettlementData(size);
-            _composition.SettlementOrbitSlot = _settlement.transform.localPosition;
-        }
     }
 
     private void CreateRandomComposition() {
@@ -150,12 +146,6 @@ public class SystemCreator : AMonoBase, IDisposable {
         StarCategory starType = Enums<StarCategory>.GetRandom(excludeDefault: true);
         StarData starData = CreateStarData(starType);
         _composition.StarData = starData;
-
-        SettlementCategory size = Enums<SettlementCategory>.GetRandom(excludeDefault: false);   // allows no Settlement
-        if (size != SettlementCategory.None) {
-            SettlementData settlementData = CreateSettlementData(size);
-            _composition.SettlementData = settlementData;
-        }
     }
 
     private PlanetoidData CreatePlanetData(PlanetoidCategory pType, string planetName) {
@@ -177,20 +167,6 @@ public class SystemCreator : AMonoBase, IDisposable {
         return data;
     }
 
-    private SettlementData CreateSettlementData(SettlementCategory size) {
-        string settlementName = _systemName + Constants.Space + size.GetName();
-        SettlementData data = new SettlementData(size, settlementName, 50F, _systemName) {
-            Population = 100,
-            CapacityUsed = 10,
-            ResourcesUsed = new OpeYield(1.3F, 0.5F, 2.4F),
-            SpecialResourcesUsed = new XYield(new XYield.XResourceValuePair(XResource.Special_1, 0.2F)),
-            Strength = new CombatStrength(1f, 2f, 3f, 4f, 5f, 6f),
-            CurrentHitPoints = 38F,
-            Owner = new Player()
-        };
-        return data;
-    }
-
     private void DeploySystem() {
         if (_isExistingSystem) {
             DeployExistingSystem();
@@ -203,9 +179,9 @@ public class SystemCreator : AMonoBase, IDisposable {
     private void DeployExistingSystem() {
         _system = gameObject.GetSafeMonoBehaviourComponentInChildren<SystemItem>();
         InitializePlanets();
+        AssignElementsToOrbitSlots();   // repositions planet orbits and changes name to reflect slot
         InitializeMoons();
         InitializeStar();
-        InitializeSettlement();
         InitializeSystem();
     }
 
@@ -213,12 +189,10 @@ public class SystemCreator : AMonoBase, IDisposable {
         BuildSystem();  // first as planets, stars and settlements need a system parent
         BuildPlanets();
         BuildStar();
-        BuildSettlement();
         InitializePlanets();
         AssignElementsToOrbitSlots(); // after InitPlanets so planet names can be changed according to orbit
         InitializeMoons();
         InitializeStar();
-        InitializeSettlement();
         InitializeSystem();
     }
 
@@ -232,12 +206,10 @@ public class SystemCreator : AMonoBase, IDisposable {
         _planets = new List<PlanetoidItem>();
         foreach (var pType in _composition.PlanetTypes) {
             GameObject planetPrefab = RequiredPrefabs.Instance.planets.First(p => p.gameObject.name == pType.GetName());
-            string nameOfPlanetType = planetPrefab.name;
             GameObject systemGo = _system.gameObject;
 
             _composition.GetPlanetData(pType).ForAll(pd => {
                 GameObject topLevelPlanetGo = UnityUtility.AddChild(systemGo, planetPrefab);
-                topLevelPlanetGo.name = nameOfPlanetType; // get rid of (Clone) in name as the name holds the PlanetoidType which is needed in InitPlanets
                 PlanetoidItem planet = topLevelPlanetGo.GetSafeMonoBehaviourComponentInChildren<PlanetoidItem>();
                 _planets.Add(planet);
             });
@@ -250,19 +222,6 @@ public class SystemCreator : AMonoBase, IDisposable {
         GameObject systemGo = _system.gameObject;
         GameObject starGo = UnityUtility.AddChild(systemGo, starPrefab);
         _star = starGo.GetSafeMonoBehaviourComponent<StarItem>();
-    }
-
-    private void BuildSettlement() {
-        SettlementData data = _composition.SettlementData;
-        if (data != null) {
-            SettlementCategory size = data.Category;
-            GameObject settlementPrefab = RequiredPrefabs.Instance.settlements.First(sp => sp.gameObject.name == size.GetName());
-            string nameOfSettlementSize = settlementPrefab.name;
-            GameObject systemGo = _system.gameObject;
-            GameObject topLevelSettlementGo = UnityUtility.AddChild(systemGo, settlementPrefab);
-            topLevelSettlementGo.name = nameOfSettlementSize;   // get rid of (Clone)
-            _settlement = topLevelSettlementGo.GetSafeMonoBehaviourComponentInChildren<SettlementItem>();
-        }
     }
 
     private void InitializePlanets() {
@@ -310,19 +269,9 @@ public class SystemCreator : AMonoBase, IDisposable {
         // PlayerIntel is determined by the Intel of the System
     }
 
-    private void InitializeSettlement() {
-        if (_settlement != null) {
-            _settlement.Data = _composition.SettlementData;
-            // PlayerIntel is determined by the Intel of the System
-            // SystemData gets settlement data assigned to it when it is created via the composition
-            // include the System and Settlement as a target in any child with a CameraLOSChangedRelay
-            _settlement.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().AddTarget(_system.transform, _settlement.transform);
-        }
-    }
-
     /// <summary>
-    /// Assigns each planet and/or a Settlement to an appropriate orbit slot. If an appropriate orbit slot is no
-    /// longer available for a planet, the planet is removed and destroyed.
+    /// Assigns each element to an appropriate orbit slot including reserving a slot for a future settlement.
+    /// If an appropriate orbit slot is no longer available for a planet, the planet is removed and destroyed.
     /// </summary>
     /// <exception cref="System.NotImplementedException"></exception>
     private void AssignElementsToOrbitSlots() {
@@ -333,11 +282,8 @@ public class SystemCreator : AMonoBase, IDisposable {
         var midStack = new Stack<int>(Enumerable.Range(innerOrbitsCount, midOrbitsCount).Shuffle());
         var outerStack = new Stack<int>(Enumerable.Range(innerOrbitsCount + midOrbitsCount, outerOrbitsCount).Shuffle());
 
-        // start by reserving and possibly assigning the slot for the Settlement
+        // start by reserving the slot for the Settlement
         int slotIndex = midStack.Pop();
-        if (_settlement != null) {
-            _settlement.transform.localPosition = _orbitSlots[slotIndex];
-        }
         _composition.SettlementOrbitSlot = _orbitSlots[slotIndex];
 
         // now divy up the remaining slots among the planets
@@ -413,15 +359,11 @@ public class SystemCreator : AMonoBase, IDisposable {
         _moons.ForAll(m => m.enabled = true);
         _system.enabled = true;
         _star.enabled = true;
-        if (_settlement != null) { _settlement.enabled = true; }
 
         _planets.ForAll(p => p.gameObject.GetSafeMonoBehaviourComponent<PlanetoidView>().enabled = true);
         _moons.ForAll(m => m.gameObject.GetSafeMonoBehaviourComponent<PlanetoidView>().enabled = true);
         _system.gameObject.GetSafeMonoBehaviourComponent<SystemView>().enabled = true;
         _star.gameObject.GetSafeMonoBehaviourComponent<StarView>().enabled = true;
-        if (_settlement != null) {
-            _settlement.gameObject.GetSafeMonoBehaviourComponent<SettlementView>().enabled = true;
-        }
     }
 
     private void __SetIntelLevel() {

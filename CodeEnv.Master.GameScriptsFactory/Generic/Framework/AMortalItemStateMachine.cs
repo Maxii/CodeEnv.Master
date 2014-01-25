@@ -436,7 +436,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
             }
             ChangingState();
             state.currentState = value;
-            D.Log("{0} setting CurrentState to {1}.", Data.Name, value.ToString());
+            //D.Log("{0} setting CurrentState to {1}.", Data.Name, value.ToString());
             ConfigureCurrentState();
         }
     }

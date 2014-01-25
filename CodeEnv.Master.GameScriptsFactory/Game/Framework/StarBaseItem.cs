@@ -62,7 +62,7 @@ public class StarbaseItem : ACommandItem<FacilityItem> {
         CurrentState = StarbaseState.Dying;
     }
 
-    #region FleetStates
+    #region StarbaseStates
 
     #region Idle
 

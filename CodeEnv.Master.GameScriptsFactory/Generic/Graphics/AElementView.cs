@@ -109,7 +109,6 @@ public abstract class AElementView : AFocusableView, IElementViewable {
 
     #endregion
 
-
     #region IElementViewable Members
 
     public event Action onShowCompletion;

@@ -16,66 +16,45 @@
 
 // default namespace
 
-using System;
-using System.Collections;
-using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
 /// A class for managing the UI of a Settlement.
 /// </summary>
-public class SettlementView : AFocusableView, ICameraFollowable, ISettlementViewable {
+public class SettlementView : ACommandView, ICameraFollowable {
 
     public new SettlementPresenter Presenter {
         get { return base.Presenter as SettlementPresenter; }
         protected set { base.Presenter = value; }
     }
 
-    public AudioClip dying;
-    private AudioSource _audioSource;
-
-    private Color _originalMeshColor_Main;
-    private Color _originalMeshColor_Specular;
-    private Color _hiddenMeshColor;
-    private Renderer _renderer;
-
-    protected override void Awake() {
-        base.Awake();
-        _audioSource = UnityUtility.ValidateComponentPresence<AudioSource>(gameObject);
-        circleScaleFactor = 1.0F;
-        InitializeMesh();
-    }
-
     protected override void InitializePresenter() {
         Presenter = new SettlementPresenter(this);
     }
 
-    protected override void OnIsDiscernibleChanged() {
-        base.OnIsDiscernibleChanged();
-        ShowMesh(IsDiscernible);
+    protected override void InitializeTrackingTarget() {
+        TrackingTarget = Presenter.GetHQElementTransform();
     }
 
-    private void InitializeMesh() {
-        _renderer = gameObject.GetComponentInChildren<Renderer>();
-        _originalMeshColor_Main = _renderer.material.GetColor(UnityConstants.MaterialColor_Main);
-        _originalMeshColor_Specular = _renderer.material.GetColor(UnityConstants.MaterialColor_Specular);
-        _hiddenMeshColor = GameColor.Clear.ToUnityColor();
+    protected override void OnPlayerIntelContentChanged() {
+        base.OnPlayerIntelContentChanged();
+        Presenter.OnPlayerIntelChanged();
     }
 
-    private void ShowMesh(bool toShow) {
-        if (toShow) {
-            _renderer.material.SetColor(UnityConstants.MaterialColor_Main, _originalMeshColor_Main);
-            _renderer.material.SetColor(UnityConstants.MaterialColor_Specular, _originalMeshColor_Specular);
-            // TODO audio on goes here
-        }
-        else {
-            _renderer.material.SetColor(UnityConstants.MaterialColor_Main, _hiddenMeshColor);
-            _renderer.material.SetColor(UnityConstants.MaterialColor_Specular, _hiddenMeshColor);
-            // TODO audio off goes here
-        }
+    protected override void RequestContextMenu(bool isDown) {
+        Presenter.RequestContextMenu(isDown);
+    }
+
+    protected override void OnAltLeftClick() {
+        base.OnAltLeftClick();
+        Presenter.__SimulateAllElementsAttacked();
+    }
+
+    protected override void OnIsSelectedChanged() {
+        base.OnIsSelectedChanged();
+        Presenter.OnIsSelectedChanged();
     }
 
     public override string ToString() {
@@ -94,51 +73,6 @@ public class SettlementView : AFocusableView, ICameraFollowable, ISettlementView
     private float cameraFollowRotationDampener = 1.0F;
     public virtual float CameraFollowRotationDampener {
         get { return cameraFollowRotationDampener; }
-    }
-
-    #endregion
-
-    #region ISettlementViewable Members
-
-    public event Action onShowCompletion;
-
-    public void ShowAttacking() {
-        // TODO
-    }
-
-    public void ShowHit() {
-        // TODO
-    }
-
-    public void ShowRepairing() {
-        // TODO
-    }
-
-    public void ShowRefitting() {
-        // TODO
-    }
-
-    public void StopShowing() {
-        // TODO
-    }
-
-    public void ShowDying() {
-        new Job(ShowingDying(), toStart: true);
-    }
-
-    private IEnumerator ShowingDying() {
-        if (dying != null) {
-            _audioSource.PlayOneShot(dying);
-        }
-        _collider.enabled = false;
-        //animation.Stop();
-        //yield return UnityUtility.PlayAnimation(animation, "die");  // show debree particles for some period of time?
-        yield return null;
-
-        var sc = onShowCompletion;
-        if (sc != null) {
-            sc();
-        }
     }
 
     #endregion

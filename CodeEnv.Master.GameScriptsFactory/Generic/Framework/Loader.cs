@@ -26,11 +26,11 @@ using Vectrosity;
 /// </summary>
 public class Loader : AMonoBaseSingleton<Loader>, IDisposable {
 
-    //public UsefulPrefabs usefulPrefabsPrefab;
-
     public int TargetFPS = 25;
 
     private IList<MonoBehaviour> _unreadyElements;
+    private IDictionary<GameState, IList<MonoBehaviour>> _gameStateTransitionReadinessLookup;
+
     private IList<IDisposable> _subscribers;
 
     private GameManager _gameMgr;
@@ -52,7 +52,7 @@ public class Loader : AMonoBaseSingleton<Loader>, IDisposable {
         _playerPrefsMgr = PlayerPrefsManager.Instance;
         InitializeQualitySettings();
         InitializeVectrosity();
-        _unreadyElements = new List<MonoBehaviour>();
+        InitializeGameStateReadinessSystem();
         Subscribe();
         UpdateRate = FrameUpdateFrequency.Infrequent;
     }
@@ -102,6 +102,16 @@ public class Loader : AMonoBaseSingleton<Loader>, IDisposable {
         VectorLine.useMeshLines = true;
         VectorLine.useMeshPoints = true;
         VectorLine.useMeshQuads = true;
+    }
+
+    private void InitializeGameStateReadinessSystem() {
+        _unreadyElements = new List<MonoBehaviour>();
+        _gameStateTransitionReadinessLookup = new Dictionary<GameState, IList<MonoBehaviour>>();
+        //_gameStateTransitionReadinessLookup.Add(GameState.Waiting, new List<MonoBehaviour>());
+        //_gameStateTransitionReadinessLookup.Add(GameState.Waiting, new List<MonoBehaviour>());
+        //_gameStateTransitionReadinessLookup.Add(GameState.Waiting, new List<MonoBehaviour>());
+        //_gameStateTransitionReadinessLookup.Add(GameState.Waiting, new List<MonoBehaviour>());
+
     }
 
     //[System.Diagnostics.Conditional("UNITY_EDITOR")]
