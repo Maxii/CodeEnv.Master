@@ -67,7 +67,7 @@ public class FacilityItem : AElement {
     }
 
     protected override void Die() {
-        _command.ReportElementLost(this);
+        _command.ReportElementDestroyed(this);
         // let Cmd process the loss before the destroyed facility starts processing its state changes
         CurrentState = FacilityState.Dying;
     }

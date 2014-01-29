@@ -29,7 +29,7 @@ using UnityEngine;
 [System.Obsolete]
 public class FleetManager : AMonoBase, ISelectable, IHasData, IDisposable {
 
-    private static IconFactory _iconFactory;
+    private static AIconFactory _iconFactory;
 
     /// <summary>
     /// Used for convenience only. Actual FleetData repository is held by FleetCommand.
@@ -95,7 +95,7 @@ public class FleetManager : AMonoBase, ISelectable, IHasData, IDisposable {
         Vector2 iconSize = _fleetIconSprite.localSize;
         _iconSize = new Vector3(iconSize.x, iconSize.y, iconSize.x);
 
-        _iconFactory = IconFactory.Instance;
+        _iconFactory = AIconFactory.Instance;
         UpdateRate = FrameUpdateFrequency.Normal;
     }
 
@@ -179,11 +179,11 @@ public class FleetManager : AMonoBase, ISelectable, IHasData, IDisposable {
                 _fleetIconSprite.color = GameColor.Clear.ToUnityColor();    // TODO None should be a completely transparent icon
                 break;
             case IntelLevel.Unknown:
-                _fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.IntelLevelUnknown);
+                _fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.Unknown);
                 _fleetIconSprite.color = GameColor.White.ToUnityColor();    // may be clear from prior setting
                 break;
             case IntelLevel.OutOfDate:
-                _fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.IntelLevelUnknown);
+                _fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.Unknown);
                 _fleetIconSprite.color = Data.Owner.Color.ToUnityColor();
                 break;
             case IntelLevel.LongRangeSensors:

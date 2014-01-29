@@ -31,7 +31,7 @@ namespace CodeEnv.Master.Common {
         Level3,
         Level4,
         Level5,
-        IntelLevelUnknown
+        Unknown
 
     }
 }

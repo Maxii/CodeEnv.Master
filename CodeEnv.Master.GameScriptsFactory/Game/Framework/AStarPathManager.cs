@@ -28,6 +28,7 @@ public class AStarPathManager : AMonoBase, IDisposable {
     protected override void Awake() {
         base.Awake();
         InitializeAstarPath();
+        RegisterGameStateProgressionReadiness(isReady: false);
         Subscribe();
     }
 
@@ -37,6 +38,10 @@ public class AStarPathManager : AMonoBase, IDisposable {
         }
         _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
         AstarPath.OnLatePostScan += OnGraphScansCompleted;
+    }
+
+    private void RegisterGameStateProgressionReadiness(bool isReady) {
+        GameEventManager.Instance.Raise(new ElementReadyEvent(this, GameState.GeneratingPathGraphs, isReady));
     }
 
     private void InitializeAstarPath() {
@@ -56,9 +61,7 @@ public class AStarPathManager : AMonoBase, IDisposable {
     }
 
     private void OnGraphScansCompleted(AstarPath astarPath) {
-        //if (GameManager.Instance.GameState == GameState.GeneratingPathGraphs) {
-        //GameManager.Instance.__ProgressToRunning();
-        // TODO need to tell GameManager that it is OK to progress the game state
+        RegisterGameStateProgressionReadiness(isReady: true);
         // WARNING: I must not directly cause the game state to change as the other subscribers to 
         // GameStateChanged may not have been called yet. This GraphScansCompletedEvent occurs 
         // while we are still processing OnGameStateChanged

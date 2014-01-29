@@ -147,6 +147,30 @@ public class FleetItem : ACommandItem<ShipItem> {
         Elements.ForAll(s => s.CurrentOrder = allStop);
     }
 
+    public override void AssessCommandCategory() {
+        if (Elements.Count >= 22) {
+            Data.Category = FleetCategory.Armada;
+            return;
+        }
+        if (Elements.Count >= 15) {
+            Data.Category = FleetCategory.BattleGroup;
+            return;
+        }
+        if (Elements.Count >= 9) {
+            Data.Category = FleetCategory.TaskForce;
+            return;
+        }
+        if (Elements.Count >= 4) {
+            Data.Category = FleetCategory.Squadron;
+            return;
+        }
+        if (Elements.Count >= 1) {
+            Data.Category = FleetCategory.Flotilla;
+            return;
+        }
+        Data.Category = FleetCategory.None;
+    }
+
     protected override void Die() {
         CurrentState = FleetState.Dying;
     }

@@ -28,6 +28,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FleetData : ACommandData {
 
+        public FleetCategory Category { get; set; }
+
         public new ShipData HQElementData {
             get { return base.HQElementData as ShipData; }
             set { base.HQElementData = value; }

@@ -35,12 +35,12 @@ public class SettlementView : ACommandView, ICameraFollowable {
     }
 
     protected override void InitializeTrackingTarget() {
-        TrackingTarget = Presenter.GetHQElementTransform();
+        TrackingTarget = Presenter.GetTrackingTarget();
     }
 
     protected override void OnPlayerIntelContentChanged() {
         base.OnPlayerIntelContentChanged();
-        Presenter.OnPlayerIntelChanged();
+        Presenter.OnPlayerIntelContentChanged();
     }
 
     protected override void RequestContextMenu(bool isDown) {

@@ -20,11 +20,11 @@ namespace CodeEnv.Master.Common {
     using System.Xml.Linq;
 
     /// <summary>
-    /// Generic abstract base class that acquires the filename of an Icon image based on a provided set of criteria.
+    /// Abstract base class that acquires the filename of an Icon image based on a provided set of criteria.
     /// Acquires the filename of the appropriate image from the xml file holding the filenames, derived from the IconSection and 
     /// IconSelectionCriteria provided.
     /// </summary>
-    public abstract class AIcon<T> : IIcon where T : class {
+    public abstract class AIcon : IIcon {
 
         private static string _sectionTagName = "Section";
         private static string _sectionAttributeTagName = "SectionName";
@@ -40,7 +40,7 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// The name of the Xml file without extension. Default is the name of the derived class T.
         /// </summary>
-        protected virtual string XmlFilename { get { return typeof(T).Name; } }
+        protected virtual string XmlFilename { get { return GetType().Name; } }
         private XElement _xElement;
 
         private string _iconFilename;
@@ -84,7 +84,7 @@ namespace CodeEnv.Master.Common {
                     return selectionNode.Element(_iconFilenameTagName).Value;
                 }
             }
-            D.Error("No filename for {0} using Section {1} and Criteria {2} found.", typeof(T).Name, Section.GetName(), Criteria.Concatenate());
+            D.Error("No filename for {0} using Section {1} and Criteria {2} found.", GetType().Name, Section.GetName(), Criteria.Concatenate());
             return string.Empty;
         }
 
@@ -102,6 +102,8 @@ namespace CodeEnv.Master.Common {
                 return _iconFilename;
             }
         }
+
+        public GameColor Color { get; set; }
 
         #endregion
 

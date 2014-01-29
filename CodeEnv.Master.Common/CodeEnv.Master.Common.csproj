@@ -124,7 +124,6 @@
     <Compile Include="Generic\IO\GraphicsOptionSettings.cs" />
     <Compile Include="Generic\Extensions\MouseButtonExtensions.cs" />
     <Compile Include="Generic\_Debug\UnityDebugConstants.cs" />
-    <Compile Include="Generic\Graphics\IconFactory.cs" />
     <Compile Include="Generic\Graphics\IconSection.cs" />
     <Compile Include="Generic\Graphics\IconSelectionCriteria.cs" />
     <Compile Include="Generic\Graphics\IIcon.cs" />

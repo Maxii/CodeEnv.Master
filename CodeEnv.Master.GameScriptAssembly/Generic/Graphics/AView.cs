@@ -73,7 +73,7 @@ public abstract class AView : AMonoBase, IViewable, ICameraLOSChangedClient, IDi
     }
 
     protected virtual void OnIsDiscernibleChanged() {
-        //D.Log("{0}.OnIsDiscernibleChanged(), isDiscernible = {1}.", _transform.name, IsDiscernible);
+        D.Log("{0}.OnIsDiscernibleChanged(), isDiscernible = {1}.", _transform.name, IsDiscernible);
         if (!IsDiscernible) {
             ShowHud(false);
         }

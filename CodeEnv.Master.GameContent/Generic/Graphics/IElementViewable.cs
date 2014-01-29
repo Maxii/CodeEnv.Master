@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IElementViewable.cs
-// COMMENT - one line to give a brief idea of what the file does.
+//  Interface used by a ElementPresenter to communicate with their associated ElementView.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,11 +17,6 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using UnityEngine;
 
     /// <summary>
     /// Interface used by a ElementPresenter to communicate with their associated ElementView.

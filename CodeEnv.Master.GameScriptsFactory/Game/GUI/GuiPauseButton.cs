@@ -41,7 +41,7 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
     }
 
     protected override void InitializeTooltip() {
-        tooltip = "Pause or resume the game.";
+        tooltip = "Error. I haven't been initialized.";
     }
 
     private void Subscribe() {
@@ -59,10 +59,8 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
 
     protected override void Start() {
         base.Start();
-        _eventMgr.Raise<ElementReadyEvent>(new ElementReadyEvent(this, isReady: false));
         _pauseButtonLabel = _button.GetComponentInChildren<UILabel>();
         UpdateButtonLabel();
-        _eventMgr.Raise<ElementReadyEvent>(new ElementReadyEvent(this, isReady: true));
     }
 
     protected override void OnLeftClick() {
@@ -73,9 +71,11 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
 
     private void UpdateButtonLabel() {
         if (_pauseButtonLabel != null) {
-            // can be null if GamePauseStateChangedEvent arrives during new game start up before Start() is called. It's OK though
+            // can be null if GameStatus.IsPaused changes during new game start up before Start() is called. It's OK though
             // as the label will be updated based on the recorded pauseCommand once Start() is called
-            _pauseButtonLabel.text = (pauseCommand == PauseRequest.PriorityPause) ? UIMessages.ResumeButtonLabel : UIMessages.PauseButtonLabel;
+            string stateOnNextClick = (pauseCommand == PauseRequest.PriorityPause) ? UIMessages.ResumeButtonLabel : UIMessages.PauseButtonLabel;
+            _pauseButtonLabel.text = stateOnNextClick;
+            tooltip = "{0} the game.".Inject(stateOnNextClick);
         }
     }
 

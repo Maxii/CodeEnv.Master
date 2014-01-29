@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ACommandItem.cs
-// Abstract, generic base class for a CommandItem. A CommandItem is an object that commands Elements.
+//  Abstract, generic base class for a CommandItem, an object that commands Elements.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,7 +23,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract, generic base class for a CommandItem. A CommandItem is an object that commands Elements.
+/// Abstract, generic base class for a CommandItem, an object that commands Elements.
 /// </summary>
 /// <typeparam name="ElementType">The Type of Element this Command is composed of.</typeparam>
 public abstract class ACommandItem<ElementType> : AMortalItemStateMachine, ITarget where ElementType : AElement {
@@ -69,11 +69,12 @@ public abstract class ACommandItem<ElementType> : AMortalItemStateMachine, ITarg
         if (element.transform.parent != parentTransform) {
             element.transform.parent = parentTransform;   // local position, rotation and scale are auto adjusted to keep ship unchanged in worldspace
         }
+        AssessCommandCategory();
         // TODO consider changing HQElement
     }
 
-    public void ReportElementLost(ElementType element) {
-        D.Log("{0} acknowledging {1} has been lost.", Data.Name, element.Data.Name);
+    public void ReportElementDestroyed(ElementType element) {
+        D.Log("{0} acknowledging {1} has been destroyed.", Data.Name, element.Data.Name);
         RemoveElement(element);
 
         var temp = onElementDestroyed;
@@ -91,9 +92,9 @@ public abstract class ACommandItem<ElementType> : AMortalItemStateMachine, ITarg
                 // HQ Element has died
                 HQElement = SelectHQElement();
             }
-            return;
+            AssessCommandCategory();
         }
-        // Fleet knows when to die
+        // Command knows when to die
     }
 
     protected virtual void OnHQElementChanging(ElementType newElement) {
@@ -110,6 +111,8 @@ public abstract class ACommandItem<ElementType> : AMortalItemStateMachine, ITarg
     protected virtual ElementType SelectHQElement() {
         return Elements.MaxBy(e => e.Data.Health);
     }
+
+    public abstract void AssessCommandCategory();
 
     protected override void Cleanup() {
         base.Cleanup();

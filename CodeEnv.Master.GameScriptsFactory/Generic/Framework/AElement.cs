@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AElement.cs
-// Abstract, generic base class for an Element. An Element is an object that is under the command of a CommandItem.
+// Abstract base class for an Element, an object that is under the command of a CommandItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,7 +22,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract, generic base class for an Element. An Element is an object that is under the command of a CommandItem.
+/// Abstract base class for an Element, an object that is under the command of a CommandItem.
 /// </summary>
 public abstract class AElement : AMortalItemStateMachine, ITarget {
 

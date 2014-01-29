@@ -35,27 +35,36 @@ public class SystemItem : AItem {
         UnityUtility.AttachChildToParent(settlementCreator.gameObject, orbitGoClone);
         // position this settlement piece in the orbit slot already reserved for it
         settlementCreator.transform.localPosition = Data.SettlementOrbitSlot;
-        SettlementItem settlementCmd = settlementCreator.gameObject.GetComponentInChildren<SettlementItem>();
-        if (settlementCmd != null) {
-            // the creator has already deployed the settlement so finish initialization
-            InitializeSettlement(settlementCmd);
+        if (settlementCreator.IsCompleted) {
+            _isLocalCallFlag = true;
+            InitializeSettlement(settlementCreator);
         }
         else {
-            D.Warn("{0} assigned to {1} but not yet completed.", settlementCreator.PieceName, Data.Name);
+            settlementCreator.onCompleted += InitializeSettlement;
         }
     }
 
-    public void InitializeSettlement(SettlementItem settlementCmd) {
-        Intel systemPlayerIntel = gameObject.GetSafeInterface<IViewable>().PlayerIntel;
-        if (systemPlayerIntel != null) {
-            settlementCmd.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel = systemPlayerIntel;
-            D.Log("{0} has attached and initialized {1}.", Data.Name, settlementCmd.PieceName);
-        }
-        else {
-            D.Warn("{0} PlayerIntel not yet set.", Data.Name);
+    private bool _isLocalCallFlag;
+    private void InitializeSettlement(SettlementCreator creator) {
+        if (!_isLocalCallFlag) {
+            creator.onCompleted -= InitializeSettlement;
         }
         // IMPROVE for now, assign SettlementData to the System's Composition so the SystemHud works
+        SettlementItem settlementCmd = creator.gameObject.GetComponentInChildren<SettlementItem>();
         Data.Composition.SettlementData = settlementCmd.Data;
+        AddSystemAsLOSChangedRelayTarget(settlementCmd);
+
+        Intel systemPlayerIntel = gameObject.GetSafeInterface<IViewable>().PlayerIntel;
+        if (systemPlayerIntel == null) {
+            D.Log("{0} has attached and initialized {1}. However, PlayerIntel is not yet set.", Data.Name, settlementCmd.PieceName);
+            return;
+        }
+        settlementCmd.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel = systemPlayerIntel;
+    }
+
+    private void AddSystemAsLOSChangedRelayTarget(SettlementItem settlementCmd) {
+        settlementCmd.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().AddTarget(_transform);
+        settlementCmd.Elements.ForAll(element => element.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().AddTarget(_transform));
     }
 
     public override string ToString() {

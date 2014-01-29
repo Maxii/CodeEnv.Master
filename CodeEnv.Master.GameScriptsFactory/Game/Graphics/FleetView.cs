@@ -30,7 +30,6 @@ public class FleetView : ACommandView, ICameraFollowable, IHighlightTrackingLabe
     public bool enableTrackingLabel = false;
     private GuiTrackingLabel _trackingLabel;
 
-    private Transform _cmdIconTransform;
     private VelocityRay _velocityRay;
 
     protected override void InitializePresenter() {
@@ -38,7 +37,7 @@ public class FleetView : ACommandView, ICameraFollowable, IHighlightTrackingLabe
     }
 
     protected override void InitializeTrackingTarget() {
-        TrackingTarget = Presenter.GetHQElementTransform();
+        TrackingTarget = Presenter.GetTrackingTarget();
     }
 
     protected override void OnIsDiscernibleChanged() {
@@ -56,7 +55,7 @@ public class FleetView : ACommandView, ICameraFollowable, IHighlightTrackingLabe
 
     protected override void OnPlayerIntelContentChanged() {
         base.OnPlayerIntelContentChanged();
-        Presenter.NotifyElementsOfIntelChange();
+        Presenter.OnPlayerIntelContentChanged();
     }
 
     protected override void RequestContextMenu(bool isDown) {
@@ -82,13 +81,7 @@ public class FleetView : ACommandView, ICameraFollowable, IHighlightTrackingLabe
         if (TrackingTarget != null) {
             _transform.position = TrackingTarget.position;
             _transform.rotation = TrackingTarget.rotation;
-
-            // Notes: _fleetIconPivotOffset is a worldspace offset to the top of the leadship collider and doesn't change with scale, position or rotation
-            // The approach below will also work if we want a viewport offset that is a constant percentage of the viewport
-            //Vector3 viewportOffsetLocation = Camera.main.WorldToViewportPoint(_leadShipTransform.position + _fleetIconPivotOffset);
-            //Vector3 worldOffsetLocation = Camera.main.ViewportToWorldPoint(viewportOffsetLocation + _fleetIconViewportOffset);
-            //_fleetIconTransform.localPosition = worldOffsetLocation - _leadShipTransform.position;
-            _cmdIconTransform.localPosition = _cmdIconPivotOffset;
+            PositionIcon();
         }
     }
 
@@ -106,17 +99,12 @@ public class FleetView : ACommandView, ICameraFollowable, IHighlightTrackingLabe
                 return;
             }
             if (_velocityRay == null) {
-                Reference<float> fleetSpeed = Presenter.GetFleetSpeed();
+                Reference<float> fleetSpeed = Presenter.GetFleetSpeedReference();
                 _velocityRay = new VelocityRay("FleetVelocityRay", _transform, fleetSpeed, parent: DynamicObjects.Folder,
                     width: 2F, color: GameColor.Green);
             }
             _velocityRay.Show(toShow);
         }
-    }
-
-    protected override void InitializeCmdIcon() {
-        base.InitializeCmdIcon();
-        _cmdIconTransform = _cmdIconSprite.transform;
     }
 
     protected override void Cleanup() {

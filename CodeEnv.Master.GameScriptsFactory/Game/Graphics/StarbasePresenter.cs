@@ -110,14 +110,13 @@ public class StarbasePresenter : AMortalFocusablePresenter {
         AssessCmdIcon();
     }
 
-    public void OnPlayerIntelChanged() {
+    public void OnPlayerIntelContentChanged() {
         Item.Elements.ForAll<FacilityItem>(sc => sc.gameObject.GetSafeMonoBehaviourComponent<FacilityView>().PlayerIntel = View.PlayerIntel);
         AssessCmdIcon();
     }
 
-
     private void OnHQElementChanged() {
-        View.TrackingTarget = GetHQElementTransform();
+        View.TrackingTarget = GetTrackingTarget();
     }
 
     public void OnIsSelectedChanged() {
@@ -127,39 +126,14 @@ public class StarbasePresenter : AMortalFocusablePresenter {
         Item.Elements.ForAll(s => s.gameObject.GetSafeMonoBehaviourComponent<FacilityView>().AssessHighlighting());
     }
 
-    public Transform GetHQElementTransform() {
+    public Transform GetTrackingTarget() {
         return Item.HQElement.transform;
     }
 
-    private IconFactory _iconFactory = IconFactory.Instance;
+    private StarbaseIconFactory _iconFactory = StarbaseIconFactory.Instance;
     private void AssessCmdIcon() {
-        IIcon icon;
-        GameColor color = GameColor.White;
-        // TODO evaluate Composition
-        switch (View.PlayerIntel.Scope) {
-            case IntelScope.None:
-                icon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.None);
-                //color = GameColor.Clear;    // None should be a completely transparent icon
-                break;
-            case IntelScope.Aware:
-                icon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.IntelLevelUnknown);
-                // color = GameColor.White;    // may be clear from prior setting
-                break;
-            case IntelScope.Minimal:
-            case IntelScope.Moderate:
-                icon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.Level5);
-                color = Item.Data.Owner.Color;
-                break;
-            case IntelScope.Comprehensive:
-                var selectionCriteria = new IconSelectionCriteria[] { IconSelectionCriteria.Level5, IconSelectionCriteria.Science, IconSelectionCriteria.Colony, IconSelectionCriteria.Troop };
-                icon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, selectionCriteria);
-                color = Item.Data.Owner.Color;
-                break;
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(View.PlayerIntel.Scope));
-        }
-        D.Log("IntelScope is {2}, changing {0} to {1}.", typeof(FleetIcon).Name, icon.Filename, View.PlayerIntel.Scope.GetName());
-        View.ChangeCmdIcon(icon, color);
+        IIcon icon = _iconFactory.MakeInstance(Item.Data, View.PlayerIntel);
+        View.ChangeCmdIcon(icon);
     }
 
     public override string ToString() {

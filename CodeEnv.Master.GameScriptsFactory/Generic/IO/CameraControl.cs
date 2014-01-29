@@ -231,7 +231,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         // need to raise this event in Awake as Start can be too late, since the true version of this event is called
         // when the GameState changes to Waiting, which can occur before Start. We have to rely on Loader.Awake
         // being called first via ScriptExecutionOrder.
-        _eventMgr.Raise<ElementReadyEvent>(new ElementReadyEvent(this, isReady: false));
+        _eventMgr.Raise<ElementReadyEvent>(new ElementReadyEvent(this, GameState.Waiting, isReady: false));
     }
 
     private void InitializeEventDispatcher() {
@@ -431,13 +431,15 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
                     _restoredGameFlag = false;
                 }
                 else {
-                    InitializeMainCamera();
+                    InitializeMainCamera(); // deferred init until clear game is new
                 }
-                _eventMgr.Raise<ElementReadyEvent>(new ElementReadyEvent(this, isReady: true));
+                _eventMgr.Raise<ElementReadyEvent>(new ElementReadyEvent(this, GameState.Waiting, isReady: true));
                 break;
             case GameState.Building:
             case GameState.Loading:
+            case GameState.DeployingSystems:
             case GameState.GeneratingPathGraphs:
+            case GameState.DeployingSettlements:
             case GameState.RunningCountdown_2:
             case GameState.RunningCountdown_1:
             case GameState.Running:

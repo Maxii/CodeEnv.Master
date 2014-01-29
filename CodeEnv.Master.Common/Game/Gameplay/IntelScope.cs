@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IntelScope.cs
-// Enum defining the scope of knowledge a player has accumulated of an object in the game.
+// Enum defining the scope of knowledge a player currently has about an object in the game.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,7 +17,7 @@
 namespace CodeEnv.Master.Common {
 
     /// <summary>
-    /// Enum defining the scope of knowledge a player has accumulated of an object in the game.
+    /// Enum defining the scope of knowledge a player currently has about an object in the game.
     /// </summary>
     public enum IntelScope {
 
@@ -28,27 +28,27 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// We are aware of the existance of an object but that is all.
-        /// Typically the location is or has been within range of long range sensors, or
-        /// what we know is based off of rumor, inuendo or simple empirical observation from too far away.
+        /// Typically the location is 1) within range of long range sensors, and/or 2) can be observed empirically
+        /// by all and/or 3) our info is based off of rumor and inuendo.
         /// </summary>
         Aware,
 
         /// <summary>
         /// We have collected basic information on this object. 
-        /// Typically the object is or has been within range of medium range sensors. 
+        /// Typically the object is within range of medium range sensors. 
         /// </summary>
         Minimal,
 
         /// <summary>
         /// We have collected quite a bit of information on this object.  
-        /// Typically the object is or has been within range of short range sensors. 
+        /// Typically the object is within range of short range sensors. 
         /// </summary>
         Moderate,
 
         /// <summary>
         /// The object is under constant observation and is completely connected into our real-time knowledge
         /// systems. We know everything there is to know. Typically the object is owned by us, is
-        /// a trusted ally or we have a secret source of realtime information.
+        /// a trusted ally or we have a source of realtime information.
         /// </summary>
         Comprehensive
 

@@ -19,7 +19,7 @@ namespace CodeEnv.Master.Common {
     /// <summary>
     /// Class that acquires the filename of a Fleet Icon image based on a provided set of criteria.
     /// </summary>
-    public class FleetIcon : AIcon<FleetIcon> {
+    public class FleetIcon : AIcon {
 
         public FleetIcon(IconSection section, params IconSelectionCriteria[] criteria)
             : base(section, criteria) {

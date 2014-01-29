@@ -122,6 +122,33 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        /// Gets the bounding box surrounding all of the provided points in Worldspace.
+        /// Derived from Vectrosity.VectorManager.
+        /// </summary>
+        /// <param name="points">The points to encompass in the bounding box.</param>
+        /// <returns></returns>
+        public static Bounds GetBounds(Vector3[] points) {
+            var bounds = new Bounds();
+            var min = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+            var max = new Vector3(float.MinValue, float.MinValue, float.MinValue);
+            var end = points.Length;
+
+            for (int i = 0; i < end; i++) {
+                if (points[i].x < min.x) min.x = points[i].x;
+                else if (points[i].x > max.x) max.x = points[i].x;
+                if (points[i].y < min.y) min.y = points[i].y;
+                else if (points[i].y > max.y) max.y = points[i].y;
+                if (points[i].z < min.z) min.z = points[i].z;
+                else if (points[i].z > max.z) max.z = points[i].z;
+            }
+
+            bounds.min = min;
+            bounds.max = max;
+            return bounds;
+        }
+
+
+        /// <summary>
         /// Positions the provided game objects randomly inside a sphere in such a way that the meshes 
         /// are not in contact. 
         /// </summary>

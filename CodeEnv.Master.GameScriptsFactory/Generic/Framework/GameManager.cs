@@ -361,15 +361,11 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
 
     protected override void OnCurrentStateChanging(GameState incomingState) {
         base.OnCurrentStateChanging(incomingState);
-        D.Log("{0}.CurrentState changing from {1} to {2}.", typeof(GameManager).Name, CurrentState.GetName(), incomingState.GetName());
+        D.Log("{0} changing from {1} to {2}.", typeof(GameState).Name, CurrentState.GetName(), incomingState.GetName());
     }
 
     protected override void OnCurrentStateChanged() {
         base.OnCurrentStateChanged();
-    }
-
-    public void OnLoaderReady() {
-        CurrentState = GameState.GeneratingPathGraphs;
     }
 
     // NOTE: The sequencing when a change of state is initiated by setting CurrentState = newState
@@ -404,10 +400,39 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
         D.Assert(CurrentState == GameState.Waiting);
     }
 
+    #region Waiting
+
+    void Waiting_EnterState() {
+        LogEvent();
+    }
+
+    void Waiting_ProgressState() {
+        CurrentState = GameState.DeployingSystems;
+    }
+
     void Waiting_ExitState() {
+        LogEvent();
+        D.Assert(CurrentState == GameState.DeployingSystems);
+    }
+
+    #endregion
+
+    #region DeployingSystems
+
+    void DeployingSystems_EnterState() {
+        LogEvent();
+    }
+
+    void DeployingSystems_ProgressState() {
+        CurrentState = GameState.GeneratingPathGraphs;
+    }
+
+    void DeployingSystems_ExitState() {
         LogEvent();
         D.Assert(CurrentState == GameState.GeneratingPathGraphs);
     }
+
+    #endregion
 
     #region GeneratingPathGraphs
 
@@ -415,12 +440,28 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
         LogEvent();
     }
 
-    void GeneratingPathGraphs_Update() {
-        LogEvent();
-        CurrentState = GameState.RunningCountdown_2;
+    void GeneratingPathGraphs_ProgressState() {
+        CurrentState = GameState.DeployingSettlements;
     }
 
     void GeneratingPathGraphs_ExitState() {
+        LogEvent();
+        D.Assert(CurrentState == GameState.DeployingSettlements);
+    }
+
+    #endregion
+
+    #region DeployingSettlements
+
+    void DeployingSettlements_EnterState() {
+        LogEvent();
+    }
+
+    void DeployingSettlements_ProgressState() {
+        CurrentState = GameState.RunningCountdown_2;
+    }
+
+    void DeployingSettlements_ExitState() {
         LogEvent();
         D.Assert(CurrentState == GameState.RunningCountdown_2);
     }
@@ -433,8 +474,7 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
         LogEvent();
     }
 
-    void RunningCountdown_2_Update() {
-        LogEvent();
+    void RunningCountdown_2_ProgressState() {
         CurrentState = GameState.RunningCountdown_1;
     }
 
@@ -451,8 +491,7 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
         LogEvent();
     }
 
-    void RunningCountdown_1_Update() {
-        LogEvent();
+    void RunningCountdown_1_ProgressState() {
         CurrentState = GameState.Running;
     }
 
@@ -478,6 +517,14 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
         LogEvent();
         D.Assert(CurrentState == GameState.Lobby || CurrentState == GameState.Building);
         _gameStatus.IsRunning = false;
+    }
+
+    #endregion
+
+    #region Callbacks
+
+    public void ProgressState() {
+        RelayToCurrentState();
     }
 
     #endregion

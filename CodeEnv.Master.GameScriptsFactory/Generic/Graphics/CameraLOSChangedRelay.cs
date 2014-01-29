@@ -7,7 +7,7 @@
 // <summary> 
 // File: CameraLOSChangedRelay.cs
 // Conveys changes in its Renderer's 'visibility state' (in or out of the camera's line of sight) to 
-// one or more client gameobjects that implement the ICameraLOSChangedClient interface.
+// one or more client transforms that implement the ICameraLOSChangedClient interface.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -33,12 +33,10 @@ public class CameraLOSChangedRelay : AMonoBase, IDisposable {
     private IList<ICameraLOSChangedClient> _iRelayTargets;
     private bool _isRunning;
     private IList<IDisposable> _subscribers;
-    private Renderer _renderer;
 
     protected override void Awake() {
         base.Awake();
-        _renderer = UnityUtility.ValidateComponentPresence<Renderer>(gameObject);
-        _renderer.enabled = true;   // renderers do not deliver OnBecameVisible() events if not enabled!!!!!!!!
+        InitializeRenderer();
         relayTargets = relayTargets ?? new List<Transform>();
         if (relayTargets.Count == 0) {
             Transform relayTarget = _transform.GetSafeTransformWithInterfaceInParents<ICameraLOSChangedClient>();
@@ -63,6 +61,15 @@ public class CameraLOSChangedRelay : AMonoBase, IDisposable {
             _iRelayTargets.Add(iTarget);
         }
         Subscribe();
+    }
+
+    private void InitializeRenderer() {
+        if (renderer != null) {
+            renderer.enabled = true;    // renderers do not deliver OnBecameVisible() events if not enabled!!!!!!!!
+        }
+        else {
+            SetupInvisibleBoundsMesh();
+        }
     }
 
     private void Subscribe() {
@@ -168,6 +175,59 @@ public class CameraLOSChangedRelay : AMonoBase, IDisposable {
         return isValid;
     }
 
+    #region Invisible Mesh System supporting OnBecameVisible/Invisible
+
+    private static IDictionary<string, Mesh> _meshCache;
+
+    /// <summary>
+    /// Sets up an invisible bounds mesh that enables OnBecameVisible/Invisible to properly operate,
+    /// even without having a pre-installed Renderer. Derived from Vectrosity.VectorManager.
+    /// </summary>
+    private void SetupInvisibleBoundsMesh() {
+        var meshFilter = gameObject.GetComponent<MeshFilter>();
+        if (meshFilter == null) {
+            meshFilter = gameObject.AddComponent<MeshFilter>();
+        }
+        var meshRenderer = gameObject.AddComponent<MeshRenderer>();
+        meshRenderer.enabled = true;    // renderers do not deliver OnBecameVisible() events if not enabled!!!!!!!!
+
+        if (_meshCache == null) {
+            _meshCache = new Dictionary<string, Mesh>();
+        }
+
+        UISprite sprite = gameObject.GetSafeMonoBehaviourComponent<UISprite>();
+        string cacheKey = sprite.localSize.ToString();  // "[0.0, 1.0]"
+        if (!_meshCache.ContainsKey(cacheKey)) {
+            _meshCache.Add(cacheKey, MakeBoundsMesh(UnityUtility.GetBounds(sprite.localCorners)));
+            _meshCache[cacheKey].name = cacheKey + " Invisible Bounds";
+        }
+        else {
+            D.Log("{0} is reusing {1} mesh.", _transform.name, _meshCache[cacheKey].name);
+        }
+        meshFilter.mesh = _meshCache[cacheKey];
+    }
+
+    /// <summary>
+    /// Makes an invisible (as there are no triangles) mesh between the vertices of the provided bounds.
+    /// Derived from Vectrosity.VectorManager.
+    /// </summary>
+    /// <param name="bounds">The bounds.</param>
+    /// <returns></returns>
+    private static Mesh MakeBoundsMesh(Bounds bounds) {
+        var mesh = new Mesh();
+        mesh.vertices = new[] {bounds.center + new Vector3(-bounds.extents.x,  bounds.extents.y,  bounds.extents.z),
+                               bounds.center + new Vector3( bounds.extents.x,  bounds.extents.y,  bounds.extents.z),
+                               bounds.center + new Vector3(-bounds.extents.x,  bounds.extents.y, -bounds.extents.z),
+                               bounds.center + new Vector3( bounds.extents.x,  bounds.extents.y, -bounds.extents.z),
+                               bounds.center + new Vector3(-bounds.extents.x, -bounds.extents.y,  bounds.extents.z),
+                               bounds.center + new Vector3( bounds.extents.x, -bounds.extents.y,  bounds.extents.z),
+                               bounds.center + new Vector3(-bounds.extents.x, -bounds.extents.y, -bounds.extents.z),
+                               bounds.center + new Vector3( bounds.extents.x, -bounds.extents.y, -bounds.extents.z)};
+        return mesh;
+    }
+
+    #endregion
+
     protected override void OnDestroy() {
         base.OnDestroy();
         Dispose();
@@ -186,6 +246,7 @@ public class CameraLOSChangedRelay : AMonoBase, IDisposable {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
 
     #region IDisposable
     [DoNotSerialize]

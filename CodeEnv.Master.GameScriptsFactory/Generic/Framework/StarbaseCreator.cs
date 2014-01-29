@@ -28,6 +28,10 @@ using UnityEngine;
 /// </summary>
 public class StarbaseCreator : ACreator<FacilityItem, FacilityCategory, FacilityData, StarbaseItem, BaseComposition> {
 
+    protected override GameState GetCreationGameState() {
+        return GameState.DeployingSystems;
+    }
+
     protected override FacilityData CreateElementData(FacilityCategory elementCategory, string elementInstanceName, IPlayer owner) {
         FacilityData elementData = new FacilityData(elementCategory, elementInstanceName, maxHitPoints: 50F, mass: 10000F) {   // TODO mass variation
             // optionalParentName gets set when it gets attached to a command
@@ -92,8 +96,6 @@ public class StarbaseCreator : ACreator<FacilityItem, FacilityCategory, Facility
     protected override void __InitializeCommandIntel() {
         _command.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel = new Intel(IntelScope.Comprehensive, IntelSource.InfoNet);
     }
-
-    protected override void OnCreationComplete() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

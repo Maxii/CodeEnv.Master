@@ -38,7 +38,7 @@ public class StarbaseView : ACommandView, IHighlightTrackingLabel {
     }
 
     protected override void InitializeTrackingTarget() {
-        TrackingTarget = Presenter.GetHQElementTransform();
+        TrackingTarget = Presenter.GetTrackingTarget();
     }
 
     protected override void OnIsDiscernibleChanged() {
@@ -55,7 +55,7 @@ public class StarbaseView : ACommandView, IHighlightTrackingLabel {
 
     protected override void OnPlayerIntelContentChanged() {
         base.OnPlayerIntelContentChanged();
-        Presenter.OnPlayerIntelChanged();
+        Presenter.OnPlayerIntelContentChanged();
     }
 
     protected override void RequestContextMenu(bool isDown) {

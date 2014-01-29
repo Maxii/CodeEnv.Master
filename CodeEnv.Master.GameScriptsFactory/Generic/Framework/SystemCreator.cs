@@ -73,9 +73,14 @@ public class SystemCreator : AMonoBase, IDisposable {
         base.Awake();
         _systemsFolder = _transform.parent;
         _isExistingSystem = _transform.childCount > 0;
-        _systemName = _transform.name;  // the SystemManager will carry the name of the System
+        _systemName = _transform.name;  // the SystemCreator will carry the name of the System
+        RegisterGameStateProgressionReadiness(isReady: false);
         CreateSystemComposition();
         Subscribe();
+    }
+
+    private void RegisterGameStateProgressionReadiness(bool isReady) {
+        GameEventManager.Instance.Raise(new ElementReadyEvent(this, GameState.DeployingSystems, isReady));
     }
 
     private void Subscribe() {
@@ -86,9 +91,10 @@ public class SystemCreator : AMonoBase, IDisposable {
     }
 
     private void OnGameStateChanged() {
-        if (GameManager.Instance.CurrentState == GameState.GeneratingPathGraphs) {
-            DeploySystem(); // TODO deploy systems before generate path graph to generate interference?
+        if (GameManager.Instance.CurrentState == GameState.DeployingSystems) {
+            DeploySystem();
             EnableSystem(); // must make View operational before starting state changes (like IntelLevel) within it 
+            RegisterGameStateProgressionReadiness(isReady: true);
         }
         if (GameManager.Instance.CurrentState == GameState.RunningCountdown_2) {
             __SetIntelLevel();

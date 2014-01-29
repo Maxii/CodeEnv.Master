@@ -32,10 +32,11 @@ public abstract class ACommandView : AFocusableView, ICommandViewable, ISelectab
     public AudioClip dying;
     private AudioSource _audioSource;
 
-    protected Vector3 _cmdIconPivotOffset;
-    protected UISprite _cmdIconSprite;
+    private Vector3 _cmdIconPivotOffset;
+    private UISprite _cmdIconSprite;
+    private Transform _cmdIconTransform;
     private ScaleRelativeToCamera _cmdIconScaler;
-    private IIcon _cmdIcon;   // IMPROVE not really used for now
+    //private IIcon _cmdIcon;   // IMPROVE not really used for now
     private Vector3 _cmdIconSize;
 
     private CtxObject _ctxObject;
@@ -64,12 +65,13 @@ public abstract class ACommandView : AFocusableView, ICommandViewable, ISelectab
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
         _collider.enabled = IsDiscernible;
-        _billboard.gameObject.SetActive(IsDiscernible);
+        _billboard.enabled = IsDiscernible; // can't deactivate billboard gameobject as that would disable the Icon's CameraLOSChangedRelay
         ShowCommandIcon(IsDiscernible);
     }
 
     protected virtual void OnTrackingTargetChanged() {
         _cmdIconPivotOffset = new Vector3(Constants.ZeroF, TrackingTarget.collider.bounds.extents.y, Constants.ZeroF);
+        PositionIcon();
         KeepColliderOverIcon();
     }
 
@@ -163,7 +165,7 @@ public abstract class ACommandView : AFocusableView, ICommandViewable, ISelectab
 
     private void ShowCommandIcon(bool toShow) {
         if (_cmdIconSprite != null) {
-            _cmdIconSprite.gameObject.SetActive(toShow);
+            _cmdIconSprite.enabled = toShow;    // IMPROVE what is best way to stop UISprite from rendering?
             // TODO audio on/off goes here
         }
     }
@@ -229,10 +231,20 @@ public abstract class ACommandView : AFocusableView, ICommandViewable, ISelectab
 
     protected virtual void InitializeCmdIcon() {
         _cmdIconSprite = gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>();
+        _cmdIconTransform = _cmdIconSprite.transform;
         _cmdIconScaler = _cmdIconSprite.gameObject.GetSafeMonoBehaviourComponent<ScaleRelativeToCamera>();
-        // I need the collider sitting over the fleet icon to be 3D as it's rotation tracks the Cmd object, not the billboarded icon
+        // I need the collider sitting over the CmdIcon to be 3D as it's rotation tracks the Cmd object, not the billboarded icon
         Vector2 iconSize = _cmdIconSprite.localSize;
         _cmdIconSize = new Vector3(iconSize.x, iconSize.y, iconSize.x);
+    }
+
+    protected void PositionIcon() {
+        // Notes: _cmdIconPivotOffset is a worldspace offset to the top of the TrackingTarget collider and doesn't change with scale, position or rotation
+        // The approach below will also work if we want a viewport offset that is a constant percentage of the viewport
+        //Vector3 viewportOffsetLocation = Camera.main.WorldToViewportPoint(TrackingTarget.position + _cmdIconPivotOffset);
+        //Vector3 worldOffsetLocation = Camera.main.ViewportToWorldPoint(viewportOffsetLocation + _cmdIconViewportOffset);
+        //_cmdIconTransform.localPosition = worldOffsetLocation - TrackingTarget.position;
+        _cmdIconTransform.localPosition = _cmdIconPivotOffset;
     }
 
     #region ICommandViewable Members
@@ -268,10 +280,10 @@ public abstract class ACommandView : AFocusableView, ICommandViewable, ISelectab
         set { SetProperty<Transform>(ref _trackingTarget, value, "TrackingTarget", OnTrackingTargetChanged); }
     }
 
-    public void ChangeCmdIcon(IIcon icon, GameColor color) {
-        _cmdIcon = icon;
+    public void ChangeCmdIcon(IIcon icon) {
+        //_cmdIcon = icon;
         _cmdIconSprite.spriteName = icon.Filename;
-        _cmdIconSprite.color = color.ToUnityColor();
+        _cmdIconSprite.color = icon.Color.ToUnityColor();
     }
 
     /// <summary>

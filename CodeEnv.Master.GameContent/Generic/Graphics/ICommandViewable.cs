@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ICommandViewable.cs
-// COMMENT - one line to give a brief idea of what the file does.
+//  Interface used by a CommandPresenter to communicate with their associated CommandView.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,14 +17,11 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
 
     /// <summary>
-    /// 
+    ///  Interface used by a CommandPresenter to communicate with their associated CommandView.
     /// </summary>
     public interface ICommandViewable : IViewable {
 
@@ -32,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
 
         Transform TrackingTarget { set; }
 
-        void ChangeCmdIcon(IIcon icon, GameColor color);
+        void ChangeCmdIcon(IIcon icon);
 
         void ShowDying();
 

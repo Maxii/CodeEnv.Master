@@ -100,7 +100,7 @@ public class ShipItem : AElement {
     }
 
     protected override void Die() {
-        _fleet.ReportElementLost(this);
+        _fleet.ReportElementDestroyed(this);
         // let fleetCmd process the loss before the destroyed ship starts processing its state changes
         CurrentState = ShipState.Dying;
     }

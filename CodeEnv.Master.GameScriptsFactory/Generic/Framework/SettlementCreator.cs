@@ -29,6 +29,12 @@ using UnityEngine;
 /// </summary>
 public class SettlementCreator : ACreator<FacilityItem, FacilityCategory, FacilityData, SettlementItem, BaseComposition> {
 
+    public event Action<SettlementCreator> onCompleted;
+
+    protected override GameState GetCreationGameState() {
+        return GameState.DeployingSystems;  // Building can take place anytime? Placing in Systems takes place in DeployingSettlements
+    }
+
     protected override FacilityData CreateElementData(FacilityCategory elementCategory, string elementInstanceName, IPlayer owner) {
         FacilityData elementData = new FacilityData(elementCategory, elementInstanceName, maxHitPoints: 50F, mass: 10000F) {   // TODO mass variation
             // optionalParentName gets set when it gets attached to a command
@@ -99,15 +105,11 @@ public class SettlementCreator : ACreator<FacilityItem, FacilityCategory, Facili
         // Settlements assume the intel state of their system when assigned
     }
 
-    protected override void OnCreationComplete() {
-        SystemItem localSystem = gameObject.GetComponentInParents<SystemItem>();
-        if (localSystem != null) {
-            // A Settlement that has been assigned to a System before it is finished being created
-            // may need to be reinitialized
-            localSystem.InitializeSettlement(_command);
-        }
-        else {
-            D.Log("{0} Creation completed but not yet assigned to a System.", PieceName);
+    protected override void OnCompleted() {
+        base.OnCompleted();
+        var temp = onCompleted;
+        if (temp != null) {
+            temp(this);
         }
     }
 

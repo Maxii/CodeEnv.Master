@@ -25,59 +25,20 @@ using UnityEngine;
 /// </summary>
 public class __UniverseInitializer : AMonoBase, IDisposable {
 
-    //private static IList<Vector3> _obstacleLocations;
-    //public static IList<Vector3> ObstacleLocations { get { return _obstacleLocations; } }
-
     private GameManager _gameMgr;
     private IList<IDisposable> _subscribers;
 
-    //private FleetManager[] _fleetMgrs;
-    //private SystemManager[] _systemMgrs;
-
     private SystemCreator[] _systemCreators;
-    //private SettlementItem[] _settlements;
-    //private Item[] _stars;
-    //private Item[] _planetoids;
     private UniverseCenterItem _universeCenter;
-    //private StarBaseItem[] _starBases;
-    //private FacilityItem[] _facilities;
     private Stack<SettlementCreator> _settlementCreators;
-
 
     protected override void Awake() {
         base.Awake();
         _gameMgr = GameManager.Instance;
         Subscribe();
-        AcquireGameObjectsRequiringDataToInitialize();
-    }
-
-    private void AcquireGameObjectsRequiringDataToInitialize() {
-        //_fleetMgrs = gameObject.GetSafeMonoBehaviourComponentsInChildren<FleetManager>();
-        // Item[] excludedFleetElements = _fleetMgrs.Where(fMgr => fMgr.transform.childCount > 0)
-        // .SelectMany(fm => fm.gameObject.GetSafeMonoBehaviourComponentsInChildren<Item>()).ToArray();
-
-        //_systemMgrs = gameObject.GetSafeMonoBehaviourComponentsInChildren<SystemManager>();
-        //Item[] excludedSystemElements = _systemMgrs.Where(sMgr => sMgr.transform.childCount > 0)
-        // .SelectMany(sm => sm.gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetoidItem>()).ToArray();
-
-        _systemCreators = gameObject.GetSafeMonoBehaviourComponentsInChildren<SystemCreator>();
-        //_settlements = gameObject.GetSafeMonoBehaviourComponentsInChildren<SettlementItem>();
-        _settlementCreators = new Stack<SettlementCreator>(gameObject.GetSafeMonoBehaviourComponentsInChildren<SettlementCreator>());
-
-        //Item[] celestialObjects = gameObject.GetSafeMonoBehaviourComponentsInChildren<Item>()
-        //.Except(excludedSystemElements).Except(_settlements).Except(excludedFleetElements).ToArray();
-        //    Item[] celestialObjects = gameObject.GetSafeMonoBehaviourComponentsInChildren<Item>()
-        //.Except(_systems).Except(_settlements).Except(excludedFleetElements).ToArray();
-
-        //_stars = celestialObjects.Where(co => co.gameObject.GetComponent<StarView>() != null).ToArray();
-        //_planetoids = celestialObjects.Where(co => co.gameObject.GetComponent<MovingView>() != null).ToArray();
-        //_universeCenter = celestialObjects.Single(co => co.gameObject.GetComponent<UniverseCenterView>() != null);
-        _universeCenter = gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterItem>();
-        //_starBases = gameObject.GetSafeMonoBehaviourComponentsInChildren<StarBaseItem>();
-        //_facilities = gameObject.GetSafeMonoBehaviourComponentsInChildren<FacilityItem>();
-
-        //_obstacleLocations = _systems.Select(s => s.transform.position).ToList();
-        //_obstacleLocations.Add(_universeCenter.transform.position);
+        RegisterGameStateProgressionReadiness(GameState.DeployingSystems, isReady: false);
+        RegisterGameStateProgressionReadiness(GameState.DeployingSettlements, isReady: false);
+        AcquireObjectsPresentInScene();
     }
 
     private void Subscribe() {
@@ -87,103 +48,33 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
         _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
     }
 
+    // UNCLEAR how useful this is in the cases here
+    private void RegisterGameStateProgressionReadiness(GameState stateToNotMoveBeyondUntilReady, bool isReady) {
+        GameEventManager.Instance.Raise(new ElementReadyEvent(this, stateToNotMoveBeyondUntilReady, isReady));
+    }
+
+    private void AcquireObjectsPresentInScene() {
+        _systemCreators = gameObject.GetSafeMonoBehaviourComponentsInChildren<SystemCreator>();
+        _settlementCreators = new Stack<SettlementCreator>(gameObject.GetSafeMonoBehaviourComponentsInChildren<SettlementCreator>());
+        _universeCenter = gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterItem>();
+    }
+
     private void OnGameStateChanged() {
-        if (_gameMgr.CurrentState == GameState.GeneratingPathGraphs) {
-            InitializeGameObjectData();
+        if (_gameMgr.CurrentState == GameState.DeployingSystems) {
+            InitializeUniverseCenter();
+            RegisterGameStateProgressionReadiness(GameState.DeployingSystems, isReady: true);
         }
-        if (_gameMgr.CurrentState == GameState.RunningCountdown_1) {
+        if (_gameMgr.CurrentState == GameState.DeployingSettlements) {
             AssignSettlementsToSystems();   // must occur after SystemData has been set...
-            InitializePlayerIntel();
+            RegisterGameStateProgressionReadiness(GameState.DeployingSettlements, isReady: true);
+        }
+
+        if (_gameMgr.CurrentState == GameState.RunningCountdown_1) {
+            InitializeUniverseCenterPlayerIntel();
         }
     }
 
-    private void InitializeGameObjectData() {
-        //InitializeSystems();    // systems before settements and celestial objects as they need the system name
-        //InitializeSettlements();
-        //InitializeStars();
-        //InitializePlanetoids();
-        InitializeCenter();
-        //InitializeStarBases();
-        //InitializeFacilities();
-
-        //InitializeFleets();
-    }
-
-    //private void InitializeSystems() {
-    //    int sysNumber = 0;
-    //    foreach (SystemItem system in _systems) {
-    //        Transform systemTransform = system.transform;
-    //        string systemName = "System_" + sysNumber;
-    //        //SystemData data = new SystemData(systemTransform, systemName) {
-    //        SystemData data = new SystemData(systemName) {
-
-    //            // there is no parentName for a System
-    //            LastHumanPlayerIntelDate = new GameDate(),
-    //            Capacity = 25,
-    //            Resources = new OpeYield(3.1F, 2.0F, 4.8F),
-    //            SpecialResources = new XYield(XResource.Special_1, 0.3F),
-    //        };
-    //        system.Data = data;
-    //        sysNumber++;
-    //    }
-    //}
-
-    //private void InitializeSettlements() {
-    //    foreach (Item settlement in _settlements) {
-    //        SystemItem system = settlement.gameObject.GetSafeMonoBehaviourComponentInParents<SystemItem>();
-    //        string systemName = system.Data.Name;
-    //        string settlementName = systemName + " Settlement";
-    //        //SettlementData data = new SettlementData(settlement.transform, settlementName, 50F, systemName) {
-    //        SettlementData data = new SettlementData(settlementName, 50F, systemName) {
-
-    //            SettlementSize = SettlementSize.City,
-    //            Population = 100,
-    //            CapacityUsed = 10,
-    //            ResourcesUsed = new OpeYield(1.3F, 0.5F, 2.4F),
-    //            SpecialResourcesUsed = new XYield(new XYield.XResourceValuePair(XResource.Special_1, 0.2F)),
-    //            Strength = new CombatStrength(1f, 2f, 3f, 4f, 5f, 6f),
-    //            CurrentHitPoints = 38F,
-    //            Owner = GameManager.Instance.HumanPlayer
-    //        };
-    //        settlement.Data = data;
-    //        // PlayerIntelLevel is determined by the IntelLevel of the System
-    //        system.Data.Settlement = data;  // TODO temporary as the SystemHud shows settlement info this way
-    //    }
-    //}
-
-    //private void InitializeStars() {
-    //    foreach (Item star in _stars) {
-    //        SystemItem system = star.gameObject.GetSafeMonoBehaviourComponentInParents<SystemItem>();
-    //        string systemName = system.Data.Name;
-    //        string starName = systemName + " Star";
-    //        //Data data = new Data(star.transform, starName, 1000000F, systemName) {
-    //        Data data = new Data(starName, 1000000F, systemName) {
-
-    //            LastHumanPlayerIntelDate = new GameDate()
-    //        };
-    //        star.Data = data;
-    //        // PlayerIntelLevel is determined by the IntelLevel of the System
-    //    }
-    //}
-
-    //private void InitializePlanetoids() {
-    //    int planetoidNumber = 0;
-    //    foreach (Item planetoid in _planetoids) {
-    //        SystemItem system = planetoid.gameObject.GetSafeMonoBehaviourComponentInParents<SystemItem>();
-    //        string systemName = system.Data.Name;
-    //        string planetName = "Planet_" + planetoidNumber;
-    //        //Data data = new Data(planetoid.transform, planetName, 100000F, systemName) {
-    //        Data data = new Data(planetName, 100000F, systemName) {
-
-    //            LastHumanPlayerIntelDate = new GameDate()
-    //        };
-    //        planetoid.Data = data;
-    //        planetoidNumber++;
-    //        // PlayerIntelLevel is determined by the IntelLevel of the System
-    //    }
-    //}
-
-    private void InitializeCenter() {
+    private void InitializeUniverseCenter() {
         if (_universeCenter) {
             Data data = new Data("UniverseCenter");
 
@@ -208,95 +99,6 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
         }
     }
 
-    //private void InitializeStarBases() {
-    //    if (!_starBases.IsNullOrEmpty()) {
-    //        int count = 0;
-    //        foreach (var sbi in _starBases) {
-    //            StarBaseData data = new StarBaseData("StarBase_{0}".Inject(count), 50F);
-    //            data.Strength = new CombatStrength();
-    //            data.Owner = GameManager.Instance.HumanPlayer;
-    //            data.Size = StarBaseSize.DistrictBase;
-
-    //            sbi.Data = data;
-    //            sbi.enabled = true;
-    //            var sbv = sbi.gameObject.GetSafeMonoBehaviourComponent<StarBaseView>();
-    //            if (sbv != null) {
-    //                sbv.enabled = true;
-    //            }
-    //            count++;
-    //        }
-    //    }
-    //}
-
-    //private void InitializeFacilities() {
-    //    if (!_facilities.IsNullOrEmpty()) {
-    //        int count = 0;
-    //        foreach (var fi in _facilities) {
-    //            FacilityData data = new FacilityData("Facility {0}".Inject(count), 50F);
-    //            data.Strength = new CombatStrength();
-    //            data.Owner = GameManager.Instance.HumanPlayer;
-    //            data.Type = FacilityType.Economic;
-
-    //            fi.Data = data;
-    //            fi.enabled = true;
-    //            var fv = fi.gameObject.GetSafeMonoBehaviourComponent<FacilityView>();
-    //            if (fv != null) {
-    //                fv.enabled = true;
-    //            }
-    //            count++;
-    //        }
-    //    }
-    //}
-
-
-
-    // **************** New Section now randomly instantiates fleets of ships rather than just find pre-existing ones ********************************
-
-    //private void InitializeFleets() {
-    //    if (!_fleetMgrs.IsNullOrEmpty()) {
-    //        BuildFleets();
-    //    }
-    //}
-
-    //private void BuildFleets() {
-    //    bool isHumanFleetCreated = false;
-    //    foreach (var fleetMgr in _fleetMgrs) {
-    //        IPlayer owner;
-    //        if (!isHumanFleetCreated) {
-    //            owner = GameManager.Instance.HumanPlayer;
-    //            isHumanFleetCreated = true;
-    //        }
-    //        else {
-    //            owner = new Player(new Race(Enums<Races>.GetRandom(excludeDefault: true)), IQ.Normal);
-    //        }
-    //        FleetComposition composition = new FleetComposition();
-
-    //        //determine how many ships of what hull for the fleet, then build shipdata and add to composition
-    //        int shipCount = RandomExtended<int>.Range(3, 27);
-    //        for (int i = 0; i < shipCount; i++) {
-
-    //            IEnumerable<ShipHull> hullsToExclude = new ShipHull[] { default(ShipHull), 
-    //                ShipHull.Fighter, ShipHull.Scout, ShipHull.Science, ShipHull.Support, ShipHull.Troop, ShipHull.Colonizer };
-    //            ShipHull hull = RandomExtended<ShipHull>.Choice(Enums<ShipHull>.GetValues().Except(hullsToExclude).ToArray());
-
-    //            string shipName = hull.GetName() + Constants.Underscore + i;
-    //            float mass = TempGameValues.__GetMass(hull);
-    //            float drag = 0.1F;
-    //            ShipData shipData = new ShipData(shipName, 50F, mass, drag) {
-    //                // Ship's optionalParentName gets set when it gets attached to a fleet
-    //                Hull = hull,
-    //                Strength = new CombatStrength(),
-    //                LastHumanPlayerIntelDate = new GameDate(),
-    //                CurrentHitPoints = UnityEngine.Random.Range(25F, 50F),
-    //                MaxTurnRate = UnityEngine.Random.Range(1F, 2F),
-    //                Owner = owner,
-    //                MaxThrust = mass * drag * UnityEngine.Random.Range(2F, 5F)  // MaxThrust = Mass * Drag * MaxSpeed;
-    //            };
-    //            composition.AddShip(shipData);
-    //        }
-    //        fleetMgr.BuildFleet(composition);
-    //    }
-    //}
 
     // *****************************************************************************************************************************************************************
 
@@ -304,17 +106,10 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
     /// <summary>
     /// PlayerIntelLevel changes immediately propogate through COs and Ships so initialize this last in case the change pulls Data.
     /// </summary>
-    private void InitializePlayerIntel() {
-        //_systemMgrs.ForAll<SystemManager>(sm => sm.gameObject.GetSafeInterfaceInChildren<ISystemViewable>().PlayerIntelLevel
-        //    = Enums<IntelLevel>.GetRandom(excludeDefault: true));
+    private void InitializeUniverseCenterPlayerIntel() {
         if (_universeCenter != null) {  // allows me to deactivate it
             _universeCenter.gameObject.GetSafeInterface<IViewable>().PlayerIntel = new Intel(IntelScope.Comprehensive, IntelSource.InfoNet);
         }
-        //_fleetMgrs.ForAll<FleetManager>(fm => fm.gameObject.GetSafeInterfaceInChildren<IFleetViewable>().PlayerIntelLevel
-        //    = RandomExtended<IntelLevel>.Choice(Enums<IntelLevel>.GetValues().Except(default(IntelLevel), IntelLevel.Nil).ToArray()));
-        //= IntelLevel.Nil);
-        //_starBases.ForAll<StarBaseItem>(sbi => sbi.gameObject.GetSafeInterface<IStarBaseViewable>().PlayerIntel = new Intel(IntelScope.Comprehensive, IntelSource.InfoNet));
-        //_facilities.ForAll<FacilityItem>(fi => fi.gameObject.GetSafeInterface<IFacilityViewable>().PlayerIntel = new Intel(IntelScope.Comprehensive, IntelSource.InfoNet));
     }
 
     protected override void OnDestroy() {

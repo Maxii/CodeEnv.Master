@@ -28,8 +28,7 @@ public class Loader : AMonoBaseSingleton<Loader>, IDisposable {
 
     public int TargetFPS = 25;
 
-    private IList<MonoBehaviour> _unreadyElements;
-    private IDictionary<GameState, IList<MonoBehaviour>> _gameStateTransitionReadinessLookup;
+    private IDictionary<GameState, IList<MonoBehaviour>> _gameStateProgressionReadinessLookup;
 
     private IList<IDisposable> _subscribers;
 
@@ -105,13 +104,13 @@ public class Loader : AMonoBaseSingleton<Loader>, IDisposable {
     }
 
     private void InitializeGameStateReadinessSystem() {
-        _unreadyElements = new List<MonoBehaviour>();
-        _gameStateTransitionReadinessLookup = new Dictionary<GameState, IList<MonoBehaviour>>();
-        //_gameStateTransitionReadinessLookup.Add(GameState.Waiting, new List<MonoBehaviour>());
-        //_gameStateTransitionReadinessLookup.Add(GameState.Waiting, new List<MonoBehaviour>());
-        //_gameStateTransitionReadinessLookup.Add(GameState.Waiting, new List<MonoBehaviour>());
-        //_gameStateTransitionReadinessLookup.Add(GameState.Waiting, new List<MonoBehaviour>());
-
+        _gameStateProgressionReadinessLookup = new Dictionary<GameState, IList<MonoBehaviour>>();
+        _gameStateProgressionReadinessLookup.Add(GameState.Waiting, new List<MonoBehaviour>());
+        _gameStateProgressionReadinessLookup.Add(GameState.DeployingSystems, new List<MonoBehaviour>());
+        _gameStateProgressionReadinessLookup.Add(GameState.GeneratingPathGraphs, new List<MonoBehaviour>());
+        _gameStateProgressionReadinessLookup.Add(GameState.DeployingSettlements, new List<MonoBehaviour>());
+        _gameStateProgressionReadinessLookup.Add(GameState.RunningCountdown_2, new List<MonoBehaviour>());
+        _gameStateProgressionReadinessLookup.Add(GameState.RunningCountdown_1, new List<MonoBehaviour>());
     }
 
     //[System.Diagnostics.Conditional("UNITY_EDITOR")]
@@ -124,45 +123,37 @@ public class Loader : AMonoBaseSingleton<Loader>, IDisposable {
 
     private void OnElementReady(ElementReadyEvent e) {
         MonoBehaviour source = e.Source as MonoBehaviour;
+        GameState maxGameStateAllowedUntilReady = e.MaxGameStateUntilReady;
+        IList<MonoBehaviour> unreadyElements = _gameStateProgressionReadinessLookup[maxGameStateAllowedUntilReady];
         if (!e.IsReady) {
-            D.Assert(!_unreadyElements.Contains(source), "UnreadyElements already has {0} registered!".Inject(source.name));
-            _unreadyElements.Add(source);
-            D.Log("{0} has registered with Loader as unready.".Inject(source.name));
+            D.Assert(!unreadyElements.Contains(source), "UnreadyElements for {0} already has {1} registered!".Inject(maxGameStateAllowedUntilReady.GetName(), source.name));
+            unreadyElements.Add(source);
+            D.Log("{0} has registered with Loader as unready to progress beyond {1}.", source.name, maxGameStateAllowedUntilReady.GetName());
         }
         else {
-            D.Assert(_unreadyElements.Contains(source), "UnreadyElements has no record of {0}!".Inject(source.name));
-            _unreadyElements.Remove(source);
-            D.Log("{0} is now ready to Run.".Inject(source.name));
+            D.Assert(unreadyElements.Contains(source), "UnreadyElements for {0} has no record of {1}!".Inject(maxGameStateAllowedUntilReady.GetName(), source.name));
+            unreadyElements.Remove(source);
+            D.Log("{0} is now ready to progress beyond {1}.", source.name, maxGameStateAllowedUntilReady.GetName());
         }
     }
 
-    private void AssessReadinessToProgressGameState() {
-        if (_gameMgr.CurrentState == GameState.Waiting && _unreadyElements.Count == 0) {
-            enabled = false;    // stops update
-            _gameMgr.OnLoaderReady();
-        }
-    }
-
-    // Important to use Update to assess readiness to progress the game state beyond waiting as
-    // it makes sure all Awake and Start methods have been called before the first assessment. Most
-    // element readiness reporting needs both of these methods to register and then clear their readiness
+    // Important to use Update to assess readiness to progress the game state as
+    // it makes sure all Awake and Start methods have been called before the first assessment. 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
         AssessReadinessToProgressGameState();
     }
 
-    //private void CheckForPrefabs() {
-    //    // Check to make sure UsefulPrefabs is in the startScene. If not, instantiate it from the attached Prefab
-    //    UsefulPrefabs usefulPrefabs = FindObjectOfType(typeof(UsefulPrefabs)) as UsefulPrefabs;
-    //    if (usefulPrefabs == null) {
-    //        D.Warn("{0} instance not present in scene. Instantiating new one.".Inject(typeof(UsefulPrefabs).Name));
-    //        Arguments.ValidateNotNull(usefulPrefabsPrefab);
-    //        usefulPrefabs = Instantiate<UsefulPrefabs>(usefulPrefabsPrefab);
-    //    }
-    //    usefulPrefabs.transform.parent = Instance.transform.parent;
-    //}
-
-
+    private void AssessReadinessToProgressGameState() {
+        IList<MonoBehaviour> unreadyElements = _gameStateProgressionReadinessLookup[_gameMgr.CurrentState];
+        if (unreadyElements != null && unreadyElements.Count == 0) {
+            _gameMgr.ProgressState();
+            if (_gameMgr.CurrentState == GameState.Running) {
+                enabled = false;    // stops update
+                D.Log("{0} is no longer enabled. Updating has stopped.", typeof(Loader).Name);
+            }
+        }
+    }
 
     protected override void OnDestroy() {
         base.OnDestroy();

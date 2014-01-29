@@ -50,14 +50,27 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         ///  The waiting state prior to beginning the progression to Running, waiting for approval to start the progression.
+        ///  IMPROVE this should probably be some sort of post load/restore initialization
+        ///  and Building and Loading should be the new game alternatives to Restoring...???
         /// </summary>
         Waiting,
+
+        /// <summary>
+        /// The buildout of all Systems and other potential pathfinding obstacles prior to generating the network
+        /// of waypoints known as a PathGraph.
+        /// </summary>
+        DeployingSystems,
 
         /// <summary>
         /// Primary focus is to allow the AStar Pathfinding system time to generate the overall graph
         /// from points acquired from SectorGrid's GridFramework.
         /// </summary>
         GeneratingPathGraphs,
+
+        /// <summary>
+        /// The deployment of Settlements to Systems that start out settled.
+        /// </summary>
+        DeployingSettlements,
 
         /// <summary>
         /// A placeholder countdown step in progressing to Running, following GeneratingPathfindingGraphs.

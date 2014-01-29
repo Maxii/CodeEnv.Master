@@ -73,7 +73,7 @@ namespace CodeEnv.Master.GameContent {
             IDictionary<GuiHudLineKeys, string> baseDisplayLineContent = new Dictionary<GuiHudLineKeys, string>() {
                 {GuiHudLineKeys.Name, "{0}"},
                 {GuiHudLineKeys.ParentName, "{0}"},
-                {GuiHudLineKeys.Category, "Type: {0}"},
+                {GuiHudLineKeys.Category, "{0}: {1}"},
                 {GuiHudLineKeys.IntelState, "< {0} >"},
                 {GuiHudLineKeys.Capacity, "Capacity: {0} Slots"},   
                 {GuiHudLineKeys.Resources, "Resources: O: {0}, P: {1}, E: {2}"},

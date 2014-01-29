@@ -161,7 +161,7 @@ public class FleetPresenter : AMortalFocusablePresenter {
         return Item.Flagship.transform;
     }
 
-    private IconFactory _iconFactory = IconFactory.Instance;
+    private AIconFactory _iconFactory = AIconFactory.Instance;
     private void AssessFleetIcon() {
         IIcon fleetIcon;
         GameColor color = GameColor.White;
@@ -172,11 +172,11 @@ public class FleetPresenter : AMortalFocusablePresenter {
                 //color = GameColor.Clear;    // None should be a completely transparent icon
                 break;
             case IntelLevel.Unknown:
-                fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.IntelLevelUnknown);
+                fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.Unknown);
                 // color = GameColor.White;    // may be clear from prior setting
                 break;
             case IntelLevel.OutOfDate:
-                fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.IntelLevelUnknown);
+                fleetIcon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.Unknown);
                 color = Item.Data.Owner.Color;
                 break;
             case IntelLevel.LongRangeSensors:

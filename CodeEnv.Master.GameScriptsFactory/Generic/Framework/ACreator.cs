@@ -38,6 +38,8 @@ public abstract class ACreator<ElementType, ElementCategoryType, ElementDataType
     where CommandType : ACommandItem<ElementType>
     where CompositionType : class, new() {
 
+    public bool IsCompleted { get; private set; }
+
     protected static bool __isHumanOwnedCreated;
 
     public int maxElements = 8;
@@ -71,21 +73,22 @@ public abstract class ACreator<ElementType, ElementCategoryType, ElementDataType
         CreateComposition();
         DeployPiece();
         EnablePiece();
+        OnCompleted();
         __InitializeCommandIntel();
-        OnCreationComplete();
     }
 
     private void OnGameStateChanged() {
-        if (GameManager.Instance.CurrentState == GameState.RunningCountdown_2) {
+        if (GameManager.Instance.CurrentState == GetCreationGameState()) {
             CreateComposition();
             DeployPiece();
             EnablePiece();  // must make View operational before starting state changes within it
+            OnCompleted();
         }
         if (GameManager.Instance.CurrentState == GameState.RunningCountdown_1) {
             __InitializeCommandIntel();
-            OnCreationComplete();
         }
     }
+
 
     private void CreateComposition() {
         if (_isPreset) {
@@ -188,6 +191,8 @@ public abstract class ACreator<ElementType, ElementCategoryType, ElementDataType
                 dataStackLookup.Add(elementCategory, elementDataStack);
             }
             element.Data = elementDataStack.Pop();  // automatically adds the element's transform to Data when set
+            // this is not really necessary as Element's prefab should already have ElementItem as its Mesh's CameraLOSChangedRelay target
+            element.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().AddTarget(element.transform);
         }
     }
 
@@ -204,8 +209,10 @@ public abstract class ACreator<ElementType, ElementCategoryType, ElementDataType
     private void InitializePiece() {
         AddCommandDataToCommand();    // automatically adds the command transform to Data when set
         _elements.ForAll(element => _command.AddElement(element));
-        // include command as a target in each element's CameraLOSChangedRelay
-        _elements.ForAll(element => element.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().AddTarget(_command.transform));
+        // command IS NOT assigned as a target of each element's CameraLOSChangedRelay as that would make the CommandIcon disappear when the elements disappear
+
+        // this is not really necessary as Command's prefab should already have CommandItem as its Icon's CameraLOSChangedRelay target
+        _command.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().AddTarget(_command.transform);
     }
 
     protected abstract void PositionElements();
@@ -284,6 +291,15 @@ public abstract class ACreator<ElementType, ElementCategoryType, ElementDataType
         return _transform.name;
     }
 
+    protected virtual void OnCompleted() {
+        IsCompleted = true;
+    }
+
+    /// <summary>
+    /// Returns the GameState defining when creation should occur.
+    /// </summary>
+    /// <returns>The GameState that triggers creation.</returns>
+    protected abstract GameState GetCreationGameState();
     protected abstract void AddDataToComposition(ElementDataType elementData);
     protected abstract IList<ElementDataType> GetCompositionData(ElementCategoryType elementCategory);
     protected abstract IList<ElementCategoryType> GetCompositionCategories();
@@ -292,7 +308,6 @@ public abstract class ACreator<ElementType, ElementCategoryType, ElementDataType
     protected abstract void AddCommandDataToCommand();
     protected abstract ElementCategoryType[] GetValidHQElementCategories();
     protected abstract ElementCategoryType[] GetValidElementCategories();
-    protected abstract void OnCreationComplete();
 
     protected override void OnDestroy() {
         base.OnDestroy();

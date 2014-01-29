@@ -31,6 +31,10 @@ using UnityEngine;
 /// </summary>
 public class FleetCreator : ACreator<ShipItem, ShipCategory, ShipData, FleetItem, FleetComposition> {
 
+    protected override GameState GetCreationGameState() {
+        return GameState.DeployingSettlements;  // Can be anytime? Should be after GeneratePathGraph so no interference
+    }
+
     protected override ShipData CreateElementData(ShipCategory elementCategory, string elementInstanceName, IPlayer owner) {
         float mass = TempGameValues.__GetMass(elementCategory);
         float drag = 0.1F;
@@ -99,8 +103,6 @@ public class FleetCreator : ACreator<ShipItem, ShipCategory, ShipData, FleetItem
         _elements.ForAll(e => e.gameObject.GetSafeMonoBehaviourComponent<ShipView>().enabled = true);
         _command.gameObject.GetSafeMonoBehaviourComponent<FleetView>().enabled = true;
     }
-
-    protected override void OnCreationComplete() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

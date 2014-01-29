@@ -56,6 +56,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Gameplay\FleetCategory.cs" />
     <Compile Include="Generic\Framework\ACommandData.cs" />
     <Compile Include="Generic\Framework\AElementData.cs" />
     <Compile Include="Game\Graphics\FacilityGuiHudTextFactory.cs" />
@@ -71,6 +72,7 @@
     <Compile Include="Generic\Framework\GameStatus.cs" />
     <Compile Include="Generic\Framework\ITarget.cs" />
     <Compile Include="Generic\Graphics\A3DVectrosityBase.cs" />
+    <Compile Include="Generic\Graphics\AIconFactory.cs" />
     <Compile Include="Generic\Graphics\AVectrosityBase.cs" />
     <Compile Include="Generic\Graphics\CubeWireframe.cs" />
     <Compile Include="Game\Framework\FleetComposition.cs" />
@@ -100,6 +102,7 @@
     <Compile Include="Generic\Graphics\ICameraFocusable.cs" />
     <Compile Include="Generic\Graphics\ICameraFollowable.cs" />
     <Compile Include="Generic\Graphics\ICameraTargetable.cs" />
+    <Compile Include="Generic\Graphics\FleetIconFactory.cs" />
     <Compile Include="Generic\Graphics\IZoomToFurthest.cs" />
     <Compile Include="Generic\IO\AnimationSettings.cs" />
     <Compile Include="Game\_Debug\DebugHudText.cs" />
@@ -145,7 +148,6 @@
     <Compile Include="Game\Gameplay\Data.cs" />
     <Compile Include="Game\Graphics\SectorGuiHudTextFactory.cs" />
     <Compile Include="Game\Gameplay\StarbaseOrders.cs" />
-    <Compile Include="Game\Graphics\ISettlementViewable.cs" />
     <Compile Include="Game\Gameplay\SettlementOrders.cs" />
     <Compile Include="Game\Gameplay\SettlementState.cs" />
     <Compile Include="Generic\Graphics\IHighlightTrackingLabel.cs" />
@@ -156,6 +158,8 @@
     <Compile Include="Game\Graphics\StarbaseGuiHudTextFactory.cs" />
     <Compile Include="Generic\Graphics\ICommandViewable.cs" />
     <Compile Include="Generic\Graphics\IElementViewable.cs" />
+    <Compile Include="Generic\Graphics\SettlementIconFactory.cs" />
+    <Compile Include="Generic\Graphics\StarbaseIconFactory.cs" />
     <Compile Include="ThirdParty\ICoroutineManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\SystemData.cs" />

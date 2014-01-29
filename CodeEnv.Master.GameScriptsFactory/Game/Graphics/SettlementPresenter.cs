@@ -49,12 +49,6 @@ public class SettlementPresenter : AMortalFocusablePresenter {
         return new GuiHudPublisher<SettlementData>(Item.Data);
     }
 
-    //protected override void Subscribe() {
-    //    base.Subscribe();
-    //    _subscribers.Add(Item.SubscribeToPropertyChanged<SettlementItem, SettlementState>(sb => sb.CurrentState, OnSettlementStateChanged));
-    //    View.onShowCompletion += Item.OnShowCompletion;
-    //}
-
     protected override void Subscribe() {
         base.Subscribe();
         _subscribers.Add(Item.SubscribeToPropertyChanged<SettlementItem, AElement>(sb => sb.HQElement, OnHQElementChanged));
@@ -63,22 +57,6 @@ public class SettlementPresenter : AMortalFocusablePresenter {
         View.onShowCompletion += Item.OnShowCompletion;
         Item.onElementDestroyed += OnSettlementElementDestroyed;
     }
-
-
-    //private void OnSettlementStateChanged() {
-    //    SettlementState state = Item.CurrentState;
-    //    switch (state) {
-    //        case SettlementState.ShowDying:
-    //            View.ShowDying();
-    //            break;
-    //        case SettlementState.Idling:
-    //            // do nothing
-    //            break;
-    //        case SettlementState.None:
-    //        default:
-    //            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(state));
-    //    }
-    //}
 
     private void OnSettlementStateChanged() {
         SettlementState state = Item.CurrentState;
@@ -119,13 +97,13 @@ public class SettlementPresenter : AMortalFocusablePresenter {
         AssessCmdIcon();
     }
 
-    public void OnPlayerIntelChanged() {    // IMPROVE duplicates System communication of changes to all views in System
+    public void OnPlayerIntelContentChanged() {    // IMPROVE duplicates System communication of changes to all views in System
         Item.Elements.ForAll<FacilityItem>(sc => sc.gameObject.GetSafeMonoBehaviourComponent<FacilityView>().PlayerIntel = View.PlayerIntel);
         AssessCmdIcon();
     }
 
     private void OnHQElementChanged() {
-        View.TrackingTarget = GetHQElementTransform();
+        View.TrackingTarget = GetTrackingTarget();
     }
 
     public void OnIsSelectedChanged() {
@@ -135,39 +113,14 @@ public class SettlementPresenter : AMortalFocusablePresenter {
         Item.Elements.ForAll(s => s.gameObject.GetSafeMonoBehaviourComponent<FacilityView>().AssessHighlighting());
     }
 
-    public Transform GetHQElementTransform() {
+    public Transform GetTrackingTarget() {
         return Item.HQElement.transform;
     }
 
-    private IconFactory _iconFactory = IconFactory.Instance;
+    private SettlementIconFactory _iconFactory = SettlementIconFactory.Instance;
     private void AssessCmdIcon() {
-        IIcon icon;
-        GameColor color = GameColor.White;
-        // TODO evaluate Composition
-        switch (View.PlayerIntel.Scope) {
-            case IntelScope.None:
-                icon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.None);
-                //color = GameColor.Clear;    // None should be a completely transparent icon
-                break;
-            case IntelScope.Aware:
-                icon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.IntelLevelUnknown);
-                // color = GameColor.White;    // may be clear from prior setting
-                break;
-            case IntelScope.Minimal:
-            case IntelScope.Moderate:
-                icon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, IconSelectionCriteria.Level5);
-                color = Item.Data.Owner.Color;
-                break;
-            case IntelScope.Comprehensive:
-                var selectionCriteria = new IconSelectionCriteria[] { IconSelectionCriteria.Level5, IconSelectionCriteria.Science, IconSelectionCriteria.Colony, IconSelectionCriteria.Troop };
-                icon = _iconFactory.MakeInstance<FleetIcon>(IconSection.Base, selectionCriteria);
-                color = Item.Data.Owner.Color;
-                break;
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(View.PlayerIntel.Scope));
-        }
-        D.Log("IntelScope is {2}, changing {0} to {1}.", typeof(FleetIcon).Name, icon.Filename, View.PlayerIntel.Scope.GetName());
-        View.ChangeCmdIcon(icon, color);
+        IIcon icon = _iconFactory.MakeInstance(Item.Data, View.PlayerIntel);
+        View.ChangeCmdIcon(icon);
     }
 
     protected override void OnItemDeath(ItemDeathEvent e) {

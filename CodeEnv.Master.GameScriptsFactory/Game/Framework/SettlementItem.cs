@@ -54,6 +54,33 @@ public class SettlementItem : ACommandItem<FacilityItem> {
         CurrentState = SettlementState.Idling;
     }
 
+    public override void AssessCommandCategory() {
+        switch (Elements.Count) {
+            case 1:
+                Data.Category = SettlementCategory.Colony;
+                break;
+            case 2:
+            case 3:
+                Data.Category = SettlementCategory.City;
+                break;
+            case 4:
+            case 5:
+                Data.Category = SettlementCategory.CityState;
+                break;
+            case 6:
+            case 7:
+                Data.Category = SettlementCategory.Province;
+                break;
+            case 8:
+            case 9:
+                Data.Category = SettlementCategory.Territory;
+                break;
+            case 0:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(Elements.Count));
+        }
+    }
+
     protected override void Die() {
         CurrentState = SettlementState.Dying;
     }

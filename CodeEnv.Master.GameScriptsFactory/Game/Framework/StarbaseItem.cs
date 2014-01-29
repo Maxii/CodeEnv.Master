@@ -58,6 +58,33 @@ public class StarbaseItem : ACommandItem<FacilityItem> {
         CurrentState = StarbaseState.Idling;
     }
 
+    public override void AssessCommandCategory() {
+        switch (Elements.Count) {
+            case 1:
+                Data.Category = StarbaseCategory.Outpost;
+                break;
+            case 2:
+            case 3:
+                Data.Category = StarbaseCategory.LocalBase;
+                break;
+            case 4:
+            case 5:
+                Data.Category = StarbaseCategory.DistrictBase;
+                break;
+            case 6:
+            case 7:
+                Data.Category = StarbaseCategory.RegionalBase;
+                break;
+            case 8:
+            case 9:
+                Data.Category = StarbaseCategory.TerritorialBase;
+                break;
+            case 0:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(Elements.Count));
+        }
+    }
+
     protected override void Die() {
         CurrentState = StarbaseState.Dying;
     }

@@ -27,6 +27,8 @@ namespace CodeEnv.Master.Common {
 
         string Filename { get; }
 
+        GameColor Color { get; }
+
     }
 }
 

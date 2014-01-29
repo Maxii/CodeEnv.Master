@@ -129,7 +129,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-
         private static GameDate _date;
         /// <summary>
         /// The GameDate in the game. This value takes into account when the game was begun,
@@ -176,7 +175,7 @@ namespace CodeEnv.Master.GameContent {
 
         #region SingletonPattern
 
-        private static readonly GameTime instance;
+        private static readonly GameTime _instance;
 
         /// <summary>
         /// Explicit static constructor that enables lazy instantiation by telling C# compiler
@@ -184,7 +183,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         static GameTime() {
             // try, catch and resolve any possible exceptions here
-            instance = new GameTime();
+            _instance = new GameTime();
         }
 
         /// <summary>
@@ -196,7 +195,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>Returns the singleton instance of this class.</summary>
         public static GameTime Instance {
-            get { return instance; }
+            get { return _instance; }
         }
         #endregion
 
@@ -204,6 +203,7 @@ namespace CodeEnv.Master.GameContent {
         /// Called once from the constructor, this does all required initialization
         /// </summary>
         private void Initialize() {
+            D.Log("{0}.Initialize() called.", typeof(GameTime).Name);
             _gameStatus = GameStatus.Instance;
             _eventMgr = GameEventManager.Instance;
             UnityEngine.Time.timeScale = Constants.OneF;

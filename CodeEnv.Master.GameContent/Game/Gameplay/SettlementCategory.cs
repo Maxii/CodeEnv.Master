@@ -30,14 +30,14 @@ namespace CodeEnv.Master.GameContent {
         [EnumAttribute("Growing City")]
         City,
 
-        [EnumAttribute("City State")]
+        [EnumAttribute("Mature City")]
         CityState,
 
-        [EnumAttribute("Expansive Territory")]
-        Territory,
+        [EnumAttribute("Regional Province")]
+        Province,
 
-        [EnumAttribute("Ruling Province")]
-        Province
+        [EnumAttribute("Expansive Territory")]
+        Territory
 
     }
 }

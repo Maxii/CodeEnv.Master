@@ -100,7 +100,6 @@ namespace CodeEnv.Master.GameContent {
             D.Warn("Attempting to add {0} {1} that is already present.", typeof(AElementData), elementData.OptionalParentName);
         }
 
-
         private void ValidateOwner(IPlayer owner) {
             if (Owner == null) {
                 // first setting of owner by first Element added. Not broadcast
@@ -154,7 +153,6 @@ namespace CodeEnv.Master.GameContent {
             MaxHitPoints = ElementsData.Sum<AElementData>(ed => ed.MaxHitPoints);
         }
 
-
         #region ElementData PropertyChanged Subscription and Methods
 
         protected virtual void Subscribe(AElementData elementData) {
@@ -196,7 +194,6 @@ namespace CodeEnv.Master.GameContent {
             }
             _subscribers.Clear();
         }
-
 
         #region IDisposable
         [DoNotSerialize]
