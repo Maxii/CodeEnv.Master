@@ -16,11 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
     /// All the data associated with a Starbase.
@@ -40,10 +36,10 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<BaseComposition>(ref _composition, value, "Composition"); }
         }
 
-        ///// <summary>
-        ///// Initializes a new instance of the <see cref="StarbaseData"/> class.
-        ///// </summary>
-        ///// <param name="starbaseName">Name of the starbase.</param>
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StarbaseData"/> class.
+        /// </summary>
+        /// <param name="starbaseName">Name of the starbase.</param>
         public StarbaseData(string starbaseName) : base(starbaseName) { }
 
         protected override void InitializeComposition() {

@@ -69,10 +69,10 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<BaseComposition>(ref _composition, value, "Composition"); }
         }
 
-        ///// <summary>
-        ///// Initializes a new instance of the <see cref="StarbaseData"/> class.
-        ///// </summary>
-        ///// <param name="starbaseName">Name of the starbase.</param>
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StarbaseData"/> class.
+        /// </summary>
+        /// <param name="starbaseName">Name of the starbase.</param>
         public SettlementData(string settlementName) : base(settlementName) { }
 
         protected override void InitializeComposition() {
@@ -92,10 +92,6 @@ namespace CodeEnv.Master.GameContent {
                 Composition = new BaseComposition(Composition);
             }
         }
-
-
-
-
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

@@ -43,13 +43,6 @@ public abstract class AMortalFocusablePresenter : AFocusablePresenter {
         _eventMgr.AddListener<ItemDeathEvent>(this, OnItemDeath);
     }
 
-    public bool IsDetectable {
-        get { return true; }
-        // TODO assess detectability of this view for the HumanPlayer
-        // include Item.StealthMode, Item.Owner and whether in range
-        // of humanPlayer's sensors
-    }
-
     protected abstract void OnItemDeath(ItemDeathEvent e);
 
     protected virtual void CleanupOnDeath() {

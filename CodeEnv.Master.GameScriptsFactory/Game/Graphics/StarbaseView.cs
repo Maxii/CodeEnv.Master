@@ -33,6 +33,11 @@ public class StarbaseView : ACommandView, IHighlightTrackingLabel {
     public bool enableTrackingLabel = false;
     private GuiTrackingLabel _trackingLabel;
 
+    protected override void Awake() {
+        base.Awake();
+        Subscribe();
+    }
+
     protected override void InitializePresenter() {
         Presenter = new StarbasePresenter(this);
     }
@@ -53,9 +58,9 @@ public class StarbaseView : ACommandView, IHighlightTrackingLabel {
         InitializeTrackingLabel();
     }
 
-    protected override void OnPlayerIntelContentChanged() {
-        base.OnPlayerIntelContentChanged();
-        Presenter.OnPlayerIntelContentChanged();
+    protected override void OnPlayerIntelCoverageChanged() {
+        base.OnPlayerIntelCoverageChanged();
+        Presenter.OnPlayerIntelCoverageChanged();
     }
 
     protected override void RequestContextMenu(bool isDown) {

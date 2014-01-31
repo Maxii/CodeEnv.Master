@@ -86,12 +86,17 @@ namespace CodeEnv.Master.Common {
         }
 
         #region IEquatable<Index3D> Members
+
         public bool Equals(Index3D other) {
             // TODO add your equality test here. Call the base class Equals only if the
             // base class version is not provided by System.Object or System.ValueType
             // as all that occurs is either a check for reference equality or content equality.
+            if (other == null) {    // the runtime will use this IEquatable Equals implementation directly
+                return false;       // rather than the Object.Equals above, IF the 'other' passed for equivalence testing is of Type T
+            }   // In that case, 'other' must be tested for null as the null test for 'right' in Object.Equals never occurs
             return X == other.X && Y == other.Y && Z == other.Z;
         }
+
         #endregion
 
     }

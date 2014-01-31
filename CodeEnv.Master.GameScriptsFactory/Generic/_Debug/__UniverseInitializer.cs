@@ -70,7 +70,7 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
         }
 
         if (_gameMgr.CurrentState == GameState.RunningCountdown_1) {
-            InitializeUniverseCenterPlayerIntel();
+            //InitializeUniverseCenterPlayerIntel();    // no longer needed as UniverseCenter.PlayerIntel.Coverage is fixed to Comprehensive
         }
     }
 
@@ -106,11 +106,12 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
     /// <summary>
     /// PlayerIntelLevel changes immediately propogate through COs and Ships so initialize this last in case the change pulls Data.
     /// </summary>
-    private void InitializeUniverseCenterPlayerIntel() {
-        if (_universeCenter != null) {  // allows me to deactivate it
-            _universeCenter.gameObject.GetSafeInterface<IViewable>().PlayerIntel = new Intel(IntelScope.Comprehensive, IntelSource.InfoNet);
-        }
-    }
+    //private void InitializeUniverseCenterPlayerIntel() {
+    //    if (_universeCenter != null) {  // allows me to deactivate it
+    //        //_universeCenter.gameObject.GetSafeInterface<IViewable>().PlayerIntel = new Intel(IntelScope.Comprehensive, IntelSource.InfoNet);
+    //        _universeCenter.gameObject.GetSafeInterface<IViewable>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
+    //    }
+    //}
 
     protected override void OnDestroy() {
         base.OnDestroy();

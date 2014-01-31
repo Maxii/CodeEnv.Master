@@ -97,10 +97,11 @@ public class SettlementPresenter : AMortalFocusablePresenter {
         AssessCmdIcon();
     }
 
-    public void OnPlayerIntelContentChanged() {    // IMPROVE duplicates System communication of changes to all views in System
-        Item.Elements.ForAll<FacilityItem>(sc => sc.gameObject.GetSafeMonoBehaviourComponent<FacilityView>().PlayerIntel = View.PlayerIntel);
+    public void OnPlayerIntelCoverageChanged() {
+        Item.Elements.ForAll<FacilityItem>(e => e.gameObject.GetSafeMonoBehaviourComponent<FacilityView>().PlayerIntel.CurrentCoverage = View.PlayerIntel.CurrentCoverage);
         AssessCmdIcon();
     }
+
 
     private void OnHQElementChanged() {
         View.TrackingTarget = GetTrackingTarget();

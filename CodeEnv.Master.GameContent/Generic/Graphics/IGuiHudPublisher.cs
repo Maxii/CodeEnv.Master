@@ -37,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="toShow">if set to <c>true</c> shows the hud, otherwise hides it.</param>
         /// <param name="intel">The intel.</param>
-        void ShowHud(bool toShow, Intel intel);
+        void ShowHud(bool toShow, IIntel intel);
 
         /// <summary>
         /// Clients can optionally provide additional GuiCursorHudLineKeys they wish to routinely update whenever GetHudText is called.

@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -38,35 +38,35 @@ namespace CodeEnv.Master.GameContent {
             _iconCache = new Dictionary<IconSection, IDictionary<IEnumerable<IconSelectionCriteria>, IIcon>>();
         }
 
-        public IIcon MakeInstance(DataType data, Intel playerIntel) {
+        public IIcon MakeInstance(DataType data, IIntel playerIntel) {
             IconSection section = GetIconSection();
             IconSelectionCriteria[] criteria = GetSelectionCriteria(data, playerIntel);
             return MakeInstance(section, data.Owner.Color, criteria);
         }
 
-        private IconSelectionCriteria[] GetSelectionCriteria(DataType data, Intel playerIntel) {
+        private IconSelectionCriteria[] GetSelectionCriteria(DataType data, IIntel playerIntel) {
             IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
-            switch (playerIntel.Scope) {
-                case IntelScope.None:
+            switch (playerIntel.CurrentCoverage) {
+                case IntelCoverage.None:
                     // always returns None
                     criteria.Add(IconSelectionCriteria.None);
                     break;
-                case IntelScope.Aware:
+                case IntelCoverage.Aware:
                     // always returns Unknown
                     criteria.Add(IconSelectionCriteria.Unknown);
                     break;
-                case IntelScope.Minimal:
+                case IntelCoverage.Minimal:
                     // always returns level 1-5
                     criteria.Add(GetCriteriaFromCategory(data));
                     break;
-                case IntelScope.Moderate:
-                case IntelScope.Comprehensive:
+                case IntelCoverage.Moderate:
+                case IntelCoverage.Comprehensive:
                     // always returns a comprehensive icon
                     criteria.Add(GetCriteriaFromCategory(data));
                     GetCriteriaFromComposition(data).ForAll(isc => criteria.Add(isc));
                     break;
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(playerIntel.Scope));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(playerIntel.CurrentCoverage));
             }
             return criteria.ToArray();
         }

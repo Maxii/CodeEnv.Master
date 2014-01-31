@@ -12,10 +12,8 @@
 
 // default namespace
 
-using System;
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
@@ -32,10 +30,19 @@ public class UniverseCenterView : AFocusableView {
         (_collider as SphereCollider).radius = TempGameValues.UniverseCenterRadius;
         _keepoutCollider = gameObject.GetComponentsInChildren<SphereCollider>().Single(c => c.gameObject.layer == (int)Layers.CelestialObjectKeepout);
         _keepoutCollider.radius = (_collider as SphereCollider).radius * TempGameValues.KeepoutRadiusMultiplier;
+        Subscribe();    // no real need to subscribe at all if only subscription is PlayerIntelCoverage changes which these don't have
+    }
+
+    protected override IIntel InitializePlayerIntel() {
+        return new FixedIntel(IntelCoverage.Comprehensive);
     }
 
     protected override void InitializePresenter() {
         Presenter = new UniverseCenterPresenter(this);
+    }
+
+    protected override void SubscribeToPlayerIntelCoverageChanged() {
+        // no reason to subscribe as Coverage does not change
     }
 
     public override string ToString() {

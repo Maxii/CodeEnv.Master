@@ -264,7 +264,7 @@ public class ShipView : AFollowableView, IShipViewable, ISelectable {
                 return;
             }
             if (_velocityRay == null) {
-                Reference<float> shipSpeed = Presenter.GetShipSpeed();
+                Reference<float> shipSpeed = Presenter.GetShipSpeedReference();
                 _velocityRay = new VelocityRay("ShipVelocity", _transform, shipSpeed, parent: DynamicObjects.Folder,
                     width: 1F, color: GameColor.Gray);
             }

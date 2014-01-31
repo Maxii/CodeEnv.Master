@@ -237,8 +237,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
 
         sectorGO.transform.position = worldPosition;
         SectorView view = sectorGO.GetSafeMonoBehaviourComponent<SectorView>();
-        //view.PlayerIntel = new Intel(IntelScope.Comprehensive, IntelFreshness.Realtime);
-        view.PlayerIntel = new Intel(IntelScope.Comprehensive, IntelSource.InfoNet);
+        view.PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
         sector.enabled = true;
         view.enabled = true;
 

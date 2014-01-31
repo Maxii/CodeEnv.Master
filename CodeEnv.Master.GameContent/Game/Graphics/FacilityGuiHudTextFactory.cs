@@ -29,22 +29,20 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, Intel intel, FacilityData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, FacilityData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
-                    // ships donot show name if IntelScope is simply just Aware
-                    return intel.Scope != IntelScope.Aware ? new ColoredTextList_String(data.Name) : _emptyColoredTextList;
+                    return new ColoredTextList_String(data.Name);
                 case GuiHudLineKeys.ParentName:
-                    return data.OptionalParentName != string.Empty ? new ColoredTextList_String(data.OptionalParentName) : _emptyColoredTextList;
+                    return new ColoredTextList_String(data.OptionalParentName);
                 case GuiHudLineKeys.Distance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
-                    return (intel.DateStamp != null) ? new ColoredTextList_Intel(intel) : _emptyColoredTextList;
+                    return new ColoredTextList_Intel(intel);
                 case GuiHudLineKeys.Category:
                     return new ColoredTextList_String(data.Category.GetName(), data.Category.GetDescription());
                 case GuiHudLineKeys.Health:
                     return new ColoredTextList_Health(data.Health, data.MaxHitPoints);
-
                 case GuiHudLineKeys.Owner:
                     return new ColoredTextList_Owner(data.Owner);
                 case GuiHudLineKeys.CombatStrength:

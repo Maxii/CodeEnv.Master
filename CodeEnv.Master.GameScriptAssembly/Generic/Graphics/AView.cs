@@ -30,38 +30,35 @@ using UnityEngine;
 public abstract class AView : AMonoBase, IViewable, ICameraLOSChangedClient, IDisposable {
 
     private IList<Transform> _meshesInCameraLOS = new List<Transform>();    // OPTIMIZE can be simplified to simple incrementing/decrementing counter
-    private IList<IDisposable> _subscribers;
+    protected IList<IDisposable> _subscribers;
 
     protected override void Awake() {
         base.Awake();
+        PlayerIntel = InitializePlayerIntel();
         enabled = false;
     }
 
     protected override void Start() {
         base.Start();
         InitializePresenter();  // moved from Awake as some Presenters need immediate access to this Behaviour's parent which may not yet be assigned if Instantiated at runtime
+        // Derived classes must call Subscribe after all references are available
     }
 
+    protected virtual IIntel InitializePlayerIntel() {
+        return new Intel();
+    }
     protected abstract void InitializePresenter();
 
     protected virtual void Subscribe() {
-        if (_subscribers == null) {
-            _subscribers = new List<IDisposable>();
-        }
-        _subscribers.Add(PlayerIntel.SubscribeToPropertyChanged<Intel, IntelSource>(pi => pi.Source, OnPlayerIntelContentChanged));
+        _subscribers = new List<IDisposable>();
+        SubscribeToPlayerIntelCoverageChanged();
     }
 
-    private void OnPlayerIntelChanging(Intel newIntel) {
-        Unsubscribe();
+    protected virtual void SubscribeToPlayerIntelCoverageChanged() {
+        _subscribers.Add((PlayerIntel as Intel).SubscribeToPropertyChanged<Intel, IntelCoverage>(pi => pi.CurrentCoverage, OnPlayerIntelCoverageChanged));
     }
 
-
-    private void OnPlayerIntelChanged() {
-        Subscribe();
-        OnPlayerIntelContentChanged();
-    }
-
-    protected virtual void OnPlayerIntelContentChanged() {
+    protected virtual void OnPlayerIntelCoverageChanged() {
         AssessDiscernability();
         if (HudPublisher != null && HudPublisher.IsHudShowing) {
             ShowHud(true);
@@ -100,7 +97,7 @@ public abstract class AView : AMonoBase, IViewable, ICameraLOSChangedClient, IDi
 
     protected virtual void AssessDiscernability() {
         //D.Log("{0}.{1}.AssessDiscernability() called.", _transform.parent.name, _transform.name);
-        IsDiscernible = InCameraLOS && PlayerIntel.Source != IntelSource.None;
+        IsDiscernible = InCameraLOS && PlayerIntel.CurrentCoverage != IntelCoverage.None;
     }
 
     public void ShowHud(bool toShow) {
@@ -135,11 +132,7 @@ public abstract class AView : AMonoBase, IViewable, ICameraLOSChangedClient, IDi
 
     public abstract float Radius { get; }
 
-    private Intel _playerIntel;
-    public Intel PlayerIntel {
-        get { return _playerIntel; }
-        set { SetProperty<Intel>(ref _playerIntel, value, "PlayerIntel", OnPlayerIntelChanged, OnPlayerIntelChanging); }
-    }
+    public IIntel PlayerIntel { get; private set; }
 
     public IGuiHudPublisher HudPublisher { get; set; }
 

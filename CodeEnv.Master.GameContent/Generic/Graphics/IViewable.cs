@@ -34,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         IGuiHudPublisher HudPublisher { get; set; }
 
-        Intel PlayerIntel { get; set; }
+        IIntel PlayerIntel { get; }
 
         /// <summary>
         /// The radius in units of the conceptual 'globe' that

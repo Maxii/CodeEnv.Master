@@ -16,9 +16,12 @@
 
 namespace CodeEnv.Master.Common {
 
+    using System;
+
     /// <summary>
     /// The current realtime source of Intel data for an object.
     /// </summary>
+    [Obsolete]
     public enum IntelSource {
 
         /// <summary>

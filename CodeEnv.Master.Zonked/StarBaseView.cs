@@ -284,7 +284,7 @@ public class StarBaseView : AFocusableView, IStarBaseViewable, ISelectable, IHig
 
     public override bool IsRetainedFocusEligible {
         get {
-            return PlayerIntel.Scope != IntelScope.None;
+            return PlayerIntel.Scope != IntelCoverage.None;
         }
     }
 

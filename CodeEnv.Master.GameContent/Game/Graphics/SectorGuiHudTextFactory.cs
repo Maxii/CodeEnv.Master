@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, Intel intel, SectorData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, SectorData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.Name);
@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Distance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
-                    return (intel.DateStamp != null) ? new ColoredTextList_Intel(intel) : _emptyColoredTextList;
+                    return new ColoredTextList_Intel(intel);
                 case GuiHudLineKeys.SectorIndex:
                     return new ColoredTextList_String(data.SectorIndex.ToString());
                 case GuiHudLineKeys.Density:

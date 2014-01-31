@@ -34,32 +34,18 @@ public class ShipPresenter : AMortalFocusablePresenter {
         protected set { base.Item = value; }
     }
 
-    //protected new IShipViewable View {
-    //    get { return base.View as IShipViewable; }
-    //}
-
     protected new IElementViewable View {
         get { return base.View as IElementViewable; }
     }
 
-    //private IFleetViewable _fleetView;
     private ICommandViewable _fleetView;
-
-    //public ShipPresenter(IShipViewable view)
-    //    : base(view) {
-    //    FleetCreator fleetMgr = _viewGameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>();
-    //    _fleetView = fleetMgr.gameObject.GetSafeInterfaceInChildren<IFleetViewable>();
-    //    Subscribe();
-    //}
 
     public ShipPresenter(IElementViewable view)
         : base(view) {
         FleetCreator fleetMgr = _viewGameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>();
-        //_fleetView = fleetMgr.gameObject.GetSafeInterfaceInChildren<IFleetViewable>();
         _fleetView = fleetMgr.gameObject.GetSafeInterfaceInChildren<ICommandViewable>();
         Subscribe();
     }
-
 
     protected override AItem AcquireItemReference() {
         return UnityUtility.ValidateMonoBehaviourPresence<ShipItem>(_viewGameObject);
@@ -156,7 +142,7 @@ public class ShipPresenter : AMortalFocusablePresenter {
         Item.__SimulateAttacked();
     }
 
-    public Reference<float> GetShipSpeed() {
+    public Reference<float> GetShipSpeedReference() {
         return new Reference<float>(() => Item.Data.CurrentSpeed);
     }
 

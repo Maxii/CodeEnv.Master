@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IntelScope.cs
+// File: IntelCoverage.cs
 // Enum defining the scope of knowledge a player currently has about an object in the game.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.Common {
     /// <summary>
     /// Enum defining the scope of knowledge a player currently has about an object in the game.
     /// </summary>
-    public enum IntelScope {
+    public enum IntelCoverage {
 
         /// <summary>
         /// There is zero knowledge of an object, not even its existance.

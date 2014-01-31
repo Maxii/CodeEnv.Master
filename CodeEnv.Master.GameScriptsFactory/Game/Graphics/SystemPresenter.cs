@@ -54,10 +54,16 @@ public class SystemPresenter : AFocusablePresenter {
         SelectionManager.Instance.CurrentSelection = View as ISelectable;
     }
 
-    public void OnPlayerIntelChanged() {
-        // construct list each time as Settlement Views (Cmd and elements) can change over time
-        IEnumerable<IViewable> childViewsInSystem = _viewGameObject.GetSafeInterfacesInChildren<IViewable>().Except(View);
-        childViewsInSystem.ForAll<IViewable>(v => v.PlayerIntel = View.PlayerIntel);
+    // UNCLEAR what should the relationship be between System.IntelCoverage and Settlement/Planet?, implemented Settlement for now
+    public void OnPlayerIntelCoverageChanged() {
+        // construct list each time as Settlement presence can change with time
+        SettlementView settlementView = _viewGameObject.GetComponentInChildren<SettlementView>();
+        if (settlementView != null) {
+            settlementView.PlayerIntel.CurrentCoverage = View.PlayerIntel.CurrentCoverage;
+        }
+        // The approach below acquired all views in the system and gave them the same IntelCoverage as the system
+        //IEnumerable<IViewable> childViewsInSystem = _viewGameObject.GetSafeInterfacesInChildren<IViewable>().Except(View);
+        //childViewsInSystem.ForAll<IViewable>(v => v.PlayerIntel.CurrentCoverage = View.PlayerIntel.CurrentCoverage);
     }
 
     public override string ToString() {

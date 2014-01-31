@@ -29,18 +29,16 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, Intel intel, ShipData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, ShipData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
-                    // ships donot show name if IntelScope is simply Aware
-                    return intel.Scope != IntelScope.Aware ? new ColoredTextList_String(data.Name) : _emptyColoredTextList;
+                    return new ColoredTextList_String(data.Name);
                 case GuiHudLineKeys.ParentName:
-                    // ships donot show name of the fleet if IntelLevel is Unknown
-                    return intel.Scope != IntelScope.Aware ? new ColoredTextList_String(data.OptionalParentName) : _emptyColoredTextList;
+                    return new ColoredTextList_String(data.OptionalParentName);
                 case GuiHudLineKeys.Distance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
-                    return (intel.DateStamp != null) ? new ColoredTextList_Intel(intel) : _emptyColoredTextList;
+                    return new ColoredTextList_Intel(intel);
                 case GuiHudLineKeys.Speed:
                     return new ColoredTextList_Speed(data.CurrentSpeed, data.MaxSpeed);
                 case GuiHudLineKeys.Owner:

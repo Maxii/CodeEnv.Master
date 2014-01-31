@@ -45,10 +45,19 @@ public class StarView : AFocusableView {
         _keepoutCollider.radius = (_collider as SphereCollider).radius * TempGameValues.KeepoutRadiusMultiplier;
         _starLight = gameObject.GetComponentInChildren<Light>();
         _billboard = gameObject.GetSafeMonoBehaviourComponentInChildren<Billboard>();
+        Subscribe();    // no real need to subscribe at all if only subscription is PlayerIntelCoverage changes which these don't have
+    }
+
+    protected override IIntel InitializePlayerIntel() {
+        return new FixedIntel(IntelCoverage.Comprehensive);
     }
 
     protected override void InitializePresenter() {
         Presenter = new StarPresenter(this);
+    }
+
+    protected override void SubscribeToPlayerIntelCoverageChanged() {
+        // no reason to subscribe as Coverage does not change
     }
 
     protected override void Start() {

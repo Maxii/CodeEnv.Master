@@ -30,6 +30,11 @@ public class SettlementView : ACommandView, ICameraFollowable {
         protected set { base.Presenter = value; }
     }
 
+    protected override void Awake() {
+        base.Awake();
+        Subscribe();
+    }
+
     protected override void InitializePresenter() {
         Presenter = new SettlementPresenter(this);
     }
@@ -38,9 +43,9 @@ public class SettlementView : ACommandView, ICameraFollowable {
         TrackingTarget = Presenter.GetTrackingTarget();
     }
 
-    protected override void OnPlayerIntelContentChanged() {
-        base.OnPlayerIntelContentChanged();
-        Presenter.OnPlayerIntelContentChanged();
+    protected override void OnPlayerIntelCoverageChanged() {
+        base.OnPlayerIntelCoverageChanged();
+        Presenter.OnPlayerIntelCoverageChanged();
     }
 
     protected override void RequestContextMenu(bool isDown) {

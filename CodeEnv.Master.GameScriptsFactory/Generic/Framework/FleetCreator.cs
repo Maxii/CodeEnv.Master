@@ -96,7 +96,7 @@ public class FleetCreator : ACreator<ShipItem, ShipCategory, ShipData, FleetItem
     }
 
     protected override void __InitializeCommandIntel() {
-        _command.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel = new Intel(IntelScope.Comprehensive, IntelSource.InfoNet);
+        _command.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
     }
 
     protected override void EnableViews() {

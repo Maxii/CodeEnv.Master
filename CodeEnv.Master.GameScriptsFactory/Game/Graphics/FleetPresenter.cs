@@ -138,8 +138,8 @@ public class FleetPresenter : AMortalFocusablePresenter {
         AssessCmdIcon();
     }
 
-    public void OnPlayerIntelContentChanged() {
-        Item.Elements.ForAll(sc => sc.gameObject.GetSafeMonoBehaviourComponent<ShipView>().PlayerIntel = View.PlayerIntel);
+    public void OnPlayerIntelCoverageChanged() {
+        Item.Elements.ForAll(e => e.gameObject.GetSafeMonoBehaviourComponent<ShipView>().PlayerIntel.CurrentCoverage = View.PlayerIntel.CurrentCoverage);
         AssessCmdIcon();
     }
 

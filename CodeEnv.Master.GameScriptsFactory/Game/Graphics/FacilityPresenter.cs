@@ -31,25 +31,14 @@ public class FacilityPresenter : AMortalFocusablePresenter {
         protected set { base.Item = value; }
     }
 
-    //protected new IFacilityViewable View {
-    //    get { return base.View as IFacilityViewable; }
-    //}
-
     protected new IElementViewable View {
         get { return base.View as IElementViewable; }
     }
-
-
-    //public FacilityPresenter(IFacilityViewable view)
-    //    : base(view) {
-    //    Subscribe();
-    //}
 
     public FacilityPresenter(IElementViewable view)
         : base(view) {
         Subscribe();
     }
-
 
     protected override AItem AcquireItemReference() {
         return UnityUtility.ValidateMonoBehaviourPresence<FacilityItem>(_viewGameObject);

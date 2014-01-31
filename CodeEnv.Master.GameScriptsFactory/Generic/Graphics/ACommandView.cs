@@ -120,13 +120,21 @@ public abstract class ACommandView : AFocusableView, ICommandViewable, ISelectab
         }
     }
 
+    #region Intel Stealth Testing
+
     protected virtual void OnLeftDoubleClick() {
-        __SimulateStealthToggle();
+        __ToggleStealthSimulation();
     }
 
-    private void __SimulateStealthToggle() {
-        PlayerIntel.Source = PlayerIntel.Source == IntelSource.None ? IntelSource.InfoNet : IntelSource.None;
+    private IntelCoverage __normalIntelCoverage;
+    private void __ToggleStealthSimulation() {
+        if (__normalIntelCoverage == IntelCoverage.None) {
+            __normalIntelCoverage = PlayerIntel.CurrentCoverage;
+        }
+        PlayerIntel.CurrentCoverage = PlayerIntel.CurrentCoverage == __normalIntelCoverage ? IntelCoverage.Aware : __normalIntelCoverage;
     }
+
+    #endregion
 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
@@ -310,7 +318,7 @@ public abstract class ACommandView : AFocusableView, ICommandViewable, ISelectab
 
     public override bool IsRetainedFocusEligible {
         get {
-            return PlayerIntel.Source != IntelSource.None;
+            return PlayerIntel.CurrentCoverage != IntelCoverage.None;
         }
     }
 

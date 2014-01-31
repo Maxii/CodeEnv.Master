@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     // ships donot show name if IntelScope is simply just Aware
-                    return intel.Scope != IntelScope.Aware ? new ColoredTextList_String(data.Name) : _emptyColoredTextList;
+                    return intel.CurrentCoverage != IntelCoverage.Aware ? new ColoredTextList_String(data.Name) : _emptyColoredTextList;
                 case GuiHudLineKeys.ParentName:
                     return data.OptionalParentName != string.Empty ? new ColoredTextList_String(data.OptionalParentName) : _emptyColoredTextList;
                 case GuiHudLineKeys.Distance:

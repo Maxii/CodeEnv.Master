@@ -11,7 +11,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -74,7 +74,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="toShow">if set to <c>true</c> shows the hud, otherwise hides it.</param>
         /// <param name="intelLevel">The intel level.</param>
-        public void ShowHud(bool toShow, Intel intel) {
+        public void ShowHud(bool toShow, IIntel intel) {
             if (toShow) {
                 PrepareHudText(intel);
                 if (_job == null) {
@@ -92,13 +92,12 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private IEnumerator DisplayHudAtCursor(Intel intel) {
+        private IEnumerator DisplayHudAtCursor(IIntel intel) {
             while (true) {
                 UpdateGuiCursorHudText(intel, GuiHudLineKeys.Distance);
-                if (intel.Source == IntelSource.None) {
-                    // update number of days readout since intel was current
-                    UpdateGuiCursorHudText(intel, GuiHudLineKeys.IntelState);
-                }
+                // always update IntelState as the Coverage can change even if data age does not need refreshing
+                UpdateGuiCursorHudText(intel, GuiHudLineKeys.IntelState);
+
                 if (_optionalKeys != null) {
                     UpdateGuiCursorHudText(intel, _optionalKeys);
                 }
@@ -107,8 +106,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void PrepareHudText(Intel intel) {        // OPTIMIZE Detect individual data property changes and replace them individually
-            if (_guiCursorHudText == null || _guiCursorHudText.Intel != intel || _data.IsChanged) {
+        private void PrepareHudText(IIntel intel) {        // OPTIMIZE Detect individual data property changes and replace them individually
+            if (_guiCursorHudText == null || _guiCursorHudText.IntelCoverage != intel.CurrentCoverage || _data.IsChanged) {
                 // don't have the right version of GuiCursorHudText so make one
                 _guiCursorHudText = _guiHudTextFactory.MakeInstance(intel, _data);
                 _data.AcceptChanges();   // once we make a new one from current data, it is no longer dirty, if it ever was
@@ -120,7 +119,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="intelLevel">The intel level.</param>
         /// <param name="keys">The line keys.</param>
-        private void UpdateGuiCursorHudText(Intel intel, params GuiHudLineKeys[] keys) {
+        private void UpdateGuiCursorHudText(IIntel intel, params GuiHudLineKeys[] keys) {
             IColoredTextList coloredTextList;
             foreach (var key in keys) {
                 coloredTextList = _guiHudTextFactory.MakeInstance(key, intel, _data);

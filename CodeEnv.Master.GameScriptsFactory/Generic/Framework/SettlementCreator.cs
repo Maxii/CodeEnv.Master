@@ -36,7 +36,8 @@ public class SettlementCreator : ACreator<FacilityItem, FacilityCategory, Facili
     }
 
     protected override FacilityData CreateElementData(FacilityCategory elementCategory, string elementInstanceName, IPlayer owner) {
-        FacilityData elementData = new FacilityData(elementCategory, elementInstanceName, maxHitPoints: 50F, mass: 10000F) {   // TODO mass variation
+        FacilityData elementData = new FacilityData(elementCategory, elementInstanceName, maxHitPoints: 50F, mass: 10000F) {
+            // TODO mass variation
             // optionalParentName gets set when it gets attached to a command
             Strength = new CombatStrength(),
             CurrentHitPoints = UnityEngine.Random.Range(25F, 50F),
@@ -102,7 +103,7 @@ public class SettlementCreator : ACreator<FacilityItem, FacilityCategory, Facili
     }
 
     protected override void __InitializeCommandIntel() {
-        // Settlements assume the intel state of their system when assigned
+        // For now settlements assume the intel coverage of their system when assigned
     }
 
     protected override void OnCompleted() {

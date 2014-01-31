@@ -41,7 +41,6 @@ public abstract class APresenter : APropertyChangeTracking, IDisposable {
         GuiHudPublisher<StarData>.SetFactory(StarGuiHudTextFactory.Instance);
         GuiHudPublisher<PlanetoidData>.SetFactory(PlanetoidGuiHudTextFactory.Instance);
         GuiHudPublisher<SettlementData>.SetFactory(SettlementGuiHudTextFactory.Instance);
-        //GuiHudPublisher<StarBaseData>.SetFactory(StarBaseGuiHudTextFactory.Instance);
         GuiHudPublisher<FacilityData>.SetFactory(FacilityGuiHudTextFactory.Instance);
         GuiHudPublisher<StarbaseData>.SetFactory(StarbaseGuiHudTextFactory.Instance);
     }
@@ -64,6 +63,7 @@ public abstract class APresenter : APropertyChangeTracking, IDisposable {
         Item = AcquireItemReference();
         // the following use ItemData so Views should only be enabled to create this Presenter after ItemData is set
         View.HudPublisher = InitializeHudPublisher();
+        // derived Presenters should call Subscribe() if they have any subscriptions to make
     }
 
     protected abstract AItem AcquireItemReference();

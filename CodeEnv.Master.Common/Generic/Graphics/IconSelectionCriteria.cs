@@ -33,6 +33,8 @@ namespace CodeEnv.Master.Common {
         Level5,
         Unknown
 
+        // WARNING: Name changes here must also be implemented in Icon.xml files
+
     }
 }
 

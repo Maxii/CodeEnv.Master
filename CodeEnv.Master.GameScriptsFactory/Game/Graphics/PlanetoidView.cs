@@ -40,10 +40,19 @@ public class PlanetoidView : AFocusableView, ICameraFollowable {
         base.Awake();
         _keepoutCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
         _keepoutCollider.radius = (_collider as SphereCollider).radius * TempGameValues.KeepoutRadiusMultiplier;
+        Subscribe();
+    }
+
+    protected override IIntel InitializePlayerIntel() {
+        return new ImprovingIntel();
     }
 
     protected override void InitializePresenter() {
         Presenter = new PlanetoidPresenter(this);
+    }
+
+    protected override void SubscribeToPlayerIntelCoverageChanged() {
+        _subscribers.Add((PlayerIntel as ImprovingIntel).SubscribeToPropertyChanged<ImprovingIntel, IntelCoverage>(pi => pi.CurrentCoverage, OnPlayerIntelCoverageChanged));
     }
 
     public override string ToString() {

@@ -99,7 +99,7 @@ public abstract class AElementView : AFocusableView, IElementViewable {
 
     public override bool IsEligible {
         get {
-            return PlayerIntel.Source != IntelSource.None;
+            return PlayerIntel.CurrentCoverage != IntelCoverage.None;
         }
     }
 

@@ -54,12 +54,9 @@ public class SystemItem : AItem {
         Data.Composition.SettlementData = settlementCmd.Data;
         AddSystemAsLOSChangedRelayTarget(settlementCmd);
 
-        Intel systemPlayerIntel = gameObject.GetSafeInterface<IViewable>().PlayerIntel;
-        if (systemPlayerIntel == null) {
-            D.Log("{0} has attached and initialized {1}. However, PlayerIntel is not yet set.", Data.Name, settlementCmd.PieceName);
-            return;
-        }
-        settlementCmd.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel = systemPlayerIntel;
+        IIntel systemPlayerIntel = gameObject.GetSafeInterface<IViewable>().PlayerIntel;
+        // UNCLEAR should a new settlement being attached to a System take on the PlayerIntel state of the System??  See SystemPresenter.OnPlayerIntelCoverageChanged()
+        settlementCmd.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel.CurrentCoverage = systemPlayerIntel.CurrentCoverage;
     }
 
     private void AddSystemAsLOSChangedRelayTarget(SettlementItem settlementCmd) {

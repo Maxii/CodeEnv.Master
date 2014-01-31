@@ -46,6 +46,7 @@ public class SystemView : AFocusableView, ISelectable, IZoomToFurthest, IHighlig
     protected override void Awake() {
         base.Awake();
         _systemHighlightRenderer = __FindSystemHighlight();
+        Subscribe();
     }
 
     protected override void Start() {
@@ -102,11 +103,10 @@ public class SystemView : AFocusableView, ISelectable, IZoomToFurthest, IHighlig
         }
     }
 
-    protected override void OnPlayerIntelContentChanged() {
-        base.OnPlayerIntelContentChanged();
-        Presenter.OnPlayerIntelChanged();
+    protected override void OnPlayerIntelCoverageChanged() {
+        base.OnPlayerIntelCoverageChanged();
+        Presenter.OnPlayerIntelCoverageChanged();
     }
-
 
     private void OnIsSelectedChanged() {
         if (IsSelected) {

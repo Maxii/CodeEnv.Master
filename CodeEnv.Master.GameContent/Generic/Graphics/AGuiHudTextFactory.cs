@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -33,72 +33,67 @@ namespace CodeEnv.Master.GameContent {
         where ClassType : class
         where DataType : AData {
 
-        private static IDictionary<IntelScope, IList<GuiHudLineKeys>> _hudLineKeyLookup = new Dictionary<IntelScope, IList<GuiHudLineKeys>> {
+        private static IDictionary<IntelCoverage, IList<GuiHudLineKeys>> _hudLineKeyLookup = new Dictionary<IntelCoverage, IList<GuiHudLineKeys>> {
 
-        {IntelScope.None, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
-                                                                       GuiHudLineKeys.ParentName,
-                                                                       GuiHudLineKeys.Category,
+        {IntelCoverage.None, new List<GuiHudLineKeys> { GuiHudLineKeys.SectorIndex }},
+
+        {IntelCoverage.Aware, new List<GuiHudLineKeys> { GuiHudLineKeys.SectorIndex,
+
                                                                        GuiHudLineKeys.IntelState,
-                                                                       GuiHudLineKeys.SectorIndex,
                                                                        GuiHudLineKeys.Distance }},
 
-        {IntelScope.Aware, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
-                                                                       GuiHudLineKeys.ParentName,
-                                                                       GuiHudLineKeys.Category,
-                                                                       GuiHudLineKeys.IntelState,
-                                                                       GuiHudLineKeys.SectorIndex,
-                                                                       GuiHudLineKeys.Distance }},
-
-        {IntelScope.Minimal, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
+        {IntelCoverage.Minimal, new List<GuiHudLineKeys> { GuiHudLineKeys.SectorIndex,
+                                                                        GuiHudLineKeys.IntelState,
+                                                                        GuiHudLineKeys.Distance, 
+                                                                        
+                                                                        GuiHudLineKeys.Name,
                                                                         GuiHudLineKeys.ParentName,
                                                                        GuiHudLineKeys.Category,
-                                                                       GuiHudLineKeys.IntelState,
-                                                                            GuiHudLineKeys.Capacity,
+                                                                        GuiHudLineKeys.Capacity,
                                                                           GuiHudLineKeys.Resources,
                                                                        GuiHudLineKeys.Specials,
                                                                             GuiHudLineKeys.Owner,
+                                                                       GuiHudLineKeys.Density,
+                                                                           GuiHudLineKeys.Speed
+                                                                            }},
+
+         {IntelCoverage.Moderate, new List<GuiHudLineKeys> { GuiHudLineKeys.SectorIndex,
+                                                                        GuiHudLineKeys.IntelState,
+                                                                        GuiHudLineKeys.Distance, 
+                                                                        GuiHudLineKeys.Name,
+                                                                        GuiHudLineKeys.ParentName,
+                                                                       GuiHudLineKeys.Category,
+                                                                        GuiHudLineKeys.Capacity,
+                                                                          GuiHudLineKeys.Resources,
+                                                                       GuiHudLineKeys.Specials,
+                                                                            GuiHudLineKeys.Owner,
+                                                                       GuiHudLineKeys.Density,
+                                                                           GuiHudLineKeys.Speed,
+             
+                                                                            GuiHudLineKeys.Health,
                                                                            GuiHudLineKeys.CombatStrength,
-                                                                           GuiHudLineKeys.Composition,
-                                                                       GuiHudLineKeys.SectorIndex,
-                                                                       GuiHudLineKeys.Density,
-                                                                           GuiHudLineKeys.Speed,
-                                                                           GuiHudLineKeys.Distance }},
+                                                                           GuiHudLineKeys.Composition
+                                                                         }},
 
-         {IntelScope.Moderate, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
+       {IntelCoverage.Comprehensive, new List<GuiHudLineKeys> { GuiHudLineKeys.SectorIndex,
+                                                                        GuiHudLineKeys.IntelState,
+                                                                        GuiHudLineKeys.Distance,
+                                                                        GuiHudLineKeys.Name,
                                                                         GuiHudLineKeys.ParentName,
                                                                        GuiHudLineKeys.Category,
-                                                                       GuiHudLineKeys.IntelState,
-                                                                            GuiHudLineKeys.Capacity,
+                                                                        GuiHudLineKeys.Capacity,
                                                                           GuiHudLineKeys.Resources,
                                                                        GuiHudLineKeys.Specials,
-                                                                       GuiHudLineKeys.SettlementDetails,
                                                                             GuiHudLineKeys.Owner,
+                                                                       GuiHudLineKeys.Density,
+                                                                           GuiHudLineKeys.Speed,
+             
                                                                             GuiHudLineKeys.Health,
                                                                            GuiHudLineKeys.CombatStrengthDetails,
                                                                            GuiHudLineKeys.CompositionDetails,
-                                                                        GuiHudLineKeys.SectorIndex,
-                                                                       GuiHudLineKeys.Density,
-                                                                          GuiHudLineKeys.Speed,
-                                                                           GuiHudLineKeys.ShipDetails,
-                                                                           GuiHudLineKeys.Distance }},
-
-       {IntelScope.Comprehensive, new List<GuiHudLineKeys> { GuiHudLineKeys.Name,
-                                                                        GuiHudLineKeys.ParentName,
-                                                                       GuiHudLineKeys.Category,
-                                                                       GuiHudLineKeys.IntelState,
-                                                                            GuiHudLineKeys.Capacity,
-                                                                          GuiHudLineKeys.Resources,
-                                                                       GuiHudLineKeys.Specials,
+           
                                                                        GuiHudLineKeys.SettlementDetails,
-                                                                            GuiHudLineKeys.Owner,
-                                                                            GuiHudLineKeys.Health,
-                                                                           GuiHudLineKeys.CombatStrengthDetails,
-                                                                           GuiHudLineKeys.CompositionDetails,
-                                                                       GuiHudLineKeys.SectorIndex,
-                                                                       GuiHudLineKeys.Density,
-                                                                           GuiHudLineKeys.Speed,
-                                                                           GuiHudLineKeys.ShipDetails,
-                                                                           GuiHudLineKeys.Distance }}
+                                                                           GuiHudLineKeys.ShipDetails }}
     };
 
 
@@ -108,12 +103,13 @@ namespace CodeEnv.Master.GameContent {
             // TODO do any initialization here
         }
 
-        public GuiHudText MakeInstance(Intel intel, DataType data) {
+        public GuiHudText MakeInstance(IIntel intel, DataType data) {
             Arguments.ValidateNotNull(data);
             IList<GuiHudLineKeys> keys;
-            if (_hudLineKeyLookup.TryGetValue(intel.Scope, out keys)) {
-                GuiHudText guiCursorHudText = new GuiHudText(intel);
+            if (_hudLineKeyLookup.TryGetValue(intel.CurrentCoverage, out keys)) {
+                GuiHudText guiCursorHudText = new GuiHudText(intel.CurrentCoverage);
                 IColoredTextList textList;
+                D.Log("IntelCoverage = {0}, Keys = {1}.", intel.CurrentCoverage.GetName(), keys.Concatenate());
 
                 foreach (GuiHudLineKeys key in keys) {
                     textList = MakeInstance(key, intel, data);
@@ -121,18 +117,19 @@ namespace CodeEnv.Master.GameContent {
                 }
                 return guiCursorHudText;
             }
-            D.Error("{0} {1} Key is not present in Lookup.", typeof(IntelScope), intel.Scope.GetName());
+            D.Error("{0} {1} Key is not present in Lookup.", typeof(IntelCoverage), intel.CurrentCoverage.GetName());
             return null;
         }
 
-        public IColoredTextList MakeInstance(GuiHudLineKeys key, Intel intel, DataType data) {
+
+        public IColoredTextList MakeInstance(GuiHudLineKeys key, IIntel intel, DataType data) {
             if (!ValidateKeyAgainstIntelLevel(key, intel)) {
                 return _emptyColoredTextList;
             }
             return MakeTextInstance(key, intel, data);
         }
 
-        protected abstract IColoredTextList MakeTextInstance(GuiHudLineKeys key, Intel intel, DataType data);
+        protected abstract IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, DataType data);
 
         /// <summary>
         /// Validates the key against intel, warning and returning false if the key provided is not a key
@@ -144,8 +141,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="key">The key.</param>
         /// <param name="intel">The intel.</param>
         /// <returns></returns>
-        private static bool ValidateKeyAgainstIntelLevel(GuiHudLineKeys key, Intel intel) {
-            return _hudLineKeyLookup[intel.Scope].Contains<GuiHudLineKeys>(key);
+        private static bool ValidateKeyAgainstIntelLevel(GuiHudLineKeys key, IIntel intel) {
+            return _hudLineKeyLookup[intel.CurrentCoverage].Contains<GuiHudLineKeys>(key);
         }
 
 
@@ -204,28 +201,23 @@ namespace CodeEnv.Master.GameContent {
 
         public class ColoredTextList_Intel : ColoredTextListBase {
 
-            public ColoredTextList_Intel(Intel intel) {
-                GameTimePeriod intelAge = new GameTimePeriod(intel.DateStamp, GameTime.Date);
-                string intelText_formatted = ConstructIntelText(intel, intelAge);
+            public ColoredTextList_Intel(IIntel intel) {
+                string intelText_formatted = ConstructIntelText(intel);
                 _list.Add(new ColoredText(intelText_formatted));
             }
 
-            private string ConstructIntelText(Intel intel, GameTimePeriod intelAge) {
-                string intelMsg = intel.Scope.GetName();
-                switch (intel.Source) {
-                    case IntelSource.None:
-                        string addendum = String.Format(". Last Intel {0} ago.", intelAge.FormattedPeriod);
-                        intelMsg = intelMsg + addendum;
-                        break;
-                    case IntelSource.LongRangeSensors:
-                    case IntelSource.MediumRangeSensors:
-                    case IntelSource.ShortRangeSensors:
-                    case IntelSource.InfoNet:
-                        // data is current so no addendum to add
-                        break;
-                    default:
-                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(intel.Source));
+            private string ConstructIntelText(IIntel intel) {
+                string intelMsg = intel.CurrentCoverage.GetName();
+                string addendum = ". Intel is current.";
+                if (!(intel is FixedIntel) && !(intel is ImprovingIntel)) { // IMPROVE avoid having to inspect Intel Types
+                    if (intel.DatedCoverage != IntelCoverage.None) {  // OutOfDateScope is None if there is no previous record, DateStamp is null
+                        //D.Log("DateStamp = {0}, CurrentDate = {1}.", intel.DateStamp, GameTime.Date);
+                        GameTimePeriod intelAge = new GameTimePeriod(intel.DateStamp, GameTime.Date);
+                        addendum = String.Format(". Last Intel {0} ago.", intelAge.FormattedPeriod);
+                    }
                 }
+                intelMsg = intelMsg + addendum;
+                D.Log(intelMsg);
                 return intelMsg;
             }
         }

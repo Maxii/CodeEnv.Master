@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, Intel intel, PlanetoidData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, PlanetoidData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.Name);
@@ -41,7 +41,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Distance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
-                    return (intel.DateStamp != null) ? new ColoredTextList_Intel(intel) : _emptyColoredTextList;
+                    return new ColoredTextList_Intel(intel);
                 case GuiHudLineKeys.Category:
                     return new ColoredTextList_String(data.Category.GetName(), data.Category.GetDescription());
                 case GuiHudLineKeys.Health:

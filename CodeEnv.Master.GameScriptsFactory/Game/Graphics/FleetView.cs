@@ -13,6 +13,7 @@
 
 // default namespace
 
+using System.Collections;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -31,6 +32,11 @@ public class FleetView : ACommandView, ICameraFollowable, IHighlightTrackingLabe
     private GuiTrackingLabel _trackingLabel;
 
     private VelocityRay _velocityRay;
+
+    protected override void Awake() {
+        base.Awake();
+        Subscribe();
+    }
 
     protected override void InitializePresenter() {
         Presenter = new FleetPresenter(this);
@@ -53,9 +59,9 @@ public class FleetView : ACommandView, ICameraFollowable, IHighlightTrackingLabe
         InitializeTrackingLabel();
     }
 
-    protected override void OnPlayerIntelContentChanged() {
-        base.OnPlayerIntelContentChanged();
-        Presenter.OnPlayerIntelContentChanged();
+    protected override void OnPlayerIntelCoverageChanged() {
+        base.OnPlayerIntelCoverageChanged();
+        Presenter.OnPlayerIntelCoverageChanged();
     }
 
     protected override void RequestContextMenu(bool isDown) {
@@ -71,6 +77,35 @@ public class FleetView : ACommandView, ICameraFollowable, IHighlightTrackingLabe
         base.OnIsSelectedChanged();
         Presenter.OnIsSelectedChanged();
     }
+
+    #region Intel Cycling Testing
+
+    protected override void OnLeftClick() {
+        base.OnLeftClick();
+        __ToggleIntelChangingTest();
+    }
+
+    private Job _intelTestJob;
+    private void __ToggleIntelChangingTest() {
+        if (_intelTestJob == null) {
+            _intelTestJob = new Job(__CycleIntel());
+        }
+        if (!_intelTestJob.IsRunning) {
+            _intelTestJob.Start();
+        }
+        else {
+            _intelTestJob.Kill();
+        }
+    }
+
+    private IEnumerator __CycleIntel() {
+        while (true) {
+            PlayerIntel.CurrentCoverage = Enums<IntelCoverage>.GetRandom(true);
+            yield return new WaitForSeconds(4F);
+        }
+    }
+
+    #endregion
 
     protected override void Update() {
         base.Update();

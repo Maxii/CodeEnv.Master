@@ -128,8 +128,10 @@
     <Compile Include="IFleetViewable.cs" />
     <Compile Include="IGuiHudPublisher.cs" />
     <Compile Include="IHasData.cs" />
+    <Compile Include="Intel.cs" />
     <Compile Include="IntelFreshness.cs" />
     <Compile Include="IntelLevel.cs" />
+    <Compile Include="IntelSource.cs" />
     <Compile Include="ISettlementViewable.cs" />
     <Compile Include="IShipViewable.cs" />
     <Compile Include="IStarBaseViewable.cs" />

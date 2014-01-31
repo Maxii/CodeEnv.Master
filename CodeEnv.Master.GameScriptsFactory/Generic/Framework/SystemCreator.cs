@@ -272,7 +272,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         _star.Data = _composition.StarData; // automatically assigns the transform to data and aligns the transform's name to held by data
         // include the System and Star as a target in any child with a CameraLOSChangedRelay
         _star.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().AddTarget(_system.transform, _star.transform);
-        // PlayerIntel is determined by the Intel of the System
+        // PlayerIntel coverage is fixed at Comprehensive
     }
 
     /// <summary>
@@ -373,7 +373,8 @@ public class SystemCreator : AMonoBase, IDisposable {
     }
 
     private void __SetIntelLevel() {
-        _system.gameObject.GetSafeInterface<IViewable>().PlayerIntel = new Intel(IntelScope.Comprehensive, IntelSource.InfoNet);
+        _system.gameObject.GetSafeInterface<IViewable>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
+        _planets.ForAll(p => p.gameObject.GetSafeInterface<IViewable>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive);
     }
 
     private void GenerateOrbitSlotStartLocation() {

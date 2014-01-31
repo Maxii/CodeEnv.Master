@@ -47,6 +47,19 @@ public class SectorView : AView {
         }
     }
 
+    protected override void Awake() {
+        base.Awake();
+        Subscribe();
+    }
+
+    protected override IIntel InitializePlayerIntel() {
+        return new ImprovingIntel();
+    }
+
+    protected override void SubscribeToPlayerIntelCoverageChanged() {
+        _subscribers.Add((PlayerIntel as ImprovingIntel).SubscribeToPropertyChanged<ImprovingIntel, IntelCoverage>(pi => pi.CurrentCoverage, OnPlayerIntelCoverageChanged));
+    }
+
     // TODO meshes and animations need to be added to sectors
     // UNCLEAR include a separate CullingLayer for Sector meshes and animations?
 

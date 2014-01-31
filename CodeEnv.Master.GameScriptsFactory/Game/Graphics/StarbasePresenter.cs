@@ -110,8 +110,8 @@ public class StarbasePresenter : AMortalFocusablePresenter {
         AssessCmdIcon();
     }
 
-    public void OnPlayerIntelContentChanged() {
-        Item.Elements.ForAll<FacilityItem>(sc => sc.gameObject.GetSafeMonoBehaviourComponent<FacilityView>().PlayerIntel = View.PlayerIntel);
+    public void OnPlayerIntelCoverageChanged() {
+        Item.Elements.ForAll<FacilityItem>(e => e.gameObject.GetSafeMonoBehaviourComponent<FacilityView>().PlayerIntel.CurrentCoverage = View.PlayerIntel.CurrentCoverage);
         AssessCmdIcon();
     }
 

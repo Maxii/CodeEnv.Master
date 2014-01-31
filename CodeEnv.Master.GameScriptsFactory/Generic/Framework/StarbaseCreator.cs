@@ -94,7 +94,7 @@ public class StarbaseCreator : ACreator<FacilityItem, FacilityCategory, Facility
     }
 
     protected override void __InitializeCommandIntel() {
-        _command.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel = new Intel(IntelScope.Comprehensive, IntelSource.InfoNet);
+        _command.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
     }
 
     public override string ToString() {

@@ -56,6 +56,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\FixedIntel.cs" />
     <Compile Include="Game\Gameplay\FleetCategory.cs" />
     <Compile Include="Generic\Framework\ACommandData.cs" />
     <Compile Include="Generic\Framework\AElementData.cs" />
@@ -151,7 +152,6 @@
     <Compile Include="Game\Gameplay\SettlementOrders.cs" />
     <Compile Include="Game\Gameplay\SettlementState.cs" />
     <Compile Include="Generic\Graphics\IHighlightTrackingLabel.cs" />
-    <Compile Include="Generic\Framework\Intel.cs" />
     <Compile Include="Game\Gameplay\StarbaseCategory.cs" />
     <Compile Include="Game\Framework\BaseComposition.cs" />
     <Compile Include="Game\Gameplay\StarbaseData.cs" />
@@ -160,6 +160,9 @@
     <Compile Include="Generic\Graphics\IElementViewable.cs" />
     <Compile Include="Generic\Graphics\SettlementIconFactory.cs" />
     <Compile Include="Generic\Graphics\StarbaseIconFactory.cs" />
+    <Compile Include="Generic\Framework\Intel.cs" />
+    <Compile Include="Generic\Framework\IIntel.cs" />
+    <Compile Include="Generic\Framework\ImprovingIntel.cs" />
     <Compile Include="ThirdParty\ICoroutineManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\SystemData.cs" />

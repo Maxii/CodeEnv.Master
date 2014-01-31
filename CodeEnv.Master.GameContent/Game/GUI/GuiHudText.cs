@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -58,9 +58,7 @@ namespace CodeEnv.Master.GameContent {
         private IDictionary<GuiHudLineKeys, IColoredTextList> _textLine;
 
         public bool IsDirty { get; private set; }
-        //public IntelLevel IntelLevel { get; private set; }
-
-        public Intel Intel { get; private set; }
+        public IntelCoverage IntelCoverage { get; private set; }
 
         static GuiHudText() {
             _baseDisplayLineContent = InitializeBaseDisplayLineContent();
@@ -94,24 +92,14 @@ namespace CodeEnv.Master.GameContent {
             return baseDisplayLineContent;
         }
 
-        //public GuiHudText(IntelLevel intelLevel)
-        //    : this(intelLevel, new Dictionary<GuiHudLineKeys, IColoredTextList>()) { }
+        public GuiHudText(IntelCoverage intelCoverage)
+            : this(intelCoverage, new Dictionary<GuiHudLineKeys, IColoredTextList>()) { }
 
-        //private GuiHudText(IntelLevel intelLevel, IDictionary<GuiHudLineKeys, IColoredTextList> textLine) {
-        //    IntelLevel = intelLevel;
-        //    _textLine = textLine;
-        //    IsDirty = true;
-        //}
-
-        public GuiHudText(Intel intel)
-            : this(intel, new Dictionary<GuiHudLineKeys, IColoredTextList>()) { }
-
-        private GuiHudText(Intel intel, IDictionary<GuiHudLineKeys, IColoredTextList> textLine) {
-            Intel = intel;
+        private GuiHudText(IntelCoverage intelCoverage, IDictionary<GuiHudLineKeys, IColoredTextList> textLine) {
+            IntelCoverage = intelCoverage;
             _textLine = textLine;
             IsDirty = true;
         }
-
 
         /// <summary>
         /// Adds the specified key and text list to this GuiCursorHudText.
@@ -120,6 +108,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="textList">The text list.</param>
         /// <exception cref="ArgumentException" >Attempting to add a line key that is already present.</exception>
         public void Add(GuiHudLineKeys lineKey, IColoredTextList textList) {
+            D.Log("Adding {0}.", lineKey.GetName());
             _textLine.Add(lineKey, textList);
             //_data[lineKey] = textList;
             IsDirty = true;
