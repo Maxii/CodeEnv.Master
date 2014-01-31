@@ -34,7 +34,7 @@ public abstract class ACommandView : AFocusableView, ICommandViewable, ISelectab
 
     private Vector3 _cmdIconPivotOffset;
     private UISprite _cmdIconSprite;
-    private Transform _cmdIconTransform;
+    protected Transform _cmdIconTransform;
     private ScaleRelativeToCamera _cmdIconScaler;
     //private IIcon _cmdIcon;   // IMPROVE not really used for now
     private Vector3 _cmdIconSize;
@@ -106,7 +106,9 @@ public abstract class ACommandView : AFocusableView, ICommandViewable, ISelectab
         }
     }
 
-    protected virtual void OnLeftClick() { }
+    protected virtual void OnLeftClick() {
+        IsSelected = true;
+    }
 
     protected virtual void OnAltLeftClick() { }
 
@@ -147,7 +149,7 @@ public abstract class ACommandView : AFocusableView, ICommandViewable, ISelectab
 
         Vector3[] iconWorldCorners = _cmdIconSprite.worldCorners;
         Vector3 iconWorldCenter = iconWorldCorners[0] + (iconWorldCorners[2] - iconWorldCorners[0]) * 0.5F;
-        // convert icon's world position to the equivalent local position on the fleetCmd transform
+        // convert icon's world position to the equivalent local position on the command transform
         (_collider as BoxCollider).center = _transform.InverseTransformPoint(iconWorldCenter);
     }
 
@@ -201,6 +203,10 @@ public abstract class ACommandView : AFocusableView, ICommandViewable, ISelectab
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(highlight));
         }
+    }
+
+    protected override void ShowCircle(bool toShow, Highlights highlight) {
+        ShowCircle(toShow, highlight, _cmdIconTransform);
     }
 
     protected override float calcNormalizedCircleRadius() {

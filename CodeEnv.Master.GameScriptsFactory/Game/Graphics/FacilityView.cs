@@ -17,6 +17,7 @@
 // default namespace
 
 using CodeEnv.Master.Common;
+using UnityEngine;
 
 /// <summary>
 /// A class for managing the elements of a Facility's UI. 

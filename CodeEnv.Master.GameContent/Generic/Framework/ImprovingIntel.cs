@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public override GameDate DateStamp {
+        public override IGameDate DateStamp {
             get {
                 D.Warn("{0} does not support DateStamp.", typeof(ImprovingIntel).Name);
                 return base.DateStamp;

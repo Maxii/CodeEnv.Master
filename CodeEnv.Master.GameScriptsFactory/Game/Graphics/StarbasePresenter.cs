@@ -25,16 +25,17 @@ using UnityEngine;
 /// <summary>
 /// An MVPresenter associated with a StarbaseView.
 /// </summary>
-public class StarbasePresenter : AMortalFocusablePresenter {
+public class StarbasePresenter : ACommandPresenter<FacilityItem> {
+    //public class StarbasePresenter : AMortalFocusablePresenter {
 
     public new StarbaseItem Item {
         get { return base.Item as StarbaseItem; }
         protected set { base.Item = value; }
     }
 
-    protected new ICommandViewable View {
-        get { return base.View as ICommandViewable; }
-    }
+    //protected new ICommandViewable View {
+    //    get { return base.View as ICommandViewable; }
+    //}
 
     public StarbasePresenter(ICommandViewable view)
         : base(view) {
@@ -51,11 +52,11 @@ public class StarbasePresenter : AMortalFocusablePresenter {
 
     protected override void Subscribe() {
         base.Subscribe();
-        _subscribers.Add(Item.SubscribeToPropertyChanged<StarbaseItem, AElement>(sb => sb.HQElement, OnHQElementChanged));
+        //_subscribers.Add(Item.SubscribeToPropertyChanged<StarbaseItem, AElement>(sb => sb.HQElement, OnHQElementChanged));
         _subscribers.Add(Item.Data.SubscribeToPropertyChanged<StarbaseData, BaseComposition>(sbd => sbd.Composition, OnCompositionChanged));
         _subscribers.Add(Item.SubscribeToPropertyChanged<StarbaseItem, StarbaseState>(sb => sb.CurrentState, OnStarbaseStateChanged));
         View.onShowCompletion += Item.OnShowCompletion;
-        Item.onElementDestroyed += OnStarbaseElementDestroyed;
+        //Item.onElementDestroyed += OnStarbaseElementDestroyed;
     }
 
     private void OnStarbaseStateChanged() {
@@ -76,22 +77,22 @@ public class StarbasePresenter : AMortalFocusablePresenter {
         }
     }
 
-    private void OnStarbaseElementDestroyed(AElement element) {
-        if (element.gameObject.GetSafeInterface<ICameraFocusable>().IsFocus) {
-            // our fleet's ship that was just destroyed was the focus, so change the focus to the fleet
-            (View as ICameraFocusable).IsFocus = true;
-        }
-    }
+    //private void OnStarbaseElementDestroyed(AElement element) {
+    //    if (element.gameObject.GetSafeInterface<ICameraFocusable>().IsFocus) {
+    //        // our fleet's ship that was just destroyed was the focus, so change the focus to the fleet
+    //        (View as ICameraFocusable).IsFocus = true;
+    //    }
+    //}
 
     public void __SimulateAllElementsAttacked() {
-        Item.Elements.ForAll<FacilityItem>(s => s.__SimulateAttacked());
+        Item.Elements.ForAll(e => e.__SimulateAttacked());
     }
 
-    public void RequestContextMenu(bool isDown) {
-        if (DebugSettings.Instance.AllowEnemyOrders || Item.Data.Owner.IsHuman) {
-            CameraControl.Instance.ShowContextMenuOnPress(isDown);
-        }
-    }
+    //public void RequestContextMenu(bool isDown) {
+    //    if (DebugSettings.Instance.AllowEnemyOrders || Item.Data.Owner.IsHuman) {
+    //        CameraControl.Instance.ShowContextMenuOnPress(isDown);
+    //    }
+    //}
 
     protected override void OnItemDeath(ItemDeathEvent e) {
         if ((e.Source as StarbaseItem) == Item) {
@@ -99,41 +100,50 @@ public class StarbasePresenter : AMortalFocusablePresenter {
         }
     }
 
-    protected override void CleanupOnDeath() {
-        base.CleanupOnDeath();
-        if ((View as ISelectable).IsSelected) {
-            SelectionManager.Instance.CurrentSelection = null;
-        }
-    }
+    //protected override void CleanupOnDeath() {
+    //    base.CleanupOnDeath();
+    //    if ((View as ISelectable).IsSelected) {
+    //        SelectionManager.Instance.CurrentSelection = null;
+    //    }
+    //}
 
     private void OnCompositionChanged() {
         AssessCmdIcon();
     }
 
-    public void OnPlayerIntelCoverageChanged() {
-        Item.Elements.ForAll<FacilityItem>(e => e.gameObject.GetSafeMonoBehaviourComponent<FacilityView>().PlayerIntel.CurrentCoverage = View.PlayerIntel.CurrentCoverage);
-        AssessCmdIcon();
-    }
+    //public void OnPlayerIntelCoverageChanged() {
+    //    Item.Elements.ForAll<FacilityItem>(e => e.gameObject.GetSafeMonoBehaviourComponent<FacilityView>().PlayerIntel.CurrentCoverage = View.PlayerIntel.CurrentCoverage);
+    //    AssessCmdIcon();
+    //}
 
-    private void OnHQElementChanged() {
-        View.TrackingTarget = GetTrackingTarget();
-    }
+    //private void OnHQElementChanged() {
+    //    View.TrackingTarget = GetTrackingTarget();
+    //}
 
-    public void OnIsSelectedChanged() {
-        if ((View as ISelectable).IsSelected) {
-            SelectionManager.Instance.CurrentSelection = View as ISelectable;
-        }
+    //public void OnIsSelectedChanged() {
+    //    if ((View as ISelectable).IsSelected) {
+    //        SelectionManager.Instance.CurrentSelection = View as ISelectable;
+    //    }
+    //    Item.Elements.ForAll(s => s.gameObject.GetSafeMonoBehaviourComponent<FacilityView>().AssessHighlighting());
+    //}
+
+    public override void OnIsSelectedChanged() {
+        base.OnIsSelectedChanged();
         Item.Elements.ForAll(s => s.gameObject.GetSafeMonoBehaviourComponent<FacilityView>().AssessHighlighting());
     }
 
-    public Transform GetTrackingTarget() {
-        return Item.HQElement.transform;
-    }
+    //public Transform GetTrackingTarget() {
+    //    return Item.HQElement.transform;
+    //}
 
-    private StarbaseIconFactory _iconFactory = StarbaseIconFactory.Instance;
-    private void AssessCmdIcon() {
-        IIcon icon = _iconFactory.MakeInstance(Item.Data, View.PlayerIntel);
-        View.ChangeCmdIcon(icon);
+    //private StarbaseIconFactory _iconFactory = StarbaseIconFactory.Instance;
+    //private void AssessCmdIcon() {
+    //    IIcon icon = _iconFactory.MakeInstance(Item.Data, View.PlayerIntel);
+    //    View.ChangeCmdIcon(icon);
+    //}
+
+    protected override IIcon MakeCommandIconInstance() {
+        return StarbaseIconFactory.Instance.MakeInstance(Item.Data, View.PlayerIntel);
     }
 
     public override string ToString() {

@@ -129,7 +129,6 @@ public class ShipView : AElementView, ISelectable {
         Presenter.IsFleetSelected = true;
     }
 
-
     public override void AssessHighlighting() {
         if (!IsDiscernible) {
             Highlight(Highlights.None);
@@ -196,10 +195,11 @@ public class ShipView : AElementView, ISelectable {
     }
 
     /// <summary>
-    /// Shows a Ray indicating the course and speed of the ship.
+    /// Shows a Ray eminating from the ship indicating its course and speed.
     /// </summary>
+    /// <param name="toShow">if set to <c>true</c> [automatic show].</param>
     private void ShowVelocityRay(bool toShow) {
-        if (DebugSettings.Instance.EnableShipVelocityRays) {
+        if (DebugSettings.Instance.EnableShipVelocityRays && !Presenter.IsHQElement) {
             if (!toShow && _velocityRay == null) {
                 return;
             }

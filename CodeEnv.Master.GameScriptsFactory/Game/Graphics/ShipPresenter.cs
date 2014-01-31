@@ -138,6 +138,10 @@ public class ShipPresenter : AMortalFocusablePresenter {
         set { (_fleetView as ISelectable).IsSelected = value; }
     }
 
+    public bool IsHQElement {
+        get { return Item.IsHQElement; }
+    }
+
     public void __SimulateAttacked() {
         Item.__SimulateAttacked();
     }

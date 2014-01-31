@@ -41,14 +41,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<IntelCoverage>(ref _currentCoverage, value, "CurrentCoverage", null, OnCurrentCoverageChanging); }
         }
 
-        private GameDate _dateStamp;
-        /// <summary>
-        /// The date DatedCoverage data was last current.
-        /// </summary>
-        public virtual GameDate DateStamp {
-            get { return _dateStamp; }
-            private set { SetProperty<GameDate>(ref _dateStamp, value, "DateStamp"); }
-        }
+        public virtual IGameDate DateStamp { get; private set; }
 
         public Intel() : this(IntelCoverage.None) { }
 
@@ -61,7 +54,10 @@ namespace CodeEnv.Master.GameContent {
             if (newCurrentCoverage < CurrentCoverage) {
                 // we have less data than before so record the level we had and stamp the date
                 DatedCoverage = CurrentCoverage;
-                DateStamp = new GameDate(GameDate.PresetDateSelector.Current);
+                GameDate currentDate = new GameDate(GameDate.PresetDateSelector.Current);
+                if (!currentDate.Equals(DateStamp)) {
+                    DateStamp = currentDate;    // avoids PropertyChangeTracking equals warning
+                }
             }
             if (newCurrentCoverage > CurrentCoverage && newCurrentCoverage >= DatedCoverage) {
                 // we have more data than before and it is the same or more than our previous record, so erase the previous record

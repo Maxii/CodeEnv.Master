@@ -64,19 +64,20 @@ public class FleetView : ACommandView, ICameraFollowable, IHighlightTrackingLabe
         Presenter.OnPlayerIntelCoverageChanged();
     }
 
-    protected override void RequestContextMenu(bool isDown) {
-        Presenter.RequestContextMenu(isDown);
+
+    protected override void OnIsSelectedChanged() {
+        base.OnIsSelectedChanged();
+        Presenter.OnIsSelectedChanged();
     }
+
+    #region Attacked Testing
 
     protected override void OnAltLeftClick() {
         base.OnAltLeftClick();
         Presenter.__SimulateAllElementsAttacked();
     }
 
-    protected override void OnIsSelectedChanged() {
-        base.OnIsSelectedChanged();
-        Presenter.OnIsSelectedChanged();
-    }
+    #endregion
 
     #region Intel Cycling Testing
 
@@ -120,6 +121,10 @@ public class FleetView : ACommandView, ICameraFollowable, IHighlightTrackingLabe
         }
     }
 
+    protected override void RequestContextMenu(bool isDown) {
+        Presenter.RequestContextMenu(isDown);
+    }
+
     private void InitializeTrackingLabel() {
         if (enableTrackingLabel) {
             float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
@@ -128,6 +133,10 @@ public class FleetView : ACommandView, ICameraFollowable, IHighlightTrackingLabe
         }
     }
 
+    /// <summary>
+    /// Shows a Ray eminating from the Fleet's CommandTransform (tracking the HQ ship) indicating its course and speed.
+    /// </summary>
+    /// <param name="toShow">if set to <c>true</c> [automatic show].</param>
     private void ShowVelocityRay(bool toShow) {
         if (DebugSettings.Instance.EnableFleetVelocityRays) {
             if (!toShow && _velocityRay == null) {

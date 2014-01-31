@@ -63,19 +63,19 @@ public class StarbaseView : ACommandView, IHighlightTrackingLabel {
         Presenter.OnPlayerIntelCoverageChanged();
     }
 
-    protected override void RequestContextMenu(bool isDown) {
-        Presenter.RequestContextMenu(isDown);
+    protected override void OnIsSelectedChanged() {
+        base.OnIsSelectedChanged();
+        Presenter.OnIsSelectedChanged();
     }
+
+    #region Attacked Testing
 
     protected override void OnAltLeftClick() {
         base.OnAltLeftClick();
         Presenter.__SimulateAllElementsAttacked();
     }
 
-    protected override void OnIsSelectedChanged() {
-        base.OnIsSelectedChanged();
-        Presenter.OnIsSelectedChanged();
-    }
+    #endregion
 
     private void InitializeTrackingLabel() {
         if (enableTrackingLabel) {
@@ -83,6 +83,10 @@ public class StarbaseView : ACommandView, IHighlightTrackingLabel {
             string fleetName = Presenter.Item.PieceName;
             _trackingLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(TrackingTarget, GuiTrackingLabelFactory.LabelPlacement.AboveTarget, minShowDistance, Mathf.Infinity, fleetName);
         }
+    }
+
+    protected override void RequestContextMenu(bool isDown) {
+        Presenter.RequestContextMenu(isDown);
     }
 
     protected override void Cleanup() {

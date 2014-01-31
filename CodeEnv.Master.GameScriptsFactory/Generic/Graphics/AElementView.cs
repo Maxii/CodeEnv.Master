@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for managing an Element's UI. 
 /// </summary>
-public abstract class AElementView : AFocusableView, IElementViewable {
+public abstract class AElementView : AFocusableView, IElementViewable, ICameraFollowable {
 
     public AudioClip dying;
     private AudioSource _audioSource;
@@ -86,6 +86,24 @@ public abstract class AElementView : AFocusableView, IElementViewable {
             // TODO audio off goes here
         }
     }
+
+    #region ICameraFollowable Members
+
+    // TODO Settlement Facilities should be followable as they orbit, but Starbase Facilities?
+
+    [SerializeField]
+    private float cameraFollowDistanceDampener = 3.0F;
+    public virtual float CameraFollowDistanceDampener {
+        get { return cameraFollowDistanceDampener; }
+    }
+
+    [SerializeField]
+    private float cameraFollowRotationDampener = 1.0F;
+    public virtual float CameraFollowRotationDampener {
+        get { return cameraFollowRotationDampener; }
+    }
+
+    #endregion
 
     #region ICameraFocusable Members
 

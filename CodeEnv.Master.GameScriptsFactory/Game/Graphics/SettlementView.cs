@@ -48,18 +48,22 @@ public class SettlementView : ACommandView, ICameraFollowable {
         Presenter.OnPlayerIntelCoverageChanged();
     }
 
-    protected override void RequestContextMenu(bool isDown) {
-        Presenter.RequestContextMenu(isDown);
+    protected override void OnIsSelectedChanged() {
+        base.OnIsSelectedChanged();
+        Presenter.OnIsSelectedChanged();
     }
+
+    #region Attacked Testing
 
     protected override void OnAltLeftClick() {
         base.OnAltLeftClick();
         Presenter.__SimulateAllElementsAttacked();
     }
 
-    protected override void OnIsSelectedChanged() {
-        base.OnIsSelectedChanged();
-        Presenter.OnIsSelectedChanged();
+    #endregion
+
+    protected override void RequestContextMenu(bool isDown) {
+        Presenter.RequestContextMenu(isDown);
     }
 
     public override string ToString() {

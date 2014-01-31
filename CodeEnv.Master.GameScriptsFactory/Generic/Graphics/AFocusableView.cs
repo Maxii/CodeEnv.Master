@@ -130,14 +130,24 @@ public abstract class AFocusableView : AView, ICameraFocusable {
         }
     }
 
-    protected void ShowCircle(bool toShow, Highlights highlight) {
+    protected virtual void ShowCircle(bool toShow, Highlights highlight) {
+        ShowCircle(toShow, highlight, _transform);
+    }
+
+    /// <summary>
+    /// Shows or hides Highlighting Circles.
+    /// </summary>
+    /// <param name="toShow">if set to <c>true</c> [automatic show].</param>
+    /// <param name="highlight">The highlight.</param>
+    /// <param name="transform">The transform the circles should track.</param>
+    protected void ShowCircle(bool toShow, Highlights highlight, Transform transform) {
         if (!toShow && _circles == null) {
             return;
         }
         if (_circles == null) {
             float normalizedRadius = calcNormalizedCircleRadius();
             string circlesTitle = "{0} Circle".Inject(gameObject.name);
-            _circles = new HighlightCircle(circlesTitle, _transform, normalizedRadius, parent: DynamicObjects.Folder,
+            _circles = new HighlightCircle(circlesTitle, transform, normalizedRadius, parent: DynamicObjects.Folder,
                 isRadiusDynamic: _isCirclesRadiusDynamic, maxCircles: 3);
             _circles.Colors = new GameColor[3] { UnityDebugConstants.FocusedColor, UnityDebugConstants.SelectedColor, UnityDebugConstants.GeneralHighlightColor };
             _circles.Widths = new float[3] { 2F, 2F, 1F };

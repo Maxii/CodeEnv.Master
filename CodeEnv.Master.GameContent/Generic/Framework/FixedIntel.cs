@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
             set { D.Warn("{0} does not support setting CurrentCoverage. Use FixedIntel(fixedCoverage) instead.", typeof(FixedIntel).Name); }
         }
 
-        public override GameDate DateStamp {
+        public override IGameDate DateStamp {
             get {
                 D.Warn("{0} does not support DateStamp.", typeof(FixedIntel).Name);
                 return base.DateStamp;
