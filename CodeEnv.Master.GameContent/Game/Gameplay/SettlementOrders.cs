@@ -25,17 +25,13 @@ namespace CodeEnv.Master.GameContent {
 
         Attack,
 
-        Disband,
+        StopAttack,
 
-        DisbandAt,
-
-        RefitAt,
+        Refit,
 
         Repair,
 
-        RepairAt,
-
-        StopAttack
+        Disband
 
     }
 }

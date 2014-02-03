@@ -52,9 +52,9 @@ public class FleetNavigator : ANavigator {
     private int _currentWaypointIndex;
 
     private Seeker _seeker;
-    private FleetItem _fleet;
+    private FleetCmdModel _fleet;
 
-    public FleetNavigator(FleetItem fleet, Seeker seeker)
+    public FleetNavigator(FleetCmdModel fleet, Seeker seeker)
         : base(fleet.Data) {
         _fleet = fleet;
         _seeker = seeker;
@@ -336,7 +336,7 @@ public class FleetNavigator : ANavigator {
 
     private void __MoveShipsTo(ITarget target) {
         D.Assert(Speed != Constants.ZeroF, "{0} moving Ships to {1} at Speed of 0!".Inject(Data.Name, target.Name));
-        ItemOrder<ShipOrders> moveToOrder = new ItemOrder<ShipOrders>(ShipOrders.MoveTo, target, Speed);
+        UnitOrder<ShipOrders> moveToOrder = new UnitOrder<ShipOrders>(ShipOrders.MoveTo, target, Speed);
         _fleet.Elements.ForAll(s => s.CurrentOrder = moveToOrder);
     }
 

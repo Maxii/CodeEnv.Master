@@ -20,7 +20,7 @@ using UnityEngine;
 /// Lowest level instantiable class for stationary items in the universe that the camera can focus on.
 /// </summary>
 [System.Obsolete]
-public class StationaryItem : AItem, ICameraFocusable {
+public class StationaryItem : AItemModel, ICameraFocusable {
 
     private static bool _isStaticHudPublisherFieldsInitialized;
 
@@ -36,7 +36,7 @@ public class StationaryItem : AItem, ICameraFocusable {
 
     private static void InitializeStaticHudPublisherFields() {
         AGuiHudPublisher.SetGuiCursorHud(GuiCursorHud.Instance);
-        GuiHudPublisher<AMortalData>.SetFactory(GuiHudTextFactory.Instance);
+        GuiHudPublisher<AMortalItemData>.SetFactory(GuiHudTextFactory.Instance);
         GuiHudPublisher<ShipData>.SetFactory(ShipGuiHudTextFactory.Instance);
         GuiHudPublisher<FleetData>.SetFactory(FleetGuiHudTextFactory.Instance);
         GuiHudPublisher<SystemData>.SetFactory(SystemGuiHudTextFactory.Instance);
@@ -44,7 +44,7 @@ public class StationaryItem : AItem, ICameraFocusable {
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<AMortalData>(Data);
+        return new GuiHudPublisher<AMortalItemData>(Data);
     }
 
     protected virtual void OnClick() {

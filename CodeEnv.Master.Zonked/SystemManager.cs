@@ -87,7 +87,7 @@ public class SystemManager : AMonoBase, ISelectable, IHasData {
 
     #region IHasData Members
 
-    public AMortalData GetData() {
+    public AMortalItemData GetData() {
         return Data;
     }
 

@@ -31,7 +31,7 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasData, IDisposable {
     public ShipNavigator Navigator { get; private set; }
 
     private ShipGraphics _shipGraphics;
-    private FleetCreator _fleetMgr;
+    private FleetUnitCreator _fleetMgr;
     private FleetCommand _fleetCmd;
     private SelectionManager _selectionMgr;
 
@@ -39,7 +39,7 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasData, IDisposable {
         base.Awake();
         UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
         _shipGraphics = gameObject.GetSafeMonoBehaviourComponent<ShipGraphics>();
-        _fleetMgr = gameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>();
+        _fleetMgr = gameObject.GetSafeMonoBehaviourComponentInParents<FleetUnitCreator>();
         _fleetCmd = _fleetMgr.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>();
         _selectionMgr = SelectionManager.Instance;
     }
@@ -112,7 +112,7 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasData, IDisposable {
         if (IsFocus) {
             CameraControl.Instance.CurrentFocus = null;
         }
-        _eventMgr.Raise<ItemDeathEvent>(new ItemDeathEvent(this));
+        _eventMgr.Raise<MortalItemDeathEvent>(new MortalItemDeathEvent(this));
         Destroy(gameObject);
     }
 

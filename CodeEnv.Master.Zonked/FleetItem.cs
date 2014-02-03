@@ -23,30 +23,30 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all fleets in the game.
 /// </summary>
-public class FleetItem : AItem {
+public class FleetItem : AItemModel {
 
     public new FleetData Data {
         get { return base.Data as FleetData; }
         set { base.Data = value; }
     }
 
-    private ShipItem _flagship;
-    public ShipItem Flagship {
+    private ShipModel _flagship;
+    public ShipModel Flagship {
         get { return _flagship; }
-        set { SetProperty<ShipItem>(ref _flagship, value, "Flagship", OnFlagshipChanged); }
+        set { SetProperty<ShipModel>(ref _flagship, value, "Flagship", OnFlagshipChanged); }
     }
 
-    private ShipItem _lastFleetShipDestroyed;
+    private ShipModel _lastFleetShipDestroyed;
     /// <summary>
     /// The most recent member of this fleet that has been destroyed. Can be 
     /// null if no ships belonging to this fleet have been destroyed.
     /// </summary>
-    public ShipItem LastFleetShipDestroyed {
+    public ShipModel LastFleetShipDestroyed {
         get { return _lastFleetShipDestroyed; }
-        set { SetProperty<ShipItem>(ref _lastFleetShipDestroyed, value, "LastFleetShipDestroyed", OnLastFleetShipDestroyedChanged); }
+        set { SetProperty<ShipModel>(ref _lastFleetShipDestroyed, value, "LastFleetShipDestroyed", OnLastFleetShipDestroyedChanged); }
     }
 
-    public IList<ShipItem> Ships { get; private set; }
+    public IList<ShipModel> Ships { get; private set; }
     public FleetNavigator AutoPilot { get; private set; }
     public FleetStateMachine StateMachine { get; private set; }
 
@@ -54,7 +54,7 @@ public class FleetItem : AItem {
 
     protected override void Awake() {
         base.Awake();
-        Ships = new List<ShipItem>();
+        Ships = new List<ShipModel>();
     }
 
     protected override void Start() {
@@ -97,7 +97,7 @@ public class FleetItem : AItem {
         //D.Log("FleetItem.OnGameStateChanged event recieved. GameState = {0}.", _gameMgr.CurrentState);
         if (_gameMgr.CurrentState == GameState.Running) {
             // IMPROVE select LeadShipCaptain here for now as Data must be initialized first
-            Flagship = RandomExtended<ShipItem>.Choice(Ships);
+            Flagship = RandomExtended<ShipModel>.Choice(Ships);
             __GetFleetUnderway();
         }
     }
@@ -165,17 +165,17 @@ public class FleetItem : AItem {
     /// Adds the ship to this fleet including parenting if needed.
     /// </summary>
     /// <param name="ship">The ship.</param>
-    public void AddShip(ShipItem ship) {
+    public void AddShip(ShipModel ship) {
         Ships.Add(ship);
         Data.AddShip(ship.Data);
-        Transform parentFleetTransform = gameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>().transform;
+        Transform parentFleetTransform = gameObject.GetSafeMonoBehaviourComponentInParents<FleetUnitCreator>().transform;
         if (ship.transform.parent != parentFleetTransform) {
             ship.transform.parent = parentFleetTransform;   // local position, rotation and scale are auto adjusted to keep ship unchanged in worldspace
         }
         // TODO consider changing flagship
     }
 
-    public void RemoveShip(ShipItem ship) {
+    public void RemoveShip(ShipModel ship) {
         bool isRemoved = Ships.Remove(ship);
         isRemoved = isRemoved && Data.RemoveShip(ship.Data);
         D.Assert(isRemoved, "{0} not found.".Inject(ship.Data.Name));
@@ -193,7 +193,7 @@ public class FleetItem : AItem {
         StateMachine.CurrentState = FleetState.Dead;
     }
 
-    private ShipItem SelectBestShip() {
+    private ShipModel SelectBestShip() {
         return Ships.MaxBy(s => s.Data.Health);
     }
 

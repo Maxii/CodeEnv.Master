@@ -16,18 +16,14 @@
 
 // default namespace
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
 /// A class for managing the UI of a planetoid.
 /// </summary>
-public class PlanetoidView : AFocusableView, ICameraFollowable {
+public class PlanetoidView : AMortalItemView, ICameraFollowable {
 
     public new PlanetoidPresenter Presenter {
         get { return base.Presenter as PlanetoidPresenter; }

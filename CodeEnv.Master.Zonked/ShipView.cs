@@ -166,7 +166,7 @@ public class ShipView : AFollowableView, IShipViewable, ISelectable {
     }
 
     private void OnLeftDoubleClick() {
-        Presenter.IsFleetSelected = true;
+        Presenter.IsCommandSelected = true;
     }
 
     public override void AssessHighlighting() {
@@ -181,7 +181,7 @@ public class ShipView : AFollowableView, IShipViewable, ISelectable {
                 Highlight(Highlights.SelectedAndFocus);
                 return;
             }
-            if (Presenter.IsFleetSelected) {
+            if (Presenter.IsCommandSelected) {
                 ShowMesh(true);
                 Highlight(Highlights.FocusAndGeneral);
                 return;
@@ -195,7 +195,7 @@ public class ShipView : AFollowableView, IShipViewable, ISelectable {
             Highlight(Highlights.Selected);
             return;
         }
-        if (Presenter.IsFleetSelected) {
+        if (Presenter.IsCommandSelected) {
             ShowMesh(true);
             Highlight(Highlights.General);
             return;

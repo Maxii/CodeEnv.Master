@@ -22,9 +22,9 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// An abstract base MVPresenter associated with AFocusableViews and AFollowableViews.
 /// </summary>
-public abstract class AFocusablePresenter : APresenter {
+public abstract class AFocusablePresenter : AItemPresenter {
 
-    public AFocusablePresenter(IViewable view)
+    public AFocusableItemPresenter(IViewable view)
         : base(view) {
     }
 

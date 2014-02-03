@@ -53,10 +53,10 @@ public class FleetNavigator : ANavigator {
     private int _currentWaypointIndex;
 
     private Seeker _seeker;
-    private FleetItem _fleet;
+    private FleetCmdModel _fleet;
     private FleetData _fleetData;
 
-    public FleetNavigator(FleetItem fleet, Seeker seeker)
+    public FleetNavigator(FleetCmdModel fleet, Seeker seeker)
         : base() {
         _fleet = fleet;
         _fleetData = fleet.Data;
@@ -261,7 +261,7 @@ public class FleetNavigator : ANavigator {
     }
 
     private void MoveShipsTo(Vector3 destination) {
-        ItemOrder<ShipOrders> moveToDestination = new ItemOrder<ShipOrders>(ShipOrders.MoveTo, destination);
+        UnitOrder<ShipOrders> moveToDestination = new UnitOrder<ShipOrders>(ShipOrders.MoveTo, destination);
         _fleet.Ships.ForAll(s => s.CurrentOrder = moveToDestination);
     }
 

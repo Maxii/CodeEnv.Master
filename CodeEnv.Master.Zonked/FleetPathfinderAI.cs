@@ -37,13 +37,13 @@ public class FleetPathfinderAI : AMonoBase {
     private float _arrivedAtWaypointDistanceSqrd = 25F;
 
     private Seeker _seeker;
-    private FleetItem _fleet;
+    private FleetCmdModel _fleet;
     private IList<IDisposable> _subscribers;
 
     protected override void Awake() {
         base.Awake();
         _seeker = gameObject.GetSafeMonoBehaviourComponent<Seeker>();
-        _fleet = gameObject.GetSafeMonoBehaviourComponent<FleetItem>();
+        _fleet = gameObject.GetSafeMonoBehaviourComponent<FleetCmdModel>();
         Subscribe();
     }
 

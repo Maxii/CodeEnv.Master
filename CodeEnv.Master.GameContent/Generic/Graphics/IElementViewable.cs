@@ -21,15 +21,11 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface used by a ElementPresenter to communicate with their associated ElementView.
     /// </summary>
-    public interface IElementViewable : IViewable {
+    public interface IElementViewable : IMortalViewable {
 
-        event Action onShowCompletion;
+        void AssessHighlighting();
 
         void ShowAttacking();
-
-        void ShowHit();
-
-        void ShowDying();
 
         void ShowRepairing();
 

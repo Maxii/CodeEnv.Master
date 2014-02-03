@@ -27,44 +27,36 @@ using UnityEngine;
 /// <summary>
 /// An MVPresenter associated with a ShipView.
 /// </summary>
-public class ShipPresenter : AMortalFocusablePresenter {
+public class ShipPresenter : AUnitElementPresenter {
 
-    public new ShipItem Item {
-        get { return base.Item as ShipItem; }
-        protected set { base.Item = value; }
+    public new ShipModel Model {
+        get { return base.Model as ShipModel; }
+        protected set { base.Model = value; }
     }
-
-    protected new IElementViewable View {
-        get { return base.View as IElementViewable; }
-    }
-
-    private ICommandViewable _fleetView;
 
     public ShipPresenter(IElementViewable view)
         : base(view) {
-        FleetCreator fleetMgr = _viewGameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>();
-        _fleetView = fleetMgr.gameObject.GetSafeInterfaceInChildren<ICommandViewable>();
         Subscribe();
     }
 
-    protected override AItem AcquireItemReference() {
-        return UnityUtility.ValidateMonoBehaviourPresence<ShipItem>(_viewGameObject);
+    protected override AItemModel AcquireModelReference() {
+        return UnityUtility.ValidateMonoBehaviourPresence<ShipModel>(_viewGameObject);
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        var hudPublisher = new GuiHudPublisher<ShipData>(Item.Data);
+        var hudPublisher = new GuiHudPublisher<ShipData>(Model.Data);
         hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed);
         return hudPublisher;
     }
 
     protected override void Subscribe() {
         base.Subscribe();
-        _subscribers.Add(Item.SubscribeToPropertyChanging<ShipItem, ShipState>(s => s.CurrentState, OnShipStateChanging));
-        View.onShowCompletion += Item.OnShowCompletion;
+        _subscribers.Add(Model.SubscribeToPropertyChanging<ShipModel, ShipState>(s => s.CurrentState, OnShipStateChanging));
+        _subscribers.Add(Model.SubscribeToPropertyChanged<ShipModel, ShipState>(s => s.CurrentState, OnShipStateChanged));
     }
 
     private void OnShipStateChanging(ShipState newState) {
-        ShipState previousState = Item.CurrentState;
+        ShipState previousState = Model.CurrentState;
         switch (previousState) {
             case ShipState.Refitting:
             case ShipState.Repairing:
@@ -94,7 +86,10 @@ public class ShipPresenter : AMortalFocusablePresenter {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(previousState));
         }
+    }
 
+    private void OnShipStateChanged() {
+        ShipState newState = Model.CurrentState;
         switch (newState) {
             case ShipState.ShowAttacking:
                 View.ShowAttacking();
@@ -131,23 +126,15 @@ public class ShipPresenter : AMortalFocusablePresenter {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(newState));
         }
-    }
 
-    public bool IsFleetSelected {
-        get { return (_fleetView as ISelectable).IsSelected; }
-        set { (_fleetView as ISelectable).IsSelected = value; }
     }
 
     public bool IsHQElement {
-        get { return Item.IsHQElement; }
-    }
-
-    public void __SimulateAttacked() {
-        Item.__SimulateAttacked();
+        get { return Model.IsHQElement; }
     }
 
     public Reference<float> GetShipSpeedReference() {
-        return new Reference<float>(() => Item.Data.CurrentSpeed);
+        return new Reference<float>(() => Model.Data.CurrentSpeed);
     }
 
     public void OnIsSelected() {
@@ -155,14 +142,8 @@ public class ShipPresenter : AMortalFocusablePresenter {
     }
 
     public void RequestContextMenu(bool isDown) {
-        if (DebugSettings.Instance.AllowEnemyOrders || Item.Data.Owner.IsHuman) {
+        if (DebugSettings.Instance.AllowEnemyOrders || Model.Data.Owner.IsHuman) {
             CameraControl.Instance.ShowContextMenuOnPress(isDown);
-        }
-    }
-
-    protected override void OnItemDeath(ItemDeathEvent e) {
-        if ((e.Source as ShipItem) == Item) {
-            CleanupOnDeath();
         }
     }
 

@@ -287,7 +287,7 @@ public class FleetManager : AMonoBase, ISelectable, IHasData, IDisposable {
 
     #region IHasData Members
 
-    public AMortalData GetData() {
+    public AMortalItemData GetData() {
         return Data;
     }
 

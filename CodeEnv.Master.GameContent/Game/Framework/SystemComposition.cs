@@ -32,12 +32,11 @@ namespace CodeEnv.Master.GameContent {
 
         private Vector3 _settlementOrbitSlot;
         /// <summary>
-        /// The orbital start position (in local space) of any current or
-        /// future settlement. The transform holding the SettlementItem has
-        /// its localPosition assigned this value, while the top level GameObject
-        /// of the newly instantiated Settlement is parented to the System.
-        /// WARNING: Can be Vector3.zero if a system that starts in the scene
-        /// contains no Settlement.
+        ///  The orbital start position (in local space) of any current or
+        /// future settlement. The transform holding the SettlementCreator (whose
+        /// children are SettlementCmd and the Settlement's Facilities) has
+        /// its localPosition assigned this value. It is then attached to an orbit
+        /// object which is parented to the System.
         /// </summary>
         public Vector3 SettlementOrbitSlot {
             get { return _settlementOrbitSlot; }

@@ -16,22 +16,19 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
     /// <summary>
     ///  Interface used by a CommandPresenter to communicate with their associated CommandView.
     /// </summary>
-    public interface ICommandViewable : IViewable {
-
-        event Action onShowCompletion;
+    public interface ICommandViewable : IMortalViewable {
 
         Transform TrackingTarget { set; }
 
         void ChangeCmdIcon(IIcon icon);
 
-        void ShowDying();
+        // ShowHit() from IMortalViewable allows us to optionally show lucky hits on commands
 
     }
 }

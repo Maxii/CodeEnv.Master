@@ -174,7 +174,7 @@ public class Sector : AMonoBase, IHasContextMenu {
     }
 
     public void OnPress(bool isDown) {
-        FleetCreator selectedFleetMgr = _selectionMgr.CurrentSelection as FleetCreator;
+        FleetUnitCreator selectedFleetMgr = _selectionMgr.CurrentSelection as FleetUnitCreator;
         //string fleetName = fleetMgr != null ? fleetMgr.name : "null";
         //D.Log("Sector.OnPress({0}), fleetMgr is {1}.", isDown, fleetName);
         if (selectedFleetMgr != null) {

@@ -17,6 +17,6 @@ using UnityEditor;
 /// <summary>
 /// Example Custom Editor using EditorBase class.
 /// </summary>
-[CustomEditor(typeof(PlanetoidItem))]
-public class ExampleEditor : AEditorBase<PlanetoidItem> { }
+[CustomEditor(typeof(UniverseCenterModel))]
+public class ExampleEditor : AEditorBase<UniverseCenterModel> { }
 

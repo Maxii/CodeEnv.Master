@@ -25,25 +25,25 @@ using UnityEngine;
 /// <summary>
 /// An MVPresenter associated with a SystemView.
 /// </summary>
-public class SystemPresenter : AFocusablePresenter {
+public class SystemPresenter : AFocusableItemPresenter {
 
-    public new SystemItem Item {
-        get { return base.Item as SystemItem; }
-        protected set { base.Item = value; }
+    public new SystemModel Model {
+        get { return base.Model as SystemModel; }
+        protected set { base.Model = value; }
     }
 
     public SystemPresenter(IViewable view) : base(view) { }
 
-    protected override AItem AcquireItemReference() {
-        return UnityUtility.ValidateMonoBehaviourPresence<SystemItem>(_viewGameObject);
+    protected override AItemModel AcquireModelReference() {
+        return UnityUtility.ValidateMonoBehaviourPresence<SystemModel>(_viewGameObject);
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<SystemData>(Item.Data);
+        return new GuiHudPublisher<SystemData>(Model.Data);
     }
 
     public void RequestContextMenu(bool isDown) {
-        SettlementData settlement = Item.Data.Settlement;
+        SettlementData settlement = Model.Data.Settlement;
         //D.Log("Settlement null = {0}, isHumanOwner = {1}.", settlement == null, settlement.Owner.IsHuman);
         if (settlement != null && (DebugSettings.Instance.AllowEnemyOrders || settlement.Owner.IsHuman)) {
             CameraControl.Instance.ShowContextMenuOnPress(isDown);
@@ -57,7 +57,7 @@ public class SystemPresenter : AFocusablePresenter {
     // UNCLEAR what should the relationship be between System.IntelCoverage and Settlement/Planet?, implemented Settlement for now
     public void OnPlayerIntelCoverageChanged() {
         // construct list each time as Settlement presence can change with time
-        SettlementView settlementView = _viewGameObject.GetComponentInChildren<SettlementView>();
+        SettlementCmdView settlementView = _viewGameObject.GetComponentInChildren<SettlementCmdView>();
         if (settlementView != null) {
             settlementView.PlayerIntel.CurrentCoverage = View.PlayerIntel.CurrentCoverage;
         }

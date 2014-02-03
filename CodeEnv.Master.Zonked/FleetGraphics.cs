@@ -52,11 +52,11 @@ public class FleetGraphics : AGraphics, IDisposable {
 
     // cached references
     private FleetCommand _fleetCmd;
-    private FleetCreator _fleetMgr;
+    private FleetUnitCreator _fleetMgr;
 
     protected override void Awake() {
         base.Awake();
-        _fleetMgr = gameObject.GetSafeMonoBehaviourComponent<FleetCreator>();
+        _fleetMgr = gameObject.GetSafeMonoBehaviourComponent<FleetUnitCreator>();
         _fleetCmd = gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>();
         _trackingLabelFactory = GuiTrackingLabelFactory.Instance;
         Target = _fleetCmd.transform;

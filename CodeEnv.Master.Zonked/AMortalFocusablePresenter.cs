@@ -24,12 +24,12 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// An abstract base MVPresenter associated with AMortalItem.
 /// </summary>
-public abstract class AMortalFocusablePresenter : AFocusablePresenter, IDisposable {
+public abstract class AMortalFocusablePresenter : AFocusableItemPresenter, IDisposable {
 
     protected GameEventManager _eventMgr;
     protected IList<IDisposable> _subscribers;
 
-    public AMortalFocusablePresenter(IViewable view)
+    public AMortalItemPresenter(IViewable view)
         : base(view) {
         _eventMgr = GameEventManager.Instance;
         Subscribe();

@@ -52,11 +52,11 @@ public class AutoPilot : APropertyChangeTracking, IDisposable {
 
     private Job _job;
 
-    private ShipItem _ship;
+    private ShipModel _ship;
     private ShipData _shipData;
     private IList<IDisposable> _subscribers;
 
-    public AutoPilot(ShipItem ship) {
+    public AutoPilot(ShipModel ship) {
         _ship = ship;
         _shipData = ship.Data;
         _courseUpdateFrequency /= GameTime.Instance.GameSpeed.SpeedMultiplier();

@@ -22,21 +22,21 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// MVPresenter associated with a SectorView.
 /// </summary>
-public class SectorPresenter : APresenter {
+public class SectorPresenter : AItemPresenter {
 
-    public new SectorItem Item {
-        get { return base.Item as SectorItem; }
-        protected set { base.Item = value; }
+    public new SectorModel Item {
+        get { return base.Model as SectorModel; }
+        protected set { base.Model = value; }
     }
 
     public SectorPresenter(IViewable view) : base(view) { }
 
-    protected override AItem AcquireItemReference() {
-        return UnityUtility.ValidateMonoBehaviourPresence<SectorItem>(_viewGameObject);
+    protected override AItemModel AcquireModelReference() {
+        return UnityUtility.ValidateMonoBehaviourPresence<SectorModel>(_viewGameObject);
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<SectorData>(Item.Data);
+        return new GuiHudPublisher<SectorData>(Model.Data);
     }
 
     public override string ToString() {

@@ -70,7 +70,6 @@
     <Compile Include="Generic\Extensions\LayerMaskExtensions.cs" />
     <Compile Include="Generic\Extensions\UnityExtensions.cs" />
     <Compile Include="Generic\Extensions\VectorExtensions.cs" />
-    <Compile Include="Generic\Framework\ItemDeathEvent.cs" />
     <Compile Include="Generic\Framework\MyNguiConstants.cs" />
     <Compile Include="Generic\Framework\MyNguiUtilities.cs" />
     <Compile Include="Generic\Extensions\UnityUtility.cs" />

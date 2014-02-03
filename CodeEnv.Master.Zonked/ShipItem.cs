@@ -20,7 +20,7 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all ships in the game.
 /// </summary>
-public class ShipItem : AItem {
+public class ShipItem : AItemModel {
 
     public new ShipData Data {
         get { return base.Data as ShipData; }
@@ -30,7 +30,7 @@ public class ShipItem : AItem {
     public ShipNavigator Navigator { get; private set; }
     public AutoPilot AutoPilot { get; private set; }
 
-    private FleetItem _fleet;
+    private FleetCmdModel _fleet;
 
     protected override void Awake() {
         base.Awake();
@@ -39,8 +39,8 @@ public class ShipItem : AItem {
 
     protected override void Start() {
         base.Start();
-        var fleetParent = gameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>();
-        _fleet = fleetParent.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetItem>();
+        var fleetParent = gameObject.GetSafeMonoBehaviourComponentInParents<FleetUnitCreator>();
+        _fleet = fleetParent.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCmdModel>();
         __InitializeNavigator();
         //InitializeAutoPilot();
     }

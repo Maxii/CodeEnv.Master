@@ -59,10 +59,10 @@ public class SystemCreator : AMonoBase, IDisposable {
     private Transform _systemsFolder;
 
     private SystemComposition _composition;
-    private SystemItem _system;
-    private StarItem _star;
-    private IList<PlanetoidItem> _planets;
-    private IEnumerable<PlanetoidItem> _moons;
+    private SystemModel _system;
+    private StarModel _star;
+    private IList<PlanetoidModel> _planets;
+    private IEnumerable<PlanetoidModel> _moons;
 
     // Removed Settlement treatment. Now built separately like a Starbase and assigned to a system
 
@@ -115,8 +115,8 @@ public class SystemCreator : AMonoBase, IDisposable {
     }
 
     private void CreateCompositionFromChildren() {
-        IEnumerable<PlanetoidItem> allPlanetoids = gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetoidItem>();
-        _planets = allPlanetoids.Where(p => p.gameObject.GetComponentInParents<PlanetoidItem>(excludeSelf: true) == null).ToList();
+        IEnumerable<PlanetoidModel> allPlanetoids = gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetoidModel>();
+        _planets = allPlanetoids.Where(p => p.gameObject.GetComponentInParents<PlanetoidModel>(excludeSelf: true) == null).ToList();
         _composition = new SystemComposition();
         foreach (var planet in _planets) {
             Transform transformCarryingPlanetType = planet.transform.parent.parent;
@@ -126,7 +126,7 @@ public class SystemCreator : AMonoBase, IDisposable {
             _composition.AddPlanet(data);
         }
 
-        _star = gameObject.GetSafeMonoBehaviourComponentInChildren<StarItem>();
+        _star = gameObject.GetSafeMonoBehaviourComponentInChildren<StarModel>();
         Transform transformCarryingStarType = _star.transform;
         StarCategory starType = GetType<StarCategory>(transformCarryingStarType);
         _composition.StarData = CreateStarData(starType);
@@ -183,7 +183,7 @@ public class SystemCreator : AMonoBase, IDisposable {
     }
 
     private void DeployExistingSystem() {
-        _system = gameObject.GetSafeMonoBehaviourComponentInChildren<SystemItem>();
+        _system = gameObject.GetSafeMonoBehaviourComponentInChildren<SystemModel>();
         InitializePlanets();
         AssignElementsToOrbitSlots();   // repositions planet orbits and changes name to reflect slot
         InitializeMoons();
@@ -205,18 +205,18 @@ public class SystemCreator : AMonoBase, IDisposable {
     private void BuildSystem() {
         GameObject systemGo = UnityUtility.AddChild(gameObject, RequiredPrefabs.Instance.system.gameObject);
         systemGo.name = _systemName;     // assign the name of the system
-        _system = systemGo.GetSafeMonoBehaviourComponent<SystemItem>();
+        _system = systemGo.GetSafeMonoBehaviourComponent<SystemModel>();
     }
 
     private void BuildPlanets() {
-        _planets = new List<PlanetoidItem>();
+        _planets = new List<PlanetoidModel>();
         foreach (var pType in _composition.PlanetTypes) {
             GameObject planetPrefab = RequiredPrefabs.Instance.planets.First(p => p.gameObject.name == pType.GetName());
             GameObject systemGo = _system.gameObject;
 
             _composition.GetPlanetData(pType).ForAll(pd => {
                 GameObject topLevelPlanetGo = UnityUtility.AddChild(systemGo, planetPrefab);
-                PlanetoidItem planet = topLevelPlanetGo.GetSafeMonoBehaviourComponentInChildren<PlanetoidItem>();
+                PlanetoidModel planet = topLevelPlanetGo.GetSafeMonoBehaviourComponentInChildren<PlanetoidModel>();
                 _planets.Add(planet);
             });
         }
@@ -227,7 +227,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         GameObject starPrefab = RequiredPrefabs.Instance.stars.First(sp => sp.gameObject.name == starType.GetName()).gameObject;
         GameObject systemGo = _system.gameObject;
         GameObject starGo = UnityUtility.AddChild(systemGo, starPrefab);
-        _star = starGo.GetSafeMonoBehaviourComponent<StarItem>();
+        _star = starGo.GetSafeMonoBehaviourComponent<StarModel>();
     }
 
     private void InitializePlanets() {
@@ -248,9 +248,9 @@ public class SystemCreator : AMonoBase, IDisposable {
     }
 
     private void InitializeMoons() {
-        _moons = new List<PlanetoidItem>();
+        _moons = new List<PlanetoidModel>();
         foreach (var planet in _planets) {
-            IEnumerable<PlanetoidItem> moons = planet.gameObject.GetComponentsInChildren<PlanetoidItem>().Except(planet);
+            IEnumerable<PlanetoidModel> moons = planet.gameObject.GetComponentsInChildren<PlanetoidModel>().Except(planet);
             if (!moons.IsNullOrEmpty()) {
                 int letterIndex = 0;
                 foreach (var moon in moons) {
@@ -293,7 +293,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         _composition.SettlementOrbitSlot = _orbitSlots[slotIndex];
 
         // now divy up the remaining slots among the planets
-        IList<PlanetoidItem> planetsToDestroy = null;
+        IList<PlanetoidModel> planetsToDestroy = null;
         Stack<int>[] slots;
         foreach (var planet in _planets) {
             var pType = planet.Data.Category;
@@ -327,7 +327,7 @@ public class SystemCreator : AMonoBase, IDisposable {
             }
             else {
                 if (planetsToDestroy == null) {
-                    planetsToDestroy = new List<PlanetoidItem>();
+                    planetsToDestroy = new List<PlanetoidModel>();
                 }
                 planetsToDestroy.Add(planet);
             }

@@ -16,13 +16,15 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using UnityEngine;
 
 /// <summary>
 /// A class for managing the elements of a Facility's UI. 
 /// </summary>
-public class FacilityView : AElementView {
+public class FacilityView : AUnitElementView {
 
     public new FacilityPresenter Presenter {
         get { return base.Presenter as FacilityPresenter; }
@@ -41,6 +43,51 @@ public class FacilityView : AElementView {
     protected override void OnAltLeftClick() {
         base.OnAltLeftClick();
         Presenter.__SimulateAttacked();
+    }
+
+    public override void AssessHighlighting() {
+        if (!IsDiscernible) {
+            Highlight(Highlights.None);
+            return;
+        }
+        if (IsFocus) {
+            if (Presenter.IsCommandSelected) {
+                Highlight(Highlights.FocusAndGeneral);
+                return;
+            }
+            Highlight(Highlights.Focused);
+            return;
+        }
+        if (Presenter.IsCommandSelected) {
+            Highlight(Highlights.General);
+            return;
+        }
+        Highlight(Highlights.None);
+    }
+
+    protected override void Highlight(Highlights highlight) {
+        switch (highlight) {
+            case Highlights.Focused:
+                ShowCircle(true, Highlights.Focused);
+                ShowCircle(false, Highlights.General);
+                break;
+            case Highlights.General:
+                ShowCircle(false, Highlights.Focused);
+                ShowCircle(true, Highlights.General);
+                break;
+            case Highlights.FocusAndGeneral:
+                ShowCircle(true, Highlights.Focused);
+                ShowCircle(true, Highlights.General);
+                break;
+            case Highlights.None:
+                ShowCircle(false, Highlights.Focused);
+                ShowCircle(false, Highlights.General);
+                break;
+            case Highlights.Selected:
+            case Highlights.SelectedAndFocus:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(highlight));
+        }
     }
 
     public override string ToString() {

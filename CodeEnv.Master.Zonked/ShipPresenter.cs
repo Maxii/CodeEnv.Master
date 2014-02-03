@@ -27,11 +27,11 @@ using UnityEngine;
 /// <summary>
 /// An MVPresenter associated with a ShipView.
 /// </summary>
-public class ShipPresenter : AMortalFocusablePresenter {
+public class ShipPresenter : AMortalItemPresenter {
 
-    public new ShipItem Item {
-        get { return base.Item as ShipItem; }
-        protected set { base.Item = value; }
+    public new ShipModel Item {
+        get { return base.Model as ShipModel; }
+        protected set { base.Model = value; }
     }
 
     protected new IShipViewable View {
@@ -42,28 +42,28 @@ public class ShipPresenter : AMortalFocusablePresenter {
 
     public ShipPresenter(IShipViewable view)
         : base(view) {
-        FleetCreator fleetMgr = _viewGameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>();
+        FleetUnitCreator fleetMgr = _viewGameObject.GetSafeMonoBehaviourComponentInParents<FleetUnitCreator>();
         _fleetView = fleetMgr.gameObject.GetSafeInterfaceInChildren<IFleetViewable>();
     }
 
-    protected override AItem AcquireItemReference() {
-        return UnityUtility.ValidateMonoBehaviourPresence<ShipItem>(_viewGameObject);
+    protected override AItemModel AcquireModelReference() {
+        return UnityUtility.ValidateMonoBehaviourPresence<ShipModel>(_viewGameObject);
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        var hudPublisher = new GuiHudPublisher<ShipData>(Item.Data);
+        var hudPublisher = new GuiHudPublisher<ShipData>(Model.Data);
         hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed);
         return hudPublisher;
     }
 
     protected override void Subscribe() {
         base.Subscribe();
-        _subscribers.Add(Item.SubscribeToPropertyChanging<ShipItem, ShipState>(s => s.CurrentState, OnShipStateChanging));
-        View.onShowCompletion += Item.OnShowCompletion;
+        _subscribers.Add(Model.SubscribeToPropertyChanging<ShipModel, ShipState>(s => s.CurrentState, OnShipStateChanging));
+        View.onShowCompletion += Model.OnShowCompletion;
     }
 
     private void OnShipStateChanging(ShipState newState) {
-        ShipState previousState = Item.CurrentState;
+        ShipState previousState = Model.CurrentState;
         switch (previousState) {
             case ShipState.Entrenching:
             case ShipState.Refitting:
@@ -138,11 +138,11 @@ public class ShipPresenter : AMortalFocusablePresenter {
     }
 
     public void __SimulateAttacked() {
-        Item.__SimulateAttacked();
+        Model.__SimulateAttacked();
     }
 
     public Reference<float> GetShipSpeed() {
-        return new Reference<float>(() => Item.Data.CurrentSpeed);
+        return new Reference<float>(() => Model.Data.CurrentSpeed);
     }
 
     public void OnIsSelected() {
@@ -154,13 +154,13 @@ public class ShipPresenter : AMortalFocusablePresenter {
     }
 
     private void OnPressRequestContextMenu(bool isDown) {
-        if (DebugSettings.Instance.AllowEnemyOrders || Item.Data.Owner.IsHuman) {
+        if (DebugSettings.Instance.AllowEnemyOrders || Model.Data.Owner.IsHuman) {
             CameraControl.Instance.ShowContextMenuOnPress(isDown);
         }
     }
 
-    protected override void OnItemDeath(ItemDeathEvent e) {
-        if ((e.Source as ShipItem) == Item) {
+    protected override void OnItemDeath(MortalItemDeathEvent e) {
+        if ((e.Source as ShipModel) == Model) {
             CleanupOnDeath();
         }
     }

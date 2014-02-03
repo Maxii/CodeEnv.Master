@@ -20,7 +20,7 @@ using UnityEngine;
 /// Abstract base class for any item in the universe that is focusable. Also provides
 /// CursorHud support if there is Data for the item.
 /// </summary>
-public abstract class AFocusableItem : AItem, ICameraFocusable {
+public abstract class AFocusableItem : AItemModel, ICameraFocusable {
 
     protected GameEventManager _eventMgr;
 

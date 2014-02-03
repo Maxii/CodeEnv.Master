@@ -52,7 +52,7 @@ public class ShipGraphics : AGraphics, IDisposable {
 
     // cached references
     private ShipCaptain _shipCaptain;
-    private FleetCreator _fleetMgr;
+    private FleetUnitCreator _fleetMgr;
 
     protected override void Awake() {
         base.Awake();
@@ -60,7 +60,7 @@ public class ShipGraphics : AGraphics, IDisposable {
         _shipCaptain = gameObject.GetSafeMonoBehaviourComponent<ShipCaptain>();
         maxAnimateDistance = Mathf.RoundToInt(AnimationSettings.Instance.MaxShipAnimateDistanceFactor * _shipCaptain.Size);
         maxShowDistance = Mathf.RoundToInt(AnimationSettings.Instance.MaxShipShowDistanceFactor * _shipCaptain.Size);
-        _fleetMgr = gameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>();
+        _fleetMgr = gameObject.GetSafeMonoBehaviourComponentInParents<FleetUnitCreator>();
         InitializeHighlighting();
     }
 

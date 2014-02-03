@@ -23,11 +23,11 @@ using UnityEngine;
 /// <summary>
 /// An MVPresenter associated with a StarView.
 /// </summary>
-public class StarPresenter : AFocusablePresenter {
+public class StarPresenter : AFocusableItemPresenter {
 
-    public new StarItem Item {
-        get { return base.Item as StarItem; }
-        protected set { base.Item = value; }
+    public new StarModel Model {
+        get { return base.Model as StarModel; }
+        protected set { base.Model = value; }
     }
 
     private SystemView _systemView;
@@ -37,12 +37,12 @@ public class StarPresenter : AFocusablePresenter {
         _systemView = _viewGameObject.GetSafeMonoBehaviourComponentInParents<SystemView>();
     }
 
-    protected override AItem AcquireItemReference() {
-        return UnityUtility.ValidateMonoBehaviourPresence<StarItem>(_viewGameObject);
+    protected override AItemModel AcquireModelReference() {
+        return UnityUtility.ValidateMonoBehaviourPresence<StarModel>(_viewGameObject);
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<StarData>(Item.Data);
+        return new GuiHudPublisher<StarData>(Model.Data);
     }
 
     public void OnHover(bool isOver) {

@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     public class FleetComposition {
 
         /// <summary>
-        /// The Categories of the Items present in this Composition.
+        /// The Categories of the Elements present in this Composition.
         /// </summary>
         public IList<ShipCategory> Categories {
             get {

@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// A class for managing the UI of a Sector.
 /// </summary>
-public class SectorView : AView, IViewable {
+public class SectorView : AItemView, IViewable {
 
     public SectorPresenter Presenter { get; private set; }
 

@@ -29,8 +29,8 @@ using UnityEngine;
 /// </summary>
 public class SettlementView : AFollowableView, ISettlementViewable {
 
-    public new SettlementPresenter Presenter {
-        get { return base.Presenter as SettlementPresenter; }
+    public new SettlementCmdPresenter Presenter {
+        get { return base.Presenter as SettlementCmdPresenter; }
         protected set { base.Presenter = value; }
     }
 
@@ -61,7 +61,7 @@ public class SettlementView : AFollowableView, ISettlementViewable {
     }
 
     protected override void InitializePresenter() {
-        Presenter = new SettlementPresenter(this);
+        Presenter = new SettlementCmdPresenter(this);
     }
 
     private void OnIsDetectableChanged() {

@@ -24,6 +24,19 @@ namespace CodeEnv.Master.GameContent {
         None,
         Idling,
         ProcessOrders,
+        GoAttack,   // ?
+        Attacking,
+
+        // These 2 allow Commands to optionally take hits and show them, seperate from their HQElement
+        TakingDamage,
+        ShowHit,
+
+        GoRepair,   // ?
+        Repairing,
+        GoRefit,   // ?
+        Refitting,
+        GoDisband,   // ?
+        Disbanding,
         Dying,
         ShowDying,
         Dead

@@ -25,13 +25,13 @@ namespace CodeEnv.Master.GameContent {
     /// Factory that makes GuiCursorHudText and IColoredTextList instances 
     /// for eye candy game objects.
     /// </summary>
-    public class GuiHudTextFactory : AGuiHudTextFactory<GuiHudTextFactory, Data> {
+    public class GuiHudTextFactory : AGuiHudTextFactory<GuiHudTextFactory, ItemData> {
 
         private GuiHudTextFactory() {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, Data data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, ItemData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.Name);

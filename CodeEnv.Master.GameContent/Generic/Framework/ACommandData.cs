@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ACommandData.cs
-// Abstract base class for data associated with Command Items that have an ElementType under command.
+// Abstract base class for data associated with a Unit Command.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,9 +23,9 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
-    /// Abstract base class for data associated with Command Items that have an ElementType under command.
+    /// Abstract base class for data associated with a Unit Command.
     /// </summary>
-    public abstract class ACommandData : AMortalData, IDisposable {
+    public abstract class ACommandData : AMortalItemData, IDisposable {
 
         private AElementData _hqElementData;
         public AElementData HQElementData {

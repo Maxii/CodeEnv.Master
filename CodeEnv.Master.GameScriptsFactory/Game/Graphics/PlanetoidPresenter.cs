@@ -16,41 +16,62 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// An MVPresenter associated with a PlanetoidView.
 /// </summary>
-public class PlanetoidPresenter : AMortalFocusablePresenter {
+public class PlanetoidPresenter : AMortalItemPresenter {
 
-    public new PlanetoidItem Item {
-        get { return base.Item as PlanetoidItem; }
-        protected set { base.Item = value; }
+    public new PlanetoidModel Model {
+        get { return base.Model as PlanetoidModel; }
+        protected set { base.Model = value; }
     }
 
-    public PlanetoidPresenter(IViewable view)
+    protected new IMortalViewable View {
+        get { return base.View as IMortalViewable; }
+    }
+
+    public PlanetoidPresenter(IMortalViewable view)
         : base(view) {
         Subscribe();
     }
 
-    protected override AItem AcquireItemReference() {
-        return UnityUtility.ValidateMonoBehaviourPresence<PlanetoidItem>(_viewGameObject);
+    protected override AItemModel AcquireModelReference() {
+        return UnityUtility.ValidateMonoBehaviourPresence<PlanetoidModel>(_viewGameObject);
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<PlanetoidData>(Item.Data);
+        return new GuiHudPublisher<PlanetoidData>(Model.Data);
     }
 
-    protected override void OnItemDeath(ItemDeathEvent e) {
-        if ((e.Source as PlanetoidItem) == Item) {
-            CleanupOnDeath();
+    protected override void Subscribe() {
+        base.Subscribe();
+        _subscribers.Add(Model.SubscribeToPropertyChanged<PlanetoidModel, PlanetoidState>(sb => sb.CurrentState, OnPlanetoidStateChanged));
+    }
+
+    private void OnPlanetoidStateChanged() {
+        PlanetoidState newState = Model.CurrentState;
+        switch (newState) {
+            case PlanetoidState.ShowHit:
+                View.ShowHit();
+                break;
+            case PlanetoidState.ShowDying:
+                View.ShowDying();
+                break;
+            case PlanetoidState.Idling:
+            case PlanetoidState.TakingDamage:
+            case PlanetoidState.Dying:
+            case PlanetoidState.Dead:
+                // do nothing
+                break;
+            case PlanetoidState.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(newState));
         }
-    }
-
-    protected override void CleanupOnDeath() {
-        base.CleanupOnDeath();
-        // TODO initiate death of a planet...
     }
 
     public override string ToString() {

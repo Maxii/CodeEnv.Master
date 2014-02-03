@@ -25,11 +25,11 @@ using UnityEngine;
 /// <summary>
 /// An MVPresenter associated with a StarBaseView.
 /// </summary>
-public class StarBasePresenter : AMortalFocusablePresenter {
+public class StarBasePresenter : AMortalItemPresenter {
 
     public new StarBaseItem Item {
-        get { return base.Item as StarBaseItem; }
-        protected set { base.Item = value; }
+        get { return base.Model as StarBaseItem; }
+        protected set { base.Model = value; }
     }
 
     protected new IStarBaseViewable View {
@@ -41,7 +41,7 @@ public class StarBasePresenter : AMortalFocusablePresenter {
         Subscribe();
     }
 
-    protected override AItem AcquireItemReference() {
+    protected override AItemModel AcquireModelReference() {
         return UnityUtility.ValidateMonoBehaviourPresence<StarBaseItem>(_viewGameObject);
     }
 
@@ -80,7 +80,7 @@ public class StarBasePresenter : AMortalFocusablePresenter {
         }
     }
 
-    protected override void OnItemDeath(ItemDeathEvent e) {
+    protected override void OnItemDeath(MortalItemDeathEvent e) {
         if ((e.Source as StarBaseItem) == Item) {
             CleanupOnDeath();
         }

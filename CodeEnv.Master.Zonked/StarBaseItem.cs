@@ -28,8 +28,8 @@ using UnityEngine;
 /// </summary>
 public class StarBaseItem : AMortalItemStateMachine<StarbaseState>, ITarget {
 
-    private ItemOrder<StarbaseOrders> _currentOrder;
-    public ItemOrder<StarbaseOrders> CurrentOrder {
+    private UnitOrder<StarbaseOrders> _currentOrder;
+    public UnitOrder<StarbaseOrders> CurrentOrder {
         get { return _currentOrder; }
         set { SetProperty<ItemOrder<StarbaseOrders>>(ref _currentOrder, value, "CurrentOrder", OnOrdersChanged); }
     }
@@ -95,7 +95,7 @@ public class StarBaseItem : AMortalItemStateMachine<StarbaseState>, ITarget {
 
     #region ProcessOrders
 
-    private ItemOrder<StarbaseOrders> _orderBeingExecuted;
+    private UnitOrder<StarbaseOrders> _orderBeingExecuted;
     private bool _isNewOrderWaiting;
 
     void ProcessOrders_EnterState() { }
@@ -201,7 +201,7 @@ public class StarBaseItem : AMortalItemStateMachine<StarbaseState>, ITarget {
 
     IEnumerator Dead_EnterState() {
         D.Log("{0} has Died!", Data.Name);
-        GameEventManager.Instance.Raise<ItemDeathEvent>(new ItemDeathEvent(this));
+        GameEventManager.Instance.Raise<MortalItemDeathEvent>(new MortalItemDeathEvent(this));
         yield return new WaitForSeconds(3);
         Destroy(gameObject);
     }

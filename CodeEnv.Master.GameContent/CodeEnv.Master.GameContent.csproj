@@ -56,6 +56,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Gameplay\FacilityOrders.cs" />
     <Compile Include="Generic\Framework\FixedIntel.cs" />
     <Compile Include="Game\Gameplay\FleetCategory.cs" />
     <Compile Include="Generic\Framework\ACommandData.cs" />
@@ -65,7 +66,7 @@
     <Compile Include="Game\Gameplay\FacilityData.cs" />
     <Compile Include="Game\Gameplay\FacilityState.cs" />
     <Compile Include="Game\Gameplay\StarbaseState.cs" />
-    <Compile Include="Generic\Framework\AData.cs" />
+    <Compile Include="Generic\Framework\AItemData.cs" />
     <Compile Include="Game\Framework\EngineRoom.cs" />
     <Compile Include="Generic\Extensions\GameUtility.cs" />
     <Compile Include="Game\Gameplay\FleetOrders.cs" />
@@ -109,7 +110,7 @@
     <Compile Include="Game\_Debug\DebugHudText.cs" />
     <Compile Include="Game\Framework\GameConstants.cs" />
     <Compile Include="Game\GUI\BuildNewGameEvent.cs" />
-    <Compile Include="Generic\Framework\AMortalData.cs" />
+    <Compile Include="Generic\Framework\AMortalItemData.cs" />
     <Compile Include="Game\Gameplay\FleetData.cs" />
     <Compile Include="Game\Framework\GameTimePeriod.cs" />
     <Compile Include="Game\_Debug\TempGameValues.cs" />
@@ -143,10 +144,10 @@
     <Compile Include="Game\Graphics\SettlementGuiHudTextFactory.cs" />
     <Compile Include="Game\Gameplay\ShipState.cs" />
     <Compile Include="Game\Gameplay\ShipOrders.cs" />
-    <Compile Include="Generic\Framework\ItemOrder.cs" />
+    <Compile Include="Generic\Framework\UnitOrder.cs" />
     <Compile Include="Generic\Framework\StationaryLocation.cs" />
     <Compile Include="Game\Gameplay\SectorData.cs" />
-    <Compile Include="Game\Gameplay\Data.cs" />
+    <Compile Include="Game\Gameplay\ItemData.cs" />
     <Compile Include="Game\Graphics\SectorGuiHudTextFactory.cs" />
     <Compile Include="Game\Gameplay\StarbaseOrders.cs" />
     <Compile Include="Game\Gameplay\SettlementOrders.cs" />
@@ -163,6 +164,8 @@
     <Compile Include="Generic\Framework\Intel.cs" />
     <Compile Include="Generic\Framework\IIntel.cs" />
     <Compile Include="Generic\Framework\ImprovingIntel.cs" />
+    <Compile Include="Game\Gameplay\PlanetoidState.cs" />
+    <Compile Include="Generic\Graphics\IMortalViewable.cs" />
     <Compile Include="ThirdParty\ICoroutineManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\SystemData.cs" />

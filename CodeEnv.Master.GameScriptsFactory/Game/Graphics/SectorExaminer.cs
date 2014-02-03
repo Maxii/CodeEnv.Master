@@ -111,7 +111,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
 
     private void OnRightPressRelease() {
         if (_viewMode == PlayerViewMode.SectorView) {
-            FleetView selectedFleetView = _selectionMgr.CurrentSelection as FleetView;
+            FleetCmdView selectedFleetView = _selectionMgr.CurrentSelection as FleetCmdView;
             if (selectedFleetView != null) {
                 _ctxObject.ShowMenu();
             }
@@ -151,11 +151,11 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
 
     private void OnContextMenuSelection() {
         int menuId = CtxObject.current.selectedItem;
-        FleetView selectedFleetView = _selectionMgr.CurrentSelection as FleetView;
-        FleetItem selectedFleetItem = selectedFleetView.Presenter.Item;
+        FleetCmdView selectedFleetView = _selectionMgr.CurrentSelection as FleetCmdView;
+        FleetCmdModel selectedFleetItem = selectedFleetView.Presenter.Model;
         if (menuId == 4) {  // UNDONE
             Vector3 centerOfSector = SectorGrid.GetSector(Location).Position;
-            selectedFleetItem.CurrentOrder = new ItemOrder<FleetOrders>(FleetOrders.MoveTo, centerOfSector);
+            selectedFleetItem.CurrentOrder = new UnitOrder<FleetOrders>(FleetOrders.MoveTo, centerOfSector);
         }
     }
 
@@ -227,7 +227,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
                 Vector3 mouseWorldPoint = Camera.main.ScreenToWorldPoint(mousePosition);
                 Index3D sectorIndexUnderMouse = SectorGrid.GetSectorIndex(mouseWorldPoint);
                 bool toShow;
-                SectorItem notUsed;
+                SectorModel notUsed;
                 if (toShow = SectorGrid.TryGetSector(sectorIndexUnderMouse, out notUsed)) {
                     if (!Location.Equals(sectorIndexUnderMouse)) {
                         Location = sectorIndexUnderMouse; // avoid the SetProperty equivalent warnings

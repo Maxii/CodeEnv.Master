@@ -27,8 +27,8 @@ using UnityEngine;
 /// </summary>
 public class FleetView : AFollowableView, IFleetViewable, ISelectable {
 
-    public new FleetPresenter Presenter {
-        get { return base.Presenter as FleetPresenter; }
+    public new FleetCmdPresenter Presenter {
+        get { return base.Presenter as FleetCmdPresenter; }
         protected set { base.Presenter = value; }
     }
 
@@ -88,7 +88,7 @@ public class FleetView : AFollowableView, IFleetViewable, ISelectable {
     }
 
     protected override void InitializePresenter() {
-        Presenter = new FleetPresenter(this);
+        Presenter = new FleetCmdPresenter(this);
     }
 
     private void InitializeTrackingTarget() {
@@ -201,7 +201,7 @@ public class FleetView : AFollowableView, IFleetViewable, ISelectable {
                 disableComponentOnNotDiscernible = disableComponentOnNotDiscernible.Except(_trackingLabel);
             }
             float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
-            string fleetName = Presenter.Item.Data.Name;
+            string fleetName = Presenter.Model.Data.Name;
             _trackingLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(TrackingTarget, GuiTrackingLabelFactory.LabelPlacement.AboveTarget, minShowDistance, Mathf.Infinity, fleetName);
             disableComponentOnNotDiscernible = disableComponentOnNotDiscernible.Union(new Component[] { _trackingLabel });
         }

@@ -57,8 +57,13 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Generic\Framework\AItem.cs" />
-    <Compile Include="Generic\Graphics\AView.cs" />
+    <Compile Include="Generic\Framework\AItemModel.cs" />
+    <Compile Include="Generic\Framework\AMortalItemModel.cs" />
+    <Compile Include="Generic\Framework\AMortalItemModelStateMachine.cs" />
+    <Compile Include="Generic\Framework\AUnitCommandModel.cs" />
+    <Compile Include="Generic\Framework\AUnitElementModel.cs" />
+    <Compile Include="Generic\Framework\MortalItemDeathEvent.cs" />
+    <Compile Include="Generic\Graphics\AItemView.cs" />
     <Compile Include="ThirdParty\TaskManager.cs" />
     <Compile Include="ThirdParty\CoroutineManager.cs" />
     <Compile Include="ThirdParty\AMonoStateMachineSingleton.cs" />

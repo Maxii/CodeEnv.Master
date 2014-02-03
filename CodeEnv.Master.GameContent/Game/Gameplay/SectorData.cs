@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Data associated with a Sector.
     /// </summary>
-    public class SectorData : AData {
+    public class SectorData : AItemData {
 
         public Index3D SectorIndex { get; private set; }
 

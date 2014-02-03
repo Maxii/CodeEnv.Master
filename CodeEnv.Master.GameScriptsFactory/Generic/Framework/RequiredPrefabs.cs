@@ -28,19 +28,19 @@ public class RequiredPrefabs : AMonoBaseSingleton<RequiredPrefabs> {
     public SphereCollider universeEdge;
     public Transform cameraDummyTarget;
     public GuiTrackingLabel guiTrackingLabel;
-    public SectorItem sector;
+    public SectorModel sector;
 
     public Orbit orbit;
 
-    public FleetItem fleetCmd;
-    public ShipItem[] ships;
+    public FleetCmdModel fleetCmd;
+    public ShipModel[] ships;
 
-    public SettlementItem settlementCmd;
-    public StarbaseItem starbaseCmd;
-    public FacilityItem[] facilities;
+    public SettlementCmdModel settlementCmd;
+    public StarbaseCmdModel starbaseCmd;
+    public FacilityModel[] facilities;
 
-    public SystemItem system; // without the star and settlement
-    public StarItem[] stars;
+    public SystemModel system; // without the star and settlement
+    public StarModel[] stars;
     public GameObject[] planets;
 
     protected override void Awake() {

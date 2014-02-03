@@ -20,19 +20,16 @@ using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// An MVPresenter associated with a Facility View.
 /// </summary>
-public class FacilityPresenter : AMortalFocusablePresenter {
+public class FacilityPresenter : AUnitElementPresenter {
 
-    public new FacilityItem Item {
-        get { return base.Item as FacilityItem; }
-        protected set { base.Item = value; }
-    }
-
-    protected new IElementViewable View {
-        get { return base.View as IElementViewable; }
+    public new FacilityModel Model {
+        get { return base.Model as FacilityModel; }
+        protected set { base.Model = value; }
     }
 
     public FacilityPresenter(IElementViewable view)
@@ -40,48 +37,79 @@ public class FacilityPresenter : AMortalFocusablePresenter {
         Subscribe();
     }
 
-    protected override AItem AcquireItemReference() {
-        return UnityUtility.ValidateMonoBehaviourPresence<FacilityItem>(_viewGameObject);
+    protected override AItemModel AcquireModelReference() {
+        return UnityUtility.ValidateMonoBehaviourPresence<FacilityModel>(_viewGameObject);
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<FacilityData>(Item.Data);
+        return new GuiHudPublisher<FacilityData>(Model.Data);
     }
 
     protected override void Subscribe() {
         base.Subscribe();
-        _subscribers.Add(Item.SubscribeToPropertyChanged<FacilityItem, FacilityState>(sb => sb.CurrentState, OnSettlementStateChanged));
-        View.onShowCompletion += Item.OnShowCompletion;
+        _subscribers.Add(Model.SubscribeToPropertyChanging<FacilityModel, FacilityState>(sb => sb.CurrentState, OnFacilityStateChanging));
+        _subscribers.Add(Model.SubscribeToPropertyChanged<FacilityModel, FacilityState>(sb => sb.CurrentState, OnFacilityStateChanged));
     }
 
-    private void OnSettlementStateChanged() {
-        FacilityState state = Item.CurrentState;
-        switch (state) {
-            case FacilityState.ShowDying:
-                View.ShowDying();
+    private void OnFacilityStateChanging(FacilityState newState) {
+        FacilityState previousState = Model.CurrentState;
+        switch (previousState) {
+            case FacilityState.Refitting:
+            case FacilityState.Repairing:
+                // the state is changing from one of these states so stop the Showing
+                View.StopShowing();
                 break;
+            case FacilityState.ShowAttacking:
+            case FacilityState.ShowHit:
+            case FacilityState.ShowDying:
+                // no need to stop any of these showing as they have already completed
+                break;
+            case FacilityState.ProcessOrders:
             case FacilityState.Idling:
+            case FacilityState.GoAttack:
+            case FacilityState.Dead:
+            case FacilityState.Attacking:
+            case FacilityState.Dying:
+            case FacilityState.TakingDamage:
                 // do nothing
                 break;
             case FacilityState.None:
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(state));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(previousState));
         }
     }
 
-    protected override void OnItemDeath(ItemDeathEvent e) {
-        if ((e.Source as FacilityItem) == Item) {
-            CleanupOnDeath();
+    private void OnFacilityStateChanged() {
+        FacilityState newState = Model.CurrentState;
+        switch (newState) {
+            case FacilityState.ShowAttacking:
+                View.ShowAttacking();
+                break;
+            case FacilityState.ShowHit:
+                View.ShowHit();
+                break;
+            case FacilityState.ShowDying:
+                View.ShowDying();
+                break;
+            case FacilityState.Refitting:
+                View.ShowRefitting();
+                break;
+            case FacilityState.Repairing:
+                View.ShowRepairing();
+                break;
+            case FacilityState.ProcessOrders:
+            case FacilityState.Idling:
+            case FacilityState.GoAttack:
+            case FacilityState.Dead:
+            case FacilityState.Attacking:
+            case FacilityState.Dying:
+            case FacilityState.TakingDamage:
+                // do nothing
+                break;
+            case FacilityState.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(newState));
         }
-    }
-
-    public void __SimulateAttacked() {
-        Item.__SimulateAttacked();
-    }
-
-    protected override void CleanupOnDeath() {
-        base.CleanupOnDeath();
-        // TODO initiate death of a facility
     }
 
     public override string ToString() {

@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
     /// <typeparam name="DataType">The type of Data.</typeparam>
     public abstract class AGuiHudTextFactory<ClassType, DataType> : AGenericSingleton<ClassType>, IGuiHudTextFactory<DataType>
         where ClassType : class
-        where DataType : AData {
+        where DataType : AItemData {
 
         private static IDictionary<IntelCoverage, IList<GuiHudLineKeys>> _hudLineKeyLookup = new Dictionary<IntelCoverage, IList<GuiHudLineKeys>> {
 

@@ -21,7 +21,7 @@ using UnityEngine;
 /// <summary>
 /// A class for managing the UI of a system's star.
 /// </summary>
-public class StarView : AFocusableView {
+public class StarView : AFocusableItemView {
 
     public new StarPresenter Presenter {
         get { return base.Presenter as StarPresenter; }

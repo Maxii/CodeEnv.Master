@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// A class for managing the elements of a StarBase's UI. 
 /// </summary>
-public class StarBaseView : AFocusableView, IStarBaseViewable, ISelectable, IHighlightTrackingLabel {
+public class StarBaseView : AFocusableItemView, IStarBaseViewable, ISelectable, IHighlightTrackingLabel {
 
     public new StarBasePresenter Presenter {
         get { return base.Presenter as StarBasePresenter; }

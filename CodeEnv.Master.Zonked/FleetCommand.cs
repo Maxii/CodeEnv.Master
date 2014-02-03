@@ -27,11 +27,11 @@ public class FleetCommand : FollowableItem, IFleetCommand {
     public float optimalFleetViewingDistance = 6F;
 
     private FleetGraphics _fleetGraphics;
-    private FleetCreator _fleetMgr;
+    private FleetUnitCreator _fleetMgr;
 
     protected override void Awake() {
         base.Awake();
-        _fleetMgr = gameObject.GetSafeMonoBehaviourComponentInParents<FleetCreator>();
+        _fleetMgr = gameObject.GetSafeMonoBehaviourComponentInParents<FleetUnitCreator>();
         _fleetGraphics = gameObject.GetSafeMonoBehaviourComponentInParents<FleetGraphics>();
     }
 
@@ -109,7 +109,7 @@ public class FleetCommand : FollowableItem, IFleetCommand {
         if (IsFocus) {
             CameraControl.Instance.CurrentFocus = null;
         }
-        _eventMgr.Raise<ItemDeathEvent>(new ItemDeathEvent(this));
+        _eventMgr.Raise<MortalItemDeathEvent>(new MortalItemDeathEvent(this));
         Destroy(gameObject);
         _fleetMgr.Die();
     }

@@ -23,7 +23,7 @@ using UnityEngine;
 /// <summary>
 /// A class for managing the UI of a system's star.
 /// </summary>
-public class StarView : AFocusableView {
+public class StarView : AFocusableItemView {
 
     private static LayerMask _starLightCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
         Layers.Ships, Layers.BasesSettlements, Layers.Planetoids, Layers.Stars);

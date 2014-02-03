@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Abstract base class for data associated with Elements (Items under a Command).
     /// </summary>
-    public abstract class AElementData : AMortalData {
+    public abstract class AElementData : AMortalItemData {
 
         /// <summary>
         /// The local position of this Element relative to HQ.

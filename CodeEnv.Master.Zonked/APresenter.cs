@@ -27,13 +27,13 @@ using UnityEngine;
 /// </summary>
 public abstract class APresenter : APropertyChangeTracking {
 
-    static APresenter() {
+    static AItemPresenter() {
         InitializeHudPublishers();
     }
 
     private static void InitializeHudPublishers() {
         AGuiHudPublisher.SetGuiCursorHud(GuiCursorHud.Instance);
-        GuiHudPublisher<Data>.SetFactory(GuiHudTextFactory.Instance);
+        GuiHudPublisher<ItemData>.SetFactory(GuiHudTextFactory.Instance);
         GuiHudPublisher<SectorData>.SetFactory(SectorGuiHudTextFactory.Instance);
         GuiHudPublisher<ShipData>.SetFactory(ShipGuiHudTextFactory.Instance);
         GuiHudPublisher<FleetData>.SetFactory(FleetGuiHudTextFactory.Instance);
@@ -46,15 +46,15 @@ public abstract class APresenter : APropertyChangeTracking {
 
     protected IViewable View { get; private set; }
 
-    private AItem _item;
-    public AItem Item {
+    private AItemModel _item;
+    public AItemModel Item {
         get { return _item; }
-        protected set { SetProperty<AItem>(ref _item, value, "Item", OnItemChanged); }
+        protected set { SetProperty<AItemModel>(ref _item, value, "Item", OnItemChanged); }
     }
 
     protected GameObject _viewGameObject;
 
-    public APresenter(IViewable view) {
+    public AItemPresenter(IViewable view) {
         View = view;
         _viewGameObject = (view as Component).gameObject;
         Item = AcquireItemReference();
@@ -62,7 +62,7 @@ public abstract class APresenter : APropertyChangeTracking {
         View.HudPublisher = InitializeHudPublisher();
     }
 
-    protected abstract AItem AcquireItemReference();
+    protected abstract AItemModel AcquireItemReference();
 
     protected abstract IGuiHudPublisher InitializeHudPublisher();
 

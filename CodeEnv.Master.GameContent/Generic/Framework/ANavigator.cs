@@ -64,7 +64,7 @@ namespace CodeEnv.Master.GameContent {
             get { return _pilotJob != null && _pilotJob.IsRunning; }
         }
 
-        protected AMortalData Data { get; private set; }
+        protected AMortalItemData Data { get; private set; }
 
         protected static LayerMask _keepoutOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.CelestialObjectKeepout);
 
@@ -91,7 +91,7 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="ANavigator" /> class.
         /// </summary>
         /// <param name="data">Item data.</param>
-        public ANavigator(AMortalData data) {
+        public ANavigator(AMortalItemData data) {
             Data = data;
             _gameTime = GameTime.Instance;
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?

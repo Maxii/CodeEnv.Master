@@ -25,36 +25,36 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 ///  An MVPresenter associated with a Settlement View.
 /// </summary>
-public class SettlementPresenter : AMortalFocusablePresenter {
+public class SettlementPresenter : AMortalItemPresenter {
 
-    public new SettlementItem Item {
-        get { return base.Item as SettlementItem; }
-        protected set { base.Item = value; }
+    public new SettlementCmdModel Item {
+        get { return base.Model as SettlementCmdModel; }
+        protected set { base.Model = value; }
     }
 
     protected new ISettlementViewable View {
         get { return base.View as ISettlementViewable; }
     }
 
-    public SettlementPresenter(ISettlementViewable view)
+    public SettlementCmdPresenter(ISettlementViewable view)
         : base(view) { }
 
-    protected override AItem AcquireItemReference() {
-        return UnityUtility.ValidateMonoBehaviourPresence<SettlementItem>(_viewGameObject);
+    protected override AItemModel AcquireModelReference() {
+        return UnityUtility.ValidateMonoBehaviourPresence<SettlementCmdModel>(_viewGameObject);
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<SettlementData>(Item.Data);
+        return new GuiHudPublisher<SettlementData>(Mode.Data);
     }
 
     protected override void Subscribe() {
         base.Subscribe();
-        _subscribers.Add(Item.SubscribeToPropertyChanged<SettlementItem, SettlementState>(sb => sb.CurrentState, OnSettlementStateChanged));
-        View.onShowCompletion += Item.OnShowCompletion;
+        _subscribers.Add(Mode.SubscribeToPropertyChanged<SettlementCommandModel, SettlementState>(sb => sb.CurrentState, OnSettlementStateChanged));
+        View.onShowCompletion += Mode.OnShowCompletion;
     }
 
     private void OnSettlementStateChanged() {
-        SettlementState state = Item.CurrentState;
+        SettlementState state = Mode.CurrentState;
         switch (state) {
             case SettlementState.ShowDying:
                 View.ShowDying();
@@ -68,8 +68,8 @@ public class SettlementPresenter : AMortalFocusablePresenter {
         }
     }
 
-    protected override void OnItemDeath(ItemDeathEvent e) {
-        if ((e.Source as SettlementItem) == Item) {
+    protected override void OnItemDeath(MortalItemDeathEvent e) {
+        if ((e.Source as SettlementCmdModel) == Mode) {
             CleanupOnDeath();
         }
     }

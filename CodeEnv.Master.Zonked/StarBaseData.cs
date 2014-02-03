@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// All the data associated with a particular StarBase.
     /// </summary>
-    public class StarBaseData : AMortalData {
+    public class StarBaseData : AMortalItemData {
 
         private StarbaseCategory _size;
         public StarbaseCategory Size {

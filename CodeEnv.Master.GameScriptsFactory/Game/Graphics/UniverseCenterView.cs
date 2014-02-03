@@ -20,7 +20,7 @@ using UnityEngine;
 /// <summary>
 ///A class for managing the UI of the object at the center of the universe.
 /// </summary>
-public class UniverseCenterView : AFocusableView {
+public class UniverseCenterView : AFocusableItemView {
 
     private SphereCollider _keepoutCollider;
 

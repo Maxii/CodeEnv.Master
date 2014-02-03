@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract class managing the UI View for a focusable object.
 /// </summary>
-public abstract class AFocusableView : AView, ICameraFocusable {
+public abstract class AFocusableView : AItemView, ICameraFocusable {
 
     public enum Highlights {
 
@@ -55,7 +55,7 @@ public abstract class AFocusableView : AView, ICameraFocusable {
 
     }
 
-    public AFocusablePresenter Presenter { get; protected set; }
+    public AFocusableItemPresenter Presenter { get; protected set; }
 
     public float circleScaleFactor = 3.0F;
     protected bool _isCirclesRadiusDynamic = true;

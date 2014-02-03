@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// A class for managing the UI of a Sector.
 /// </summary>
-public class SectorView : AView {
+public class SectorView : AItemView {
 
     public SectorPresenter Presenter { get; private set; }
 
@@ -65,6 +65,11 @@ public class SectorView : AView {
 
     protected override void InitializePresenter() {
         Presenter = new SectorPresenter(this);
+    }
+
+    protected override void Cleanup() {
+        base.Cleanup();
+        Presenter.Dispose();
     }
 
     public override string ToString() {

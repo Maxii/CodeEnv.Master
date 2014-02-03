@@ -51,13 +51,13 @@ public class FleetAutoPilot : AMonoBase, IDisposable {
     private float _closeEnoughToWaypointDistance;
 
     private Seeker _seeker;
-    private FleetItem _fleet;
+    private FleetCmdModel _fleet;
     private FleetData _fleetData;
     private IList<IDisposable> _subscribers;
 
     protected override void Awake() {
         base.Awake();
-        _fleet = gameObject.GetSafeMonoBehaviourComponent<FleetItem>();
+        _fleet = gameObject.GetSafeMonoBehaviourComponent<FleetCmdModel>();
         _seeker = gameObject.GetSafeMonoBehaviourComponent<Seeker>();
         _fleetData = _fleet.Data;
         _closeEnoughToWaypointDistance = 5F * GameTime.Instance.GameSpeed.SpeedMultiplier();

@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
     /// some customization and coroutine-based update methods that keep the text current.
     /// </summary>
     /// <typeparam name="DataType">The type of Data used.</typeparam>
-    public class GuiHudPublisher<DataType> : AGuiHudPublisher, IGuiHudPublisher, IDisposable where DataType : AData {
+    public class GuiHudPublisher<DataType> : AGuiHudPublisher, IGuiHudPublisher, IDisposable where DataType : AItemData {
 
         public bool IsHudShowing {
             get { return _job != null && _job.IsRunning; }

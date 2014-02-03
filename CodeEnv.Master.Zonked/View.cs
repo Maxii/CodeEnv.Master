@@ -22,9 +22,9 @@ using UnityEngine;
 /// <summary>
 ///An instantiable class managing the UI for its object. 
 /// </summary>
-public class View : AView, ICameraFocusable {
+public class View : AItemView, ICameraFocusable {
 
-    public AFocusablePresenter Presenter { get; protected set; }
+    public AFocusableItemPresenter Presenter { get; protected set; }
 
     public float circleScaleFactor = 3.0F;
     protected bool _isCirclesRadiusDynamic = true;
@@ -41,7 +41,7 @@ public class View : AView, ICameraFocusable {
     }
 
     protected virtual void InitializePresenter() {
-        Presenter = new AFocusablePresenter(this);
+        Presenter = new AFocusableItemPresenter(this);
     }
 
     protected override void RegisterComponentsToDisable() {

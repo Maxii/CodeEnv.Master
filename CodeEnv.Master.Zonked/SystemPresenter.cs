@@ -24,11 +24,11 @@ using UnityEngine;
 /// <summary>
 /// An MVPresenter associated with a SystemView.
 /// </summary>
-public class SystemPresenter : AFocusablePresenter {
+public class SystemPresenter : AFocusableItemPresenter {
 
-    public new SystemItem Item {
-        get { return base.Item as SystemItem; }
-        protected set { base.Item = value; }
+    public new SystemModel Item {
+        get { return base.Model as SystemModel; }
+        protected set { base.Model = value; }
     }
 
     protected new ISystemViewable View {
@@ -42,12 +42,12 @@ public class SystemPresenter : AFocusablePresenter {
         _childViewsInSystem = _viewGameObject.GetSafeInterfacesInChildren<IViewable>().Except(view).ToArray();
     }
 
-    protected override AItem AcquireItemReference() {
-        return UnityUtility.ValidateMonoBehaviourPresence<SystemItem>(_viewGameObject);
+    protected override AItemModel AcquireModelReference() {
+        return UnityUtility.ValidateMonoBehaviourPresence<SystemModel>(_viewGameObject);
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<SystemData>(Item.Data);
+        return new GuiHudPublisher<SystemData>(Model.Data);
     }
 
     public void OnPressWhileSelected(bool isDown) {
@@ -55,7 +55,7 @@ public class SystemPresenter : AFocusablePresenter {
     }
 
     private void OnPressRequestContextMenu(bool isDown) {
-        SettlementData settlement = Item.Data.Settlement;
+        SettlementData settlement = Model.Data.Settlement;
         //D.Log("Settlement null = {0}, isHumanOwner = {1}.", settlement == null, settlement.Owner.IsHuman);
         if (settlement != null && (DebugSettings.Instance.AllowEnemyOrders || settlement.Owner.IsHuman)) {
             CameraControl.Instance.ShowContextMenuOnPress(isDown);

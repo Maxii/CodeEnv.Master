@@ -41,6 +41,10 @@ namespace CodeEnv.Master.GameContent {
 
         Attacking,
 
+        // These 2 allow Commands to optionally take hits and show them, seperate from their HQElement
+        TakingDamage,
+        ShowHit,
+
         Entrenching,
 
         GoRepair,

@@ -29,8 +29,8 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
     private IList<IDisposable> _subscribers;
 
     private SystemCreator[] _systemCreators;
-    private UniverseCenterItem _universeCenter;
-    private Stack<SettlementCreator> _settlementCreators;
+    private UniverseCenterModel _universeCenter;
+    private Stack<SettlementUnitCreator> _settlementCreators;
 
     protected override void Awake() {
         base.Awake();
@@ -55,8 +55,8 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
 
     private void AcquireObjectsPresentInScene() {
         _systemCreators = gameObject.GetSafeMonoBehaviourComponentsInChildren<SystemCreator>();
-        _settlementCreators = new Stack<SettlementCreator>(gameObject.GetSafeMonoBehaviourComponentsInChildren<SettlementCreator>());
-        _universeCenter = gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterItem>();
+        _settlementCreators = new Stack<SettlementUnitCreator>(gameObject.GetSafeMonoBehaviourComponentsInChildren<SettlementUnitCreator>());
+        _universeCenter = gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterModel>();
     }
 
     private void OnGameStateChanged() {
@@ -76,7 +76,7 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
 
     private void InitializeUniverseCenter() {
         if (_universeCenter) {
-            Data data = new Data("UniverseCenter");
+            ItemData data = new ItemData("UniverseCenter");
 
             _universeCenter.Data = data;
             _universeCenter.enabled = true;
@@ -88,7 +88,7 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
         foreach (var sysCreator in _systemCreators) {
             if (!_settlementCreators.IsNullOrEmpty()) {
                 var settlementCreator = _settlementCreators.Pop();
-                sysCreator.gameObject.GetComponentInChildren<SystemItem>().AssignSettlement(settlementCreator);
+                sysCreator.gameObject.GetComponentInChildren<SystemModel>().AssignSettlement(settlementCreator);
             }
         }
 

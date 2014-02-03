@@ -23,7 +23,7 @@ using UnityEngine;
 /// <summary>
 /// A class for managing the UI of a ship.
 /// </summary>
-public class ShipView : AElementView, ISelectable {
+public class ShipView : AUnitElementView, ISelectable {
 
     public new ShipPresenter Presenter {
         get { return base.Presenter as ShipPresenter; }
@@ -113,22 +113,6 @@ public class ShipView : AElementView, ISelectable {
         }
     }
 
-    void OnDoubleClick() {
-        if (GameInputHelper.IsLeftMouseButton()) {
-            OnLeftDoubleClick();
-        }
-    }
-
-    private void OnLeftDoubleClick() {
-        if (IsDiscernible) {
-            SelectFleet();
-        }
-    }
-
-    private void SelectFleet() {
-        Presenter.IsFleetSelected = true;
-    }
-
     public override void AssessHighlighting() {
         if (!IsDiscernible) {
             Highlight(Highlights.None);
@@ -139,7 +123,7 @@ public class ShipView : AElementView, ISelectable {
                 Highlight(Highlights.SelectedAndFocus);
                 return;
             }
-            if (Presenter.IsFleetSelected) {
+            if (Presenter.IsCommandSelected) {
                 Highlight(Highlights.FocusAndGeneral);
                 return;
             }
@@ -150,7 +134,7 @@ public class ShipView : AElementView, ISelectable {
             Highlight(Highlights.Selected);
             return;
         }
-        if (Presenter.IsFleetSelected) {
+        if (Presenter.IsCommandSelected) {
             Highlight(Highlights.General);
             return;
         }

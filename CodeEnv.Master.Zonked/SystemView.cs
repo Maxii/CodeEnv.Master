@@ -24,7 +24,7 @@ using UnityEngine;
 ///  A class for managing the elements of a system's UI, those, that are not already handled by 
 ///  the UI classes for stars, planets and moons.
 /// </summary>
-public class SystemView : AFocusableView, ISystemViewable, ISelectable, IZoomToFurthest {
+public class SystemView : AFocusableItemView, ISystemViewable, ISelectable, IZoomToFurthest {
 
     private static string __highlightName = "SystemHighlightMesh";  // IMPROVE
 

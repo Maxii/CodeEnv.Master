@@ -22,21 +22,21 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// An MVPresenter associated with a UniverseCenter View.
 /// </summary>
-public class UniverseCenterPresenter : AFocusablePresenter {
+public class UniverseCenterPresenter : AFocusableItemPresenter {
 
-    public new UniverseCenterItem Item {
-        get { return base.Item as UniverseCenterItem; }
-        protected set { base.Item = value; }
+    public new UniverseCenterModel Item {
+        get { return base.Model as UniverseCenterModel; }
+        protected set { base.Model = value; }
     }
 
     public UniverseCenterPresenter(IViewable view) : base(view) { }
 
-    protected override AItem AcquireItemReference() {
-        return UnityUtility.ValidateMonoBehaviourPresence<UniverseCenterItem>(_viewGameObject);
+    protected override AItemModel AcquireModelReference() {
+        return UnityUtility.ValidateMonoBehaviourPresence<UniverseCenterModel>(_viewGameObject);
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<Data>(Item.Data);
+        return new GuiHudPublisher<ItemData>(Model.Data);
     }
 
     public override string ToString() {

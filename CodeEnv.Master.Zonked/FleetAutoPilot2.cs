@@ -56,11 +56,11 @@ public class FleetAutoPilot2 : APropertyChangeTracking, IDisposable {
     private float _closeEnoughToWaypointDistance;
 
     private Seeker _seeker;
-    private FleetItem _fleet;
+    private FleetCmdModel _fleet;
     private FleetData _fleetData;
     private IList<IDisposable> _subscribers;
 
-    public FleetAutoPilot2(FleetItem fleet, Seeker seeker) {
+    public FleetAutoPilot2(FleetCmdModel fleet, Seeker seeker) {
         _fleet = fleet;
         _seeker = seeker;
         _fleetData = _fleet.Data;

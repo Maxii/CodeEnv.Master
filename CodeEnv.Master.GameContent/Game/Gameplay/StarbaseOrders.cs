@@ -22,16 +22,11 @@ namespace CodeEnv.Master.GameContent {
     public enum StarbaseOrders {
 
         None,
-
         Attack,
-
-        Disband,
-
-        Refit,
-
+        StopAttack,
         Repair,
-
-        StopAttack
+        Refit,
+        Disband
 
     }
 }
