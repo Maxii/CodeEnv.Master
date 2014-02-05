@@ -21,6 +21,7 @@ namespace CodeEnv.Master.GameContent {
     using System.Linq;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
+    using UnityEngine;
 
     /// <summary>
     /// Abstract base class for data associated with a Unit Command.
@@ -37,13 +38,14 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private CombatStrength _strength;
-        public CombatStrength Strength {
+        // NOTE: overrides CurrentHitPoints so this Cmd's value cannot reach zero until the unit itself dies.
+        public override float CurrentHitPoints {
             get {
-                return _strength;
+                return base.CurrentHitPoints;
             }
-            private set {
-                SetProperty<CombatStrength>(ref _strength, value, "Strength");
+            set {
+                value = Mathf.Clamp(value, MaxHitPoints * 0.5F, MaxHitPoints);  // TODO externalize 0.5?
+                base.CurrentHitPoints = value;
             }
         }
 
@@ -53,17 +55,72 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<IPlayer>(ref _owner, value, "Owner", OnOwnerChanged); }
         }
 
+        private int _cmdEffectiveness;
+        public int CmdEffectiveness {  // TODO make use of this
+            get { return _cmdEffectiveness; }
+            private set { SetProperty<int>(ref _cmdEffectiveness, value, "CmdEffectiveness"); }
+        }
+
+        private CombatStrength _unitStrength;
+        public CombatStrength UnitStrength {
+            get {
+                return _unitStrength;
+            }
+            private set {
+                SetProperty<CombatStrength>(ref _unitStrength, value, "UnitStrength");
+            }
+        }
+
+        private float _unitMaxHitPoints;
+        public float UnitMaxHitPoints {
+            get { return _unitCurrentHitPoints; }
+            private set { SetProperty<float>(ref _unitMaxHitPoints, value, "UnitMaxHitPoints", OnUnitMaxHitPointsChanged, OnUnitMaxHitPointsChanging); }
+        }
+
+        private float _unitCurrentHitPoints;
+        public float UnitCurrentHitPoints {
+            get { return _unitCurrentHitPoints; }
+            private set { SetProperty<float>(ref _unitCurrentHitPoints, value, "UnitCurrentHitPoints", OnUnitCurrentHitPointsChanged); }
+        }
+
+        private float _unitHealth;
+        /// <summary>
+        /// Readonly. Indicates the health of the Unit, a value between 0 and 1.
+        /// </summary>
+        public float UnitHealth {
+            get {
+                //D.Log("Health {0}, CurrentHitPoints {1}, MaxHitPoints {2}.", _health, _currentHitPoints, _maxHitPoints);
+                return _unitHealth;
+            }
+            private set {
+                value = Mathf.Clamp01(value);
+                SetProperty<float>(ref _unitHealth, value, "UnitHealth", OnUnitHealthChanged);
+            }
+        }
+
+        /// <summary>
+        /// Called when [unit health changed]. This is effectively a workaround that initiates death of 
+        /// the UnitCmdItem when the Unit has died. It changes the UnitCmdItem's CurrentHitPoints by directly
+        /// changing the base value, bypassing the override that holds the value to a predetermined minimum.
+        /// </summary>
+        private void OnUnitHealthChanged() {
+            if (UnitHealth <= Constants.ZeroF) {
+                base.CurrentHitPoints -= MaxHitPoints;  // initiate destruction of Cmd item too
+            }
+        }
+
         // NOTE: Using new to overwrite a list of base types does not work!!
         protected IList<AElementData> ElementsData { get; private set; }
         protected IDictionary<AElementData, IList<IDisposable>> _subscribers;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ACommandData"/> class.
+        /// Initializes a new instance of the <see cref="ACommandData" /> class.
         /// </summary>
         /// <param name="cmdParentName">Name of the parent of this Command, eg. the FleetName for a FleetCommand.</param>
-        public ACommandData(string cmdParentName)
-            : base(cmdParentName + Constants.Space + CommonTerms.Command, maxHitPoints: Constants.ZeroF, optionalParentName: cmdParentName) {
-            // A command's maxHitPoints are constructed from the sum of the elements
+        /// <param name="cmdMaxHitPoints">The maximum hit points of this Command staff.</param>
+        public ACommandData(string cmdParentName, float cmdMaxHitPoints)
+            : base(cmdParentName + Constants.Space + CommonTerms.Command, cmdMaxHitPoints, mass: 0.1F, optionalParentName: cmdParentName) {
+            // A command's UnitMaxHitPoints are constructed from the sum of the elements
             InitializeCollections();
         }
 
@@ -84,6 +141,28 @@ namespace CodeEnv.Master.GameContent {
         private void OnOwnerChanged() {
             // UNDONE change all element owners?
             D.Log("{0} Owner has changed to {1}.", OptionalParentName, Owner.LeaderName);
+        }
+
+        private void OnUnitMaxHitPointsChanging(float newMaxHitPoints) {
+            if (newMaxHitPoints < UnitMaxHitPoints) {
+                // reduction in max hit points so reduce current hit points to match
+                UnitCurrentHitPoints = Mathf.Clamp(UnitCurrentHitPoints, Constants.ZeroF, newMaxHitPoints);
+                // FIXME changing CurrentHitPoints here sends out a temporary erroneous health change event. The accurate health change event follows shortly
+            }
+        }
+
+        private void OnUnitMaxHitPointsChanged() {
+            UnitHealth = UnitMaxHitPoints > Constants.ZeroF ? UnitCurrentHitPoints / UnitMaxHitPoints : Constants.ZeroF;
+        }
+
+        private void OnUnitCurrentHitPointsChanged() {
+            UnitHealth = UnitMaxHitPoints > Constants.ZeroF ? UnitCurrentHitPoints / UnitMaxHitPoints : Constants.ZeroF;
+        }
+
+        protected override void OnHealthChanged() {
+            base.OnHealthChanged();
+            CmdEffectiveness = Mathf.RoundToInt(100 * Health);  // concept: staff and equipment are hurt as health of the Cmd declines
+            // as Health of a Cmd cannot decline below 50% due to CurrentHitPoints override, neither can CmdEffectiveness, until the Unit is destroyed
         }
 
         public void AddElement(AElementData elementData) {
@@ -132,25 +211,25 @@ namespace CodeEnv.Master.GameContent {
         /// Recalculates any Command properties that are dependant upon the total element population.
         /// </summary>
         protected virtual void UpdatePropertiesDerivedFromCombinedElements() {
-            UpdateStrength();
-            UpdateMaxHitPoints();   // must preceed current as current uses max as a clamp
-            UpdateCurrentHitPoints();
+            UpdateUnitStrength();
+            UpdateUnitMaxHitPoints();   // must preceed current as current uses max as a clamp
+            UpdateUnitCurrentHitPoints();
         }
 
-        private void UpdateStrength() {
+        private void UpdateUnitStrength() {
             CombatStrength sum = new CombatStrength();
             foreach (var eData in ElementsData) {
                 sum.AddToTotal(eData.Strength);
             }
-            Strength = sum;
+            UnitStrength = sum;
         }
 
-        private void UpdateCurrentHitPoints() {
-            CurrentHitPoints = ElementsData.Sum<AElementData>(ed => ed.CurrentHitPoints);
+        private void UpdateUnitMaxHitPoints() {
+            UnitMaxHitPoints = ElementsData.Sum<AElementData>(ed => ed.MaxHitPoints);
         }
 
-        private void UpdateMaxHitPoints() {
-            MaxHitPoints = ElementsData.Sum<AElementData>(ed => ed.MaxHitPoints);
+        private void UpdateUnitCurrentHitPoints() {
+            UnitCurrentHitPoints = ElementsData.Sum<AElementData>(ed => ed.CurrentHitPoints);
         }
 
         #region ElementData PropertyChanged Subscription and Methods
@@ -164,15 +243,15 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnElementStrengthChanged() {
-            UpdateStrength();
+            UpdateUnitStrength();
         }
 
         private void OnElementCurrentHitPointsChanged() {
-            UpdateCurrentHitPoints();
+            UpdateUnitCurrentHitPoints();
         }
 
         private void OnElementMaxHitPointsChanged() {
-            UpdateMaxHitPoints();
+            UpdateUnitMaxHitPoints();
         }
 
         private void Unsubscribe(AElementData elementData) {

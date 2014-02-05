@@ -205,8 +205,8 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
                 }
             }
         }
-        D.Log("{0} grid and {1} world vertice found.", _gridVertexLocations.Count, _worldVertexLocations.Count);
-        D.Log("{0} grid and {1} world boxes found.", _gridBoxToSectorIndexLookup.Count, _worldBoxLocations.Count);
+        //D.Log("{0} grid and {1} world vertice found.", _gridVertexLocations.Count, _worldVertexLocations.Count);
+        //D.Log("{0} grid and {1} world boxes found.", _gridBoxToSectorIndexLookup.Count, _worldBoxLocations.Count);
     }
 
     /// <summary>

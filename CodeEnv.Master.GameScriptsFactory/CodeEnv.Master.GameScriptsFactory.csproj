@@ -58,7 +58,6 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Generic\Graphics\AMortalItemView.cs" />
     <Compile Include="Generic\Graphics\AItemPresenter.cs" />
     <Compile Include="Generic\Graphics\AUnitCommandPresenter.cs" />
     <Compile Include="Generic\Graphics\AUnitElementPresenter.cs" />

@@ -65,6 +65,7 @@
     <Compile Include="AMonoBehaviourBaseSingletonInstanceIdentity.cs" />
     <Compile Include="AMonoStateMachineSingleton.cs" />
     <Compile Include="AMortalFocusablePresenter.cs" />
+    <Compile Include="AMortalItemView.cs" />
     <Compile Include="ANavigator.cs" />
     <Compile Include="APresenter.cs" />
     <Compile Include="AStateMachine.cs" />

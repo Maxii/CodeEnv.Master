@@ -44,7 +44,6 @@ public abstract class AUnitCommandPresenter<UnitElementModelType> : AMortalItemP
         base.Subscribe();
         _subscribers.Add(Model.SubscribeToPropertyChanged<AUnitCommandModel<UnitElementModelType>, UnitElementModelType>(sb => sb.HQElement, OnHQElementChanged));
         Model.onSubordinateElementDeath += OnSubordinateElementDeath;
-        View.onShowCompletion += Model.OnShowCompletion;
     }
 
     private void OnSubordinateElementDeath(UnitElementModelType element) {

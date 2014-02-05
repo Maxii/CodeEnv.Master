@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Collections;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -24,12 +25,16 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for managing an Element's UI. 
 /// </summary>
-public abstract class AUnitElementView : AMortalItemView, IElementViewable, ICameraFollowable {
+public abstract class AUnitElementView : AFocusableItemView, IElementViewable, ICameraFollowable {
 
     public new AUnitElementPresenter Presenter {
         get { return base.Presenter as AUnitElementPresenter; }
         protected set { base.Presenter = value; }
     }
+
+    public AudioClip dying;
+    private AudioSource _audioSource;
+    protected Job _showingJob;
 
     private Color _originalMeshColor_Main;
     private Color _originalMeshColor_Specular;
@@ -38,6 +43,7 @@ public abstract class AUnitElementView : AMortalItemView, IElementViewable, ICam
 
     protected override void Awake() {
         base.Awake();
+        _audioSource = UnityUtility.ValidateComponentPresence<AudioSource>(gameObject);
         circleScaleFactor = 1.0F;
         InitializeMesh();
     }
@@ -45,11 +51,6 @@ public abstract class AUnitElementView : AMortalItemView, IElementViewable, ICam
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
         ShowMesh(IsDiscernible);
-    }
-
-    protected override void OnLeftDoubleClick() {
-        base.OnLeftDoubleClick();
-        SelectCommand();
     }
 
     private void SelectCommand() {
@@ -75,6 +76,39 @@ public abstract class AUnitElementView : AMortalItemView, IElementViewable, ICam
             // TODO audio off goes here
         }
     }
+
+    #region Mouse Events
+
+    protected override void OnClick() {
+        base.OnClick();
+        if (IsDiscernible) {
+            if (GameInputHelper.IsLeftMouseButton()) {
+                KeyCode notUsed;
+                if (GameInputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftAlt, KeyCode.RightAlt)) {
+                    OnAltLeftClick();
+                }
+                else {
+                    OnLeftClick();
+                }
+            }
+        }
+    }
+
+    protected virtual void OnLeftClick() { }
+
+    protected virtual void OnAltLeftClick() { }
+
+    void OnDoubleClick() {
+        if (IsDiscernible && GameInputHelper.IsLeftMouseButton()) {
+            OnLeftDoubleClick();
+        }
+    }
+
+    protected virtual void OnLeftDoubleClick() {
+        SelectCommand();
+    }
+
+    #endregion
 
     #region ICameraFollowable Members
 
@@ -104,6 +138,12 @@ public abstract class AUnitElementView : AMortalItemView, IElementViewable, ICam
 
     #region ICameraTargetable Members
 
+    public override bool IsEligible {
+        get {
+            return PlayerIntel.CurrentCoverage != IntelCoverage.None;
+        }
+    }
+
     protected override float CalcMinimumCameraViewingDistance() {
         return Radius * 2.0F;
     }
@@ -112,10 +152,50 @@ public abstract class AUnitElementView : AMortalItemView, IElementViewable, ICam
 
     #region IElementViewable Members
 
+    public event Action onShowCompletion;
+
+    /// <summary>
+    /// Safely invokes the onShowCompletion event.
+    /// </summary>
+    protected void OnShowCompletion() {
+        var temp = onShowCompletion;
+        if (temp != null) {
+            temp();
+        }
+    }
+
     // the following must return onShowCompletion when finished to inform 
     // ElementItem when it is OK to progress to the next state
+
+    public void ShowHit() {
+        // TODO
+        OnShowCompletion();
+    }
+
+    public void ShowCmdHit() {
+        // TODO
+        OnShowCompletion();
+    }
+
     public void ShowAttacking() {
         // TODO
+        OnShowCompletion();
+    }
+
+    public void ShowDying() {
+        //_showingJob = new Job(ShowingDying(), toStart: true); // Coroutines don't show the right method name when logged using stacktrace
+        OnShowCompletion();
+    }
+
+    private IEnumerator ShowingDying() {
+        if (dying != null) {
+            _audioSource.PlayOneShot(dying);
+        }
+        _collider.enabled = false;
+        //animation.Stop();
+        //yield return UnityUtility.PlayAnimation(animation, "die");  // show debree particles for some period of time?
+        yield return null;
+
         OnShowCompletion();
     }
 

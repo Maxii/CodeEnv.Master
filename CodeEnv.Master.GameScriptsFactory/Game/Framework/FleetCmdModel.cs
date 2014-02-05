@@ -34,8 +34,8 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
         set { SetProperty<UnitOrder<FleetOrders>>(ref _currentOrder, value, "CurrentOrder", OnOrdersChanged); }
     }
 
-    public new FleetData Data {
-        get { return base.Data as FleetData; }
+    public new FleetCmdData Data {
+        get { return base.Data as FleetCmdData; }
         set { base.Data = value; }
     }
 
@@ -103,7 +103,6 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
     }
 
     private void OnIsRunningChanged() {
-        //D.Log("FleetItem.OnGameStateChanged event recieved. GameState = {0}.", _gameMgr.CurrentState);
         if (GameStatus.Instance.IsRunning) {
             __GetFleetUnderway();
         }
@@ -159,21 +158,16 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
         Data.Category = FleetCategory.None;
     }
 
-    protected override void Die() {
-        base.Die();
+    protected override void NotifyOfDeath() {
+        base.NotifyOfDeath();
         CurrentState = FleetState.Dying;
     }
 
-    #region Fleet StateMachine
+    #region StateMachine
 
-    private FleetState _currentState;
     public new FleetState CurrentState {
-        get { return _currentState; }
-        set { SetProperty<FleetState>(ref _currentState, value, "CurrentState", OnCurrentStateChanged); }
-    }
-
-    private void OnCurrentStateChanged() {
-        base.CurrentState = _currentState;
+        get { return (FleetState)base.CurrentState; }
+        set { base.CurrentState = value; }
     }
 
     #region Idle
@@ -188,6 +182,10 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
 
     void Idling_OnOrdersChanged() {
         CurrentState = FleetState.ProcessOrders;
+    }
+
+    void Idling_OnHit() {
+        Call(FleetState.TakingDamage);
     }
 
     void Idling_ExitState() {
@@ -290,6 +288,11 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
         CurrentState = FleetState.ProcessOrders;
     }
 
+    void MovingTo_OnHit() {
+        LogEvent();
+        Call(FleetState.TakingDamage);
+    }
+
     void MovingTo_OnCoursePlotFailure() {
         CurrentState = FleetState.Idling;
     }
@@ -312,9 +315,17 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
 
     void GoPatrol_EnterState() { }
 
+    void GoPatrol_OnHit() {
+        Call(FleetState.TakingDamage);
+    }
+
     void GoPatrol_OnDetectedEnemy() { }
 
     void Patrolling_EnterState() { }
+
+    void Patrolling_OnHit() {
+        Call(FleetState.TakingDamage);
+    }
 
     void Patrolling_OnDetectedEnemy() { }
 
@@ -324,13 +335,25 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
 
     void GoGuard_EnterState() { }
 
+    void GoGuard_OnHit() {
+        Call(FleetState.TakingDamage);
+    }
+
     void Guarding_EnterState() { }
+
+    void Guarding_OnHit() {
+        Call(FleetState.TakingDamage);
+    }
 
     #endregion
 
     #region Entrench
 
     void Entrenching_EnterState() { }
+
+    void Entrenching_OnHit() {
+        Call(FleetState.TakingDamage);
+    }
 
     #endregion
 
@@ -344,31 +367,22 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
 
     #region TakingDamage
 
-    private float _hitDamage;
-
     void TakingDamage_EnterState() {
-        // Data.CurrentHitPoints -= _hitDamage; // TODO need way for Commands to independantly take damage from the HQElement
-        _hitDamage = 0F;
-        Call(StarbaseState.ShowHit);
+        LogEvent();
+        bool isCmdHealthGreaterThanZero = ApplyDamage();
+        if (!isCmdHealthGreaterThanZero) {
+            D.Log("{0} Senior Staff have been killed! {0} Effectiveness severely impaired.", Data.Name);
+            // ACommandData changes CmdEffectiveness as health changes
+            // TODO notification to the player?
+        }
         Return();   // returns to the state we were in when the OnHit event arrived
     }
 
+    void TakingDamage_ExitState() {
+        LogEvent();
+    }
+
     // TakingDamage is a transition state so _OnHit cannot occur here
-
-    #endregion
-
-    #region ShowHit
-
-    void ShowHit_OnHit(float damage) {
-        // View can not 'queue' show animations so just apply the damage
-        // and wait for ShowXXX_OnCompletion to return to caller
-        Data.CurrentHitPoints -= damage;
-    }
-
-    void ShowHit_OnShowCompletion() {
-        // View is showing Hit
-        Return();
-    }
 
     #endregion
 
@@ -376,7 +390,15 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
 
     void GoRepair_EnterState() { }
 
+    void GoRepair_OnHit() {
+        Call(FleetState.TakingDamage);
+    }
+
     void Repairing_EnterState() { }
+
+    void Repairing_OnHit() {
+        Call(FleetState.TakingDamage);
+    }
 
     #endregion
 
@@ -390,7 +412,15 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
 
     void GoRefit_EnterState() { }
 
+    void GoRefit_OnHit() {
+        Call(FleetState.TakingDamage);
+    }
+
     void Refitting_EnterState() { }
+
+    void Refitting_OnHit() {
+        Call(FleetState.TakingDamage);
+    }
 
     #endregion
 
@@ -398,27 +428,23 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
 
     void GoDisband_EnterState() { }
 
+    void GoDisband_OnHit() {
+        Call(FleetState.TakingDamage);
+    }
+
     void Disbanding_EnterState() { }
+
+    void Disbanding_OnHit() {
+        Call(FleetState.TakingDamage);
+    }
 
     #endregion
 
     #region Dying
 
     void Dying_EnterState() {
-        Call(FleetState.ShowDying);
+        LogEvent();
         CurrentState = FleetState.Dead;
-    }
-
-    #endregion
-
-    #region ShowDying
-
-    void ShowDying_EnterState() {
-        // View is showing Dying
-    }
-
-    void ShowDying_OnShowCompletion() {
-        Return();
     }
 
     #endregion
@@ -426,16 +452,16 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
     #region Dead
 
     IEnumerator Dead_EnterState() {
-        D.Log("{0} is Dead!", Data.Name);
+        LogEvent();
         yield return new WaitForSeconds(3);
         Destroy(gameObject);
     }
 
     #endregion
 
-    # region Callbacks
+    # region StateMachine Callbacks
 
-    // See also ACommandItem
+    // See also AUnitCommandModel
 
     void OnCoursePlotFailure() { RelayToCurrentState(); }
 

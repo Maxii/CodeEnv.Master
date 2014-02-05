@@ -70,8 +70,11 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
         return RequiredPrefabs.Instance.starbaseCmd.gameObject;
     }
 
-    protected override void AddCommandDataToCommand() {
-        _command.Data = new StarbaseData(UnitName);
+    protected override void InitializeCommandData() {
+        _command.Data = new StarbaseCmdData(UnitName, 10F) {
+            Strength = new CombatStrength(0F, 10F, 0F, 10F, 0F, 10F)  // no offense, strong defense
+            // strength of the UnitCommand so it can properly calculate damage when its HQElement is hit
+        };
     }
 
     protected override void MarkHQElement() {

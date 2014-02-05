@@ -29,6 +29,7 @@ namespace CodeEnv.Master.GameContent {
         ShowAttacking,
         TakingDamage,
         ShowHit,
+        ShowCmdHit,
         Repairing,
         Refitting,
         Disbanding,

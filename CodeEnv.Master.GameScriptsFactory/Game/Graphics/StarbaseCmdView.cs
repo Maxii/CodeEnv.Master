@@ -110,5 +110,6 @@ public class StarbaseCmdView : AUnitCommandView, IHighlightTrackingLabel {
     }
 
     #endregion
+
 }
 

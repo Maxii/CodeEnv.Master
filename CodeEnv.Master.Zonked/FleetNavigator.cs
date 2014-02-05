@@ -54,7 +54,7 @@ public class FleetNavigator : ANavigator {
 
     private Seeker _seeker;
     private FleetCmdModel _fleet;
-    private FleetData _fleetData;
+    private FleetCmdData _fleetData;
 
     public FleetNavigator(FleetCmdModel fleet, Seeker seeker)
         : base() {

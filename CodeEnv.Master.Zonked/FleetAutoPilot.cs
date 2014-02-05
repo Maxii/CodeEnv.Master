@@ -52,7 +52,7 @@ public class FleetAutoPilot : AMonoBase, IDisposable {
 
     private Seeker _seeker;
     private FleetCmdModel _fleet;
-    private FleetData _fleetData;
+    private FleetCmdData _fleetData;
     private IList<IDisposable> _subscribers;
 
     protected override void Awake() {

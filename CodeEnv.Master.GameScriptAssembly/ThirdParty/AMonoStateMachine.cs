@@ -6,7 +6,8 @@
 // </copyright> 
 // <summary> 
 // File: AMonoStateMachine.cs
-//  Abstract Base class for MonoBehaviour State Machines to inherit from.
+//  Abstract Base class for MonoBehaviour State Machines to inherit from.This version does not
+//  support subscribing to State Changes.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -27,6 +28,8 @@ using UnityEngine;
 
 /// <summary>
 ///  Abstract Base class for MonoBehaviour State Machines to inherit from.
+///  WARNING: This version does not support subscribing to State Changes 
+///  as Call() and Return() make changes without going through SetProperty.
 /// </summary>
 /// <typeparam name="E">Th State Type being used, typically an enum type.</typeparam>
 public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
@@ -425,17 +428,31 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
     /// 7. the event OnCurrentStateChanged() is sent to subscribers
     ///          - when this event is received, a get_CurrentState property inquiry will properly return newState
     /// </summary>
-    public E CurrentState {
-        get { return state.currentState; }
-        protected set { SetProperty<E>(ref state.currentState, value, "CurrentState", OnCurrentStateChanged, OnCurrentStateChanging); }
-    }
+    //public E CurrentState {
+    //    get { return state.currentState; }
+    //    protected set { SetProperty<E>(ref state.currentState, value, "CurrentState", OnCurrentStateChanged, OnCurrentStateChanging); }
+    //}
 
-    protected virtual void OnCurrentStateChanging(E incomingState) {
-        ChangingState();
-    }
+    //protected virtual void OnCurrentStateChanging(E incomingState) {
+    //    ChangingState();
+    //}
 
-    protected virtual void OnCurrentStateChanged() {
-        ConfigureCurrentState();
+    //protected virtual void OnCurrentStateChanged() {
+    //    ConfigureCurrentState();
+    //}
+
+    public virtual E CurrentState {
+        get {
+            return state.currentState;
+        }
+        protected set {
+            if (state.Equals(value)) {
+                return;
+            }
+            ChangingState();
+            state.currentState = value;
+            ConfigureCurrentState();
+        }
     }
 
 
@@ -455,7 +472,7 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
     /// <param name='stateToActivate'>
     /// State to activate.
     /// </param>
-    public void Call(E stateToActivate) {
+    public virtual void Call(E stateToActivate) {
         state.time = timeInCurrentState;
         state.enterStack = enterStateCoroutine.CreateStack();
         state.exitStack = exitStateCoroutine.CreateStack();
@@ -479,7 +496,7 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
     /// <summary>
     /// Return this state from a call
     /// </summary>
-    public void Return() {
+    public virtual void Return() {
         if (state.exitState != null) {
             state.exitStateEnumerator = state.exitState();
             exitStateCoroutine.Run(state.exitStateEnumerator);
@@ -500,7 +517,7 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
     /// <param name='baseState'>
     /// The state to use if there is no waiting calling state
     /// </param>
-    public void Return(E baseState) {
+    public virtual void Return(E baseState) {
         //UnwireEvents();
         if (state.exitState != null) {
             state.exitStateEnumerator = state.exitState();
@@ -522,7 +539,7 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
     /// <summary>
     /// Caches previous states
     /// </summary>
-    private void ChangingState() {
+    protected void ChangingState() {
         lastState = state.currentState;
         _timeEnteredState = Time.time;
     }
@@ -530,7 +547,7 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
     /// <summary>
     /// Configures the state machine for the current state
     /// </summary>
-    private void ConfigureCurrentState() {
+    protected void ConfigureCurrentState() {
         if (state.exitState != null) {
             // runs the exitState of the PREVIOUS state as the state delegates haven't been changed yet
             exitStateCoroutine.Run(state.exitState());

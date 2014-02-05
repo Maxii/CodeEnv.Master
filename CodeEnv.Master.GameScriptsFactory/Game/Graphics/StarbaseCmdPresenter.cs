@@ -42,43 +42,12 @@ public class StarbaseCmdPresenter : AUnitCommandPresenter<FacilityModel> {
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<StarbaseData>(Model.Data);
+        return new GuiHudPublisher<StarbaseCmdData>(Model.Data);
     }
 
     protected override void Subscribe() {
         base.Subscribe();
-        _subscribers.Add(Model.Data.SubscribeToPropertyChanged<StarbaseData, BaseComposition>(sbd => sbd.Composition, OnCompositionChanged));
-        _subscribers.Add(Model.SubscribeToPropertyChanged<StarbaseCmdModel, StarbaseState>(sb => sb.CurrentState, OnStarbaseStateChanged));
-    }
-
-    private void OnStarbaseStateChanged() {
-        StarbaseState state = Model.CurrentState;
-        switch (state) {
-            case StarbaseState.ShowHit:
-                View.ShowHit();
-                break;
-            case StarbaseState.ShowDying:
-                View.ShowDying();
-                break;
-            case StarbaseState.Idling:
-            case StarbaseState.ProcessOrders:
-            case StarbaseState.GoAttack:
-            case StarbaseState.Attacking:
-            case StarbaseState.TakingDamage:
-            case StarbaseState.GoRepair:
-            case StarbaseState.Repairing:
-            case StarbaseState.GoRefit:
-            case StarbaseState.Refitting:
-            case StarbaseState.GoDisband:
-            case StarbaseState.Disbanding:
-            case StarbaseState.Dying:
-            case StarbaseState.Dead:
-                // do nothing
-                break;
-            case StarbaseState.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(state));
-        }
+        _subscribers.Add(Model.Data.SubscribeToPropertyChanged<StarbaseCmdData, BaseComposition>(sbd => sbd.Composition, OnCompositionChanged));
     }
 
     private void OnCompositionChanged() {

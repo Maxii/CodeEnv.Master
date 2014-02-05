@@ -23,13 +23,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Factory that makes GuiCursorHudText and IColoredTextList instances for Fleets.
     /// </summary>
-    public class FleetGuiHudTextFactory : AGuiHudTextFactory<FleetGuiHudTextFactory, FleetData> {
+    public class FleetGuiHudTextFactory : AGuiHudTextFactory<FleetGuiHudTextFactory, FleetCmdData> {
 
         private FleetGuiHudTextFactory() {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, FleetData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, FleetCmdData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.Name);
@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Owner:
                     return new ColoredTextList_Owner(data.Owner);
                 case GuiHudLineKeys.Health:
-                    return new ColoredTextList_Health(data.Health, data.MaxHitPoints);
+                    return new ColoredTextList_Health(data.UnitHealth, data.MaxHitPoints);
                 case GuiHudLineKeys.CombatStrength:
                     return new ColoredTextList<float>(Constants.FormatFloat_0Dp, data.Strength.Combined);
                 case GuiHudLineKeys.CombatStrengthDetails:

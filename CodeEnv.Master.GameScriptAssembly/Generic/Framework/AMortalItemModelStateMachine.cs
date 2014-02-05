@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -32,6 +32,32 @@ using UnityEngine;
 ///  classes.
 /// </summary>
 public abstract class AMortalItemModelStateMachine : AMortalItemModel {
+
+    #region My State Change Events
+
+    /// <summary>
+    /// Occurs AFTER the previous state's ExitState() method has run
+    /// but BEFORE the new state's EnterState() method has run. Accessing
+    /// the CurrentState will give you the new state, but no processing 
+    /// reflecting that new state will have yet occured.
+    /// </summary>
+    public event Action onStateChanged;
+
+    private void OnStateChanged() {
+        D.Log("{0}.State changed to {1}.", Data.Name, CurrentState.ToString());
+        var temp = onStateChanged;
+        if (temp != null) {
+            temp();
+        }
+    }
+
+    #endregion
+
+    public override void LogEvent() {
+        // NOTE:  Coroutines don't show the right method name when logged using stacktrace
+        System.Diagnostics.StackFrame stackFrame = new StackFrame(1);
+        D.Log("{0}.{1}.{2}() called.".Inject(_transform.name, GetType().Name, stackFrame.GetMethod().Name));
+    }
 
     /// <summary>
     /// A coroutine executor that can be interrupted
@@ -234,6 +260,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     ///     void CallingMethodName(param)  { 
     ///         SendStateMessage(param);
     ///     }
+    ///     IMPROVE // add Action&lt;float&gt; delegate
     /// </summary>
     /// <param name='param'>
     /// Any parameter passed to the current handler that should be passed on
@@ -310,6 +337,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     }
 
     #endregion
+
 
     /// <summary>
     /// The enter state coroutine.
@@ -431,7 +459,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     public object CurrentState {
         get { return state.currentState; }
         set {
-            if (state.currentState != null && state.currentState.Equals(value)) {
+            if (state.Equals(value)) {  //if (state.currentState != null && state.currentState.Equals(value)) {
                 return;
             }
             ChangingState();
@@ -470,6 +498,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     //Configures the state machine when the new state has been called
     private void ConfigureCurrentStateForCall() {
         GetStateMethods();
+        OnStateChanged();
         if (state.enterState != null) {
             state.enterStateEnumerator = state.enterState();
             enterStateCoroutine.Run(state.enterStateEnumerator);
@@ -485,8 +514,11 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
             exitStateCoroutine.Run(state.exitStateEnumerator);
         }
         //UnwireEvents();
+        //D.Log("On Return, Stack count = {0}.", _stack.Count);
         if (_stack.Count > 0) {
             state = _stack.Pop();
+            //D.Log("New State in StateMachine.Return() = {0}", state.currentState.ToString());
+            OnStateChanged();
             enterStateCoroutine.Run(state.enterStateEnumerator, state.enterStack);
             //WireEvents();
             _timeEnteredState = Time.time - state.time;
@@ -505,12 +537,12 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
         if (state.exitState != null) {
             state.exitStateEnumerator = state.exitState();
             exitStateCoroutine.Run(state.exitStateEnumerator);
-
         }
+
         if (_stack.Count > 0) {
             state = _stack.Pop();
+            OnStateChanged();
             enterStateCoroutine.Run(state.enterStateEnumerator, state.enterStack);
-
         }
         else {
             CurrentState = baseState;
@@ -537,6 +569,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
         }
 
         GetStateMethods();
+        OnStateChanged();
 
         if (state.enterState != null) {
             state.enterStateEnumerator = state.enterState();

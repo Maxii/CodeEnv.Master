@@ -243,7 +243,7 @@ namespace CodeEnv.Master.GameContent {
 
         public class ColoredTextList_Settlement : ColoredTextListBase {
 
-            public ColoredTextList_Settlement(SettlementData settlement) {
+            public ColoredTextList_Settlement(SettlementCmdData settlement) {
                 _list.Add(new ColoredText(settlement.Category.GetName()));
                 _list.Add(new ColoredText(settlement.Population.ToString()));
                 _list.Add(new ColoredText(settlement.CapacityUsed.ToString()));

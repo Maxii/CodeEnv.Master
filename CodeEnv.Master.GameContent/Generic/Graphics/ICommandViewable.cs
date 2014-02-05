@@ -22,13 +22,11 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     ///  Interface used by a CommandPresenter to communicate with their associated CommandView.
     /// </summary>
-    public interface ICommandViewable : IMortalViewable {
+    public interface ICommandViewable : IViewable {
 
         Transform TrackingTarget { set; }
 
         void ChangeCmdIcon(IIcon icon);
-
-        // ShowHit() from IMortalViewable allows us to optionally show lucky hits on commands
 
     }
 }

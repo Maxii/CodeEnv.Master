@@ -123,7 +123,7 @@ namespace CodeEnv.Master.GameContent {
                 _headingJob.Kill();
             }
             _headingJob = new Job(ExecuteHeadingChange(), toStart: true, onJobComplete: (wasKilled) => {
-                if (wasKilled) {
+                if (wasKilled && !_isDisposing) {
                     D.Warn("{0} turn command cancelled. Current Heading is {1}.", Data.Name, Data.CurrentHeading);
                 }
                 else {

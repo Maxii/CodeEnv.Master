@@ -51,57 +51,25 @@ public class ShipPresenter : AUnitElementPresenter {
 
     protected override void Subscribe() {
         base.Subscribe();
-        _subscribers.Add(Model.SubscribeToPropertyChanging<ShipModel, ShipState>(s => s.CurrentState, OnShipStateChanging));
-        _subscribers.Add(Model.SubscribeToPropertyChanged<ShipModel, ShipState>(s => s.CurrentState, OnShipStateChanged));
+        Model.onStopShow += OnStopShowInView;
+        Model.onStartShow += OnStartShowInView;
     }
 
-    private void OnShipStateChanging(ShipState newState) {
-        ShipState previousState = Model.CurrentState;
-        switch (previousState) {
-            case ShipState.Refitting:
-            case ShipState.Repairing:
-                // the state is changing from one of these states so stop the Showing
-                View.StopShowing();
-                break;
-            case ShipState.ShowAttacking:
-            case ShipState.ShowHit:
-            case ShipState.ShowDying:
-                // no need to stop any of these showing as they have already completed
-                break;
-            case ShipState.Entrenching:
-            case ShipState.ProcessOrders:
-            case ShipState.MovingTo:
-            case ShipState.Idling:
-            case ShipState.GoAttack:
-            case ShipState.Dead:
-            case ShipState.Chasing:
-            case ShipState.Attacking:
-            case ShipState.Dying:
-            case ShipState.Joining:
-            case ShipState.TakingDamage:
-            case ShipState.Withdrawing:
-                // do nothing
-                break;
-            case ShipState.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(previousState));
-        }
-    }
-
-    private void OnShipStateChanged() {
-        ShipState newState = Model.CurrentState;
-        switch (newState) {
+    private void OnStartShowInView() {
+        ShipState state = Model.CurrentState;
+        //D.Log("{0}.OnStartShowInView state = {1}.", Model.Data.Name, newState.GetName());
+        switch (state) {
             case ShipState.ShowAttacking:
                 View.ShowAttacking();
                 break;
             case ShipState.ShowHit:
                 View.ShowHit();
                 break;
+            case ShipState.ShowCmdHit:
+                View.ShowCmdHit();
+                break;
             case ShipState.ShowDying:
                 View.ShowDying();
-                break;
-            case ShipState.Entrenching:
-                //View.ShowEntrenching();   // no current plans to show entrenching animation at this stage
                 break;
             case ShipState.Refitting:
                 View.ShowRefitting();
@@ -109,6 +77,7 @@ public class ShipPresenter : AUnitElementPresenter {
             case ShipState.Repairing:
                 View.ShowRepairing();
                 break;
+            case ShipState.Entrenching:
             case ShipState.ProcessOrders:
             case ShipState.MovingTo:
             case ShipState.Idling:
@@ -124,9 +93,41 @@ public class ShipPresenter : AUnitElementPresenter {
                 break;
             case ShipState.None:
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(newState));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(state));
         }
+    }
 
+    private void OnStopShowInView() {
+        ShipState state = Model.CurrentState;
+        switch (state) {
+            case ShipState.Refitting:
+            case ShipState.Repairing:
+                View.StopShowing();
+                break;
+            case ShipState.ShowAttacking:
+            case ShipState.ShowHit:
+            case ShipState.ShowCmdHit:
+            case ShipState.ShowDying:
+                // no need to stop any of these showing as they complete at their own pace
+                break;
+            case ShipState.Entrenching:
+            case ShipState.ProcessOrders:
+            case ShipState.MovingTo:
+            case ShipState.Idling:
+            case ShipState.GoAttack:
+            case ShipState.Dead:
+            case ShipState.Chasing:
+            case ShipState.Attacking:
+            case ShipState.Dying:
+            case ShipState.Joining:
+            case ShipState.TakingDamage:
+            case ShipState.Withdrawing:
+                // do nothing
+                break;
+            case ShipState.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(state));
+        }
     }
 
     public bool IsHQElement {

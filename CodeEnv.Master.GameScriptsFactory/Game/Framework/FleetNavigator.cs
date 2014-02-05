@@ -35,7 +35,7 @@ public class FleetNavigator : ANavigator {
         get { return Target.Position; }
     }
 
-    protected new FleetData Data { get { return base.Data as FleetData; } }
+    protected new FleetCmdData Data { get { return base.Data as FleetCmdData; } }
 
     private bool IsCourseReplotNeeded {
         get {

@@ -47,46 +47,22 @@ public class FacilityPresenter : AUnitElementPresenter {
 
     protected override void Subscribe() {
         base.Subscribe();
-        _subscribers.Add(Model.SubscribeToPropertyChanging<FacilityModel, FacilityState>(sb => sb.CurrentState, OnFacilityStateChanging));
-        _subscribers.Add(Model.SubscribeToPropertyChanged<FacilityModel, FacilityState>(sb => sb.CurrentState, OnFacilityStateChanged));
+        Model.onStopShow += OnStopShowInView;
+        Model.onStartShow += OnStartShowInView;
     }
 
-    private void OnFacilityStateChanging(FacilityState newState) {
-        FacilityState previousState = Model.CurrentState;
-        switch (previousState) {
-            case FacilityState.Refitting:
-            case FacilityState.Repairing:
-                // the state is changing from one of these states so stop the Showing
-                View.StopShowing();
-                break;
-            case FacilityState.ShowAttacking:
-            case FacilityState.ShowHit:
-            case FacilityState.ShowDying:
-                // no need to stop any of these showing as they have already completed
-                break;
-            case FacilityState.ProcessOrders:
-            case FacilityState.Idling:
-            case FacilityState.GoAttack:
-            case FacilityState.Dead:
-            case FacilityState.Attacking:
-            case FacilityState.Dying:
-            case FacilityState.TakingDamage:
-                // do nothing
-                break;
-            case FacilityState.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(previousState));
-        }
-    }
-
-    private void OnFacilityStateChanged() {
+    private void OnStartShowInView() {
         FacilityState newState = Model.CurrentState;
+        //D.Log("{0}.OnStartShowInView state = {1}.", Model.Data.Name, newState.GetName());
         switch (newState) {
             case FacilityState.ShowAttacking:
                 View.ShowAttacking();
                 break;
             case FacilityState.ShowHit:
                 View.ShowHit();
+                break;
+            case FacilityState.ShowCmdHit:
+                View.ShowCmdHit();
                 break;
             case FacilityState.ShowDying:
                 View.ShowDying();
@@ -111,6 +87,35 @@ public class FacilityPresenter : AUnitElementPresenter {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(newState));
         }
     }
+
+    private void OnStopShowInView() {
+        FacilityState state = Model.CurrentState;
+        switch (state) {
+            case FacilityState.Refitting:
+            case FacilityState.Repairing:
+                View.StopShowing();
+                break;
+            case FacilityState.ShowAttacking:
+            case FacilityState.ShowHit:
+            case FacilityState.ShowCmdHit:
+            case FacilityState.ShowDying:
+                // no need to stop any of these showing as they complete at their own pace
+                break;
+            case FacilityState.ProcessOrders:
+            case FacilityState.Idling:
+            case FacilityState.GoAttack:
+            case FacilityState.Dead:
+            case FacilityState.Attacking:
+            case FacilityState.Dying:
+            case FacilityState.TakingDamage:
+                // do nothing
+                break;
+            case FacilityState.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(state));
+        }
+    }
+
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

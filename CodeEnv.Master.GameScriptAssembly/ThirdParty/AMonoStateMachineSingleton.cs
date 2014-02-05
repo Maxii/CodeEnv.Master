@@ -6,7 +6,8 @@
 // </copyright> 
 // <summary> 
 // File: AMonoStateMachineSingleton.cs
-//  Abstract Base class for Singleton MonoBehaviour State Machines.
+//  Abstract Base class for Singleton MonoBehaviour State Machines.This version supports
+//  subscription to State Changes, but does not support Call() or Return().
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,16 +23,20 @@ using UnityEngine;
 
 /// <summary>
 /// Abstract Base class for Singleton MonoBehaviour State Machines.
+/// WARNING: This version supports subscription to State Changes, but does not 
+///  support Call() or Return() as not all state changes will be notified if they are 
+///  used as they make state changes without going through SetProperty.
 /// </summary>
 /// <typeparam name="T">The final derived AMonoBase Type</typeparam>
 /// <typeparam name="E">Th State Type being used, typically an enum type.</typeparam>
-public class AMonoStateMachineSingleton<T, E> : AMonoStateMachine<E>, IInstanceIdentity
+public class AMonoStateMachineSingleton<T, E> : AMonoStateMachine_NoCall<E>, IInstanceIdentity
     where T : AMonoBase
     where E : struct {
 
     private string _instanceID;
 
     public override void LogEvent() {
+        // NOTE:  Coroutines don't show the right method name when logged using stacktrace
         System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
         D.Log("{0}{1}.{2}() method called.".Inject(GetType().Name, _instanceID, stackFrame.GetMethod().Name));
     }

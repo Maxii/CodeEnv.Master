@@ -202,7 +202,7 @@ public class CameraLOSChangedRelay : AMonoBase, IDisposable {
             _meshCache[cacheKey].name = cacheKey + " Invisible Bounds";
         }
         else {
-            D.Log("{0} is reusing {1} mesh.", _transform.name, _meshCache[cacheKey].name);
+            //D.Log("{0} is reusing {1} mesh.", _transform.name, _meshCache[cacheKey].name);
         }
         meshFilter.mesh = _meshCache[cacheKey];
     }

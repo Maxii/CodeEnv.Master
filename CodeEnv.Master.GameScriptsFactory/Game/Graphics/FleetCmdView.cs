@@ -64,7 +64,6 @@ public class FleetCmdView : AUnitCommandView, ICameraFollowable, IHighlightTrack
         Presenter.OnPlayerIntelCoverageChanged();
     }
 
-
     protected override void OnIsSelectedChanged() {
         base.OnIsSelectedChanged();
         Presenter.OnIsSelectedChanged();
@@ -79,7 +78,7 @@ public class FleetCmdView : AUnitCommandView, ICameraFollowable, IHighlightTrack
 
     #endregion
 
-    #region Intel Cycling Testing
+    #region Intel Change Testing
 
     protected override void OnLeftClick() {
         base.OnLeftClick();

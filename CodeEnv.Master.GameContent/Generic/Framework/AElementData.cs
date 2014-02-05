@@ -37,29 +37,15 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private CombatStrength _combatStrength;
-        public CombatStrength Strength {
-            get { return _combatStrength; }
-            set {
-                SetProperty<CombatStrength>(ref _combatStrength, value, "Strength");
-            }
-        }
-
-        /// <summary>
-        /// The mass of the Element.
-        /// </summary>
-        public float Mass { get; private set; }
-
         /// <summary>
         /// Initializes a new instance of the <see cref="AElementData" /> class.
         /// </summary>
         /// <param name="name">The name of the Element.</param>
         /// <param name="maxHitPoints">The maximum hit points.</param>
-        /// <param name="mass">The mass.</param>
+        /// <param name="mass">The mass of the Element.</param>
         /// <param name="optionalParentName">Name of the optional parent.</param>
         public AElementData(string name, float maxHitPoints, float mass, string optionalParentName = "")
-            : base(name, maxHitPoints, optionalParentName) {
-            Mass = mass;
+            : base(name, maxHitPoints, mass, optionalParentName) {
         }
 
 

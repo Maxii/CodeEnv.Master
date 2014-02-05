@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SettlementData.cs
+// File: SettlementCmdData.cs
 // All the data associated with a particular Settlement in a System.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// All the data associated with a particular Settlement in a System.
     /// </summary>
-    public class SettlementData : ACommandData {
+    public class SettlementCmdData : ACommandData {
 
         public SettlementCategory Category { get; set; }
 
@@ -70,10 +70,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="StarbaseData"/> class.
+        /// Initializes a new instance of the <see cref="StarbaseCmdData" /> class.
         /// </summary>
-        /// <param name="starbaseName">Name of the starbase.</param>
-        public SettlementData(string settlementName) : base(settlementName) { }
+        /// <param name="settlementName">Name of the settlement.</param>
+        /// <param name="cmdMaxHitPoints">The command maximum hit points.</param>
+        public SettlementCmdData(string settlementName, float cmdMaxHitPoints) : base(settlementName, cmdMaxHitPoints) { }
 
         protected override void InitializeComposition() {
             Composition = new BaseComposition();

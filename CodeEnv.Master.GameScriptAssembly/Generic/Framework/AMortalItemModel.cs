@@ -26,7 +26,7 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public abstract class AMortalItemModel : AItemModel, IDisposable {
 
-    public event Action<AMortalItemModel> onDeath;
+    public event Action<AMortalItemModel> onItemDeath;
 
     public new AMortalItemData Data {
         get { return base.Data as AMortalItemData; }
@@ -47,15 +47,15 @@ public abstract class AMortalItemModel : AItemModel, IDisposable {
     }
 
     protected virtual void OnHealthChanged() {
-        //D.Log("{0} Health = {1}.", Data.Name, Data.Health);
+        D.Log("{0} Health = {1}.", Data.Name, Data.Health);
         if (Data.Health <= Constants.ZeroF) {
-            Die();
+            NotifyOfDeath();
         }
     }
 
-    protected virtual void Die() {
+    protected virtual void NotifyOfDeath() {
         D.Log("{0} is Dying!", Data.Name);
-        var temp = onDeath;
+        var temp = onItemDeath;
         if (temp != null) {
             temp(this);
         }

@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -164,6 +164,7 @@ namespace CodeEnv.Master.GameContent {
         /// Primary external control to disengage the pilot once Engage has been called.
         /// </summary>
         public virtual void Disengage() {
+            D.Log("{0} Navigator disengaging.", Data.Name);
             if (IsEngaged) {
                 _pilotJob.Kill();
             }
@@ -288,7 +289,8 @@ namespace CodeEnv.Master.GameContent {
 
         #region IDisposable
         [DoNotSerialize]
-        private bool alreadyDisposed = false;
+        private bool _alreadyDisposed = false;
+        protected bool _isDisposing = false;
 
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
@@ -305,17 +307,18 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
         protected virtual void Dispose(bool isDisposing) {
             // Allows Dispose(isDisposing) to be called more than once
-            if (alreadyDisposed) {
+            if (_alreadyDisposed) {
                 return;
             }
 
+            _isDisposing = true;
             if (isDisposing) {
                 // free managed resources here including unhooking events
                 Cleanup();
             }
             // free unmanaged resources here
 
-            alreadyDisposed = true;
+            _alreadyDisposed = true;
         }
 
         // Example method showing check for whether the object has been disposed

@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using System.Collections;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
@@ -25,6 +26,8 @@ using UnityEngine;
 /// The data-holding class for all planetoids in the game.
 /// </summary>
 public class PlanetoidModel : AMortalItemModelStateMachine {
+
+    public event Action onStartShow;
 
     public new PlanetoidData Data {
         get { return base.Data as PlanetoidData; }
@@ -36,21 +39,16 @@ public class PlanetoidModel : AMortalItemModelStateMachine {
         Subscribe();
     }
 
-    protected override void Die() {
-        base.Die();
+    protected override void NotifyOfDeath() {
+        base.NotifyOfDeath();
         CurrentState = PlanetoidState.Dying;
     }
 
-    #region Planetoid StateMachine
+    #region StateMachine
 
-    private PlanetoidState _currentState;
     public new PlanetoidState CurrentState {
-        get { return _currentState; }
-        set { SetProperty<PlanetoidState>(ref _currentState, value, "CurrentState", OnCurrentStateChanged); }
-    }
-
-    private void OnCurrentStateChanged() {
-        base.CurrentState = _currentState;
+        get { return (PlanetoidState)base.CurrentState; }
+        set { base.CurrentState = value; }
     }
 
     #region Idle
@@ -58,6 +56,10 @@ public class PlanetoidModel : AMortalItemModelStateMachine {
     void Idling_EnterState() {
         //D.Log("{0} Idling_EnterState", Data.Name);
         // TODO register as available
+    }
+
+    void Idling_OnHit() {
+        Call(PlanetoidState.TakingDamage);
     }
 
     void Idling_ExitState() {
@@ -68,13 +70,16 @@ public class PlanetoidModel : AMortalItemModelStateMachine {
 
     #region TakingDamage
 
-    private float _hitDamage;
-
     void TakingDamage_EnterState() {
-        Data.CurrentHitPoints -= _hitDamage;
-        _hitDamage = 0F;
-        Call(PlanetoidState.ShowHit);
-        Return();   // returns to the state we were in when the OnHit event arrived
+        LogEvent();
+        bool isElementAlive = ApplyDamage();
+        if (isElementAlive) {
+            Call(PlanetoidState.ShowHit);
+            Return();   // returns to the state we were in when the OnHit event arrived
+        }
+        else {
+            CurrentState = PlanetoidState.Dying;
+        }
     }
 
     // TakingDamage is a transition state so _OnHit cannot occur here
@@ -83,10 +88,14 @@ public class PlanetoidModel : AMortalItemModelStateMachine {
 
     #region ShowHit
 
-    void ShowHit_OnHit(float damage) {
+    void ShowHit_EnterState() {
+        OnStartShow();
+    }
+
+    void ShowHit_OnHit() {
         // View can not 'queue' show animations so just apply the damage
         // and wait for ShowXXX_OnCompletion to return to caller
-        Data.CurrentHitPoints -= damage;
+        ApplyDamage();
     }
 
     void ShowHit_OnShowCompletion() {
@@ -108,6 +117,7 @@ public class PlanetoidModel : AMortalItemModelStateMachine {
     #region ShowDying
 
     void ShowDying_EnterState() {
+        OnStartShow();
         // View is showing Dying
     }
 
@@ -120,21 +130,53 @@ public class PlanetoidModel : AMortalItemModelStateMachine {
     #region Dead
 
     IEnumerator Dead_EnterState() {
-        D.Log("{0} is Dead!", Data.Name);
+        LogEvent();
         yield return new WaitForSeconds(3);
         Destroy(gameObject);
     }
 
     #endregion
 
-    # region Callbacks
+    #region StateMachine Support Methods
+
+    private float _hitDamage;
+    /// <summary>
+    /// Applies the damage to the Element. Returns true 
+    /// if the Element survived the hit.
+    /// </summary>
+    /// <returns><c>true</c> if the Element survived.</returns>
+    protected bool ApplyDamage() {
+        bool isAlive = true;
+        Data.CurrentHitPoints -= _hitDamage;
+        if (Data.Health <= Constants.ZeroF) {
+            isAlive = false;
+        }
+        _hitDamage = Constants.ZeroF;
+        return isAlive;
+    }
+
+    private void OnStartShow() {
+        var temp = onStartShow;
+        if (temp != null) {
+            onStartShow();
+        }
+    }
+
+    #endregion
+
+    # region StateMachine Callbacks
 
     public void OnShowCompletion() {
         RelayToCurrentState();
     }
 
     void OnHit(float damage) {
-        RelayToCurrentState(damage);    // IMPROVE add Action delegate to RelayToCurrentState
+        _hitDamage = damage;
+        OnHit();
+    }
+
+    void OnHit() {
+        RelayToCurrentState();
     }
 
     #endregion

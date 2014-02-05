@@ -59,11 +59,17 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
 
     protected abstract void Initialize();
 
+    protected override void SubscribeToDataValueChanges() {
+        base.SubscribeToDataValueChanges();
+        // TODO 
+    }
+
     /// <summary>
     /// Adds the Element to this Command including parenting if needed.
     /// </summary>
     /// <param name="element">The Element to add.</param>
     public void AddElement(UnitElementModelType element) {
+        element.onItemDeath += OnSubordinateElementDeath;
         Elements.Add(element);
         Data.AddElement(element.Data);
         Transform parentTransform = _transform.parent;
@@ -74,8 +80,9 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         // TODO consider changing HQElement
     }
 
-    public void OnSubordinateElementDeath(UnitElementModelType element) {
-        D.Log("{0} acknowledging {1} has been lost.", Data.Name, element.Data.Name);
+    private void OnSubordinateElementDeath(AMortalItemModel mortalItem) {
+        D.Log("{0} acknowledging {1} has been lost.", Data.Name, mortalItem.Data.Name);
+        UnitElementModelType element = mortalItem as UnitElementModelType;
         RemoveElement(element);
 
         var temp = onSubordinateElementDeath;
@@ -85,6 +92,7 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
     }
 
     public void RemoveElement(UnitElementModelType element) {
+        element.onItemDeath -= OnSubordinateElementDeath;
         bool isRemoved = Elements.Remove(element);
         isRemoved = isRemoved && Data.RemoveElement(element.Data);
         D.Assert(isRemoved, "{0} not found.".Inject(element.Data.Name));
@@ -92,6 +100,7 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
             if (element == HQElement) {
                 // HQ Element has died
                 HQElement = SelectHQElement();
+                D.Log("{0} new HQElement = {1}.", Data.Name, HQElement.Data.Name);
             }
             AssessCommandCategory();
         }
@@ -109,6 +118,22 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         Data.HQElementData = HQElement.Data;
     }
 
+    /// <summary>
+    /// Checks for damage to this Command when its HQElement takes a hit.
+    /// </summary>
+    /// <param name="isHQElementAlive">if set to <c>true</c> [is hq element alive].</param>
+    /// <returns><c>true</c> if the Command has taken damage.</returns>
+    public bool __CheckForDamage(bool isHQElementAlive) {
+        bool isHit = (isHQElementAlive) ? RandomExtended<bool>.SplitChance() : true;
+        if (isHit) {
+            OnHit(UnityEngine.Random.Range(1F, Data.MaxHitPoints + 1F));
+        }
+        else {
+            D.Log("{0} avoided a hit.", Data.Name);
+        }
+        return isHit;
+    }
+
     protected virtual UnitElementModelType SelectHQElement() {
         return Elements.MaxBy(e => e.Data.Health);
     }
@@ -120,14 +145,40 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         Data.Dispose();
     }
 
+    # region StateMachine Support Methods
+
+    private float _hitDamage;
+    /// <summary>
+    /// Applies the damage to the UnitCommand. Returns true 
+    /// if the UnitCommand is still alive.
+    /// </summary>
+    /// <returns><c>true</c> if health > 0.</returns>
+    protected bool ApplyDamage() {
+        bool isAlive = true;
+        Data.CurrentHitPoints -= _hitDamage;
+        if (Data.Health <= Constants.ZeroF) {
+            D.Error("{0} should never die as a result of applying damage.", Data.Name);
+            isAlive = false;
+        }
+        _hitDamage = Constants.ZeroF;
+        return isAlive;
+    }
+
+    #endregion
+
     # region StateMachine Callbacks
 
     public void OnShowCompletion() {
         RelayToCurrentState();
     }
 
-    void OnHit(float damage) {  // allows commands to optionally take and show special hits
-        RelayToCurrentState(damage);    // IMPROVE add Action delegate to RelayToCurrentState
+    void OnHit(float damage) {
+        _hitDamage = damage;
+        OnHit();
+    }
+
+    void OnHit() {
+        RelayToCurrentState();
     }
 
     void OnDetectedEnemy() {  // TODO connect to sensors when I get them

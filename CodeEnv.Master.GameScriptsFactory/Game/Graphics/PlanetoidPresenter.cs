@@ -31,11 +31,11 @@ public class PlanetoidPresenter : AMortalItemPresenter {
         protected set { base.Model = value; }
     }
 
-    protected new IMortalViewable View {
-        get { return base.View as IMortalViewable; }
+    protected new IPlanetoidViewable View {
+        get { return base.View as IPlanetoidViewable; }
     }
 
-    public PlanetoidPresenter(IMortalViewable view)
+    public PlanetoidPresenter(IPlanetoidViewable view)
         : base(view) {
         Subscribe();
     }
@@ -50,12 +50,13 @@ public class PlanetoidPresenter : AMortalItemPresenter {
 
     protected override void Subscribe() {
         base.Subscribe();
-        _subscribers.Add(Model.SubscribeToPropertyChanged<PlanetoidModel, PlanetoidState>(sb => sb.CurrentState, OnPlanetoidStateChanged));
+        View.onShowCompletion += Model.OnShowCompletion;
+        Model.onStartShow += OnStartShowInView;
     }
 
-    private void OnPlanetoidStateChanged() {
-        PlanetoidState newState = Model.CurrentState;
-        switch (newState) {
+    private void OnStartShowInView() {
+        PlanetoidState state = Model.CurrentState;
+        switch (state) {
             case PlanetoidState.ShowHit:
                 View.ShowHit();
                 break;
@@ -70,7 +71,7 @@ public class PlanetoidPresenter : AMortalItemPresenter {
                 break;
             case PlanetoidState.None:
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(newState));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(state));
         }
     }
 

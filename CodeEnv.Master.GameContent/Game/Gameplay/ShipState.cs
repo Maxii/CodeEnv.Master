@@ -41,6 +41,8 @@ namespace CodeEnv.Master.GameContent {
 
         ShowHit,
 
+        ShowCmdHit,
+
         Entrenching,
 
         Repairing,

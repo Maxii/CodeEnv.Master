@@ -37,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Gets or sets the current hit points of this item. 
         /// </summary>
-        public float CurrentHitPoints {
+        public virtual float CurrentHitPoints {
             get { return _currentHitPoints; }
             set {
                 value = Mathf.Clamp(value, Constants.ZeroF, MaxHitPoints);
@@ -56,20 +56,36 @@ namespace CodeEnv.Master.GameContent {
             }
             private set {
                 value = Mathf.Clamp01(value);
-                SetProperty<float>(ref _health, value, "Health");
+                SetProperty<float>(ref _health, value, "Health", OnHealthChanged);
             }
         }
+
+        private CombatStrength _combatStrength = new CombatStrength();
+        public CombatStrength Strength {
+            get { return _combatStrength; }
+            set {
+                SetProperty<CombatStrength>(ref _combatStrength, value, "Strength");
+            }
+        }
+
+        /// <summary>
+        /// The mass of the Item.
+        /// </summary>
+        public float Mass { get; private set; }
+
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AMortalItemData" /> class.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="maxHitPoints">The maximum hit points.</param>
+        /// <param name="mass">The mass of the Item.</param>
         /// <param name="optionalParentName">Name of the optional parent.</param>
-        public AMortalItemData(string name, float maxHitPoints, string optionalParentName = "")
+        public AMortalItemData(string name, float maxHitPoints, float mass, string optionalParentName = "")
             : base(name, optionalParentName) {
             _maxHitPoints = maxHitPoints;
             CurrentHitPoints = maxHitPoints;
+            Mass = mass;
         }
 
         private void OnMaxHitPointsChanging(float newMaxHitPoints) {
@@ -88,9 +104,7 @@ namespace CodeEnv.Master.GameContent {
             Health = MaxHitPoints > Constants.ZeroF ? CurrentHitPoints / MaxHitPoints : Constants.ZeroF;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
+        protected virtual void OnHealthChanged() { }
 
     }
 }

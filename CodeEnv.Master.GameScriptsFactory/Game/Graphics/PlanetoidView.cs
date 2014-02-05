@@ -16,6 +16,8 @@
 
 // default namespace
 
+using System;
+using System.Collections;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -23,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// A class for managing the UI of a planetoid.
 /// </summary>
-public class PlanetoidView : AMortalItemView, ICameraFollowable {
+public class PlanetoidView : AFocusableItemView, IPlanetoidViewable, ICameraFollowable {
 
     public new PlanetoidPresenter Presenter {
         get { return base.Presenter as PlanetoidPresenter; }
@@ -31,9 +33,13 @@ public class PlanetoidView : AMortalItemView, ICameraFollowable {
     }
 
     private SphereCollider _keepoutCollider;
+    public AudioClip dying;
+    private AudioSource _audioSource;
+    //private Job _showingJob;
 
     protected override void Awake() {
         base.Awake();
+        _audioSource = UnityUtility.ValidateComponentPresence<AudioSource>(gameObject);
         _keepoutCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
         _keepoutCollider.radius = (_collider as SphereCollider).radius * TempGameValues.KeepoutRadiusMultiplier;
         Subscribe();
@@ -54,6 +60,54 @@ public class PlanetoidView : AMortalItemView, ICameraFollowable {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region IPlanetoidViewable Members
+
+    public event Action onShowCompletion;
+
+    /// <summary>
+    /// Safely invokes the onShowCompletion event.
+    /// </summary>
+    private void OnShowCompletion() {
+        var temp = onShowCompletion;
+        if (temp != null) {
+            temp();
+        }
+    }
+
+    public void ShowHit() {
+        // TODO
+        OnShowCompletion();
+    }
+
+    public void ShowDying() {
+        //_showingJob = new Job(ShowingDying(), toStart: true); // Coroutines don't show the right method name when logged using stacktrace
+        OnShowCompletion();
+    }
+
+    private IEnumerator ShowingDying() {
+        if (dying != null) {
+            _audioSource.PlayOneShot(dying);
+        }
+        _collider.enabled = false;
+        //animation.Stop();
+        //yield return UnityUtility.PlayAnimation(animation, "die");  // show debree particles for some period of time?
+        yield return null;
+
+        OnShowCompletion();
+    }
+
+    #endregion
+
+    #region ICameraTargetable Members
+
+    public override bool IsEligible {
+        get {
+            return PlayerIntel.CurrentCoverage != IntelCoverage.None;
+        }
+    }
+
+    #endregion
 
     #region ICameraFollowable Members
 

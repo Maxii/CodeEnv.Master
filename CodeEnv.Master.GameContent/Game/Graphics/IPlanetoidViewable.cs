@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IMortalViewable.cs
-//  Interface used by a MortalPresenters to communicate with their associated MortalFocusableViews.
+// File: IPlanetoidViewable.cs
+//  Interface used by a PlanetoidPresenter to communicate with their associated PlanetoidView.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,9 +19,9 @@ namespace CodeEnv.Master.GameContent {
     using System;
 
     /// <summary>
-    /// Interface used by a MortalPresenters to communicate with their associated MortalFocusableViews.
+    /// Interface used by a PlanetoidPresenter to communicate with their associated PlanetoidView.
     /// </summary>
-    public interface IMortalViewable : IViewable {
+    public interface IPlanetoidViewable : IViewable {
 
         event Action onShowCompletion;
 

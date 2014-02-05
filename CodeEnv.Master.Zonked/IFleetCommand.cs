@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IFleetCommand {
 
-        FleetData Data { get; set; }
+        FleetCmdData Data { get; set; }
 
         void ChangeFleetHeading(Vector3 newHeading);
 

@@ -46,11 +46,11 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public SettlementData SettlementData { get; set; }
+        public SettlementCmdData SettlementData { get; set; }
 
         public StarData StarData { get; set; }
 
-        public IList<PlanetoidCategory> PlanetTypes {
+        public IList<PlanetoidCategory> PlanetCategories {
             get {
                 return _composition.Keys.ToList();
             }
@@ -103,7 +103,7 @@ namespace CodeEnv.Master.GameContent {
 
         public IEnumerable<PlanetoidData> GetPlanetData() {
             IEnumerable<PlanetoidData> allData = new List<PlanetoidData>();
-            foreach (var pType in PlanetTypes) {
+            foreach (var pType in PlanetCategories) {
                 allData = allData.Concat(GetPlanetData(pType));
             }
             //D.Log("PlanetData count = {0}.", allData.Count());

@@ -45,14 +45,13 @@ namespace CodeEnv.Master.Common {
             this(0f, 1f, 0f, 1f, 0f, 1f) {
         }
 
-        public CombatStrength(params float[] values) {
-            D.Assert(values.Length == 6, "CombatStrength constructor incorrect.");
-            Beam_Offense = values[0];
-            Beam_Defense = values[1];
-            Missile_Offense = values[2];
-            Missile_Defense = values[3];
-            Particle_Offense = values[4];
-            Particle_Defense = values[5];
+        public CombatStrength(float beamOff, float beamDef, float misOff, float misDef, float partOff, float partDef) {
+            Beam_Offense = beamOff;
+            Beam_Defense = beamDef;
+            Missile_Offense = misOff;
+            Missile_Defense = misDef;
+            Particle_Offense = partOff;
+            Particle_Defense = partDef;
         }
 
         public void AddToTotal(CombatStrength cs) {

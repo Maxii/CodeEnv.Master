@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using System.Collections;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
@@ -25,6 +26,9 @@ using UnityEngine;
 /// Abstract base class for an Element, an object that is under the command of a CommandItem.
 /// </summary>
 public abstract class AUnitElementModel : AMortalItemModelStateMachine, ITarget {
+
+    public event Action onStartShow;
+    public event Action onStopShow;
 
     public bool IsHQElement { get; set; }
 
@@ -59,6 +63,40 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, ITarget 
         }
     }
 
+    # region StateMachine Support Methods
+
+    private float _hitDamage;
+    /// <summary>
+    /// Applies the damage to the Element. Returns true 
+    /// if the Element survived the hit.
+    /// </summary>
+    /// <returns><c>true</c> if the Element survived.</returns>
+    protected bool ApplyDamage() {
+        bool isAlive = true;
+        Data.CurrentHitPoints -= _hitDamage;
+        if (Data.Health <= Constants.ZeroF) {
+            isAlive = false;
+        }
+        _hitDamage = Constants.ZeroF;
+        return isAlive;
+    }
+
+    protected void OnStartShow() {
+        var temp = onStartShow;
+        if (temp != null) {
+            onStartShow();
+        }
+    }
+
+    protected void OnStopShow() {
+        var temp = onStopShow;
+        if (temp != null) {
+            onStopShow();
+        }
+    }
+
+    #endregion
+
     # region StateMachine Callbacks
 
     public void OnShowCompletion() {
@@ -66,7 +104,12 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, ITarget 
     }
 
     void OnHit(float damage) {
-        RelayToCurrentState(damage);    // IMPROVE add Action delegate to RelayToCurrentState
+        _hitDamage = damage;
+        OnHit();
+    }
+
+    void OnHit() {
+        RelayToCurrentState();
     }
 
     void OnDetectedEnemy() {  // TODO connect to sensors when I get them

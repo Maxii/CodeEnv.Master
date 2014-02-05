@@ -77,8 +77,11 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
         return new ShipCategory[] { ShipCategory.Cruiser, ShipCategory.Carrier, ShipCategory.Dreadnaught };
     }
 
-    protected override void AddCommandDataToCommand() {
-        _command.Data = new FleetData(UnitName);
+    protected override void InitializeCommandData() {
+        _command.Data = new FleetCmdData(UnitName, 10F) {
+            Strength = new CombatStrength(0F, 10F, 0F, 10F, 0F, 10F)  // no offense, strong defense
+            // strength of the UnitCommand so it can properly calculate damage when its HQElement is hit
+        };
     }
 
     protected override void MarkHQElement() {

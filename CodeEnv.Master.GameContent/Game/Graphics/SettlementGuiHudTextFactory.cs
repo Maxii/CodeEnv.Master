@@ -23,13 +23,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     ///  Factory that makes GuiCursorHudText and IColoredTextList instances for Settlements.
     /// </summary>
-    public class SettlementGuiHudTextFactory : AGuiHudTextFactory<SettlementGuiHudTextFactory, SettlementData> {
+    public class SettlementGuiHudTextFactory : AGuiHudTextFactory<SettlementGuiHudTextFactory, SettlementCmdData> {
 
         private SettlementGuiHudTextFactory() {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, SettlementData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, SettlementCmdData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.Name);
@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Category:
                     return new ColoredTextList_String(data.Category.GetName(), data.Category.GetDescription());
                 case GuiHudLineKeys.Health:
-                    return new ColoredTextList_Health(data.Health, data.MaxHitPoints);
+                    return new ColoredTextList_Health(data.UnitHealth, data.MaxHitPoints);
 
                 case GuiHudLineKeys.Owner:
                     return new ColoredTextList_Owner(data.Owner);

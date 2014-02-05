@@ -34,8 +34,8 @@ public class StarbaseCmdModel : AUnitCommandModel<FacilityModel> {
         set { SetProperty<UnitOrder<StarbaseOrders>>(ref _currentOrder, value, "CurrentOrder", OnOrdersChanged); }
     }
 
-    public new StarbaseData Data {
-        get { return base.Data as StarbaseData; }
+    public new StarbaseCmdData Data {
+        get { return base.Data as StarbaseCmdData; }
         set { base.Data = value; }
     }
 
@@ -75,22 +75,18 @@ public class StarbaseCmdModel : AUnitCommandModel<FacilityModel> {
         }
     }
 
-    protected override void Die() {
-        base.Die();
+    protected override void NotifyOfDeath() {
+        base.NotifyOfDeath();
         CurrentState = StarbaseState.Dying;
     }
 
-    #region Starbase StateMachine
+    #region StateMachine
 
-    private StarbaseState _currentState;
     public new StarbaseState CurrentState {
-        get { return _currentState; }
-        set { SetProperty<StarbaseState>(ref _currentState, value, "CurrentState", OnCurrentStateChanged); }
+        get { return (StarbaseState)base.CurrentState; }
+        set { base.CurrentState = value; }
     }
 
-    private void OnCurrentStateChanged() {
-        base.CurrentState = _currentState;
-    }
 
     #region Idle
 
@@ -106,12 +102,15 @@ public class StarbaseCmdModel : AUnitCommandModel<FacilityModel> {
         CurrentState = StarbaseState.ProcessOrders;
     }
 
+    void Idling_OnHit() {
+        Call(StarbaseState.TakingDamage);
+    }
+
     void Idling_ExitState() {
         // register as unavailable
     }
 
     void Idling_OnDetectedEnemy() { }
-
 
     #endregion
 
@@ -170,12 +169,8 @@ public class StarbaseCmdModel : AUnitCommandModel<FacilityModel> {
 
     #region TakingDamage
 
-    private float _hitDamage;
-
     void TakingDamage_EnterState() {
-        // Data.CurrentHitPoints -= _hitDamage; // TODO need way for Commands to independantly take damage from the HQElement
-        _hitDamage = 0F;
-        Call(StarbaseState.ShowHit);
+        ApplyDamage();
         Return();   // returns to the state we were in when the OnHit event arrived
     }
 
@@ -183,26 +178,19 @@ public class StarbaseCmdModel : AUnitCommandModel<FacilityModel> {
 
     #endregion
 
-    #region ShowHit
-
-    void ShowHit_OnHit(float damage) {
-        // View can not 'queue' show animations so just apply the damage
-        // and wait for ShowXXX_OnCompletion to return to caller
-        Data.CurrentHitPoints -= damage;
-    }
-
-    void ShowHit_OnShowCompletion() {
-        // View is showing Hit
-        Return();
-    }
-
-    #endregion
-
     #region Repair
 
     void GoRepair_EnterState() { }
 
+    void GoRepair_OnHit() {
+        Call(StarbaseState.TakingDamage);
+    }
+
     void Repairing_EnterState() { }
+
+    void Repairing_OnHit() {
+        Call(StarbaseState.TakingDamage);
+    }
 
     #endregion
 
@@ -210,7 +198,15 @@ public class StarbaseCmdModel : AUnitCommandModel<FacilityModel> {
 
     void GoRefit_EnterState() { }
 
+    void GoRefit_OnHit() {
+        Call(StarbaseState.TakingDamage);
+    }
+
     void Refitting_EnterState() { }
+
+    void Refitting_OnHit() {
+        Call(StarbaseState.TakingDamage);
+    }
 
     #endregion
 
@@ -218,27 +214,22 @@ public class StarbaseCmdModel : AUnitCommandModel<FacilityModel> {
 
     void GoDisband_EnterState() { }
 
+    void GoDisband_OnHit() {
+        Call(StarbaseState.TakingDamage);
+    }
+
     void Disbanding_EnterState() { }
+
+    void Disbanding_OnHit() {
+        Call(StarbaseState.TakingDamage);
+    }
 
     #endregion
 
     #region Dying
 
     void Dying_EnterState() {
-        Call(StarbaseState.ShowDying);
         CurrentState = StarbaseState.Dead;
-    }
-
-    #endregion
-
-    #region ShowDying
-
-    void ShowDying_EnterState() {
-        // View is showing Dying
-    }
-
-    void ShowDying_OnShowCompletion() {
-        Return();
     }
 
     #endregion
@@ -246,7 +237,7 @@ public class StarbaseCmdModel : AUnitCommandModel<FacilityModel> {
     #region Dead
 
     IEnumerator Dead_EnterState() {
-        D.Log("{0} is Dead!", Data.Name);
+        LogEvent();
         yield return new WaitForSeconds(3);
         Destroy(gameObject);
     }
@@ -254,9 +245,9 @@ public class StarbaseCmdModel : AUnitCommandModel<FacilityModel> {
     #endregion
 
 
-    # region Callbacks
+    # region StateMachine Callbacks
 
-    // See also ACommandItem
+    // See also AUnitCommandModel
 
     void OnOrdersChanged() {
         if (CurrentOrder != null) {

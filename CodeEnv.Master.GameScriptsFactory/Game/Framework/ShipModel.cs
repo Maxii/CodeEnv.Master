@@ -83,13 +83,6 @@ public class ShipModel : AUnitElementModel {
         // else TODO
     }
 
-    protected override void Die() {
-        base.Die();
-        _command.OnSubordinateElementDeath(this);
-        // let command process the loss before the element starts processing its state changes
-        CurrentState = ShipState.Dying;
-    }
-
     #region Velocity Debugger
 
     private Vector3 __lastPosition;
@@ -115,16 +108,11 @@ public class ShipModel : AUnitElementModel {
 
     #endregion
 
-    #region Ship StateMachine
+    #region StateMachine
 
-    private ShipState _currentState;
     public new ShipState CurrentState {
-        get { return _currentState; }
-        set { SetProperty<ShipState>(ref _currentState, value, "CurrentState", OnCurrentStateChanged); }
-    }
-
-    private void OnCurrentStateChanged() {
-        base.CurrentState = _currentState;
+        get { return (ShipState)base.CurrentState; }
+        set { base.CurrentState = value; }
     }
 
     #region Idling
@@ -135,9 +123,8 @@ public class ShipModel : AUnitElementModel {
         // TODO register as available
     }
 
-    void Idling_OnHit(float damage) {
+    void Idling_OnHit() {
         // TODO inform fleet of hit
-        _hitDamage = damage;
         Call(ShipState.TakingDamage);
     }
 
@@ -213,6 +200,7 @@ public class ShipModel : AUnitElementModel {
     #region MovingTo
 
     void MovingTo_EnterState() {
+        LogEvent();
         Navigator.PlotCourse(CurrentOrder.Target, CurrentOrder.Speed);
     }
 
@@ -220,9 +208,9 @@ public class ShipModel : AUnitElementModel {
         Navigator.Engage();
     }
 
-    void MovingTo_OnHit(float damage) {
+    void MovingTo_OnHit() {
         // TODO inform fleet of hit
-        _hitDamage = damage;
+        LogEvent();
         Call(ShipState.TakingDamage);
     }
 
@@ -243,6 +231,7 @@ public class ShipModel : AUnitElementModel {
     }
 
     void MovingTo_ExitState() {
+        LogEvent();
         Navigator.Disengage();
         // ship retains its current speed and heading
     }
@@ -260,8 +249,7 @@ public class ShipModel : AUnitElementModel {
         // TODO track and close on target
     }
 
-    void Chasing_OnHit(float damage) {
-        _hitDamage = damage;
+    void Chasing_OnHit() {
         Call(ShipState.TakingDamage);
     }
 
@@ -288,9 +276,8 @@ public class ShipModel : AUnitElementModel {
         Return();
     }
 
-    void Joining_OnHit(float damage) {
+    void Joining_OnHit() {
         // TODO inform fleet of hit
-        _hitDamage = damage;
         Call(ShipState.TakingDamage);
     }
 
@@ -350,10 +337,14 @@ public class ShipModel : AUnitElementModel {
 
     #region ShowAttacking
 
-    void ShowAttacking_OnHit(float damage) {
+    void ShowAttacking_EnterState() {
+        OnStartShow();
+    }
+
+    void ShowAttacking_OnHit() {
         // View can not 'queue' show animations so just apply the damage
         // and wait for ShowXXX_OnCompletion to return to caller
-        Data.CurrentHitPoints -= damage;
+        ApplyDamage();
     }
 
     void ShowAttacking_OnShowCompletion() {
@@ -365,13 +356,29 @@ public class ShipModel : AUnitElementModel {
 
     #region TakingDamage
 
-    private float _hitDamage;
-
     void TakingDamage_EnterState() {
-        Data.CurrentHitPoints -= _hitDamage;
-        _hitDamage = 0F;
-        Call(ShipState.ShowHit);
-        Return();   // returns to the state we were in when the OnHit event arrived
+        LogEvent();
+        bool isCmdHit = false;
+        bool isElementAlive = ApplyDamage();
+        if (IsHQElement) {
+            isCmdHit = _command.__CheckForDamage(isElementAlive);
+        }
+        if (isElementAlive) {
+            if (isCmdHit) {
+                Call(ShipState.ShowCmdHit);
+            }
+            else {
+                Call(ShipState.ShowHit);
+            }
+            Return();   // returns to the state we were in when the OnHit event arrived
+        }
+        else {
+            CurrentState = ShipState.Dying;
+        }
+    }
+
+    void TakingDamage_ExitState() {
+        LogEvent();
     }
 
     // TakingDamage is a transition state so _OnHit cannot occur here
@@ -380,14 +387,43 @@ public class ShipModel : AUnitElementModel {
 
     #region ShowHit
 
-    void ShowHit_OnHit(float damage) {
+    void ShowHit_EnterState() {
+        LogEvent();
+        OnStartShow();
+    }
+
+    void ShowHit_OnHit() {
         // View can not 'queue' show animations so just apply the damage
         // and wait for ShowXXX_OnCompletion to return to caller
-        Data.CurrentHitPoints -= damage;
+        ApplyDamage();
     }
 
     void ShowHit_OnShowCompletion() {
         // View is showing Hit
+        LogEvent();
+        Return();
+    }
+
+    #endregion
+
+    #region ShowCmdHit
+
+    void ShowCmdHit_EnterState() {
+        LogEvent();
+        //OnShowCompletion();
+        OnStartShow();
+    }
+
+
+    void ShowCmdHit_OnHit() {
+        // View can not 'queue' show animations so just apply the damage
+        // and wait for ShowXXX_OnCompletion to return to caller
+        ApplyDamage();
+    }
+
+    void ShowCmdHit_OnShowCompletion() {
+        // View is showing Hit
+        LogEvent();
         Return();
     }
 
@@ -400,8 +436,7 @@ public class ShipModel : AUnitElementModel {
         // TODO withdraw to rear, evade
     }
 
-    void Withdrawing_OnHit(float damage) {
-        _hitDamage = damage;
+    void Withdrawing_OnHit() {
         Call(ShipState.TakingDamage);
     }
 
@@ -423,9 +458,8 @@ public class ShipModel : AUnitElementModel {
     //    Return();
     //}
 
-    void Entrenching_OnHit(float damage) {
+    void Entrenching_OnHit() {
         // TODO inform fleet of hit
-        _hitDamage = damage;
         Call(ShipState.TakingDamage);
     }
 
@@ -441,19 +475,20 @@ public class ShipModel : AUnitElementModel {
 
     #region Repairing
 
-    //IEnumerator Repairing_EnterState() {
-    //    // TODO ShipView shows animation while in this state
-    //    while (true) {
-    //        // TODO repair until complete
-    //        yield return null;
-    //    }
-    //    //_fleet.OnRepairingComplete(this)?
-    //    Return();
-    //}
+    IEnumerator Repairing_EnterState() {
+        // ShipView shows animation while in this state
+        OnStartShow();
+        //while (true) {
+        // TODO repair until complete
+        yield return new WaitForSeconds(2);
+        //}
+        //_command.OnRepairingComplete(this)?
+        OnStopShow();   // must occur while still in target state
+        Return();
+    }
 
-    void Repairing_OnHit(float damage) {
+    void Repairing_OnHit() {
         // TODO inform fleet of hit
-        _hitDamage = damage;
         Call(ShipState.TakingDamage);
     }
 
@@ -462,26 +497,26 @@ public class ShipModel : AUnitElementModel {
     }
 
     void Repairing_ExitState() {
-        //_fleet.OnRepairingComplete(this)?
+        LogEvent();
     }
 
     #endregion
 
     #region Refitting
 
-    //IEnumerator Refitting_EnterState() {
-    //    // TODO ShipView shows animation while in this state
-    //    while (true) {
-    //        // TODO refit until complete
-    //        yield return null;
-    //    }
-    //    //_fleet.OnRefittingComplete(this)?
-    //    Return();
-    //}
+    IEnumerator Refitting_EnterState() {
+        // ShipView shows animation while in this state
+        OnStartShow();
+        //while (true) {
+        // TODO refit until complete
+        yield return new WaitForSeconds(2);
+        //}
+        OnStopShow();   // must occur while still in target state
+        Return();
+    }
 
-    void Refitting_OnHit(float damage) {
+    void Refitting_OnHit() {
         // TODO inform fleet of hit
-        _hitDamage = damage;
         Call(ShipState.TakingDamage);
     }
 
@@ -490,6 +525,7 @@ public class ShipModel : AUnitElementModel {
     }
 
     void Refitting_ExitState() {
+        LogEvent();
         //_fleet.OnRefittingComplete(this)?
     }
 
@@ -504,9 +540,8 @@ public class ShipModel : AUnitElementModel {
         Return();   // ??
     }
 
-    void Disbanding_OnHit(float damage) {
+    void Disbanding_OnHit() {
         // TODO inform fleet of hit
-        _hitDamage = damage;
         Call(ShipState.TakingDamage);
     }
 
@@ -523,6 +558,7 @@ public class ShipModel : AUnitElementModel {
     #region Dying
 
     void Dying_EnterState() {
+        LogEvent();
         Call(ShipState.ShowDying);
         CurrentState = ShipState.Dead;
     }
@@ -532,10 +568,13 @@ public class ShipModel : AUnitElementModel {
     #region ShowDying
 
     void ShowDying_EnterState() {
+        LogEvent();
         // View is showing Dying
+        OnStartShow();
     }
 
     void ShowDying_OnShowCompletion() {
+        LogEvent();
         Return();
     }
 
@@ -544,16 +583,14 @@ public class ShipModel : AUnitElementModel {
     #region Dead
 
     IEnumerator Dead_EnterState() {
-        D.Log("{0} is Dead!", Data.Name);
+        LogEvent();
         yield return new WaitForSeconds(3);
         Destroy(gameObject);
     }
 
     #endregion
 
-
     # region Callbacks
-
     // See also AElementItem 
 
     void OnOrdersChanged() {

@@ -27,13 +27,13 @@ namespace CodeEnv.Master.GameContent {
     /// the object's equality comparer (same instance in memory) is used by the client of the factory
     /// to determine which icon is currently showing.
     /// </summary>
-    public class FleetIconFactory : AIconFactory<FleetIcon, FleetData, FleetIconFactory> {
+    public class FleetIconFactory : AIconFactory<FleetIcon, FleetCmdData, FleetIconFactory> {
 
         private FleetIconFactory() {
             Initialize();
         }
 
-        protected override IconSelectionCriteria GetCriteriaFromCategory(FleetData data) {
+        protected override IconSelectionCriteria GetCriteriaFromCategory(FleetCmdData data) {
             switch (data.Category) {
                 case FleetCategory.Flotilla:
                     return IconSelectionCriteria.Level1;
@@ -51,7 +51,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(FleetData data) {
+        protected override IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(FleetCmdData data) {
             IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
             IEnumerable<ShipCategory> shipCategories = data.Composition.Categories;
             if (shipCategories.Contains(ShipCategory.Science)) {

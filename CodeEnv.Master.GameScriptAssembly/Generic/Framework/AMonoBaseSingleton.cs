@@ -32,8 +32,9 @@ public abstract class AMonoBaseSingleton<T> : AMonoBase, IInstanceIdentity where
     private string _instanceID;
 
     public override void LogEvent() {
+        // NOTE:  Coroutines don't show the right method name when logged using stacktrace
         System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
-        D.Log("{0}{1}.{2}() method called.".Inject(GetType().Name, _instanceID, stackFrame.GetMethod().Name));
+        D.Log("{0}.{1}{2}.{3}() called.".Inject(_transform.name, GetType().Name, _instanceID, stackFrame.GetMethod().Name));
     }
 
     #region Singleton Pattern

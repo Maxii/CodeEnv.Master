@@ -151,7 +151,7 @@ namespace Pathfinding {
             if (universeCenterView != null) {   // allows me to deactivate UniverseCenter
                 obstacleLocations.Add(universeCenterView.transform.position);
             }
-            D.Log("{0} obstacle locations found.", obstacleLocations.Count);
+            //D.Log("{0} obstacle locations found.", obstacleLocations.Count);
             return obstacleLocations;
         }
 
@@ -163,7 +163,7 @@ namespace Pathfinding {
                 nodes[i].position = (Int3)GraphLocations[i];
                 nodes[i].walkable = true;
             }
-            D.Log("{0} pathfinding nodes created.", nodes.Length);
+            //D.Log("{0} pathfinding nodes created.", nodes.Length);
 
             if (maxDistance >= 0) {
                 //To avoid too many allocations, these lists are reused for each node
@@ -197,7 +197,7 @@ namespace Pathfinding {
                     node.connectionCosts = costs.ToArray();
                 }
                 int totalConnectionsAttempted = connectionCount + invalidConnectionCount;
-                D.Log("{0}/{1} valid connections.", connectionCount, totalConnectionsAttempted);
+                //D.Log("{0}/{1} valid connections.", connectionCount, totalConnectionsAttempted);
             }
         }
 

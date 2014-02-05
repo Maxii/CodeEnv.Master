@@ -24,35 +24,26 @@ namespace CodeEnv.Master.GameContent {
         None,
 
         Idling,
-
         ProcessOrders,
-
         MovingTo,
 
         GoPatrol,
-
         Patrolling,
 
         GoGuard,
-
         Guarding,
 
         GoAttack,
-
         Attacking,
 
-        // These 2 allow Commands to optionally take hits and show them, seperate from their HQElement
         TakingDamage,
-        ShowHit,
 
         Entrenching,
 
         GoRepair,
-
         Repairing,
 
         GoRefit,
-
         Refitting,
 
         GoRetreat,
@@ -64,15 +55,12 @@ namespace CodeEnv.Master.GameContent {
         //Embarking,
 
         GoDisband,
-
         Disbanding,
 
         Dying,
-
-        ShowDying,
-
         Dead
 
+        // ShowXXX no longer applicable to Cmds as there is no mesh
 
     }
 

@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for managing the UI of a Command.
 /// </summary>
-public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISelectable {
+public abstract class AUnitCommandView : AFocusableItemView, ICommandViewable, ISelectable {
 
     private Vector3 _cmdIconPivotOffset;
     private UISprite _cmdIconSprite;
@@ -70,46 +70,11 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
         KeepColliderOverIcon();
     }
 
-    void OnPress(bool isDown) {
-        if (IsDiscernible) {
-            if (GameInputHelper.IsRightMouseButton()) {
-                OnRightPress(isDown);
-            }
-        }
-    }
-
-    private void OnRightPress(bool isDown) {
-        if (IsSelected) {
-            RequestContextMenu(isDown);
-        }
-    }
-
     protected abstract void RequestContextMenu(bool isDown);
-
-    protected override void OnLeftClick() {
-        base.OnLeftClick();
-        IsSelected = true;
-    }
 
     protected virtual void OnIsSelectedChanged() {
         AssessHighlighting();
     }
-
-    #region Intel Stealth Testing
-
-    protected override void OnLeftDoubleClick() {
-        __ToggleStealthSimulation();
-    }
-
-    private IntelCoverage __normalIntelCoverage;
-    private void __ToggleStealthSimulation() {
-        if (__normalIntelCoverage == IntelCoverage.None) {
-            __normalIntelCoverage = PlayerIntel.CurrentCoverage;
-        }
-        PlayerIntel.CurrentCoverage = PlayerIntel.CurrentCoverage == __normalIntelCoverage ? IntelCoverage.Aware : __normalIntelCoverage;
-    }
-
-    #endregion
 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
@@ -186,6 +151,24 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
         return Screen.height * circleScaleFactor;
     }
 
+    protected virtual void InitializeCmdIcon() {
+        _cmdIconSprite = gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>();
+        _cmdIconTransform = _cmdIconSprite.transform;
+        _cmdIconScaler = _cmdIconSprite.gameObject.GetSafeMonoBehaviourComponent<ScaleRelativeToCamera>();
+        // I need the collider sitting over the CmdIcon to be 3D as it's rotation tracks the Cmd object, not the billboarded icon
+        Vector2 iconSize = _cmdIconSprite.localSize;
+        _cmdIconSize = new Vector3(iconSize.x, iconSize.y, iconSize.x);
+    }
+
+    protected void PositionIcon() {
+        // Notes: _cmdIconPivotOffset is a worldspace offset to the top of the TrackingTarget collider and doesn't change with scale, position or rotation
+        // The approach below will also work if we want a viewport offset that is a constant percentage of the viewport
+        //Vector3 viewportOffsetLocation = Camera.main.WorldToViewportPoint(TrackingTarget.position + _cmdIconPivotOffset);
+        //Vector3 worldOffsetLocation = Camera.main.ViewportToWorldPoint(viewportOffsetLocation + _cmdIconViewportOffset);
+        //_cmdIconTransform.localPosition = worldOffsetLocation - TrackingTarget.position;
+        _cmdIconTransform.localPosition = _cmdIconPivotOffset;
+    }
+
     #region ContextMenu
 
     private void __InitializeContextMenu() {      // IMPROVE use of string
@@ -216,23 +199,65 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
 
     #endregion
 
-    protected virtual void InitializeCmdIcon() {
-        _cmdIconSprite = gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>();
-        _cmdIconTransform = _cmdIconSprite.transform;
-        _cmdIconScaler = _cmdIconSprite.gameObject.GetSafeMonoBehaviourComponent<ScaleRelativeToCamera>();
-        // I need the collider sitting over the CmdIcon to be 3D as it's rotation tracks the Cmd object, not the billboarded icon
-        Vector2 iconSize = _cmdIconSprite.localSize;
-        _cmdIconSize = new Vector3(iconSize.x, iconSize.y, iconSize.x);
+    #region Intel Stealth Testing
+
+    private IntelCoverage __normalIntelCoverage;
+    private void __ToggleStealthSimulation() {
+        if (__normalIntelCoverage == IntelCoverage.None) {
+            __normalIntelCoverage = PlayerIntel.CurrentCoverage;
+        }
+        PlayerIntel.CurrentCoverage = PlayerIntel.CurrentCoverage == __normalIntelCoverage ? IntelCoverage.Aware : __normalIntelCoverage;
     }
 
-    protected void PositionIcon() {
-        // Notes: _cmdIconPivotOffset is a worldspace offset to the top of the TrackingTarget collider and doesn't change with scale, position or rotation
-        // The approach below will also work if we want a viewport offset that is a constant percentage of the viewport
-        //Vector3 viewportOffsetLocation = Camera.main.WorldToViewportPoint(TrackingTarget.position + _cmdIconPivotOffset);
-        //Vector3 worldOffsetLocation = Camera.main.ViewportToWorldPoint(viewportOffsetLocation + _cmdIconViewportOffset);
-        //_cmdIconTransform.localPosition = worldOffsetLocation - TrackingTarget.position;
-        _cmdIconTransform.localPosition = _cmdIconPivotOffset;
+    #endregion
+
+    #region Mouse Events
+
+    protected override void OnClick() {
+        base.OnClick();
+        if (IsDiscernible) {
+            if (GameInputHelper.IsLeftMouseButton()) {
+                KeyCode notUsed;
+                if (GameInputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftAlt, KeyCode.RightAlt)) {
+                    OnAltLeftClick();
+                }
+                else {
+                    OnLeftClick();
+                }
+            }
+        }
     }
+
+    protected virtual void OnLeftClick() {
+        IsSelected = true;
+    }
+
+    protected virtual void OnAltLeftClick() { }
+
+    void OnDoubleClick() {
+        if (IsDiscernible && GameInputHelper.IsLeftMouseButton()) {
+            OnLeftDoubleClick();
+        }
+    }
+
+    protected void OnLeftDoubleClick() {
+        __ToggleStealthSimulation();
+    }
+
+    void OnPress(bool isDown) {
+        if (IsDiscernible && GameInputHelper.IsRightMouseButton()) {
+            OnRightPress(isDown);
+        }
+    }
+
+    private void OnRightPress(bool isDown) {
+        if (IsSelected) {
+            RequestContextMenu(isDown);
+        }
+    }
+
+    #endregion
+
 
     #region ICommandViewable Members
 
@@ -259,6 +284,16 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
     /// Note the override - a fleet's collider and mesh (icon) both scale, thus AView's implementation can't be used
     /// </summary>
     public override float Radius { get { return 1.0F; } }   // TODO should reflect the rough radius of the fleet
+
+    #endregion
+
+    #region ICameraTargetable Members
+
+    public override bool IsEligible {
+        get {
+            return PlayerIntel.CurrentCoverage != IntelCoverage.None;
+        }
+    }
 
     #endregion
 

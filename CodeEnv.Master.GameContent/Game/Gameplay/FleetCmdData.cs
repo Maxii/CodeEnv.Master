@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FleetData.cs
+// File: FleetCmdData.cs
 // All the data associated with a particular fleet.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// All the data associated with a particular fleet.
     /// </summary>
-    public class FleetData : ACommandData {
+    public class FleetCmdData : ACommandData {
 
         public FleetCategory Category { get; set; }
 
@@ -88,7 +88,12 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<FleetComposition>(ref _composition, value, "Composition"); }
         }
 
-        public FleetData(string fleetName) : base(fleetName) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FleetCmdData"/> class.
+        /// </summary>
+        /// <param name="fleetName">Name of the fleet.</param>
+        /// <param name="cmdMaxHitPoints">The command maximum hit points.</param>
+        public FleetCmdData(string fleetName, float cmdMaxHitPoints) : base(fleetName, cmdMaxHitPoints) { }
 
         protected override void InitializeComposition() {
             Composition = new FleetComposition();

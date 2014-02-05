@@ -41,53 +41,14 @@ public class FleetCmdPresenter : AUnitCommandPresenter<ShipModel> {
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        var hudPublisher = new GuiHudPublisher<FleetData>(Model.Data);
+        var hudPublisher = new GuiHudPublisher<FleetCmdData>(Model.Data);
         hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed);
         return hudPublisher;
     }
 
     protected override void Subscribe() {
         base.Subscribe();
-        _subscribers.Add(Model.Data.SubscribeToPropertyChanged<FleetData, FleetComposition>(fd => fd.Composition, OnCompositionChanged));
-        _subscribers.Add(Model.SubscribeToPropertyChanged<FleetCmdModel, FleetState>(f => f.CurrentState, OnFleetStateChanged));
-    }
-
-    private void OnFleetStateChanged() {
-        FleetState state = Model.CurrentState;
-        switch (state) {
-            case FleetState.ShowHit:
-                View.ShowHit();
-                break;
-            case FleetState.ShowDying:
-                View.ShowDying();
-                break;
-            case FleetState.Idling:
-            case FleetState.ProcessOrders:
-            case FleetState.MovingTo:
-            case FleetState.GoAttack:
-            case FleetState.Attacking:
-            case FleetState.Entrenching:
-            case FleetState.TakingDamage:
-            case FleetState.GoGuard:
-            case FleetState.Guarding:
-            case FleetState.GoJoin:
-            case FleetState.GoPatrol:
-            case FleetState.Patrolling:
-            case FleetState.GoRepair:
-            case FleetState.Repairing:
-            case FleetState.GoRefit:
-            case FleetState.Refitting:
-            case FleetState.GoRetreat:
-            case FleetState.GoDisband:
-            case FleetState.Disbanding:
-            case FleetState.Dying:
-            case FleetState.Dead:
-                // do nothing
-                break;
-            case FleetState.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(state));
-        }
+        _subscribers.Add(Model.Data.SubscribeToPropertyChanged<FleetCmdData, FleetComposition>(fd => fd.Composition, OnCompositionChanged));
     }
 
     public Reference<float> GetFleetSpeedReference() {

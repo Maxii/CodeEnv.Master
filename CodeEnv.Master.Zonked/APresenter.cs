@@ -36,11 +36,11 @@ public abstract class APresenter : APropertyChangeTracking {
         GuiHudPublisher<ItemData>.SetFactory(GuiHudTextFactory.Instance);
         GuiHudPublisher<SectorData>.SetFactory(SectorGuiHudTextFactory.Instance);
         GuiHudPublisher<ShipData>.SetFactory(ShipGuiHudTextFactory.Instance);
-        GuiHudPublisher<FleetData>.SetFactory(FleetGuiHudTextFactory.Instance);
+        GuiHudPublisher<FleetCmdData>.SetFactory(FleetGuiHudTextFactory.Instance);
         GuiHudPublisher<SystemData>.SetFactory(SystemGuiHudTextFactory.Instance);
         GuiHudPublisher<StarData>.SetFactory(StarGuiHudTextFactory.Instance);
         GuiHudPublisher<PlanetoidData>.SetFactory(PlanetoidGuiHudTextFactory.Instance);
-        GuiHudPublisher<SettlementData>.SetFactory(SettlementGuiHudTextFactory.Instance);
+        GuiHudPublisher<SettlementCmdData>.SetFactory(SettlementGuiHudTextFactory.Instance);
         GuiHudPublisher<StarBaseData>.SetFactory(StarBaseGuiHudTextFactory.Instance);
     }
 

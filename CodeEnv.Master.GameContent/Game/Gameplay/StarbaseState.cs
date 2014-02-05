@@ -27,9 +27,7 @@ namespace CodeEnv.Master.GameContent {
         GoAttack,   // ?
         Attacking,
 
-        // These 2 allow Commands to optionally take hits and show them, seperate from their HQElement
         TakingDamage,
-        ShowHit,
 
         GoRepair,   // ?
         Repairing,
@@ -38,8 +36,9 @@ namespace CodeEnv.Master.GameContent {
         GoDisband,   // ?
         Disbanding,
         Dying,
-        ShowDying,
         Dead
+
+        // ShowXXX no longer applicable to Cmds as there is no mesh
 
     }
 }

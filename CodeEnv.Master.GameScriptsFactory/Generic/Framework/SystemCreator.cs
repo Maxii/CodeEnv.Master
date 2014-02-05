@@ -119,17 +119,17 @@ public class SystemCreator : AMonoBase, IDisposable {
         _planets = allPlanetoids.Where(p => p.gameObject.GetComponentInParents<PlanetoidModel>(excludeSelf: true) == null).ToList();
         _composition = new SystemComposition();
         foreach (var planet in _planets) {
-            Transform transformCarryingPlanetType = planet.transform.parent.parent;
-            PlanetoidCategory pType = GetType<PlanetoidCategory>(transformCarryingPlanetType);
+            Transform transformCarryingPlanetCategory = planet.transform.parent.parent;
+            PlanetoidCategory pCategory = DeriveCategory<PlanetoidCategory>(transformCarryingPlanetCategory);
             string planetName = planet.gameObject.name; // if already in scene, the planet should already be named for its system and orbit
-            PlanetoidData data = CreatePlanetData(pType, planetName);
+            PlanetoidData data = CreatePlanetData(pCategory, planetName);
             _composition.AddPlanet(data);
         }
 
         _star = gameObject.GetSafeMonoBehaviourComponentInChildren<StarModel>();
-        Transform transformCarryingStarType = _star.transform;
-        StarCategory starType = GetType<StarCategory>(transformCarryingStarType);
-        _composition.StarData = CreateStarData(starType);
+        Transform transformCarryingStarCategory = _star.transform;
+        StarCategory starCategory = DeriveCategory<StarCategory>(transformCarryingStarCategory);
+        _composition.StarData = CreateStarData(starCategory);
     }
 
     private void CreateRandomComposition() {
@@ -140,22 +140,23 @@ public class SystemCreator : AMonoBase, IDisposable {
         int planetCount = RandomExtended<int>.Range(0, orbitSlotsAvailableForPlanets);
         for (int i = 0; i < planetCount; i++) {
 
-            IEnumerable<PlanetoidCategory> planetoidTypesToExclude = new PlanetoidCategory[] { default(PlanetoidCategory), 
+            IEnumerable<PlanetoidCategory> planetoidCategoriesToExclude = new PlanetoidCategory[] { default(PlanetoidCategory), 
                 PlanetoidCategory.Moon_001, PlanetoidCategory.Moon_002, PlanetoidCategory.Moon_003, PlanetoidCategory.Moon_004, PlanetoidCategory.Moon_005 };
-            PlanetoidCategory planetType = RandomExtended<PlanetoidCategory>.Choice(Enums<PlanetoidCategory>.GetValues().Except(planetoidTypesToExclude).ToArray());
+            PlanetoidCategory planetCategory = RandomExtended<PlanetoidCategory>.Choice(Enums<PlanetoidCategory>.GetValues().Except(planetoidCategoriesToExclude).ToArray());
 
-            string planetName = "{0}, rest deferred until orbit assigned.".Inject(planetType.GetName());
-            PlanetoidData planetData = CreatePlanetData(planetType, planetName);
+            string planetName = "{0}, rest deferred until orbit assigned.".Inject(planetCategory.GetName());
+            PlanetoidData planetData = CreatePlanetData(planetCategory, planetName);
             _composition.AddPlanet(planetData);
         }
 
-        StarCategory starType = Enums<StarCategory>.GetRandom(excludeDefault: true);
-        StarData starData = CreateStarData(starType);
+        StarCategory starCategory = Enums<StarCategory>.GetRandom(excludeDefault: true);
+        StarData starData = CreateStarData(starCategory);
         _composition.StarData = starData;
     }
 
-    private PlanetoidData CreatePlanetData(PlanetoidCategory pType, string planetName) {
-        PlanetoidData data = new PlanetoidData(pType, planetName, 100000F, _systemName) {
+    private PlanetoidData CreatePlanetData(PlanetoidCategory pCategory, string planetName) {
+        PlanetoidData data = new PlanetoidData(pCategory, planetName, 10000F, 1000000F, _systemName) {
+            Strength = new CombatStrength(),
             Capacity = 25,
             Resources = new OpeYield(3.1F, 2.0F, 4.8F),
             SpecialResources = new XYield(XResource.Special_1, 0.3F),
@@ -163,9 +164,9 @@ public class SystemCreator : AMonoBase, IDisposable {
         return data;
     }
 
-    private StarData CreateStarData(StarCategory sType) {
+    private StarData CreateStarData(StarCategory sCategory) {
         string starName = _systemName + Constants.Space + CommonTerms.Star;
-        StarData data = new StarData(sType, starName, _systemName) {
+        StarData data = new StarData(sCategory, starName, _systemName) {
             Capacity = 100,
             Resources = new OpeYield(0F, 0F, 100F),
             SpecialResources = new XYield(XResource.Special_3, 0.3F),
@@ -210,11 +211,11 @@ public class SystemCreator : AMonoBase, IDisposable {
 
     private void BuildPlanets() {
         _planets = new List<PlanetoidModel>();
-        foreach (var pType in _composition.PlanetTypes) {
-            GameObject planetPrefab = RequiredPrefabs.Instance.planets.First(p => p.gameObject.name == pType.GetName());
+        foreach (var pCat in _composition.PlanetCategories) {
+            GameObject planetPrefab = RequiredPrefabs.Instance.planets.First(p => p.gameObject.name == pCat.GetName());
             GameObject systemGo = _system.gameObject;
 
-            _composition.GetPlanetData(pType).ForAll(pd => {
+            _composition.GetPlanetData(pCat).ForAll(pd => {
                 GameObject topLevelPlanetGo = UnityUtility.AddChild(systemGo, planetPrefab);
                 PlanetoidModel planet = topLevelPlanetGo.GetSafeMonoBehaviourComponentInChildren<PlanetoidModel>();
                 _planets.Add(planet);
@@ -223,23 +224,23 @@ public class SystemCreator : AMonoBase, IDisposable {
     }
 
     private void BuildStar() {
-        StarCategory starType = _composition.StarData.Category;
-        GameObject starPrefab = RequiredPrefabs.Instance.stars.First(sp => sp.gameObject.name == starType.GetName()).gameObject;
+        StarCategory starCat = _composition.StarData.Category;
+        GameObject starPrefab = RequiredPrefabs.Instance.stars.First(sp => sp.gameObject.name == starCat.GetName()).gameObject;
         GameObject systemGo = _system.gameObject;
         GameObject starGo = UnityUtility.AddChild(systemGo, starPrefab);
         _star = starGo.GetSafeMonoBehaviourComponent<StarModel>();
     }
 
     private void InitializePlanets() {
-        IDictionary<PlanetoidCategory, Stack<PlanetoidData>> typeLookup = new Dictionary<PlanetoidCategory, Stack<PlanetoidData>>();
+        IDictionary<PlanetoidCategory, Stack<PlanetoidData>> planetCategoryLookup = new Dictionary<PlanetoidCategory, Stack<PlanetoidData>>();
         foreach (var planet in _planets) {
             Transform transformCarryingPlanetType = planet.transform.parent.parent; // top level planetarySystem go holding orbits, planet and moons
-            PlanetoidCategory pType = GetType<PlanetoidCategory>(transformCarryingPlanetType);
+            PlanetoidCategory pCategory = DeriveCategory<PlanetoidCategory>(transformCarryingPlanetType);
 
             Stack<PlanetoidData> dataStack;
-            if (!typeLookup.TryGetValue(pType, out dataStack)) {
-                dataStack = new Stack<PlanetoidData>(_composition.GetPlanetData(pType));
-                typeLookup.Add(pType, dataStack);
+            if (!planetCategoryLookup.TryGetValue(pCategory, out dataStack)) {
+                dataStack = new Stack<PlanetoidData>(_composition.GetPlanetData(pCategory));
+                planetCategoryLookup.Add(pCategory, dataStack);
             }
             planet.Data = dataStack.Pop();  // automatically adds the planet's transform to Data when set
             // include the System and planet as a target in any child with a CameraLOSChangedRelay
@@ -256,8 +257,14 @@ public class SystemCreator : AMonoBase, IDisposable {
                 foreach (var moon in moons) {
                     string planetName = planet.Data.Name;
                     string moonName = planetName + _moonLetters[letterIndex];
-                    PlanetoidCategory moonType = GetType<PlanetoidCategory>(moon.transform);
-                    PlanetoidData data = new PlanetoidData(moonType, moonName, 10000F, _systemName) { };
+                    PlanetoidCategory moonCategory = DeriveCategory<PlanetoidCategory>(moon.transform);
+                    PlanetoidData data = new PlanetoidData(moonCategory, moonName, 1000F, 100000F, _systemName) {
+                        Strength = new CombatStrength(),
+                        Capacity = 5,
+                        Resources = new OpeYield(0.1F, 1.0F, 0.8F),
+                        SpecialResources = null,
+                    };
+
                     moon.Data = data;
                     letterIndex++;
                     // include the System and moon as a target in any child with a CameraLOSChangedRelay
@@ -296,8 +303,8 @@ public class SystemCreator : AMonoBase, IDisposable {
         IList<PlanetoidModel> planetsToDestroy = null;
         Stack<int>[] slots;
         foreach (var planet in _planets) {
-            var pType = planet.Data.Category;
-            switch (pType) {
+            var planetCategory = planet.Data.Category;
+            switch (planetCategory) {
                 case PlanetoidCategory.Volcanic:
                     slots = new Stack<int>[] { innerStack, midStack };
                     break;
@@ -317,7 +324,7 @@ public class SystemCreator : AMonoBase, IDisposable {
                 case PlanetoidCategory.Moon_005:
                 case PlanetoidCategory.None:
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(pType));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(planetCategory));
             }
 
             if (TryFindOrbitSlot(out slotIndex, slots)) {
@@ -388,8 +395,8 @@ public class SystemCreator : AMonoBase, IDisposable {
         }
     }
 
-    private T GetType<T>(Transform transformWithTypeName) where T : struct {
-        return Enums<T>.Parse(transformWithTypeName.name);
+    private T DeriveCategory<T>(Transform transformContainingCategoryName) where T : struct {
+        return Enums<T>.Parse(transformContainingCategoryName.name);
     }
 
     private void DestroySystemCreator() {

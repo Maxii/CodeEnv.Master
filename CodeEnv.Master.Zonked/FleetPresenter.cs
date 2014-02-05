@@ -46,7 +46,7 @@ public class FleetPresenter : AMortalItemPresenter {
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        var hudPublisher = new GuiHudPublisher<FleetData>(Model.Data);
+        var hudPublisher = new GuiHudPublisher<FleetCmdData>(Model.Data);
         hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed);
         return hudPublisher;
     }
@@ -54,7 +54,7 @@ public class FleetPresenter : AMortalItemPresenter {
     protected override void Subscribe() {
         base.Subscribe();
         _subscribers.Add(Model.SubscribeToPropertyChanged<FleetCmdModel, ShipModel>(f => f.Flagship, OnFlagshipChanged));
-        _subscribers.Add(Model.Data.SubscribeToPropertyChanged<FleetData, FleetComposition>(fd => fd.Composition, OnFleetCompositionChanged));
+        _subscribers.Add(Model.Data.SubscribeToPropertyChanged<FleetCmdData, FleetComposition>(fd => fd.Composition, OnFleetCompositionChanged));
         _subscribers.Add(Model.SubscribeToPropertyChanged<FleetCmdModel, FleetState>(f => f.CurrentState, OnFleetStateChanged));
         View.onShowCompletion += Model.OnShowCompletion;
         Model.onFleetElementDestroyed += OnFleetElementDestroyed;

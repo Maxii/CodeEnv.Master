@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AStateMachine.cs
-// Abstract Base class for a State Machine implemented as a component of a MonoBehaviour.
+// Abstract Base class for a State Machine implemented AS A COMPONENT of a MonoBehaviour.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -24,7 +24,9 @@ namespace CodeEnv.Master.Common {
     using UnityEngine;
 
     /// <summary>
-    ///  Abstract Base class for a State Machine implemented as a component of a MonoBehaviour.
+    ///  Abstract Base class for a State Machine implemented AS A COMPONENT of a MonoBehaviour.
+    ///  WARNING: It does support subscriptions to State Changes, but not all state changes will be 
+    ///  notified if Call() or Return() are used as these make state changes without going through SetProperty.
     /// </summary>
     /// <typeparam name="E">Th State Type being used, typically an enum type.</typeparam>
     public abstract class AStateMachine<E> : APropertyChangeTracking where E : struct {

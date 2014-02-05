@@ -57,6 +57,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="ThirdParty\AMonoStateMachine_NoCall.cs" />
     <Compile Include="Generic\Framework\AItemModel.cs" />
     <Compile Include="Generic\Framework\AMortalItemModel.cs" />
     <Compile Include="Generic\Framework\AMortalItemModelStateMachine.cs" />

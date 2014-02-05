@@ -213,7 +213,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     }
 
     private void InitializePiece() {
-        AddCommandDataToCommand();    // automatically adds the command transform to Data when set
+        InitializeCommandData();    // automatically adds the command transform to Data when set
         _elements.ForAll(element => _command.AddElement(element));
         // command IS NOT assigned as a target of each element's CameraLOSChangedRelay as that would make the CommandIcon disappear when the elements disappear
 
@@ -258,7 +258,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         foreach (var element in _elements) {
             if (element.IsHQElement) {
                 element.Data.FormationPosition = Vector3.zero;
-                D.Log("HQ Element is {0}.", element.Data.Name);
+                D.Log("{0} HQ Element is {1}.", UnitName, element.Data.Name);
                 continue;
             }
             element.Data.FormationPosition = element.transform.position - hqPosition;
@@ -311,7 +311,10 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     protected abstract IList<ElementCategoryType> GetCompositionCategories();
     protected abstract IEnumerable<GameObject> GetElementPrefabs();
     protected abstract GameObject GetCommandPrefab();
-    protected abstract void AddCommandDataToCommand();
+    /// <summary>
+    /// Instantiate and assign the command's data to Command.
+    /// </summary>
+    protected abstract void InitializeCommandData();
     protected abstract ElementCategoryType[] GetValidHQElementCategories();
     protected abstract ElementCategoryType[] GetValidElementCategories();
 

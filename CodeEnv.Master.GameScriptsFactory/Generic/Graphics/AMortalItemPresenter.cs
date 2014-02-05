@@ -35,7 +35,7 @@ public abstract class AMortalItemPresenter : AFocusableItemPresenter {
 
     protected override void Subscribe() {
         base.Subscribe();
-        Model.onDeath += OnDeath;
+        Model.onItemDeath += OnDeath;
     }
 
     protected virtual void OnDeath(AMortalItemModel itemModel) {

@@ -25,6 +25,7 @@ using UnityEngine;
 /// <summary>
 ///  Abstract base class for managing the elements of an object that is both Mortal and Focusable.
 /// </summary>
+[Obsolete]
 public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
 
     public new AMortalItemPresenter Presenter {
@@ -91,14 +92,6 @@ public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
     #region IMortalViewable Members
 
     public event Action onShowCompletion;
-
-    // the following must return onShowCompletion when finished to inform 
-    // Item when it is OK to progress to the next state
-
-    public void ShowHit() {
-        // TODO
-        OnShowCompletion();
-    }
 
     public void ShowDying() {
         _showingJob = new Job(ShowingDying(), toStart: true);

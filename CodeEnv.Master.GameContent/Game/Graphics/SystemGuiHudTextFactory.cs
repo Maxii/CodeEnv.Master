@@ -40,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Owner:
                     return (data.Settlement != null) ? new ColoredTextList_Owner(data.Settlement.Owner) : _emptyColoredTextList;
                 case GuiHudLineKeys.Health:
-                    return (data.Settlement != null) ? new ColoredTextList_Health(data.Settlement.Health, data.Settlement.MaxHitPoints) : _emptyColoredTextList;
+                    return (data.Settlement != null) ? new ColoredTextList_Health(data.Settlement.UnitHealth, data.Settlement.MaxHitPoints) : _emptyColoredTextList;
                 case GuiHudLineKeys.CombatStrength:
                     return (data.Settlement != null) ? new ColoredTextList<float>(Constants.FormatFloat_0Dp, data.Settlement.Strength.Combined) : _emptyColoredTextList;
                 case GuiHudLineKeys.CombatStrengthDetails:

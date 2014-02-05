@@ -58,23 +58,11 @@ public class FacilityModel : AUnitElementModel {
         CurrentState = FacilityState.Idling;
     }
 
-    protected override void Die() {
-        base.Die();
-        _command.OnSubordinateElementDeath(this);
-        // let Cmd process the loss before the destroyed facility starts processing its state changes
-        CurrentState = FacilityState.Dying;
-    }
+    #region StateMachine
 
-    #region Facility StateMachine
-
-    private FacilityState _currentState;
     public new FacilityState CurrentState {
-        get { return _currentState; }
-        set { SetProperty<FacilityState>(ref _currentState, value, "CurrentState", OnCurrentStateChanged); }
-    }
-
-    private void OnCurrentStateChanged() {
-        base.CurrentState = _currentState;
+        get { return (FacilityState)base.CurrentState; }
+        set { base.CurrentState = value; }
     }
 
     #region Idle
@@ -86,6 +74,10 @@ public class FacilityModel : AUnitElementModel {
 
     void Idling_OnOrdersChanged() {
         CurrentState = FacilityState.ProcessOrders;
+    }
+
+    void Idling_OnHit() {
+        Call(FacilityState.TakingDamage);
     }
 
     void Idling_ExitState() {
@@ -178,7 +170,7 @@ public class FacilityModel : AUnitElementModel {
 
     void Attacking_EnterState() {
         // launch a salvo at  _target 
-        Call(ShipState.ShowAttacking);
+        Call(FacilityState.ShowAttacking);
         Return();   // to GoAttack
     }
 
@@ -188,10 +180,14 @@ public class FacilityModel : AUnitElementModel {
 
     #region ShowAttacking
 
-    void ShowAttacking_OnHit(float damage) {
+    void ShowAttacking_EnterState() {
+        OnStartShow();
+    }
+
+    void ShowAttacking_OnHit() {
         // View can not 'queue' show animations so just apply the damage
         // and wait for ShowXXX_OnCompletion to return to caller
-        Data.CurrentHitPoints -= damage;
+        ApplyDamage();
     }
 
     void ShowAttacking_OnShowCompletion() {
@@ -203,13 +199,29 @@ public class FacilityModel : AUnitElementModel {
 
     #region TakingDamage
 
-    private float _hitDamage;
-
     void TakingDamage_EnterState() {
-        Data.CurrentHitPoints -= _hitDamage;
-        _hitDamage = 0F;
-        Call(ShipState.ShowHit);
-        Return();   // returns to the state we were in when the OnHit event arrived
+        LogEvent();
+        bool isCmdHit = false;
+        bool isElementAlive = ApplyDamage();
+        if (IsHQElement) {
+            isCmdHit = _command.__CheckForDamage(isElementAlive);
+        }
+        if (isElementAlive) {
+            if (isCmdHit) {
+                Call(FacilityState.ShowCmdHit);
+            }
+            else {
+                Call(FacilityState.ShowHit);
+            }
+            Return();   // returns to the state we were in when the OnHit event arrived
+        }
+        else {
+            CurrentState = FacilityState.Dying;
+        }
+    }
+
+    void TakingDamage_ExitState() {
+        LogEvent();
     }
 
     // TakingDamage is a transition state so _OnHit cannot occur here
@@ -218,14 +230,42 @@ public class FacilityModel : AUnitElementModel {
 
     #region ShowHit
 
-    void ShowHit_OnHit(float damage) {
+    void ShowHit_EnterState() {
+        LogEvent();
+        OnStartShow();
+    }
+
+    void ShowHit_OnHit() {
         // View can not 'queue' show animations so just apply the damage
         // and wait for ShowXXX_OnCompletion to return to caller
-        Data.CurrentHitPoints -= damage;
+        ApplyDamage();
     }
 
     void ShowHit_OnShowCompletion() {
         // View is showing Hit
+        LogEvent();
+        Return();
+    }
+
+    #endregion
+
+    #region ShowCmdHit
+
+    void ShowCmdHit_EnterState() {
+        LogEvent();
+        //OnShowCompletion();
+        OnStartShow();
+    }
+
+    void ShowCmdHit_OnHit() {
+        // View can not 'queue' show animations so just apply the damage
+        // and wait for ShowXXX_OnCompletion to return to caller
+        ApplyDamage();
+    }
+
+    void ShowCmdHit_OnShowCompletion() {
+        // View is showing Hit
+        LogEvent();
         Return();
     }
 
@@ -233,25 +273,90 @@ public class FacilityModel : AUnitElementModel {
 
     #region Repairing
 
-    void Repairing_EnterState() { }
+    IEnumerator Repairing_EnterState() {
+        // ShipView shows animation while in this state
+        OnStartShow();
+        //while (true) {
+        // TODO repair until complete
+        yield return new WaitForSeconds(2);
+        //}
+        //_command.OnRepairingComplete(this)?
+        OnStopShow();   // must occur while still in target state
+        Return();
+    }
+
+    void Repairing_OnHit() {
+        // TODO inform fleet of hit
+        Call(FacilityState.TakingDamage);
+    }
+
+    void Repairing_OnOrdersChanged() {
+        CurrentState = FacilityState.ProcessOrders;
+    }
+
+    void Repairing_ExitState() {
+        LogEvent();
+    }
 
     #endregion
 
     #region Refitting
 
-    void Refitting_EnterState() { }
+    IEnumerator Refitting_EnterState() {
+        // View shows animation while in this state
+        OnStartShow();
+        //while (true) {
+        // TODO refit until complete
+        yield return new WaitForSeconds(2);
+        //}
+        OnStopShow();   // must occur while still in target state
+        Return();
+    }
+
+    void Refitting_OnHit() {
+        // TODO inform fleet of hit
+        Call(FacilityState.TakingDamage);
+    }
+
+    void Refitting_OnOrdersChanged() {
+        CurrentState = FacilityState.ProcessOrders;
+    }
+
+    void Refitting_ExitState() {
+        LogEvent();
+        //_fleet.OnRefittingComplete(this)?
+    }
 
     #endregion
 
     #region Disbanding
+    // UNDONE not clear how this works
 
-    void Disbanding_EnterState() { }
+    void Disbanding_EnterState() {
+        // TODO detach from fleet and create temp FleetCmd
+        // issue a Disband order to our new fleet
+        Return();   // ??
+    }
+
+    void Disbanding_OnHit() {
+        // TODO inform fleet of hit
+        Call(FacilityState.TakingDamage);
+    }
+
+    void Disbanding_OnOrdersChanged() {
+        CurrentState = FacilityState.ProcessOrders; // ??
+    }
+
+    void Disbanding_ExitState() {
+        // issue the Disband order here, after Return?
+    }
 
     #endregion
 
     #region Dying
 
     void Dying_EnterState() {
+        LogEvent();
         Call(FacilityState.ShowDying);
         CurrentState = FacilityState.Dead;
     }
@@ -261,10 +366,13 @@ public class FacilityModel : AUnitElementModel {
     #region ShowDying
 
     void ShowDying_EnterState() {
+        LogEvent();
         // View is showing Dying
+        OnStartShow();
     }
 
     void ShowDying_OnShowCompletion() {
+        LogEvent();
         Return();
     }
 
@@ -273,7 +381,7 @@ public class FacilityModel : AUnitElementModel {
     #region Dead
 
     IEnumerator Dead_EnterState() {
-        D.Log("{0} is Dead!", Data.Name);
+        LogEvent();
         yield return new WaitForSeconds(3);
         Destroy(gameObject);
     }
@@ -294,7 +402,6 @@ public class FacilityModel : AUnitElementModel {
     #endregion
 
     #endregion
-
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

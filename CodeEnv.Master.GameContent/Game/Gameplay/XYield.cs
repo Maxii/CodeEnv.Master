@@ -24,6 +24,7 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Data container holding XResource yields.
+    /// TODO Needs to accomodate XResource.None rather than using null in the properties that hold these XYields
     /// </summary>
     public class XYield : APropertyChangeTracking {
 

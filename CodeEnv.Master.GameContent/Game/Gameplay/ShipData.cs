@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -143,7 +143,7 @@ namespace CodeEnv.Master.GameContent {
             _gameTime = GameTime.Instance;
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();
             Subscribe();
-            D.Log("{0} ShipData constructor has completed.", Name);
+            //D.Log("{0} ShipData constructor has completed.", Name);
         }
 
         private void Subscribe() {

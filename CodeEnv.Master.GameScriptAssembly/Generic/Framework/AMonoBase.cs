@@ -38,8 +38,9 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     #region Debug
 
     public virtual void LogEvent() {
+        // NOTE:  Coroutines don't show the right method name when logged using stacktrace
         System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
-        D.Log("{0}.{1}() method called.".Inject(GetType().Name, stackFrame.GetMethod().Name));
+        D.Log("{0}.{1}.{2}() called.".Inject(_transform.name, GetType().Name, stackFrame.GetMethod().Name));
     }
 
     #endregion

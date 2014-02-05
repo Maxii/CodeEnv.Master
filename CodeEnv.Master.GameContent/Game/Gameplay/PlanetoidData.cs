@@ -50,14 +50,15 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PlanetoidData"/> class.
+        /// Initializes a new instance of the <see cref="PlanetoidData" /> class.
         /// </summary>
         /// <param name="category">The category of planet.</param>
         /// <param name="name">The name.</param>
         /// <param name="maxHitPoints">The maximum hit points.</param>
+        /// <param name="mass">The mass.</param>
         /// <param name="parentName">Name of the parent.</param>
-        public PlanetoidData(PlanetoidCategory category, string name, float maxHitPoints, string parentName)
-            : base(name, maxHitPoints, parentName) {
+        public PlanetoidData(PlanetoidCategory category, string name, float maxHitPoints, float mass, string parentName)
+            : base(name, maxHitPoints, mass, parentName) {
             Category = category;
         }
 

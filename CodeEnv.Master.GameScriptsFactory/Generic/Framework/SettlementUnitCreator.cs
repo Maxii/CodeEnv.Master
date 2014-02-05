@@ -74,8 +74,10 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
         return RequiredPrefabs.Instance.settlementCmd.gameObject;
     }
 
-    protected override void AddCommandDataToCommand() {
-        _command.Data = new SettlementData(UnitName) {
+    protected override void InitializeCommandData() {
+        _command.Data = new SettlementCmdData(UnitName, 10F) {
+            Strength = new CombatStrength(0F, 10F, 0F, 10F, 0F, 10F),  // no offense, strong defense
+            // strength of the UnitCommand so it can properly calculate damage when its HQElement is hit
             Population = 100,
             CapacityUsed = 10,
             ResourcesUsed = new OpeYield(1.3F, 0.5F, 2.4F),
