@@ -84,18 +84,8 @@ public class ShipView : AUnitElementView, ISelectable {
         IsSelected = true;
     }
 
-    protected override void OnAltLeftClick() {
-        base.OnAltLeftClick();
-        Presenter.__SimulateAttacked();
-    }
-
-    void OnPress(bool isDown) {
-        if (IsDiscernible && GameInputHelper.IsRightMouseButton()) {
-            OnRightPress(isDown);
-        }
-    }
-
-    private void OnRightPress(bool isDown) {
+    protected override void OnRightPress(bool isDown) {
+        base.OnRightPress(isDown);
         if (IsSelected) {
             Presenter.RequestContextMenu(isDown);
         }

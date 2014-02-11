@@ -45,16 +45,14 @@ public abstract class AUnitElementPresenter : AMortalItemPresenter {
 
     protected override void Subscribe() {
         base.Subscribe();
-        View.onShowCompletion += Model.OnShowCompletion;
+        Model.onStopShow += OnStopShowInView;
     }
+
+    protected abstract void OnStopShowInView();
 
     public bool IsCommandSelected {
         get { return (_commandView as ISelectable).IsSelected; }
         set { (_commandView as ISelectable).IsSelected = value; }
-    }
-
-    public void __SimulateAttacked() {
-        Model.__SimulateAttacked();
     }
 
     protected override void CleanupFocusOnDeath() {

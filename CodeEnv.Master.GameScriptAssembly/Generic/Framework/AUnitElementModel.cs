@@ -27,9 +27,6 @@ using UnityEngine;
 /// </summary>
 public abstract class AUnitElementModel : AMortalItemModelStateMachine, ITarget {
 
-    public event Action onStartShow;
-    public event Action onStopShow;
-
     public virtual bool IsHQElement { get; set; }
 
     public new AElementData Data {
@@ -45,22 +42,9 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, ITarget 
         // derived classes should call Subscribe() after they have acquired needed references
     }
 
-    protected override void Start() {
-        base.Start();
-        Initialize();
-    }
-
-    protected abstract void Initialize();
-
     protected override void OnDataChanged() {
         base.OnDataChanged();
         _rigidbody.mass = Data.Mass;
-    }
-
-    public void __SimulateAttacked() {
-        if (!DebugSettings.Instance.MakePlayerInvincible) {
-            OnHit(UnityEngine.Random.Range(Constants.ZeroF, Data.MaxHitPoints + 1F));
-        }
     }
 
     # region StateMachine Support Methods
@@ -75,27 +59,6 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, ITarget 
         return Data.Health > Constants.ZeroF;
     }
 
-    protected void OnStartShow() {
-        var temp = onStartShow;
-        if (temp != null) {
-            onStartShow();
-        }
-    }
-
-    protected void OnStopShow() {
-        var temp = onStopShow;
-        if (temp != null) {
-            onStopShow();
-        }
-    }
-
-    protected IEnumerator DelayedDestroy(float delayInSeconds) {
-        D.Log("{0}.DelayedDestroy({1}).", Data.Name, delayInSeconds);
-        yield return new WaitForSeconds(delayInSeconds);
-        D.Log("{0} GameObject being destroyed.", Data.Name);
-        Destroy(gameObject);
-    }
-
     protected void Dead_ExitState() {
         LogEvent();
         D.Error("{0}.Dead_ExitState should not occur.", Data.Name);
@@ -105,11 +68,9 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, ITarget 
 
     # region StateMachine Callbacks
 
-    public void OnShowCompletion() {
+    public override void OnShowCompletion() {
         RelayToCurrentState();
     }
-
-    protected abstract void OnHit(float damage);
 
     void OnDetectedEnemy() {  // TODO connect to sensors when I get them
         RelayToCurrentState();

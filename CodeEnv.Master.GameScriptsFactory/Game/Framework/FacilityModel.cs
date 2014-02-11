@@ -157,7 +157,6 @@ public class FacilityModel : AUnitElementModel {
 
     void ShowCmdHit_OnShowCompletion() {
         LogEvent();
-        // View is showing Hit
         Return();
     }
 

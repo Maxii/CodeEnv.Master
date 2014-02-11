@@ -361,12 +361,12 @@ public class ShipModel : AUnitElementModel {
 
     void Dead_EnterState() {
         LogEvent();
+        OnItemDeath();
         OnStartShow();
     }
 
     void Dead_OnShowCompletion() {
         LogEvent();
-        OnItemDeath();
         StartCoroutine(DelayedDestroy(3));
     }
 

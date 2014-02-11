@@ -56,6 +56,30 @@ public class StarbaseCmdPresenter : AUnitCommandPresenter<FacilityModel> {
         AssessCmdIcon();
     }
 
+    protected override void OnStartShowInView() {
+        StarbaseState state = Model.CurrentState;
+        //D.Log("{0}.OnStartShowInView state = {1}.", Model.Data.Name, state.GetName());
+        switch (state) {
+            case StarbaseState.Dead:
+                View.ShowDying();
+                break;
+            case StarbaseState.Attacking:
+            case StarbaseState.Refitting:
+            case StarbaseState.Repairing:
+            case StarbaseState.Idling:
+            case StarbaseState.GoAttack:
+            case StarbaseState.Disbanding:
+            case StarbaseState.GoDisband:
+            case StarbaseState.GoRefit:
+            case StarbaseState.GoRepair:
+                // do nothing
+                break;
+            case StarbaseState.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(state));
+        }
+    }
+
     protected override IIcon MakeCmdIconInstance() {
         return StarbaseIconFactory.Instance.MakeInstance(Model.Data, View.PlayerIntel);
     }

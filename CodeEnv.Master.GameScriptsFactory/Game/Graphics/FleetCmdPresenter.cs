@@ -51,6 +51,37 @@ public class FleetCmdPresenter : AUnitCommandPresenter<ShipModel> {
         _subscribers.Add(Model.Data.SubscribeToPropertyChanged<FleetCmdData, FleetComposition>(fd => fd.Composition, OnCompositionChanged));
     }
 
+    protected override void OnStartShowInView() {
+        FleetState state = Model.CurrentState;
+        //D.Log("{0}.OnStartShowInView state = {1}.", Model.Data.Name, state.GetName());
+        switch (state) {
+            case FleetState.Dead:
+                View.ShowDying();
+                break;
+            case FleetState.Attacking:
+            case FleetState.Refitting:
+            case FleetState.Repairing:
+            case FleetState.Entrenching:
+            case FleetState.MovingTo:
+            case FleetState.Idling:
+            case FleetState.GoAttack:
+            case FleetState.Disbanding:
+            case FleetState.GoDisband:
+            case FleetState.GoGuard:
+            case FleetState.Guarding:
+            case FleetState.GoRefit:
+            case FleetState.GoRepair:
+            case FleetState.GoJoin:
+            case FleetState.GoPatrol:
+            case FleetState.Patrolling:
+                // do nothing
+                break;
+            case FleetState.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(state));
+        }
+    }
+
     public Reference<float> GetFleetSpeedReference() {
         return new Reference<float>(() => Model.Data.CurrentSpeed);
     }

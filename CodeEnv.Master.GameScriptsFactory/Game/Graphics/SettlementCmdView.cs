@@ -53,15 +53,6 @@ public class SettlementCmdView : AUnitCommandView, ICameraFollowable {
         Presenter.OnIsSelectedChanged();
     }
 
-    #region Mouse Events
-
-    protected override void OnAltLeftClick() {
-        base.OnAltLeftClick();
-        Presenter.__SimulateAllElementsAttacked();
-    }
-
-    #endregion
-
     protected override void RequestContextMenu(bool isDown) {
         Presenter.RequestContextMenu(isDown);
     }

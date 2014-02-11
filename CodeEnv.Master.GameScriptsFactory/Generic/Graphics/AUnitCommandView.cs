@@ -223,13 +223,8 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
         __ToggleStealthSimulation();
     }
 
-    void OnPress(bool isDown) {
-        if (IsDiscernible && GameInputHelper.IsRightMouseButton()) {
-            OnRightPress(isDown);
-        }
-    }
-
-    private void OnRightPress(bool isDown) {
+    protected override void OnRightPress(bool isDown) {
+        base.OnRightPress(isDown);
         if (IsSelected) {
             RequestContextMenu(isDown);
         }

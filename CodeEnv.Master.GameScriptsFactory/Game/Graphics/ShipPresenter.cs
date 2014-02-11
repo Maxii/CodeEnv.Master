@@ -49,13 +49,7 @@ public class ShipPresenter : AUnitElementPresenter {
         return hudPublisher;
     }
 
-    protected override void Subscribe() {
-        base.Subscribe();
-        Model.onStopShow += OnStopShowInView;
-        Model.onStartShow += OnStartShowInView;
-    }
-
-    private void OnStartShowInView() {
+    protected override void OnStartShowInView() {
         ShipState state = Model.CurrentState;
         //D.Log("{0}.OnStartShowInView state = {1}.", Model.Data.Name, newState.GetName());
         switch (state) {
@@ -92,7 +86,7 @@ public class ShipPresenter : AUnitElementPresenter {
         }
     }
 
-    private void OnStopShowInView() {
+    protected override void OnStopShowInView() {
         ShipState state = Model.CurrentState;
         switch (state) {
             case ShipState.Refitting:

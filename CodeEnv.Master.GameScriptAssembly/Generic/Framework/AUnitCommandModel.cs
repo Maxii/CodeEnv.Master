@@ -53,13 +53,6 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         // Derived class should call Subscribe() after all used references have been established
     }
 
-    protected override void Start() {
-        base.Start();
-        Initialize();
-    }
-
-    protected abstract void Initialize();
-
     /// <summary>
     /// Adds the Element to this Command including parenting if needed.
     /// </summary>
@@ -114,6 +107,10 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         Data.HQElementData = HQElement.Data;
     }
 
+    public override void __SimulateAttacked() {
+        Elements.ForAll<UnitElementModelType>(e => e.__SimulateAttacked());
+    }
+
     /// <summary>
     /// Checks for damage to this Command when its HQElement takes a hit.
     /// </summary>
@@ -143,13 +140,6 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
 
     # region StateMachine Support Methods
 
-    protected IEnumerator DelayedDestroy(float delayInSeconds) {
-        D.Log("{0}.DelayedDestroy({1}).", Data.Name, delayInSeconds);
-        yield return new WaitForSeconds(delayInSeconds);
-        D.Log("{0} GameObject being destroyed.", Data.Name);
-        Destroy(gameObject);
-    }
-
     protected void Dead_ExitState() {
         LogEvent();
         D.Error("{0}.Dead_ExitState should not occur.", Data.Name);
@@ -159,11 +149,11 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
 
     # region StateMachine Callbacks
 
-    public void OnShowCompletion() {
+    public override void OnShowCompletion() {
         RelayToCurrentState();
     }
 
-    void OnHit(float damage) {
+    protected override void OnHit(float damage) {
         Data.CurrentHitPoints -= damage;
         D.Assert(Data.Health > Constants.ZeroF, "{0} should never die as a result of being hit.".Inject(Data.Name));
     }

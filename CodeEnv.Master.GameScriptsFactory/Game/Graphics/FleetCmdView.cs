@@ -71,11 +71,6 @@ public class FleetCmdView : AUnitCommandView, ICameraFollowable, IHighlightTrack
 
     #region MouseEvents
 
-    protected override void OnAltLeftClick() {
-        base.OnAltLeftClick();
-        Presenter.__SimulateAllElementsAttacked();
-    }
-
     protected override void OnLeftClick() {
         base.OnLeftClick();
         __ToggleIntelChangingTest();

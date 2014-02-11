@@ -258,7 +258,12 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
     void Dead_EnterState() {
         LogEvent();
         OnItemDeath();
-        StartCoroutine(DelayedDestroy(1));
+        OnStartShow();
+    }
+
+    void Dead_OnShowCompletion() {
+        LogEvent();
+        StartCoroutine(DelayedDestroy(3));
     }
 
     #endregion

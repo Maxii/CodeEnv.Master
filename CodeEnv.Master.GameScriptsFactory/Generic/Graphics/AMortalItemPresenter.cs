@@ -45,7 +45,11 @@ public abstract class AMortalItemPresenter : AFocusableItemPresenter {
     protected override void Subscribe() {
         base.Subscribe();
         Model.onItemDeath += OnDeath;
+        View.onShowCompletion += Model.OnShowCompletion;
+        Model.onStartShow += OnStartShowInView;
     }
+
+    protected abstract void OnStartShowInView();
 
     protected virtual void OnDeath(AMortalItemModel itemModel) {
         D.Assert(Model == itemModel, "{0} has erroneously received OnDeath from {1}.".Inject(Model.Data.Name, itemModel.Data.Name));
@@ -64,6 +68,10 @@ public abstract class AMortalItemPresenter : AFocusableItemPresenter {
         if (focusableView.IsFocus) {
             CameraControl.Instance.CurrentFocus = null;
         }
+    }
+
+    public void __SimulateAttacked() {
+        Model.__SimulateAttacked();
     }
 
     // no need to unsubscribe from internal subscription to Model.onDeath

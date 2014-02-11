@@ -103,7 +103,12 @@ public class SettlementCmdModel : AUnitCommandModel<FacilityModel> {
     void Dead_EnterState() {
         LogEvent();
         OnItemDeath();
-        StartCoroutine(DelayedDestroy(1));
+        OnStartShow();
+    }
+
+    void Dead_OnShowCompletion() {
+        LogEvent();
+        StartCoroutine(DelayedDestroy(3));
     }
 
     #endregion

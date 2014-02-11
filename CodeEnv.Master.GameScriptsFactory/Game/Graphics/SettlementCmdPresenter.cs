@@ -56,6 +56,30 @@ public class SettlementCmdPresenter : AUnitCommandPresenter<FacilityModel> {
         AssessCmdIcon();
     }
 
+    protected override void OnStartShowInView() {
+        SettlementState state = Model.CurrentState;
+        //D.Log("{0}.OnStartShowInView state = {1}.", Model.Data.Name, state.GetName());
+        switch (state) {
+            case SettlementState.Dead:
+                View.ShowDying();
+                break;
+            case SettlementState.Attacking:
+            case SettlementState.Refitting:
+            case SettlementState.Repairing:
+            case SettlementState.Idling:
+            case SettlementState.GoAttack:
+            case SettlementState.Disbanding:
+            case SettlementState.GoDisband:
+            case SettlementState.GoRefit:
+            case SettlementState.GoRepair:
+                // do nothing
+                break;
+            case SettlementState.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(state));
+        }
+    }
+
     protected override IIcon MakeCmdIconInstance() {
         return SettlementIconFactory.Instance.MakeInstance(Model.Data, View.PlayerIntel);
     }

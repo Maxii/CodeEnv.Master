@@ -58,7 +58,9 @@ public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
 
     protected virtual void OnLeftClick() { }
 
-    protected virtual void OnAltLeftClick() { }
+    protected virtual void OnAltLeftClick() {
+        Presenter.__SimulateAttacked();
+    }
 
     void OnDoubleClick() {
         if (IsDiscernible && GameInputHelper.IsLeftMouseButton()) {
@@ -67,6 +69,14 @@ public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
     }
 
     protected virtual void OnLeftDoubleClick() { }
+
+    void OnPress(bool isDown) {
+        if (IsDiscernible && GameInputHelper.IsRightMouseButton()) {
+            OnRightPress(isDown);
+        }
+    }
+
+    protected virtual void OnRightPress(bool isDown) { }
 
     #endregion
 

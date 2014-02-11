@@ -50,13 +50,7 @@ public class PlanetoidPresenter : AMortalItemPresenter {
         return publisher;
     }
 
-    protected override void Subscribe() {
-        base.Subscribe();
-        View.onShowCompletion += Model.OnShowCompletion;
-        Model.onStartShow += OnStartShowInView;
-    }
-
-    private void OnStartShowInView() {
+    protected override void OnStartShowInView() {
         PlanetoidState state = Model.CurrentState;
         switch (state) {
             case PlanetoidState.ShowHit:

@@ -17,9 +17,11 @@
 // default namespace
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// Abstract base class for an AItem that can die. 
@@ -27,8 +29,8 @@ using CodeEnv.Master.GameContent;
 public abstract class AMortalItemModel : AItemModel, IDisposable {
 
     public event Action<AMortalItemModel> onItemDeath;
-    //public event Action onStartShow;
-    //public event Action onStopShow;
+    public event Action onStopShow;
+    public event Action onStartShow;
 
     public new AMortalItemData Data {
         get { return base.Data as AMortalItemData; }
@@ -36,6 +38,13 @@ public abstract class AMortalItemModel : AItemModel, IDisposable {
     }
 
     protected IList<IDisposable> _subscribers;
+
+    protected override void Start() {
+        base.Start();
+        Initialize();
+    }
+
+    protected abstract void Initialize();
 
     // Derived classes should call Subscribe() from Awake() after any required references are established
 
@@ -64,6 +73,35 @@ public abstract class AMortalItemModel : AItemModel, IDisposable {
         }
         // TODO not clear this event will ever be used
         GameEventManager.Instance.Raise<MortalItemDeathEvent>(new MortalItemDeathEvent(this, this));
+    }
+
+    protected void OnStartShow() {
+        var temp = onStartShow;
+        if (temp != null) {
+            temp();
+        }
+    }
+
+    protected void OnStopShow() {
+        var temp = onStopShow;
+        if (temp != null) {
+            temp();
+        }
+    }
+
+    public abstract void OnShowCompletion();
+
+    protected abstract void OnHit(float damage);
+
+    public virtual void __SimulateAttacked() {
+        OnHit(UnityEngine.Random.Range(Constants.ZeroF, Data.MaxHitPoints + 1F));
+    }
+
+    protected IEnumerator DelayedDestroy(float delayInSeconds) {
+        D.Log("{0}.DelayedDestroy({1}).", Data.Name, delayInSeconds);
+        yield return new WaitForSeconds(delayInSeconds);
+        D.Log("{0} GameObject being destroyed.", Data.Name);
+        Destroy(gameObject);
     }
 
     protected override void OnDestroy() {

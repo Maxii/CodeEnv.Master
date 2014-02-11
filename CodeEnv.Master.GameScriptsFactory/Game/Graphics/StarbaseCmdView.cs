@@ -68,15 +68,6 @@ public class StarbaseCmdView : AUnitCommandView, IHighlightTrackingLabel {
         Presenter.OnIsSelectedChanged();
     }
 
-    #region Mouse Events
-
-    protected override void OnAltLeftClick() {
-        base.OnAltLeftClick();
-        Presenter.__SimulateAllElementsAttacked();
-    }
-
-    #endregion
-
     private void InitializeTrackingLabel() {
         if (enableTrackingLabel) {
             float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;

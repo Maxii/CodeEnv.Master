@@ -91,10 +91,6 @@ public abstract class AUnitCommandPresenter<UnitElementModelType> : AMortalItemP
         View.ChangeCmdIcon(icon);
     }
 
-    public void __SimulateAllElementsAttacked() {
-        Model.Elements.ForAll<UnitElementModelType>(s => s.__SimulateAttacked());
-    }
-
     protected abstract IIcon MakeCmdIconInstance();
 
     // subscriptions contained completely within this gameobject (both subscriber

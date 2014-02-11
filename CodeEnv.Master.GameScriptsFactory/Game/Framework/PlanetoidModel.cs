@@ -19,15 +19,15 @@
 using System;
 using System.Collections;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
 /// The data-holding class for all planetoids in the game.
 /// </summary>
-public class PlanetoidModel : AMortalItemModelStateMachine {
-
-    public event Action onStartShow;
+public class PlanetoidModel : AMortalItemModel {
+    //public class PlanetoidModel : AMortalItemModelStateMachine {
 
     public new PlanetoidData Data {
         get { return base.Data as PlanetoidData; }
@@ -39,77 +39,53 @@ public class PlanetoidModel : AMortalItemModelStateMachine {
         Subscribe();
     }
 
-    #region StateMachine
-
-    public new PlanetoidState CurrentState {
-        get { return (PlanetoidState)base.CurrentState; }
-        set { base.CurrentState = value; }
+    protected override void Initialize() {
+        CurrentState = PlanetoidState.Normal;
     }
 
-    #region Normal
+    #region StateMachine - Simple Alternative
 
-    void Normal_EnterState() {
-        // TODO register as available
+    private PlanetoidState _currentState;
+    public PlanetoidState CurrentState {
+        get { return _currentState; }
+        set { SetProperty<PlanetoidState>(ref _currentState, value, "CurrentState", OnCurrentStateChanged); }
     }
 
-    void Normal_ExitState() {
-        // TODO register as unavailable
-    }
-
-    #endregion
-
-    #region ShowHit
-
-    void ShowHit_EnterState() {
-        OnStartShow();
-    }
-
-    void ShowHit_OnShowCompletion() {
-        // View is showing Hit
-        Return();
-    }
-
-    #endregion
-
-    #region Dead
-
-    void Dead_EnterState() {
-        LogEvent();
-        OnItemDeath();
-        OnStartShow();
-    }
-
-    void Dead_OnShowCompletion() {
-        LogEvent();
-        StartCoroutine(DelayedDestroy(3));
-    }
-    #endregion
-
-    #region StateMachine Support Methods
-
-    private IEnumerator DelayedDestroy(float delayInSeconds) {
-        D.Log("{0}.DelayedDestroy({1}).", Data.Name, delayInSeconds);
-        yield return new WaitForSeconds(delayInSeconds);
-        D.Log("{0} GameObject being destroyed.", Data.Name);
-        Destroy(gameObject);
-    }
-
-    private void OnStartShow() {
-        var temp = onStartShow;
-        if (temp != null) {
-            onStartShow();
+    private void OnCurrentStateChanged() {
+        D.Log("{0}.CurrentState changed to {1}.", Data.Name, CurrentState.GetName());
+        switch (CurrentState) {
+            case PlanetoidState.Normal:
+                // do nothing
+                break;
+            case PlanetoidState.ShowHit:
+                OnStartShow();
+                break;
+            case PlanetoidState.Dead:
+                OnItemDeath();
+                OnStartShow();
+                break;
+            case PlanetoidState.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(CurrentState));
         }
     }
 
-    #endregion
-
-    # region StateMachine Callbacks
-
-    public void OnShowCompletion() {
-        RelayToCurrentState();
+    public override void OnShowCompletion() {
+        switch (CurrentState) {
+            case PlanetoidState.ShowHit:
+                CurrentState = PlanetoidState.Normal;
+                break;
+            case PlanetoidState.Dead:
+                StartCoroutine(DelayedDestroy(3));
+                break;
+            case PlanetoidState.Normal:
+            case PlanetoidState.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(CurrentState));
+        }
     }
 
-    void OnHit(float damage) {
+    protected override void OnHit(float damage) {
         if (CurrentState == PlanetoidState.Dead) {
             return;
         }
@@ -122,10 +98,80 @@ public class PlanetoidModel : AMortalItemModelStateMachine {
             // View can not 'queue' show animations so don't interrupt what is showing with another like show
             return;
         }
-        Call(ShipState.ShowHit);
+        CurrentState = PlanetoidState.ShowHit;
     }
 
     #endregion
+
+    #region StateMachine - Full featured
+
+    //public new PlanetoidState CurrentState {
+    //    get { return (PlanetoidState)base.CurrentState; }
+    //    set { base.CurrentState = value; }
+    //}
+
+    //#region Normal
+
+    //void Normal_EnterState() {
+    //    // TODO register as available
+    //}
+
+    //void Normal_ExitState() {
+    //    // TODO register as unavailable
+    //}
+
+    //#endregion
+
+    //#region ShowHit
+
+    //void ShowHit_EnterState() {
+    //    OnStartShow();
+    //}
+
+    //void ShowHit_OnShowCompletion() {
+    //    // View is showing Hit
+    //    Return();
+    //}
+
+    //#endregion
+
+    //#region Dead
+
+    //void Dead_EnterState() {
+    //    LogEvent();
+    //    OnItemDeath();
+    //    OnStartShow();
+    //}
+
+    //void Dead_OnShowCompletion() {
+    //    LogEvent();
+    //    StartCoroutine(DelayedDestroy(3));
+    //}
+    //#endregion
+
+    //# region StateMachine Callbacks
+
+    //public override void OnShowCompletion() {
+    //    RelayToCurrentState();
+    //}
+
+    //protected override void OnHit(float damage) {
+    //    if (CurrentState == PlanetoidState.Dead) {
+    //        return;
+    //    }
+    //    Data.CurrentHitPoints -= damage;
+    //    if (Data.Health > Constants.ZeroF) {
+    //        CurrentState = PlanetoidState.Dead;
+    //        return;
+    //    }
+    //    if (CurrentState == PlanetoidState.ShowHit) {
+    //        // View can not 'queue' show animations so don't interrupt what is showing with another like show
+    //        return;
+    //    }
+    //    Call(PlanetoidState.ShowHit);
+    //}
+
+    //#endregion
 
     #endregion
 
