@@ -77,6 +77,8 @@ public class ShipView : AUnitElementView, ISelectable {
 
     #endregion
 
+    #region Mouse Events
+
     protected override void OnLeftClick() {
         base.OnLeftClick();
         IsSelected = true;
@@ -86,6 +88,20 @@ public class ShipView : AUnitElementView, ISelectable {
         base.OnAltLeftClick();
         Presenter.__SimulateAttacked();
     }
+
+    void OnPress(bool isDown) {
+        if (IsDiscernible && GameInputHelper.IsRightMouseButton()) {
+            OnRightPress(isDown);
+        }
+    }
+
+    private void OnRightPress(bool isDown) {
+        if (IsSelected) {
+            Presenter.RequestContextMenu(isDown);
+        }
+    }
+
+    #endregion
 
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
@@ -97,20 +113,6 @@ public class ShipView : AUnitElementView, ISelectable {
             Presenter.OnIsSelected();
         }
         AssessHighlighting();
-    }
-
-    void OnPress(bool isDown) {
-        if (GameInputHelper.IsRightMouseButton()) {
-            OnRightPress(isDown);
-        }
-    }
-
-    private void OnRightPress(bool isDown) {
-        if (IsDiscernible) {
-            if (IsSelected) {
-                Presenter.RequestContextMenu(isDown);
-            }
-        }
     }
 
     public override void AssessHighlighting() {

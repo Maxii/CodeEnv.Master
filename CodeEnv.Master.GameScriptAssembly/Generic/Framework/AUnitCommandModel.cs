@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
@@ -59,11 +60,6 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
 
     protected abstract void Initialize();
 
-    protected override void SubscribeToDataValueChanges() {
-        base.SubscribeToDataValueChanges();
-        // TODO 
-    }
-
     /// <summary>
     /// Adds the Element to this Command including parenting if needed.
     /// </summary>
@@ -76,7 +72,6 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         if (element.transform.parent != parentTransform) {
             element.transform.parent = parentTransform;   // local position, rotation and scale are auto adjusted to keep ship unchanged in worldspace
         }
-        AssessCommandCategory();
         // TODO consider changing HQElement
     }
 
@@ -96,15 +91,16 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         bool isRemoved = Elements.Remove(element);
         isRemoved = isRemoved && Data.RemoveElement(element.Data);
         D.Assert(isRemoved, "{0} not found.".Inject(element.Data.Name));
-        if (Elements.Count > Constants.Zero) {
-            if (element == HQElement) {
-                // HQ Element has died
-                HQElement = SelectHQElement();
-                D.Log("{0} new HQElement = {1}.", Data.Name, HQElement.Data.Name);
-            }
-            AssessCommandCategory();
+        if (Elements.Count <= Constants.Zero) {
+            D.Assert(Data.UnitHealth <= Constants.ZeroF, "{0} UnitHealth error.".Inject(Data.Name));
+            KillCommand();
+            return;
         }
-        // Command knows when to die
+        if (element == HQElement) {
+            // HQ Element has died
+            HQElement = SelectHQElement();
+            D.Log("{0} new HQElement = {1}.", Data.Name, HQElement.Data.Name);
+        }
     }
 
     protected virtual void OnHQElementChanging(UnitElementModelType newElement) {
@@ -134,11 +130,11 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         return isHit;
     }
 
+    protected abstract void KillCommand();
+
     protected virtual UnitElementModelType SelectHQElement() {
         return Elements.MaxBy(e => e.Data.Health);
     }
-
-    public abstract void AssessCommandCategory();
 
     protected override void Cleanup() {
         base.Cleanup();
@@ -147,21 +143,16 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
 
     # region StateMachine Support Methods
 
-    private float _hitDamage;
-    /// <summary>
-    /// Applies the damage to the UnitCommand. Returns true 
-    /// if the UnitCommand is still alive.
-    /// </summary>
-    /// <returns><c>true</c> if health > 0.</returns>
-    protected bool ApplyDamage() {
-        bool isAlive = true;
-        Data.CurrentHitPoints -= _hitDamage;
-        if (Data.Health <= Constants.ZeroF) {
-            D.Error("{0} should never die as a result of applying damage.", Data.Name);
-            isAlive = false;
-        }
-        _hitDamage = Constants.ZeroF;
-        return isAlive;
+    protected IEnumerator DelayedDestroy(float delayInSeconds) {
+        D.Log("{0}.DelayedDestroy({1}).", Data.Name, delayInSeconds);
+        yield return new WaitForSeconds(delayInSeconds);
+        D.Log("{0} GameObject being destroyed.", Data.Name);
+        Destroy(gameObject);
+    }
+
+    protected void Dead_ExitState() {
+        LogEvent();
+        D.Error("{0}.Dead_ExitState should not occur.", Data.Name);
     }
 
     #endregion
@@ -173,12 +164,8 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
     }
 
     void OnHit(float damage) {
-        _hitDamage = damage;
-        OnHit();
-    }
-
-    void OnHit() {
-        RelayToCurrentState();
+        Data.CurrentHitPoints -= damage;
+        D.Assert(Data.Health > Constants.ZeroF, "{0} should never die as a result of being hit.".Inject(Data.Name));
     }
 
     void OnDetectedEnemy() {  // TODO connect to sensors when I get them

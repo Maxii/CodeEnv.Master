@@ -34,19 +34,12 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        public int ElementCount { get { return GetAllData().Count(); } }
+
         private IDictionary<FacilityCategory, IList<FacilityData>> _composition;
 
         public BaseComposition() {
             _composition = new SortedDictionary<FacilityCategory, IList<FacilityData>>();
-        }
-
-        /// <summary>
-        /// Copy Constructor. Initializes a new instance of the <see cref="BaseComposition"/> class.
-        /// </summary>
-        /// <param name="compositionToCopy">The BaseComposition to copy.</param>
-        public BaseComposition(BaseComposition compositionToCopy) {
-            _composition = compositionToCopy._composition;
-            // UNCLEAR does compositionToCopy get collected by the garbage collector now?
         }
 
         public bool Add(FacilityData elementData) {

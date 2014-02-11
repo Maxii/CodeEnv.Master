@@ -511,6 +511,10 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
             D.Log("New Focus {0}.".Inject(newFocus.name));
             SetFocus(newFocus);
         }
+        else if (CurrentState != CameraState.Freeform) {
+            // CurrentFocus set to null while focused or following so switch to freeform
+            ResetAtCurrentLocation();
+        }
     }
 
     #endregion

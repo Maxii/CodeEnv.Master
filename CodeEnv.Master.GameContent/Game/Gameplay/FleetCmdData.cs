@@ -28,7 +28,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FleetCmdData : ACommandData {
 
-        public FleetCategory Category { get; set; }
+        private FleetCategory _category;
+        public FleetCategory Category {
+            get { return _category; }
+            private set { SetProperty<FleetCategory>(ref _category, value, "Category"); }
+        }
 
         public new ShipData HQElementData {
             get { return base.HQElementData as ShipData; }
@@ -82,11 +86,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private FleetComposition _composition;
-        public FleetComposition Composition {
-            get { return _composition; }
-            private set { SetProperty<FleetComposition>(ref _composition, value, "Composition"); }
-        }
+        public FleetComposition Composition { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FleetCmdData"/> class.
@@ -105,16 +105,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="elementData">The ship data.</param>
         /// <param name="toAdd">if set to <c>true</c> add the ship, otherwise remove it.</param>
         protected override void ChangeComposition(AElementData elementData, bool toAdd) {
-            bool isChanged = false;
-            if (toAdd) {
-                isChanged = Composition.Add(elementData as ShipData);
-            }
-            else {
-                isChanged = Composition.Remove(elementData as ShipData);
-            }
-
+            bool isChanged = toAdd ? Composition.Add(elementData as ShipData) : Composition.Remove(elementData as ShipData);
             if (isChanged) {
-                Composition = new FleetComposition(Composition);
+                AssessCommandCategory();
+                OnCompositionChanged();
             }
         }
 
@@ -160,11 +154,33 @@ namespace CodeEnv.Master.GameContent {
             UpdateMaxTurnRate();
         }
 
+        private void AssessCommandCategory() {
+            if (Composition.ElementCount >= 22) {
+                Category = FleetCategory.Armada;
+                return;
+            }
+            if (Composition.ElementCount >= 15) {
+                Category = FleetCategory.BattleGroup;
+                return;
+            }
+            if (Composition.ElementCount >= 9) {
+                Category = FleetCategory.TaskForce;
+                return;
+            }
+            if (Composition.ElementCount >= 4) {
+                Category = FleetCategory.Squadron;
+                return;
+            }
+            if (Composition.ElementCount >= 1) {
+                Category = FleetCategory.Flotilla;
+                return;
+            }
+            // element count of 0 = dead, so don't generate a change to be handled
+        }
+
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
-
     }
-
 }
 

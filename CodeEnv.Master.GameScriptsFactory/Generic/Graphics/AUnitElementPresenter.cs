@@ -57,6 +57,10 @@ public abstract class AUnitElementPresenter : AMortalItemPresenter {
         Model.__SimulateAttacked();
     }
 
+    protected override void CleanupFocusOnDeath() {
+        // do nothing. If this UnitElement is the focus, CurrentFocus will be assumed by its UnitCommand
+    }
+
     // subscriptions contained completely within this gameobject (both subscriber
     // and subscribee) donot have to be cleaned up as all instances are destroyed
 

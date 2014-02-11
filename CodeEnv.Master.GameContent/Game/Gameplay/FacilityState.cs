@@ -22,19 +22,23 @@ namespace CodeEnv.Master.GameContent {
     public enum FacilityState {
 
         None,
+
         Idling,
-        ProcessOrders,
+
         GoAttack,
+
         Attacking,
-        ShowAttacking,
-        TakingDamage,
+
         ShowHit,
+
         ShowCmdHit,
+
         Repairing,
+
         Refitting,
+
         Disbanding,
-        Dying,
-        ShowDying,
+
         Dead
 
     }

@@ -23,10 +23,8 @@ namespace CodeEnv.Master.GameContent {
 
         None,
         Idling,
-        ProcessOrders,
         GoAttack,   // ?
         Attacking,
-        TakingDamage,
 
         GoRepair,   // ?
         Repairing,
@@ -34,9 +32,8 @@ namespace CodeEnv.Master.GameContent {
         Refitting,
         GoDisband,   // ?
         Disbanding,
-        Dying,
         Dead
-        // ShowXXX no longer applicable to Cmds as there is no mesh
+        // ShowHit no longer applicable to Cmds as there is no mesh
 
     }
 }

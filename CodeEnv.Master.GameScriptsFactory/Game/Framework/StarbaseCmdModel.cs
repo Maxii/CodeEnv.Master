@@ -48,38 +48,6 @@ public class StarbaseCmdModel : AUnitCommandModel<FacilityModel> {
         CurrentState = StarbaseState.Idling;
     }
 
-    public override void AssessCommandCategory() {
-        switch (Elements.Count) {
-            case 1:
-                Data.Category = StarbaseCategory.Outpost;
-                break;
-            case 2:
-            case 3:
-                Data.Category = StarbaseCategory.LocalBase;
-                break;
-            case 4:
-            case 5:
-                Data.Category = StarbaseCategory.DistrictBase;
-                break;
-            case 6:
-            case 7:
-                Data.Category = StarbaseCategory.RegionalBase;
-                break;
-            case 8:
-            case 9:
-                Data.Category = StarbaseCategory.TerritorialBase;
-                break;
-            case 0:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(Elements.Count));
-        }
-    }
-
-    protected override void NotifyOfDeath() {
-        base.NotifyOfDeath();
-        CurrentState = StarbaseState.Dying;
-    }
-
     #region StateMachine
 
     public new StarbaseState CurrentState {
@@ -87,46 +55,77 @@ public class StarbaseCmdModel : AUnitCommandModel<FacilityModel> {
         set { base.CurrentState = value; }
     }
 
-
     #region Idle
 
     void Idling_EnterState() {
-        //CurrentOrder = null;
-        //if (Data.RequestedSpeed != Constants.ZeroF) {
-        //    ChangeSpeed(Constants.ZeroF);
-        //}
         // register as available
     }
 
-    void Idling_OnOrdersChanged() {
-        CurrentState = StarbaseState.ProcessOrders;
-    }
-
-    void Idling_OnHit() {
-        Call(StarbaseState.TakingDamage);
-    }
+    void Idling_OnDetectedEnemy() { }
 
     void Idling_ExitState() {
         // register as unavailable
     }
 
-    void Idling_OnDetectedEnemy() { }
+    #endregion
+
+    #region Attack
+
+    void GoAttack_EnterState() { }
+
+    void Attacking_EnterState() { }
 
     #endregion
 
-    #region ProcessOrders
+    #region Repair
 
-    private UnitOrder<StarbaseOrders> _orderBeingExecuted;
-    private bool _isNewOrderWaiting;
+    void GoRepair_EnterState() { }
 
-    void ProcessOrders_EnterState() { }
+    void Repairing_EnterState() { }
 
-    void ProcessOrders_Update() {
-        // I got to this state one of two ways:
-        // 1. there has been a new order issued, or
-        // 2. the last new order (_orderBeingExecuted) has been completed
-        _isNewOrderWaiting = _orderBeingExecuted != CurrentOrder;
-        if (_isNewOrderWaiting) {
+    #endregion
+
+    #region Refit
+
+    void GoRefit_EnterState() { }
+
+    void Refitting_EnterState() { }
+
+    #endregion
+
+    #region Disband
+
+    void GoDisband_EnterState() { }
+
+    void Disbanding_EnterState() { }
+
+    #endregion
+
+    #region Dead
+
+    void Dead_EnterState() {
+        LogEvent();
+        OnItemDeath();
+        StartCoroutine(DelayedDestroy(1));
+    }
+
+    #endregion
+
+    #region StateMachine Support Methods
+
+    protected override void KillCommand() {
+        CurrentState = StarbaseState.Dead;
+    }
+
+    #endregion
+
+    # region StateMachine Callbacks
+
+    // See also AUnitCommandModel
+
+    void OnOrdersChanged() {
+        if (CurrentOrder != null) {
+            D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
             StarbaseOrders order = CurrentOrder.Order;
             switch (order) {
                 case StarbaseOrders.Attack:
@@ -148,111 +147,6 @@ public class StarbaseCmdModel : AUnitCommandModel<FacilityModel> {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
             }
-            _orderBeingExecuted = CurrentOrder;
-        }
-        else {
-            // there is no new order so the return to this state must be after the last new order has been completed
-            D.Assert(false, "Should be no Return() here.");
-            CurrentState = StarbaseState.Idling;
-        }
-    }
-
-    #endregion
-
-    #region Attack
-
-    void GoAttack_EnterState() { }
-
-    void Attacking_EnterState() { }
-
-    #endregion
-
-    #region TakingDamage
-
-    void TakingDamage_EnterState() {
-        ApplyDamage();
-        Return();   // returns to the state we were in when the OnHit event arrived
-    }
-
-    // TakingDamage is a transition state so _OnHit cannot occur here
-
-    #endregion
-
-    #region Repair
-
-    void GoRepair_EnterState() { }
-
-    void GoRepair_OnHit() {
-        Call(StarbaseState.TakingDamage);
-    }
-
-    void Repairing_EnterState() { }
-
-    void Repairing_OnHit() {
-        Call(StarbaseState.TakingDamage);
-    }
-
-    #endregion
-
-    #region Refit
-
-    void GoRefit_EnterState() { }
-
-    void GoRefit_OnHit() {
-        Call(StarbaseState.TakingDamage);
-    }
-
-    void Refitting_EnterState() { }
-
-    void Refitting_OnHit() {
-        Call(StarbaseState.TakingDamage);
-    }
-
-    #endregion
-
-    #region Disband
-
-    void GoDisband_EnterState() { }
-
-    void GoDisband_OnHit() {
-        Call(StarbaseState.TakingDamage);
-    }
-
-    void Disbanding_EnterState() { }
-
-    void Disbanding_OnHit() {
-        Call(StarbaseState.TakingDamage);
-    }
-
-    #endregion
-
-    #region Dying
-
-    void Dying_EnterState() {
-        CurrentState = StarbaseState.Dead;
-    }
-
-    #endregion
-
-    #region Dead
-
-    IEnumerator Dead_EnterState() {
-        LogEvent();
-        yield return new WaitForSeconds(3);
-        Destroy(gameObject);
-    }
-
-    #endregion
-
-
-    # region StateMachine Callbacks
-
-    // See also AUnitCommandModel
-
-    void OnOrdersChanged() {
-        if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
-            RelayToCurrentState();
         }
     }
 

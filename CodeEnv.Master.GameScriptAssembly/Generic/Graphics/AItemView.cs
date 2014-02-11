@@ -96,7 +96,7 @@ public abstract class AItemView : AMonoBase, IViewable, ICameraLOSChangedClient,
         }
     }
 
-    protected virtual void AssessDiscernability() {
+    public virtual void AssessDiscernability() {
         //D.Log("{0}.{1}.AssessDiscernability() called.", _transform.parent.name, _transform.name);
         IsDiscernible = InCameraLOS && PlayerIntel.CurrentCoverage != IntelCoverage.None;
     }
@@ -140,7 +140,7 @@ public abstract class AItemView : AMonoBase, IViewable, ICameraLOSChangedClient,
     private bool _isDiscernible;
     public bool IsDiscernible {
         get { return _isDiscernible; }
-        set { SetProperty<bool>(ref _isDiscernible, value, "IsDiscernible", OnIsDiscernibleChanged); }
+        protected set { SetProperty<bool>(ref _isDiscernible, value, "IsDiscernible", OnIsDiscernibleChanged); }
     }
 
     #endregion

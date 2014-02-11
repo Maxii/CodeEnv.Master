@@ -27,8 +27,6 @@ public class SectorModel : AItemModel {
         set { base.Data = value; }
     }
 
-    protected override void SubscribeToDataValueChanges() { }
-
     public Index3D SectorIndex {
         get { return Data.SectorIndex; }
     }

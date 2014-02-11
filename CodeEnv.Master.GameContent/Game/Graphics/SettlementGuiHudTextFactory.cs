@@ -42,8 +42,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Category:
                     return new ColoredTextList_String(data.Category.GetName(), data.Category.GetDescription());
                 case GuiHudLineKeys.Health:
-                    return new ColoredTextList_Health(data.UnitHealth, data.MaxHitPoints);
-
+                    return new ColoredTextList_Health(data.UnitHealth, data.UnitMaxHitPoints);
                 case GuiHudLineKeys.Owner:
                     return new ColoredTextList_Owner(data.Owner);
                 case GuiHudLineKeys.CombatStrength:

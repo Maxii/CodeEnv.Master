@@ -29,7 +29,11 @@ public abstract class AItemModel : AMonoBase {
     /// </summary>
     public AItemData Data {
         get { return _data; }
-        set { SetProperty<AItemData>(ref _data, value, "Data", OnDataChanged, OnDataChanging); }
+        set {
+            if (_data == value) { return; }
+            _data = value;
+            OnDataChanged();
+        }
     }
 
     /// <summary>
@@ -42,19 +46,16 @@ public abstract class AItemModel : AMonoBase {
         enabled = false;
     }
 
-    private void OnDataChanging(AItemData data) {
-        data.Transform = _transform; // assign our transform to Data
-    }
-
     protected virtual void OnDataChanged() {
+        Data.Transform = _transform;
         SubscribeToDataValueChanges();
     }
 
     /// <summary>
     /// Placeholder for subscribing to changes to values contained in Data. 
-    /// All derived classes must implement this, even if it does nothing.
+    /// Does nothing.
     /// </summary>
-    protected abstract void SubscribeToDataValueChanges();
+    protected virtual void SubscribeToDataValueChanges() { }
 
 }
 

@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IElementViewable.cs
-//  Interface used by a ElementPresenter to communicate with their associated ElementView.
+// File: IMortalViewable.cs
+// Interface used by AMortalItemPresenters to communicate with their associated AMortalItemViews.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,23 +19,15 @@ namespace CodeEnv.Master.GameContent {
     using System;
 
     /// <summary>
-    /// Interface used by a ElementPresenter to communicate with their associated ElementView.
+    ///  Interface used by AMortalItemPresenters to communicate with their associated AMortalItemViews.
     /// </summary>
-    public interface IElementViewable : IMortalViewable {
+    public interface IMortalViewable : IViewable {
 
-        void ShowHit();
+        event Action onShowCompletion;
 
-        void ShowCmdHit();
+        void ShowDying();
 
-        void ShowAttacking();
-
-        void ShowRepairing();
-
-        void ShowRefitting();
-
-        void StopShowing();
-
-        void AssessHighlighting();
+        void AssessDiscernability();
 
     }
 }

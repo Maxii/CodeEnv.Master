@@ -40,10 +40,14 @@ public class FacilityView : AUnitElementView {
         Presenter = new FacilityPresenter(this);
     }
 
+    #region Mouse Events
+
     protected override void OnAltLeftClick() {
         base.OnAltLeftClick();
         Presenter.__SimulateAttacked();
     }
+
+    #endregion
 
     public override void AssessHighlighting() {
         if (!IsDiscernible) {

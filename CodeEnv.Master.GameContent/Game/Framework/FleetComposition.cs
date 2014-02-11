@@ -34,21 +34,13 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        public int ElementCount { get { return GetAllData().Count(); } }
+
         private IDictionary<ShipCategory, IList<ShipData>> _composition;
 
         public FleetComposition() {
             _composition = new SortedDictionary<ShipCategory, IList<ShipData>>();
         }
-
-        /// <summary>
-        /// Copy Constructor. Initializes a new instance of the <see cref="FleetComposition"/> class.
-        /// </summary>
-        /// <param name="compositionToCopy">The fleet composition to copy.</param>
-        public FleetComposition(FleetComposition compositionToCopy) {
-            _composition = compositionToCopy._composition;
-            // UNCLEAR does fleetCompositionToCopy get collected by the garbage collector now?
-        }
-
 
         public bool Add(ShipData elementData) {
             ShipCategory category = elementData.Category;

@@ -53,11 +53,17 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
 
     #endregion
 
+    #region Debug
+
+    /// <summary>
+    /// Logs the event. WARNING:  Coroutines showup as &lt;IEnumerator.MoveNext&gt; rather than the method name
+    /// </summary>
     public override void LogEvent() {
-        // NOTE:  Coroutines don't show the right method name when logged using stacktrace
         System.Diagnostics.StackFrame stackFrame = new StackFrame(1);
         D.Log("{0}.{1}.{2}() called.".Inject(_transform.name, GetType().Name, stackFrame.GetMethod().Name));
     }
+
+    #endregion
 
     /// <summary>
     /// A coroutine executor that can be interrupted
@@ -138,9 +144,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
                             }
                             //Check if it is a yield instruction
                             else if (result is YieldInstruction) {
-                                //To be able to interrupt yield instructions
-                                //we need to run them as a separate coroutine
-                                //and wait for them
+                                //To be able to interrupt yield instructions we need to run them as a separate coroutine and wait for them
                                 _stack.Push(_enumerator);
                                 //Create the coroutine to wait for the yieldinstruction
                                 _enumerator = WaitForCoroutine(result as YieldInstruction);
@@ -152,8 +156,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
                             }
                         }
                         else {
-                            //If the enumerator was set to null then we
-                            //need to mark this as invalid
+                            //If the enumerator was set to null then we need to mark this as invalid
                             valid = false;
                             yield return null;
                         }
@@ -230,10 +233,13 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
         }
 
         /// <summary>
-        /// Creates a new stack for executing coroutines
+        /// Creates a new stack for executing coroutines and return the stack 
+        /// that was executing. This effectively suspends the execution of the method
+        /// on the stack that was executing as the stack that is returned is no
+        /// longer being run by the EnterState or ExitStateCoroutine.
         /// </summary>
         /// <returns>
-        /// The stack.
+        /// The stack that was previously being executed, now suspended.
         /// </returns>
         public Stack<IEnumerator> CreateStack() {
             var current = _stack;
@@ -267,6 +273,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     /// </param>
     protected void RelayToCurrentState(params object[] param) {
         var message = CurrentState.ToString() + "_" + (new StackFrame(1)).GetMethod().Name;
+        //D.Log("{0} looking for method signature {1}.", Data.Name, message);
         SendMessageEx(message, param);
     }
 
@@ -312,7 +319,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
             //Cache for later
             lookup[message] = mtd;
         }
-        //If this message exists		
+        //If this message exists as a method...	
         if (mtd != null) {
             //If we haven't already tried to create an action
             if (!actionSpecified) {
@@ -333,6 +340,9 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
             else
                 //Otherwise slow invoke the method passing the parameters
                 mtd.Invoke(this, param);
+        }
+        else {
+            D.Warn("{0} did not find Method with signature {1}.", Data.Name, message);
         }
     }
 
@@ -459,7 +469,12 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     public object CurrentState {
         get { return state.currentState; }
         set {
-            if (state.Equals(value)) {  //if (state.currentState != null && state.currentState.Equals(value)) {
+            if (state.Equals(value)) {
+                D.Error("This should never occur.");
+                return;
+            }
+            if (state.currentState != null && state.currentState.Equals(value)) {
+                D.Warn("{0} trying to set CurrentState to same value. Value = {1}.", Data.Name, value.ToString());
                 return;
             }
             ChangingState();
@@ -500,7 +515,11 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
         GetStateMethods();
         OnStateChanged();
         if (state.enterState != null) {
+            //D.Log("{0}.{1} EnterState method name = {2}.", Data.Name, state.currentState.ToString(), state.enterState.Method.Name);
             state.enterStateEnumerator = state.enterState();
+            //if (state.enterStateEnumerator != null) {
+            //    D.Log("{0}.{1} EnterState enumerator contents = {2}.", Data.Name, state.currentState.ToString(), state.enterStateEnumerator.ToString());
+            //}
             enterStateCoroutine.Run(state.enterStateEnumerator);
         }
     }
@@ -510,6 +529,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     /// </summary>
     public void Return() {
         if (state.exitState != null) {
+            //D.Log("{0}.{1} ExitState method name = {2}.", Data.Name, state.currentState.ToString(), state.exitState.Method.Name);
             state.exitStateEnumerator = state.exitState();
             exitStateCoroutine.Run(state.exitStateEnumerator);
         }
@@ -571,9 +591,14 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
         GetStateMethods();
         OnStateChanged();
 
+        //if (state.enterState == null) {
+        //    D.Warn("{0}.EnterState() is null.", state.currentState.ToString());
+        //}
         if (state.enterState != null) {
             state.enterStateEnumerator = state.enterState();
+            //D.Log("{0}.EnterState preRun", state.currentState.ToString());
             enterStateCoroutine.Run(state.enterStateEnumerator);
+            // D.Log("{0}.EnterState postRun", state.currentState.ToString());
         }
     }
 

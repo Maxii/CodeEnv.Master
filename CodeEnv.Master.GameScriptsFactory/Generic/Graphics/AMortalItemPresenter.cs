@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AMortalItemPresenter.cs
-// An abstract base MVPresenter associated with AMortalItem.
+// An abstract base MVPresenter associated with AMortalItemView.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,7 +22,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// An abstract base MVPresenter associated with AMortalItem.
+/// An abstract base MVPresenter associated with AMortalItemView.
 /// </summary>
 public abstract class AMortalItemPresenter : AFocusableItemPresenter {
 
@@ -31,7 +31,16 @@ public abstract class AMortalItemPresenter : AFocusableItemPresenter {
         protected set { base.Model = value; }
     }
 
-    public AMortalItemPresenter(IViewable view) : base(view) { }
+    protected new IMortalViewable View {
+        get { return base.View as IMortalViewable; }
+    }
+
+    public AMortalItemPresenter(IMortalViewable view)
+        : base(view) {
+        IsAlive = true;
+    }
+
+    public bool IsAlive { get; private set; }
 
     protected override void Subscribe() {
         base.Subscribe();
@@ -44,10 +53,17 @@ public abstract class AMortalItemPresenter : AFocusableItemPresenter {
     }
 
     protected virtual void CleanupOnDeath() {
-        if ((View as ICameraFocusable).IsFocus) {
+        IsAlive = false;
+        View.AssessDiscernability();
+        CleanupFocusOnDeath();
+        // UNDONE other cleanup needed if recycled
+    }
+
+    protected virtual void CleanupFocusOnDeath() {
+        var focusableView = View as ICameraFocusable;
+        if (focusableView.IsFocus) {
             CameraControl.Instance.CurrentFocus = null;
         }
-        // UNDONE other cleanup needed if recycled
     }
 
     // no need to unsubscribe from internal subscription to Model.onDeath

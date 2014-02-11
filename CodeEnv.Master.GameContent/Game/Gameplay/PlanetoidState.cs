@@ -22,11 +22,11 @@ namespace CodeEnv.Master.GameContent {
     public enum PlanetoidState {
 
         None,
-        Idling,
-        TakingDamage,
+
+        Normal,
+
         ShowHit,
-        Dying,
-        ShowDying,
+
         Dead
 
     }

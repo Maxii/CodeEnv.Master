@@ -24,9 +24,9 @@ namespace CodeEnv.Master.GameContent {
     public interface IViewable {
 
         /// <summary>
-        /// Indicates whether this view is discernible by the human player.
+        /// Readonly. Indicates whether this view is discernible by the human player.
         /// </summary>
-        bool IsDiscernible { get; set; }
+        bool IsDiscernible { get; }
 
         /// <summary>
         /// Provides the ability to update the text for the GuiCursorHud. Can be null if there

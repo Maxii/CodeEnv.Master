@@ -27,6 +27,8 @@ using CodeEnv.Master.GameContent;
 public abstract class AMortalItemModel : AItemModel, IDisposable {
 
     public event Action<AMortalItemModel> onItemDeath;
+    //public event Action onStartShow;
+    //public event Action onStopShow;
 
     public new AMortalItemData Data {
         get { return base.Data as AMortalItemData; }
@@ -43,24 +45,25 @@ public abstract class AMortalItemModel : AItemModel, IDisposable {
     }
 
     protected override void SubscribeToDataValueChanges() {
+        base.SubscribeToDataValueChanges();
         _subscribers.Add(Data.SubscribeToPropertyChanged<AMortalItemData, float>(d => d.Health, OnHealthChanged));
     }
 
-    protected virtual void OnHealthChanged() {
-        D.Log("{0} Health = {1}.", Data.Name, Data.Health);
-        if (Data.Health <= Constants.ZeroF) {
-            NotifyOfDeath();
-        }
-    }
+    /// <summary>
+    /// Called when the item's health has changed. 
+    /// NOTE: Donot use this to initiate the death of an item. That is handled in MortalItemModels as damage is taken which
+    /// makes the logic behind dieing more visible and understandable. In the cae of a UnitCommandModel, death occurs
+    /// when the last Element has been removed from the Unit.
+    /// </summary>
+    protected virtual void OnHealthChanged() { }
 
-    protected virtual void NotifyOfDeath() {
-        D.Log("{0} is Dying!", Data.Name);
+    protected void OnItemDeath() {
         var temp = onItemDeath;
         if (temp != null) {
             temp(this);
         }
+        // TODO not clear this event will ever be used
         GameEventManager.Instance.Raise<MortalItemDeathEvent>(new MortalItemDeathEvent(this, this));
-        // TODO derived classes should override to initiate Dying state in their state machine
     }
 
     protected override void OnDestroy() {

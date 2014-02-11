@@ -42,7 +42,7 @@ public class FleetCmdPresenter : AUnitCommandPresenter<ShipModel> {
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
         var hudPublisher = new GuiHudPublisher<FleetCmdData>(Model.Data);
-        hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed);
+        hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed, GuiHudLineKeys.Health);
         return hudPublisher;
     }
 

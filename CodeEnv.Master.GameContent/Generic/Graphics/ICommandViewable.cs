@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     ///  Interface used by a CommandPresenter to communicate with their associated CommandView.
     /// </summary>
-    public interface ICommandViewable : IViewable {
+    public interface ICommandViewable : IMortalViewable {
 
         Transform TrackingTarget { set; }
 

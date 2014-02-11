@@ -28,6 +28,15 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class ACommandData : AMortalItemData, IDisposable {
 
+        public event Action onCompositionChanged;
+
+        protected void OnCompositionChanged() {
+            var temp = onCompositionChanged;
+            if (temp != null) {
+                temp();
+            }
+        }
+
         private AElementData _hqElementData;
         public AElementData HQElementData {
             get {
@@ -38,7 +47,10 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        // NOTE: overrides CurrentHitPoints so this Cmd's value cannot reach zero until the unit itself dies.
+        /// <summary>
+        /// Gets or sets the current hit points of this UnitCommand.
+        /// NOTE: Like Health, this value will only reach 0 when the Unit's Health reaches 0.
+        /// </summary>
         public override float CurrentHitPoints {
             get {
                 return base.CurrentHitPoints;
@@ -46,6 +58,16 @@ namespace CodeEnv.Master.GameContent {
             set {
                 value = Mathf.Clamp(value, MaxHitPoints * 0.5F, MaxHitPoints);  // TODO externalize 0.5?
                 base.CurrentHitPoints = value;
+            }
+        }
+
+        /// <summary>
+        /// Readonly. Indicates the health of this Unit's Command, a value between 0 and 1.
+        /// NOTE: Like CurrentHitPoints, this value will only reach 0 when the Unit's overall UnitHealth reaches 0.
+        /// </summary>
+        public override float Health {
+            get {
+                return base.Health;
             }
         }
 
@@ -73,7 +95,7 @@ namespace CodeEnv.Master.GameContent {
 
         private float _unitMaxHitPoints;
         public float UnitMaxHitPoints {
-            get { return _unitCurrentHitPoints; }
+            get { return _unitMaxHitPoints; }
             private set { SetProperty<float>(ref _unitMaxHitPoints, value, "UnitMaxHitPoints", OnUnitMaxHitPointsChanged, OnUnitMaxHitPointsChanging); }
         }
 
@@ -85,7 +107,7 @@ namespace CodeEnv.Master.GameContent {
 
         private float _unitHealth;
         /// <summary>
-        /// Readonly. Indicates the health of the Unit, a value between 0 and 1.
+        /// Readonly. Indicates the health of the entire Unit, a value between 0 and 1.
         /// </summary>
         public float UnitHealth {
             get {
@@ -95,17 +117,6 @@ namespace CodeEnv.Master.GameContent {
             private set {
                 value = Mathf.Clamp01(value);
                 SetProperty<float>(ref _unitHealth, value, "UnitHealth", OnUnitHealthChanged);
-            }
-        }
-
-        /// <summary>
-        /// Called when [unit health changed]. This is effectively a workaround that initiates death of 
-        /// the UnitCmdItem when the Unit has died. It changes the UnitCmdItem's CurrentHitPoints by directly
-        /// changing the base value, bypassing the override that holds the value to a predetermined minimum.
-        /// </summary>
-        private void OnUnitHealthChanged() {
-            if (UnitHealth <= Constants.ZeroF) {
-                base.CurrentHitPoints -= MaxHitPoints;  // initiate destruction of Cmd item too
             }
         }
 
@@ -156,7 +167,23 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnUnitCurrentHitPointsChanged() {
-            UnitHealth = UnitMaxHitPoints > Constants.ZeroF ? UnitCurrentHitPoints / UnitMaxHitPoints : Constants.ZeroF;
+            var unitHealth = UnitMaxHitPoints > Constants.ZeroF ? UnitCurrentHitPoints / UnitMaxHitPoints : Constants.ZeroF;
+            //D.Log("{0} attempting to set UnitHealth to {1}. UnitCurrentHitPoints = {2}, UnitMaxHitPoints = {3}.", Name, unitHealth, UnitCurrentHitPoints, UnitMaxHitPoints);
+            UnitHealth = unitHealth;
+        }
+
+        /// <summary>
+        /// Called when the Unit's health changes.
+        /// NOTE: This is a workaround that sets the UnitCommand's CurrentHitPoints 
+        /// and Health to 0 when UnitHealth reaches 0.. It does so by changing the UnitCommand's CurrentHitPoints by directly
+        /// changing the base value, bypassing the override that holds the value to a predetermined minimum. This is not
+        /// used to determine the UnitCommand's death. It is done to keep the values of a UnitCommand's CurrentHitPoints 
+        /// and Health consistent with the way other Item's values are treated for any future subscribers to health changes.
+        /// </summary>
+        private void OnUnitHealthChanged() {
+            if (UnitHealth <= Constants.ZeroF) {
+                base.CurrentHitPoints -= MaxHitPoints;  // initiate destruction of Cmd item too
+            }
         }
 
         protected override void OnHealthChanged() {

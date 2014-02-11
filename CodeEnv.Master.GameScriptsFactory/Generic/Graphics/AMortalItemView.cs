@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AMortalItemView.cs
-// Abstract base class for managing the elements of an object that is both Mortal and Focusable.
+// Abstract class managing the UI View for a mortal object.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,9 +23,8 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-///  Abstract base class for managing the elements of an object that is both Mortal and Focusable.
-/// </summary>
-[Obsolete]
+///  Abstract class managing the UI View for a mortal object.
+///  </summary>
 public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
 
     public new AMortalItemPresenter Presenter {
@@ -42,17 +41,17 @@ public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
         _audioSource = UnityUtility.ValidateComponentPresence<AudioSource>(gameObject);
     }
 
+    #region Mouse Events
+
     protected override void OnClick() {
         base.OnClick();
-        if (IsDiscernible) {
-            if (GameInputHelper.IsLeftMouseButton()) {
-                KeyCode notUsed;
-                if (GameInputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftAlt, KeyCode.RightAlt)) {
-                    OnAltLeftClick();
-                }
-                else {
-                    OnLeftClick();
-                }
+        if (IsDiscernible && GameInputHelper.IsLeftMouseButton()) {
+            KeyCode notUsed;
+            if (GameInputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftAlt, KeyCode.RightAlt)) {
+                OnAltLeftClick();
+            }
+            else {
+                OnLeftClick();
             }
         }
     }
@@ -69,6 +68,8 @@ public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
 
     protected virtual void OnLeftDoubleClick() { }
 
+    #endregion
+
     /// <summary>
     /// Safely invokes the onShowCompletion event.
     /// </summary>
@@ -79,12 +80,21 @@ public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
         }
     }
 
+    private IEnumerator ShowingDying() {
+        if (dying != null) {
+            _audioSource.PlayOneShot(dying);
+        }
+        _collider.enabled = false;
+        //animation.Stop();
+        //yield return UnityUtility.PlayAnimation(animation, "die");  // show debree particles for some period of time?
+        yield return null;
+        OnShowCompletion();
+    }
+
     #region ICameraTargetable Members
 
     public override bool IsEligible {
-        get {
-            return PlayerIntel.CurrentCoverage != IntelCoverage.None;
-        }
+        get { return PlayerIntel.CurrentCoverage != IntelCoverage.None; }
     }
 
     #endregion
@@ -97,16 +107,8 @@ public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
         _showingJob = new Job(ShowingDying(), toStart: true);
     }
 
-    private IEnumerator ShowingDying() {
-        if (dying != null) {
-            _audioSource.PlayOneShot(dying);
-        }
-        _collider.enabled = false;
-        //animation.Stop();
-        //yield return UnityUtility.PlayAnimation(animation, "die");  // show debree particles for some period of time?
-        yield return null;
-
-        OnShowCompletion();
+    public override void AssessDiscernability() {
+        IsDiscernible = InCameraLOS && PlayerIntel.CurrentCoverage != IntelCoverage.None && Presenter.IsAlive;
     }
 
     #endregion

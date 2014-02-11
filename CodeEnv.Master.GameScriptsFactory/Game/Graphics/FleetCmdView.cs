@@ -69,21 +69,21 @@ public class FleetCmdView : AUnitCommandView, ICameraFollowable, IHighlightTrack
         Presenter.OnIsSelectedChanged();
     }
 
-    #region Attacked Testing
+    #region MouseEvents
 
     protected override void OnAltLeftClick() {
         base.OnAltLeftClick();
         Presenter.__SimulateAllElementsAttacked();
     }
 
-    #endregion
-
-    #region Intel Change Testing
-
     protected override void OnLeftClick() {
         base.OnLeftClick();
         __ToggleIntelChangingTest();
     }
+
+    #endregion
+
+    #region Intel Change Testing
 
     private Job _intelTestJob;
     private void __ToggleIntelChangingTest() {

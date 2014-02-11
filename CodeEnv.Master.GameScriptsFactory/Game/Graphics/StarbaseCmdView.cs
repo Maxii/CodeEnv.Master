@@ -68,7 +68,7 @@ public class StarbaseCmdView : AUnitCommandView, IHighlightTrackingLabel {
         Presenter.OnIsSelectedChanged();
     }
 
-    #region Attacked Testing
+    #region Mouse Events
 
     protected override void OnAltLeftClick() {
         base.OnAltLeftClick();

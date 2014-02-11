@@ -27,6 +27,14 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SystemData : AItemData, IDisposable {
 
+        public event Action onCompositionChanged;
+        private void OnCompositionChanged() {
+            var temp = onCompositionChanged;
+            if (temp != null) {
+                temp();
+            }
+        }
+
         /// <summary>
         /// Readonly. The orbital start position (in local space) of any current or
         /// future settlement. The transform holding the SettlementCreator (whose
@@ -76,11 +84,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private SystemComposition _composition;
-        public SystemComposition Composition {
-            get { return _composition; }
-            private set { SetProperty<SystemComposition>(ref _composition, value, "Composition"); }
-        }
+        public SystemComposition Composition { get; private set; }
 
         private IDictionary<PlanetoidData, IList<IDisposable>> _planetSubscribers;
         private IList<IDisposable> _starSubscribers;
@@ -119,6 +123,7 @@ namespace CodeEnv.Master.GameContent {
             if (Composition.RemovePlanet(data)) {
                 Unsubscribe(data);
                 UpdateProperties();
+                OnCompositionChanged();
                 return true;
             }
             D.Warn("Attempting to remove {0} {1} that is not present.", typeof(PlanetoidData), data.OptionalParentName);
@@ -139,6 +144,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void OnSettlementChanged() {
             Composition.SettlementData = Settlement;
+            OnCompositionChanged();
         }
 
         /// <summary>
@@ -186,7 +192,6 @@ namespace CodeEnv.Master.GameContent {
             totalSpecial.Add(Composition.StarData.SpecialResources);
             SpecialResources = totalSpecial;
         }
-
 
         private void Unsubscribe(PlanetoidData planetData) {
             _planetSubscribers[planetData].ForAll<IDisposable>(d => d.Dispose());

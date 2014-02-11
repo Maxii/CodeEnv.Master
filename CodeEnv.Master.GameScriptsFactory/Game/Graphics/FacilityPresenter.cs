@@ -42,7 +42,9 @@ public class FacilityPresenter : AUnitElementPresenter {
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<FacilityData>(Model.Data);
+        var publisher = new GuiHudPublisher<FacilityData>(Model.Data);
+        publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
+        return publisher;
     }
 
     protected override void Subscribe() {
@@ -55,7 +57,7 @@ public class FacilityPresenter : AUnitElementPresenter {
         FacilityState newState = Model.CurrentState;
         //D.Log("{0}.OnStartShowInView state = {1}.", Model.Data.Name, newState.GetName());
         switch (newState) {
-            case FacilityState.ShowAttacking:
+            case FacilityState.Attacking:
                 View.ShowAttacking();
                 break;
             case FacilityState.ShowHit:
@@ -64,22 +66,17 @@ public class FacilityPresenter : AUnitElementPresenter {
             case FacilityState.ShowCmdHit:
                 View.ShowCmdHit();
                 break;
-            case FacilityState.ShowDying:
-                View.ShowDying();
-                break;
             case FacilityState.Refitting:
                 View.ShowRefitting();
                 break;
             case FacilityState.Repairing:
                 View.ShowRepairing();
                 break;
-            case FacilityState.ProcessOrders:
+            case FacilityState.Dead:
+                View.ShowDying();
+                break;
             case FacilityState.Idling:
             case FacilityState.GoAttack:
-            case FacilityState.Dead:
-            case FacilityState.Attacking:
-            case FacilityState.Dying:
-            case FacilityState.TakingDamage:
                 // do nothing
                 break;
             case FacilityState.None:
@@ -95,19 +92,14 @@ public class FacilityPresenter : AUnitElementPresenter {
             case FacilityState.Repairing:
                 View.StopShowing();
                 break;
-            case FacilityState.ShowAttacking:
             case FacilityState.ShowHit:
             case FacilityState.ShowCmdHit:
-            case FacilityState.ShowDying:
+            case FacilityState.Attacking:
                 // no need to stop any of these showing as they complete at their own pace
                 break;
-            case FacilityState.ProcessOrders:
             case FacilityState.Idling:
             case FacilityState.GoAttack:
             case FacilityState.Dead:
-            case FacilityState.Attacking:
-            case FacilityState.Dying:
-            case FacilityState.TakingDamage:
                 // do nothing
                 break;
             case FacilityState.None:
@@ -115,7 +107,6 @@ public class FacilityPresenter : AUnitElementPresenter {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(state));
         }
     }
-
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

@@ -16,25 +16,28 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
+    using System.Linq;
     using CodeEnv.Master.Common;
+    using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
     /// All the data associated with a Starbase.
     /// </summary>
     public class StarbaseCmdData : ACommandData {
 
-        public StarbaseCategory Category { get; set; }
+        private StarbaseCategory _category;
+        public StarbaseCategory Category {
+            get { return _category; }
+            private set { SetProperty<StarbaseCategory>(ref _category, value, "Category"); }
+        }
 
         public new FacilityData HQElementData {
             get { return base.HQElementData as FacilityData; }
             set { base.HQElementData = value; }
         }
 
-        private BaseComposition _composition;
-        public BaseComposition Composition {
-            get { return _composition; }
-            private set { SetProperty<BaseComposition>(ref _composition, value, "Composition"); }
-        }
+        public BaseComposition Composition { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StarbaseCmdData" /> class.
@@ -48,18 +51,41 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override void ChangeComposition(AElementData elementData, bool toAdd) {
-            bool isChanged = false;
-            if (toAdd) {
-                isChanged = Composition.Add(elementData as FacilityData);
-            }
-            else {
-                isChanged = Composition.Remove(elementData as FacilityData);
-            }
-
+            bool isChanged = toAdd ? Composition.Add(elementData as FacilityData) : Composition.Remove(elementData as FacilityData);
             if (isChanged) {
-                Composition = new BaseComposition(Composition);
+                AssessCommandCategory();
+                OnCompositionChanged();
             }
+        }
 
+        private void AssessCommandCategory() {
+            int elementCount = Composition.ElementCount;
+            switch (elementCount) {
+                case 1:
+                    Category = StarbaseCategory.Outpost;
+                    break;
+                case 2:
+                case 3:
+                    Category = StarbaseCategory.LocalBase;
+                    break;
+                case 4:
+                case 5:
+                    Category = StarbaseCategory.DistrictBase;
+                    break;
+                case 6:
+                case 7:
+                    Category = StarbaseCategory.RegionalBase;
+                    break;
+                case 8:
+                case 9:
+                    Category = StarbaseCategory.TerritorialBase;
+                    break;
+                case 0:
+                    // element count of 0 = dead, so don't generate a change to be handled
+                    break;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(elementCount));
+            }
         }
 
         public override string ToString() {

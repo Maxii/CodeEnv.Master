@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Readonly. Indicates the health of the item, a value between 0 and 1.
         /// </summary>
-        public float Health {
+        public virtual float Health {
             get {
                 //D.Log("Health {0}, CurrentHitPoints {1}, MaxHitPoints {2}.", _health, _currentHitPoints, _maxHitPoints);
                 return _health;

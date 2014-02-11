@@ -45,7 +45,9 @@ public class PlanetoidPresenter : AMortalItemPresenter {
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<PlanetoidData>(Model.Data);
+        var publisher = new GuiHudPublisher<PlanetoidData>(Model.Data);
+        publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
+        return publisher;
     }
 
     protected override void Subscribe() {
@@ -60,13 +62,10 @@ public class PlanetoidPresenter : AMortalItemPresenter {
             case PlanetoidState.ShowHit:
                 View.ShowHit();
                 break;
-            case PlanetoidState.ShowDying:
+            case PlanetoidState.Dead:
                 View.ShowDying();
                 break;
-            case PlanetoidState.Idling:
-            case PlanetoidState.TakingDamage:
-            case PlanetoidState.Dying:
-            case PlanetoidState.Dead:
+            case PlanetoidState.Normal:
                 // do nothing
                 break;
             case PlanetoidState.None:

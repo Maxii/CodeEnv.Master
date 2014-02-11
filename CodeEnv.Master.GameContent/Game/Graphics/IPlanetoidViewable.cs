@@ -21,13 +21,9 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface used by a PlanetoidPresenter to communicate with their associated PlanetoidView.
     /// </summary>
-    public interface IPlanetoidViewable : IViewable {
-
-        event Action onShowCompletion;
+    public interface IPlanetoidViewable : IMortalViewable {
 
         void ShowHit();
-
-        void ShowDying();
 
     }
 }

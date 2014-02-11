@@ -25,8 +25,6 @@ namespace CodeEnv.Master.GameContent {
 
         Idling,
 
-        ProcessOrders,
-
         MovingTo,
 
         Chasing,
@@ -34,10 +32,6 @@ namespace CodeEnv.Master.GameContent {
         GoAttack,
 
         Attacking,
-
-        ShowAttacking,
-
-        TakingDamage,
 
         ShowHit,
 
@@ -59,12 +53,7 @@ namespace CodeEnv.Master.GameContent {
 
         Disbanding,
 
-        Dying,
-
-        ShowDying,
-
         Dead
-
 
     }
 }

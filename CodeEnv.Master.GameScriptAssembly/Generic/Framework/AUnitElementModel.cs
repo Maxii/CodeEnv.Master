@@ -30,7 +30,7 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, ITarget 
     public event Action onStartShow;
     public event Action onStopShow;
 
-    public bool IsHQElement { get; set; }
+    public virtual bool IsHQElement { get; set; }
 
     public new AElementData Data {
         get { return base.Data as AElementData; }
@@ -65,20 +65,14 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, ITarget 
 
     # region StateMachine Support Methods
 
-    private float _hitDamage;
     /// <summary>
     /// Applies the damage to the Element. Returns true 
     /// if the Element survived the hit.
     /// </summary>
     /// <returns><c>true</c> if the Element survived.</returns>
-    protected bool ApplyDamage() {
-        bool isAlive = true;
-        Data.CurrentHitPoints -= _hitDamage;
-        if (Data.Health <= Constants.ZeroF) {
-            isAlive = false;
-        }
-        _hitDamage = Constants.ZeroF;
-        return isAlive;
+    protected bool ApplyDamage(float damage) {
+        Data.CurrentHitPoints -= damage;
+        return Data.Health > Constants.ZeroF;
     }
 
     protected void OnStartShow() {
@@ -95,6 +89,18 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, ITarget 
         }
     }
 
+    protected IEnumerator DelayedDestroy(float delayInSeconds) {
+        D.Log("{0}.DelayedDestroy({1}).", Data.Name, delayInSeconds);
+        yield return new WaitForSeconds(delayInSeconds);
+        D.Log("{0} GameObject being destroyed.", Data.Name);
+        Destroy(gameObject);
+    }
+
+    protected void Dead_ExitState() {
+        LogEvent();
+        D.Error("{0}.Dead_ExitState should not occur.", Data.Name);
+    }
+
     #endregion
 
     # region StateMachine Callbacks
@@ -103,14 +109,7 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, ITarget 
         RelayToCurrentState();
     }
 
-    void OnHit(float damage) {
-        _hitDamage = damage;
-        OnHit();
-    }
-
-    void OnHit() {
-        RelayToCurrentState();
-    }
+    protected abstract void OnHit(float damage);
 
     void OnDetectedEnemy() {  // TODO connect to sensors when I get them
         RelayToCurrentState();

@@ -29,8 +29,6 @@ public class UniverseCenterModel : AItemModel {
         set { base.Data = value; }
     }
 
-    protected override void SubscribeToDataValueChanges() { }
-
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

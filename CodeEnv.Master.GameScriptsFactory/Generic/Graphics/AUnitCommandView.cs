@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for managing the UI of a Command.
 /// </summary>
-public abstract class AUnitCommandView : AFocusableItemView, ICommandViewable, ISelectable {
+public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISelectable {
 
     private Vector3 _cmdIconPivotOffset;
     private UISprite _cmdIconSprite;
@@ -69,8 +69,6 @@ public abstract class AUnitCommandView : AFocusableItemView, ICommandViewable, I
         PositionIcon();
         KeepColliderOverIcon();
     }
-
-    protected abstract void RequestContextMenu(bool isDown);
 
     protected virtual void OnIsSelectedChanged() {
         AssessHighlighting();
@@ -197,6 +195,8 @@ public abstract class AUnitCommandView : AFocusableItemView, ICommandViewable, I
         // UNDONE
     }
 
+    protected abstract void RequestContextMenu(bool isDown);
+
     #endregion
 
     #region Intel Stealth Testing
@@ -213,34 +213,13 @@ public abstract class AUnitCommandView : AFocusableItemView, ICommandViewable, I
 
     #region Mouse Events
 
-    protected override void OnClick() {
-        base.OnClick();
-        if (IsDiscernible) {
-            if (GameInputHelper.IsLeftMouseButton()) {
-                KeyCode notUsed;
-                if (GameInputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftAlt, KeyCode.RightAlt)) {
-                    OnAltLeftClick();
-                }
-                else {
-                    OnLeftClick();
-                }
-            }
-        }
-    }
-
-    protected virtual void OnLeftClick() {
+    protected override void OnLeftClick() {
+        base.OnLeftClick();
         IsSelected = true;
     }
 
-    protected virtual void OnAltLeftClick() { }
-
-    void OnDoubleClick() {
-        if (IsDiscernible && GameInputHelper.IsLeftMouseButton()) {
-            OnLeftDoubleClick();
-        }
-    }
-
-    protected void OnLeftDoubleClick() {
+    protected override void OnLeftDoubleClick() {
+        base.OnLeftDoubleClick();
         __ToggleStealthSimulation();
     }
 
@@ -257,7 +236,6 @@ public abstract class AUnitCommandView : AFocusableItemView, ICommandViewable, I
     }
 
     #endregion
-
 
     #region ICommandViewable Members
 
@@ -284,16 +262,6 @@ public abstract class AUnitCommandView : AFocusableItemView, ICommandViewable, I
     /// Note the override - a fleet's collider and mesh (icon) both scale, thus AView's implementation can't be used
     /// </summary>
     public override float Radius { get { return 1.0F; } }   // TODO should reflect the rough radius of the fleet
-
-    #endregion
-
-    #region ICameraTargetable Members
-
-    public override bool IsEligible {
-        get {
-            return PlayerIntel.CurrentCoverage != IntelCoverage.None;
-        }
-    }
 
     #endregion
 

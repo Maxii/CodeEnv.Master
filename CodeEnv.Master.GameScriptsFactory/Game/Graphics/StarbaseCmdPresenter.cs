@@ -42,7 +42,9 @@ public class StarbaseCmdPresenter : AUnitCommandPresenter<FacilityModel> {
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<StarbaseCmdData>(Model.Data);
+        var publisher = new GuiHudPublisher<StarbaseCmdData>(Model.Data);
+        publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
+        return publisher;
     }
 
     protected override void Subscribe() {

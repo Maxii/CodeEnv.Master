@@ -118,37 +118,296 @@ public class ShipModel : AUnitElementModel {
     #region Idling
 
     void Idling_EnterState() {
-        //CurrentOrder = null;
-        //ChangeSpeed(Constants.ZeroF);
+        LogEvent();
         // TODO register as available
     }
 
-    void Idling_OnHit() {
-        // TODO inform fleet of hit
-        Call(ShipState.TakingDamage);
-    }
-
-    void Idling_OnOrdersChanged() {
-        CurrentState = ShipState.ProcessOrders;
-    }
-
     void Idling_ExitState() {
+        LogEvent();
         // TODO register as unavailable
     }
 
     #endregion
 
-    #region ProcessOrders
+    #region MovingTo
 
-    private UnitOrder<ShipOrders> _orderBeingExecuted;
-    private bool _isNewOrderWaiting;
+    void MovingTo_EnterState() {
+        //D.Log("{0}.MovingTo_EnterState().", Data.Name);
+        LogEvent();
+        Navigator.PlotCourse(CurrentOrder.Target, CurrentOrder.Speed);
+    }
 
-    void ProcessOrders_Update() {
-        // I got to this state only one way - there was a new order issued.
-        // This switch should never use Call(state) as there is no 'state' to
-        // return to in ProcessOrders to resume. It is a transition state.
-        _isNewOrderWaiting = _orderBeingExecuted != CurrentOrder;
-        if (_isNewOrderWaiting) {
+    void MovingTo_OnCoursePlotSuccess() {
+        Navigator.Engage();
+    }
+
+    void MovingTo_OnCoursePlotFailure() {
+        CurrentState = ShipState.Idling;
+    }
+
+    void MovingTo_OnCourseTrackingError() {
+        CurrentState = ShipState.Idling;
+    }
+
+    void MovingTo_OnDestinationReached() {
+        CurrentState = ShipState.Idling;
+    }
+
+    void MovingTo_ExitState() {
+        LogEvent();
+        Navigator.Disengage();
+        // ship retains its current speed and heading
+    }
+
+    #endregion
+
+    #region Chasing
+    // only called from GoAttack
+
+    void Chasing_EnterState() {
+        // take attack target and engage autopilot
+    }
+
+    void Chasing_Update() {
+        // TODO track and close on target
+    }
+
+    void Chasing_OnDestinationReached() {
+        Return();
+    }
+
+    void Chasing_ExitState() {
+        LogEvent();
+        Navigator.Disengage();
+    }
+
+    #endregion
+
+    #region Joining
+
+    void Joining_EnterState() {
+        // TODO detach from fleet and create temp FleetCmd
+        // issue a JoinFleetAt order to our new fleet
+        Return();
+    }
+
+    void Joining_ExitState() {
+        // issue the JoinFleetAt order here, after Return?
+    }
+
+    #endregion
+
+    #region GoAttack
+
+    private ITarget _target;
+
+    void GoAttack_EnterState() {
+        //ITarget providedTarget = (CurrentOrder as ShipOrder_ItemTarget).ItemTarget;
+        ITarget providedTarget = CurrentOrder.Target;
+        if (providedTarget is FleetCmdModel) {
+            // TODO pick the ship to target
+        }
+        else {
+            _target = providedTarget;    // a settlement or specific ship
+        }
+    }
+
+    void GoAttack_Update() {
+        // if badly damaged, CurrentState = ShipState.Withdrawing;
+        // if target destroyed, find new target
+        // if target out of range, Call(ShipState.Chasing);
+        // else Call(ShipState.Attacking);
+        //}
+    }
+
+    #endregion
+
+    #region Attacking
+
+    void Attacking_EnterState() {
+        LogEvent();
+        // launch a salvo at  _target 
+        OnStartShow();
+    }
+
+    void Attacking_OnShowCompletion() {
+        LogEvent();
+        Return();   // to GoAttack
+    }
+
+    #endregion
+
+    #region ShowHit
+
+    void ShowHit_EnterState() {
+        LogEvent();
+        OnStartShow();
+    }
+
+    void ShowHit_OnShowCompletion() {
+        // View is showing Hit
+        LogEvent();
+        Return();
+    }
+
+    #endregion
+
+    #region ShowCmdHit
+
+    void ShowCmdHit_EnterState() {
+        LogEvent();
+        OnStartShow();
+    }
+
+    void ShowCmdHit_OnShowCompletion() {
+        // View is showing Hit
+        LogEvent();
+        Return();
+    }
+
+    #endregion
+
+    #region Withdrawing
+    // only called from GoAttack
+
+    void Withdrawing_EnterState() {
+        // TODO withdraw to rear, evade
+    }
+
+    //void Withdrawing_OnHit() {
+    //    Call(ShipState.TakingDamage);
+    //}
+
+    void Withdrawing_OnOrdersChanged() {
+        Return();
+    }
+
+    #endregion
+
+    #region Entrenching
+
+    //IEnumerator Entrenching_EnterState() {
+    //    // TODO ShipView shows animation while in this state
+    //    while (true) {
+    //        // TODO entrench until complete
+    //        yield return null;
+    //    }
+    //    //_fleet.OnEntrenchingComplete(this)?
+    //    Return();
+    //}
+
+    void Entrenching_ExitState() {
+        //_fleet.OnEntrenchingComplete(this)?
+    }
+
+    #endregion
+
+    #region Repairing
+
+    IEnumerator Repairing_EnterState() {
+        // ShipView shows animation while in this state
+        OnStartShow();
+        //while (true) {
+        // TODO repair until complete
+        yield return new WaitForSeconds(2);
+        //}
+        //_command.OnRepairingComplete(this)?
+        OnStopShow();   // must occur while still in target state
+        Return();
+    }
+
+    void Repairing_ExitState() {
+        LogEvent();
+    }
+
+    #endregion
+
+    #region Refitting
+
+    IEnumerator Refitting_EnterState() {
+        // ShipView shows animation while in this state
+        OnStartShow();
+        //while (true) {
+        // TODO refit until complete
+        yield return new WaitForSeconds(2);
+        //}
+        OnStopShow();   // must occur while still in target state
+        Return();
+    }
+
+    void Refitting_ExitState() {
+        LogEvent();
+        //_fleet.OnRefittingComplete(this)?
+    }
+
+    #endregion
+
+    #region Disbanding
+    // UNDONE not clear how this works
+
+    void Disbanding_EnterState() {
+        // TODO detach from fleet and create temp FleetCmd
+        // issue a Disband order to our new fleet
+        Return();   // ??
+    }
+
+    void Disbanding_ExitState() {
+        // issue the Disband order here, after Return?
+    }
+
+    #endregion
+
+    #region Dead
+
+    void Dead_EnterState() {
+        LogEvent();
+        OnStartShow();
+    }
+
+    void Dead_OnShowCompletion() {
+        LogEvent();
+        OnItemDeath();
+        StartCoroutine(DelayedDestroy(3));
+    }
+
+    #endregion
+
+    # region Callbacks
+
+    // See also AUnitElementModel
+
+    protected override void OnHit(float damage) {
+        if (CurrentState == ShipState.Dead) {
+            return;
+        }
+        LogEvent();
+        bool isCmdHit = false;
+        bool isElementAlive = ApplyDamage(damage);
+        if (IsHQElement) {
+            isCmdHit = _command.__CheckForDamage(isElementAlive);
+        }
+        if (!isElementAlive) {
+            CurrentState = ShipState.Dead;
+            return;
+        }
+
+        if (CurrentState == ShipState.ShowHit || CurrentState == ShipState.ShowCmdHit) {
+            // View can not 'queue' show animations so don't interrupt what is showing with another like show
+            return;
+        }
+
+        if (isCmdHit) {
+            Call(ShipState.ShowCmdHit);
+        }
+        else {
+            Call(ShipState.ShowHit);
+        }
+    }
+
+    void OnOrdersChanged() {
+        if (CurrentOrder != null) {
+            D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
+
             ShipOrders order = CurrentOrder.Order;
             switch (order) {
                 case ShipOrders.AllStop:
@@ -184,422 +443,11 @@ public class ShipModel : AUnitElementModel {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
             }
-            _orderBeingExecuted = CurrentOrder;
-        }
-        else {
-            // there is no new order so the return to this state must be after the last new order has been completed
-            D.Assert(false, "Should be no Return() here.");
-            CurrentState = ShipState.Idling;
         }
     }
 
-    // Transition state so _OnHit and _OnOrdersChanged cannot occur here
-
-    #endregion
-
-    #region MovingTo
-
-    void MovingTo_EnterState() {
-        LogEvent();
-        Navigator.PlotCourse(CurrentOrder.Target, CurrentOrder.Speed);
-    }
-
-    void MovingTo_OnCoursePlotSuccess() {
-        Navigator.Engage();
-    }
-
-    void MovingTo_OnHit() {
-        // TODO inform fleet of hit
-        LogEvent();
-        Call(ShipState.TakingDamage);
-    }
-
-    void MovingTo_OnOrdersChanged() {
-        CurrentState = ShipState.ProcessOrders;
-    }
-
-    void MovingTo_OnCoursePlotFailure() {
-        CurrentState = ShipState.Idling;
-    }
-
-    void MovingTo_OnCourseTrackingError() {
-        CurrentState = ShipState.Idling;
-    }
-
-    void MovingTo_OnDestinationReached() {
-        CurrentState = ShipState.Idling;
-    }
-
-    void MovingTo_ExitState() {
-        LogEvent();
-        Navigator.Disengage();
-        // ship retains its current speed and heading
-    }
-
-    #endregion
-
-    #region Chasing
-    // only called from GoAttack
-
-    void Chasing_EnterState() {
-        // take attack target and engage autopilot
-    }
-
-    void Chasing_Update() {
-        // TODO track and close on target
-    }
-
-    void Chasing_OnHit() {
-        Call(ShipState.TakingDamage);
-    }
-
-    void Chasing_OnOrdersChanged() {
-        Return();
-    }
-
-    void Chasing_OnDestinationReached() {
-        Return();
-    }
-
-    void Chasing_ExitState() {
-        D.Log("Chasing_ExitState");
-        Navigator.Disengage();
-    }
-
-    #endregion
-
-    #region Joining
-
-    void Joining_EnterState() {
-        // TODO detach from fleet and create temp FleetCmd
-        // issue a JoinFleetAt order to our new fleet
-        Return();
-    }
-
-    void Joining_OnHit() {
-        // TODO inform fleet of hit
-        Call(ShipState.TakingDamage);
-    }
-
-    void Joining_OnOrdersChanged() {
-        CurrentState = ShipState.ProcessOrders;
-    }
-
-    void Joining_ExitState() {
-        // issue the JoinFleetAt order here, after Return?
-    }
-
-    #endregion
-
-    #region GoAttack
-
-    private ITarget _target;
-
-    void GoAttack_EnterState() {
-        //ITarget providedTarget = (CurrentOrder as ShipOrder_ItemTarget).ItemTarget;
-        ITarget providedTarget = CurrentOrder.Target;
-        if (providedTarget is FleetCmdModel) {
-            // TODO pick the ship to target
-        }
-        else {
-            _target = providedTarget;    // a settlement or specific ship
-        }
-    }
-
-    void GoAttack_Update() {
-        if (!_isNewOrderWaiting) {
-            // if badly damaged, CurrentState = ShipState.Withdrawing;
-            // if target destroyed, find new target
-            // if target out of range, Call(ShipState.Chasing);
-            // else Call(ShipState.Attacking);
-        }
-        else {
-            // there is a new order waiting, so get it processed
-            CurrentState = ShipState.ProcessOrders;
-        }
-    }
-
-    // Transition state so _OnHit and _OnOrdersChanged cannot occur here
-
-    #endregion
-
-    #region Attacking
-
-    void Attacking_EnterState() {
-        // launch a salvo at  _target 
-        Call(ShipState.ShowAttacking);
-        Return();   // to GoAttack
-    }
-
-    // Transition state so _OnHit and _OnOrdersChanged cannot occur here
-
-    #endregion
-
-    #region ShowAttacking
-
-    void ShowAttacking_EnterState() {
-        OnStartShow();
-    }
-
-    void ShowAttacking_OnHit() {
-        // View can not 'queue' show animations so just apply the damage
-        // and wait for ShowXXX_OnCompletion to return to caller
-        ApplyDamage();
-    }
-
-    void ShowAttacking_OnShowCompletion() {
-        // VIew shows the attack here
-        Return();   // to Attacking
-    }
-
-    #endregion
-
-    #region TakingDamage
-
-    void TakingDamage_EnterState() {
-        LogEvent();
-        bool isCmdHit = false;
-        bool isElementAlive = ApplyDamage();
-        if (IsHQElement) {
-            isCmdHit = _command.__CheckForDamage(isElementAlive);
-        }
-        if (isElementAlive) {
-            if (isCmdHit) {
-                Call(ShipState.ShowCmdHit);
-            }
-            else {
-                Call(ShipState.ShowHit);
-            }
-            Return();   // returns to the state we were in when the OnHit event arrived
-        }
-        else {
-            CurrentState = ShipState.Dying;
-        }
-    }
-
-    void TakingDamage_ExitState() {
-        LogEvent();
-    }
-
-    // TakingDamage is a transition state so _OnHit cannot occur here
-
-    #endregion
-
-    #region ShowHit
-
-    void ShowHit_EnterState() {
-        LogEvent();
-        OnStartShow();
-    }
-
-    void ShowHit_OnHit() {
-        // View can not 'queue' show animations so just apply the damage
-        // and wait for ShowXXX_OnCompletion to return to caller
-        ApplyDamage();
-    }
-
-    void ShowHit_OnShowCompletion() {
-        // View is showing Hit
-        LogEvent();
-        Return();
-    }
-
-    #endregion
-
-    #region ShowCmdHit
-
-    void ShowCmdHit_EnterState() {
-        LogEvent();
-        //OnShowCompletion();
-        OnStartShow();
-    }
-
-
-    void ShowCmdHit_OnHit() {
-        // View can not 'queue' show animations so just apply the damage
-        // and wait for ShowXXX_OnCompletion to return to caller
-        ApplyDamage();
-    }
-
-    void ShowCmdHit_OnShowCompletion() {
-        // View is showing Hit
-        LogEvent();
-        Return();
-    }
-
-    #endregion
-
-    #region Withdrawing
-    // only called from GoAttack
-
-    void Withdrawing_EnterState() {
-        // TODO withdraw to rear, evade
-    }
-
-    void Withdrawing_OnHit() {
-        Call(ShipState.TakingDamage);
-    }
-
-    void Withdrawing_OnOrdersChanged() {
-        Return();
-    }
-
-    #endregion
-
-    #region Entrenching
-
-    //IEnumerator Entrenching_EnterState() {
-    //    // TODO ShipView shows animation while in this state
-    //    while (true) {
-    //        // TODO entrench until complete
-    //        yield return null;
-    //    }
-    //    //_fleet.OnEntrenchingComplete(this)?
-    //    Return();
-    //}
-
-    void Entrenching_OnHit() {
-        // TODO inform fleet of hit
-        Call(ShipState.TakingDamage);
-    }
-
-    void Entrenching_OnOrdersChanged() {
-        CurrentState = ShipState.ProcessOrders;
-    }
-
-    void Entrenching_ExitState() {
-        //_fleet.OnEntrenchingComplete(this)?
-    }
-
-    #endregion
-
-    #region Repairing
-
-    IEnumerator Repairing_EnterState() {
-        // ShipView shows animation while in this state
-        OnStartShow();
-        //while (true) {
-        // TODO repair until complete
-        yield return new WaitForSeconds(2);
-        //}
-        //_command.OnRepairingComplete(this)?
-        OnStopShow();   // must occur while still in target state
-        Return();
-    }
-
-    void Repairing_OnHit() {
-        // TODO inform fleet of hit
-        Call(ShipState.TakingDamage);
-    }
-
-    void Repairing_OnOrdersChanged() {
-        CurrentState = ShipState.ProcessOrders;
-    }
-
-    void Repairing_ExitState() {
-        LogEvent();
-    }
-
-    #endregion
-
-    #region Refitting
-
-    IEnumerator Refitting_EnterState() {
-        // ShipView shows animation while in this state
-        OnStartShow();
-        //while (true) {
-        // TODO refit until complete
-        yield return new WaitForSeconds(2);
-        //}
-        OnStopShow();   // must occur while still in target state
-        Return();
-    }
-
-    void Refitting_OnHit() {
-        // TODO inform fleet of hit
-        Call(ShipState.TakingDamage);
-    }
-
-    void Refitting_OnOrdersChanged() {
-        CurrentState = ShipState.ProcessOrders;
-    }
-
-    void Refitting_ExitState() {
-        LogEvent();
-        //_fleet.OnRefittingComplete(this)?
-    }
-
-    #endregion
-
-    #region Disbanding
-    // UNDONE not clear how this works
-
-    void Disbanding_EnterState() {
-        // TODO detach from fleet and create temp FleetCmd
-        // issue a Disband order to our new fleet
-        Return();   // ??
-    }
-
-    void Disbanding_OnHit() {
-        // TODO inform fleet of hit
-        Call(ShipState.TakingDamage);
-    }
-
-    void Disbanding_OnOrdersChanged() {
-        CurrentState = ShipState.ProcessOrders; // ??
-    }
-
-    void Disbanding_ExitState() {
-        // issue the Disband order here, after Return?
-    }
-
-    #endregion
-
-    #region Dying
-
-    void Dying_EnterState() {
-        LogEvent();
-        Call(ShipState.ShowDying);
-        CurrentState = ShipState.Dead;
-    }
-
-    #endregion
-
-    #region ShowDying
-
-    void ShowDying_EnterState() {
-        LogEvent();
-        // View is showing Dying
-        OnStartShow();
-    }
-
-    void ShowDying_OnShowCompletion() {
-        LogEvent();
-        Return();
-    }
-
-    #endregion
-
-    #region Dead
-
-    IEnumerator Dead_EnterState() {
-        LogEvent();
-        yield return new WaitForSeconds(3);
-        Destroy(gameObject);
-    }
-
-    #endregion
-
-    # region Callbacks
-    // See also AElementItem 
-
-    void OnOrdersChanged() {
-        if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
-            RelayToCurrentState();
-        }
-    }
-
+    // UNCLEAR can these 4 course-related events occur in any other state than MovingTo?
+    // If not, then they should be processed here rather than in the state
     void OnCoursePlotSuccess() { RelayToCurrentState(); }
 
     void OnCoursePlotFailure() {

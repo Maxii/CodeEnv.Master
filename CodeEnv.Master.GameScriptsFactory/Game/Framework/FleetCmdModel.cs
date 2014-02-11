@@ -76,7 +76,7 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
             D.Warn("Duplicate ChangeHeading Command to {0} on {1}.", newHeading, Data.Name);
             return false;
         }
-        D.Log("Fleet Requested Heading was {0}, now {1}.", Data.RequestedHeading, newHeading);
+        //D.Log("Fleet Requested Heading was {0}, now {1}.", Data.RequestedHeading, newHeading);
         foreach (var ship in Elements) {
             ship.ChangeHeading(newHeading);
         }
@@ -95,7 +95,7 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
             D.Warn("Duplicate ChangeSpeed Command to {0} on {1}.", newSpeed, Data.Name);
             return false;
         }
-        D.Log("Fleet Requested Speed was {0}, now {1}.", Data.RequestedSpeed, newSpeed);
+        //D.Log("Fleet Requested Speed was {0}, now {1}.", Data.RequestedSpeed, newSpeed);
         foreach (var ship in Elements) {
             ship.ChangeSpeed(newSpeed);
         }
@@ -134,35 +134,6 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
         Elements.ForAll(s => s.CurrentOrder = allStop);
     }
 
-    public override void AssessCommandCategory() {
-        if (Elements.Count >= 22) {
-            Data.Category = FleetCategory.Armada;
-            return;
-        }
-        if (Elements.Count >= 15) {
-            Data.Category = FleetCategory.BattleGroup;
-            return;
-        }
-        if (Elements.Count >= 9) {
-            Data.Category = FleetCategory.TaskForce;
-            return;
-        }
-        if (Elements.Count >= 4) {
-            Data.Category = FleetCategory.Squadron;
-            return;
-        }
-        if (Elements.Count >= 1) {
-            Data.Category = FleetCategory.Flotilla;
-            return;
-        }
-        Data.Category = FleetCategory.None;
-    }
-
-    protected override void NotifyOfDeath() {
-        base.NotifyOfDeath();
-        CurrentState = FleetState.Dying;
-    }
-
     #region StateMachine
 
     public new FleetState CurrentState {
@@ -173,43 +144,159 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
     #region Idle
 
     void Idling_EnterState() {
-        //CurrentOrder = null;
-        //if (Data.RequestedSpeed != Constants.ZeroF) {
-        //    ChangeSpeed(Constants.ZeroF);
-        //}
+        LogEvent();
         // register as available
-    }
-
-    void Idling_OnOrdersChanged() {
-        CurrentState = FleetState.ProcessOrders;
-    }
-
-    void Idling_OnHit() {
-        Call(FleetState.TakingDamage);
-    }
-
-    void Idling_ExitState() {
-        // register as unavailable
     }
 
     void Idling_OnDetectedEnemy() { }
 
+    void Idling_ExitState() {
+        LogEvent();
+        // register as unavailable
+    }
 
     #endregion
 
-    #region ProcessOrders
+    #region MovingTo
 
-    private UnitOrder<FleetOrders> _orderBeingExecuted;
-    private bool _isNewOrderWaiting;
+    void MovingTo_EnterState() {
+        Navigator.PlotCourse(CurrentOrder.Target, CurrentOrder.Speed);
+    }
 
-    void ProcessOrders_EnterState() { }
+    void MovingTo_OnCoursePlotSuccess() {
+        Navigator.Engage();
+    }
 
-    void ProcessOrders_Update() {
-        // I got to this state one of two ways:
-        // 1. there has been a new order issued, or
-        // 2. the last new order (_orderBeingExecuted) has been completed
-        _isNewOrderWaiting = _orderBeingExecuted != CurrentOrder;
-        if (_isNewOrderWaiting) {
+    void MovingTo_OnDestinationReached() {
+        CurrentOrder = new UnitOrder<FleetOrders>(FleetOrders.AllStop);
+    }
+
+    void MovingTo_OnCoursePlotFailure() {
+        CurrentState = FleetState.Idling;
+    }
+
+    void MovingTo_OnFleetTrackingError() {
+        CurrentState = FleetState.Idling;
+    }
+
+    void MovingTo_OnFlagshipTrackingError() {
+        CurrentState = FleetState.Idling;
+    }
+
+    void MovingTo_ExitState() {
+        Navigator.Disengage();
+    }
+
+    #endregion
+
+    #region Patrol
+
+    void GoPatrol_EnterState() { }
+
+    void GoPatrol_OnDetectedEnemy() { }
+
+    void Patrolling_EnterState() { }
+
+    void Patrolling_OnDetectedEnemy() { }
+
+    #endregion
+
+    #region Guard
+
+    void GoGuard_EnterState() { }
+
+    void Guarding_EnterState() { }
+
+    #endregion
+
+    #region Entrench
+
+    void Entrenching_EnterState() { }
+
+    #endregion
+
+    #region Attack
+
+    void GoAttack_EnterState() { }
+
+    void Attacking_EnterState() { }
+
+    #endregion
+
+    #region Repair
+
+    void GoRepair_EnterState() { }
+
+    void Repairing_EnterState() { }
+
+    #endregion
+
+    #region Retreat
+
+    void GoRetreat_EnterState() { }
+
+    #endregion
+
+    #region Refit
+
+    void GoRefit_EnterState() { }
+
+    void Refitting_EnterState() { }
+
+    #endregion
+
+    #region Disband
+
+    void GoDisband_EnterState() { }
+
+    void Disbanding_EnterState() { }
+
+    #endregion
+
+    #region Dead
+
+    void Dead_EnterState() {
+        LogEvent();
+        OnItemDeath();
+        StartCoroutine(DelayedDestroy(1));
+    }
+
+    #endregion
+
+    #region StateMachine Support Methods
+
+    protected override void KillCommand() {
+        CurrentState = FleetState.Dead;
+    }
+
+    #endregion
+
+    # region StateMachine Callbacks
+
+    // See also AUnitCommandModel
+
+    void OnCoursePlotFailure() { RelayToCurrentState(); }
+
+    void OnCoursePlotSuccess() { RelayToCurrentState(); }
+
+    void OnDestinationReached() {
+        D.Log("{0} Destination {1} reached.", Data.Name, Navigator.Target.Name);
+        RelayToCurrentState();
+    }
+
+    void OnFleetTrackingError() {
+        // the final waypoint is not close enough and we can't directly approach the Destination
+        RelayToCurrentState();
+    }
+
+    void OnFlagshipTrackingError() {
+        // the Flagship reports the fleet has missed or can't catch a target
+        RelayToCurrentState();
+    }
+
+    void OnOrdersChanged() {
+        if (CurrentOrder != null) {
+            D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
             FleetOrders order = CurrentOrder.Order;
             switch (order) {
                 case FleetOrders.AllStop:
@@ -259,233 +346,6 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
             }
-            _orderBeingExecuted = CurrentOrder;
-        }
-        else {
-            // there is no new order so the return to this state must be after the last new order has been completed
-            D.Assert(false, "Should be no Return() here.");
-            CurrentState = FleetState.Idling;
-        }
-    }
-
-    #endregion
-
-    #region MovingTo
-
-    void MovingTo_EnterState() {
-        Navigator.PlotCourse(CurrentOrder.Target, CurrentOrder.Speed);
-    }
-
-    void MovingTo_OnCoursePlotSuccess() {
-        Navigator.Engage();
-    }
-
-    void MovingTo_OnDestinationReached() {
-        CurrentOrder = new UnitOrder<FleetOrders>(FleetOrders.AllStop);
-    }
-
-    void MovingTo_OnOrdersChanged() {
-        CurrentState = FleetState.ProcessOrders;
-    }
-
-    void MovingTo_OnHit() {
-        LogEvent();
-        Call(FleetState.TakingDamage);
-    }
-
-    void MovingTo_OnCoursePlotFailure() {
-        CurrentState = FleetState.Idling;
-    }
-
-    void MovingTo_OnFleetTrackingError() {
-        CurrentState = FleetState.Idling;
-    }
-
-    void MovingTo_OnFlagshipTrackingError() {
-        CurrentState = FleetState.Idling;
-    }
-
-    void MovingTo_ExitState() {
-        Navigator.Disengage();
-    }
-
-    #endregion
-
-    #region Patrol
-
-    void GoPatrol_EnterState() { }
-
-    void GoPatrol_OnHit() {
-        Call(FleetState.TakingDamage);
-    }
-
-    void GoPatrol_OnDetectedEnemy() { }
-
-    void Patrolling_EnterState() { }
-
-    void Patrolling_OnHit() {
-        Call(FleetState.TakingDamage);
-    }
-
-    void Patrolling_OnDetectedEnemy() { }
-
-    #endregion
-
-    #region Guard
-
-    void GoGuard_EnterState() { }
-
-    void GoGuard_OnHit() {
-        Call(FleetState.TakingDamage);
-    }
-
-    void Guarding_EnterState() { }
-
-    void Guarding_OnHit() {
-        Call(FleetState.TakingDamage);
-    }
-
-    #endregion
-
-    #region Entrench
-
-    void Entrenching_EnterState() { }
-
-    void Entrenching_OnHit() {
-        Call(FleetState.TakingDamage);
-    }
-
-    #endregion
-
-    #region Attack
-
-    void GoAttack_EnterState() { }
-
-    void Attacking_EnterState() { }
-
-    #endregion
-
-    #region TakingDamage
-
-    void TakingDamage_EnterState() {
-        LogEvent();
-        bool isCmdHealthGreaterThanZero = ApplyDamage();
-        if (!isCmdHealthGreaterThanZero) {
-            D.Log("{0} Senior Staff have been killed! {0} Effectiveness severely impaired.", Data.Name);
-            // ACommandData changes CmdEffectiveness as health changes
-            // TODO notification to the player?
-        }
-        Return();   // returns to the state we were in when the OnHit event arrived
-    }
-
-    void TakingDamage_ExitState() {
-        LogEvent();
-    }
-
-    // TakingDamage is a transition state so _OnHit cannot occur here
-
-    #endregion
-
-    #region Repair
-
-    void GoRepair_EnterState() { }
-
-    void GoRepair_OnHit() {
-        Call(FleetState.TakingDamage);
-    }
-
-    void Repairing_EnterState() { }
-
-    void Repairing_OnHit() {
-        Call(FleetState.TakingDamage);
-    }
-
-    #endregion
-
-    #region Retreat
-
-    void GoRetreat_EnterState() { }
-
-    #endregion
-
-    #region Refit
-
-    void GoRefit_EnterState() { }
-
-    void GoRefit_OnHit() {
-        Call(FleetState.TakingDamage);
-    }
-
-    void Refitting_EnterState() { }
-
-    void Refitting_OnHit() {
-        Call(FleetState.TakingDamage);
-    }
-
-    #endregion
-
-    #region Disband
-
-    void GoDisband_EnterState() { }
-
-    void GoDisband_OnHit() {
-        Call(FleetState.TakingDamage);
-    }
-
-    void Disbanding_EnterState() { }
-
-    void Disbanding_OnHit() {
-        Call(FleetState.TakingDamage);
-    }
-
-    #endregion
-
-    #region Dying
-
-    void Dying_EnterState() {
-        LogEvent();
-        CurrentState = FleetState.Dead;
-    }
-
-    #endregion
-
-    #region Dead
-
-    IEnumerator Dead_EnterState() {
-        LogEvent();
-        yield return new WaitForSeconds(3);
-        Destroy(gameObject);
-    }
-
-    #endregion
-
-    # region StateMachine Callbacks
-
-    // See also AUnitCommandModel
-
-    void OnCoursePlotFailure() { RelayToCurrentState(); }
-
-    void OnCoursePlotSuccess() { RelayToCurrentState(); }
-
-    void OnDestinationReached() {
-        D.Log("{0} Destination {1} reached.", Data.Name, Navigator.Target.Name);
-        RelayToCurrentState();
-    }
-
-    void OnFleetTrackingError() {
-        // the final waypoint is not close enough and we can't directly approach the Destination
-        RelayToCurrentState();
-    }
-
-    void OnFlagshipTrackingError() {
-        // the Flagship reports the fleet has missed or can't catch a target
-        RelayToCurrentState();
-    }
-
-    void OnOrdersChanged() {
-        if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
-            RelayToCurrentState();
         }
     }
 

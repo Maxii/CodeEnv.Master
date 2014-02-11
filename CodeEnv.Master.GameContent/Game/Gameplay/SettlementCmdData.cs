@@ -16,7 +16,10 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
+    using System.Linq;
     using CodeEnv.Master.Common;
+    using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
 
     /// <summary>
@@ -24,7 +27,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SettlementCmdData : ACommandData {
 
-        public SettlementCategory Category { get; set; }
+        private SettlementCategory _category;
+        public SettlementCategory Category {
+            get { return _category; }
+            private set { SetProperty<SettlementCategory>(ref _category, value, "Category"); }
+        }
 
         private int _population;
         public int Population {
@@ -63,11 +70,7 @@ namespace CodeEnv.Master.GameContent {
             set { base.HQElementData = value; }
         }
 
-        private BaseComposition _composition;
-        public BaseComposition Composition {
-            get { return _composition; }
-            private set { SetProperty<BaseComposition>(ref _composition, value, "Composition"); }
-        }
+        public BaseComposition Composition { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StarbaseCmdData" /> class.
@@ -81,16 +84,40 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override void ChangeComposition(AElementData elementData, bool toAdd) {
-            bool isChanged = false;
-            if (toAdd) {
-                isChanged = Composition.Add(elementData as FacilityData);
-            }
-            else {
-                isChanged = Composition.Remove(elementData as FacilityData);
-            }
-
+            bool isChanged = toAdd ? Composition.Add(elementData as FacilityData) : Composition.Remove(elementData as FacilityData);
             if (isChanged) {
-                Composition = new BaseComposition(Composition);
+                AssessCommandCategory();
+                OnCompositionChanged();
+            }
+        }
+
+        private void AssessCommandCategory() {
+            int elementCount = Composition.ElementCount;
+            switch (elementCount) {
+                case 1:
+                    Category = SettlementCategory.Colony;
+                    break;
+                case 2:
+                case 3:
+                    Category = SettlementCategory.City;
+                    break;
+                case 4:
+                case 5:
+                    Category = SettlementCategory.CityState;
+                    break;
+                case 6:
+                case 7:
+                    Category = SettlementCategory.Province;
+                    break;
+                case 8:
+                case 9:
+                    Category = SettlementCategory.Territory;
+                    break;
+                case 0:
+                    // element count of 0 = dead, so don't generate a change to be handled
+                    break;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(elementCount));
             }
         }
 

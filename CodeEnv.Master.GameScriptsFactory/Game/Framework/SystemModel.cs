@@ -27,8 +27,6 @@ public class SystemModel : AItemModel {
         set { base.Data = value; }
     }
 
-    protected override void SubscribeToDataValueChanges() { }
-
     public void AssignSettlement(SettlementUnitCreator settlementCreator) {
         D.Assert(gameObject.GetComponentInChildren<SettlementUnitCreator>() == null, "{0} already has a Settlement.".Inject(Data.Name));
         GameObject orbitGoClone = UnityUtility.AddChild(gameObject, RequiredPrefabs.Instance.orbit.gameObject);

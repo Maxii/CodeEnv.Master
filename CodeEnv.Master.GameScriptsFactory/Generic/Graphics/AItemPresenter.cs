@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// MVPresenter base class associated with an AView.
 /// </summary>
-public abstract class AItemPresenter : APropertyChangeTracking, IDisposable {
+public abstract class AItemPresenter : IDisposable {
 
     static AItemPresenter() {
         InitializeHudPublishers();

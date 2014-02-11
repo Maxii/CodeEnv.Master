@@ -18,6 +18,8 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
@@ -31,6 +33,18 @@ public class FacilityModel : AUnitElementModel {
     public new FacilityData Data {
         get { return base.Data as FacilityData; }
         set { base.Data = value; }
+    }
+
+    public override bool IsHQElement {  // temp override to add Assertion protection
+        get {
+            return base.IsHQElement;
+        }
+        set {
+            if (value) {
+                D.Assert(Data.Category == FacilityCategory.CentralHub);
+            }
+            base.IsHQElement = value;
+        }
     }
 
     private UnitOrder<FacilityOrders> _currentOrder;
@@ -72,14 +86,6 @@ public class FacilityModel : AUnitElementModel {
         // TODO register as available
     }
 
-    void Idling_OnOrdersChanged() {
-        CurrentState = FacilityState.ProcessOrders;
-    }
-
-    void Idling_OnHit() {
-        Call(FacilityState.TakingDamage);
-    }
-
     void Idling_ExitState() {
         // TODO register as unavailable
     }
@@ -89,17 +95,155 @@ public class FacilityModel : AUnitElementModel {
 
     #endregion
 
-    #region ProcessOrders
+    #region GoAttack
 
-    private UnitOrder<FacilityOrders> _orderBeingExecuted;
-    private bool _isNewOrderWaiting;
+    private ITarget _target;
 
-    void ProcessOrders_Update() {
-        // I got to this state only one way - there was a new order issued.
-        // This switch should never use Call(state) as there is no 'state' to
-        // return to in ProcessOrders to resume. It is a transition state.
-        _isNewOrderWaiting = _orderBeingExecuted != CurrentOrder;
-        if (_isNewOrderWaiting) {
+    void GoAttack_EnterState() {
+        ITarget providedTarget = CurrentOrder.Target;
+        if (providedTarget is FleetCmdModel) {
+            // TODO pick the ship to target
+        }
+        else {
+            _target = providedTarget;    // a specific ship
+        }
+    }
+
+    void GoAttack_Update() {
+        // if badly damaged, CurrentState = ShipState.Withdrawing;
+        // if target destroyed, find new target
+        // if target out of range, Call(ShipState.Chasing);
+        // else Call(ShipState.Attacking);
+    }
+
+    #endregion
+
+    #region Attacking
+
+    void Attacking_EnterState() {
+        LogEvent();
+        // launch a salvo at  _target 
+        OnStartShow();
+    }
+
+    void Attacking_OnShowCompletion() {
+        LogEvent();
+        Return();   // to GoAttack
+    }
+
+    #endregion
+
+    #region ShowHit
+
+    void ShowHit_EnterState() {
+        LogEvent();
+        OnStartShow();
+    }
+
+    void ShowHit_OnShowCompletion() {
+        LogEvent();
+        // View is showing Hit
+        Return();
+    }
+
+    #endregion
+
+    #region ShowCmdHit
+
+    void ShowCmdHit_EnterState() {
+        LogEvent();
+        OnStartShow();
+    }
+
+    void ShowCmdHit_OnShowCompletion() {
+        LogEvent();
+        // View is showing Hit
+        Return();
+    }
+
+    #endregion
+
+    #region Repairing
+
+    IEnumerator Repairing_EnterState() {
+        // ShipView shows animation while in this state
+        OnStartShow();
+        //while (true) {
+        // TODO repair until complete
+        yield return new WaitForSeconds(2);
+        //}
+        //_command.OnRepairingComplete(this)?
+        OnStopShow();   // must occur while still in target state
+        Return();
+    }
+
+    void Repairing_ExitState() {
+        LogEvent();
+    }
+
+    #endregion
+
+    #region Refitting
+
+    IEnumerator Refitting_EnterState() {
+        // View shows animation while in this state
+        OnStartShow();
+        //while (true) {
+        // TODO refit until complete
+        yield return new WaitForSeconds(2);
+        //}
+        OnStopShow();   // must occur while still in target state
+        Return();
+    }
+
+    void Refitting_ExitState() {
+        LogEvent();
+        //_fleet.OnRefittingComplete(this)?
+    }
+
+    #endregion
+
+    #region Disbanding
+    // UNDONE not clear how this works
+
+    void Disbanding_EnterState() {
+        // TODO detach from fleet and create temp FleetCmd
+        // issue a Disband order to our new fleet
+        Return();   // ??
+    }
+
+    void Disbanding_ExitState() {
+        // issue the Disband order here, after Return?
+    }
+
+    #endregion
+
+    #region Dead
+
+    void Dead_EnterState() {
+        LogEvent();
+        OnItemDeath();
+        OnStartShow();
+    }
+
+    void Dead_OnShowCompletion() {
+        LogEvent();
+        StartCoroutine(DelayedDestroy(3));
+    }
+
+    #endregion
+
+    # region Callbacks
+
+    // See also AUnitElementModel
+
+    protected override void OnHit(float damage) {
+        DistributeDamage(damage);
+    }
+
+    void OnOrdersChanged() {
+        if (CurrentOrder != null) {
+            D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
             FacilityOrders order = CurrentOrder.Order;
             switch (order) {
                 case FacilityOrders.Attack:
@@ -122,280 +266,77 @@ public class FacilityModel : AUnitElementModel {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
             }
-            _orderBeingExecuted = CurrentOrder;
+        }
+    }
+
+    #endregion
+
+    #region StateMachine Support Methods
+
+    /// <summary>
+    /// Distributes the damage this element has just received evenly across all
+    /// other non-HQ facilities.
+    /// </summary>
+    /// <param name="damage">The damage.</param>
+    private void DistributeDamage(float damage) {
+        // if facility being attacked is already dead, no damage can be taken by the Unit
+        if (CurrentState == FacilityState.Dead) {
+            return;
+        }
+
+        var elements = _command.Elements;
+        IList<FacilityModel> elementsTakingDamage;
+        if (elements.Count == 1) {
+            // the HQ Element CentralHub
+            elementsTakingDamage = new List<FacilityModel>(elements);
         }
         else {
-            // there is no new order so the return to this state must be after the last new order has been completed
-            D.Assert(false, "Should be no Return() here.");
-            CurrentState = FacilityState.Idling;
+            // all other facilities except the HQElement CentralHub
+            elementsTakingDamage = new List<FacilityModel>(elements.Where(e => !e.IsHQElement));
+        }
+        float elementDamage = damage / (float)elementsTakingDamage.Count;
+        foreach (var element in elementsTakingDamage) {
+            bool isElementDirectlyAttacked = false;
+            if (element == this) {
+                isElementDirectlyAttacked = true;
+            }
+            element.TakeDamage(elementDamage, isElementDirectlyAttacked);
         }
     }
 
-    // Transition state so _OnHit and _OnOrdersChanged cannot occur here
+    /// <summary>
+    /// The method Facilities use to actually incur individual damage.
+    /// </summary>
+    /// <param name="damage">The damage.</param>
+    /// <param name="isDirectlyAttacked">if set to <c>true</c> this facility is the one being directly attacked.</param>
+    private void TakeDamage(float damage, bool isDirectlyAttacked) {
+        D.Assert(CurrentState != FacilityState.Dead, "{0} should not already be dead!".Inject(Data.Name));
 
-    #endregion
+        bool isElementAlive = ApplyDamage(damage);
 
-    #region GoAttack
-
-    private ITarget _target;
-
-    void GoAttack_EnterState() {
-        ITarget providedTarget = CurrentOrder.Target;
-        if (providedTarget is FleetCmdModel) {
-            // TODO pick the ship to target
-        }
-        else {
-            _target = providedTarget;    // a specific ship
-        }
-    }
-
-    void GoAttack_Update() {
-        if (!_isNewOrderWaiting) {
-            // if badly damaged, CurrentState = ShipState.Withdrawing;
-            // if target destroyed, find new target
-            // if target out of range, Call(ShipState.Chasing);
-            // else Call(ShipState.Attacking);
-        }
-        else {
-            // there is a new order waiting, so get it processed
-            CurrentState = FacilityState.ProcessOrders;
-        }
-    }
-
-    // Transition state so _OnHit and _OnOrdersChanged cannot occur here
-
-    #endregion
-
-    #region Attacking
-
-    void Attacking_EnterState() {
-        // launch a salvo at  _target 
-        Call(FacilityState.ShowAttacking);
-        Return();   // to GoAttack
-    }
-
-    // Transition state so _OnHit and _OnOrdersChanged cannot occur here
-
-    #endregion
-
-    #region ShowAttacking
-
-    void ShowAttacking_EnterState() {
-        OnStartShow();
-    }
-
-    void ShowAttacking_OnHit() {
-        // View can not 'queue' show animations so just apply the damage
-        // and wait for ShowXXX_OnCompletion to return to caller
-        ApplyDamage();
-    }
-
-    void ShowAttacking_OnShowCompletion() {
-        // VIew shows the attack here
-        Return();   // to Attacking
-    }
-
-    #endregion
-
-    #region TakingDamage
-
-    void TakingDamage_EnterState() {
-        LogEvent();
         bool isCmdHit = false;
-        bool isElementAlive = ApplyDamage();
         if (IsHQElement) {
+            D.Assert(isDirectlyAttacked, "{0} is HQElement and must be directly attacked to incur damage.".Inject(Data.Name));
             isCmdHit = _command.__CheckForDamage(isElementAlive);
         }
-        if (isElementAlive) {
+        if (!isElementAlive) {
+            CurrentState = FacilityState.Dead;
+            return;
+        }
+
+        if (CurrentState == FacilityState.ShowHit || CurrentState == FacilityState.ShowCmdHit) {
+            // View can not 'queue' show animations so don't interrupt what is showing with another like show
+            return;
+        }
+
+        if (isDirectlyAttacked) {
+            // only show being hit if this facility is the one being directly attacked
             if (isCmdHit) {
                 Call(FacilityState.ShowCmdHit);
             }
             else {
                 Call(FacilityState.ShowHit);
             }
-            Return();   // returns to the state we were in when the OnHit event arrived
-        }
-        else {
-            CurrentState = FacilityState.Dying;
-        }
-    }
-
-    void TakingDamage_ExitState() {
-        LogEvent();
-    }
-
-    // TakingDamage is a transition state so _OnHit cannot occur here
-
-    #endregion
-
-    #region ShowHit
-
-    void ShowHit_EnterState() {
-        LogEvent();
-        OnStartShow();
-    }
-
-    void ShowHit_OnHit() {
-        // View can not 'queue' show animations so just apply the damage
-        // and wait for ShowXXX_OnCompletion to return to caller
-        ApplyDamage();
-    }
-
-    void ShowHit_OnShowCompletion() {
-        // View is showing Hit
-        LogEvent();
-        Return();
-    }
-
-    #endregion
-
-    #region ShowCmdHit
-
-    void ShowCmdHit_EnterState() {
-        LogEvent();
-        //OnShowCompletion();
-        OnStartShow();
-    }
-
-    void ShowCmdHit_OnHit() {
-        // View can not 'queue' show animations so just apply the damage
-        // and wait for ShowXXX_OnCompletion to return to caller
-        ApplyDamage();
-    }
-
-    void ShowCmdHit_OnShowCompletion() {
-        // View is showing Hit
-        LogEvent();
-        Return();
-    }
-
-    #endregion
-
-    #region Repairing
-
-    IEnumerator Repairing_EnterState() {
-        // ShipView shows animation while in this state
-        OnStartShow();
-        //while (true) {
-        // TODO repair until complete
-        yield return new WaitForSeconds(2);
-        //}
-        //_command.OnRepairingComplete(this)?
-        OnStopShow();   // must occur while still in target state
-        Return();
-    }
-
-    void Repairing_OnHit() {
-        // TODO inform fleet of hit
-        Call(FacilityState.TakingDamage);
-    }
-
-    void Repairing_OnOrdersChanged() {
-        CurrentState = FacilityState.ProcessOrders;
-    }
-
-    void Repairing_ExitState() {
-        LogEvent();
-    }
-
-    #endregion
-
-    #region Refitting
-
-    IEnumerator Refitting_EnterState() {
-        // View shows animation while in this state
-        OnStartShow();
-        //while (true) {
-        // TODO refit until complete
-        yield return new WaitForSeconds(2);
-        //}
-        OnStopShow();   // must occur while still in target state
-        Return();
-    }
-
-    void Refitting_OnHit() {
-        // TODO inform fleet of hit
-        Call(FacilityState.TakingDamage);
-    }
-
-    void Refitting_OnOrdersChanged() {
-        CurrentState = FacilityState.ProcessOrders;
-    }
-
-    void Refitting_ExitState() {
-        LogEvent();
-        //_fleet.OnRefittingComplete(this)?
-    }
-
-    #endregion
-
-    #region Disbanding
-    // UNDONE not clear how this works
-
-    void Disbanding_EnterState() {
-        // TODO detach from fleet and create temp FleetCmd
-        // issue a Disband order to our new fleet
-        Return();   // ??
-    }
-
-    void Disbanding_OnHit() {
-        // TODO inform fleet of hit
-        Call(FacilityState.TakingDamage);
-    }
-
-    void Disbanding_OnOrdersChanged() {
-        CurrentState = FacilityState.ProcessOrders; // ??
-    }
-
-    void Disbanding_ExitState() {
-        // issue the Disband order here, after Return?
-    }
-
-    #endregion
-
-    #region Dying
-
-    void Dying_EnterState() {
-        LogEvent();
-        Call(FacilityState.ShowDying);
-        CurrentState = FacilityState.Dead;
-    }
-
-    #endregion
-
-    #region ShowDying
-
-    void ShowDying_EnterState() {
-        LogEvent();
-        // View is showing Dying
-        OnStartShow();
-    }
-
-    void ShowDying_OnShowCompletion() {
-        LogEvent();
-        Return();
-    }
-
-    #endregion
-
-    #region Dead
-
-    IEnumerator Dead_EnterState() {
-        LogEvent();
-        yield return new WaitForSeconds(3);
-        Destroy(gameObject);
-    }
-
-    #endregion
-
-    # region Callbacks
-
-    // See also AElementItem
-
-    void OnOrdersChanged() {
-        if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
-            RelayToCurrentState();
         }
     }
 

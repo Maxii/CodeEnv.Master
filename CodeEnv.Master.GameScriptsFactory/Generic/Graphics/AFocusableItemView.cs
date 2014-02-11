@@ -163,6 +163,10 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
 
     protected override void Cleanup() {
         base.Cleanup();
+        if (Presenter == null) {
+            D.Error("{0}.Presenter is null.", _transform.name);
+            return;
+        }
         Presenter.Dispose();
         if (_circles != null) { _circles.Dispose(); }
     }

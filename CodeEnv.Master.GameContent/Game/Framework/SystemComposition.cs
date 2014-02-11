@@ -62,15 +62,6 @@ namespace CodeEnv.Master.GameContent {
             _composition = new SortedDictionary<PlanetoidCategory, IList<PlanetoidData>>();
         }
 
-        /// <summary>
-        /// Copy Constructor. Initializes a new instance of the <see cref="SystemComposition" /> class.
-        /// </summary>
-        /// <param name="compositionToCopy">The composition to copy.</param>
-        public SystemComposition(SystemComposition compositionToCopy) {
-            _composition = compositionToCopy._composition;
-            // UNCLEAR does compositionToCopy get collected by the garbage collector now?
-        }
-
         public bool AddPlanet(PlanetoidData data) {
             PlanetoidCategory pType = data.Category;
             if (!_composition.ContainsKey(pType)) {

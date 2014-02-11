@@ -42,7 +42,9 @@ public class SettlementCmdPresenter : AUnitCommandPresenter<FacilityModel> {
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<SettlementCmdData>(Model.Data);
+        var publisher = new GuiHudPublisher<SettlementCmdData>(Model.Data);
+        publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
+        return publisher;
     }
 
     protected override void Subscribe() {

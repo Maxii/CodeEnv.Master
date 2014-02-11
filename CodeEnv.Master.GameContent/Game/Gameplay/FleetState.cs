@@ -24,7 +24,6 @@ namespace CodeEnv.Master.GameContent {
         None,
 
         Idling,
-        ProcessOrders,
         MovingTo,
 
         GoPatrol,
@@ -35,8 +34,6 @@ namespace CodeEnv.Master.GameContent {
 
         GoAttack,
         Attacking,
-
-        TakingDamage,
 
         Entrenching,
 
@@ -50,18 +47,13 @@ namespace CodeEnv.Master.GameContent {
 
         GoJoin,
 
-        //Docking,
-
-        //Embarking,
-
         GoDisband,
         Disbanding,
 
-        Dying,
         Dead
 
-        // ShowXXX no longer applicable to Cmds as there is no mesh
-
+        // ShowHit no longer applicable to Cmds as there is no mesh
+        // TODO Docking, Embarking, etc.
     }
 
 }

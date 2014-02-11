@@ -45,7 +45,7 @@ public class ShipPresenter : AUnitElementPresenter {
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
         var hudPublisher = new GuiHudPublisher<ShipData>(Model.Data);
-        hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed);
+        hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed, GuiHudLineKeys.Health);
         return hudPublisher;
     }
 
@@ -59,7 +59,7 @@ public class ShipPresenter : AUnitElementPresenter {
         ShipState state = Model.CurrentState;
         //D.Log("{0}.OnStartShowInView state = {1}.", Model.Data.Name, newState.GetName());
         switch (state) {
-            case ShipState.ShowAttacking:
+            case ShipState.Attacking:
                 View.ShowAttacking();
                 break;
             case ShipState.ShowHit:
@@ -68,26 +68,21 @@ public class ShipPresenter : AUnitElementPresenter {
             case ShipState.ShowCmdHit:
                 View.ShowCmdHit();
                 break;
-            case ShipState.ShowDying:
-                View.ShowDying();
-                break;
             case ShipState.Refitting:
                 View.ShowRefitting();
                 break;
             case ShipState.Repairing:
                 View.ShowRepairing();
                 break;
+            case ShipState.Dead:
+                View.ShowDying();
+                break;
             case ShipState.Entrenching:
-            case ShipState.ProcessOrders:
             case ShipState.MovingTo:
             case ShipState.Idling:
             case ShipState.GoAttack:
-            case ShipState.Dead:
             case ShipState.Chasing:
-            case ShipState.Attacking:
-            case ShipState.Dying:
             case ShipState.Joining:
-            case ShipState.TakingDamage:
             case ShipState.Withdrawing:
                 // do nothing
                 break;
@@ -104,23 +99,18 @@ public class ShipPresenter : AUnitElementPresenter {
             case ShipState.Repairing:
                 View.StopShowing();
                 break;
-            case ShipState.ShowAttacking:
             case ShipState.ShowHit:
             case ShipState.ShowCmdHit:
-            case ShipState.ShowDying:
+            case ShipState.Dead:
                 // no need to stop any of these showing as they complete at their own pace
                 break;
             case ShipState.Entrenching:
-            case ShipState.ProcessOrders:
             case ShipState.MovingTo:
             case ShipState.Idling:
             case ShipState.GoAttack:
-            case ShipState.Dead:
             case ShipState.Chasing:
             case ShipState.Attacking:
-            case ShipState.Dying:
             case ShipState.Joining:
-            case ShipState.TakingDamage:
             case ShipState.Withdrawing:
                 // do nothing
                 break;
