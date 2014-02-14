@@ -104,7 +104,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
     #region ContextMenu
 
     void OnPress(bool isDown) {
-        if (GameInputHelper.IsRightMouseButton() && !isDown) {
+        if (GameInputHelper.Instance.IsRightMouseButton() && !isDown) {
             OnRightPressRelease();
         }
     }
@@ -118,6 +118,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
         }
     }
 
+    // The Wireframe Hotspot approach alternative to using a small collider
     ///// <summary>
     ///// Called when a mouse button is pressed and is not consumed by another object. This implementation
     ///// is a custom context menu picker for the SectorViewer.
@@ -244,7 +245,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
             return;
         }
         if (_wireframe == null) {
-            _wireframe = new CubeWireframe("SectorWireframe", _transform, TempGameValues.SectorSize, parent: DynamicObjects.Folder,
+            _wireframe = new CubeWireframe("SectorWireframe", _transform, TempGameValues.SectorSize, parent: DynamicObjects.Instance.Folder,
                 width: 2F, color: UnityDebugConstants.SectorHighlightColor);
         }
         if (_sectorIDLabel == null) {

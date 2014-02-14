@@ -46,6 +46,7 @@ public class Loader : AMonoBaseSingleton<Loader>, IDisposable {
         if (TryDestroyExtraCopies()) {
             return;
         }
+        InitializeStaticReferences();
         _eventMgr = GameEventManager.Instance;
         _gameMgr = GameManager.Instance;
         _playerPrefsMgr = PlayerPrefsManager.Instance;
@@ -73,6 +74,26 @@ public class Loader : AMonoBaseSingleton<Loader>, IDisposable {
             _instance = this;
             return false;
         }
+    }
+
+    private void InitializeStaticReferences() {
+        D.Log("Initializing Static References.");
+        References.InputHelper = GameInputHelper.Instance;
+        References.GameManager = GameManager.Instance;
+        References.DynamicObjects = DynamicObjects.Instance;
+        References.CameraControl = CameraControl.Instance;
+
+        AGuiHudPublisher.GuiCursorHud = GuiCursorHud.Instance;
+        GuiHudPublisher<ItemData>.TextFactory = GuiHudTextFactory.Instance;
+        GuiHudPublisher<SectorData>.TextFactory = SectorGuiHudTextFactory.Instance;
+        GuiHudPublisher<ShipData>.TextFactory = ShipGuiHudTextFactory.Instance;
+        GuiHudPublisher<FleetCmdData>.TextFactory = FleetGuiHudTextFactory.Instance;
+        GuiHudPublisher<SystemData>.TextFactory = SystemGuiHudTextFactory.Instance;
+        GuiHudPublisher<StarData>.TextFactory = StarGuiHudTextFactory.Instance;
+        GuiHudPublisher<PlanetoidData>.TextFactory = PlanetoidGuiHudTextFactory.Instance;
+        GuiHudPublisher<SettlementCmdData>.TextFactory = SettlementGuiHudTextFactory.Instance;
+        GuiHudPublisher<FacilityData>.TextFactory = FacilityGuiHudTextFactory.Instance;
+        GuiHudPublisher<StarbaseCmdData>.TextFactory = StarbaseGuiHudTextFactory.Instance;
     }
 
     private void Subscribe() {

@@ -42,11 +42,6 @@ public class GuiLoadGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
         ValidateState();
     }
 
-    //protected override void OnPopupListSelectionChange(string selectionName) {
-    //    base.OnPopupListSelectionChange(selectionName);
-    //    ValidateState();
-    //}
-
     protected override void OnLeftClick() {
         if (LevelSerializer.SavedGames.Count > 0) {
             Arguments.ValidateForContent(selectedGameCaption);

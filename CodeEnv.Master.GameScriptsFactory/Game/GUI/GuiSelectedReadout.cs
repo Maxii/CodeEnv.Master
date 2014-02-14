@@ -50,7 +50,6 @@ public class GuiSelectedReadout : AGuiLabelReadoutBase, IDisposable {
         string selectionName = string.Empty;
         ISelectable newSelection = _selectionMgr.CurrentSelection;
         if (newSelection != null) {
-            //selectionName = (newSelection as IHasData).GetData().Name;  // IMPROVE ISelectable perviously inherited from IHasData
             selectionName = (newSelection as Component).gameObject.GetSafeMonoBehaviourComponent<AItemModel>().Data.Name;
         }
         RefreshReadout(selectionName);

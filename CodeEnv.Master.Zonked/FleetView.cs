@@ -278,7 +278,7 @@ public class FleetView : AFollowableView, IFleetViewable, ISelectable {
             }
             if (_velocityRay == null) {
                 Reference<float> fleetSpeed = Presenter.GetFleetSpeedReference();
-                _velocityRay = new VelocityRay("FleetVelocityRay", _transform, fleetSpeed, parent: DynamicObjects.Folder,
+                _velocityRay = new VelocityRay("FleetVelocityRay", _transform, fleetSpeed, parent: _dynamicObjects.Folder,
                     width: 2F, color: GameColor.Green);
             }
             _velocityRay.Show(toShow);

@@ -128,7 +128,7 @@ public class ShipPresenter : AUnitElementPresenter {
 
     public void RequestContextMenu(bool isDown) {
         if (DebugSettings.Instance.AllowEnemyOrders || Model.Data.Owner.IsHuman) {
-            CameraControl.Instance.ShowContextMenuOnPress(isDown);
+            _cameraControl.ShowContextMenuOnPress(isDown);
         }
     }
 

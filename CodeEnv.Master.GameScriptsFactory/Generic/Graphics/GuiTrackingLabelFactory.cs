@@ -108,7 +108,7 @@ public class GuiTrackingLabelFactory : AGenericSingleton<GuiTrackingLabelFactory
             D.Error("Prefab of Type {0} is not present.".Inject(typeof(GuiTrackingLabel).Name));
             return null;
         }
-        GameObject guiTrackingLabelCloneGO = NGUITools.AddChild(DynamicTrackingLabels.Folder.gameObject, guiTrackingLabelPrefab);
+        GameObject guiTrackingLabelCloneGO = NGUITools.AddChild(DynamicTrackingLabels.Instance.Folder.gameObject, guiTrackingLabelPrefab);
         // NGUITools.AddChild handles all scale, rotation, position, parent and layer settings
         if (text == string.Empty) { text = target.name; }
         guiTrackingLabelCloneGO.name = text + CommonTerms.Label;  // readable name of runtime instantiated label

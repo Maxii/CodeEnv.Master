@@ -30,11 +30,11 @@ namespace CodeEnv.Master.GameContent {
     /// <typeparam name="DataType">The type of Data used.</typeparam>
     public class GuiHudPublisher<DataType> : AGuiHudPublisher, IGuiHudPublisher, IDisposable where DataType : AItemData {
 
+        public static IGuiHudTextFactory<DataType> TextFactory { private get; set; }
+
         public bool IsHudShowing {
             get { return _job != null && _job.IsRunning; }
         }
-
-        private static IGuiHudTextFactory<DataType> _guiHudTextFactory;
 
         private GuiHudText _guiCursorHudText;
 
@@ -49,10 +49,6 @@ namespace CodeEnv.Master.GameContent {
             _data = data;
             _hudRefreshRate = GeneralSettings.Instance.HudRefreshRate;
             Subscribe();
-        }
-
-        public static void SetFactory(IGuiHudTextFactory<DataType> factory) {
-            _guiHudTextFactory = factory;
         }
 
         private void Subscribe() {
@@ -88,7 +84,7 @@ namespace CodeEnv.Master.GameContent {
             }
             else if (_job != null && _job.IsRunning) {
                 _job.Kill();
-                _guiCursorHud.Clear();
+                GuiCursorHud.Clear();
             }
         }
 
@@ -101,7 +97,7 @@ namespace CodeEnv.Master.GameContent {
                 if (_optionalKeys != null) {
                     UpdateGuiCursorHudText(intel, _optionalKeys);
                 }
-                _guiCursorHud.Set(_guiCursorHudText);
+                GuiCursorHud.Set(_guiCursorHudText);
                 yield return new WaitForSeconds(_hudRefreshRate);
             }
         }
@@ -109,7 +105,7 @@ namespace CodeEnv.Master.GameContent {
         private void PrepareHudText(IIntel intel) {        // OPTIMIZE Detect individual data property changes and replace them individually
             if (_guiCursorHudText == null || _guiCursorHudText.IntelCoverage != intel.CurrentCoverage || _data.IsChanged) {
                 // don't have the right version of GuiCursorHudText so make one
-                _guiCursorHudText = _guiHudTextFactory.MakeInstance(intel, _data);
+                _guiCursorHudText = TextFactory.MakeInstance(intel, _data);
                 _data.AcceptChanges();   // once we make a new one from current data, it is no longer dirty, if it ever was
             }
         }
@@ -122,7 +118,7 @@ namespace CodeEnv.Master.GameContent {
         private void UpdateGuiCursorHudText(IIntel intel, params GuiHudLineKeys[] keys) {
             IColoredTextList coloredTextList;
             foreach (var key in keys) {
-                coloredTextList = _guiHudTextFactory.MakeInstance(key, intel, _data);
+                coloredTextList = TextFactory.MakeInstance(key, intel, _data);
                 _guiCursorHudText.Replace(key, coloredTextList);
             }
         }
@@ -132,7 +128,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Cleanup() {
-            _guiCursorHud.Clear();
+            GuiCursorHud.Clear();
             if (_job != null) {
                 _job.Kill();
             }

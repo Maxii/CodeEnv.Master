@@ -41,7 +41,7 @@ public abstract class AGuiButtonBase : GuiTooltip {
     }
 
     void OnClick() {
-        if (GameInputHelper.IsLeftMouseButton()) {
+        if (GameInputHelper.Instance.IsLeftMouseButton()) {
             OnLeftClick();
         }
     }

@@ -46,11 +46,6 @@ public class FleetCmdPresenter : AUnitCommandPresenter<ShipModel> {
         return hudPublisher;
     }
 
-    protected override void Subscribe() {
-        base.Subscribe();
-        _subscribers.Add(Model.Data.SubscribeToPropertyChanged<FleetCmdData, FleetComposition>(fd => fd.Composition, OnCompositionChanged));
-    }
-
     protected override void OnStartShowInView() {
         FleetState state = Model.CurrentState;
         //D.Log("{0}.OnStartShowInView state = {1}.", Model.Data.Name, state.GetName());
@@ -89,10 +84,6 @@ public class FleetCmdPresenter : AUnitCommandPresenter<ShipModel> {
     public void __RandomChangeOfHeadingAndSpeed() {
         Model.ChangeHeading(UnityEngine.Random.insideUnitSphere.normalized);
         Model.ChangeSpeed(UnityEngine.Random.Range(Constants.ZeroF, 2.5F));
-    }
-
-    private void OnCompositionChanged() {
-        AssessCmdIcon();
     }
 
     protected override IIcon MakeCmdIconInstance() {

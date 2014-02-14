@@ -45,7 +45,7 @@ namespace CodeEnv.Master.Common {
         public static ActionTask CreateAndStartTask(Func<bool> action, Action<ATask> onCompletion) {
             var actionTask = new ActionTask(action);
             actionTask.onCompletion = onCompletion;
-            taskMgr.AddTask(actionTask);
+            TaskMgr.AddTask(actionTask);
             return actionTask;
         }
 

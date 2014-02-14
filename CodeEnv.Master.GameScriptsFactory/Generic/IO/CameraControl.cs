@@ -27,9 +27,11 @@ using UnityEngine;
 /// <summary>
 /// Singleton. Main Camera movement control.
 /// </summary>
-public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraControl.CameraState> {
+public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraControl.CameraState>, ICameraControl {
 
     #region Camera Control Configurations
+    // WARNING: Initializing non-Mono classes declared in a Mono class, outside of Awake or Start causes them to be instantiated by Unity AT EDITOR TIME (aka before runtime). 
+    //This means that their constructors will be called before ANYTHING else is called. Script execution order is irrelevant.
 
     // Focused Zooming: When focused, top and bottom Edge zooming and arrow key zooming cause camera movement in and out from the focused object that is centered on the screen. 
     // ScrollWheel zooming normally does the same if the cursor is pointed at the focused object. If the cursor is pointed somewhere else, scrolling IN moves toward the cursor resulting 
@@ -110,6 +112,9 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     }
 
     private ICameraFocusable _currentFocus;
+    /// <summary>
+    /// The object the camera is currently focused on if it has one.
+    /// </summary>
     public ICameraFocusable CurrentFocus {
         get { return _currentFocus; }
         set { SetProperty<ICameraFocusable>(ref _currentFocus, value, "CurrentFocus", OnCurrentFocusChanged, OnCurrentFocusChanging); }
@@ -337,10 +342,10 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
             universeEdge = new GameObject(universeEdgeName);
             universeEdge.AddComponent<SphereCollider>();
             universeEdge.isStatic = true;
-            UnityUtility.AttachChildToParent(universeEdge, Universe.Folder.gameObject);
+            UnityUtility.AttachChildToParent(universeEdge, Universe.Instance.Folder.gameObject);
         }
         else {
-            universeEdge = NGUITools.AddChild(Universe.Folder.gameObject, universeEdgePrefab.gameObject);
+            universeEdge = NGUITools.AddChild(Universe.Instance.Folder.gameObject, universeEdgePrefab.gameObject);
         }
         (universeEdge.collider as SphereCollider).radius = _universeRadius;
         universeEdge.layer = (int)Layers.UniverseEdge;
@@ -357,7 +362,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
             dummyTarget.AddComponent<DummyTargetManager>();
         }
         else {
-            dummyTarget = NGUITools.AddChild(DynamicObjects.Folder.gameObject, dummyTargetPrefab.gameObject);
+            dummyTarget = NGUITools.AddChild(DynamicObjects.Instance.Folder.gameObject, dummyTargetPrefab.gameObject);
         }
         dummyTarget.layer = (int)Layers.DummyTarget;
         _dummyTarget = dummyTarget.transform;
@@ -1556,9 +1561,9 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
             KeyCode notUsed;
             switch (keyboardAxis) {
                 case KeyboardAxis.Horizontal:
-                    return GameInputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftArrow, KeyCode.RightArrow);
+                    return GameInputHelper.Instance.TryIsKeyHeldDown(out notUsed, KeyCode.LeftArrow, KeyCode.RightArrow);
                 case KeyboardAxis.Vertical:
-                    return GameInputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.UpArrow, KeyCode.DownArrow);
+                    return GameInputHelper.Instance.TryIsKeyHeldDown(out notUsed, KeyCode.UpArrow, KeyCode.DownArrow);
                 case KeyboardAxis.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(keyboardAxis));

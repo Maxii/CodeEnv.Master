@@ -47,15 +47,6 @@ public class StarbaseCmdPresenter : AUnitCommandPresenter<FacilityModel> {
         return publisher;
     }
 
-    protected override void Subscribe() {
-        base.Subscribe();
-        _subscribers.Add(Model.Data.SubscribeToPropertyChanged<StarbaseCmdData, BaseComposition>(sbd => sbd.Composition, OnCompositionChanged));
-    }
-
-    private void OnCompositionChanged() {
-        AssessCmdIcon();
-    }
-
     protected override void OnStartShowInView() {
         StarbaseState state = Model.CurrentState;
         //D.Log("{0}.OnStartShowInView state = {1}.", Model.Data.Name, state.GetName());

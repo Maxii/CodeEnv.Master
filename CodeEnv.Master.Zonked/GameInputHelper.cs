@@ -1,4 +1,4 @@
-// --------------------------------------------------------------------------------------------------------------------
+﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
 // Copyright © 2012 - 2013 Strategic Forge
 //
@@ -6,8 +6,8 @@
 // </copyright> 
 // <summary> 
 // File: GameInputHelper.cs
-//  Singleton helper class for determining the state of Mouse controls
-// using Ngui's default mouse input values. 
+// Static helper class for determining the state of Mouse controls using Ngui's default mouse input values.
+//These input values are different than Unitys.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -15,32 +15,27 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-// default namespace
+//namespace CodeEnv.Master.GameContent {
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using UnityEngine;
 
 /// <summary>
-/// Singleton helper class for determining the state of Mouse controls
+/// Static helper class for determining the state of Mouse controls
 /// using Ngui's default mouse input values. These input values are 
 /// different than Unitys.
 /// </summary>
-public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHelper {
-
-    private GameInputHelper() {
-        Initialize();
-    }
-
-    protected override void Initialize() {
-        // TODO do any initialization here
-    }
+public static class GameInputHelper {
 
     /// <summary>
     /// Gets the NguiMouseButton that is being used to generate the current event.
     /// Valid only within an Ngui UICamera-generated event.
     /// </summary>
     /// <returns></returns>
-    public NguiMouseButton GetMouseButton() {
+    public static NguiMouseButton GetMouseButton() {
         int currentMouseButton = UICamera.currentTouchID;
         ValidateCurrentTouchID(currentMouseButton);
         return (NguiMouseButton)currentMouseButton;
@@ -54,12 +49,12 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     /// <returns>
     ///   <c>true</c> if the mouseButton is the one that was used to generate the current event; otherwise, <c>false</c>.
     /// </returns>
-    public bool IsMouseButton(NguiMouseButton mouseButton) {
+    public static bool IsMouseButton(NguiMouseButton mouseButton) {
         return mouseButton == GetMouseButton();
     }
 
     [System.Diagnostics.Conditional("DEBUG")]
-    private void ValidateCurrentTouchID(int currentTouchID) {
+    private static void ValidateCurrentTouchID(int currentTouchID) {
         Arguments.ValidateForRange(currentTouchID, -3, -1);
     }
 
@@ -70,7 +65,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     /// <returns>
     ///   <c>true</c> if the left mouseButton is the one that was used to generate the current event; otherwise, <c>false</c>.
     /// </returns>
-    public bool IsLeftMouseButton() {
+    public static bool IsLeftMouseButton() {
         return IsMouseButton(NguiMouseButton.Left);
     }
 
@@ -81,7 +76,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     /// <returns>
     ///   <c>true</c> if the right mouseButton is the one that was used to generate the current event; otherwise, <c>false</c>.
     /// </returns>
-    public bool IsRightMouseButton() {
+    public static bool IsRightMouseButton() {
         return IsMouseButton(NguiMouseButton.Right);
     }
 
@@ -92,7 +87,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     /// <returns>
     ///   <c>true</c> if the middle mouseButton is the one that was used to generate the current event; otherwise, <c>false</c>.
     /// </returns>
-    public bool IsMiddleMouseButton() {
+    public static bool IsMiddleMouseButton() {
         return IsMouseButton(NguiMouseButton.Middle);
     }
 
@@ -134,7 +129,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
         return false;
     }
 
-    public bool IsAnyKeyOrMouseButtonDown() {
+    public static bool IsAnyKeyOrMouseButtonDown() {
         return Input.anyKey;
     }
 
@@ -160,7 +155,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     /// <param name="keyHeldDown">The key held down.</param>
     /// <param name="keys">The keys.</param>
     /// <returns></returns>
-    public bool TryIsKeyHeldDown(out KeyCode keyHeldDown, params KeyCode[] keys) {
+    public static bool TryIsKeyHeldDown(out KeyCode keyHeldDown, params KeyCode[] keys) {
         keyHeldDown = KeyCode.None;
         foreach (var key in keys) {
             if (IsKeyHeldDown(key)) {
@@ -186,7 +181,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     /// <param name="keyDown">The key down.</param>
     /// <param name="keys">The keys.</param>
     /// <returns></returns>
-    public bool TryIsKeyDown(out KeyCode keyDown, params KeyCode[] keys) {
+    public static bool TryIsKeyDown(out KeyCode keyDown, params KeyCode[] keys) {
         keyDown = KeyCode.None;
         foreach (var key in keys) {
             if (IsKeyDown(key)) {
@@ -196,7 +191,6 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
         }
         return false;
     }
-
 }
-
+//}
 

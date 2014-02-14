@@ -54,7 +54,7 @@ public class FleetNavigator : ANavigator {
     private Seeker _seeker;
     private FleetCmdModel _fleet;
 
-    public FleetNavigator(FleetCmdModel fleet, Seeker seeker)
+    public FleetNavigator(FleetCmdModel fleet, Seeker seeker)   // AStar.Seeker requires this Navigator to stay in this project
         : base(fleet.Data) {
         _fleet = fleet;
         _seeker = seeker;

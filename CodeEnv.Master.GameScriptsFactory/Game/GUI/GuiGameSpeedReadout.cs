@@ -40,9 +40,7 @@ public class GuiGameSpeedReadout : AGuiLabelReadoutBase, IDisposable {
     }
 
     private void Subscribe() {
-        if (_subscribers == null) {
-            _subscribers = new List<IDisposable>();
-        }
+        _subscribers = new List<IDisposable>();
         _subscribers.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
     }
 

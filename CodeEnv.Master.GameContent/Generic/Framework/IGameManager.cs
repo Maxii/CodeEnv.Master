@@ -1,13 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AGuiHudPublisher.cs
-// Abstract base class for GuiHudPublisher&lt;DataType&gt; that makes a static
-// field available across all variations.
+// File: IGameManager.cs
+//  Interface for easy access to the GameManager.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,13 +16,21 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    /// <summary>
-    /// Abstract base class for GuiHudPublisher&lt;DataType&gt; that makes a static
-    /// field available across all variations.
-    /// </summary>
-    public abstract class AGuiHudPublisher {
+    using System;
+    using CodeEnv.Master.Common;
 
-        public static IGuiHud GuiCursorHud { protected get; set; }
+    /// <summary>
+    /// Interface for easy access to the GameManager.
+    /// </summary>
+    public interface IGameManager {
+
+        event Action<GameState> onCurrentStateChanging;
+
+        event Action onCurrentStateChanged;
+
+        HumanPlayer HumanPlayer { get; }
+
+        GameState CurrentState { get; }
 
     }
 }

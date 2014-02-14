@@ -25,8 +25,8 @@ public class FpsReadout : AGuiLabelReadoutBase {
 
     public float secondsBetweenDisplayRefresh = 0.5F;
 
-    private float _accumulatedFpsOverInterval = Constants.ZeroF;
-    private int _framesDrawnInInterval = Constants.Zero;
+    private float _accumulatedFpsOverInterval;
+    private int _framesDrawnInInterval;
     private float _timeRemainingInInterval;
 
     protected override void Awake() {

@@ -226,7 +226,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
 
     private void __AddSector(Index3D index, Vector3 worldPosition) {
         SectorModel sectorPrefab = RequiredPrefabs.Instance.sector;
-        GameObject sectorGO = NGUITools.AddChild(Sectors.Folder.gameObject, sectorPrefab.gameObject);
+        GameObject sectorGO = NGUITools.AddChild(Sectors.Instance.Folder.gameObject, sectorPrefab.gameObject);
         // sector.Awake() runs immediately here, then disables itself
         SectorModel sector = sectorGO.GetSafeMonoBehaviourComponent<SectorModel>();
 
@@ -426,7 +426,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
         if (_gridWireframe == null) {
             Vector3[] gridPoints;
             if (TryGenerateGridPoints(CameraControl.Instance.SectorIndex, out gridPoints)) {
-                _gridWireframe = new GridWireframe("GridWireframe", gridPoints, DynamicObjects.Folder);
+                _gridWireframe = new GridWireframe("GridWireframe", gridPoints, DynamicObjects.Instance.Folder);
             }
         }
 

@@ -95,6 +95,7 @@
     <Compile Include="GameClockCommand.cs" />
     <Compile Include="GameClockEvent.cs" />
     <Compile Include="GameInput.cs" />
+    <Compile Include="GameInputHelper.cs" />
     <Compile Include="GameManager.cs" />
     <Compile Include="GameManager_1.cs" />
     <Compile Include="GamePauseState.cs" />

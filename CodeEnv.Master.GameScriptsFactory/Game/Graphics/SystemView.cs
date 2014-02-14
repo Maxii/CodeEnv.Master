@@ -69,6 +69,8 @@ public class SystemView : AFocusableItemView, ISelectable, IZoomToFurthest, IHig
         // other renderers are handled by their own Views
     }
 
+    #region Mouse Events
+
     protected override void OnHover(bool isOver) {
         base.OnHover(isOver);
         if (IsDiscernible) {
@@ -76,32 +78,19 @@ public class SystemView : AFocusableItemView, ISelectable, IZoomToFurthest, IHig
         }
     }
 
-    void OnPress(bool isDown) {
-        if (GameInputHelper.IsRightMouseButton()) {
-            OnRightPress(isDown);
+    protected override void OnLeftClick() {
+        base.OnLeftClick();
+        IsSelected = true;
+    }
+
+    protected override void OnRightPress(bool isDown) {
+        base.OnRightPress(isDown);
+        if (IsSelected) {
+            Presenter.RequestContextMenu(isDown);
         }
     }
 
-    private void OnRightPress(bool isDown) {
-        if (IsDiscernible) {
-            if (IsSelected) {
-                Presenter.RequestContextMenu(isDown);
-            }
-        }
-    }
-
-    protected override void OnClick() {
-        base.OnClick();
-        if (GameInputHelper.IsLeftMouseButton()) {
-            OnLeftClick();
-        }
-    }
-
-    private void OnLeftClick() {
-        if (IsDiscernible) {
-            IsSelected = true;
-        }
-    }
+    #endregion
 
     protected override void OnPlayerIntelCoverageChanged() {
         base.OnPlayerIntelCoverageChanged();

@@ -35,6 +35,9 @@ namespace CodeEnv.Master.Common {
         /// <summary>Returns the singleton instance of the derived class.</summary>
         public static T Instance {
             get {
+                //System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
+                //D.Log("{0}.{1}() method called.".Inject(typeof(T).Name, stackFrame.GetMethod().Name));
+
                 if (_instance == null) {
                     _instance = (T)Activator.CreateInstance(typeof(T), true);
                 }

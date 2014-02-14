@@ -33,14 +33,12 @@ public class GuiSavedGamesPopupList : AGuiPopupListBase {
         if (savedGames.Count > 0) {
             popupList.gameObject.SetActive(true);
             popupList.items.Clear();
-            //popupList.textLabel.text = "Saved Games"; // deprecated in 3.0.6
             popupList.value = "Saved Games";
             foreach (var game in savedGames) {
                 popupList.items.Add(game.Caption);
             }
         }
         else {
-            //popupList.textLabel.text = "No Saved Games";  // deprecated in 3.0.6
             popupList.value = "No Saved Games";
             popupList.gameObject.SetActive(false);
         }
@@ -48,7 +46,6 @@ public class GuiSavedGamesPopupList : AGuiPopupListBase {
 
     protected override void InitializeSelection() {
         popupList.value = "Saved Games";
-        //popupList.selection = "Saved Games";
     }
 
     protected override void OnEnable() {
@@ -57,7 +54,6 @@ public class GuiSavedGamesPopupList : AGuiPopupListBase {
     }
 
     protected override void OnPopupListSelectionChange() { }
-    //protected override void OnPopupListSelectionChange(string item) { }
 
     // IDisposable Note: No reason to remove Ngui event currentListeners OnDestroy() as the EventListener or
     // Delegate to be removed is attached to this same GameObject that is being destroyed. In addition,

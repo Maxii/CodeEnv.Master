@@ -145,7 +145,7 @@ public class MyNguiButtonPlayAnimation : MonoBehaviour {
 
     void OnClick() {
         if (enabled && trigger == Trigger.OnClick) {
-            if (GameInputHelper.IsLeftMouseButton()) {   // My Change
+            if (GameInputHelper.Instance.IsLeftMouseButton()) {   // My Change
                 Play(true);
             }
         }

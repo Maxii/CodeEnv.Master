@@ -24,12 +24,14 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public abstract class AFocusableItemPresenter : AItemPresenter {
 
+    protected ICameraControl _cameraControl = References.CameraControl;
+
     public AFocusableItemPresenter(IViewable view)
         : base(view) {
     }
 
     public void OnIsFocus() {
-        CameraControl.Instance.CurrentFocus = View as ICameraFocusable;
+        _cameraControl.CurrentFocus = View as ICameraFocusable;
     }
 
     public override string ToString() {

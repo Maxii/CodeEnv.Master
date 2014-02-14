@@ -28,13 +28,14 @@ public abstract class AFolderAccess<T> : AMonoBaseSingleton<T> where T : AMonoBa
     /// <summary>
     /// Gets the folder.
     /// </summary>
-    public static Transform Folder {
+    public Transform Folder {
         get {
-            if (Instance.gameObject.name != _folderName) {
-                D.Error("Expecting folder {0} but got {1}.", _folderName, Instance.gameObject.name);
+            if (gameObject.name != _folderName) {
+                D.Error("Expecting folder {0} but got {1}.", _folderName, gameObject.name);
             }
-            return (Instance as AFolderAccess<T>)._transform;
+            return _transform;
         }
+
     }
 
 }

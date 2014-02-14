@@ -59,8 +59,11 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     private IList<IDisposable> _subscribers;
     protected bool _isPreset;
 
+    protected IGameManager _gameMgr;
+
     protected override void Awake() {
         base.Awake();
+        _gameMgr = References.GameManager;
         UnitName = GetUnitName();
         _isPreset = _transform.childCount > 0;
         if (!GameStatus.Instance.IsRunning) {
@@ -73,7 +76,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     private void Subscribe() {
         _subscribers = new List<IDisposable>();
-        _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
+        _gameMgr.onCurrentStateChanged += OnGameStateChanged;
     }
 
     private void Initiate() {
@@ -85,13 +88,13 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     }
 
     private void OnGameStateChanged() {
-        if (GameManager.Instance.CurrentState == GetCreationGameState()) {
+        if (_gameMgr.CurrentState == GetCreationGameState()) {
             CreateComposition();
             DeployPiece();
             EnablePiece();  // must make View operational before starting state changes within it
             OnCompleted();
         }
-        if (GameManager.Instance.CurrentState == GameState.RunningCountdown_1) {
+        if (_gameMgr.CurrentState == GameState.RunningCountdown_1) {
             __InitializeCommandIntel();
         }
     }
@@ -107,7 +110,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     private void CreateCompositionFromChildren() {
         _elements = gameObject.GetSafeMonoBehaviourComponentsInChildren<ElementType>();
-        IPlayer owner = GameManager.Instance.HumanPlayer;
+        IPlayer owner = _gameMgr.HumanPlayer;
         __isHumanOwnedCreated = true;
         _composition = Activator.CreateInstance<CompositionType>();
         foreach (var element in _elements) {
@@ -121,7 +124,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     private void CreateRandomComposition() {
         IPlayer owner;
         if (!__isHumanOwnedCreated) {
-            owner = GameManager.Instance.HumanPlayer;
+            owner = _gameMgr.HumanPlayer;
             __isHumanOwnedCreated = true;
         }
         else {
@@ -198,7 +201,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             }
             element.Data = elementDataStack.Pop();  // automatically adds the element's transform to Data when set
             // this is not really necessary as Element's prefab should already have ElementItem as its Mesh's CameraLOSChangedRelay target
-            element.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().AddTarget(element.transform);
+            element.gameObject.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(element.transform);
         }
     }
 
@@ -218,7 +221,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         // command IS NOT assigned as a target of each element's CameraLOSChangedRelay as that would make the CommandIcon disappear when the elements disappear
 
         // this is not really necessary as Command's prefab should already have CommandItem as its Icon's CameraLOSChangedRelay target
-        _command.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().AddTarget(_command.transform);
+        _command.gameObject.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(_command.transform);
     }
 
     protected abstract void PositionElements();
@@ -333,6 +336,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             _subscribers.ForAll(d => d.Dispose());
             _subscribers.Clear();
         }
+        _gameMgr.onCurrentStateChanged -= OnGameStateChanged;
     }
 
     #region IDisposable

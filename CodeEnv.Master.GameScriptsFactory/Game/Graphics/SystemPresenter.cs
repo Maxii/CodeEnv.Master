@@ -46,7 +46,7 @@ public class SystemPresenter : AFocusableItemPresenter {
         SettlementCmdData settlement = Model.Data.Settlement;
         //D.Log("Settlement null = {0}, isHumanOwner = {1}.", settlement == null, settlement.Owner.IsHuman);
         if (settlement != null && (DebugSettings.Instance.AllowEnemyOrders || settlement.Owner.IsHuman)) {
-            CameraControl.Instance.ShowContextMenuOnPress(isDown);
+            _cameraControl.ShowContextMenuOnPress(isDown);
         }
     }
 

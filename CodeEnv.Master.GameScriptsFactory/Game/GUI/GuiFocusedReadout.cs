@@ -25,7 +25,6 @@ public class GuiFocusedReadout : AGuiLabelReadoutBase {
 
     private ICameraFocusable _retainedFocus;
 
-
     private IList<IDisposable> _subscribers;
 
     protected override void Awake() {
@@ -77,7 +76,7 @@ public class GuiFocusedReadout : AGuiLabelReadoutBase {
     }
 
     void OnClick() {
-        if (GameInputHelper.IsMiddleMouseButton()) {
+        if (GameInputHelper.Instance.IsMiddleMouseButton()) {
             OnMiddleClick();
         }
     }

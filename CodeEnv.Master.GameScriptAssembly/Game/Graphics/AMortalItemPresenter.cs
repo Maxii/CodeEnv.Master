@@ -66,7 +66,7 @@ public abstract class AMortalItemPresenter : AFocusableItemPresenter {
     protected virtual void CleanupFocusOnDeath() {
         var focusableView = View as ICameraFocusable;
         if (focusableView.IsFocus) {
-            CameraControl.Instance.CurrentFocus = null;
+            _cameraControl.CurrentFocus = null;
         }
     }
 

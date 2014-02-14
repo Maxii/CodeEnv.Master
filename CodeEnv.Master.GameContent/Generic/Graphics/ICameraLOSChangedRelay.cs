@@ -1,13 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AGuiHudPublisher.cs
-// Abstract base class for GuiHudPublisher&lt;DataType&gt; that makes a static
-// field available across all variations.
+// File: ICameraLOSChangedRelay.cs
+// Interface for easy access to CameraLOSChangedRelays.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,13 +16,14 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    /// <summary>
-    /// Abstract base class for GuiHudPublisher&lt;DataType&gt; that makes a static
-    /// field available across all variations.
-    /// </summary>
-    public abstract class AGuiHudPublisher {
+    using UnityEngine;
 
-        public static IGuiHud GuiCursorHud { protected get; set; }
+    /// <summary>
+    /// Interface for easy access to CameraLOSChangedRelays.
+    /// </summary>
+    public interface ICameraLOSChangedRelay {
+
+        void AddTarget(params Transform[] targets);
 
     }
 }

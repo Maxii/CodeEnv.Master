@@ -29,11 +29,12 @@ using UnityEngine;
 /// </summary>
 public abstract class AItemView : AMonoBase, IViewable, ICameraLOSChangedClient, IDisposable {
 
-    private IList<Transform> _meshesInCameraLOS = new List<Transform>();    // OPTIMIZE can be simplified to simple incrementing/decrementing counter
+    private IList<Transform> _meshesInCameraLOS;    // OPTIMIZE can be simplified to simple incrementing/decrementing counter
     protected IList<IDisposable> _subscribers;
 
     protected override void Awake() {
         base.Awake();
+        _meshesInCameraLOS = new List<Transform>();
         PlayerIntel = InitializePlayerIntel();
         enabled = false;
     }

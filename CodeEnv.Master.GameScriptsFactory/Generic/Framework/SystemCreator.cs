@@ -344,7 +344,7 @@ public class SystemCreator : AMonoBase, IDisposable {
                 _planets.Remove(p);
                 _composition.RemovePlanet(p.Data);
                 D.Log("Destroying Planet {0}.", p.gameObject.name);
-                Destroy(p);
+                Destroy(p.gameObject);
             });
         }
     }

@@ -26,7 +26,7 @@ using System.Text;
 /// one or more client gameobjects that implement the ICameraLOSChangedClient interface.
 ///<remarks>Used when I wish to separate a mesh and its renderer from a parent GameObject that does most of the work.</remarks>
 /// </summary>
-public class CameraLOSChangedRelay : AMonoBase, IDisposable {
+public class CameraLOSChangedRelay : AMonoBase, ICameraLOSChangedRelay, IDisposable {
 
     public List<Transform> relayTargets;
 

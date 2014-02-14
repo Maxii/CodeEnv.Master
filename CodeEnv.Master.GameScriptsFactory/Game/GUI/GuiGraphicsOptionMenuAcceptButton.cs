@@ -46,11 +46,6 @@ public class GuiGraphicsOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
         ValidateState();
     }
 
-    //protected override void OnPopupListSelectionChange(string selectionName) {
-    //    base.OnPopupListSelectionChange(selectionName);
-    //    ValidateState();
-    //}
-
     protected override void OnLeftClick() {
         ValidateState();
         GraphicsOptionSettings settings = new GraphicsOptionSettings();

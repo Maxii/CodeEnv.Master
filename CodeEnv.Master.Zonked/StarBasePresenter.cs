@@ -76,7 +76,7 @@ public class StarBasePresenter : AMortalItemPresenter {
 
     private void OnPressRequestContextMenu(bool isDown) {
         if (DebugSettings.Instance.AllowEnemyOrders || Item.Data.Owner.IsHuman) {
-            CameraControl.Instance.ShowContextMenuOnPress(isDown);
+            _cameraControl.Instance.ShowContextMenuOnPress(isDown);
         }
     }
 

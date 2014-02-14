@@ -31,11 +31,9 @@ using UnityEngine;
 /// Singleton. The main manager for the game, implemented as a mono state machine.
 /// </summary>
 [SerializeAll]
-public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, IDisposable {
+public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, IGameManager, IDisposable {
 
     public static GameSettings Settings { get; private set; }
-
-    public HumanPlayer HumanPlayer { get; private set; }
 
     private PauseState _pauseState;
     /// <summary>
@@ -564,6 +562,12 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region IGameManager Members
+
+    public HumanPlayer HumanPlayer { get; private set; }
+
+    #endregion
 
     #region IDisposable
     [DoNotSerialize]

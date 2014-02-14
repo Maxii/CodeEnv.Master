@@ -47,15 +47,6 @@ public class SettlementCmdPresenter : AUnitCommandPresenter<FacilityModel> {
         return publisher;
     }
 
-    protected override void Subscribe() {
-        base.Subscribe();
-        _subscribers.Add(Model.Data.SubscribeToPropertyChanged<SettlementCmdData, BaseComposition>(sbd => sbd.Composition, OnCompositionChanged));
-    }
-
-    private void OnCompositionChanged() {
-        AssessCmdIcon();
-    }
-
     protected override void OnStartShowInView() {
         SettlementState state = Model.CurrentState;
         //D.Log("{0}.OnStartShowInView state = {1}.", Model.Data.Name, state.GetName());

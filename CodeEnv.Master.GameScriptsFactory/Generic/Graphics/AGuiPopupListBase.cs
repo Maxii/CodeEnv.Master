@@ -34,7 +34,6 @@ public abstract class AGuiPopupListBase : GuiTooltip {
         InitializeSelection();
         // don't receive events until initializing is complete
         EventDelegate.Add(popupList.onChange, OnPopupListSelectionChange);
-        //popupList.onSelectionChange += OnPopupListSelectionChange;
     }
 
     /// <summary>
@@ -42,10 +41,6 @@ public abstract class AGuiPopupListBase : GuiTooltip {
     /// prior to initializing list values or the selection.
     /// </summary>
     protected virtual void ConfigurePopupList() {
-        //popupList.textLabel = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
-        // popupList.textLabel is no longer needed as the same can be achieved by choosing a
-        // On[Value]Change notification targeting a label's SetCurrentSelection method.
-        // If your code was list.textLabel = myLabel, change it to: EventDelegate.Add(list.onChange, lbl.SetCurrentSelection);
         UILabel label = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
         EventDelegate.Add(popupList.onChange, label.SetCurrentSelection);
     }
@@ -64,12 +59,6 @@ public abstract class AGuiPopupListBase : GuiTooltip {
     protected abstract void InitializeSelection();
 
     protected virtual void OnPopupListSelectionChange() { }
-
-    /// <summary>
-    /// Method called when the popupList selection is changed. The default implementation does nothing.
-    /// </summary>
-    /// <arg name="item">The name of the selection.</arg>
-    //protected virtual void OnPopupListSelectionChange(string item) { }
 
     // IDisposable Note: No reason to remove Ngui event currentListeners OnDestroy() as the EventListener or
     // Delegate to be removed is attached to this same GameObject that is being destroyed. In addition,

@@ -43,40 +43,10 @@ public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
 
     #region Mouse Events
 
-    protected override void OnClick() {
-        base.OnClick();
-        if (IsDiscernible && GameInputHelper.IsLeftMouseButton()) {
-            KeyCode notUsed;
-            if (GameInputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftAlt, KeyCode.RightAlt)) {
-                OnAltLeftClick();
-            }
-            else {
-                OnLeftClick();
-            }
-        }
-    }
-
-    protected virtual void OnLeftClick() { }
-
-    protected virtual void OnAltLeftClick() {
+    protected override void OnAltLeftClick() {
+        base.OnAltLeftClick();
         Presenter.__SimulateAttacked();
     }
-
-    void OnDoubleClick() {
-        if (IsDiscernible && GameInputHelper.IsLeftMouseButton()) {
-            OnLeftDoubleClick();
-        }
-    }
-
-    protected virtual void OnLeftDoubleClick() { }
-
-    void OnPress(bool isDown) {
-        if (IsDiscernible && GameInputHelper.IsRightMouseButton()) {
-            OnRightPress(isDown);
-        }
-    }
-
-    protected virtual void OnRightPress(bool isDown) { }
 
     #endregion
 

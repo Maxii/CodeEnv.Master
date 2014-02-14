@@ -93,7 +93,7 @@ public class NguiGenericEventHandler : AMonoBaseSingleton<NguiGenericEventHandle
 
         if (UICamera.hoveredObject == gameObject) {
             // the target of the click is this generic event handler, so this click wasn't consumed by another gameobject
-            _gameInput.RecordUnconsumedClick();
+            _gameInput.OnUnconsumedClick();
         }
     }
 

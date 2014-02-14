@@ -24,7 +24,6 @@ using CodeEnv.Master.Common;
 public class GuiUniverseSizePopupList : AGuiEnumPopupListBase<UniverseSize> {
 
     protected override void OnPopupListSelectionChange() { }
-    //protected override void OnPopupListSelectionChange(string item) { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

@@ -42,7 +42,6 @@ public class GuiQualitySettingPopupList : AGuiPopupListBase {
     protected override void InitializeSelection() {
         int qualitySettingPreference = PlayerPrefsManager.Instance.QualitySetting;
         popupList.value = popupList.items[qualitySettingPreference];
-        //popupList.selection = popupList.items[qualitySettingPreference];
     }
 
     public override string ToString() {

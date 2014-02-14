@@ -48,6 +48,9 @@ public class AMonoStateMachineSingleton<T, E> : AMonoStateMachine_NoCall<E>, IIn
     public static T Instance {
         get {
             if (_instance == null && !_isApplicationQuiting) {
+                //System.Diagnostics.StackFrame stackFrame_ = new System.Diagnostics.StackTrace().GetFrame(1);
+                //D.Log("{0}.{1}() method called.".Inject(typeof(T).Name, stackFrame_.GetMethod().Name));
+
                 // value is required for the first time, so look for it                        
                 Type thisType = typeof(T);
                 _instance = FindObjectOfType(thisType) as T;

@@ -28,34 +28,11 @@ using UnityEngine;
 /// </summary>
 public abstract class AFocusableItemView : AItemView, ICameraFocusable {
 
-    public enum Highlights {
-
-        None = -1,
-        /// <summary>
-        /// The item is the focus.
-        /// </summary>
-        Focused = 0,
-        /// <summary>
-        /// The item is selected..
-        /// </summary>
-        Selected = 1,
-        /// <summary>
-        /// The item is highlighted for other reasons. This is
-        /// typically used on a fleet's ships when the fleet is selected.
-        /// </summary>
-        General = 2,
-        /// <summary>
-        /// The item is both selected and the focus.
-        /// </summary>
-        SelectedAndFocus = 3,
-        /// <summary>
-        /// The item is both the focus and generally highlighted.
-        /// </summary>
-        FocusAndGeneral = 4
-
-    }
 
     public AFocusableItemPresenter Presenter { get; protected set; }
+
+    protected IGameInputHelper _inputHelper;
+    protected IDynamicObjects _dynamicObjects;
 
     public float circleScaleFactor = 3.0F;
     protected bool _isCirclesRadiusDynamic = true;
@@ -65,8 +42,24 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
 
     protected override void Awake() {
         base.Awake();
+        _inputHelper = References.InputHelper;
+        _dynamicObjects = References.DynamicObjects;
         _collider = UnityUtility.ValidateComponentPresence<Collider>(gameObject);
     }
+
+    protected override void OnIsDiscernibleChanged() {
+        base.OnIsDiscernibleChanged();
+        AssessHighlighting();
+    }
+
+    protected virtual void OnIsFocusChanged() {
+        if (IsFocus) {
+            Presenter.OnIsFocus();
+        }
+        AssessHighlighting();
+    }
+
+    #region Mouse Events
 
     protected virtual void OnHover(bool isOver) {
         //D.Log("{0}.OnHover({1}) called.", _transform.name, isOver);
@@ -77,29 +70,53 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
         ShowHud(false);
     }
 
-    protected override void OnIsDiscernibleChanged() {
-        base.OnIsDiscernibleChanged();
-        AssessHighlighting();
-    }
-
-    protected virtual void OnClick() {
-        if (GameInputHelper.IsMiddleMouseButton()) {
-            OnMiddleClick();
+    void OnClick() {
+        if (IsDiscernible) {
+            if (_inputHelper.IsLeftMouseButton()) {
+                KeyCode notUsed;
+                if (_inputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftAlt, KeyCode.RightAlt)) {
+                    OnAltLeftClick();
+                }
+                else {
+                    OnLeftClick();
+                }
+            }
+            else if (_inputHelper.IsMiddleMouseButton()) {
+                OnMiddleClick();
+            }
+            else {
+                OnRightClick();
+            }
         }
     }
+
+    protected virtual void OnLeftClick() { }
+
+    protected virtual void OnAltLeftClick() { }
 
     protected virtual void OnMiddleClick() {
-        if (IsDiscernible) {
-            IsFocus = true;
+        IsFocus = true;
+    }
+
+    protected virtual void OnRightClick() { }
+
+    void OnDoubleClick() {
+        if (IsDiscernible && _inputHelper.IsLeftMouseButton()) {
+            OnLeftDoubleClick();
         }
     }
 
-    protected virtual void OnIsFocusChanged() {
-        if (IsFocus) {
-            Presenter.OnIsFocus();
+    protected virtual void OnLeftDoubleClick() { }
+
+    void OnPress(bool isDown) {
+        if (IsDiscernible && _inputHelper.IsRightMouseButton()) {
+            OnRightPress(isDown);
         }
-        AssessHighlighting();
     }
+
+    protected virtual void OnRightPress(bool isDown) { }
+
+    #endregion
 
     public virtual void AssessHighlighting() {
         if (!IsDiscernible) {
@@ -147,7 +164,7 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
         if (_circles == null) {
             float normalizedRadius = calcNormalizedCircleRadius();
             string circlesTitle = "{0} Circle".Inject(gameObject.name);
-            _circles = new HighlightCircle(circlesTitle, transform, normalizedRadius, parent: DynamicObjects.Folder,
+            _circles = new HighlightCircle(circlesTitle, transform, normalizedRadius, parent: _dynamicObjects.Folder,
                 isRadiusDynamic: _isCirclesRadiusDynamic, maxCircles: 3);
             _circles.Colors = new GameColor[3] { UnityDebugConstants.FocusedColor, UnityDebugConstants.SelectedColor, UnityDebugConstants.GeneralHighlightColor };
             _circles.Widths = new float[3] { 2F, 2F, 1F };
@@ -253,6 +270,33 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
     }
 
     #endregion
+
+    public enum Highlights {
+
+        None = -1,
+        /// <summary>
+        /// The item is the focus.
+        /// </summary>
+        Focused = 0,
+        /// <summary>
+        /// The item is selected..
+        /// </summary>
+        Selected = 1,
+        /// <summary>
+        /// The item is highlighted for other reasons. This is
+        /// typically used on a fleet's ships when the fleet is selected.
+        /// </summary>
+        General = 2,
+        /// <summary>
+        /// The item is both selected and the focus.
+        /// </summary>
+        SelectedAndFocus = 3,
+        /// <summary>
+        /// The item is both the focus and generally highlighted.
+        /// </summary>
+        FocusAndGeneral = 4
+
+    }
 
 }
 

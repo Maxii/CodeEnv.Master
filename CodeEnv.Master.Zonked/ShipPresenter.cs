@@ -155,7 +155,7 @@ public class ShipPresenter : AMortalItemPresenter {
 
     private void OnPressRequestContextMenu(bool isDown) {
         if (DebugSettings.Instance.AllowEnemyOrders || Model.Data.Owner.IsHuman) {
-            CameraControl.Instance.ShowContextMenuOnPress(isDown);
+            _cameraControl.Instance.ShowContextMenuOnPress(isDown);
         }
     }
 

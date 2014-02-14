@@ -65,6 +65,8 @@ public class StarView : AFocusableItemView {
         InitializeStarSettings();
     }
 
+    #region Mouse Events
+
     protected override void OnHover(bool isOver) {
         base.OnHover(isOver);
         if (IsDiscernible) {
@@ -72,18 +74,12 @@ public class StarView : AFocusableItemView {
         }
     }
 
-    protected override void OnClick() {
-        base.OnClick();
-        if (GameInputHelper.IsLeftMouseButton()) {
-            OnLeftClick();
-        }
+    protected override void OnLeftClick() {
+        base.OnLeftClick();
+        Presenter.OnLeftClick();
     }
 
-    private void OnLeftClick() {
-        if (IsDiscernible) {
-            Presenter.OnLeftClick();
-        }
-    }
+    #endregion
 
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();

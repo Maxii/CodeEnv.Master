@@ -87,7 +87,7 @@ public class TaskManager : MonoBehaviour, ITaskManager {
 
     private void Initialize() {
         // do any required initialization here as you would normally do in Awake()
-        ATask.taskMgr = Instance;
+        ATask.TaskMgr = Instance;
     }
 
     /// <summary>

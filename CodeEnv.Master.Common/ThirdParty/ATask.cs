@@ -24,7 +24,7 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public abstract class ATask {
 
-        public static ITaskManager taskMgr;
+        public static ITaskManager TaskMgr { protected get; set; }
 
         public TaskState state; // the tasks current state
         public float delay; // delay when starting the task in seconds
@@ -84,7 +84,7 @@ namespace CodeEnv.Master.Common {
 
             // if we have a next task to run and we were not cancelled, start it
             if (nextTask != null && state != TaskState.Canceled)
-                taskMgr.AddTask(nextTask);
+                TaskMgr.AddTask(nextTask);
         }
 
         /// <summary>

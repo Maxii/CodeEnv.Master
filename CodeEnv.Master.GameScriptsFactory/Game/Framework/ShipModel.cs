@@ -118,12 +118,12 @@ public class ShipModel : AUnitElementModel {
     #region Idling
 
     void Idling_EnterState() {
-        LogEvent();
+        //LogEvent();
         // TODO register as available
     }
 
     void Idling_ExitState() {
-        LogEvent();
+        //LogEvent();
         // TODO register as unavailable
     }
 
@@ -240,13 +240,12 @@ public class ShipModel : AUnitElementModel {
     #region ShowHit
 
     void ShowHit_EnterState() {
-        LogEvent();
+        //LogEvent();
         OnStartShow();
     }
 
     void ShowHit_OnShowCompletion() {
-        // View is showing Hit
-        LogEvent();
+        //LogEvent();
         Return();
     }
 
@@ -255,13 +254,12 @@ public class ShipModel : AUnitElementModel {
     #region ShowCmdHit
 
     void ShowCmdHit_EnterState() {
-        LogEvent();
+        // LogEvent();
         OnStartShow();
     }
 
     void ShowCmdHit_OnShowCompletion() {
-        // View is showing Hit
-        LogEvent();
+        //LogEvent();
         Return();
     }
 
@@ -406,7 +404,7 @@ public class ShipModel : AUnitElementModel {
 
     void OnOrdersChanged() {
         if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
+            //D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
 
             ShipOrders order = CurrentOrder.Order;
             switch (order) {

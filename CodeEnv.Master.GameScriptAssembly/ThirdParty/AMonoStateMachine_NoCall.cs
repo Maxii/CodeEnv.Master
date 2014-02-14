@@ -11,7 +11,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -33,6 +33,9 @@ using UnityEngine;
 /// </summary>
 /// <typeparam name="E">Th State Type being used, typically an enum type.</typeparam>
 public class AMonoStateMachine_NoCall<E> : AMonoStateMachine<E> where E : struct {
+
+    public event Action onCurrentStateChanged;
+    public event Action<E> onCurrentStateChanging;
 
     /// <summary>
     /// Gets or sets the current State.
@@ -60,10 +63,18 @@ public class AMonoStateMachine_NoCall<E> : AMonoStateMachine<E> where E : struct
 
     protected virtual void OnCurrentStateChanging(E incomingState) {
         ChangingState();
+        var temp = onCurrentStateChanging;
+        if (temp != null) {
+            temp(incomingState);
+        }
     }
 
     protected virtual void OnCurrentStateChanged() {
         ConfigureCurrentState();
+        var temp = onCurrentStateChanged;
+        if (temp != null) {
+            temp();
+        }
     }
 
     public override void Call(E stateToActivate) {

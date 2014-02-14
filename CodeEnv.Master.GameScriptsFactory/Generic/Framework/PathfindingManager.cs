@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AStarPathManager.cs
+// File: PathfindingManager.cs
 //  The manager for the AStar Pathfinding system. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -17,10 +17,12 @@ using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
+// NOTE: Can't move this to GameScriptAssembly as it requires loose AStar scripts in Unity when compiled
+
 /// <summary>
 /// The manager for the AStar Pathfinding system. 
 /// </summary>
-public class AStarPathManager : AMonoBase, IDisposable {
+public class PathfindingManager : AMonoBase, IDisposable {
 
     private IList<IDisposable> _subscribers;
     private AstarPath _astarPath;
@@ -33,9 +35,7 @@ public class AStarPathManager : AMonoBase, IDisposable {
     }
 
     private void Subscribe() {
-        if (_subscribers == null) {
-            _subscribers = new List<IDisposable>();
-        }
+        _subscribers = new List<IDisposable>();
         _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
         AstarPath.OnLatePostScan += OnGraphScansCompleted;
     }

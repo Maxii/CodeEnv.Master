@@ -17,13 +17,6 @@
 
 namespace CodeEnv.Master.Common {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using UnityEngine;
-
     /// <summary>
     /// Interface for TaskManager (monoBehaviour) that allows all ATask-derived
     /// tasks to reside in the Common or GameContent assemblies.

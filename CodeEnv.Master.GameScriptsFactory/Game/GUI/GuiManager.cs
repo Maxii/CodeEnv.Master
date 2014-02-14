@@ -27,12 +27,13 @@ public class GuiManager : AMonoBaseSingleton<GuiManager>, IDisposable {
 
     public bool ReadyForSceneChange { get; private set; }
 
-    private Stack<IList<UIPanel>> _stackedPanelsToRestore = new Stack<IList<UIPanel>>();
+    private Stack<IList<UIPanel>> _stackedPanelsToRestore;
     private UIPanel[] _panelsToAlwaysRemainActive;
     private GameEventManager _eventMgr;
 
     protected override void Awake() {
         base.Awake();
+        _stackedPanelsToRestore = new Stack<IList<UIPanel>>();
         _eventMgr = GameEventManager.Instance;
         UIPanel uiRootPanel = gameObject.GetSafeMonoBehaviourComponent<UIRoot>().gameObject.GetSafeMonoBehaviourComponent<UIPanel>();
         UIPanel tooltipPanel = gameObject.GetSafeMonoBehaviourComponentInChildren<UITooltip>().gameObject.GetSafeMonoBehaviourComponent<UIPanel>();

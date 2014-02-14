@@ -44,6 +44,7 @@ public abstract class AUnitCommandPresenter<UnitElementModelType> : AMortalItemP
         base.Subscribe();
         _subscribers.Add(Model.SubscribeToPropertyChanged<AUnitCommandModel<UnitElementModelType>, UnitElementModelType>(sb => sb.HQElement, OnHQElementChanged));
         Model.onSubordinateElementDeath += OnSubordinateElementDeath;
+        Model.Data.onCompositionChanged += OnCompositionChanged;
     }
 
     private void OnSubordinateElementDeath(UnitElementModelType element) {
@@ -55,7 +56,7 @@ public abstract class AUnitCommandPresenter<UnitElementModelType> : AMortalItemP
 
     public void RequestContextMenu(bool isDown) {
         if (DebugSettings.Instance.AllowEnemyOrders || Model.Data.Owner.IsHuman) {
-            CameraControl.Instance.ShowContextMenuOnPress(isDown);
+            _cameraControl.ShowContextMenuOnPress(isDown);
         }
     }
 
@@ -68,6 +69,10 @@ public abstract class AUnitCommandPresenter<UnitElementModelType> : AMortalItemP
 
     public void OnPlayerIntelCoverageChanged() {
         Model.Elements.ForAll(e => e.gameObject.GetSafeInterface<IViewable>().PlayerIntel.CurrentCoverage = View.PlayerIntel.CurrentCoverage);
+        AssessCmdIcon();
+    }
+
+    private void OnCompositionChanged() {
         AssessCmdIcon();
     }
 
@@ -86,7 +91,7 @@ public abstract class AUnitCommandPresenter<UnitElementModelType> : AMortalItemP
         return Model.HQElement.transform;
     }
 
-    protected void AssessCmdIcon() {
+    private void AssessCmdIcon() {
         IIcon icon = MakeCmdIconInstance();
         View.ChangeCmdIcon(icon);
     }

@@ -17,12 +17,13 @@
 // default namespace
 
 using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
 /// Easy access to DynamicObjects folder in Scene.
 /// </summary>
-public class DynamicObjects : AFolderAccess<DynamicObjects> {
+public class DynamicObjects : AFolderAccess<DynamicObjects>, IDynamicObjects {
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

@@ -428,19 +428,6 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
     /// 7. the event OnCurrentStateChanged() is sent to subscribers
     ///          - when this event is received, a get_CurrentState property inquiry will properly return newState
     /// </summary>
-    //public E CurrentState {
-    //    get { return state.currentState; }
-    //    protected set { SetProperty<E>(ref state.currentState, value, "CurrentState", OnCurrentStateChanged, OnCurrentStateChanging); }
-    //}
-
-    //protected virtual void OnCurrentStateChanging(E incomingState) {
-    //    ChangingState();
-    //}
-
-    //protected virtual void OnCurrentStateChanged() {
-    //    ConfigureCurrentState();
-    //}
-
     public virtual E CurrentState {
         get {
             return state.currentState;

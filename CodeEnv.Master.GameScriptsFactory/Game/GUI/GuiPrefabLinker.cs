@@ -42,13 +42,6 @@ public class GuiPrefabLinker : AMonoBase {
             return;
         }
         GameObject prefabClone = NGUITools.AddChild(gameObject, linkedPrefab);
-        // NGUITools.AddChild handles all of the following
-        //GameObject prefabClone = Instantiate<GameObject>(linkedPrefab);
-        //prefabClone.transform.parent = transform;
-        //prefabClone.transform.localScale = Vector3.one;
-        //prefabClone.transform.localPosition = Vector3.zero;
-        //prefabClone.transform.localRotation = Quaternion.identity;
-        //prefabClone.layer = gameObject.layer;
 
         UIPanel prefabUIPanel = prefabClone.GetComponentInChildren<UIPanel>();
         Animation prefabWindowBackAnimation = prefabClone.GetComponentInChildren<Animation>();

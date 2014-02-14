@@ -145,9 +145,9 @@ namespace Pathfinding {
         }
 
         private IList<Vector3> FindObstacleLocations() {
-            var obstacleLocations = Universe.Folder.gameObject.GetSafeMonoBehaviourComponentsInChildren<SystemCreator>()
+            var obstacleLocations = Universe.Instance.Folder.gameObject.GetSafeMonoBehaviourComponentsInChildren<SystemCreator>()
                 .Select(sm => sm.transform.position).ToList();
-            var universeCenterView = Universe.Folder.gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterView>();
+            var universeCenterView = Universe.Instance.Folder.gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterView>();
             if (universeCenterView != null) {   // allows me to deactivate UniverseCenter
                 obstacleLocations.Add(universeCenterView.transform.position);
             }
