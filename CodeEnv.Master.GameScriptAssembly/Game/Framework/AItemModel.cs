@@ -16,11 +16,12 @@ using System;
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// The abstract data-holding base class for all solid and non-solid objects in the game.
 /// </summary>
-public abstract class AItemModel : AMonoBase {
+public abstract class AItemModel : AMonoBase, IDestinationTarget {
 
     private AItemData _data;
     /// <summary>
@@ -35,11 +36,6 @@ public abstract class AItemModel : AMonoBase {
             OnDataChanged();
         }
     }
-
-    /// <summary>
-    /// The radius in units of the conceptual 'globe' that encompasses this Item.
-    /// </summary>
-    public float Radius { get; set; }
 
     protected override void Awake() {
         base.Awake();
@@ -57,5 +53,19 @@ public abstract class AItemModel : AMonoBase {
     /// </summary>
     protected virtual void SubscribeToDataValueChanges() { }
 
+    #region IDestinationTarget Members
+
+    public string Name { get { return Data.Name; } }
+
+    public Vector3 Position { get { return Data.Position; } }
+
+    /// <summary>
+    /// The radius in units of the conceptual 'globe' that encompasses this Item.
+    /// </summary>
+    public float Radius { get; set; }
+
+    public virtual bool IsMovable { get { return false; } }
+
+    #endregion
 }
 

@@ -83,6 +83,15 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<int>(ref _cmdEffectiveness, value, "CmdEffectiveness"); }
         }
 
+        private float _unitWeaponsRange;
+        /// <summary>
+        /// The range of the longest range weapon in the Unit. IMPROVE
+        /// </summary>
+        public float UnitWeaponsRange {
+            get { return _unitWeaponsRange; }
+            set { SetProperty<float>(ref _unitWeaponsRange, value, "UnitWeaponsRange"); }
+        }
+
         private CombatStrength _unitStrength;
         public CombatStrength UnitStrength {
             get {
@@ -241,9 +250,10 @@ namespace CodeEnv.Master.GameContent {
             UpdateUnitStrength();
             UpdateUnitMaxHitPoints();   // must preceed current as current uses max as a clamp
             UpdateUnitCurrentHitPoints();
+            UpdateUnitWeaponsRange();
         }
 
-        private void UpdateUnitStrength() {
+        private void UpdateUnitStrength() { // IMPROVE avoid creating new each time
             CombatStrength sum = new CombatStrength();
             foreach (var eData in ElementsData) {
                 sum.AddToTotal(eData.Strength);
@@ -257,6 +267,10 @@ namespace CodeEnv.Master.GameContent {
 
         private void UpdateUnitCurrentHitPoints() {
             UnitCurrentHitPoints = ElementsData.Sum<AElementData>(ed => ed.CurrentHitPoints);
+        }
+
+        private void UpdateUnitWeaponsRange() {
+            UnitWeaponsRange = ElementsData.Count == 0 ? Constants.ZeroF : ElementsData.MaxBy<AElementData, float>(ed => ed.WeaponsRange).WeaponsRange;
         }
 
         #region ElementData PropertyChanged Subscription and Methods

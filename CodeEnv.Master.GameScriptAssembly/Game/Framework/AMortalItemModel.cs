@@ -26,11 +26,12 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for an AItem that can die. 
 /// </summary>
-public abstract class AMortalItemModel : AItemModel, IDisposable {
+public abstract class AMortalItemModel : AItemModel, ITarget, IDisposable {
 
-    public event Action<AMortalItemModel> onItemDeath;
-    public event Action onStopShow;
-    public event Action onStartShow;
+    //public event Action onStopShow;
+    //public event Action onStartShow;
+    public event Action<MortalAnimations> onShowAnimation;
+    public event Action<MortalAnimations> onStopAnimation;
 
     public new AMortalItemData Data {
         get { return base.Data as AMortalItemData; }
@@ -67,34 +68,45 @@ public abstract class AMortalItemModel : AItemModel, IDisposable {
     protected virtual void OnHealthChanged() { }
 
     protected void OnItemDeath() {
+        IsDead = true;
         var temp = onItemDeath;
         if (temp != null) {
             temp(this);
         }
-        // TODO not clear this event will ever be used
+        // OPTIMIZE not clear this event will ever be used
         GameEventManager.Instance.Raise<MortalItemDeathEvent>(new MortalItemDeathEvent(this, this));
     }
 
-    protected void OnStartShow() {
-        var temp = onStartShow;
+    protected void OnShowAnimation(MortalAnimations animation) {
+        var temp = onShowAnimation;
         if (temp != null) {
-            temp();
+            temp(animation);
         }
     }
 
-    protected void OnStopShow() {
-        var temp = onStopShow;
+    protected void OnStopAnimation(MortalAnimations animation) {
+        var temp = onStopAnimation;
         if (temp != null) {
-            temp();
+            temp(animation);
         }
     }
 
     public abstract void OnShowCompletion();
 
-    protected abstract void OnHit(float damage);
-
     public virtual void __SimulateAttacked() {
-        OnHit(UnityEngine.Random.Range(Constants.ZeroF, Data.MaxHitPoints + 1F));
+        TakeDamage(UnityEngine.Random.Range(Constants.ZeroF, Data.MaxHitPoints + 1F));
+    }
+
+    #region StateMachine Support Methods
+
+    /// <summary>
+    /// Applies the damage to the Item. Returns true 
+    /// if the Item survived the hit.
+    /// </summary>
+    /// <returns><c>true</c> if the Item survived.</returns>
+    protected bool ApplyDamage(float damage) {
+        Data.CurrentHitPoints -= damage;
+        return Data.Health > Constants.ZeroF;
     }
 
     protected IEnumerator DelayedDestroy(float delayInSeconds) {
@@ -103,6 +115,8 @@ public abstract class AMortalItemModel : AItemModel, IDisposable {
         D.Log("{0} GameObject being destroyed.", Data.Name);
         Destroy(gameObject);
     }
+
+    #endregion
 
     protected override void OnDestroy() {
         base.OnDestroy();
@@ -118,6 +132,18 @@ public abstract class AMortalItemModel : AItemModel, IDisposable {
         _subscribers.ForAll(d => d.Dispose());
         _subscribers.Clear();
     }
+
+    #region ITarget Members
+
+    public event Action<ITarget> onItemDeath;
+
+    public bool IsDead { get; private set; }
+
+    public override bool IsMovable { get { return true; } }
+
+    public abstract void TakeDamage(float damage);
+
+    #endregion
 
     #region IDisposable
     [DoNotSerialize]

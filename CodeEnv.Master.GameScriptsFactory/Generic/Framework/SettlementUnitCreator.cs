@@ -40,6 +40,7 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
             // TODO mass variation
             // optionalParentName gets set when it gets attached to a command
             Strength = new CombatStrength(),
+            WeaponsRange = UnityEngine.Random.Range(5F, 10F),
             CurrentHitPoints = UnityEngine.Random.Range(25F, 50F),
             Owner = owner,
         };

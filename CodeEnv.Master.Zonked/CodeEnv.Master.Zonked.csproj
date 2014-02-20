@@ -82,8 +82,10 @@
     <Compile Include="FleetAutoPilot2.cs" />
     <Compile Include="FleetCommand.cs" />
     <Compile Include="FleetGraphics.cs" />
+    <Compile Include="FleetIdleTask.cs" />
     <Compile Include="FleetItem.cs" />
     <Compile Include="FleetManager.cs" />
+    <Compile Include="FleetMoveTask.cs" />
     <Compile Include="FleetNavigator.cs" />
     <Compile Include="FleetPathfinderAI.cs" />
     <Compile Include="FleetPresenter.cs" />
@@ -157,9 +159,12 @@
     <Compile Include="SectorView.cs" />
     <Compile Include="SettlementPresenter.cs" />
     <Compile Include="SettlementView.cs" />
+    <Compile Include="ShipAttackTask.cs" />
     <Compile Include="ShipCaptain.cs" />
     <Compile Include="ShipGraphics.cs" />
+    <Compile Include="ShipIdleTask.cs" />
     <Compile Include="ShipItem.cs" />
+    <Compile Include="ShipMoveTask.cs" />
     <Compile Include="ShipNavigator.cs" />
     <Compile Include="ShipPresenter.cs" />
     <Compile Include="ShipView.cs" />

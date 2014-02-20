@@ -29,6 +29,12 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public Vector3 FormationPosition { get; set; }
 
+        private float _weaponsRange;
+        public float WeaponsRange {
+            get { return _weaponsRange; }
+            set { SetProperty<float>(ref _weaponsRange, value, "WeaponsRange"); }
+        }
+
         private IPlayer _owner;
         public IPlayer Owner {
             get { return _owner; }

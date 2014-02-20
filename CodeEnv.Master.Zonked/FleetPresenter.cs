@@ -71,7 +71,7 @@ public class FleetPresenter : AMortalItemPresenter {
             case FleetState.Disbanding:
             case FleetState.Dying:
             case FleetState.Entrenching:
-            case FleetState.GoAttack:
+            case FleetState.ExecuteAttackOrder:
             case FleetState.GoDisband:
             case FleetState.GoGuard:
             case FleetState.GoJoin:
@@ -81,7 +81,7 @@ public class FleetPresenter : AMortalItemPresenter {
             case FleetState.GoRetreat:
             case FleetState.Guarding:
             case FleetState.Idling:
-            case FleetState.MovingTo:
+            case FleetState.Moving:
             case FleetState.Patrolling:
             case FleetState.ProcessOrders:
             case FleetState.Refitting:

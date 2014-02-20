@@ -28,7 +28,6 @@ using UnityEngine;
 /// </summary>
 public abstract class AFocusableItemView : AItemView, ICameraFocusable {
 
-
     public AFocusableItemPresenter Presenter { get; protected set; }
 
     protected IGameInputHelper _inputHelper;

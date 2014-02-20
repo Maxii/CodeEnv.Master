@@ -31,11 +31,6 @@ public class SectorModel : AItemModel {
         get { return Data.SectorIndex; }
     }
 
-    /// <summary>
-    /// Readonly. Gets the position of this Sector in worldspace.
-    /// </summary>
-    public Vector3 Position { get { return Data.Position; } }
-
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

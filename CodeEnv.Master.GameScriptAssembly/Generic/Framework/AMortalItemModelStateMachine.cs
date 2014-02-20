@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -44,7 +44,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     public event Action onStateChanged;
 
     private void OnStateChanged() {
-        D.Log("{0}.State changed to {1}.", Data.Name, CurrentState.ToString());
+        //D.Log("{0}.State changed to {1}.", Data.Name, CurrentState.ToString());
         var temp = onStateChanged;
         if (temp != null) {
             temp();
@@ -269,7 +269,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     ///     IMPROVE // add Action&lt;float&gt; delegate
     /// </summary>
     /// <param name='param'>
-    /// Any parameter passed to the current handler that should be passed on
+    /// Any parameter passed to the current handler that should be passed on.
     /// </param>
     protected void RelayToCurrentState(params object[] param) {
         var message = CurrentState.ToString() + "_" + (new StackFrame(1)).GetMethod().Name;

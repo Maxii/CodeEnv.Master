@@ -122,7 +122,7 @@ public class FleetNavigator : ANavigator {
 
         while (_currentWaypointIndex < _course.vectorPath.Count) {
             //D.Log("Distance to Waypoint_{0} = {1}.", _currentWaypointIndex, distanceToWaypoint);
-            if (distanceToWaypointSqrd < _closeEnoughDistanceSqrd) {
+            if (distanceToWaypointSqrd < _desiredDistanceFromTargetSqrd) {
                 _currentWaypointIndex++;
                 D.Log("Waypoint_{0} reached. Current destination is now Waypoint_{1}.", _currentWaypointIndex - 1, _currentWaypointIndex);
                 if (CheckDirectApproachToDestination()) {
@@ -144,10 +144,10 @@ public class FleetNavigator : ANavigator {
                     yield break;
                 }
             }
-            yield return new WaitForSeconds(_courseUpdatePeriod);
+            yield return new WaitForSeconds(_courseProgressAssessmentPeriod);
         }
 
-        if (Vector3.SqrMagnitude(Destination - _fleetData.Position) < _closeEnoughDistanceSqrd) {
+        if (Vector3.SqrMagnitude(Destination - _fleetData.Position) < _desiredDistanceFromTargetSqrd) {
             // the final waypoint turns out to be located close enough to the Destination although a direct approach can't be made 
             onDestinationReached();
         }
@@ -167,14 +167,14 @@ public class FleetNavigator : ANavigator {
 
         float distanceToDestinationSqrd = Vector3.SqrMagnitude(Destination - _fleetData.Position);
         float previousDistanceSqrd = distanceToDestinationSqrd;
-        while (distanceToDestinationSqrd > _closeEnoughDistanceSqrd) {
+        while (distanceToDestinationSqrd > _desiredDistanceFromTargetSqrd) {
             if (GameUtility.CheckForIncreasingSeparation(distanceToDestinationSqrd, ref previousDistanceSqrd)) {
                 // we've missed the destination 
                 onCourseTrackingError();
                 yield break;
             }
             distanceToDestinationSqrd = Vector3.SqrMagnitude(Destination - _fleetData.Position);
-            yield return new WaitForSeconds(_courseUpdatePeriod);
+            yield return new WaitForSeconds(_courseProgressAssessmentPeriod);
         }
         //D.Log("Direct Approach coroutine ended.");
         onDestinationReached();

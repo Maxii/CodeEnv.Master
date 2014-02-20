@@ -160,6 +160,17 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
         }
     }
 
+
+    //private void OnContextMenuSelection() {
+    //    int menuId = CtxObject.current.selectedItem;
+    //    FleetCmdView selectedFleetView = _selectionMgr.CurrentSelection as FleetCmdView;
+    //    FleetCmdModel selectedFleetItem = selectedFleetView.Presenter.Model;
+    //    if (menuId == 4) {  // UNDONE
+    //        Vector3 centerOfSector = SectorGrid.GetSector(Location).Position;
+    //        selectedFleetItem.CurrentOrder = new UnitOrder<FleetOrders>(FleetOrders.MoveTo, centerOfSector, Speed.Standard);
+    //    }
+    //}
+
     private void OnContextMenuHide() {
         _isContextMenuShowing = false;
     }

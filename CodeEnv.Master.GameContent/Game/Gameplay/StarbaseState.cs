@@ -23,18 +23,16 @@ namespace CodeEnv.Master.GameContent {
 
         None,
         Idling,
-        GoAttack,   // ?
+        ExecuteAttackOrder,
         Attacking,
 
-        GoRepair,   // ?
+        GoRepair,
         Repairing,
-        GoRefit,   // ?
+        GoRefit,
         Refitting,
-        GoDisband,   // ?
+        GoDisband,
         Disbanding,
         Dead
-
-        // ShowHit no longer applicable to Cmds as there is no mesh
 
     }
 }

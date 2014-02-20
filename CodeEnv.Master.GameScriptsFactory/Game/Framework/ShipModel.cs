@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
@@ -83,6 +84,22 @@ public class ShipModel : AUnitElementModel {
         // else TODO
     }
 
+    public void AllStop() {
+        ChangeSpeed(Constants.ZeroF);
+    }
+
+    //public void ChangeSpeed(Speed newSpeed) {
+    //    if (Navigator.ChangeSpeed(newSpeed)) {
+    //        // TODO
+    //    }
+    //    // else TODO
+    //}
+
+    //public void AllStop() {
+    //    ChangeSpeed(Speed.AllStop);
+    //}
+
+
     #region Velocity Debugger
 
     private Vector3 __lastPosition;
@@ -118,58 +135,176 @@ public class ShipModel : AUnitElementModel {
     #region Idling
 
     void Idling_EnterState() {
-        //LogEvent();
+        LogEvent();
+        AllStop();
         // TODO register as available
     }
 
     void Idling_ExitState() {
-        //LogEvent();
+        LogEvent();
         // TODO register as unavailable
     }
 
     #endregion
 
-    #region MovingTo
+    #region ExecuteMoveOrder
 
-    void MovingTo_EnterState() {
-        //D.Log("{0}.MovingTo_EnterState().", Data.Name);
-        LogEvent();
-        Navigator.PlotCourse(CurrentOrder.Target, CurrentOrder.Speed);
+    IEnumerator ExecuteMoveOrder_EnterState() {
+        //LogEvent();
+        D.Log("{0}.ExecuteMoveOrder_EnterState.", Data.Name);
+        _moveSpeed = CurrentOrder.Speed;
+        Call(ShipState.OverseeMove);
+        yield return null;  // required immediately after Call() to avoid FSM bug
+        // Return()s here - move error or not, we idle
+        if (_isMoveError || !_isMoveError) {
+            // TODO how to handle move errors?
+            CurrentState = ShipState.Idling;
+        }
     }
 
-    void MovingTo_OnCoursePlotSuccess() {
+    void ExecuteMoveOrder_ExitState() {
+        LogEvent();
+        _isMoveError = false;
+    }
+
+    #endregion
+
+    #region OverseeMove
+
+    private bool _isMoveError;
+    private bool _isMoving;
+
+    /// <summary>
+    /// The speed of the move. If we are executing a MoveOrder (from a FleetCmd), this value is set from
+    /// the speed setting contained in the order. If execuing another Order that requires a move, then
+    /// this value is set by that Order execution state.
+    /// </summary>
+    private float _moveSpeed;
+
+    IEnumerator OverseeMove_EnterState() {
+        //LogEvent();
+        D.Log("{0}.OverseeMove_EnterState.", Data.Name);
+        Navigator.PlotCourse(CurrentOrder.Target, _moveSpeed);
+        _isMoving = true;
+        while (_isMoving) {
+            yield return null;
+        }
+        D.Warn("{0} Returning from OverseeMove_EnterState.", Data.Name);
+        Return();
+    }
+
+    void OverseeMove_OnCoursePlotSuccess() {
+        LogEvent();
+        Call(FleetState.Moving);
+    }
+
+    void OverseeMove_OnCoursePlotFailure() {
+        LogEvent();
+        _isMoveError = true;
+        _isMoving = false;
+    }
+
+    void OverseeMove_ExitState() {
+        LogEvent();
+        Navigator.Disengage();
+        AllStop();
+        _moveSpeed = Constants.ZeroF;
+    }
+
+    #endregion
+
+    #region Moving
+
+    void Moving_EnterState() {
+        LogEvent();
         Navigator.Engage();
     }
 
-    void MovingTo_OnCoursePlotFailure() {
-        CurrentState = ShipState.Idling;
-    }
-
-    void MovingTo_OnCourseTrackingError() {
-        CurrentState = ShipState.Idling;
-    }
-
-    void MovingTo_OnDestinationReached() {
-        CurrentState = ShipState.Idling;
-    }
-
-    void MovingTo_ExitState() {
+    void Moving_OnDestinationReached() {
         LogEvent();
-        Navigator.Disengage();
-        // ship retains its current speed and heading
+        Return();
+    }
+
+    void Moving_OnCourseTrackingError() {
+        LogEvent();
+        _isMoveError = true;
+        Return();
+    }
+
+    void Moving_ExitState() {
+        LogEvent();
+        _isMoving = false;
+    }
+
+    #endregion
+
+    #region ExecuteAttackOrder
+
+    private ITarget _target;
+
+    IEnumerator ExecuteAttackOrder_EnterState() {
+        D.Log("{0}.ExecuteAttackOrder_EnterState() called.", Data.Name);
+        _target = PickTarget();
+        while (_target != null && !_isMoveError) {
+            var weaponsRange = Data.WeaponsRange;
+            var rangeToTarget = Vector3.Distance(_target.Position, Data.Position) - _target.Radius;
+            D.Log("{0} weaponsRange is {1}. Target range is {2}.", Data.Name, weaponsRange, rangeToTarget);
+            if (rangeToTarget > weaponsRange) {
+                Call(ShipState.Chasing);
+            }
+            else {
+                Call(ShipState.Attacking);
+            }
+            yield return null;  // IMPROVE fire rate
+        }
+        CurrentState = ShipState.Idling;
+    }
+
+    void ExecuteAttackOrder_OnTargetDeath() {
+        LogEvent();
+        _target = PickTarget();
+    }
+
+    void ExecuteAttackOrder_ExitState() {
+        LogEvent();
+        _isMoveError = false;
     }
 
     #endregion
 
     #region Chasing
-    // only called from GoAttack
+    // only called from ExecuteAttackOrder
+    // can't use SetupMove as the target must be mortal
 
     void Chasing_EnterState() {
-        // take attack target and engage autopilot
+        LogEvent();
+        Navigator.PlotCourse(_target, Data.FullSpeed);
     }
 
-    void Chasing_Update() {
-        // TODO track and close on target
+    //void Chasing_EnterState() {
+    //    LogEvent();
+    //    Navigator.PlotCourse(_target, Speed.Full);
+    //}
+
+    void Chasing_OnCoursePlotSuccess() {
+        Navigator.Engage();
+    }
+
+    void Chasing_OnCoursePlotFailure() {
+        LogEvent();
+        _isMoveError = true;
+        Return();
+    }
+
+    void Chasing_OnCourseTrackingError() {
+        LogEvent();
+        _isMoveError = true;
+        Return();
+    }
+
+    void Chasing_OnTargetDeath() {
+        _target = PickTarget();
+        Return();
     }
 
     void Chasing_OnDestinationReached() {
@@ -179,6 +314,33 @@ public class ShipModel : AUnitElementModel {
     void Chasing_ExitState() {
         LogEvent();
         Navigator.Disengage();
+        AllStop();
+    }
+
+    #endregion
+
+    #region Attacking
+
+    void Attacking_EnterState() {
+        LogEvent();
+        OnShowAnimation(MortalAnimations.Attacking);
+        _target.TakeDamage(8F);
+        Return();   // to ExecuteAttackOrder
+    }
+
+    void Attacking_OnTargetDeath() {
+        // can get death as result of TakeDamage() before Return
+        LogEvent();
+        _target = PickTarget();
+    }
+
+    #endregion
+
+    #region Withdrawing
+    // only called from ExecuteAttackOrder
+
+    void Withdrawing_EnterState() {
+        // TODO withdraw to rear, evade
     }
 
     #endregion
@@ -193,91 +355,6 @@ public class ShipModel : AUnitElementModel {
 
     void Joining_ExitState() {
         // issue the JoinFleetAt order here, after Return?
-    }
-
-    #endregion
-
-    #region GoAttack
-
-    private ITarget _target;
-
-    void GoAttack_EnterState() {
-        //ITarget providedTarget = (CurrentOrder as ShipOrder_ItemTarget).ItemTarget;
-        ITarget providedTarget = CurrentOrder.Target;
-        if (providedTarget is FleetCmdModel) {
-            // TODO pick the ship to target
-        }
-        else {
-            _target = providedTarget;    // a settlement or specific ship
-        }
-    }
-
-    void GoAttack_Update() {
-        // if badly damaged, CurrentState = ShipState.Withdrawing;
-        // if target destroyed, find new target
-        // if target out of range, Call(ShipState.Chasing);
-        // else Call(ShipState.Attacking);
-        //}
-    }
-
-    #endregion
-
-    #region Attacking
-
-    void Attacking_EnterState() {
-        LogEvent();
-        // launch a salvo at  _target 
-        OnStartShow();
-    }
-
-    void Attacking_OnShowCompletion() {
-        LogEvent();
-        Return();   // to GoAttack
-    }
-
-    #endregion
-
-    #region ShowHit
-
-    void ShowHit_EnterState() {
-        //LogEvent();
-        OnStartShow();
-    }
-
-    void ShowHit_OnShowCompletion() {
-        //LogEvent();
-        Return();
-    }
-
-    #endregion
-
-    #region ShowCmdHit
-
-    void ShowCmdHit_EnterState() {
-        // LogEvent();
-        OnStartShow();
-    }
-
-    void ShowCmdHit_OnShowCompletion() {
-        //LogEvent();
-        Return();
-    }
-
-    #endregion
-
-    #region Withdrawing
-    // only called from GoAttack
-
-    void Withdrawing_EnterState() {
-        // TODO withdraw to rear, evade
-    }
-
-    //void Withdrawing_OnHit() {
-    //    Call(ShipState.TakingDamage);
-    //}
-
-    void Withdrawing_OnOrdersChanged() {
-        Return();
     }
 
     #endregion
@@ -300,17 +377,42 @@ public class ShipModel : AUnitElementModel {
 
     #endregion
 
+    #region ExecuteRepairOrder
+
+    IEnumerator ExecuteRepairOrder_EnterState() {
+        //LogEvent();
+        D.Log("{0}.ExecuteRepairOrder_EnterState.", Data.Name);
+        _moveSpeed = CurrentOrder.Speed;
+        Call(ShipState.OverseeMove);
+        // Return()s here
+        if (_isMoveError) {
+            // TODO how to handle move errors?
+            CurrentState = ShipState.Idling;
+            yield break;
+        }
+        Call(ShipState.Repairing);
+        yield return null;  // required immediately after Call() to avoid FSM bug
+    }
+
+    void ExecuteRepairOrder_ExitState() {
+        LogEvent();
+        _isMoveError = false;
+    }
+
+    #endregion
+
     #region Repairing
 
     IEnumerator Repairing_EnterState() {
-        // ShipView shows animation while in this state
-        OnStartShow();
-        //while (true) {
-        // TODO repair until complete
-        yield return new WaitForSeconds(2);
-        //}
-        //_command.OnRepairingComplete(this)?
-        OnStopShow();   // must occur while still in target state
+        D.Log("{0}.Repairing_EnterState.", Data.Name);
+        // OnStartShow();
+        OnShowAnimation(MortalAnimations.Repairing);
+        yield return new WaitForSeconds(1);
+        D.Log("{0}'s repair is 50% complete.", Data.Name);
+        yield return new WaitForSeconds(1);
+        D.Log("{0}'s repair is 100% complete.", Data.Name);
+        //OnStopShow();   // must occur while still in target state
+        OnStopAnimation(MortalAnimations.Repairing);
         Return();
     }
 
@@ -324,12 +426,12 @@ public class ShipModel : AUnitElementModel {
 
     IEnumerator Refitting_EnterState() {
         // ShipView shows animation while in this state
-        OnStartShow();
+        //OnStartShow();
         //while (true) {
         // TODO refit until complete
         yield return new WaitForSeconds(2);
         //}
-        OnStopShow();   // must occur while still in target state
+        //OnStopShow();   // must occur while still in target state
         Return();
     }
 
@@ -360,7 +462,7 @@ public class ShipModel : AUnitElementModel {
     void Dead_EnterState() {
         LogEvent();
         OnItemDeath();
-        OnStartShow();
+        OnShowAnimation(MortalAnimations.Dying);
     }
 
     void Dead_OnShowCompletion() {
@@ -370,50 +472,62 @@ public class ShipModel : AUnitElementModel {
 
     #endregion
 
-    # region Callbacks
+    #region StateMachine Support Methods
 
-    // See also AUnitElementModel
+    private ITarget PickTarget() {
+        ITarget chosenTarget = (CurrentOrder as UnitAttackOrder<ShipOrders>).Target;
+        ICmdTarget cmdTarget = chosenTarget as ICmdTarget;
+        if (cmdTarget != null) {
+            IList<ITarget> targetsInRange = new List<ITarget>();
+            foreach (var target in cmdTarget.ElementTargets) {
+                if (target.IsDead) {
+                    continue; // in case we get the onItemDeath event before item is removed by cmdTarget from ElementTargets
+                }
+                float rangeToTarget = Vector3.Distance(Data.Position, target.Position) - target.Radius;
+                if (rangeToTarget <= Data.WeaponsRange) {
+                    targetsInRange.Add(target);
+                }
+            }
+            chosenTarget = targetsInRange.Count != 0 ? RandomExtended<ITarget>.Choice(targetsInRange) :
+                cmdTarget.ElementTargets.IsNullOrEmpty() ? null : RandomExtended<ITarget>.Choice(cmdTarget.ElementTargets);  // IMPROVE
+        }
+        if (chosenTarget != null) {
+            chosenTarget.onItemDeath += OnTargetDeath;
+            D.Log("{0}'s new target to attack is {1}.", Data.Name, chosenTarget.Name);
+        }
+        return chosenTarget;
+    }
 
-    protected override void OnHit(float damage) {
-        if (CurrentState == ShipState.Dead) {
-            return;
-        }
-        LogEvent();
-        bool isCmdHit = false;
-        bool isElementAlive = ApplyDamage(damage);
-        if (IsHQElement) {
-            isCmdHit = _command.__CheckForDamage(isElementAlive);
-        }
-        if (!isElementAlive) {
-            CurrentState = ShipState.Dead;
-            return;
-        }
 
-        if (CurrentState == ShipState.ShowHit || CurrentState == ShipState.ShowCmdHit) {
-            // View can not 'queue' show animations so don't interrupt what is showing with another like show
-            return;
-        }
-
-        if (isCmdHit) {
-            Call(ShipState.ShowCmdHit);
-        }
-        else {
-            Call(ShipState.ShowHit);
+    private void AssessNeedForRepair() {
+        if (Data.Health < 0.50F) {
+            IDestinationTarget repairDestination = new StationaryLocation(Data.Position + UnityEngine.Random.onUnitSphere * 20F);
+            CurrentOrder = new UnitOrder<ShipOrders>(ShipOrders.Repair, repairDestination, Data.FullSpeed);
         }
     }
 
+    #endregion
+
+    # region Callbacks
+
     void OnOrdersChanged() {
         if (CurrentOrder != null) {
-            //D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
+            D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
+
+            // if orders arrive when in a Call()ed state, the change of state will cause the Call()ed state's ExitState()
+            // method to be called. However, if the Call()ed state has been Call()ed by another Call()ed state, the 2
+            // deep Call()ed state needs to Return() before changing to this new state below
+            if (CurrentState == ShipState.Moving) {
+                Return();
+            }
+            if (CurrentState == ShipState.OverseeMove) {
+                Return();
+            }
 
             ShipOrders order = CurrentOrder.Order;
             switch (order) {
-                case ShipOrders.AllStop:
-                    ChangeSpeed(Constants.ZeroF);
-                    CurrentState = ShipState.Idling;
-                    break;
                 case ShipOrders.Attack:
-                    CurrentState = ShipState.GoAttack;
+                    CurrentState = ShipState.ExecuteAttackOrder;
                     break;
                 case ShipOrders.StopAttack:
                     // issued when peace declared while attacking
@@ -426,10 +540,10 @@ public class ShipModel : AUnitElementModel {
                     CurrentState = ShipState.Entrenching;
                     break;
                 case ShipOrders.MoveTo:
-                    CurrentState = ShipState.MovingTo;
+                    CurrentState = ShipState.ExecuteMoveOrder;
                     break;
                 case ShipOrders.Repair:
-                    CurrentState = ShipState.Repairing;
+                    CurrentState = ShipState.ExecuteRepairOrder;
                     break;
                 case ShipOrders.Refit:
                     CurrentState = ShipState.Refitting;
@@ -444,8 +558,13 @@ public class ShipModel : AUnitElementModel {
         }
     }
 
-    // UNCLEAR can these 4 course-related events occur in any other state than MovingTo?
-    // If not, then they should be processed here rather than in the state
+    void OnTargetDeath(ITarget target) {
+        LogEvent();
+        D.Assert(_target == target, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _target.Name, target.Name));
+        _target.onItemDeath -= OnTargetDeath;
+        RelayToCurrentState();
+    }
+
     void OnCoursePlotSuccess() { RelayToCurrentState(); }
 
     void OnCoursePlotFailure() {
@@ -453,10 +572,7 @@ public class ShipModel : AUnitElementModel {
         RelayToCurrentState();
     }
 
-    void OnDestinationReached() {
-        D.Log("{0} reached Destination {1}.", Data.Name, Navigator.Target.Name);
-        RelayToCurrentState();
-    }
+    void OnDestinationReached() { RelayToCurrentState(); }
 
     void OnCourseTrackingError() { RelayToCurrentState(); }
 
@@ -473,5 +589,30 @@ public class ShipModel : AUnitElementModel {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region ITarget Members
+
+    public override void TakeDamage(float damage) {
+        if (CurrentState == ShipState.Dead) {
+            return;
+        }
+        LogEvent();
+        bool isCmdHit = false;
+        bool isElementAlive = ApplyDamage(damage);
+        if (IsHQElement) {
+            isCmdHit = _command.__CheckForDamage(isElementAlive);
+        }
+        if (!isElementAlive) {
+            CurrentState = ShipState.Dead;
+            return;
+        }
+
+        var hitAnimation = isCmdHit ? MortalAnimations.CmdHit : MortalAnimations.Hit;
+        OnShowAnimation(hitAnimation);
+
+        AssessNeedForRepair();
+    }
+
+    #endregion
 }
 

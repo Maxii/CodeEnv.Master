@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
@@ -27,7 +28,7 @@ using UnityEngine;
 /// Abstract, generic base class for a CommandItem, an object that commands Elements.
 /// </summary>
 /// <typeparam name="UnitElementModelType">The Type of the derived AUnitElementModel this Command is composed of.</typeparam>
-public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModelStateMachine, ITarget where UnitElementModelType : AUnitElementModel {
+public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModelStateMachine, ICmdTarget where UnitElementModelType : AUnitElementModel {
 
     public event Action<UnitElementModelType> onSubordinateElementDeath;
 
@@ -68,8 +69,8 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         // TODO consider changing HQElement
     }
 
-    private void OnSubordinateElementDeath(AMortalItemModel mortalItem) {
-        D.Log("{0} acknowledging {1} has been lost.", Data.Name, mortalItem.Data.Name);
+    private void OnSubordinateElementDeath(ITarget mortalItem) {
+        D.Log("{0} acknowledging {1} has been lost.", Data.Name, mortalItem.Name);
         UnitElementModelType element = mortalItem as UnitElementModelType;
         RemoveElement(element);
 
@@ -119,7 +120,7 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
     public bool __CheckForDamage(bool isHQElementAlive) {
         bool isHit = (isHQElementAlive) ? RandomExtended<bool>.SplitChance() : true;
         if (isHit) {
-            OnHit(UnityEngine.Random.Range(1F, Data.MaxHitPoints + 1F));
+            TakeDamage(UnityEngine.Random.Range(1F, Data.MaxHitPoints + 1F));
         }
         else {
             D.Log("{0} avoided a hit.", Data.Name);
@@ -153,11 +154,6 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         RelayToCurrentState();
     }
 
-    protected override void OnHit(float damage) {
-        Data.CurrentHitPoints -= damage;
-        D.Assert(Data.Health > Constants.ZeroF, "{0} should never die as a result of being hit.".Inject(Data.Name));
-    }
-
     void OnDetectedEnemy() {  // TODO connect to sensors when I get them
         RelayToCurrentState();
     }
@@ -169,15 +165,18 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
 
     #region ITarget Members
 
-    public string Name {
-        get { return Data.Name; }
+    public override void TakeDamage(float damage) {
+        bool isCmdAlive = ApplyDamage(damage);
+        D.Assert(isCmdAlive, "{0} should never die as a result of being hit.".Inject(Data.Name));
     }
 
-    public Vector3 Position {
-        get { return Data.Position; }
-    }
+    #endregion
 
-    public virtual bool IsMovable { get { return true; } }
+    #region ICmdTarget Members
+
+    public IEnumerable<ITarget> ElementTargets {
+        get { return Elements.Cast<ITarget>(); }
+    }
 
     #endregion
 

@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SettlementState.cs
-// Enum defining the states a Settlement can operate in.
+// File: IDestinationTarget.cs
+// Interface for an Item that is a movement destination.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,23 +16,21 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using UnityEngine;
+
     /// <summary>
-    /// Enum defining the states a Settlement can operate in.
+    /// Interface for an Item that is a movement destination.
     /// </summary>
-    public enum SettlementState {
+    public interface IDestinationTarget {
 
-        None,
-        Idling,
-        ExecuteAttackOrder,
-        Attacking,
+        string Name { get; }
 
-        GoRepair,
-        Repairing,
-        GoRefit,
-        Refitting,
-        GoDisband,
-        Disbanding,
-        Dead
+        Vector3 Position { get; }
+
+        bool IsMovable { get; }
+
+        float Radius { get; }
+
     }
 }
 

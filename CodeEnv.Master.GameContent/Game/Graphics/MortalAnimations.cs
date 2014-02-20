@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ShipState.cs
-// Enum defining the states a Ship can operate in.
+// File: MortalAnimations.cs
+//  Enum specifying the Animation to show for Mortal Items.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,42 +17,25 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Enum defining the states a Ship can operate in.
+    /// Enum specifying the Animation to show for Mortal Items.
     /// </summary>
-    public enum ShipState {
+    public enum MortalAnimations {
 
         None,
 
-        Idling,
-
-        ExecuteMoveOrder,
-
-        OverseeMove,
-        Moving,
-
-
-        ExecuteAttackOrder,
-        Chasing,
         Attacking,
 
-        Entrenching,
+        Hit,
 
-        ExecuteRepairOrder,
-        Repairing,
+        CmdHit,
 
         Refitting,
 
-        Joining,
-
-        //Docking,
-
-        //Embarking,
-
-        Withdrawing,
+        Repairing,
 
         Disbanding,
 
-        Dead
+        Dying
 
     }
 }

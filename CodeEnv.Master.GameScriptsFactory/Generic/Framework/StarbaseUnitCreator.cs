@@ -36,6 +36,7 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
         FacilityData elementData = new FacilityData(elementCategory, elementInstanceName, maxHitPoints: 50F, mass: 10000F) {   // TODO mass variation
             // optionalParentName gets set when it gets attached to a command
             Strength = new CombatStrength(),
+            WeaponsRange = UnityEngine.Random.Range(5F, 10F),
             CurrentHitPoints = UnityEngine.Random.Range(25F, 50F),
             Owner = owner,
         };

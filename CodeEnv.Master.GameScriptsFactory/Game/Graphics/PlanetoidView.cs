@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// A class for managing the UI of a planetoid.
 /// </summary>
-public class PlanetoidView : AMortalItemView, IPlanetoidViewable, ICameraFollowable {
+public class PlanetoidView : AMortalItemView, ICameraFollowable {
 
     public new PlanetoidPresenter Presenter {
         get { return base.Presenter as PlanetoidPresenter; }
@@ -56,15 +56,6 @@ public class PlanetoidView : AMortalItemView, IPlanetoidViewable, ICameraFollowa
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region IPlanetoidViewable Members
-
-    public void ShowHit() {
-        // TODO
-        OnShowCompletion();
-    }
-
-    #endregion
 
     #region ICameraFollowable Members
 

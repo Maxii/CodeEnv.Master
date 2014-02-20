@@ -24,7 +24,24 @@ namespace CodeEnv.Master.GameContent {
         None,
 
         Idling,
-        MovingTo,
+
+        /// <summary>
+        /// State that executes the FleetOrder MoveTo. Upon move completion
+        /// the state reverts to Idling.
+        /// </summary>
+        ExecuteMoveOrder,
+
+        /// <summary>
+        /// Call-only state that plots a course and Call()s Moving. Occurs prior to and
+        /// after the Moving state.
+        /// </summary>
+        OverseeMove,
+
+        /// <summary>
+        /// Call-only state that exists while an entire fleet is moving from one position to another.
+        /// Called only by OverseeMove. This can occur as part of the execution process for a number of FleetOrders.
+        /// </summary>
+        Moving,
 
         GoPatrol,
         Patrolling,
@@ -32,7 +49,11 @@ namespace CodeEnv.Master.GameContent {
         GoGuard,
         Guarding,
 
-        GoAttack,
+        /// <summary>
+        /// State that executes the FleetOrder Attack which encompasses Moving
+        /// and Attacking.
+        /// </summary>
+        ExecuteAttackOrder,
         Attacking,
 
         Entrenching,

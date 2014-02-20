@@ -60,16 +60,16 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public Vector3 CurrentHeading { get { return HQElementData.CurrentHeading; } }
 
-        private float _maxSpeed;
+        private float _fullSpeed;
         /// <summary>
-        /// Gets the maximum speed of the fleet in units per day.
+        /// Gets the maximum sustainable speed of the fleet in units per day.
         /// </summary>
-        public float MaxSpeed {
+        public float FullSpeed {
             get {
-                return _maxSpeed;
+                return _fullSpeed;
             }
             private set {
-                SetProperty<float>(ref _maxSpeed, value, "MaxSpeed");
+                SetProperty<float>(ref _fullSpeed, value, "FullSpeed");
             }
         }
 
@@ -114,18 +114,18 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void UpdatePropertiesDerivedFromCombinedElements() {
             base.UpdatePropertiesDerivedFromCombinedElements();
-            UpdateMaxSpeed();
+            UpdateFullSpeed();
             UpdateMaxTurnRate();
         }
 
-        private void UpdateMaxSpeed() {
+        private void UpdateFullSpeed() {
             // MinBy is a MoreLinq Nuget package extension method made available by Radical. I can also get it from
             // Nuget package manager, but installing it placed alot of things in my solution that I didn't know how to organize
             if (ElementsData.IsNullOrEmpty()) {
-                MaxSpeed = Constants.ZeroF;
+                FullSpeed = Constants.ZeroF;
                 return;
             }
-            MaxSpeed = (ElementsData.MinBy(data => (data as ShipData).MaxSpeed) as ShipData).MaxSpeed;
+            FullSpeed = (ElementsData.MinBy(data => (data as ShipData).FullSpeed) as ShipData).FullSpeed;
         }
 
         private void UpdateMaxTurnRate() {
@@ -142,12 +142,12 @@ namespace CodeEnv.Master.GameContent {
             base.Subscribe(elementData);
             IList<IDisposable> anElementsSubscriptions = _subscribers[elementData];
             ShipData shipData = elementData as ShipData;
-            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.MaxSpeed, OnShipElementMaxSpeedChanged));
+            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.FullSpeed, OnShipElementFullSpeedChanged));
             anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.MaxTurnRate, OnShipElementMaxTurnRateChanged));
         }
 
-        private void OnShipElementMaxSpeedChanged() {
-            UpdateMaxSpeed();
+        private void OnShipElementFullSpeedChanged() {
+            UpdateFullSpeed();
         }
 
         private void OnShipElementMaxTurnRateChanged() {

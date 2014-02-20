@@ -95,25 +95,39 @@ public class FacilityModel : AUnitElementModel {
 
     #endregion
 
-    #region GoAttack
+    #region ExecuteAttackOrder
 
     private ITarget _target;
 
-    void GoAttack_EnterState() {
-        ITarget providedTarget = CurrentOrder.Target;
-        if (providedTarget is FleetCmdModel) {
-            // TODO pick the ship to target
+    IEnumerator ExecuteAttackOrder_EnterState() {
+        D.Log("{0}.ExecuteAttackOrder_EnterState() called.", Data.Name);
+        while (true) {
+            if (_target != null) {
+                float rangeToTarget = Vector3.Distance(Data.Position, _target.Position) - _target.Radius;
+                if (rangeToTarget <= Data.WeaponsRange) {
+                    Call(FacilityState.Attacking);
+                }
+                else {
+                    _target = PickTarget();
+                }
+            }
+            else {
+                _target = PickTarget();
+            }
+            yield return null;  // IMPROVE fire rate
         }
-        else {
-            _target = providedTarget;    // a specific ship
-        }
+        // CurrentState = FacilityState.Idling; // FIXME How to get out of this order??
+        // More fundamental issue is not relying on individual attack orders for Units that can't move
+        // Must be able to defend/attack enemies without specific attack order as attack order is limited to 1 unit at a time
     }
 
-    void GoAttack_Update() {
-        // if badly damaged, CurrentState = ShipState.Withdrawing;
-        // if target destroyed, find new target
-        // if target out of range, Call(ShipState.Chasing);
-        // else Call(ShipState.Attacking);
+    void ExecuteAttackOrder_OnTargetDeath() {
+        LogEvent();
+        _target = PickTarget();
+    }
+
+    void ExecuteAttackOrder_ExitState() {
+        LogEvent();
     }
 
     #endregion
@@ -122,42 +136,15 @@ public class FacilityModel : AUnitElementModel {
 
     void Attacking_EnterState() {
         LogEvent();
-        // launch a salvo at  _target 
-        OnStartShow();
+        OnShowAnimation(MortalAnimations.Attacking);
+        _target.TakeDamage(8F);
+        Return();   // to ExecuteAttackOrder
     }
 
-    void Attacking_OnShowCompletion() {
+    void Attacking_OnTargetDeath() {
+        // can get death as result of TakeDamage() before Return
         LogEvent();
-        Return();   // to GoAttack
-    }
-
-    #endregion
-
-    #region ShowHit
-
-    void ShowHit_EnterState() {
-        LogEvent();
-        OnStartShow();
-    }
-
-    void ShowHit_OnShowCompletion() {
-        LogEvent();
-        // View is showing Hit
-        Return();
-    }
-
-    #endregion
-
-    #region ShowCmdHit
-
-    void ShowCmdHit_EnterState() {
-        LogEvent();
-        OnStartShow();
-    }
-
-    void ShowCmdHit_OnShowCompletion() {
-        LogEvent();
-        Return();
+        _target = PickTarget();
     }
 
     #endregion
@@ -166,13 +153,13 @@ public class FacilityModel : AUnitElementModel {
 
     IEnumerator Repairing_EnterState() {
         // ShipView shows animation while in this state
-        OnStartShow();
+        //OnStartShow();
         //while (true) {
         // TODO repair until complete
         yield return new WaitForSeconds(2);
         //}
         //_command.OnRepairingComplete(this)?
-        OnStopShow();   // must occur while still in target state
+        //OnStopShow();   // must occur while still in target state
         Return();
     }
 
@@ -186,12 +173,12 @@ public class FacilityModel : AUnitElementModel {
 
     IEnumerator Refitting_EnterState() {
         // View shows animation while in this state
-        OnStartShow();
+        //OnStartShow();
         //while (true) {
         // TODO refit until complete
         yield return new WaitForSeconds(2);
         //}
-        OnStopShow();   // must occur while still in target state
+        //OnStopShow();   // must occur while still in target state
         Return();
     }
 
@@ -222,7 +209,7 @@ public class FacilityModel : AUnitElementModel {
     void Dead_EnterState() {
         LogEvent();
         OnItemDeath();
-        OnStartShow();
+        OnShowAnimation(MortalAnimations.Dying);
     }
 
     void Dead_OnShowCompletion() {
@@ -234,19 +221,13 @@ public class FacilityModel : AUnitElementModel {
 
     # region Callbacks
 
-    // See also AUnitElementModel
-
-    protected override void OnHit(float damage) {
-        DistributeDamage(damage);
-    }
-
     void OnOrdersChanged() {
         if (CurrentOrder != null) {
             D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
             FacilityOrders order = CurrentOrder.Order;
             switch (order) {
                 case FacilityOrders.Attack:
-                    CurrentState = FacilityState.GoAttack;
+                    CurrentState = FacilityState.ExecuteAttackOrder;
                     break;
                 case FacilityOrders.StopAttack:
                     // issued when peace declared while attacking
@@ -268,9 +249,47 @@ public class FacilityModel : AUnitElementModel {
         }
     }
 
+    void OnTargetDeath(ITarget target) {
+        LogEvent();
+        D.Assert(_target == target, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _target.Name, target.Name));
+        _target.onItemDeath -= OnTargetDeath;
+        RelayToCurrentState();
+    }
+
     #endregion
 
     #region StateMachine Support Methods
+
+    private ITarget PickTarget() {
+        ITarget chosenTarget = (CurrentOrder as UnitAttackOrder<FacilityOrders>).Target;
+        ICmdTarget cmdTarget = chosenTarget as ICmdTarget;
+        if (cmdTarget != null) {
+            IList<ITarget> targetsInRange = new List<ITarget>();
+            foreach (var target in cmdTarget.ElementTargets) {
+                if (target.IsDead) {
+                    continue; // in case we get the onItemDeath event before item is removed by cmdTarget from ElementTargets
+                }
+                float rangeToTarget = Vector3.Distance(Data.Position, target.Position) - target.Radius;
+                if (rangeToTarget <= Data.WeaponsRange) {
+                    targetsInRange.Add(target);
+                }
+            }
+            chosenTarget = targetsInRange.Count != 0 ? RandomExtended<ITarget>.Choice(targetsInRange) : null;  // IMPROVE
+        }
+        if (chosenTarget != null) {
+            chosenTarget.onItemDeath += OnTargetDeath;
+            D.Log("{0}'s new target to attack is {1}.", Data.Name, chosenTarget.Name);
+        }
+        return chosenTarget;
+    }
+
+
+    private void AssessNeedForRepair() {
+        if (Data.Health < 0.50F) {
+            // TODO 
+        }
+    }
+
 
     /// <summary>
     /// Distributes the damage this element has just received evenly across all
@@ -283,23 +302,22 @@ public class FacilityModel : AUnitElementModel {
             return;
         }
 
-        var elements = _command.Elements;
-        IList<FacilityModel> elementsTakingDamage;
-        if (elements.Count == 1) {
-            // the HQ Element CentralHub
-            elementsTakingDamage = new List<FacilityModel>(elements);
-        }
-        else {
-            // all other facilities except the HQElement CentralHub
-            elementsTakingDamage = new List<FacilityModel>(elements.Where(e => !e.IsHQElement));
-        }
-        float elementDamage = damage / (float)elementsTakingDamage.Count;
-        foreach (var element in elementsTakingDamage) {
+        var elements = new List<FacilityModel>(_command.Elements);  // copy to avoid enumeration modified while enumerating exception
+        // damage either all goes to HQ Element or is spread among all except the HQ Element
+        float damageDivisor = elements.Count == 1 ? 1F : (float)(elements.Count - 1);
+        float elementDamage = damage / damageDivisor;
+
+        foreach (var element in elements) {
+            float damageToTake = elementDamage;
             bool isElementDirectlyAttacked = false;
             if (element == this) {
                 isElementDirectlyAttacked = true;
             }
-            element.TakeDamage(elementDamage, isElementDirectlyAttacked);
+            if (element.IsHQElement && elements.Count > 1) {
+                // HQElements take 0 damage until they are the only facility left
+                damageToTake = Constants.ZeroF;
+            }
+            element.TakeDistributedDamage(damageToTake, isElementDirectlyAttacked);
         }
     }
 
@@ -308,14 +326,13 @@ public class FacilityModel : AUnitElementModel {
     /// </summary>
     /// <param name="damage">The damage.</param>
     /// <param name="isDirectlyAttacked">if set to <c>true</c> this facility is the one being directly attacked.</param>
-    private void TakeDamage(float damage, bool isDirectlyAttacked) {
+    private void TakeDistributedDamage(float damage, bool isDirectlyAttacked) {
         D.Assert(CurrentState != FacilityState.Dead, "{0} should not already be dead!".Inject(Data.Name));
 
         bool isElementAlive = ApplyDamage(damage);
 
         bool isCmdHit = false;
-        if (IsHQElement) {
-            D.Assert(isDirectlyAttacked, "{0} is HQElement and must be directly attacked to incur damage.".Inject(Data.Name));
+        if (IsHQElement && isDirectlyAttacked) {
             isCmdHit = _command.__CheckForDamage(isElementAlive);
         }
         if (!isElementAlive) {
@@ -323,19 +340,10 @@ public class FacilityModel : AUnitElementModel {
             return;
         }
 
-        if (CurrentState == FacilityState.ShowHit || CurrentState == FacilityState.ShowCmdHit) {
-            // View can not 'queue' show animations so don't interrupt what is showing with another like show
-            return;
-        }
-
         if (isDirectlyAttacked) {
             // only show being hit if this facility is the one being directly attacked
-            if (isCmdHit) {
-                Call(FacilityState.ShowCmdHit);
-            }
-            else {
-                Call(FacilityState.ShowHit);
-            }
+            var hitAnimation = isCmdHit ? MortalAnimations.CmdHit : MortalAnimations.Hit;
+            OnShowAnimation(hitAnimation);
         }
     }
 
@@ -349,7 +357,9 @@ public class FacilityModel : AUnitElementModel {
 
     #region ITarget Members
 
-    public override bool IsMovable { get { return false; } }
+    public override void TakeDamage(float damage) {
+        DistributeDamage(damage);
+    }
 
     #endregion
 

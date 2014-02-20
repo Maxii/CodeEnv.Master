@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ITarget.cs
-// Interface for an Item that is a target of another Item.
+// Interface for a MortalItem that is an attack target of another Item.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,20 +16,19 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using UnityEngine;
 
     /// <summary>
-    /// Interface for an Item that is a target of another Item.
+    /// Interface for a MortalItem that is an attack target of another Item.
     /// </summary>
-    public interface ITarget {
+    public interface ITarget : IDestinationTarget {
 
-        string Name { get; }
+        event Action<ITarget> onItemDeath;
 
-        Vector3 Position { get; }
+        bool IsDead { get; }
 
-        bool IsMovable { get; }
-
-        float Radius { get; }
+        void TakeDamage(float damage);
 
     }
 }

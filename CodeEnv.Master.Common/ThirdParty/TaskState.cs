@@ -21,8 +21,6 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public enum TaskState {
 
-        None,
-
         NotRunning,
 
         Running,

@@ -32,6 +32,12 @@ public abstract class AUnitElementView : AMortalItemView, IElementViewable, ICam
         protected set { base.Presenter = value; }
     }
 
+    public AudioClip cmdHit;
+    public AudioClip attacking;
+    public AudioClip repairing;
+    public AudioClip refitting;
+    public AudioClip disbanding;
+
     private Color _originalMeshColor_Main;
     private Color _originalMeshColor_Specular;
     private Color _hiddenMeshColor;
@@ -81,6 +87,86 @@ public abstract class AUnitElementView : AMortalItemView, IElementViewable, ICam
         }
     }
 
+    #region Animations
+
+    protected override void ShowCmdHit() {
+        base.ShowCmdHit();
+        _showingJob = new Job(ShowingCmdHit(), toStart: true);
+    }
+
+    protected override void ShowAttacking() {
+        base.ShowAttacking();
+        _showingJob = new Job(ShowingAttacking(), toStart: true);
+    }
+
+    // these run continuously until they are stopped via StopAnimation() 
+    protected override void ShowRepairing() {
+        base.ShowRepairing();
+        _showingJob = new Job(ShowingRepairing(), toStart: true);
+    }
+
+    protected override void ShowRefitting() {
+        base.ShowRefitting();
+        _showingJob = new Job(ShowingRefitting(), toStart: true);
+    }
+
+    protected override void ShowDisbanding() {
+        base.ShowDisbanding();
+        _showingJob = new Job(ShowingDisbanding(), toStart: true);
+    }
+
+    private IEnumerator ShowingCmdHit() {
+        if (cmdHit != null) {
+            _audioSource.PlayOneShot(cmdHit);
+        }
+        //animation.Stop();
+        //yield return UnityUtility.PlayAnimation(animation, "hit");  
+        yield return null;
+        // does not use onShowCompletion
+    }
+
+    private IEnumerator ShowingAttacking() {
+        if (attacking != null) {
+            _audioSource.PlayOneShot(attacking);
+        }
+        //animation.Stop();
+        //yield return UnityUtility.PlayAnimation(animation, "hit");  
+        yield return null;
+        // does not use onShowCompletion
+    }
+
+    private IEnumerator ShowingRefitting() {
+        if (refitting != null) {
+            _audioSource.PlayOneShot(refitting);
+        }
+        //animation.Stop();
+        //yield return UnityUtility.PlayAnimation(animation, "hit");  
+        yield return null;
+        // does not use onShowCompletion
+    }
+
+    private IEnumerator ShowingDisbanding() {
+        if (disbanding != null) {
+            _audioSource.PlayOneShot(disbanding);
+        }
+        //animation.Stop();
+        //yield return UnityUtility.PlayAnimation(animation, "hit");  
+        yield return null;
+        // does not use onShowCompletion
+    }
+
+    private IEnumerator ShowingRepairing() {
+        if (repairing != null) {
+            _audioSource.PlayOneShot(repairing);
+        }
+        //animation.Stop();
+        //yield return UnityUtility.PlayAnimation(animation, "hit");  
+        yield return null;
+        // does not use onShowCompletion
+    }
+
+    #endregion
+
     #region ICameraFollowable Members
 
     // TODO Settlement Facilities should be followable as they orbit, but Starbase Facilities?
@@ -115,43 +201,6 @@ public abstract class AUnitElementView : AMortalItemView, IElementViewable, ICam
 
     #endregion
 
-    #region IElementViewable Members
-
-    // the following must return onShowCompletion when finished to inform 
-    // ElementItem when it is OK to progress to the next state
-
-    public void ShowHit() {
-        // TODO
-        OnShowCompletion();
-    }
-
-    public void ShowCmdHit() {
-        // TODO
-        OnShowCompletion();
-    }
-
-    public void ShowAttacking() {
-        // TODO
-        OnShowCompletion();
-    }
-
-    // these run continuously until they are stopped via StopShowing() when
-    // ElementItem state changes from the state that started them
-    public void ShowRepairing() {
-        throw new NotImplementedException();
-    }
-
-    public void ShowRefitting() {
-        throw new NotImplementedException();
-    }
-
-    public void StopShowing() {
-        if (_showingJob != null && _showingJob.IsRunning) {
-            _showingJob.Kill();
-        }
-    }
-
-    #endregion
 
 }
 

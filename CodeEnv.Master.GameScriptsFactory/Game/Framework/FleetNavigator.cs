@@ -63,6 +63,7 @@ public class FleetNavigator : ANavigator {
 
     protected override void Subscribe() {
         base.Subscribe();
+        _subscribers.Add(Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.UnitWeaponsRange, OnWeaponsRangeChanged));
         _seeker.pathCallback += OnCoursePlotCompleted;
     }
 
@@ -71,10 +72,16 @@ public class FleetNavigator : ANavigator {
     /// </summary>
     /// <param name="target">The target.</param>
     /// <param name="speed">The speed.</param>
-    public override void PlotCourse(ITarget target, float speed) {
+    public override void PlotCourse(IDestinationTarget target, float speed) {
         base.PlotCourse(target, speed);
         GenerateCourse();
     }
+
+    //public override void PlotCourse(IDestinationTarget target, Speed speed) {
+    //    base.PlotCourse(target, speed);
+    //    GenerateCourse();
+    //}
+
 
     /// <summary>
     /// Engages navigator execution to Destination either by direct
@@ -116,7 +123,7 @@ public class FleetNavigator : ANavigator {
         while (_currentWaypointIndex < _course.Count) {
             float distanceToWaypointSqrd = Vector3.SqrMagnitude(currentWaypointPosition - Data.Position);
             //D.Log("{0} distance to Waypoint_{1} = {2}.", Data.Name, _currentWaypointIndex, Mathf.Sqrt(distanceToWaypointSqrd));
-            if (distanceToWaypointSqrd < _closeEnoughDistanceSqrd) {
+            if (distanceToWaypointSqrd < _desiredDistanceFromTargetSqrd) {
                 if (CheckTargetIsLocal()) {
                     if (CheckApproachTo(Destination)) {
                         D.Log("{0} initiating homing course to {1} from waypoint {2}.", Data.Name, Target.Name, _currentWaypointIndex);
@@ -150,10 +157,10 @@ public class FleetNavigator : ANavigator {
             else if (IsCourseReplotNeeded) {
                 RegenerateCourse();
             }
-            yield return new WaitForSeconds(_courseUpdatePeriod);
+            yield return new WaitForSeconds(_courseProgressCheckPeriod);
         }
 
-        if (Vector3.SqrMagnitude(Destination - Data.Position) < _closeEnoughDistanceSqrd) {
+        if (Vector3.SqrMagnitude(Destination - Data.Position) < _desiredDistanceFromTargetSqrd) {
             // the final waypoint turns out to be located close enough to the Destination although a direct approach can't be made 
             OnDestinationReached();
         }
@@ -170,8 +177,8 @@ public class FleetNavigator : ANavigator {
     /// <returns></returns>
     private IEnumerator EngageHomingCourseToTarget() {
         __MoveShipsTo(Target);
-        while (Vector3.SqrMagnitude(Destination - Data.Position) > _closeEnoughDistanceSqrd) {
-            yield return new WaitForSeconds(_courseUpdatePeriod);
+        while (Vector3.SqrMagnitude(Destination - Data.Position) > _desiredDistanceFromTargetSqrd) {
+            yield return new WaitForSeconds(_courseProgressCheckPeriod);
         }
         OnDestinationReached();
     }
@@ -183,8 +190,8 @@ public class FleetNavigator : ANavigator {
     /// <returns></returns>
     private IEnumerator EngageHomingCourseTo(Vector3 stationaryLocation) {
         __MoveShipsTo(new StationaryLocation(stationaryLocation));
-        while (Vector3.SqrMagnitude(stationaryLocation - Data.Position) > _closeEnoughDistanceSqrd) {
-            yield return new WaitForSeconds(_courseUpdatePeriod);
+        while (Vector3.SqrMagnitude(stationaryLocation - Data.Position) > _desiredDistanceFromTargetSqrd) {
+            yield return new WaitForSeconds(_courseProgressCheckPeriod);
         }
         D.Log("{0} has arrived at {1}.", Data.Name, stationaryLocation);
     }
@@ -321,6 +328,19 @@ public class FleetNavigator : ANavigator {
         GenerateCourse();
     }
 
+    //protected override void AssessCourseProgressCheckPeriod() {
+    //    // frequency of course progress checks increases as speed and gameSpeed increase
+    //    _courseProgressCheckPeriod = 1F / (Speed.GetValue(Data.FullSpeed) * _gameSpeedMultiplier);
+    //    D.Log("{0}.{1} CourseProgressCheckPeriod adjusted to {2}.", Data.Name, GetType().Name, _courseProgressCheckPeriod);
+    //}
+
+    private void __MoveShipsTo(IDestinationTarget target) {
+        UnitOrder<ShipOrders> moveToOrder = new UnitOrder<ShipOrders>(ShipOrders.MoveTo, target, Speed);
+        _fleet.Elements.ForAll(s => s.CurrentOrder = moveToOrder);
+    }
+
+
+
     /// <summary>
     /// Initializes the values that depend on the target and speed.
     /// </summary>
@@ -329,16 +349,20 @@ public class FleetNavigator : ANavigator {
     /// </returns>
     protected override float InitializeTargetValues() {
         float speedFactor = base.InitializeTargetValues();
+        //DesiredDistanceFromTarget = Target.Radius + speedFactor + Data.UnitWeaponsRange;
+        DesiredDistanceFromTarget = Target.Radius + Data.UnitWeaponsRange;
         _targetPositionAtLastPlot = Target.Position;
         _isCourseReplot = false;
         return speedFactor;
     }
 
-    private void __MoveShipsTo(ITarget target) {
-        D.Assert(Speed != Constants.ZeroF, "{0} moving Ships to {1} at Speed of 0!".Inject(Data.Name, target.Name));
-        UnitOrder<ShipOrders> moveToOrder = new UnitOrder<ShipOrders>(ShipOrders.MoveTo, target, Speed);
-        _fleet.Elements.ForAll(s => s.CurrentOrder = moveToOrder);
-    }
+    //protected override void InitializeTargetValues() {
+    //    base.InitializeTargetValues();
+    //    //DesiredDistanceFromTarget = Target.Radius + speedFactor + Data.UnitWeaponsRange;
+    //    DesiredDistanceFromTarget = Target.Radius + Data.UnitWeaponsRange;
+    //    _targetPositionAtLastPlot = Target.Position;
+    //    _isCourseReplot = false;
+    //}
 
 
     public override string ToString() {

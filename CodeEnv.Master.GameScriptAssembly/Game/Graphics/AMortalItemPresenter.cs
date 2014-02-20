@@ -45,14 +45,14 @@ public abstract class AMortalItemPresenter : AFocusableItemPresenter {
     protected override void Subscribe() {
         base.Subscribe();
         Model.onItemDeath += OnDeath;
+        Model.onShowAnimation += View.ShowAnimation;
+        Model.onStopAnimation += View.StopAnimation;
         View.onShowCompletion += Model.OnShowCompletion;
-        Model.onStartShow += OnStartShowInView;
     }
 
-    protected abstract void OnStartShowInView();
-
-    protected virtual void OnDeath(AMortalItemModel itemModel) {
-        D.Assert(Model == itemModel, "{0} has erroneously received OnDeath from {1}.".Inject(Model.Data.Name, itemModel.Data.Name));
+    protected virtual void OnDeath(ITarget itemModel) {
+        // Equals avoids erroneous warning
+        D.Assert(Model.Equals(itemModel), "{0} has erroneously received OnDeath from {1}.".Inject(Model.Data.Name, itemModel.Name));
         CleanupOnDeath();
     }
 

@@ -23,8 +23,6 @@ namespace CodeEnv.Master.GameContent {
 
         None,
 
-        AllStop,
-
         MoveTo,
 
         Attack,

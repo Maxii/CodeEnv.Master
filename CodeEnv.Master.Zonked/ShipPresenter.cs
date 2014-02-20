@@ -77,9 +77,9 @@ public class ShipPresenter : AMortalItemPresenter {
                 // no need to stop any of these showing as they have already completed
                 break;
             case ShipState.ProcessOrders:
-            case ShipState.MovingTo:
+            case ShipState.Moving:
             case ShipState.Idling:
-            case ShipState.GoAttack:
+            case ShipState.ExecuteAttackOrder:
             case ShipState.Dead:
             case ShipState.Chasing:
             case ShipState.Attacking:
@@ -114,9 +114,9 @@ public class ShipPresenter : AMortalItemPresenter {
                 View.ShowRepairing();
                 break;
             case ShipState.ProcessOrders:
-            case ShipState.MovingTo:
+            case ShipState.Moving:
             case ShipState.Idling:
-            case ShipState.GoAttack:
+            case ShipState.ExecuteAttackOrder:
             case ShipState.Dead:
             case ShipState.Chasing:
             case ShipState.Attacking:

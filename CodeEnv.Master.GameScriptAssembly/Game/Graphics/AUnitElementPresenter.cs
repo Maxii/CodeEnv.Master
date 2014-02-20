@@ -43,13 +43,6 @@ public abstract class AUnitElementPresenter : AMortalItemPresenter {
         // derived classes should call Subscribe() after they have acquired needed references
     }
 
-    protected override void Subscribe() {
-        base.Subscribe();
-        Model.onStopShow += OnStopShowInView;
-    }
-
-    protected abstract void OnStopShowInView();
-
     public bool IsCommandSelected {
         get { return (_commandView as ISelectable).IsSelected; }
         set { (_commandView as ISelectable).IsSelected = value; }

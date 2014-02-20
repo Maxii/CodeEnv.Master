@@ -25,7 +25,9 @@ namespace CodeEnv.Master.GameContent {
 
         event Action onShowCompletion;
 
-        void ShowDying();
+        void ShowAnimation(MortalAnimations animation);
+
+        void StopAnimation(MortalAnimations animation);
 
         void AssessDiscernability();
 

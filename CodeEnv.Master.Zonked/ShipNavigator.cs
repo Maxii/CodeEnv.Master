@@ -78,7 +78,7 @@ namespace CodeEnv.Master.GameContent {
             _gameStatus = GameStatus.Instance;
             _generalSettings = GeneralSettings.Instance;
 
-            _thrustHelper = new ThrustHelper(0F, 0F, _data.MaxThrust);
+            _thrustHelper = new ThrustHelper(0F, 0F, _data.FullThrust);
             Subscribe();
         }
 
@@ -161,16 +161,16 @@ namespace CodeEnv.Master.GameContent {
                 Disengage();
             }
 
-            float newSpeed = Mathf.Clamp(newSpeedRequest, Constants.ZeroF, _data.MaxSpeed);
+            float newSpeed = Mathf.Clamp(newSpeedRequest, Constants.ZeroF, _data.FullSpeed);
             float previousRequestedSpeed = _data.RequestedSpeed;
             float newSpeedToRequestedSpeedRatio = (previousRequestedSpeed != Constants.ZeroF) ? newSpeed / previousRequestedSpeed : Constants.ZeroF;
             if (ThrustHelper.SpeedTargetRange.Contains(newSpeedToRequestedSpeedRatio)) {
-                D.Warn("{1} ChangeSpeed Command to {0} (Max = {2}) not executed. Target speed unchanged.", newSpeedRequest, _transform.name, _data.MaxSpeed);
+                D.Warn("{1} ChangeSpeed Command to {0} (Max = {2}) not executed. Target speed unchanged.", newSpeedRequest, _transform.name, _data.FullSpeed);
                 return false;
             }
             _data.RequestedSpeed = newSpeed;
             float thrustNeededToMaintainRequestedSpeed = newSpeed * _data.Mass * _data.Drag;
-            _thrustHelper = new ThrustHelper(newSpeed, thrustNeededToMaintainRequestedSpeed, _data.MaxThrust);
+            _thrustHelper = new ThrustHelper(newSpeed, thrustNeededToMaintainRequestedSpeed, _data.FullThrust);
             D.Log("{0} adjusting thrust to achieve requested speed {1}.", _data.Name, newSpeed);
             _thrust = AdjustThrust();
 
@@ -201,7 +201,7 @@ namespace CodeEnv.Master.GameContent {
             float distanceToDestinationSqrd = Vector3.SqrMagnitude(Destination - _data.Position);
             float previousDistanceSqrd = distanceToDestinationSqrd;
 
-            while (distanceToDestinationSqrd > _closeEnoughDistanceSqrd) {
+            while (distanceToDestinationSqrd > _desiredDistanceFromTargetSqrd) {
                 //D.Log("Distance to Destination = {0}.", distanceToDestination);
                 if (!isSpeedIncreaseMade) {    // adjusts speed as a oneshot until we get there
                     isSpeedIncreaseMade = IncreaseSpeedOnHeadingConfirmation();
@@ -214,7 +214,7 @@ namespace CodeEnv.Master.GameContent {
                     onCourseTrackingError();
                     yield break;
                 }
-                yield return new WaitForSeconds(_courseUpdatePeriod);
+                yield return new WaitForSeconds(_courseProgressAssessmentPeriod);
             }
             //D.Log("Final Approach coroutine ended.");
             onDestinationReached();

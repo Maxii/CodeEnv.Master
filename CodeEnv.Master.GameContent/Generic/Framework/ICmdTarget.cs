@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IPlanetoidViewable.cs
-//  Interface used by a PlanetoidPresenter to communicate with their associated PlanetoidView.
+// File: ICmdTarget.cs
+// Interface for a UnitCommandItem that is an attack target of another Item.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,14 +16,14 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
+    using System.Collections.Generic;
 
     /// <summary>
-    /// Interface used by a PlanetoidPresenter to communicate with their associated PlanetoidView.
+    /// Interface for a UnitCommandItem that is an attack target of another Item.
     /// </summary>
-    public interface IPlanetoidViewable : IMortalViewable {
+    public interface ICmdTarget : ITarget {
 
-        void ShowHit();
+        IEnumerable<ITarget> ElementTargets { get; }
 
     }
 }

@@ -26,20 +26,33 @@ namespace CodeEnv.Master.GameContent {
     public class UnitOrder<T> where T : struct {
 
         public float Speed { get; set; }
+        //public Speed Speed { get; set; }
 
-        public ITarget Target { get; private set; }
+        public IDestinationTarget Target { get; protected set; }
 
         public T Order { get; private set; }
 
-        public UnitOrder(T order, ITarget target = null, float speed = Constants.ZeroF) {
+        public UnitOrder(T order, IDestinationTarget target = null, float speed = Constants.ZeroF) {
             Order = order;
             Target = target;
             Speed = speed;
         }
 
         public UnitOrder(T order, Vector3 targetLocation)
-            : this(order, new StationaryLocation(targetLocation), 2F) {
+            : this(order, new StationaryLocation(targetLocation), 2f) {
         }
+
+
+        //public UnitOrder(T order, IDestinationTarget target, Speed speed) {
+        //    Order = order;
+        //    Target = target;
+        //    Speed = speed;
+        //}
+
+
+        //public UnitOrder(T order, Vector3 targetLocation, Speed speed)
+        //    : this(order, new StationaryLocation(targetLocation), speed) {
+        //}
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

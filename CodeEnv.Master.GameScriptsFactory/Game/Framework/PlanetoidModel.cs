@@ -57,12 +57,9 @@ public class PlanetoidModel : AMortalItemModel {
             case PlanetoidState.Normal:
                 // do nothing
                 break;
-            case PlanetoidState.ShowHit:
-                OnStartShow();
-                break;
             case PlanetoidState.Dead:
                 OnItemDeath();
-                OnStartShow();
+                OnShowAnimation(MortalAnimations.Dying);
                 break;
             case PlanetoidState.None:
             default:
@@ -72,33 +69,16 @@ public class PlanetoidModel : AMortalItemModel {
 
     public override void OnShowCompletion() {
         switch (CurrentState) {
-            case PlanetoidState.ShowHit:
-                CurrentState = PlanetoidState.Normal;
-                break;
             case PlanetoidState.Dead:
                 StartCoroutine(DelayedDestroy(3));
                 break;
             case PlanetoidState.Normal:
+                // do nothing
+                break;
             case PlanetoidState.None:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(CurrentState));
         }
-    }
-
-    protected override void OnHit(float damage) {
-        if (CurrentState == PlanetoidState.Dead) {
-            return;
-        }
-        Data.CurrentHitPoints -= damage;
-        if (Data.Health > Constants.ZeroF) {
-            CurrentState = PlanetoidState.Dead;
-            return;
-        }
-        if (CurrentState == PlanetoidState.ShowHit) {
-            // View can not 'queue' show animations so don't interrupt what is showing with another like show
-            return;
-        }
-        CurrentState = PlanetoidState.ShowHit;
     }
 
     #endregion
@@ -178,6 +158,23 @@ public class PlanetoidModel : AMortalItemModel {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region ITarget Members
+
+    public override void TakeDamage(float damage) {
+        if (CurrentState == PlanetoidState.Dead) {
+            return;
+        }
+        LogEvent();
+        bool isAlive = ApplyDamage(damage);
+        if (!isAlive) {
+            CurrentState = PlanetoidState.Dead;
+            return;
+        }
+        OnShowAnimation(MortalAnimations.Hit);
+    }
+
+    #endregion
 
 }
 

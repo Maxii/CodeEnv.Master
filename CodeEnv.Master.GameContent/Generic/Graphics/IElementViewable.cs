@@ -23,18 +23,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IElementViewable : IMortalViewable {
 
-        void ShowHit();
-
-        void ShowCmdHit();
-
-        void ShowAttacking();
-
-        void ShowRepairing();
-
-        void ShowRefitting();
-
-        void StopShowing();
-
         void AssessHighlighting();
 
     }

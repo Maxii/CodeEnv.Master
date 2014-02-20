@@ -25,13 +25,9 @@ namespace CodeEnv.Master.GameContent {
 
         Idling,
 
-        GoAttack,
+        ExecuteAttackOrder,
 
         Attacking,
-
-        ShowHit,
-
-        ShowCmdHit,
 
         Repairing,
 

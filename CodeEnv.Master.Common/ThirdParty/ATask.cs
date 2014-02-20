@@ -53,7 +53,7 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// called when the task is started. allows setup/cleanup to occur and delays to be used
         /// </summary>
-        public virtual void TaskStarted() {
+        public void TaskStarted() {
             ResetState();
 
             // if we are delayed then set ourself as paused then unpause after the delay
@@ -71,8 +71,13 @@ namespace CodeEnv.Master.Common {
                 // start immediately
                 state = TaskState.Running;
             }
+            Setup();
         }
 
+        /// <summary>
+        /// Placeholder that allows derived classes to cleanup and/or setup prior to task execution.
+        /// </summary>
+        public virtual void Setup() { }
 
         /// <summary>
         /// called when the task is completed
@@ -85,6 +90,13 @@ namespace CodeEnv.Master.Common {
             // if we have a next task to run and we were not cancelled, start it
             if (nextTask != null && state != TaskState.Canceled)
                 TaskMgr.AddTask(nextTask);
+        }
+
+        /// <summary>
+        /// Completes this task causing any nextTask to begin execution.
+        /// </summary>
+        public void Finish() {
+            state = TaskState.Complete;
         }
 
         /// <summary>

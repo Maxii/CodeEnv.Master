@@ -64,7 +64,7 @@ namespace CodeEnv.Master.GameContent {
             _generalSettings = GeneralSettings.Instance;
             Subscribe();
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
-            _thrustHelper = new ThrustHelper(0F, 0F, _data.MaxThrust);
+            _thrustHelper = new ThrustHelper(0F, 0F, _data.FullThrust);
         }
 
         private void Subscribe() {
@@ -163,16 +163,16 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public bool ChangeSpeed(float newSpeedRequest) {
-            float newSpeed = Mathf.Clamp(newSpeedRequest, Constants.ZeroF, _data.MaxSpeed);
+            float newSpeed = Mathf.Clamp(newSpeedRequest, Constants.ZeroF, _data.FullSpeed);
             float previousRequestedSpeed = _data.RequestedSpeed;
             float newSpeedToRequestedSpeedRatio = (previousRequestedSpeed != Constants.ZeroF) ? newSpeed / previousRequestedSpeed : Constants.ZeroF;
             if (ThrustHelper.SpeedTargetRange.Contains(newSpeedToRequestedSpeedRatio)) {
-                D.Warn("{1} ChangeSpeed Command to {0} (Max = {2}) not executed. Target speed unchanged.", newSpeedRequest, _transform.name, _data.MaxSpeed);
+                D.Warn("{1} ChangeSpeed Command to {0} (Max = {2}) not executed. Target speed unchanged.", newSpeedRequest, _transform.name, _data.FullSpeed);
                 return false;
             }
             _data.RequestedSpeed = newSpeed;
             float thrustNeededToMaintainRequestedSpeed = newSpeed * _data.Mass * _data.Drag;
-            _thrustHelper = new ThrustHelper(newSpeed, thrustNeededToMaintainRequestedSpeed, _data.MaxThrust);
+            _thrustHelper = new ThrustHelper(newSpeed, thrustNeededToMaintainRequestedSpeed, _data.FullThrust);
             D.Log("{0} adjusting thrust to achieve requested speed {1}.", _data.Name, newSpeed);
             _thrust = AdjustThrust();
 

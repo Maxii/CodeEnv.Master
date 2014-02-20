@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -73,7 +73,7 @@ namespace CodeEnv.Master.GameContent {
                 // they will be applied again during GetThrust() if needed
                 DeployFlaps(false);
             }
-            newSpeedRequest = Mathf.Clamp(newSpeedRequest, Constants.ZeroF, _data.MaxSpeed);
+            //newSpeedRequest = Mathf.Clamp(newSpeedRequest, Constants.ZeroF, _data.FullSpeed); // FIXME what about flank speed?
             float previousRequestedSpeed = _data.RequestedSpeed;
             float newSpeedToRequestedSpeedRatio = (previousRequestedSpeed != Constants.ZeroF) ? newSpeedRequest / previousRequestedSpeed : Constants.ZeroF;
             if (EngineRoom.SpeedTargetRange.Contains(newSpeedToRequestedSpeedRatio)) {
@@ -91,6 +91,33 @@ namespace CodeEnv.Master.GameContent {
             }
             return true;
         }
+
+        //public bool ChangeSpeed(Speed newSpeedRequest) {
+        //    if (_isFlapsDeployed) {
+        //        // reset drag to normal so max speed and thrust calculations are accurate
+        //        // they will be applied again during GetThrust() if needed
+        //        DeployFlaps(false);
+        //    }
+        //    float speedRequest = newSpeedRequest.GetValue(_data.FullSpeed);
+        //    //newSpeedRequest = Mathf.Clamp(newSpeedRequest, Constants.ZeroF, _data.FullSpeed);
+        //    float previousRequestedSpeed = _data.RequestedSpeed;
+        //    float newSpeedToRequestedSpeedRatio = (previousRequestedSpeed != Constants.ZeroF) ? speedRequest / previousRequestedSpeed : Constants.ZeroF;
+        //    if (EngineRoom.SpeedTargetRange.Contains(newSpeedToRequestedSpeedRatio)) {
+        //        D.Warn("{0} is already generating thrust for {1}. Requested speed unchanged.", _data.Name, newSpeedRequest);
+        //        return false;
+        //    }
+        //    SetThrustFor(speedRequest);
+        //    D.Log("{0} adjusting thrust to achieve requested speed {1}.", _data.Name, newSpeedRequest.GetName());
+
+        //    if (_job == null || !_job.IsRunning) {
+        //        _job = new Job(OperateEngines(), toStart: true, onJobComplete: delegate {
+        //            string message = "{0} thrust stopped.  Coasting speed is {1}.";
+        //            D.Log(message, _data.Name, _data.CurrentSpeed);
+        //        });
+        //    }
+        //    return true;
+        //}
+
 
         private void OnGameSpeedChanged() {
             float previousGameSpeedMultiplier = _gameSpeedMultiplier;   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
@@ -116,9 +143,9 @@ namespace CodeEnv.Master.GameContent {
             float targetThrust = requestedSpeed * _data.Drag * _data.Mass;
 
             //_targetThrustMinusMinus = Mathf.Min(targetThrust / _speedModeratelyAboveTarget.Max, maxThrust);
-            _targetThrustMinus = Mathf.Min(targetThrust / _speedSlightlyAboveTarget.Max, _data.MaxThrust);
-            _targetThrust = Mathf.Min(targetThrust, _data.MaxThrust);
-            _targetThrustPlus = Mathf.Min(targetThrust / _speedSlightlyBelowTarget.Min, _data.MaxThrust);
+            _targetThrustMinus = Mathf.Min(targetThrust / _speedSlightlyAboveTarget.Max, _data.FullThrust);
+            _targetThrust = Mathf.Min(targetThrust, _data.FullThrust);
+            _targetThrustPlus = Mathf.Min(targetThrust / _speedSlightlyBelowTarget.Min, _data.FullThrust);
             // _targetThrustPlusPlus = Mathf.Min(targetThrust / _speedModeratelyBelowTarget.Min, maxThrust);
         }
 
@@ -145,7 +172,7 @@ namespace CodeEnv.Master.GameContent {
             //if (_speedModeratelyAboveTarget.IsInRange(sr)) { return _targetThrustMinusMinus; }
             if (_speedWayBelowTarget.Contains(sr)) {
                 DeployFlaps(false);
-                return _data.MaxThrust;
+                return _data.FullThrust;
             }
             if (_speedWayAboveTarget.Contains(sr)) {
                 DeployFlaps(true);
@@ -156,14 +183,14 @@ namespace CodeEnv.Master.GameContent {
 
         private void DeployFlaps(bool toDeploy) {
             if (!_isFlapsDeployed && toDeploy) {
-                _data.Drag = _data.Drag * 10F;
+                _data.Drag = _data.Drag * 100F;
                 _isFlapsDeployed = true;
-                D.Log("{0} has deployed flaps.", _data.Name);
+                D.Log("{0} has deployed flaps. Drag = {1}.", _data.Name, _data.Drag);
             }
             else if (_isFlapsDeployed && !toDeploy) {
-                _data.Drag = _data.Drag * 0.1F;
+                _data.Drag = _data.Drag * 0.01F;
                 _isFlapsDeployed = false;
-                D.Log("{0} has retracted flaps.", _data.Name);
+                D.Log("{0} has retracted flaps. Drag = {1}.", _data.Name, _data.Drag);
             }
         }
 

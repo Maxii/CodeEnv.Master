@@ -46,7 +46,7 @@ namespace CodeEnv.Master.GameContent {
         public float RequestedSpeed {
             get { return _requestedSpeed; }
             set {
-                value = value < MaxSpeed ? value : MaxSpeed;
+                value = value < FullSpeed ? value : FullSpeed;
                 SetProperty<float>(ref _requestedSpeed, value, "RequestedSpeed");
             }
         }
@@ -60,14 +60,14 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<float>(ref _drag, value, "Drag", OnDragChanged); }
         }
 
-        private float _maxThrust;
+        private float _fullThrust;
         /// <summary>
-        /// Gets or sets the max thrust achievable by the engines.
+        /// Gets or sets the maximum sustainable thrust achievable by the engines.
         /// </summary>
-        public float MaxThrust {
-            get { return _maxThrust; }
+        public float FullThrust {
+            get { return _fullThrust; }
             set {
-                SetProperty<float>(ref _maxThrust, value, "MaxThrust", OnMaxThrustChanged);
+                SetProperty<float>(ref _fullThrust, value, "FullThrust", OnFullThrustChanged);
             }
         }
 
@@ -92,15 +92,15 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private float _maxSpeed;
+        private float _fullSpeed;
         /// <summary>
-        /// Readonly. Gets the maximum speed that the ship can achieve in units per day.
-        /// Derived directly from the MaxThrust, mass and drag of the ship.
+        /// Readonly. Gets the maximum sustainable speed that the ship can achieve in units per day.
+        /// Derived directly from FullThrust, mass and drag of the ship.
         /// </summary>
-        public float MaxSpeed {
+        public float FullSpeed {
             get {
-                if (_maxSpeed == Constants.ZeroF) { _maxSpeed = MaxThrust / (Mass * Drag); }
-                return _maxSpeed;
+                if (_fullSpeed == Constants.ZeroF) { _fullSpeed = FullThrust / (Mass * Drag); }
+                return _fullSpeed;
             }
         }
 
@@ -143,7 +143,6 @@ namespace CodeEnv.Master.GameContent {
             _gameTime = GameTime.Instance;
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();
             Subscribe();
-            //D.Log("{0} ShipData constructor has completed.", Name);
         }
 
         private void Subscribe() {
@@ -161,11 +160,11 @@ namespace CodeEnv.Master.GameContent {
 
         private void OnDragChanged() {
             _rigidbody.drag = Drag;
-            _maxSpeed = MaxThrust / (Mass * Drag);
+            _fullSpeed = FullThrust / (Mass * Drag);
         }
 
-        private void OnMaxThrustChanged() {
-            _maxSpeed = MaxThrust / (Mass * Drag);
+        private void OnFullThrustChanged() {
+            _fullSpeed = FullThrust / (Mass * Drag);
         }
 
         private void OnIsPausedChanging(bool isPausing) {

@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for an Element, an object that is under the command of a CommandItem.
 /// </summary>
-public abstract class AUnitElementModel : AMortalItemModelStateMachine, ITarget {
+public abstract class AUnitElementModel : AMortalItemModelStateMachine {
 
     public virtual bool IsHQElement { get; set; }
 
@@ -49,15 +49,6 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, ITarget 
 
     # region StateMachine Support Methods
 
-    /// <summary>
-    /// Applies the damage to the Element. Returns true 
-    /// if the Element survived the hit.
-    /// </summary>
-    /// <returns><c>true</c> if the Element survived.</returns>
-    protected bool ApplyDamage(float damage) {
-        Data.CurrentHitPoints -= damage;
-        return Data.Health > Constants.ZeroF;
-    }
 
     protected void Dead_ExitState() {
         LogEvent();
@@ -80,20 +71,6 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, ITarget 
 
     // subscriptions contained completely within this gameobject (both subscriber
     // and subscribee) donot have to be cleaned up as all instances are destroyed
-
-    #region ITarget Members
-
-    public string Name {
-        get { return Data.Name; }
-    }
-
-    public Vector3 Position {
-        get { return Data.Position; }
-    }
-
-    public virtual bool IsMovable { get { return true; } }
-
-    #endregion
 
 }
 

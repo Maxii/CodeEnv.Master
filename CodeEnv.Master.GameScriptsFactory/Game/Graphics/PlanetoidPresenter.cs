@@ -16,9 +16,7 @@
 
 // default namespace
 
-using System;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
@@ -31,11 +29,7 @@ public class PlanetoidPresenter : AMortalItemPresenter {
         protected set { base.Model = value; }
     }
 
-    protected new IPlanetoidViewable View {
-        get { return base.View as IPlanetoidViewable; }
-    }
-
-    public PlanetoidPresenter(IPlanetoidViewable view)
+    public PlanetoidPresenter(IMortalViewable view)
         : base(view) {
         Subscribe();
     }
@@ -48,24 +42,6 @@ public class PlanetoidPresenter : AMortalItemPresenter {
         var publisher = new GuiHudPublisher<PlanetoidData>(Model.Data);
         publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
         return publisher;
-    }
-
-    protected override void OnStartShowInView() {
-        PlanetoidState state = Model.CurrentState;
-        switch (state) {
-            case PlanetoidState.ShowHit:
-                View.ShowHit();
-                break;
-            case PlanetoidState.Dead:
-                View.ShowDying();
-                break;
-            case PlanetoidState.Normal:
-                // do nothing
-                break;
-            case PlanetoidState.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(state));
-        }
     }
 
     public override string ToString() {

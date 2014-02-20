@@ -44,6 +44,13 @@ public class SettlementCmdModel : AUnitCommandModel<FacilityModel> {
         CurrentState = SettlementState.Idling;
     }
 
+    private void AllAttack() {
+        var attackTarget = CurrentOrder.Target as ITarget;  // should be this kind of target when called
+        var facilityAttackOrder = new UnitAttackOrder<FacilityOrders>(FacilityOrders.Attack, attackTarget);
+        Elements.ForAll<FacilityModel>(e => e.CurrentOrder = facilityAttackOrder);
+    }
+
+
     #region StateMachine
 
     public new SettlementState CurrentState {
@@ -66,11 +73,33 @@ public class SettlementCmdModel : AUnitCommandModel<FacilityModel> {
 
     #endregion
 
-    #region Attack
+    #region ExecuteAttackOrder
 
-    void GoAttack_EnterState() { }
+    void ExecuteAttackOrder_EnterState() {
+        LogEvent();
+        //D.Log("{0}.ExecuteAttackOrder_EnterState.", Data.Name);
+        Call(SettlementState.Attacking);
+        CurrentState = SettlementState.Idling;
+    }
 
-    void Attacking_EnterState() { }
+    void ExecuteAttackOrder_ExitState() {
+        LogEvent();
+    }
+
+    #endregion
+
+    #region Attacking
+
+    void Attacking_EnterState() {
+        LogEvent();
+        AllAttack();
+        // TODO Wait here until attack complete so stay in Attacking state while ships are Attacking?
+        //Return();
+    }
+
+    void Attacking_ExitState() {
+        LogEvent();
+    }
 
     #endregion
 
@@ -103,7 +132,7 @@ public class SettlementCmdModel : AUnitCommandModel<FacilityModel> {
     void Dead_EnterState() {
         LogEvent();
         OnItemDeath();
-        OnStartShow();
+        OnShowAnimation(MortalAnimations.Dying);
     }
 
     void Dead_OnShowCompletion() {
@@ -123,15 +152,13 @@ public class SettlementCmdModel : AUnitCommandModel<FacilityModel> {
 
     # region StateMachine Callbacks
 
-    // See also AUnitCommandModel
-
     void OnOrdersChanged() {
         if (CurrentOrder != null) {
             D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
             SettlementOrders order = CurrentOrder.Order;
             switch (order) {
                 case SettlementOrders.Attack:
-
+                    CurrentState = SettlementState.ExecuteAttackOrder;
                     break;
                 case SettlementOrders.StopAttack:
 

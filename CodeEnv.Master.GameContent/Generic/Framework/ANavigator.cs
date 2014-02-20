@@ -46,14 +46,28 @@ namespace CodeEnv.Master.GameContent {
         public event Action onCourseTrackingError;
 
         /// <summary>
-        /// The ITarget this navigator is trying to reach. Can simply be a location.
+        /// The IDestinationTarget this navigator is trying to reach. Can simply be a location.
         /// </summary>
-        public ITarget Target { get; private set; }
+        public IDestinationTarget Target { get; private set; }
 
+        private float _speed;
         /// <summary>
         /// From orders, the speed to travel at.
         /// </summary>
-        public float Speed { get; private set; }
+        public float Speed {
+            get { return _speed; }
+            set { SetProperty<float>(ref _speed, value, "Speed", OnSpeedChanged); }
+        }
+
+        //private Speed _speed;
+        ///// <summary>
+        ///// From orders, the speed to travel at.
+        ///// </summary>
+        //public Speed Speed {
+        //    get { return _speed; }
+        //    set { SetProperty<Speed>(ref _speed, value, "Speed", OnSpeedChanged); }
+        //}
+
 
         /// <summary>
         /// The world space location of the target.
@@ -64,17 +78,25 @@ namespace CodeEnv.Master.GameContent {
             get { return _pilotJob != null && _pilotJob.IsRunning; }
         }
 
+        private float _desiredDistanceFromTarget;
+        protected float DesiredDistanceFromTarget {
+            get { return _desiredDistanceFromTarget; }
+            set {
+                _desiredDistanceFromTarget = value;
+                _desiredDistanceFromTargetSqrd = _desiredDistanceFromTarget * _desiredDistanceFromTarget;
+            }
+        }
+
         protected AMortalItemData Data { get; private set; }
 
         protected static LayerMask _keepoutOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.CelestialObjectKeepout);
 
         /// <summary>
-        /// The duration in seconds between course updates. The default is
-        /// every second at normal gamespeed.
+        /// The duration in seconds between course progress assessments. The default is
+        /// every second at a speed of 1 unit per day and normal gamespeed.
         /// </summary>
-        protected float _courseUpdatePeriod = 1F;
-        protected float _closeEnoughDistance;
-        protected float _closeEnoughDistanceSqrd;
+        protected float _courseProgressCheckPeriod = 1F;
+        protected float _desiredDistanceFromTargetSqrd;
 
         /// <summary>
         /// The tolerance value used to test whether separation between 2 items is increasing. This 
@@ -95,7 +117,7 @@ namespace CodeEnv.Master.GameContent {
             Data = data;
             _gameTime = GameTime.Instance;
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
-            _courseUpdatePeriod /= _gameSpeedMultiplier;
+            _courseProgressCheckPeriod /= _gameSpeedMultiplier;    // speed not set yet
             // Subscribe called by derived classes so all constructor references can be initialized before they are used by Subscribe
         }
 
@@ -105,37 +127,47 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected void OnCoursePlotFailure() {
-            if (onCoursePlotFailure != null) {
-                onCoursePlotFailure();
+            var temp = onCoursePlotFailure;
+            if (temp != null) {
+                temp();
             }
         }
 
         protected void OnCoursePlotSuccess() {
-            if (onCoursePlotSuccess != null) {
-                onCoursePlotSuccess();
+            var temp = onCoursePlotSuccess;
+            if (temp != null) {
+                temp();
             }
         }
 
         protected virtual void OnDestinationReached() {
             _pilotJob.Kill();
             D.Log("{0} has reached Destination {1}. Actual proximity {2} units.", Data.Name, Target.Name, Vector3.Distance(Destination, Data.Position));
-            if (onDestinationReached != null) {
-                onDestinationReached();
+            var temp = onDestinationReached;
+            if (temp != null) {
+                temp();
             }
         }
 
         protected virtual void OnCourseTrackingError() {
             _pilotJob.Kill();
-            if (onCourseTrackingError != null) {
-                onCourseTrackingError();
+            var temp = onCourseTrackingError;
+            if (temp != null) {
+                temp();
             }
         }
 
+        protected void OnWeaponsRangeChanged() {
+            InitializeTargetValues();
+        }
+
+        private void OnSpeedChanged() {
+            AssessFrequencyOfCourseProgressChecks();
+        }
+
         private void OnGameSpeedChanged() {
-            float previousGameSpeedMultiplier = _gameSpeedMultiplier;   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();
-            float gameSpeedChangeRatio = _gameSpeedMultiplier / previousGameSpeedMultiplier;
-            AdjustForGameSpeed(gameSpeedChangeRatio);
+            AssessFrequencyOfCourseProgressChecks();
         }
 
         /// <summary>
@@ -143,12 +175,20 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="target">The target.</param>
         /// <param name="speed">The speed.</param>
-        public virtual void PlotCourse(ITarget target, float speed) {
+        public virtual void PlotCourse(IDestinationTarget target, float speed) {
             Target = target;
             Speed = speed;
             D.Assert(speed != Constants.ZeroF, "Designated speed to new target {0} is 0!".Inject(target.Name));
             InitializeTargetValues();
         }
+
+        //public virtual void PlotCourse(IDestinationTarget target, Speed speed) {
+        //    Target = target;
+        //    Speed = speed;
+        //    D.Assert(speed != Speed.AllStop, "Designated speed to new target {0} is 0!".Inject(target.Name));
+        //    InitializeTargetValues();
+        //}
+
 
         /// <summary>
         /// Engages pilot execution to Destination either by direct
@@ -164,8 +204,8 @@ namespace CodeEnv.Master.GameContent {
         /// Primary external control to disengage the pilot once Engage has been called.
         /// </summary>
         public virtual void Disengage() {
-            D.Log("{0} Navigator disengaging.", Data.Name);
             if (IsEngaged) {
+                D.Log("{0} Navigator disengaging.", Data.Name);
                 _pilotJob.Kill();
             }
         }
@@ -181,9 +221,13 @@ namespace CodeEnv.Master.GameContent {
             Vector3 currentPosition = Data.Position;
             Vector3 vectorToLocation = location - currentPosition;
             float distanceToLocation = vectorToLocation.magnitude;
+            if (distanceToLocation < DesiredDistanceFromTarget) {
+                // already inside close enough distance
+                return true;
+            }
             Vector3 directionToLocation = vectorToLocation.normalized;
-            float rayDistance = distanceToLocation - _closeEnoughDistance;
-            float clampedRayDistance = Mathf.Clamp(rayDistance, Constants.ZeroF, Mathf.Infinity);
+            float rayDistance = distanceToLocation - DesiredDistanceFromTarget;
+            float clampedRayDistance = Mathf.Clamp(rayDistance, 0.1F, Mathf.Infinity);
             RaycastHit hitInfo;
             if (Physics.Raycast(currentPosition, directionToLocation, out hitInfo, clampedRayDistance, _keepoutOnlyLayerMask.value)) {
                 D.Warn("{0} encountered obstacle {1} when checking approach to {2}.", Data.Name, hitInfo.collider.name, location);
@@ -220,7 +264,7 @@ namespace CodeEnv.Master.GameContent {
                     Vector3 rayExitPoint = hitInfo.point;
                     Vector3 halfWayPointInsideKeepoutZone = rayEntryPoint + (rayExitPoint - rayEntryPoint) / 2F;
                     Vector3 obstacleCenter = hitInfo.collider.transform.position;
-                    waypoint = obstacleCenter + (halfWayPointInsideKeepoutZone - obstacleCenter).normalized * (keepoutRadius + _closeEnoughDistance);
+                    waypoint = obstacleCenter + (halfWayPointInsideKeepoutZone - obstacleCenter).normalized * (keepoutRadius + DesiredDistanceFromTarget);
                     D.Log("{0}'s waypoint to avoid obstacle = {1}.", Data.Name, waypoint);
                 }
                 else {
@@ -259,18 +303,32 @@ namespace CodeEnv.Master.GameContent {
         /// <returns>SpeedFactor, a multiple of Speed used in the calculations. Simply a convenience for derived classes.</returns>
         protected virtual float InitializeTargetValues() {
             float speedFactor = Speed * 3F;
+            //_desiredDistanceFromTarget = Target.Radius + speedFactor + _weaponsRange;
+            //_desiredDistanceFromTargetSqrd = _desiredDistanceFromTarget * _desiredDistanceFromTarget;
             __separationTestToleranceDistanceSqrd = speedFactor * speedFactor;   // FIXME needs work - courseUpdatePeriod???
-            _closeEnoughDistance = Target.Radius + speedFactor;  // IMPROVE range should be a factor too
-            _closeEnoughDistanceSqrd = _closeEnoughDistance * _closeEnoughDistance;
             return speedFactor;
         }
 
-        /// <summary>
-        /// Adjusts various factors to reflect the new GameClockSpeed setting. 
-        /// </summary>
-        /// <param name="gameSpeed">The game speed.</param>
-        protected virtual void AdjustForGameSpeed(float gameSpeedChangeRatio) {
-            _courseUpdatePeriod /= gameSpeedChangeRatio;
+        //protected virtual void InitializeTargetValues() {
+        //    //_desiredDistanceFromTarget = Target.Radius + speedFactor + _weaponsRange;
+        //    //_desiredDistanceFromTargetSqrd = _desiredDistanceFromTarget * _desiredDistanceFromTarget;
+        //    __separationTestToleranceDistanceSqrd = 100F;   // FIXME needs work - courseUpdatePeriod???
+        //}
+
+
+        ///// <summary>
+        ///// Adjusts various factors to reflect the new GameClockSpeed setting. 
+        ///// </summary>
+        ///// <param name="gameSpeed">The game speed.</param>
+        //protected void AdjustForGameSpeed(float gameSpeedChangeRatio) {
+        //    _courseProgressCheckPeriod /= gameSpeedChangeRatio;
+        //}
+
+        private void AssessFrequencyOfCourseProgressChecks() {
+            // frequency of course progress checks increases as speed and gameSpeed increase
+            float courseProgressCheckFrequency = Speed * _gameSpeedMultiplier;
+            _courseProgressCheckPeriod = 1F / courseProgressCheckFrequency;
+            D.Log("{0}.{1} frequency of course progress checks adjusted to {2}.", Data.Name, GetType().Name, courseProgressCheckFrequency);
         }
 
         protected virtual void Cleanup() {

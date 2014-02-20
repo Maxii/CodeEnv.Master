@@ -47,61 +47,6 @@ public class FacilityPresenter : AUnitElementPresenter {
         return publisher;
     }
 
-    protected override void OnStartShowInView() {
-        FacilityState newState = Model.CurrentState;
-        //D.Log("{0}.OnStartShowInView state = {1}.", Model.Data.Name, newState.GetName());
-        switch (newState) {
-            case FacilityState.Attacking:
-                View.ShowAttacking();
-                break;
-            case FacilityState.ShowHit:
-                View.ShowHit();
-                break;
-            case FacilityState.ShowCmdHit:
-                View.ShowCmdHit();
-                break;
-            case FacilityState.Refitting:
-                View.ShowRefitting();
-                break;
-            case FacilityState.Repairing:
-                View.ShowRepairing();
-                break;
-            case FacilityState.Dead:
-                View.ShowDying();
-                break;
-            case FacilityState.Idling:
-            case FacilityState.GoAttack:
-                // do nothing
-                break;
-            case FacilityState.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(newState));
-        }
-    }
-
-    protected override void OnStopShowInView() {
-        FacilityState state = Model.CurrentState;
-        switch (state) {
-            case FacilityState.Refitting:
-            case FacilityState.Repairing:
-                View.StopShowing();
-                break;
-            case FacilityState.ShowHit:
-            case FacilityState.ShowCmdHit:
-            case FacilityState.Attacking:
-                // no need to stop any of these showing as they complete at their own pace
-                break;
-            case FacilityState.Idling:
-            case FacilityState.GoAttack:
-            case FacilityState.Dead:
-                // do nothing
-                break;
-            case FacilityState.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(state));
-        }
-    }
-
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

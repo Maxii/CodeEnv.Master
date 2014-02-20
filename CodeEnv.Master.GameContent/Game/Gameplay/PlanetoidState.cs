@@ -25,8 +25,6 @@ namespace CodeEnv.Master.GameContent {
 
         Normal,
 
-        ShowHit,
-
         Dead
 
     }

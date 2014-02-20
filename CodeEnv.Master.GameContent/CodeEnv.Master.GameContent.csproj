@@ -168,12 +168,15 @@
     <Compile Include="Generic\Framework\IIntel.cs" />
     <Compile Include="Generic\Framework\ImprovingIntel.cs" />
     <Compile Include="Game\Gameplay\PlanetoidState.cs" />
-    <Compile Include="Game\Graphics\IPlanetoidViewable.cs" />
     <Compile Include="Generic\Graphics\IMortalViewable.cs" />
     <Compile Include="Generic\_Debug\IDynamicObjects.cs" />
     <Compile Include="Generic\Framework\IGameManager.cs" />
     <Compile Include="Generic\_Debug\References.cs" />
     <Compile Include="Generic\Graphics\ICameraLOSChangedRelay.cs" />
+    <Compile Include="Generic\Framework\ICmdTarget.cs" />
+    <Compile Include="Generic\Framework\IDestinationTarget.cs" />
+    <Compile Include="Generic\Extensions\ShipSpeedExtensions.cs" />
+    <Compile Include="Generic\Framework\Speed.cs" />
     <Compile Include="ThirdParty\ICoroutineManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\SystemData.cs" />
@@ -184,6 +187,8 @@
     <Compile Include="ThirdParty\Job.cs" />
     <Compile Include="Generic\Framework\ANavigator.cs" />
     <Compile Include="Game\Framework\ShipNavigator.cs" />
+    <Compile Include="Generic\Framework\UnitAttackOrder.cs" />
+    <Compile Include="Game\Graphics\MortalAnimations.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Generic\Math\" />

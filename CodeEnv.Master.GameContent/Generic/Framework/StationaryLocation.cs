@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// A dummy ITarget wrapping a stationary location.
     /// </summary>
-    public class StationaryLocation : ITarget {
+    public class StationaryLocation : IDestinationTarget {
 
         public StationaryLocation(Vector3 position) {
             Position = position;
@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
             return Name;
         }
 
-        #region ITarget Members
+        #region IDestinationTarget Members
 
         public string Name {
             get {

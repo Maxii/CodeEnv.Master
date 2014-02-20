@@ -65,7 +65,7 @@ namespace CodeEnv.Master.GameContent {
         public ANavigator() {
             _gameTime = GameTime.Instance;
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
-            _courseUpdatePeriod /= _gameSpeedMultiplier;
+            _courseProgressAssessmentPeriod /= _gameSpeedMultiplier;
             // Subscribe called by derived classes so all constructor references can be initialized before they are used by Subscribe
         }
 
@@ -132,7 +132,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="gameSpeed">The game speed.</param>
         protected virtual void AdjustForGameSpeed(float gameSpeedChangeRatio) {
-            _courseUpdatePeriod /= gameSpeedChangeRatio;
+            _courseProgressAssessmentPeriod /= gameSpeedChangeRatio;
         }
 
         protected virtual void Cleanup() {
