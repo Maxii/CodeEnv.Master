@@ -56,7 +56,8 @@ namespace CodeEnv.Master.GameContent {
             _race = race;
             IQ = iq;
             IsActive = true;
-            _diplomaticRelations = null;    // TODO gets rid of unused warning
+            _diplomaticRelations = new Dictionary<IPlayer, DiplomaticRelations>();
+            SetRelations(this, DiplomaticRelations.Self);
         }
 
         public DiplomaticRelations GetRelations(IPlayer player) {
@@ -64,6 +65,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void SetRelations(IPlayer player, DiplomaticRelations relation) {
+            if (player == this) {
+                D.Assert(relation == DiplomaticRelations.Self);
+            }
             _diplomaticRelations[player] = relation;
             // TODO send DiploRelationsChange event
         }

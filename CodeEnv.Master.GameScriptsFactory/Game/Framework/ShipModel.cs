@@ -50,6 +50,7 @@ public class ShipModel : AUnitElementModel {
     }
 
     protected override void Initialize() {
+        base.Initialize();
         var parent = _transform.parent;
         _command = parent.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCmdModel>();
 
@@ -138,6 +139,10 @@ public class ShipModel : AUnitElementModel {
         LogEvent();
         AllStop();
         // TODO register as available
+    }
+
+    void Idling_OnTriggerEnter(Collider other) {
+        EvaluateTrigger(other);
     }
 
     void Idling_ExitState() {
@@ -240,14 +245,14 @@ public class ShipModel : AUnitElementModel {
 
     #region ExecuteAttackOrder
 
-    private ITarget _target;
+    private ITarget _attackTarget;
 
     IEnumerator ExecuteAttackOrder_EnterState() {
         D.Log("{0}.ExecuteAttackOrder_EnterState() called.", Data.Name);
-        _target = PickTarget();
-        while (_target != null && !_isMoveError) {
+        _attackTarget = PickTarget();
+        while (_attackTarget != null && !_isMoveError) {
             var weaponsRange = Data.WeaponsRange;
-            var rangeToTarget = Vector3.Distance(_target.Position, Data.Position) - _target.Radius;
+            var rangeToTarget = Vector3.Distance(_attackTarget.Position, Data.Position) - _attackTarget.Radius;
             D.Log("{0} weaponsRange is {1}. Target range is {2}.", Data.Name, weaponsRange, rangeToTarget);
             if (rangeToTarget > weaponsRange) {
                 Call(ShipState.Chasing);
@@ -262,7 +267,7 @@ public class ShipModel : AUnitElementModel {
 
     void ExecuteAttackOrder_OnTargetDeath() {
         LogEvent();
-        _target = PickTarget();
+        _attackTarget = PickTarget();
     }
 
     void ExecuteAttackOrder_ExitState() {
@@ -278,7 +283,7 @@ public class ShipModel : AUnitElementModel {
 
     void Chasing_EnterState() {
         LogEvent();
-        Navigator.PlotCourse(_target, Data.FullSpeed);
+        Navigator.PlotCourse(_attackTarget, Data.FullSpeed);
     }
 
     //void Chasing_EnterState() {
@@ -303,7 +308,7 @@ public class ShipModel : AUnitElementModel {
     }
 
     void Chasing_OnTargetDeath() {
-        _target = PickTarget();
+        _attackTarget = PickTarget();
         Return();
     }
 
@@ -324,14 +329,14 @@ public class ShipModel : AUnitElementModel {
     void Attacking_EnterState() {
         LogEvent();
         OnShowAnimation(MortalAnimations.Attacking);
-        _target.TakeDamage(8F);
+        _attackTarget.TakeDamage(8F);
         Return();   // to ExecuteAttackOrder
     }
 
     void Attacking_OnTargetDeath() {
         // can get death as result of TakeDamage() before Return
         LogEvent();
-        _target = PickTarget();
+        _attackTarget = PickTarget();
     }
 
     #endregion
@@ -474,6 +479,11 @@ public class ShipModel : AUnitElementModel {
 
     #region StateMachine Support Methods
 
+    private void EvaluateTrigger(Collider other) {
+        var attackTgt = other.gameObject.GetInterface<ITarget>();
+    }
+
+
     private ITarget PickTarget() {
         ITarget chosenTarget = (CurrentOrder as UnitAttackOrder<ShipOrders>).Target;
         ICmdTarget cmdTarget = chosenTarget as ICmdTarget;
@@ -560,8 +570,8 @@ public class ShipModel : AUnitElementModel {
 
     void OnTargetDeath(ITarget target) {
         LogEvent();
-        D.Assert(_target == target, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _target.Name, target.Name));
-        _target.onItemDeath -= OnTargetDeath;
+        D.Assert(_attackTarget == target, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _attackTarget.Name, target.Name));
+        _attackTarget.onItemDeath -= OnTargetDeath;
         RelayToCurrentState();
     }
 

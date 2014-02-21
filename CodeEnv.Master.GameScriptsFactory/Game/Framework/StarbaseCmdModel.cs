@@ -135,7 +135,6 @@ public class StarbaseCmdModel : AUnitCommandModel<FacilityModel> {
     void Dead_EnterState() {
         LogEvent();
         OnItemDeath();
-        //OnStartShow();
         OnShowAnimation(MortalAnimations.Dying);
     }
 

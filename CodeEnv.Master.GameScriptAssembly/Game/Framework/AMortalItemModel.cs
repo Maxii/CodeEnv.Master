@@ -28,8 +28,6 @@ using UnityEngine;
 /// </summary>
 public abstract class AMortalItemModel : AItemModel, ITarget, IDisposable {
 
-    //public event Action onStopShow;
-    //public event Action onStartShow;
     public event Action<MortalAnimations> onShowAnimation;
     public event Action<MortalAnimations> onStopAnimation;
 

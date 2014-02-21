@@ -29,7 +29,9 @@ namespace CodeEnv.Master.Common {
 
         Friend,
 
-        Enemy
+        Enemy,
+
+        Ally
 
     }
 }

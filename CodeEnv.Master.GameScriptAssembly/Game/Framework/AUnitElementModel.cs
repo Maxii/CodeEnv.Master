@@ -35,20 +35,35 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
     }
 
     private Rigidbody _rigidbody;
+    private SphereCollider _weaponsRangeCollider;
 
     protected override void Awake() {
         base.Awake();
         _rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
+        _weaponsRangeCollider = gameObject.GetComponentInChildren<SphereCollider>();
         // derived classes should call Subscribe() after they have acquired needed references
+    }
+
+    protected override void Initialize() {
+        _weaponsRangeCollider.isTrigger = true;
+    }
+
+    protected override void SubscribeToDataValueChanges() {
+        base.SubscribeToDataValueChanges();
+        _subscribers.Add(Data.SubscribeToPropertyChanged<AElementData, float>(d => d.WeaponsRange, OnWeaponsRangeChanged));
     }
 
     protected override void OnDataChanged() {
         base.OnDataChanged();
         _rigidbody.mass = Data.Mass;
+        OnWeaponsRangeChanged();
+    }
+
+    private void OnWeaponsRangeChanged() {
+        _weaponsRangeCollider.radius = Data.WeaponsRange;
     }
 
     # region StateMachine Support Methods
-
 
     protected void Dead_ExitState() {
         LogEvent();

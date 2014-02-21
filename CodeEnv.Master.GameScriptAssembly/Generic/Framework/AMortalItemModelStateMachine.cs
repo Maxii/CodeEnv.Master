@@ -697,24 +697,24 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
         state.DoOnTriggerEnter(other);
     }
 
-    void OnTriggerExit(Collider other) {
-        state.DoOnTriggerExit(other);
-    }
-
     void OnTriggerStay(Collider other) {
         state.DoOnTriggerStay(other);
+    }
+
+    void OnTriggerExit(Collider other) {
+        state.DoOnTriggerExit(other);
     }
 
     void OnCollisionEnter(Collision other) {
         state.DoOnCollisionEnter(other);
     }
 
-    void OnCollisionExit(Collision other) {
-        state.DoOnCollisionExit(other);
-    }
-
     void OnCollisionStay(Collision other) {
         state.DoOnCollisionStay(other);
+    }
+
+    void OnCollisionExit(Collision other) {
+        state.DoOnCollisionExit(other);
     }
 
     void OnHover(bool isOver) {
