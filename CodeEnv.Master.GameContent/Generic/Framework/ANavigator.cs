@@ -326,9 +326,9 @@ namespace CodeEnv.Master.GameContent {
 
         private void AssessFrequencyOfCourseProgressChecks() {
             // frequency of course progress checks increases as speed and gameSpeed increase
-            float courseProgressCheckFrequency = Speed * _gameSpeedMultiplier;
+            float courseProgressCheckFrequency = 1F + (Speed * _gameSpeedMultiplier);
             _courseProgressCheckPeriod = 1F / courseProgressCheckFrequency;
-            D.Log("{0}.{1} frequency of course progress checks adjusted to {2}.", Data.Name, GetType().Name, courseProgressCheckFrequency);
+            D.Log("{0}.{1} frequency of course progress checks adjusted to {2:0.####}.", Data.Name, GetType().Name, courseProgressCheckFrequency);
         }
 
         protected virtual void Cleanup() {
