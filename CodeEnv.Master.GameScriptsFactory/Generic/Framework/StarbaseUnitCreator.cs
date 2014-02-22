@@ -32,13 +32,12 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
         return GameState.DeployingSystems;
     }
 
-    protected override FacilityData CreateElementData(FacilityCategory elementCategory, string elementInstanceName, IPlayer owner) {
+    protected override FacilityData CreateElementData(FacilityCategory elementCategory, string elementInstanceName) {
         FacilityData elementData = new FacilityData(elementCategory, elementInstanceName, maxHitPoints: 50F, mass: 10000F) {   // TODO mass variation
             // optionalParentName gets set when it gets attached to a command
             Strength = new CombatStrength(),
             WeaponsRange = UnityEngine.Random.Range(5F, 10F),
             CurrentHitPoints = UnityEngine.Random.Range(25F, 50F),
-            Owner = owner,
         };
         return elementData;
     }
@@ -71,10 +70,10 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
         return RequiredPrefabs.Instance.starbaseCmd.gameObject;
     }
 
-    protected override void InitializeCommandData() {
+    protected override void InitializeCommandData(IPlayer owner) {
         _command.Data = new StarbaseCmdData(UnitName, 10F) {
-            Strength = new CombatStrength(0F, 10F, 0F, 10F, 0F, 10F)  // no offense, strong defense
-            // strength of the UnitCommand so it can properly calculate damage when its HQElement is hit
+            Strength = new CombatStrength(0F, 10F, 0F, 10F, 0F, 10F),  // no offense, strong defense
+            Owner = owner
         };
     }
 

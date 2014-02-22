@@ -71,12 +71,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private IPlayer _owner;
-        public IPlayer Owner {
-            get { return _owner; }
-            set { SetProperty<IPlayer>(ref _owner, value, "Owner", OnOwnerChanged); }
-        }
-
         private int _cmdEffectiveness;
         public int CmdEffectiveness {  // TODO make use of this
             get { return _cmdEffectiveness; }
@@ -158,11 +152,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void OnOwnerChanged() {
-            // UNDONE change all element owners?
-            D.Log("{0} Owner has changed to {1}.", OptionalParentName, Owner.LeaderName);
-        }
-
         private void OnUnitMaxHitPointsChanging(float newMaxHitPoints) {
             if (newMaxHitPoints < UnitMaxHitPoints) {
                 // reduction in max hit points so reduce current hit points to match
@@ -203,7 +192,7 @@ namespace CodeEnv.Master.GameContent {
 
         public void AddElement(AElementData elementData) {
             if (!ElementsData.Contains(elementData)) {
-                ValidateOwner(elementData.Owner);
+                AssignOwner(elementData);
                 UpdateElementParentName(elementData);
                 ElementsData.Add(elementData);
 
@@ -215,12 +204,15 @@ namespace CodeEnv.Master.GameContent {
             D.Warn("Attempting to add {0} {1} that is already present.", typeof(AElementData), elementData.OptionalParentName);
         }
 
-        private void ValidateOwner(IPlayer owner) {
+        private void AssignOwner(AElementData elementData) {
             if (Owner == null) {
-                // first setting of owner by first Element added. Not broadcast
-                _owner = owner;
+                D.Error("{0} owner must be set before adding elements.", Name);
             }
-            D.Assert(Owner == owner, "Owners {0} and {1} are different.".Inject(Owner.LeaderName, owner.LeaderName));
+            IPlayer elementOwner = elementData.Owner;
+            if (elementOwner == null) {
+                elementOwner = Owner;
+            }
+            D.Assert(Owner == elementOwner, "Owners {0} and {1} are different.".Inject(Owner.LeaderName, elementOwner.LeaderName));
         }
 
         private void UpdateElementParentName(AElementData elementData) {

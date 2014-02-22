@@ -63,6 +63,7 @@ public class SystemCreator : AMonoBase, IDisposable {
     private StarModel _star;
     private IList<PlanetoidModel> _planets;
     private IEnumerable<PlanetoidModel> _moons;
+    private Vector3 _settlementOrbitSlot;
 
     // Removed Settlement treatment. Now built separately like a Starbase and assigned to a system
 
@@ -297,7 +298,7 @@ public class SystemCreator : AMonoBase, IDisposable {
 
         // start by reserving the slot for the Settlement
         int slotIndex = midStack.Pop();
-        _composition.SettlementOrbitSlot = _orbitSlots[slotIndex];
+        _settlementOrbitSlot = _orbitSlots[slotIndex];
 
         // now divy up the remaining slots among the planets
         IList<PlanetoidModel> planetsToDestroy = null;
@@ -361,7 +362,9 @@ public class SystemCreator : AMonoBase, IDisposable {
     }
 
     private void InitializeSystem() {
-        SystemData data = new SystemData(_systemName, _composition);
+        SystemData data = new SystemData(_systemName, _composition) {
+            SettlementOrbitSlot = _settlementOrbitSlot
+        };
         _system.Data = data;
         // include the System as a target in any child with a CameraLOSChangedRelay
         _system.gameObject.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(r => r.AddTarget(_system.transform));

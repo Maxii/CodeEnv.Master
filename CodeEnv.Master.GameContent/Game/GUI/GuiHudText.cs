@@ -168,8 +168,8 @@ namespace CodeEnv.Master.GameContent {
 
             string baseText;
             if (_baseDisplayLineContent.TryGetValue(lineKey, out baseText)) {
-                //D.Log("BaseText = {0}", baseText);
-                //D.Log("Text Elements = {0}", textElements.Concatenate<string>(Constants.Comma));
+                D.Log("BaseText = {0}", baseText);
+                D.Log("Text Elements = {0}", textElements.Concatenate<string>(Constants.Comma));
                 string colorEmbeddedLineText = baseText.Inject(textElements.ToArray<string>());
                 return colorEmbeddedLineText;
             }

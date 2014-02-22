@@ -43,9 +43,10 @@ namespace CodeEnv.Master.GameContent {
                     return new ColoredTextList_String(data.SectorIndex.ToString());
                 case GuiHudLineKeys.Density:
                     return new ColoredTextList<float>(data.Density);
+                case GuiHudLineKeys.Owner:
+                    return data.Owner != null ? new ColoredTextList_Owner(data.Owner) : _emptyColoredTextList;
 
                 // The following is a fall through catcher for line keys that aren't processed. An empty ColoredTextList will be returned which will be ignored by GuiCursorHudText
-                case GuiHudLineKeys.Owner:
                 case GuiHudLineKeys.Health:
                 case GuiHudLineKeys.CombatStrength:
                 case GuiHudLineKeys.CombatStrengthDetails:

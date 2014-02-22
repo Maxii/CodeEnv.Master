@@ -40,6 +40,8 @@ namespace CodeEnv.Master.GameContent {
         void SetRelations(IPlayer player, DiplomaticRelations relation);
 
         bool IsRelationship(IPlayer player, DiplomaticRelations relation);
+
+        bool IsEnemy(IPlayer player);
     }
 }
 

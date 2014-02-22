@@ -30,6 +30,8 @@ namespace CodeEnv.Master.GameContent {
 
         void TakeDamage(float damage);
 
+        IPlayer Owner { get; }
+
     }
 }
 

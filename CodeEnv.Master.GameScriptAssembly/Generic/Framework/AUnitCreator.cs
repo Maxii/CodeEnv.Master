@@ -48,9 +48,6 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     /// The name of the top level Unit, aka the Settlement, Starbase or Fleet name.
     /// A Unit contains a Command and one or more Elements.
     /// </summary>
-    /// <value>
-    /// The name of the unit.
-    /// </value>
     public string UnitName { get; private set; }
 
     protected CompositionType _composition;
@@ -81,8 +78,8 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     private void Initiate() {
         CreateComposition();
-        DeployPiece();
-        EnablePiece();
+        DeployUnit();
+        EnableUnit();
         OnCompleted();
         __InitializeCommandIntel();
     }
@@ -90,8 +87,8 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     private void OnGameStateChanged() {
         if (_gameMgr.CurrentState == GetCreationGameState()) {
             CreateComposition();
-            DeployPiece();
-            EnablePiece();  // must make View operational before starting state changes within it
+            DeployUnit();
+            EnableUnit();  // must make View operational before starting state changes within it
             OnCompleted();
         }
         if (_gameMgr.CurrentState == GameState.RunningCountdown_1) {
@@ -110,26 +107,16 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     private void CreateCompositionFromChildren() {
         _elements = gameObject.GetSafeMonoBehaviourComponentsInChildren<ElementType>();
-        IPlayer owner = _gameMgr.HumanPlayer;
-        __isHumanOwnedCreated = true;
         _composition = Activator.CreateInstance<CompositionType>();
         foreach (var element in _elements) {
             ElementCategoryType category = DeriveCategory(element);
             string elementName = element.gameObject.name;
-            ElementDataType elementData = CreateElementData(category, elementName, owner);
+            ElementDataType elementData = CreateElementData(category, elementName);
             AddDataToComposition(elementData);
         }
     }
 
     private void CreateRandomComposition() {
-        IPlayer owner;
-        if (!__isHumanOwnedCreated) {
-            owner = _gameMgr.HumanPlayer;
-            __isHumanOwnedCreated = true;
-        }
-        else {
-            owner = GetNonHumanOwner();
-        }
         _composition = Activator.CreateInstance<CompositionType>();
 
         ElementCategoryType[] validHQCategories = GetValidHQElementCategories();
@@ -141,14 +128,14 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             ElementCategoryType elementCategory = (i == 0) ? RandomExtended<ElementCategoryType>.Choice(validHQCategories) : RandomExtended<ElementCategoryType>.Choice(validCategories);
             int elementInstanceIndex = GetCurrentCount(elementCategory) + 1;
             string elementInstanceName = elementCategory.ToString() + Constants.Underscore + elementInstanceIndex;
-            ElementDataType elementData = CreateElementData(elementCategory, elementInstanceName, owner);
+            ElementDataType elementData = CreateElementData(elementCategory, elementInstanceName);
             AddDataToComposition(elementData);
         }
     }
 
-    protected abstract ElementDataType CreateElementData(ElementCategoryType category, string elementName, IPlayer owner);
+    protected abstract ElementDataType CreateElementData(ElementCategoryType category, string elementName);
 
-    private void DeployPiece() {
+    private void DeployUnit() {
         if (_isPreset) {
             DeployPresetPiece();
         }
@@ -160,7 +147,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     private void DeployPresetPiece() {
         InitializeElements();
         AcquireCommand();
-        InitializePiece();
+        InitializeUnit();
         MarkHQElement();
         AssignFormationPositions();
     }
@@ -169,7 +156,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         BuildElements();
         InitializeElements();
         AcquireCommand();
-        InitializePiece();
+        InitializeUnit();
         MarkHQElement();
         PositionElements();
         AssignFormationPositions();
@@ -215,9 +202,17 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         }
     }
 
-    private void InitializePiece() {
-        InitializeCommandData();    // automatically adds the command transform to Data when set
-        _elements.ForAll(element => _command.AddElement(element));
+    private void InitializeUnit() {
+        IPlayer owner;
+        if (!__isHumanOwnedCreated) {
+            owner = _gameMgr.HumanPlayer;
+            __isHumanOwnedCreated = true;
+        }
+        else {
+            owner = GetNonHumanOwner();
+        }
+        InitializeCommandData(owner);    // automatically adds the command transform to Data when set
+        _elements.ForAll(element => _command.AddElement(element));  // owners assigned to elements when added to a Cmd
         // command IS NOT assigned as a target of each element's CameraLOSChangedRelay as that would make the CommandIcon disappear when the elements disappear
 
         // this is not really necessary as Command's prefab should already have CommandItem as its Icon's CameraLOSChangedRelay target
@@ -269,7 +264,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         }
     }
 
-    private void EnablePiece() {
+    private void EnableUnit() {
         // elements need to run their Start first to initialize and assign the designated HQElement to the Command before Command is enabled and runs its Start
         _elements.ForAll(element => element.enabled = true);
         _command.enabled = true;
@@ -315,9 +310,9 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     protected abstract IEnumerable<GameObject> GetElementPrefabs();
     protected abstract GameObject GetCommandPrefab();
     /// <summary>
-    /// Instantiate and assign the command's data to Command.
+    /// Instantiate and assign the command's data with owner set to Command.
     /// </summary>
-    protected abstract void InitializeCommandData();
+    protected abstract void InitializeCommandData(IPlayer owner);
     protected abstract ElementCategoryType[] GetValidHQElementCategories();
     protected abstract ElementCategoryType[] GetValidElementCategories();
 

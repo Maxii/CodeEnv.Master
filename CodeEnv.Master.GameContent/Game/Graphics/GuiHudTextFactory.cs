@@ -41,9 +41,10 @@ namespace CodeEnv.Master.GameContent {
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
                     return new ColoredTextList_Intel(intel);
+                case GuiHudLineKeys.Owner:
+                    return data.Owner != null ? new ColoredTextList_Owner(data.Owner) : _emptyColoredTextList;
 
                 // The following is a fall through catcher for line keys that aren't processed. An empty ColoredTextList will be returned which will be ignored by GuiCursorHudText
-                case GuiHudLineKeys.Owner:
                 case GuiHudLineKeys.Health:
                 case GuiHudLineKeys.CombatStrength:
                 case GuiHudLineKeys.CombatStrengthDetails:

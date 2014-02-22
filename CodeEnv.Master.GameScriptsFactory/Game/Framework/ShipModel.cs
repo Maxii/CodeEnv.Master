@@ -141,9 +141,9 @@ public class ShipModel : AUnitElementModel {
         // TODO register as available
     }
 
-    void Idling_OnTriggerEnter(Collider other) {
-        EvaluateTrigger(other);
-    }
+    //void Idling_OnTriggerEnter(Collider other) {
+    //    EvaluateTrigger(other);
+    //}
 
     void Idling_ExitState() {
         LogEvent();
@@ -181,7 +181,7 @@ public class ShipModel : AUnitElementModel {
 
     /// <summary>
     /// The speed of the move. If we are executing a MoveOrder (from a FleetCmd), this value is set from
-    /// the speed setting contained in the order. If execuing another Order that requires a move, then
+    /// the speed setting contained in the order. If executing another Order that requires a move, then
     /// this value is set by that Order execution state.
     /// </summary>
     private float _moveSpeed;
@@ -194,7 +194,7 @@ public class ShipModel : AUnitElementModel {
         while (_isMoving) {
             yield return null;
         }
-        D.Warn("{0} Returning from OverseeMove_EnterState.", Data.Name);
+        //D.Log("{0} Returning from OverseeMove_EnterState.", Data.Name);
         Return();
     }
 
@@ -245,21 +245,27 @@ public class ShipModel : AUnitElementModel {
 
     #region ExecuteAttackOrder
 
-    private ITarget _attackTarget;
+    //private ITarget _attackTarget;
+    private ITarget _primaryTarget;
+    //private ITarget _secondaryTarget;
 
     IEnumerator ExecuteAttackOrder_EnterState() {
         D.Log("{0}.ExecuteAttackOrder_EnterState() called.", Data.Name);
-        _attackTarget = PickTarget();
-        while (_attackTarget != null && !_isMoveError) {
+        _primaryTarget = PickPrimaryTarget();
+        while (_primaryTarget != null && !_isMoveError) {
             var weaponsRange = Data.WeaponsRange;
-            var rangeToTarget = Vector3.Distance(_attackTarget.Position, Data.Position) - _attackTarget.Radius;
-            D.Log("{0} weaponsRange is {1}. Target range is {2}.", Data.Name, weaponsRange, rangeToTarget);
+            var rangeToTarget = Vector3.Distance(_primaryTarget.Position, Data.Position) - _primaryTarget.Radius;
+            D.Log("{0} weaponsRange is {1}. PrimaryTarget range is {2}.", Data.Name, weaponsRange, rangeToTarget);
             if (rangeToTarget > weaponsRange) {
                 Call(ShipState.Chasing);
             }
             else {
+                //_attackTarget = _primaryTarget;
                 Call(ShipState.Attacking);
             }
+            //if (_primaryTarget.IsDead) {
+            //    _primaryTarget = PickPrimaryTarget();
+            //}
             yield return null;  // IMPROVE fire rate
         }
         CurrentState = ShipState.Idling;
@@ -267,7 +273,7 @@ public class ShipModel : AUnitElementModel {
 
     void ExecuteAttackOrder_OnTargetDeath() {
         LogEvent();
-        _attackTarget = PickTarget();
+        _primaryTarget = PickPrimaryTarget();
     }
 
     void ExecuteAttackOrder_ExitState() {
@@ -283,7 +289,7 @@ public class ShipModel : AUnitElementModel {
 
     void Chasing_EnterState() {
         LogEvent();
-        Navigator.PlotCourse(_attackTarget, Data.FullSpeed);
+        Navigator.PlotCourse(_primaryTarget, Data.FullSpeed);
     }
 
     //void Chasing_EnterState() {
@@ -308,7 +314,7 @@ public class ShipModel : AUnitElementModel {
     }
 
     void Chasing_OnTargetDeath() {
-        _attackTarget = PickTarget();
+        _primaryTarget = PickPrimaryTarget();
         Return();
     }
 
@@ -329,14 +335,15 @@ public class ShipModel : AUnitElementModel {
     void Attacking_EnterState() {
         LogEvent();
         OnShowAnimation(MortalAnimations.Attacking);
-        _attackTarget.TakeDamage(8F);
-        Return();   // to ExecuteAttackOrder
+        //_attackTarget.TakeDamage(8F);
+        _primaryTarget.TakeDamage(8F);
+        Return();
     }
 
     void Attacking_OnTargetDeath() {
         // can get death as result of TakeDamage() before Return
         LogEvent();
-        _attackTarget = PickTarget();
+        _primaryTarget = PickPrimaryTarget();
     }
 
     #endregion
@@ -479,12 +486,17 @@ public class ShipModel : AUnitElementModel {
 
     #region StateMachine Support Methods
 
-    private void EvaluateTrigger(Collider other) {
-        var attackTgt = other.gameObject.GetInterface<ITarget>();
-    }
+    //private void EvaluateTrigger(Collider other) {
+    //    var attackTgt = other.gameObject.GetInterface<ITarget>();
+    //    if (attackTgt != null && Data.Owner.IsEnemy(attackTgt.Owner)) {
+    //        _secondaryTarget = _primaryTarget;
+    //        _primaryTarget = attackTgt;
+    //        Call(ShipState.Attacking);
+    //    }
+    //}
 
 
-    private ITarget PickTarget() {
+    private ITarget PickPrimaryTarget() {
         ITarget chosenTarget = (CurrentOrder as UnitAttackOrder<ShipOrders>).Target;
         ICmdTarget cmdTarget = chosenTarget as ICmdTarget;
         if (cmdTarget != null) {
@@ -570,8 +582,8 @@ public class ShipModel : AUnitElementModel {
 
     void OnTargetDeath(ITarget target) {
         LogEvent();
-        D.Assert(_attackTarget == target, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _attackTarget.Name, target.Name));
-        _attackTarget.onItemDeath -= OnTargetDeath;
+        D.Assert(_primaryTarget == target, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _primaryTarget.Name, target.Name));
+        _primaryTarget.onItemDeath -= OnTargetDeath;
         RelayToCurrentState();
     }
 

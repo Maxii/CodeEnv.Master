@@ -24,6 +24,28 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class Player : APropertyChangeTracking, IPlayer {
 
+        private IDictionary<IPlayer, DiplomaticRelations> _diplomaticRelations;
+
+        /// <summary>
+        /// Initializes a new random instance of the <see cref="Player"/> class for testing.
+        /// </summary>
+        public Player()
+            : this(new Race(Enums<Races>.GetRandom(excludeDefault: true)), Enums<IQ>.GetRandom(excludeDefault: true)) { }
+
+        public Player(Race race, IQ iq) {
+            _race = race;
+            IQ = iq;
+            IsActive = true;
+            _diplomaticRelations = new Dictionary<IPlayer, DiplomaticRelations>();
+            SetRelations(this, DiplomaticRelations.Self);
+        }
+
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
+        }
+
+        #region IPlayer Members
+
         private bool _isActive;
         public bool IsActive {  // accomodates an AIPlayer being eliminated in the game
             get { return _isActive; }
@@ -44,22 +66,6 @@ namespace CodeEnv.Master.GameContent {
 
         public virtual GameColor Color { get { return _race.Color; } }
 
-        private IDictionary<IPlayer, DiplomaticRelations> _diplomaticRelations;
-
-        /// <summary>
-        /// Initializes a new random instance of the <see cref="Player"/> class for testing.
-        /// </summary>
-        public Player()
-            : this(new Race(Enums<Races>.GetRandom(excludeDefault: true)), Enums<IQ>.GetRandom(excludeDefault: true)) { }
-
-        public Player(Race race, IQ iq) {
-            _race = race;
-            IQ = iq;
-            IsActive = true;
-            _diplomaticRelations = new Dictionary<IPlayer, DiplomaticRelations>();
-            SetRelations(this, DiplomaticRelations.Self);
-        }
-
         public DiplomaticRelations GetRelations(IPlayer player) {
             return _diplomaticRelations[player];
         }
@@ -76,10 +82,11 @@ namespace CodeEnv.Master.GameContent {
             return _diplomaticRelations[player] == relation;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+        public bool IsEnemy(IPlayer player) {
+            return IsRelationship(player, DiplomaticRelations.Enemy);
         }
 
+        #endregion
     }
 }
 

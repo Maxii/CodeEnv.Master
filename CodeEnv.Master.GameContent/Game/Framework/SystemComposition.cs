@@ -29,24 +29,7 @@ namespace CodeEnv.Master.GameContent {
     /// star and settlement Data.
     /// </summary>
     public class SystemComposition {
-
-        private Vector3 _settlementOrbitSlot;
-        /// <summary>
-        ///  The orbital start position (in local space) of any current or
-        /// future settlement. The transform holding the SettlementCreator (whose
-        /// children are SettlementCmd and the Settlement's Facilities) has
-        /// its localPosition assigned this value. It is then attached to an orbit
-        /// object which is parented to the System.
-        /// </summary>
-        public Vector3 SettlementOrbitSlot {
-            get { return _settlementOrbitSlot; }
-            set {
-                _settlementOrbitSlot = value;
-                D.Log("System's SettlementOrbitSlot set to {0}.", _settlementOrbitSlot);
-            }
-        }
-
-        public SettlementCmdData SettlementData { get; set; }
+        // SystemComposition no longer contains any SettlementData or Orbit info
 
         public StarData StarData { get; set; }
 

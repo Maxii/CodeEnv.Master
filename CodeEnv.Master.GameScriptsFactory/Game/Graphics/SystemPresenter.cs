@@ -43,9 +43,9 @@ public class SystemPresenter : AFocusableItemPresenter {
     }
 
     public void RequestContextMenu(bool isDown) {
-        SettlementCmdData settlement = Model.Data.Settlement;
+        SettlementCmdData settlementData = Model.Data.SettlementData;
         //D.Log("Settlement null = {0}, isHumanOwner = {1}.", settlement == null, settlement.Owner.IsHuman);
-        if (settlement != null && (DebugSettings.Instance.AllowEnemyOrders || settlement.Owner.IsHuman)) {
+        if (settlementData != null && (DebugSettings.Instance.AllowEnemyOrders || settlementData.Owner.IsHuman)) {
             _cameraControl.ShowContextMenuOnPress(isDown);
         }
     }

@@ -35,20 +35,19 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        private Vector3 _settlementOrbitSlot;
         /// <summary>
-        /// Readonly. The orbital start position (in local space) of any current or
+        ///  The orbital start position (in local space) of any current or
         /// future settlement. The transform holding the SettlementCreator (whose
         /// children are SettlementCmd and the Settlement's Facilities) has
         /// its localPosition assigned this value. It is then attached to an orbit
         /// object which is parented to the System.
         /// </summary>
         public Vector3 SettlementOrbitSlot {
-            get {
-                var slot = Composition.SettlementOrbitSlot;
-                if (slot == Vector3.zero) {
-                    D.Warn("Settlement Orbit slot has not been set.");
-                }
-                return slot;
+            get { return _settlementOrbitSlot; }
+            set {
+                _settlementOrbitSlot = value;
+                D.Log("System's SettlementOrbitSlot set to {0}.", _settlementOrbitSlot);
             }
         }
 
@@ -76,11 +75,11 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private SettlementCmdData _settlement;
-        public SettlementCmdData Settlement {
-            get { return _settlement; }
+        private SettlementCmdData _settlementData;
+        public SettlementCmdData SettlementData {
+            get { return _settlementData; }
             set {
-                SetProperty<SettlementCmdData>(ref _settlement, value, "Settlement", OnSettlementChanged);
+                SetProperty<SettlementCmdData>(ref _settlementData, value, "SettlementData", OnSettlementDataChanged);
             }
         }
 
@@ -88,6 +87,7 @@ namespace CodeEnv.Master.GameContent {
 
         private IDictionary<PlanetoidData, IList<IDisposable>> _planetSubscribers;
         private IList<IDisposable> _starSubscribers;
+        private IList<IDisposable> _settlementSubscribers;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SystemData"/> class.
@@ -97,7 +97,6 @@ namespace CodeEnv.Master.GameContent {
         public SystemData(string systemName, SystemComposition composition)
             : base(systemName) {
             Composition = composition;
-            _settlement = composition.SettlementData;
             Subscribe();
             UpdateProperties();
         }
@@ -117,6 +116,12 @@ namespace CodeEnv.Master.GameContent {
             _starSubscribers.Add(starData.SubscribeToPropertyChanged<StarData, int>(sd => sd.Capacity, OnCapacityChangedInComposition));
             _starSubscribers.Add(starData.SubscribeToPropertyChanged<StarData, OpeYield>(sd => sd.Resources, OnResourcesChangedInComposition));
             _starSubscribers.Add(starData.SubscribeToPropertyChanged<StarData, XYield>(sd => sd.SpecialResources, OnSpecialResourcesChangedInComposition));
+
+            _settlementSubscribers = new List<IDisposable>();
+        }
+
+        private void SubscribeToSettlementDataValuesChanged() {
+            _settlementSubscribers.Add(SettlementData.SubscribeToPropertyChanged<SettlementCmdData, IPlayer>(sd => sd.Owner, OnSettlementOwnerChanged));
         }
 
         public bool RemovePlanet(PlanetoidData data) {
@@ -142,9 +147,29 @@ namespace CodeEnv.Master.GameContent {
             UpdateSpecialResources();
         }
 
-        private void OnSettlementChanged() {
-            Composition.SettlementData = Settlement;
-            OnCompositionChanged();
+        private void OnSettlementDataChanged() {
+            if (SettlementData != null) {
+                SubscribeToSettlementDataValuesChanged();
+                OnSettlementOwnerChanged();
+            }
+            else {
+                Owner = null;
+                UnsubscribeSettlement();
+            }
+        }
+
+        private void OnSettlementOwnerChanged() {
+            Owner = SettlementData.Owner;
+        }
+
+        protected override void OnOwnerChanged() {
+            base.OnOwnerChanged();
+            PropogateOwnerChange();
+        }
+
+        private void PropogateOwnerChange() {
+            Composition.GetPlanetData().ForAll(pd => pd.Owner = Owner);
+            Composition.StarData.Owner = Owner;
         }
 
         /// <summary>
@@ -198,6 +223,11 @@ namespace CodeEnv.Master.GameContent {
             _planetSubscribers.Remove(planetData);
         }
 
+        private void UnsubscribeSettlement() {
+            _settlementSubscribers.ForAll(d => d.Dispose());
+            _settlementSubscribers.Clear();
+        }
+
         private void Cleanup() {
             Unsubscribe();
         }
@@ -212,6 +242,8 @@ namespace CodeEnv.Master.GameContent {
 
             _starSubscribers.ForAll(ss => ss.Dispose());
             _starSubscribers.Clear();
+
+            UnsubscribeSettlement();
         }
 
         public override string ToString() {

@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for an AItem that can die. 
 /// </summary>
-public abstract class AMortalItemModel : AItemModel, ITarget, IDisposable {
+public abstract class AMortalItemModel : AItemModel, ITarget {
 
     public event Action<MortalAnimations> onShowAnimation;
     public event Action<MortalAnimations> onStopAnimation;
@@ -36,21 +36,12 @@ public abstract class AMortalItemModel : AItemModel, ITarget, IDisposable {
         set { base.Data = value; }
     }
 
-    protected IList<IDisposable> _subscribers;
-
     protected override void Start() {
         base.Start();
         Initialize();
     }
 
     protected abstract void Initialize();
-
-    // Derived classes should call Subscribe() from Awake() after any required references are established
-
-    protected virtual void Subscribe() {
-        _subscribers = new List<IDisposable>();
-        // Subscriptions to data value changes should be done with SubscribeToDataValueChanges()
-    }
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
@@ -116,21 +107,6 @@ public abstract class AMortalItemModel : AItemModel, ITarget, IDisposable {
 
     #endregion
 
-    protected override void OnDestroy() {
-        base.OnDestroy();
-        Dispose();
-    }
-
-    protected virtual void Cleanup() {
-        Unsubscribe();
-        // other cleanup here including any tracking Gui2D elements
-    }
-
-    protected virtual void Unsubscribe() {
-        _subscribers.ForAll(d => d.Dispose());
-        _subscribers.Clear();
-    }
-
     #region ITarget Members
 
     public event Action<ITarget> onItemDeath;
@@ -141,49 +117,10 @@ public abstract class AMortalItemModel : AItemModel, ITarget, IDisposable {
 
     public abstract void TakeDamage(float damage);
 
-    #endregion
-
-    #region IDisposable
-    [DoNotSerialize]
-    private bool alreadyDisposed = false;
-
-    /// <summary>
-    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-    /// </summary>
-    public void Dispose() {
-        Dispose(true);
-        GC.SuppressFinalize(this);
+    public IPlayer Owner {
+        get { return Data.Owner; }
     }
 
-    /// <summary>
-    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
-    /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool isDisposing) {
-        // Allows Dispose(isDisposing) to be called more than once
-        if (alreadyDisposed) {
-            return;
-        }
-
-        if (isDisposing) {
-            // free managed resources here including unhooking events
-            Cleanup();
-        }
-        // free unmanaged resources here
-
-        alreadyDisposed = true;
-    }
-
-    // Example method showing check for whether the object has been disposed
-    //public void ExampleMethod() {
-    //    // throw Exception if called on object that is already disposed
-    //    if(alreadyDisposed) {
-    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-    //    }
-
-    //    // method content here
-    //}
     #endregion
 
 }

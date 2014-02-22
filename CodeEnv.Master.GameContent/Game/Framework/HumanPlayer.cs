@@ -24,6 +24,18 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class HumanPlayer : Player {
 
+        public HumanPlayer(Race race, GameColor color = GameColor.None, string leaderName = Constants.Empty)
+            : base(race, IQ.Normal) {
+            _leaderName = leaderName;
+            _color = color;
+        }
+
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
+        }
+
+        #region IPlayer Members
+
         public override bool IsHuman { get { return true; } }
 
         private string _leaderName;
@@ -38,15 +50,7 @@ namespace CodeEnv.Master.GameContent {
             get { return _color != GameColor.None ? _color : base.Color; }
         }
 
-        public HumanPlayer(Race race, GameColor color = GameColor.None, string leaderName = Constants.Empty)
-            : base(race, IQ.Normal) {
-            _leaderName = leaderName;
-            _color = color;
-        }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
+        #endregion
 
     }
 }

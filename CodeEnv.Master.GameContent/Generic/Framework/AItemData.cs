@@ -44,6 +44,12 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        private IPlayer _owner;
+        public IPlayer Owner {
+            get { return _owner; }
+            set { SetProperty<IPlayer>(ref _owner, value, "Owner", OnOwnerChanged); }
+        }
+
         /// <summary>
         /// Readonly. Gets the position of the gameObject containing this data.
         /// </summary>
@@ -67,6 +73,15 @@ namespace CodeEnv.Master.GameContent {
         public AItemData(string name, string optionalParentName = "") {
             _name = name;
             OptionalParentName = optionalParentName;
+        }
+
+        protected virtual void OnOwnerChanged() {
+            if (Owner != null) {
+                D.Log("{0} Owner has changed to {1}.", Name, Owner.LeaderName);
+            }
+            else {
+                D.Log("{0} no longer has an owner.", Name);
+            }
         }
 
         protected virtual void OnTransformChanged() {

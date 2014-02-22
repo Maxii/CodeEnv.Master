@@ -27,6 +27,11 @@ public class SystemModel : AItemModel {
         set { base.Data = value; }
     }
 
+    protected override void Awake() {
+        base.Awake();
+        Subscribe();
+    }
+
     public void AssignSettlement(SettlementUnitCreator settlementCreator) {
         D.Assert(gameObject.GetComponentInChildren<SettlementUnitCreator>() == null, "{0} already has a Settlement.".Inject(Data.Name));
         GameObject orbitGoClone = UnityUtility.AddChild(gameObject, RequiredPrefabs.Instance.orbit.gameObject);
@@ -47,9 +52,9 @@ public class SystemModel : AItemModel {
         if (!_isLocalCallFlag) {
             creator.onCompleted -= InitializeSettlement;
         }
-        // IMPROVE for now, assign SettlementData to the System's Composition so the SystemHud works
         SettlementCmdModel settlementCmd = creator.gameObject.GetComponentInChildren<SettlementCmdModel>();
-        Data.Composition.SettlementData = settlementCmd.Data;
+        Data.SettlementData = settlementCmd.Data;
+
         AddSystemAsLOSChangedRelayTarget(settlementCmd);
 
         IIntel systemPlayerIntel = gameObject.GetSafeInterface<IViewable>().PlayerIntel;

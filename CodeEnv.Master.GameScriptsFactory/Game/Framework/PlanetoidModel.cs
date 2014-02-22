@@ -43,6 +43,22 @@ public class PlanetoidModel : AMortalItemModel {
         CurrentState = PlanetoidState.Normal;
     }
 
+    protected override void SubscribeToDataValueChanges() {
+        base.SubscribeToDataValueChanges();
+        _subscribers.Add(Data.SubscribeToPropertyChanged<PlanetoidData, IPlayer>(d => d.Owner, OnOwnerChanged));
+    }
+
+    private void OnOwnerChanged() {
+        PropogateOwnerChangeToMoons();
+    }
+
+    private void PropogateOwnerChangeToMoons() {
+        var moons = gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetoidModel>().Except(this);
+        if (!moons.IsNullOrEmpty()) {
+            moons.ForAll(m => m.Data.Owner = Data.Owner);
+        }
+    }
+
     #region StateMachine - Simple Alternative
 
     private PlanetoidState _currentState;

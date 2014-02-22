@@ -35,14 +35,6 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<float>(ref _weaponsRange, value, "WeaponsRange"); }
         }
 
-        private IPlayer _owner;
-        public IPlayer Owner {
-            get { return _owner; }
-            set {
-                SetProperty<IPlayer>(ref _owner, value, "Owner");
-            }
-        }
-
         /// <summary>
         /// Initializes a new instance of the <see cref="AElementData" /> class.
         /// </summary>
@@ -53,7 +45,6 @@ namespace CodeEnv.Master.GameContent {
         public AElementData(string name, float maxHitPoints, float mass, string optionalParentName = "")
             : base(name, maxHitPoints, mass, optionalParentName) {
         }
-
 
     }
 }

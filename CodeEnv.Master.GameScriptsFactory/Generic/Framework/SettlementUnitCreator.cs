@@ -35,14 +35,13 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
         return GameState.DeployingSystems;  // Building can take place anytime? Placing in Systems takes place in DeployingSettlements
     }
 
-    protected override FacilityData CreateElementData(FacilityCategory elementCategory, string elementInstanceName, IPlayer owner) {
+    protected override FacilityData CreateElementData(FacilityCategory elementCategory, string elementInstanceName) {
         FacilityData elementData = new FacilityData(elementCategory, elementInstanceName, maxHitPoints: 50F, mass: 10000F) {
             // TODO mass variation
             // optionalParentName gets set when it gets attached to a command
             Strength = new CombatStrength(),
             WeaponsRange = UnityEngine.Random.Range(5F, 10F),
             CurrentHitPoints = UnityEngine.Random.Range(25F, 50F),
-            Owner = owner,
         };
         return elementData;
     }
@@ -75,10 +74,10 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
         return RequiredPrefabs.Instance.settlementCmd.gameObject;
     }
 
-    protected override void InitializeCommandData() {
+    protected override void InitializeCommandData(IPlayer owner) {
         _command.Data = new SettlementCmdData(UnitName, 10F) {
             Strength = new CombatStrength(0F, 10F, 0F, 10F, 0F, 10F),  // no offense, strong defense
-            // strength of the UnitCommand so it can properly calculate damage when its HQElement is hit
+            Owner = owner,
             Population = 100,
             CapacityUsed = 10,
             ResourcesUsed = new OpeYield(1.3F, 0.5F, 2.4F),

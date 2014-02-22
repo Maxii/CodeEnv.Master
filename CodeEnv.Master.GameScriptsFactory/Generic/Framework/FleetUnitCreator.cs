@@ -35,7 +35,7 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
         return GameState.DeployingSettlements;  // Can be anytime? Should be after GeneratePathGraph so no interference
     }
 
-    protected override ShipData CreateElementData(ShipCategory elementCategory, string elementInstanceName, IPlayer owner) {
+    protected override ShipData CreateElementData(ShipCategory elementCategory, string elementInstanceName) {
         float mass = TempGameValues.__GetMass(elementCategory);
         float drag = 0.1F;
         ShipData elementData = new ShipData(elementCategory, elementInstanceName, maxHitPoints: 50F, mass: mass, drag: drag) {   // TODO mass variation
@@ -43,7 +43,6 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
             Strength = new CombatStrength(),
             WeaponsRange = UnityEngine.Random.Range(2F, 6F),
             CurrentHitPoints = UnityEngine.Random.Range(25F, 50F),
-            Owner = owner,
             MaxTurnRate = UnityEngine.Random.Range(45F, 315F),
             FullThrust = mass * drag * UnityEngine.Random.Range(2F, 5F) // MaxThrust = Mass * Drag * MaxSpeed;
         };
@@ -78,10 +77,10 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
         return new ShipCategory[] { ShipCategory.Cruiser, ShipCategory.Carrier, ShipCategory.Dreadnaught };
     }
 
-    protected override void InitializeCommandData() {
+    protected override void InitializeCommandData(IPlayer owner) {
         _command.Data = new FleetCmdData(UnitName, 10F) {
-            Strength = new CombatStrength(0F, 10F, 0F, 10F, 0F, 10F)  // no offense, strong defense
-            // strength of the UnitCommand so it can properly calculate damage when its HQElement is hit
+            Strength = new CombatStrength(0F, 10F, 0F, 10F, 0F, 10F),   // no offense, strong defense
+            Owner = owner
         };
     }
 
