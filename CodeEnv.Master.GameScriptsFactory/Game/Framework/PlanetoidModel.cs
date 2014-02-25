@@ -68,7 +68,7 @@ public class PlanetoidModel : AMortalItemModel {
     }
 
     private void OnCurrentStateChanged() {
-        D.Log("{0}.CurrentState changed to {1}.", Data.Name, CurrentState.GetName());
+        //D.Log("{0}.CurrentState changed to {1}.", Data.Name, CurrentState.GetName());
         switch (CurrentState) {
             case PlanetoidState.Normal:
                 // do nothing

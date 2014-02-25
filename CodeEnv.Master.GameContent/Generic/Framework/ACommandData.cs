@@ -208,11 +208,10 @@ namespace CodeEnv.Master.GameContent {
             if (Owner == null) {
                 D.Error("{0} owner must be set before adding elements.", Name);
             }
-            IPlayer elementOwner = elementData.Owner;
-            if (elementOwner == null) {
-                elementOwner = Owner;
+            if (elementData.Owner == null) {
+                elementData.Owner = Owner;
             }
-            D.Assert(Owner == elementOwner, "Owners {0} and {1} are different.".Inject(Owner.LeaderName, elementOwner.LeaderName));
+            D.Assert(Owner == elementData.Owner, "Owners {0} and {1} are different.".Inject(Owner.LeaderName, elementData.Owner.LeaderName));
         }
 
         private void UpdateElementParentName(AElementData elementData) {

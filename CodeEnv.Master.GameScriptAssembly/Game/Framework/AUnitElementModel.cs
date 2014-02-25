@@ -35,32 +35,54 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
     }
 
     private Rigidbody _rigidbody;
-    private SphereCollider _weaponsRangeCollider;
+    protected InRangeTracker _targetTracker;
+
 
     protected override void Awake() {
         base.Awake();
         _rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
-        _weaponsRangeCollider = gameObject.GetComponentInChildren<SphereCollider>();
+        _targetTracker = gameObject.GetSafeMonoBehaviourComponentInChildren<InRangeTracker>();
+        UpdateRate = FrameUpdateFrequency.Rare;   // temp for fire rate
         // derived classes should call Subscribe() after they have acquired needed references
     }
 
     protected override void Initialize() {
-        _weaponsRangeCollider.isTrigger = true;
+        _rigidbody.mass = Data.Mass;
+
+        InitializeTargetTrackers();
+
     }
+
+    private void InitializeTargetTrackers() {
+        _targetTracker.Range = Data.WeaponsRange;
+        _targetTracker.Owner = Data.Owner;
+    }
+
+
+    protected override void OccasionalUpdate() {
+        base.OccasionalUpdate();
+        OnWeaponReady();
+    }
+
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
         _subscribers.Add(Data.SubscribeToPropertyChanged<AElementData, float>(d => d.WeaponsRange, OnWeaponsRangeChanged));
     }
 
-    protected override void OnDataChanged() {
-        base.OnDataChanged();
-        _rigidbody.mass = Data.Mass;
-        OnWeaponsRangeChanged();
-    }
+    //protected override void OnDataChanged() {
+    //    base.OnDataChanged();
+    //    _rigidbody.mass = Data.Mass;
+    //    OnWeaponsRangeChanged();
+    //}
 
     private void OnWeaponsRangeChanged() {
-        _weaponsRangeCollider.radius = Data.WeaponsRange;
+        _targetTracker.Range = Data.WeaponsRange;
+    }
+
+    protected override void OnOwnerChanged() {
+        base.OnOwnerChanged();
+        _targetTracker.Owner = Data.Owner;
     }
 
     # region StateMachine Support Methods
@@ -79,6 +101,10 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
     }
 
     void OnDetectedEnemy() {  // TODO connect to sensors when I get them
+        RelayToCurrentState();
+    }
+
+    void OnWeaponReady() {
         RelayToCurrentState();
     }
 

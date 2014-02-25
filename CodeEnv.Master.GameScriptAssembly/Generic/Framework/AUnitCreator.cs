@@ -287,7 +287,9 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     }
 
     protected virtual IPlayer GetNonHumanOwner() {
-        return new Player(new Race(Enums<Races>.GetRandom(excludeDefault: true)), IQ.Normal);
+        IPlayer player = new Player();
+        player.SetRelations(_gameMgr.HumanPlayer, DiplomaticRelations.Enemy);
+        return player;
     }
 
     protected virtual string GetUnitName() {

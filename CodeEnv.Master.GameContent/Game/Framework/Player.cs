@@ -67,6 +67,9 @@ namespace CodeEnv.Master.GameContent {
         public virtual GameColor Color { get { return _race.Color; } }
 
         public DiplomaticRelations GetRelations(IPlayer player) {
+            if (!_diplomaticRelations.ContainsKey(player)) {
+                return DiplomaticRelations.Neutral;
+            }
             return _diplomaticRelations[player];
         }
 
@@ -79,7 +82,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public bool IsRelationship(IPlayer player, DiplomaticRelations relation) {
-            return _diplomaticRelations[player] == relation;
+            return GetRelations(player) == relation;
         }
 
         public bool IsEnemy(IPlayer player) {

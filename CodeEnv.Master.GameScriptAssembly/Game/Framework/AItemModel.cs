@@ -78,10 +78,17 @@ public abstract class AItemModel : AMonoBase, IDestinationTarget, IDisposable {
         }
     }
 
-
     #region IDestinationTarget Members
 
-    public string Name { get { return Data.Name; } }
+    public string Name {
+        get {
+            if (Data != null) {
+                return Data.Name;
+            }
+            return _transform.name + " (from transform)";
+        }
+    }
+
 
     public Vector3 Position { get { return Data.Position; } }
 

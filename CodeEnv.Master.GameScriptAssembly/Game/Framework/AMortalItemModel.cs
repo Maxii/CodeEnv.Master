@@ -46,6 +46,7 @@ public abstract class AMortalItemModel : AItemModel, ITarget {
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
         _subscribers.Add(Data.SubscribeToPropertyChanged<AMortalItemData, float>(d => d.Health, OnHealthChanged));
+        _subscribers.Add(Data.SubscribeToPropertyChanged<AMortalItemData, IPlayer>(d => d.Owner, OnOwnerChanged));
     }
 
     /// <summary>
@@ -55,6 +56,13 @@ public abstract class AMortalItemModel : AItemModel, ITarget {
     /// when the last Element has been removed from the Unit.
     /// </summary>
     protected virtual void OnHealthChanged() { }
+
+    protected virtual void OnOwnerChanged() {
+        var temp = onOwnerChanged;
+        if (temp != null) {
+            temp(this);
+        }
+    }
 
     protected void OnItemDeath() {
         IsDead = true;
@@ -110,6 +118,8 @@ public abstract class AMortalItemModel : AItemModel, ITarget {
     #region ITarget Members
 
     public event Action<ITarget> onItemDeath;
+
+    public event Action<ITarget> onOwnerChanged;
 
     public bool IsDead { get; private set; }
 

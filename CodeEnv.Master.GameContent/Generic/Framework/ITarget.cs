@@ -26,6 +26,8 @@ namespace CodeEnv.Master.GameContent {
 
         event Action<ITarget> onItemDeath;
 
+        event Action<ITarget> onOwnerChanged;
+
         bool IsDead { get; }
 
         void TakeDamage(float damage);
