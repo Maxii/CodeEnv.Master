@@ -43,12 +43,8 @@ public class PlanetoidModel : AMortalItemModel {
         CurrentState = PlanetoidState.Normal;
     }
 
-    protected override void SubscribeToDataValueChanges() {
-        base.SubscribeToDataValueChanges();
-        _subscribers.Add(Data.SubscribeToPropertyChanged<PlanetoidData, IPlayer>(d => d.Owner, OnOwnerChanged));
-    }
-
-    private void OnOwnerChanged() {
+    protected override void OnOwnerChanged() {
+        base.OnOwnerChanged();
         PropogateOwnerChangeToMoons();
     }
 

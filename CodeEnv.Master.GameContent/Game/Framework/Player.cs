@@ -27,10 +27,11 @@ namespace CodeEnv.Master.GameContent {
         private IDictionary<IPlayer, DiplomaticRelations> _diplomaticRelations;
 
         /// <summary>
-        /// Initializes a new random instance of the <see cref="Player"/> class for testing.
+        /// Initializes a new random instance of the <see cref="Player"/> class for testing. Excludes Humans.
         /// </summary>
         public Player()
-            : this(new Race(Enums<Races>.GetRandom(excludeDefault: true)), Enums<IQ>.GetRandom(excludeDefault: true)) { }
+            : this(new Race(RandomExtended<Races>.Choice(Enums<Races>.GetValues().Except(Races.None, Races.Human))),
+                Enums<IQ>.GetRandom(excludeDefault: true)) { }
 
         public Player(Race race, IQ iq) {
             _race = race;
@@ -85,7 +86,7 @@ namespace CodeEnv.Master.GameContent {
             return GetRelations(player) == relation;
         }
 
-        public bool IsEnemy(IPlayer player) {
+        public bool IsEnemyOf(IPlayer player) {
             return IsRelationship(player, DiplomaticRelations.Enemy);
         }
 

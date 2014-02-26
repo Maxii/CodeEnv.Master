@@ -27,26 +27,21 @@ namespace CodeEnv.Master.GameContent {
 
         ExecuteMoveOrder,
 
-        //OverseeMove,
         Moving,
 
-
         ExecuteAttackOrder,
-        //Chasing,
+
         Attacking,
 
         Entrenching,
 
         ExecuteRepairOrder,
+
         Repairing,
 
         Refitting,
 
         Joining,
-
-        //Docking,
-
-        //Embarking,
 
         Withdrawing,
 

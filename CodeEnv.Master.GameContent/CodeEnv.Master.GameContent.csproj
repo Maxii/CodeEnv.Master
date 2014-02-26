@@ -177,6 +177,7 @@
     <Compile Include="Generic\Framework\IDestinationTarget.cs" />
     <Compile Include="Generic\Extensions\ShipSpeedExtensions.cs" />
     <Compile Include="Generic\Framework\Speed.cs" />
+    <Compile Include="Generic\Framework\IRangeTracker.cs" />
     <Compile Include="ThirdParty\ICoroutineManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\SystemData.cs" />

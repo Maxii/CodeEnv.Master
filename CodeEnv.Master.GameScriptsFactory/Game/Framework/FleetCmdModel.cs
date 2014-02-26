@@ -17,11 +17,13 @@
 // default namespace
 
 using System;
+using System.Linq;
 using System.Collections;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using System.Collections.Generic;
 
 /// <summary>
 /// The data-holding class for all fleets in the game. Includes a state machine.
@@ -152,11 +154,21 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
     }
 
     private void __GetFleetAttackUnderway() {
-        ITarget attackTgt = FindObjectOfType<StarbaseCmdModel>();
-        if (attackTgt == null) {
-            // in case Starbases are disabled
-            attackTgt = FindObjectOfType<PlanetoidModel>();
+        IPlayer humanPlayer = GameManager.Instance.HumanPlayer;
+        IEnumerable<ITarget> attackTgts = FindObjectsOfType<StarbaseCmdModel>().Where(sb => sb.Owner.IsEnemyOf(humanPlayer)).Cast<ITarget>();
+        if (attackTgts.IsNullOrEmpty()) {
+            // in case no Starbases qualify
+            attackTgts = FindObjectsOfType<SettlementCmdModel>().Where(sb => sb.Owner.IsEnemyOf(humanPlayer)).Cast<ITarget>();
+            if (attackTgts.IsNullOrEmpty()) {
+                // in case no Settlements qualify
+                attackTgts = FindObjectsOfType<FleetCmdModel>().Where(sb => sb.Owner.IsEnemyOf(humanPlayer)).Cast<ITarget>();
+            }
         }
+        if (attackTgts.IsNullOrEmpty()) {
+            D.Warn("{0} can find no AttackTargets that meet the enemy selection criteria.", Data.Name);
+            return;
+        }
+        ITarget attackTgt = attackTgts.MinBy(t => Vector3.Distance(t.Position, Data.Position));
         CurrentOrder = new UnitAttackOrder<FleetOrders>(FleetOrders.Attack, attackTgt, Data.FullSpeed);
         //CurrentOrder = new UnitAttackOrder<FleetOrders>(FleetOrders.Attack, attackTgt, Speed.Full);
     }

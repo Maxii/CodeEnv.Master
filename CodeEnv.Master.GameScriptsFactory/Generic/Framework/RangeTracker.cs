@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: InRangeTracker.cs
+// File: RangeTracker.cs
 // Maintains a list of all ITargets within a specified range of this trigger collider object.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -24,8 +24,9 @@ using UnityEngine;
 
 /// <summary>
 /// Maintains a list of all ITargets within a specified range of this trigger collider object.
+/// TODO Account for a diploRelations change with an owner
 /// </summary>
-public class InRangeTracker : TriggerTracker {
+public class RangeTracker : TriggerTracker, IRangeTracker {
 
     private float _range;
     public float Range {
@@ -52,8 +53,8 @@ public class InRangeTracker : TriggerTracker {
 
     protected override void Add(ITarget target) {
         base.Add(target);
-        if (target.Owner.IsEnemy(Owner) && !target.IsDead && !EnemyTargets.Contains(target)) {
-            D.Log("Enemy Target {0} added.", target.Name);
+        if (Owner.IsEnemyOf(target.Owner) && !target.IsDead && !EnemyTargets.Contains(target)) {
+            D.Log("{0}.{1} with range {2} added Enemy Target {3}.", Data.Name, GetType().Name, Range, target.Name);
             EnemyTargets.Add(target);
         }
     }
@@ -61,14 +62,14 @@ public class InRangeTracker : TriggerTracker {
     protected override void Remove(ITarget target) {
         base.Remove(target);
         if (EnemyTargets.Remove(target)) {
-            D.Log("Enemy Target {0} removed.", target.Name);
+            D.Log("{0}.{1} with range {2} removed Enemy Target {3}.", Data.Name, GetType().Name, Range, target.Name);
         }
     }
 
     protected override void OnTargetOwnerChanged(ITarget target) {
         base.OnTargetOwnerChanged(target);
         if (_isInitialized) {
-            if (target.Owner.IsEnemy(Owner)) {
+            if (Owner.IsEnemyOf(target.Owner)) {
                 if (!EnemyTargets.Contains(target)) {
                     EnemyTargets.Add(target);
                 }
@@ -86,15 +87,15 @@ public class InRangeTracker : TriggerTracker {
     }
 
     private void RefreshEnemyTargets() {
-        EnemyTargets = AllTargets.Where(t => t.Owner.IsEnemy(Owner)).ToList();
+        EnemyTargets = AllTargets.Where(t => t.Owner.IsEnemyOf(Owner)).ToList();
     }
 
     private void OnRangeChanged() {
+        //D.Log("{0}.{1}.Range changed to {2}.", Data.Name, GetType().Name, Range);
+        Collider.radius = Range;
         if (_isInitialized) {
             Collider.enabled = false;
-            AllTargets.Clear();
-            EnemyTargets.Clear();
-            Collider.radius = Range;
+            AllTargets.ForAll(t => Remove(t));  // clears both AllTargets and EnemyTargets
             Collider.enabled = true;    //  TODO unconfirmed - this should repopulate the Targets when re-enabled with new radius
         }
     }

@@ -51,6 +51,18 @@ namespace CodeEnv.Master.GameContent {
             private set { _daysPerYear = value; }
         }
 
+        private int _hoursPerDay;
+        public int HoursPerDay {
+            get {
+                if (!isPropertyValuesInitialized) {
+                    InitializePropertyValues();
+                }
+                return _hoursPerDay;
+            }
+            private set { _hoursPerDay = value; }
+        }
+
+
         #endregion
 
         #region Float

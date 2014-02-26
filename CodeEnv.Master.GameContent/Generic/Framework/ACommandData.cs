@@ -261,7 +261,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void UpdateUnitWeaponsRange() {
-            UnitWeaponsRange = ElementsData.Count == 0 ? Constants.ZeroF : ElementsData.MaxBy<AElementData, float>(ed => ed.WeaponsRange).WeaponsRange;
+            UnitWeaponsRange = ElementsData.Count == 0 ? Constants.ZeroF : ElementsData.MaxBy<AElementData, float>(ed => ed.WeaponRange).WeaponRange;
         }
 
         #region ElementData PropertyChanged Subscription and Methods

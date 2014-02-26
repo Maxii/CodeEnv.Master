@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
@@ -38,9 +39,9 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     where CommandType : AUnitCommandModel<ElementType>
     where CompositionType : class, new() {
 
-    public bool IsCompleted { get; private set; }
+    public DiplomaticRelations OwnerRelationshipWithHuman;
 
-    protected static bool __isHumanOwnedCreated;
+    public bool IsCompleted { get; private set; }
 
     public int maxElements = 8;
 
@@ -55,6 +56,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     protected CommandType _command;
     private IList<IDisposable> _subscribers;
     protected bool _isPreset;
+    protected IPlayer _owner;
 
     protected IGameManager _gameMgr;
 
@@ -97,6 +99,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     }
 
     private void CreateComposition() {
+        SetOwner();
         if (_isPreset) {
             CreateCompositionFromChildren();
         }
@@ -203,15 +206,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     }
 
     private void InitializeUnit() {
-        IPlayer owner;
-        if (!__isHumanOwnedCreated) {
-            owner = _gameMgr.HumanPlayer;
-            __isHumanOwnedCreated = true;
-        }
-        else {
-            owner = GetNonHumanOwner();
-        }
-        InitializeCommandData(owner);    // automatically adds the command transform to Data when set
+        InitializeCommandData(_owner);    // automatically adds the command transform to Data when set
         _elements.ForAll(element => _command.AddElement(element));  // owners assigned to elements when added to a Cmd
         // command IS NOT assigned as a target of each element's CameraLOSChangedRelay as that would make the CommandIcon disappear when the elements disappear
 
@@ -286,10 +281,38 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         return GetCompositionData(elementCategory).Count;
     }
 
-    protected virtual IPlayer GetNonHumanOwner() {
-        IPlayer player = new Player();
-        player.SetRelations(_gameMgr.HumanPlayer, DiplomaticRelations.Enemy);
-        return player;
+    private void SetOwner() {
+        IPlayer humanPlayer = _gameMgr.HumanPlayer;
+        IPlayer owner = new Player();
+        switch (OwnerRelationshipWithHuman) {
+            case DiplomaticRelations.Self:
+                owner = humanPlayer;
+                break;
+            case DiplomaticRelations.Enemy:
+                owner.SetRelations(humanPlayer, DiplomaticRelations.Enemy);
+                humanPlayer.SetRelations(owner, DiplomaticRelations.Enemy);
+                break;
+            case DiplomaticRelations.Ally:
+                owner.SetRelations(humanPlayer, DiplomaticRelations.Ally);
+                humanPlayer.SetRelations(owner, DiplomaticRelations.Ally);
+                break;
+            case DiplomaticRelations.Neutral:
+                owner.SetRelations(humanPlayer, DiplomaticRelations.Neutral);
+                humanPlayer.SetRelations(owner, DiplomaticRelations.Neutral);
+                break;
+            case DiplomaticRelations.Friend:
+                owner.SetRelations(humanPlayer, DiplomaticRelations.Friend);
+                humanPlayer.SetRelations(owner, DiplomaticRelations.Friend);
+                break;
+            case DiplomaticRelations.None:
+                D.WarnContext("Unit Owner not selected. Defaulting to Neutral relationship with HumanPlayer.", gameObject);
+                owner.SetRelations(humanPlayer, DiplomaticRelations.Neutral);
+                humanPlayer.SetRelations(owner, DiplomaticRelations.Neutral);
+                break;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(OwnerRelationshipWithHuman));
+        }
+        _owner = owner;
     }
 
     protected virtual string GetUnitName() {

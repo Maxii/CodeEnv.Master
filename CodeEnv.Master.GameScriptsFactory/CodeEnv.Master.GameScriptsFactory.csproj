@@ -58,7 +58,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Generic\Framework\InRangeTracker.cs" />
+    <Compile Include="Generic\Framework\RangeTracker.cs" />
     <Compile Include="Generic\Framework\PathfindingManager.cs" />
     <Compile Include="Generic\Graphics\AUnitCommandView.cs" />
     <Compile Include="Generic\IO\GameInputHelper.cs" />
@@ -160,7 +160,6 @@
     <Compile Include="Game\Framework\FleetNavigator.cs" />
     <Compile Include="Game\Framework\UniverseCenterModel.cs" />
     <Compile Include="Game\Graphics\UniverseCenterPresenter.cs" />
-    <Compile Include="Generic\Framework\TriggerTracker.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">

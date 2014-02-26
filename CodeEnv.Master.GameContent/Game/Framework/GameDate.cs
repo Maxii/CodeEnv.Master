@@ -39,6 +39,7 @@ namespace CodeEnv.Master.GameContent {
             Current
         }
 
+        public static int HoursPerDay = GeneralSettings.Instance.HoursPerDay;
         public static int DaysPerYear = GeneralSettings.Instance.DaysPerYear;
         public static float DaysPerSecond = GeneralSettings.Instance.DaysPerSecond;
         public static int StartingYear = GeneralSettings.Instance.StartingYear;

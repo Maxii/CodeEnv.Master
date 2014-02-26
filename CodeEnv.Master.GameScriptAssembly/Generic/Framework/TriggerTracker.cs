@@ -32,6 +32,8 @@ public class TriggerTracker : AMonoBase, IDisposable {
     /// </summary>
     public bool trackOtherTriggers;
 
+    public AElementData Data { get; set; }
+
     private static IList<Collider> _collidersToIgnore = new List<Collider>();
 
     public IList<ITarget> AllTargets { get; private set; }
@@ -44,8 +46,8 @@ public class TriggerTracker : AMonoBase, IDisposable {
     protected override void Awake() {
         base.Awake();
         Collider = UnityUtility.ValidateComponentPresence<Collider>(gameObject);
-        Collider.enabled = false;
         Collider.isTrigger = true;
+        Collider.enabled = false;
         AllTargets = new List<ITarget>();
         Subscribe();
     }
@@ -65,7 +67,7 @@ public class TriggerTracker : AMonoBase, IDisposable {
     void OnTriggerEnter(Collider other) {
         //D.Log("OnTriggerEnter({0}) called.", other.name);
         if (!trackOtherTriggers && other.isTrigger) {
-            //D.Warn("Ignored Trigger Collider {0}.", other.name);
+            //D.Log("{0}.{1}.OnTriggerEnter ignored Trigger Collider {2}.", Data.Name, GetType().Name, other.name);
             return;
         }
 
@@ -76,7 +78,7 @@ public class TriggerTracker : AMonoBase, IDisposable {
         ITarget target = other.gameObject.GetInterface<ITarget>();
         if (target == null) {
             _collidersToIgnore.Add(other);
-            D.Warn("Now ignoring Collider {0}.", other.name);
+            D.Warn("{0}.{1} now ignoring Collider {2}.", Data.Name, GetType().Name, other.name);
             return;
         }
 
@@ -86,6 +88,7 @@ public class TriggerTracker : AMonoBase, IDisposable {
     void OnTriggerExit(Collider other) {
         //D.Log("{0}.OnTriggerExit() called by Collider {1}.", GetType().Name, other.name);
         if (!trackOtherTriggers && other.isTrigger) {
+            //D.Log("{0}.{1}.OnTriggerExit ignored Trigger Collider {2}.", Data.Name, GetType().Name, other.name);
             return;
         }
 
@@ -102,29 +105,29 @@ public class TriggerTracker : AMonoBase, IDisposable {
     protected virtual void Add(ITarget target) {
         if (!AllTargets.Contains(target)) {
             if (!target.IsDead) {
-                D.Log("Now tracking target {0}.", target.Name);
+                D.Log("{0}.{1} now tracking target {2}.", Data.Name, GetType().Name, target.Name);
                 target.onItemDeath += OnTargetDeath;
                 target.onOwnerChanged += OnTargetOwnerChanged;
                 AllTargets.Add(target);
             }
             else {
-                D.Warn("Avoided adding target {0} that is already dead but not yet destroyed.", target.Name);
+                D.Warn("{0}.{1} avoided adding target {2} that is already dead but not yet destroyed.", Data.Name, GetType().Name, target.Name);
             }
         }
         else {
-            D.Warn("Attempted to add duplicate Target {0}.", target.Name);
+            D.Warn("{0}.{1} attempted to add duplicate Target {2}.", Data.Name, GetType().Name, target.Name);
         }
     }
 
     protected virtual void Remove(ITarget target) {
         bool isRemoved = AllTargets.Remove(target);
         if (isRemoved) {
-            D.Log("No longer tracking target {0}. Distance = {1}.", target.Name, Vector3.Distance(target.Position, _transform.position));
+            D.Log("{0}.{1} no longer tracking target {2} at distance = {3}.", Data.Name, GetType().Name, target.Name, Vector3.Distance(target.Position, _transform.position));
             target.onItemDeath -= OnTargetDeath;
             target.onOwnerChanged -= OnTargetOwnerChanged;
         }
         else {
-            D.Warn("Target {0} not present to be removed.", target.Name);
+            D.Warn("{0}.{1} target {2} not present to be removed.", Data.Name, GetType().Name, target.Name);
         }
     }
 
@@ -147,6 +150,7 @@ public class TriggerTracker : AMonoBase, IDisposable {
     private void Unsubscribe() {
         _subscribers.ForAll(d => d.Dispose());
         _subscribers.Clear();
+        AllTargets.ForAll(t => Remove(t));
     }
 
     public override string ToString() {

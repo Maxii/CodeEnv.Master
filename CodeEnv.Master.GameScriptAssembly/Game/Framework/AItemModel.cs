@@ -89,7 +89,6 @@ public abstract class AItemModel : AMonoBase, IDestinationTarget, IDisposable {
         }
     }
 
-
     public Vector3 Position { get { return Data.Position; } }
 
     /// <summary>

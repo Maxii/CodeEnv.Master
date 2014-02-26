@@ -41,7 +41,12 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsRelationship(IPlayer player, DiplomaticRelations relation);
 
-        bool IsEnemy(IPlayer player);
+        /// <summary>
+        /// Indicates whether the designated player is the enemy of this player.
+        /// </summary>
+        /// <param name="player">The designated player.</param>
+        /// <returns></returns>
+        bool IsEnemyOf(IPlayer player);
     }
 }
 

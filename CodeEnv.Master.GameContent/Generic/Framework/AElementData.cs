@@ -29,10 +29,16 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public Vector3 FormationPosition { get; set; }
 
-        private float _weaponsRange;
-        public float WeaponsRange {
-            get { return _weaponsRange; }
-            set { SetProperty<float>(ref _weaponsRange, value, "WeaponsRange"); }
+        private float _weaponRange;
+        public float WeaponRange {
+            get { return _weaponRange; }
+            set { SetProperty<float>(ref _weaponRange, value, "WeaponRange"); }
+        }
+
+        private float _weaponFireRate;
+        public float WeaponFireRate {
+            get { return _weaponFireRate; }
+            set { SetProperty<float>(ref _weaponFireRate, value, "WeaponFireRate"); }
         }
 
         /// <summary>

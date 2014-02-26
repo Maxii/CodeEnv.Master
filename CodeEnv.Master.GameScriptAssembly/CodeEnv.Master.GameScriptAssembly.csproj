@@ -60,6 +60,7 @@
     <Compile Include="Generic\Framework\AUnitCreator.cs" />
     <Compile Include="Game\Graphics\AFocusableItemPresenter.cs" />
     <Compile Include="Game\Graphics\AFocusableItemView.cs" />
+    <Compile Include="Generic\Framework\TriggerTracker.cs" />
     <Compile Include="Generic\Graphics\AItemPresenter.cs" />
     <Compile Include="Game\Graphics\AMortalItemPresenter.cs" />
     <Compile Include="Game\Graphics\AMortalItemView.cs" />

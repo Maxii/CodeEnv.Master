@@ -72,7 +72,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Subscribe() {
             base.Subscribe();
-            _subscribers.Add(Data.SubscribeToPropertyChanged<ShipData, float>(d => d.WeaponsRange, OnWeaponsRangeChanged));
+            _subscribers.Add(Data.SubscribeToPropertyChanged<ShipData, float>(d => d.WeaponRange, OnWeaponsRangeChanged));
         }
 
         /// <summary>
@@ -140,7 +140,7 @@ namespace CodeEnv.Master.GameContent {
             }
             _headingJob = new Job(ExecuteHeadingChange(), toStart: true, onJobComplete: (wasKilled) => {
                 if (wasKilled && !_isDisposing) {
-                    D.Warn("{0} turn command cancelled. Current Heading is {1}.", Data.Name, Data.CurrentHeading);
+                    D.Log("{0} turn command cancelled. Current Heading is {1}.", Data.Name, Data.CurrentHeading);
                 }
                 else {
                     D.Log("Turn complete. {0} current heading is {1}.", Data.Name, Data.CurrentHeading);
@@ -287,7 +287,7 @@ namespace CodeEnv.Master.GameContent {
         protected override float InitializeTargetValues() {
             float speedFactor = base.InitializeTargetValues();
             //DesiredDistanceFromTarget = Target.Radius + speedFactor + Data.WeaponsRange;
-            DesiredDistanceFromTarget = Target.Radius + Data.WeaponsRange;
+            DesiredDistanceFromTarget = Target.Radius + Data.WeaponRange;
             _courseHeadingCheckPeriod = Mathf.RoundToInt(1000 / (speedFactor * 5));  // higher speeds mean fewer periods between course checks, aka more frequent checks
             _courseHeadingCheckDistanceThresholdSqrd = speedFactor * speedFactor;   // higher speeds mean course checks become continuous further away
             if (!Target.IsMovable) {

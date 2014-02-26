@@ -35,7 +35,7 @@ public class FacilityModel : AUnitElementModel {
         set { base.Data = value; }
     }
 
-    public override bool IsHQElement {  // temp override to add Assertion protection
+    public override bool IsHQElement {  // OPTIMIZE temp override to add Assertion protection
         get {
             return base.IsHQElement;
         }
@@ -61,6 +61,7 @@ public class FacilityModel : AUnitElementModel {
     }
 
     protected override void Initialize() {
+        base.Initialize();
         // when a Starbase or Settlement is initially built, the facility already selected to be the HQ assigns itself
         // to the command. As Command will immediately callback, Facility must do any
         // required initialization now, before the callback takes place
@@ -79,55 +80,64 @@ public class FacilityModel : AUnitElementModel {
         set { base.CurrentState = value; }
     }
 
-    #region Idle
+    #region Idling
 
     void Idling_EnterState() {
-        //D.Log("{0} Idling_EnterState", Data.Name);
+        LogEvent();
         // TODO register as available
     }
 
-    void Idling_ExitState() {
-        // TODO register as unavailable
+    void Idling_OnWeaponReady() {
+        //LogEvent();
+        _attackTarget = _inWeaponRangeTargetTracker.__GetRandomEnemyTarget();
+        if (_attackTarget != null) {
+            D.Log("{0} initiating attack on {1} from {2}.", Data.Name, _attackTarget.Name, CurrentState.GetName());
+            Call(FacilityState.Attacking);
+        }
     }
 
-    void Idling_OnDetectedEnemy() { }
-
+    void Idling_ExitState() {
+        LogEvent();
+        // TODO register as unavailable
+    }
 
     #endregion
 
     #region ExecuteAttackOrder
 
-    private ITarget _target;
+    private ITarget _ordersTarget;
+    private ITarget _primaryTarget; // IMPROVE  take this previous target into account when PickPrimaryTarget()
+    private ITarget _attackTarget;
 
     IEnumerator ExecuteAttackOrder_EnterState() {
         D.Log("{0}.ExecuteAttackOrder_EnterState() called.", Data.Name);
-        while (true) {
-            if (_target != null) {
-                float rangeToTarget = Vector3.Distance(Data.Position, _target.Position) - _target.Radius;
-                if (rangeToTarget <= Data.WeaponsRange) {
-                    Call(FacilityState.Attacking);
-                }
-                else {
-                    _target = PickTarget();
-                }
-            }
-            else {
-                _target = PickTarget();
+        _ordersTarget = (CurrentOrder as UnitAttackOrder<FacilityOrders>).Target;
+
+        while (!_ordersTarget.IsDead) {
+            bool inRange = PickPrimaryTarget(out _primaryTarget);
+            if (inRange) {   // if no orders target in range, then _primaryTarget is null, so continue during next fire window
+                _attackTarget = _primaryTarget;
+                Call(FacilityState.Attacking);
             }
             yield return null;  // IMPROVE fire rate
         }
-        // CurrentState = FacilityState.Idling; // FIXME How to get out of this order??
-        // More fundamental issue is not relying on individual attack orders for Units that can't move
-        // Must be able to defend/attack enemies without specific attack order as attack order is limited to 1 unit at a time
+        CurrentState = FacilityState.Idling;
     }
 
-    void ExecuteAttackOrder_OnTargetDeath() {
-        LogEvent();
-        _target = PickTarget();
+    // IMPROVE potshot only if shots still available
+    void ExecuteAttackOrder_OnWeaponReady() {
+        //LogEvent();
+        _attackTarget = _inWeaponRangeTargetTracker.__GetRandomEnemyTarget();
+        if (_attackTarget != null) {
+            D.Log("{0} initiating attack on {1} from {2}.", Data.Name, _attackTarget.Name, CurrentState.GetName());
+            Call(FacilityState.Attacking);
+        }
     }
 
     void ExecuteAttackOrder_ExitState() {
         LogEvent();
+        _primaryTarget = null;
+        _ordersTarget = null;
     }
 
     #endregion
@@ -136,15 +146,45 @@ public class FacilityModel : AUnitElementModel {
 
     void Attacking_EnterState() {
         LogEvent();
+        if (_attackTarget == null) {
+            D.Warn("{0} attackTarget is null. Return()ing.", Data.Name);
+            Return();
+            return;
+        }
         OnShowAnimation(MortalAnimations.Attacking);
-        _target.TakeDamage(8F);
-        Return();   // to ExecuteAttackOrder
+        _attackTarget.TakeDamage(8F);
+        Return();
     }
 
-    void Attacking_OnTargetDeath() {
-        // can get death as result of TakeDamage() before Return
+    // No potshots while firing at a primaryTarget
+
+    void Attacking_ExitState() {
         LogEvent();
-        _target = PickTarget();
+        _attackTarget = null;
+    }
+
+    #endregion
+
+    #region ExecuteRepairOrder
+
+    IEnumerator ExecuteRepairOrder_EnterState() {
+        //LogEvent();
+        D.Log("{0}.ExecuteRepairOrder_EnterState.", Data.Name);
+        Call(FacilityState.Repairing);
+        yield return null;  // required immediately after Call() to avoid FSM bug
+    }
+
+    void ExecuteRepairOrder_OnWeaponReady() {
+        //LogEvent();
+        _attackTarget = _inWeaponRangeTargetTracker.__GetRandomEnemyTarget();
+        if (_attackTarget != null) {
+            D.Log("{0} initiating attack on {1} from {2}.", Data.Name, _attackTarget.Name, CurrentState.GetName());
+            Call(FacilityState.Attacking);
+        }
+    }
+
+    void ExecuteRepairOrder_ExitState() {
+        LogEvent();
     }
 
     #endregion
@@ -152,15 +192,23 @@ public class FacilityModel : AUnitElementModel {
     #region Repairing
 
     IEnumerator Repairing_EnterState() {
-        // ShipView shows animation while in this state
-        //OnStartShow();
-        //while (true) {
-        // TODO repair until complete
-        yield return new WaitForSeconds(2);
-        //}
-        //_command.OnRepairingComplete(this)?
-        //OnStopShow();   // must occur while still in target state
+        D.Log("{0}.Repairing_EnterState.", Data.Name);
+        OnShowAnimation(MortalAnimations.Repairing);
+        yield return new WaitForSeconds(1);
+        D.Log("{0}'s repair is 50% complete.", Data.Name);
+        yield return new WaitForSeconds(1);
+        D.Log("{0}'s repair is 100% complete.", Data.Name);
+        OnStopAnimation(MortalAnimations.Repairing);
         Return();
+    }
+
+    void Repairing_OnWeaponReady() {
+        LogEvent();
+        _attackTarget = _inWeaponRangeTargetTracker.__GetRandomEnemyTarget();
+        if (_attackTarget != null) {
+            D.Log("{0} initiating attack on {1} from {2}.", Data.Name, _attackTarget.Name, CurrentState.GetName());
+            Call(FacilityState.Attacking);
+        }
     }
 
     void Repairing_ExitState() {
@@ -172,7 +220,7 @@ public class FacilityModel : AUnitElementModel {
     #region Refitting
 
     IEnumerator Refitting_EnterState() {
-        // View shows animation while in this state
+        // ShipView shows animation while in this state
         //OnStartShow();
         //while (true) {
         // TODO refit until complete
@@ -208,6 +256,7 @@ public class FacilityModel : AUnitElementModel {
 
     void Dead_EnterState() {
         LogEvent();
+        enabled = false;
         OnItemDeath();
         OnShowAnimation(MortalAnimations.Dying);
     }
@@ -219,77 +268,53 @@ public class FacilityModel : AUnitElementModel {
 
     #endregion
 
-    # region Callbacks
-
-    void OnOrdersChanged() {
-        if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
-            FacilityOrders order = CurrentOrder.Order;
-            switch (order) {
-                case FacilityOrders.Attack:
-                    CurrentState = FacilityState.ExecuteAttackOrder;
-                    break;
-                case FacilityOrders.StopAttack:
-                    // issued when peace declared while attacking
-                    CurrentState = FacilityState.Idling;
-                    break;
-                case FacilityOrders.Repair:
-                    CurrentState = FacilityState.Repairing;
-                    break;
-                case FacilityOrders.Refit:
-                    CurrentState = FacilityState.Refitting;
-                    break;
-                case FacilityOrders.Disband:
-                    CurrentState = FacilityState.Disbanding;
-                    break;
-                case FacilityOrders.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
-            }
-        }
-    }
-
-    void OnTargetDeath(ITarget target) {
-        LogEvent();
-        D.Assert(_target == target, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _target.Name, target.Name));
-        _target.onItemDeath -= OnTargetDeath;
-        RelayToCurrentState();
-    }
-
-    #endregion
-
     #region StateMachine Support Methods
 
-    private ITarget PickTarget() {
-        ITarget chosenTarget = (CurrentOrder as UnitAttackOrder<FacilityOrders>).Target;
-        ICmdTarget cmdTarget = chosenTarget as ICmdTarget;
+    /// <summary>
+    /// Picks the highest priority target from orders. First selection criteria is inRange.
+    /// </summary>
+    /// <param name="chosenTarget">The chosen target from orders or null if no targets remain.</param>
+    /// <returns>
+    /// True if the target is in range, false otherwise. NEXT
+    /// </returns>
+    private bool PickPrimaryTarget(out ITarget chosenTarget) {
+        D.Assert(_ordersTarget != null && !_ordersTarget.IsDead, "{0}'s target from orders is null or dead.".Inject(Data.Name));
+        bool isTargetInRange = false;
+        var enemyTargetsInRange = _inWeaponRangeTargetTracker.EnemyTargets;
+
+        ICmdTarget cmdTarget = _ordersTarget as ICmdTarget;
         if (cmdTarget != null) {
-            IList<ITarget> targetsInRange = new List<ITarget>();
-            foreach (var target in cmdTarget.ElementTargets) {
-                if (target.IsDead) {
-                    continue; // in case we get the onItemDeath event before item is removed by cmdTarget from ElementTargets
-                }
-                float rangeToTarget = Vector3.Distance(Data.Position, target.Position) - target.Radius;
-                if (rangeToTarget <= Data.WeaponsRange) {
-                    targetsInRange.Add(target);
-                }
+            var primaryTargets = cmdTarget.ElementTargets;
+            var primaryTargetsInRange = primaryTargets.Intersect(enemyTargetsInRange);
+            if (!primaryTargetsInRange.IsNullOrEmpty()) {
+                chosenTarget = SelectHighestPriorityTarget(primaryTargetsInRange);
+                isTargetInRange = true;
             }
-            chosenTarget = targetsInRange.Count != 0 ? RandomExtended<ITarget>.Choice(targetsInRange) : null;  // IMPROVE
+            else {
+                D.Assert(!primaryTargets.IsNullOrEmpty(), "{0}'s primaryTargets cannot be empty when _ordersTarget is alive.");
+                chosenTarget = null;    // no target as all are out of range
+            }
+        }
+        else {
+            chosenTarget = _ordersTarget;   // Planetoid
+            isTargetInRange = enemyTargetsInRange.Contains(_ordersTarget);
         }
         if (chosenTarget != null) {
-            chosenTarget.onItemDeath += OnTargetDeath;
-            D.Log("{0}'s new target to attack is {1}.", Data.Name, chosenTarget.Name);
+            // no need for knowing about death event as primaryTarget is continuously checked while under orders to attack
+            D.Log("{0}'s has selected {1} as it's primary target.", Data.Name, chosenTarget.Name);
         }
-        return chosenTarget;
+        return isTargetInRange;
     }
 
+    private ITarget SelectHighestPriorityTarget(IEnumerable<ITarget> selectedTargetsInRange) {
+        return RandomExtended<ITarget>.Choice(selectedTargetsInRange);
+    }
 
-    private void AssessNeedForRepair() {
+    private void AssessNeedForRepair() {    // TODO not currently used
         if (Data.Health < 0.50F) {
-            // TODO 
+            CurrentOrder = new UnitOrder<FacilityOrders>(FacilityOrders.Repair);
         }
     }
-
 
     /// <summary>
     /// Distributes the damage this element has just received evenly across all
@@ -344,6 +369,38 @@ public class FacilityModel : AUnitElementModel {
             // only show being hit if this facility is the one being directly attacked
             var hitAnimation = isCmdHit ? MortalAnimations.CmdHit : MortalAnimations.Hit;
             OnShowAnimation(hitAnimation);
+        }
+    }
+
+    #endregion
+
+    # region Callbacks
+
+    void OnOrdersChanged() {
+        if (CurrentOrder != null) {
+            D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
+            FacilityOrders order = CurrentOrder.Order;
+            switch (order) {
+                case FacilityOrders.Attack:
+                    CurrentState = FacilityState.ExecuteAttackOrder;
+                    break;
+                case FacilityOrders.StopAttack:
+                    // issued when peace declared while attacking
+                    CurrentState = FacilityState.Idling;
+                    break;
+                case FacilityOrders.Repair:
+                    CurrentState = FacilityState.Repairing;
+                    break;
+                case FacilityOrders.Refit:
+                    CurrentState = FacilityState.Refitting;
+                    break;
+                case FacilityOrders.Disband:
+                    CurrentState = FacilityState.Disbanding;
+                    break;
+                case FacilityOrders.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
+            }
         }
     }
 

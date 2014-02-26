@@ -18,6 +18,10 @@
       <PropertyValue>100</PropertyValue>
     </Setting>
     <Setting>
+      <PropertyName>HoursPerDay</PropertyName>
+      <PropertyValue>20</PropertyValue>
+    </Setting>
+    <Setting>
       <PropertyName></PropertyName>
       <PropertyValue>0</PropertyValue>
     </Setting>

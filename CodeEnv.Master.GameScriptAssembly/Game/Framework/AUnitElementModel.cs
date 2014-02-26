@@ -35,29 +35,27 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
     }
 
     private Rigidbody _rigidbody;
-    protected InRangeTracker _targetTracker;
+    protected IRangeTracker _inWeaponRangeTargetTracker;
 
 
     protected override void Awake() {
         base.Awake();
         _rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
-        _targetTracker = gameObject.GetSafeMonoBehaviourComponentInChildren<InRangeTracker>();
+        _inWeaponRangeTargetTracker = gameObject.GetSafeInterfaceInChildren<IRangeTracker>();
         UpdateRate = FrameUpdateFrequency.Rare;   // temp for fire rate
         // derived classes should call Subscribe() after they have acquired needed references
     }
 
     protected override void Initialize() {
         _rigidbody.mass = Data.Mass;
-
-        InitializeTargetTrackers();
-
+        InitializeWeaponRangeTargetTrackers();
     }
 
-    private void InitializeTargetTrackers() {
-        _targetTracker.Range = Data.WeaponsRange;
-        _targetTracker.Owner = Data.Owner;
+    private void InitializeWeaponRangeTargetTrackers() {
+        _inWeaponRangeTargetTracker.Data = Data;
+        _inWeaponRangeTargetTracker.Range = Data.WeaponRange;
+        _inWeaponRangeTargetTracker.Owner = Data.Owner;
     }
-
 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
@@ -67,22 +65,16 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
-        _subscribers.Add(Data.SubscribeToPropertyChanged<AElementData, float>(d => d.WeaponsRange, OnWeaponsRangeChanged));
+        _subscribers.Add(Data.SubscribeToPropertyChanged<AElementData, float>(d => d.WeaponRange, OnWeaponsRangeChanged));
     }
 
-    //protected override void OnDataChanged() {
-    //    base.OnDataChanged();
-    //    _rigidbody.mass = Data.Mass;
-    //    OnWeaponsRangeChanged();
-    //}
-
     private void OnWeaponsRangeChanged() {
-        _targetTracker.Range = Data.WeaponsRange;
+        _inWeaponRangeTargetTracker.Range = Data.WeaponRange;
     }
 
     protected override void OnOwnerChanged() {
         base.OnOwnerChanged();
-        _targetTracker.Owner = Data.Owner;
+        _inWeaponRangeTargetTracker.Owner = Data.Owner;
     }
 
     # region StateMachine Support Methods
@@ -112,6 +104,11 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
 
     // subscriptions contained completely within this gameobject (both subscriber
     // and subscribee) donot have to be cleaned up as all instances are destroyed
+
+    protected override void Cleanup() {
+        base.Cleanup();
+        (_inWeaponRangeTargetTracker as IDisposable).Dispose();
+    }
 
 }
 
