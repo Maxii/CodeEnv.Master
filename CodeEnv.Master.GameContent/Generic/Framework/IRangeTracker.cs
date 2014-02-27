@@ -16,12 +16,19 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using System.Collections.Generic;
 
     /// <summary>
     /// Interface for access to RangeTrackers.
     /// </summary>
     public interface IRangeTracker {
+
+        /// <summary>
+        /// Occurs once with <c>true</c> when the first of one or more enemies come into range and 
+        /// once with <c>false</c> when there are no more enemies in range.
+        /// </summary>
+        event Action<bool> onEnemyInRange;
 
         float Range { get; set; }
 
@@ -31,7 +38,13 @@ namespace CodeEnv.Master.GameContent {
 
         IList<ITarget> AllTargets { get; }
 
-        ITarget __GetRandomEnemyTarget();
+        /// <summary>
+        /// Attempts to acquire a random enemy target in this weapon's range. Returns
+        /// <c>true</c> if successful.
+        /// </summary>
+        /// <param name="enemyTarget">The enemy target in range. Can be null.</param>
+        /// <returns><c>true</c> if there is an enemy target in range.</returns>
+        bool __TryGetRandomEnemyTarget(out ITarget enemyTarget);
 
         AElementData Data { get; set; } // TODO Temporary Just for debug messages
 

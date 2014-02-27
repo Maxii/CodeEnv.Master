@@ -145,11 +145,10 @@ public class ShipModel : AUnitElementModel {
     }
 
     void Idling_OnWeaponReady() {
-        //LogEvent();
-        _attackTarget = _inWeaponRangeTargetTracker.__GetRandomEnemyTarget();
-        if (_attackTarget != null) {
+        LogEvent();
+        if (_weaponTargetTracker.__TryGetRandomEnemyTarget(out _attackTarget)) {
             D.Log("{0} initiating attack on {1} from {2}.", Data.Name, _attackTarget.Name, CurrentState.GetName());
-            Call(ShipState.Attacking);
+            Call(FacilityState.Attacking);
         }
     }
 
@@ -226,11 +225,10 @@ public class ShipModel : AUnitElementModel {
     }
 
     void Moving_OnWeaponReady() {
-        //LogEvent();
-        _attackTarget = _inWeaponRangeTargetTracker.__GetRandomEnemyTarget();
-        if (_attackTarget != null) {
+        LogEvent();
+        if (_weaponTargetTracker.__TryGetRandomEnemyTarget(out _attackTarget)) {
             D.Log("{0} initiating attack on {1} from {2}.", Data.Name, _attackTarget.Name, CurrentState.GetName());
-            Call(ShipState.Attacking);
+            Call(FacilityState.Attacking);
         }
     }
 
@@ -266,27 +264,22 @@ public class ShipModel : AUnitElementModel {
             // _primaryTarget cannot be null when _ordersTarget is alive
             bool inRange = PickPrimaryTarget(out _primaryTarget);
             if (inRange) {
-                _attackTarget = _primaryTarget;
-                Call(ShipState.Attacking);
+                if (_isWeaponReady) {
+                    _attackTarget = _primaryTarget;
+                    Call(ShipState.Attacking);
+                }
             }
             else {
                 _moveTarget = _primaryTarget;
                 _moveSpeed = Data.FullSpeed;
                 Call(ShipState.Moving);
             }
-            yield return null;  // IMPROVE fire rate
+            yield return null;
         }
         CurrentState = ShipState.Idling;
     }
 
-    void ExecuteAttackOrder_OnWeaponReady() {
-        //LogEvent();
-        _attackTarget = _inWeaponRangeTargetTracker.__GetRandomEnemyTarget();
-        if (_attackTarget != null) {
-            D.Log("{0} initiating attack on {1} from {2}.", Data.Name, _attackTarget.Name, CurrentState.GetName());
-            Call(ShipState.Attacking);
-        }
-    }
+    // No need for method to take potshots at enemies in this state as the state always Call()s another state
 
     void ExecuteAttackOrder_ExitState() {
         LogEvent();
@@ -306,15 +299,15 @@ public class ShipModel : AUnitElementModel {
             Return();
             return;
         }
+        D.Assert(_isWeaponReady, "{0} Attacking with no weapon ready.".Inject(Data.Name));
         OnShowAnimation(MortalAnimations.Attacking);
         _attackTarget.TakeDamage(8F);
         Return();
     }
 
-    // No Trigger potshots when Attacking
-
     void Attacking_ExitState() {
         LogEvent();
+        _isWeaponReady = false;
         _attackTarget = null;
     }
 
@@ -380,11 +373,10 @@ public class ShipModel : AUnitElementModel {
     }
 
     void ExecuteRepairOrder_OnWeaponReady() {
-        //LogEvent();
-        _attackTarget = _inWeaponRangeTargetTracker.__GetRandomEnemyTarget();
-        if (_attackTarget != null) {
+        LogEvent();
+        if (_weaponTargetTracker.__TryGetRandomEnemyTarget(out _attackTarget)) {
             D.Log("{0} initiating attack on {1} from {2}.", Data.Name, _attackTarget.Name, CurrentState.GetName());
-            Call(ShipState.Attacking);
+            Call(FacilityState.Attacking);
         }
     }
 
@@ -410,10 +402,9 @@ public class ShipModel : AUnitElementModel {
 
     void Repairing_OnWeaponReady() {
         LogEvent();
-        _attackTarget = _inWeaponRangeTargetTracker.__GetRandomEnemyTarget();
-        if (_attackTarget != null) {
+        if (_weaponTargetTracker.__TryGetRandomEnemyTarget(out _attackTarget)) {
             D.Log("{0} initiating attack on {1} from {2}.", Data.Name, _attackTarget.Name, CurrentState.GetName());
-            Call(ShipState.Attacking);
+            Call(FacilityState.Attacking);
         }
     }
 
@@ -462,8 +453,6 @@ public class ShipModel : AUnitElementModel {
 
     void Dead_EnterState() {
         LogEvent();
-        Navigator.Disengage();
-        enabled = false;
         OnItemDeath();
         OnShowAnimation(MortalAnimations.Dying);
     }
@@ -487,7 +476,7 @@ public class ShipModel : AUnitElementModel {
     private bool PickPrimaryTarget(out ITarget chosenTarget) {
         D.Assert(_ordersTarget != null && !_ordersTarget.IsDead, "{0}'s target from orders is null or dead.".Inject(Data.Name));
         bool isTargetInRange = false;
-        var enemyTargetsInRange = _inWeaponRangeTargetTracker.EnemyTargets;
+        var enemyTargetsInRange = _weaponTargetTracker.EnemyTargets;
 
         ICmdTarget cmdTarget = _ordersTarget as ICmdTarget;
         if (cmdTarget != null) {
@@ -524,6 +513,11 @@ public class ShipModel : AUnitElementModel {
                 CurrentOrder = new UnitOrder<ShipOrders>(ShipOrders.Repair, repairDestination, Data.FullSpeed);
             }
         }
+    }
+
+    protected override void OnItemDeath() {
+        base.OnItemDeath();
+        Navigator.Disengage();
     }
 
     #endregion

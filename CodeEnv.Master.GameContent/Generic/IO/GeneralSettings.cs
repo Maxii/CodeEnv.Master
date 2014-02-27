@@ -67,15 +67,15 @@ namespace CodeEnv.Master.GameContent {
 
         #region Float
 
-        private float _daysPerSecond;
-        public float DaysPerSecond {
+        private float _hoursPerSecond;
+        public float HoursPerSecond {
             get {
                 if (!isPropertyValuesInitialized) {
                     InitializePropertyValues();
                 }
-                return _daysPerSecond;
+                return _hoursPerSecond;
             }
-            private set { _daysPerSecond = value; }
+            private set { _hoursPerSecond = value; }
         }
 
         private float _injuredHealthThreshold;

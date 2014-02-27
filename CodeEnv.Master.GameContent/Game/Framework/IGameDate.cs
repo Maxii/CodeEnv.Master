@@ -22,6 +22,8 @@ public interface IGameDate {
 
     int DayOfYear { get; }
 
+    int HourOfDay { get; }
+
     string FormattedDate { get; }
 
     string ToString();

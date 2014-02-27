@@ -55,7 +55,10 @@ public class Orbit : AMonoBase, IDisposable {
         base.Awake();
         _gameStatus = GameStatus.Instance;
         orbitPeriod = orbitPeriod ?? new GameTimePeriod(days: 0, years: 1);
-        _orbitSpeed = (relativeOrbitSpeed * Constants.DegreesPerOrbit * GeneralSettings.Instance.DaysPerSecond) / orbitPeriod.PeriodInDays;
+
+        _orbitSpeed = (relativeOrbitSpeed * Constants.DegreesPerOrbit *
+            (GeneralSettings.Instance.HoursPerSecond / GeneralSettings.Instance.HoursPerDay)) / orbitPeriod.PeriodInDays;
+
         Subscribe();
         UpdateRate = FrameUpdateFrequency.Frequent;
         enabled = false;

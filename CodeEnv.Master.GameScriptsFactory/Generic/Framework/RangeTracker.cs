@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
@@ -27,6 +28,8 @@ using UnityEngine;
 /// TODO Account for a diploRelations change with an owner
 /// </summary>
 public class RangeTracker : TriggerTracker, IRangeTracker {
+
+    public event Action<bool> onEnemyInRange;
 
     private float _range;
     public float Range {
@@ -54,15 +57,29 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
     protected override void Add(ITarget target) {
         base.Add(target);
         if (Owner.IsEnemyOf(target.Owner) && !target.IsDead && !EnemyTargets.Contains(target)) {
-            D.Log("{0}.{1} with range {2} added Enemy Target {3}.", Data.Name, GetType().Name, Range, target.Name);
-            EnemyTargets.Add(target);
+            AddEnemyTarget(target);
         }
+    }
+
+    private void AddEnemyTarget(ITarget enemyTarget) {
+        D.Log("{0}.{1} with range {2} added Enemy Target {3}.", Data.Name, GetType().Name, Range, enemyTarget.Name);
+        if (EnemyTargets.Count == 0) {
+            OnEnemyInRange(true);   // there are now enemies in range
+        }
+        EnemyTargets.Add(enemyTarget);
     }
 
     protected override void Remove(ITarget target) {
         base.Remove(target);
-        if (EnemyTargets.Remove(target)) {
-            D.Log("{0}.{1} with range {2} removed Enemy Target {3}.", Data.Name, GetType().Name, Range, target.Name);
+        RemoveEnemyTarget(target);
+    }
+
+    private void RemoveEnemyTarget(ITarget enemyTarget) {
+        if (EnemyTargets.Remove(enemyTarget)) {
+            if (EnemyTargets.Count == 0) {
+                OnEnemyInRange(false);  // no longer any Enemies in range
+            }
+            D.Log("{0}.{1} with range {2} removed Enemy Target {3}.", Data.Name, GetType().Name, Range, enemyTarget.Name);
         }
     }
 
@@ -71,11 +88,11 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
         if (_isInitialized) {
             if (Owner.IsEnemyOf(target.Owner)) {
                 if (!EnemyTargets.Contains(target)) {
-                    EnemyTargets.Add(target);
+                    AddEnemyTarget(target);
                 }
             }
             else {
-                EnemyTargets.Remove(target);
+                RemoveEnemyTarget(target);
             }
         }
     }
@@ -87,7 +104,15 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
     }
 
     private void RefreshEnemyTargets() {
-        EnemyTargets = AllTargets.Where(t => t.Owner.IsEnemyOf(Owner)).ToList();
+        if (EnemyTargets.Count > 0) {
+            EnemyTargets.Clear();
+            OnEnemyInRange(false);
+        }
+        foreach (var target in AllTargets) {
+            if (Owner.IsEnemyOf(target.Owner)) {
+                AddEnemyTarget(target);
+            }
+        }
     }
 
     private void OnRangeChanged() {
@@ -100,11 +125,21 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
         }
     }
 
-    public ITarget __GetRandomEnemyTarget() {
+    public bool __TryGetRandomEnemyTarget(out ITarget enemyTarget) {
+        bool result = false;
+        enemyTarget = null;
         if (EnemyTargets.Count > 0) {
-            return RandomExtended<ITarget>.Choice(EnemyTargets);
+            result = true;
+            enemyTarget = RandomExtended<ITarget>.Choice(EnemyTargets);
         }
-        return null;
+        return result;
+    }
+
+    protected void OnEnemyInRange(bool isEnemyInRange) {
+        var temp = onEnemyInRange;
+        if (temp != null) {
+            temp(isEnemyInRange);
+        }
     }
 
     public override string ToString() {

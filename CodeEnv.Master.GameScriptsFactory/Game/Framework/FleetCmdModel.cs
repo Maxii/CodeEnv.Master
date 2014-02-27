@@ -399,7 +399,6 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
     void Dead_EnterState() {
         LogEvent();
         OnItemDeath();
-        //OnStartShow();
         OnShowAnimation(MortalAnimations.Dying);
     }
 

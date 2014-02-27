@@ -25,6 +25,7 @@ namespace CodeEnv.Master.GameContent {
     public class GameTimePeriod {
 
         private static int _daysPerYear = GeneralSettings.Instance.DaysPerYear;
+        private static int _hoursPerDay = GeneralSettings.Instance.HoursPerDay;
 
         private IGameDate _startDate;
 
@@ -39,6 +40,12 @@ namespace CodeEnv.Master.GameContent {
         /// period is acquired using PeriodInDays.
         /// </summary>
         public int Days { get; private set; }
+
+        /// <summary>
+        /// The hours value for this period. Note: The total duration of the
+        /// period is acquired using PeriodInDays.
+        /// </summary>
+        public int Hours { get; private set; }
 
         /// <summary>
         /// The total duration of the period in Days.
@@ -67,13 +74,23 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="days">The days.</param>
         /// <param name="years">The years.</param>
-        public GameTimePeriod(int days, int years) {
-            Arguments.ValidateForRange(days, Constants.Zero, 99);
+        public GameTimePeriod(int days, int years) : this(Constants.Zero, days, years) { }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GameTimePeriod" /> class of the
+        /// duration provided.
+        /// </summary>
+        /// <param name="hours">The hours.</param>
+        /// <param name="days">The days.</param>
+        /// <param name="years">The years.</param>
+        public GameTimePeriod(int hours, int days, int years) {
+            Arguments.ValidateForRange(hours, Constants.Zero, _hoursPerDay - 1);
+            Arguments.ValidateForRange(days, Constants.Zero, _daysPerYear - 1);
             Arguments.ValidateNotNegative(years);
+            Hours = hours;
             Days = days;
             Years = years;
             PeriodInDays = years * _daysPerYear + days;
-            //GenerateArtificialStartDate(days, years);
         }
 
         /// <summary>
@@ -105,21 +122,19 @@ namespace CodeEnv.Master.GameContent {
                 years--;
                 days = _daysPerYear + days;
             }
+            int hours = endDate.HourOfDay - startDate.HourOfDay;
+            if (hours < 0) {
+                days--;
+                hours = _hoursPerDay + hours;
+                if (days < 0) {
+                    years--;
+                    days = _daysPerYear + days;
+                }
+            }
             Years = years;
             Days = days;
+            Hours = hours;
             PeriodInDays = years * _daysPerYear + days;
-        }
-
-        [Obsolete]
-        private void GenerateArtificialStartDate(int days, int years) {
-            IGameDate currentDate = GameTime.Date;  // issue when called before the game starts
-            int startYear = currentDate.Year - years;
-            int startDay = currentDate.DayOfYear - days;
-            if (startDay < 0) {
-                startYear--;
-                startDay = _daysPerYear + startDay;
-            }
-            _startDate = new GameDate(startDay, startYear);
         }
 
         public override string ToString() {

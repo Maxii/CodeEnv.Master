@@ -88,9 +88,8 @@ public class FacilityModel : AUnitElementModel {
     }
 
     void Idling_OnWeaponReady() {
-        //LogEvent();
-        _attackTarget = _inWeaponRangeTargetTracker.__GetRandomEnemyTarget();
-        if (_attackTarget != null) {
+        LogEvent();
+        if (_weaponTargetTracker.__TryGetRandomEnemyTarget(out _attackTarget)) {
             D.Log("{0} initiating attack on {1} from {2}.", Data.Name, _attackTarget.Name, CurrentState.GetName());
             Call(FacilityState.Attacking);
         }
@@ -114,21 +113,22 @@ public class FacilityModel : AUnitElementModel {
         _ordersTarget = (CurrentOrder as UnitAttackOrder<FacilityOrders>).Target;
 
         while (!_ordersTarget.IsDead) {
-            bool inRange = PickPrimaryTarget(out _primaryTarget);
-            if (inRange) {   // if no orders target in range, then _primaryTarget is null, so continue during next fire window
-                _attackTarget = _primaryTarget;
-                Call(FacilityState.Attacking);
+            if (_isWeaponReady) {
+                bool inRange = PickPrimaryTarget(out _primaryTarget);
+                if (inRange) {   // if no orders target in range, then _primaryTarget is null, so continue during next fire window
+                    _attackTarget = _primaryTarget;
+                    Call(FacilityState.Attacking);
+                }
             }
-            yield return null;  // IMPROVE fire rate
+            yield return null;
         }
         CurrentState = FacilityState.Idling;
     }
 
-    // IMPROVE potshot only if shots still available
+    // Valid in this state as the state can exist for quite a while if the orderTarget is staying out of range
     void ExecuteAttackOrder_OnWeaponReady() {
-        //LogEvent();
-        _attackTarget = _inWeaponRangeTargetTracker.__GetRandomEnemyTarget();
-        if (_attackTarget != null) {
+        LogEvent();
+        if (_weaponTargetTracker.__TryGetRandomEnemyTarget(out _attackTarget)) {
             D.Log("{0} initiating attack on {1} from {2}.", Data.Name, _attackTarget.Name, CurrentState.GetName());
             Call(FacilityState.Attacking);
         }
@@ -147,19 +147,19 @@ public class FacilityModel : AUnitElementModel {
     void Attacking_EnterState() {
         LogEvent();
         if (_attackTarget == null) {
-            D.Warn("{0} attackTarget is null. Return()ing.", Data.Name);
+            D.Error("{0} attackTarget is null. Return()ing.", Data.Name);
             Return();
             return;
         }
+        D.Assert(_isWeaponReady, "{0} Attacking with no weapon ready.".Inject(Data.Name));
         OnShowAnimation(MortalAnimations.Attacking);
         _attackTarget.TakeDamage(8F);
         Return();
     }
 
-    // No potshots while firing at a primaryTarget
-
     void Attacking_ExitState() {
         LogEvent();
+        _isWeaponReady = false;
         _attackTarget = null;
     }
 
@@ -175,9 +175,8 @@ public class FacilityModel : AUnitElementModel {
     }
 
     void ExecuteRepairOrder_OnWeaponReady() {
-        //LogEvent();
-        _attackTarget = _inWeaponRangeTargetTracker.__GetRandomEnemyTarget();
-        if (_attackTarget != null) {
+        LogEvent();
+        if (_weaponTargetTracker.__TryGetRandomEnemyTarget(out _attackTarget)) {
             D.Log("{0} initiating attack on {1} from {2}.", Data.Name, _attackTarget.Name, CurrentState.GetName());
             Call(FacilityState.Attacking);
         }
@@ -204,8 +203,7 @@ public class FacilityModel : AUnitElementModel {
 
     void Repairing_OnWeaponReady() {
         LogEvent();
-        _attackTarget = _inWeaponRangeTargetTracker.__GetRandomEnemyTarget();
-        if (_attackTarget != null) {
+        if (_weaponTargetTracker.__TryGetRandomEnemyTarget(out _attackTarget)) {
             D.Log("{0} initiating attack on {1} from {2}.", Data.Name, _attackTarget.Name, CurrentState.GetName());
             Call(FacilityState.Attacking);
         }
@@ -256,7 +254,6 @@ public class FacilityModel : AUnitElementModel {
 
     void Dead_EnterState() {
         LogEvent();
-        enabled = false;
         OnItemDeath();
         OnShowAnimation(MortalAnimations.Dying);
     }
@@ -280,7 +277,7 @@ public class FacilityModel : AUnitElementModel {
     private bool PickPrimaryTarget(out ITarget chosenTarget) {
         D.Assert(_ordersTarget != null && !_ordersTarget.IsDead, "{0}'s target from orders is null or dead.".Inject(Data.Name));
         bool isTargetInRange = false;
-        var enemyTargetsInRange = _inWeaponRangeTargetTracker.EnemyTargets;
+        var enemyTargetsInRange = _weaponTargetTracker.EnemyTargets;
 
         ICmdTarget cmdTarget = _ordersTarget as ICmdTarget;
         if (cmdTarget != null) {

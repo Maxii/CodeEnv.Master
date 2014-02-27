@@ -30,8 +30,8 @@
 
   <Float>
     <Setting>
-      <PropertyName>DaysPerSecond</PropertyName>
-      <PropertyValue>0.1</PropertyValue>
+      <PropertyName>HoursPerSecond</PropertyName>
+      <PropertyValue>2.0</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>InjuredHealthThreshold</PropertyName>

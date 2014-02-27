@@ -323,7 +323,10 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         private IEnumerator ExecuteHeadingChange() {
             int previousFrameCount = Time.frameCount - 1;   // FIXME makes initial framesSinceLastPass = 1
-            float maxRadianTurnRatePerSecond = Mathf.Deg2Rad * Data.MaxTurnRate * _generalSettings.DaysPerSecond;
+
+            float maxRadianTurnRatePerSecond = Mathf.Deg2Rad * Data.MaxTurnRate * (_generalSettings.HoursPerSecond / _generalSettings.HoursPerDay);
+            //float maxRadianTurnRatePerSecond = Mathf.Deg2Rad * Data.MaxTurnRate * _generalSettings.DaysPerSecond;
+
             //D.Log("New coroutine. {0} coming to heading {1} at {2} radians/day.", _data.Name, _data.RequestedHeading, _data.MaxTurnRate);
             while (!IsTurnComplete) {
                 int framesSinceLastPass = Time.frameCount - previousFrameCount;

@@ -59,7 +59,7 @@ namespace CodeEnv.Master.Common {
         public const string CurrencyNumericFormat = "C02";
         public const string PercentNumericFormat = "P00";
 
-        public const string GameDateFormat = "{0}.{1:D3}";
+        public const string GameDateFormat = "{0}.{1:D3}.{2:D2}";
         public const string GamePeriodYearsFormat = "{0} years, {1:D3} days";
         public const string GamePeriodNoYearsFormat = "{0:D3} days";
 

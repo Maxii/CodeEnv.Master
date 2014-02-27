@@ -41,8 +41,10 @@ namespace CodeEnv.Master.GameContent {
 
         public static int HoursPerDay = GeneralSettings.Instance.HoursPerDay;
         public static int DaysPerYear = GeneralSettings.Instance.DaysPerYear;
-        public static float DaysPerSecond = GeneralSettings.Instance.DaysPerSecond;
+        public static float HoursPerSecond = GeneralSettings.Instance.HoursPerSecond;
         public static int StartingYear = GeneralSettings.Instance.StartingYear;
+
+        public int HourOfDay { get; private set; }
 
         public int DayOfYear { get; private set; }
 
@@ -50,7 +52,7 @@ namespace CodeEnv.Master.GameContent {
 
         public string FormattedDate {
             get {
-                return Constants.GameDateFormat.Inject(Year, DayOfYear);
+                return Constants.GameDateFormat.Inject(Year, DayOfYear, HourOfDay);
             }
         }
 
@@ -63,10 +65,12 @@ namespace CodeEnv.Master.GameContent {
         public GameDate(PresetDateSelector preset) {
             switch (preset) {
                 case PresetDateSelector.Start:
+                    HourOfDay = Constants.Zero;
                     DayOfYear = Constants.One;
                     Year = StartingYear;
                     break;
                 case PresetDateSelector.Current:
+                    HourOfDay = GameTime.Date.HourOfDay;
                     DayOfYear = GameTime.Date.DayOfYear;
                     Year = GameTime.Date.Year;
                     break;
@@ -75,16 +79,23 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public GameDate(int dayOfYear, int year) {
+        public GameDate(int hourOfDay, int dayOfYear, int year) {
+            Arguments.ValidateNotNegative(hourOfDay);
             Arguments.ValidateNotNegative(dayOfYear);
+            HourOfDay = hourOfDay;
             DayOfYear = dayOfYear;
             Year = year;
         }
 
+        public GameDate(int dayOfYear, int year) : this(Constants.Zero, dayOfYear, year) { }
+
         internal void SyncDateToGameClock(float gameClock) {
-            int elapsedDays = Mathf.FloorToInt(gameClock * DaysPerSecond);
-            Year = StartingYear + Mathf.FloorToInt(elapsedDays / DaysPerYear);
+            int elapsedHours = Mathf.FloorToInt(gameClock * HoursPerSecond);
+            int elapsedDays = elapsedHours / HoursPerDay;
+            int hoursPerYear = DaysPerYear * HoursPerDay;
+            Year = StartingYear + Mathf.FloorToInt(elapsedHours / hoursPerYear);
             DayOfYear = 1 + (elapsedDays % DaysPerYear);
+            HourOfDay = elapsedHours % HoursPerDay;
         }
 
         // Override object.Equals on reference types when you do not want your
@@ -144,7 +155,7 @@ namespace CodeEnv.Master.GameContent {
             if (other == null) {    // the runtime will use this IEquatable Equals implementation directly
                 return false;       // rather than the Object.Equals above, IF the 'other' passed for equivalence testing is of Type T
             }   // In that case, 'other' must be tested for null as the null test for 'right' in Object.Equals never occurs
-            return DayOfYear == other.DayOfYear && Year == other.Year;
+            return HourOfDay == other.HourOfDay && DayOfYear == other.DayOfYear && Year == other.Year;
         }
 
         #endregion

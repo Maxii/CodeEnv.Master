@@ -35,10 +35,14 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<float>(ref _weaponRange, value, "WeaponRange"); }
         }
 
-        private float _weaponFireRate;
-        public float WeaponFireRate {
-            get { return _weaponFireRate; }
-            set { SetProperty<float>(ref _weaponFireRate, value, "WeaponFireRate"); }
+        private float _weaponReloadPeriod;
+        /// <summary>
+        /// The time in hours required to reload and fire this weapon. The inverse is the
+        /// Weapon's Rate of Fire.
+        /// </summary>
+        public float WeaponReloadPeriod {
+            get { return _weaponReloadPeriod; }
+            set { SetProperty<float>(ref _weaponReloadPeriod, value, "WeaponReloadPeriod"); }
         }
 
         /// <summary>

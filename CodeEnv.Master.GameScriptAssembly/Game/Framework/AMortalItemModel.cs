@@ -64,7 +64,8 @@ public abstract class AMortalItemModel : AItemModel, ITarget {
         }
     }
 
-    protected void OnItemDeath() {
+    protected virtual void OnItemDeath() {
+        enabled = false;
         IsDead = true;
         var temp = onItemDeath;
         if (temp != null) {

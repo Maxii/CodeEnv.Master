@@ -261,20 +261,19 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     /// <summary>
     /// Optimized messaging replacement for SendMessage() that binds the
     /// message to the current state. Essentially calls the method on this MonoBehaviour
-    /// instance that has the signature "CurrentState_CallingMethodName(param). 
+    /// instance that has the signature "CurrentState_CallingMethodName(param).
     /// Usage:
-    ///     void CallingMethodName(param)  { 
-    ///         SendStateMessage(param);
-    ///     }
-    ///     IMPROVE // add Action&lt;float&gt; delegate
+    /// void CallingMethodName(param)  {
+    /// SendStateMessage(param);
+    /// }
+    /// IMPROVE // add Action&lt;float&gt; delegate
     /// </summary>
-    /// <param name='param'>
-    /// Any parameter passed to the current handler that should be passed on.
-    /// </param>
-    protected void RelayToCurrentState(params object[] param) {
+    /// <param name="param">Any parameter passed to the current handler that should be passed on.</param>
+    /// <returns>true if a method in the current state was invoked, false if no method is present.</returns>
+    protected bool RelayToCurrentState(params object[] param) {
         var message = CurrentState.ToString() + "_" + (new StackFrame(1)).GetMethod().Name;
         //D.Log("{0} looking for method signature {1}.", Data.Name, message);
-        SendMessageEx(message, param);
+        return SendMessageEx(message, param);
     }
 
     //Holds a cache of whether a message is available on a type
@@ -287,7 +286,8 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     /// </summary>
     /// <param name="message">The message.</param>
     /// <param name="param">The parameter.</param>
-    private void SendMessageEx(string message, object[] param) {
+    /// <returns>true if the method with signature <c>message</c> was invoked.</returns>
+    private bool SendMessageEx(string message, object[] param) {
         //Have we found that a delegate was already created
         var actionSpecified = false;
         //Try to get an Action delegate for the message
@@ -299,7 +299,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
             //a will be null if we previously tried to get an action and failed
             if (a != null) {
                 a();
-                return;
+                return true;    // my addition of true
             }
         }
 
@@ -333,21 +333,24 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
                     action();
                 }
                 else {
-                    //Otherwise flag that we cannot call this method
+                    //Otherwise flag that we cannot call this method thru the delegate system, then slow invoke it
                     _actions[message] = null;
+                    mtd.Invoke(this, param);    // my addition
                 }
             }
-            else
+            else {
                 //Otherwise slow invoke the method passing the parameters
                 mtd.Invoke(this, param);
+            }
+            return true; // my addition
         }
         else {
-            D.Warn("{0} did not find Method with signature {1}.", Data.Name, message);
+            D.Log("{0} did not find Method with signature {1}.", Data.Name, message);  // my addition
+            return false;   // my addition
         }
     }
 
     #endregion
-
 
     /// <summary>
     /// The enter state coroutine.
