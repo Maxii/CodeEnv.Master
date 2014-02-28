@@ -31,10 +31,6 @@ using UnityEngine;
 /// </summary>
 public class FleetNavigator : ANavigator {
 
-    protected override Vector3 Destination {
-        get { return Target.Position; }
-    }
-
     protected new FleetCmdData Data { get { return base.Data as FleetCmdData; } }
 
     private bool IsCourseReplotNeeded {
@@ -74,14 +70,9 @@ public class FleetNavigator : ANavigator {
     /// <param name="speed">The speed.</param>
     public override void PlotCourse(IDestinationTarget target, float speed) {
         base.PlotCourse(target, speed);
+        InitializeReplotValues();
         GenerateCourse();
     }
-
-    //public override void PlotCourse(IDestinationTarget target, Speed speed) {
-    //    base.PlotCourse(target, speed);
-    //    GenerateCourse();
-    //}
-
 
     /// <summary>
     /// Engages navigator execution to Destination either by direct
@@ -145,7 +136,7 @@ public class FleetNavigator : ANavigator {
                         _currentWaypointIndex - 1, currentWaypointPosition, _currentWaypointIndex, _course[_currentWaypointIndex]);
                     currentWaypointPosition = _course[_currentWaypointIndex];
                     if (CheckApproachTo(currentWaypointPosition)) {
-                        __MoveShipsTo(new StationaryLocation(currentWaypointPosition));
+                        _fleet.__IssueShipMovementOrders(new StationaryLocation(currentWaypointPosition), Speed);
                     }
                     else {
                         Vector3 waypointToAvoidObstacle = GetWaypointAroundObstacleTo(currentWaypointPosition);
@@ -176,7 +167,7 @@ public class FleetNavigator : ANavigator {
     /// </summary>
     /// <returns></returns>
     private IEnumerator EngageHomingCourseToTarget() {
-        __MoveShipsTo(Target);
+        _fleet.__IssueShipMovementOrders(Target, Speed);
         while (Vector3.SqrMagnitude(Destination - Data.Position) > _desiredDistanceFromTargetSqrd) {
             yield return new WaitForSeconds(_courseProgressCheckPeriod);
         }
@@ -189,7 +180,7 @@ public class FleetNavigator : ANavigator {
     /// <param name="stationaryLocation">The stationary location.</param>
     /// <returns></returns>
     private IEnumerator EngageHomingCourseTo(Vector3 stationaryLocation) {
-        __MoveShipsTo(new StationaryLocation(stationaryLocation));
+        _fleet.__IssueShipMovementOrders(new StationaryLocation(stationaryLocation), Speed);
         while (Vector3.SqrMagnitude(stationaryLocation - Data.Position) > _desiredDistanceFromTargetSqrd) {
             yield return new WaitForSeconds(_courseProgressCheckPeriod);
         }
@@ -213,7 +204,7 @@ public class FleetNavigator : ANavigator {
         }
         else {
             if (_course.Count != 0) {
-                InitializeTargetValues();
+                InitializeReplotValues();
                 Engage();
             }
             else {
@@ -251,6 +242,47 @@ public class FleetNavigator : ANavigator {
         _pilotJob = new Job(EngageHomingCourseTo(waypointAroundObstacle), true);
         _pilotJob.CreateAndAddChildJob(EngageHomingCourseToTarget());
     }
+
+    /// <summary>
+    /// Finds the obstacle in the way of approaching location and develops and
+    /// returns a waypoint location that will avoid it.
+    /// </summary>
+    /// <param name="location">The location we are trying to reach that has an obstacle in the way.</param>
+    /// <returns>A waypoint location that will avoid the obstacle.</returns>
+    private Vector3 GetWaypointAroundObstacleTo(Vector3 location) {
+        Vector3 currentPosition = Data.Position;
+        Vector3 vectorToLocation = location - currentPosition;
+        float distanceToLocation = vectorToLocation.magnitude;
+        Vector3 directionToLocation = vectorToLocation.normalized;
+
+        Vector3 waypoint = Vector3.zero;
+
+        Ray ray = new Ray(currentPosition, directionToLocation);
+        RaycastHit hitInfo;
+        if (Physics.Raycast(ray, out hitInfo, distanceToLocation, _keepoutOnlyLayerMask.value)) {
+            // found a keepout zone, so find the point on the other side of the zone where the ray came out
+            string obstacleName = hitInfo.collider.transform.parent.name + "." + hitInfo.collider.name;
+            Vector3 rayEntryPoint = hitInfo.point;
+            float keepoutRadius = (hitInfo.collider as SphereCollider).radius;
+            float maxKeepoutDiameter = TempGameValues.MaxKeepoutRadius * 2F;
+            Vector3 pointBeyondKeepoutZone = ray.GetPoint(hitInfo.distance + maxKeepoutDiameter);
+            if (Physics.Raycast(pointBeyondKeepoutZone, -ray.direction, out hitInfo, maxKeepoutDiameter, _keepoutOnlyLayerMask.value)) {
+                Vector3 rayExitPoint = hitInfo.point;
+                Vector3 halfWayPointInsideKeepoutZone = rayEntryPoint + (rayExitPoint - rayEntryPoint) / 2F;
+                Vector3 obstacleCenter = hitInfo.collider.transform.position;
+                waypoint = obstacleCenter + (halfWayPointInsideKeepoutZone - obstacleCenter).normalized * (keepoutRadius + DesiredDistanceFromTarget);
+                D.Log("{0}'s waypoint to avoid obstacle = {1}.", Data.Name, waypoint);
+            }
+            else {
+                D.Error("{0} did not find a ray exit point when casting through {1}.", Data.Name, obstacleName);    // hitInfo is null
+            }
+        }
+        else {
+            D.Error("{0} did not find an obstacle.", Data.Name);
+        }
+        return waypoint;
+    }
+
 
     /// <summary>
     /// Checks the distance to the target to determine if it is close 
@@ -328,42 +360,20 @@ public class FleetNavigator : ANavigator {
         GenerateCourse();
     }
 
-    //protected override void AssessCourseProgressCheckPeriod() {
-    //    // frequency of course progress checks increases as speed and gameSpeed increase
-    //    _courseProgressCheckPeriod = 1F / (Speed.GetValue(Data.FullSpeed) * _gameSpeedMultiplier);
-    //    D.Log("{0}.{1} CourseProgressCheckPeriod adjusted to {2}.", Data.Name, GetType().Name, _courseProgressCheckPeriod);
-    //}
-
-    private void __MoveShipsTo(IDestinationTarget target) {
-        UnitOrder<ShipOrders> moveToOrder = new UnitOrder<ShipOrders>(ShipOrders.MoveTo, target, Speed);
-        _fleet.Elements.ForAll(s => s.CurrentOrder = moveToOrder);
-    }
-
-
-
     /// <summary>
     /// Initializes the values that depend on the target and speed.
     /// </summary>
-    /// <returns>
-    /// SpeedFactor, a multiple of Speed used in the calculations. Simply a convenience for derived classes.
-    /// </returns>
-    protected override float InitializeTargetValues() {
-        float speedFactor = base.InitializeTargetValues();
-        //DesiredDistanceFromTarget = Target.Radius + speedFactor + Data.UnitWeaponsRange;
+    protected override void InitializeTargetValues() {
         DesiredDistanceFromTarget = Target.Radius + Data.UnitWeaponsRange;
-        _targetPositionAtLastPlot = Target.Position;
-        _isCourseReplot = false;
-        return speedFactor;
     }
 
-    //protected override void InitializeTargetValues() {
-    //    base.InitializeTargetValues();
-    //    //DesiredDistanceFromTarget = Target.Radius + speedFactor + Data.UnitWeaponsRange;
-    //    DesiredDistanceFromTarget = Target.Radius + Data.UnitWeaponsRange;
-    //    _targetPositionAtLastPlot = Target.Position;
-    //    _isCourseReplot = false;
-    //}
-
+    /// <summary>
+    /// Initializes the values needed to support a Fleet's attempt to replot its course.
+    /// </summary>
+    private void InitializeReplotValues() {
+        _targetPositionAtLastPlot = Target.Position;
+        _isCourseReplot = false;
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

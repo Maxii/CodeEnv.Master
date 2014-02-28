@@ -50,9 +50,15 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private float _courseHeadingCheckDistanceThresholdSqrd;
 
+        /// <summary>
+        /// The tolerance value used to test whether separation between 2 items is increasing. This 
+        /// is a squared value.
+        /// </summary>
+        private float __separationTestToleranceDistanceSqrd;
+
+
         private Transform _transform;
         private GameStatus _gameStatus;
-        private GeneralSettings _generalSettings;
         private Job _headingJob;
         private EngineRoom _engineRoom;
 
@@ -65,7 +71,6 @@ namespace CodeEnv.Master.GameContent {
             : base(data) {
             _transform = t;
             _gameStatus = GameStatus.Instance;
-            _generalSettings = GeneralSettings.Instance;
             _engineRoom = new EngineRoom(data, t.rigidbody);
             Subscribe();
         }
@@ -91,17 +96,6 @@ namespace CodeEnv.Master.GameContent {
                 OnCoursePlotFailure();
             }
         }
-
-        //public override void PlotCourse(IDestinationTarget target, Speed speed) {
-        //    base.PlotCourse(target, speed);
-        //    if (CheckApproachTo(Destination)) {
-        //        OnCoursePlotSuccess();
-        //    }
-        //    else {
-        //        OnCoursePlotFailure();
-        //    }
-        //}
-
 
         /// <summary>
         /// Engages pilot execution to destination by direct
@@ -167,19 +161,6 @@ namespace CodeEnv.Master.GameContent {
             return _engineRoom.ChangeSpeed(newSpeedRequest);
         }
 
-        //public bool ChangeSpeed(Speed newSpeedRequest, bool isManualOverride = true) {
-        //    if (DebugSettings.Instance.StopShipMovement) {
-        //        Disengage();
-        //        return false;
-        //    }
-        //    if (isManualOverride) {
-        //        Disengage();
-        //    }
-
-        //    return _engineRoom.ChangeSpeed(newSpeedRequest);
-        //}
-
-
         /// <summary>
         /// Engages pilot execution of a direct homing course to the Target. No A* course is used.
         /// </summary>
@@ -224,12 +205,6 @@ namespace CodeEnv.Master.GameContent {
             ChangeHeading(newHeading, isManualOverride: false);
         }
 
-        //private void AdjustHeadingAndSpeedForTurn(Vector3 newHeading) {
-        //    ChangeSpeed(Speed.Slow, isManualOverride: false); // slow for the turn
-        //    ChangeHeading(newHeading, isManualOverride: false);
-        //}
-
-
         /// <summary>
         /// Increases the speed of the fleet when the correct heading has been achieved.
         /// </summary>
@@ -272,21 +247,14 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
-        //protected override void AssessCourseProgressCheckPeriod() {
-        //    // frequency of course progress checks increases as speed and gameSpeed increase
-        //    _courseProgressCheckPeriod = 1F / (Speed.GetValue(Data.FullSpeed) * _gameSpeedMultiplier);
-        //    D.Log("{0}.{1} CourseProgressCheckPeriod adjusted to {2}.", Data.Name, GetType().Name, _courseProgressCheckPeriod);
-        //}
-
         /// <summary>
         /// Initializes the values that depend on the target and speed.
         /// </summary>
-        /// <returns>
-        /// SpeedFactor, a multiple of Speed used in the calculations. Simply a convenience for derived classes.
-        /// </returns>
-        protected override float InitializeTargetValues() {
-            float speedFactor = base.InitializeTargetValues();
-            //DesiredDistanceFromTarget = Target.Radius + speedFactor + Data.WeaponsRange;
+        protected override void InitializeTargetValues() {
+            float speedFactor = Speed * 3F;
+
+            __separationTestToleranceDistanceSqrd = speedFactor * speedFactor;   // FIXME needs work - courseUpdatePeriod???
+
             DesiredDistanceFromTarget = Target.Radius + Data.WeaponRange;
             _courseHeadingCheckPeriod = Mathf.RoundToInt(1000 / (speedFactor * 5));  // higher speeds mean fewer periods between course checks, aka more frequent checks
             _courseHeadingCheckDistanceThresholdSqrd = speedFactor * speedFactor;   // higher speeds mean course checks become continuous further away
@@ -297,25 +265,7 @@ namespace CodeEnv.Master.GameContent {
             }
             _courseHeadingCheckDistanceThresholdSqrd = Mathf.Max(_courseHeadingCheckDistanceThresholdSqrd, _desiredDistanceFromTargetSqrd * 2);
             D.Log("{0}: CourseCheckPeriod = {1}, CourseCheckDistanceThreshold = {2}.", Data.Name, _courseHeadingCheckPeriod, Mathf.Sqrt(_courseHeadingCheckDistanceThresholdSqrd));
-            return speedFactor;
         }
-
-        //protected override void InitializeTargetValues() {
-        //    base.InitializeTargetValues();
-        //    float speedFactor = Speed.GetValue(Data.FullSpeed) * 3F;
-        //    //DesiredDistanceFromTarget = Target.Radius + speedFactor + Data.WeaponsRange;
-        //    DesiredDistanceFromTarget = Target.Radius + Data.WeaponsRange;
-        //    _courseHeadingCheckPeriod = Mathf.RoundToInt(1000 / (speedFactor * 5));  // higher speeds mean fewer periods between course checks, aka more frequent checks
-        //    _courseHeadingCheckDistanceThresholdSqrd = speedFactor * speedFactor;   // higher speeds mean course checks become continuous further away
-        //    if (!Target.IsMovable) {
-        //        // the target doesn't move so course checks are much less important
-        //        _courseHeadingCheckPeriod *= 5;
-        //        _courseHeadingCheckDistanceThresholdSqrd /= 5F;
-        //    }
-        //    _courseHeadingCheckDistanceThresholdSqrd = Mathf.Max(_courseHeadingCheckDistanceThresholdSqrd, _desiredDistanceFromTargetSqrd * 2);
-        //    D.Log("{0}: CourseCheckPeriod = {1}, CourseCheckDistanceThreshold = {2}.", Data.Name, _courseHeadingCheckPeriod, Mathf.Sqrt(_courseHeadingCheckDistanceThresholdSqrd));
-        //}
-
 
         /// <summary>
         /// Coroutine that executes a heading change. 
@@ -324,12 +274,10 @@ namespace CodeEnv.Master.GameContent {
         private IEnumerator ExecuteHeadingChange() {
             int previousFrameCount = Time.frameCount - 1;   // FIXME makes initial framesSinceLastPass = 1
 
-            float maxRadianTurnRatePerSecond = Mathf.Deg2Rad * Data.MaxTurnRate * (_generalSettings.HoursPerSecond / _generalSettings.HoursPerDay);
-            //float maxRadianTurnRatePerSecond = Mathf.Deg2Rad * Data.MaxTurnRate * _generalSettings.DaysPerSecond;
-
+            float maxRadianTurnRatePerSecond = Mathf.Deg2Rad * Data.MaxTurnRate * (GameDate.HoursPerSecond / GameDate.HoursPerDay);
             //D.Log("New coroutine. {0} coming to heading {1} at {2} radians/day.", _data.Name, _data.RequestedHeading, _data.MaxTurnRate);
             while (!IsTurnComplete) {
-                int framesSinceLastPass = Time.frameCount - previousFrameCount;
+                int framesSinceLastPass = Time.frameCount - previousFrameCount; // needed when using yield return WaitForSeconds()
                 previousFrameCount = Time.frameCount;
                 float allowedTurn = maxRadianTurnRatePerSecond * GameTime.DeltaTimeOrPausedWithGameSpeed * framesSinceLastPass;
                 Vector3 newHeading = Vector3.RotateTowards(Data.CurrentHeading, Data.RequestedHeading, allowedTurn, maxMagnitudeDelta: 1F);
@@ -339,6 +287,27 @@ namespace CodeEnv.Master.GameContent {
                 yield return null; // new WaitForSeconds(0.5F);
             }
         }
+
+        /// <summary>
+        /// Checks whether the distance between 2 objects is increasing.
+        /// </summary>
+        /// <param name="distanceToCurrentDestinationSqrd">The distance automatic current destination SQRD.</param>
+        /// <param name="previousDistanceSqrd">The previous distance SQRD.</param>
+        /// <returns>true if the seperation distance is increasing.</returns>
+        protected bool CheckSeparation(float distanceToCurrentDestinationSqrd, ref float previousDistanceSqrd) {
+            if (distanceToCurrentDestinationSqrd > previousDistanceSqrd + __separationTestToleranceDistanceSqrd) {
+                D.Warn("{0} separating from {1}. DistanceSqrd = {2}, previousSqrd = {3}, tolerance = {4}.",
+    Data.Name, Target.Name, distanceToCurrentDestinationSqrd, previousDistanceSqrd, __separationTestToleranceDistanceSqrd);
+                return true;
+            }
+            if (distanceToCurrentDestinationSqrd < previousDistanceSqrd) {
+                // while we continue to move closer to the current destination, keep previous distance current
+                // once we start to move away, we must not update it if we want the tolerance check to catch it
+                previousDistanceSqrd = distanceToCurrentDestinationSqrd;
+            }
+            return false;
+        }
+
 
         protected override void Cleanup() {
             base.Cleanup();

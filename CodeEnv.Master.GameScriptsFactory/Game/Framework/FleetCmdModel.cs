@@ -180,12 +180,10 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
         Elements.ForAll<ShipModel>(e => e.CurrentOrder = shipAttackOrder);
     }
 
-    //public void __MoveShipsTo(IDestinationTarget target, Speed speed) {
-    //    UnitOrder<ShipOrders> moveToOrder = new UnitOrder<ShipOrders>(ShipOrders.MoveTo, target, speed);
-    //    Elements.ForAll(s => s.CurrentOrder = moveToOrder);
-    //}
-
-
+    public void __IssueShipMovementOrders(IDestinationTarget target, float speed) {
+        UnitOrder<ShipOrders> moveToOrder = new UnitOrder<ShipOrders>(ShipOrders.MoveTo, target, speed);
+        Elements.ForAll(s => s.CurrentOrder = moveToOrder);
+    }
 
     private void AllStop() {
         //var allStop = new UnitOrder<ShipOrders>(ShipOrders.AllStop);

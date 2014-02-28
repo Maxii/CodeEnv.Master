@@ -56,7 +56,7 @@ public class Revolve : AMonoBase, IDisposable {
         rotationPeriod = rotationPeriod ?? new GameTimePeriod(days: 1, years: 0);
 
         _rotationSpeed = (relativeRotationSpeed * Constants.DegreesPerRotation *
-            (GeneralSettings.Instance.HoursPerSecond / GeneralSettings.Instance.HoursPerDay)) / rotationPeriod.PeriodInDays;
+            (GameDate.HoursPerSecond / GameDate.HoursPerDay)) / rotationPeriod.PeriodInDays;
 
         Subscribe();
         UpdateRate = FrameUpdateFrequency.Frequent;
