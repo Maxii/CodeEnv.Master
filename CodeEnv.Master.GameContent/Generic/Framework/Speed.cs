@@ -29,14 +29,29 @@ namespace CodeEnv.Master.GameContent {
         Slow,
 
         /// <summary>
+        /// The slowest Slow speed of any ship in the fleet.
+        /// </summary>
+        FleetSlow,
+
+        /// <summary>
         /// One-third of Standard speed, 0.25.
         /// </summary>
         OneThird,
 
         /// <summary>
+        /// One-third of the slowest Standard speed of any ship in the fleet.
+        /// </summary>
+        FleetOneThird,
+
+        /// <summary>
         /// Two-thirds of Standard speed, 0.5.
         /// </summary>
         TwoThirds,
+
+        /// <summary>
+        /// Two-thirds of the slowest Standard speed of any ship in the fleet.
+        /// </summary>
+        FleetTwoThirds,
 
         /// <summary>
         /// The most efficient speed, 0.75.
@@ -46,12 +61,17 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The slowest Standard speed of any ship in the fleet.
         /// </summary>
-        //FleetStandard,
+        FleetStandard,
 
         /// <summary>
         /// The fastest sustainable speed, 1.0.
         /// </summary>
         Full,
+
+        /// <summary>
+        /// The slowest Full speed of any ship in the fleet.
+        /// </summary>
+        FleetFull,
 
         /// <summary>
         /// The maximum speed, 1.10.  Inefficient and unsustainable.

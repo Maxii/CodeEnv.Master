@@ -28,7 +28,7 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all ships in the game. Includes a state machine.
 /// </summary>
-public class ShipModel : AUnitElementModel {
+public class ShipModel : AUnitElementModel, IShipNavigatorClient {
 
     private UnitOrder<ShipOrders> _currentOrder;
     public UnitOrder<ShipOrders> CurrentOrder {
@@ -44,7 +44,8 @@ public class ShipModel : AUnitElementModel {
     public ShipNavigator Navigator { get; private set; }
 
     private FleetCmdModel _command;
-
+    private EngineRoom _engineRoom;
+    private Job _headingJob;
 
     protected override void Awake() {
         base.Awake();
@@ -56,6 +57,7 @@ public class ShipModel : AUnitElementModel {
         var parent = _transform.parent;
         _command = parent.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCmdModel>();
 
+        _engineRoom = new EngineRoom(Data, _rigidbody);
         InitializeNavigator();
         // when a fleet is initially built, the ship already selected to be the flagship assigns itself
         // to fleet command once it has initialized its Navigator to receive the immediate callback
@@ -66,43 +68,85 @@ public class ShipModel : AUnitElementModel {
         CurrentState = ShipState.Idling;
     }
 
+    #region Navigation
+
     private void InitializeNavigator() {
-        Navigator = new ShipNavigator(_transform, Data);
+        Navigator = new ShipNavigator(this);
         Navigator.onDestinationReached += OnDestinationReached;
         Navigator.onCourseTrackingError += OnCourseTrackingError;
         Navigator.onCoursePlotFailure += OnCoursePlotFailure;
         Navigator.onCoursePlotSuccess += OnCoursePlotSuccess;
     }
 
-    public void ChangeHeading(Vector3 newHeading) {
-        if (Navigator.ChangeHeading(newHeading)) {
-            // TODO
+    /// <summary>
+    /// Changes the direction the ship is headed in normalized world space coordinates.
+    /// </summary>
+    /// <param name="newHeading">The new direction in world coordinates, normalized.</param>
+    /// <param name="isAutoPilot">if set to <c>true</c> the requester is the autopilot.</param>
+    public void ChangeHeading(Vector3 newHeading, bool isAutoPilot = false) {
+        if (DebugSettings.Instance.StopShipMovement || !isAutoPilot) {
+            Navigator.Disengage();
         }
-        // else TODO
+
+        newHeading.ValidateNormalized();
+        if (newHeading.IsSameDirection(Data.RequestedHeading, 0.1F)) {
+            D.Warn("Duplicate ChangeHeading Command to {0} on {1}.", newHeading, Data.Name);
+            return;
+        }
+        Data.RequestedHeading = newHeading;
+        if (_headingJob != null && _headingJob.IsRunning) {
+            _headingJob.Kill();
+        }
+        _headingJob = new Job(ExecuteHeadingChange(), toStart: true, onJobComplete: (wasKilled) => {
+            if (wasKilled && !_isDisposing) {
+                D.Log("{0} turn command cancelled. Current Heading is {1}.", Data.Name, Data.CurrentHeading);
+            }
+            else {
+                D.Log("Turn complete. {0} current heading is {1}.", Data.Name, Data.CurrentHeading);
+            }
+        });
     }
 
-    public void ChangeSpeed(float newSpeed) {
-        if (Navigator.ChangeSpeed(newSpeed)) {
-            // TODO
+    /// <summary>
+    /// Coroutine that executes a heading change. 
+    /// </summary>
+    /// <returns></returns>
+    private IEnumerator ExecuteHeadingChange() {
+        int previousFrameCount = Time.frameCount - 1;   // FIXME makes initial framesSinceLastPass = 1
+
+        float maxRadianTurnRatePerSecond = Mathf.Deg2Rad * Data.MaxTurnRate * (GameDate.HoursPerSecond / GameDate.HoursPerDay);
+        //D.Log("New coroutine. {0} coming to heading {1} at {2} radians/day.", _data.Name, _data.RequestedHeading, _data.MaxTurnRate);
+        //while (!IsTurnComplete) {
+        while (!Data.CurrentHeading.IsSameDirection(Data.RequestedHeading, 0.1F)) {
+            int framesSinceLastPass = Time.frameCount - previousFrameCount; // needed when using yield return WaitForSeconds()
+            previousFrameCount = Time.frameCount;
+            float allowedTurn = maxRadianTurnRatePerSecond * GameTime.DeltaTimeOrPausedWithGameSpeed * framesSinceLastPass;
+            Vector3 newHeading = Vector3.RotateTowards(Data.CurrentHeading, Data.RequestedHeading, allowedTurn, maxMagnitudeDelta: 1F);
+            // maxMagnitudeDelta > 0F appears to be important. Otherwise RotateTowards can stop rotating when it gets very close
+            //D.Log("AllowedTurn = {0:0.0000}, CurrentHeading = {1}, ReqHeading = {2}, NewHeading = {3}", allowedTurn, Data.CurrentHeading, Data.RequestedHeading, newHeading);
+            _transform.rotation = Quaternion.LookRotation(newHeading);
+            yield return null; // new WaitForSeconds(0.5F);
         }
-        // else TODO
     }
+
+    /// <summary>
+    /// Changes the speed of the ship.
+    /// </summary>
+    /// <param name="newSpeed">The new speed request.</param>
+    /// <param name="isAutoPilot">if set to <c>true</c>the requester is the autopilot.</param>
+    public void ChangeSpeed(Speed newSpeed, bool isAutoPilot = false) {
+        if (DebugSettings.Instance.StopShipMovement || !isAutoPilot) {
+            Navigator.Disengage();
+        }
+        _engineRoom.ChangeSpeed(newSpeed.GetValue(_command.Data, Data));
+    }
+
 
     public void AllStop() {
-        ChangeSpeed(Constants.ZeroF);
+        ChangeSpeed(Speed.AllStop);
     }
 
-    //public void ChangeSpeed(Speed newSpeed) {
-    //    if (Navigator.ChangeSpeed(newSpeed)) {
-    //        // TODO
-    //    }
-    //    // else TODO
-    //}
-
-    //public void AllStop() {
-    //    ChangeSpeed(Speed.AllStop);
-    //}
-
+    #endregion
 
     #region Velocity Debugger
 
@@ -164,8 +208,10 @@ public class ShipModel : AUnitElementModel {
     IEnumerator ExecuteMoveOrder_EnterState() {
         //LogEvent();
         D.Log("{0}.ExecuteMoveOrder_EnterState.", Data.Name);
-        _moveSpeed = CurrentOrder.Speed;
-        _moveTarget = CurrentOrder.Target;
+        var moveOrder = (CurrentOrder as UnitMoveOrder<ShipOrders>);
+        _moveSpeed = moveOrder.Speed;
+        _moveTarget = moveOrder.Target;
+        _standoffDistance = moveOrder.StandoffDistance;
         Call(ShipState.Moving);
         yield return null;  // required immediately after Call() to avoid FSM bug
         // Return()s here - move error or not, we idle
@@ -189,17 +235,18 @@ public class ShipModel : AUnitElementModel {
     /// the speed setting contained in the order. If executing another Order that requires a move, then
     /// this value is set by that Order execution state.
     /// </summary>
-    private float _moveSpeed;
+    private Speed _moveSpeed;
     private IDestinationTarget _moveTarget;
+    private float _standoffDistance;
     private bool _isMoveError;
 
     void Moving_EnterState() {
         LogEvent();
         var mortalMoveTarget = _moveTarget as ITarget;
         if (mortalMoveTarget != null) {
-            mortalMoveTarget.onItemDeath += OnMoveTargetDeath;
+            mortalMoveTarget.onItemDeath += OnTargetDeath;
         }
-        Navigator.PlotCourse(_moveTarget, _moveSpeed);
+        Navigator.PlotCourse(_moveTarget, _moveSpeed, _standoffDistance);
     }
 
     void Moving_OnCoursePlotSuccess() {
@@ -219,8 +266,9 @@ public class ShipModel : AUnitElementModel {
         Return();
     }
 
-    void Moving_OnMoveTargetDeath() {
+    void Moving_OnTargetDeath(ITarget deadTarget) {
         LogEvent();
+        D.Assert(_moveTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _moveTarget.Name, deadTarget.Name));
         Return();
     }
 
@@ -241,9 +289,11 @@ public class ShipModel : AUnitElementModel {
         LogEvent();
         var mortalMoveTarget = _moveTarget as ITarget;
         if (mortalMoveTarget != null) {
-            mortalMoveTarget.onItemDeath -= OnMoveTargetDeath;
+            mortalMoveTarget.onItemDeath -= OnTargetDeath;
         }
         _moveTarget = null;
+        _moveSpeed = Speed.AllStop;
+        _standoffDistance = Constants.ZeroF;
         Navigator.Disengage();
         AllStop();
     }
@@ -258,20 +308,21 @@ public class ShipModel : AUnitElementModel {
 
     IEnumerator ExecuteAttackOrder_EnterState() {
         D.Log("{0}.ExecuteAttackOrder_EnterState() called.", Data.Name);
-        _ordersTarget = (CurrentOrder as UnitAttackOrder<ShipOrders>).Target;
+        _ordersTarget = (CurrentOrder as UnitTargetOrder<ShipOrders>).Target;
 
         while (!_ordersTarget.IsDead) {
             // _primaryTarget cannot be null when _ordersTarget is alive
             bool inRange = PickPrimaryTarget(out _primaryTarget);
             if (inRange) {
-                if (_isWeaponReady) {
+                if (_isAnyWeaponReady) {
                     _attackTarget = _primaryTarget;
                     Call(ShipState.Attacking);
                 }
             }
             else {
                 _moveTarget = _primaryTarget;
-                _moveSpeed = Data.FullSpeed;
+                _moveSpeed = Speed.Full;
+                _standoffDistance = Data.WeaponRange;   // IMPROVE based on Standoff Stance - long range, point blank, etc.
                 Call(ShipState.Moving);
             }
             yield return null;
@@ -279,7 +330,7 @@ public class ShipModel : AUnitElementModel {
         CurrentState = ShipState.Idling;
     }
 
-    // No need for method to take potshots at enemies in this state as the state always Call()s another state
+    // No need to take potshots at enemies in this state as the state always Call()s another state
 
     void ExecuteAttackOrder_ExitState() {
         LogEvent();
@@ -299,15 +350,24 @@ public class ShipModel : AUnitElementModel {
             Return();
             return;
         }
-        D.Assert(_isWeaponReady, "{0} Attacking with no weapon ready.".Inject(Data.Name));
+        D.Assert(_isAnyWeaponReady, "{0} Attacking with no weapon ready.".Inject(Data.Name));
         OnShowAnimation(MortalAnimations.Attacking);
         _attackTarget.TakeDamage(8F);
         Return();
     }
 
+    // This approach has a weakness in that target might go out of range before weapon ready.
+    // The advantage is that it uses OnWeaponReady() rather than isWeaponReady and only
+    // ExecuteAttackOrder Call()s Attacking
+    //void Attacking_OnWeaponReady() {  
+    //    LogEvent();
+    //    FireOnTarget(_attackTarget);
+    //    Return();
+    //}
+
     void Attacking_ExitState() {
         LogEvent();
-        _isWeaponReady = false;
+        _isAnyWeaponReady = false;
         _attackTarget = null;
     }
 
@@ -359,8 +419,9 @@ public class ShipModel : AUnitElementModel {
     IEnumerator ExecuteRepairOrder_EnterState() {
         //LogEvent();
         D.Log("{0}.ExecuteRepairOrder_EnterState.", Data.Name);
-        _moveSpeed = CurrentOrder.Speed;
-        _moveTarget = CurrentOrder.Target;
+        _moveSpeed = Speed.Full;
+        _moveTarget = (CurrentOrder as UnitDestinationTargetOrder<ShipOrders>).Target;
+        _standoffDistance = Constants.ZeroF;
         Call(ShipState.Moving);
         // Return()s here
         if (_isMoveError) {
@@ -392,9 +453,11 @@ public class ShipModel : AUnitElementModel {
     IEnumerator Repairing_EnterState() {
         D.Log("{0}.Repairing_EnterState.", Data.Name);
         OnShowAnimation(MortalAnimations.Repairing);
-        yield return new WaitForSeconds(1);
+        yield return new WaitForSeconds(2);
+        Data.CurrentHitPoints += 0.5F * (Data.MaxHitPoints - Data.CurrentHitPoints);
         D.Log("{0}'s repair is 50% complete.", Data.Name);
-        yield return new WaitForSeconds(1);
+        yield return new WaitForSeconds(3);
+        Data.CurrentHitPoints = Data.MaxHitPoints;
         D.Log("{0}'s repair is 100% complete.", Data.Name);
         OnStopAnimation(MortalAnimations.Repairing);
         Return();
@@ -404,7 +467,7 @@ public class ShipModel : AUnitElementModel {
         LogEvent();
         if (_weaponTargetTracker.__TryGetRandomEnemyTarget(out _attackTarget)) {
             D.Log("{0} initiating attack on {1} from {2}.", Data.Name, _attackTarget.Name, CurrentState.GetName());
-            Call(FacilityState.Attacking);
+            Call(ShipState.Attacking);
         }
     }
 
@@ -508,9 +571,9 @@ public class ShipModel : AUnitElementModel {
 
     private void AssessNeedForRepair() {
         if (Data.Health < 0.30F) {
-            if (CurrentOrder.Order != ShipOrders.Repair) {
+            if (CurrentOrder == null || CurrentOrder.Order != ShipOrders.Repair) {
                 IDestinationTarget repairDestination = new StationaryLocation(Data.Position + UnityEngine.Random.onUnitSphere * 20F);
-                CurrentOrder = new UnitOrder<ShipOrders>(ShipOrders.Repair, repairDestination, Data.FullSpeed);
+                CurrentOrder = new UnitDestinationTargetOrder<ShipOrders>(ShipOrders.Repair, repairDestination);
             }
         }
     }
@@ -529,8 +592,10 @@ public class ShipModel : AUnitElementModel {
             D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
 
             // TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated
-            if (CurrentState == ShipState.Moving) {
+            if (CurrentState == ShipState.Moving || CurrentState == ShipState.Repairing) {
                 Return();
+                // IMPROVE Attacking is not here as it is not really a state so far. It has no duration so it could be replaced with a method
+                // I'm deferring doing that right now as it is unclear how Attacking will evolve
             }
 
             ShipOrders order = CurrentOrder.Order;
@@ -567,10 +632,9 @@ public class ShipModel : AUnitElementModel {
         }
     }
 
-    void OnMoveTargetDeath(ITarget deadTarget) {
+    void OnTargetDeath(ITarget deadTarget) {
         //LogEvent();
-        D.Assert(_moveTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _moveTarget.Name, deadTarget.Name));
-        RelayToCurrentState();
+        RelayToCurrentState(deadTarget);
     }
 
     void OnCoursePlotSuccess() { RelayToCurrentState(); }
@@ -592,6 +656,11 @@ public class ShipModel : AUnitElementModel {
         base.Cleanup();
         Navigator.Dispose();
         Data.Dispose();
+
+        if (_headingJob != null) {
+            _headingJob.Kill();
+        }
+        _engineRoom.Dispose();
     }
 
     public override string ToString() {

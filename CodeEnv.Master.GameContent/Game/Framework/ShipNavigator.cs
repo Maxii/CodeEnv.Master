@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ShipNavigator.cs
-// Ship navigator and pilot.
+// Ship navigator and autopilot.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Ship navigator and pilot.
+    /// Ship navigator and autopilot.
     /// </summary>
     public class ShipNavigator : ANavigator {
 
@@ -56,39 +56,39 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private float __separationTestToleranceDistanceSqrd;
 
-
-        private Transform _transform;
+        private IShipNavigatorClient _ship;
         private GameStatus _gameStatus;
-        private Job _headingJob;
-        private EngineRoom _engineRoom;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ShipNavigator"/> class.
         /// </summary>
         /// <param name="t">Ship Transform</param>
         /// <param name="data">Ship data.</param>
-        public ShipNavigator(Transform t, ShipData data)
-            : base(data) {
-            _transform = t;
+        public ShipNavigator(IShipNavigatorClient ship)
+            : base(ship.Data) {
+            _ship = ship;
             _gameStatus = GameStatus.Instance;
-            _engineRoom = new EngineRoom(data, t.rigidbody);
             Subscribe();
         }
 
         protected override void Subscribe() {
             base.Subscribe();
             _subscribers.Add(Data.SubscribeToPropertyChanged<ShipData, float>(d => d.WeaponRange, OnWeaponsRangeChanged));
+            _subscribers.Add(Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullSpeed, OnFullSpeedChanged));
         }
 
         /// <summary>
-        /// Plots a direct course to the target and notifies the ship of the outcome via the
-        /// onCoursePlotSuccess/Failure events if set. The actual location is adjusted for the ship's
-        /// position within the fleet's formation.
+        /// Plots a course and notifies the requester of the outcome via the onCoursePlotCompleted event if set.
         /// </summary>
         /// <param name="target">The target.</param>
         /// <param name="speed">The speed.</param>
-        public override void PlotCourse(IDestinationTarget target, float speed) {
-            base.PlotCourse(target, speed);
+        /// <param name="standoffDistance">The distance to standoff from the target.</param>
+        public void PlotCourse(IDestinationTarget target, Speed speed, float standoffDistance = Constants.ZeroF) {
+            Target = target;
+            Speed = speed;
+            D.Assert(speed != Speed.AllStop, "Designated speed to new target {0} is 0!".Inject(target.Name));
+            CloseEnoughDistanceToTarget = standoffDistance != Constants.ZeroF ? standoffDistance : Speed.Standard.GetValue(null, Data);
+            InitializeTargetValues();
             if (CheckApproachTo(Destination)) {
                 OnCoursePlotSuccess();
             }
@@ -107,68 +107,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Changes the direction the ship is headed in normalized world space coordinates.
-        /// </summary>
-        /// <param name="newHeading">The new direction in world coordinates, normalized.</param>
-        /// <param name="isManualOverride">if set to <c>true</c> [is manual override].</param>
-        /// <returns>
-        ///   <c>true</c> if the command was accepted, <c>false</c> if the command is a duplicate.
-        /// </returns>
-        public bool ChangeHeading(Vector3 newHeading, bool isManualOverride = true) {
-            if (DebugSettings.Instance.StopShipMovement) {
-                Disengage();
-                return false;
-            }
-            if (isManualOverride) {
-                Disengage();
-            }
-
-            newHeading.ValidateNormalized();
-            if (newHeading.IsSameDirection(Data.RequestedHeading, 0.1F)) {
-                D.Warn("Duplicate ChangeHeading Command to {0} on {1}.", newHeading, Data.Name);
-                return false;
-            }
-            Data.RequestedHeading = newHeading;
-            if (_headingJob != null && _headingJob.IsRunning) {
-                _headingJob.Kill();
-            }
-            _headingJob = new Job(ExecuteHeadingChange(), toStart: true, onJobComplete: (wasKilled) => {
-                if (wasKilled && !_isDisposing) {
-                    D.Log("{0} turn command cancelled. Current Heading is {1}.", Data.Name, Data.CurrentHeading);
-                }
-                else {
-                    D.Log("Turn complete. {0} current heading is {1}.", Data.Name, Data.CurrentHeading);
-                }
-            });
-            return true;
-        }
-
-        /// <summary>
-        /// Changes the speed of the ship.
-        /// </summary>
-        /// <param name="newSpeedRequest">The new speed request.</param>
-        /// <param name="isManualOverride">if set to <c>true</c> [is manual override].</param>
-        /// <returns></returns>
-        public bool ChangeSpeed(float newSpeedRequest, bool isManualOverride = true) {
-            if (DebugSettings.Instance.StopShipMovement) {
-                Disengage();
-                return false;
-            }
-            if (isManualOverride) {
-                Disengage();
-            }
-
-            return _engineRoom.ChangeSpeed(newSpeedRequest);
-        }
-
-        /// <summary>
         /// Engages pilot execution of a direct homing course to the Target. No A* course is used.
         /// </summary>
         /// <returns></returns>
         private IEnumerator EngageHomingCourseToTarget() {
             //D.Log("Initiating coroutine for approach to {0}.", Destination);
             Vector3 newHeading = (Destination - Data.Position).normalized;
-            ChangeHeading(newHeading, isManualOverride: false);
+            _ship.ChangeHeading(newHeading, isAutoPilot: true);
 
             int courseCheckPeriod = _courseHeadingCheckPeriod;
             bool isSpeedIncreaseMade = false;
@@ -176,7 +121,7 @@ namespace CodeEnv.Master.GameContent {
             float distanceToDestinationSqrd = Vector3.SqrMagnitude(Destination - Data.Position);
             float previousDistanceSqrd = distanceToDestinationSqrd;
 
-            while (distanceToDestinationSqrd > _desiredDistanceFromTargetSqrd) {
+            while (distanceToDestinationSqrd > _closeEnoughDistanceToTargetSqrd) {
                 D.Log("Distance to {0} = {1}.", Target.Name, Mathf.Sqrt(distanceToDestinationSqrd));
                 if (!isSpeedIncreaseMade) {    // adjusts speed as a oneshot until we get there
                     isSpeedIncreaseMade = IncreaseSpeedOnHeadingConfirmation();
@@ -200,10 +145,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void AdjustHeadingAndSpeedForTurn(Vector3 newHeading) {
-            float turnSpeed = Speed;
-            ChangeSpeed(turnSpeed, isManualOverride: false); // slow for the turn
-            ChangeHeading(newHeading, isManualOverride: false);
+            Speed turnSpeed = Speed;
+            _ship.ChangeSpeed(turnSpeed, isAutoPilot: true); // TODO slow for the turn?
+            _ship.ChangeHeading(newHeading, isAutoPilot: true);
         }
+
 
         /// <summary>
         /// Increases the speed of the fleet when the correct heading has been achieved.
@@ -212,7 +158,7 @@ namespace CodeEnv.Master.GameContent {
         private bool IncreaseSpeedOnHeadingConfirmation() {
             if (Data.CurrentHeading.IsSameDirection(Data.RequestedHeading, 1F)) {
                 // we are close to being on course, so increase speed from orders
-                ChangeSpeed(Speed, isManualOverride: false);
+                _ship.ChangeSpeed(Speed, isAutoPilot: true);
                 //D.Log("At Heading Confirmation, angle between current and requested heading = {0:0.00}.", Vector3.Angle(Data.CurrentHeading, Data.RequestedHeading));
                 return true;
             }
@@ -247,45 +193,34 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
+        protected override void OnFullSpeedChanged() {
+            base.OnFullSpeedChanged();
+            InitializeTargetValues();
+        }
+
+        protected override void OnGameSpeedChanged() {
+            base.OnGameSpeedChanged();
+            InitializeTargetValues();
+        }
+
         /// <summary>
         /// Initializes the values that depend on the target and speed.
         /// </summary>
         protected override void InitializeTargetValues() {
-            float speedFactor = Speed * 3F;
+            float speedFactor = Data.FullSpeed * _gameSpeedMultiplier * 3F;
 
             __separationTestToleranceDistanceSqrd = speedFactor * speedFactor;   // FIXME needs work - courseUpdatePeriod???
 
-            DesiredDistanceFromTarget = Target.Radius + Data.WeaponRange;
-            _courseHeadingCheckPeriod = Mathf.RoundToInt(1000 / (speedFactor * 5));  // higher speeds mean fewer periods between course checks, aka more frequent checks
+            //DesiredDistanceFromTarget = Data.WeaponRange;
+            _courseHeadingCheckPeriod = Mathf.RoundToInt(1000 / (speedFactor * 5));  // higher speeds mean a shorter period between course checks, aka more frequent checks
             _courseHeadingCheckDistanceThresholdSqrd = speedFactor * speedFactor;   // higher speeds mean course checks become continuous further away
             if (!Target.IsMovable) {
                 // the target doesn't move so course checks are much less important
                 _courseHeadingCheckPeriod *= 5;
                 _courseHeadingCheckDistanceThresholdSqrd /= 5F;
             }
-            _courseHeadingCheckDistanceThresholdSqrd = Mathf.Max(_courseHeadingCheckDistanceThresholdSqrd, _desiredDistanceFromTargetSqrd * 2);
+            _courseHeadingCheckDistanceThresholdSqrd = Mathf.Max(_courseHeadingCheckDistanceThresholdSqrd, _closeEnoughDistanceToTargetSqrd * 2);
             D.Log("{0}: CourseCheckPeriod = {1}, CourseCheckDistanceThreshold = {2}.", Data.Name, _courseHeadingCheckPeriod, Mathf.Sqrt(_courseHeadingCheckDistanceThresholdSqrd));
-        }
-
-        /// <summary>
-        /// Coroutine that executes a heading change. 
-        /// </summary>
-        /// <returns></returns>
-        private IEnumerator ExecuteHeadingChange() {
-            int previousFrameCount = Time.frameCount - 1;   // FIXME makes initial framesSinceLastPass = 1
-
-            float maxRadianTurnRatePerSecond = Mathf.Deg2Rad * Data.MaxTurnRate * (GameDate.HoursPerSecond / GameDate.HoursPerDay);
-            //D.Log("New coroutine. {0} coming to heading {1} at {2} radians/day.", _data.Name, _data.RequestedHeading, _data.MaxTurnRate);
-            while (!IsTurnComplete) {
-                int framesSinceLastPass = Time.frameCount - previousFrameCount; // needed when using yield return WaitForSeconds()
-                previousFrameCount = Time.frameCount;
-                float allowedTurn = maxRadianTurnRatePerSecond * GameTime.DeltaTimeOrPausedWithGameSpeed * framesSinceLastPass;
-                Vector3 newHeading = Vector3.RotateTowards(Data.CurrentHeading, Data.RequestedHeading, allowedTurn, maxMagnitudeDelta: 1F);
-                // maxMagnitudeDelta > 0F appears to be important. Otherwise RotateTowards can stop rotating when it gets very close
-                //D.Log("AllowedTurn = {0:0.0000}, CurrentHeading = {1}, ReqHeading = {2}, NewHeading = {3}", allowedTurn, Data.CurrentHeading, Data.RequestedHeading, newHeading);
-                _transform.rotation = Quaternion.LookRotation(newHeading);
-                yield return null; // new WaitForSeconds(0.5F);
-            }
         }
 
         /// <summary>
@@ -308,13 +243,11 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
-
-        protected override void Cleanup() {
-            base.Cleanup();
-            if (_headingJob != null) {
-                _headingJob.Kill();
-            }
-            _engineRoom.Dispose();
+        protected override void AssessFrequencyOfCourseProgressChecks() {
+            // frequency of course progress checks increases as fullSpeed and gameSpeed increase
+            float courseProgressCheckFrequency = 1F + (Data.FullSpeed * _gameSpeedMultiplier);
+            _courseProgressCheckPeriod = 1F / courseProgressCheckFrequency;
+            D.Log("{0}.{1} frequency of course progress checks adjusted to {2:0.####}.", Data.Name, GetType().Name, courseProgressCheckFrequency);
         }
 
         public override string ToString() {

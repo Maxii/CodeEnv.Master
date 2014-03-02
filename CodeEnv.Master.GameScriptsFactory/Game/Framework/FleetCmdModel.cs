@@ -66,12 +66,12 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
         _subscribers.Add(GameStatus.Instance.SubscribeToPropertyChanged<GameStatus, bool>(gs => gs.IsRunning, OnIsRunningChanged));
     }
 
-    public bool ChangeHeading(Vector3 newHeading, bool isManualOverride = true) {
+    public bool ChangeHeading(Vector3 newHeading, bool isAutoPilot = false) {
         if (DebugSettings.Instance.StopShipMovement) {
             Navigator.Disengage();
             return false;
         }
-        if (isManualOverride) {
+        if (!isAutoPilot) {
             Navigator.Disengage();
         }
         if (newHeading.IsSameDirection(Data.RequestedHeading, .1F)) {
@@ -85,44 +85,19 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
         return true;
     }
 
-    public bool ChangeSpeed(float newSpeed, bool isManualOverride = true) {
+    public bool ChangeSpeed(Speed newSpeed, bool isAutoPilot = false) {
         if (DebugSettings.Instance.StopShipMovement) {
             Navigator.Disengage();
             return false;
         }
-        if (isManualOverride) {
+        if (!isAutoPilot) {
             Navigator.Disengage();
         }
-        if (Mathfx.Approx(newSpeed, Data.RequestedSpeed, .01F)) {
-            D.Warn("Duplicate ChangeSpeed Command to {0} on {1}.", newSpeed, Data.Name);
-            return false;
-        }
-        //D.Log("Fleet Requested Speed was {0}, now {1}.", Data.RequestedSpeed, newSpeed);
         foreach (var ship in Elements) {
             ship.ChangeSpeed(newSpeed);
         }
         return true;
     }
-
-    //public bool ChangeSpeed(Speed newSpeed, bool isManualOverride = true) {
-    //    if (DebugSettings.Instance.StopShipMovement) {
-    //        Navigator.Disengage();
-    //        return false;
-    //    }
-    //    if (isManualOverride) {
-    //        Navigator.Disengage();
-    //    }
-    //    if (Mathfx.Approx(newSpeed.GetValue(Data.FullSpeed), Data.RequestedSpeed, .01F)) {
-    //        D.Warn("{0} has received a duplicate ChangeSpeed Command to {1}.", Data.Name, newSpeed.GetName());
-    //        return false;
-    //    }
-    //    //D.Log("Fleet Requested Speed was {0}, now {1}.", Data.RequestedSpeed, newSpeed);
-    //    foreach (var ship in Elements) {
-    //        ship.ChangeSpeed(newSpeed);
-    //    }
-    //    return true;
-    //}
-
 
     private void OnIsRunningChanged() {
         if (GameStatus.Instance.IsRunning) {
@@ -149,8 +124,7 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
             // in case Settlements are disabled
             destination = new StationaryLocation(Data.Position + UnityEngine.Random.onUnitSphere * 50F);
         }
-        CurrentOrder = new UnitOrder<FleetOrders>(FleetOrders.MoveTo, destination, Data.FullSpeed);
-        //CurrentOrder = new UnitOrder<FleetOrders>(FleetOrders.MoveTo, destination, Speed.Standard);
+        CurrentOrder = new UnitMoveOrder<FleetOrders>(FleetOrders.MoveTo, destination, Speed.FleetStandard);
     }
 
     private void __GetFleetAttackUnderway() {
@@ -169,25 +143,15 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
             return;
         }
         ITarget attackTgt = attackTgts.MinBy(t => Vector3.Distance(t.Position, Data.Position));
-        CurrentOrder = new UnitAttackOrder<FleetOrders>(FleetOrders.Attack, attackTgt, Data.FullSpeed);
-        //CurrentOrder = new UnitAttackOrder<FleetOrders>(FleetOrders.Attack, attackTgt, Speed.Full);
+        CurrentOrder = new UnitTargetOrder<FleetOrders>(FleetOrders.Attack, attackTgt);
     }
 
-    private void AllAttack() {  // TODO wrong speed
-        var attackTarget = CurrentOrder.Target as ITarget;  // should be this kind of target when called
-        var shipAttackOrder = new UnitAttackOrder<ShipOrders>(ShipOrders.Attack, attackTarget, Data.FullSpeed);
-        //var shipAttackOrder = new UnitAttackOrder<ShipOrders>(ShipOrders.Attack, attackTarget, Speed.Full);
-        Elements.ForAll<ShipModel>(e => e.CurrentOrder = shipAttackOrder);
-    }
-
-    public void __IssueShipMovementOrders(IDestinationTarget target, float speed) {
-        UnitOrder<ShipOrders> moveToOrder = new UnitOrder<ShipOrders>(ShipOrders.MoveTo, target, speed);
+    public void __IssueShipMovementOrders(IDestinationTarget target, Speed speed, float standoffDistance = Constants.ZeroF) {
+        var moveToOrder = new UnitMoveOrder<ShipOrders>(ShipOrders.MoveTo, target, speed, standoffDistance);
         Elements.ForAll(s => s.CurrentOrder = moveToOrder);
     }
 
-    private void AllStop() {
-        //var allStop = new UnitOrder<ShipOrders>(ShipOrders.AllStop);
-        //Elements.ForAll(s => s.CurrentOrder = allStop);
+    private void __AllStop() {
         Elements.ForAll(s => s.AllStop());
     }
 
@@ -202,7 +166,7 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
 
     void Idling_EnterState() {
         LogEvent();
-        AllStop();
+        __AllStop();
         // register as available
     }
 
@@ -219,7 +183,10 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
 
     IEnumerator ExecuteMoveOrder_EnterState() {
         D.Log("{0}.ExecuteMoveOrder_EnterState.", Data.Name);
-        Call(FleetState.OverseeMove);
+        var moveOrder = CurrentOrder as UnitMoveOrder<FleetOrders>;
+        _moveSpeed = moveOrder.Speed;
+        _moveTarget = moveOrder.Target;
+        Call(FleetState.Moving);
         yield return null;  // required immediately after Call() to avoid FSM bug
         // Return()s here - move error or not, we idle
         if (_isMoveError || !_isMoveError) {
@@ -235,44 +202,47 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
 
     #endregion
 
-    #region OverseeMove
-
-    private bool _isMoveError;
-    private bool _isMoving;
-
-    IEnumerator OverseeMove_EnterState() {
-        D.Log("{0}.OverseeMove_EnterState.", Data.Name);
-        Navigator.PlotCourse(CurrentOrder.Target, CurrentOrder.Speed);
-        _isMoving = true;
-        while (_isMoving) {
-            yield return null;
-        }
-        Return();
-    }
-
-    void OverseeMove_OnCoursePlotSuccess() {
-        LogEvent();
-        Call(FleetState.Moving);
-    }
-
-    void OverseeMove_OnCoursePlotFailure() {
-        LogEvent();
-        _isMoveError = true;
-        _isMoving = false;
-    }
-
-    void OverseeMove_ExitState() {
-        LogEvent();
-        Navigator.Disengage();
-    }
-
-    #endregion
-
     #region Moving
+
+    /// <summary>
+    /// The speed of the move. If we are executing a Fleet MoveOrder, this value is set from
+    /// the speed setting contained in the order. If executing another Order that requires a move, then
+    /// this value is set by that Order execution state.
+    /// </summary>
+    private Speed _moveSpeed;
+    private IDestinationTarget _moveTarget;
+    private bool _isMoveError;
 
     void Moving_EnterState() {
         LogEvent();
+        var mortalMoveTarget = _moveTarget as ITarget;
+        if (mortalMoveTarget != null) {
+            mortalMoveTarget.onItemDeath += OnTargetDeath;
+        }
+        Navigator.PlotCourse(_moveTarget, _moveSpeed);
+    }
+
+    void Moving_OnCoursePlotSuccess() {
+        LogEvent();
         Navigator.Engage();
+    }
+
+    void Moving_OnCoursePlotFailure() {
+        LogEvent();
+        _isMoveError = true;
+        Return();
+    }
+
+    void Moving_OnCourseTrackingError() {
+        LogEvent();
+        _isMoveError = true;
+        Return();
+    }
+
+    void Moving_OnTargetDeath(ITarget deadTarget) {
+        LogEvent();
+        D.Assert(_moveTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _moveTarget.Name, deadTarget.Name));
+        Return();
     }
 
     void Moving_OnDestinationReached() {
@@ -280,21 +250,15 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
         Return();
     }
 
-    void Moving_OnFleetTrackingError() {
-        LogEvent();
-        _isMoveError = true;
-        Return();
-    }
-
-    void Moving_OnFlagshipTrackingError() {
-        LogEvent();
-        _isMoveError = true;
-        Return();
-    }
-
     void Moving_ExitState() {
         LogEvent();
-        _isMoving = false;
+        var mortalMoveTarget = _moveTarget as ITarget;
+        if (mortalMoveTarget != null) {
+            mortalMoveTarget.onItemDeath -= OnTargetDeath;
+        }
+        _moveTarget = null;
+        Navigator.Disengage();
+        __AllStop();
     }
 
     #endregion
@@ -329,7 +293,10 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
 
     IEnumerator ExecuteAttackOrder_EnterState() {
         D.Log("{0}.ExecuteAttackOrder_EnterState.", Data.Name);
-        Call(FleetState.OverseeMove);
+        var attackOrder = CurrentOrder as UnitTargetOrder<FleetOrders>;
+        _moveTarget = attackOrder.Target;
+        _moveSpeed = Speed.FleetFull;
+        Call(FleetState.Moving);
         yield return null;  // required immediately after Call() to avoid FSM bug
         if (_isMoveError) {
             CurrentState = FleetState.Idling;
@@ -349,15 +316,26 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
 
     #region Attacking
 
+    ITarget _attackTarget;
+
     void Attacking_EnterState() {
         LogEvent();
-        AllAttack();
-        // TODO Wait here until attack complete so stay in Attacking state while ships are Attacking?
-        //Return();
+        _attackTarget = (CurrentOrder as UnitTargetOrder<FleetOrders>).Target;
+        _attackTarget.onItemDeath += OnTargetDeath;
+        var elementAttackOrder = new UnitTargetOrder<ShipOrders>(ShipOrders.Attack, _attackTarget);
+        Elements.ForAll<ShipModel>(e => e.CurrentOrder = elementAttackOrder);
+    }
+
+    void Attacking_OnTargetDeath(ITarget deadTarget) {
+        LogEvent();
+        D.Assert(_attackTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _attackTarget.Name, deadTarget.Name));
+        Return();
     }
 
     void Attacking_ExitState() {
         LogEvent();
+        _attackTarget.onItemDeath -= OnTargetDeath;
+        _attackTarget = null;
     }
 
     #endregion
@@ -437,12 +415,16 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
     }
 
     void OnOrdersChanged() {
+        if (CurrentState == FleetState.Moving || CurrentState == FleetState.Attacking) {
+            Return();
+        }
+
         if (CurrentOrder != null) {
             D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
             FleetOrders order = CurrentOrder.Order;
             switch (order) {
                 case FleetOrders.AllStop:
-                    AllStop();
+                    __AllStop();
                     CurrentState = FleetState.Idling;
                     break;
                 case FleetOrders.Attack:

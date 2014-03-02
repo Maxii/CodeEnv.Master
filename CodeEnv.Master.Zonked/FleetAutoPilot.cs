@@ -146,7 +146,7 @@ public class FleetAutoPilot : AMonoBase, IDisposable {
         while (_toContinueFollowingCourse && IsEngaged) {
             if (_currentWaypointIndex >= _course.vectorPath.Count) {
                 _toContinueFollowingCourse = false;
-                _fleet.ChangeSpeed(Constants.ZeroF, isManualOverride: false);
+                _fleet.ChangeSpeed(Constants.ZeroF, isAutoPilot: false);
                 IsFinalDestinationReached = true;
             }
             else {
@@ -215,7 +215,7 @@ public class FleetAutoPilot : AMonoBase, IDisposable {
             float distanceToDestination = Vector3.Distance(Destination, _fleetData.Position);
             //D.Log("Distance to Destination = {0}.", distanceToDestination);
             if (distanceToDestination < _closeEnoughToWaypointDistance) {
-                _fleet.ChangeSpeed(Constants.ZeroF, isManualOverride: false);
+                _fleet.ChangeSpeed(Constants.ZeroF, isAutoPilot: false);
                 _toContinueFinalApproach = false;
                 IsFinalDestinationReached = true;
             }
@@ -293,8 +293,8 @@ public class FleetAutoPilot : AMonoBase, IDisposable {
     }
 
     private void AdjustHeadingAndSpeedForTurn(Vector3 newHeading) {
-        _fleet.ChangeSpeed(0.1F, isManualOverride: false); // slow for the turn
-        _fleet.ChangeHeading(newHeading, isManualOverride: false);
+        _fleet.ChangeSpeed(0.1F, isAutoPilot: false); // slow for the turn
+        _fleet.ChangeHeading(newHeading, isAutoPilot: false);
     }
 
     /// <summary>
@@ -304,7 +304,7 @@ public class FleetAutoPilot : AMonoBase, IDisposable {
     private bool IncreaseSpeedOnHeadingConfirmation() {
         if (CodeEnv.Master.Common.Mathfx.Approx(_fleetData.CurrentHeading, _fleetData.RequestedHeading, .1F)) {
             // we are close to being on course, so punch it up to warp 9!
-            _fleet.ChangeSpeed(2.0F, isManualOverride: false);
+            _fleet.ChangeSpeed(2.0F, isAutoPilot: false);
             return true;
         }
         return false;
@@ -322,7 +322,7 @@ public class FleetAutoPilot : AMonoBase, IDisposable {
             Vector3 newHeading = (currentDestination - _fleetData.Position).normalized;
             if (!CodeEnv.Master.Common.Mathfx.Approx(newHeading, _fleetData.RequestedHeading, .01F)) {
                 D.Log("A midcourse correction to {0} is about to be made.", newHeading);
-                _fleet.ChangeHeading(newHeading, isManualOverride: false);
+                _fleet.ChangeHeading(newHeading, isAutoPilot: false);
                 return true;
             }
             D.Log("Midcourse correction check made with no change. Heading remains {0}.", _fleetData.RequestedHeading);

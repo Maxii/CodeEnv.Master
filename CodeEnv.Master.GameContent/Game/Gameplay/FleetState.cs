@@ -32,14 +32,8 @@ namespace CodeEnv.Master.GameContent {
         ExecuteMoveOrder,
 
         /// <summary>
-        /// Call-only state that plots a course and Call()s Moving. Occurs prior to and
-        /// after the Moving state.
-        /// </summary>
-        OverseeMove,
-
-        /// <summary>
         /// Call-only state that exists while an entire fleet is moving from one position to another.
-        /// Called only by OverseeMove. This can occur as part of the execution process for a number of FleetOrders.
+        /// This can occur as part of the execution process for a number of FleetOrders.
         /// </summary>
         Moving,
 

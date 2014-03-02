@@ -92,33 +92,6 @@ namespace CodeEnv.Master.GameContent {
             return true;
         }
 
-        //public bool ChangeSpeed(Speed newSpeedRequest) {
-        //    if (_isFlapsDeployed) {
-        //        // reset drag to normal so max speed and thrust calculations are accurate
-        //        // they will be applied again during GetThrust() if needed
-        //        DeployFlaps(false);
-        //    }
-        //    float speedRequest = newSpeedRequest.GetValue(_data.FullSpeed);
-        //    //newSpeedRequest = Mathf.Clamp(newSpeedRequest, Constants.ZeroF, _data.FullSpeed);
-        //    float previousRequestedSpeed = _data.RequestedSpeed;
-        //    float newSpeedToRequestedSpeedRatio = (previousRequestedSpeed != Constants.ZeroF) ? speedRequest / previousRequestedSpeed : Constants.ZeroF;
-        //    if (EngineRoom.SpeedTargetRange.Contains(newSpeedToRequestedSpeedRatio)) {
-        //        D.Warn("{0} is already generating thrust for {1}. Requested speed unchanged.", _data.Name, newSpeedRequest);
-        //        return false;
-        //    }
-        //    SetThrustFor(speedRequest);
-        //    D.Log("{0} adjusting thrust to achieve requested speed {1}.", _data.Name, newSpeedRequest.GetName());
-
-        //    if (_job == null || !_job.IsRunning) {
-        //        _job = new Job(OperateEngines(), toStart: true, onJobComplete: delegate {
-        //            string message = "{0} thrust stopped.  Coasting speed is {1}.";
-        //            D.Log(message, _data.Name, _data.CurrentSpeed);
-        //        });
-        //    }
-        //    return true;
-        //}
-
-
         private void OnGameSpeedChanged() {
             float previousGameSpeedMultiplier = _gameSpeedMultiplier;   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
             _gameSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();

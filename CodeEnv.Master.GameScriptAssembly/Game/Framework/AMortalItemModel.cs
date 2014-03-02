@@ -132,6 +132,8 @@ public abstract class AMortalItemModel : AItemModel, ITarget {
         get { return Data.Owner; }
     }
 
+    public abstract float MaxWeaponsRange { get; }
+
     #endregion
 
 }

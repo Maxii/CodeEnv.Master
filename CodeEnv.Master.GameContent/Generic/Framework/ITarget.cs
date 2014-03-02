@@ -34,6 +34,8 @@ namespace CodeEnv.Master.GameContent {
 
         IPlayer Owner { get; }
 
+        float MaxWeaponsRange { get; }
+
     }
 }
 

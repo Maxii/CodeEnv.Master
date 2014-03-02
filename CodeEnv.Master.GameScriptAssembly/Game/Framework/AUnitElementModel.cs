@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -27,6 +28,9 @@ using UnityEngine;
 /// </summary>
 public abstract class AUnitElementModel : AMortalItemModelStateMachine {
 
+
+    //protected IList<RangeTrackerID> _rangeTrackersInUse;
+
     public virtual bool IsHQElement { get; set; }
 
     public new AElementData Data {
@@ -34,7 +38,7 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
         set { base.Data = value; }
     }
 
-    private Rigidbody _rigidbody;
+    protected Rigidbody _rigidbody;
     protected IRangeTracker _weaponTargetTracker;
     protected float _gameSpeedMultiplier;
 
@@ -44,6 +48,7 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
         _rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
         _weaponTargetTracker = gameObject.GetSafeInterfaceInChildren<IRangeTracker>();
         _gameSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();
+        // _rangeTrackersInUse = new List<RangeTrackerID>();
         // derived classes should call Subscribe() after they have acquired needed references
     }
 
@@ -106,6 +111,20 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
         }
     }
 
+    //private void OnEnemyInRange(bool isInRange, RangeTrackerID id) {
+    //    if (isInRange) {
+    //        if (_reloadWeaponJob == null) {
+    //            _reloadWeaponJob = new Job(ReloadWeapon());
+    //        }
+    //        D.Assert(!_reloadWeaponJob.IsRunning, "{0}.ReloadWeaponJob should not be running.".Inject(Data.Name));
+    //        _reloadWeaponJob.Start();
+    //    }
+    //    else {
+    //        D.Assert(_reloadWeaponJob.IsRunning, "{0}.ReloadWeaponJob should be running.".Inject(Data.Name));
+    //        _reloadWeaponJob.Kill();
+    //    }
+    //}
+
     private float _weaponReloadPeriod;
     private IEnumerator ReloadWeapon() {
         while (true) {
@@ -113,6 +132,14 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
             yield return new WaitForSeconds(_weaponReloadPeriod);
         }
     }
+
+    //private IEnumerator ReloadWeapon(Weapon weapon) {
+    //    float reloadPeriod = weapon.ReloadPeriod;
+    //    while (true) {
+    //        OnWeaponReady(weapon);
+    //        yield return new WaitForSeconds(reloadPeriod);
+    //    }
+    //}
 
     #endregion
 
@@ -143,9 +170,9 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
         RelayToCurrentState();
     }
 
-    protected bool _isWeaponReady;
+    protected bool _isAnyWeaponReady;
     void OnWeaponReady() {
-        _isWeaponReady = true;
+        _isAnyWeaponReady = true;
         RelayToCurrentState();
     }
 
@@ -159,5 +186,10 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
     // subscriptions contained completely within this gameobject (both subscriber
     // and subscribee) donot have to be cleaned up as all instances are destroyed
 
+    #region ITarget Members
+
+    public override float MaxWeaponsRange { get { return Data.WeaponRange; } }
+
+    #endregion
 }
 

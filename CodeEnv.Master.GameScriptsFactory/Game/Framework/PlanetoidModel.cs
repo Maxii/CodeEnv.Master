@@ -186,6 +186,8 @@ public class PlanetoidModel : AMortalItemModel {
         OnShowAnimation(MortalAnimations.Hit);
     }
 
+    public override float MaxWeaponsRange { get { return Constants.ZeroF; } }
+
     #endregion
 
 }

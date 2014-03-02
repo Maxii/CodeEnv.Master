@@ -16,10 +16,8 @@
 
 // default namespace
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using Pathfinding;
@@ -60,16 +58,20 @@ public class FleetNavigator : ANavigator {
     protected override void Subscribe() {
         base.Subscribe();
         _subscribers.Add(Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.UnitWeaponsRange, OnWeaponsRangeChanged));
+        _subscribers.Add(Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.FullSpeed, OnFullSpeedChanged));
         _seeker.pathCallback += OnCoursePlotCompleted;
     }
 
     /// <summary>
-    /// Plots a course and notifies the fleet of the outcome via the onCoursePlotCompleted delegate if set.
+    /// Plots a course and notifies the requester of the outcome via the onCoursePlotCompleted event if set.
     /// </summary>
     /// <param name="target">The target.</param>
     /// <param name="speed">The speed.</param>
-    public override void PlotCourse(IDestinationTarget target, float speed) {
-        base.PlotCourse(target, speed);
+    public void PlotCourse(IDestinationTarget target, Speed speed) {
+        Target = target;
+        Speed = speed;
+        D.Assert(speed != Speed.AllStop, "Designated speed to new target {0} is 0!".Inject(target.Name));
+        InitializeTargetValues();
         InitializeReplotValues();
         GenerateCourse();
     }
@@ -114,7 +116,7 @@ public class FleetNavigator : ANavigator {
         while (_currentWaypointIndex < _course.Count) {
             float distanceToWaypointSqrd = Vector3.SqrMagnitude(currentWaypointPosition - Data.Position);
             //D.Log("{0} distance to Waypoint_{1} = {2}.", Data.Name, _currentWaypointIndex, Mathf.Sqrt(distanceToWaypointSqrd));
-            if (distanceToWaypointSqrd < _desiredDistanceFromTargetSqrd) {
+            if (distanceToWaypointSqrd < _closeEnoughDistanceToTargetSqrd) {
                 if (CheckTargetIsLocal()) {
                     if (CheckApproachTo(Destination)) {
                         D.Log("{0} initiating homing course to {1} from waypoint {2}.", Data.Name, Target.Name, _currentWaypointIndex);
@@ -151,7 +153,7 @@ public class FleetNavigator : ANavigator {
             yield return new WaitForSeconds(_courseProgressCheckPeriod);
         }
 
-        if (Vector3.SqrMagnitude(Destination - Data.Position) < _desiredDistanceFromTargetSqrd) {
+        if (Vector3.SqrMagnitude(Destination - Data.Position) < _closeEnoughDistanceToTargetSqrd) {
             // the final waypoint turns out to be located close enough to the Destination although a direct approach can't be made 
             OnDestinationReached();
         }
@@ -167,8 +169,8 @@ public class FleetNavigator : ANavigator {
     /// </summary>
     /// <returns></returns>
     private IEnumerator EngageHomingCourseToTarget() {
-        _fleet.__IssueShipMovementOrders(Target, Speed);
-        while (Vector3.SqrMagnitude(Destination - Data.Position) > _desiredDistanceFromTargetSqrd) {
+        _fleet.__IssueShipMovementOrders(Target, Speed, CloseEnoughDistanceToTarget);
+        while (Vector3.SqrMagnitude(Destination - Data.Position) > _closeEnoughDistanceToTargetSqrd) {
             yield return new WaitForSeconds(_courseProgressCheckPeriod);
         }
         OnDestinationReached();
@@ -181,7 +183,7 @@ public class FleetNavigator : ANavigator {
     /// <returns></returns>
     private IEnumerator EngageHomingCourseTo(Vector3 stationaryLocation) {
         _fleet.__IssueShipMovementOrders(new StationaryLocation(stationaryLocation), Speed);
-        while (Vector3.SqrMagnitude(stationaryLocation - Data.Position) > _desiredDistanceFromTargetSqrd) {
+        while (Vector3.SqrMagnitude(stationaryLocation - Data.Position) > _closeEnoughDistanceToTargetSqrd) {
             yield return new WaitForSeconds(_courseProgressCheckPeriod);
         }
         D.Log("{0} has arrived at {1}.", Data.Name, stationaryLocation);
@@ -270,7 +272,7 @@ public class FleetNavigator : ANavigator {
                 Vector3 rayExitPoint = hitInfo.point;
                 Vector3 halfWayPointInsideKeepoutZone = rayEntryPoint + (rayExitPoint - rayEntryPoint) / 2F;
                 Vector3 obstacleCenter = hitInfo.collider.transform.position;
-                waypoint = obstacleCenter + (halfWayPointInsideKeepoutZone - obstacleCenter).normalized * (keepoutRadius + DesiredDistanceFromTarget);
+                waypoint = obstacleCenter + (halfWayPointInsideKeepoutZone - obstacleCenter).normalized * (keepoutRadius + CloseEnoughDistanceToTarget);
                 D.Log("{0}'s waypoint to avoid obstacle = {1}.", Data.Name, waypoint);
             }
             else {
@@ -282,7 +284,6 @@ public class FleetNavigator : ANavigator {
         }
         return waypoint;
     }
-
 
     /// <summary>
     /// Checks the distance to the target to determine if it is close 
@@ -360,11 +361,26 @@ public class FleetNavigator : ANavigator {
         GenerateCourse();
     }
 
+    protected override void AssessFrequencyOfCourseProgressChecks() {
+        // frequency of course progress checks increases as fullSpeed value and gameSpeed increase
+        float courseProgressCheckFrequency = 1F + (Data.FullSpeed * _gameSpeedMultiplier);
+        _courseProgressCheckPeriod = 1F / courseProgressCheckFrequency;
+        D.Log("{0}.{1} frequency of course progress checks adjusted to {2:0.####}.", Data.Name, GetType().Name, courseProgressCheckFrequency);
+    }
+
     /// <summary>
     /// Initializes the values that depend on the target and speed.
     /// </summary>
     protected override void InitializeTargetValues() {
-        DesiredDistanceFromTarget = Target.Radius + Data.UnitWeaponsRange;
+        var target = Target as ITarget;
+        if (target != null) {
+            if (Data.Owner.IsEnemyOf(target.Owner)) {
+                CloseEnoughDistanceToTarget = target.MaxWeaponsRange + 1F;
+                return;
+            }
+        }
+        // distance traveled in 1 day at FleetStandard Speed
+        CloseEnoughDistanceToTarget = Speed.FleetStandard.GetValue(Data);
     }
 
     /// <summary>

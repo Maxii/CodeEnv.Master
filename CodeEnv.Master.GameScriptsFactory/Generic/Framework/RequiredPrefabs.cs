@@ -43,6 +43,8 @@ public class RequiredPrefabs : AMonoBaseSingleton<RequiredPrefabs> {
     public StarModel[] stars;
     public GameObject[] planets;
 
+    public RangeTracker rangeTracker;
+
     protected override void Awake() {
         base.Awake();
         if (TryDestroyExtraCopies()) {

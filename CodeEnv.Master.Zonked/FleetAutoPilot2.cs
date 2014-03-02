@@ -130,7 +130,7 @@ public class FleetAutoPilot2 : APropertyChangeTracking, IDisposable {
         while (_toFollowCourse && _isEngaged && !IsFinalDestinationReached) {
             if (_currentWaypointIndex >= _course.vectorPath.Count) {
                 IsFinalDestinationReached = true;
-                _fleet.ChangeSpeed(Constants.ZeroF, isManualOverride: false);
+                _fleet.ChangeSpeed(Constants.ZeroF, isAutoPilot: false);
             }
             else {
                 if (!isSpeedIncreaseMade) {    // adjusts speed as a oneshot until next waypoint
@@ -183,7 +183,7 @@ public class FleetAutoPilot2 : APropertyChangeTracking, IDisposable {
             D.Log("Distance to Destination = {0}.", distanceToDestination);
             if (distanceToDestination < _closeEnoughToWaypointDistance) {
                 IsFinalDestinationReached = true;
-                _fleet.ChangeSpeed(Constants.ZeroF, isManualOverride: false);
+                _fleet.ChangeSpeed(Constants.ZeroF, isAutoPilot: false);
             }
             else {
                 if (!isSpeedIncreaseMade) {    // adjusts speed as a oneshot until we get there
@@ -261,8 +261,8 @@ public class FleetAutoPilot2 : APropertyChangeTracking, IDisposable {
     }
 
     private void AdjustHeadingAndSpeedForTurn(Vector3 newHeading) {
-        _fleet.ChangeHeading(newHeading, isManualOverride: false);
-        _fleet.ChangeSpeed(0.2F, isManualOverride: false); // slow for the turn
+        _fleet.ChangeHeading(newHeading, isAutoPilot: false);
+        _fleet.ChangeSpeed(0.2F, isAutoPilot: false); // slow for the turn
     }
 
     /// <summary>
@@ -272,7 +272,7 @@ public class FleetAutoPilot2 : APropertyChangeTracking, IDisposable {
     private bool IncreaseSpeedOnHeadingConfirmation() {
         if (CodeEnv.Master.Common.Mathfx.Approx(_fleetData.CurrentHeading, _fleetData.RequestedHeading, .2F)) {
             // we are close to being on course, so punch it up to warp 9!
-            _fleet.ChangeSpeed(2.0F, isManualOverride: false);
+            _fleet.ChangeSpeed(2.0F, isAutoPilot: false);
             return true;
         }
         return false;
@@ -290,7 +290,7 @@ public class FleetAutoPilot2 : APropertyChangeTracking, IDisposable {
             Vector3 newHeading = (currentDestination - _fleetData.Position).normalized;
             if (!CodeEnv.Master.Common.Mathfx.Approx(newHeading, _fleetData.RequestedHeading, .01F)) {
                 D.Log("A midcourse correction to {0} is about to be made.", newHeading);
-                _fleet.ChangeHeading(newHeading, isManualOverride: false);
+                _fleet.ChangeHeading(newHeading, isAutoPilot: false);
                 return true;
             }
             D.Log("Midcourse correction check made with no change. Heading remains {0}.", _fleetData.RequestedHeading);

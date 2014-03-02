@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
@@ -52,14 +53,9 @@ public class FleetCmdPresenter : AUnitCommandPresenter<ShipModel> {
 
     public void __RandomChangeOfHeadingAndSpeed() {
         Model.ChangeHeading(UnityEngine.Random.insideUnitSphere.normalized);
-        Model.ChangeSpeed(UnityEngine.Random.Range(Constants.ZeroF, 2.5F));
+        IEnumerable<Speed> fleetSpeeds = new List<Speed>() { Speed.FleetFull, Speed.FleetStandard, Speed.FleetTwoThirds };
+        Model.ChangeSpeed(RandomExtended<Speed>.Choice(fleetSpeeds));
     }
-
-    //public void __RandomChangeOfHeadingAndSpeed() {
-    //    Model.ChangeHeading(UnityEngine.Random.insideUnitSphere.normalized);
-    //    Model.ChangeSpeed(Enums<Speed>.GetRandom(excludeDefault: true));
-    //}
-
 
     protected override IIcon MakeCmdIconInstance() {
         return FleetIconFactory.Instance.MakeInstance(Model.Data, View.PlayerIntel);

@@ -154,6 +154,11 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         RelayToCurrentState();
     }
 
+    protected void OnTargetDeath(ITarget deadTarget) {
+        //LogEvent();
+        RelayToCurrentState(deadTarget);
+    }
+
     void OnDetectedEnemy() {  // TODO connect to sensors when I get them
         RelayToCurrentState();
     }
@@ -169,6 +174,8 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         bool isCmdAlive = ApplyDamage(damage);
         D.Assert(isCmdAlive, "{0} should never die as a result of being hit.".Inject(Data.Name));
     }
+
+    public override float MaxWeaponsRange { get { return Data.UnitWeaponsRange; } }
 
     #endregion
 

@@ -130,8 +130,8 @@ public class AutoPilot : APropertyChangeTracking, IDisposable {
     }
 
     private void AdjustHeadingAndSpeedForTurn(Vector3 newHeading) {
-        _ship.ChangeSpeed(0.1F, isManualOverride: false); // slow for the turn
-        _ship.ChangeHeading(newHeading, isManualOverride: false);
+        _ship.ChangeSpeed(0.1F, isAutoPilot: false); // slow for the turn
+        _ship.ChangeHeading(newHeading, isAutoPilot: false);
     }
 
     /// <summary>
@@ -141,7 +141,7 @@ public class AutoPilot : APropertyChangeTracking, IDisposable {
     private bool IncreaseSpeedOnHeadingConfirmation() {
         if (CodeEnv.Master.Common.Mathfx.Approx(_shipData.CurrentHeading, _shipData.RequestedHeading, .1F)) {
             // we are close to being on course, so punch it up to warp 9!
-            _ship.ChangeSpeed(2.0F, isManualOverride: false);
+            _ship.ChangeSpeed(2.0F, isAutoPilot: false);
             return true;
         }
         return false;
@@ -163,7 +163,7 @@ public class AutoPilot : APropertyChangeTracking, IDisposable {
             Vector3 newHeading = (destination - _shipData.Position).normalized;
             if (!CodeEnv.Master.Common.Mathfx.Approx(newHeading, _shipData.RequestedHeading, .01F)) {
                 //_fleet.ChangeFleetSpeed(0.1F, isManualOverride: false);
-                _ship.ChangeHeading(newHeading, isManualOverride: false);
+                _ship.ChangeHeading(newHeading, isAutoPilot: false);
                 D.Log("{0} has made a midcourse correction to {1} at checkpoint {2} of {3}.",
                     _ship.Data.Name, newHeading, checksRemaining, _courseLegCheckFrequency);
             }

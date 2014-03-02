@@ -41,8 +41,8 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
         ShipData elementData = new ShipData(elementCategory, elementInstanceName, maxHitPoints: 50F, mass: mass, drag: drag) {   // TODO mass variation
             // optionalParentName gets set when it gets attached to a command
             Strength = new CombatStrength(),
-            WeaponRange = UnityEngine.Random.Range(2F, 6F),
-            WeaponReloadPeriod = UnityEngine.Random.Range(0.3F, 0.5F),
+            WeaponRange = UnityEngine.Random.Range(3F, 6F),
+            WeaponReloadPeriod = UnityEngine.Random.Range(0.4F, 0.6F),
             CurrentHitPoints = UnityEngine.Random.Range(25F, 50F),
             MaxTurnRate = UnityEngine.Random.Range(45F, 315F),
             FullThrust = mass * drag * UnityEngine.Random.Range(2F, 5F) // MaxThrust = Mass * Drag * MaxSpeed;

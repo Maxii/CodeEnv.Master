@@ -48,15 +48,15 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The IDestinationTarget this navigator is trying to reach. Can simply be a location.
         /// </summary>
-        public IDestinationTarget Target { get; private set; }
+        public IDestinationTarget Target { get; protected set; }
 
-        private float _speed;
+        private Speed _speed;
         /// <summary>
         /// The speed to travel at.
         /// </summary>
-        public float Speed {
+        public Speed Speed {
             get { return _speed; }
-            set { SetProperty<float>(ref _speed, value, "Speed", OnSpeedChanged); }
+            set { SetProperty<Speed>(ref _speed, value, "Speed"); }
         }
 
         /// <summary>
@@ -68,12 +68,13 @@ namespace CodeEnv.Master.GameContent {
             get { return _pilotJob != null && _pilotJob.IsRunning; }
         }
 
-        private float _desiredDistanceFromTarget;
-        protected float DesiredDistanceFromTarget {
-            get { return _desiredDistanceFromTarget; }
+        protected float _closeEnoughDistanceToTargetSqrd;
+        private float _closeEnoughDistanceToTarget;
+        protected float CloseEnoughDistanceToTarget {
+            get { return _closeEnoughDistanceToTarget; }
             set {
-                _desiredDistanceFromTarget = value;
-                _desiredDistanceFromTargetSqrd = _desiredDistanceFromTarget * _desiredDistanceFromTarget;
+                _closeEnoughDistanceToTarget = Target.Radius + value;
+                _closeEnoughDistanceToTargetSqrd = _closeEnoughDistanceToTarget * _closeEnoughDistanceToTarget;
             }
         }
 
@@ -86,7 +87,6 @@ namespace CodeEnv.Master.GameContent {
         /// every second at a speed of 1 unit per day and normal gamespeed.
         /// </summary>
         protected float _courseProgressCheckPeriod = 1F;
-        protected float _desiredDistanceFromTargetSqrd;
 
         protected IList<IDisposable> _subscribers;
         private GameTime _gameTime;
@@ -101,7 +101,7 @@ namespace CodeEnv.Master.GameContent {
             Data = data;
             _gameTime = GameTime.Instance;
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
-            _courseProgressCheckPeriod /= _gameSpeedMultiplier;    // speed not set yet
+            AssessFrequencyOfCourseProgressChecks();
             // Subscribe called by derived classes so all constructor references can be initialized before they are used by Subscribe
         }
 
@@ -145,25 +145,13 @@ namespace CodeEnv.Master.GameContent {
             InitializeTargetValues();
         }
 
-        private void OnSpeedChanged() {
+        protected virtual void OnFullSpeedChanged() {
             AssessFrequencyOfCourseProgressChecks();
         }
 
-        private void OnGameSpeedChanged() {
+        protected virtual void OnGameSpeedChanged() {
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();
             AssessFrequencyOfCourseProgressChecks();
-        }
-
-        /// <summary>
-        /// Plots a course and notifies the requester of the outcome via the onCoursePlotCompleted event if set.
-        /// </summary>
-        /// <param name="target">The target.</param>
-        /// <param name="speed">The speed.</param>
-        public virtual void PlotCourse(IDestinationTarget target, float speed) {
-            Target = target;
-            Speed = speed;
-            D.Assert(speed != Constants.ZeroF, "Designated speed to new target {0} is 0!".Inject(target.Name));
-            InitializeTargetValues();
         }
 
         /// <summary>
@@ -197,12 +185,12 @@ namespace CodeEnv.Master.GameContent {
             Vector3 currentPosition = Data.Position;
             Vector3 vectorToLocation = location - currentPosition;
             float distanceToLocation = vectorToLocation.magnitude;
-            if (distanceToLocation < DesiredDistanceFromTarget) {
+            if (distanceToLocation < CloseEnoughDistanceToTarget) {
                 // already inside close enough distance
                 return true;
             }
             Vector3 directionToLocation = vectorToLocation.normalized;
-            float rayDistance = distanceToLocation - DesiredDistanceFromTarget;
+            float rayDistance = distanceToLocation - CloseEnoughDistanceToTarget;
             float clampedRayDistance = Mathf.Clamp(rayDistance, 0.1F, Mathf.Infinity);
             RaycastHit hitInfo;
             if (Physics.Raycast(currentPosition, directionToLocation, out hitInfo, clampedRayDistance, _keepoutOnlyLayerMask.value)) {
@@ -215,12 +203,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected abstract void InitializeTargetValues();
 
-        private void AssessFrequencyOfCourseProgressChecks() {
-            // frequency of course progress checks increases as speed and gameSpeed increase
-            float courseProgressCheckFrequency = 1F + (Speed * _gameSpeedMultiplier);
-            _courseProgressCheckPeriod = 1F / courseProgressCheckFrequency;
-            D.Log("{0}.{1} frequency of course progress checks adjusted to {2:0.####}.", Data.Name, GetType().Name, courseProgressCheckFrequency);
-        }
+        protected abstract void AssessFrequencyOfCourseProgressChecks();
 
         protected virtual void Cleanup() {
             Unsubscribe();
@@ -260,7 +243,7 @@ namespace CodeEnv.Master.GameContent {
                 return;
             }
 
-            _isDisposing = true;
+            _isDisposing = isDisposing;
             if (isDisposing) {
                 // free managed resources here including unhooking events
                 Cleanup();

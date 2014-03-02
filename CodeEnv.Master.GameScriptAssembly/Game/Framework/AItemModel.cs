@@ -103,6 +103,7 @@ public abstract class AItemModel : AMonoBase, IDestinationTarget, IDisposable {
     #region IDisposable
     [DoNotSerialize]
     private bool alreadyDisposed = false;
+    protected bool _isDisposing = false;
 
     /// <summary>
     /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
@@ -123,6 +124,7 @@ public abstract class AItemModel : AMonoBase, IDestinationTarget, IDisposable {
             return;
         }
 
+        _isDisposing = isDisposing;
         if (isDisposing) {
             // free managed resources here including unhooking events
             Cleanup();

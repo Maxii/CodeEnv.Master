@@ -110,10 +110,10 @@ public class FacilityModel : AUnitElementModel {
 
     IEnumerator ExecuteAttackOrder_EnterState() {
         D.Log("{0}.ExecuteAttackOrder_EnterState() called.", Data.Name);
-        _ordersTarget = (CurrentOrder as UnitAttackOrder<FacilityOrders>).Target;
+        _ordersTarget = (CurrentOrder as UnitTargetOrder<FacilityOrders>).Target;
 
         while (!_ordersTarget.IsDead) {
-            if (_isWeaponReady) {
+            if (_isAnyWeaponReady) {
                 bool inRange = PickPrimaryTarget(out _primaryTarget);
                 if (inRange) {   // if no orders target in range, then _primaryTarget is null, so continue during next fire window
                     _attackTarget = _primaryTarget;
@@ -151,7 +151,7 @@ public class FacilityModel : AUnitElementModel {
             Return();
             return;
         }
-        D.Assert(_isWeaponReady, "{0} Attacking with no weapon ready.".Inject(Data.Name));
+        D.Assert(_isAnyWeaponReady, "{0} Attacking with no weapon ready.".Inject(Data.Name));
         OnShowAnimation(MortalAnimations.Attacking);
         _attackTarget.TakeDamage(8F);
         Return();
@@ -159,7 +159,7 @@ public class FacilityModel : AUnitElementModel {
 
     void Attacking_ExitState() {
         LogEvent();
-        _isWeaponReady = false;
+        _isAnyWeaponReady = false;
         _attackTarget = null;
     }
 
@@ -193,9 +193,11 @@ public class FacilityModel : AUnitElementModel {
     IEnumerator Repairing_EnterState() {
         D.Log("{0}.Repairing_EnterState.", Data.Name);
         OnShowAnimation(MortalAnimations.Repairing);
-        yield return new WaitForSeconds(1);
+        yield return new WaitForSeconds(2);
+        Data.CurrentHitPoints += 0.5F * (Data.MaxHitPoints - Data.CurrentHitPoints);
         D.Log("{0}'s repair is 50% complete.", Data.Name);
-        yield return new WaitForSeconds(1);
+        yield return new WaitForSeconds(3);
+        Data.CurrentHitPoints = Data.MaxHitPoints;
         D.Log("{0}'s repair is 100% complete.", Data.Name);
         OnStopAnimation(MortalAnimations.Repairing);
         Return();
@@ -307,9 +309,11 @@ public class FacilityModel : AUnitElementModel {
         return RandomExtended<ITarget>.Choice(selectedTargetsInRange);
     }
 
-    private void AssessNeedForRepair() {    // TODO not currently used
-        if (Data.Health < 0.50F) {
-            CurrentOrder = new UnitOrder<FacilityOrders>(FacilityOrders.Repair);
+    private void AssessNeedForRepair() {
+        if (Data.Health < 0.30F) {
+            if (CurrentOrder == null || CurrentOrder.Order != FacilityOrders.Repair) {
+                CurrentOrder = new UnitOrder<FacilityOrders>(FacilityOrders.Repair);
+            }
         }
     }
 
@@ -374,6 +378,13 @@ public class FacilityModel : AUnitElementModel {
     # region Callbacks
 
     void OnOrdersChanged() {
+        // TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated
+        if (CurrentState == FacilityState.Repairing) {
+            Return();
+            // IMPROVE Attacking is not here as it is not really a state so far. It has no duration so it could be replaced with a method
+            // I'm deferring doing that right now as it is unclear how Attacking will evolve
+        }
+
         if (CurrentOrder != null) {
             D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
             FacilityOrders order = CurrentOrder.Order;
@@ -413,6 +424,7 @@ public class FacilityModel : AUnitElementModel {
 
     public override void TakeDamage(float damage) {
         DistributeDamage(damage);
+        AssessNeedForRepair();
     }
 
     #endregion

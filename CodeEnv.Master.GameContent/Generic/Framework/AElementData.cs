@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System.Collections.Generic;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -45,6 +46,9 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<float>(ref _weaponReloadPeriod, value, "WeaponReloadPeriod"); }
         }
 
+        //protected IDictionary<RangeTrackerID, IList<Weapon>> _weaponLookup;
+
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AElementData" /> class.
         /// </summary>
@@ -54,7 +58,13 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="optionalParentName">Name of the optional parent.</param>
         public AElementData(string name, float maxHitPoints, float mass, string optionalParentName = "")
             : base(name, maxHitPoints, mass, optionalParentName) {
+            //_weaponLookup = new Dictionary<RangeTrackerID, IList<Weapon>>();
+
         }
+
+        //public void AddWeapon(Weapon weapon) {
+
+        //}
 
     }
 }

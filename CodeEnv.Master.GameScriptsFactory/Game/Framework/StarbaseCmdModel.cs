@@ -48,13 +48,6 @@ public class StarbaseCmdModel : AUnitCommandModel<FacilityModel> {
         CurrentState = StarbaseState.Idling;
     }
 
-    private void AllAttack() {
-        var attackTarget = CurrentOrder.Target as ITarget;  // should be this kind of target when called
-        var facilityAttackOrder = new UnitAttackOrder<FacilityOrders>(FacilityOrders.Attack, attackTarget);
-        Elements.ForAll<FacilityModel>(e => e.CurrentOrder = facilityAttackOrder);
-    }
-
-
     #region StateMachine
 
     public new StarbaseState CurrentState {
@@ -93,15 +86,26 @@ public class StarbaseCmdModel : AUnitCommandModel<FacilityModel> {
 
     #region Attacking
 
+    ITarget _attackTarget;
+
     void Attacking_EnterState() {
         LogEvent();
-        AllAttack();
-        // TODO Wait here until attack complete so stay in Attacking state while ships are Attacking?
-        //Return();
+        _attackTarget = (CurrentOrder as UnitTargetOrder<StarbaseOrders>).Target;
+        _attackTarget.onItemDeath += OnTargetDeath;
+        var elementAttackOrder = new UnitTargetOrder<FacilityOrders>(FacilityOrders.Attack, _attackTarget);
+        Elements.ForAll<FacilityModel>(e => e.CurrentOrder = elementAttackOrder);
+    }
+
+    void Attacking_OnTargetDeath(ITarget deadTarget) {
+        LogEvent();
+        D.Assert(_attackTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _attackTarget.Name, deadTarget.Name));
+        Return();
     }
 
     void Attacking_ExitState() {
         LogEvent();
+        _attackTarget.onItemDeath -= OnTargetDeath;
+        _attackTarget = null;
     }
 
     #endregion
@@ -156,6 +160,9 @@ public class StarbaseCmdModel : AUnitCommandModel<FacilityModel> {
     # region StateMachine Callbacks
 
     void OnOrdersChanged() {
+        if (CurrentState == StarbaseState.Attacking) {
+            Return();
+        }
         if (CurrentOrder != null) {
             D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
             StarbaseOrders order = CurrentOrder.Order;

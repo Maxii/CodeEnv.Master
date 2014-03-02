@@ -29,7 +29,12 @@ using UnityEngine;
 /// </summary>
 public class RangeTracker : TriggerTracker, IRangeTracker {
 
+    //public RangeTrackerID ID { get; set; }
+
+    //public Range<float> RangeSpan { get; private set; }
+
     public event Action<bool> onEnemyInRange;
+    //public event Action<bool, RangeTrackerID> onEnemyInRange;
 
     private float _range;
     public float Range {
@@ -118,6 +123,7 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
     private void OnRangeChanged() {
         //D.Log("{0}.{1}.Range changed to {2}.", Data.Name, GetType().Name, Range);
         Collider.radius = Range;
+        //RangeSpan = new Range<float>(0.9F * Range, 1.10F * Range);
         if (_isInitialized) {
             Collider.enabled = false;
             AllTargets.ForAll(t => Remove(t));  // clears both AllTargets and EnemyTargets
@@ -139,6 +145,7 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
         var temp = onEnemyInRange;
         if (temp != null) {
             temp(isEnemyInRange);
+            //temp(isEnemyInRange, ID);
         }
     }
 

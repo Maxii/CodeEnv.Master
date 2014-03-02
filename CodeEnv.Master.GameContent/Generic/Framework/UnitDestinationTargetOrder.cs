@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: UnitOrder.cs
-// Order that requires no other info besides the order itself.
+// File: UnitDestinationTargetOrder.cs
+// Order that requires IDestinationTarget info.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,17 +19,15 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Order that requires no other info besides the order itself.
+    /// Order that requires IDestinationTarget info.
     /// </summary>
-    /// <typeparam name="T">The enum type of the order.</typeparam>
-    public class UnitOrder<T> where T : struct {
+    public class UnitDestinationTargetOrder<T> : UnitOrder<T> where T : struct {
 
-        public UnitOrder<T> NextOrder { get; set; } // not currently used
+        public IDestinationTarget Target { get; private set; }
 
-        public T Order { get; private set; }
-
-        public UnitOrder(T order) {
-            Order = order;
+        public UnitDestinationTargetOrder(T order, IDestinationTarget target)
+            : base(order) {
+            Target = target;
         }
 
         public override string ToString() {
