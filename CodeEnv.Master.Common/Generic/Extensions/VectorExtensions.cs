@@ -17,6 +17,7 @@
 namespace CodeEnv.Master.Common {
 
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
@@ -93,7 +94,6 @@ namespace CodeEnv.Master.Common {
             Vector3 newPosition = new Vector3(transform.position.x, transform.position.y, z);
             transform.position = newPosition;
         }
-
     }
 }
 

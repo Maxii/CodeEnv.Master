@@ -14,6 +14,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -44,15 +45,23 @@ public class ShipView : AUnitElementView, ISelectable {
 
     protected override void Start() {
         base.Start();
-        __InitializeContextMenu();
+        InitializeContextMenu();
     }
 
     #region ContextMenu
 
-    private void __InitializeContextMenu() {    // IMPROVE use of string
+    private IDictionary<int, FleetCmdModel> _joinableFleetLookup;
+
+    public enum ShipContextMenu {
+        JoinFleet = 0,
+        AnotherOrder = 1
+    }
+
+    private void InitializeContextMenu() {    // IMPROVE use of string
         _ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
         CtxMenu shipMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "ShipMenu");
         _ctxObject.contextMenu = shipMenu;
+
         D.Assert(_ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
         UnityUtility.ValidateComponentPresence<Collider>(gameObject);
 
@@ -62,16 +71,61 @@ public class ShipView : AUnitElementView, ISelectable {
     }
 
     private void OnContextMenuShow() {
-        // UNDONE
+        int shipMenuItemCount = Enums<ShipContextMenu>.GetValues().Count();
+        var shipMenuItems = new CtxMenu.Item[shipMenuItemCount];
+
+        // setup or disable the context menu for the JoinFleet order
+        shipMenuItems[0] = new CtxMenu.Item();
+        shipMenuItems[0].text = ShipContextMenu.JoinFleet.GetName();
+
+        var joinableFleets = FindObjectsOfType<FleetCmdModel>().Where(f => f.Owner == Presenter.Model.Owner).Except(Presenter.Model.Command).ToArray();
+        var joinFleetSubmenuItemCount = joinableFleets.Length;
+
+        if (joinFleetSubmenuItemCount > Constants.Zero) {
+            _joinableFleetLookup = new Dictionary<int, FleetCmdModel>(joinFleetSubmenuItemCount);
+            shipMenuItems[0].isSubmenu = true;
+            CtxMenu joinFleetSubmenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "JoinFleetSubMenu");
+            shipMenuItems[0].submenu = joinFleetSubmenu;
+            var joinFleetSubmenuItems = new CtxMenu.Item[joinFleetSubmenuItemCount];
+            for (int i = 0; i < joinFleetSubmenuItemCount; i++) {
+                joinFleetSubmenuItems[i] = new CtxMenu.Item();
+
+                joinFleetSubmenuItems[i].text = joinableFleets[i].Name;
+                int id = i + shipMenuItemCount;
+                joinFleetSubmenuItems[i].id = id;
+                _joinableFleetLookup.Add(id, joinableFleets[i]);
+                D.Log("{0}.{1}.submenu ID {2} = {3}.", Presenter.Model.Name, Presenter.Model.Data.OptionalParentName, joinFleetSubmenuItems[i].id, joinFleetSubmenuItems[i].text);
+            }
+            shipMenuItems[0].submenuItems = joinFleetSubmenuItems;
+        }
+        else {
+            shipMenuItems[0].isDisabled = true;
+        }
+
+        // setup the rest of the orders
+        for (int i = 1; i < shipMenuItemCount; i++) {
+            shipMenuItems[i] = new CtxMenu.Item();
+            shipMenuItems[i].text = ((ShipContextMenu)i).GetName();
+            shipMenuItems[i].id = i;
+        }
+
+        _ctxObject.menuItems = shipMenuItems;   // can also use CtxObject.current to get the CtxObject
     }
 
     private void OnContextMenuSelection() {
-        // int itemId = CtxObject.current.selectedItem;
-        // D.Log("{0} selected context menu item {1}.", _transform.name, itemId);
-        // UNDONE
+        int itemId = CtxObject.current.selectedItem;
+        D.Log("{0} selected context menu item {1}.", _transform.name, itemId);
+        if (itemId == 1) {
+            // UNDONE AnotherOrder
+            return;
+        }
+        UnitTargetOrder<ShipOrders> joinFleetOrder = new UnitTargetOrder<ShipOrders>(ShipOrders.JoinFleet, _joinableFleetLookup[itemId] as ITarget);
+        Presenter.Model.CurrentOrder = joinFleetOrder;
     }
 
     private void OnContextMenuHide() {
+        D.Log("{0}.OnContextMenuHide() called.", _transform.name);
+        _joinableFleetLookup = null;
         // UNDONE
     }
 

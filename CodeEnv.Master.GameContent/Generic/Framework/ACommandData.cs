@@ -37,6 +37,12 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        private Formation _unitFormation;
+        public Formation UnitFormation {
+            get { return _unitFormation; }
+            set { SetProperty<Formation>(ref _unitFormation, value, "UnitFormation"); }
+        }
+
         private AElementData _hqElementData;
         public AElementData HQElementData {
             get {
@@ -77,13 +83,13 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<int>(ref _cmdEffectiveness, value, "CmdEffectiveness"); }
         }
 
-        private float _unitWeaponsRange;
+        private float _unitMaxWeaponsRange;
         /// <summary>
-        /// The range of the longest range weapon in the Unit. IMPROVE
+        /// The range of the longest range weapon in the Unit.
         /// </summary>
-        public float UnitWeaponsRange {
-            get { return _unitWeaponsRange; }
-            set { SetProperty<float>(ref _unitWeaponsRange, value, "UnitWeaponsRange"); }
+        public float UnitMaxWeaponsRange {
+            get { return _unitMaxWeaponsRange; }
+            set { SetProperty<float>(ref _unitMaxWeaponsRange, value, "UnitMaxWeaponsRange"); }
         }
 
         private CombatStrength _unitStrength;
@@ -147,9 +153,10 @@ namespace CodeEnv.Master.GameContent {
         protected abstract void InitializeComposition();
 
         private void OnHQElementDataChanged() {
-            if (!ElementsData.Contains(_hqElementData)) {
+            if (!ElementsData.Contains(HQElementData)) {
                 D.Error("HQ Element {0} assigned not present in Command {1}.", _hqElementData.OptionalParentName, OptionalParentName);
             }
+            HQElementData.FormationPosition = Vector3.zero;
         }
 
         private void OnUnitMaxHitPointsChanging(float newMaxHitPoints) {
@@ -241,7 +248,7 @@ namespace CodeEnv.Master.GameContent {
             UpdateUnitStrength();
             UpdateUnitMaxHitPoints();   // must preceed current as current uses max as a clamp
             UpdateUnitCurrentHitPoints();
-            UpdateUnitWeaponsRange();
+            UpdateUnitMaxWeaponsRange();
         }
 
         private void UpdateUnitStrength() { // IMPROVE avoid creating new each time
@@ -260,8 +267,8 @@ namespace CodeEnv.Master.GameContent {
             UnitCurrentHitPoints = ElementsData.Sum<AElementData>(ed => ed.CurrentHitPoints);
         }
 
-        private void UpdateUnitWeaponsRange() {
-            UnitWeaponsRange = ElementsData.Count == 0 ? Constants.ZeroF : ElementsData.MaxBy<AElementData, float>(ed => ed.WeaponRange).WeaponRange;
+        private void UpdateUnitMaxWeaponsRange() {
+            UnitMaxWeaponsRange = ElementsData.Count == 0 ? Constants.ZeroF : ElementsData.Max<AElementData>(ed => ed.MaxWeaponsRange);
         }
 
         #region ElementData PropertyChanged Subscription and Methods
@@ -272,6 +279,7 @@ namespace CodeEnv.Master.GameContent {
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AElementData, float>(ed => ed.CurrentHitPoints, OnElementCurrentHitPointsChanged));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AElementData, float>(ed => ed.MaxHitPoints, OnElementMaxHitPointsChanged));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AElementData, CombatStrength>(ed => ed.Strength, OnElementStrengthChanged));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AElementData, float>(ed => ed.MaxWeaponsRange, OnElementMaxWeaponsRangeChanged));
         }
 
         private void OnElementStrengthChanged() {
@@ -284,6 +292,10 @@ namespace CodeEnv.Master.GameContent {
 
         private void OnElementMaxHitPointsChanged() {
             UpdateUnitMaxHitPoints();
+        }
+
+        private void OnElementMaxWeaponsRangeChanged() {
+            UpdateUnitMaxWeaponsRange();
         }
 
         private void Unsubscribe(AElementData elementData) {

@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -61,7 +61,7 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
     #region Mouse Events
 
     protected virtual void OnHover(bool isOver) {
-        //D.Log("{0}.OnHover({1}) called.", _transform.name, isOver);
+        D.Log("{0}.OnHover({1}) called.", _transform.name, isOver);
         if (IsDiscernible && isOver) {
             ShowHud(true);
             return;

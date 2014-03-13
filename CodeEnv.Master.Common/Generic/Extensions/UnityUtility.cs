@@ -147,53 +147,7 @@ namespace CodeEnv.Master.Common {
             return bounds;
         }
 
-
-        /// <summary>
-        /// Positions the provided game objects randomly inside a sphere in such a way that the meshes 
-        /// are not in contact. 
-        /// </summary>
-        /// <param name="center">The location of the sphere's center in world space.</param>
-        /// <param name="radius">The radius of the sphere in units.</param>
-        /// <param name="objects">The objects to position.</param>
-        /// <returns><c>true</c> if all objects were successfully positioned.</returns>
-        public static bool PositionRandomWithinSphere(Vector3 center, float radius, GameObject[] objects) {
-            Vector3[] localLocations = new Vector3[objects.Length];
-            int iterateCount = 0;
-            IList<Bounds> objectsBounds = new List<Bounds>();
-
-            for (int i = 0; i < objects.Length; i++) {
-                bool toEncapsulate = false;
-                Vector3 candidateLocalLocation = UnityEngine.Random.insideUnitSphere * radius;
-                Bounds goBounds = new Bounds();
-                GameObject go = objects[i];
-                if (GetBoundWithChildren(go.transform, ref goBounds, ref toEncapsulate)) {
-                    goBounds.center = candidateLocalLocation;
-                    D.Log("Bounds = {0}.", goBounds.ToString());
-                    if (objectsBounds.All(b => !b.Intersects(goBounds))) {
-                        objectsBounds.Add(goBounds);
-                        localLocations[i] = candidateLocalLocation;
-                        iterateCount = 0;
-                    }
-                    else {
-                        i--;
-                        iterateCount++;
-                        if (iterateCount >= 10) {
-                            D.Error("Iterate error.");
-                            return false;
-                        }
-                    }
-                }
-                else {
-                    D.Error("Unable to construct a Bound for {0}.", go.name);
-                    return false;
-                }
-            }
-            for (int i = 0; i < objects.Length; i++) {
-                objects[i].transform.position = center + localLocations[i];
-                //objects[i].transform.localPosition = localLocations[i];
-            }
-            return true;
-        }
+        // Moved PositionRandomWithinSphere() to AUnitCommandModel as it isn't really useful outside of that scope
 
         /// <summary>
         /// Attaches the child to the parent, automatically aligning position,
@@ -222,13 +176,35 @@ namespace CodeEnv.Master.Common {
         static public GameObject AddChild(GameObject parent, GameObject prefab) {
             GameObject clone = GameObject.Instantiate(prefab) as GameObject;
             clone.name = prefab.name;
-            D.Log("Instantiated {0} and parented to {1}. Awake() can preceed this!", prefab.name, parent.name);
             if (clone != null && parent != null) {
+                D.Log("Instantiated {0} and parented to {1}. Awake() can preceed this!", prefab.name, parent.name);
                 AttachChildToParent(clone, parent);
             }
             return clone;
         }
 
+        /// <summary>
+        /// Calculates the location in world space of 8 vertices of a box surrounding a point.
+        /// The minimum distance from this 'center' point to any side of the box is distance.
+        /// </summary>
+        /// <param name="point">The point.</param>
+        /// <param name="distance">The minimum distance to the side of the box.</param>
+        /// <returns></returns>
+        public static IList<Vector3> CalcBoxVerticesAroundPoint(Vector3 point, float distance) {
+            IList<Vector3> vertices = new List<Vector3>(8);
+            var xPair = new float[2] { point.x - distance, point.x + distance };
+            var yPair = new float[2] { point.y - distance, point.y + distance };
+            var zPair = new float[2] { point.z - distance, point.z + distance };
+            foreach (var x in xPair) {
+                foreach (var y in yPair) {
+                    foreach (var z in zPair) {
+                        Vector3 gridBoxVertex = new Vector3(x, y, z);
+                        vertices.Add(gridBoxVertex);
+                    }
+                }
+            }
+            return vertices;
+        }
 
         /// <summary>
         /// Rounds each value in this Vector3 to the float equivalent of the closest integer.

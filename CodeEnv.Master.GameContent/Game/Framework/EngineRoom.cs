@@ -77,7 +77,7 @@ namespace CodeEnv.Master.GameContent {
             float previousRequestedSpeed = _data.RequestedSpeed;
             float newSpeedToRequestedSpeedRatio = (previousRequestedSpeed != Constants.ZeroF) ? newSpeedRequest / previousRequestedSpeed : Constants.ZeroF;
             if (EngineRoom.SpeedTargetRange.Contains(newSpeedToRequestedSpeedRatio)) {
-                D.Warn("{0} is already generating thrust for {1}. Requested speed unchanged.", _data.Name, newSpeedRequest);
+                D.Log("{0} is already generating thrust for {1}. Requested speed unchanged.", _data.Name, newSpeedRequest);
                 return false;
             }
             SetThrustFor(newSpeedRequest);
@@ -154,18 +154,40 @@ namespace CodeEnv.Master.GameContent {
             return Constants.ZeroF;
         }
 
+        #region Flaps
+
+        // IMPROVE once I implement FTL speed and reduce drag to get faster speeds
+        // I'll have to rethink the whole subject of Data.Drag. Changing Data.Drag
+        // for flaps causes Data.FullSpeed to change which affects lots of other things
+        // especially in Navigator where the FullSpeed value affects a number of factors
+
+        //private void DeployFlaps(bool toDeploy) {
+        //    if (!_isFlapsDeployed && toDeploy) {
+        //        _data.Drag = _data.Drag * 100F;
+        //        _isFlapsDeployed = true;
+        //        D.Log("{0} has deployed flaps. Drag = {1}.", _data.Name, _data.Drag);
+        //    }
+        //    else if (_isFlapsDeployed && !toDeploy) {
+        //        _data.Drag = _data.Drag * 0.01F;
+        //        _isFlapsDeployed = false;
+        //        D.Log("{0} has retracted flaps. Drag = {1}.", _data.Name, _data.Drag);
+        //    }
+        //}
+
         private void DeployFlaps(bool toDeploy) {
             if (!_isFlapsDeployed && toDeploy) {
-                _data.Drag = _data.Drag * 100F;
+                _rigidbody.drag *= 100F;
                 _isFlapsDeployed = true;
-                D.Log("{0} has deployed flaps. Drag = {1}.", _data.Name, _data.Drag);
+                D.Log("{0} has deployed flaps.", _data.Name);
             }
             else if (_isFlapsDeployed && !toDeploy) {
-                _data.Drag = _data.Drag * 0.01F;
+                _rigidbody.drag *= 0.01F;
                 _isFlapsDeployed = false;
-                D.Log("{0} has retracted flaps. Drag = {1}.", _data.Name, _data.Drag);
+                D.Log("{0} has retracted flaps.", _data.Name);
             }
         }
+
+        #endregion
 
         /// <summary>
         /// Coroutine that continuously applies thrust while RequestedSpeed is not Zero.

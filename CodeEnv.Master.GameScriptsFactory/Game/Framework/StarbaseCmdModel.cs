@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Linq;
 using System.Collections;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -45,7 +46,17 @@ public class StarbaseCmdModel : AUnitCommandModel<FacilityModel> {
     }
 
     protected override void Initialize() {
+        base.Initialize();
         CurrentState = StarbaseState.Idling;
+    }
+
+    public override void AddElement(FacilityModel element) {
+        base.AddElement(element);
+        element.Command = this;
+    }
+
+    protected override FacilityModel SelectHQElement() {
+        return Elements.Single(e => e.Data.Category == FacilityCategory.CentralHub);
     }
 
     #region StateMachine

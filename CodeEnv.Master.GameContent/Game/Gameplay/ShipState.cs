@@ -41,7 +41,7 @@ namespace CodeEnv.Master.GameContent {
 
         Refitting,
 
-        Joining,
+        ExecuteJoinFleetOrder,
 
         Withdrawing,
 

@@ -29,12 +29,11 @@ using UnityEngine;
 /// </summary>
 public class RangeTracker : TriggerTracker, IRangeTracker {
 
-    //public RangeTrackerID ID { get; set; }
+    public Guid ID { get; private set; }
 
-    //public Range<float> RangeSpan { get; private set; }
+    public Range<float> RangeSpan { get; private set; }
 
-    public event Action<bool> onEnemyInRange;
-    //public event Action<bool, RangeTrackerID> onEnemyInRange;
+    public event Action<bool, Guid> onEnemyInRange;
 
     private float _range;
     public float Range {
@@ -57,6 +56,8 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
     protected override void Awake() {
         base.Awake();
         EnemyTargets = new List<ITarget>();
+        ID = Guid.NewGuid();
+        RangeSpan = new Range<float>(Constants.ZeroF, Constants.ZeroF);
     }
 
     protected override void Add(ITarget target) {
@@ -67,7 +68,7 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
     }
 
     private void AddEnemyTarget(ITarget enemyTarget) {
-        D.Log("{0}.{1} with range {2} added Enemy Target {3}.", Data.Name, GetType().Name, Range, enemyTarget.Name);
+        //D.Log("{0}.{1} with range {2} added Enemy Target {3}.", Data.Name, GetType().Name, Range, enemyTarget.Name);
         if (EnemyTargets.Count == 0) {
             OnEnemyInRange(true);   // there are now enemies in range
         }
@@ -84,7 +85,7 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
             if (EnemyTargets.Count == 0) {
                 OnEnemyInRange(false);  // no longer any Enemies in range
             }
-            D.Log("{0}.{1} with range {2} removed Enemy Target {3}.", Data.Name, GetType().Name, Range, enemyTarget.Name);
+            //D.Log("{0}.{1} with range {2} removed Enemy Target {3}.", Data.Name, GetType().Name, Range, enemyTarget.Name);
         }
     }
 
@@ -123,7 +124,7 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
     private void OnRangeChanged() {
         //D.Log("{0}.{1}.Range changed to {2}.", Data.Name, GetType().Name, Range);
         Collider.radius = Range;
-        //RangeSpan = new Range<float>(0.9F * Range, 1.10F * Range);
+        RangeSpan = new Range<float>(0.9F * Range, 1.10F * Range);
         if (_isInitialized) {
             Collider.enabled = false;
             AllTargets.ForAll(t => Remove(t));  // clears both AllTargets and EnemyTargets
@@ -144,8 +145,7 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
     protected void OnEnemyInRange(bool isEnemyInRange) {
         var temp = onEnemyInRange;
         if (temp != null) {
-            temp(isEnemyInRange);
-            //temp(isEnemyInRange, ID);
+            temp(isEnemyInRange, ID);
         }
     }
 

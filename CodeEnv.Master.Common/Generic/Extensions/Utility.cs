@@ -13,6 +13,7 @@
 namespace CodeEnv.Master.Common {
 
     using System;
+    using System.Linq;
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -194,6 +195,34 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         public static float RoundFloor(float number, float multiple) {
             return Mathf.Floor(number / multiple) * multiple;
+        }
+
+        /// <summary>
+        /// Combines the specified enumerables into 1 enumerable. Duplicates are allowed.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="enumerables">The enumerables.</param>
+        /// <returns></returns>
+        public static IEnumerable<T> Combine<T>(IEnumerable<IEnumerable<T>> enumerables) {
+            IEnumerable<T> result = Enumerable.Empty<T>();
+            foreach (var e in enumerables) {
+                result = result.Concat<T>(e);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Combines the specified enumerables into 1 enumerable of unique elements.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="enumerables">The enumerables.</param>
+        /// <returns></returns>
+        public static IEnumerable<T> CombineUnique<T>(IEnumerable<IEnumerable<T>> enumerables) {
+            IEnumerable<T> result = Enumerable.Empty<T>();
+            foreach (var e in enumerables) {
+                result = result.Union<T>(e);
+            }
+            return result;
         }
 
     }

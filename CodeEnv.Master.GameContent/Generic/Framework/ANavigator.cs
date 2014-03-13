@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -46,7 +46,8 @@ namespace CodeEnv.Master.GameContent {
         public event Action onCourseTrackingError;
 
         /// <summary>
-        /// The IDestinationTarget this navigator is trying to reach. Can simply be a location.
+        /// The IDestinationTarget this navigator is trying to reach. Can simply be a 
+        /// StationaryLocation or even null if the ship or fleet has not attempted to move.
         /// </summary>
         public IDestinationTarget Target { get; protected set; }
 
@@ -194,7 +195,7 @@ namespace CodeEnv.Master.GameContent {
             float clampedRayDistance = Mathf.Clamp(rayDistance, 0.1F, Mathf.Infinity);
             RaycastHit hitInfo;
             if (Physics.Raycast(currentPosition, directionToLocation, out hitInfo, clampedRayDistance, _keepoutOnlyLayerMask.value)) {
-                D.Warn("{0} encountered obstacle {1} when checking approach to {2}.", Data.Name, hitInfo.collider.name, location);
+                D.Log("{0} encountered obstacle {1} when checking approach to {2}.", Data.Name, hitInfo.collider.name, location);
                 // there is a keepout zone obstacle in the way 
                 return false;
             }

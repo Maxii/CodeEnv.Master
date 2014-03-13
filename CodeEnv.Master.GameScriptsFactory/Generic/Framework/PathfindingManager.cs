@@ -47,9 +47,11 @@ public class PathfindingManager : AMonoBase, IDisposable {
     private void InitializeAstarPath() {
         _astarPath = AstarPath.active;
         _astarPath.scanOnStartup = false;
-        // IMPROVE max distance from a worldspace position to a node from my experimentation
-        // assuming points surrounding obstacles are set at 0.05 grids away (0.5 * 0.1) from obstacle center
-        // and interior sector points are 0.25 grids away from sector center (0.5 * 0.5)
+        // IMPROVE 600 seems a good max distance from a worldspace position to a node from my experimentation
+        // This distance is used during the construction of a path. MaxDistance is used in the generation of a point graph
+        // Assumptions:
+        // points surrounding obstacles are set at 0.05 grids away (0.5 * 0.1) from obstacle center
+        // interior sector points are 0.25 grids away from sector center (0.5 * 0.5) ~ 520 (0.25 x sectorDiag of 2078)
         _astarPath.maxNearestNodeDistance = 600F;
         // TODO other settings
     }

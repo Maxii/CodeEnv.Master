@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -57,7 +57,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float Drag {
             get { return _drag; }
-            set { SetProperty<float>(ref _drag, value, "Drag", OnDragChanged); }
+            set { SetProperty<float>(ref _drag, value, "Drag", OnDragChanged, OnDragChanging); }
         }
 
         private float _fullThrust;
@@ -66,9 +66,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float FullThrust {
             get { return _fullThrust; }
-            set {
-                SetProperty<float>(ref _fullThrust, value, "FullThrust", OnFullThrustChanged);
-            }
+            set { SetProperty<float>(ref _fullThrust, value, "FullThrust", OnFullThrustChanged); }
         }
 
         private Vector3 _requestedHeading;
@@ -137,7 +135,6 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-
         private void Initialize() {
             _gameStatus = GameStatus.Instance;
             _gameTime = GameTime.Instance;
@@ -158,13 +155,22 @@ namespace CodeEnv.Master.GameContent {
             _rigidbody.drag = Drag;
         }
 
+        private void OnDragChanging(float newDrag) {
+            if (Drag != Constants.ZeroF && Drag != _rigidbody.drag) {
+                D.Warn("{0}.Drag of {1} and Rigidbody.drag of {2} are not the same.", Name, Drag, _rigidbody.drag);
+                // TODO: Need to rethink this whole Drag subject (flaps, FTL, etc.) as I'm probably changing Drag when the flaps are on
+            }
+        }
+
         private void OnDragChanged() {
             _rigidbody.drag = Drag;
             _fullSpeed = FullThrust / (Mass * Drag);
+            D.Log("{0} FullSpeed set to {1}, FullThrust = {2}, Mass = {3}, Drag = {4}.", Name, _fullSpeed, FullThrust, Mass, Drag);
         }
 
         private void OnFullThrustChanged() {
             _fullSpeed = FullThrust / (Mass * Drag);
+            D.Log("{0} FullSpeed set to {1}, FullThrust = {2}, Mass = {3}, Drag = {4}.", Name, _fullSpeed, FullThrust, Mass, Drag);
         }
 
         private void OnIsPausedChanging(bool isPausing) {

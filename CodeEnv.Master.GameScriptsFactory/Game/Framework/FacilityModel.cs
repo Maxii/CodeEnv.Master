@@ -53,7 +53,7 @@ public class FacilityModel : AUnitElementModel {
         set { SetProperty<UnitOrder<FacilityOrders>>(ref _currentOrder, value, "CurrentOrder", OnOrdersChanged); }
     }
 
-    private AUnitCommandModel<FacilityModel> _command;
+    public AUnitCommandModel<FacilityModel> Command { get; set; }
 
     protected override void Awake() {
         base.Awake();
@@ -62,14 +62,6 @@ public class FacilityModel : AUnitElementModel {
 
     protected override void Initialize() {
         base.Initialize();
-        // when a Starbase or Settlement is initially built, the facility already selected to be the HQ assigns itself
-        // to the command. As Command will immediately callback, Facility must do any
-        // required initialization now, before the callback takes place
-        var parent = _transform.parent;
-        _command = parent.gameObject.GetSafeMonoBehaviourComponentInChildren<AUnitCommandModel<FacilityModel>>();
-        if (IsHQElement) {
-            _command.HQElement = this;
-        }
         CurrentState = FacilityState.Idling;
     }
 
@@ -87,12 +79,9 @@ public class FacilityModel : AUnitElementModel {
         // TODO register as available
     }
 
-    void Idling_OnWeaponReady() {
+    void Idling_OnWeaponReady(Weapon weapon) {
         LogEvent();
-        if (_weaponTargetTracker.__TryGetRandomEnemyTarget(out _attackTarget)) {
-            D.Log("{0} initiating attack on {1} from {2}.", Data.Name, _attackTarget.Name, CurrentState.GetName());
-            Call(FacilityState.Attacking);
-        }
+        TryFireOnAnyTarget(weapon);
     }
 
     void Idling_ExitState() {
@@ -106,31 +95,30 @@ public class FacilityModel : AUnitElementModel {
 
     private ITarget _ordersTarget;
     private ITarget _primaryTarget; // IMPROVE  take this previous target into account when PickPrimaryTarget()
-    private ITarget _attackTarget;
 
     IEnumerator ExecuteAttackOrder_EnterState() {
         D.Log("{0}.ExecuteAttackOrder_EnterState() called.", Data.Name);
         _ordersTarget = (CurrentOrder as UnitTargetOrder<FacilityOrders>).Target;
 
         while (!_ordersTarget.IsDead) {
-            if (_isAnyWeaponReady) {
-                bool inRange = PickPrimaryTarget(out _primaryTarget);
-                if (inRange) {   // if no orders target in range, then _primaryTarget is null, so continue during next fire window
-                    _attackTarget = _primaryTarget;
-                    Call(FacilityState.Attacking);
-                }
-            }
+            bool inRange = PickPrimaryTarget(out _primaryTarget);
+            // if a primaryTarget is inRange, primary target is not null so OnWeaponReady will attack it
+            // if not in range, then primary target will be null, so OnWeaponReady will attack other targets of opportunity, if any
             yield return null;
         }
         CurrentState = FacilityState.Idling;
     }
 
-    // Valid in this state as the state can exist for quite a while if the orderTarget is staying out of range
-    void ExecuteAttackOrder_OnWeaponReady() {
+    void ExecuteAttackOrder_OnWeaponReady(Weapon weapon) {
         LogEvent();
-        if (_weaponTargetTracker.__TryGetRandomEnemyTarget(out _attackTarget)) {
-            D.Log("{0} initiating attack on {1} from {2}.", Data.Name, _attackTarget.Name, CurrentState.GetName());
+        if (_primaryTarget != null) {
+            _attackTarget = _primaryTarget;
+            _attackDamage = weapon.Damage;
+            D.Log("{0}.{1} initiating attack on {2} from {3}.", Data.Name, weapon.Name, _attackTarget.Name, CurrentState.GetName());
             Call(FacilityState.Attacking);
+        }
+        else {
+            TryFireOnAnyTarget(weapon);    // Valid in this state as the state can exist for quite a while if the orderTarget is staying out of range
         }
     }
 
@@ -144,6 +132,9 @@ public class FacilityModel : AUnitElementModel {
 
     #region Attacking
 
+    private ITarget _attackTarget;
+    private float _attackDamage;
+
     void Attacking_EnterState() {
         LogEvent();
         if (_attackTarget == null) {
@@ -151,16 +142,15 @@ public class FacilityModel : AUnitElementModel {
             Return();
             return;
         }
-        D.Assert(_isAnyWeaponReady, "{0} Attacking with no weapon ready.".Inject(Data.Name));
         OnShowAnimation(MortalAnimations.Attacking);
-        _attackTarget.TakeDamage(8F);
+        _attackTarget.TakeDamage(_attackDamage);
         Return();
     }
 
     void Attacking_ExitState() {
         LogEvent();
-        _isAnyWeaponReady = false;
         _attackTarget = null;
+        _attackDamage = Constants.ZeroF;
     }
 
     #endregion
@@ -174,12 +164,9 @@ public class FacilityModel : AUnitElementModel {
         yield return null;  // required immediately after Call() to avoid FSM bug
     }
 
-    void ExecuteRepairOrder_OnWeaponReady() {
+    void ExecuteRepairOrder_OnWeaponReady(Weapon weapon) {
         LogEvent();
-        if (_weaponTargetTracker.__TryGetRandomEnemyTarget(out _attackTarget)) {
-            D.Log("{0} initiating attack on {1} from {2}.", Data.Name, _attackTarget.Name, CurrentState.GetName());
-            Call(FacilityState.Attacking);
-        }
+        TryFireOnAnyTarget(weapon);
     }
 
     void ExecuteRepairOrder_ExitState() {
@@ -203,12 +190,9 @@ public class FacilityModel : AUnitElementModel {
         Return();
     }
 
-    void Repairing_OnWeaponReady() {
+    void Repairing_OnWeaponReady(Weapon weapon) {
         LogEvent();
-        if (_weaponTargetTracker.__TryGetRandomEnemyTarget(out _attackTarget)) {
-            D.Log("{0} initiating attack on {1} from {2}.", Data.Name, _attackTarget.Name, CurrentState.GetName());
-            Call(FacilityState.Attacking);
-        }
+        TryFireOnAnyTarget(weapon);
     }
 
     void Repairing_ExitState() {
@@ -270,21 +254,39 @@ public class FacilityModel : AUnitElementModel {
     #region StateMachine Support Methods
 
     /// <summary>
+    /// Attempts to fire the provided weapon at a target within range.
+    /// </summary>
+    /// <param name="weapon">The weapon.</param>
+    private void TryFireOnAnyTarget(Weapon weapon) {
+        if (_rangeTrackerLookup[weapon.TrackerID].__TryGetRandomEnemyTarget(out _attackTarget)) {
+            D.Log("{0}.{1} initiating attack on {2} from {3}.", Data.Name, weapon.Name, _attackTarget.Name, CurrentState.GetName());
+            _attackDamage = weapon.Damage;
+            Call(FacilityState.Attacking);
+        }
+        else {
+            D.Warn("{0}.{1} could not lockon {2} from {3}.", Data.Name, weapon.Name, _attackTarget.Name, CurrentState.GetName());
+        }
+    }
+
+    /// <summary>
     /// Picks the highest priority target from orders. First selection criteria is inRange.
     /// </summary>
     /// <param name="chosenTarget">The chosen target from orders or null if no targets remain.</param>
     /// <returns>
-    /// True if the target is in range, false otherwise. NEXT
+    /// True if the target is in range, false otherwise. 
     /// </returns>
     private bool PickPrimaryTarget(out ITarget chosenTarget) {
         D.Assert(_ordersTarget != null && !_ordersTarget.IsDead, "{0}'s target from orders is null or dead.".Inject(Data.Name));
         bool isTargetInRange = false;
-        var enemyTargetsInRange = _weaponTargetTracker.EnemyTargets;
+        var uniqueEnemyTargetsInRange = Enumerable.Empty<ITarget>();
+        foreach (var rt in _rangeTrackerLookup.Values) {
+            uniqueEnemyTargetsInRange = uniqueEnemyTargetsInRange.Union<ITarget>(rt.EnemyTargets);  // OPTIMIZE
+        }
 
         ICmdTarget cmdTarget = _ordersTarget as ICmdTarget;
         if (cmdTarget != null) {
             var primaryTargets = cmdTarget.ElementTargets;
-            var primaryTargetsInRange = primaryTargets.Intersect(enemyTargetsInRange);
+            var primaryTargetsInRange = primaryTargets.Intersect(uniqueEnemyTargetsInRange);
             if (!primaryTargetsInRange.IsNullOrEmpty()) {
                 chosenTarget = SelectHighestPriorityTarget(primaryTargetsInRange);
                 isTargetInRange = true;
@@ -296,11 +298,11 @@ public class FacilityModel : AUnitElementModel {
         }
         else {
             chosenTarget = _ordersTarget;   // Planetoid
-            isTargetInRange = enemyTargetsInRange.Contains(_ordersTarget);
+            isTargetInRange = uniqueEnemyTargetsInRange.Contains(_ordersTarget);
         }
         if (chosenTarget != null) {
             // no need for knowing about death event as primaryTarget is continuously checked while under orders to attack
-            D.Log("{0}'s has selected {1} as it's primary target.", Data.Name, chosenTarget.Name);
+            D.Log("{0}'s has selected {1} as it's primary target. InRange = {2}.", Data.Name, chosenTarget.Name, isTargetInRange);
         }
         return isTargetInRange;
     }
@@ -328,10 +330,10 @@ public class FacilityModel : AUnitElementModel {
             return;
         }
 
-        var elements = new List<FacilityModel>(_command.Elements);  // copy to avoid enumeration modified while enumerating exception
+        var elements = new List<FacilityModel>(Command.Elements);  // copy to avoid enumeration modified while enumerating exception
         // damage either all goes to HQ Element or is spread among all except the HQ Element
-        float damageDivisor = elements.Count == 1 ? 1F : (float)(elements.Count - 1);
-        float elementDamage = damage / damageDivisor;
+        float numElementsShareDamage = elements.Count == 1 ? 1F : (float)(elements.Count - 1);
+        float elementDamage = damage / numElementsShareDamage;
 
         foreach (var element in elements) {
             float damageToTake = elementDamage;
@@ -359,7 +361,7 @@ public class FacilityModel : AUnitElementModel {
 
         bool isCmdHit = false;
         if (IsHQElement && isDirectlyAttacked) {
-            isCmdHit = _command.__CheckForDamage(isElementAlive);
+            isCmdHit = Command.__CheckForDamage(isElementAlive);
         }
         if (!isElementAlive) {
             CurrentState = FacilityState.Dead;
@@ -371,6 +373,7 @@ public class FacilityModel : AUnitElementModel {
             var hitAnimation = isCmdHit ? MortalAnimations.CmdHit : MortalAnimations.Hit;
             OnShowAnimation(hitAnimation);
         }
+        AssessNeedForRepair();
     }
 
     #endregion
@@ -423,8 +426,8 @@ public class FacilityModel : AUnitElementModel {
     #region ITarget Members
 
     public override void TakeDamage(float damage) {
+        D.Log("{0} taking {1} damage.", Data.OptionalParentName, damage);
         DistributeDamage(damage);
-        AssessNeedForRepair();
     }
 
     #endregion

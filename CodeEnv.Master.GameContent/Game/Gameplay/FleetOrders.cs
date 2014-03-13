@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
 
         Guard,
 
-        JoinFleetAt,
+        JoinFleet,
 
         /// <summary>
         /// Move to an ITarget or location.

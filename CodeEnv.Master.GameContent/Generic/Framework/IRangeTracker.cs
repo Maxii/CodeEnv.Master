@@ -18,6 +18,7 @@ namespace CodeEnv.Master.GameContent {
 
     using System;
     using System.Collections.Generic;
+    using CodeEnv.Master.Common;
 
     /// <summary>
     /// Interface for access to RangeTrackers.
@@ -28,9 +29,13 @@ namespace CodeEnv.Master.GameContent {
         /// Occurs once with <c>true</c> when the first of one or more enemies come into range and 
         /// once with <c>false</c> when there are no more enemies in range.
         /// </summary>
-        event Action<bool> onEnemyInRange;
+        event Action<bool, Guid> onEnemyInRange;
+
+        Guid ID { get; }
 
         float Range { get; set; }
+
+        Range<float> RangeSpan { get; }
 
         IPlayer Owner { get; set; }
 

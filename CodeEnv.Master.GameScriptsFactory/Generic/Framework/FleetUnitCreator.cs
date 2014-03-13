@@ -29,45 +29,69 @@ using UnityEngine;
 /// deployed will simply be initialized if already present in the scene. If it is not present, then
 /// it will be built and then initialized.
 /// </summary>
-public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, FleetCmdModel, FleetComposition> {
+public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, ShipStats, FleetCmdModel> {
 
     protected override GameState GetCreationGameState() {
         return GameState.DeployingSettlements;  // Can be anytime? Should be after GeneratePathGraph so no interference
     }
 
-    protected override ShipData CreateElementData(ShipCategory elementCategory, string elementInstanceName) {
-        float mass = TempGameValues.__GetMass(elementCategory);
+    protected override void CreateElementStat(ShipCategory category, string elementName) {
+        float mass = TempGameValues.__GetMass(category);
         float drag = 0.1F;
-        ShipData elementData = new ShipData(elementCategory, elementInstanceName, maxHitPoints: 50F, mass: mass, drag: drag) {   // TODO mass variation
-            // optionalParentName gets set when it gets attached to a command
-            Strength = new CombatStrength(),
-            WeaponRange = UnityEngine.Random.Range(3F, 6F),
-            WeaponReloadPeriod = UnityEngine.Random.Range(0.4F, 0.6F),
-            CurrentHitPoints = UnityEngine.Random.Range(25F, 50F),
+
+        ShipStats stat = new ShipStats() {
+            Category = category,
+            Name = elementName,
+            Mass = mass,
+            Drag = drag,
+            FullThrust = mass * drag * UnityEngine.Random.Range(2F, 5F), // MaxThrust = Mass * Drag * MaxSpeed;
+            MaxHitPoints = 50F,
             MaxTurnRate = UnityEngine.Random.Range(45F, 315F),
-            FullThrust = mass * drag * UnityEngine.Random.Range(2F, 5F) // MaxThrust = Mass * Drag * MaxSpeed;
+            Strength = new CombatStrength(),
+            Weapons = new List<Weapon>() { 
+                new Weapon(WeaponCategory.BeamOffense, model: 1) {
+                Range = UnityEngine.Random.Range(3F, 6F),
+                ReloadPeriod = UnityEngine.Random.Range(0.4F, 0.6F),
+                Damage = UnityEngine.Random.Range(4F, 6F)
+                },
+                new Weapon(WeaponCategory.MissileOffense, model: 2) {
+                Range = UnityEngine.Random.Range(5F, 8F),
+                ReloadPeriod = UnityEngine.Random.Range(1F, 1.5F),
+                Damage = UnityEngine.Random.Range(8F, 12F)
+                }
+            },
+            CurrentHitPoints = UnityEngine.Random.Range(25F, 50F)
         };
-        return elementData;
+        _elementStats.Add(stat);
     }
 
-    protected override GameObject GetCommandPrefab() {
-        return RequiredPrefabs.Instance.fleetCmd.gameObject;
+    protected override FleetCmdModel GetCommand(IPlayer owner) {
+        FleetCmdModel cmd;
+        if (_isPreset) {
+            cmd = gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCmdModel>();
+            _factory.PopulateCommand(UnitName, owner, ref cmd);
+        }
+        else {
+            cmd = _factory.MakeFleetCmdInstance(UnitName, owner);
+            UnityUtility.AttachChildToParent(cmd.gameObject, gameObject);
+        }
+        return cmd;
     }
 
-    protected override void AddDataToComposition(ShipData elementData) {
-        _composition.Add(elementData);
+    protected override IList<ShipStats> GetStats(ShipCategory elementCategory) {
+        return _elementStats.Where(s => s.Category == elementCategory).ToList();
     }
 
-    protected override IList<ShipCategory> GetCompositionCategories() {
-        return _composition.Categories;
+    protected override ShipModel MakeElement(ShipStats stat) {
+        return _factory.MakeInstance(stat);
     }
 
-    protected override IList<ShipData> GetCompositionData(ShipCategory elementCategory) {
-        return _composition.GetData(elementCategory);
+    protected override void MakeElement(ShipStats stat, ref ShipModel element) { // OPTIMIZE
+        _factory.MakeInstance(stat, ref element);
     }
 
-    protected override IEnumerable<GameObject> GetElementPrefabs() {
-        return RequiredPrefabs.Instance.ships.Select<ShipModel, GameObject>(s => s.gameObject);
+    protected override ShipCategory GetCategory(ShipStats stat) {
+        return stat.Category;
     }
 
     protected override ShipCategory[] GetValidElementCategories() {
@@ -76,27 +100,6 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
 
     protected override ShipCategory[] GetValidHQElementCategories() {
         return new ShipCategory[] { ShipCategory.Cruiser, ShipCategory.Carrier, ShipCategory.Dreadnaught };
-    }
-
-    protected override void InitializeCommandData(IPlayer owner) {
-        _command.Data = new FleetCmdData(UnitName, 10F) {
-            Strength = new CombatStrength(0F, 10F, 0F, 10F, 0F, 10F),   // no offense, strong defense
-            Owner = owner
-        };
-    }
-
-    protected override void MarkHQElement() {
-        RandomExtended<ShipModel>.Choice(_elements).IsHQElement = true;
-    }
-
-    protected override void PositionElements() {
-        float globeRadius = 1F * (float)Math.Pow(_elements.Count * 0.2F, 0.33F);  // cube root of number of groups of 5 elements
-        PositionElementsEquidistantInCircle(globeRadius);
-
-        //if (!PositionElementsRandomlyInSphere(globeRadius)) {
-        //    // try again with a larger radius
-        //    D.Assert(PositionElementsRandomlyInSphere(globeRadius * 1.5F), "{0} Positioning Error.".Inject(_pieceName));
-        //}
     }
 
     protected override void __InitializeCommandIntel() {

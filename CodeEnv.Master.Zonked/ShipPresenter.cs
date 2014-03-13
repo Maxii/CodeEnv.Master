@@ -84,7 +84,7 @@ public class ShipPresenter : AMortalItemPresenter {
             case ShipState.Chasing:
             case ShipState.Attacking:
             case ShipState.Dying:
-            case ShipState.Joining:
+            case ShipState.ExecuteJoinFleetOrder:
             case ShipState.TakingDamage:
             case ShipState.Withdrawing:
                 // do nothing
@@ -121,7 +121,7 @@ public class ShipPresenter : AMortalItemPresenter {
             case ShipState.Chasing:
             case ShipState.Attacking:
             case ShipState.Dying:
-            case ShipState.Joining:
+            case ShipState.ExecuteJoinFleetOrder:
             case ShipState.TakingDamage:
             case ShipState.Withdrawing:
                 // do nothing

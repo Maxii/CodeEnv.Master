@@ -19,6 +19,7 @@ namespace Pathfinding {
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
+    using CodeEnv.Master.GameContent;
     using UnityEngine;
 
     /// <summary>
@@ -29,6 +30,10 @@ namespace Pathfinding {
     public class MyAStarPointGenerator : PointGraph {
 
         public IList<Vector3> GraphLocations { get; private set; }
+
+        public IList<Vector3> ObstacleLocations { get; private set; }
+
+        private UniverseCenterView _universeCenterView;
 
         /// <summary>
         /// This will be called on the same time as Awake on the gameObject which the AstarPath script is attached to. (remember, not in the editor)
@@ -115,47 +120,8 @@ namespace Pathfinding {
             return closestNode;
         }
 
-        private IList<Vector3> InitializeGraphLocations() {
-            SectorGrid sectorGrid = SectorGrid.Instance;
-            var corners = sectorGrid.SectorCorners;
-            if (corners == null) {
-                // AstarPath has an option to automatically call Scan() on Awake which can be too early
-                D.Warn("SectorGrid not yet initialized.");
-                return new List<Vector3>();
-            }
-            var sectorCenters = sectorGrid.SectorCenters;
-            IEnumerable<Vector3> graphLocations = corners.Union(sectorCenters);
-
-            IList<Vector3> obstacleLocations = FindObstacleLocations();
-            graphLocations = graphLocations.Except(obstacleLocations);
-
-            IEnumerable<Vector3> pointsAroundObstacles = new List<Vector3>();
-            foreach (var obstacleLoc in obstacleLocations) {
-                pointsAroundObstacles = pointsAroundObstacles.Union(sectorGrid.CalcBoxVerticesAroundCenter(obstacleLoc, 0.1F));
-            }
-            graphLocations = graphLocations.Union(pointsAroundObstacles);
-
-            IEnumerable<Vector3> interiorSectorPoints = new List<Vector3>();
-            foreach (var sectorCenter in sectorCenters) {
-                interiorSectorPoints = interiorSectorPoints.Union(sectorGrid.CalcBoxVerticesAroundCenter(sectorCenter, 0.5F));
-            }
-            graphLocations = graphLocations.Union(interiorSectorPoints);
-
-            return graphLocations.ToList();
-        }
-
-        private IList<Vector3> FindObstacleLocations() {
-            var obstacleLocations = Universe.Instance.Folder.gameObject.GetSafeMonoBehaviourComponentsInChildren<SystemCreator>()
-                .Select(sm => sm.transform.position).ToList();
-            var universeCenterView = Universe.Instance.Folder.gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterView>();
-            if (universeCenterView != null) {   // allows me to deactivate UniverseCenter
-                obstacleLocations.Add(universeCenterView.transform.position);
-            }
-            //D.Log("{0} obstacle locations found.", obstacleLocations.Count);
-            return obstacleLocations;
-        }
-
         public override void Scan() {
+            ObstacleLocations = FindObstacleLocations();
             GraphLocations = InitializeGraphLocations();
 
             nodes = CreateNodes(GraphLocations.Count);
@@ -163,7 +129,7 @@ namespace Pathfinding {
                 nodes[i].position = (Int3)GraphLocations[i];
                 nodes[i].walkable = true;
             }
-            //D.Log("{0} pathfinding nodes created.", nodes.Length);
+            D.Log("{0} pathfinding nodes created.", nodes.Length);
 
             if (maxDistance >= 0) {
                 //To avoid too many allocations, these lists are reused for each node
@@ -197,8 +163,67 @@ namespace Pathfinding {
                     node.connectionCosts = costs.ToArray();
                 }
                 int totalConnectionsAttempted = connectionCount + invalidConnectionCount;
-                //D.Log("{0}/{1} valid connections.", connectionCount, totalConnectionsAttempted);
+                D.Log("{0}/{1} valid connections.", connectionCount, totalConnectionsAttempted);
             }
+        }
+
+        private IList<Vector3> InitializeGraphLocations() {
+            SectorGrid sectorGrid = SectorGrid.Instance;
+            var corners = sectorGrid.SectorCorners;
+            if (corners == null) {
+                // AstarPath has an option to automatically call Scan() on Awake which can be too early
+                D.Warn("SectorGrid not yet initialized.");
+                return new List<Vector3>();
+            }
+            var sectorCenters = sectorGrid.SectorCenters;
+            IEnumerable<Vector3> graphLocations = corners.Union(sectorCenters);
+
+            var vector3EqualityComparer = new Vector3EqualityComparer();
+            graphLocations = graphLocations.Except(ObstacleLocations, vector3EqualityComparer);
+
+            float percentDistanceAroundObstacles = TempGameValues.PathGraphPointPercentDistanceAroundObstacles;  // 0.1F
+            float percentDistanceAroundSectorCenters = 0.5F;
+
+            IEnumerable<Vector3> pointsAroundObstacles = Enumerable.Empty<Vector3>();
+            foreach (var obstacleLoc in ObstacleLocations) {
+                if (sectorCenters.Contains<Vector3>(obstacleLoc, vector3EqualityComparer)) {
+                    pointsAroundObstacles = pointsAroundObstacles.Union(sectorGrid.CalcBoxVerticesAroundCenter(obstacleLoc, percentDistanceAroundObstacles));
+                }
+                else if (_universeCenterView != null && _universeCenterView.transform.position.IsSame(obstacleLoc)) {
+                    var radius = _universeCenterView.Radius;    // allows UniverseCenter to be quite large
+                    var absoluteDistance = radius + percentDistanceAroundObstacles * ((0.5F * TempGameValues.SectorSideLength) - radius);
+                    pointsAroundObstacles = pointsAroundObstacles.Union(UnityUtility.CalcBoxVerticesAroundPoint(obstacleLoc, absoluteDistance));
+                }
+                else {
+                    D.Warn("Obstacle at {0} not anticipated.", obstacleLoc);
+                }
+            }
+            graphLocations = graphLocations.Union(pointsAroundObstacles);
+
+            IEnumerable<Vector3> interiorSectorPoints = Enumerable.Empty<Vector3>();
+            foreach (var sectorCenter in sectorCenters) {
+                interiorSectorPoints = interiorSectorPoints.Union(sectorGrid.CalcBoxVerticesAroundCenter(sectorCenter, percentDistanceAroundSectorCenters));
+            }
+            graphLocations = graphLocations.Union(interiorSectorPoints);
+
+            return graphLocations.ToList();
+        }
+
+        private IList<Vector3> FindObstacleLocations() {
+            _universeCenterView = Universe.Instance.Folder.gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterView>();
+            var obstacleLocations = Universe.Instance.Folder.gameObject.GetSafeMonoBehaviourComponentsInChildren<SystemCreator>()
+                .Select(sm => sm.transform.position).ToList();
+            var starbaseObstacleLocations = Universe.Instance.Folder.gameObject.GetSafeMonoBehaviourComponentsInChildren<StarbaseUnitCreator>()
+                .Select(sbc => sbc.transform.position);
+            if (!starbaseObstacleLocations.IsNullOrEmpty()) {
+                obstacleLocations = obstacleLocations.Concat(starbaseObstacleLocations).ToList();
+            }
+
+            if (_universeCenterView != null) {   // allows me to deactivate UniverseCenter
+                obstacleLocations.Add(_universeCenterView.transform.position);
+            }
+            D.Log("{0} obstacle locations found.", obstacleLocations.Count);
+            return obstacleLocations;
         }
 
         /// <summary>

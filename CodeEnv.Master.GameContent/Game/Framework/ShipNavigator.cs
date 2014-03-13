@@ -73,7 +73,8 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Subscribe() {
             base.Subscribe();
-            _subscribers.Add(Data.SubscribeToPropertyChanged<ShipData, float>(d => d.WeaponRange, OnWeaponsRangeChanged));
+            //_subscribers.Add(Data.SubscribeToPropertyChanged<ShipData, float>(d => d.WeaponRange, OnWeaponsRangeChanged));
+            _subscribers.Add(Data.SubscribeToPropertyChanged<ShipData, float>(d => d.MaxWeaponsRange, OnWeaponsRangeChanged));
             _subscribers.Add(Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullSpeed, OnFullSpeedChanged));
         }
 
@@ -113,7 +114,9 @@ namespace CodeEnv.Master.GameContent {
         private IEnumerator EngageHomingCourseToTarget() {
             //D.Log("Initiating coroutine for approach to {0}.", Destination);
             Vector3 newHeading = (Destination - Data.Position).normalized;
-            _ship.ChangeHeading(newHeading, isAutoPilot: true);
+            if (!newHeading.IsSameDirection(Data.RequestedHeading, 0.1F)) {
+                _ship.ChangeHeading(newHeading, isAutoPilot: true);
+            }
 
             int courseCheckPeriod = _courseHeadingCheckPeriod;
             bool isSpeedIncreaseMade = false;
@@ -150,7 +153,6 @@ namespace CodeEnv.Master.GameContent {
             _ship.ChangeHeading(newHeading, isAutoPilot: true);
         }
 
-
         /// <summary>
         /// Increases the speed of the fleet when the correct heading has been achieved.
         /// </summary>
@@ -166,10 +168,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Checks the course and makes any heading corrections needed.
+        /// Checks the course and provides any heading corrections needed.
         /// </summary>
-        /// <param name="distanceToDestinationSqrd"></param>
+        /// <param name="distanceToDestinationSqrd">The distance to destination SQRD.</param>
+        /// <param name="correctedHeading">The corrected heading.</param>
         /// <param name="checkCount">The check count. When the value reaches 0, the course is checked.</param>
+        /// <returns>true if a course correction to <c>correctedHeading</c> is needed.</returns>
         private bool CheckForCourseCorrection(float distanceToDestinationSqrd, out Vector3 correctedHeading, ref int checkCount) {
             if (distanceToDestinationSqrd < _courseHeadingCheckDistanceThresholdSqrd) {
                 checkCount = 0;
@@ -208,13 +212,12 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         protected override void InitializeTargetValues() {
             float speedFactor = Data.FullSpeed * _gameSpeedMultiplier * 3F;
-
             __separationTestToleranceDistanceSqrd = speedFactor * speedFactor;   // FIXME needs work - courseUpdatePeriod???
+            D.Log("{0} SeparationToleranceSqrd = {1}, Data.FullSpeed = {2}.", Data.Name, __separationTestToleranceDistanceSqrd, Data.FullSpeed);
 
-            //DesiredDistanceFromTarget = Data.WeaponRange;
             _courseHeadingCheckPeriod = Mathf.RoundToInt(1000 / (speedFactor * 5));  // higher speeds mean a shorter period between course checks, aka more frequent checks
             _courseHeadingCheckDistanceThresholdSqrd = speedFactor * speedFactor;   // higher speeds mean course checks become continuous further away
-            if (!Target.IsMovable) {
+            if (Target != null && !Target.IsMovable) {  // target can be null
                 // the target doesn't move so course checks are much less important
                 _courseHeadingCheckPeriod *= 5;
                 _courseHeadingCheckDistanceThresholdSqrd /= 5F;

@@ -60,7 +60,7 @@ namespace CodeEnv.Master.GameContent {
 
         GoRetreat,
 
-        GoJoin,
+        ExecuteJoinFleetOrder,
 
         GoDisband,
         Disbanding,

@@ -27,7 +27,7 @@ using UnityEngine;
 ///  Initialization class that deploys a Settlement that is available for assignment to a System.
 ///  When assigned, the Settlement relocates to the orbital slot for Settlements held open by the System.
 /// </summary>
-public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategory, FacilityData, SettlementCmdModel, BaseComposition> {
+public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategory, FacilityData, FacilityStats, SettlementCmdModel> {
 
     public event Action<SettlementUnitCreator> onCompleted;
 
@@ -35,32 +35,39 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
         return GameState.DeployingSystems;  // Building can take place anytime? Placing in Systems takes place in DeployingSettlements
     }
 
-    protected override FacilityData CreateElementData(FacilityCategory elementCategory, string elementInstanceName) {
-        FacilityData elementData = new FacilityData(elementCategory, elementInstanceName, maxHitPoints: 50F, mass: 10000F) {
-            // TODO mass variation
-            // optionalParentName gets set when it gets attached to a command
+    protected override void CreateElementStat(FacilityCategory category, string elementName) {
+        FacilityStats stat = new FacilityStats() {
+            Category = category,
+            Name = elementName,
+            Mass = 10000F,
+            MaxHitPoints = 50F,
             Strength = new CombatStrength(),
-            WeaponRange = UnityEngine.Random.Range(3F, 5F),
-            WeaponReloadPeriod = UnityEngine.Random.Range(0.6F, 0.9F),
-            CurrentHitPoints = UnityEngine.Random.Range(25F, 50F),
+            Weapons = new List<Weapon>() { 
+                new Weapon(WeaponCategory.BeamOffense, model: 1) {
+                Range = UnityEngine.Random.Range(3F, 5F),
+                ReloadPeriod = UnityEngine.Random.Range(0.6F, 0.9F),
+                Damage = UnityEngine.Random.Range(3F, 8F) 
+                }
+            },
+            CurrentHitPoints = UnityEngine.Random.Range(25F, 50F)
         };
-        return elementData;
+        _elementStats.Add(stat);
     }
 
-    protected override void AddDataToComposition(FacilityData elementData) {
-        _composition.Add(elementData);
+    protected override IList<FacilityStats> GetStats(FacilityCategory elementCategory) {
+        return _elementStats.Where(s => s.Category == elementCategory).ToList();
     }
 
-    protected override IList<FacilityCategory> GetCompositionCategories() {
-        return _composition.Categories;
+    protected override FacilityModel MakeElement(FacilityStats stat) {
+        return _factory.MakeInstance(stat);
     }
 
-    protected override IList<FacilityData> GetCompositionData(FacilityCategory elementCategory) {
-        return _composition.GetData(elementCategory);
+    protected override void MakeElement(FacilityStats stat, ref FacilityModel element) {
+        _factory.MakeInstance(stat, ref element);
     }
 
-    protected override IEnumerable<GameObject> GetElementPrefabs() {
-        return RequiredPrefabs.Instance.facilities.Select<FacilityModel, GameObject>(f => f.gameObject);
+    protected override FacilityCategory GetCategory(FacilityStats stat) {
+        return stat.Category;
     }
 
     protected override FacilityCategory[] GetValidElementCategories() {
@@ -71,33 +78,17 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
         return new FacilityCategory[] { FacilityCategory.CentralHub };
     }
 
-    protected override GameObject GetCommandPrefab() {
-        return RequiredPrefabs.Instance.settlementCmd.gameObject;
-    }
-
-    protected override void InitializeCommandData(IPlayer owner) {
-        _command.Data = new SettlementCmdData(UnitName, 10F) {
-            Strength = new CombatStrength(0F, 10F, 0F, 10F, 0F, 10F),  // no offense, strong defense
-            Owner = owner,
-            Population = 100,
-            CapacityUsed = 10,
-            ResourcesUsed = new OpeYield(1.3F, 0.5F, 2.4F),
-            SpecialResourcesUsed = new XYield(new XYield.XResourceValuePair(XResource.Special_1, 0.2F))
-        };
-    }
-
-    protected override void MarkHQElement() {
-        _elements.Single(e => (e.Data as FacilityData).Category == FacilityCategory.CentralHub).IsHQElement = true;
-    }
-
-    protected override void PositionElements() {
-        float globeRadius = 1F * (float)Math.Pow(_elements.Count * 0.2F, 0.33F);  // cube root of number of groups of 5 elements
-        PositionElementsEquidistantInCircle(globeRadius);
-
-        //if (!PositionElementsRandomlyInSphere(globeRadius)) {
-        //    // try again with a larger radius
-        //    D.Assert(PositionElementsRandomlyInSphere(globeRadius * 1.5F), "{0} Positioning Error.".Inject(_pieceName));
-        //}
+    protected override SettlementCmdModel GetCommand(IPlayer owner) {
+        SettlementCmdModel cmd;
+        if (_isPreset) {
+            cmd = gameObject.GetSafeMonoBehaviourComponentInChildren<SettlementCmdModel>();
+            _factory.PopulateCommand(UnitName, owner, ref cmd);
+        }
+        else {
+            cmd = _factory.MakeSettlementCmdInstance(UnitName, owner);
+            UnityUtility.AttachChildToParent(cmd.gameObject, gameObject);
+        }
+        return cmd;
     }
 
     protected override void EnableViews() {

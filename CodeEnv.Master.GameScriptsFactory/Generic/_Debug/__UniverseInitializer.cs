@@ -88,13 +88,15 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
         foreach (var sysCreator in _systemCreators) {
             if (!_settlementCreators.IsNullOrEmpty()) {
                 var settlementCreator = _settlementCreators.Pop();
-                sysCreator.gameObject.GetComponentInChildren<SystemModel>().AssignSettlement(settlementCreator);
+                sysCreator.gameObject.GetSafeMonoBehaviourComponentInChildren<SystemModel>().AssignSettlement(settlementCreator);
             }
         }
 
+        // if any settlements left over, destroy them
         if (!_settlementCreators.IsNullOrEmpty()) {
             foreach (var settlementCreator in _settlementCreators) {
-                settlementCreator.gameObject.SetActive(false);
+                //settlementCreator.gameObject.SetActive(false);
+                Destroy(settlementCreator.gameObject);
             }
         }
     }

@@ -273,20 +273,21 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     /// <summary>
     ///  Calculates the location in world space of 8 vertices of a box surrounding the center of a sector.
     /// </summary>
-    /// <param name="sectorWorldLocation">The world location.</param>
-    /// <param name="distance">The distance.</param>
-    /// <returns></returns>
-    public IList<Vector3> CalcBoxVerticesAroundCenter(Vector3 sectorWorldLocation, float distance) {
-        Index3D index = GetSectorIndex(sectorWorldLocation);
+    /// <param name="sectorCenterWorldLocation">The world location of the sector's center.</param>
+    /// <param name="distance">The desired relative distance of each box vertex as measured from the center 
+    /// to the corner of the sector where 0.0 is the sector center and 1.0 is the corner of the sector.</param>
+    /// <returns>The 8 corner vertexes of the box surrounding the center of the sector and box.</returns>
+    public IList<Vector3> CalcBoxVerticesAroundCenter(Vector3 sectorCenterWorldLocation, float distance) {
+        Index3D index = GetSectorIndex(sectorCenterWorldLocation);
         return CalcBoxVerticesAroundCenter(index, distance);
     }
 
     /// <summary>
     /// Calculates the location in world space of 8 vertices of a box surrounding the center of a sector.
     /// </summary>
-    /// <param name="index">The sector index.</param>
-    /// <param name="distance">The relative distance of each vertex from the center of the sector 
-    /// where 0.0 is the sector center and 1.0 is the corner of the sector.</param>
+    /// <param name="index">The sector index whose center is in the middle of the resulting box.</param>
+    /// <param name="distance">The desired relative distance of each box vertex as measured from the center 
+    /// to the corner of the sector where 0.0 is the sector center and 1.0 is the corner of the sector.</param>
     /// <returns></returns>
     public IList<Vector3> CalcBoxVerticesAroundCenter(Index3D index, float distance) {
         Arguments.ValidateForRange(distance, Constants.ZeroF, 1.0F);

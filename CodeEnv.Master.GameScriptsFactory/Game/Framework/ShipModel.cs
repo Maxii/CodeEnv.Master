@@ -43,7 +43,7 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
 
     public ShipNavigator Navigator { get; private set; }
 
-    private FleetCmdModel _command;
+    public FleetCmdModel Command { get; set; }
     private EngineRoom _engineRoom;
     private Job _headingJob;
 
@@ -54,17 +54,8 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
 
     protected override void Initialize() {
         base.Initialize();
-        var parent = _transform.parent;
-        _command = parent.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCmdModel>();
-
         _engineRoom = new EngineRoom(Data, _rigidbody);
         InitializeNavigator();
-        // when a fleet is initially built, the ship already selected to be the flagship assigns itself
-        // to fleet command once it has initialized its Navigator to receive the immediate callback
-        if (IsHQElement) {
-            _command.HQElement = this;
-        }
-
         CurrentState = ShipState.Idling;
     }
 
@@ -90,7 +81,7 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
 
         newHeading.ValidateNormalized();
         if (newHeading.IsSameDirection(Data.RequestedHeading, 0.1F)) {
-            D.Warn("Duplicate ChangeHeading Command to {0} on {1}.", newHeading, Data.Name);
+            D.Warn("{0} received a duplicate ChangeHeading Command to {1}.", Data.Name, newHeading);
             return;
         }
         Data.RequestedHeading = newHeading;
@@ -98,11 +89,13 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
             _headingJob.Kill();
         }
         _headingJob = new Job(ExecuteHeadingChange(), toStart: true, onJobComplete: (wasKilled) => {
-            if (wasKilled && !_isDisposing) {
-                D.Log("{0} turn command cancelled. Current Heading is {1}.", Data.Name, Data.CurrentHeading);
-            }
-            else {
-                D.Log("Turn complete. {0} current heading is {1}.", Data.Name, Data.CurrentHeading);
+            if (!_isDisposing) {
+                if (wasKilled) {
+                    D.Log("{0} turn command cancelled. Current Heading is {1}.", Data.Name, Data.CurrentHeading);
+                }
+                else {
+                    D.Log("Turn complete. {0} current heading is {1}.", Data.Name, Data.CurrentHeading);
+                }
             }
         });
     }
@@ -138,7 +131,7 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
         if (DebugSettings.Instance.StopShipMovement || !isAutoPilot) {
             Navigator.Disengage();
         }
-        _engineRoom.ChangeSpeed(newSpeed.GetValue(_command.Data, Data));
+        _engineRoom.ChangeSpeed(newSpeed.GetValue(Command.Data, Data));
     }
 
 
@@ -188,12 +181,9 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
         // TODO register as available
     }
 
-    void Idling_OnWeaponReady() {
+    void Idling_OnWeaponReady(Weapon weapon) {
         LogEvent();
-        if (_weaponTargetTracker.__TryGetRandomEnemyTarget(out _attackTarget)) {
-            D.Log("{0} initiating attack on {1} from {2}.", Data.Name, _attackTarget.Name, CurrentState.GetName());
-            Call(FacilityState.Attacking);
-        }
+        TryFireOnAnyTarget(weapon);
     }
 
     void Idling_ExitState() {
@@ -272,12 +262,9 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
         Return();
     }
 
-    void Moving_OnWeaponReady() {
+    void Moving_OnWeaponReady(Weapon weapon) {
         LogEvent();
-        if (_weaponTargetTracker.__TryGetRandomEnemyTarget(out _attackTarget)) {
-            D.Log("{0} initiating attack on {1} from {2}.", Data.Name, _attackTarget.Name, CurrentState.GetName());
-            Call(FacilityState.Attacking);
-        }
+        TryFireOnAnyTarget(weapon);
     }
 
     void Moving_OnDestinationReached() {
@@ -304,25 +291,22 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
 
     private ITarget _ordersTarget;
     private ITarget _primaryTarget; // IMPROVE  take this previous target into account when PickPrimaryTarget()
-    private ITarget _attackTarget;
 
     IEnumerator ExecuteAttackOrder_EnterState() {
         D.Log("{0}.ExecuteAttackOrder_EnterState() called.", Data.Name);
         _ordersTarget = (CurrentOrder as UnitTargetOrder<ShipOrders>).Target;
 
         while (!_ordersTarget.IsDead) {
-            // _primaryTarget cannot be null when _ordersTarget is alive
+            // once picked, _primaryTarget cannot be null when _ordersTarget is alive
             bool inRange = PickPrimaryTarget(out _primaryTarget);
             if (inRange) {
-                if (_isAnyWeaponReady) {
-                    _attackTarget = _primaryTarget;
-                    Call(ShipState.Attacking);
-                }
+                D.Assert(_primaryTarget != null);
+                // while this inRange state exists, we wait for OnWeaponReady() to be called
             }
             else {
                 _moveTarget = _primaryTarget;
                 _moveSpeed = Speed.Full;
-                _standoffDistance = Data.WeaponRange;   // IMPROVE based on Standoff Stance - long range, point blank, etc.
+                _standoffDistance = Data.MaxWeaponsRange;   // IMPROVE based on Standoff Stance - long range, point blank, etc.
                 Call(ShipState.Moving);
             }
             yield return null;
@@ -330,7 +314,16 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
         CurrentState = ShipState.Idling;
     }
 
-    // No need to take potshots at enemies in this state as the state always Call()s another state
+    void ExecuteAttackOrder_OnWeaponReady(Weapon weapon) {
+        LogEvent();
+        if (_primaryTarget != null) {   // OnWeaponReady can occur before _primaryTarget is picked
+            _attackTarget = _primaryTarget;
+            _attackDamage = weapon.Damage;
+            D.Log("{0}.{1} initiating attack on {2} from {3}.", Data.Name, weapon.Name, _attackTarget.Name, CurrentState.GetName());
+            Call(ShipState.Attacking);
+        }
+        // No potshots at random enemies as the ship is either Moving or the primary target is in range
+    }
 
     void ExecuteAttackOrder_ExitState() {
         LogEvent();
@@ -343,32 +336,25 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
 
     #region Attacking
 
+    private ITarget _attackTarget;
+    private float _attackDamage;
+
     void Attacking_EnterState() {
         LogEvent();
         if (_attackTarget == null) {
-            D.Warn("{0} attackTarget is null. Return()ing.", Data.Name);
+            D.Error("{0} attackTarget is null. Return()ing.", Data.Name);
             Return();
             return;
         }
-        D.Assert(_isAnyWeaponReady, "{0} Attacking with no weapon ready.".Inject(Data.Name));
         OnShowAnimation(MortalAnimations.Attacking);
-        _attackTarget.TakeDamage(8F);
+        _attackTarget.TakeDamage(_attackDamage);
         Return();
     }
 
-    // This approach has a weakness in that target might go out of range before weapon ready.
-    // The advantage is that it uses OnWeaponReady() rather than isWeaponReady and only
-    // ExecuteAttackOrder Call()s Attacking
-    //void Attacking_OnWeaponReady() {  
-    //    LogEvent();
-    //    FireOnTarget(_attackTarget);
-    //    Return();
-    //}
-
     void Attacking_ExitState() {
         LogEvent();
-        _isAnyWeaponReady = false;
         _attackTarget = null;
+        _attackDamage = Constants.ZeroF;
     }
 
     #endregion
@@ -382,16 +368,32 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
 
     #endregion
 
-    #region Joining
+    #region ExecuteJoinFleetOrder
 
-    void Joining_EnterState() {
-        // TODO detach from fleet and create temp FleetCmd
-        // issue a JoinFleetAt order to our new fleet
-        Return();
+    IEnumerator ExecuteJoinFleetOrder_EnterState() {
+        //LogEvent();
+        D.Log("{0}.ExecuteJoinFleetOrder_EnterState() called.", Data.Name);
+        // detach from fleet and create tempFleetCmd
+        Command.RemoveElement(this);
+
+        var fleetToJoin = (CurrentOrder as UnitTargetOrder<ShipOrders>).Target;
+        string tempFleetName = "Join_" + fleetToJoin.ParentName;
+        var tempFleetCmd = UnitFactory.Instance.MakeFleetInstance(tempFleetName, Owner, this);
+        yield return null;  // wait to allow tempFleetCmd and View to initialize
+
+        // this ship's Command should now be the fleetToJoin
+        var fleetToJoinView = Command.gameObject.GetSafeMonoBehaviourComponent<FleetCmdView>();
+        fleetToJoinView.PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
+        // TODO PlayerIntelCoverage should be set through sensor detection
+
+        // issue a JoinFleet order to our new tempFleetCmd
+        UnitTargetOrder<FleetOrders> joinFleetOrder = new UnitTargetOrder<FleetOrders>(FleetOrders.JoinFleet, fleetToJoin);
+        tempFleetCmd.CurrentOrder = joinFleetOrder;
+        // once joinFleetOrder takes, ship state will change to moving
     }
 
-    void Joining_ExitState() {
-        // issue the JoinFleetAt order here, after Return?
+    void ExecuteJoinFleetOrder_ExitState() {
+        LogEvent();
     }
 
     #endregion
@@ -433,12 +435,9 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
         yield return null;  // required immediately after Call() to avoid FSM bug
     }
 
-    void ExecuteRepairOrder_OnWeaponReady() {
+    void ExecuteRepairOrder_OnWeaponReady(Weapon weapon) {
         LogEvent();
-        if (_weaponTargetTracker.__TryGetRandomEnemyTarget(out _attackTarget)) {
-            D.Log("{0} initiating attack on {1} from {2}.", Data.Name, _attackTarget.Name, CurrentState.GetName());
-            Call(FacilityState.Attacking);
-        }
+        TryFireOnAnyTarget(weapon);
     }
 
     void ExecuteRepairOrder_ExitState() {
@@ -463,12 +462,9 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
         Return();
     }
 
-    void Repairing_OnWeaponReady() {
+    void Repairing_OnWeaponReady(Weapon weapon) {
         LogEvent();
-        if (_weaponTargetTracker.__TryGetRandomEnemyTarget(out _attackTarget)) {
-            D.Log("{0} initiating attack on {1} from {2}.", Data.Name, _attackTarget.Name, CurrentState.GetName());
-            Call(ShipState.Attacking);
-        }
+        TryFireOnAnyTarget(weapon);
     }
 
     void Repairing_ExitState() {
@@ -530,6 +526,21 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
     #region StateMachine Support Methods
 
     /// <summary>
+    /// Attempts to fire the provided weapon at a target within range.
+    /// </summary>
+    /// <param name="weapon">The weapon.</param>
+    private void TryFireOnAnyTarget(Weapon weapon) {
+        if (_rangeTrackerLookup[weapon.TrackerID].__TryGetRandomEnemyTarget(out _attackTarget)) {
+            D.Log("{0}.{1} initiating attack on {2} from {3}.", Data.Name, weapon.Name, _attackTarget.Name, CurrentState.GetName());
+            _attackDamage = weapon.Damage;
+            Call(FacilityState.Attacking);
+        }
+        else {
+            D.Warn("{0}.{1} could not lockon {2} from {3}.", Data.Name, weapon.Name, _attackTarget.Name, CurrentState.GetName());
+        }
+    }
+
+    /// <summary>
     /// Picks the highest priority target from orders. First selection criteria is inRange.
     /// </summary>
     /// <param name="chosenTarget">The chosen target from orders or null if no targets remain alive.</param>
@@ -539,12 +550,15 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
     private bool PickPrimaryTarget(out ITarget chosenTarget) {
         D.Assert(_ordersTarget != null && !_ordersTarget.IsDead, "{0}'s target from orders is null or dead.".Inject(Data.Name));
         bool isTargetInRange = false;
-        var enemyTargetsInRange = _weaponTargetTracker.EnemyTargets;
+        var uniqueEnemyTargetsInRange = Enumerable.Empty<ITarget>();
+        foreach (var rt in _rangeTrackerLookup.Values) {
+            uniqueEnemyTargetsInRange = uniqueEnemyTargetsInRange.Union<ITarget>(rt.EnemyTargets);  // OPTIMIZE
+        }
 
         ICmdTarget cmdTarget = _ordersTarget as ICmdTarget;
         if (cmdTarget != null) {
             var primaryTargets = cmdTarget.ElementTargets;
-            var primaryTargetsInRange = primaryTargets.Intersect(enemyTargetsInRange);
+            var primaryTargetsInRange = primaryTargets.Intersect(uniqueEnemyTargetsInRange);
             if (!primaryTargetsInRange.IsNullOrEmpty()) {
                 chosenTarget = __SelectHighestPriorityTarget(primaryTargetsInRange);
                 isTargetInRange = true;
@@ -556,11 +570,14 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
         }
         else {
             chosenTarget = _ordersTarget;   // Planetoid
-            isTargetInRange = enemyTargetsInRange.Contains(_ordersTarget);
+            isTargetInRange = uniqueEnemyTargetsInRange.Contains(_ordersTarget);
         }
         if (chosenTarget != null) {
             // no need for knowing about death event as primaryTarget is continuously checked while under orders to attack
-            D.Log("{0}'s has selected {1} as it's primary target.", Data.Name, chosenTarget.Name);
+            //D.Log("{0}'s has selected {1} as it's primary target. InRange = {2}.", Data.Name, chosenTarget.Name, isTargetInRange);
+        }
+        else {
+            D.Warn("{0}'s primary target returned as null. InRange = {1}.", Data.Name, isTargetInRange);
         }
         return isTargetInRange;
     }
@@ -572,7 +589,7 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
     private void AssessNeedForRepair() {
         if (Data.Health < 0.30F) {
             if (CurrentOrder == null || CurrentOrder.Order != ShipOrders.Repair) {
-                IDestinationTarget repairDestination = new StationaryLocation(Data.Position + UnityEngine.Random.onUnitSphere * 20F);
+                IDestinationTarget repairDestination = new StationaryLocation(Data.Position - _transform.forward * 20F);
                 CurrentOrder = new UnitDestinationTargetOrder<ShipOrders>(ShipOrders.Repair, repairDestination);
             }
         }
@@ -622,8 +639,8 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
                 case ShipOrders.Refit:
                     CurrentState = ShipState.Refitting;
                     break;
-                case ShipOrders.JoinFleetAt:
-                    CurrentState = ShipState.Joining;
+                case ShipOrders.JoinFleet:
+                    CurrentState = ShipState.ExecuteJoinFleetOrder;
                     break;
                 case ShipOrders.None:
                 default:
@@ -673,11 +690,12 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
         if (CurrentState == ShipState.Dead) {
             return;
         }
-        LogEvent();
+        //LogEvent();
+        D.Log("{0} taking {1} damage.", Data.Name, damage);
         bool isCmdHit = false;
         bool isElementAlive = ApplyDamage(damage);
         if (IsHQElement) {
-            isCmdHit = _command.__CheckForDamage(isElementAlive);
+            isCmdHit = Command.__CheckForDamage(isElementAlive);
         }
         if (!isElementAlive) {
             CurrentState = ShipState.Dead;

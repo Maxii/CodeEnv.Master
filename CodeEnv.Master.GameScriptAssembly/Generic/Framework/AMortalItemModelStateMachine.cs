@@ -476,10 +476,11 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
                 D.Error("This should never occur.");
                 return;
             }
-            if (state.currentState != null && state.currentState.Equals(value)) {
-                D.Warn("{0} trying to set CurrentState to same value. Value = {1}.", Data.Name, value.ToString());
-                return;
-            }
+            //if (state.currentState != null && state.currentState.Equals(value)) {
+            //    // This is not illegal, eg. initiating another ExecuteMoveOrder while already in ExecuteMoveOrder
+            //    D.Warn("{0} trying to set CurrentState to same value. Value = {1}.", Data.Name, value.ToString());
+            //    return;
+            //}
             ChangingState();
             state.currentState = value;
             //D.Log("{0} setting CurrentState to {1}.", Data.Name, value.ToString());

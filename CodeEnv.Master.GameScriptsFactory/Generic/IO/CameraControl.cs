@@ -149,11 +149,16 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
 
     private float _universeRadius;
 
+
     private string[] keyboardAxesNames = new string[] { UnityConstants.KeyboardAxisName_Horizontal, UnityConstants.KeyboardAxisName_Vertical };
     private LayerMask _collideWithUniverseEdgeOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.UniverseEdge);
     private LayerMask _collideWithDummyTargetOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.DummyTarget);
     private LayerMask _collideWithOnlyCameraTargetsLayerMask
-        = LayerMaskExtensions.CreateExclusiveMask(Layers.UniverseEdge, Layers.DeepSpace, Layers.Gui2D, Layers.Vectrosity2D, Layers.CelestialObjectKeepout);
+        = LayerMaskExtensions.CreateExclusiveMask(Layers.UniverseEdge, Layers.DeepSpace, Layers.Gui2D, Layers.Vectrosity2D,
+        Layers.CelestialObjectKeepout, Layers.WeaponsRange);
+    private LayerMask _layersVisibleToCamera = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
+        Layers.DummyTarget, Layers.UniverseEdge, Layers.Ships, Layers.BasesSettlements, Layers.Planetoids, Layers.Stars);
+
     private Vector3 _screenCenter = new Vector3(Screen.width / 2, Screen.height / 2, 0F);
 
     // Continuously calculated, actual Camera values
@@ -220,7 +225,6 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         base.Awake();
         _camera = UnityUtility.ValidateComponentPresence<Camera>(gameObject);
         InitializeReferences();
-        InitializeEventDispatcher();
         __InitializeDebugEdgeMovementSettings();
         enabled = false;
     }
@@ -231,6 +235,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         _playerPrefsMgr = PlayerPrefsManager.Instance;
         _gameInput = GameInput.Instance;
         _gameStatus = GameStatus.Instance;
+        _eventDispatcher = gameObject.GetSafeMonoBehaviourComponent<UICamera>();
         Subscribe();
         ValidateActiveConfigurations();
         // need to raise this event in Awake as Start can be too late, since the true version of this event is called
@@ -239,10 +244,6 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         _eventMgr.Raise<ElementReadyEvent>(new ElementReadyEvent(this, GameState.Waiting, isReady: false));
     }
 
-    private void InitializeEventDispatcher() {
-        _eventDispatcher = gameObject.GetSafeMonoBehaviourComponent<UICamera>();
-        EnableEvents(false);
-    }
 
     private void Subscribe() {
         if (_subscribers == null) {
@@ -267,6 +268,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     private void InitializeMainCamera() {
         InitializeFields();
         SetCameraSettings();
+        InitializeEventDispatcher();    // avoid doing in Awake as UICamera Awake() can override setting
         InitializeCameraPreferences();
         PositionCameraForGame();
         InitializeContextMenuSettings();
@@ -282,11 +284,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         _camera.nearClipPlane = 0.02F;
         _camera.fieldOfView = 50F;
 
-        IList<Layers> layersToInclude = new List<Layers> { 
-            Layers.Default, Layers.TransparentFX, Layers.DummyTarget, Layers.UniverseEdge,
-            Layers.Ships, Layers.BasesSettlements, Layers.Planetoids, Layers.Stars
-        };
-        _camera.cullingMask = LayerMaskExtensions.CreateInclusiveMask(layersToInclude.ToArray());
+        _camera.cullingMask = _layersVisibleToCamera;
 
         _camera.farClipPlane = _universeRadius * 2F;
         //_camera.layerCullSpherical = true;
@@ -295,8 +293,12 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         cullDistances[(int)Layers.BasesSettlements] = TempGameValues.StarBaseRadius * AnimationSettings.Instance.StarBaseSettlementLayerCullingDistanceFactor;  // 100
         cullDistances[(int)Layers.Planetoids] = TempGameValues.PlanetoidRadius_Max * AnimationSettings.Instance.PlanetoidLayerCullingDistanceFactor; // 500
         cullDistances[(int)Layers.Stars] = TempGameValues.StarRadius * AnimationSettings.Instance.StarLayerCullingDistanceFactor; // 3000
-
         _camera.layerCullDistances = cullDistances;
+    }
+
+    private void InitializeEventDispatcher() {
+        _eventDispatcher.eventType = UICamera.EventType.World;
+        EnableEvents(false);    // turns off the event system until the game starts
     }
 
     private void InitializeCameraPreferences() {
@@ -313,6 +315,15 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         keyFocusRoll.activate = toEnable;
     }
 
+    /// <summary>
+    /// Enables the Ngui Event System. Setting the eventReceiverMask to -1 means Everything
+    /// (all layers collliders) is visible to the event system. 0 means Nothing - no layers are visible
+    /// to the event system. The actual mask used in UICamera to determine which layers the 
+    /// event system will actually 'see' is the AND of the Camera culling mask and this eventReceiverMask.
+    /// This means that the event system will only 'see' layers that both the camera can see AND
+    /// the layer mask is allowed to see. 
+    /// </summary>
+    /// <param name="toEnable">if set to <c>true</c> all layers the camera can see will be visible to the event system.</param>
     private void EnableEvents(bool toEnable) {
         _eventDispatcher.eventReceiverMask = toEnable ? -1 : 0;
     }

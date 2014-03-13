@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -48,7 +48,7 @@ public class FleetNavigator : ANavigator {
     private Seeker _seeker;
     private FleetCmdModel _fleet;
 
-    public FleetNavigator(FleetCmdModel fleet, Seeker seeker)   // AStar.Seeker requires this Navigator to stay in this project
+    public FleetNavigator(FleetCmdModel fleet, Seeker seeker)   // AStar.Seeker requires this Navigator to stay in this VS Project
         : base(fleet.Data) {
         _fleet = fleet;
         _seeker = seeker;
@@ -57,9 +57,10 @@ public class FleetNavigator : ANavigator {
 
     protected override void Subscribe() {
         base.Subscribe();
-        _subscribers.Add(Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.UnitWeaponsRange, OnWeaponsRangeChanged));
+        _subscribers.Add(Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.UnitMaxWeaponsRange, OnWeaponsRangeChanged));
         _subscribers.Add(Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.FullSpeed, OnFullSpeedChanged));
         _seeker.pathCallback += OnCoursePlotCompleted;
+        // No subscription to changes in a target's maxWeaponsRange as a fleet should not automatically get an enemy target's maxWeaponRange update when it changes
     }
 
     /// <summary>
@@ -86,7 +87,7 @@ public class FleetNavigator : ANavigator {
             D.Warn("A course to {0} has not been plotted. PlotCourse to a destination, then Engage.");
             return;
         }
-        if (CheckTargetIsLocal()) {
+        if (___CheckTargetIsLocal()) {
             if (CheckApproachTo(Destination)) {
                 InitiateHomingCourseToTarget();
             }
@@ -103,7 +104,7 @@ public class FleetNavigator : ANavigator {
     /// </summary>
     /// <returns></returns>
     private IEnumerator EngageWaypointCourse() {
-        D.Log("{0} initiating coroutine to follow course to {1}.", Data.Name, Destination);
+        //D.Log("{0} initiating coroutine to follow course to {1}.", Data.Name, Destination);
         if (_course == null) {
             D.Error("{0}'s course to {1} is null. Exiting coroutine.", Data.Name, Destination);
             yield break;    // exit immediately
@@ -117,13 +118,13 @@ public class FleetNavigator : ANavigator {
             float distanceToWaypointSqrd = Vector3.SqrMagnitude(currentWaypointPosition - Data.Position);
             //D.Log("{0} distance to Waypoint_{1} = {2}.", Data.Name, _currentWaypointIndex, Mathf.Sqrt(distanceToWaypointSqrd));
             if (distanceToWaypointSqrd < _closeEnoughDistanceToTargetSqrd) {
-                if (CheckTargetIsLocal()) {
+                if (___CheckTargetIsLocal()) {
                     if (CheckApproachTo(Destination)) {
-                        D.Log("{0} initiating homing course to {1} from waypoint {2}.", Data.Name, Target.Name, _currentWaypointIndex);
+                        //D.Log("{0} initiating homing course to {1} from waypoint {2}.", Data.Name, Target.Name, _currentWaypointIndex);
                         InitiateHomingCourseToTarget();
                     }
                     else {
-                        D.Log("{0} initiating course around obstacle to {1} from waypoint {2}.", Data.Name, Target.Name, _currentWaypointIndex);
+                        //D.Log("{0} initiating course around obstacle to {1} from waypoint {2}.", Data.Name, Target.Name, _currentWaypointIndex);
                         InitiateCourseAroundObstacleTo(Destination);
                     }
                 }
@@ -273,7 +274,7 @@ public class FleetNavigator : ANavigator {
                 Vector3 halfWayPointInsideKeepoutZone = rayEntryPoint + (rayExitPoint - rayEntryPoint) / 2F;
                 Vector3 obstacleCenter = hitInfo.collider.transform.position;
                 waypoint = obstacleCenter + (halfWayPointInsideKeepoutZone - obstacleCenter).normalized * (keepoutRadius + CloseEnoughDistanceToTarget);
-                D.Log("{0}'s waypoint to avoid obstacle = {1}.", Data.Name, waypoint);
+                //D.Log("{0}'s waypoint to avoid obstacle = {1}.", Data.Name, waypoint);
             }
             else {
                 D.Error("{0} did not find a ray exit point when casting through {1}.", Data.Name, obstacleName);    // hitInfo is null
@@ -290,12 +291,12 @@ public class FleetNavigator : ANavigator {
     /// enough to attempt a direct approach.
     /// </summary>
     /// <returns>returns true if the target is local to the sector.</returns>
-    private bool CheckTargetIsLocal() {
+    private bool ___CheckTargetIsLocal() {
         float distanceToDestination = Vector3.Magnitude(Destination - Data.Position);
         float maxDirectApproachDistance = TempGameValues.SectorSideLength;
         if (distanceToDestination > maxDirectApproachDistance) {
             // limit direct approaches to within a sector so we normally follow the pathfinder course
-            D.Log("{0} direct approach distance {1} to {2} exceeds maxiumum of {3}.", Data.Name, distanceToDestination, Target.Name, maxDirectApproachDistance);
+            //D.Log("{0} direct approach distance {1} to {2} exceeds maxiumum of {3}.", Data.Name, distanceToDestination, Target.Name, maxDirectApproachDistance);
             return false;
         }
         return true;
@@ -365,7 +366,7 @@ public class FleetNavigator : ANavigator {
         // frequency of course progress checks increases as fullSpeed value and gameSpeed increase
         float courseProgressCheckFrequency = 1F + (Data.FullSpeed * _gameSpeedMultiplier);
         _courseProgressCheckPeriod = 1F / courseProgressCheckFrequency;
-        D.Log("{0}.{1} frequency of course progress checks adjusted to {2:0.####}.", Data.Name, GetType().Name, courseProgressCheckFrequency);
+        //D.Log("{0}.{1} frequency of course progress checks adjusted to {2:0.##}.", Data.Name, GetType().Name, courseProgressCheckFrequency);
     }
 
     /// <summary>

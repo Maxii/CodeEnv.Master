@@ -101,7 +101,7 @@ public class SystemCreator : AMonoBase, IDisposable {
             __SetIntelLevel();
         }
         if (GameManager.Instance.CurrentState == GameState.Running) {
-            DestroySystemCreator(); // destruction deferred so __UniverseInitializer can complete its work
+            DestroyCreationObject(); // destruction deferred so __UniverseInitializer can complete its work
         }
     }
 
@@ -402,7 +402,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         return Enums<T>.Parse(transformContainingCategoryName.name);
     }
 
-    private void DestroySystemCreator() {
+    private void DestroyCreationObject() {
         foreach (Transform child in _transform) {
             child.parent = _systemsFolder;
         }

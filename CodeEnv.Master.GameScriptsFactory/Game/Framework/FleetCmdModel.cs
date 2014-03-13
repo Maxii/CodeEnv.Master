@@ -49,6 +49,7 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
     }
 
     protected override void Initialize() {
+        base.Initialize();
         InitializeNavigator();
         CurrentState = FleetState.Idling;
     }
@@ -64,6 +65,20 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
     protected override void Subscribe() {
         base.Subscribe();
         _subscribers.Add(GameStatus.Instance.SubscribeToPropertyChanged<GameStatus, bool>(gs => gs.IsRunning, OnIsRunningChanged));
+    }
+
+    public override void AddElement(ShipModel element) {
+        base.AddElement(element);
+        element.Command = this;
+    }
+
+    public void TransferShip(ShipModel ship, FleetCmdModel fleetCmd) {
+        fleetCmd.AddElement(ship);
+        RemoveElement(ship);
+    }
+
+    protected override ShipModel SelectHQElement() {
+        return Elements.MaxBy(e => e.Data.Health);
     }
 
     public bool ChangeHeading(Vector3 newHeading, bool isAutoPilot = false) {
@@ -118,6 +133,14 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
         HQElement.Navigator.onCourseTrackingError += OnFlagshipTrackingError;
     }
 
+    protected override void RelocateElement(ShipModel element, Vector3 newLocation) {
+        if (!GameStatus.Instance.IsRunning) {
+            // if we aren't yet running, then this is the initial setup so 'transport this element to its formation position
+            base.RelocateElement(element, newLocation);
+        }
+        // otherwise, do nothing as ships will move to their new location rather than being 'transported'
+    }
+
     private void __GetFleetUnderway() {
         IDestinationTarget destination = FindObjectOfType<SettlementCmdModel>();
         if (destination == null) {
@@ -128,19 +151,19 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
     }
 
     private void __GetFleetAttackUnderway() {
-        IPlayer humanPlayer = GameManager.Instance.HumanPlayer;
-        IEnumerable<ITarget> attackTgts = FindObjectsOfType<StarbaseCmdModel>().Where(sb => sb.Owner.IsEnemyOf(humanPlayer)).Cast<ITarget>();
+        IPlayer fleetOwner = Data.Owner;
+        IEnumerable<ITarget> attackTgts = FindObjectsOfType<StarbaseCmdModel>().Where(sb => fleetOwner.IsEnemyOf(sb.Owner)).Cast<ITarget>();
         if (attackTgts.IsNullOrEmpty()) {
             // in case no Starbases qualify
-            attackTgts = FindObjectsOfType<SettlementCmdModel>().Where(sb => sb.Owner.IsEnemyOf(humanPlayer)).Cast<ITarget>();
+            attackTgts = FindObjectsOfType<SettlementCmdModel>().Where(sb => fleetOwner.IsEnemyOf(sb.Owner)).Cast<ITarget>();
             if (attackTgts.IsNullOrEmpty()) {
                 // in case no Settlements qualify
-                attackTgts = FindObjectsOfType<FleetCmdModel>().Where(sb => sb.Owner.IsEnemyOf(humanPlayer)).Cast<ITarget>();
+                attackTgts = FindObjectsOfType<FleetCmdModel>().Where(sb => fleetOwner.IsEnemyOf(sb.Owner)).Cast<ITarget>();
             }
         }
         if (attackTgts.IsNullOrEmpty()) {
-            D.Warn("{0} can find no AttackTargets that meet the enemy selection criteria.", Data.Name);
-            return;
+            attackTgts = FindObjectsOfType<PlanetoidModel>().Cast<ITarget>();
+            D.Warn("{0} can find no AttackTargets that meet the enemy selection criteria. Picking a Planet.", Data.Name);
         }
         ITarget attackTgt = attackTgts.MinBy(t => Vector3.Distance(t.Position, Data.Position));
         CurrentOrder = new UnitTargetOrder<FleetOrders>(FleetOrders.Attack, attackTgt);
@@ -362,6 +385,35 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
 
     #endregion
 
+    #region ExecuteJoinFleetOrder
+
+    IEnumerator ExecuteJoinFleetOrder_EnterState() {
+        //LogEvent();
+        D.Log("{0}.ExecuteJoinFleetOrder_EnterState.", Data.Name);
+        var joinOrder = CurrentOrder as UnitTargetOrder<FleetOrders>;
+        _moveTarget = joinOrder.Target;
+        _moveSpeed = Speed.FleetStandard;
+        Call(FleetState.Moving);
+        yield return null;  // required immediately after Call() to avoid FSM bug
+        if (_isMoveError) {
+            CurrentState = FleetState.Idling;
+            yield break;
+        }
+
+        // we've arrived so transfer the ship to the fleet we are joining
+        var fleetToJoin = joinOrder.Target as FleetCmdModel;
+        var ship = Elements[0];
+        TransferShip(ship, fleetToJoin);
+        // removing the only ship will immediately call FleetState.Dead
+        yield return null;
+    }
+
+    void ExecuteJoinFleetOrder_ExitState() {
+        LogEvent();
+    }
+
+    #endregion
+
     #region Disband
 
     void GoDisband_EnterState() { }
@@ -442,8 +494,8 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
                 case FleetOrders.Guard:
 
                     break;
-                case FleetOrders.JoinFleetAt:
-
+                case FleetOrders.JoinFleet:
+                    CurrentState = FleetState.ExecuteJoinFleetOrder;
                     break;
                 case FleetOrders.MoveTo:
                     CurrentState = FleetState.ExecuteMoveOrder;

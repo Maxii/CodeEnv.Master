@@ -88,15 +88,16 @@ public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud, IDisposable {
                 // OPTIMIZE why not just use uiCamera.ScreenToWorldPoint(cursorPosition)?
 
                 // For pixel-perfect results
-                if (uiCamera.isOrthoGraphic) {
-                    _transform.localPosition = NGUIMath.ApplyHalfPixelOffset(_transform.localPosition, _transform.localScale);
-                }
+                //if (uiCamera.isOrthoGraphic) {  // ApplyHalfPixelOffset removed in 3.0.7
+                //    _transform.localPosition = NGUIMath.ApplyHalfPixelOffset(_transform.localPosition, _transform.localScale);
+                //}
             }
             else {
                 // Simple calculation that assumes that the camera is of fixed size
                 cursorPosition.x -= Screen.width * 0.5f;
                 cursorPosition.y -= Screen.height * 0.5f;
-                _transform.localPosition = NGUIMath.ApplyHalfPixelOffset(cursorPosition, _transform.localScale);
+                // ApplyHalfPixelOffset removed in 3.0.7
+                //_transform.localPosition = NGUIMath.ApplyHalfPixelOffset(cursorPosition, _transform.localScale);
             }
         }
     }

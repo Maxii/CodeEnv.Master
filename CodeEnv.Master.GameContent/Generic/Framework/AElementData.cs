@@ -16,6 +16,8 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
+    using System.Linq;
     using System.Collections.Generic;
     using CodeEnv.Master.Common;
     using UnityEngine;
@@ -26,28 +28,20 @@ namespace CodeEnv.Master.GameContent {
     public abstract class AElementData : AMortalItemData {
 
         /// <summary>
-        /// The local position of this Element relative to HQ.
+        /// The desired position offset of this Element from the HQElement.
         /// </summary>
         public Vector3 FormationPosition { get; set; }
 
-        private float _weaponRange;
-        public float WeaponRange {
-            get { return _weaponRange; }
-            set { SetProperty<float>(ref _weaponRange, value, "WeaponRange"); }
+        private float _maxWeaponsRange;
+        public float MaxWeaponsRange {
+            get { return _maxWeaponsRange; }
+            set { SetProperty<float>(ref _maxWeaponsRange, value, "MaxWeaponsRange"); }
         }
 
-        private float _weaponReloadPeriod;
         /// <summary>
-        /// The time in hours required to reload and fire this weapon. The inverse is the
-        /// Weapon's Rate of Fire.
+        /// Dictionary for finding the list of weapons associated with a particular rangeTracker.
         /// </summary>
-        public float WeaponReloadPeriod {
-            get { return _weaponReloadPeriod; }
-            set { SetProperty<float>(ref _weaponReloadPeriod, value, "WeaponReloadPeriod"); }
-        }
-
-        //protected IDictionary<RangeTrackerID, IList<Weapon>> _weaponLookup;
-
+        protected IDictionary<Guid, IList<Weapon>> _weaponRangeTrackerLookup;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AElementData" /> class.
@@ -58,13 +52,57 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="optionalParentName">Name of the optional parent.</param>
         public AElementData(string name, float maxHitPoints, float mass, string optionalParentName = "")
             : base(name, maxHitPoints, mass, optionalParentName) {
-            //_weaponLookup = new Dictionary<RangeTrackerID, IList<Weapon>>();
-
+            _weaponRangeTrackerLookup = new Dictionary<Guid, IList<Weapon>>();
         }
 
-        //public void AddWeapon(Weapon weapon) {
+        public void AddWeapon(Weapon weapon, Guid trackerID) {
+            weapon.TrackerID = trackerID;
+            if (!_weaponRangeTrackerLookup.ContainsKey(trackerID)) {
+                _weaponRangeTrackerLookup.Add(trackerID, new List<Weapon>());
+            }
+            _weaponRangeTrackerLookup[trackerID].Add(weapon);   // duplicates allowed
+            RecalcMaxWeaponsRange();
+        }
 
-        //}
+        public bool RemoveWeapon(Weapon weapon) {
+            var trackerID = weapon.TrackerID;
+            var trackerWeapons = _weaponRangeTrackerLookup[trackerID];
+            var result = trackerWeapons.Remove(weapon);
+            if (trackerWeapons.Count == Constants.Zero) {
+                _weaponRangeTrackerLookup.Remove(trackerID);
+                D.Warn("{0} has removed a weapon, leaving an unused {1}.", Name, typeof(IRangeTracker).Name);
+            }
+            RecalcMaxWeaponsRange();
+            return result;
+        }
+
+        public IList<Weapon> GetWeapons(Guid trackerID) {
+            IList<Weapon> weapons;
+            if (!_weaponRangeTrackerLookup.TryGetValue(trackerID, out weapons)) {
+                weapons = new List<Weapon>(0);
+            }
+            return weapons;
+        }
+
+        public IEnumerable<Weapon> GetWeapons() {
+            IEnumerable<Weapon> result = Enumerable.Empty<Weapon>();
+            foreach (var key in _weaponRangeTrackerLookup.Keys) {
+                result = result.Concat(_weaponRangeTrackerLookup[key]);
+            }
+            return result;
+        }
+
+        private void RecalcMaxWeaponsRange() {
+            float result = Constants.ZeroF;
+            foreach (var key in _weaponRangeTrackerLookup.Keys) {
+                var weapons = _weaponRangeTrackerLookup[key];
+                var maxRange = weapons.Max<Weapon>(w => w.Range);
+                if (maxRange > result) {
+                    result = maxRange;
+                }
+            }
+            MaxWeaponsRange = result;
+        }
 
     }
 }

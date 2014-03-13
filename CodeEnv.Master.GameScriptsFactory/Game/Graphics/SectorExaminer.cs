@@ -91,7 +91,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
 
     protected override void Start() {
         base.Start();
-        __ValidateCtxObjectSettings();
+        InitializeContextMenu();
     }
 
     void OnHover(bool isOver) {
@@ -134,7 +134,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
     //    }
     //}
 
-    private void __ValidateCtxObjectSettings() {    // IMPROVE string use
+    private void InitializeContextMenu() {    // IMPROVE string use
         _ctxObject = UnityUtility.ValidateMonoBehaviourPresence<CtxObject>(gameObject);
         CtxMenu sectorMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "SectorMenu");
         _ctxObject.contextMenu = sectorMenu;

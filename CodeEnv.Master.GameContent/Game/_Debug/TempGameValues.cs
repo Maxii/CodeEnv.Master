@@ -64,6 +64,14 @@ namespace CodeEnv.Master.GameContent {
         public const float ShipRadius_Max = 0.2F;   // range is 0.04 - 0.2      // 0.2 x 25(factor) = 5(cullingDistance)
 
         /// <summary>
+        /// The distance from the center of an obstacle to the side of the box of graphPoint vertices surrounding it. 
+        /// The distance is a value between 0.0 and 1.0.  0 represents a box whose side is <c>ObstacleRadius</c> away 
+        /// from the center of the obstacle, aka a box that bounds a sphere of size ObstacleRadius.
+        /// 1.0 represents a box whose side is <c>SectorSideLength</c> from the center of the obstacle.
+        /// </summary>
+        public const float PathGraphPointPercentDistanceAroundObstacles = 0.1F;
+
+        /// <summary>
         /// The multiplier used to determine the radius of the keepoutZone around celestial objects.
         /// </summary>
         public const float KeepoutRadiusMultiplier = 2.5F;

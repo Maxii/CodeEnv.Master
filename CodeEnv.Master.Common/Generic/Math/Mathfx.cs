@@ -211,9 +211,9 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Returns a collection of Vector3 points (y = 0) that are uniformly distributed around a circle in the xz plane.
+        /// Returns an array of Vector3 local positions (y = 0) that are uniformly distributed in a circle in the xz plane.
         /// </summary>
-        /// <param name="radius">The radius.</param>
+        /// <param name="radius">The radius of the circle.</param>
         /// <param name="numberOfPoints">The number of points.</param>
         /// <returns></returns>
         public static Vector3[] UniformPointsOnCircle(float radius, int numberOfPoints) {

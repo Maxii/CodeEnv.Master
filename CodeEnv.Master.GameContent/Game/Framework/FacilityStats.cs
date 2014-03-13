@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ShipOrders.cs
-// The orders that can be issued to a ship.
+// File: FacilityStats.cs
+// Class containing values and settings for Facilities.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,28 +16,18 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using CodeEnv.Master.Common;
+
     /// <summary>
-    /// The orders that can be issued to a ship.
+    /// Class containing values and settings for Facilities.
     /// </summary>
-    public enum ShipOrders {
+    public class FacilityStats : AElementStats {
 
-        None,
+        public FacilityCategory Category { get; set; }
 
-        MoveTo,
-
-        Attack,
-
-        StopAttack,
-
-        Repair,
-
-        Entrench,
-
-        Refit,
-
-        Disband,
-
-        JoinFleet
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
+        }
 
     }
 }

@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
@@ -28,9 +29,6 @@ using UnityEngine;
 /// </summary>
 public abstract class AUnitElementModel : AMortalItemModelStateMachine {
 
-
-    //protected IList<RangeTrackerID> _rangeTrackersInUse;
-
     public virtual bool IsHQElement { get; set; }
 
     public new AElementData Data {
@@ -39,16 +37,14 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
     }
 
     protected Rigidbody _rigidbody;
-    protected IRangeTracker _weaponTargetTracker;
+    protected IDictionary<Guid, IRangeTracker> _rangeTrackerLookup;
     protected float _gameSpeedMultiplier;
 
 
     protected override void Awake() {
         base.Awake();
         _rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
-        _weaponTargetTracker = gameObject.GetSafeInterfaceInChildren<IRangeTracker>();
         _gameSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();
-        // _rangeTrackersInUse = new List<RangeTrackerID>();
         // derived classes should call Subscribe() after they have acquired needed references
     }
 
@@ -60,86 +56,68 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
     protected override void Initialize() {
         _rigidbody.mass = Data.Mass;
         InitializeWeaponRangeTargetTrackers();
-        OnWeaponReloadPeriodChanged();
     }
 
     private void InitializeWeaponRangeTargetTrackers() {
-        _weaponTargetTracker.Data = Data;
-        _weaponTargetTracker.Range = Data.WeaponRange;
-        _weaponTargetTracker.Owner = Data.Owner;
-        _weaponTargetTracker.onEnemyInRange += OnEnemyInRange;
+        _rangeTrackerLookup = new Dictionary<Guid, IRangeTracker>();
+        var rangeTrackers = gameObject.GetSafeInterfacesInChildren<IRangeTracker>();
+
+        foreach (var rangeTracker in rangeTrackers) {
+            D.Assert(rangeTracker.Range != Constants.ZeroF, "{0} has an extra {1}.".Inject(Data.Name, typeof(IRangeTracker).Name));
+            rangeTracker.Data = Data;
+            rangeTracker.Owner = Data.Owner;
+            rangeTracker.onEnemyInRange += OnEnemyInRange;
+            _rangeTrackerLookup.Add(rangeTracker.ID, rangeTracker);
+        }
     }
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
-        _subscribers.Add(Data.SubscribeToPropertyChanged<AElementData, float>(d => d.WeaponRange, OnWeaponsRangeChanged));
-        _subscribers.Add(Data.SubscribeToPropertyChanged<AElementData, float>(d => d.WeaponReloadPeriod, OnWeaponReloadPeriodChanged));
+        //TODO: Weapon values don't change but weapons do
     }
 
     private void OnGameSpeedChanged() {
         _gameSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();
-        OnWeaponReloadPeriodChanged();
-    }
-
-    private void OnWeaponsRangeChanged() {
-        _weaponTargetTracker.Range = Data.WeaponRange;
     }
 
     protected override void OnOwnerChanged() {
         base.OnOwnerChanged();
-        _weaponTargetTracker.Owner = Data.Owner;
+        if (enabled) {  // acts just like an isInitialized test as enabled results in Start() which calls Initialize 
+            _rangeTrackerLookup.Values.ForAll(rt => rt.Owner = Data.Owner);
+        }
     }
 
     #region Weapon Reload System
 
-    private void OnWeaponReloadPeriodChanged() {
-        _weaponReloadPeriod = Data.WeaponReloadPeriod / (GameDate.HoursPerSecond * _gameSpeedMultiplier);
-    }
+    private IDictionary<Guid, Job> _weaponReloadJobs = new Dictionary<Guid, Job>();
 
-    private Job _reloadWeaponJob;
-    private void OnEnemyInRange(bool isInRange) {
-        if (isInRange) {
-            if (_reloadWeaponJob == null) {
-                _reloadWeaponJob = new Job(ReloadWeapon());
+    private void OnEnemyInRange(bool isInRange, Guid trackerID) {
+        var weapons = Data.GetWeapons(trackerID);
+        foreach (var weapon in weapons) {
+            var weaponID = weapon.ID;
+            Job weaponReloadJob;
+            if (isInRange) {
+                if (!_weaponReloadJobs.TryGetValue(weaponID, out weaponReloadJob)) {
+                    weaponReloadJob = new Job(ReloadWeapon(weapon));
+                    _weaponReloadJobs.Add(weaponID, weaponReloadJob);
+                }
+                D.Assert(!weaponReloadJob.IsRunning, "{0}.WeaponReloadJob should not be running.".Inject(Data.Name));
+                weaponReloadJob.Start();
             }
-            D.Assert(!_reloadWeaponJob.IsRunning, "{0}.ReloadWeaponJob should not be running.".Inject(Data.Name));
-            _reloadWeaponJob.Start();
-        }
-        else {
-            D.Assert(_reloadWeaponJob.IsRunning, "{0}.ReloadWeaponJob should be running.".Inject(Data.Name));
-            _reloadWeaponJob.Kill();
+            else {
+                weaponReloadJob = _weaponReloadJobs[weaponID];
+                D.Assert(weaponReloadJob.IsRunning, "{0}.ReloadWeaponJob should be running.".Inject(Data.Name));
+                weaponReloadJob.Kill();
+            }
         }
     }
 
-    //private void OnEnemyInRange(bool isInRange, RangeTrackerID id) {
-    //    if (isInRange) {
-    //        if (_reloadWeaponJob == null) {
-    //            _reloadWeaponJob = new Job(ReloadWeapon());
-    //        }
-    //        D.Assert(!_reloadWeaponJob.IsRunning, "{0}.ReloadWeaponJob should not be running.".Inject(Data.Name));
-    //        _reloadWeaponJob.Start();
-    //    }
-    //    else {
-    //        D.Assert(_reloadWeaponJob.IsRunning, "{0}.ReloadWeaponJob should be running.".Inject(Data.Name));
-    //        _reloadWeaponJob.Kill();
-    //    }
-    //}
-
-    private float _weaponReloadPeriod;
-    private IEnumerator ReloadWeapon() {
+    private IEnumerator ReloadWeapon(Weapon weapon) {
         while (true) {
-            OnWeaponReady();
-            yield return new WaitForSeconds(_weaponReloadPeriod);
+            OnWeaponReady(weapon);
+            yield return new WaitForSeconds(weapon.ReloadPeriod);
         }
     }
-
-    //private IEnumerator ReloadWeapon(Weapon weapon) {
-    //    float reloadPeriod = weapon.ReloadPeriod;
-    //    while (true) {
-    //        OnWeaponReady(weapon);
-    //        yield return new WaitForSeconds(reloadPeriod);
-    //    }
-    //}
 
     #endregion
 
@@ -152,9 +130,9 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
 
     protected override void OnItemDeath() {
         base.OnItemDeath();
-        _weaponTargetTracker.onEnemyInRange -= OnEnemyInRange;
-        if (_reloadWeaponJob != null) {
-            _reloadWeaponJob.Kill();
+        _rangeTrackerLookup.Values.ForAll(rt => rt.onEnemyInRange -= OnEnemyInRange);
+        if (_weaponReloadJobs.Count != Constants.Zero) {
+            _weaponReloadJobs.ForAll<KeyValuePair<Guid, Job>>(kvp => kvp.Value.Kill());
         }
     }
 
@@ -170,17 +148,19 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
         RelayToCurrentState();
     }
 
-    protected bool _isAnyWeaponReady;
-    void OnWeaponReady() {
-        _isAnyWeaponReady = true;
-        RelayToCurrentState();
+    /// <summary>
+    /// Called when this weapon is ready to fire on a target in range.
+    /// </summary>
+    /// <param name="weapon">The weapon.</param>
+    void OnWeaponReady(Weapon weapon) {
+        RelayToCurrentState(weapon);
     }
 
     #endregion
 
     protected override void Cleanup() {
         base.Cleanup();
-        (_weaponTargetTracker as IDisposable).Dispose();
+        _rangeTrackerLookup.Values.ForAll(rt => (rt as IDisposable).Dispose());
     }
 
     // subscriptions contained completely within this gameobject (both subscriber
@@ -188,7 +168,7 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
 
     #region ITarget Members
 
-    public override float MaxWeaponsRange { get { return Data.WeaponRange; } }
+    public override float MaxWeaponsRange { get { return Data.MaxWeaponsRange; } }
 
     #endregion
 }

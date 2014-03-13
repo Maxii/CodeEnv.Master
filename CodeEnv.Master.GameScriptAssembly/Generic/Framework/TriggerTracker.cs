@@ -78,7 +78,7 @@ public class TriggerTracker : AMonoBase, IDisposable {
         ITarget target = other.gameObject.GetInterface<ITarget>();
         if (target == null) {
             _collidersToIgnore.Add(other);
-            D.Warn("{0}.{1} now ignoring Collider {2}.", Data.Name, GetType().Name, other.name);
+            D.Log("{0}.{1} now ignoring Collider {2}.", Data.Name, GetType().Name, other.name);
             return;
         }
 
@@ -111,7 +111,7 @@ public class TriggerTracker : AMonoBase, IDisposable {
                 AllTargets.Add(target);
             }
             else {
-                D.Warn("{0}.{1} avoided adding target {2} that is already dead but not yet destroyed.", Data.Name, GetType().Name, target.Name);
+                D.Log("{0}.{1} avoided adding target {2} that is already dead but not yet destroyed.", Data.Name, GetType().Name, target.Name);
             }
         }
         else {

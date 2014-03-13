@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -23,7 +24,13 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class Weapon {
 
-        public RangeTrackerID TrackerID { get; set; }
+        public Guid ID { get; private set; }
+
+        public Guid TrackerID { get; set; }
+
+        public bool IsOperational { get; set; }
+
+        public string Name { get { return Category.GetName() + Constants.Underscore + "Model" + Model; } }
 
         public WeaponCategory Category { get; private set; }
 
@@ -42,6 +49,7 @@ namespace CodeEnv.Master.GameContent {
         public Weapon(WeaponCategory category, int model) {
             Category = category;
             Model = model;
+            ID = Guid.NewGuid();
         }
 
         public override string ToString() {

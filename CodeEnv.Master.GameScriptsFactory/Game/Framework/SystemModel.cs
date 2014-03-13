@@ -34,8 +34,9 @@ public class SystemModel : AItemModel {
 
     public void AssignSettlement(SettlementUnitCreator settlementCreator) {
         D.Assert(gameObject.GetComponentInChildren<SettlementUnitCreator>() == null, "{0} already has a Settlement.".Inject(Data.Name));
-        GameObject orbitGoClone = UnityUtility.AddChild(gameObject, RequiredPrefabs.Instance.orbit.gameObject);
-        UnityUtility.AttachChildToParent(settlementCreator.gameObject, orbitGoClone);
+        GameObject orbitGo = UnityUtility.AddChild(gameObject, RequiredPrefabs.Instance.orbit.gameObject);
+        orbitGo.name = "SettlementOrbit";
+        UnityUtility.AttachChildToParent(settlementCreator.gameObject, orbitGo);
         // position this settlement piece in the orbit slot already reserved for it
         settlementCreator.transform.localPosition = Data.SettlementOrbitSlot;
         if (settlementCreator.IsCompleted) {
@@ -52,7 +53,7 @@ public class SystemModel : AItemModel {
         if (!_isLocalCallFlag) {
             creator.onCompleted -= InitializeSettlement;
         }
-        SettlementCmdModel settlementCmd = creator.gameObject.GetComponentInChildren<SettlementCmdModel>();
+        SettlementCmdModel settlementCmd = creator.gameObject.GetSafeMonoBehaviourComponentInChildren<SettlementCmdModel>();
         Data.SettlementData = settlementCmd.Data;
 
         AddSystemAsLOSChangedRelayTarget(settlementCmd);

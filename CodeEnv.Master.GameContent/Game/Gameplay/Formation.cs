@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ShipOrders.cs
-// The orders that can be issued to a ship.
+// File: Formation.cs
+// Enum identifying the alternative formations of a Unit.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,27 +17,15 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// The orders that can be issued to a ship.
+    /// Enum identifying the alternative formations of a Unit.
     /// </summary>
-    public enum ShipOrders {
+    public enum Formation {
 
         None,
 
-        MoveTo,
+        Circle,
 
-        Attack,
-
-        StopAttack,
-
-        Repair,
-
-        Entrench,
-
-        Refit,
-
-        Disband,
-
-        JoinFleet
+        Globe
 
     }
 }

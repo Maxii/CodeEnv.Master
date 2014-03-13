@@ -30,14 +30,14 @@ using UnityEngine;
 /// <typeparam name="ElementType">The Type of Element contained in the Command.</typeparam>
 /// <typeparam name="ElementCategoryType">The Type holding the Element's Categories.</typeparam>
 /// <typeparam name="ElementDataType">The Type of the Element's Data.</typeparam>
+/// <typeparam name="ElementStatType">The Type of the Element stat.</typeparam>
 /// <typeparam name="CommandType">The Type of the Command.</typeparam>
-/// <typeparam name="CompositionType">The Type of the Composition within the Command.</typeparam>
-public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementDataType, CommandType, CompositionType> : AMonoBase, IDisposable
+public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementDataType, ElementStatType, CommandType> : AMonoBase, IDisposable
     where ElementType : AUnitElementModel
     where ElementCategoryType : struct
     where ElementDataType : AElementData
-    where CommandType : AUnitCommandModel<ElementType>
-    where CompositionType : class, new() {
+    where ElementStatType : class, new()
+    where CommandType : AUnitCommandModel<ElementType> {
 
     public DiplomaticRelations OwnerRelationshipWithHuman;
 
@@ -51,18 +51,25 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     /// </summary>
     public string UnitName { get; private set; }
 
-    protected CompositionType _composition;
+    protected IList<ElementStatType> _elementStats;
+    protected HashSet<ElementCategoryType> _elementCategoriesUsed;
+    protected UnitFactory _factory;
+
     protected IList<ElementType> _elements;
     protected CommandType _command;
     private IList<IDisposable> _subscribers;
     protected bool _isPreset;
-    protected IPlayer _owner;
 
     protected IGameManager _gameMgr;
 
     protected override void Awake() {
         base.Awake();
         _gameMgr = References.GameManager;
+
+        _elementStats = new List<ElementStatType>();
+        _elementCategoriesUsed = new HashSet<ElementCategoryType>();
+        _factory = UnitFactory.Instance;
+
         UnitName = GetUnitName();
         _isPreset = _transform.childCount > 0;
         if (!GameStatus.Instance.IsRunning) {
@@ -82,192 +89,117 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         CreateComposition();
         DeployUnit();
         EnableUnit();
+        // FIXME need to allow time for Starts to run to choose HQ after EnableUnit() is called
         OnCompleted();
         __InitializeCommandIntel();
     }
 
     private void OnGameStateChanged() {
         if (_gameMgr.CurrentState == GetCreationGameState()) {
+            D.Assert(_gameMgr.CurrentState != GameState.RunningCountdown_2);    // interferes with positioning
             CreateComposition();
             DeployUnit();
             EnableUnit();  // must make View operational before starting state changes within it
+        }
+        if (_gameMgr.CurrentState == GameState.RunningCountdown_2) {
+            // allows time for Starts to run to choose HQ after EnableUnit() is called
             OnCompleted();
         }
         if (_gameMgr.CurrentState == GameState.RunningCountdown_1) {
             __InitializeCommandIntel();
         }
+        if (_gameMgr.CurrentState == GameState.Running) {
+            RemoveCreatorScript();
+        }
     }
 
     private void CreateComposition() {
-        SetOwner();
         if (_isPreset) {
-            CreateCompositionFromChildren();
+            CreateStatsFromChildren();
         }
         else {
-            CreateRandomComposition();
+            CreateRandomStats();
         }
     }
 
-    private void CreateCompositionFromChildren() {
-        _elements = gameObject.GetSafeMonoBehaviourComponentsInChildren<ElementType>();
-        _composition = Activator.CreateInstance<CompositionType>();
-        foreach (var element in _elements) {
+    private void CreateStatsFromChildren() {
+        var elements = gameObject.GetSafeMonoBehaviourComponentsInChildren<ElementType>();
+        foreach (var element in elements) {
             ElementCategoryType category = DeriveCategory(element);
-            string elementName = element.gameObject.name;
-            ElementDataType elementData = CreateElementData(category, elementName);
-            AddDataToComposition(elementData);
+            _elementCategoriesUsed.Add(category);
+            // don't change the name as I need to derive category from it in InitializeElements
+            string elementInstanceName = element.gameObject.name;
+            CreateElementStat(category, elementInstanceName);
         }
     }
 
-    private void CreateRandomComposition() {
-        _composition = Activator.CreateInstance<CompositionType>();
-
+    private void CreateRandomStats() {
         ElementCategoryType[] validHQCategories = GetValidHQElementCategories();
-
         ElementCategoryType[] validCategories = GetValidElementCategories();
 
         int elementCount = RandomExtended<int>.Range(1, maxElements);
+        D.Log("{0} Element count is {1}.", UnitName, elementCount);
         for (int i = 0; i < elementCount; i++) {
-            ElementCategoryType elementCategory = (i == 0) ? RandomExtended<ElementCategoryType>.Choice(validHQCategories) : RandomExtended<ElementCategoryType>.Choice(validCategories);
-            int elementInstanceIndex = GetCurrentCount(elementCategory) + 1;
-            string elementInstanceName = elementCategory.ToString() + Constants.Underscore + elementInstanceIndex;
-            ElementDataType elementData = CreateElementData(elementCategory, elementInstanceName);
-            AddDataToComposition(elementData);
+            ElementCategoryType category = (i == 0) ? RandomExtended<ElementCategoryType>.Choice(validHQCategories) : RandomExtended<ElementCategoryType>.Choice(validCategories);
+            _elementCategoriesUsed.Add(category);
+            int elementInstanceIndex = GetCurrentCount(category) + 1;
+            string elementInstanceName = category.ToString() + Constants.Underscore + elementInstanceIndex;
+            CreateElementStat(category, elementInstanceName);
         }
     }
-
-    protected abstract ElementDataType CreateElementData(ElementCategoryType category, string elementName);
 
     private void DeployUnit() {
-        if (_isPreset) {
-            DeployPresetPiece();
-        }
-        else {
-            DeployRandomPiece();
-        }
-    }
-
-    private void DeployPresetPiece() {
         InitializeElements();
-        AcquireCommand();
-        InitializeUnit();
-        MarkHQElement();
-        AssignFormationPositions();
-    }
-
-    private void DeployRandomPiece() {
-        BuildElements();
-        InitializeElements();
-        AcquireCommand();
-        InitializeUnit();
-        MarkHQElement();
-        PositionElements();
-        AssignFormationPositions();
-    }
-
-    private void BuildElements() {
-        _elements = new List<ElementType>();
-        foreach (var elementCategory in GetCompositionCategories()) {
-            GameObject elementPrefabGo = GetElementPrefabs().First(go => go.name == elementCategory.ToString());
-            string elementCategoryName = elementPrefabGo.name;
-
-            GetCompositionData(elementCategory).ForAll(data => {
-                GameObject elementGoClone = UnityUtility.AddChild(gameObject, elementPrefabGo);
-                elementGoClone.name = elementCategoryName; // get rid of (Clone) in name
-                ElementType element = elementGoClone.GetSafeMonoBehaviourComponent<ElementType>();
-                _elements.Add(element);
-            });
-        }
+        _command = GetCommand(GetOwner());
+        AddElements();
     }
 
     private void InitializeElements() {
-        IDictionary<ElementCategoryType, Stack<ElementDataType>> dataStackLookup = new Dictionary<ElementCategoryType, Stack<ElementDataType>>();
-        foreach (var element in _elements) {
-            ElementCategoryType elementCategory = DeriveCategory(element);
-            Stack<ElementDataType> elementDataStack;
-            if (!dataStackLookup.TryGetValue(elementCategory, out elementDataStack)) {
-                elementDataStack = new Stack<ElementDataType>(GetCompositionData(elementCategory));
-                dataStackLookup.Add(elementCategory, elementDataStack);
-            }
-            element.Data = elementDataStack.Pop();  // automatically adds the element's transform to Data when set
-            // this is not really necessary as Element's prefab should already have ElementItem as its Mesh's CameraLOSChangedRelay target
-            element.gameObject.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(element.transform);
-        }
-    }
+        _elements = new List<ElementType>();
+        ElementType element = null;
+        foreach (var stat in _elementStats) {
 
-    private void AcquireCommand() {
-        if (_isPreset) {
-            _command = gameObject.GetSafeMonoBehaviourComponentInChildren<CommandType>();
-        }
-        else {
-            GameObject commandGoClone = UnityUtility.AddChild(gameObject, GetCommandPrefab());
-            _command = commandGoClone.GetSafeMonoBehaviourComponent<CommandType>();
-        }
-    }
+            if (_isPreset) {
+                // find a preExisting element of the right category first to provide to Make
+                var categoryElements = gameObject.GetSafeMonoBehaviourComponentsInChildren<ElementType>()
+                    .Where(e => DeriveCategory(e).Equals(GetCategory(stat)));
+                var categoryElementsStillAvailable = categoryElements.Except(_elements);
+                element = categoryElementsStillAvailable.First();
 
-    private void InitializeUnit() {
-        InitializeCommandData(_owner);    // automatically adds the command transform to Data when set
-        _elements.ForAll(element => _command.AddElement(element));  // owners assigned to elements when added to a Cmd
-        // command IS NOT assigned as a target of each element's CameraLOSChangedRelay as that would make the CommandIcon disappear when the elements disappear
-
-        // this is not really necessary as Command's prefab should already have CommandItem as its Icon's CameraLOSChangedRelay target
-        _command.gameObject.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(_command.transform);
-    }
-
-    protected abstract void PositionElements();
-
-    /// <summary>
-    /// Randomly positions the ships of the fleet in a spherical globe around this location.
-    /// </summary>
-    /// <param name="radius">The radius of the globe within which to deploy the fleet.</param>
-    /// <returns></returns>
-    protected bool PositionElementsRandomlyInSphere(float radius) {  // FIXME need to set FormationPosition
-        GameObject[] elementGos = _elements.Select(s => s.gameObject).ToArray();
-        Vector3 pieceCenter = _transform.position;
-        D.Log("Radius of Sphere occupied by {0} of count {1} is {2}.", UnitName, elementGos.Length, radius);
-        return UnityUtility.PositionRandomWithinSphere(pieceCenter, radius, elementGos);
-        // fleetCmd will relocate itsef once it selects its flagship
-    }
-
-    protected void PositionElementsEquidistantInCircle(float radius) {
-        Vector3 pieceCenter = _transform.position;
-        Stack<Vector3> localFormationPositions = new Stack<Vector3>(Mathfx.UniformPointsOnCircle(radius, _elements.Count - 1));
-        foreach (var element in _elements) {
-            if (element.IsHQElement) {
-                element.transform.position = pieceCenter;
+                MakeElement(stat, ref element);
             }
             else {
-                Vector3 localFormationPosition = localFormationPositions.Pop();
-                element.transform.position = pieceCenter + localFormationPosition;
+                element = MakeElement(stat);
             }
+            // need to tell each element where this creator is located. This assures that whichever element is picked as the HQElement
+            // will start with this position. The other elements positions will be adjusted from the HQElement position when the formation is formed
+            element.transform.position = _transform.position;
+            _elements.Add(element);
         }
     }
 
-    protected abstract void MarkHQElement();
+    protected abstract CommandType GetCommand(IPlayer owner);
 
-    private void AssignFormationPositions() {
-        ElementType hqElement = _elements.Single(s => s.IsHQElement);
-        Vector3 hqPosition = hqElement.transform.position;
-        foreach (var element in _elements) {
-            if (element.IsHQElement) {
-                element.Data.FormationPosition = Vector3.zero;
-                D.Log("{0} HQ Element is {1}.", UnitName, element.Data.Name);
-                continue;
-            }
-            element.Data.FormationPosition = element.transform.position - hqPosition;
-            //D.Log("{0}.FormationPosition = {1}.", ship.Data.Name, ship.Data.FormationPosition);
-        }
+    private void AddElements() {
+        _elements.ForAll(e => _command.AddElement(e));
+        // command IS NOT assigned as a target of each element's CameraLOSChangedRelay as that would make the CommandIcon disappear when the elements disappear
     }
 
+    // Element positioning and formationPosition assignments have been moved to AUnitCommandModel to support runtime adds and removals
+
+    /// <summary>
+    /// Enables the Unit's elements and command which allows Start() and Initialize() to run. 
+    /// Commands pick their HQ Element when they initialize. As positioning of the elements in a 
+    /// formation requires knowledge of the HQ Element, this must run before positioning takes place.
+    /// </summary>
     private void EnableUnit() {
-        // elements need to run their Start first to initialize and assign the designated HQElement to the Command before Command is enabled and runs its Start
         _elements.ForAll(element => element.enabled = true);
         _command.enabled = true;
         EnableViews();
     }
 
     protected abstract void EnableViews();
-
+    protected abstract void CreateElementStat(ElementCategoryType category, string elementName);
     protected abstract void __InitializeCommandIntel();
 
     private ElementCategoryType DeriveCategory(ElementType element) {
@@ -275,13 +207,15 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     }
 
     private int GetCurrentCount(ElementCategoryType elementCategory) {
-        if (!GetCompositionCategories().Contains(elementCategory)) {
+        if (!_elementCategoriesUsed.Contains(elementCategory)) {
             return 0;
         }
-        return GetCompositionData(elementCategory).Count;
+        return GetStats(elementCategory).Count;
     }
 
-    private void SetOwner() {
+    protected abstract IList<ElementStatType> GetStats(ElementCategoryType elementCategory);
+
+    private IPlayer GetOwner() {
         IPlayer humanPlayer = _gameMgr.HumanPlayer;
         IPlayer owner = new Player();
         switch (OwnerRelationshipWithHuman) {
@@ -312,7 +246,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(OwnerRelationshipWithHuman));
         }
-        _owner = owner;
+        return owner;
     }
 
     protected virtual string GetUnitName() {
@@ -329,17 +263,15 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     /// </summary>
     /// <returns>The GameState that triggers creation.</returns>
     protected abstract GameState GetCreationGameState();
-    protected abstract void AddDataToComposition(ElementDataType elementData);
-    protected abstract IList<ElementDataType> GetCompositionData(ElementCategoryType elementCategory);
-    protected abstract IList<ElementCategoryType> GetCompositionCategories();
-    protected abstract IEnumerable<GameObject> GetElementPrefabs();
-    protected abstract GameObject GetCommandPrefab();
-    /// <summary>
-    /// Instantiate and assign the command's data with owner set to Command.
-    /// </summary>
-    protected abstract void InitializeCommandData(IPlayer owner);
+    protected abstract ElementCategoryType GetCategory(ElementStatType stat);
+    protected abstract void MakeElement(ElementStatType stat, ref ElementType element);
+    protected abstract ElementType MakeElement(ElementStatType stat);
     protected abstract ElementCategoryType[] GetValidHQElementCategories();
     protected abstract ElementCategoryType[] GetValidElementCategories();
+
+    private void RemoveCreatorScript() {
+        Destroy(this);
+    }
 
     protected override void OnDestroy() {
         base.OnDestroy();
@@ -403,4 +335,5 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     #endregion
 
 }
+
 

@@ -48,6 +48,7 @@ namespace CodeEnv.Master.GameContent {
                 _composition.Add(category, new List<ShipData>());
             }
             if (_composition[category].Contains(elementData)) {
+                D.Warn("{0} already contains Data for {1}.", GetType().Name, elementData.Name);
                 return false;
             }
             _composition[category].Add(elementData);
