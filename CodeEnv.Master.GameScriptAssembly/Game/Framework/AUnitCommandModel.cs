@@ -188,8 +188,8 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
     ///   <c>true</c> if all elements were successfully positioned without overlap.
     /// </returns>
     private bool TryPositionRandomWithinSphere(AUnitElementModel hqElement, float radius, ref UnitElementModelType[] elementsToPosition) {
-        D.Assert(hqElement.Data.FormationPosition.IsSame(Vector3.zero),
-            "{0}'s HQ Element {1}.FormationPosition is at {2}.".Inject(Data.Name, hqElement.Name, hqElement.Data.FormationPosition));
+        //D.Assert(hqElement.Data.FormationPosition.IsSame(Vector3.zero),
+        //    "{0}'s HQ Element {1}.FormationPosition is at {2}.".Inject(Data.Name, hqElement.Name, hqElement.Data.FormationPosition));
         IList<Bounds> allElementBounds = new List<Bounds>();
 
         Bounds hqElementBounds = new Bounds();
