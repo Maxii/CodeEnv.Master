@@ -30,7 +30,7 @@ using System.Collections.Generic;
 /// </summary>
 public class FleetCmdModel : AUnitCommandModel<ShipModel> {
 
-    private IList<OnStationTracker> _formationStationTrackers;
+    private IDictionary<Guid, FormationStationTracker> _formationStationTrackerLookup;
 
 
     private UnitOrder<FleetOrders> _currentOrder;
@@ -48,7 +48,7 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
 
     protected override void Awake() {
         base.Awake();
-        _formationStationTrackers = new List<OnStationTracker>();
+        _formationStationTrackerLookup = new Dictionary<Guid, FormationStationTracker>();
         Subscribe();
     }
 
@@ -142,12 +142,35 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
         HQElement.Navigator.onCourseTrackingError += OnFlagshipTrackingError;
     }
 
-    protected override void __InstantlyRelocateElement(ShipModel element, Vector3 newLocation) {
-        if (!GameStatus.Instance.IsRunning) {
-            // if we aren't yet running, then this is the initial setup so 'transport this element to its formation position
-            base.__InstantlyRelocateElement(element, newLocation);
+    //protected override void RelocateElement(ShipModel element, Vector3 newLocation) {
+    //    if (!GameStatus.Instance.IsRunning) {
+    //        // if we aren't yet running, then this is the initial setup so 'transport this element to its formation position
+    //        base.RelocateElement(element, newLocation);
+    //    }
+    //    // otherwise, do nothing as ships will move to their new location rather than being 'transported'
+    //}
+
+    protected override void PositionElementInFormation(ShipModel ship, Vector3 formationStationOffset) {
+        //element.Data.FormationStationTracker.Position = newLocation;
+        ship.transform.position = HQElement.Position + formationStationOffset;
+        ship.Data.FormationStationOffset = formationStationOffset;
+        var shipFormationStationTracker = _formationStationTrackerLookup.Values.SingleOrDefault(fst => fst.AssignedShip == ship);
+        if (shipFormationStationTracker != null) {
+            shipFormationStationTracker.StationOffset = formationStationOffset;
         }
-        // otherwise, do nothing as ships will move to their new location rather than being 'transported'
+        else {
+            // the ship is not assigned to a stationTracker so check for any emptys and assign the ship to one of them
+            var emptyFormationStationTrackers = _formationStationTrackerLookup.Values.Where(fst => fst.AssignedShip == null);
+            if (!emptyFormationStationTrackers.IsNullOrEmpty()) {
+                var emptyTracker = emptyFormationStationTrackers.First();
+                emptyTracker.AssignedShip = ship;
+                emptyTracker.StationOffset = formationStationOffset;
+            }
+            else {
+                // there are no emptys so make a new one and assign the ship to it
+                UnitFactory.Instance.mak
+            }
+        }
     }
 
     private void __GetFleetUnderway() {

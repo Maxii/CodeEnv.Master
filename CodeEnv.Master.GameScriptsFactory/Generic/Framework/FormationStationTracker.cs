@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: OnStationTracker.cs
+// File: FormationStationTracker.cs
 // Tracks whether the assigned ship is within the radius of it's Station in the Formation.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -25,19 +25,26 @@ using UnityEngine;
 /// <summary>
 /// Tracks whether the assigned ship is within the radius of it's Station in the Formation.
 /// </summary>
-public class OnStationTracker : AMonoBase {
+public class FormationStationTracker : AMonoBase, IFormationStationTracker {
     //public class OnStationTracker : AMonoBase, IDisposable {
 
-    public event Action<bool, Guid> onShipOnStation;
+    //public event Action<bool, Guid> onShipOnStation;
+    public event Action<Guid, bool> onShipOnStation;
+
 
     public Guid ID { get; private set; }
 
+    public bool IsOnStation { get; private set; }
+
     public float StationRadius { get; private set; }
 
-    private Vector3 _position;
-    public Vector3 Position {
-        get { return _position; }
-        set { SetProperty<Vector3>(ref _position, value, "Position", OnPositionChanged); }
+    private Vector3 _stationOffset;
+    /// <summary>
+    /// The Vector3 offset of this station of the formation from the HQ Element.
+    /// </summary>
+    public Vector3 StationOffset {
+        get { return _stationOffset; }
+        set { SetProperty<Vector3>(ref _stationOffset, value, "StationOffset", OnStationOffsetChanged); }
     }
 
     private ITarget _assignedShip;
@@ -66,6 +73,7 @@ public class OnStationTracker : AMonoBase {
     void OnTriggerEnter(Collider other) {
         //D.Log("OnTriggerEnter({0}) called.", other.name);
         ITarget target = other.gameObject.GetInterface<ITarget>();
+        //ShipModel target = other.gameObject.GetComponent<ShipModel>();
         if (target != null) {
             if (target == AssignedShip) {
                 OnShipOnStation(true);
@@ -76,6 +84,7 @@ public class OnStationTracker : AMonoBase {
     void OnTriggerExit(Collider other) {
         //D.Log("{0}.OnTriggerExit() called by Collider {1}.", GetType().Name, other.name);
         ITarget target = other.gameObject.GetInterface<ITarget>();
+        //ShipModel target = other.gameObject.GetComponent<ShipModel>();
         if (target != null) {
             if (target == AssignedShip) {
                 OnShipOnStation(false);
@@ -115,14 +124,15 @@ public class OnStationTracker : AMonoBase {
         AssignedShip = null;
     }
 
-    private void OnPositionChanged() {
-        _transform.position = Position;
+    private void OnStationOffsetChanged() {
+        _transform.localPosition = StationOffset;
     }
 
     protected void OnShipOnStation(bool isOnStation) {
+        IsOnStation = IsOnStation;
         var temp = onShipOnStation;
         if (temp != null) {
-            temp(isOnStation, ID);
+            temp(ID, isOnStation);
         }
     }
 

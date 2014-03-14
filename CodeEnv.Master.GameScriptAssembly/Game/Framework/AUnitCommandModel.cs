@@ -188,8 +188,8 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
     ///   <c>true</c> if all elements were successfully positioned without overlap.
     /// </returns>
     private bool TryPositionRandomWithinSphere(AUnitElementModel hqElement, float radius, ref UnitElementModelType[] elementsToPosition) {
-        D.Assert(hqElement.Data.FormationPosition.IsSame(Vector3.zero),
-            "{0}'s HQ Element {1}.FormationPosition is at {2}.".Inject(Data.Name, hqElement.Name, hqElement.Data.FormationPosition));
+        //D.Assert(hqElement.Data.FormationPosition.IsSame(Vector3.zero),
+        //    "{0}'s HQ Element {1}.FormationPosition is at {2}.".Inject(Data.Name, hqElement.Name, hqElement.Data.FormationPosition));
         IList<Bounds> allElementBounds = new List<Bounds>();
 
         Bounds hqElementBounds = new Bounds();
@@ -199,18 +199,18 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         allElementBounds.Add(hqElementBounds);
 
         int iterateCount = 0;
-        Vector3[] localFormationPositions = new Vector3[elementsToPosition.Length];
+        Vector3[] formationStationOffsets = new Vector3[elementsToPosition.Length];
         for (int i = 0; i < elementsToPosition.Length; i++) {
             bool toEncapsulate = false;
-            Vector3 candidateLocalLocation = UnityEngine.Random.insideUnitSphere * radius;
+            Vector3 candidateStationOffset = UnityEngine.Random.insideUnitSphere * radius;
             Bounds elementBounds = new Bounds();
             AUnitElementModel element = elementsToPosition[i];
             if (UnityUtility.GetBoundWithChildren(element.transform, ref elementBounds, ref toEncapsulate)) {
-                elementBounds.center = candidateLocalLocation;
+                elementBounds.center = candidateStationOffset;
                 //D.Log("Bounds = {0}.", elementBounds.ToString());
                 if (allElementBounds.All(eb => !eb.Intersects(elementBounds))) {
                     allElementBounds.Add(elementBounds);
-                    localFormationPositions[i] = candidateLocalLocation;
+                    formationStationOffsets[i] = candidateStationOffset;
                     iterateCount = 0;
                 }
                 else {
@@ -228,8 +228,9 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
             }
         }
         for (int i = 0; i < elementsToPosition.Length; i++) {
-            elementsToPosition[i].Data.FormationPosition = localFormationPositions[i];
-            __InstantlyRelocateElement(elementsToPosition[i], HQElement.Position + localFormationPositions[i]);
+            PositionElementInFormation(elementsToPosition[i], formationStationOffsets[i]);
+            //elementsToPosition[i].Data.FormationPosition = localFormationPositions[i];
+            //RelocateElement(elementsToPosition[i], HQElement.Position + localFormationPositions[i]);
             //elementsToPosition[i].transform.localPosition = localFormationPositions[i];   // won't work as the position of the Element's parent is arbitrary
         }
         return true;
@@ -244,26 +245,23 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         Vector3 hqElementPosition = HQElement.Position;
         var elementsToPosition = Elements.Except(HQElement);
         //D.Log("{0}.elementsCount = {1}.", GetType().Name, _elements.Count);
-        Stack<Vector3> localFormationPositions = new Stack<Vector3>(Mathfx.UniformPointsOnCircle(globeRadius, elementsToPosition.Count()));
+        Stack<Vector3> formationStationOffsets = new Stack<Vector3>(Mathfx.UniformPointsOnCircle(globeRadius, elementsToPosition.Count()));
         foreach (var element in elementsToPosition) {
-            Vector3 localFormationPosition = localFormationPositions.Pop();
-            element.Data.FormationPosition = localFormationPosition;
-            __InstantlyRelocateElement(element, hqElementPosition + localFormationPosition);
+            Vector3 stationOffset = formationStationOffsets.Pop();
+            PositionElementInFormation(element, stationOffset);
+            //element.Data.FormationPosition = localFormationPosition;
+            //RelocateElement(element, hqElementPosition + localFormationPosition);
         }
     }
 
-    /// <summary>
-    /// Instantly relocates an element of this command. NOTE: this method is present so it can be overridden by FleetCmd
-    /// to only relocate during initialization as Ships should travel to their new location, not instantly appear there when the 
-    /// game is running. Temp as I need a better way to make this distinction happen.
-    /// </summary>
-    /// <param name="element">The element.</param>
-    /// <param name="newLocation">The new location.</param>
+    //protected virtual void RelocateElement(UnitElementModelType element, Vector3 newLocation) {
+    //    element.transform.position = newLocation;
+    //    D.Log("{0}'s element {1} relocated to {2}, {3} units from HQElement at {4}.",
+    //        Name, element.Name, newLocation, Vector3.Distance(HQElement.Position, newLocation), HQElement.Position);
+    //}
+
+    protected abstract void PositionElementInFormation(UnitElementModelType element, Vector3 formationStationOffset);
     protected virtual void __InstantlyRelocateElement(UnitElementModelType element, Vector3 newLocation) {
-        element.transform.position = newLocation;
-        D.Log("{0}'s element {1} relocated to {2}, {3} units from HQElement at {4}.",
-            Name, element.Name, newLocation, Vector3.Distance(HQElement.Position, newLocation), HQElement.Position);
-    }
 
 
     protected abstract void KillCommand();

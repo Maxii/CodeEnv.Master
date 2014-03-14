@@ -108,7 +108,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="destination">The destination.</param>
         public override void PlotCourse(Vector3 destination) {
-            Destination = destination + _data.FormationPosition;
+            Destination = destination + _data.FormationStationOffset;
             if (CheckDirectApproachToDestination()) {
                 onCoursePlotSuccess();
             }

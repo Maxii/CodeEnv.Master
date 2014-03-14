@@ -27,10 +27,10 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AElementData : AMortalItemData {
 
-        /// <summary>
-        /// The desired position offset of this Element from the HQElement.
-        /// </summary>
-        public Vector3 FormationPosition { get; set; }
+        ///// <summary>
+        ///// The desired position offset of this Element from the HQElement.
+        ///// </summary>
+        //public Vector3 FormationPosition { get; set; }
 
         private float _maxWeaponsRange;
         public float MaxWeaponsRange {

@@ -30,6 +30,17 @@ namespace CodeEnv.Master.GameContent {
         public ShipCategory Category { get; private set; }
 
         /// <summary>
+        /// The station in the fleet formation this ship is assigned too.
+        /// </summary>
+        //public IOnStationTracker FormationStationTracker { get; set; }
+
+        /// <summary>
+        /// The desired position offset of this Element from the HQElement.
+        /// </summary>
+        public Vector3 FormationStationOffset { get; set; }
+
+
+        /// <summary>
         /// Readonly. Gets the current speed of the ship in Units per
         /// day, normalized for game speed.
         /// </summary>
