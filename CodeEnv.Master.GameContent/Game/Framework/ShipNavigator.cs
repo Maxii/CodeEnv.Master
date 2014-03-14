@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
     public class ShipNavigator : ANavigator {
 
         protected override Vector3 Destination {
-            get { return Target.Position + Data.FormationPosition; }
+            get { return Target.Position + Data.FormationStationOffset; }
         }
 
         private bool IsTurnComplete {

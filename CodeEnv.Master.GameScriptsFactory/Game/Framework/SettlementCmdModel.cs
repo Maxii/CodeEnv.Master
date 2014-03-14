@@ -19,11 +19,14 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using System.Collections.Generic;
 
 /// <summary>
 /// The data-holding class for all Settlements in the game. Includes a state machine.
 /// </summary>
 public class SettlementCmdModel : AUnitCommandModel<FacilityModel> {
+
+    private IDictionary<Vector3, FacilityModel> _formationPositionLookup;
 
     public new SettlementCmdData Data {
         get { return base.Data as SettlementCmdData; }
@@ -38,6 +41,7 @@ public class SettlementCmdModel : AUnitCommandModel<FacilityModel> {
 
     protected override void Awake() {
         base.Awake();
+        _formationPositionLookup = new Dictionary<Vector3, FacilityModel>();
         Subscribe();
     }
 
@@ -54,6 +58,14 @@ public class SettlementCmdModel : AUnitCommandModel<FacilityModel> {
     protected override FacilityModel SelectHQElement() {
         return Elements.Single(e => e.Data.Category == FacilityCategory.CentralHub);
     }
+
+    protected override void PositionElementInFormation(FacilityModel element, Vector3 formationStationOffset) {
+        //element.Data.FormationPosition = localFormationPosition;
+        element.transform.position = HQElement.Position + formationStationOffset;
+        // TODO what about if the element is already in the lookup?
+        _formationPositionLookup.Add(formationStationOffset, element);
+    }
+
 
     #region StateMachine
 
