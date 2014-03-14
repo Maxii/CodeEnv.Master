@@ -37,7 +37,7 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
     }
 
     protected Rigidbody _rigidbody;
-    protected IDictionary<Guid, IRangeTracker> _rangeTrackerLookup;
+    protected IDictionary<Guid, IRangeTracker> _weaponRangeTrackerLookup;
     protected float _gameSpeedMultiplier;
 
 
@@ -55,11 +55,11 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
 
     protected override void Initialize() {
         _rigidbody.mass = Data.Mass;
-        InitializeWeaponRangeTargetTrackers();
+        InitializeWeaponRangeTrackers();
     }
 
-    private void InitializeWeaponRangeTargetTrackers() {
-        _rangeTrackerLookup = new Dictionary<Guid, IRangeTracker>();
+    private void InitializeWeaponRangeTrackers() {
+        _weaponRangeTrackerLookup = new Dictionary<Guid, IRangeTracker>();
         var rangeTrackers = gameObject.GetSafeInterfacesInChildren<IRangeTracker>();
 
         foreach (var rangeTracker in rangeTrackers) {
@@ -67,7 +67,7 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
             rangeTracker.Data = Data;
             rangeTracker.Owner = Data.Owner;
             rangeTracker.onEnemyInRange += OnEnemyInRange;
-            _rangeTrackerLookup.Add(rangeTracker.ID, rangeTracker);
+            _weaponRangeTrackerLookup.Add(rangeTracker.ID, rangeTracker);
         }
     }
 
@@ -83,7 +83,7 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
     protected override void OnOwnerChanged() {
         base.OnOwnerChanged();
         if (enabled) {  // acts just like an isInitialized test as enabled results in Start() which calls Initialize 
-            _rangeTrackerLookup.Values.ForAll(rt => rt.Owner = Data.Owner);
+            _weaponRangeTrackerLookup.Values.ForAll(rt => rt.Owner = Data.Owner);
         }
     }
 
@@ -130,7 +130,7 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
 
     protected override void OnItemDeath() {
         base.OnItemDeath();
-        _rangeTrackerLookup.Values.ForAll(rt => rt.onEnemyInRange -= OnEnemyInRange);
+        _weaponRangeTrackerLookup.Values.ForAll(rt => rt.onEnemyInRange -= OnEnemyInRange);
         if (_weaponReloadJobs.Count != Constants.Zero) {
             _weaponReloadJobs.ForAll<KeyValuePair<Guid, Job>>(kvp => kvp.Value.Kill());
         }
@@ -160,7 +160,7 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine {
 
     protected override void Cleanup() {
         base.Cleanup();
-        _rangeTrackerLookup.Values.ForAll(rt => (rt as IDisposable).Dispose());
+        _weaponRangeTrackerLookup.Values.ForAll(rt => (rt as IDisposable).Dispose());
     }
 
     // subscriptions contained completely within this gameobject (both subscriber

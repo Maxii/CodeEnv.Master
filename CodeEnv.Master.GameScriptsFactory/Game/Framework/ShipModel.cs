@@ -30,6 +30,8 @@ using UnityEngine;
 /// </summary>
 public class ShipModel : AUnitElementModel, IShipNavigatorClient {
 
+    public OnStationTracker FormationStationTracker { get; set; }
+
     private UnitOrder<ShipOrders> _currentOrder;
     public UnitOrder<ShipOrders> CurrentOrder {
         get { return _currentOrder; }
@@ -165,6 +167,7 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
     }
 
     #endregion
+
 
     #region StateMachine
 
@@ -530,7 +533,7 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     private void TryFireOnAnyTarget(Weapon weapon) {
-        if (_rangeTrackerLookup[weapon.TrackerID].__TryGetRandomEnemyTarget(out _attackTarget)) {
+        if (_weaponRangeTrackerLookup[weapon.TrackerID].__TryGetRandomEnemyTarget(out _attackTarget)) {
             D.Log("{0}.{1} initiating attack on {2} from {3}.", Data.Name, weapon.Name, _attackTarget.Name, CurrentState.GetName());
             _attackDamage = weapon.Damage;
             Call(FacilityState.Attacking);
@@ -551,7 +554,7 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
         D.Assert(_ordersTarget != null && !_ordersTarget.IsDead, "{0}'s target from orders is null or dead.".Inject(Data.Name));
         bool isTargetInRange = false;
         var uniqueEnemyTargetsInRange = Enumerable.Empty<ITarget>();
-        foreach (var rt in _rangeTrackerLookup.Values) {
+        foreach (var rt in _weaponRangeTrackerLookup.Values) {
             uniqueEnemyTargetsInRange = uniqueEnemyTargetsInRange.Union<ITarget>(rt.EnemyTargets);  // OPTIMIZE
         }
 

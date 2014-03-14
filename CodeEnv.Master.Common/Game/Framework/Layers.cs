@@ -45,7 +45,7 @@ namespace CodeEnv.Master.Common {
 
         DeepSpace = 20,
         CelestialObjectKeepout = 21,
-        WeaponsRange = 22,
+        IgnoreGuiEvents = 22,
 
         Vectrosity2D = 31
 

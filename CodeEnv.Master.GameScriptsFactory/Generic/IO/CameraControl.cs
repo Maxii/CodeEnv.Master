@@ -155,7 +155,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     private LayerMask _collideWithDummyTargetOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.DummyTarget);
     private LayerMask _collideWithOnlyCameraTargetsLayerMask
         = LayerMaskExtensions.CreateExclusiveMask(Layers.UniverseEdge, Layers.DeepSpace, Layers.Gui2D, Layers.Vectrosity2D,
-        Layers.CelestialObjectKeepout, Layers.WeaponsRange);
+        Layers.CelestialObjectKeepout, Layers.IgnoreGuiEvents);
     private LayerMask _layersVisibleToCamera = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
         Layers.DummyTarget, Layers.UniverseEdge, Layers.Ships, Layers.BasesSettlements, Layers.Planetoids, Layers.Stars);
 

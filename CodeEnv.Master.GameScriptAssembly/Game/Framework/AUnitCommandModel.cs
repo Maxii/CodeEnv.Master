@@ -229,7 +229,7 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         }
         for (int i = 0; i < elementsToPosition.Length; i++) {
             elementsToPosition[i].Data.FormationPosition = localFormationPositions[i];
-            RelocateElement(elementsToPosition[i], HQElement.Position + localFormationPositions[i]);
+            __InstantlyRelocateElement(elementsToPosition[i], HQElement.Position + localFormationPositions[i]);
             //elementsToPosition[i].transform.localPosition = localFormationPositions[i];   // won't work as the position of the Element's parent is arbitrary
         }
         return true;
@@ -248,11 +248,18 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         foreach (var element in elementsToPosition) {
             Vector3 localFormationPosition = localFormationPositions.Pop();
             element.Data.FormationPosition = localFormationPosition;
-            RelocateElement(element, hqElementPosition + localFormationPosition);
+            __InstantlyRelocateElement(element, hqElementPosition + localFormationPosition);
         }
     }
 
-    protected virtual void RelocateElement(UnitElementModelType element, Vector3 newLocation) {
+    /// <summary>
+    /// Instantly relocates an element of this command. NOTE: this method is present so it can be overridden by FleetCmd
+    /// to only relocate during initialization as Ships should travel to their new location, not instantly appear there when the 
+    /// game is running. Temp as I need a better way to make this distinction happen.
+    /// </summary>
+    /// <param name="element">The element.</param>
+    /// <param name="newLocation">The new location.</param>
+    protected virtual void __InstantlyRelocateElement(UnitElementModelType element, Vector3 newLocation) {
         element.transform.position = newLocation;
         D.Log("{0}'s element {1} relocated to {2}, {3} units from HQElement at {4}.",
             Name, element.Name, newLocation, Vector3.Distance(HQElement.Position, newLocation), HQElement.Position);

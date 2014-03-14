@@ -34,6 +34,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     private FleetCmdModel fleetCmdPrefab;
     private StarbaseCmdModel starbaseCmdPrefab;
     private SettlementCmdModel settlementCmdPrefab;
+    private OnStationTracker formationStationTrackerPrefab;
 
     private UnitFactory() {
         Initialize();
@@ -46,6 +47,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         fleetCmdPrefab = RequiredPrefabs.Instance.fleetCmd;
         starbaseCmdPrefab = RequiredPrefabs.Instance.starbaseCmd;
         settlementCmdPrefab = RequiredPrefabs.Instance.settlementCmd;
+        formationStationTrackerPrefab = RequiredPrefabs.Instance.formationStationTracker;
     }
 
     /// <summary>
@@ -253,6 +255,13 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         facilityGo.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(facilityGo.transform);
     }
 
+    public OnStationTracker MakeFormationStationTrackerInstance(Vector3 position, FleetCmdModel fleetCmd) {
+        GameObject stGo = UnityUtility.AddChild(fleetCmd.gameObject, formationStationTrackerPrefab.gameObject);
+        OnStationTracker st = stGo.GetSafeMonoBehaviourComponent<OnStationTracker>();
+        st.Position = position;
+        return st;
+    }
+
     private void AttachWeaponsToRangeTrackers(IList<Weapon> weapons, AElementData data, GameObject elementGo) {
         IList<IRangeTracker> rangeTrackers = elementGo.GetInterfacesInChildren<IRangeTracker>().ToList();
         rangeTrackers.ForAll(rt => rt.Range = Constants.ZeroF); // initialize all to zero so RangeSpan gets set and left overs can be found
@@ -268,7 +277,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 }
                 else {
                     GameObject rTrackerGo = UnityUtility.AddChild(elementGo, rangeTrackerPrefab.gameObject);
-                    rTrackerGo.layer = (int)Layers.WeaponsRange; // AddChild resets prefab layer to elementGo's layer
+                    rTrackerGo.layer = (int)Layers.IgnoreGuiEvents; // AddChild resets prefab layer to elementGo's layer
                     rTracker = rTrackerGo.GetSafeInterfaceInChildren<IRangeTracker>();
                     rangeTrackers.Add(rTracker);
                 }

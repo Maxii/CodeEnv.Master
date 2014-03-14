@@ -30,6 +30,9 @@ using System.Collections.Generic;
 /// </summary>
 public class FleetCmdModel : AUnitCommandModel<ShipModel> {
 
+    private IList<OnStationTracker> _formationStationTrackers;
+
+
     private UnitOrder<FleetOrders> _currentOrder;
     public UnitOrder<FleetOrders> CurrentOrder {
         get { return _currentOrder; }
@@ -45,6 +48,7 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
 
     protected override void Awake() {
         base.Awake();
+        _formationStationTrackers = new List<OnStationTracker>();
         Subscribe();
     }
 
@@ -70,12 +74,17 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
     public override void AddElement(ShipModel element) {
         base.AddElement(element);
         element.Command = this;
+        // if there is an empty formationStationTracker, then assign this ship to it
+        // if not, then create a new one at the rear of the formation
     }
 
     public void TransferShip(ShipModel ship, FleetCmdModel fleetCmd) {
         fleetCmd.AddElement(ship);
         RemoveElement(ship);
     }
+
+    // RemoveElement(ShipModel element)
+    // find the ship in the FSTs and remove it
 
     protected override ShipModel SelectHQElement() {
         return Elements.MaxBy(e => e.Data.Health);
@@ -133,10 +142,10 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
         HQElement.Navigator.onCourseTrackingError += OnFlagshipTrackingError;
     }
 
-    protected override void RelocateElement(ShipModel element, Vector3 newLocation) {
+    protected override void __InstantlyRelocateElement(ShipModel element, Vector3 newLocation) {
         if (!GameStatus.Instance.IsRunning) {
             // if we aren't yet running, then this is the initial setup so 'transport this element to its formation position
-            base.RelocateElement(element, newLocation);
+            base.__InstantlyRelocateElement(element, newLocation);
         }
         // otherwise, do nothing as ships will move to their new location rather than being 'transported'
     }
