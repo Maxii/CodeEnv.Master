@@ -24,7 +24,7 @@ using System.Collections.Generic;
 /// <summary>
 /// The data-holding class for all Settlements in the game. Includes a state machine.
 /// </summary>
-public class SettlementCmdModel : AUnitCommandModel<FacilityModel> {
+public class SettlementCmdModel : AUnitCommandModel {
 
     public new SettlementCmdData Data {
         get { return base.Data as SettlementCmdData; }
@@ -51,12 +51,12 @@ public class SettlementCmdModel : AUnitCommandModel<FacilityModel> {
         base.AddElement(element);
         element.Command = this;
         if (enabled) {  // if disabled, then this AddElement operation is occuring prior to initialization
-            RegenerateFormation();    // Bases simply regenerate the formation when adding an element
+            _formationGenerator.RegenerateFormation();    // Bases simply regenerate the formation when adding an element
         }
     }
 
-    protected override FacilityModel SelectHQElement() {
-        return Elements.Single(e => e.Data.Category == FacilityCategory.CentralHub);
+    protected override AUnitElementModel SelectHQElement() {
+        return Elements.Single(e => (e as FacilityModel).Data.Category == FacilityCategory.CentralHub);
     }
 
     #region StateMachine
@@ -105,7 +105,7 @@ public class SettlementCmdModel : AUnitCommandModel<FacilityModel> {
         _attackTarget = (CurrentOrder as UnitTargetOrder<SettlementOrders>).Target;
         _attackTarget.onItemDeath += OnTargetDeath;
         var elementAttackOrder = new UnitTargetOrder<FacilityOrders>(FacilityOrders.Attack, _attackTarget);
-        Elements.ForAll<FacilityModel>(e => e.CurrentOrder = elementAttackOrder);
+        Elements.ForAll(e => (e as FacilityModel).CurrentOrder = elementAttackOrder);
     }
 
     void Attacking_OnTargetDeath(IMortalTarget deadTarget) {

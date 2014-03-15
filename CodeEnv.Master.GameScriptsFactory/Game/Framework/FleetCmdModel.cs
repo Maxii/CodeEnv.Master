@@ -28,7 +28,7 @@ using System.Collections.Generic;
 /// <summary>
 /// The data-holding class for all fleets in the game. Includes a state machine.
 /// </summary>
-public class FleetCmdModel : AUnitCommandModel<ShipModel> {
+public class FleetCmdModel : AUnitCommandModel {
 
     private UnitOrder<FleetOrders> _currentOrder;
     public UnitOrder<FleetOrders> CurrentOrder {
@@ -89,7 +89,7 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
             }
             else {
                 // there are no empty trackers so regenerate the whole formation
-                RegenerateFormation();    // TODO instead, create a new one at the rear of the formation
+                _formationGenerator.RegenerateFormation();    // TODO instead, create a new one at the rear of the formation
             }
         }
     }
@@ -111,7 +111,7 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
         }
     }
 
-    protected override ShipModel SelectHQElement() {
+    protected override AUnitElementModel SelectHQElement() {
         return Elements.MaxBy(e => e.Data.Health);
     }
 
@@ -249,7 +249,7 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
 
     public void __IssueShipMovementOrders(IDestination target, Speed speed, float standoffDistance = Constants.ZeroF) {
         var moveToOrder = new UnitMoveOrder<ShipOrders>(ShipOrders.MoveTo, target, speed, standoffDistance);
-        Elements.ForAll(s => s.CurrentOrder = moveToOrder);
+        Elements.ForAll(e => (e as ShipModel).CurrentOrder = moveToOrder);
     }
 
     private void __AllStop() {
@@ -424,7 +424,7 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
         _attackTarget = (CurrentOrder as UnitTargetOrder<FleetOrders>).Target;
         _attackTarget.onItemDeath += OnTargetDeath;
         var elementAttackOrder = new UnitTargetOrder<ShipOrders>(ShipOrders.Attack, _attackTarget);
-        Elements.ForAll<ShipModel>(e => e.CurrentOrder = elementAttackOrder);
+        Elements.ForAll(e => (e as ShipModel).CurrentOrder = elementAttackOrder);
     }
 
     void Attacking_OnTargetDeath(IMortalTarget deadTarget) {
@@ -480,7 +480,7 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
 
         // we've arrived so transfer the ship to the fleet we are joining
         var fleetToJoin = joinOrder.Target as FleetCmdModel;
-        var ship = Elements[0];
+        var ship = Elements[0] as ShipModel;
         TransferShip(ship, fleetToJoin);
         // removing the only ship will immediately call FleetState.Dead
         yield return null;

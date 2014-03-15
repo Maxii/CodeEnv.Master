@@ -186,7 +186,7 @@
     <Compile Include="Generic\Framework\IFormationStationTracker.cs" />
     <Compile Include="Generic\Framework\IUnitElement.cs" />
     <Compile Include="Generic\Framework\IShip.cs" />
-    <Compile Include="IUnitTarget.cs" />
+    <Compile Include="Generic\Framework\IUnitTarget.cs" />
     <Compile Include="ThirdParty\ICoroutineManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\SystemData.cs" />

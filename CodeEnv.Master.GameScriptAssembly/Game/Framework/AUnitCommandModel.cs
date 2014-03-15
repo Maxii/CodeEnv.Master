@@ -29,9 +29,9 @@ using UnityEngine;
 /// Abstract, generic base class for a CommandItem, an object that commands Elements.
 /// </summary>
 /// <typeparam name="UnitElementModelType">The Type of the derived AUnitElementModel this Command is composed of.</typeparam>
-public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModelStateMachine, IUnitCommand where UnitElementModelType : AUnitElementModel {
+public abstract class AUnitCommandModel : AMortalItemModelStateMachine, IUnitCommand  {
 
-    public event Action<UnitElementModelType> onSubordinateElementDeath;
+    public event Action<AUnitElementModel> onSubordinateElementDeath;
 
     public string PieceName { get { return Data.OptionalParentName; } }
 
@@ -40,24 +40,27 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         set { base.Data = value; }
     }
 
-    private UnitElementModelType _hqElement;
-    public UnitElementModelType HQElement {
+    private AUnitElementModel _hqElement;
+    public AUnitElementModel HQElement {
         get { return _hqElement; }
-        set { SetProperty<UnitElementModelType>(ref _hqElement, value, "HQElement", OnHQElementChanged, OnHQElementChanging); }
+        set { SetProperty<AUnitElementModel>(ref _hqElement, value, "HQElement", OnHQElementChanged, OnHQElementChanging); }
     }
 
     // can't get rid of generic ElementType since List Properties can't be hidden
-    public IList<UnitElementModelType> Elements { get; set; }
+    public IList<AUnitElementModel> Elements { get; set; }
+
+    protected FormationGenerator _formationGenerator;
 
     protected override void Awake() {
         base.Awake();
-        Elements = new List<UnitElementModelType>();
+        Elements = new List<AUnitElementModel>();
+        _formationGenerator = new FormationGenerator(this);
         // Derived class should call Subscribe() after all used references have been established
     }
 
     protected override void Initialize() {
         HQElement = SelectHQElement();
-        RegenerateFormation();
+        _formationGenerator.RegenerateFormation();
     }
 
     protected override void SubscribeToDataValueChanges() {
@@ -69,7 +72,7 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
     /// Adds the Element to this Command including parenting if needed.
     /// </summary>
     /// <param name="element">The Element to add.</param>
-    public virtual void AddElement(UnitElementModelType element) {
+    public virtual void AddElement(AUnitElementModel element) {
         D.Assert(!element.IsHQElement, "{0} adding element {1} already designated as the HQ Element.".Inject(Name, element.Name));   // by definition, an element can't already be the HQ Element when it is being added
         element.onItemDeath += OnSubordinateElementDeath;
         Elements.Add(element);
@@ -81,7 +84,7 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         // TODO consider changing HQElement
     }
 
-    public virtual void RemoveElement(UnitElementModelType element) {
+    public virtual void RemoveElement(AUnitElementModel element) {
         element.onItemDeath -= OnSubordinateElementDeath;
         bool isRemoved = Elements.Remove(element);
         isRemoved = isRemoved && Data.RemoveElement(element.Data);
@@ -99,9 +102,9 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
     }
 
     private void OnSubordinateElementDeath(IMortalTarget mortalItem) {
-        D.Assert(mortalItem is UnitElementModelType);
+        D.Assert(mortalItem is AUnitElementModel);
         D.Log("{0} acknowledging {1} has been lost.", Data.Name, mortalItem.Name);
-        UnitElementModelType element = mortalItem as UnitElementModelType;
+        AUnitElementModel element = mortalItem as AUnitElementModel;
         RemoveElement(element);
 
         var temp = onSubordinateElementDeath;
@@ -110,7 +113,7 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         }
     }
 
-    protected virtual void OnHQElementChanging(UnitElementModelType newElement) {
+    protected virtual void OnHQElementChanging(AUnitElementModel newElement) {
         if (HQElement != null) {
             HQElement.IsHQElement = false;
         }
@@ -122,11 +125,11 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
     }
 
     private void OnFormationChanged() {
-        RegenerateFormation();
+        _formationGenerator.RegenerateFormation();
     }
 
     public override void __SimulateAttacked() {
-        Elements.ForAll<UnitElementModelType>(e => e.__SimulateAttacked());
+        Elements.ForAll<AUnitElementModel>(e => e.__SimulateAttacked());
     }
 
     /// <summary>
@@ -145,120 +148,120 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         return isHit;
     }
 
-    /// <summary>
-    /// Generates a new formation based on the formation selected and the 
-    /// number of elements present in the Unit.
-    /// </summary>
-    /// <exception cref="System.NotImplementedException"></exception>
-    protected void RegenerateFormation() {
-        switch (Data.UnitFormation) {
-            case Formation.Circle:
-                PositionElementsEquidistantInCircle();
-                break;
-            case Formation.Globe:
-                PositionElementsRandomlyInSphere();
-                break;
-            case Formation.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(Data.UnitFormation));
-        }
-        CleanupAfterFormationGeneration();
-    }
+    ///// <summary>
+    ///// Generates a new formation based on the formation selected and the 
+    ///// number of elements present in the Unit.
+    ///// </summary>
+    ///// <exception cref="System.NotImplementedException"></exception>
+    //protected void RegenerateFormation() {
+    //    switch (Data.UnitFormation) {
+    //        case Formation.Circle:
+    //            PositionElementsEquidistantInCircle();
+    //            break;
+    //        case Formation.Globe:
+    //            PositionElementsRandomlyInSphere();
+    //            break;
+    //        case Formation.None:
+    //        default:
+    //            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(Data.UnitFormation));
+    //    }
+    //    CleanupAfterFormationGeneration();
+    //}
 
-    /// <summary>
-    /// Randomly positions the elements of the unit in a spherical globe around the HQ Element.
-    /// </summary>
-    private void PositionElementsRandomlyInSphere() {
-        float globeRadius = 1F * (float)Math.Pow(Elements.Count * 0.2F, 0.33F);  // cube root of number of groups of 5 elements
+    ///// <summary>
+    ///// Randomly positions the elements of the unit in a spherical globe around the HQ Element.
+    ///// </summary>
+    //private void PositionElementsRandomlyInSphere() {
+    //    float globeRadius = 1F * (float)Math.Pow(Elements.Count * 0.2F, 0.33F);  // cube root of number of groups of 5 elements
 
-        var elementsToPosition = Elements.Except(HQElement).ToArray();
-        if (!TryPositionRandomWithinSphere(HQElement, globeRadius, ref elementsToPosition)) {
-            // try again with a larger radius
-            D.Assert(TryPositionRandomWithinSphere(HQElement, globeRadius * 1.5F, ref elementsToPosition),
-                "{0} Formation Positioning Error.".Inject(Data.Name));
-        }
-    }
+    //    var elementsToPosition = Elements.Except(HQElement).ToArray();
+    //    if (!TryPositionRandomWithinSphere(HQElement, globeRadius, ref elementsToPosition)) {
+    //        // try again with a larger radius
+    //        D.Assert(TryPositionRandomWithinSphere(HQElement, globeRadius * 1.5F, ref elementsToPosition),
+    //            "{0} Formation Positioning Error.".Inject(Data.Name));
+    //    }
+    //}
 
-    /// <summary>
-    /// Positions the provided game objects randomly inside a sphere in such a way that the meshes
-    /// are not in contact.
-    /// </summary>
-    /// <param name="hqElement">The hq element with FormationPosition fixed at Vector3.zero.</param>
-    /// <param name="radius">The radius of the sphere in units.</param>
-    /// <param name="elementsToPosition">The non-HQ elements to position.</param>
-    /// <returns>
-    ///   <c>true</c> if all elements were successfully positioned without overlap.
-    /// </returns>
-    private bool TryPositionRandomWithinSphere(AUnitElementModel hqElement, float radius, ref UnitElementModelType[] elementsToPosition) {
-        IList<Bounds> allElementBounds = new List<Bounds>();
+    ///// <summary>
+    ///// Positions the provided game objects randomly inside a sphere in such a way that the meshes
+    ///// are not in contact.
+    ///// </summary>
+    ///// <param name="hqElement">The hq element with FormationPosition fixed at Vector3.zero.</param>
+    ///// <param name="radius">The radius of the sphere in units.</param>
+    ///// <param name="elementsToPosition">The non-HQ elements to position.</param>
+    ///// <returns>
+    /////   <c>true</c> if all elements were successfully positioned without overlap.
+    ///// </returns>
+    //private bool TryPositionRandomWithinSphere(AUnitElementModel hqElement, float radius, ref UnitElementModelType[] elementsToPosition) {
+    //    IList<Bounds> allElementBounds = new List<Bounds>();
 
-        Bounds hqElementBounds = new Bounds();
-        bool toEncapsulateHqElement = false;
-        D.Assert(UnityUtility.GetBoundWithChildren(hqElement.transform, ref hqElementBounds, ref toEncapsulateHqElement),
-            "{0} unable to construct a Bound for HQ Element {1}.".Inject(Name, hqElement.Name));
-        allElementBounds.Add(hqElementBounds);
+    //    Bounds hqElementBounds = new Bounds();
+    //    bool toEncapsulateHqElement = false;
+    //    D.Assert(UnityUtility.GetBoundWithChildren(hqElement.transform, ref hqElementBounds, ref toEncapsulateHqElement),
+    //        "{0} unable to construct a Bound for HQ Element {1}.".Inject(Name, hqElement.Name));
+    //    allElementBounds.Add(hqElementBounds);
 
-        int iterateCount = 0;
-        Vector3[] formationStationOffsets = new Vector3[elementsToPosition.Length];
-        for (int i = 0; i < elementsToPosition.Length; i++) {
-            bool toEncapsulate = false;
-            Vector3 candidateStationOffset = UnityEngine.Random.insideUnitSphere * radius;
-            Bounds elementBounds = new Bounds();
-            UnitElementModelType element = elementsToPosition[i];
-            if (UnityUtility.GetBoundWithChildren(element.transform, ref elementBounds, ref toEncapsulate)) {
-                elementBounds.center = candidateStationOffset;
-                //D.Log("Bounds = {0}.", elementBounds.ToString());
-                if (allElementBounds.All(eb => !eb.Intersects(elementBounds))) {
-                    allElementBounds.Add(elementBounds);
-                    formationStationOffsets[i] = candidateStationOffset;
-                    iterateCount = 0;
-                }
-                else {
-                    i--;
-                    iterateCount++;
-                    if (iterateCount >= 10) {
-                        D.Warn("{0} had a formation positioning iteration error.", Name);
-                        return false;
-                    }
-                }
-            }
-            else {
-                D.Error("{0} unable to construct a Bound for {1}.", Name, element.name);
-                return false;
-            }
-        }
-        for (int i = 0; i < elementsToPosition.Length; i++) {
-            PositionElementInFormation(elementsToPosition[i], formationStationOffsets[i]);
-            //elementsToPosition[i].transform.localPosition = localFormationPositions[i];   // won't work as the position of the Element's parent is arbitrary
-        }
-        return true;
-    }
+    //    int iterateCount = 0;
+    //    Vector3[] formationStationOffsets = new Vector3[elementsToPosition.Length];
+    //    for (int i = 0; i < elementsToPosition.Length; i++) {
+    //        bool toEncapsulate = false;
+    //        Vector3 candidateStationOffset = UnityEngine.Random.insideUnitSphere * radius;
+    //        Bounds elementBounds = new Bounds();
+    //        UnitElementModelType element = elementsToPosition[i];
+    //        if (UnityUtility.GetBoundWithChildren(element.transform, ref elementBounds, ref toEncapsulate)) {
+    //            elementBounds.center = candidateStationOffset;
+    //            //D.Log("Bounds = {0}.", elementBounds.ToString());
+    //            if (allElementBounds.All(eb => !eb.Intersects(elementBounds))) {
+    //                allElementBounds.Add(elementBounds);
+    //                formationStationOffsets[i] = candidateStationOffset;
+    //                iterateCount = 0;
+    //            }
+    //            else {
+    //                i--;
+    //                iterateCount++;
+    //                if (iterateCount >= 10) {
+    //                    D.Warn("{0} had a formation positioning iteration error.", Name);
+    //                    return false;
+    //                }
+    //            }
+    //        }
+    //        else {
+    //            D.Error("{0} unable to construct a Bound for {1}.", Name, element.name);
+    //            return false;
+    //        }
+    //    }
+    //    for (int i = 0; i < elementsToPosition.Length; i++) {
+    //        PositionElementInFormation(elementsToPosition[i], formationStationOffsets[i]);
+    //        //elementsToPosition[i].transform.localPosition = localFormationPositions[i];   // won't work as the position of the Element's parent is arbitrary
+    //    }
+    //    return true;
+    //}
 
-    /// <summary>
-    /// Positions the elements equidistant in a circle around the HQ Element.
-    /// </summary>
-    protected void PositionElementsEquidistantInCircle() {
-        float globeRadius = 1F * (float)Math.Pow(Elements.Count * 0.2F, 0.33F);  // cube root of number of groups of 5 elements
+    ///// <summary>
+    ///// Positions the elements equidistant in a circle around the HQ Element.
+    ///// </summary>
+    //protected void PositionElementsEquidistantInCircle() {
+    //    float globeRadius = 1F * (float)Math.Pow(Elements.Count * 0.2F, 0.33F);  // cube root of number of groups of 5 elements
 
-        Vector3 hqElementPosition = HQElement.Position;
-        var elementsToPosition = Elements.Except(HQElement);
-        //D.Log("{0}.elementsCount = {1}.", GetType().Name, _elements.Count);
-        Stack<Vector3> formationStationOffsets = new Stack<Vector3>(Mathfx.UniformPointsOnCircle(globeRadius, elementsToPosition.Count()));
-        foreach (var element in elementsToPosition) {
-            Vector3 stationOffset = formationStationOffsets.Pop();
-            PositionElementInFormation(element, stationOffset);
-        }
-    }
+    //    Vector3 hqElementPosition = HQElement.Position;
+    //    var elementsToPosition = Elements.Except(HQElement);
+    //    //D.Log("{0}.elementsCount = {1}.", GetType().Name, _elements.Count);
+    //    Stack<Vector3> formationStationOffsets = new Stack<Vector3>(Mathfx.UniformPointsOnCircle(globeRadius, elementsToPosition.Count()));
+    //    foreach (var element in elementsToPosition) {
+    //        Vector3 stationOffset = formationStationOffsets.Pop();
+    //        PositionElementInFormation(element, stationOffset);
+    //    }
+    //}
 
-    protected virtual void PositionElementInFormation(UnitElementModelType element, Vector3 stationOffset) {
+    protected internal virtual void PositionElementInFormation(AUnitElementModel element, Vector3 stationOffset) {
         element.transform.position = HQElement.transform.position + stationOffset;
     }
 
-    protected virtual void CleanupAfterFormationGeneration() { }
+    protected internal virtual void CleanupAfterFormationGeneration() { }
 
     protected abstract void KillCommand();
 
-    protected abstract UnitElementModelType SelectHQElement();
+    protected abstract AUnitElementModel SelectHQElement();
 
     protected override void Cleanup() {
         base.Cleanup();

@@ -24,10 +24,10 @@ using UnityEngine;
 /// Abstract, generic base MVPresenter associated with CommandViews.
 /// </summary>
 /// <typeparam name="UnitElementModelType">The Type of the derived AUnitElementModel.</typeparam>
-public abstract class AUnitCommandPresenter<UnitElementModelType> : AMortalItemPresenter where UnitElementModelType : AUnitElementModel {
+public abstract class AUnitCommandPresenter : AMortalItemPresenter {
 
-    public new AUnitCommandModel<UnitElementModelType> Model {
-        get { return base.Model as AUnitCommandModel<UnitElementModelType>; }
+    public new AUnitCommandModel Model {
+        get { return base.Model as AUnitCommandModel; }
         protected set { base.Model = value; }
     }
 
@@ -42,12 +42,12 @@ public abstract class AUnitCommandPresenter<UnitElementModelType> : AMortalItemP
 
     protected override void Subscribe() {
         base.Subscribe();
-        _subscribers.Add(Model.SubscribeToPropertyChanged<AUnitCommandModel<UnitElementModelType>, UnitElementModelType>(sb => sb.HQElement, OnHQElementChanged));
+        _subscribers.Add(Model.SubscribeToPropertyChanged<AUnitCommandModel, AUnitElementModel>(sb => sb.HQElement, OnHQElementChanged));
         Model.onSubordinateElementDeath += OnSubordinateElementDeath;
         Model.Data.onCompositionChanged += OnCompositionChanged;
     }
 
-    private void OnSubordinateElementDeath(UnitElementModelType element) {
+    private void OnSubordinateElementDeath(AUnitElementModel element) {
         if (element.gameObject.GetSafeInterface<ICameraFocusable>().IsFocus) {
             // our element that was just destroyed was the focus, so change the focus to the command
             (View as ICameraFocusable).IsFocus = true;
