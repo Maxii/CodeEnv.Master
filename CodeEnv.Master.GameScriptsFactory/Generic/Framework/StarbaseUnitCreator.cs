@@ -28,6 +28,13 @@ using UnityEngine;
 /// </summary>
 public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory, FacilityData, FacilityStats, StarbaseCmdModel> {
 
+    private UnitFactory _factory;
+
+    protected override void Awake() {
+        base.Awake();
+        _factory = UnitFactory.Instance;
+    }
+
     protected override GameState GetCreationGameState() {
         return GameState.DeployingSystems;
     }

@@ -57,9 +57,10 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="FormationGenerator.cs" />
+    <Compile Include="Game\Framework\FormationGenerator.cs" />
     <Compile Include="Game\Graphics\AFocusableItemPresenter.cs" />
     <Compile Include="Game\Graphics\AFocusableItemView.cs" />
+    <Compile Include="Generic\Framework\AUnitCreator.cs" />
     <Compile Include="Generic\Framework\TriggerTracker.cs" />
     <Compile Include="Generic\Graphics\AItemPresenter.cs" />
     <Compile Include="Game\Graphics\AMortalItemPresenter.cs" />

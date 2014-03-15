@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IUnitElement.cs
-// Interface for a UnitElement.
+// File: IDestinationItem.cs
+// Interface for an Item that is a movement destination.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,13 +16,21 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using UnityEngine;
+
     /// <summary>
-    ///  Interface for a UnitElement.
+    /// Interface for an Item that is a movement destination.
     /// </summary>
-    public interface IUnitElement : IUnitItem {
+    public interface IDestinationItem {
 
-        //IUnitElement HQElement { get; set; }
+        string Name { get; }
+
+        Vector3 Position { get; }
+
+        bool IsMovable { get; }
+
+        float Radius { get; }
+
     }
-
 }
 

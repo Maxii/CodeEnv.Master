@@ -106,7 +106,9 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IUnitEle
             }
             else {
                 weaponReloadJob = _weaponReloadJobs[weaponID];
-                D.Assert(weaponReloadJob.IsRunning, "{0}.ReloadWeaponJob should be running.".Inject(Data.Name));
+                if (!weaponReloadJob.IsRunning) {
+                    D.Warn("{0}.WeaponReloadJob should be running.".Inject(Data.Name));
+                }
                 weaponReloadJob.Kill();
             }
         }

@@ -25,8 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Tracks whether the assigned ship is within the radius of it's Station in the Formation.
 /// </summary>
-public class FormationStationTracker : AMonoBase, IFormationStationTracker {
-    //public class OnStationTracker : AMonoBase, IDisposable {
+public class FormationStationTracker : AMonoBase /* IDisposable */ {
 
     public event Action<Guid, bool> onShipOnStation;
 
@@ -115,7 +114,7 @@ public class FormationStationTracker : AMonoBase, IFormationStationTracker {
         }
     }
 
-    private void OnAssignedShipDeath(IMortalTarget deadAssignedShip) {
+    private void OnAssignedShipDeath(IMortalItem deadAssignedShip) {
         IShip ship = deadAssignedShip as IShip;
         D.Assert(ship != null && ship == AssignedShip);
         OnShipOnStation(false);

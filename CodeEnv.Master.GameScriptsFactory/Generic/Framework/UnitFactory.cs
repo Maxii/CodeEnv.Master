@@ -256,18 +256,18 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     public FormationStationTracker MakeFormationStationTrackerInstance(Vector3 stationOffset, FleetCmdModel fleetCmd) {
-        // make a container for neatness if one doesn't yet exist
-        GameObject stationTrackerHolder = null;
+        // make a folder for neatness if one doesn't yet exist
+        GameObject stationTrackerFolder = null;
         var trackers = fleetCmd.gameObject.GetComponentsInChildren<FormationStationTracker>();
         if (trackers.IsNullOrEmpty()) {
-            stationTrackerHolder = new GameObject("StationTrackers");
-            UnityUtility.AttachChildToParent(stationTrackerHolder, fleetCmd.gameObject);
+            stationTrackerFolder = new GameObject("StationTrackers");
+            UnityUtility.AttachChildToParent(stationTrackerFolder, fleetCmd.gameObject);
         }
         else {
-            stationTrackerHolder = trackers.First().transform.parent.gameObject;
+            stationTrackerFolder = trackers.First().transform.parent.gameObject;
         }
 
-        GameObject stGo = UnityUtility.AddChild(stationTrackerHolder, formationStationTrackerPrefab.gameObject);
+        GameObject stGo = UnityUtility.AddChild(stationTrackerFolder, formationStationTrackerPrefab.gameObject);
         FormationStationTracker st = stGo.GetSafeMonoBehaviourComponent<FormationStationTracker>();
         st.StationOffset = stationOffset;
         return st;

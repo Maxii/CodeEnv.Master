@@ -31,6 +31,13 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
 
     public event Action<SettlementUnitCreator> onCompleted;
 
+    private UnitFactory _factory;
+
+    protected override void Awake() {
+        base.Awake();
+        _factory = UnitFactory.Instance;
+    }
+
     protected override GameState GetCreationGameState() {
         return GameState.DeployingSystems;  // Building can take place anytime? Placing in Systems takes place in DeployingSettlements
     }

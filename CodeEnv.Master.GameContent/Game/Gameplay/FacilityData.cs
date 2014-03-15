@@ -27,12 +27,6 @@ namespace CodeEnv.Master.GameContent {
         public FacilityCategory Category { get; private set; }
 
         /// <summary>
-        /// The desired position offset of this Element from the HQElement.
-        /// </summary>
-        //public Vector3 FormationPosition { get; set; }
-
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="FacilityData" /> class.
         /// </summary>
         /// <param name="category">The kind of Facility.</param>

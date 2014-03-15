@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 ///  An MVPresenter associated with a Settlement View.
 /// </summary>
-public class SettlementCmdPresenter : AUnitCommandPresenter<FacilityModel> {
+public class SettlementCmdPresenter : AUnitCommandPresenter {
 
     public new SettlementCmdModel Model {
         get { return base.Model as SettlementCmdModel; }

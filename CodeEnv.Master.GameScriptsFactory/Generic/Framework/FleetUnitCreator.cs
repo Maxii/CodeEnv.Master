@@ -31,6 +31,13 @@ using UnityEngine;
 /// </summary>
 public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, ShipStats, FleetCmdModel> {
 
+    private UnitFactory _factory;
+
+    protected override void Awake() {
+        base.Awake();
+        _factory = UnitFactory.Instance;
+    }
+
     protected override GameState GetCreationGameState() {
         return GameState.DeployingSettlements;  // Can be anytime? Should be after GeneratePathGraph so no interference
     }

@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for an AItem that can die. 
 /// </summary>
-public abstract class AMortalItemModel : AItemModel, IMortalTarget {
+public abstract class AMortalItemModel : AItemModel, IMortalItem {
 
     public event Action<MortalAnimations> onShowAnimation;
     public event Action<MortalAnimations> onStopAnimation;
@@ -116,11 +116,11 @@ public abstract class AMortalItemModel : AItemModel, IMortalTarget {
 
     #endregion
 
-    #region IMortalTarget Members
+    #region IMortalItem Members
 
-    public event Action<IMortalTarget> onItemDeath;
+    public event Action<IMortalItem> onItemDeath;
 
-    public event Action<IMortalTarget> onOwnerChanged;
+    public event Action<IMortalItem> onOwnerChanged;
 
     public bool IsDead { get; private set; }
 

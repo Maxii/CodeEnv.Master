@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// An MVPresenter associated with a StarbaseView.
 /// </summary>
-public class StarbaseCmdPresenter : AUnitCommandPresenter<FacilityModel> {
+public class StarbaseCmdPresenter : AUnitCommandPresenter {
 
     public new StarbaseCmdModel Model {
         get { return base.Model as StarbaseCmdModel; }

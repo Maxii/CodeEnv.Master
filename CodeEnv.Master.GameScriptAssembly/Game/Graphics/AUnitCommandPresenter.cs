@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AUnitCommandPresenter.cs
-// Abstract, generic base MVPresenter associated with CommandViews.
+// Abstract base MVPresenter associated with CommandViews.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,9 +21,8 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract, generic base MVPresenter associated with CommandViews.
+/// Abstract base MVPresenter associated with CommandViews.
 /// </summary>
-/// <typeparam name="UnitElementModelType">The Type of the derived AUnitElementModel.</typeparam>
 public abstract class AUnitCommandPresenter : AMortalItemPresenter {
 
     public new AUnitCommandModel Model {

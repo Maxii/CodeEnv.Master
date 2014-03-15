@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AUnitCommandModel.cs
-//  Abstract, generic base class for a CommandItem, an object that commands Elements.
+//  Abstract base class for a CommandItem, an object that commands Elements.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -26,10 +26,9 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract, generic base class for a CommandItem, an object that commands Elements.
+/// Abstract base class for a CommandItem, an object that commands Elements.
 /// </summary>
-/// <typeparam name="UnitElementModelType">The Type of the derived AUnitElementModel this Command is composed of.</typeparam>
-public abstract class AUnitCommandModel : AMortalItemModelStateMachine, IUnitCommand  {
+public abstract class AUnitCommandModel : AMortalItemModelStateMachine, IUnitCommand {
 
     public event Action<AUnitElementModel> onSubordinateElementDeath;
 
@@ -46,7 +45,6 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, IUnitCom
         set { SetProperty<AUnitElementModel>(ref _hqElement, value, "HQElement", OnHQElementChanged, OnHQElementChanging); }
     }
 
-    // can't get rid of generic ElementType since List Properties can't be hidden
     public IList<AUnitElementModel> Elements { get; set; }
 
     protected FormationGenerator _formationGenerator;
@@ -101,7 +99,7 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, IUnitCom
         }
     }
 
-    private void OnSubordinateElementDeath(IMortalTarget mortalItem) {
+    private void OnSubordinateElementDeath(IMortalItem mortalItem) {
         D.Assert(mortalItem is AUnitElementModel);
         D.Log("{0} acknowledging {1} has been lost.", Data.Name, mortalItem.Name);
         AUnitElementModel element = mortalItem as AUnitElementModel;
@@ -283,7 +281,7 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, IUnitCom
         RelayToCurrentState();
     }
 
-    protected void OnTargetDeath(IMortalTarget deadTarget) {
+    protected void OnTargetDeath(IMortalItem deadTarget) {
         //LogEvent();
         RelayToCurrentState(deadTarget);
     }

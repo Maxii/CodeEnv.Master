@@ -51,9 +51,9 @@ public class StarbaseCmdModel : AUnitCommandModel {
         CurrentState = StarbaseState.Idling;
     }
 
-    public override void AddElement(FacilityModel element) {
+    public override void AddElement(AUnitElementModel element) {
         base.AddElement(element);
-        element.Command = this;
+        (element as FacilityModel).Command = this;
         if (enabled) {  // if disabled, then this AddElement operation is occuring prior to initialization
             _formationGenerator.RegenerateFormation();    // Bases simply regenerate the formation when adding an element
         }
@@ -101,7 +101,7 @@ public class StarbaseCmdModel : AUnitCommandModel {
 
     #region Attacking
 
-    IMortalTarget _attackTarget;
+    IMortalItem _attackTarget;
 
     void Attacking_EnterState() {
         LogEvent();
@@ -111,7 +111,7 @@ public class StarbaseCmdModel : AUnitCommandModel {
         Elements.ForAll(e => (e as FacilityModel).CurrentOrder = elementAttackOrder);
     }
 
-    void Attacking_OnTargetDeath(IMortalTarget deadTarget) {
+    void Attacking_OnTargetDeath(IMortalItem deadTarget) {
         LogEvent();
         D.Assert(_attackTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _attackTarget.Name, deadTarget.Name));
         Return();

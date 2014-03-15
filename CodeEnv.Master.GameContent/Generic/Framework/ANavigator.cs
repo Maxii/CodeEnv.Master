@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
         /// The IDestinationTarget this navigator is trying to reach. Can simply be a 
         /// StationaryLocation or even null if the ship or fleet has not attempted to move.
         /// </summary>
-        public IDestination Target { get; protected set; }
+        public IDestinationItem Target { get; protected set; }
 
         private Speed _speed;
         /// <summary>

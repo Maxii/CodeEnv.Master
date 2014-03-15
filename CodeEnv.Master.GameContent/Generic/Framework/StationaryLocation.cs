@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// A dummy ITarget wrapping a stationary location.
     /// </summary>
-    public class StationaryLocation : IDestination {
+    public class StationaryLocation : IDestinationItem {
 
         public StationaryLocation(Vector3 position) {
             Position = position;

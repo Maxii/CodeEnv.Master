@@ -59,7 +59,6 @@
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Game\_Debug\Fleets.cs" />
-    <Compile Include="Generic\Framework\AUnitCreator.cs" />
     <Compile Include="Generic\Framework\UnitFactory.cs" />
     <Compile Include="Generic\Framework\RangeTracker.cs" />
     <Compile Include="Generic\Framework\PathfindingManager.cs" />

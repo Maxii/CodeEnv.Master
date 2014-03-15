@@ -25,7 +25,7 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// An MVPresenter associated with a FleetView.
 /// </summary>
-public class FleetCmdPresenter : AUnitCommandPresenter<ShipModel> {
+public class FleetCmdPresenter : AUnitCommandPresenter {
 
     public new FleetCmdModel Model {
         get { return base.Model as FleetCmdModel; }

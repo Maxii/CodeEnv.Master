@@ -37,7 +37,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     where ElementCategoryType : struct
     where ElementDataType : AElementData
     where ElementStatType : class, new()
-    where CommandType : AUnitCommandModel<ElementType> {
+    where CommandType : AUnitCommandModel {
 
     public DiplomaticRelations OwnerRelationshipWithHuman;
 
@@ -53,7 +53,6 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     protected IList<ElementStatType> _elementStats;
     protected HashSet<ElementCategoryType> _elementCategoriesUsed;
-    protected UnitFactory _factory;
 
     protected IList<ElementType> _elements;
     protected CommandType _command;
@@ -68,7 +67,6 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
         _elementStats = new List<ElementStatType>();
         _elementCategoriesUsed = new HashSet<ElementCategoryType>();
-        _factory = UnitFactory.Instance;
 
         UnitName = GetUnitName();
         _isPreset = _transform.childCount > 0;

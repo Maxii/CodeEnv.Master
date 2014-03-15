@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
 
         public Speed Speed { get; private set; }
 
-        public UnitMoveOrder(T order, IDestination target, Speed speed, float standoffDistance = Constants.ZeroF)
+        public UnitMoveOrder(T order, IDestinationItem target, Speed speed, float standoffDistance = Constants.ZeroF)
             : base(order, target) {
             Speed = speed;
             StandoffDistance = standoffDistance;

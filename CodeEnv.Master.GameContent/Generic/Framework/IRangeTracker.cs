@@ -39,9 +39,9 @@ namespace CodeEnv.Master.GameContent {
 
         IPlayer Owner { get; set; }
 
-        IList<IMortalTarget> EnemyTargets { get; }
+        IList<IMortalItem> EnemyTargets { get; }
 
-        IList<IMortalTarget> AllTargets { get; }
+        IList<IMortalItem> AllTargets { get; }
 
         /// <summary>
         /// Attempts to acquire a random enemy target in this weapon's range. Returns
@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="enemyTarget">The enemy target in range. Can be null.</param>
         /// <returns><c>true</c> if there is an enemy target in range.</returns>
-        bool __TryGetRandomEnemyTarget(out IMortalTarget enemyTarget);
+        bool __TryGetRandomEnemyTarget(out IMortalItem enemyTarget);
 
         AElementData Data { get; set; } // TODO Temporary Just for debug messages
 
