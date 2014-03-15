@@ -373,7 +373,7 @@ public class FleetNavigator : ANavigator {
     /// Initializes the values that depend on the target and speed.
     /// </summary>
     protected override void InitializeTargetValues() {
-        var target = Target as IMortalTarget;
+        var target = Target as IUnitTarget;
         if (target != null) {
             if (Data.Owner.IsEnemyOf(target.Owner)) {
                 CloseEnoughDistanceToTarget = target.MaxWeaponsRange + 1F;
@@ -382,6 +382,7 @@ public class FleetNavigator : ANavigator {
         }
         // distance traveled in 1 day at FleetStandard Speed
         CloseEnoughDistanceToTarget = Speed.FleetStandard.GetValue(Data);
+        // IMPROVE if a cellestial object then closeEnoughDistance should be an 'orbit' value, aka keepoutDistance + 1 or somesuch
     }
 
     /// <summary>

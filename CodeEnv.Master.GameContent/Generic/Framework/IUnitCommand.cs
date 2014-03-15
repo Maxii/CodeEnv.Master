@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IUnitCommand : IUnitTarget {
 
-        IEnumerable<IMortalTarget> ElementTargets { get; }
+        IEnumerable<IUnitElement> ElementTargets { get; }
 
     }
 }

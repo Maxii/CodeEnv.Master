@@ -36,8 +36,6 @@ namespace CodeEnv.Master.GameContent {
 
         string ParentName { get; }
 
-        float MaxWeaponsRange { get; }
-
     }
 }
 

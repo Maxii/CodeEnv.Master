@@ -213,7 +213,7 @@ public class FleetCmdModel : AUnitCommandModel<ShipModel> {
     /// <param name="assignedShip">The assigned ship being tested for.</param>
     /// <param name="trackers">The trackers meeting the criteria</param>
     /// <returns><c>true</c> if any trackers matching the criteria were found.</returns>
-    private bool TryFindFormationStationTrackers(IMortalTarget assignedShip, out IEnumerable<FormationStationTracker> trackers) {
+    private bool TryFindFormationStationTrackers(IShip assignedShip, out IEnumerable<FormationStationTracker> trackers) {
         trackers = _formationStationTrackerLookup.Values.Where(fst => fst.AssignedShip == assignedShip);
         return trackers.Count() > 0;
     }

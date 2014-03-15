@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: UnitMoveOrder.cs
-// Order to move to a IDestinationTarget at a provided speed.
+// Order to move to a target IDestination at a provided speed.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,9 +20,9 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Order to move to a IDestinationTarget at a provided speed.
+    /// Order to move to a target IDestination at a provided speed.
     /// </summary>
-    public class UnitMoveOrder<T> : UnitDestinationTargetOrder<T> where T : struct {
+    public class UnitMoveOrder<T> : UnitDestinationOrder<T> where T : struct {
 
         public float StandoffDistance { get; private set; }
 

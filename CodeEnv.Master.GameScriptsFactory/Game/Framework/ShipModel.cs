@@ -28,7 +28,7 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all ships in the game. Includes a state machine.
 /// </summary>
-public class ShipModel : AUnitElementModel, IShipNavigatorClient {
+public class ShipModel : AUnitElementModel, IShip, IShipNavigatorClient {
 
     private UnitOrder<ShipOrders> _currentOrder;
     public UnitOrder<ShipOrders> CurrentOrder {
@@ -423,7 +423,7 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
         //LogEvent();
         D.Log("{0}.ExecuteRepairOrder_EnterState.", Data.Name);
         _moveSpeed = Speed.Full;
-        _moveTarget = (CurrentOrder as UnitDestinationTargetOrder<ShipOrders>).Target;
+        _moveTarget = (CurrentOrder as UnitDestinationOrder<ShipOrders>).Target;
         _standoffDistance = Constants.ZeroF;
         Call(ShipState.Moving);
         // Return()s here
@@ -558,7 +558,7 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
 
         IUnitCommand cmdTarget = _ordersTarget as IUnitCommand;
         if (cmdTarget != null) {
-            var primaryTargets = cmdTarget.ElementTargets;
+            var primaryTargets = cmdTarget.ElementTargets.Cast<IMortalTarget>();
             var primaryTargetsInRange = primaryTargets.Intersect(uniqueEnemyTargetsInRange);
             if (!primaryTargetsInRange.IsNullOrEmpty()) {
                 chosenTarget = __SelectHighestPriorityTarget(primaryTargetsInRange);
@@ -591,7 +591,7 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
         if (Data.Health < 0.30F) {
             if (CurrentOrder == null || CurrentOrder.Order != ShipOrders.Repair) {
                 IDestination repairDestination = new StationaryLocation(Data.Position - _transform.forward * 20F);
-                CurrentOrder = new UnitDestinationTargetOrder<ShipOrders>(ShipOrders.Repair, repairDestination);
+                CurrentOrder = new UnitDestinationOrder<ShipOrders>(ShipOrders.Repair, repairDestination);
             }
         }
     }
@@ -651,7 +651,6 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
     }
 
     void OnTargetDeath(IMortalTarget deadTarget) {
-        //LogEvent();
         RelayToCurrentState(deadTarget);
     }
 

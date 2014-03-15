@@ -19,7 +19,10 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     ///  Interface for a UnitElement.
     /// </summary>
-    public interface IUnitElement : IUnitTarget { }
+    public interface IUnitElement : IUnitTarget {
+
+        //IUnitElement HQElement { get; set; }
+    }
 
 }
 

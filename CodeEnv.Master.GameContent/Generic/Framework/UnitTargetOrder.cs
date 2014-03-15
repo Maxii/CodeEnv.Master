@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Order that requires IMortalTarget info.
     /// </summary>
-    public class UnitTargetOrder<T> : UnitDestinationTargetOrder<T> where T : struct {
+    public class UnitTargetOrder<T> : UnitDestinationOrder<T> where T : struct {
 
         public new IMortalTarget Target {
             get { return base.Target as IMortalTarget; }

@@ -45,10 +45,10 @@ public class FormationStationTracker : AMonoBase, IFormationStationTracker {
         set { SetProperty<Vector3>(ref _stationOffset, value, "StationOffset", OnStationOffsetChanged); }
     }
 
-    private IMortalTarget _assignedShip;
-    public IMortalTarget AssignedShip {
+    private IShip _assignedShip;
+    public IShip AssignedShip {
         get { return _assignedShip; }
-        set { SetProperty<IMortalTarget>(ref _assignedShip, value, "AssignedShip", OnAssignedShipChanged, OnAssignedShipChanging); }
+        set { SetProperty<IShip>(ref _assignedShip, value, "AssignedShip", OnAssignedShipChanged, OnAssignedShipChanging); }
     }
 
     private SphereCollider _collider;
@@ -70,7 +70,7 @@ public class FormationStationTracker : AMonoBase, IFormationStationTracker {
 
     void OnTriggerEnter(Collider other) {
         //D.Log("OnTriggerEnter({0}) called.", other.name);
-        IMortalTarget target = other.gameObject.GetInterface<IMortalTarget>();
+        IShip target = other.gameObject.GetInterface<IShip>();
         if (target != null) {
             if (target == AssignedShip) {
                 OnShipOnStation(true);
@@ -80,7 +80,7 @@ public class FormationStationTracker : AMonoBase, IFormationStationTracker {
 
     void OnTriggerExit(Collider other) {
         //D.Log("{0}.OnTriggerExit() called by Collider {1}.", GetType().Name, other.name);
-        IMortalTarget target = other.gameObject.GetInterface<IMortalTarget>();
+        IShip target = other.gameObject.GetInterface<IShip>();
         if (target != null) {
             if (target == AssignedShip) {
                 OnShipOnStation(false);
@@ -94,7 +94,7 @@ public class FormationStationTracker : AMonoBase, IFormationStationTracker {
     //    }
     //}
 
-    private void OnAssignedShipChanging(IMortalTarget newShip) {
+    private void OnAssignedShipChanging(IShip newShip) {
         if (AssignedShip != null) {
             AssignedShip.onItemDeath -= OnAssignedShipDeath;
         }
@@ -116,6 +116,8 @@ public class FormationStationTracker : AMonoBase, IFormationStationTracker {
     }
 
     private void OnAssignedShipDeath(IMortalTarget deadAssignedShip) {
+        IShip ship = deadAssignedShip as IShip;
+        D.Assert(ship != null && ship == AssignedShip);
         OnShipOnStation(false);
         AssignedShip = null;
     }

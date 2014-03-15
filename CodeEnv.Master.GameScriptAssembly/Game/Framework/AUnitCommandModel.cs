@@ -99,7 +99,7 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
     }
 
     private void OnSubordinateElementDeath(IMortalTarget mortalItem) {
-        D.Assert(mortalItem is IUnitElement);
+        D.Assert(mortalItem is UnitElementModelType);
         D.Log("{0} acknowledging {1} has been lost.", Data.Name, mortalItem.Name);
         UnitElementModelType element = mortalItem as UnitElementModelType;
         RemoveElement(element);
@@ -204,7 +204,7 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
             bool toEncapsulate = false;
             Vector3 candidateStationOffset = UnityEngine.Random.insideUnitSphere * radius;
             Bounds elementBounds = new Bounds();
-            AUnitElementModel element = elementsToPosition[i];
+            UnitElementModelType element = elementsToPosition[i];
             if (UnityUtility.GetBoundWithChildren(element.transform, ref elementBounds, ref toEncapsulate)) {
                 elementBounds.center = candidateStationOffset;
                 //D.Log("Bounds = {0}.", elementBounds.ToString());
@@ -301,14 +301,18 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         D.Assert(isCmdAlive, "{0} should never die as a result of being hit.".Inject(Data.Name));
     }
 
-    public override float MaxWeaponsRange { get { return Data.UnitMaxWeaponsRange; } }
+    #endregion
+
+    #region IUnitTarget Members
+
+    public float MaxWeaponsRange { get { return Data.UnitMaxWeaponsRange; } }
 
     #endregion
 
     #region IUnitCommand Members
 
-    public IEnumerable<IMortalTarget> ElementTargets {
-        get { return Elements.Cast<IMortalTarget>(); }
+    public IEnumerable<IUnitElement> ElementTargets {
+        get { return Elements.Cast<IUnitElement>(); }
     }
 
     #endregion

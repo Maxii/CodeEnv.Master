@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: UnitDestinationTargetOrder.cs
-// Order that requires IDestinationTarget info.
+// File: UnitDestinationOrder.cs
+// Order that requires IDestination info.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,13 +19,13 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Order that requires IDestinationTarget info.
+    /// Order that requires IDestination info.
     /// </summary>
-    public class UnitDestinationTargetOrder<T> : UnitOrder<T> where T : struct {
+    public class UnitDestinationOrder<T> : UnitOrder<T> where T : struct {
 
         public IDestination Target { get; private set; }
 
-        public UnitDestinationTargetOrder(T order, IDestination target)
+        public UnitDestinationOrder(T order, IDestination target)
             : base(order) {
             Target = target;
         }

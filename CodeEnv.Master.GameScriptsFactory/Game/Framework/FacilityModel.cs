@@ -285,7 +285,7 @@ public class FacilityModel : AUnitElementModel {
 
         IUnitCommand cmdTarget = _ordersTarget as IUnitCommand;
         if (cmdTarget != null) {
-            var primaryTargets = cmdTarget.ElementTargets;
+            var primaryTargets = cmdTarget.ElementTargets.Cast<IMortalTarget>();
             var primaryTargetsInRange = primaryTargets.Intersect(uniqueEnemyTargetsInRange);
             if (!primaryTargetsInRange.IsNullOrEmpty()) {
                 chosenTarget = SelectHighestPriorityTarget(primaryTargetsInRange);

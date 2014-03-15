@@ -171,7 +171,7 @@ public class PlanetoidModel : AMortalItemModel {
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region ITarget Members
+    #region IMortalTarget Members
 
     public override void TakeDamage(float damage) {
         if (CurrentState == PlanetoidState.Dead) {
@@ -185,8 +185,6 @@ public class PlanetoidModel : AMortalItemModel {
         }
         OnShowAnimation(MortalAnimations.Hit);
     }
-
-    public override float MaxWeaponsRange { get { return Constants.ZeroF; } }
 
     #endregion
 

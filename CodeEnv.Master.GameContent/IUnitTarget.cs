@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IUnitTarget : IMortalTarget {
 
-        //float MaxWeaponsRange { get; }
+        float MaxWeaponsRange { get; }
 
     }
 }

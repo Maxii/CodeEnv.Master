@@ -199,7 +199,7 @@
     <Compile Include="Game\Framework\ShipNavigator.cs" />
     <Compile Include="Generic\Framework\UnitTargetOrder.cs" />
     <Compile Include="Game\Graphics\MortalAnimations.cs" />
-    <Compile Include="Generic\Framework\UnitDestinationTargetOrder.cs" />
+    <Compile Include="Generic\Framework\UnitDestinationOrder.cs" />
     <Compile Include="Generic\Framework\UnitMoveOrder.cs" />
     <Compile Include="Generic\Framework\Weapon.cs" />
     <Compile Include="Generic\Framework\WeaponCategory.cs" />
