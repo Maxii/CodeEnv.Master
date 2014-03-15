@@ -28,9 +28,7 @@ using UnityEngine;
 public class FormationStationTracker : AMonoBase, IFormationStationTracker {
     //public class OnStationTracker : AMonoBase, IDisposable {
 
-    //public event Action<bool, Guid> onShipOnStation;
     public event Action<Guid, bool> onShipOnStation;
-
 
     public Guid ID { get; private set; }
 
@@ -47,10 +45,10 @@ public class FormationStationTracker : AMonoBase, IFormationStationTracker {
         set { SetProperty<Vector3>(ref _stationOffset, value, "StationOffset", OnStationOffsetChanged); }
     }
 
-    private ITarget _assignedShip;
-    public ITarget AssignedShip {
+    private IMortalTarget _assignedShip;
+    public IMortalTarget AssignedShip {
         get { return _assignedShip; }
-        set { SetProperty<ITarget>(ref _assignedShip, value, "AssignedShip", OnAssignedShipChanged, OnAssignedShipChanging); }
+        set { SetProperty<IMortalTarget>(ref _assignedShip, value, "AssignedShip", OnAssignedShipChanged, OnAssignedShipChanging); }
     }
 
     private SphereCollider _collider;
@@ -72,8 +70,7 @@ public class FormationStationTracker : AMonoBase, IFormationStationTracker {
 
     void OnTriggerEnter(Collider other) {
         //D.Log("OnTriggerEnter({0}) called.", other.name);
-        ITarget target = other.gameObject.GetInterface<ITarget>();
-        //ShipModel target = other.gameObject.GetComponent<ShipModel>();
+        IMortalTarget target = other.gameObject.GetInterface<IMortalTarget>();
         if (target != null) {
             if (target == AssignedShip) {
                 OnShipOnStation(true);
@@ -83,8 +80,7 @@ public class FormationStationTracker : AMonoBase, IFormationStationTracker {
 
     void OnTriggerExit(Collider other) {
         //D.Log("{0}.OnTriggerExit() called by Collider {1}.", GetType().Name, other.name);
-        ITarget target = other.gameObject.GetInterface<ITarget>();
-        //ShipModel target = other.gameObject.GetComponent<ShipModel>();
+        IMortalTarget target = other.gameObject.GetInterface<IMortalTarget>();
         if (target != null) {
             if (target == AssignedShip) {
                 OnShipOnStation(false);
@@ -98,7 +94,7 @@ public class FormationStationTracker : AMonoBase, IFormationStationTracker {
     //    }
     //}
 
-    private void OnAssignedShipChanging(ITarget newShip) {
+    private void OnAssignedShipChanging(IMortalTarget newShip) {
         if (AssignedShip != null) {
             AssignedShip.onItemDeath -= OnAssignedShipDeath;
         }
@@ -119,7 +115,7 @@ public class FormationStationTracker : AMonoBase, IFormationStationTracker {
         }
     }
 
-    private void OnAssignedShipDeath(ITarget deadAssignedShip) {
+    private void OnAssignedShipDeath(IMortalTarget deadAssignedShip) {
         OnShipOnStation(false);
         AssignedShip = null;
     }

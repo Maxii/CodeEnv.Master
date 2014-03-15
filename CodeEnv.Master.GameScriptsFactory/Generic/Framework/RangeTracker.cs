@@ -47,7 +47,7 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
         set { SetProperty<IPlayer>(ref _owner, value, "Owner", OnOwnerChanged); }
     }
 
-    public IList<ITarget> EnemyTargets { get; private set; }
+    public IList<IMortalTarget> EnemyTargets { get; private set; }
 
     protected new SphereCollider Collider {
         get { return base.Collider as SphereCollider; }
@@ -55,19 +55,19 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
 
     protected override void Awake() {
         base.Awake();
-        EnemyTargets = new List<ITarget>();
+        EnemyTargets = new List<IMortalTarget>();
         ID = Guid.NewGuid();
         RangeSpan = new Range<float>(Constants.ZeroF, Constants.ZeroF);
     }
 
-    protected override void Add(ITarget target) {
+    protected override void Add(IMortalTarget target) {
         base.Add(target);
         if (Owner.IsEnemyOf(target.Owner) && !target.IsDead && !EnemyTargets.Contains(target)) {
             AddEnemyTarget(target);
         }
     }
 
-    private void AddEnemyTarget(ITarget enemyTarget) {
+    private void AddEnemyTarget(IMortalTarget enemyTarget) {
         //D.Log("{0}.{1} with range {2} added Enemy Target {3}.", Data.Name, GetType().Name, Range, enemyTarget.Name);
         if (EnemyTargets.Count == 0) {
             OnEnemyInRange(true);   // there are now enemies in range
@@ -75,12 +75,12 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
         EnemyTargets.Add(enemyTarget);
     }
 
-    protected override void Remove(ITarget target) {
+    protected override void Remove(IMortalTarget target) {
         base.Remove(target);
         RemoveEnemyTarget(target);
     }
 
-    private void RemoveEnemyTarget(ITarget enemyTarget) {
+    private void RemoveEnemyTarget(IMortalTarget enemyTarget) {
         if (EnemyTargets.Remove(enemyTarget)) {
             if (EnemyTargets.Count == 0) {
                 OnEnemyInRange(false);  // no longer any Enemies in range
@@ -89,7 +89,7 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
         }
     }
 
-    protected override void OnTargetOwnerChanged(ITarget target) {
+    protected override void OnTargetOwnerChanged(IMortalTarget target) {
         base.OnTargetOwnerChanged(target);
         if (_isInitialized) {
             if (Owner.IsEnemyOf(target.Owner)) {
@@ -132,12 +132,12 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
         }
     }
 
-    public bool __TryGetRandomEnemyTarget(out ITarget enemyTarget) {
+    public bool __TryGetRandomEnemyTarget(out IMortalTarget enemyTarget) {
         bool result = false;
         enemyTarget = null;
         if (EnemyTargets.Count > 0) {
             result = true;
-            enemyTarget = RandomExtended<ITarget>.Choice(EnemyTargets);
+            enemyTarget = RandomExtended<IMortalTarget>.Choice(EnemyTargets);
         }
         return result;
     }

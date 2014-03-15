@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: UnitTargetOrder.cs
-// Order that requires IMortalTarget info.
+// File: IUnitTarget.cs
+//  Interface for a Unit Element or Command.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,21 +19,11 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Order that requires IMortalTarget info.
+    /// Interface for a Unit Element or Command.
     /// </summary>
-    public class UnitTargetOrder<T> : UnitDestinationTargetOrder<T> where T : struct {
+    public interface IUnitTarget : IMortalTarget {
 
-        public new IMortalTarget Target {
-            get { return base.Target as IMortalTarget; }
-        }
-
-        public UnitTargetOrder(T order, IMortalTarget target)
-            : base(order, target) {
-        }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
+        //float MaxWeaponsRange { get; }
 
     }
 }

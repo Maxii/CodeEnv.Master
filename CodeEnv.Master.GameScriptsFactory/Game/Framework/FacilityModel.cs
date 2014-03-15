@@ -93,8 +93,8 @@ public class FacilityModel : AUnitElementModel {
 
     #region ExecuteAttackOrder
 
-    private ITarget _ordersTarget;
-    private ITarget _primaryTarget; // IMPROVE  take this previous target into account when PickPrimaryTarget()
+    private IMortalTarget _ordersTarget;
+    private IMortalTarget _primaryTarget; // IMPROVE  take this previous target into account when PickPrimaryTarget()
 
     IEnumerator ExecuteAttackOrder_EnterState() {
         D.Log("{0}.ExecuteAttackOrder_EnterState() called.", Data.Name);
@@ -132,7 +132,7 @@ public class FacilityModel : AUnitElementModel {
 
     #region Attacking
 
-    private ITarget _attackTarget;
+    private IMortalTarget _attackTarget;
     private float _attackDamage;
 
     void Attacking_EnterState() {
@@ -275,15 +275,15 @@ public class FacilityModel : AUnitElementModel {
     /// <returns>
     /// True if the target is in range, false otherwise. 
     /// </returns>
-    private bool PickPrimaryTarget(out ITarget chosenTarget) {
+    private bool PickPrimaryTarget(out IMortalTarget chosenTarget) {
         D.Assert(_ordersTarget != null && !_ordersTarget.IsDead, "{0}'s target from orders is null or dead.".Inject(Data.Name));
         bool isTargetInRange = false;
-        var uniqueEnemyTargetsInRange = Enumerable.Empty<ITarget>();
+        var uniqueEnemyTargetsInRange = Enumerable.Empty<IMortalTarget>();
         foreach (var rt in _weaponRangeTrackerLookup.Values) {
-            uniqueEnemyTargetsInRange = uniqueEnemyTargetsInRange.Union<ITarget>(rt.EnemyTargets);  // OPTIMIZE
+            uniqueEnemyTargetsInRange = uniqueEnemyTargetsInRange.Union<IMortalTarget>(rt.EnemyTargets);  // OPTIMIZE
         }
 
-        ICmdTarget cmdTarget = _ordersTarget as ICmdTarget;
+        IUnitCommand cmdTarget = _ordersTarget as IUnitCommand;
         if (cmdTarget != null) {
             var primaryTargets = cmdTarget.ElementTargets;
             var primaryTargetsInRange = primaryTargets.Intersect(uniqueEnemyTargetsInRange);
@@ -307,8 +307,8 @@ public class FacilityModel : AUnitElementModel {
         return isTargetInRange;
     }
 
-    private ITarget SelectHighestPriorityTarget(IEnumerable<ITarget> selectedTargetsInRange) {
-        return RandomExtended<ITarget>.Choice(selectedTargetsInRange);
+    private IMortalTarget SelectHighestPriorityTarget(IEnumerable<IMortalTarget> selectedTargetsInRange) {
+        return RandomExtended<IMortalTarget>.Choice(selectedTargetsInRange);
     }
 
     private void AssessNeedForRepair() {

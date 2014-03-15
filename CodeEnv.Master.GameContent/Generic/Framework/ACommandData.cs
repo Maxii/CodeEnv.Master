@@ -152,11 +152,11 @@ namespace CodeEnv.Master.GameContent {
 
         protected abstract void InitializeComposition();
 
-        private void OnHQElementDataChanged() {
+        protected virtual void OnHQElementDataChanged() {
             if (!ElementsData.Contains(HQElementData)) {
                 D.Error("HQ Element {0} assigned not present in Command {1}.", _hqElementData.OptionalParentName, OptionalParentName);
             }
-            HQElementData.FormationPosition = Vector3.zero;
+            //HQElementData.FormationPosition = Vector3.zero; 
         }
 
         private void OnUnitMaxHitPointsChanging(float newMaxHitPoints) {

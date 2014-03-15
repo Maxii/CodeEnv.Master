@@ -30,8 +30,6 @@ using UnityEngine;
 /// </summary>
 public class ShipModel : AUnitElementModel, IShipNavigatorClient {
 
-    public OnStationTracker FormationStationTracker { get; set; }
-
     private UnitOrder<ShipOrders> _currentOrder;
     public UnitOrder<ShipOrders> CurrentOrder {
         get { return _currentOrder; }
@@ -229,13 +227,13 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
     /// this value is set by that Order execution state.
     /// </summary>
     private Speed _moveSpeed;
-    private IDestinationTarget _moveTarget;
+    private IDestination _moveTarget;
     private float _standoffDistance;
     private bool _isMoveError;
 
     void Moving_EnterState() {
         LogEvent();
-        var mortalMoveTarget = _moveTarget as ITarget;
+        var mortalMoveTarget = _moveTarget as IMortalTarget;
         if (mortalMoveTarget != null) {
             mortalMoveTarget.onItemDeath += OnTargetDeath;
         }
@@ -259,7 +257,7 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
         Return();
     }
 
-    void Moving_OnTargetDeath(ITarget deadTarget) {
+    void Moving_OnTargetDeath(IMortalTarget deadTarget) {
         LogEvent();
         D.Assert(_moveTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _moveTarget.Name, deadTarget.Name));
         Return();
@@ -277,7 +275,7 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
 
     void Moving_ExitState() {
         LogEvent();
-        var mortalMoveTarget = _moveTarget as ITarget;
+        var mortalMoveTarget = _moveTarget as IMortalTarget;
         if (mortalMoveTarget != null) {
             mortalMoveTarget.onItemDeath -= OnTargetDeath;
         }
@@ -292,8 +290,8 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
 
     #region ExecuteAttackOrder
 
-    private ITarget _ordersTarget;
-    private ITarget _primaryTarget; // IMPROVE  take this previous target into account when PickPrimaryTarget()
+    private IMortalTarget _ordersTarget;
+    private IMortalTarget _primaryTarget; // IMPROVE  take this previous target into account when PickPrimaryTarget()
 
     IEnumerator ExecuteAttackOrder_EnterState() {
         D.Log("{0}.ExecuteAttackOrder_EnterState() called.", Data.Name);
@@ -339,7 +337,7 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
 
     #region Attacking
 
-    private ITarget _attackTarget;
+    private IMortalTarget _attackTarget;
     private float _attackDamage;
 
     void Attacking_EnterState() {
@@ -550,15 +548,15 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
     /// <returns>
     /// True if the target is in range, false otherwise.
     /// </returns>
-    private bool PickPrimaryTarget(out ITarget chosenTarget) {
+    private bool PickPrimaryTarget(out IMortalTarget chosenTarget) {
         D.Assert(_ordersTarget != null && !_ordersTarget.IsDead, "{0}'s target from orders is null or dead.".Inject(Data.Name));
         bool isTargetInRange = false;
-        var uniqueEnemyTargetsInRange = Enumerable.Empty<ITarget>();
+        var uniqueEnemyTargetsInRange = Enumerable.Empty<IMortalTarget>();
         foreach (var rt in _weaponRangeTrackerLookup.Values) {
-            uniqueEnemyTargetsInRange = uniqueEnemyTargetsInRange.Union<ITarget>(rt.EnemyTargets);  // OPTIMIZE
+            uniqueEnemyTargetsInRange = uniqueEnemyTargetsInRange.Union<IMortalTarget>(rt.EnemyTargets);  // OPTIMIZE
         }
 
-        ICmdTarget cmdTarget = _ordersTarget as ICmdTarget;
+        IUnitCommand cmdTarget = _ordersTarget as IUnitCommand;
         if (cmdTarget != null) {
             var primaryTargets = cmdTarget.ElementTargets;
             var primaryTargetsInRange = primaryTargets.Intersect(uniqueEnemyTargetsInRange);
@@ -585,14 +583,14 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
         return isTargetInRange;
     }
 
-    private ITarget __SelectHighestPriorityTarget(IEnumerable<ITarget> selectedTargetsInRange) {
-        return RandomExtended<ITarget>.Choice(selectedTargetsInRange);
+    private IMortalTarget __SelectHighestPriorityTarget(IEnumerable<IMortalTarget> selectedTargetsInRange) {
+        return RandomExtended<IMortalTarget>.Choice(selectedTargetsInRange);
     }
 
     private void AssessNeedForRepair() {
         if (Data.Health < 0.30F) {
             if (CurrentOrder == null || CurrentOrder.Order != ShipOrders.Repair) {
-                IDestinationTarget repairDestination = new StationaryLocation(Data.Position - _transform.forward * 20F);
+                IDestination repairDestination = new StationaryLocation(Data.Position - _transform.forward * 20F);
                 CurrentOrder = new UnitDestinationTargetOrder<ShipOrders>(ShipOrders.Repair, repairDestination);
             }
         }
@@ -652,7 +650,7 @@ public class ShipModel : AUnitElementModel, IShipNavigatorClient {
         }
     }
 
-    void OnTargetDeath(ITarget deadTarget) {
+    void OnTargetDeath(IMortalTarget deadTarget) {
         //LogEvent();
         RelayToCurrentState(deadTarget);
     }

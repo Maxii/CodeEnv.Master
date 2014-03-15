@@ -68,7 +68,7 @@ public class FleetNavigator : ANavigator {
     /// </summary>
     /// <param name="target">The target.</param>
     /// <param name="speed">The speed.</param>
-    public void PlotCourse(IDestinationTarget target, Speed speed) {
+    public void PlotCourse(IDestination target, Speed speed) {
         Target = target;
         Speed = speed;
         D.Assert(speed != Speed.AllStop, "Designated speed to new target {0} is 0!".Inject(target.Name));
@@ -373,7 +373,7 @@ public class FleetNavigator : ANavigator {
     /// Initializes the values that depend on the target and speed.
     /// </summary>
     protected override void InitializeTargetValues() {
-        var target = Target as ITarget;
+        var target = Target as IMortalTarget;
         if (target != null) {
             if (Data.Owner.IsEnemyOf(target.Owner)) {
                 CloseEnoughDistanceToTarget = target.MaxWeaponsRange + 1F;

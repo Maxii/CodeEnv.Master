@@ -28,7 +28,6 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsOnStation { get; }
 
-
         Guid ID { get; }
 
         float StationRadius { get; }
@@ -38,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         Vector3 StationOffset { get; set; }
 
-        ITarget AssignedShip { get; set; }
+        IMortalTarget AssignedShip { get; set; }
 
     }
 }

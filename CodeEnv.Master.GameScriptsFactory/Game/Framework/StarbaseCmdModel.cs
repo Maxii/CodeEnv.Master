@@ -30,9 +30,6 @@ using System.Collections.Generic;
 /// </summary>
 public class StarbaseCmdModel : AUnitCommandModel<FacilityModel> {
 
-    private IDictionary<Vector3, FacilityModel> _formationPositionLookup;
-
-
     private UnitOrder<StarbaseOrders> _currentOrder;
     public UnitOrder<StarbaseOrders> CurrentOrder {
         get { return _currentOrder; }
@@ -46,7 +43,6 @@ public class StarbaseCmdModel : AUnitCommandModel<FacilityModel> {
 
     protected override void Awake() {
         base.Awake();
-        _formationPositionLookup = new Dictionary<Vector3, FacilityModel>();
         Subscribe();
     }
 
@@ -58,17 +54,13 @@ public class StarbaseCmdModel : AUnitCommandModel<FacilityModel> {
     public override void AddElement(FacilityModel element) {
         base.AddElement(element);
         element.Command = this;
+        if (enabled) {  // if disabled, then this AddElement operation is occuring prior to initialization
+            RegenerateFormation();    // Bases simply regenerate the formation when adding an element
+        }
     }
 
     protected override FacilityModel SelectHQElement() {
         return Elements.Single(e => e.Data.Category == FacilityCategory.CentralHub);
-    }
-
-    protected override void PositionElementInFormation(FacilityModel element, Vector3 formationStationOffset) {
-        //element.Data.FormationPosition = localFormationPosition;
-        element.transform.position = HQElement.Position + formationStationOffset;
-        // TODO what about if the element is already in the lookup?
-        _formationPositionLookup.Add(formationStationOffset, element);
     }
 
     #region StateMachine
@@ -109,7 +101,7 @@ public class StarbaseCmdModel : AUnitCommandModel<FacilityModel> {
 
     #region Attacking
 
-    ITarget _attackTarget;
+    IMortalTarget _attackTarget;
 
     void Attacking_EnterState() {
         LogEvent();
@@ -119,7 +111,7 @@ public class StarbaseCmdModel : AUnitCommandModel<FacilityModel> {
         Elements.ForAll<FacilityModel>(e => e.CurrentOrder = elementAttackOrder);
     }
 
-    void Attacking_OnTargetDeath(ITarget deadTarget) {
+    void Attacking_OnTargetDeath(IMortalTarget deadTarget) {
         LogEvent();
         D.Assert(_attackTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _attackTarget.Name, deadTarget.Name));
         Return();

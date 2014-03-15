@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IDestinationTarget.cs
-// Interface for an Item that is a movement destination.
+// File: IUnitCommand.cs
+// Interface for a UnitCommand.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,20 +16,14 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using UnityEngine;
+    using System.Collections.Generic;
 
     /// <summary>
-    /// Interface for an Item that is a movement destination.
+    /// Interface for a UnitCommand.
     /// </summary>
-    public interface IDestinationTarget {
+    public interface IUnitCommand : IUnitTarget {
 
-        string Name { get; }
-
-        Vector3 Position { get; }
-
-        bool IsMovable { get; }
-
-        float Radius { get; }
+        IEnumerable<IMortalTarget> ElementTargets { get; }
 
     }
 }

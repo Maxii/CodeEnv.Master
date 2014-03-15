@@ -34,7 +34,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     private FleetCmdModel fleetCmdPrefab;
     private StarbaseCmdModel starbaseCmdPrefab;
     private SettlementCmdModel settlementCmdPrefab;
-    private OnStationTracker formationStationTrackerPrefab;
+    private FormationStationTracker formationStationTrackerPrefab;
 
     private UnitFactory() {
         Initialize();
@@ -255,10 +255,10 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         facilityGo.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(facilityGo.transform);
     }
 
-    public OnStationTracker MakeFormationStationTrackerInstance(Vector3 position, FleetCmdModel fleetCmd) {
+    public FormationStationTracker MakeFormationStationTrackerInstance(Vector3 stationOffset, FleetCmdModel fleetCmd) {
         GameObject stGo = UnityUtility.AddChild(fleetCmd.gameObject, formationStationTrackerPrefab.gameObject);
-        OnStationTracker st = stGo.GetSafeMonoBehaviourComponent<OnStationTracker>();
-        st.Position = position;
+        FormationStationTracker st = stGo.GetSafeMonoBehaviourComponent<FormationStationTracker>();
+        st.StationOffset = stationOffset;
         return st;
     }
 

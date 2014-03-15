@@ -29,7 +29,7 @@ using UnityEngine;
 /// Abstract, generic base class for a CommandItem, an object that commands Elements.
 /// </summary>
 /// <typeparam name="UnitElementModelType">The Type of the derived AUnitElementModel this Command is composed of.</typeparam>
-public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModelStateMachine, ICmdTarget where UnitElementModelType : AUnitElementModel {
+public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModelStateMachine, IUnitCommand where UnitElementModelType : AUnitElementModel {
 
     public event Action<UnitElementModelType> onSubordinateElementDeath;
 
@@ -57,7 +57,7 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
 
     protected override void Initialize() {
         HQElement = SelectHQElement();
-        RepositionElementsInFormation();
+        RegenerateFormation();
     }
 
     protected override void SubscribeToDataValueChanges() {
@@ -78,14 +78,10 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         if (element.transform.parent != parentTransform) {
             element.transform.parent = parentTransform;   // local position, rotation and scale are auto adjusted to keep ship unchanged in worldspace
         }
-        if (HQElement != null) {
-            // if HQElement is null, then this AddElement operation is occuring prior to initialization
-            RepositionElementsInFormation();
-        }
         // TODO consider changing HQElement
     }
 
-    public void RemoveElement(UnitElementModelType element) {
+    public virtual void RemoveElement(UnitElementModelType element) {
         element.onItemDeath -= OnSubordinateElementDeath;
         bool isRemoved = Elements.Remove(element);
         isRemoved = isRemoved && Data.RemoveElement(element.Data);
@@ -100,10 +96,10 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
             HQElement = SelectHQElement();
             D.Log("{0} new HQElement = {1}.", Data.Name, HQElement.Data.Name);
         }
-        RepositionElementsInFormation();
     }
 
-    private void OnSubordinateElementDeath(ITarget mortalItem) {
+    private void OnSubordinateElementDeath(IMortalTarget mortalItem) {
+        D.Assert(mortalItem is IUnitElement);
         D.Log("{0} acknowledging {1} has been lost.", Data.Name, mortalItem.Name);
         UnitElementModelType element = mortalItem as UnitElementModelType;
         RemoveElement(element);
@@ -126,7 +122,7 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
     }
 
     private void OnFormationChanged() {
-        RepositionElementsInFormation();
+        RegenerateFormation();
     }
 
     public override void __SimulateAttacked() {
@@ -149,7 +145,12 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         return isHit;
     }
 
-    private void RepositionElementsInFormation() {
+    /// <summary>
+    /// Generates a new formation based on the formation selected and the 
+    /// number of elements present in the Unit.
+    /// </summary>
+    /// <exception cref="System.NotImplementedException"></exception>
+    protected void RegenerateFormation() {
         switch (Data.UnitFormation) {
             case Formation.Circle:
                 PositionElementsEquidistantInCircle();
@@ -161,12 +162,13 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(Data.UnitFormation));
         }
+        CleanupAfterFormationGeneration();
     }
 
     /// <summary>
     /// Randomly positions the elements of the unit in a spherical globe around the HQ Element.
     /// </summary>
-    private void PositionElementsRandomlyInSphere() {  // FIXME need to set FormationPosition
+    private void PositionElementsRandomlyInSphere() {
         float globeRadius = 1F * (float)Math.Pow(Elements.Count * 0.2F, 0.33F);  // cube root of number of groups of 5 elements
 
         var elementsToPosition = Elements.Except(HQElement).ToArray();
@@ -188,8 +190,6 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
     ///   <c>true</c> if all elements were successfully positioned without overlap.
     /// </returns>
     private bool TryPositionRandomWithinSphere(AUnitElementModel hqElement, float radius, ref UnitElementModelType[] elementsToPosition) {
-        //D.Assert(hqElement.Data.FormationPosition.IsSame(Vector3.zero),
-        //    "{0}'s HQ Element {1}.FormationPosition is at {2}.".Inject(Data.Name, hqElement.Name, hqElement.Data.FormationPosition));
         IList<Bounds> allElementBounds = new List<Bounds>();
 
         Bounds hqElementBounds = new Bounds();
@@ -217,20 +217,18 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
                     i--;
                     iterateCount++;
                     if (iterateCount >= 10) {
-                        D.Warn("Formation positioning iteration error.");
+                        D.Warn("{0} had a formation positioning iteration error.", Name);
                         return false;
                     }
                 }
             }
             else {
-                D.Error("Unable to construct a Bound for {0}.", element.name);
+                D.Error("{0} unable to construct a Bound for {1}.", Name, element.name);
                 return false;
             }
         }
         for (int i = 0; i < elementsToPosition.Length; i++) {
             PositionElementInFormation(elementsToPosition[i], formationStationOffsets[i]);
-            //elementsToPosition[i].Data.FormationPosition = localFormationPositions[i];
-            //RelocateElement(elementsToPosition[i], HQElement.Position + localFormationPositions[i]);
             //elementsToPosition[i].transform.localPosition = localFormationPositions[i];   // won't work as the position of the Element's parent is arbitrary
         }
         return true;
@@ -249,20 +247,14 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         foreach (var element in elementsToPosition) {
             Vector3 stationOffset = formationStationOffsets.Pop();
             PositionElementInFormation(element, stationOffset);
-            //element.Data.FormationPosition = localFormationPosition;
-            //RelocateElement(element, hqElementPosition + localFormationPosition);
         }
     }
 
-    //protected virtual void RelocateElement(UnitElementModelType element, Vector3 newLocation) {
-    //    element.transform.position = newLocation;
-    //    D.Log("{0}'s element {1} relocated to {2}, {3} units from HQElement at {4}.",
-    //        Name, element.Name, newLocation, Vector3.Distance(HQElement.Position, newLocation), HQElement.Position);
-    //}
+    protected virtual void PositionElementInFormation(UnitElementModelType element, Vector3 stationOffset) {
+        element.transform.position = HQElement.transform.position + stationOffset;
+    }
 
-    protected abstract void PositionElementInFormation(UnitElementModelType element, Vector3 formationStationOffset);
-    protected virtual void __InstantlyRelocateElement(UnitElementModelType element, Vector3 newLocation) {
-
+    protected virtual void CleanupAfterFormationGeneration() { }
 
     protected abstract void KillCommand();
 
@@ -288,7 +280,7 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
         RelayToCurrentState();
     }
 
-    protected void OnTargetDeath(ITarget deadTarget) {
+    protected void OnTargetDeath(IMortalTarget deadTarget) {
         //LogEvent();
         RelayToCurrentState(deadTarget);
     }
@@ -302,7 +294,7 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
     // subscriptions contained completely within this gameobject (both subscriber
     // and subscribee) donot have to be cleaned up as all instances are destroyed
 
-    #region ITarget Members
+    #region IMortalTarget Members
 
     public override void TakeDamage(float damage) {
         bool isCmdAlive = ApplyDamage(damage);
@@ -313,10 +305,10 @@ public abstract class AUnitCommandModel<UnitElementModelType> : AMortalItemModel
 
     #endregion
 
-    #region ICmdTarget Members
+    #region IUnitCommand Members
 
-    public IEnumerable<ITarget> ElementTargets {
-        get { return Elements.Cast<ITarget>(); }
+    public IEnumerable<IMortalTarget> ElementTargets {
+        get { return Elements.Cast<IMortalTarget>(); }
     }
 
     #endregion

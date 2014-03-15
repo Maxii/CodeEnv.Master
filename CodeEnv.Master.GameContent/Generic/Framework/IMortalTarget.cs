@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ITarget.cs
-// Interface for a MortalItem that is an attack target of another Item.
+// Interface for a MortalItem that can be an attack target of a Unit.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,13 +20,13 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for a MortalItem that is an attack target of another Item.
+    /// Interface for a MortalItem that can be an attack target of a Unit.
     /// </summary>
-    public interface ITarget : IDestinationTarget {
+    public interface IMortalTarget : IDestination {
 
-        event Action<ITarget> onItemDeath;
+        event Action<IMortalTarget> onItemDeath;
 
-        event Action<ITarget> onOwnerChanged;
+        event Action<IMortalTarget> onOwnerChanged;
 
         bool IsDead { get; }
 
@@ -34,9 +34,9 @@ namespace CodeEnv.Master.GameContent {
 
         IPlayer Owner { get; }
 
-        float MaxWeaponsRange { get; }
-
         string ParentName { get; }
+
+        float MaxWeaponsRange { get; }
 
     }
 }

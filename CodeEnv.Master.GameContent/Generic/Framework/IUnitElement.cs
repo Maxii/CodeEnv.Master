@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ICmdTarget.cs
-// Interface for a UnitCommandItem that is an attack target of another Item.
+// File: IUnitElement.cs
+// Interface for a UnitElement.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,15 +16,10 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System.Collections.Generic;
-
     /// <summary>
-    /// Interface for a UnitCommandItem that is an attack target of another Item.
+    ///  Interface for a UnitElement.
     /// </summary>
-    public interface ICmdTarget : ITarget {
+    public interface IUnitElement : IUnitTarget { }
 
-        IEnumerable<ITarget> ElementTargets { get; }
-
-    }
 }
 
