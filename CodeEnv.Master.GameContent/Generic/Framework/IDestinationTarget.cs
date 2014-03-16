@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ICommandModel.cs
-// Interface for a UnitCommand.Model.
+// File: IDestinationTarget.cs
+//  Interface for a target that is simply a destination.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,14 +16,20 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System.Collections.Generic;
+    using UnityEngine;
 
     /// <summary>
-    /// Interface for a UnitCommandModel.
+    /// Interface for a target that is simply a destination.
     /// </summary>
-    public interface ICommandModel : IUnitModel {
+    public interface IDestinationTarget {
 
-        IEnumerable<IElementModel> ElementTargets { get; }
+        string Name { get; }
+
+        Vector3 Position { get; }
+
+        bool IsMovable { get; }
+
+        float Radius { get; }
 
     }
 }

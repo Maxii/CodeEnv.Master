@@ -28,7 +28,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for a CommandItem, an object that commands Elements.
 /// </summary>
-public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommandModel {
+public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommandTarget {
 
     public event Action<AUnitElementModel> onSubordinateElementDeath;
 
@@ -99,7 +99,7 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
         }
     }
 
-    private void OnSubordinateElementDeath(IMortalModel mortalItem) {
+    private void OnSubordinateElementDeath(IMortalTarget mortalItem) {
         D.Assert(mortalItem is AUnitElementModel);
         D.Log("{0} acknowledging {1} has been lost.", Data.Name, mortalItem.Name);
         AUnitElementModel element = mortalItem as AUnitElementModel;
@@ -281,7 +281,7 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
         RelayToCurrentState();
     }
 
-    protected void OnTargetDeath(IMortalModel deadTarget) {
+    protected void OnTargetDeath(IMortalTarget deadTarget) {
         //LogEvent();
         RelayToCurrentState(deadTarget);
     }
@@ -310,10 +310,10 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
 
     #endregion
 
-    #region IUnitCommand Members
+    #region ICommandTarget Members
 
-    public IEnumerable<IElementModel> ElementTargets {
-        get { return Elements.Cast<IElementModel>(); }
+    public IEnumerable<IElementTarget> ElementTargets {
+        get { return Elements.Cast<IElementTarget>(); }
     }
 
     #endregion

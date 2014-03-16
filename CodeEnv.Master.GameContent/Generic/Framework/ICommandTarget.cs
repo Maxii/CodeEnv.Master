@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IElementModel.cs
-// Interface for a UnitElementModel.
+// File: ICommandTarget.cs
+// Interface for a target that is a UnitCommand.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,13 +16,15 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System.Collections.Generic;
+
     /// <summary>
-    ///  Interface for a UnitElementModel.
+    /// Interface for a target that is a UnitCommand.
     /// </summary>
-    public interface IElementModel : IUnitModel {
+    public interface ICommandTarget : IUnitTarget {
 
-        //IUnitElement HQElement { get; set; }
+        IEnumerable<IElementTarget> ElementTargets { get; }
+
     }
-
 }
 

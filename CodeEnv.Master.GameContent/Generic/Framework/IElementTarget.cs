@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IModel.cs
-// Interface for an ItemModel.
+// File: IElementTarget.cs
+//  Interface for a target that is a UnitElement.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,21 +16,13 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using UnityEngine;
-
     /// <summary>
-    /// Interface for an ItemModel.
+    ///  Interface for a target that is a UnitElement.
     /// </summary>
-    public interface IModel {
+    public interface IElementTarget : IUnitTarget {
 
-        string Name { get; }
-
-        Vector3 Position { get; }
-
-        bool IsMovable { get; }
-
-        float Radius { get; }
-
+        //IUnitElement HQElement { get; set; }
     }
+
 }
 

@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IShipModel.cs
-//  Interface for a Ship.
+// File: IUnitTarget.cs
+//  Interface for a target that is a Unit Element or Command.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,9 +17,12 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for a ShipModel.
+    /// Interface for a target that is a Unit Element or Command.
     /// </summary>
-    public interface IShipModel : IElementModel { }
+    public interface IUnitTarget : IMortalTarget {
 
+        float MaxWeaponsRange { get; }
+
+    }
 }
 

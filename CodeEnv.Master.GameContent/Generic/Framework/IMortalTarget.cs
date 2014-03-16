@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IMortalModel.cs
-// Interface for a MortalItemModel.
+// File: IMortalTarget.cs
+// Interface for a target that is mortal.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,13 +20,13 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for a MortalItemModel.
+    /// Interface for a target that is mortal.
     /// </summary>
-    public interface IMortalModel : IModel {
+    public interface IMortalTarget : IDestinationTarget {
 
-        event Action<IMortalModel> onItemDeath;
+        event Action<IMortalTarget> onItemDeath;
 
-        event Action<IMortalModel> onOwnerChanged;
+        event Action<IMortalTarget> onOwnerChanged;
 
         bool IsDead { get; }
 

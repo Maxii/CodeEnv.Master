@@ -50,7 +50,7 @@ public abstract class AMortalItemPresenter : AFocusableItemPresenter {
         View.onShowCompletion += Model.OnShowCompletion;
     }
 
-    protected virtual void OnDeath(IMortalModel itemModel) {
+    protected virtual void OnDeath(IMortalTarget itemModel) {
         // Equals avoids erroneous warning
         D.Assert(Model.Equals(itemModel), "{0} has erroneously received OnDeath from {1}.".Inject(Model.Data.Name, itemModel.Name));
         CleanupOnDeath();

@@ -101,7 +101,7 @@ public class StarbaseCmdModel : AUnitCommandModel {
 
     #region Attacking
 
-    IMortalModel _attackTarget;
+    IMortalTarget _attackTarget;
 
     void Attacking_EnterState() {
         LogEvent();
@@ -111,7 +111,7 @@ public class StarbaseCmdModel : AUnitCommandModel {
         Elements.ForAll(e => (e as FacilityModel).CurrentOrder = elementAttackOrder);
     }
 
-    void Attacking_OnTargetDeath(IMortalModel deadTarget) {
+    void Attacking_OnTargetDeath(IMortalTarget deadTarget) {
         LogEvent();
         D.Assert(_attackTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _attackTarget.Name, deadTarget.Name));
         Return();
@@ -212,7 +212,7 @@ public class StarbaseCmdModel : AUnitCommandModel {
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region ITarget Members
+    #region IDestinationTarget Members
 
     public override bool IsMovable { get { return false; } }
 
