@@ -23,11 +23,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class UnitTargetOrder<T> : UnitDestinationOrder<T> where T : struct {
 
-        public new IMortalItem Target {
-            get { return base.Target as IMortalItem; }
+        public new IMortalModel Target {
+            get { return base.Target as IMortalModel; }
         }
 
-        public UnitTargetOrder(T order, IMortalItem target)
+        public UnitTargetOrder(T order, IMortalModel target)
             : base(order, target) {
         }
 

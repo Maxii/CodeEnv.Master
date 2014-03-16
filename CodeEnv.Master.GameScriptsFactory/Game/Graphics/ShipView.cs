@@ -120,7 +120,7 @@ public class ShipView : AUnitElementView, ISelectable {
             return;
         }
         UnitTargetOrder<ShipOrders> joinFleetOrder =
-            new UnitTargetOrder<ShipOrders>(ShipOrders.JoinFleet, _joinableFleetLookup[itemId] as IMortalItem);
+            new UnitTargetOrder<ShipOrders>(ShipOrders.JoinFleet, _joinableFleetLookup[itemId] as IMortalModel);
         Presenter.Model.CurrentOrder = joinFleetOrder;
     }
 

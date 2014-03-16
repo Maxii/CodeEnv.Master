@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IUnitCommand.cs
-// Interface for a UnitCommand.
+// File: IShipModel.cs
+//  Interface for a Ship.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,15 +16,10 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System.Collections.Generic;
-
     /// <summary>
-    /// Interface for a UnitCommand.
+    /// Interface for a ShipModel.
     /// </summary>
-    public interface IUnitCommand : IUnitItem {
+    public interface IShipModel : IElementModel { }
 
-        IEnumerable<IUnitElement> ElementTargets { get; }
-
-    }
 }
 

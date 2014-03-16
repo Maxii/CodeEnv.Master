@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all StarBases in the game. Includes a state machine.
 /// </summary>
-public class StarBaseItem : AMortalItemStateMachine<StarbaseState>, IMortalItem {
+public class StarBaseItem : AMortalItemStateMachine<StarbaseState>, IMortalModel {
 
     private UnitOrder<StarbaseOrders> _currentOrder;
     public UnitOrder<StarbaseOrders> CurrentOrder {

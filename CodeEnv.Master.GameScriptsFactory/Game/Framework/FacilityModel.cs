@@ -93,8 +93,8 @@ public class FacilityModel : AUnitElementModel {
 
     #region ExecuteAttackOrder
 
-    private IMortalItem _ordersTarget;
-    private IMortalItem _primaryTarget; // IMPROVE  take this previous target into account when PickPrimaryTarget()
+    private IMortalModel _ordersTarget;
+    private IMortalModel _primaryTarget; // IMPROVE  take this previous target into account when PickPrimaryTarget()
 
     IEnumerator ExecuteAttackOrder_EnterState() {
         D.Log("{0}.ExecuteAttackOrder_EnterState() called.", Data.Name);
@@ -132,7 +132,7 @@ public class FacilityModel : AUnitElementModel {
 
     #region Attacking
 
-    private IMortalItem _attackTarget;
+    private IMortalModel _attackTarget;
     private float _attackDamage;
 
     void Attacking_EnterState() {
@@ -275,17 +275,17 @@ public class FacilityModel : AUnitElementModel {
     /// <returns>
     /// True if the target is in range, false otherwise. 
     /// </returns>
-    private bool PickPrimaryTarget(out IMortalItem chosenTarget) {
+    private bool PickPrimaryTarget(out IMortalModel chosenTarget) {
         D.Assert(_ordersTarget != null && !_ordersTarget.IsDead, "{0}'s target from orders is null or dead.".Inject(Data.Name));
         bool isTargetInRange = false;
-        var uniqueEnemyTargetsInRange = Enumerable.Empty<IMortalItem>();
+        var uniqueEnemyTargetsInRange = Enumerable.Empty<IMortalModel>();
         foreach (var rt in _weaponRangeTrackerLookup.Values) {
-            uniqueEnemyTargetsInRange = uniqueEnemyTargetsInRange.Union<IMortalItem>(rt.EnemyTargets);  // OPTIMIZE
+            uniqueEnemyTargetsInRange = uniqueEnemyTargetsInRange.Union<IMortalModel>(rt.EnemyTargets);  // OPTIMIZE
         }
 
-        IUnitCommand cmdTarget = _ordersTarget as IUnitCommand;
+        ICommandModel cmdTarget = _ordersTarget as ICommandModel;
         if (cmdTarget != null) {
-            var primaryTargets = cmdTarget.ElementTargets.Cast<IMortalItem>();
+            var primaryTargets = cmdTarget.ElementTargets.Cast<IMortalModel>();
             var primaryTargetsInRange = primaryTargets.Intersect(uniqueEnemyTargetsInRange);
             if (!primaryTargetsInRange.IsNullOrEmpty()) {
                 chosenTarget = SelectHighestPriorityTarget(primaryTargetsInRange);
@@ -307,8 +307,8 @@ public class FacilityModel : AUnitElementModel {
         return isTargetInRange;
     }
 
-    private IMortalItem SelectHighestPriorityTarget(IEnumerable<IMortalItem> selectedTargetsInRange) {
-        return RandomExtended<IMortalItem>.Choice(selectedTargetsInRange);
+    private IMortalModel SelectHighestPriorityTarget(IEnumerable<IMortalModel> selectedTargetsInRange) {
+        return RandomExtended<IMortalModel>.Choice(selectedTargetsInRange);
     }
 
     private void AssessNeedForRepair() {

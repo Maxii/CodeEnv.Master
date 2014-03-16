@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IUnitItem.cs
-//  Interface for a Unit Element or Command.
+// File: ICommandModel.cs
+// Interface for a UnitCommand.Model.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,14 +16,14 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using CodeEnv.Master.Common;
+    using System.Collections.Generic;
 
     /// <summary>
-    /// Interface for a Unit Element or Command.
+    /// Interface for a UnitCommandModel.
     /// </summary>
-    public interface IUnitItem : IMortalItem {
+    public interface ICommandModel : IUnitModel {
 
-        float MaxWeaponsRange { get; }
+        IEnumerable<IElementModel> ElementTargets { get; }
 
     }
 }

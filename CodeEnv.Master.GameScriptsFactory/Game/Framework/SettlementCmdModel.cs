@@ -98,7 +98,7 @@ public class SettlementCmdModel : AUnitCommandModel {
 
     #region Attacking
 
-    IMortalItem _attackTarget;
+    IMortalModel _attackTarget;
 
     void Attacking_EnterState() {
         LogEvent();
@@ -108,7 +108,7 @@ public class SettlementCmdModel : AUnitCommandModel {
         Elements.ForAll(e => (e as FacilityModel).CurrentOrder = elementAttackOrder);
     }
 
-    void Attacking_OnTargetDeath(IMortalItem deadTarget) {
+    void Attacking_OnTargetDeath(IMortalModel deadTarget) {
         LogEvent();
         D.Assert(_attackTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _attackTarget.Name, deadTarget.Name));
         Return();

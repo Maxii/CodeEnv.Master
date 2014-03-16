@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IMortalItem.cs
-// Interface for a MortalItem.
+// File: IUnitModel.cs
+//  Interface for a Unit Element or Command Model.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,25 +16,14 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using UnityEngine;
+    using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Interface for a MortalItem.
+    /// Interface for a Unit Element or Command Model.
     /// </summary>
-    public interface IMortalItem : IDestinationItem {
+    public interface IUnitModel : IMortalModel {
 
-        event Action<IMortalItem> onItemDeath;
-
-        event Action<IMortalItem> onOwnerChanged;
-
-        bool IsDead { get; }
-
-        void TakeDamage(float damage);
-
-        IPlayer Owner { get; }
-
-        string ParentName { get; }
+        float MaxWeaponsRange { get; }
 
     }
 }

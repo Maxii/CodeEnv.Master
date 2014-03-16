@@ -37,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         Vector3 StationOffset { get; set; }
 
-        IShip AssignedShip { get; set; }
+        IShipModel AssignedShip { get; set; }
 
     }
 }

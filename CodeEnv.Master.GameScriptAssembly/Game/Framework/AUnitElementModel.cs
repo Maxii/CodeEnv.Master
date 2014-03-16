@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for an Element, an object that is under the command of a CommandItem.
 /// </summary>
-public abstract class AUnitElementModel : AMortalItemModelStateMachine, IUnitElement {
+public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElementModel {
 
     public virtual bool IsHQElement { get; set; }
 

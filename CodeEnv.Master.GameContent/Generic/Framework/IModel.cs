@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IDestinationItem.cs
-// Interface for an Item that is a movement destination.
+// File: IModel.cs
+// Interface for an ItemModel.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,9 +19,9 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for an Item that is a movement destination.
+    /// Interface for an ItemModel.
     /// </summary>
-    public interface IDestinationItem {
+    public interface IModel {
 
         string Name { get; }
 

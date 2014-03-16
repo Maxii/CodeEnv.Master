@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IShip.cs
-//  Interface for a Ship.
+// File: IElementModel.cs
+// Interface for a UnitElementModel.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,9 +17,12 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for a Ship.
+    ///  Interface for a UnitElementModel.
     /// </summary>
-    public interface IShip : IUnitElement { }
+    public interface IElementModel : IUnitModel {
+
+        //IUnitElement HQElement { get; set; }
+    }
 
 }
 

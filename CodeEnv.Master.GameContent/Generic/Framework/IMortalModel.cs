@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2013 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IUnitElement.cs
-// Interface for a UnitElement.
+// File: IMortalModel.cs
+// Interface for a MortalItemModel.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,13 +16,26 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
+    using UnityEngine;
+
     /// <summary>
-    ///  Interface for a UnitElement.
+    /// Interface for a MortalItemModel.
     /// </summary>
-    public interface IUnitElement : IUnitItem {
+    public interface IMortalModel : IModel {
 
-        //IUnitElement HQElement { get; set; }
+        event Action<IMortalModel> onItemDeath;
+
+        event Action<IMortalModel> onOwnerChanged;
+
+        bool IsDead { get; }
+
+        void TakeDamage(float damage);
+
+        IPlayer Owner { get; }
+
+        string ParentName { get; }
+
     }
-
 }
 

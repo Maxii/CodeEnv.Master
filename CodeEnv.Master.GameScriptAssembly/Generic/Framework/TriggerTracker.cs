@@ -36,7 +36,7 @@ public class TriggerTracker : AMonoBase, IDisposable {
 
     private static IList<Collider> _collidersToIgnore = new List<Collider>();
 
-    public IList<IMortalItem> AllTargets { get; private set; }
+    public IList<IMortalModel> AllTargets { get; private set; }
 
     protected Collider Collider { get; private set; }
 
@@ -48,7 +48,7 @@ public class TriggerTracker : AMonoBase, IDisposable {
         Collider = UnityUtility.ValidateComponentPresence<Collider>(gameObject);
         Collider.isTrigger = true;
         Collider.enabled = false;
-        AllTargets = new List<IMortalItem>();
+        AllTargets = new List<IMortalModel>();
         Subscribe();
     }
 
@@ -75,7 +75,7 @@ public class TriggerTracker : AMonoBase, IDisposable {
             return;
         }
 
-        IMortalItem target = other.gameObject.GetInterface<IMortalItem>();
+        IMortalModel target = other.gameObject.GetInterface<IMortalModel>();
         if (target == null) {
             _collidersToIgnore.Add(other);
             D.Log("{0}.{1} now ignoring Collider {2}.", Data.Name, GetType().Name, other.name);
@@ -96,13 +96,13 @@ public class TriggerTracker : AMonoBase, IDisposable {
             return;
         }
 
-        IMortalItem target = other.gameObject.GetInterface<IMortalItem>();
+        IMortalModel target = other.gameObject.GetInterface<IMortalModel>();
         if (target != null) {
             Remove(target);
         }
     }
 
-    protected virtual void Add(IMortalItem target) {
+    protected virtual void Add(IMortalModel target) {
         if (!AllTargets.Contains(target)) {
             if (!target.IsDead) {
                 D.Log("{0}.{1} now tracking target {2}.", Data.Name, GetType().Name, target.Name);
@@ -119,7 +119,7 @@ public class TriggerTracker : AMonoBase, IDisposable {
         }
     }
 
-    protected virtual void Remove(IMortalItem target) {
+    protected virtual void Remove(IMortalModel target) {
         bool isRemoved = AllTargets.Remove(target);
         if (isRemoved) {
             D.Log("{0}.{1} no longer tracking target {2} at distance = {3}.", Data.Name, GetType().Name, target.Name, Vector3.Distance(target.Position, _transform.position));
@@ -131,11 +131,11 @@ public class TriggerTracker : AMonoBase, IDisposable {
         }
     }
 
-    protected virtual void OnTargetDeath(IMortalItem target) {
+    protected virtual void OnTargetDeath(IMortalModel target) {
         Remove(target);
     }
 
-    protected virtual void OnTargetOwnerChanged(IMortalItem target) { }
+    protected virtual void OnTargetOwnerChanged(IMortalModel target) { }
 
     protected override void OnDestroy() {
         base.OnDestroy();

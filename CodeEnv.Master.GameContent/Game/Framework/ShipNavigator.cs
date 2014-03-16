@@ -84,7 +84,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="target">The target.</param>
         /// <param name="speed">The speed.</param>
         /// <param name="standoffDistance">The distance to standoff from the target.</param>
-        public void PlotCourse(IDestinationItem target, Speed speed, float standoffDistance = Constants.ZeroF) {
+        public void PlotCourse(IModel target, Speed speed, float standoffDistance = Constants.ZeroF) {
             Target = target;
             Speed = speed;
             D.Assert(speed != Speed.AllStop, "Designated speed to new target {0} is 0!".Inject(target.Name));

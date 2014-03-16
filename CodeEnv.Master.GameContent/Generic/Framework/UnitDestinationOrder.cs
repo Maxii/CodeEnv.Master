@@ -23,9 +23,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class UnitDestinationOrder<T> : UnitOrder<T> where T : struct {
 
-        public IDestinationItem Target { get; private set; }
+        public IModel Target { get; private set; }
 
-        public UnitDestinationOrder(T order, IDestinationItem target)
+        public UnitDestinationOrder(T order, IModel target)
             : base(order) {
             Target = target;
         }
