@@ -28,7 +28,7 @@ using System.Collections.Generic;
 /// <summary>
 /// The data-holding class for all fleets in the game. Includes a state machine.
 /// </summary>
-public class FleetCmdModel : AUnitCommandModel {
+public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     private UnitOrder<FleetOrders> _currentOrder;
     public UnitOrder<FleetOrders> CurrentOrder {
@@ -75,9 +75,9 @@ public class FleetCmdModel : AUnitCommandModel {
         _subscribers.Add(GameStatus.Instance.SubscribeToPropertyChanged<GameStatus, bool>(gs => gs.IsRunning, OnIsRunningChanged));
     }
 
-    public override void AddElement(AUnitElementModel element) {
+    public override void AddElement(IElementModel element) {
         base.AddElement(element);
-        (element as ShipModel).Command = this;
+        (element as IShipModel).Command = this;
         if (enabled) {
             // if disabled, the HQElement hasn't been set yet
             var trackers = Enumerable.Empty<FormationStationTracker>();
@@ -99,11 +99,11 @@ public class FleetCmdModel : AUnitCommandModel {
         RemoveElement(ship);
     }
 
-    public override void RemoveElement(AUnitElementModel element) {
+    public override void RemoveElement(IElementModel element) {
         base.RemoveElement(element);
         // find the ship in the FormationStationTrackers and remove it
         var trackers = Enumerable.Empty<FormationStationTracker>();
-        if (TryFindFormationStationTrackers(element as IShipTarget, out trackers)) {
+        if (TryFindFormationStationTrackers(element as IShipModel, out trackers)) {
             trackers.Single().AssignedShip = null;
         }
         else {
@@ -111,7 +111,7 @@ public class FleetCmdModel : AUnitCommandModel {
         }
     }
 
-    protected override AUnitElementModel SelectHQElement() {
+    protected override IElementModel SelectHQElement() {
         return Elements.MaxBy(e => e.Data.Health);
     }
 
@@ -151,7 +151,7 @@ public class FleetCmdModel : AUnitCommandModel {
         }
     }
 
-    protected override void OnHQElementChanging(AUnitElementModel newElement) {
+    protected override void OnHQElementChanging(IElementModel newElement) {
         base.OnHQElementChanging(newElement);
         if (HQElement != null) {
             (HQElement as ShipModel).Navigator.onCourseTrackingError -= OnFlagshipTrackingError;
@@ -163,10 +163,10 @@ public class FleetCmdModel : AUnitCommandModel {
         (HQElement as ShipModel).Navigator.onCourseTrackingError += OnFlagshipTrackingError;
     }
 
-    protected override void PositionElementInFormation(AUnitElementModel element, Vector3 stationOffset) {
-        (element as ShipModel).Data.FormationStationOffset = stationOffset;
+    protected override void PositionElementInFormation(IElementModel element, Vector3 stationOffset) {
+        (element as IShipModel).Data.FormationStationOffset = stationOffset;
 
-        IShipTarget ship = element as IShipTarget;
+        IShipModel ship = element as IShipModel;
         var stationTrackers = Enumerable.Empty<FormationStationTracker>();
         if (TryFindFormationStationTrackers(ship, out stationTrackers)) {
             // the ship already assigned to a FormationStationTracker
@@ -210,7 +210,7 @@ public class FleetCmdModel : AUnitCommandModel {
     /// <param name="assignedShip">The assigned ship being tested for.</param>
     /// <param name="trackers">The trackers meeting the criteria</param>
     /// <returns><c>true</c> if any trackers matching the criteria were found.</returns>
-    private bool TryFindFormationStationTrackers(IShipTarget assignedShip, out IEnumerable<FormationStationTracker> trackers) {
+    private bool TryFindFormationStationTrackers(IShipModel assignedShip, out IEnumerable<FormationStationTracker> trackers) {
         trackers = _formationStationTrackerLookup.Values.Where(fst => fst.AssignedShip == assignedShip);
         return trackers.Count() > 0;
     }

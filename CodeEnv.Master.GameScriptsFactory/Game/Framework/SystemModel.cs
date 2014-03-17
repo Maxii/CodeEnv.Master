@@ -20,7 +20,7 @@ using UnityEngine;
 /// The data-holding class for all Systems in the game.  
 /// WARNING: Donot change name to "System", a protected word.
 /// </summary>
-public class SystemModel : AItemModel {
+public class SystemModel : AItemModel, ISystemModel {
 
     public new SystemData Data {
         get { return base.Data as SystemData; }
@@ -65,7 +65,7 @@ public class SystemModel : AItemModel {
 
     private void AddSystemAsLOSChangedRelayTarget(SettlementCmdModel settlementCmd) {
         settlementCmd.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().AddTarget(_transform);
-        settlementCmd.Elements.ForAll(element => element.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().AddTarget(_transform));
+        settlementCmd.Elements.ForAll(element => element.Transform.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().AddTarget(_transform));
     }
 
     public override string ToString() {

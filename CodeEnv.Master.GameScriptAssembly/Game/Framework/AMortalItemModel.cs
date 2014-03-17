@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for an AItem that can die. 
 /// </summary>
-public abstract class AMortalItemModel : AItemModel, IMortalTarget {
+public abstract class AMortalItemModel : AItemModel, IMortalModel, IMortalTarget {
 
     public event Action<MortalAnimations> onShowAnimation;
     public event Action<MortalAnimations> onStopAnimation;
@@ -118,9 +118,9 @@ public abstract class AMortalItemModel : AItemModel, IMortalTarget {
 
     #region IMortalTarget Members
 
-    public event Action<IMortalTarget> onItemDeath;
+    public event Action<IMortalModel> onItemDeath;
 
-    public event Action<IMortalTarget> onOwnerChanged;
+    public event Action<IMortalModel> onOwnerChanged;
 
     public bool IsDead { get; private set; }
 
@@ -128,9 +128,9 @@ public abstract class AMortalItemModel : AItemModel, IMortalTarget {
 
     public abstract void TakeDamage(float damage);
 
-    public IPlayer Owner {
-        get { return Data.Owner; }
-    }
+    public IPlayer Owner { get { return Data.Owner; } }
+
+    public float MaxWeaponsRange { get { return Data.MaxWeaponsRange; } }
 
     public string ParentName { get { return Data.OptionalParentName; } }
 

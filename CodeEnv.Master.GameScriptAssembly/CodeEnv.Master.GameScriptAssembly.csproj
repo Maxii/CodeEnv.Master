@@ -58,15 +58,10 @@
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Game\Framework\FormationGenerator.cs" />
-    <Compile Include="Game\Graphics\AFocusableItemPresenter.cs" />
     <Compile Include="Game\Graphics\AFocusableItemView.cs" />
     <Compile Include="Generic\Framework\AUnitCreator.cs" />
     <Compile Include="Generic\Framework\TriggerTracker.cs" />
-    <Compile Include="Generic\Graphics\AItemPresenter.cs" />
-    <Compile Include="Game\Graphics\AMortalItemPresenter.cs" />
     <Compile Include="Game\Graphics\AMortalItemView.cs" />
-    <Compile Include="Game\Graphics\AUnitCommandPresenter.cs" />
-    <Compile Include="Game\Graphics\AUnitElementPresenter.cs" />
     <Compile Include="Game\Graphics\AUnitElementView.cs" />
     <Compile Include="ThirdParty\AMonoStateMachine_NoCall.cs" />
     <Compile Include="Game\Framework\AItemModel.cs" />
@@ -74,7 +69,6 @@
     <Compile Include="Generic\Framework\AMortalItemModelStateMachine.cs" />
     <Compile Include="Game\Framework\AUnitCommandModel.cs" />
     <Compile Include="Game\Framework\AUnitElementModel.cs" />
-    <Compile Include="Generic\Framework\MortalItemDeathEvent.cs" />
     <Compile Include="Generic\Graphics\AItemView.cs" />
     <Compile Include="ThirdParty\TaskManager.cs" />
     <Compile Include="ThirdParty\CoroutineManager.cs" />

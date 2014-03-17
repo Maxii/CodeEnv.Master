@@ -44,10 +44,10 @@ public class FormationStationTracker : AMonoBase /* IDisposable */ {
         set { SetProperty<Vector3>(ref _stationOffset, value, "StationOffset", OnStationOffsetChanged); }
     }
 
-    private IShipTarget _assignedShip;
-    public IShipTarget AssignedShip {
+    private IShipModel _assignedShip;
+    public IShipModel AssignedShip {
         get { return _assignedShip; }
-        set { SetProperty<IShipTarget>(ref _assignedShip, value, "AssignedShip", OnAssignedShipChanged, OnAssignedShipChanging); }
+        set { SetProperty<IShipModel>(ref _assignedShip, value, "AssignedShip", OnAssignedShipChanged, OnAssignedShipChanging); }
     }
 
     private SphereCollider _collider;
@@ -69,7 +69,7 @@ public class FormationStationTracker : AMonoBase /* IDisposable */ {
 
     void OnTriggerEnter(Collider other) {
         //D.Log("OnTriggerEnter({0}) called.", other.name);
-        IShipTarget target = other.gameObject.GetInterface<IShipTarget>();
+        IShipModel target = other.gameObject.GetInterface<IShipModel>();
         if (target != null) {
             if (target == AssignedShip) {
                 OnShipOnStation(true);
@@ -79,7 +79,7 @@ public class FormationStationTracker : AMonoBase /* IDisposable */ {
 
     void OnTriggerExit(Collider other) {
         //D.Log("{0}.OnTriggerExit() called by Collider {1}.", GetType().Name, other.name);
-        IShipTarget target = other.gameObject.GetInterface<IShipTarget>();
+        IShipModel target = other.gameObject.GetInterface<IShipModel>();
         if (target != null) {
             if (target == AssignedShip) {
                 OnShipOnStation(false);
@@ -93,7 +93,7 @@ public class FormationStationTracker : AMonoBase /* IDisposable */ {
     //    }
     //}
 
-    private void OnAssignedShipChanging(IShipTarget newShip) {
+    private void OnAssignedShipChanging(IShipModel newShip) {
         if (AssignedShip != null) {
             AssignedShip.onItemDeath -= OnAssignedShipDeath;
         }
@@ -114,8 +114,8 @@ public class FormationStationTracker : AMonoBase /* IDisposable */ {
         }
     }
 
-    private void OnAssignedShipDeath(IMortalTarget deadAssignedShip) {
-        IShipTarget ship = deadAssignedShip as IShipTarget;
+    private void OnAssignedShipDeath(IMortalModel deadAssignedShip) {
+        IShipModel ship = deadAssignedShip as IShipModel;
         D.Assert(ship != null);
         D.Assert(ship == AssignedShip);
         OnShipOnStation(false);
@@ -135,7 +135,7 @@ public class FormationStationTracker : AMonoBase /* IDisposable */ {
     }
 
     private bool IsShipAlreadyOnStation {
-        get { return _collider.bounds.Contains(AssignedShip.Position); }
+        get { return _collider.bounds.Contains(AssignedShip.Data.Position); }
     }
 
     //protected override void OnDestroy() {

@@ -28,7 +28,7 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all ships in the game. Includes a state machine.
 /// </summary>
-public class ShipModel : AUnitElementModel, IShipTarget, IShipNavigatorClient {
+public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     private UnitOrder<ShipOrders> _currentOrder;
     public UnitOrder<ShipOrders> CurrentOrder {
@@ -43,7 +43,7 @@ public class ShipModel : AUnitElementModel, IShipTarget, IShipNavigatorClient {
 
     public ShipNavigator Navigator { get; private set; }
 
-    public FleetCmdModel Command { get; set; }
+    public IFleetCmdModel Command { get; set; }
     private EngineRoom _engineRoom;
     private Job _headingJob;
 
@@ -233,7 +233,7 @@ public class ShipModel : AUnitElementModel, IShipTarget, IShipNavigatorClient {
 
     void Moving_EnterState() {
         LogEvent();
-        var mortalMoveTarget = _moveTarget as IMortalTarget;
+        var mortalMoveTarget = _moveTarget as IMortalModel;
         if (mortalMoveTarget != null) {
             mortalMoveTarget.onItemDeath += OnTargetDeath;
         }
@@ -275,7 +275,7 @@ public class ShipModel : AUnitElementModel, IShipTarget, IShipNavigatorClient {
 
     void Moving_ExitState() {
         LogEvent();
-        var mortalMoveTarget = _moveTarget as IMortalTarget;
+        var mortalMoveTarget = _moveTarget as IMortalModel;
         if (mortalMoveTarget != null) {
             mortalMoveTarget.onItemDeath -= OnTargetDeath;
         }
@@ -383,7 +383,7 @@ public class ShipModel : AUnitElementModel, IShipTarget, IShipNavigatorClient {
         yield return null;  // wait to allow tempFleetCmd and View to initialize
 
         // this ship's Command should now be the fleetToJoin
-        var fleetToJoinView = Command.gameObject.GetSafeMonoBehaviourComponent<FleetCmdView>();
+        var fleetToJoinView = Command.Transform.GetSafeMonoBehaviourComponent<FleetCmdView>();
         fleetToJoinView.PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
         // TODO PlayerIntelCoverage should be set through sensor detection
 
@@ -650,7 +650,7 @@ public class ShipModel : AUnitElementModel, IShipTarget, IShipNavigatorClient {
         }
     }
 
-    void OnTargetDeath(IMortalTarget deadTarget) {
+    void OnTargetDeath(IMortalModel deadTarget) {
         RelayToCurrentState(deadTarget);
     }
 

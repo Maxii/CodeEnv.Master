@@ -69,8 +69,18 @@ namespace CodeEnv.Master.GameContent {
             get { return _pilotJob != null && _pilotJob.IsRunning; }
         }
 
+        /// <summary>
+        /// The SQRD distance from the target that is 'close enough' to have arrived. This value
+        /// is automatically adjusted to accomodate the radius of the target since all distance 
+        /// calculations use the target's center point as its position.
+        /// </summary>
         protected float _closeEnoughDistanceToTargetSqrd;
         private float _closeEnoughDistanceToTarget;
+        /// <summary>
+        /// The distance from the target that is 'close enough' to have arrived. This value
+        /// is automatically adjusted to accomodate the radius of the target since all distance 
+        /// calculations use the target's center point as its position.
+        /// </summary>
         protected float CloseEnoughDistanceToTarget {
             get { return _closeEnoughDistanceToTarget; }
             set {

@@ -153,7 +153,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
     private void OnContextMenuSelection() {
         int menuId = CtxObject.current.selectedItem;
         FleetCmdView selectedFleetView = _selectionMgr.CurrentSelection as FleetCmdView;
-        FleetCmdModel selectedFleet = selectedFleetView.Presenter.Model;
+        IFleetCmdModel selectedFleet = selectedFleetView.Presenter.Model;
         if (menuId == 4) {  // UNDONE
             Vector3 centerOfSector = SectorGrid.GetSector(Location).Position;
             selectedFleet.CurrentOrder = new UnitMoveOrder<FleetOrders>(FleetOrders.MoveTo, centerOfSector, Speed.FleetStandard);

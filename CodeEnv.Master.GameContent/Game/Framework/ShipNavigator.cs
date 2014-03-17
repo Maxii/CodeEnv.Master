@@ -56,15 +56,14 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private float __separationTestToleranceDistanceSqrd;
 
-        private IShipNavigatorClient _ship;
+        private IShipModel _ship;
         private GameStatus _gameStatus;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ShipNavigator"/> class.
+        /// Initializes a new instance of the <see cref="ShipNavigator" /> class.
         /// </summary>
-        /// <param name="t">Ship Transform</param>
-        /// <param name="data">Ship data.</param>
-        public ShipNavigator(IShipNavigatorClient ship)
+        /// <param name="ship">The ship.</param>
+        public ShipNavigator(IShipModel ship)
             : base(ship.Data) {
             _ship = ship;
             _gameStatus = GameStatus.Instance;

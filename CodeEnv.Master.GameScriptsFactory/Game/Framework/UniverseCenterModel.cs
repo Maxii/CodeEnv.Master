@@ -22,7 +22,7 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// The Item at the center of the universe.
 /// </summary>
-public class UniverseCenterModel : AItemModel {
+public class UniverseCenterModel : AItemModel, IUniverseCenterModel {
 
     public new ItemData Data {
         get { return base.Data as ItemData; }

@@ -57,6 +57,21 @@
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Game\Gameplay\Formation.cs" />
+    <Compile Include="Game\Graphics\FacilityPresenter.cs" />
+    <Compile Include="Game\Graphics\FleetCmdPresenter.cs" />
+    <Compile Include="Game\Graphics\PlanetoidPresenter.cs" />
+    <Compile Include="Game\Graphics\SectorPresenter.cs" />
+    <Compile Include="Game\Graphics\SettlementCmdPresenter.cs" />
+    <Compile Include="Game\Graphics\ShipPresenter.cs" />
+    <Compile Include="Game\Graphics\StarbaseCmdPresenter.cs" />
+    <Compile Include="Game\Graphics\StarPresenter.cs" />
+    <Compile Include="Game\Graphics\SystemPresenter.cs" />
+    <Compile Include="Game\Graphics\UniverseCenterPresenter.cs" />
+    <Compile Include="Generic\Framework\MortalItemDeathEvent.cs" />
+    <Compile Include="Generic\Graphics\AFocusableItemPresenter.cs" />
+    <Compile Include="Generic\Graphics\AMortalItemPresenter.cs" />
+    <Compile Include="Generic\Graphics\AUnitCommandPresenter.cs" />
+    <Compile Include="Generic\Graphics\AUnitElementPresenter.cs" />
     <Compile Include="Generic\Framework\AElementStats.cs" />
     <Compile Include="Game\Framework\FacilityStats.cs" />
     <Compile Include="Game\Gameplay\FacilityOrders.cs" />
@@ -79,6 +94,7 @@
     <Compile Include="Generic\Framework\SelectionManager.cs" />
     <Compile Include="Generic\Graphics\A3DVectrosityBase.cs" />
     <Compile Include="Generic\Graphics\AIconFactory.cs" />
+    <Compile Include="Generic\Graphics\AItemPresenter.cs" />
     <Compile Include="Generic\Graphics\AVectrosityBase.cs" />
     <Compile Include="Generic\Graphics\CubeWireframe.cs" />
     <Compile Include="Game\Framework\FleetComposition.cs" />
@@ -185,8 +201,20 @@
     <Compile Include="Game\Framework\ShipStats.cs" />
     <Compile Include="Generic\Framework\IElementTarget.cs" />
     <Compile Include="Generic\Framework\IShipTarget.cs" />
-    <Compile Include="Generic\Framework\IUnitTarget.cs" />
-    <Compile Include="IModel.cs" />
+    <Compile Include="Generic\Framework\ICommandModel.cs" />
+    <Compile Include="Generic\Framework\IElementModel.cs" />
+    <Compile Include="Generic\Framework\IFacilityModel.cs" />
+    <Compile Include="Generic\Framework\IFleetCmdModel.cs" />
+    <Compile Include="Generic\Framework\IModel.cs" />
+    <Compile Include="Generic\Framework\IMortalModel.cs" />
+    <Compile Include="Generic\Framework\IPlanetoidModel.cs" />
+    <Compile Include="Generic\Framework\ISectorModel.cs" />
+    <Compile Include="Generic\Framework\ISettlementCmdModel.cs" />
+    <Compile Include="Generic\Framework\IShipModel.cs" />
+    <Compile Include="Generic\Framework\IStarbaseCmdModel.cs" />
+    <Compile Include="Generic\Framework\IStarModel.cs" />
+    <Compile Include="Generic\Framework\ISystemModel.cs" />
+    <Compile Include="Generic\Framework\IUniverseCenterModel.cs" />
     <Compile Include="ThirdParty\ICoroutineManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\SystemData.cs" />

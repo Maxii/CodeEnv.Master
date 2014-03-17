@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IModel.cs
-// Interface for an ItemModel.
+// File: IStarModel.cs
+// Interface for a StarModel.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,11 +17,11 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for an ItemModel.
+    /// Interface for a StarModel.
     /// </summary>
-    public interface IModel {
+    public interface IStarModel : IModel {
 
-        AItemData Data { get; set; }
+        new StarData Data { get; set; }
 
     }
 }

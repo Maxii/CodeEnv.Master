@@ -24,6 +24,12 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AMortalItemData : AItemData {
 
+        private float _maxWeaponsRange;
+        public float MaxWeaponsRange {
+            get { return _maxWeaponsRange; }
+            set { SetProperty<float>(ref _maxWeaponsRange, value, "MaxWeaponsRange"); }
+        }
+
         private float _maxHitPoints;
         public float MaxHitPoints {
             get { return _maxHitPoints; }

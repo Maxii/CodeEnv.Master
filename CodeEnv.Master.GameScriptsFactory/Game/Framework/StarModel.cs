@@ -22,7 +22,7 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// The data-holding class for all Stars in the game.
 /// </summary>
-public class StarModel : AItemModel {
+public class StarModel : AItemModel, IStarModel {
 
     public new StarData Data {
         get { return base.Data as StarData; }

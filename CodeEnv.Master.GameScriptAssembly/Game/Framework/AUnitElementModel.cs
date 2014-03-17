@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for an Element, an object that is under the command of a CommandItem.
 /// </summary>
-public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElementTarget {
+public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElementModel, IElementTarget {
 
     public virtual bool IsHQElement { get; set; }
 
@@ -168,10 +168,5 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
     // subscriptions contained completely within this gameobject (both subscriber
     // and subscribee) donot have to be cleaned up as all instances are destroyed
 
-    #region IUnitTarget Members
-
-    public float MaxWeaponsRange { get { return Data.MaxWeaponsRange; } }
-
-    #endregion
 }
 

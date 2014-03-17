@@ -28,7 +28,7 @@ using System.Collections.Generic;
 /// <summary>
 /// The data-holding class for all Starbases in the game. Includes a state machine. 
 /// </summary>
-public class StarbaseCmdModel : AUnitCommandModel {
+public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
 
     private UnitOrder<StarbaseOrders> _currentOrder;
     public UnitOrder<StarbaseOrders> CurrentOrder {
@@ -51,16 +51,16 @@ public class StarbaseCmdModel : AUnitCommandModel {
         CurrentState = StarbaseState.Idling;
     }
 
-    public override void AddElement(AUnitElementModel element) {
+    public override void AddElement(IElementModel element) {
         base.AddElement(element);
-        (element as FacilityModel).Command = this;
+        (element as IFacilityModel).Command = this;
         if (enabled) {  // if disabled, then this AddElement operation is occuring prior to initialization
             _formationGenerator.RegenerateFormation();    // Bases simply regenerate the formation when adding an element
         }
     }
 
-    protected override AUnitElementModel SelectHQElement() {
-        return Elements.Single(e => (e as FacilityModel).Data.Category == FacilityCategory.CentralHub);
+    protected override IElementModel SelectHQElement() {
+        return Elements.Single(e => (e as IFacilityModel).Data.Category == FacilityCategory.CentralHub);
     }
 
     #region StateMachine

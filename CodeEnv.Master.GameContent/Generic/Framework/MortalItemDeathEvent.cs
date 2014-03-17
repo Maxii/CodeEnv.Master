@@ -14,25 +14,25 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-// default namespace
+namespace CodeEnv.Master.GameContent {
 
 using CodeEnv.Master.Common;
 
 /// <summary>
 /// Event indicating a MortalItem in the game has died. 
 /// </summary>
-public class MortalItemDeathEvent : AGameEvent {
+    public class MortalItemDeathEvent : AGameEvent {
 
-    public AMortalItemModel ItemModel { get; private set; }
+        public IMortalModel ItemModel { get; private set; }
 
-    public MortalItemDeathEvent(object source, AMortalItemModel itemModel)
-        : base(source) {
+        public MortalItemDeathEvent(object source, IMortalModel itemModel)
+            : base(source) {
             ItemModel = itemModel;
-    }
+        }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
+        }
     }
-
 }
 

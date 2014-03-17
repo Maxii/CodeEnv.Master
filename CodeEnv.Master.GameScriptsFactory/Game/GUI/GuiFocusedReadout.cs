@@ -41,7 +41,7 @@ public class GuiFocusedReadout : AGuiLabelReadoutBase {
             _subscribers = new List<IDisposable>();
         }
         _subscribers.Add(CameraControl.Instance.SubscribeToPropertyChanged<CameraControl, ICameraFocusable>(cc => cc.CurrentFocus, OnFocusChanged));
-        _eventMgr.AddListener<MortalItemDeathEvent>(this, OnGameItemDestroyed);
+        _eventMgr.AddListener<MortalItemDeathEvent>(this, OnMortalItemDeath);
     }
 
     private void OnFocusChanged() {
@@ -61,12 +61,12 @@ public class GuiFocusedReadout : AGuiLabelReadoutBase {
         }
     }
 
-    private void OnGameItemDestroyed(MortalItemDeathEvent e) {
+    private void OnMortalItemDeath(MortalItemDeathEvent e) {
         ICameraFocusable focusable = e.Source as ICameraFocusable;
-        CheckRetainedFocusDestroyed(focusable);
+        CheckForRetainedFocusDeath(focusable);
     }
 
-    private void CheckRetainedFocusDestroyed(ICameraFocusable focusable) {
+    private void CheckForRetainedFocusDeath(ICameraFocusable focusable) {
         if (focusable != null && focusable.IsRetainedFocusEligible) {
             if (focusable == _retainedFocus) {
                 RefreshReadout(string.Empty);
@@ -90,7 +90,7 @@ public class GuiFocusedReadout : AGuiLabelReadoutBase {
     private void Unsubscribe() {
         _subscribers.ForAll(s => s.Dispose());
         _subscribers.Clear();
-        _eventMgr.RemoveListener<MortalItemDeathEvent>(this, OnGameItemDestroyed);
+        _eventMgr.RemoveListener<MortalItemDeathEvent>(this, OnMortalItemDeath);
     }
 
     protected override void OnDestroy() {

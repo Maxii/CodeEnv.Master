@@ -78,7 +78,7 @@ public class ShipView : AUnitElementView, ISelectable {
         shipMenuItems[0] = new CtxMenu.Item();
         shipMenuItems[0].text = ShipContextMenu.JoinFleet.GetName();
 
-        var joinableFleets = FindObjectsOfType<FleetCmdModel>().Where(f => f.Owner == Presenter.Model.Owner).Except(Presenter.Model.Command).ToArray();
+        var joinableFleets = FindObjectsOfType<FleetCmdModel>().Where(f => f.Owner == Presenter.Model.Data.Owner).Except(Presenter.Model.Command as FleetCmdModel).ToArray();
         var joinFleetSubmenuItemCount = joinableFleets.Length;
 
         if (joinFleetSubmenuItemCount > Constants.Zero) {

@@ -122,7 +122,7 @@ public class FleetCmdView : AUnitCommandView, ICameraFollowable, IHighlightTrack
     private void InitializeTrackingLabel() {
         if (enableTrackingLabel) {
             float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
-            string fleetName = Presenter.Model.PieceName;
+            string fleetName = Presenter.Model.UnitName;
             _trackingLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(TrackingTarget, GuiTrackingLabelFactory.LabelPlacement.AboveTarget, minShowDistance, Mathf.Infinity, fleetName);
         }
     }

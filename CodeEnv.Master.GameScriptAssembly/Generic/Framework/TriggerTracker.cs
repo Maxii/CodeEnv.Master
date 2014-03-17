@@ -131,11 +131,11 @@ public class TriggerTracker : AMonoBase, IDisposable {
         }
     }
 
-    protected virtual void OnTargetDeath(IMortalTarget target) {
-        Remove(target);
+    protected virtual void OnTargetDeath(IMortalModel target) {
+        Remove(target as IMortalTarget);
     }
 
-    protected virtual void OnTargetOwnerChanged(IMortalTarget target) { }
+    protected virtual void OnTargetOwnerChanged(IMortalModel target) { }
 
     protected override void OnDestroy() {
         base.OnDestroy();

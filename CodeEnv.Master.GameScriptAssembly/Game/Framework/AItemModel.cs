@@ -21,7 +21,7 @@ using UnityEngine;
 /// <summary>
 /// The abstract data-holding base class for all solid and non-solid objects in the game.
 /// </summary>
-public abstract class AItemModel : AMonoBase, IDestinationTarget, IDisposable {
+public abstract class AItemModel : AMonoBase, IModel, IDestinationTarget, IDisposable {
 
     private AItemData _data;
     /// <summary>
@@ -77,6 +77,10 @@ public abstract class AItemModel : AMonoBase, IDestinationTarget, IDisposable {
             _subscribers.Clear();
         }
     }
+
+
+
+    public Transform Transform { get { return _transform; } }
 
     #region IDestinationTarget Members
 

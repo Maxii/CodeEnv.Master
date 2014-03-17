@@ -28,30 +28,30 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for a CommandItem, an object that commands Elements.
 /// </summary>
-public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommandTarget {
+public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommandModel, ICommandTarget {
 
-    public event Action<AUnitElementModel> onSubordinateElementDeath;
+    public event Action<IElementModel> onSubordinateElementDeath;
 
-    public string PieceName { get { return Data.OptionalParentName; } }
+    public string UnitName { get { return Data.OptionalParentName; } }
 
     public new ACommandData Data {
         get { return base.Data as ACommandData; }
         set { base.Data = value; }
     }
 
-    private AUnitElementModel _hqElement;
-    public AUnitElementModel HQElement {
+    private IElementModel _hqElement;
+    public IElementModel HQElement {
         get { return _hqElement; }
-        set { SetProperty<AUnitElementModel>(ref _hqElement, value, "HQElement", OnHQElementChanged, OnHQElementChanging); }
+        set { SetProperty<IElementModel>(ref _hqElement, value, "HQElement", OnHQElementChanged, OnHQElementChanging); }
     }
 
-    public IList<AUnitElementModel> Elements { get; set; }
+    public IList<IElementModel> Elements { get; set; }
 
     protected FormationGenerator _formationGenerator;
 
     protected override void Awake() {
         base.Awake();
-        Elements = new List<AUnitElementModel>();
+        Elements = new List<IElementModel>();
         _formationGenerator = new FormationGenerator(this);
         // Derived class should call Subscribe() after all used references have been established
     }
@@ -70,19 +70,19 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
     /// Adds the Element to this Command including parenting if needed.
     /// </summary>
     /// <param name="element">The Element to add.</param>
-    public virtual void AddElement(AUnitElementModel element) {
+    public virtual void AddElement(IElementModel element) {
         D.Assert(!element.IsHQElement, "{0} adding element {1} already designated as the HQ Element.".Inject(Name, element.Name));   // by definition, an element can't already be the HQ Element when it is being added
         element.onItemDeath += OnSubordinateElementDeath;
         Elements.Add(element);
         Data.AddElement(element.Data);
         Transform parentTransform = _transform.parent;
-        if (element.transform.parent != parentTransform) {
-            element.transform.parent = parentTransform;   // local position, rotation and scale are auto adjusted to keep ship unchanged in worldspace
+        if (element.Transform.parent != parentTransform) {
+            element.Transform.parent = parentTransform;   // local position, rotation and scale are auto adjusted to keep ship unchanged in worldspace
         }
         // TODO consider changing HQElement
     }
 
-    public virtual void RemoveElement(AUnitElementModel element) {
+    public virtual void RemoveElement(IElementModel element) {
         element.onItemDeath -= OnSubordinateElementDeath;
         bool isRemoved = Elements.Remove(element);
         isRemoved = isRemoved && Data.RemoveElement(element.Data);
@@ -99,7 +99,7 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
         }
     }
 
-    private void OnSubordinateElementDeath(IMortalTarget mortalItem) {
+    private void OnSubordinateElementDeath(IMortalModel mortalItem) {
         D.Assert(mortalItem is AUnitElementModel);
         D.Log("{0} acknowledging {1} has been lost.", Data.Name, mortalItem.Name);
         AUnitElementModel element = mortalItem as AUnitElementModel;
@@ -111,7 +111,7 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
         }
     }
 
-    protected virtual void OnHQElementChanging(AUnitElementModel newElement) {
+    protected virtual void OnHQElementChanging(IElementModel newElement) {
         if (HQElement != null) {
             HQElement.IsHQElement = false;
         }
@@ -127,7 +127,7 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
     }
 
     public override void __SimulateAttacked() {
-        Elements.ForAll<AUnitElementModel>(e => e.__SimulateAttacked());
+        Elements.ForAll(e => e.__SimulateAttacked());
     }
 
     /// <summary>
@@ -251,15 +251,15 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
     //    }
     //}
 
-    protected internal virtual void PositionElementInFormation(AUnitElementModel element, Vector3 stationOffset) {
-        element.transform.position = HQElement.transform.position + stationOffset;
+    protected internal virtual void PositionElementInFormation(IElementModel element, Vector3 stationOffset) {
+        element.Transform.position = HQElement.Transform.position + stationOffset;
     }
 
     protected internal virtual void CleanupAfterFormationGeneration() { }
 
     protected abstract void KillCommand();
 
-    protected abstract AUnitElementModel SelectHQElement();
+    protected abstract IElementModel SelectHQElement();
 
     protected override void Cleanup() {
         base.Cleanup();
@@ -281,7 +281,7 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
         RelayToCurrentState();
     }
 
-    protected void OnTargetDeath(IMortalTarget deadTarget) {
+    protected void OnTargetDeath(IMortalModel deadTarget) {
         //LogEvent();
         RelayToCurrentState(deadTarget);
     }
@@ -301,12 +301,6 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
         bool isCmdAlive = ApplyDamage(damage);
         D.Assert(isCmdAlive, "{0} should never die as a result of being hit.".Inject(Data.Name));
     }
-
-    #endregion
-
-    #region IUnitTarget Members
-
-    public float MaxWeaponsRange { get { return Data.UnitMaxWeaponsRange; } }
 
     #endregion
 

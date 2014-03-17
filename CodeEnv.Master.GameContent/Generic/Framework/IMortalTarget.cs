@@ -24,15 +24,17 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IMortalTarget : IDestinationTarget {
 
-        event Action<IMortalTarget> onItemDeath;
+        event Action<IMortalModel> onItemDeath;
 
-        event Action<IMortalTarget> onOwnerChanged;
+        event Action<IMortalModel> onOwnerChanged;
 
         bool IsDead { get; }
 
         void TakeDamage(float damage);
 
         IPlayer Owner { get; }
+
+        float MaxWeaponsRange { get; }
 
         string ParentName { get; }
 

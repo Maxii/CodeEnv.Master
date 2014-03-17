@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SectorPresenter.cs
-// MVPresenter associated with a SectorView.
+// File: UniverseCenterPresenter.cs
+// An MVPresenter associated with a UniverseCenter View.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,23 +20,23 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// MVPresenter associated with a SectorView.
+/// An MVPresenter associated with a UniverseCenter View.
 /// </summary>
-public class SectorPresenter : AItemPresenter {
+public class UniverseCenterPresenter : AFocusableItemPresenter {
 
-    public new SectorModel Model {
-        get { return base.Model as SectorModel; }
+    public new IUniverseCenterModel Model {
+        get { return base.Model as IUniverseCenterModel; }
         protected set { base.Model = value; }
     }
 
-    public SectorPresenter(IViewable view) : base(view) { }
+    public UniverseCenterPresenter(IViewable view) : base(view) { }
 
-    protected override AItemModel AcquireModelReference() {
-        return UnityUtility.ValidateMonoBehaviourPresence<SectorModel>(_viewGameObject);
+    protected override IModel AcquireModelReference() {
+        return _viewGameObject.GetSafeInterface<IUniverseCenterModel>();
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<SectorData>(Model.Data);
+        return new GuiHudPublisher<ItemData>(Model.Data);
     }
 
     public override string ToString() {
@@ -44,5 +44,4 @@ public class SectorPresenter : AItemPresenter {
     }
 
 }
-
 

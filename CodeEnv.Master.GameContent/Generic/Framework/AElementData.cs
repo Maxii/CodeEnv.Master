@@ -27,12 +27,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AElementData : AMortalItemData {
 
-        private float _maxWeaponsRange;
-        public float MaxWeaponsRange {
-            get { return _maxWeaponsRange; }
-            set { SetProperty<float>(ref _maxWeaponsRange, value, "MaxWeaponsRange"); }
-        }
-
         /// <summary>
         /// Dictionary for finding the list of weapons associated with a particular rangeTracker.
         /// </summary>

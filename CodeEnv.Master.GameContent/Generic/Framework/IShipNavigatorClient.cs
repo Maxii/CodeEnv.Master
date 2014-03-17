@@ -21,6 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     ///  Interface for easy access to the client of a ShipNavigator.
     /// </summary>
+    [System.Obsolete]
     public interface IShipNavigatorClient {
 
         ShipData Data { get; }

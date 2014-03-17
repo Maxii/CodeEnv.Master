@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all planetoids in the game.
 /// </summary>
-public class PlanetoidModel : AMortalItemModel {
+public class PlanetoidModel : AMortalItemModel, IPlanetoidModel {
     //public class PlanetoidModel : AMortalItemModelStateMachine {
 
     public new PlanetoidData Data {

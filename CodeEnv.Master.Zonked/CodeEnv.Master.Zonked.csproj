@@ -141,6 +141,7 @@
     <Compile Include="IStarBaseViewable.cs" />
     <Compile Include="ISystemViewable.cs" />
     <Compile Include="ItemGraphics.cs" />
+    <Compile Include="IUnitTarget.cs" />
     <Compile Include="IViewable.cs" />
     <Compile Include="IZoomToClosest.cs" />
     <Compile Include="KeyboardAxis.cs" />

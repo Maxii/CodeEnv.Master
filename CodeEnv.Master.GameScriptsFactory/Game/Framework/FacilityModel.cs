@@ -28,7 +28,7 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all Facilities in the game. Includes a state machine.
 /// </summary>
-public class FacilityModel : AUnitElementModel {
+public class FacilityModel : AUnitElementModel, IFacilityModel {
 
     public new FacilityData Data {
         get { return base.Data as FacilityData; }
@@ -53,7 +53,7 @@ public class FacilityModel : AUnitElementModel {
         set { SetProperty<UnitOrder<FacilityOrders>>(ref _currentOrder, value, "CurrentOrder", OnOrdersChanged); }
     }
 
-    public AUnitCommandModel Command { get; set; }
+    public ICommandModel Command { get; set; }
 
     protected override void Awake() {
         base.Awake();

@@ -93,6 +93,20 @@ namespace CodeEnv.Master.Common {
             return components.Where(c => c.transform.parent == go.transform).ToArray();
         }
 
+        /// <summary>
+        /// Defensive GameObject.GetComponent&lt;&gt;() alternative for acquiring MonoBehaviours. 
+        /// Logs a warning if the component cannot be found.
+        /// </summary>
+        /// <typeparam name="T">Must be a MonoBehaviour.</typeparam>
+        /// <param name="t">The Transform obstensibly containing the Component.</param>
+        /// <returns>The component of type T or null if not found.</returns>
+        public static T GetSafeMonoBehaviourComponent<T>(this Transform t) where T : MonoBehaviour {
+            T component = t.GetComponent<T>();
+            if (component == null) {
+                D.Warn(ErrorMessages.ComponentNotFound, typeof(T).Name, t.name);
+            }
+            return component;
+        }
 
 
         /// <summary>
@@ -100,7 +114,7 @@ namespace CodeEnv.Master.Common {
         /// Logs a warning if the component cannot be found.
         /// </summary>
         /// <typeparam name="T">Must be a MonoBehaviour.</typeparam>
-        /// <param name="t">The GameObject obstensibly containing the Component.</param>
+        /// <param name="go">The GameObject obstensibly containing the Component.</param>
         /// <returns>The component of type T or null if not found.</returns>
         public static T GetSafeMonoBehaviourComponent<T>(this GameObject go) where T : MonoBehaviour {
             T component = go.GetComponent<T>();
@@ -130,7 +144,7 @@ namespace CodeEnv.Master.Common {
         /// Logs a warning if the component cannot be found.
         /// </summary>
         /// <typeparam name="T">Must be a MonoBehaviour.</typeparam>
-        /// <param name="t">The GameObject obstensibly containing the MonoBehaviour Component.</param>
+        /// <param name="go">The GameObject or its children obstensibly contain the MonoBehaviour Component.</param>
         /// <returns>The component of type T or null if not found.</returns>
         public static T GetSafeMonoBehaviourComponentInChildren<T>(this GameObject go) where T : MonoBehaviour {
             T component = go.GetComponentInChildren<T>();
@@ -139,6 +153,18 @@ namespace CodeEnv.Master.Common {
             }
             return component;
         }
+
+        /// <summary>
+        /// Returns the MonoBehaviour of Type T in the Transform's GameObject or any of its children using depth first search.
+        /// Logs a warning if the component cannot be found.
+        /// </summary>
+        /// <typeparam name="T">Must be a MonoBehaviour.</typeparam>
+        /// <param name="t">The Transform whose gameobject or children obstensibly contain the MonoBehaviour Component.</param>
+        /// <returns>The component of type T or null if not found.</returns>
+        public static T GetSafeMonoBehaviourComponentInChildren<T>(this Transform t) where T : MonoBehaviour {
+            return t.gameObject.GetSafeMonoBehaviourComponentInChildren<T>();
+        }
+
 
         /// <summary>
         /// Returns all MonoBehaviours of Type T in the GameObject or any of its children.
@@ -243,6 +269,17 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        /// Gets the interface of type I found in the GameObject's components.
+        /// </summary>
+        /// <typeparam name="I">The Interface type.</typeparam>
+        /// <param name="go">The gameobject.</param>
+        /// <returns>        /// The class of type I found, if any. Can be null.    </returns>
+        public static I GetInterface<I>(this GameObject go) where I : class {
+            return go.GetComponent(typeof(I)) as I;
+        }
+
+
+        /// <summary>
         ///  Gets the interface of type I found in the gameObject's components.
         ///  Logs a warning if the interface cannot be found.
         /// </summary>
@@ -250,12 +287,26 @@ namespace CodeEnv.Master.Common {
         /// <param name="go">The gameobject.</param>
         /// <returns></returns>
         public static I GetSafeInterface<I>(this GameObject go) where I : class {
-            I i = go.transform.GetInterface<I>();
+            I i = go.GetInterface<I>();
             if (i == null) {
                 D.Warn(ErrorMessages.ComponentNotFound, typeof(I).Name, go.name);
             }
             return i;
+        }
 
+        /// <summary>
+        ///  Gets the interface of type I found in the transform's components.
+        ///  Logs a warning if the interface cannot be found.
+        /// </summary>
+        /// <typeparam name="I"></typeparam>
+        /// <param name="t">The transform.</param>
+        /// <returns></returns>
+        public static I GetSafeInterface<I>(this Transform t) where I : class {
+            I i = t.GetInterface<I>();
+            if (i == null) {
+                D.Warn(ErrorMessages.ComponentNotFound, typeof(I).Name, t.name);
+            }
+            return i;
         }
 
         /// <summary>
@@ -277,10 +328,20 @@ namespace CodeEnv.Master.Common {
         /// Gets the first interface of type I found in the Transform's peer components or the gameobject's children.
         /// </summary>
         /// <typeparam name="I">The Interface type.</typeparam>
-        /// <param name="t">The game object</param>
+        /// <param name="t">The Transform.</param>
         /// <returns>The class of type I found, if any. Can be null.</returns>
         public static I GetInterfaceInChildren<I>(this Transform t) where I : class {
             return t.GetComponentInChildren(typeof(I)) as I;
+        }
+
+        /// <summary>
+        /// Gets the first interface of type I found in the GameObject's components or its children.
+        /// </summary>
+        /// <typeparam name="I">The Interface type.</typeparam>
+        /// <param name="t">The GameObject.</param>
+        /// <returns>The class of type I found, if any. Can be null.</returns>
+        public static I GetInterfaceInChildren<I>(this GameObject go) where I : class {
+            return go.GetComponentInChildren(typeof(I)) as I;
         }
 
         /// <summary>

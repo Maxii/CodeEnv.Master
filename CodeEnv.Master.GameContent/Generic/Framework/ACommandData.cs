@@ -83,14 +83,14 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<int>(ref _cmdEffectiveness, value, "CmdEffectiveness"); }
         }
 
-        private float _unitMaxWeaponsRange;
-        /// <summary>
-        /// The range of the longest range weapon in the Unit.
-        /// </summary>
-        public float UnitMaxWeaponsRange {
-            get { return _unitMaxWeaponsRange; }
-            set { SetProperty<float>(ref _unitMaxWeaponsRange, value, "UnitMaxWeaponsRange"); }
-        }
+        //private float _unitMaxWeaponsRange;
+        ///// <summary>
+        ///// The range of the longest range weapon in the Unit.
+        ///// </summary>
+        //public float UnitMaxWeaponsRange {
+        //    get { return _unitMaxWeaponsRange; }
+        //    set { SetProperty<float>(ref _unitMaxWeaponsRange, value, "UnitMaxWeaponsRange"); }
+        //}
 
         private CombatStrength _unitStrength;
         public CombatStrength UnitStrength {
@@ -268,7 +268,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void UpdateUnitMaxWeaponsRange() {
-            UnitMaxWeaponsRange = ElementsData.Count == 0 ? Constants.ZeroF : ElementsData.Max<AElementData>(ed => ed.MaxWeaponsRange);
+            MaxWeaponsRange = ElementsData.Count == 0 ? Constants.ZeroF : ElementsData.Max<AElementData>(ed => ed.MaxWeaponsRange);
         }
 
         #region ElementData PropertyChanged Subscription and Methods

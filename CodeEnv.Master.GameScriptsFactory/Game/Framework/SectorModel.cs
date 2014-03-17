@@ -20,7 +20,7 @@ using UnityEngine;
 /// A placeholder container class for TBD items that will be present in a Sector.
 /// eg. a nebula particle system.
 /// </summary>
-public class SectorModel : AItemModel {
+public class SectorModel : AItemModel, ISectorModel {
 
     public new SectorData Data {
         get { return base.Data as SectorData; }

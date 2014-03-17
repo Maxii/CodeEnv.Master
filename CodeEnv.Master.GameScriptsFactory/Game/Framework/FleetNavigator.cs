@@ -57,7 +57,7 @@ public class FleetNavigator : ANavigator {
 
     protected override void Subscribe() {
         base.Subscribe();
-        _subscribers.Add(Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.UnitMaxWeaponsRange, OnWeaponsRangeChanged));
+        _subscribers.Add(Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.MaxWeaponsRange, OnWeaponsRangeChanged));
         _subscribers.Add(Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.FullSpeed, OnFullSpeedChanged));
         _seeker.pathCallback += OnCoursePlotCompleted;
         // No subscription to changes in a target's maxWeaponsRange as a fleet should not automatically get an enemy target's maxWeaponRange update when it changes
@@ -373,11 +373,13 @@ public class FleetNavigator : ANavigator {
     /// Initializes the values that depend on the target and speed.
     /// </summary>
     protected override void InitializeTargetValues() {
-        var target = Target as IUnitTarget;
+        var target = Target as IMortalTarget;
         if (target != null) {
             if (Data.Owner.IsEnemyOf(target.Owner)) {
-                CloseEnoughDistanceToTarget = target.MaxWeaponsRange + 1F;
-                return;
+                if (target.MaxWeaponsRange != Constants.ZeroF) {
+                    CloseEnoughDistanceToTarget = target.MaxWeaponsRange + 1F;
+                    return;
+                }
             }
         }
         // distance traveled in 1 day at FleetStandard Speed

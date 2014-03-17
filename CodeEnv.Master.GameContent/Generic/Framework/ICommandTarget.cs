@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for a target that is a UnitCommand.
     /// </summary>
-    public interface ICommandTarget : IUnitTarget {
+    public interface ICommandTarget : IMortalTarget {
 
         IEnumerable<IElementTarget> ElementTargets { get; }
 

@@ -89,16 +89,17 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
         }
     }
 
-    protected override void OnTargetOwnerChanged(IMortalTarget target) {
+    protected override void OnTargetOwnerChanged(IMortalModel target) {
         base.OnTargetOwnerChanged(target);
         if (_isInitialized) {
-            if (Owner.IsEnemyOf(target.Owner)) {
-                if (!EnemyTargets.Contains(target)) {
-                    AddEnemyTarget(target);
+            var _target = target as IMortalTarget;
+            if (Owner.IsEnemyOf(_target.Owner)) {
+                if (!EnemyTargets.Contains(_target)) {
+                    AddEnemyTarget(_target);
                 }
             }
             else {
-                RemoveEnemyTarget(target);
+                RemoveEnemyTarget(_target);
             }
         }
     }

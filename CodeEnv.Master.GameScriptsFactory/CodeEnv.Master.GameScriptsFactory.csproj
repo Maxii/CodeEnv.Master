@@ -65,13 +65,11 @@
     <Compile Include="Generic\Graphics\AUnitCommandView.cs" />
     <Compile Include="Generic\IO\GameInputHelper.cs" />
     <Compile Include="Game\Framework\FacilityModel.cs" />
-    <Compile Include="Game\Graphics\FacilityPresenter.cs" />
     <Compile Include="Game\Graphics\FacilityView.cs" />
     <Compile Include="Game\Framework\FleetCmdModel.cs" />
     <Compile Include="Generic\Framework\FleetUnitCreator.cs" />
     <Compile Include="Generic\IO\CameraControl.cs" />
     <Compile Include="Generic\Framework\GameManager.cs" />
-    <Compile Include="Game\Graphics\FleetCmdPresenter.cs" />
     <Compile Include="Game\Graphics\FleetCmdView.cs" />
     <Compile Include="Game\_Debug\DynamicObjects.cs" />
     <Compile Include="Game\_Debug\DynamicTrackingLabels.cs" />
@@ -122,22 +120,17 @@
     <Compile Include="Game\GUI\GuiFocusedReadout.cs" />
     <Compile Include="Generic\Framework\SectorGrid.cs" />
     <Compile Include="Game\Framework\SystemModel.cs" />
-    <Compile Include="Game\Graphics\SystemPresenter.cs" />
     <Compile Include="Game\Graphics\SystemView.cs" />
     <Compile Include="Game\Framework\PlanetoidModel.cs" />
     <Compile Include="Game\Framework\StarModel.cs" />
     <Compile Include="Generic\Framework\SystemCreator.cs" />
-    <Compile Include="Game\Graphics\PlanetoidPresenter.cs" />
     <Compile Include="Game\Graphics\PlanetoidView.cs" />
-    <Compile Include="Game\Graphics\SettlementCmdPresenter.cs" />
     <Compile Include="Game\Graphics\SettlementCmdView.cs" />
     <Compile Include="Game\Framework\ShipModel.cs" />
-    <Compile Include="Game\Graphics\SectorPresenter.cs" />
     <Compile Include="Game\Graphics\SectorView.cs" />
     <Compile Include="Generic\Graphics\Revolve.cs" />
     <Compile Include="Generic\Framework\StarbaseUnitCreator.cs" />
     <Compile Include="Game\Framework\StarbaseCmdModel.cs" />
-    <Compile Include="Game\Graphics\StarbaseCmdPresenter.cs" />
     <Compile Include="Game\Graphics\StarbaseCmdView.cs" />
     <Compile Include="Generic\Framework\SettlementUnitCreator.cs" />
     <Compile Include="Game\_Debug\Settlements.cs" />
@@ -153,9 +146,7 @@
     <Compile Include="Generic\Graphics\StarFlare.cs" />
     <Compile Include="Game\Framework\SectorModel.cs" />
     <Compile Include="Game\Graphics\SectorExaminer.cs" />
-    <Compile Include="Game\Graphics\ShipPresenter.cs" />
     <Compile Include="Game\Graphics\ShipView.cs" />
-    <Compile Include="Game\Graphics\StarPresenter.cs" />
     <Compile Include="Game\Graphics\StarView.cs" />
     <Compile Include="Game\Framework\SettlementCmdModel.cs" />
     <Compile Include="ThirdParty\MyNguiButtonPlayAnimation.cs" />
@@ -164,7 +155,6 @@
     <Compile Include="Game\Graphics\UniverseCenterView.cs" />
     <Compile Include="Game\Framework\FleetNavigator.cs" />
     <Compile Include="Game\Framework\UniverseCenterModel.cs" />
-    <Compile Include="Game\Graphics\UniverseCenterPresenter.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">

@@ -19,6 +19,7 @@
 using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
