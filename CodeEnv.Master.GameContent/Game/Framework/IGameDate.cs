@@ -10,23 +10,23 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-// default namespace
+namespace CodeEnv.Master.GameContent {
 
+    /// <summary>
+    /// Restricted access Interface for GameDate.
+    /// </summary>
+    public interface IGameDate {
 
-/// <summary>
-/// Restricted access Interface for GameDate.
-/// </summary>
-public interface IGameDate {
+        int Year { get; }
 
-    int Year { get; }
+        int DayOfYear { get; }
 
-    int DayOfYear { get; }
+        int HourOfDay { get; }
 
-    int HourOfDay { get; }
+        string FormattedDate { get; }
 
-    string FormattedDate { get; }
+        string ToString();
 
-    string ToString();
-
+    }
 }
 

@@ -68,6 +68,7 @@ public abstract class AItemView : AMonoBase, IViewable, ICameraLOSChangedClient,
     }
 
     protected virtual void OnInCameraLOSChanged() {
+        D.Log("{0}.InCameraLOS now {1}.", gameObject.name, InCameraLOS);
         AssessDiscernability();
     }
 
@@ -89,12 +90,7 @@ public abstract class AItemView : AMonoBase, IViewable, ICameraLOSChangedClient,
             _meshesInCameraLOS.Remove(sender);
             // removed assertion tests and warnings as it will take a while to get the lists and state in sync
         }
-
-        if (InCameraLOS == (_meshesInCameraLOS.Count == 0)) {
-            // visibility state of this object should now change
-            D.Log("{0}.InCameraLOS changed to {1}.", gameObject.name, !InCameraLOS);
-            InCameraLOS = !InCameraLOS;
-        }
+        InCameraLOS = _meshesInCameraLOS.Count > Constants.Zero;
     }
 
     public virtual void AssessDiscernability() {
@@ -132,7 +128,21 @@ public abstract class AItemView : AMonoBase, IViewable, ICameraLOSChangedClient,
 
     #region IViewable Members
 
-    public abstract float Radius { get; }
+    private float _radius;
+    /// <summary>
+    /// The [float] radius of this object in units. Currently set to the distance from the 
+    ///center to the min or max extent. As bounds is a bounding box it is the longest 
+    /// diagonal from the center to a corner of the box. Most of the time, the collider can be
+    /// used to calculate this size, assuming it doesn't change size dynamically. 
+    /// Alternatively, a mesh can be used.
+    /// </summary>
+    public float Radius {
+        get {
+            D.Assert(_radius != Constants.ZeroF, "{0}.ViewRadius not yet set.".Inject(_transform.name));
+            return _radius;
+        }
+        set { _radius = value; }
+    }
 
     public IIntel PlayerIntel { get; private set; }
 

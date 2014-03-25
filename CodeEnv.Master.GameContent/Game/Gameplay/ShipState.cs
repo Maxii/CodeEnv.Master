@@ -43,6 +43,10 @@ namespace CodeEnv.Master.GameContent {
 
         ExecuteJoinFleetOrder,
 
+        ExecuteAssumeStationOrder,
+
+        AssumingStation,
+
         Withdrawing,
 
         Disbanding,

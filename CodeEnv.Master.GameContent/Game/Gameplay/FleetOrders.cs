@@ -23,8 +23,6 @@ namespace CodeEnv.Master.GameContent {
 
         None,
 
-        AllStop,
-
         Attack,
 
         Disband,
@@ -36,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
         JoinFleet,
 
         /// <summary>
-        /// Move to an ITarget or location.
+        /// Move to an IDestinationTarget.
         /// </summary>
         MoveTo,
 

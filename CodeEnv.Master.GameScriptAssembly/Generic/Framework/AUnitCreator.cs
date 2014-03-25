@@ -43,7 +43,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     public bool IsCompleted { get; private set; }
 
-    public int maxElements = 8;
+    public int maxRandomElements = 8;
 
     /// <summary>
     /// The name of the top level Unit, aka the Settlement, Starbase or Fleet name.
@@ -74,7 +74,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             Subscribe();
         }
         else {
-            Initiate();
+            Initiate(); // TODO this has never been tried
         }
     }
 
@@ -135,7 +135,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         ElementCategoryType[] validHQCategories = GetValidHQElementCategories();
         ElementCategoryType[] validCategories = GetValidElementCategories();
 
-        int elementCount = RandomExtended<int>.Range(1, maxElements);
+        int elementCount = RandomExtended<int>.Range(1, maxRandomElements);
         D.Log("{0} Element count is {1}.", UnitName, elementCount);
         for (int i = 0; i < elementCount; i++) {
             ElementCategoryType category = (i == 0) ? RandomExtended<ElementCategoryType>.Choice(validHQCategories) : RandomExtended<ElementCategoryType>.Choice(validCategories);
@@ -187,16 +187,14 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     /// <summary>
     /// Enables the Unit's elements and command which allows Start() and Initialize() to run. 
-    /// Commands pick their HQ Element when they initialize. As positioning of the elements in a 
-    /// formation requires knowledge of the HQ Element, this must run before positioning takes place.
+    /// Commands pick their HQ Element when they initialize. 
     /// </summary>
     private void EnableUnit() {
-        _elements.ForAll(element => element.enabled = true);
         _command.enabled = true;
-        EnableViews();
+        // Commands now enable their elements during initialization
+        // Models now enable their corresponding View after they initialize
     }
 
-    protected abstract void EnableViews();
     protected abstract void CreateElementStat(ElementCategoryType category, string elementName);
     protected abstract void __InitializeCommandIntel();
 

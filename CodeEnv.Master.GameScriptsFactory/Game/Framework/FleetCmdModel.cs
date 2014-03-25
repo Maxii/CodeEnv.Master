@@ -19,11 +19,11 @@
 using System;
 using System.Linq;
 using System.Collections;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
-using System.Collections.Generic;
 
 /// <summary>
 /// The data-holding class for all fleets in the game. Includes a state machine.
@@ -41,25 +41,28 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         set { base.Data = value; }
     }
 
+    public new IShipModel HQElement {
+        get { return base.HQElement as IShipModel; }
+        set { base.HQElement = value; }
+    }
+
     public FleetNavigator Navigator { get; private set; }
 
     /// <summary>
-    /// Lookup table containing the ship station trackers for the current formation. 
-    /// Includes empty trackers with no currently assigned ship. Note: there is no 
-    /// stationTracker for the HQElement as it is by definition, always on station.
+    /// The current formation's station trackers.
     /// </summary>
-    private IDictionary<Guid, FormationStationTracker> _formationStationTrackerLookup;
+    private List<IFormationStationTracker> _formationStations;
 
     protected override void Awake() {
         base.Awake();
-        _formationStationTrackerLookup = new Dictionary<Guid, FormationStationTracker>();
+        _formationStations = new List<IFormationStationTracker>();
         Subscribe();
     }
 
-    protected override void Initialize() {
-        base.Initialize();
+    protected override void FinishInitialization() {
         InitializeNavigator();
         CurrentState = FleetState.Idling;
+        D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
     }
 
     private void InitializeNavigator() {
@@ -77,15 +80,16 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     public override void AddElement(IElementModel element) {
         base.AddElement(element);
-        (element as IShipModel).Command = this;
+        IShipModel ship = element as IShipModel;
+        ship.Command = this;
+        D.Assert(ship.Data.FormationStation == null, "{0} should not yet have a FormationStation.".Inject(ship.FullName));
         if (enabled) {
-            // if disabled, the HQElement hasn't been set yet
-            var trackers = Enumerable.Empty<FormationStationTracker>();
-            if (TryFindFormationStationTrackers(null, out trackers)) {
-                // there is an empty tracker so assign this ship to it
-                var emptyTracker = trackers.First();
-                emptyTracker.AssignedShip = element as ShipModel;
-                // the empty tracker is already on the correct station
+            // if disabled, the HQElement hasn't been set yet. The initial generation of a formation comes during Initialize()
+            var emptyTrackers = _formationStations.Where(fst => fst.AssignedShip == null);
+            if (!emptyTrackers.IsNullOrEmpty()) {
+                var emptyFst = emptyTrackers.First();
+                ship.Data.FormationStation = emptyFst;
+                emptyFst.AssignedShip = ship;
             }
             else {
                 // there are no empty trackers so regenerate the whole formation
@@ -94,133 +98,102 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         }
     }
 
-    public void TransferShip(ShipModel ship, FleetCmdModel fleetCmd) {
-        fleetCmd.AddElement(ship);
+    public void TransferShip(IShipModel ship, IFleetCmdModel fleetCmd) {
         RemoveElement(ship);
+        ship.IsHQElement = false;
+        fleetCmd.AddElement(ship);
     }
 
     public override void RemoveElement(IElementModel element) {
         base.RemoveElement(element);
-        // find the ship in the FormationStationTrackers and remove it
-        var trackers = Enumerable.Empty<FormationStationTracker>();
-        if (TryFindFormationStationTrackers(element as IShipModel, out trackers)) {
-            trackers.Single().AssignedShip = null;
-        }
-        else {
-            D.Warn("{0} didn't find a {1} for {2}.", Name, typeof(FormationStationTracker).Name, element.Name);
-        }
+        // remove the formationStation from the ship and the ship from the FormationStation
+        var ship = element as IShipModel;
+        var shipFst = ship.Data.FormationStation;
+        shipFst.AssignedShip = null;
+        ship.Data.FormationStation = null;
     }
 
     protected override IElementModel SelectHQElement() {
         return Elements.MaxBy(e => e.Data.Health);
     }
 
-    public bool ChangeHeading(Vector3 newHeading, bool isAutoPilot = false) {
-        if (DebugSettings.Instance.StopShipMovement) {
-            Navigator.Disengage();
-            return false;
-        }
-        if (!isAutoPilot) {
-            Navigator.Disengage();
-        }
-        if (newHeading.IsSameDirection(Data.RequestedHeading, .1F)) {
-            D.Warn("Duplicate ChangeHeading Command to {0} on {1}.", newHeading, Data.Name);
-            return false;
-        }
-        //D.Log("Fleet Requested Heading was {0}, now {1}.", Data.RequestedHeading, newHeading);
-        Elements.ForAll(e => (e as ShipModel).ChangeHeading(newHeading));
-        return true;
-    }
-
-    public bool ChangeSpeed(Speed newSpeed, bool isAutoPilot = false) {
-        if (DebugSettings.Instance.StopShipMovement) {
-            Navigator.Disengage();
-            return false;
-        }
-        if (!isAutoPilot) {
-            Navigator.Disengage();
-        }
-        Elements.ForAll(e => (e as ShipModel).ChangeSpeed(newSpeed));
-        return true;
-    }
+    // A fleetCmd causes heading and speed changes to occur by issuing orders to
+    // ships, not by directly telling ships to modify their speed or heading. As such,
+    // the ChangeHeading(), ChangeSpeed() and AllStop() methods have been removed.
 
     private void OnIsRunningChanged() {
         if (GameStatus.Instance.IsRunning) {
-            //__GetFleetUnderway();
-            __GetFleetAttackUnderway();
-        }
-    }
-
-    protected override void OnHQElementChanging(IElementModel newElement) {
-        base.OnHQElementChanging(newElement);
-        if (HQElement != null) {
-            (HQElement as ShipModel).Navigator.onCourseTrackingError -= OnFlagshipTrackingError;
+            __GetFleetUnderway();
+            //__GetFleetAttackUnderway();
         }
     }
 
     protected override void OnHQElementChanged() {
         base.OnHQElementChanged();
-        (HQElement as ShipModel).Navigator.onCourseTrackingError += OnFlagshipTrackingError;
+        // eliminated OnFlagshipTrackingError as an overcomplication for now
+        if (_formationStations.Count != Constants.Zero) {
+            // a formation exists, so adjust all ship formation station offsets to reflect the new HQ ship assignment
+            AdjustFormationToReflectNewHQShipAssignment(HQElement);
+        }
+    }
+
+    private void AdjustFormationToReflectNewHQShipAssignment(IShipModel newHQShip) {
+        var newHQShipPreviousOffset = newHQShip.Data.FormationStation.StationOffset;
+        _formationStations.ForAll(fst => fst.StationOffset -= newHQShipPreviousOffset);
     }
 
     protected override void PositionElementInFormation(IElementModel element, Vector3 stationOffset) {
-        (element as IShipModel).Data.FormationStationOffset = stationOffset;
-
-        IShipModel ship = element as IShipModel;
-        var stationTrackers = Enumerable.Empty<FormationStationTracker>();
-        if (TryFindFormationStationTrackers(ship, out stationTrackers)) {
-            // the ship already assigned to a FormationStationTracker
-            stationTrackers.Single().StationOffset = stationOffset;
-        }
-        else if (TryFindFormationStationTrackers(null, out stationTrackers)) {
-            // there are empty trackers so assign the ship to one of them
-            var emptyTracker = stationTrackers.First();
-            emptyTracker.AssignedShip = ship;
-            emptyTracker.StationOffset = stationOffset;
-        }
-        else {
-            // there are no emptys so make a new one and assign the ship to it
-            var fst = UnitFactory.Instance.MakeFormationStationTrackerInstance(stationOffset, this);
-            fst.AssignedShip = ship;
-            _formationStationTrackerLookup.Add(fst.ID, fst);
-        }
-
         if (!GameStatus.Instance.IsRunning) {
-            // instantly moves the ship to its new formation position. 
-            // During gameplay, the ships will move under power to their station
+            // instantly place the ship in its proper position before assigning it to a tracker so the tracker will find it 'onStation'
+            // during gameplay, the ships will move under power to their station
             base.PositionElementInFormation(element, stationOffset);
         }
+
+        IShipModel ship = element as IShipModel;
+        IFormationStationTracker selectedTracker = ship.Data.FormationStation;
+        if (selectedTracker == null) {
+            // the ship does not yet have a formation station so find or make one
+            var emptyTrackers = _formationStations.Where(fst => fst.AssignedShip == null);
+            if (!emptyTrackers.IsNullOrEmpty()) {
+                // there are empty trackers so assign the ship to one of them
+                D.Log("{0} is being assigned an existing but unassigned FormationStation.", ship.FullName);
+                selectedTracker = emptyTrackers.First();
+                selectedTracker.AssignedShip = ship;
+                ship.Data.FormationStation = selectedTracker;
+            }
+            else {
+                // there are no emptys so make a new one and assign the ship to it
+                D.Log("{0} is adding a new FormationStation.", ship.FullName);
+                selectedTracker = UnitFactory.Instance.MakeFormationStationTrackerInstance(stationOffset, this);
+                //D.Log("{0} is adding a new FormationStation at {1} including Offset of {2} from FleetCmd at {3}.", ship.FullName, (selectedTracker as Component).transform.position, stationOffset, _transform.position);
+                selectedTracker.AssignedShip = ship;
+                ship.Data.FormationStation = selectedTracker;
+                _formationStations.Add(selectedTracker);
+            }
+        }
+        else {
+            D.Log("{0} already has a FormationStation.", ship.FullName);
+        }
+        selectedTracker.StationOffset = stationOffset;
     }
 
     protected override void CleanupAfterFormationGeneration() {
         base.CleanupAfterFormationGeneration();
-        var stationTrackers = Enumerable.Empty<FormationStationTracker>();
-        if (TryFindFormationStationTrackers(null, out stationTrackers)) {
-            stationTrackers.ForAll(fst => {
-                _formationStationTrackerLookup.Remove(fst.ID);
-                Destroy(fst.gameObject);    // TODO if disposable, dispose first
+        // remove and destroy any remaining formation stations that may still exist
+        var emptyStations = _formationStations.Where(fst => fst.AssignedShip == null);
+        if (!emptyStations.IsNullOrEmpty()) {
+            emptyStations.ForAll(fst => {
+                _formationStations.Remove(fst);
+                Destroy((fst as Component).gameObject);
             });
         }
     }
 
-    /// <summary>
-    /// Tries to find any FormationStationTrackers that have this ship assigned. If ship is null,
-    /// the trackers that are returned, if any, are trackers without any assigned ship.
-    /// </summary>
-    /// <param name="assignedShip">The assigned ship being tested for.</param>
-    /// <param name="trackers">The trackers meeting the criteria</param>
-    /// <returns><c>true</c> if any trackers matching the criteria were found.</returns>
-    private bool TryFindFormationStationTrackers(IShipModel assignedShip, out IEnumerable<FormationStationTracker> trackers) {
-        trackers = _formationStationTrackerLookup.Values.Where(fst => fst.AssignedShip == assignedShip);
-        return trackers.Count() > 0;
-    }
-
-
     private void __GetFleetUnderway() {
-        IDestinationTarget destination = FindObjectOfType<SettlementCmdModel>();
+        IDestinationTarget destination = null; // = FindObjectOfType<SettlementCmdModel>();
         if (destination == null) {
             // in case Settlements are disabled
-            destination = new StationaryLocation(Data.Position + UnityEngine.Random.onUnitSphere * 50F);
+            destination = new StationaryLocation(Data.Position + UnityEngine.Random.onUnitSphere * 20F);
         }
         CurrentOrder = new UnitMoveOrder<FleetOrders>(FleetOrders.MoveTo, destination, Speed.FleetStandard);
     }
@@ -249,10 +222,6 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         Elements.ForAll(e => (e as ShipModel).CurrentOrder = moveToOrder);
     }
 
-    private void __AllStop() {
-        Elements.ForAll(e => (e as ShipModel).AllStop());
-    }
-
     #region StateMachine
 
     public new FleetState CurrentState {
@@ -264,7 +233,6 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     void Idling_EnterState() {
         LogEvent();
-        __AllStop();
         // register as available
     }
 
@@ -280,7 +248,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     #region ExecuteMoveOrder
 
     IEnumerator ExecuteMoveOrder_EnterState() {
-        D.Log("{0}.ExecuteMoveOrder_EnterState.", Data.Name);
+        D.Log("{0}.{1}.ExecuteMoveOrder_EnterState.", Data.OptionalParentName, Data.Name);
         var moveOrder = CurrentOrder as UnitMoveOrder<FleetOrders>;
         _moveSpeed = moveOrder.Speed;
         _moveTarget = moveOrder.Target;
@@ -339,7 +307,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     void Moving_OnTargetDeath(IMortalTarget deadTarget) {
         LogEvent();
-        D.Assert(_moveTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _moveTarget.Name, deadTarget.Name));
+        D.Assert(_moveTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _moveTarget.FullName, deadTarget.FullName));
         Return();
     }
 
@@ -356,7 +324,6 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         }
         _moveTarget = null;
         Navigator.Disengage();
-        __AllStop();
     }
 
     #endregion
@@ -390,7 +357,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     #region ExecuteAttackOrder
 
     IEnumerator ExecuteAttackOrder_EnterState() {
-        D.Log("{0}.ExecuteAttackOrder_EnterState.", Data.Name);
+        D.Log("{0}.ExecuteAttackOrder_EnterState.", FullName);
         var attackOrder = CurrentOrder as UnitTargetOrder<FleetOrders>;
         _moveTarget = attackOrder.Target;
         _moveSpeed = Speed.FleetFull;
@@ -401,7 +368,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
             yield break;
         }
         Call(FleetState.Attacking);
-        yield return null;    // turns out NOT req'd here to get proper return
+        yield return null;  // required immediately after Call() to avoid FSM bug
         CurrentState = FleetState.Idling;
     }
 
@@ -426,7 +393,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     void Attacking_OnTargetDeath(IMortalTarget deadTarget) {
         LogEvent();
-        D.Assert(_attackTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _attackTarget.Name, deadTarget.Name));
+        D.Assert(_attackTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(Data.FullName, _attackTarget.FullName, deadTarget.FullName));
         Return();
     }
 
@@ -464,7 +431,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     IEnumerator ExecuteJoinFleetOrder_EnterState() {
         //LogEvent();
-        D.Log("{0}.ExecuteJoinFleetOrder_EnterState.", Data.Name);
+        D.Log("{0}.ExecuteJoinFleetOrder_EnterState.", FullName);
         var joinOrder = CurrentOrder as UnitTargetOrder<FleetOrders>;
         _moveTarget = joinOrder.Target;
         _moveSpeed = Speed.FleetStandard;
@@ -476,11 +443,10 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         }
 
         // we've arrived so transfer the ship to the fleet we are joining
-        var fleetToJoin = joinOrder.Target as FleetCmdModel;
-        var ship = Elements[0] as ShipModel;
+        var fleetToJoin = joinOrder.Target as IFleetCmdModel;
+        var ship = Elements[0] as IShipModel;
         TransferShip(ship, fleetToJoin);
         // removing the only ship will immediately call FleetState.Dead
-        yield return null;
     }
 
     void ExecuteJoinFleetOrder_ExitState() {
@@ -527,7 +493,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     void OnCoursePlotSuccess() { RelayToCurrentState(); }
 
     void OnDestinationReached() {
-        D.Log("{0} Destination {1} reached.", Data.Name, Navigator.Target.Name);
+        D.Log("{0} Destination {1} reached.", Data.Name, Navigator.Target.FullName);
         RelayToCurrentState();
     }
 
@@ -536,10 +502,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         RelayToCurrentState();
     }
 
-    void OnFlagshipTrackingError() {
-        // the Flagship reports the fleet has missed or can't catch a target
-        RelayToCurrentState();
-    }
+    // eliminated OnFlagshipTrackingError() as an overcomplication for now
 
     void OnOrdersChanged() {
         if (CurrentState == FleetState.Moving || CurrentState == FleetState.Attacking) {
@@ -550,10 +513,6 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
             D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
             FleetOrders order = CurrentOrder.Order;
             switch (order) {
-                case FleetOrders.AllStop:
-                    __AllStop();
-                    CurrentState = FleetState.Idling;
-                    break;
                 case FleetOrders.Attack:
                     CurrentState = FleetState.ExecuteAttackOrder;
                     break;

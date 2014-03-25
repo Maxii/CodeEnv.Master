@@ -25,11 +25,13 @@ namespace CodeEnv.Master.GameContent {
 
         new FleetCmdData Data { get; set; }
 
+        new IShipModel HQElement { get; set; }
+
         UnitOrder<FleetOrders> CurrentOrder { get; set; }
 
-        bool ChangeHeading(Vector3 newHeading, bool isAutoPilot = false);
+        //bool ChangeHeading(Vector3 newHeading, bool isAutoPilot = false);
 
-        bool ChangeSpeed(Speed newSpeed, bool isAutoPilot = false);
+        //bool ChangeSpeed(Speed newSpeed, bool isAutoPilot = false);
 
     }
 }

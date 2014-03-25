@@ -118,7 +118,7 @@ public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
     /// </summary>
     public override void LogEvent() {
         System.Diagnostics.StackFrame stackFrame = new StackFrame(1);
-        D.Log("{0}.{1}.{2}() called.".Inject(_transform.name, GetType().Name, stackFrame.GetMethod().Name));
+        D.Log("{0}.{1}.{2}() called.", _transform.name, GetType().Name, stackFrame.GetMethod().Name);
     }
 
     #endregion

@@ -50,11 +50,11 @@ namespace CodeEnv.Master.GameContent {
             return new Reference<float>(() => Model.Data.CurrentSpeed);
         }
 
-        public void __RandomChangeOfHeadingAndSpeed() {
-            Model.ChangeHeading(UnityEngine.Random.insideUnitSphere.normalized);
-            IEnumerable<Speed> fleetSpeeds = new List<Speed>() { Speed.FleetFull, Speed.FleetStandard, Speed.FleetTwoThirds };
-            Model.ChangeSpeed(RandomExtended<Speed>.Choice(fleetSpeeds));
-        }
+        //public void __RandomChangeOfHeadingAndSpeed() {
+        //    Model.ChangeHeading(UnityEngine.Random.insideUnitSphere.normalized);
+        //    IEnumerable<Speed> fleetSpeeds = new List<Speed>() { Speed.FleetFull, Speed.FleetStandard, Speed.FleetTwoThirds };
+        //    Model.ChangeSpeed(RandomExtended<Speed>.Choice(fleetSpeeds));
+        //}
 
         protected override IIcon MakeCmdIconInstance() {
             return FleetIconFactory.Instance.MakeInstance(Model.Data, View.PlayerIntel);

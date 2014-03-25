@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface ICommandModel : IMortalModel {
 
+        event Action onElementsInitializationCompleted_OneShot;
+
         event Action<IElementModel> onSubordinateElementDeath;
 
         new ACommandData Data { get; set; }

@@ -98,11 +98,6 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
         return cmd;
     }
 
-    protected override void EnableViews() {
-        _elements.ForAll(e => e.gameObject.GetSafeMonoBehaviourComponent<FacilityView>().enabled = true);
-        _command.gameObject.GetSafeMonoBehaviourComponent<SettlementCmdView>().enabled = true;
-    }
-
     protected override void __InitializeCommandIntel() {
         // For now settlements assume the intel coverage of their system when assigned
     }

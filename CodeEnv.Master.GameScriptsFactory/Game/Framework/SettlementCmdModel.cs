@@ -42,9 +42,9 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel {
         Subscribe();
     }
 
-    protected override void Initialize() {
-        base.Initialize();
+    protected override void FinishInitialization() {
         CurrentState = SettlementState.Idling;
+        //D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
     }
 
     public override void AddElement(IElementModel element) {
@@ -83,10 +83,11 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel {
 
     #region ExecuteAttackOrder
 
-    void ExecuteAttackOrder_EnterState() {
-        LogEvent();
-        //D.Log("{0}.ExecuteAttackOrder_EnterState.", Data.Name);
+    IEnumerator ExecuteAttackOrder_EnterState() {
+        //LogEvent();
+        D.Log("{0}.ExecuteAttackOrder_EnterState.", Data.Name);
         Call(SettlementState.Attacking);
+        yield return null;  // required immediately after Call() to avoid FSM bug
         CurrentState = SettlementState.Idling;
     }
 
@@ -110,7 +111,7 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel {
 
     void Attacking_OnTargetDeath(IMortalTarget deadTarget) {
         LogEvent();
-        D.Assert(_attackTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _attackTarget.Name, deadTarget.Name));
+        D.Assert(_attackTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(FullName, _attackTarget.FullName, deadTarget.FullName));
         Return();
     }
 

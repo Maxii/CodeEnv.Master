@@ -24,6 +24,7 @@ namespace CodeEnv.Master.GameContent {
         new AElementData Data { get; set; }
 
         bool IsHQElement { get; set; }
+
     }
 }
 

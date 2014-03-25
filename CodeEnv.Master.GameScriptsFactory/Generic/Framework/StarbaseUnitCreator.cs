@@ -95,11 +95,6 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
         return cmd;
     }
 
-    protected override void EnableViews() {
-        _elements.ForAll(e => e.gameObject.GetSafeMonoBehaviourComponent<FacilityView>().enabled = true);
-        _command.gameObject.GetSafeMonoBehaviourComponent<StarbaseCmdView>().enabled = true;
-    }
-
     protected override void __InitializeCommandIntel() {
         _command.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
     }

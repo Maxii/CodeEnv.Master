@@ -37,6 +37,11 @@ public class FacilityView : AUnitElementView {
         Subscribe();
     }
 
+    protected override void Start() {
+        base.Start();
+        //D.Log("{0}.{1} Initialization complete.", Presenter.Model.FullName, GetType().Name);
+    }
+
     protected override void InitializePresenter() {
         Presenter = new FacilityPresenter(this);
     }

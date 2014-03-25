@@ -30,6 +30,13 @@ namespace CodeEnv.Master.GameContent {
         IFleetCmdModel Command { get; set; }
 
         /// <summary>
+        /// Returns <c>true</c> if this ship's current heading is the same as the requested heading.
+        /// </summary>
+        //bool IsHeadingConfirmed { get; }
+
+        bool IsTurning { get; }
+
+        /// <summary>
         /// Changes the speed of the ship.
         /// </summary>
         /// <param name="speed">The new speed request.</param>
@@ -43,6 +50,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="isAutoPilot">if set to <c>true</c> the requester is the autopilot.</param>
         void ChangeHeading(Vector3 newHeading, bool isAutoPilot);
 
+
+        /// <summary>
+        /// Called by the ship's FormationStationTracker when the ship arrives or leaves its formation station.
+        /// </summary>
+        /// <param name="isOnStation">if set to <c>true</c> [is on station].</param>
+        void OnShipOnStation(bool isOnStation);
     }
 }
 

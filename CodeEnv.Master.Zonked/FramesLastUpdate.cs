@@ -23,7 +23,7 @@ using UnityEngine;
 /// Simple management class that will always be the last to update.
 /// Updates the CoroutineScheduler so coroutines run after update just like Unity
 /// and then raises a UnityUpdateEvent to tell non-MonoBehaviours that the last update
-/// this frame has just occured. This allows them to do something on the same update
+/// this frame has just occurred. This allows them to do something on the same update
 /// schedule as Unity without being a MonoBehaviour.
 /// </summary>
 [Obsolete]

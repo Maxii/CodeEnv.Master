@@ -28,6 +28,11 @@ using UnityEngine;
 /// </summary>
 public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISelectable {
 
+    public new AUnitCommandPresenter Presenter {
+        get { return base.Presenter as AUnitCommandPresenter; }
+        protected set { base.Presenter = value; }
+    }
+
     private Vector3 _cmdIconPivotOffset;
     private UISprite _cmdIconSprite;
     protected Transform _cmdIconTransform;
@@ -53,6 +58,7 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
         base.Start();
         __InitializeContextMenu();
         InitializeTrackingTarget();
+        D.Log("{0}.{1} Initialization complete.", Presenter.Model.FullName, GetType().Name);
     }
 
     protected abstract void InitializeTrackingTarget();
@@ -249,14 +255,6 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
         _cmdIconSprite.spriteName = icon.Filename;
         _cmdIconSprite.color = icon.Color.ToUnityColor();
     }
-
-    /// <summary>
-    /// The [float] radius of this object in units measured as the distance from the
-    /// center to the min or max extent. As bounds is a bounding box it is the longest
-    /// diagonal from the center to a corner of the box.    
-    /// Note the override - a fleet's collider and mesh (icon) both scale, thus AView's implementation can't be used
-    /// </summary>
-    public override float Radius { get { return 1.0F; } }   // TODO should reflect the rough radius of the fleet
 
     #endregion
 

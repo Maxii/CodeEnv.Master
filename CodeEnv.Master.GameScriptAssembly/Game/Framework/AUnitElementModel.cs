@@ -68,6 +68,7 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
             rangeTracker.Owner = Data.Owner;
             rangeTracker.onEnemyInRange += OnEnemyInRange;
             _weaponRangeTrackerLookup.Add(rangeTracker.ID, rangeTracker);
+            // rangeTrackers enable themselves
         }
     }
 
@@ -160,13 +161,20 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
 
     #endregion
 
-    protected override void Cleanup() {
-        base.Cleanup();
-        _weaponRangeTrackerLookup.Values.ForAll(rt => (rt as IDisposable).Dispose());
-    }
-
     // subscriptions contained completely within this gameobject (both subscriber
     // and subscribee) donot have to be cleaned up as all instances are destroyed
 
+    #region IModel Members
+
+    public override string FullName {
+        get {
+            if (IsHQElement) {
+                return base.FullName + " [HQ]";
+            }
+            return base.FullName;
+        }
+    }
+
+    #endregion
 }
 

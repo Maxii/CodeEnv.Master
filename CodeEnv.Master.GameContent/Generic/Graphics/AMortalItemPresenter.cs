@@ -51,7 +51,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected virtual void OnDeath(IMortalModel itemModel) {
             // Equals avoids erroneous warning
-            D.Assert(Model.Equals(itemModel), "{0} has erroneously received OnDeath from {1}.".Inject(Model.Data.Name, itemModel.Name));
+            D.Assert(Model.Equals(itemModel), "{0} has erroneously received OnDeath from {1}.".Inject(Model.FullName, itemModel.FullName));
             CleanupOnDeath();
         }
 

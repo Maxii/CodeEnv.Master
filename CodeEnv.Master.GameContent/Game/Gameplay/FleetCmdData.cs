@@ -146,11 +146,6 @@ namespace CodeEnv.Master.GameContent {
             anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.MaxTurnRate, OnShipElementMaxTurnRateChanged));
         }
 
-        protected override void OnHQElementDataChanged() {
-            base.OnHQElementDataChanged();
-            HQElementData.FormationStationOffset = Vector3.zero;
-        }
-
         private void OnShipElementFullSpeedChanged() {
             UpdateFullSpeed();
         }

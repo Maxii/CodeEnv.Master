@@ -129,7 +129,6 @@
     <Compile Include="IFacilityViewable.cs" />
     <Compile Include="IFleetCommand.cs" />
     <Compile Include="IFleetViewable.cs" />
-    <Compile Include="IFormationStationTracker.cs" />
     <Compile Include="IGuiHudPublisher.cs" />
     <Compile Include="IHasData.cs" />
     <Compile Include="Intel.cs" />

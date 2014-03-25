@@ -31,8 +31,6 @@ public class CameraLOSChangedRelay : AMonoBase, ICameraLOSChangedRelay, IDisposa
     public List<Transform> relayTargets;
 
     private IList<ICameraLOSChangedClient> _iRelayTargets;
-    private bool _isRunning;
-    private IList<IDisposable> _subscribers;
 
     protected override void Awake() {
         base.Awake();
@@ -60,7 +58,11 @@ public class CameraLOSChangedRelay : AMonoBase, ICameraLOSChangedRelay, IDisposa
             }
             _iRelayTargets.Add(iTarget);
         }
-        Subscribe();
+
+        if (!GameStatus.Instance.IsRunning) {
+            GameStatus.Instance.onIsRunning_OneShot += OnGameIsRunning;
+            enabled = false;
+        }
     }
 
     private void InitializeRenderer() {
@@ -72,11 +74,20 @@ public class CameraLOSChangedRelay : AMonoBase, ICameraLOSChangedRelay, IDisposa
         }
     }
 
-    private void Subscribe() {
-        if (_subscribers == null) {
-            _subscribers = new List<IDisposable>();
-        }
-        _subscribers.Add(GameStatus.Instance.SubscribeToPropertyChanged<GameStatus, bool>(gs => gs.IsRunning, OnIsRunningChanged));
+    protected override void Start() {
+        base.Start();
+        InitializeAsVisible();
+    }
+
+    /// <summary>
+    /// Initializes all ICameraLOSChangedClients with a collection of senders that say they are visible, whether they
+    /// are or not. Even though all Clients start with InCameraLOS = true once enabled, this collection of senders
+    /// makes sure that the client won't change to InCameraLOS = false until all these senders tell the client they
+    /// have become invisible. Without this at startup, a single sender can become invisible, thereby changing
+    /// the client to InCameraLOS = false since the count of visible senders would otherwise start at zero.
+    /// </summary>
+    private void InitializeAsVisible() {
+        NotifyClientsOfChange(inLOS: true);
     }
 
     public void AddTarget(params Transform[] targets) {
@@ -91,73 +102,28 @@ public class CameraLOSChangedRelay : AMonoBase, ICameraLOSChangedRelay, IDisposa
         }
     }
 
-    private void OnIsRunningChanged() {
-        _isRunning = GameStatus.Instance.IsRunning;
-        if (_isRunning) {
-            // all relay targets start out initialized with IsVisible = true. This just initializes their list of child meshes that think they are visible
-            InitializeAsVisible();
-        }
-    }
-
-    private bool __isInitialization;
-    /// <summary>
-    /// Initializes all ICameraLOSChangedClients as InCameraLOS whether they are or not.
-    /// </summary>
-    private void InitializeAsVisible() {
-        __isInitialization = true;
-        OnBecameVisible();
-        __isInitialization = false;
+    private void OnGameIsRunning() {
+        enabled = true;
     }
 
     void OnBecameVisible() {
         //D.Log("{0} CameraLOSChangedRelay has received OnBecameVisible(). IsRunning = {1}, IsInitialization = {2}.", _transform.name, _isRunning, __isInitialization);
-        if (__isInitialization || ValidateCameraLOSChange(inLOS: true)) {
-            for (int i = 0; i < relayTargets.Count; i++) {
-                ICameraLOSChangedClient client = _iRelayTargets[i];
-                if (client != null) {
-                    LogCameraLOSChange(_transform.name, relayTargets[i].name, inLOS: true);
-                    client.NotifyCameraLOSChanged(_transform, inLOS: true);
-                }
-            }
-            // more efficient and easier but can't provide the client target name for debug
-            //foreach (var iNotify in _iRelayTargets) {    
-            //    if (iNotify != null) {
-            //        iNotify.NotifyVisibilityChanged(_transform, isVisible: true);
-            //        D.Log("{0} has notified a client of becoming Visible.", _transform.name);
-            //    }
-            //}
+        if (ValidateCameraLOSChange(inLOS: true)) {
+            NotifyClientsOfChange(inLOS: true);
         }
     }
 
     void OnBecameInvisible() {
         //D.Log("{0} CameraLOSChangedRelay has received OnBecameInvisible(). IsRunning = {1}.", _transform.name, _isRunning);
         if (ValidateCameraLOSChange(inLOS: false)) {
-            for (int i = 0; i < relayTargets.Count; i++) {
-                Transform t = relayTargets[i];
-                if (t && t.gameObject.activeInHierarchy) {  // avoids NullReferenceException during Inspector shutdown
-                    ICameraLOSChangedClient client = _iRelayTargets[i];
-                    if (client != null) {
-                        LogCameraLOSChange(_transform.name, relayTargets[i].name, inLOS: false);
-                        client.NotifyCameraLOSChanged(_transform, inLOS: false);
-                    }
-                }
-            }
-        }
-    }
-
-    [System.Diagnostics.Conditional("DEBUG_LOG")]
-    private void LogCameraLOSChange(string notifier, string client, bool inLOS) {
-        if (DebugSettings.Instance.EnableVerboseDebugLog) {
-            string iNotifyParentName = _transform.GetSafeTransformWithInterfaceInParents<ICameraLOSChangedClient>().name;
-            string visibility = inLOS ? "InCameraLOS" : "OutOfCameraLOS";
-            D.Log("{0} of parent {1} is notifying client {2} of becoming {3}.", notifier, iNotifyParentName, client, visibility);
+            NotifyClientsOfChange(inLOS: false);
         }
     }
 
     // FIXME Recieving a few duplicate OnBecameXXX events during initial scrolling and don't know why
     // It does not seem to be from other cameras in the scene. Don't know about editor scene camera.
     private bool ValidateCameraLOSChange(bool inLOS) {
-        if (!_isRunning) {
+        if (!enabled) {
             return false;   // see SetupDocs.txt for approach to visibility
         }
         bool isValid = true;
@@ -173,6 +139,35 @@ public class CameraLOSChangedRelay : AMonoBase, ICameraLOSChangedRelay, IDisposa
         //    }
         //}
         return isValid;
+    }
+
+    private void NotifyClientsOfChange(bool inLOS) {
+        for (int i = 0; i < relayTargets.Count; i++) {
+            Transform t = relayTargets[i];
+            if (t && t.gameObject.activeInHierarchy) {  // avoids NullReferenceException during Inspector shutdown
+                ICameraLOSChangedClient client = _iRelayTargets[i];
+                if (client != null) {
+                    LogCameraLOSChange(_transform.name, relayTargets[i].name, inLOS);
+                    client.NotifyCameraLOSChanged(_transform, inLOS);
+                }
+            }
+        }
+        // more efficient and easier but can't provide the client target name for debug
+        //foreach (var iNotify in _iRelayTargets) {    
+        //    if (iNotify != null) {
+        //        iNotify.NotifyVisibilityChanged(_transform, isVisible: true);
+        //        D.Log("{0} has notified a client of becoming Visible.", _transform.name);
+        //    }
+        //}
+    }
+
+    [System.Diagnostics.Conditional("DEBUG_LOG")]
+    private void LogCameraLOSChange(string notifier, string client, bool inLOS) {
+        if (DebugSettings.Instance.EnableVerboseDebugLog) {
+            string iNotifyParentName = _transform.GetSafeTransformWithInterfaceInParents<ICameraLOSChangedClient>().name;
+            string visibility = inLOS ? "InCameraLOS" : "OutOfCameraLOS";
+            D.Log("{0} of parent {1} is notifying client {2} of becoming {3}.", notifier, iNotifyParentName, client, visibility);
+        }
     }
 
     #region Invisible Mesh System supporting OnBecameVisible/Invisible
@@ -239,18 +234,20 @@ public class CameraLOSChangedRelay : AMonoBase, ICameraLOSChangedRelay, IDisposa
     }
 
     private void Unsubscribe() {
-        _subscribers.ForAll(d => d.Dispose());
-        _subscribers.Clear();
+        // even though the OneShot will unsubscribe this object once Raised, this object can be destroyed
+        // prior to the game starting (when an extra planet is destroyed by SystemCreator) so we need
+        // to unsubscribe in case destruction occurs before the game starts running
+        GameStatus.Instance.onIsRunning_OneShot -= OnGameIsRunning;
     }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
 
-
     #region IDisposable
     [DoNotSerialize]
-    private bool alreadyDisposed = false;
+    private bool _alreadyDisposed = false;
+    protected bool _isDisposing = false;
 
     /// <summary>
     /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
@@ -267,17 +264,18 @@ public class CameraLOSChangedRelay : AMonoBase, ICameraLOSChangedRelay, IDisposa
     /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
     protected virtual void Dispose(bool isDisposing) {
         // Allows Dispose(isDisposing) to be called more than once
-        if (alreadyDisposed) {
+        if (_alreadyDisposed) {
             return;
         }
 
+        _isDisposing = isDisposing;
         if (isDisposing) {
             // free managed resources here including unhooking events
             Cleanup();
         }
         // free unmanaged resources here
 
-        alreadyDisposed = true;
+        _alreadyDisposed = true;
     }
 
     // Example method showing check for whether the object has been disposed

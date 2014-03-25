@@ -17,7 +17,6 @@
 // default namespace
 
 using System;
-using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -25,15 +24,108 @@ using UnityEngine;
 /// <summary>
 /// Tracks whether the assigned ship is within the radius of it's Station in the Formation.
 /// </summary>
-public class FormationStationTracker : AMonoBase /* IDisposable */ {
+public class FormationStationTracker : AMonoBase, IFormationStationTracker, IDestinationTarget {
 
-    public event Action<Guid, bool> onShipOnStation;
+    private SphereCollider _collider;
 
-    public Guid ID { get; private set; }
+    protected override void Awake() {
+        base.Awake();
+        _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
+        _collider.isTrigger = true;
+    }
+
+    void OnTriggerEnter(Collider other) {
+        if (enabled) {
+            if (other.isTrigger) { return; }
+            //D.Log("OnTriggerEnter({0}) called.", other.name);
+            IShipModel target = other.gameObject.GetInterface<IShipModel>();
+            if (target != null) {
+                if (target == AssignedShip) {
+                    OnShipOnStation(true);
+                }
+            }
+        }
+    }
+
+    void OnTriggerExit(Collider other) {
+        if (enabled) {
+            if (other.isTrigger) { return; }
+            //D.Log("{0}.OnTriggerExit() called by Collider {1}.", GetType().Name, other.name);
+            IShipModel target = other.gameObject.GetInterface<IShipModel>();
+            if (target != null) {
+                if (target == AssignedShip) {
+                    OnShipOnStation(false);
+                }
+            }
+        }
+    }
+
+    protected override void OnEnable() {
+        base.OnEnable();
+        _collider.enabled = true;
+    }
+
+    protected override void OnDisable() {
+        base.OnDisable();
+        _collider.enabled = false;
+    }
+
+    private void OnAssignedShipChanged() {
+        if (AssignedShip != null) {
+            Radius = AssignedShip.Radius * 5F;
+            //D.Log("{0}.StationRadius set to {1:0.0000}.", AssignedShip.FullName, StationRadius);
+            _collider.radius = Radius;
+            // Note: OnTriggerEnter appears to detect ship is onStation once the collider is enabled even if already inside
+            // Unfortunately, that detection has a small delay (collider init?) so this is needed to fill the gap
+            if (IsShipAlreadyOnStation) {
+                D.Log("{0} is already OnStation.", AssignedShip.FullName);
+                OnShipOnStation(true);
+            }
+            enabled = true;
+        }
+        else {
+            enabled = false;
+            OnShipOnStation(false);
+        }
+    }
+
+    // Note: no need to detect when the AssignedShip dies as FleetCmd will set it
+    // to null when it is removed from the fleet, whether through death or some other reason
+
+    private void OnStationOffsetChanged() {
+        //_transform.localPosition = StationOffset;     // doesn't work as the resultant world position is modified by the rotation of FleetCmd
+        _transform.position += StationOffset;
+        // UNCLEAR when an FST changes its offset (location), does OnTriggerEnter/Exit detect it?
+    }
+
+    protected void OnShipOnStation(bool isOnStation) {
+        IsOnStation = isOnStation;
+        if (AssignedShip != null) {
+            AssignedShip.OnShipOnStation(isOnStation);
+        }
+    }
+
+    /// <summary>
+    /// Manually detects whether the ship is on station by seeing whether the ship's
+    /// position is inside the collider bounds.
+    /// </summary>
+    /// <value>
+    /// <c>true</c> if this ship is already on station; otherwise, <c>false</c>.
+    /// </value>
+    private bool IsShipAlreadyOnStation {
+        get {
+            //D.Log("FormationStation at {0} with Radius {1}, Assigned Ship {2} at {3}.", _transform.position, StationRadius, AssignedShip.FullName, AssignedShip.Data.Position);
+            return _collider.bounds.Contains(AssignedShip.Data.Position);
+        }
+    }
+
+    public override string ToString() {
+        return new ObjectAnalyzer().ToString(this);
+    }
+
+    #region IFormationStationTracker Members
 
     public bool IsOnStation { get; private set; }
-
-    public float StationRadius { get; private set; }
 
     private Vector3 _stationOffset;
     /// <summary>
@@ -47,160 +139,30 @@ public class FormationStationTracker : AMonoBase /* IDisposable */ {
     private IShipModel _assignedShip;
     public IShipModel AssignedShip {
         get { return _assignedShip; }
-        set { SetProperty<IShipModel>(ref _assignedShip, value, "AssignedShip", OnAssignedShipChanged, OnAssignedShipChanging); }
+        set { SetProperty<IShipModel>(ref _assignedShip, value, "AssignedShip", OnAssignedShipChanged); }
     }
 
-    private SphereCollider _collider;
-    //private IList<IDisposable> _subscribers;
+    #endregion
 
-    protected override void Awake() {
-        base.Awake();
-        ID = Guid.NewGuid();
-        _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
-        _collider.isTrigger = true;
-        _collider.enabled = false;
-        //Subscribe();
-    }
+    #region IDestinationTarget Members
 
-    //protected virtual void Subscribe() {
-    //    _subscribers = new List<IDisposable>();
-    //    _subscribers.Add(GameStatus.Instance.SubscribeToPropertyChanged<GameStatus, bool>(gs => gs.IsRunning, OnIsRunningChanged));
-    //}
-
-    void OnTriggerEnter(Collider other) {
-        //D.Log("OnTriggerEnter({0}) called.", other.name);
-        IShipModel target = other.gameObject.GetInterface<IShipModel>();
-        if (target != null) {
-            if (target == AssignedShip) {
-                OnShipOnStation(true);
-            }
+    public string FullName {
+        get {
+            string msg = AssignedShip == null ? " (unassigned)" : string.Format(" ({0})", AssignedShip.FullName);
+            return GetType().Name + msg;
         }
     }
 
-    void OnTriggerExit(Collider other) {
-        //D.Log("{0}.OnTriggerExit() called by Collider {1}.", GetType().Name, other.name);
-        IShipModel target = other.gameObject.GetInterface<IShipModel>();
-        if (target != null) {
-            if (target == AssignedShip) {
-                OnShipOnStation(false);
-            }
-        }
+    public Vector3 Position {
+        get { return _transform.position; }
     }
 
-    //private void OnIsRunningChanged() {
-    //    if (GameStatus.Instance.IsRunning) {
-    //        _collider.enabled = true;
-    //    }
-    //}
-
-    private void OnAssignedShipChanging(IShipModel newShip) {
-        if (AssignedShip != null) {
-            AssignedShip.onItemDeath -= OnAssignedShipDeath;
-        }
+    public bool IsMovable {
+        get { return true; }
     }
 
-    private void OnAssignedShipChanged() {
-        if (AssignedShip != null) {
-            StationRadius = AssignedShip.Radius * 5F;
-            _collider.radius = StationRadius;
-            AssignedShip.onItemDeath += OnAssignedShipDeath;
-            _collider.enabled = true;
-            if (IsShipAlreadyOnStation) {   // in case ship is already present inside collider
-                OnShipOnStation(true);
-            }
-        }
-        else {
-            _collider.enabled = false;
-        }
-    }
+    public float Radius { get; private set; }
 
-    private void OnAssignedShipDeath(IMortalModel deadAssignedShip) {
-        IShipModel ship = deadAssignedShip as IShipModel;
-        D.Assert(ship != null);
-        D.Assert(ship == AssignedShip);
-        OnShipOnStation(false);
-        AssignedShip = null;
-    }
-
-    private void OnStationOffsetChanged() {
-        _transform.localPosition = StationOffset;
-    }
-
-    protected void OnShipOnStation(bool isOnStation) {
-        IsOnStation = IsOnStation;
-        var temp = onShipOnStation;
-        if (temp != null) {
-            temp(ID, isOnStation);
-        }
-    }
-
-    private bool IsShipAlreadyOnStation {
-        get { return _collider.bounds.Contains(AssignedShip.Data.Position); }
-    }
-
-    //protected override void OnDestroy() {
-    //    base.OnDestroy();
-    //    Dispose();
-    //}
-
-    //private void Cleanup() {
-    //    Unsubscribe();
-    //    // other cleanup here including any tracking Gui2D elements
-    //}
-
-    //private void Unsubscribe() {
-    //    _subscribers.ForAll(d => d.Dispose());
-    //    _subscribers.Clear();
-    //}
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
-    //#region IDisposable
-    //[DoNotSerialize]
-    //private bool _alreadyDisposed = false;
-    //protected bool _isDisposing = false;
-
-    ///// <summary>
-    ///// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-    ///// </summary>
-    //public void Dispose() {
-    //    Dispose(true);
-    //    GC.SuppressFinalize(this);
-    //}
-
-    ///// <summary>
-    ///// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-    ///// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
-    ///// </summary>
-    ///// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-    //protected virtual void Dispose(bool isDisposing) {
-    //    // Allows Dispose(isDisposing) to be called more than once
-    //    if (_alreadyDisposed) {
-    //        return;
-    //    }
-
-    //    _isDisposing = true;
-    //    if (isDisposing) {
-    //        // free managed resources here including unhooking events
-    //        Cleanup();
-    //    }
-    //    // free unmanaged resources here
-
-    //    _alreadyDisposed = true;
-    //}
-
-    //// Example method showing check for whether the object has been disposed
-    ////public void ExampleMethod() {
-    ////    // throw Exception if called on object that is already disposed
-    ////    if(alreadyDisposed) {
-    ////        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-    ////    }
-
-    ////    // method content here
-    ////}
-    //#endregion
-
+    #endregion
 }
 

@@ -45,6 +45,25 @@ public abstract class AItemModel : AMonoBase, IModel, IDestinationTarget, IDispo
         // Derived classes should call Subscribe() from Awake() after any required references are established
     }
 
+    protected override void Start() {
+        base.Start();
+        Initialize();
+        EnableView();
+    }
+
+    /// <summary>
+    /// Called from Start(), just before EnableView(). Do any 
+    /// initialization required before the corresponding view is enabled.
+    /// </summary>
+    protected abstract void Initialize();
+
+    /// <summary>
+    /// Enables the corresponding View for this model. Called after Initialize().
+    /// </summary>
+    private void EnableView() {
+        gameObject.GetSafeInterface<IViewable>().enabled = true;
+    }
+
     protected virtual void Subscribe() {
         _subscribers = new List<IDisposable>();
         // Subscriptions to data value changes should be done with SubscribeToDataValueChanges()
@@ -84,10 +103,10 @@ public abstract class AItemModel : AMonoBase, IModel, IDestinationTarget, IDispo
 
     #region IDestinationTarget Members
 
-    public string Name {
+    public virtual string FullName {
         get {
             if (Data != null) {
-                return Data.Name;
+                return Data.FullName;
             }
             return _transform.name + " (from transform)";
         }

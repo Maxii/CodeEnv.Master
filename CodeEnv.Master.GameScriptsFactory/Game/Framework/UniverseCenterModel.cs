@@ -29,6 +29,8 @@ public class UniverseCenterModel : AItemModel, IUniverseCenterModel {
         set { base.Data = value; }
     }
 
+    protected override void Initialize() { }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

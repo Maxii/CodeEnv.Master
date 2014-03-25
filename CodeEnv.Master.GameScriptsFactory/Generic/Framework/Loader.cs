@@ -166,6 +166,9 @@ public class Loader : AMonoBaseSingleton<Loader>, IDisposable {
     }
 
     private void AssessReadinessToProgressGameState() {
+        var gameState = _gameMgr.CurrentState;
+        D.Assert(_gameStateProgressionReadinessLookup.ContainsKey(gameState), "{0} key not found.".Inject(gameState), pauseOnFail: true);
+        // this will tell me what state failed, whereas failing while accessing the dictionary won't
         IList<MonoBehaviour> unreadyElements = _gameStateProgressionReadinessLookup[_gameMgr.CurrentState];
         if (unreadyElements != null && unreadyElements.Count == 0) {
             _gameMgr.ProgressState();

@@ -36,13 +36,6 @@ public abstract class AMortalItemModel : AItemModel, IMortalModel, IMortalTarget
         set { base.Data = value; }
     }
 
-    protected override void Start() {
-        base.Start();
-        Initialize();
-    }
-
-    protected abstract void Initialize();
-
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
         _subscribers.Add(Data.SubscribeToPropertyChanged<AMortalItemData, float>(d => d.Health, OnHealthChanged));

@@ -45,7 +45,7 @@ namespace CodeEnv.Master.Common {
 
         DeepSpace = 20,
         CelestialObjectKeepout = 21,
-        IgnoreGuiEvents = 22,
+        // IgnoreGuiEvents = 22, // Removed 3.19.14, replaced by IgnoreRaycast
 
         Vectrosity2D = 31
 

@@ -30,6 +30,8 @@ using UnityEngine;
 /// </summary>
 public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommandModel, ICommandTarget {
 
+    public event Action onElementsInitializationCompleted_OneShot;
+
     public event Action<IElementModel> onSubordinateElementDeath;
 
     public string UnitName { get { return Data.OptionalParentName; } }
@@ -56,10 +58,27 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
         // Derived class should call Subscribe() after all used references have been established
     }
 
-    protected override void Initialize() {
-        HQElement = SelectHQElement();
-        _formationGenerator.RegenerateFormation();
+    protected sealed override void Initialize() {
+        InitializeElements();
+        StartCoroutine(InitializeAfterElementsInitialized());
     }
+
+    private void InitializeElements() {
+        HQElement = SelectHQElement();
+        Elements.ForAll(e => e.enabled = true);
+    }
+
+    private IEnumerator InitializeAfterElementsInitialized() {
+        yield return null;  // delay to allow Elements to initialize
+        OnElementsInitializationCompleted();
+        _formationGenerator.RegenerateFormation();  // must follow element init as formation stations need ship radius
+        FinishInitialization();
+    }
+
+    /// <summary>
+    /// Finishes the initialization process. All Elements are already initialized.
+    /// </summary>
+    protected abstract void FinishInitialization();
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
@@ -71,7 +90,11 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
     /// </summary>
     /// <param name="element">The Element to add.</param>
     public virtual void AddElement(IElementModel element) {
-        D.Assert(!element.IsHQElement, "{0} adding element {1} already designated as the HQ Element.".Inject(Name, element.Name));   // by definition, an element can't already be the HQ Element when it is being added
+        D.Assert(!element.IsHQElement, "{0} adding element {1} already designated as the HQ Element.".Inject(FullName, element.FullName));
+        if (enabled) {
+            // UNCLEAR it is not yet clear whether this method should enable selected elements during runtime. This will flag me of the issue
+            D.Assert(element.enabled, "{0} is not yet enabled.".Inject(element.FullName));
+        }
         element.onItemDeath += OnSubordinateElementDeath;
         Elements.Add(element);
         Data.AddElement(element.Data);
@@ -86,22 +109,29 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
         element.onItemDeath -= OnSubordinateElementDeath;
         bool isRemoved = Elements.Remove(element);
         isRemoved = isRemoved && Data.RemoveElement(element.Data);
-        D.Assert(isRemoved, "{0} not found.".Inject(element.Data.Name));
-        if (Elements.Count <= Constants.Zero) {
-            D.Assert(Data.UnitHealth <= Constants.ZeroF, "{0} UnitHealth error.".Inject(Data.Name));
+        D.Assert(isRemoved, "{0} not found.".Inject(element.FullName));
+        if (Elements.Count == Constants.Zero) {
+            D.Assert(Data.UnitHealth <= Constants.ZeroF, "{0} UnitHealth error.".Inject(FullName));
             KillCommand();
             return;
         }
         if (element == HQElement) {
             // HQ Element has left
             HQElement = SelectHQElement();
-            D.Log("{0} new HQElement = {1}.", Data.Name, HQElement.Data.Name);
         }
+    }
+
+    private void OnElementsInitializationCompleted() {
+        var temp = onElementsInitializationCompleted_OneShot;
+        if (temp != null) {
+            temp();
+        }
+        onElementsInitializationCompleted_OneShot = null;
     }
 
     private void OnSubordinateElementDeath(IMortalModel mortalItem) {
         D.Assert(mortalItem is AUnitElementModel);
-        D.Log("{0} acknowledging {1} has been lost.", Data.Name, mortalItem.Name);
+        D.Log("{0} acknowledging {1} has been lost.", FullName, mortalItem.Data.Name);
         AUnitElementModel element = mortalItem as AUnitElementModel;
         RemoveElement(element);
 
@@ -120,6 +150,7 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
     protected virtual void OnHQElementChanged() {
         HQElement.IsHQElement = true;
         Data.HQElementData = HQElement.Data;
+        D.Log("{0} HQElement is now {1}.", FullName, HQElement.Data.Name);
     }
 
     private void OnFormationChanged() {
@@ -141,118 +172,15 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
             TakeDamage(UnityEngine.Random.Range(1F, Data.MaxHitPoints + 1F));
         }
         else {
-            D.Log("{0} avoided a hit.", Data.Name);
+            D.Log("{0} avoided a hit.", FullName);
         }
         return isHit;
     }
 
-    ///// <summary>
-    ///// Generates a new formation based on the formation selected and the 
-    ///// number of elements present in the Unit.
-    ///// </summary>
-    ///// <exception cref="System.NotImplementedException"></exception>
-    //protected void RegenerateFormation() {
-    //    switch (Data.UnitFormation) {
-    //        case Formation.Circle:
-    //            PositionElementsEquidistantInCircle();
-    //            break;
-    //        case Formation.Globe:
-    //            PositionElementsRandomlyInSphere();
-    //            break;
-    //        case Formation.None:
-    //        default:
-    //            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(Data.UnitFormation));
-    //    }
-    //    CleanupAfterFormationGeneration();
-    //}
-
-    ///// <summary>
-    ///// Randomly positions the elements of the unit in a spherical globe around the HQ Element.
-    ///// </summary>
-    //private void PositionElementsRandomlyInSphere() {
-    //    float globeRadius = 1F * (float)Math.Pow(Elements.Count * 0.2F, 0.33F);  // cube root of number of groups of 5 elements
-
-    //    var elementsToPosition = Elements.Except(HQElement).ToArray();
-    //    if (!TryPositionRandomWithinSphere(HQElement, globeRadius, ref elementsToPosition)) {
-    //        // try again with a larger radius
-    //        D.Assert(TryPositionRandomWithinSphere(HQElement, globeRadius * 1.5F, ref elementsToPosition),
-    //            "{0} Formation Positioning Error.".Inject(Data.Name));
-    //    }
-    //}
-
-    ///// <summary>
-    ///// Positions the provided game objects randomly inside a sphere in such a way that the meshes
-    ///// are not in contact.
-    ///// </summary>
-    ///// <param name="hqElement">The hq element with FormationPosition fixed at Vector3.zero.</param>
-    ///// <param name="radius">The radius of the sphere in units.</param>
-    ///// <param name="elementsToPosition">The non-HQ elements to position.</param>
-    ///// <returns>
-    /////   <c>true</c> if all elements were successfully positioned without overlap.
-    ///// </returns>
-    //private bool TryPositionRandomWithinSphere(AUnitElementModel hqElement, float radius, ref UnitElementModelType[] elementsToPosition) {
-    //    IList<Bounds> allElementBounds = new List<Bounds>();
-
-    //    Bounds hqElementBounds = new Bounds();
-    //    bool toEncapsulateHqElement = false;
-    //    D.Assert(UnityUtility.GetBoundWithChildren(hqElement.transform, ref hqElementBounds, ref toEncapsulateHqElement),
-    //        "{0} unable to construct a Bound for HQ Element {1}.".Inject(Name, hqElement.Name));
-    //    allElementBounds.Add(hqElementBounds);
-
-    //    int iterateCount = 0;
-    //    Vector3[] formationStationOffsets = new Vector3[elementsToPosition.Length];
-    //    for (int i = 0; i < elementsToPosition.Length; i++) {
-    //        bool toEncapsulate = false;
-    //        Vector3 candidateStationOffset = UnityEngine.Random.insideUnitSphere * radius;
-    //        Bounds elementBounds = new Bounds();
-    //        UnitElementModelType element = elementsToPosition[i];
-    //        if (UnityUtility.GetBoundWithChildren(element.transform, ref elementBounds, ref toEncapsulate)) {
-    //            elementBounds.center = candidateStationOffset;
-    //            //D.Log("Bounds = {0}.", elementBounds.ToString());
-    //            if (allElementBounds.All(eb => !eb.Intersects(elementBounds))) {
-    //                allElementBounds.Add(elementBounds);
-    //                formationStationOffsets[i] = candidateStationOffset;
-    //                iterateCount = 0;
-    //            }
-    //            else {
-    //                i--;
-    //                iterateCount++;
-    //                if (iterateCount >= 10) {
-    //                    D.Warn("{0} had a formation positioning iteration error.", Name);
-    //                    return false;
-    //                }
-    //            }
-    //        }
-    //        else {
-    //            D.Error("{0} unable to construct a Bound for {1}.", Name, element.name);
-    //            return false;
-    //        }
-    //    }
-    //    for (int i = 0; i < elementsToPosition.Length; i++) {
-    //        PositionElementInFormation(elementsToPosition[i], formationStationOffsets[i]);
-    //        //elementsToPosition[i].transform.localPosition = localFormationPositions[i];   // won't work as the position of the Element's parent is arbitrary
-    //    }
-    //    return true;
-    //}
-
-    ///// <summary>
-    ///// Positions the elements equidistant in a circle around the HQ Element.
-    ///// </summary>
-    //protected void PositionElementsEquidistantInCircle() {
-    //    float globeRadius = 1F * (float)Math.Pow(Elements.Count * 0.2F, 0.33F);  // cube root of number of groups of 5 elements
-
-    //    Vector3 hqElementPosition = HQElement.Position;
-    //    var elementsToPosition = Elements.Except(HQElement);
-    //    //D.Log("{0}.elementsCount = {1}.", GetType().Name, _elements.Count);
-    //    Stack<Vector3> formationStationOffsets = new Stack<Vector3>(Mathfx.UniformPointsOnCircle(globeRadius, elementsToPosition.Count()));
-    //    foreach (var element in elementsToPosition) {
-    //        Vector3 stationOffset = formationStationOffsets.Pop();
-    //        PositionElementInFormation(element, stationOffset);
-    //    }
-    //}
-
     protected internal virtual void PositionElementInFormation(IElementModel element, Vector3 stationOffset) {
         element.Transform.position = HQElement.Transform.position + stationOffset;
+        //D.Log("{0} positioned at {1}, offset by {2} from {3} at {4}.",
+        //    element.FullName, element.Transform.position, stationOffset, HQElement.FullName, HQElement.Transform.position);
     }
 
     protected internal virtual void CleanupAfterFormationGeneration() { }

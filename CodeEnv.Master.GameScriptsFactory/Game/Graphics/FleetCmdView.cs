@@ -56,6 +56,10 @@ public class FleetCmdView : AUnitCommandView, ICameraFollowable, IHighlightTrack
 
     protected override void OnTrackingTargetChanged() {
         base.OnTrackingTargetChanged();
+        //must position FleetCmd immediately over tracking target as formationStations are children of FleetCmd
+        // if we wait for update, then some ships won't show up as onStation during initialization
+        KeepViewOverTarget();
+        D.Log("{0}.TrackingTarget is now {1}. View is positioned over it.", Presenter.Model.FullName, TrackingTarget.name);
         InitializeTrackingLabel();
     }
 

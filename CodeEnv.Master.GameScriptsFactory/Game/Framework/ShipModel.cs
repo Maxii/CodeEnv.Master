@@ -57,6 +57,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         _engineRoom = new EngineRoom(Data, _rigidbody);
         InitializeNavigator();
         CurrentState = ShipState.Idling;
+        D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
     }
 
     #region Navigation
@@ -78,27 +79,34 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         if (DebugSettings.Instance.StopShipMovement || !isAutoPilot) {
             Navigator.Disengage();
         }
-
         newHeading.ValidateNormalized();
         if (newHeading.IsSameDirection(Data.RequestedHeading, 0.1F)) {
-            D.Warn("{0} received a duplicate ChangeHeading Command to {1}.", Data.Name, newHeading);
+            D.Warn("{0} received a duplicate ChangeHeading Command to {1}.", FullName, newHeading);
             return;
         }
+        D.Log("{0} changing heading to {1}.", FullName, newHeading);
         Data.RequestedHeading = newHeading;
         if (_headingJob != null && _headingJob.IsRunning) {
             _headingJob.Kill();
         }
+        IsTurning = true;
         _headingJob = new Job(ExecuteHeadingChange(), toStart: true, onJobComplete: (wasKilled) => {
+            IsTurning = false;
             if (!_isDisposing) {
                 if (wasKilled) {
-                    D.Log("{0} turn command cancelled. Current Heading is {1}.", Data.Name, Data.CurrentHeading);
+                    D.Log("{0}'s turn command cancelled. Current Heading is {1}.", FullName, Data.CurrentHeading);
                 }
                 else {
-                    D.Log("Turn complete. {0} current heading is {1}.", Data.Name, Data.CurrentHeading);
+                    D.Log("{0}'s turn is complete.  Current Heading is {1}.", FullName, Data.CurrentHeading);
                 }
+                D.Log("Angle remaining between current and requested heading is {0}.", Vector3.Angle(Data.CurrentHeading, Data.RequestedHeading));
             }
         });
     }
+
+    //public bool IsHeadingConfirmed { get { return Data.CurrentHeading.IsSameDirection(Data.RequestedHeading, 1F); } }
+
+    public bool IsTurning { get; private set; }
 
     /// <summary>
     /// Coroutine that executes a heading change. 
@@ -110,7 +118,8 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         float maxRadianTurnRatePerSecond = Mathf.Deg2Rad * Data.MaxTurnRate * (GameDate.HoursPerSecond / GameDate.HoursPerDay);
         //D.Log("New coroutine. {0} coming to heading {1} at {2} radians/day.", _data.Name, _data.RequestedHeading, _data.MaxTurnRate);
         //while (!IsTurnComplete) {
-        while (!Data.CurrentHeading.IsSameDirection(Data.RequestedHeading, 0.1F)) {
+        //while (!Data.CurrentHeading.IsSameDirection(Data.RequestedHeading, 0.1F)) {
+        while (!Data.CurrentHeading.IsSameDirection(Data.RequestedHeading, 1F)) {
             int framesSinceLastPass = Time.frameCount - previousFrameCount; // needed when using yield return WaitForSeconds()
             previousFrameCount = Time.frameCount;
             float allowedTurn = maxRadianTurnRatePerSecond * GameTime.DeltaTimeOrPausedWithGameSpeed * framesSinceLastPass;
@@ -134,8 +143,14 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         _engineRoom.ChangeSpeed(newSpeed.GetValue(Command.Data, Data));
     }
 
-
-    public void AllStop() {
+    /// <summary>
+    /// Stops the ship. The ship will actually not stop instantly as it has
+    /// momentum even with flaps deployed. Typically, this is called in the state
+    /// machine after a Return() from the Moving state. Otherwise, the ship keeps
+    /// moving in the direction and at the speed it had when it exited Moving.
+    /// </summary>
+    private void AllStop() {
+        LogEvent();
         ChangeSpeed(Speed.AllStop);
     }
 
@@ -176,10 +191,23 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     #region Idling
 
-    void Idling_EnterState() {
-        LogEvent();
+    IEnumerator Idling_EnterState() {
+        //LogEvent();
+        D.Log("{0}.Idling_EnterState.", FullName);
         AllStop();
+        if (!Data.FormationStation.IsOnStation) {
+            if (IsHQElement) {
+                var distanceFromStation = Vector3.Distance(Position, (Data.FormationStation as Component).transform.position);
+                D.Error("HQElement {0} is off Station, {1:0.0000} away. Offset = {2}, Radius = {3}.",
+                    FullName, distanceFromStation, Data.FormationStation.StationOffset, Data.FormationStation.Radius);
+                yield break;
+            }
+            //CurrentOrder = new UnitOrder<ShipOrders>(ShipOrders.AssumeStation);
+            Call(ShipState.AssumingStation);
+            yield return null;  // required immediately after Call() to avoid FSM bug
+        }
         // TODO register as available
+        yield return null;
     }
 
     void Idling_OnWeaponReady(Weapon weapon) {
@@ -194,18 +222,109 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     #endregion
 
+    #region ExecuteAssumeStationOrder
+
+    IEnumerator ExecuteAssumeStationOrder_EnterState() {
+        // cannot use void as code after Call() executes without waiting for a Return()
+        D.Log("{0}.ExecuteAssumeStationOrder_EnterState.", FullName);
+        _moveSpeed = Speed.Slow;
+        _moveTarget = Command as IDestinationTarget;
+        _standoffDistance = Constants.ZeroF;
+        _isDetachedDuty = true;
+        Call(ShipState.AssumingStation);
+        yield return null;  // required immediately after Call() to avoid FSM bug
+        // Return()s here
+        if (_isMoveError) {
+            // TODO how to handle move errors?
+            CurrentState = ShipState.Idling;
+            yield break;
+        }
+        CurrentState = ShipState.Idling;
+    }
+
+    void ExecuteAssumeStationOrder_ExitState() {
+        LogEvent();
+    }
+
+    #endregion
+
+    #region AssumingStation
+
+    // This state uses the Ship Navigator to move to its formation station (_moveTarget = Command) at
+    // a set speed (_moveSpeed = Speed.Slow). The conditions used to determine 'arrival' at the
+    // station is OnShipOnStation(true). While in this state, the ship
+    // navigator can dynamically change [both speed and] direction to successfully
+    // reach the target. When the state is exited either because of target arrival or some
+    // other reason, the ship retains its current speed and direction.  As a result, the
+    // Call()ing state is responsible for any speed or facing cleanup that may be desired.
+
+    void AssumingStation_EnterState() {
+        LogEvent();
+        //Navigator.PlotCourse(_moveTarget, _moveSpeed, _standoffDistance);
+        Navigator.PlotCourse(Command as IDestinationTarget, Speed.Slow, Constants.ZeroF, isDetachedDuty: true);
+    }
+
+    void AssumingStation_OnCoursePlotSuccess() {
+        LogEvent();
+        Navigator.Engage();
+    }
+
+    void AssumingStation_OnCoursePlotFailure() {
+        LogEvent();
+        _isMoveError = true;
+        Return();
+    }
+
+    void AssumingStation_OnCourseTrackingError() {
+        LogEvent();
+        _isMoveError = true;
+        Return();
+    }
+
+    void AssumingStation_OnWeaponReady(Weapon weapon) {
+        LogEvent();
+        TryFireOnAnyTarget(weapon);
+    }
+
+    void AssumingStation_OnShipOnStation(bool isOnStation) {
+        LogEvent();
+        D.Assert(isOnStation, "{0} received OnShipOnStation(false) while AssumingStation.".Inject(FullName));
+        ChangeHeading(Command.HQElement.Data.CurrentHeading);
+        Return();
+    }
+
+    void AssumingStation_OnDestinationReached() {
+        LogEvent();
+        D.Error("{0} reached destination before OnShipOnStation occurred. Station Radius = {1:0.0000}.",
+            FullName, Data.FormationStation.Radius);
+        Return();
+    }
+
+    void AssumingStation_ExitState() {
+        LogEvent();
+        //_moveTarget = null;
+        //_moveSpeed = Speed.AllStop;
+        //_standoffDistance = Constants.ZeroF;
+        //_isDetachedDuty = false;
+        Navigator.Disengage();
+        // the ship retains its existing speed and direction upon exit
+    }
+
+    #endregion
+
     #region ExecuteMoveOrder
 
     IEnumerator ExecuteMoveOrder_EnterState() {
-        //LogEvent();
-        D.Log("{0}.ExecuteMoveOrder_EnterState.", Data.Name);
+        // cannot use void as code after Call() doesn't wait for a Return() to execute
+        D.Log("{0}.ExecuteMoveOrder_EnterState.", FullName);
         var moveOrder = (CurrentOrder as UnitMoveOrder<ShipOrders>);
         _moveSpeed = moveOrder.Speed;
         _moveTarget = moveOrder.Target;
         _standoffDistance = moveOrder.StandoffDistance;
+        _isDetachedDuty = false;
         Call(ShipState.Moving);
         yield return null;  // required immediately after Call() to avoid FSM bug
-        // Return()s here - move error or not, we idle
+        // Return()s here
         if (_isMoveError || !_isMoveError) {
             // TODO how to handle move errors?
             CurrentState = ShipState.Idling;
@@ -221,6 +340,14 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     #region Moving
 
+    // This state uses the Ship Navigator to move to a target (_moveTarget) at
+    // a set speed (_moveSpeed). The conditions used to determine 'arrival' at the
+    // target is determined in part by _standoffDistance. While in this state, the ship
+    // navigator can dynamically change [both speed and] direction to successfully
+    // reach the target. When the state is exited either because of target arrival or some
+    // other reason, the ship retains its current speed and direction.  As a result, the
+    // Call()ing state is responsible for any speed or facing cleanup that may be desired.
+
     /// <summary>
     /// The speed of the move. If we are executing a MoveOrder (from a FleetCmd), this value is set from
     /// the speed setting contained in the order. If executing another Order that requires a move, then
@@ -229,6 +356,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     private Speed _moveSpeed;
     private IDestinationTarget _moveTarget;
     private float _standoffDistance;
+    private bool _isDetachedDuty;
     private bool _isMoveError;
 
     void Moving_EnterState() {
@@ -237,7 +365,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         if (mortalMoveTarget != null) {
             mortalMoveTarget.onItemDeath += OnTargetDeath;
         }
-        Navigator.PlotCourse(_moveTarget, _moveSpeed, _standoffDistance);
+        Navigator.PlotCourse(_moveTarget, _moveSpeed, _standoffDistance, _isDetachedDuty);
     }
 
     void Moving_OnCoursePlotSuccess() {
@@ -259,7 +387,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     void Moving_OnTargetDeath(IMortalTarget deadTarget) {
         LogEvent();
-        D.Assert(_moveTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _moveTarget.Name, deadTarget.Name));
+        D.Assert(_moveTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(FullName, _moveTarget.FullName, deadTarget.FullName));
         Return();
     }
 
@@ -282,8 +410,9 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         _moveTarget = null;
         _moveSpeed = Speed.AllStop;
         _standoffDistance = Constants.ZeroF;
+        _isDetachedDuty = false;
         Navigator.Disengage();
-        AllStop();
+        // the ship retains its existing speed and direction upon exit
     }
 
     #endregion
@@ -294,7 +423,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     private IMortalTarget _primaryTarget; // IMPROVE  take this previous target into account when PickPrimaryTarget()
 
     IEnumerator ExecuteAttackOrder_EnterState() {
-        D.Log("{0}.ExecuteAttackOrder_EnterState() called.", Data.Name);
+        D.Log("{0}.ExecuteAttackOrder_EnterState() called.", FullName);
         _ordersTarget = (CurrentOrder as UnitTargetOrder<ShipOrders>).Target;
 
         while (!_ordersTarget.IsDead) {
@@ -308,7 +437,10 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
                 _moveTarget = _primaryTarget;
                 _moveSpeed = Speed.Full;
                 _standoffDistance = Data.MaxWeaponsRange;   // IMPROVE based on Standoff Stance - long range, point blank, etc.
+                _isDetachedDuty = true;
                 Call(ShipState.Moving);
+                yield return null;  // required immediately after Call() to avoid FSM bug
+                AllStop();  // stop and shoot after completing move
             }
             yield return null;
         }
@@ -320,7 +452,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         if (_primaryTarget != null) {   // OnWeaponReady can occur before _primaryTarget is picked
             _attackTarget = _primaryTarget;
             _attackDamage = weapon.Damage;
-            D.Log("{0}.{1} initiating attack on {2} from {3}.", Data.Name, weapon.Name, _attackTarget.Name, CurrentState.GetName());
+            D.Log("{0}.{1} initiating attack on {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
             Call(ShipState.Attacking);
         }
         // No potshots at random enemies as the ship is either Moving or the primary target is in range
@@ -373,7 +505,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     IEnumerator ExecuteJoinFleetOrder_EnterState() {
         //LogEvent();
-        D.Log("{0}.ExecuteJoinFleetOrder_EnterState() called.", Data.Name);
+        D.Log("{0}.{1}.ExecuteJoinFleetOrder_EnterState() called.", Data.OptionalParentName, Data.Name);
         // detach from fleet and create tempFleetCmd
         Command.RemoveElement(this);
 
@@ -390,7 +522,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         // issue a JoinFleet order to our new tempFleetCmd
         UnitTargetOrder<FleetOrders> joinFleetOrder = new UnitTargetOrder<FleetOrders>(FleetOrders.JoinFleet, fleetToJoin);
         tempFleetCmd.CurrentOrder = joinFleetOrder;
-        // once joinFleetOrder takes, ship state will change to moving
+        // once joinFleetOrder takes, this ship state will be changed by its new tempfleetCmd
     }
 
     void ExecuteJoinFleetOrder_ExitState() {
@@ -421,11 +553,13 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     IEnumerator ExecuteRepairOrder_EnterState() {
         //LogEvent();
-        D.Log("{0}.ExecuteRepairOrder_EnterState.", Data.Name);
+        D.Log("{0}.{1}.ExecuteRepairOrder_EnterState.", Data.OptionalParentName, Data.Name);
         _moveSpeed = Speed.Full;
         _moveTarget = (CurrentOrder as UnitDestinationOrder<ShipOrders>).Target;
         _standoffDistance = Constants.ZeroF;
+        _isDetachedDuty = true;
         Call(ShipState.Moving);
+        yield return null;  // required immediately after Call() to avoid FSM bug
         // Return()s here
         if (_isMoveError) {
             // TODO how to handle move errors?
@@ -451,7 +585,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     #region Repairing
 
     IEnumerator Repairing_EnterState() {
-        D.Log("{0}.Repairing_EnterState.", Data.Name);
+        D.Log("{0}.{1}.Repairing_EnterState.", Data.OptionalParentName, Data.Name);
         OnShowAnimation(MortalAnimations.Repairing);
         yield return new WaitForSeconds(2);
         Data.CurrentHitPoints += 0.5F * (Data.MaxHitPoints - Data.CurrentHitPoints);
@@ -532,12 +666,12 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     /// <param name="weapon">The weapon.</param>
     private void TryFireOnAnyTarget(Weapon weapon) {
         if (_weaponRangeTrackerLookup[weapon.TrackerID].__TryGetRandomEnemyTarget(out _attackTarget)) {
-            D.Log("{0}.{1} initiating attack on {2} from {3}.", Data.Name, weapon.Name, _attackTarget.Name, CurrentState.GetName());
+            D.Log("{0}.{1} initiating attack on {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
             _attackDamage = weapon.Damage;
             Call(FacilityState.Attacking);
         }
         else {
-            D.Warn("{0}.{1} could not lockon {2} from {3}.", Data.Name, weapon.Name, _attackTarget.Name, CurrentState.GetName());
+            D.Warn("{0}.{1} could not lockon {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
         }
     }
 
@@ -607,10 +741,10 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     void OnOrdersChanged() {
         if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
+            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Order.GetName());
 
             // TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated
-            if (CurrentState == ShipState.Moving || CurrentState == ShipState.Repairing) {
+            if (CurrentState == ShipState.Moving || CurrentState == ShipState.AssumingStation || CurrentState == ShipState.Repairing) {
                 Return();
                 // IMPROVE Attacking is not here as it is not really a state so far. It has no duration so it could be replaced with a method
                 // I'm deferring doing that right now as it is unclear how Attacking will evolve
@@ -643,6 +777,9 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
                 case ShipOrders.JoinFleet:
                     CurrentState = ShipState.ExecuteJoinFleetOrder;
                     break;
+                case ShipOrders.AssumeStation:
+                    CurrentState = ShipState.ExecuteAssumeStationOrder;
+                    break;
                 case ShipOrders.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
@@ -657,7 +794,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     void OnCoursePlotSuccess() { RelayToCurrentState(); }
 
     void OnCoursePlotFailure() {
-        D.Warn("{0} course plot to {1} failed.", Data.Name, Navigator.Target.Name);
+        D.Warn("{0} course plot to {1} failed.", Data.Name, Navigator.Target.FullName);
         RelayToCurrentState();
     }
 
@@ -691,7 +828,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             return;
         }
         //LogEvent();
-        D.Log("{0} taking {1} damage.", Data.Name, damage);
+        D.Log("{0} taking {1} damage.", FullName, damage);
         bool isCmdHit = false;
         bool isElementAlive = ApplyDamage(damage);
         if (IsHQElement) {
@@ -706,6 +843,16 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         OnShowAnimation(hitAnimation);
 
         AssessNeedForRepair();
+    }
+
+    #endregion
+
+    #region IShipModel Members
+
+    public void OnShipOnStation(bool isOnStation) {
+        //LogEvent();
+        //D.Log("{0}.OnShipOnStation({1}) called.", FullName, isOnStation);
+        RelayToCurrentState(isOnStation);
     }
 
     #endregion

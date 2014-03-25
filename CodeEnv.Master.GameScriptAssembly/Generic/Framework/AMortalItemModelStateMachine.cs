@@ -39,7 +39,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     /// Occurs AFTER the previous state's ExitState() method has run
     /// but BEFORE the new state's EnterState() method has run. Accessing
     /// the CurrentState will give you the new state, but no processing 
-    /// reflecting that new state will have yet occured.
+    /// reflecting that new state will have yet occurred.
     /// </summary>
     public event Action onStateChanged;
 
@@ -60,7 +60,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     /// </summary>
     public override void LogEvent() {
         System.Diagnostics.StackFrame stackFrame = new StackFrame(1);
-        D.Log("{0}.{1}.{2}() called.".Inject(_transform.name, GetType().Name, stackFrame.GetMethod().Name));
+        D.Log("{0}.{1}() called.".Inject(FullName, stackFrame.GetMethod().Name));
     }
 
     #endregion
@@ -271,7 +271,8 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     /// <param name="param">Any parameter passed to the current handler that should be passed on.</param>
     /// <returns>true if a method in the current state was invoked, false if no method is present.</returns>
     protected bool RelayToCurrentState(params object[] param) {
-        var message = CurrentState.ToString() + "_" + (new StackFrame(1)).GetMethod().Name;
+        if (CurrentState == null) { return false; }
+        var message = CurrentState.ToString() + Constants.Underscore + new StackFrame(1).GetMethod().Name;
         //D.Log("{0} looking for method signature {1}.", Data.Name, message);
         return SendMessageEx(message, param);
     }
@@ -345,7 +346,11 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
             return true; // my addition
         }
         else {
-            D.Log("{0} did not find Method with signature {1}.", Data.Name, message);  // my addition
+            string parameters = string.Empty;
+            if (!param.IsNullOrEmpty()) {
+                parameters = param.Concatenate();
+            }
+            D.Log("{0} did not find Method with signature {1}({2}).", FullName, message, parameters);  // my addition
             return false;   // my addition
         }
     }

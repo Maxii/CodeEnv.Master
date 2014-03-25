@@ -49,7 +49,6 @@ public class Orbit : AMonoBase, IDisposable {
     protected float _orbitSpeed;
 
     private GameStatus _gameStatus;
-    private IList<IDisposable> _subscribers;
 
     protected override void Awake() {
         base.Awake();
@@ -57,21 +56,15 @@ public class Orbit : AMonoBase, IDisposable {
         orbitPeriod = orbitPeriod ?? new GameTimePeriod(days: 0, years: 1);
 
         _orbitSpeed = (relativeOrbitSpeed * Constants.DegreesPerOrbit * (GameDate.HoursPerSecond / GameDate.HoursPerDay)) / orbitPeriod.PeriodInDays;
-
-        Subscribe();
         UpdateRate = FrameUpdateFrequency.Frequent;
-        enabled = false;
-    }
-
-    private void Subscribe() {
-        if (_subscribers == null) {
-            _subscribers = new List<IDisposable>();
+        if (!_gameStatus.IsRunning) {
+            _gameStatus.onIsRunning_OneShot += OnGameIsRunning;
+            enabled = false;
         }
-        _subscribers.Add(_gameStatus.SubscribeToPropertyChanged<GameStatus, bool>(gs => gs.IsRunning, OnIsRunningChanged));
     }
 
-    private void OnIsRunningChanged() {
-        enabled = GameStatus.Instance.IsRunning;
+    private void OnGameIsRunning() {
+        enabled = true;
     }
 
     protected override void OccasionalUpdate() {
@@ -102,8 +95,10 @@ public class Orbit : AMonoBase, IDisposable {
     }
 
     private void Unsubscribe() {
-        _subscribers.ForAll(d => d.Dispose());
-        _subscribers.Clear();
+        // even though the OneShot will unsubscribe this object once Raised, this object can be destroyed
+        // prior to the game starting (when an extra planet is destroyed by SystemCreator) so we need
+        // to unsubscribe in case destruction occurs before the game starts running
+        GameStatus.Instance.onIsRunning_OneShot -= OnGameIsRunning;
     }
 
     public override string ToString() {
@@ -112,7 +107,8 @@ public class Orbit : AMonoBase, IDisposable {
 
     #region IDisposable
     [DoNotSerialize]
-    private bool alreadyDisposed = false;
+    private bool _alreadyDisposed = false;
+    protected bool _isDisposing = false;
 
     /// <summary>
     /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
@@ -129,17 +125,18 @@ public class Orbit : AMonoBase, IDisposable {
     /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
     protected virtual void Dispose(bool isDisposing) {
         // Allows Dispose(isDisposing) to be called more than once
-        if (alreadyDisposed) {
+        if (_alreadyDisposed) {
             return;
         }
 
+        _isDisposing = isDisposing;
         if (isDisposing) {
             // free managed resources here including unhooking events
             Cleanup();
         }
         // free unmanaged resources here
 
-        alreadyDisposed = true;
+        _alreadyDisposed = true;
     }
 
     // Example method showing check for whether the object has been disposed

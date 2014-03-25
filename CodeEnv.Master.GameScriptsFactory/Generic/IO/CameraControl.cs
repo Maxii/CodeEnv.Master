@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -155,7 +155,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     private LayerMask _collideWithDummyTargetOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.DummyTarget);
     private LayerMask _collideWithOnlyCameraTargetsLayerMask
         = LayerMaskExtensions.CreateExclusiveMask(Layers.UniverseEdge, Layers.DeepSpace, Layers.Gui2D, Layers.Vectrosity2D,
-        Layers.CelestialObjectKeepout, Layers.IgnoreGuiEvents);
+        Layers.CelestialObjectKeepout, Layers.IgnoreRaycast);
     private LayerMask _layersVisibleToCamera = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
         Layers.DummyTarget, Layers.UniverseEdge, Layers.Ships, Layers.BasesSettlements, Layers.Planetoids, Layers.Stars);
 
@@ -1060,7 +1060,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
                 // targetPoint changes on the orbital plane are meant to be used while in freeform
                 return;
             }
-            D.Log("Camera target {0} targetPoint moved from {1} to {2}.", _target.name, _targetPoint, newTargetPoint);
+            //D.Log("Camera target {0} targetPoint moved from {1} to {2}.", _target.name, _targetPoint, newTargetPoint);
             AssignTarget(newTarget, newTargetPoint);
             return;
         }

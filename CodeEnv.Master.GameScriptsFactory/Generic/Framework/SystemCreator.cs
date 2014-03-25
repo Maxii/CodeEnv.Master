@@ -375,11 +375,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         _moons.ForAll(m => m.enabled = true);
         _system.enabled = true;
         _star.enabled = true;
-
-        _planets.ForAll(p => p.gameObject.GetSafeMonoBehaviourComponent<PlanetoidView>().enabled = true);
-        _moons.ForAll(m => m.gameObject.GetSafeMonoBehaviourComponent<PlanetoidView>().enabled = true);
-        _system.gameObject.GetSafeMonoBehaviourComponent<SystemView>().enabled = true;
-        _star.gameObject.GetSafeMonoBehaviourComponent<StarView>().enabled = true;
+        // Models now enable their corresponding View after they initialize
     }
 
     private void __SetIntelLevel() {

@@ -37,7 +37,9 @@ namespace CodeEnv.Master.GameContent {
 
         Disband,
 
-        JoinFleet
+        JoinFleet,
+
+        AssumeStation
 
     }
 }

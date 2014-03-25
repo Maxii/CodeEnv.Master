@@ -44,6 +44,10 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        public string FullName {
+            get { return OptionalParentName == string.Empty ? Name : OptionalParentName + Constants.Underscore + Name; }
+        }
+
         private IPlayer _owner;
         public IPlayer Owner {
             get { return _owner; }

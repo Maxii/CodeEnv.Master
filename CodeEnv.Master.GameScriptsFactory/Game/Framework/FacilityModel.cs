@@ -63,6 +63,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
     protected override void Initialize() {
         base.Initialize();
         CurrentState = FacilityState.Idling;
+        //D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
     }
 
     #region StateMachine
@@ -97,7 +98,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
     private IMortalTarget _primaryTarget; // IMPROVE  take this previous target into account when PickPrimaryTarget()
 
     IEnumerator ExecuteAttackOrder_EnterState() {
-        D.Log("{0}.ExecuteAttackOrder_EnterState() called.", Data.Name);
+        D.Log("{0}.ExecuteAttackOrder_EnterState() called.", FullName);
         _ordersTarget = (CurrentOrder as UnitTargetOrder<FacilityOrders>).Target;
 
         while (!_ordersTarget.IsDead) {
@@ -114,7 +115,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
         if (_primaryTarget != null) {
             _attackTarget = _primaryTarget;
             _attackDamage = weapon.Damage;
-            D.Log("{0}.{1} initiating attack on {2} from {3}.", Data.Name, weapon.Name, _attackTarget.Name, CurrentState.GetName());
+            D.Log("{0}.{1} initiating attack on {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
             Call(FacilityState.Attacking);
         }
         else {
@@ -159,7 +160,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
 
     IEnumerator ExecuteRepairOrder_EnterState() {
         //LogEvent();
-        D.Log("{0}.ExecuteRepairOrder_EnterState.", Data.Name);
+        D.Log("{0}.ExecuteRepairOrder_EnterState.", FullName);
         Call(FacilityState.Repairing);
         yield return null;  // required immediately after Call() to avoid FSM bug
     }
@@ -178,14 +179,14 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
     #region Repairing
 
     IEnumerator Repairing_EnterState() {
-        D.Log("{0}.Repairing_EnterState.", Data.Name);
+        D.Log("{0}.Repairing_EnterState.", FullName);
         OnShowAnimation(MortalAnimations.Repairing);
         yield return new WaitForSeconds(2);
         Data.CurrentHitPoints += 0.5F * (Data.MaxHitPoints - Data.CurrentHitPoints);
-        D.Log("{0}'s repair is 50% complete.", Data.Name);
+        D.Log("{0}'s repair is 50% complete.", FullName);
         yield return new WaitForSeconds(3);
         Data.CurrentHitPoints = Data.MaxHitPoints;
-        D.Log("{0}'s repair is 100% complete.", Data.Name);
+        D.Log("{0}'s repair is 100% complete.", FullName);
         OnStopAnimation(MortalAnimations.Repairing);
         Return();
     }
@@ -259,12 +260,12 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
     /// <param name="weapon">The weapon.</param>
     private void TryFireOnAnyTarget(Weapon weapon) {
         if (_weaponRangeTrackerLookup[weapon.TrackerID].__TryGetRandomEnemyTarget(out _attackTarget)) {
-            D.Log("{0}.{1} initiating attack on {2} from {3}.", Data.Name, weapon.Name, _attackTarget.Name, CurrentState.GetName());
+            D.Log("{0}.{1} initiating attack on {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
             _attackDamage = weapon.Damage;
             Call(FacilityState.Attacking);
         }
         else {
-            D.Warn("{0}.{1} could not lockon {2} from {3}.", Data.Name, weapon.Name, _attackTarget.Name, CurrentState.GetName());
+            D.Warn("{0}.{1} could not lockon {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
         }
     }
 
@@ -276,7 +277,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
     /// True if the target is in range, false otherwise. 
     /// </returns>
     private bool PickPrimaryTarget(out IMortalTarget chosenTarget) {
-        D.Assert(_ordersTarget != null && !_ordersTarget.IsDead, "{0}'s target from orders is null or dead.".Inject(Data.Name));
+        D.Assert(_ordersTarget != null && !_ordersTarget.IsDead, "{0}'s target from orders is null or dead.".Inject(FullName));
         bool isTargetInRange = false;
         var uniqueEnemyTargetsInRange = Enumerable.Empty<IMortalTarget>();
         foreach (var rt in _weaponRangeTrackerLookup.Values) {
@@ -292,7 +293,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
                 isTargetInRange = true;
             }
             else {
-                D.Assert(!primaryTargets.IsNullOrEmpty(), "{0}'s primaryTargets cannot be empty when _ordersTarget is alive.");
+                D.Assert(!primaryTargets.IsNullOrEmpty(), "{0}'s primaryTargets cannot be empty when _ordersTarget is alive.".Inject(FullName));
                 chosenTarget = null;    // no target as all are out of range
             }
         }
@@ -302,7 +303,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
         }
         if (chosenTarget != null) {
             // no need for knowing about death event as primaryTarget is continuously checked while under orders to attack
-            D.Log("{0}'s has selected {1} as it's primary target. InRange = {2}.", Data.Name, chosenTarget.Name, isTargetInRange);
+            D.Log("{0}'s has selected {1} as it's primary target. InRange = {2}.", FullName, chosenTarget.FullName, isTargetInRange);
         }
         return isTargetInRange;
     }

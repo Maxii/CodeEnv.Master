@@ -24,20 +24,16 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IFormationStationTracker {
 
-        event Action<Guid, bool> onShipOnStation;
-
         bool IsOnStation { get; }
 
-        Guid ID { get; }
-
-        float StationRadius { get; }
+        float Radius { get; }
 
         /// <summary>
         /// The Vector3 offset of this station of the formation from the HQ Element.
         /// </summary>
         Vector3 StationOffset { get; set; }
 
-        IShipTarget AssignedShip { get; set; }
+        IShipModel AssignedShip { get; set; }
 
     }
 }

@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Maintains a list of all ITargets present inside the trigger collider this script is attached too.
 /// </summary>
-public class TriggerTracker : AMonoBase, IDisposable {
+public class TriggerTracker : AMonoBase {
 
     /// <summary>
     /// Flag indicating whether other Colliders that are triggers are to be tracked.
@@ -40,28 +40,29 @@ public class TriggerTracker : AMonoBase, IDisposable {
 
     protected Collider Collider { get; private set; }
 
-    protected IList<IDisposable> _subscribers;
-    protected bool _isInitialized;
-
     protected override void Awake() {
         base.Awake();
         Collider = UnityUtility.ValidateComponentPresence<Collider>(gameObject);
         Collider.isTrigger = true;
-        Collider.enabled = false;
         AllTargets = new List<IMortalTarget>();
-        Subscribe();
-    }
-
-    protected virtual void Subscribe() {
-        _subscribers = new List<IDisposable>();
-        _subscribers.Add(GameStatus.Instance.SubscribeToPropertyChanged<GameStatus, bool>(gs => gs.IsRunning, OnIsRunningChanged));
-    }
-
-    private void OnIsRunningChanged() {
-        if (GameStatus.Instance.IsRunning) {
-            _isInitialized = true;
-            Collider.enabled = true;
+        if (!GameStatus.Instance.IsRunning) {
+            GameStatus.Instance.onIsRunning_OneShot += OnGameIsRunning;
+            enabled = false;
         }
+    }
+
+    private void OnGameIsRunning() {
+        enabled = true;
+    }
+
+    protected override void OnEnable() {
+        base.OnEnable();
+        Collider.enabled = true;
+    }
+
+    protected override void OnDisable() {
+        base.OnDisable();
+        Collider.enabled = false;
     }
 
     void OnTriggerEnter(Collider other) {
@@ -105,29 +106,29 @@ public class TriggerTracker : AMonoBase, IDisposable {
     protected virtual void Add(IMortalTarget target) {
         if (!AllTargets.Contains(target)) {
             if (!target.IsDead) {
-                D.Log("{0}.{1} now tracking target {2}.", Data.Name, GetType().Name, target.Name);
+                //D.Log("{0}.{1}.{2} now tracking target {3}.", Data.OptionalParentName, Data.Name, GetType().Name, target.Name);
                 target.onItemDeath += OnTargetDeath;
                 target.onOwnerChanged += OnTargetOwnerChanged;
                 AllTargets.Add(target);
             }
             else {
-                D.Log("{0}.{1} avoided adding target {2} that is already dead but not yet destroyed.", Data.Name, GetType().Name, target.Name);
+                D.Log("{0}.{1} avoided adding target {2} that is already dead but not yet destroyed.", Data.FullName, GetType().Name, target.FullName);
             }
         }
         else {
-            D.Warn("{0}.{1} attempted to add duplicate Target {2}.", Data.Name, GetType().Name, target.Name);
+            D.Warn("{0}.{1} attempted to add duplicate Target {2}.", Data.FullName, GetType().Name, target.FullName);
         }
     }
 
     protected virtual void Remove(IMortalTarget target) {
         bool isRemoved = AllTargets.Remove(target);
         if (isRemoved) {
-            D.Log("{0}.{1} no longer tracking target {2} at distance = {3}.", Data.Name, GetType().Name, target.Name, Vector3.Distance(target.Position, _transform.position));
+            //D.Log("{0}.{1} no longer tracking target {2} at distance = {3}.", Data.Name, GetType().Name, target.Name, Vector3.Distance(target.Position, _transform.position));
             target.onItemDeath -= OnTargetDeath;
             target.onOwnerChanged -= OnTargetOwnerChanged;
         }
         else {
-            D.Warn("{0}.{1} target {2} not present to be removed.", Data.Name, GetType().Name, target.Name);
+            D.Warn("{0}.{1} target {2} not present to be removed.", Data.FullName, GetType().Name, target.FullName);
         }
     }
 
@@ -137,70 +138,9 @@ public class TriggerTracker : AMonoBase, IDisposable {
 
     protected virtual void OnTargetOwnerChanged(IMortalModel target) { }
 
-    protected override void OnDestroy() {
-        base.OnDestroy();
-        Dispose();
-    }
-
-    private void Cleanup() {
-        Unsubscribe();
-        // other cleanup here including any tracking Gui2D elements
-    }
-
-    private void Unsubscribe() {
-        _subscribers.ForAll(d => d.Dispose());
-        _subscribers.Clear();
-        AllTargets.ForAll(t => Remove(t));
-    }
-
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region IDisposable
-    [DoNotSerialize]
-    private bool _alreadyDisposed = false;
-    protected bool _isDisposing = false;
-
-    /// <summary>
-    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-    /// </summary>
-    public void Dispose() {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
-    /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool isDisposing) {
-        // Allows Dispose(isDisposing) to be called more than once
-        if (_alreadyDisposed) {
-            return;
-        }
-
-        _isDisposing = true;
-        if (isDisposing) {
-            // free managed resources here including unhooking events
-            Cleanup();
-        }
-        // free unmanaged resources here
-
-        _alreadyDisposed = true;
-    }
-
-    // Example method showing check for whether the object has been disposed
-    //public void ExampleMethod() {
-    //    // throw Exception if called on object that is already disposed
-    //    if(alreadyDisposed) {
-    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-    //    }
-
-    //    // method content here
-    //}
-    #endregion
 
 }
 

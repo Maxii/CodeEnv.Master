@@ -46,6 +46,7 @@ public class ShipView : AUnitElementView, ISelectable {
     protected override void Start() {
         base.Start();
         InitializeContextMenu();
+        D.Log("{0}.{1} Initialization complete.", Presenter.Model.FullName, GetType().Name);
     }
 
     #region ContextMenu
@@ -90,11 +91,11 @@ public class ShipView : AUnitElementView, ISelectable {
             for (int i = 0; i < joinFleetSubmenuItemCount; i++) {
                 joinFleetSubmenuItems[i] = new CtxMenu.Item();
 
-                joinFleetSubmenuItems[i].text = joinableFleets[i].Name;
+                joinFleetSubmenuItems[i].text = joinableFleets[i].FullName;
                 int id = i + shipMenuItemCount;
                 joinFleetSubmenuItems[i].id = id;
                 _joinableFleetLookup.Add(id, joinableFleets[i]);
-                D.Log("{0}.{1}.submenu ID {2} = {3}.", Presenter.Model.Name, Presenter.Model.Data.OptionalParentName, joinFleetSubmenuItems[i].id, joinFleetSubmenuItems[i].text);
+                D.Log("{0}.submenu ID {1} = {2}.", Presenter.Model.FullName, joinFleetSubmenuItems[i].id, joinFleetSubmenuItems[i].text);
             }
             shipMenuItems[0].submenuItems = joinFleetSubmenuItems;
         }
@@ -114,7 +115,7 @@ public class ShipView : AUnitElementView, ISelectable {
 
     private void OnContextMenuSelection() {
         int itemId = CtxObject.current.selectedItem;
-        D.Log("{0} selected context menu item {1}.", _transform.name, itemId);
+        D.Log("{0} selected context menu item {1}.", Presenter.Model.FullName, itemId);
         if (itemId == 1) {
             // UNDONE AnotherOrder
             return;
@@ -125,7 +126,7 @@ public class ShipView : AUnitElementView, ISelectable {
     }
 
     private void OnContextMenuHide() {
-        D.Log("{0}.OnContextMenuHide() called.", _transform.name);
+        D.Log("{0}.OnContextMenuHide() called.", Presenter.Model.FullName);
         _joinableFleetLookup = null;
         // UNDONE
     }

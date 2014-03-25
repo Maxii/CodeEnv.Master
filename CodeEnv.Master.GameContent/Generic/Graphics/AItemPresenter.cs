@@ -34,6 +34,7 @@ namespace CodeEnv.Master.GameContent {
             protected set {
                 _model = value;
                 _model.Radius = View.Radius;
+                //D.Log("{0}.Radius set to {1:0.0000}.", Model.FullName, View.Radius);
             }
         }
 

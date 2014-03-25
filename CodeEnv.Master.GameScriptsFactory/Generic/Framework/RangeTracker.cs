@@ -58,6 +58,7 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
         EnemyTargets = new List<IMortalTarget>();
         ID = Guid.NewGuid();
         RangeSpan = new Range<float>(Constants.ZeroF, Constants.ZeroF);
+        Collider.radius = Constants.ZeroF;  // initialize to same value as Range
     }
 
     protected override void Add(IMortalTarget target) {
@@ -68,7 +69,8 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
     }
 
     private void AddEnemyTarget(IMortalTarget enemyTarget) {
-        //D.Log("{0}.{1} with range {2} added Enemy Target {3}.", Data.Name, GetType().Name, Range, enemyTarget.Name);
+        D.Log("{0}.{1} with range {2} added Enemy {3} at distance {4}.",
+             Data.FullName, GetType().Name, Range, enemyTarget.FullName, Vector3.Distance(Data.Position, enemyTarget.Position));
         if (EnemyTargets.Count == 0) {
             OnEnemyInRange(true);   // there are now enemies in range
         }
@@ -85,27 +87,25 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
             if (EnemyTargets.Count == 0) {
                 OnEnemyInRange(false);  // no longer any Enemies in range
             }
-            //D.Log("{0}.{1} with range {2} removed Enemy Target {3}.", Data.Name, GetType().Name, Range, enemyTarget.Name);
+            D.Log("{0}.{1} with range {2} removed Enemy Target {3}.", Data.FullName, GetType().Name, Range, enemyTarget.FullName);
         }
     }
 
     protected override void OnTargetOwnerChanged(IMortalModel target) {
         base.OnTargetOwnerChanged(target);
-        if (_isInitialized) {
-            var _target = target as IMortalTarget;
-            if (Owner.IsEnemyOf(_target.Owner)) {
-                if (!EnemyTargets.Contains(_target)) {
-                    AddEnemyTarget(_target);
-                }
+        var _target = target as IMortalTarget;
+        if (Owner.IsEnemyOf(_target.Owner)) {
+            if (!EnemyTargets.Contains(_target)) {
+                AddEnemyTarget(_target);
             }
-            else {
-                RemoveEnemyTarget(_target);
-            }
+        }
+        else {
+            RemoveEnemyTarget(_target);
         }
     }
 
     private void OnOwnerChanged() {
-        if (_isInitialized) {
+        if (enabled) {
             RefreshEnemyTargets();
         }
     }
@@ -123,10 +123,10 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
     }
 
     private void OnRangeChanged() {
-        //D.Log("{0}.{1}.Range changed to {2}.", Data.Name, GetType().Name, Range);
         Collider.radius = Range;
         RangeSpan = new Range<float>(0.9F * Range, 1.10F * Range);
-        if (_isInitialized) {
+        if (enabled) {
+            D.Log("{0}.{1}.Range changed to {2}.", Data.Name, GetType().Name, Range);
             Collider.enabled = false;
             AllTargets.ForAll(t => Remove(t));  // clears both AllTargets and EnemyTargets
             Collider.enabled = true;    //  TODO unconfirmed - this should repopulate the Targets when re-enabled with new radius

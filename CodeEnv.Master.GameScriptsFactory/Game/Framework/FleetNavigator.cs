@@ -29,6 +29,26 @@ using UnityEngine;
 /// </summary>
 public class FleetNavigator : ANavigator {
 
+    /// <summary>
+    /// The SQRD distance from the target that is 'close enough' to have arrived. This value
+    /// is automatically adjusted to accomodate the radius of the target since all distance 
+    /// calculations use the target's center point as its position.
+    /// </summary>
+    private float _closeEnoughDistanceToTargetSqrd;
+    private float _closeEnoughDistanceToTarget;
+    /// <summary>
+    /// The distance from the target that is 'close enough' to have arrived. This value
+    /// is automatically adjusted to accomodate the radius of the target since all distance 
+    /// calculations use the target's center point as its position.
+    /// </summary>
+    private float CloseEnoughDistanceToTarget {
+        get { return _closeEnoughDistanceToTarget; }
+        set {
+            _closeEnoughDistanceToTarget = Target.Radius + value;
+            _closeEnoughDistanceToTargetSqrd = _closeEnoughDistanceToTarget * _closeEnoughDistanceToTarget;
+        }
+    }
+
     protected new FleetCmdData Data { get { return base.Data as FleetCmdData; } }
 
     private bool IsCourseReplotNeeded {
@@ -71,7 +91,7 @@ public class FleetNavigator : ANavigator {
     public void PlotCourse(IDestinationTarget target, Speed speed) {
         Target = target;
         Speed = speed;
-        D.Assert(speed != Speed.AllStop, "Designated speed to new target {0} is 0!".Inject(target.Name));
+        D.Assert(speed != Speed.AllStop, "Designated speed to new target {0} is 0!".Inject(target.FullName));
         InitializeTargetValues();
         InitializeReplotValues();
         GenerateCourse();
@@ -132,20 +152,20 @@ public class FleetNavigator : ANavigator {
                     _currentWaypointIndex++;
                     if (_currentWaypointIndex == _course.Count) {
                         // arrived at final waypoint
-                        D.Log("{0} has reached final waypoint {1} at {2}.", Data.Name, _currentWaypointIndex - 1, currentWaypointPosition);
+                        D.Log("{0} has reached final waypoint {1} at {2}.", Data.FullName, _currentWaypointIndex - 1, currentWaypointPosition);
                         continue;
                     }
-                    D.Log("{0} has reached Waypoint_{1} at {2}. Current destination is now Waypoint_{3} at {4}.", Data.Name,
+                    D.Log("{0} has reached Waypoint_{1} at {2}. Current destination is now Waypoint_{3} at {4}.", Data.FullName,
                         _currentWaypointIndex - 1, currentWaypointPosition, _currentWaypointIndex, _course[_currentWaypointIndex]);
+
                     currentWaypointPosition = _course[_currentWaypointIndex];
-                    if (CheckApproachTo(currentWaypointPosition)) {
-                        _fleet.__IssueShipMovementOrders(new StationaryLocation(currentWaypointPosition), Speed);
-                    }
-                    else {
+                    if (!CheckApproachTo(currentWaypointPosition)) {
+                        // there is an obstacle on the way to the next waypoint, so find a way around, insert in course and execute
                         Vector3 waypointToAvoidObstacle = GetWaypointAroundObstacleTo(currentWaypointPosition);
                         _course.Insert(_currentWaypointIndex, waypointToAvoidObstacle);
                         currentWaypointPosition = waypointToAvoidObstacle;
                     }
+                    _fleet.__IssueShipMovementOrders(new StationaryLocation(currentWaypointPosition), Speed);
                 }
             }
             else if (IsCourseReplotNeeded) {
@@ -160,7 +180,7 @@ public class FleetNavigator : ANavigator {
         }
         else {
             // the final waypoint is not close enough and we can't directly approach the Destination
-            D.Warn("{0} reached final waypoint, but {1} from {2} with obstacles in between.", Data.Name, Vector3.Distance(Destination, Data.Position), Target.Name);
+            D.Warn("{0} reached final waypoint, but {1} from {2} with obstacles in between.", Data.FullName, Vector3.Distance(Destination, Data.Position), Target.FullName);
             OnCourseTrackingError();
         }
     }
@@ -187,7 +207,7 @@ public class FleetNavigator : ANavigator {
         while (Vector3.SqrMagnitude(stationaryLocation - Data.Position) > _closeEnoughDistanceToTargetSqrd) {
             yield return new WaitForSeconds(_courseProgressCheckPeriod);
         }
-        D.Log("{0} has arrived at {1}.", Data.Name, stationaryLocation);
+        D.Log("{0} has arrived at {1}.", Data.FullName, stationaryLocation);
     }
 
     private void OnCoursePlotCompleted(Path course) {
@@ -211,7 +231,7 @@ public class FleetNavigator : ANavigator {
                 Engage();
             }
             else {
-                D.Warn("{0}'s course to {1} couldn't be replotted.", Data.Name, Target.Name);
+                D.Warn("{0}'s course to {1} couldn't be replotted.", Data.FullName, Target.FullName);
                 OnCoursePlotFailure();
             }
         }
@@ -235,7 +255,7 @@ public class FleetNavigator : ANavigator {
         _pilotJob = new Job(EngageHomingCourseToTarget(), true);
     }
 
-    protected void InitiateCourseAroundObstacleTo(Vector3 location) {
+    private void InitiateCourseAroundObstacleTo(Vector3 location) {
         D.Log("Initiating obstacle avoidance course. Distance to destination = {0}.", Vector3.Distance(Data.Position, location));
         if (_pilotJob != null && _pilotJob.IsRunning) {
             _pilotJob.Kill();
@@ -274,14 +294,14 @@ public class FleetNavigator : ANavigator {
                 Vector3 halfWayPointInsideKeepoutZone = rayEntryPoint + (rayExitPoint - rayEntryPoint) / 2F;
                 Vector3 obstacleCenter = hitInfo.collider.transform.position;
                 waypoint = obstacleCenter + (halfWayPointInsideKeepoutZone - obstacleCenter).normalized * (keepoutRadius + CloseEnoughDistanceToTarget);
-                //D.Log("{0}'s waypoint to avoid obstacle = {1}.", Data.Name, waypoint);
+                D.Log("{0}'s waypoint to avoid obstacle = {1}.", Data.FullName, waypoint);
             }
             else {
-                D.Error("{0} did not find a ray exit point when casting through {1}.", Data.Name, obstacleName);    // hitInfo is null
+                D.Error("{0} did not find a ray exit point when casting through {1}.", Data.FullName, obstacleName);    // hitInfo is null
             }
         }
         else {
-            D.Error("{0} did not find an obstacle.", Data.Name);
+            D.Error("{0} did not find an obstacle.", Data.FullName);
         }
         return waypoint;
     }
@@ -309,8 +329,24 @@ public class FleetNavigator : ANavigator {
     /// <returns>
     ///   <c>true</c> if there is nothing obstructing a direct approach.
     /// </returns>
-    protected override bool CheckApproachTo(Vector3 location) {
-        return base.CheckApproachTo(location);
+    private bool CheckApproachTo(Vector3 location) {
+        Vector3 currentPosition = Data.Position;
+        Vector3 vectorToLocation = location - currentPosition;
+        float distanceToLocation = vectorToLocation.magnitude;
+        if (distanceToLocation < CloseEnoughDistanceToTarget) {
+            // already inside close enough distance
+            return true;
+        }
+        Vector3 directionToLocation = vectorToLocation.normalized;
+        float rayDistance = distanceToLocation - CloseEnoughDistanceToTarget;
+        float clampedRayDistance = Mathf.Clamp(rayDistance, 0.1F, Mathf.Infinity);
+        RaycastHit hitInfo;
+        if (Physics.Raycast(currentPosition, directionToLocation, out hitInfo, clampedRayDistance, _keepoutOnlyLayerMask.value)) {
+            D.Log("{0} encountered obstacle {1} when checking approach to {2}.", Data.FullName, hitInfo.collider.name, location);
+            // there is a keepout zone obstacle in the way 
+            return false;
+        }
+        return true;
 
         // NOTE: approach below will be important once path penalty values are incorporated
         // For now, it will always be faster to go direct if there are no obstacles
@@ -335,6 +371,7 @@ public class FleetNavigator : ANavigator {
         //    return true;
         //}
         //return false;
+
     }
 
     private void GenerateCourse() {

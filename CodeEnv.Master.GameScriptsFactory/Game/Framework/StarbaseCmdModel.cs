@@ -46,9 +46,9 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
         Subscribe();
     }
 
-    protected override void Initialize() {
-        base.Initialize();
+    protected override void FinishInitialization() {
         CurrentState = StarbaseState.Idling;
+        //D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
     }
 
     public override void AddElement(IElementModel element) {
@@ -86,10 +86,11 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
 
     #region ExecuteAttackOrder
 
-    void ExecuteAttackOrder_EnterState() {
-        LogEvent();
-        //D.Log("{0}.ExecuteAttackOrder_EnterState.", Data.Name);
+    IEnumerator ExecuteAttackOrder_EnterState() {
+        //LogEvent();
+        D.Log("{0}.ExecuteAttackOrder_EnterState.", Data.Name);
         Call(StarbaseState.Attacking);
+        yield return null;  // required immediately after Call() to avoid FSM bug
         CurrentState = StarbaseState.Idling;
     }
 
@@ -113,7 +114,7 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
 
     void Attacking_OnTargetDeath(IMortalTarget deadTarget) {
         LogEvent();
-        D.Assert(_attackTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _attackTarget.Name, deadTarget.Name));
+        D.Assert(_attackTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(FullName, _attackTarget.FullName, deadTarget.FullName));
         Return();
     }
 

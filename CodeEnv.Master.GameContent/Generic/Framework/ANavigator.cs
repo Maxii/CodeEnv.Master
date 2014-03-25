@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -69,26 +69,6 @@ namespace CodeEnv.Master.GameContent {
             get { return _pilotJob != null && _pilotJob.IsRunning; }
         }
 
-        /// <summary>
-        /// The SQRD distance from the target that is 'close enough' to have arrived. This value
-        /// is automatically adjusted to accomodate the radius of the target since all distance 
-        /// calculations use the target's center point as its position.
-        /// </summary>
-        protected float _closeEnoughDistanceToTargetSqrd;
-        private float _closeEnoughDistanceToTarget;
-        /// <summary>
-        /// The distance from the target that is 'close enough' to have arrived. This value
-        /// is automatically adjusted to accomodate the radius of the target since all distance 
-        /// calculations use the target's center point as its position.
-        /// </summary>
-        protected float CloseEnoughDistanceToTarget {
-            get { return _closeEnoughDistanceToTarget; }
-            set {
-                _closeEnoughDistanceToTarget = Target.Radius + value;
-                _closeEnoughDistanceToTargetSqrd = _closeEnoughDistanceToTarget * _closeEnoughDistanceToTarget;
-            }
-        }
-
         protected AMortalItemData Data { get; private set; }
 
         protected static LayerMask _keepoutOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.CelestialObjectKeepout);
@@ -137,7 +117,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected virtual void OnDestinationReached() {
             _pilotJob.Kill();
-            D.Log("{0} has reached Destination {1}. Actual proximity {2} units.", Data.Name, Target.Name, Vector3.Distance(Destination, Data.Position));
+            D.Log("{0} at {1} reached Destination {2} at {3} (w/station offset). Actual proximity {4:0.0000} units.", Data.FullName, Data.Position, Target.FullName, Destination, Vector3.Distance(Destination, Data.Position));
             var temp = onDestinationReached;
             if (temp != null) {
                 temp();
@@ -180,36 +160,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public virtual void Disengage() {
             if (IsEngaged) {
-                D.Log("{0} Navigator disengaging.", Data.Name);
+                D.Log("{0} Navigator disengaging.", Data.FullName);
                 _pilotJob.Kill();
             }
-        }
-
-        /// <summary>
-        /// Checks whether the pilot can approach the provided location directly.
-        /// </summary>
-        /// <param name="location">The location to approach.</param>
-        /// <returns>
-        ///   <c>true</c> if there is nothing obstructing a direct approach.
-        /// </returns>
-        protected virtual bool CheckApproachTo(Vector3 location) {
-            Vector3 currentPosition = Data.Position;
-            Vector3 vectorToLocation = location - currentPosition;
-            float distanceToLocation = vectorToLocation.magnitude;
-            if (distanceToLocation < CloseEnoughDistanceToTarget) {
-                // already inside close enough distance
-                return true;
-            }
-            Vector3 directionToLocation = vectorToLocation.normalized;
-            float rayDistance = distanceToLocation - CloseEnoughDistanceToTarget;
-            float clampedRayDistance = Mathf.Clamp(rayDistance, 0.1F, Mathf.Infinity);
-            RaycastHit hitInfo;
-            if (Physics.Raycast(currentPosition, directionToLocation, out hitInfo, clampedRayDistance, _keepoutOnlyLayerMask.value)) {
-                D.Log("{0} encountered obstacle {1} when checking approach to {2}.", Data.Name, hitInfo.collider.name, location);
-                // there is a keepout zone obstacle in the way 
-                return false;
-            }
-            return true;
         }
 
         protected abstract void InitializeTargetValues();

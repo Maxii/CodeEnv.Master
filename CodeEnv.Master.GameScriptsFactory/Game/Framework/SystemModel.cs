@@ -32,6 +32,8 @@ public class SystemModel : AItemModel, ISystemModel {
         Subscribe();
     }
 
+    protected override void Initialize() { }
+
     public void AssignSettlement(SettlementUnitCreator settlementCreator) {
         D.Assert(gameObject.GetComponentInChildren<SettlementUnitCreator>() == null, "{0} already has a Settlement.".Inject(Data.Name));
         GameObject orbitGo = UnityUtility.AddChild(gameObject, RequiredPrefabs.Instance.orbit.gameObject);

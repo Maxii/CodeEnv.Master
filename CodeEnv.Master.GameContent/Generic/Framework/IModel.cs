@@ -26,11 +26,17 @@ namespace CodeEnv.Master.GameContent {
 
         AItemData Data { get; set; }
 
-        string Name { get; }
+        string FullName { get; }
 
+        /// <summary>
+        /// The radius in units of the conceptual 'globe' that
+        /// encompasses this Item.
+        /// </summary>
         float Radius { get; set; }
 
         Transform Transform { get; }
+
+        bool enabled { get; set; }
 
     }
 }

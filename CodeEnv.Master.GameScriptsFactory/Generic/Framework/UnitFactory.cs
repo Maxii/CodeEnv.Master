@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+#define DEBUG_LOG   // no effect while held as a loose script
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -82,7 +82,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <summary>
     /// Makes a standalone fleet instance from a single ship. The FleetCmdModel returned, along with the
     /// provided ship is parented to an empty GameObject "the fleet" which itself is parented to
-    /// the Scene's Fleets folder. The model and view are both enabled when returned.
+    /// the Scene's Fleets folder. The fleetCmd model, view and ship (if not already enabled) are all enabled when returned.
     /// </summary>
     /// <param name="unitName">The name of the unit.</param>
     /// <param name="owner">The owner of the unit.</param>
@@ -96,8 +96,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
         cmd.AddElement(element);  // resets the element's Command property and parents element to Cmd's parent GO
         cmd.enabled = true;    // picks this element as the HQ Element. Cmd positions itself over element
-        var cmdView = cmd.gameObject.GetSafeMonoBehaviourComponent<FleetCmdView>();
-        cmdView.enabled = true;
+        // enabling cmd model also enables the view and the ship
         // can't set PlayerIntelLevel here as View needs time to initialize Presenter after enabled
         return cmd;
     }
@@ -262,6 +261,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         if (trackers.IsNullOrEmpty()) {
             stationTrackerFolder = new GameObject("StationTrackers");
             UnityUtility.AttachChildToParent(stationTrackerFolder, fleetCmd.gameObject);
+            stationTrackerFolder.layer = (int)Layers.IgnoreRaycast;
         }
         else {
             stationTrackerFolder = trackers.First().transform.parent.gameObject;
@@ -270,11 +270,13 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         GameObject stGo = UnityUtility.AddChild(stationTrackerFolder, formationStationTrackerPrefab.gameObject);
         FormationStationTracker st = stGo.GetSafeMonoBehaviourComponent<FormationStationTracker>();
         st.StationOffset = stationOffset;
+        //D.Log("New FormationStation created at {0}, Offset = {1}, FleetCmd at {2}.", st.transform.position, stationOffset, fleetCmd.transform.position);
         return st;
     }
 
     private void AttachWeaponsToRangeTrackers(IList<Weapon> weapons, AElementData data, GameObject elementGo) {
         IList<IRangeTracker> rangeTrackers = elementGo.GetInterfacesInChildren<IRangeTracker>().ToList();
+        //D.Log("{0} found {1} preset attached {2} instances.", data.Name, rangeTrackers.Count, typeof(RangeTracker).Name);
         rangeTrackers.ForAll(rt => rt.Range = Constants.ZeroF); // initialize all to zero so RangeSpan gets set and left overs can be found
         var remainingUnusedTrackers = new List<IRangeTracker>(rangeTrackers);
         foreach (var weapon in weapons) {
@@ -288,10 +290,11 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 }
                 else {
                     GameObject rTrackerGo = UnityUtility.AddChild(elementGo, rangeTrackerPrefab.gameObject);
-                    rTrackerGo.layer = (int)Layers.IgnoreGuiEvents; // AddChild resets prefab layer to elementGo's layer
+                    rTrackerGo.layer = (int)Layers.IgnoreRaycast; // AddChild resets prefab layer to elementGo's layer
                     rTracker = rTrackerGo.GetSafeInterfaceInChildren<IRangeTracker>();
                     rangeTrackers.Add(rTracker);
                 }
+                //D.Log("{0}'s {1} with Range {2} assigned new Range {3}.", data.Name, typeof(RangeTracker).Name, rTracker.Range, wRange);
                 rTracker.Range = wRange;
             }
             data.AddWeapon(weapon, rTracker.ID);

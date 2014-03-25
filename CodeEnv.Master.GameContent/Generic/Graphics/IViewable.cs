@@ -38,9 +38,11 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// The radius in units of the conceptual 'globe' that
-        /// encompasses this gameObject.
+        /// encompasses this Item.
         /// </summary>
-        float Radius { get; }
+        float Radius { get; set; }
+
+        bool enabled { get; set; }
 
     }
 }

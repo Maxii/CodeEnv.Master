@@ -29,12 +29,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            return Name;
+            return FullName;
         }
 
         #region IDestinationTarget Members
 
-        public string Name {
+        public string FullName {
             get {
                 return string.Format("{0} {1}", this.GetType().Name, Position);
             }
@@ -45,7 +45,8 @@ namespace CodeEnv.Master.GameContent {
 
         public bool IsMovable { get { return false; } }
 
-        public float Radius { get { return Constants.ZeroF; } }
+        // IMPROVE must be big enough for ship navigator to have a chance at coming 'close enough'
+        public float Radius { get { return 3; } }
 
         #endregion
     }

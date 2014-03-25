@@ -31,6 +31,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         event Action<bool, Guid> onEnemyInRange;
 
+        AElementData Data { get; set; } // TODO Temporary Just for debug messages
+
         Guid ID { get; }
 
         float Range { get; set; }
@@ -50,8 +52,6 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="enemyTarget">The enemy target in range. Can be null.</param>
         /// <returns><c>true</c> if there is an enemy target in range.</returns>
         bool __TryGetRandomEnemyTarget(out IMortalTarget enemyTarget);
-
-        AElementData Data { get; set; } // TODO Temporary Just for debug messages
 
     }
 }

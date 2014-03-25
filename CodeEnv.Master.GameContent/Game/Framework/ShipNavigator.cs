@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -26,15 +26,28 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipNavigator : ANavigator {
 
-        protected override Vector3 Destination {
-            get { return Target.Position + Data.FormationStationOffset; }
+        /// <summary>
+        /// The SQRD distance from the target that is 'close enough' to have arrived. This value
+        /// is automatically adjusted to accomodate the radius of the target since all distance 
+        /// calculations use the target's center point as its position.
+        /// </summary>
+        private float _closeEnoughDistanceToTargetSqrd;
+        private float _closeEnoughDistanceToTarget;
+        /// <summary>
+        /// The distance from the target that is 'close enough' to have arrived. This value
+        /// is automatically adjusted to accomodate the radius of the target since all distance 
+        /// calculations use the target's center point as its position.
+        /// </summary>
+        private float CloseEnoughDistanceToTarget {
+            get { return _closeEnoughDistanceToTarget; }
+            set {
+                _closeEnoughDistanceToTarget = Target.Radius + value;
+                _closeEnoughDistanceToTargetSqrd = _closeEnoughDistanceToTarget * _closeEnoughDistanceToTarget;
+            }
         }
 
-        private bool IsTurnComplete {
-            get {
-                //D.Log("{0} heading passing {1} toward {2}.", _data.Name, _data.CurrentHeading, _data.RequestedHeading);
-                return Data.CurrentHeading.IsSameDirection(Data.RequestedHeading, 0.1F);
-            }
+        protected override Vector3 Destination {
+            get { return Target.Position + Data.FormationStation.StationOffset; }
         }
 
         protected new ShipData Data { get { return base.Data as ShipData; } }
@@ -56,6 +69,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private float __separationTestToleranceDistanceSqrd;
 
+        private bool _isDetachedDuty;
         private IShipModel _ship;
         private GameStatus _gameStatus;
 
@@ -72,7 +86,6 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Subscribe() {
             base.Subscribe();
-            //_subscribers.Add(Data.SubscribeToPropertyChanged<ShipData, float>(d => d.WeaponRange, OnWeaponsRangeChanged));
             _subscribers.Add(Data.SubscribeToPropertyChanged<ShipData, float>(d => d.MaxWeaponsRange, OnWeaponsRangeChanged));
             _subscribers.Add(Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullSpeed, OnFullSpeedChanged));
         }
@@ -82,12 +95,15 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="target">The target.</param>
         /// <param name="speed">The speed.</param>
-        /// <param name="standoffDistance">The distance to standoff from the target.</param>
-        public void PlotCourse(IDestinationTarget target, Speed speed, float standoffDistance = Constants.ZeroF) {
+        /// <param name="standoffDistance">The distance to standoff from the target. This is added to the radius of the target to
+        /// determine how close the ship is allowed to approach the target.</param>
+        /// <param name="isDetachedDuty">if set to <c>true</c> this navigator will ignore any fleetCmd restrictions.</param>
+        public void PlotCourse(IDestinationTarget target, Speed speed, float standoffDistance, bool isDetachedDuty) {
             Target = target;
             Speed = speed;
-            D.Assert(speed != Speed.AllStop, "Designated speed to new target {0} is 0!".Inject(target.Name));
-            CloseEnoughDistanceToTarget = standoffDistance != Constants.ZeroF ? standoffDistance : Speed.Standard.GetValue(null, Data);
+            D.Assert(speed != Speed.AllStop, "Designated speed to new target {0} is 0!".Inject(target.FullName));
+            CloseEnoughDistanceToTarget = standoffDistance;
+            _isDetachedDuty = isDetachedDuty;
             InitializeTargetValues();
             if (CheckApproachTo(Destination)) {
                 OnCoursePlotSuccess();
@@ -124,13 +140,13 @@ namespace CodeEnv.Master.GameContent {
             float previousDistanceSqrd = distanceToDestinationSqrd;
 
             while (distanceToDestinationSqrd > _closeEnoughDistanceToTargetSqrd) {
-                D.Log("Distance to {0} = {1}.", Target.Name, Mathf.Sqrt(distanceToDestinationSqrd));
+                //D.Log("{0} distance to {1} = {2}.", Data.FullName, Target.FullName, Mathf.Sqrt(distanceToDestinationSqrd));
                 if (!isSpeedIncreaseMade) {    // adjusts speed as a oneshot until we get there
                     isSpeedIncreaseMade = IncreaseSpeedOnHeadingConfirmation();
                 }
                 Vector3 correctedHeading;
                 if (CheckForCourseCorrection(distanceToDestinationSqrd, out correctedHeading, ref courseCheckPeriod)) {
-                    D.Log("{0} is making a midcourse correction of {1:0.00} degrees.", Data.Name, Vector3.Angle(correctedHeading, Data.RequestedHeading));
+                    D.Log("{0} is making a midcourse correction of {1:0.00} degrees.", Data.FullName, Vector3.Angle(correctedHeading, Data.RequestedHeading));
                     AdjustHeadingAndSpeedForTurn(correctedHeading);
                     isSpeedIncreaseMade = false;
                 }
@@ -147,20 +163,28 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void AdjustHeadingAndSpeedForTurn(Vector3 newHeading) {
-            Speed turnSpeed = Speed;
-            _ship.ChangeSpeed(turnSpeed, isAutoPilot: true); // TODO slow for the turn?
+            Speed turnSpeed = Speed;    // TODO slow for the turn?
+            _ship.ChangeSpeed(turnSpeed, isAutoPilot: true);
             _ship.ChangeHeading(newHeading, isAutoPilot: true);
         }
 
         /// <summary>
-        /// Increases the speed of the fleet when the correct heading has been achieved.
+        /// Increases the speed of the ship when both the ship and the flagship 
+        /// have achieved the requested heading.
         /// </summary>
         /// <returns><c>true</c> if the heading is confirmed and speed changed.</returns>
         private bool IncreaseSpeedOnHeadingConfirmation() {
-            if (Data.CurrentHeading.IsSameDirection(Data.RequestedHeading, 1F)) {
+            D.Log("{0}.IsTurning = {1}, IsDetachedDuty = {2}. {3}.IsTurning = {4}.",
+    _ship.FullName, _ship.IsTurning, _isDetachedDuty, _ship.Command.HQElement.FullName, _ship.Command.HQElement.IsTurning);
+            if (!_ship.IsTurning && !(_ship.Command.HQElement.IsTurning && !_isDetachedDuty)) {
+                //D.Log("{0}.IsHeadingConfirmed = {1}, IsDetachedDuty = {2}. {3}.IsHeadingConfirmed = {4}.",
+                //    _ship.FullName, _ship.IsHeadingConfirmed, _isDetachedDuty, _ship.Command.HQElement.FullName, _ship.Command.HQElement.IsHeadingConfirmed);
+                //if (_ship.IsHeadingConfirmed && !(!_ship.Command.HQElement.IsHeadingConfirmed && !_isDetachedDuty)) {
+                //if (Data.CurrentHeading.IsSameDirection(Data.RequestedHeading, 1F)) {
                 // we are close to being on course, so increase speed from orders
                 _ship.ChangeSpeed(Speed, isAutoPilot: true);
-                //D.Log("At Heading Confirmation, angle between current and requested heading = {0:0.00}.", Vector3.Angle(Data.CurrentHeading, Data.RequestedHeading));
+                D.Log("{0} increasing speed on Heading Confirmation. Angle between current and requested heading is {1:0.0000}.",
+                    _ship.FullName, Vector3.Angle(Data.CurrentHeading, Data.RequestedHeading));
                 return true;
             }
             return false;
@@ -180,7 +204,7 @@ namespace CodeEnv.Master.GameContent {
             if (checkCount == 0) {
                 // check the course
                 //D.Log("{0} is attempting to check its course. IsTurnComplete = {1}.", Data.Name, IsTurnComplete);
-                if (IsTurnComplete) {
+                if (!_ship.IsTurning) {
                     Vector3 testHeading = (Destination - Data.Position);
                     if (!testHeading.IsSameDirection(Data.RequestedHeading, 1F)) {
                         correctedHeading = testHeading.normalized;
@@ -212,7 +236,7 @@ namespace CodeEnv.Master.GameContent {
         protected override void InitializeTargetValues() {
             float speedFactor = Data.FullSpeed * _gameSpeedMultiplier * 3F;
             __separationTestToleranceDistanceSqrd = speedFactor * speedFactor;   // FIXME needs work - courseUpdatePeriod???
-            D.Log("{0} SeparationToleranceSqrd = {1}, Data.FullSpeed = {2}.", Data.Name, __separationTestToleranceDistanceSqrd, Data.FullSpeed);
+            //D.Log("{0} SeparationToleranceSqrd = {1}, FullSpeed = {2}.", Data.FullName, __separationTestToleranceDistanceSqrd, Data.FullSpeed);
 
             _courseHeadingCheckPeriod = Mathf.RoundToInt(1000 / (speedFactor * 5));  // higher speeds mean a shorter period between course checks, aka more frequent checks
             _courseHeadingCheckDistanceThresholdSqrd = speedFactor * speedFactor;   // higher speeds mean course checks become continuous further away
@@ -222,8 +246,36 @@ namespace CodeEnv.Master.GameContent {
                 _courseHeadingCheckDistanceThresholdSqrd /= 5F;
             }
             _courseHeadingCheckDistanceThresholdSqrd = Mathf.Max(_courseHeadingCheckDistanceThresholdSqrd, _closeEnoughDistanceToTargetSqrd * 2);
-            D.Log("{0}: CourseCheckPeriod = {1}, CourseCheckDistanceThreshold = {2}.", Data.Name, _courseHeadingCheckPeriod, Mathf.Sqrt(_courseHeadingCheckDistanceThresholdSqrd));
+            //D.Log("{0}: CourseCheckPeriod = {1}, CourseCheckDistanceThreshold = {2}.", Data.FullName, _courseHeadingCheckPeriod, Mathf.Sqrt(_courseHeadingCheckDistanceThresholdSqrd));
         }
+
+        /// <summary>
+        /// Checks whether the pilot can approach the provided location directly.
+        /// </summary>
+        /// <param name="location">The location to approach.</param>
+        /// <returns>
+        ///   <c>true</c> if there is nothing obstructing a direct approach.
+        /// </returns>
+        private bool CheckApproachTo(Vector3 location) {
+            Vector3 currentPosition = Data.Position;
+            Vector3 vectorToLocation = location - currentPosition;
+            float distanceToLocation = vectorToLocation.magnitude;
+            if (distanceToLocation < CloseEnoughDistanceToTarget) {
+                // already inside close enough distance
+                return true;
+            }
+            Vector3 directionToLocation = vectorToLocation.normalized;
+            float rayDistance = distanceToLocation - CloseEnoughDistanceToTarget;
+            float clampedRayDistance = Mathf.Clamp(rayDistance, 0.1F, Mathf.Infinity);
+            RaycastHit hitInfo;
+            if (Physics.Raycast(currentPosition, directionToLocation, out hitInfo, clampedRayDistance, _keepoutOnlyLayerMask.value)) {
+                D.Log("{0} encountered obstacle {1} when checking approach to {2}.", Data.FullName, hitInfo.collider.name, location);
+                // there is a keepout zone obstacle in the way 
+                return false;
+            }
+            return true;
+        }
+
 
         /// <summary>
         /// Checks whether the distance between 2 objects is increasing.
@@ -231,10 +283,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="distanceToCurrentDestinationSqrd">The distance automatic current destination SQRD.</param>
         /// <param name="previousDistanceSqrd">The previous distance SQRD.</param>
         /// <returns>true if the seperation distance is increasing.</returns>
-        protected bool CheckSeparation(float distanceToCurrentDestinationSqrd, ref float previousDistanceSqrd) {
+        private bool CheckSeparation(float distanceToCurrentDestinationSqrd, ref float previousDistanceSqrd) {
             if (distanceToCurrentDestinationSqrd > previousDistanceSqrd + __separationTestToleranceDistanceSqrd) {
                 D.Warn("{0} separating from {1}. DistanceSqrd = {2}, previousSqrd = {3}, tolerance = {4}.",
-    Data.Name, Target.Name, distanceToCurrentDestinationSqrd, previousDistanceSqrd, __separationTestToleranceDistanceSqrd);
+    Data.FullName, Target.FullName, distanceToCurrentDestinationSqrd, previousDistanceSqrd, __separationTestToleranceDistanceSqrd);
                 return true;
             }
             if (distanceToCurrentDestinationSqrd < previousDistanceSqrd) {
@@ -249,7 +301,7 @@ namespace CodeEnv.Master.GameContent {
             // frequency of course progress checks increases as fullSpeed and gameSpeed increase
             float courseProgressCheckFrequency = 1F + (Data.FullSpeed * _gameSpeedMultiplier);
             _courseProgressCheckPeriod = 1F / courseProgressCheckFrequency;
-            D.Log("{0}.{1} frequency of course progress checks adjusted to {2:0.####}.", Data.Name, GetType().Name, courseProgressCheckFrequency);
+            D.Log("{0} frequency of course progress checks adjusted to {1:0.####}.", Data.FullName, courseProgressCheckFrequency);
         }
 
         public override string ToString() {

@@ -71,6 +71,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="toShow">if set to <c>true</c> shows the hud, otherwise hides it.</param>
         /// <param name="intelLevel">The intel level.</param>
         public void ShowHud(bool toShow, IIntel intel) {
+            D.Log("ShowHud({0} called. Intel = {1}.", toShow, intel.CurrentCoverage.GetName());
             if (toShow) {
                 PrepareHudText(intel);
                 if (_job == null) {

@@ -113,11 +113,6 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
         _command.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
     }
 
-    protected override void EnableViews() {
-        _elements.ForAll(e => e.gameObject.GetSafeMonoBehaviourComponent<ShipView>().enabled = true);
-        _command.gameObject.GetSafeMonoBehaviourComponent<FleetCmdView>().enabled = true;
-    }
-
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

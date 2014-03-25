@@ -240,7 +240,8 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
     /// Any parameter passed to the current handler that should be passed on
     /// </param>
     protected void RelayToCurrentState(params object[] param) {
-        var message = CurrentState.ToString() + "_" + (new StackFrame(1)).GetMethod().Name;
+        if (CurrentState.Equals(default(E))) { return; }
+        var message = CurrentState.ToString() + Constants.Underscore + new StackFrame(1).GetMethod().Name;
         SendMessageEx(message, param);
     }
 

@@ -31,6 +31,8 @@ public class SectorModel : AItemModel, ISectorModel {
         get { return Data.SectorIndex; }
     }
 
+    protected override void Initialize() { }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IDestinationTarget {
 
-        string Name { get; }
+        string FullName { get; }
 
         Vector3 Position { get; }
 
