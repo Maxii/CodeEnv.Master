@@ -97,9 +97,11 @@ public abstract class AItemModel : AMonoBase, IModel, IDestinationTarget, IDispo
         }
     }
 
-
+    #region IModel Members
 
     public Transform Transform { get { return _transform; } }
+
+    #endregion
 
     #region IDestinationTarget Members
 

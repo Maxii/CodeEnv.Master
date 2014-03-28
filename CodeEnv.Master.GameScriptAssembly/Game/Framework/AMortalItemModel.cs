@@ -101,9 +101,8 @@ public abstract class AMortalItemModel : AItemModel, IMortalModel, IMortalTarget
     }
 
     protected IEnumerator DelayedDestroy(float delayInSeconds) {
-        D.Log("{0}.DelayedDestroy({1}).", Data.Name, delayInSeconds);
+        D.Log("{0}.DelayedDestroy({1}).", FullName, delayInSeconds);
         yield return new WaitForSeconds(delayInSeconds);
-        D.Log("{0} GameObject being destroyed.", Data.Name);
         Destroy(gameObject);
     }
 

@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FormationStationTracker.cs
+// File: FormationStation.cs
 // Tracks whether the assigned ship is within the radius of it's Station in the Formation.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// Tracks whether the assigned ship is within the radius of it's Station in the Formation.
 /// </summary>
-public class FormationStationTracker : AMonoBase, IFormationStationTracker, IDestinationTarget {
+public class FormationStation : AMonoBase, IFormationStation, IDestinationTarget {
 
     private SphereCollider _collider;
 
@@ -72,9 +72,9 @@ public class FormationStationTracker : AMonoBase, IFormationStationTracker, IDes
 
     private void OnAssignedShipChanged() {
         if (AssignedShip != null) {
-            Radius = AssignedShip.Radius * 5F;
+            StationRadius = AssignedShip.Radius * 5F;
             //D.Log("{0}.StationRadius set to {1:0.0000}.", AssignedShip.FullName, StationRadius);
-            _collider.radius = Radius;
+            _collider.radius = StationRadius;
             // Note: OnTriggerEnter appears to detect ship is onStation once the collider is enabled even if already inside
             // Unfortunately, that detection has a small delay (collider init?) so this is needed to fill the gap
             if (IsShipAlreadyOnStation) {
@@ -123,9 +123,11 @@ public class FormationStationTracker : AMonoBase, IFormationStationTracker, IDes
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region IFormationStationTracker Members
+    #region IFormationStation Members
 
     public bool IsOnStation { get; private set; }
+
+    public float StationRadius { get; private set; }
 
     private Vector3 _stationOffset;
     /// <summary>
@@ -161,8 +163,9 @@ public class FormationStationTracker : AMonoBase, IFormationStationTracker, IDes
         get { return true; }
     }
 
-    public float Radius { get; private set; }
+    public float Radius { get { return Constants.ZeroF; } }
 
     #endregion
+
 }
 

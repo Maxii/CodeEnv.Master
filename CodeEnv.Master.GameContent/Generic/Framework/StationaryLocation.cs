@@ -45,8 +45,7 @@ namespace CodeEnv.Master.GameContent {
 
         public bool IsMovable { get { return false; } }
 
-        // IMPROVE must be big enough for ship navigator to have a chance at coming 'close enough'
-        public float Radius { get { return 3; } }
+        public float Radius { get { return Constants.ZeroF; } }
 
         #endregion
     }

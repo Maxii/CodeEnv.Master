@@ -45,8 +45,6 @@ namespace CodeEnv.Master.GameContent {
 
         ExecuteAssumeStationOrder,
 
-        AssumingStation,
-
         Withdrawing,
 
         Disbanding,

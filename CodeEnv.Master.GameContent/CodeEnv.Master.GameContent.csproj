@@ -67,7 +67,7 @@
     <Compile Include="Game\Graphics\StarPresenter.cs" />
     <Compile Include="Game\Graphics\SystemPresenter.cs" />
     <Compile Include="Game\Graphics\UniverseCenterPresenter.cs" />
-    <Compile Include="Generic\Framework\IFormationStationTracker.cs" />
+    <Compile Include="Generic\Framework\IFormationStation.cs" />
     <Compile Include="Generic\Framework\MortalItemDeathEvent.cs" />
     <Compile Include="Generic\Graphics\AFocusableItemPresenter.cs" />
     <Compile Include="Generic\Graphics\AMortalItemPresenter.cs" />

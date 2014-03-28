@@ -34,7 +34,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     private FleetCmdModel fleetCmdPrefab;
     private StarbaseCmdModel starbaseCmdPrefab;
     private SettlementCmdModel settlementCmdPrefab;
-    private FormationStationTracker formationStationTrackerPrefab;
+    private FormationStation formationStationTrackerPrefab;
 
     private UnitFactory() {
         Initialize();
@@ -254,10 +254,10 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         facilityGo.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(facilityGo.transform);
     }
 
-    public FormationStationTracker MakeFormationStationTrackerInstance(Vector3 stationOffset, FleetCmdModel fleetCmd) {
+    public FormationStation MakeFormationStationTrackerInstance(Vector3 stationOffset, FleetCmdModel fleetCmd) {
         // make a folder for neatness if one doesn't yet exist
         GameObject stationTrackerFolder = null;
-        var trackers = fleetCmd.gameObject.GetComponentsInChildren<FormationStationTracker>();
+        var trackers = fleetCmd.gameObject.GetComponentsInChildren<FormationStation>();
         if (trackers.IsNullOrEmpty()) {
             stationTrackerFolder = new GameObject("StationTrackers");
             UnityUtility.AttachChildToParent(stationTrackerFolder, fleetCmd.gameObject);
@@ -268,7 +268,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         }
 
         GameObject stGo = UnityUtility.AddChild(stationTrackerFolder, formationStationTrackerPrefab.gameObject);
-        FormationStationTracker st = stGo.GetSafeMonoBehaviourComponent<FormationStationTracker>();
+        FormationStation st = stGo.GetSafeMonoBehaviourComponent<FormationStation>();
         st.StationOffset = stationOffset;
         //D.Log("New FormationStation created at {0}, Offset = {1}, FleetCmd at {2}.", st.transform.position, stationOffset, fleetCmd.transform.position);
         return st;

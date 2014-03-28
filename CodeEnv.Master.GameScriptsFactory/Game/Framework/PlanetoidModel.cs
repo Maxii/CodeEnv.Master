@@ -82,7 +82,9 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel {
     public override void OnShowCompletion() {
         switch (CurrentState) {
             case PlanetoidState.Dead:
-                StartCoroutine(DelayedDestroy(3));
+                new Job(DelayedDestroy(3), toStart: true, onJobComplete: (wasKilled) => {
+                    D.Log("{0} has been destroyed.", FullName);
+                });
                 break;
             case PlanetoidState.Normal:
                 // do nothing

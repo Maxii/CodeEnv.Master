@@ -49,13 +49,13 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     public FleetNavigator Navigator { get; private set; }
 
     /// <summary>
-    /// The current formation's station trackers.
+    /// The formation's stations.
     /// </summary>
-    private List<IFormationStationTracker> _formationStations;
+    private List<IFormationStation> _formationStations;
 
     protected override void Awake() {
         base.Awake();
-        _formationStations = new List<IFormationStationTracker>();
+        _formationStations = new List<IFormationStation>();
         Subscribe();
     }
 
@@ -150,7 +150,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         }
 
         IShipModel ship = element as IShipModel;
-        IFormationStationTracker selectedTracker = ship.Data.FormationStation;
+        IFormationStation selectedTracker = ship.Data.FormationStation;
         if (selectedTracker == null) {
             // the ship does not yet have a formation station so find or make one
             var emptyTrackers = _formationStations.Where(fst => fst.AssignedShip == null);
@@ -220,6 +220,10 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     public void __IssueShipMovementOrders(IDestinationTarget target, Speed speed, float standoffDistance = Constants.ZeroF) {
         var moveToOrder = new UnitMoveOrder<ShipOrders>(ShipOrders.MoveTo, target, speed, standoffDistance);
         Elements.ForAll(e => (e as ShipModel).CurrentOrder = moveToOrder);
+    }
+
+    public bool IsBearingConfirmed {
+        get { return Elements.All(e => (e as ShipModel).IsBearingConfirmed); }
     }
 
     #region StateMachine
@@ -473,7 +477,9 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     void Dead_OnShowCompletion() {
         LogEvent();
-        StartCoroutine(DelayedDestroy(3));
+        new Job(DelayedDestroy(3), toStart: true, onJobComplete: (wasKilled) => {
+            D.Log("{0} has been destroyed.", FullName);
+        });
     }
 
     #endregion

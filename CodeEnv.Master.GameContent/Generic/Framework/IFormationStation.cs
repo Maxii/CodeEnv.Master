@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IFormationStationTracker.cs
-// Interface for access to OnStationTracker.
+// File: IFormationStation.cs
+// Interface for access to FormationStation.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,16 +20,16 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for access to OnStationTracker.
+    /// Interface for access to FormationStation.
     /// </summary>
-    public interface IFormationStationTracker {
+    public interface IFormationStation {
 
         bool IsOnStation { get; }
 
-        float Radius { get; }
+        float StationRadius { get; }
 
         /// <summary>
-        /// The Vector3 offset of this station of the formation from the HQ Element.
+        /// The offset of this formation station from the HQ Element.
         /// </summary>
         Vector3 StationOffset { get; set; }
 

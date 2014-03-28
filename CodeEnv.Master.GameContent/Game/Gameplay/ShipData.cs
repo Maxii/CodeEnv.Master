@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The station in the formation this ship is currently assigned too.
         /// </summary>
-        public IFormationStationTracker FormationStation { get; set; }
+        public IFormationStation FormationStation { get; set; }
 
         /// <summary>
         /// Readonly. Gets the current speed of the ship in Units per

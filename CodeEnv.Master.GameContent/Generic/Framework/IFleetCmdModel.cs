@@ -29,9 +29,12 @@ namespace CodeEnv.Master.GameContent {
 
         UnitOrder<FleetOrders> CurrentOrder { get; set; }
 
-        //bool ChangeHeading(Vector3 newHeading, bool isAutoPilot = false);
-
-        //bool ChangeSpeed(Speed newSpeed, bool isAutoPilot = false);
+        /// <summary>
+        /// Indicates whether all ships in the fleet have assumed the bearing
+        /// of the flagship. Currently used as a 'ready to depart' indicator so
+        /// all fleet ships move together.
+        /// </summary>
+        bool IsBearingConfirmed { get; }
 
     }
 }

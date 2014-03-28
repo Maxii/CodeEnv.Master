@@ -135,7 +135,7 @@
     <Compile Include="Generic\Framework\SettlementUnitCreator.cs" />
     <Compile Include="Game\_Debug\Settlements.cs" />
     <Compile Include="Game\_Debug\Starbases.cs" />
-    <Compile Include="Generic\Framework\FormationStationTracker.cs" />
+    <Compile Include="Generic\Framework\FormationStation.cs" />
     <Compile Include="ThirdParty\MyAStarPointGenerator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Generic\Framework\Loader.cs" />

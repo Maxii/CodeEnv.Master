@@ -44,7 +44,7 @@ public class RequiredPrefabs : AMonoBaseSingleton<RequiredPrefabs> {
     public GameObject[] planets;
 
     public RangeTracker rangeTracker;
-    public FormationStationTracker formationStationTracker;
+    public FormationStation formationStationTracker;
 
     protected override void Awake() {
         base.Awake();

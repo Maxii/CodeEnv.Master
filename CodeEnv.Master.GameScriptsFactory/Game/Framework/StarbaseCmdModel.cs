@@ -160,7 +160,9 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
 
     void Dead_OnShowCompletion() {
         LogEvent();
-        StartCoroutine(DelayedDestroy(3));
+        new Job(DelayedDestroy(3), toStart: true, onJobComplete: (wasKilled) => {
+            D.Log("{0} has been destroyed.", FullName);
+        });
     }
 
     #endregion
