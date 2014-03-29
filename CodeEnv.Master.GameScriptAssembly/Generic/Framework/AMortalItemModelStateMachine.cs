@@ -350,7 +350,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
             if (!param.IsNullOrEmpty()) {
                 parameters = param.Concatenate();
             }
-            D.Log("{0} did not find Method with signature {1}({2}).", FullName, message, parameters);  // my addition
+            D.Warn("{0} did not find Method with signature {1}({2}).", FullName, message, parameters);  // my addition
             return false;   // my addition
         }
     }

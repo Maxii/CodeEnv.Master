@@ -285,7 +285,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     void Moving_EnterState() {
         LogEvent();
-        var mortalMoveTarget = _moveTarget as IMortalTarget;
+        var mortalMoveTarget = _moveTarget as IMortalModel;
         if (mortalMoveTarget != null) {
             mortalMoveTarget.onItemDeath += OnTargetDeath;
         }
@@ -309,7 +309,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         Return();
     }
 
-    void Moving_OnTargetDeath(IMortalTarget deadTarget) {
+    void Moving_OnTargetDeath(IMortalModel deadTarget) {
         LogEvent();
         D.Assert(_moveTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(Data.Name, _moveTarget.FullName, deadTarget.FullName));
         Return();
@@ -322,7 +322,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     void Moving_ExitState() {
         LogEvent();
-        var mortalMoveTarget = _moveTarget as IMortalTarget;
+        var mortalMoveTarget = _moveTarget as IMortalModel;
         if (mortalMoveTarget != null) {
             mortalMoveTarget.onItemDeath -= OnTargetDeath;
         }
@@ -371,6 +371,12 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
             CurrentState = FleetState.Idling;
             yield break;
         }
+        if (attackOrder.Target.IsDead) {
+            // Moving Return()s if the target dies
+            CurrentState = FleetState.Idling;
+            yield break;
+        }
+
         Call(FleetState.Attacking);
         yield return null;  // required immediately after Call() to avoid FSM bug
         CurrentState = FleetState.Idling;
@@ -395,7 +401,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         Elements.ForAll(e => (e as ShipModel).CurrentOrder = elementAttackOrder);
     }
 
-    void Attacking_OnTargetDeath(IMortalTarget deadTarget) {
+    void Attacking_OnTargetDeath(IMortalModel deadTarget) {
         LogEvent();
         D.Assert(_attackTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(Data.FullName, _attackTarget.FullName, deadTarget.FullName));
         Return();

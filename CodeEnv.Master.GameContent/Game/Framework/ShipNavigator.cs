@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public Speed Speed { get; private set; }
 
-        public bool IsEngaged {
+        public bool IsAutoPilotEngaged {
             get { return _pilotJob != null && _pilotJob.IsRunning; }
         }
 
@@ -89,12 +89,13 @@ namespace CodeEnv.Master.GameContent {
 
         private TargetInfo _targetInfo;
         private ShipData _data;
-        private IList<IDisposable> _subscribers;
         private IShipModel _ship;
+
+        private IList<IDisposable> _subscribers;
         private GameStatus _gameStatus;
         private GameTime _gameTime;
-        protected float _gameSpeedMultiplier;
-        protected Job _pilotJob;
+        private float _gameSpeedMultiplier;
+        private Job _pilotJob;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ShipNavigator" /> class.
@@ -115,6 +116,8 @@ namespace CodeEnv.Master.GameContent {
             _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
             _subscribers.Add(_data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullSpeed, OnFullSpeedChanged));
         }
+
+        #region PlotCourse
 
         /// <summary>
         /// Plots the course to the target and notifies the requester of the 
@@ -233,11 +236,13 @@ namespace CodeEnv.Master.GameContent {
             OnCoursePlotSuccess();
         }
 
+        #endregion
+
         /// <summary>
         /// Engages pilot execution to destination by direct
         /// approach. A ship does not use A* pathing.
         /// </summary>
-        public void Engage() {
+        public void EngageAutoPilot() {
             if (_pilotJob != null && _pilotJob.IsRunning) {
                 _pilotJob.Kill();
             }
@@ -247,9 +252,9 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Primary external control to disengage the pilot once Engage has been called.
         /// </summary>
-        public void Disengage() {
-            if (IsEngaged) {
-                D.Log("{0} Navigator disengaging.", _ship.FullName);
+        public void DisengageAutoPilot() {
+            if (IsAutoPilotEngaged) {
+                D.Log("{0} AutoPilot disengaging.", _ship.FullName);
                 _pilotJob.Kill();
             }
         }
@@ -351,12 +356,6 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
-        public void OnShipOnStation(bool isOnStation) {
-            if (IsEngaged && isOnStation && _targetInfo.Target is IFormationStation) {
-                OnDestinationReached();
-            }
-        }
-
         private void OnCoursePlotFailure() {
             var temp = onCoursePlotFailure;
             if (temp != null) {
@@ -371,6 +370,14 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        /// <summary>
+        /// Called when the ship gets 'close enough' to the destination
+        /// EXCEPT when the destination is a formation station. In that case,
+        /// closeEnoughDistance is 0 (radius and standoffDistance are not used)
+        /// which means this event will never be raised. The actual arrival onStation
+        /// is detected by the formation station itself which tells the ship's
+        /// state machine, ending the move.
+        /// </summary>
         private void OnDestinationReached() {
             _pilotJob.Kill();
             D.Log("{0} at {1} reached {2} at {3} (w/station offset). Actual proximity {4:0.00} units.",

@@ -85,11 +85,11 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     /// <returns><c>true</c> if the heading change was accepted.</returns>
     public bool ChangeHeading(Vector3 newHeading, bool isAutoPilot = false) {
         if (DebugSettings.Instance.StopShipMovement) {
-            Navigator.Disengage();
+            Navigator.DisengageAutoPilot();
             return false;
         }
         if (!isAutoPilot) {
-            Navigator.Disengage();
+            Navigator.DisengageAutoPilot();
         }
 
         newHeading.ValidateNormalized();
@@ -152,11 +152,11 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     /// <returns><c>true</c> if the speed change was accepted.</returns>
     public bool ChangeSpeed(Speed newSpeed, bool isAutoPilot = false) {
         if (DebugSettings.Instance.StopShipMovement) {
-            Navigator.Disengage();
+            Navigator.DisengageAutoPilot();
             return false;
         }
         if (!isAutoPilot) {
-            Navigator.Disengage();
+            Navigator.DisengageAutoPilot();
         }
 
         return _engineRoom.ChangeSpeed(newSpeed.GetValue(Command.Data, Data));
@@ -215,16 +215,24 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         D.Log("{0}.Idling_EnterState.", FullName);
         AllStop();
         if (!Data.FormationStation.IsOnStation) {
-            if (IsHQElement) {
-                var distanceFromStation = Vector3.Distance(Position, (Data.FormationStation as Component).transform.position);
-                D.Error("HQElement {0} is not OnStation, {1:0.00} away. StationOffset = {2}, StationRadius = {3}.",
-                    FullName, distanceFromStation, Data.FormationStation.StationOffset, Data.FormationStation.StationRadius);
-                yield break;
-            }
-            CurrentOrder = new UnitOrder<ShipOrders>(ShipOrders.AssumeStation);
+            ProceedToFormationStation();
+            //if (IsHQElement) {
+            //    var distanceFromStation = Vector3.Distance(Position, (Data.FormationStation as Component).transform.position);
+            //    D.Error("HQElement {0} is not OnStation, {1:0.00} away. StationOffset = {2}, StationRadius = {3}.",
+            //        FullName, distanceFromStation, Data.FormationStation.StationOffset, Data.FormationStation.StationRadius);
+            //    yield break;
+            //}
+            //CurrentOrder = new UnitOrder<ShipOrders>(ShipOrders.AssumeStation);
         }
         // TODO register as available
         yield return null;
+    }
+
+    void Idling_OnShipOnStation(bool isOnStation) {
+        LogEvent();
+        if (!isOnStation) {
+            ProceedToFormationStation();
+        }
     }
 
     void Idling_OnWeaponReady(Weapon weapon) {
@@ -325,7 +333,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     void Moving_OnCoursePlotSuccess() {
         LogEvent();
-        Navigator.Engage();
+        Navigator.EngageAutoPilot();
     }
 
     void Moving_OnCoursePlotFailure() {
@@ -356,6 +364,13 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         Return();
     }
 
+    void Moving_OnShipOnStation(bool isOnStation) {
+        LogEvent();
+        if (isOnStation && _moveTarget is IFormationStation) {
+            Moving_OnDestinationReached();
+        }
+    }
+
     void Moving_ExitState() {
         LogEvent();
         var mortalMoveTarget = _moveTarget as IMortalModel;
@@ -366,7 +381,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         _moveSpeed = Speed.AllStop;
         _standoffDistance = Constants.ZeroF;
         _isFleetMove = false;
-        Navigator.Disengage();
+        Navigator.DisengageAutoPilot();
         // the ship retains its existing speed and heading upon exit
     }
 
@@ -625,6 +640,16 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     #region StateMachine Support Methods
 
+    private void ProceedToFormationStation() {
+        if (IsHQElement) {
+            var distanceFromStation = Vector3.Distance(Position, (Data.FormationStation as Component).transform.position);
+            D.Error("HQElement {0} is not OnStation, {1:0.00} away. StationOffset = {2}, StationRadius = {3}.",
+                FullName, distanceFromStation, Data.FormationStation.StationOffset, Data.FormationStation.StationRadius);
+            return;
+        }
+        CurrentOrder = new UnitOrder<ShipOrders>(ShipOrders.AssumeStation);
+    }
+
     /// <summary>
     /// Attempts to fire the provided weapon at a target within range.
     /// </summary>
@@ -697,7 +722,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     protected override void OnItemDeath() {
         base.OnItemDeath();
-        Navigator.Disengage();
+        Navigator.DisengageAutoPilot();
     }
 
     #endregion
@@ -816,7 +841,10 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     public void OnShipOnStation(bool isOnStation) {
         D.Log("{0}.OnShipOnStation({1}) called.", FullName, isOnStation);
-        Navigator.OnShipOnStation(isOnStation);
+        if (CurrentState == ShipState.Moving || CurrentState == ShipState.Idling) {
+            // filter these so I can allow RelayToCurrentState() to warn when it doesn't find a matching method
+            RelayToCurrentState(isOnStation);
+        }
     }
 
     #endregion
