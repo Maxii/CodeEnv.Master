@@ -42,10 +42,20 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel {
         Subscribe();
     }
 
+    /// <summary>
+    /// Sets the initial state of each element's state machine. There must already be a formation,
+    /// and the game must already be running in case this initial state takes an action.
+    /// </summary>
     protected override void FinishInitialization() {
         CurrentState = SettlementState.Idling;
         //D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
     }
+
+    protected override void InitializeElementsState() {
+        (HQElement as IFacilityModel).CurrentState = FacilityState.Idling;
+        Elements.Except(HQElement).ForAll(e => (e as IFacilityModel).CurrentState = FacilityState.Idling);
+    }
+
 
     public override void AddElement(IElementModel element) {
         base.AddElement(element);

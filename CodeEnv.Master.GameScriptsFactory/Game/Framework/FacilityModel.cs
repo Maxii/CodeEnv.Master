@@ -62,7 +62,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
 
     protected override void Initialize() {
         base.Initialize();
-        CurrentState = FacilityState.Idling;
+        CurrentState = FacilityState.None;  // Idling now set from Cmd after the formation is deployed and the game is running
         //D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
     }
 

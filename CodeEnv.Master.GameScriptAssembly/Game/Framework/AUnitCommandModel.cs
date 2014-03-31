@@ -59,24 +59,37 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
     }
 
     protected sealed override void Initialize() {
-        InitializeElements();
-        StartCoroutine(InitializeAfterElementsInitialized());
+        EnableElements();
+        new Job(InitializeAfterElementsEnabled(), toStart: true);
     }
 
-    private void InitializeElements() {
+    private void EnableElements() {
         HQElement = SelectHQElement();
         Elements.ForAll(e => e.enabled = true);
     }
 
-    private IEnumerator InitializeAfterElementsInitialized() {
+    private IEnumerator InitializeAfterElementsEnabled() {
         yield return null;  // delay to allow Elements to initialize
         OnElementsInitializationCompleted();
         _formationGenerator.RegenerateFormation();  // must follow element init as formation stations need ship radius
         FinishInitialization();
+        if (GameStatus.Instance.IsRunning) {
+            InitializeElementsState();
+        }
+        else {
+            GameStatus.Instance.onIsRunning_OneShot += OnGameIsRunning;
+        }
     }
 
     /// <summary>
-    /// Finishes the initialization process. All Elements are already initialized.
+    /// Sets the initial state of each element's state machine. This follows generation
+    /// of the formation, and makes sure the game is already running.
+    /// </summary>
+    protected abstract void InitializeElementsState();
+
+    /// <summary>
+    /// Finishes the initialization process. All Elements are already initialized but
+    /// their state machine has not yet been activated.
     /// </summary>
     protected abstract void FinishInitialization();
 
@@ -119,6 +132,10 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
             // HQ Element has left
             HQElement = SelectHQElement();
         }
+    }
+
+    protected virtual void OnGameIsRunning() {
+        InitializeElementsState();
     }
 
     private void OnElementsInitializationCompleted() {

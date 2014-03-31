@@ -46,7 +46,7 @@ public class ShipView : AUnitElementView, ISelectable {
     protected override void Start() {
         base.Start();
         InitializeContextMenu();
-        D.Log("{0}.{1} Initialization complete.", Presenter.Model.FullName, GetType().Name);
+        //D.Log("{0}.{1} Initialization complete.", Presenter.Model.FullName, GetType().Name);
     }
 
     #region ContextMenu

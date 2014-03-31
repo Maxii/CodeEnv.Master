@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public static float DeltaTimeOrPausedWithGameSpeed {
             get {
-                D.Assert(Instance._isClockEnabled);
+                D.Assert(Instance._isClockEnabled, "{0} clock is not enabled.".Inject(typeof(GameTime).Name));
                 if (GameStatus.Instance.IsPaused) {
                     return Constants.ZeroF;
                 }

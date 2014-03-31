@@ -58,7 +58,7 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
         base.Start();
         __InitializeContextMenu();
         InitializeTrackingTarget();
-        D.Log("{0}.{1} Initialization complete.", Presenter.Model.FullName, GetType().Name);
+        //D.Log("{0}.{1} Initialization complete.", Presenter.Model.FullName, GetType().Name);
     }
 
     protected abstract void InitializeTrackingTarget();

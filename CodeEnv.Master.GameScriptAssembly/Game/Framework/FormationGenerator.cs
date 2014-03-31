@@ -43,6 +43,7 @@ public class FormationGenerator {
     /// <param name="minimumSeparation">The minimum separation between elements. TODO implement so ship formationStations do not overlap.</param>
     /// <exception cref="System.NotImplementedException"></exception>
     public void RegenerateFormation(float minimumSeparation = Constants.ZeroF) {
+        D.Log("{0} is about to regenerate its formation to {1}.", _unitCmd.FullName, _unitCmd.Data.UnitFormation.GetName());
         switch (_unitCmd.Data.UnitFormation) {
             case Formation.Circle:
                 PositionElementsEquidistantInCircle();
@@ -120,6 +121,7 @@ public class FormationGenerator {
                 return false;
             }
         }
+
 
         _unitCmd.PositionElementInFormation(hqElement, Vector3.zero);
         for (int i = 0; i < elementsToPositionAroundHQ.Length; i++) {

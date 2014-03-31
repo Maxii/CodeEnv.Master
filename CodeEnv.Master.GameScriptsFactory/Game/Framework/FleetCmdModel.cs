@@ -62,7 +62,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     protected override void FinishInitialization() {
         InitializeNavigator();
         CurrentState = FleetState.Idling;
-        D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
+        //D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
     }
 
     private void InitializeNavigator() {
@@ -73,9 +73,13 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         Navigator.onCoursePlotSuccess += OnCoursePlotSuccess;
     }
 
-    protected override void Subscribe() {
-        base.Subscribe();
-        _subscribers.Add(GameStatus.Instance.SubscribeToPropertyChanged<GameStatus, bool>(gs => gs.IsRunning, OnIsRunningChanged));
+    /// <summary>
+    /// Sets the initial state of each element's state machine. There must already be a formation,
+    /// and the game must already be running in case this initial state takes an action.
+    /// </summary>
+    protected override void InitializeElementsState() {
+        HQElement.CurrentState = ShipState.Idling;
+        Elements.Except(HQElement).ForAll(e => (e as IShipModel).CurrentState = ShipState.Idling);
     }
 
     public override void AddElement(IElementModel element) {
@@ -121,11 +125,10 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     // ships, not by directly telling ships to modify their speed or heading. As such,
     // the ChangeHeading(), ChangeSpeed() and AllStop() methods have been removed.
 
-    private void OnIsRunningChanged() {
-        if (GameStatus.Instance.IsRunning) {
-            __GetFleetUnderway();
-            //__GetFleetAttackUnderway();
-        }
+    protected override void OnGameIsRunning() {
+        base.OnGameIsRunning();
+        __GetFleetUnderway();
+        //__GetFleetAttackUnderway();
     }
 
     protected override void OnHQElementChanged() {
@@ -143,13 +146,18 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     }
 
     protected override void PositionElementInFormation(IElementModel element, Vector3 stationOffset) {
+        IShipModel ship = element as IShipModel;
         if (!GameStatus.Instance.IsRunning) {
             // instantly place the ship in its proper position before assigning it to a tracker so the tracker will find it 'onStation'
             // during gameplay, the ships will move under power to their station
+            //D.Warn("{0}.Velocity = {1} before positioning.", ship.FullName, ship.Transform.rigidbody.velocity);
+            //ship.Transform.rigidbody.isKinematic = true;  // IMPROVE do rigidbodies assume velocity when repositioned?
             base.PositionElementInFormation(element, stationOffset);
+            //ship.Transform.rigidbody.velocity = Vector3.zero;
+            //ship.Transform.rigidbody.isKinematic = false;
+            //D.Warn("{0}.Velocity = {1} after positioning.", ship.FullName, ship.Transform.rigidbody.velocity);
         }
 
-        IShipModel ship = element as IShipModel;
         IFormationStation selectedTracker = ship.Data.FormationStation;
         if (selectedTracker == null) {
             // the ship does not yet have a formation station so find or make one
@@ -175,6 +183,8 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
             D.Log("{0} already has a FormationStation.", ship.FullName);
         }
         selectedTracker.StationOffset = stationOffset;
+        // as some ships were temporarily set to be immune to physics in FleetUnitCreator, make sure of their proper setting
+        ship.Transform.rigidbody.isKinematic = false;
     }
 
     protected override void CleanupAfterFormationGeneration() {

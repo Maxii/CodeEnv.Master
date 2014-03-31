@@ -41,11 +41,9 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         set { base.Data = value; }
     }
 
-    public ShipNavigator Navigator { get; private set; }
+    public Helm Helm { get; private set; }
 
     public IFleetCmdModel Command { get; set; }
-    private EngineRoom _engineRoom;
-    private Job _headingJob;
 
     protected override void Awake() {
         base.Awake();
@@ -54,126 +52,18 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     protected override void Initialize() {
         base.Initialize();
-        _engineRoom = new EngineRoom(Data, _rigidbody);
-        InitializeNavigator();
-        CurrentState = ShipState.Idling;
-        D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
+        InitializeHelm();
+        CurrentState = ShipState.None;  // Idling now set from Cmd after the formation is deployed and the game is running
+        //D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
     }
 
-    #region Navigation
-
-    public bool IsBearingConfirmed { get; private set; }
-
-    private void InitializeNavigator() {
-        Navigator = new ShipNavigator(this);
-        Navigator.onDestinationReached += OnDestinationReached;
-        Navigator.onCourseTrackingError += OnCourseTrackingError;
-        Navigator.onCoursePlotFailure += OnCoursePlotFailure;
-        Navigator.onCoursePlotSuccess += OnCoursePlotSuccess;
+    private void InitializeHelm() {
+        Helm = new Helm(this);
+        Helm.onDestinationReached += OnDestinationReached;
+        Helm.onCourseTrackingError += OnCourseTrackingError;
+        Helm.onCoursePlotFailure += OnCoursePlotFailure;
+        Helm.onCoursePlotSuccess += OnCoursePlotSuccess;
     }
-
-    private void AlignBearingWithFlagship() {
-        D.Log("{0} is aligning its bearing to {1}'s bearing {2}.", FullName, Command.HQElement.FullName, Command.HQElement.Data.RequestedHeading);
-        ChangeHeading(Command.HQElement.Data.RequestedHeading);
-    }
-
-    /// <summary>
-    /// Changes the direction the ship is headed in normalized world space coordinates.
-    /// </summary>
-    /// <param name="newHeading">The new direction in world coordinates, normalized.</param>
-    /// <param name="isAutoPilot">if set to <c>true</c> the requester is the autopilot.</param>
-    /// <returns><c>true</c> if the heading change was accepted.</returns>
-    public bool ChangeHeading(Vector3 newHeading, bool isAutoPilot = false) {
-        if (DebugSettings.Instance.StopShipMovement) {
-            Navigator.DisengageAutoPilot();
-            return false;
-        }
-        if (!isAutoPilot) {
-            Navigator.DisengageAutoPilot();
-        }
-
-        newHeading.ValidateNormalized();
-        if (newHeading.IsSameDirection(Data.RequestedHeading, 0.1F)) {
-            D.Warn("{0} received a duplicate ChangeHeading Command to {1}.", FullName, newHeading);
-            return false;
-        }
-        if (_headingJob != null && _headingJob.IsRunning) {
-            _headingJob.Kill();
-        }
-        D.Log("{0} changing heading to {1}.", FullName, newHeading);
-        Data.RequestedHeading = newHeading;
-        IsBearingConfirmed = false;
-        _headingJob = new Job(ExecuteHeadingChange(), toStart: true, onJobComplete: (wasKilled) => {
-            if (!_isDisposing) {
-                if (wasKilled) {
-                    D.Log("{0}'s turn order to {1} has been cancelled.", FullName, Data.RequestedHeading);
-                }
-                else {
-                    IsBearingConfirmed = true;
-                    D.Log("{0}'s turn to {1} is complete.  Heading deviation is {2:0.00}.", FullName, Data.RequestedHeading, Vector3.Angle(Data.CurrentHeading, Data.RequestedHeading));
-                    D.Log("CurrentHeading = {0}.", Data.CurrentHeading);
-                }
-                // ExecuteHeadingChange() appears to generate angular velocity which continues to turn the ship after the Job is complete
-                //D.Log("{0}._rigidbody.angularVelocity = {1}.", FullName, _rigidbody.angularVelocity);
-                _rigidbody.angularVelocity = Vector3.zero;
-            }
-        });
-        return true;
-    }
-
-    /// <summary>
-    /// Coroutine that executes a heading change without overshooting.
-    /// </summary>
-    /// <returns></returns>
-    private IEnumerator ExecuteHeadingChange() {
-        int previousFrameCount = Time.frameCount - 1;   // FIXME makes initial framesSinceLastPass = 1
-
-        float maxRadianTurnRatePerSecond = Mathf.Deg2Rad * Data.MaxTurnRate * (GameDate.HoursPerSecond / GameDate.HoursPerDay);
-        //D.Log("New coroutine. {0} coming to heading {1} at {2} radians/day.", _data.Name, _data.RequestedHeading, _data.MaxTurnRate);
-        while (!Data.CurrentHeading.IsSameDirection(Data.RequestedHeading, 1F)) {
-            int framesSinceLastPass = Time.frameCount - previousFrameCount; // needed when using yield return WaitForSeconds()
-            previousFrameCount = Time.frameCount;
-            float allowedTurn = maxRadianTurnRatePerSecond * GameTime.DeltaTimeOrPausedWithGameSpeed * framesSinceLastPass;
-            Vector3 newHeading = Vector3.RotateTowards(Data.CurrentHeading, Data.RequestedHeading, allowedTurn, maxMagnitudeDelta: 1F);
-            // maxMagnitudeDelta > 0F appears to be important. Otherwise RotateTowards can stop rotating when it gets very close
-            //D.Log("AllowedTurn = {0:0.0000}, CurrentHeading = {1}, ReqHeading = {2}, NewHeading = {3}", allowedTurn, Data.CurrentHeading, Data.RequestedHeading, newHeading);
-            _transform.rotation = Quaternion.LookRotation(newHeading);
-            //D.Log("{0} heading is now {1}.", FullName, Data.CurrentHeading);
-            yield return null; // new WaitForSeconds(0.5F);
-            //yield return new WaitForFixedUpdate();    // attempted to fix residual angular velocity this way but no go
-        }
-    }
-
-    /// <summary>
-    /// Changes the speed of the ship.
-    /// </summary>
-    /// <param name="newSpeed">The new speed request.</param>
-    /// <param name="isAutoPilot">if set to <c>true</c>the requester is the autopilot.</param>
-    /// <returns><c>true</c> if the speed change was accepted.</returns>
-    public bool ChangeSpeed(Speed newSpeed, bool isAutoPilot = false) {
-        if (DebugSettings.Instance.StopShipMovement) {
-            Navigator.DisengageAutoPilot();
-            return false;
-        }
-        if (!isAutoPilot) {
-            Navigator.DisengageAutoPilot();
-        }
-
-        return _engineRoom.ChangeSpeed(newSpeed.GetValue(Command.Data, Data));
-    }
-
-    /// <summary>
-    /// Stops the ship. The ship will actually not stop instantly as it has
-    /// momentum even with flaps deployed. Typically, this is called in the state
-    /// machine after a Return() from the Moving state. Otherwise, the ship keeps
-    /// moving in the direction and at the speed it had when it exited Moving.
-    /// </summary>
-    private void AllStop() {
-        LogEvent();
-        ChangeSpeed(Speed.AllStop);
-    }
-
-    #endregion
 
     #region Velocity Debugger
 
@@ -182,7 +72,9 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     //protected override void Update() {
     //    base.Update();
-    //    //__CompareVelocity();
+    //    if (GameStatus.Instance.IsRunning) {
+    //        __CompareVelocity();
+    //    }
     //}
 
     private void __CompareVelocity() {
@@ -194,12 +86,11 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         float elapsedTime = currentTime - __lastTime;
         __lastTime = currentTime;
         float calcVelocity = distanceTraveled / elapsedTime;
-        D.Log("Rigidbody.velocity = {0}, ShipData.currentSpeed = {1}, Calculated Velocity = {2}.",
-            rigidbody.velocity.magnitude, Data.CurrentSpeed, calcVelocity);
+        D.Log("{0}.Rigidbody.velocity = {1}, ShipData.currentSpeed = {2}, Calculated Velocity = {3}.",
+            FullName, rigidbody.velocity.magnitude, Data.CurrentSpeed, calcVelocity);
     }
 
     #endregion
-
 
     #region StateMachine
 
@@ -211,18 +102,10 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     #region Idling
 
     IEnumerator Idling_EnterState() {
-        //LogEvent();
         D.Log("{0}.Idling_EnterState.", FullName);
-        AllStop();
+        Helm.AllStop();
         if (!Data.FormationStation.IsOnStation) {
             ProceedToFormationStation();
-            //if (IsHQElement) {
-            //    var distanceFromStation = Vector3.Distance(Position, (Data.FormationStation as Component).transform.position);
-            //    D.Error("HQElement {0} is not OnStation, {1:0.00} away. StationOffset = {2}, StationRadius = {3}.",
-            //        FullName, distanceFromStation, Data.FormationStation.StationOffset, Data.FormationStation.StationRadius);
-            //    yield break;
-            //}
-            //CurrentOrder = new UnitOrder<ShipOrders>(ShipOrders.AssumeStation);
         }
         // TODO register as available
         yield return null;
@@ -264,8 +147,9 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             CurrentState = ShipState.Idling;
             yield break;
         }
-        AllStop();
-        AlignBearingWithFlagship();
+        Helm.AllStop();
+        Helm.AlignBearingWithFlagship();
+
         CurrentState = ShipState.Idling;
     }
 
@@ -328,12 +212,12 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         if (mortalMoveTarget != null) {
             mortalMoveTarget.onItemDeath += OnTargetDeath;
         }
-        Navigator.PlotCourse(_moveTarget, _moveSpeed, _standoffDistance, _isFleetMove);
+        Helm.PlotCourse(_moveTarget, _moveSpeed, _standoffDistance, _isFleetMove);
     }
 
     void Moving_OnCoursePlotSuccess() {
         LogEvent();
-        Navigator.EngageAutoPilot();
+        Helm.EngageAutoPilot();
     }
 
     void Moving_OnCoursePlotFailure() {
@@ -378,10 +262,10 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             mortalMoveTarget.onItemDeath -= OnTargetDeath;
         }
         _moveTarget = null;
-        _moveSpeed = Speed.AllStop;
+        _moveSpeed = Speed.None;
         _standoffDistance = Constants.ZeroF;
         _isFleetMove = false;
-        Navigator.DisengageAutoPilot();
+        Helm.DisengageAutoPilot();
         // the ship retains its existing speed and heading upon exit
     }
 
@@ -419,7 +303,8 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
                 _isFleetMove = false;
                 Call(ShipState.Moving);
                 yield return null;  // required immediately after Call() to avoid FSM bug
-                AllStop();  // stop and shoot after completing move
+                //AllStop();  // stop and shoot after completing move
+                Helm.AllStop();  // stop and shoot after completing move
             }
             yield return null;
         }
@@ -543,7 +428,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             CurrentState = ShipState.Idling;
             yield break;
         }
-        AllStop();
+        Helm.AllStop();
         Call(ShipState.Repairing);
         yield return null;  // required immediately after Call() to avoid FSM bug
     }
@@ -722,7 +607,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     protected override void OnItemDeath() {
         base.OnItemDeath();
-        Navigator.DisengageAutoPilot();
+        Helm.DisengageAutoPilot();
     }
 
     #endregion
@@ -798,13 +683,8 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     protected override void Cleanup() {
         base.Cleanup();
-        Navigator.Dispose();
+        Helm.Dispose();
         Data.Dispose();
-
-        if (_headingJob != null) {
-            _headingJob.Kill();
-        }
-        _engineRoom.Dispose();
     }
 
     public override string ToString() {
@@ -838,6 +718,8 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     #endregion
 
     #region IShipModel Members
+
+    public bool IsBearingConfirmed { get { return Helm.IsBearingConfirmed; } }
 
     public void OnShipOnStation(bool isOnStation) {
         D.Log("{0}.OnShipOnStation({1}) called.", FullName, isOnStation);

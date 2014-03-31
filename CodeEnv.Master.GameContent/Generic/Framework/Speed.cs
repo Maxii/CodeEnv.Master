@@ -21,10 +21,18 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public enum Speed {
 
+        /// <summary>
+        /// The absense of speed. Used for error detection.
+        /// </summary>
+        None,
+
+        /// <summary>
+        /// A velocity of zero.
+        /// </summary>
         AllStop,
 
         /// <summary>
-        /// A small fraction of Standard speed, 0.10.
+        /// A small fraction of Standard speed, 10% of Full.
         /// </summary>
         Slow,
 
@@ -34,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
         FleetSlow,
 
         /// <summary>
-        /// One-third of Standard speed, 0.25.
+        /// One-third of Standard speed, 25% of Full.
         /// </summary>
         OneThird,
 
@@ -44,7 +52,7 @@ namespace CodeEnv.Master.GameContent {
         FleetOneThird,
 
         /// <summary>
-        /// Two-thirds of Standard speed, 0.5.
+        /// Two-thirds of Standard speed, 50% of Full.
         /// </summary>
         TwoThirds,
 
@@ -54,7 +62,7 @@ namespace CodeEnv.Master.GameContent {
         FleetTwoThirds,
 
         /// <summary>
-        /// The most efficient speed, 0.75.
+        /// The most efficient speed, 75% of Full.
         /// </summary>
         Standard,
 
@@ -64,7 +72,7 @@ namespace CodeEnv.Master.GameContent {
         FleetStandard,
 
         /// <summary>
-        /// The fastest sustainable speed, 1.0.
+        /// The fastest sustainable speed, 100% of Full.
         /// </summary>
         Full,
 
@@ -74,7 +82,7 @@ namespace CodeEnv.Master.GameContent {
         FleetFull,
 
         /// <summary>
-        /// The maximum speed, 1.10.  Inefficient and unsustainable.
+        /// The maximum speed, 110% of Full.  Inefficient and unsustainable.
         /// </summary>
         Flank
 

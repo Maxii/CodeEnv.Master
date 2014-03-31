@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ShipNavigator.cs
-// Ship navigator and autopilot.
+// File: Helm.cs
+// A Ship's helm, encompassing both the auto pilot and navigator.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,9 +23,77 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Ship navigator and autopilot.
+    /// A Ship's helm, encompassing both the auto pilot and navigator.
     /// </summary>
-    public class ShipNavigator : APropertyChangeTracking, IDisposable {
+    public class Helm : APropertyChangeTracking, IDisposable {
+
+        private class TargetInfo {
+
+            /// <summary>
+            /// The target this navigator is trying to reach. Can be a FormationStationTracker, 
+            /// StationaryLocation, UnitCommand or UnitElement.
+            /// </summary>
+            public IDestinationTarget Target { get; private set; }
+
+            /// <summary>
+            /// The actual worldspace location this navigator is trying to reach, derived
+            /// from the Target. Can be offset from the actual Target position by the
+            /// ship's formation station offset.
+            /// </summary>
+            /// <value>
+            /// The destination.
+            /// </value>
+            public Vector3 Destination { get; private set; }
+
+            /// <summary>
+            /// The distance from the Destination that is 'close enough' to have arrived. This value
+            /// is automatically adjusted to accomodate various factors including the radius of the target 
+            /// and any desired standoff distance.
+            /// </summary>
+            public float CloseEnoughDistance { get; private set; }
+
+            /// <summary>
+            /// The SQRD distance from the Destination that is 'close enough' to have arrived. This value
+            /// is automatically adjusted to accomodate various factors including the radius of the target 
+            /// and any desired standoff distance.
+            /// </summary>
+            public float CloseEnoughDistanceSqrd { get; private set; }
+
+            public TargetInfo(IFormationStation fst) {
+                Target = fst as IDestinationTarget;
+                Destination = Target.Position;
+                CloseEnoughDistance = Constants.ZeroF;
+                CloseEnoughDistanceSqrd = CloseEnoughDistance * CloseEnoughDistance;
+            }
+
+            public TargetInfo(StationaryLocation sl, Vector3 fstOffset, float fullSpeed) {
+                Target = sl;
+                Destination = sl.Position + fstOffset;
+                CloseEnoughDistance = fullSpeed * 0.5F;
+                CloseEnoughDistanceSqrd = CloseEnoughDistance * CloseEnoughDistance;
+            }
+
+            public TargetInfo(ICommandTarget cmd, Vector3 fstOffset, float standoffDistance) {
+                Target = cmd;
+                Destination = cmd.Position + fstOffset;
+                CloseEnoughDistance = cmd.Radius + standoffDistance;
+                CloseEnoughDistanceSqrd = CloseEnoughDistance * CloseEnoughDistance;
+            }
+
+            public TargetInfo(IElementTarget element, float standoffDistance) {
+                Target = element;
+                Destination = element.Position;
+                CloseEnoughDistance = element.Radius + standoffDistance;
+                CloseEnoughDistanceSqrd = CloseEnoughDistance * CloseEnoughDistance;
+            }
+
+            public TargetInfo(IMortalTarget planetoid, Vector3 fstOffset, float standoffDistance) {
+                Target = planetoid;
+                Destination = planetoid.Position + fstOffset;
+                CloseEnoughDistance = planetoid.Radius + standoffDistance;
+                CloseEnoughDistanceSqrd = CloseEnoughDistance * CloseEnoughDistance;
+            }
+        }
 
         /// <summary>
         /// Optional events for notification of the course plot being completed. 
@@ -48,6 +116,8 @@ namespace CodeEnv.Master.GameContent {
         /// The speed to travel at.
         /// </summary>
         public Speed Speed { get; private set; }
+
+        public bool IsBearingConfirmed { get; private set; }
 
         public bool IsAutoPilotEngaged {
             get { return _pilotJob != null && _pilotJob.IsRunning; }
@@ -90,23 +160,29 @@ namespace CodeEnv.Master.GameContent {
         private TargetInfo _targetInfo;
         private ShipData _data;
         private IShipModel _ship;
+        private EngineRoom _engineRoom;
+        private Rigidbody _rigidbody;
+
+        private Job _pilotJob;
+        private Job _headingJob;
 
         private IList<IDisposable> _subscribers;
         private GameStatus _gameStatus;
         private GameTime _gameTime;
         private float _gameSpeedMultiplier;
-        private Job _pilotJob;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ShipNavigator" /> class.
+        /// Initializes a new instance of the <see cref="Helm" /> class.
         /// </summary>
         /// <param name="ship">The ship.</param>
-        public ShipNavigator(IShipModel ship) {
+        public Helm(IShipModel ship) {
             _ship = ship;
             _data = ship.Data;
+            _rigidbody = ship.Transform.rigidbody;
             _gameTime = GameTime.Instance;
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
             _gameStatus = GameStatus.Instance;
+            _engineRoom = new EngineRoom(_data, _rigidbody);
             AssessFrequencyOfCourseProgressChecks();
             Subscribe();
         }
@@ -121,7 +197,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Plots the course to the target and notifies the requester of the 
-        /// outcome via the onCoursePlotCompleted event.
+        /// outcome via the onCoursePlotSuccess or Failure events.
         /// </summary>
         /// <param name="target">The target.</param>
         /// <param name="speed">The speed.</param>
@@ -152,7 +228,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Plots a course to the ship's FormationStation and notifies the requester of the
-        /// outcome via the onCoursePlotCompleted event.
+        /// outcome via the onCoursePlotSuccess or Failure events.
         /// </summary>
         /// <param name="station">The formation station.</param>
         /// <param name="speed">The speed.</param>
@@ -165,7 +241,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Plots a course to a stationary location and notifies the requester of the 
-        /// outcome via the onCoursePlotCompleted event.
+        /// outcome via the onCoursePlotSuccess or Failure events.
         /// </summary>
         /// <param name="location">The stationary location.</param>
         /// <param name="speed">The speed.</param>
@@ -181,7 +257,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Plots a course to a Command target and notifies the requester of the 
-        /// outcome via the onCoursePlotCompleted event.
+        /// outcome via the onCoursePlotSuccess or Failure events.
         /// </summary>
         /// <param name="cmd">The command target.</param>
         /// <param name="speed">The speed.</param>
@@ -196,7 +272,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Plots a course to a Element target and notifies the requester of the 
-        /// outcome via the onCoursePlotCompleted event.
+        /// outcome via the onCoursePlotSuccess or Failure events.
         /// </summary>
         /// <param name="element">The element target.</param>
         /// <param name="speed">The speed.</param>
@@ -211,7 +287,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Plots a course to a Planetoid target and notifies the requester of the
-        /// outcome via the onCoursePlotCompleted event.
+        /// outcome via the onCoursePlotSuccess or Failure events.
         /// </summary>
         /// <param name="planetoid">The planetoid.</param>
         /// <param name="speed">The speed.</param>
@@ -259,6 +335,106 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        public void AlignBearingWithFlagship() {
+            D.Log("{0} is aligning its bearing to {1}'s bearing {2}.", _ship.FullName, _ship.Command.HQElement.FullName, _ship.Command.HQElement.Data.RequestedHeading);
+            ChangeHeading(_ship.Command.HQElement.Data.RequestedHeading);
+            if (IsAutoPilotEngaged) {
+                D.Warn("{0}.AutoPilot remains engaged.", _ship.FullName);
+            }
+        }
+
+        /// <summary>
+        /// Stops the ship. The ship will actually not stop instantly as it has
+        /// momentum even with flaps deployed. Typically, this is called in the state
+        /// machine after a Return() from the Moving state. Otherwise, the ship keeps
+        /// moving in the direction and at the speed it had when it exited Moving.
+        /// </summary>
+        public void AllStop() {
+            ChangeSpeed(Speed.AllStop);
+            if (IsAutoPilotEngaged) {
+                D.Warn("{0}.AutoPilot remains engaged.", _ship.FullName);
+            }
+        }
+
+        /// <summary>
+        /// Changes the direction the ship is headed in normalized world space coordinates.
+        /// </summary>
+        /// <param name="newHeading">The new direction in world coordinates, normalized.</param>
+        /// <returns><c>true</c> if the heading change was accepted.</returns>
+        private bool ChangeHeading(Vector3 newHeading) {
+            if (DebugSettings.Instance.StopShipMovement) {
+                DisengageAutoPilot();
+                return false;
+            }
+
+            newHeading.ValidateNormalized();
+            if (newHeading.IsSameDirection(_data.RequestedHeading, 0.1F)) {
+                D.Warn("{0} received a duplicate ChangeHeading Command to {1}.", _ship.FullName, newHeading);
+                return false;
+            }
+            if (_headingJob != null && _headingJob.IsRunning) {
+                _headingJob.Kill();
+            }
+            D.Log("{0} changing heading to {1}.", _ship.FullName, newHeading);
+            _data.RequestedHeading = newHeading;
+            IsBearingConfirmed = false;
+            _headingJob = new Job(ExecuteHeadingChange(), toStart: true, onJobComplete: (wasKilled) => {
+                if (!_isDisposing) {
+                    if (wasKilled) {
+                        D.Log("{0}'s turn order to {1} has been cancelled.", _ship.FullName, _data.RequestedHeading);
+                    }
+                    else {
+                        IsBearingConfirmed = true;
+                        D.Log("{0}'s turn to {1} is complete.  Heading deviation is {2:0.00}.",
+                            _ship.FullName, _data.RequestedHeading, Vector3.Angle(_data.CurrentHeading, _data.RequestedHeading));
+                        D.Log("CurrentHeading = {0}.", _data.CurrentHeading);
+                    }
+                    // ExecuteHeadingChange() appeared to generate angular velocity which continued to turn the ship after the Job was complete.
+                    // The actual culprit was the physics engine which when started, found Creators had placed the non-kinematic ships at the same
+                    // location, relying on the formation generator to properly separate them later. The physics engine came on before the formation
+                    // had been deployed, resulting in both velocity and angular velocity from the collisions. The fix was to make the ship rigidbodies
+                    // kinematic until the formation had been deployed.
+                    //_rigidbody.angularVelocity = Vector3.zero;
+                }
+            });
+            return true;
+        }
+
+        /// <summary>
+        /// Coroutine that executes a heading change without overshooting.
+        /// </summary>
+        /// <returns></returns>
+        private IEnumerator ExecuteHeadingChange() {
+            int previousFrameCount = Time.frameCount - 1;   // FIXME makes initial framesSinceLastPass = 1
+
+            float maxRadianTurnRatePerSecond = Mathf.Deg2Rad * _data.MaxTurnRate * (GameDate.HoursPerSecond / GameDate.HoursPerDay);
+            //D.Log("New coroutine. {0} coming to heading {1} at {2} radians/day.", _data.Name, _data.RequestedHeading, _data.MaxTurnRate);
+            while (!_data.CurrentHeading.IsSameDirection(_data.RequestedHeading, 1F)) {
+                int framesSinceLastPass = Time.frameCount - previousFrameCount; // needed when using yield return WaitForSeconds()
+                previousFrameCount = Time.frameCount;
+                float allowedTurn = maxRadianTurnRatePerSecond * GameTime.DeltaTimeOrPausedWithGameSpeed * framesSinceLastPass;
+                Vector3 newHeading = Vector3.RotateTowards(_data.CurrentHeading, _data.RequestedHeading, allowedTurn, maxMagnitudeDelta: 1F);
+                // maxMagnitudeDelta > 0F appears to be important. Otherwise RotateTowards can stop rotating when it gets very close
+                //D.Log("AllowedTurn = {0:0.0000}, CurrentHeading = {1}, ReqHeading = {2}, NewHeading = {3}", allowedTurn, Data.CurrentHeading, Data.RequestedHeading, newHeading);
+                _ship.Transform.rotation = Quaternion.LookRotation(newHeading); // UNCLEAR turn kinematic on and off while rotating?
+                //D.Log("{0} heading is now {1}.", FullName, Data.CurrentHeading);
+                yield return null; // new WaitForSeconds(0.5F); // new WaitForFixedUpdate();
+            }
+        }
+
+        /// <summary>
+        /// Changes the speed of the ship.
+        /// </summary>
+        /// <param name="newSpeed">The new speed request.</param>
+        /// <returns><c>true</c> if the speed change was accepted.</returns>
+        private bool ChangeSpeed(Speed newSpeed) {
+            if (DebugSettings.Instance.StopShipMovement) {
+                DisengageAutoPilot();
+                return false;
+            }
+            return _engineRoom.ChangeSpeed(newSpeed.GetValue(_ship.Command.Data, _data));
+        }
+
         /// <summary>
         /// Engages pilot execution of a direct homing course to the Target. No A* course is used.
         /// </summary>
@@ -267,13 +443,13 @@ namespace CodeEnv.Master.GameContent {
             //D.Log("Initiating coroutine for approach to {0}.", Destination);
             Vector3 newHeading = (_targetInfo.Destination - _data.Position).normalized;
             if (!newHeading.IsSameDirection(_data.RequestedHeading, 0.1F)) {
-                _ship.ChangeHeading(newHeading, isAutoPilot: true);
+                ChangeHeading(newHeading);
             }
-
-            while (_isFleetMove && !_ship.Command.IsBearingConfirmed) {
-                // wait here until the fleet is ready for departure
-                //D.Log("{0}.CurrentHeading = {1}.", _ship.FullName, Data.CurrentHeading);
-                yield return new WaitForSeconds(_courseProgressCheckPeriod);
+            if (_isFleetMove) {
+                while (!_ship.Command.IsBearingConfirmed) {
+                    // wait here until the fleet is ready for departure
+                    yield return new WaitForSeconds(_courseProgressCheckPeriod);
+                }
             }
 
             int courseCorrectionCheckCountdown = _courseCorrectionCheckCountSetting;
@@ -306,20 +482,19 @@ namespace CodeEnv.Master.GameContent {
 
         private void AdjustHeadingAndSpeedForTurn(Vector3 newHeading) {
             //Speed turnSpeed = Speed;    // TODO slow for the turn?
-            //_ship.ChangeSpeed(turnSpeed, isAutoPilot: true);
-            _ship.ChangeHeading(newHeading, isAutoPilot: true);
+            //_ship.ChangeSpeed(turnSpeed);
+            ChangeHeading(newHeading);
         }
 
         /// <summary>
         /// Adjusts the speed of the ship (if needed) when the ship has finished its turn.
         /// </summary>
-        /// <returns><c>true</c> if the heading was confirmed and speed adjusted, if needed.</returns>
+        /// <returns><c>true</c> if the heading was confirmed and speed checked.</returns>
         private bool AdjustSpeedOnHeadingConfirmation() {
-            if (_ship.IsBearingConfirmed) {
-                if (_ship.ChangeSpeed(Speed, isAutoPilot: true)) {
+            if (IsBearingConfirmed) {
+                if (ChangeSpeed(Speed)) {
                     D.Log("{0} heading confirmed. Adjusting speed to {1}. Heading deviation is {2:0.00} degrees.",
                         _ship.FullName, Speed.GetName(), Vector3.Angle(_data.CurrentHeading, _data.RequestedHeading));
-                    //D.Log("CurrentHeading = {0}, RequestedHeading = {1}.", Data.CurrentHeading, Data.RequestedHeading);
                 }
                 return true;
             }
@@ -340,7 +515,7 @@ namespace CodeEnv.Master.GameContent {
             if (checkCount == 0) {
                 // check the course
                 //D.Log("{0} is attempting to check its course.", Data.Name);
-                if (_ship.IsBearingConfirmed) {
+                if (IsBearingConfirmed) {
                     Vector3 testHeading = (_targetInfo.Destination - _data.Position);
                     if (!testHeading.IsSameDirection(_data.RequestedHeading, 1F)) {
                         correctedHeading = testHeading.normalized;
@@ -454,15 +629,15 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Checks whether the distance between 2 objects is increasing.
+        /// Checks whether the distance between this ship and its destination is increasing.
         /// </summary>
-        /// <param name="distanceToCurrentDestinationSqrd">The distance automatic current destination SQRD.</param>
+        /// <param name="distanceToCurrentDestinationSqrd">The current distance to the destination SQRD.</param>
         /// <param name="previousDistanceSqrd">The previous distance SQRD.</param>
-        /// <returns>true if the seperation distance is increasing.</returns>
+        /// <returns>true if the separation distance is increasing.</returns>
         private bool CheckSeparation(float distanceToCurrentDestinationSqrd, ref float previousDistanceSqrd) {
             if (distanceToCurrentDestinationSqrd > previousDistanceSqrd + __separationTestToleranceDistanceSqrd) {
-                D.Warn("{0} separating from {1}. DistanceSqrd = {2}, previousSqrd = {3}, tolerance = {4}.",
-    _ship.FullName, _targetInfo.Target.FullName, distanceToCurrentDestinationSqrd, previousDistanceSqrd, __separationTestToleranceDistanceSqrd);
+                D.Warn("{0} separating from {1}. DistanceSqrd = {2}, previousSqrd = {3}, tolerance = {4}.", _ship.FullName,
+                    _targetInfo.Target.FullName, distanceToCurrentDestinationSqrd, previousDistanceSqrd, __separationTestToleranceDistanceSqrd);
                 return true;
             }
             if (distanceToCurrentDestinationSqrd < previousDistanceSqrd) {
@@ -485,6 +660,10 @@ namespace CodeEnv.Master.GameContent {
             if (_pilotJob != null) {
                 _pilotJob.Kill();
             }
+            if (_headingJob != null) {
+                _headingJob.Kill();
+            }
+            _engineRoom.Dispose();
         }
 
         private void Unsubscribe() {
@@ -496,74 +675,6 @@ namespace CodeEnv.Master.GameContent {
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
-        }
-
-        private class TargetInfo {
-
-            /// <summary>
-            /// The target this navigator is trying to reach. Can be a FormationStationTracker, 
-            /// StationaryLocation, UnitCommand or UnitElement.
-            /// </summary>
-            public IDestinationTarget Target { get; private set; }
-
-            /// <summary>
-            /// The actual worldspace location this navigator is trying to reach, derived
-            /// from the Target. Can be offset from the actual Target position by the
-            /// ship's formation station offset.
-            /// </summary>
-            /// <value>
-            /// The destination.
-            /// </value>
-            public Vector3 Destination { get; private set; }
-
-            /// <summary>
-            /// The distance from the Destination that is 'close enough' to have arrived. This value
-            /// is automatically adjusted to accomodate various factors including the radius of the target 
-            /// and any desired standoff distance.
-            /// </summary>
-            public float CloseEnoughDistance { get; private set; }
-
-            /// <summary>
-            /// The SQRD distance from the Destination that is 'close enough' to have arrived. This value
-            /// is automatically adjusted to accomodate various factors including the radius of the target 
-            /// and any desired standoff distance.
-            /// </summary>
-            public float CloseEnoughDistanceSqrd { get; private set; }
-
-            public TargetInfo(IFormationStation fst) {
-                Target = fst as IDestinationTarget;
-                Destination = Target.Position;
-                CloseEnoughDistance = Constants.ZeroF;
-                CloseEnoughDistanceSqrd = CloseEnoughDistance * CloseEnoughDistance;
-            }
-
-            public TargetInfo(StationaryLocation sl, Vector3 fstOffset, float fullSpeed) {
-                Target = sl;
-                Destination = sl.Position + fstOffset;
-                CloseEnoughDistance = fullSpeed * 0.5F;
-                CloseEnoughDistanceSqrd = CloseEnoughDistance * CloseEnoughDistance;
-            }
-
-            public TargetInfo(ICommandTarget cmd, Vector3 fstOffset, float standoffDistance) {
-                Target = cmd;
-                Destination = cmd.Position + fstOffset;
-                CloseEnoughDistance = cmd.Radius + standoffDistance;
-                CloseEnoughDistanceSqrd = CloseEnoughDistance * CloseEnoughDistance;
-            }
-
-            public TargetInfo(IElementTarget element, float standoffDistance) {
-                Target = element;
-                Destination = element.Position;
-                CloseEnoughDistance = element.Radius + standoffDistance;
-                CloseEnoughDistanceSqrd = CloseEnoughDistance * CloseEnoughDistance;
-            }
-
-            public TargetInfo(IMortalTarget planetoid, Vector3 fstOffset, float standoffDistance) {
-                Target = planetoid;
-                Destination = planetoid.Position + fstOffset;
-                CloseEnoughDistance = planetoid.Radius + standoffDistance;
-                CloseEnoughDistanceSqrd = CloseEnoughDistance * CloseEnoughDistance;
-            }
         }
 
         #region IDisposable

@@ -93,7 +93,7 @@ public class FormationStation : AMonoBase, IFormationStation, IDestinationTarget
     // to null when it is removed from the fleet, whether through death or some other reason
 
     private void OnStationOffsetChanged() {
-        //_transform.localPosition = StationOffset;     // doesn't work as the resultant world position is modified by the rotation of FleetCmd
+        // setting local position doesn't work as the resultant world position is modified by the rotation of FleetCmd
         _transform.position += StationOffset;
         // UNCLEAR when an FST changes its offset (location), does OnTriggerEnter/Exit detect it?
     }

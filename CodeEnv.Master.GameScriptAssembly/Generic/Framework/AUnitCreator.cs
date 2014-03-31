@@ -169,8 +169,12 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             else {
                 element = MakeElement(stat);
             }
-            // need to tell each element where this creator is located. This assures that whichever element is picked as the HQElement
-            // will start with this position. The other elements positions will be adjusted from the HQElement position when the formation is formed
+            // Note: Need to tell each element where this creator is located. This assures that whichever element is picked as the HQElement
+            // will start with this position. However, the elements here are all placed on top of each other. When the physics engine starts
+            // (after element.Start() completes?), rigidbodies that are not kinematic (ships) are imparted with both linear and angular 
+            // velocity from this intentional collision. This occurs before the elements are moved away from each other by being formed
+            // into a formation. Accordingly, make the rigidbody kinematic here, then change the ships back when the formation is made.
+            element.transform.rigidbody.isKinematic = true;
             element.transform.position = _transform.position;
             _elements.Add(element);
         }
@@ -180,6 +184,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     private void AddElements() {
         _elements.ForAll(e => _command.AddElement(e));
+
         // command IS NOT assigned as a target of each element's CameraLOSChangedRelay as that would make the CommandIcon disappear when the elements disappear
     }
 
