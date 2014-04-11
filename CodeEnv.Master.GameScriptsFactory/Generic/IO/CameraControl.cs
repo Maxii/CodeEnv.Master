@@ -151,9 +151,10 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
 
 
     private string[] keyboardAxesNames = new string[] { UnityConstants.KeyboardAxisName_Horizontal, UnityConstants.KeyboardAxisName_Vertical };
-    private LayerMask _collideWithUniverseEdgeOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.UniverseEdge);
-    private LayerMask _collideWithDummyTargetOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.DummyTarget);
-    private LayerMask _collideWithOnlyCameraTargetsLayerMask
+    
+    private LayerMask _universeEdgeOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.UniverseEdge);
+    private LayerMask _dummyTargetOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.DummyTarget);
+    private LayerMask _cameraTargetsOnlyLayerMask
         = LayerMaskExtensions.CreateExclusiveMask(Layers.UniverseEdge, Layers.DeepSpace, Layers.Gui2D, Layers.Vectrosity2D,
         Layers.CelestialObjectKeepout, Layers.IgnoreRaycast);
     private LayerMask _layersVisibleToCamera = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
@@ -1206,7 +1207,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         Transform proposedZoomTarget;
         Vector3 proposedZoomPoint;
         Ray ray = _camera.ScreenPointToRay(screenPoint);
-        RaycastHit[] hits = Physics.RaycastAll(ray, Mathf.Infinity, _collideWithOnlyCameraTargetsLayerMask);
+        RaycastHit[] hits = Physics.RaycastAll(ray, Mathf.Infinity, _cameraTargetsOnlyLayerMask);
         //foreach (var hit in hits) {
         //    D.Log("ICameraTargetable RaycastHit {0}.", hit.transform.name);
         //}
@@ -1288,7 +1289,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         direction.ValidateNormalized();
         Ray ray = new Ray(Position, direction);
         RaycastHit targetHit;
-        if (Physics.Raycast(ray, out targetHit, Mathf.Infinity, _collideWithDummyTargetOnlyLayerMask.value)) {
+        if (Physics.Raycast(ray, out targetHit, Mathf.Infinity, _dummyTargetOnlyLayerMask.value)) {
             if (_dummyTarget != targetHit.transform) {
                 D.Error("Camera should find DummyTarget, but it is: " + targetHit.transform.name);
                 return false;
@@ -1306,7 +1307,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         }
 
         Vector3 pointOutsideUniverse = ray.GetPoint(_universeRadius * 2);
-        if (Physics.Raycast(pointOutsideUniverse, -ray.direction, out targetHit, Mathf.Infinity, _collideWithUniverseEdgeOnlyLayerMask.value)) {
+        if (Physics.Raycast(pointOutsideUniverse, -ray.direction, out targetHit, Mathf.Infinity, _universeEdgeOnlyLayerMask.value)) {
             Vector3 universeEdgePoint = targetHit.point;
             _dummyTarget.position = universeEdgePoint;
             ChangeTarget(_dummyTarget, _dummyTarget.position);

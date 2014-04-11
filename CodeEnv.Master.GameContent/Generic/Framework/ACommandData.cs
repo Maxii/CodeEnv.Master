@@ -83,14 +83,13 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<int>(ref _cmdEffectiveness, value, "CmdEffectiveness"); }
         }
 
-        //private float _unitMaxWeaponsRange;
-        ///// <summary>
-        ///// The range of the longest range weapon in the Unit.
-        ///// </summary>
-        //public float UnitMaxWeaponsRange {
-        //    get { return _unitMaxWeaponsRange; }
-        //    set { SetProperty<float>(ref _unitMaxWeaponsRange, value, "UnitMaxWeaponsRange"); }
-        //}
+        /// <summary>
+        /// The maximum range of this Unit's weapons.
+        /// </summary>
+        public override float MaxWeaponsRange {
+            get { return base.MaxWeaponsRange; }
+            set { base.MaxWeaponsRange = value; }
+        }
 
         private CombatStrength _unitStrength;
         public CombatStrength UnitStrength {
@@ -153,10 +152,8 @@ namespace CodeEnv.Master.GameContent {
         protected abstract void InitializeComposition();
 
         protected virtual void OnHQElementDataChanged() {
-            if (!ElementsData.Contains(HQElementData)) {
-                D.Error("HQ Element {0} assigned not present in Command {1}.", _hqElementData.OptionalParentName, OptionalParentName);
-            }
-            //HQElementData.FormationPosition = Vector3.zero; 
+            D.Assert(ElementsData.Contains(HQElementData),
+                "HQ Element {0} assigned not present in {1}.".Inject(_hqElementData.FullName, FullName));
         }
 
         private void OnUnitMaxHitPointsChanging(float newMaxHitPoints) {

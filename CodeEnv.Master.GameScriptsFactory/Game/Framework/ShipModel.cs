@@ -448,14 +448,14 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     #region Repairing
 
     IEnumerator Repairing_EnterState() {
-        D.Log("{0}.{1}.Repairing_EnterState.", Data.OptionalParentName, Data.Name);
+        D.Log("{0}.Repairing_EnterState.", FullName);
         OnShowAnimation(MortalAnimations.Repairing);
         yield return new WaitForSeconds(2);
         Data.CurrentHitPoints += 0.5F * (Data.MaxHitPoints - Data.CurrentHitPoints);
-        D.Log("{0}'s repair is 50% complete.", Data.Name);
+        D.Log("{0}'s repair is 50% complete.", FullName);
         yield return new WaitForSeconds(3);
         Data.CurrentHitPoints = Data.MaxHitPoints;
-        D.Log("{0}'s repair is 100% complete.", Data.Name);
+        D.Log("{0}'s repair is 100% complete.", FullName);
         OnStopAnimation(MortalAnimations.Repairing);
         Return();
     }

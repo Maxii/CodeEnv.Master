@@ -25,7 +25,10 @@ namespace CodeEnv.Master.GameContent {
     public abstract class AMortalItemData : AItemData {
 
         private float _maxWeaponsRange;
-        public float MaxWeaponsRange {
+        /// <summary>
+        /// The maximum range of this item's weapons.
+        /// </summary>
+        public virtual float MaxWeaponsRange {
             get { return _maxWeaponsRange; }
             set { SetProperty<float>(ref _maxWeaponsRange, value, "MaxWeaponsRange"); }
         }

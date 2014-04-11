@@ -113,7 +113,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             FullThrust = stat.FullThrust,
             MaxTurnRate = stat.MaxTurnRate,
             Strength = stat.Strength,
-            CurrentHitPoints = stat.CurrentHitPoints
+            CurrentHitPoints = stat.CurrentHitPoints,
+            CombatStance = stat.CombatStance
         };
 
         GameObject shipPrefabGo = shipPrefabs.Single(s => s.gameObject.name == stat.Category.GetName()).gameObject;
@@ -141,7 +142,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             FullThrust = stat.FullThrust,
             MaxTurnRate = stat.MaxTurnRate,
             Strength = stat.Strength,
-            CurrentHitPoints = stat.CurrentHitPoints
+            CurrentHitPoints = stat.CurrentHitPoints,
+            CombatStance = stat.CombatStance
         };
 
         AttachWeaponsToRangeTrackers(stat.Weapons, data, shipGo);

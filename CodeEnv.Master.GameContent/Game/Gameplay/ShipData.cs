@@ -34,6 +34,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public IFormationStation FormationStation { get; set; }
 
+        public ShipCombatStance CombatStance { get; set; }
+
         /// <summary>
         /// Readonly. Gets the current speed of the ship in Units per
         /// day, normalized for game speed.

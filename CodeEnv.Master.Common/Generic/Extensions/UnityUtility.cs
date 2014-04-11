@@ -229,6 +229,25 @@ namespace CodeEnv.Master.Common {
             return point;
         }
 
+        /// <summary>
+        /// Derives the average of the supplied vectors.
+        /// </summary>
+        /// <param name="vectors">The vectors.</param>
+        /// <returns></returns>
+        public static Vector3 Mean(IEnumerable<Vector3> vectors) {
+            int length = vectors.Count();
+            if (length == Constants.Zero) {
+                return Vector3.zero;
+            }
+            float x = Constants.ZeroF, y = Constants.ZeroF, z = Constants.ZeroF;
+            foreach (var v in vectors) {
+                x += v.x;
+                y += v.y;
+                z += v.z;
+            }
+            return new Vector3(x / length, y / length, z / length);
+        }
+
         #region Common Animation Coroutines
 
         /// <summary>

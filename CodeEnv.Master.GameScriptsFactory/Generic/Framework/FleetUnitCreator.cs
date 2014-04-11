@@ -55,6 +55,7 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
             MaxHitPoints = 50F,
             MaxTurnRate = UnityEngine.Random.Range(45F, 315F),
             Strength = new CombatStrength(),
+            CombatStance = Enums<ShipCombatStance>.GetRandom(excludeDefault: true),
             Weapons = new List<Weapon>() { 
                 new Weapon(WeaponCategory.BeamOffense, model: 1) {
                 Range = UnityEngine.Random.Range(3F, 6F),

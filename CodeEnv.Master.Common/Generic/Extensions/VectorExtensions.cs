@@ -17,6 +17,7 @@
 namespace CodeEnv.Master.Common {
 
     using System;
+    using System.Linq;
     using System.Collections.Generic;
     using System.Diagnostics;
     using CodeEnv.Master.Common.LocalResources;
@@ -51,6 +52,21 @@ namespace CodeEnv.Master.Common {
             return angle < degreeTolerance;
         }
 
+        /// <summary>
+        /// Finds the normalized average direction toward the provided locations.
+        /// </summary>
+        /// <param name="myLoc">My location.</param>
+        /// <param name="otherLocations">The provided locations.</param>
+        /// <returns></returns>
+        public static Vector3 FindMeanDirection(this Vector3 myLoc, IEnumerable<Vector3> otherLocations) {
+            int length = otherLocations.Count();
+            var vectorsToOtherLocations = new List<Vector3>(length);
+            foreach (var loc in otherLocations) {
+                vectorsToOtherLocations.Add(loc - myLoc);
+            }
+            return UnityUtility.Mean(vectorsToOtherLocations).normalized;
+        }
+
         public static Color ToUnityColor(this GameColor color) {
             switch (color) {
                 case GameColor.Black:
@@ -80,19 +96,19 @@ namespace CodeEnv.Master.Common {
             }
         }
 
-        public static void SetX(this Transform transform, float x) {
-            Vector3 newPosition = new Vector3(x, transform.position.y, transform.position.z);
-            transform.position = newPosition;
+        public static void SetX(this Transform t, float x) {
+            Vector3 newPosition = new Vector3(x, t.position.y, t.position.z);
+            t.position = newPosition;
         }
 
-        public static void SetY(this Transform transform, float y) {
-            Vector3 newPosition = new Vector3(transform.position.x, y, transform.position.z);
-            transform.position = newPosition;
+        public static void SetY(this Transform t, float y) {
+            Vector3 newPosition = new Vector3(t.position.x, y, t.position.z);
+            t.position = newPosition;
         }
 
-        public static void SetZ(this Transform transform, float z) {
-            Vector3 newPosition = new Vector3(transform.position.x, transform.position.y, z);
-            transform.position = newPosition;
+        public static void SetZ(this Transform t, float z) {
+            Vector3 newPosition = new Vector3(t.position.x, t.position.y, z);
+            t.position = newPosition;
         }
     }
 }
