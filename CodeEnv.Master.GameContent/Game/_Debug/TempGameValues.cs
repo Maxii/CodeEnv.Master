@@ -110,7 +110,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-
+        public static readonly Player NoPlayer = new NoPlayer();
     }
 }
 

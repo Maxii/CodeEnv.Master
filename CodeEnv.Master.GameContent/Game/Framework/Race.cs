@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
             LeaderName = raceType.GetName() + " Leader";
             Description = new StringBuilder(raceType.GetDescription());
             Color = RandomExtended<GameColor>.Choice(Enums<GameColor>.GetValues()
-                .Except(default(GameColor), GameColor.Black, GameColor.Clear).ToArray());
+                .Except(default(GameColor), GameColor.Black, GameColor.Clear));
         }
 
         public Race(RaceStat stats) {

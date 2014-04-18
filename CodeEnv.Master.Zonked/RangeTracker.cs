@@ -24,9 +24,10 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Maintains a list of all ITargets within a specified range of this trigger collider object.
+/// Maintains a list of all enemy IMortalTargets within a specified range of this trigger collider object.
 /// TODO Account for a diploRelations change with an owner
 /// </summary>
+[Obsolete]
 public class RangeTracker : TriggerTracker, IRangeTracker {
 
     public Guid ID { get; private set; }
@@ -63,14 +64,15 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
 
     protected override void Add(IMortalTarget target) {
         base.Add(target);
+        D.Assert(Owner != null);
         if (Owner.IsEnemyOf(target.Owner) && !target.IsDead && !EnemyTargets.Contains(target)) {
             AddEnemyTarget(target);
         }
     }
 
     private void AddEnemyTarget(IMortalTarget enemyTarget) {
-        D.Log("{0}.{1} with range {2} added Enemy {3} at distance {4}.",
-             Data.FullName, GetType().Name, Range, enemyTarget.FullName, Vector3.Distance(Data.Position, enemyTarget.Position));
+        D.Log("{0}.{1}({2:0.00}) added Enemy {3} at distance {4}.",
+             ParentFullName, _transform.name, Range, enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
         if (EnemyTargets.Count == 0) {
             OnEnemyInRange(true);   // there are now enemies in range
         }
@@ -87,7 +89,8 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
             if (EnemyTargets.Count == 0) {
                 OnEnemyInRange(false);  // no longer any Enemies in range
             }
-            D.Log("{0}.{1} with range {2} removed Enemy Target {3}.", Data.FullName, GetType().Name, Range, enemyTarget.FullName);
+            D.Log("{0}.{1}({2:0.00}) removed Enemy Target {3} at distance {4}.",
+                ParentFullName, _transform.name, Range, enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
         }
     }
 
@@ -126,7 +129,7 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
         Collider.radius = Range;
         RangeSpan = new Range<float>(0.9F * Range, 1.10F * Range);
         if (enabled) {
-            D.Log("{0}.{1}.Range changed to {2}.", Data.Name, GetType().Name, Range);
+            D.Log("{0}.{1}.Range changed to {2:0.00}.", ParentFullName, _transform.name, Range);
             Collider.enabled = false;
             AllTargets.ForAll(t => Remove(t));  // clears both AllTargets and EnemyTargets
             Collider.enabled = true;    //  TODO unconfirmed - this should repopulate the Targets when re-enabled with new radius

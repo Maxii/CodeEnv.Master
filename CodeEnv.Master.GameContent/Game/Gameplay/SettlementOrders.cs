@@ -22,15 +22,10 @@ namespace CodeEnv.Master.GameContent {
     public enum SettlementOrders {
 
         None,
-
         Attack,
-
         StopAttack,
-
-        Refit,
-
         Repair,
-
+        Refit,
         Disband
 
     }

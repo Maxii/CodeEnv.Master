@@ -135,6 +135,7 @@
     <Compile Include="IntelFreshness.cs" />
     <Compile Include="IntelLevel.cs" />
     <Compile Include="IntelSource.cs" />
+    <Compile Include="IRangeTracker.cs" />
     <Compile Include="ISettlementViewable.cs" />
     <Compile Include="IShipViewable.cs" />
     <Compile Include="IStarBaseViewable.cs" />
@@ -153,6 +154,7 @@
     <Compile Include="PlanetoidPresenter.cs" />
     <Compile Include="PlanetoidView.cs" />
     <Compile Include="PlayerSettingsSetup.cs" />
+    <Compile Include="RangeTracker.cs" />
     <Compile Include="ResetOnFocusOptionChangedEvent.cs" />
     <Compile Include="ScaleSpriteRelativeToCamera.cs" />
     <Compile Include="Sector.cs" />
@@ -186,8 +188,13 @@
     <Compile Include="SystemPresenter.cs" />
     <Compile Include="SystemView.cs" />
     <Compile Include="TransformExtensions.cs" />
+    <Compile Include="TriggerTracker.cs" />
     <Compile Include="UnconsumedMouseButtonClick.cs" />
     <Compile Include="UnconsumedMouseButtonPress.cs" />
+    <Compile Include="UnitDestinationOrder.cs" />
+    <Compile Include="UnitMoveOrder.cs" />
+    <Compile Include="UnitOrder.cs" />
+    <Compile Include="UnitTargetOrder.cs" />
     <Compile Include="UniverseCenter.cs" />
     <Compile Include="UniverseCenterPresenter.cs" />
     <Compile Include="UniverseCenterView.cs" />

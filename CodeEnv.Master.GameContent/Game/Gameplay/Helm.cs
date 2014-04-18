@@ -205,6 +205,7 @@ namespace CodeEnv.Master.GameContent {
         /// determine how close the ship is allowed to approach.</param>
         /// <param name="isFleetMove">if set to <c>true</c> the ship will only move when the fleet is ready.</param>
         public void PlotCourse(IDestinationTarget target, Speed speed, float standoffDistance, bool isFleetMove) {
+            D.Assert(speed != default(Speed) && speed != Speed.AllStop, "{0} speed of {1} is illegal.".Inject(_ship.FullName, speed.GetName()));
             if (target is IFormationStation) {
                 PlotCourse(target as IFormationStation, speed);
             }
@@ -350,6 +351,8 @@ namespace CodeEnv.Master.GameContent {
         /// moving in the direction and at the speed it had when it exited Moving.
         /// </summary>
         public void AllStop() {
+            D.Log("{0}.Idling_EnterState AllStop(), Time = {1}.", _ship.FullName, Time.time);
+
             ChangeSpeed(Speed.AllStop);
             if (IsAutoPilotEngaged) {
                 D.Warn("{0}.AutoPilot remains engaged.", _ship.FullName);
@@ -387,7 +390,6 @@ namespace CodeEnv.Master.GameContent {
                         IsBearingConfirmed = true;
                         D.Log("{0}'s turn to {1} is complete.  Heading deviation is {2:0.00}.",
                             _ship.FullName, _data.RequestedHeading, Vector3.Angle(_data.CurrentHeading, _data.RequestedHeading));
-                        D.Log("CurrentHeading = {0}.", _data.CurrentHeading);
                     }
                     // ExecuteHeadingChange() appeared to generate angular velocity which continued to turn the ship after the Job was complete.
                     // The actual culprit was the physics engine which when started, found Creators had placed the non-kinematic ships at the same
@@ -440,7 +442,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <returns></returns>
         private IEnumerator EngageHomingCourseToTarget() {
-            //D.Log("Initiating coroutine for approach to {0}.", Destination);
+            //D.Log("{0} initiating coroutine for homing course to {0}.", _ship.FullName, _targetInfo.Destination);
             Vector3 newHeading = (_targetInfo.Destination - _data.Position).normalized;
             if (!newHeading.IsSameDirection(_data.RequestedHeading, 0.1F)) {
                 ChangeHeading(newHeading);
@@ -448,9 +450,10 @@ namespace CodeEnv.Master.GameContent {
             if (_isFleetMove) {
                 while (!_ship.Command.IsBearingConfirmed) {
                     // wait here until the fleet is ready for departure
-                    yield return new WaitForSeconds(_courseProgressCheckPeriod);
+                    yield return null;
                 }
             }
+            D.Log("{0} powering up for homing course to {1}.", _ship.FullName, _targetInfo.Destination);
 
             int courseCorrectionCheckCountdown = _courseCorrectionCheckCountSetting;
             bool isSpeedChecked = false;
@@ -492,9 +495,13 @@ namespace CodeEnv.Master.GameContent {
         /// <returns><c>true</c> if the heading was confirmed and speed checked.</returns>
         private bool AdjustSpeedOnHeadingConfirmation() {
             if (IsBearingConfirmed) {
+                D.Log("{0} heading {1} is confirmed.", _ship.FullName, _data.RequestedHeading);
                 if (ChangeSpeed(Speed)) {
-                    D.Log("{0} heading confirmed. Adjusting speed to {1}. Heading deviation is {2:0.00} degrees.",
+                    D.Log("{0} adjusting speed to {1}. Heading deviation is {2:0.00} degrees.",
                         _ship.FullName, Speed.GetName(), Vector3.Angle(_data.CurrentHeading, _data.RequestedHeading));
+                }
+                else {
+                    D.Log("{0} continuing at speed of {1}.", _ship.FullName, Speed.GetName());
                 }
                 return true;
             }
@@ -592,6 +599,8 @@ namespace CodeEnv.Master.GameContent {
 
             _courseCorrectionCheckCountSetting = Mathf.RoundToInt(1000 / (speedFactor * 5));  // higher speeds mean a shorter period between course checks, aka more frequent checks
             _courseCorrectionCheckDistanceThresholdSqrd = speedFactor * speedFactor;   // higher speeds mean course checks become continuous further away
+
+            D.Assert(_targetInfo != null, "{0}.Helm targetInfo is null, implying no course has yet been plotted.".Inject(_ship.FullName));
             if (_targetInfo.Target != null && !_targetInfo.Target.IsMovable) {  // target can be null
                 // the target doesn't move so course checks are much less important
                 _courseCorrectionCheckCountSetting *= 5;

@@ -16,8 +16,10 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using System.Collections.Generic;
     using CodeEnv.Master.Common;
+    using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
     /// Instantiable base class for a player.
@@ -38,7 +40,8 @@ namespace CodeEnv.Master.GameContent {
             IQ = iq;
             IsActive = true;
             _diplomaticRelations = new Dictionary<IPlayer, DiplomaticRelations>();
-            SetRelations(this, DiplomaticRelations.Self);
+            _diplomaticRelations[this] = DiplomaticRelations.Self;  // allows NoPlayer to make SetRelations illegal
+            //SetRelations(this, DiplomaticRelations.Self);
         }
 
         public override string ToString() {
@@ -69,12 +72,12 @@ namespace CodeEnv.Master.GameContent {
 
         public DiplomaticRelations GetRelations(IPlayer player) {
             if (!_diplomaticRelations.ContainsKey(player)) {
-                return DiplomaticRelations.Neutral;
+                return DiplomaticRelations.None;
             }
             return _diplomaticRelations[player];
         }
 
-        public void SetRelations(IPlayer player, DiplomaticRelations relation) {
+        public virtual void SetRelations(IPlayer player, DiplomaticRelations relation) {
             if (player == this) {
                 D.Assert(relation == DiplomaticRelations.Self);
             }

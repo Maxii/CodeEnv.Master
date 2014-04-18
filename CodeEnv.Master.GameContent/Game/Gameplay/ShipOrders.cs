@@ -23,6 +23,8 @@ namespace CodeEnv.Master.GameContent {
 
         None,
 
+        AssumeStation,
+
         MoveTo,
 
         Attack,
@@ -33,13 +35,13 @@ namespace CodeEnv.Master.GameContent {
 
         Entrench,
 
+        // Refit, Disband and JoinFleet can also be issued by the Player
+
         Refit,
 
         Disband,
 
-        JoinFleet,
-
-        AssumeStation
+        JoinFleet
 
     }
 }

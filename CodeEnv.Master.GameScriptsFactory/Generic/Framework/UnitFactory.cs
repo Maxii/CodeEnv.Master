@@ -10,12 +10,13 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG   // no effect while held as a loose script
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
 // default namespace
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
@@ -30,7 +31,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     private ShipModel[] shipPrefabs;
     private FacilityModel[] facilityPrefabs;
-    private RangeTracker rangeTrackerPrefab;
+    private WeaponRangeTracker weaponRangeTrackerPrefab;
     private FleetCmdModel fleetCmdPrefab;
     private StarbaseCmdModel starbaseCmdPrefab;
     private SettlementCmdModel settlementCmdPrefab;
@@ -43,7 +44,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     protected override void Initialize() {
         shipPrefabs = RequiredPrefabs.Instance.ships;
         facilityPrefabs = RequiredPrefabs.Instance.facilities;
-        rangeTrackerPrefab = RequiredPrefabs.Instance.rangeTracker;
+        weaponRangeTrackerPrefab = RequiredPrefabs.Instance.weaponRangeTracker;
         fleetCmdPrefab = RequiredPrefabs.Instance.fleetCmd;
         starbaseCmdPrefab = RequiredPrefabs.Instance.starbaseCmd;
         settlementCmdPrefab = RequiredPrefabs.Instance.settlementCmd;
@@ -120,10 +121,11 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         GameObject shipPrefabGo = shipPrefabs.Single(s => s.gameObject.name == stat.Category.GetName()).gameObject;
         GameObject shipGoClone = UnityUtility.AddChild(null, shipPrefabGo);
 
-        AttachWeaponsToRangeTrackers(stat.Weapons, data, shipGoClone);
-
         ShipModel model = shipGoClone.GetSafeMonoBehaviourComponent<ShipModel>();
         model.Data = data;
+
+        AttachWeapons(stat.Weapons, model);
+
         // this is not really necessary as Ship's prefab should already have Model as its Mesh's CameraLOSChangedRelay target
         shipGoClone.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(shipGoClone.transform);
         return model;
@@ -145,10 +147,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             CurrentHitPoints = stat.CurrentHitPoints,
             CombatStance = stat.CombatStance
         };
-
-        AttachWeaponsToRangeTrackers(stat.Weapons, data, shipGo);
-
         model.Data = data;
+        AttachWeapons(stat.Weapons, model);
+
         // this is not really necessary as ShipGo should already have Model as its Mesh's CameraLOSChangedRelay target
         shipGo.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(shipGo.transform);
     }
@@ -231,10 +232,10 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         GameObject facilityPrefabGo = facilityPrefabs.Single(f => f.gameObject.name == stat.Category.GetName()).gameObject;
         GameObject facilityGoClone = UnityUtility.AddChild(null, facilityPrefabGo);
 
-        AttachWeaponsToRangeTrackers(stat.Weapons, data, facilityGoClone);
-
         FacilityModel model = facilityGoClone.GetSafeMonoBehaviourComponent<FacilityModel>();
         model.Data = data;
+        AttachWeapons(stat.Weapons, model);
+
         // this is not really necessary as Facility's prefab should already have Model as its Mesh's CameraLOSChangedRelay target
         facilityGoClone.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(facilityGoClone.transform);
         return model;
@@ -248,10 +249,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             Strength = stat.Strength,
             CurrentHitPoints = stat.CurrentHitPoints
         };
-
-        AttachWeaponsToRangeTrackers(stat.Weapons, data, facilityGo);
-
         model.Data = data;
+        AttachWeapons(stat.Weapons, model);
+
         // this is not really necessary as facilityGo should already have Model as its Mesh's CameraLOSChangedRelay target
         facilityGo.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(facilityGo.transform);
     }
@@ -276,35 +276,37 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         return st;
     }
 
-    private void AttachWeaponsToRangeTrackers(IList<Weapon> weapons, AElementData data, GameObject elementGo) {
-        IList<IRangeTracker> rangeTrackers = elementGo.GetInterfacesInChildren<IRangeTracker>().ToList();
-        //D.Log("{0} found {1} preset attached {2} instances.", data.Name, rangeTrackers.Count, typeof(RangeTracker).Name);
-        rangeTrackers.ForAll(rt => rt.Range = Constants.ZeroF); // initialize all to zero so RangeSpan gets set and left overs can be found
-        var remainingUnusedTrackers = new List<IRangeTracker>(rangeTrackers);
-        foreach (var weapon in weapons) {
-            var wRange = weapon.Range;
-            // check trackers for range fit, if find it, assign ID, if not assign or create a tracker and assign its ID to the weapon
-            var rTracker = rangeTrackers.FirstOrDefault(rt => rt.RangeSpan.Contains(wRange));
-            if (rTracker == null) {
-                if (!remainingUnusedTrackers.IsNullOrEmpty()) {
-                    rTracker = remainingUnusedTrackers.First();
-                    remainingUnusedTrackers.Remove(rTracker);
-                }
-                else {
-                    GameObject rTrackerGo = UnityUtility.AddChild(elementGo, rangeTrackerPrefab.gameObject);
-                    rTrackerGo.layer = (int)Layers.IgnoreRaycast; // AddChild resets prefab layer to elementGo's layer
-                    rTracker = rTrackerGo.GetSafeInterfaceInChildren<IRangeTracker>();
-                    rangeTrackers.Add(rTracker);
-                }
-                //D.Log("{0}'s {1} with Range {2} assigned new Range {3}.", data.Name, typeof(RangeTracker).Name, rTracker.Range, wRange);
-                rTracker.Range = wRange;
+    private void AttachWeapons(IEnumerable<Weapon> weapons, AUnitElementModel elementModel) {
+        weapons.ForAll(w => AddWeapon(w, elementModel));
+    }
+
+    /// <summary>
+    /// Primary method to use when adding a weapon to an Element. 
+    /// </summary>
+    /// <param name="weapon">The weapon.</param>
+    /// <param name="elementModel">The element model.</param>
+    public void AddWeapon(Weapon weapon, AUnitElementModel elementModel) {
+        var allWeaponTrackers = elementModel.gameObject.GetInterfacesInChildren<IWeaponRangeTracker>();
+        var weaponTrackersInUse = allWeaponTrackers.Where(rt => rt.Range != Constants.ZeroF);
+        var wRange = weapon.Range;
+
+        // check trackers for range fit, if find it, assign ID, if not assign or create a tracker and assign its ID to the weapon
+        var rTracker = weaponTrackersInUse.FirstOrDefault(rt => rt.RangeSpan.Contains(wRange));
+        if (rTracker == null) {
+            var unusedWeaponTrackers = allWeaponTrackers.Except(weaponTrackersInUse);
+            if (!unusedWeaponTrackers.IsNullOrEmpty()) {
+                rTracker = unusedWeaponTrackers.First();
             }
-            data.AddWeapon(weapon, rTracker.ID);
-            // IMPROVE how to keep track ranges from overlapping
+            else {
+                GameObject rTrackerGo = UnityUtility.AddChild(elementModel.gameObject, weaponRangeTrackerPrefab.gameObject);
+                rTrackerGo.layer = (int)Layers.IgnoreRaycast; // AddChild resets prefab layer to elementGo's layer
+                rTracker = rTrackerGo.GetSafeInterfaceInChildren<IWeaponRangeTracker>();
+            }
+            //D.Log("{0}'s {1} with Range {2} assigned new Range {3}.", elementModel.FullName, typeof(IWeaponRangeTracker).Name, rTracker.Range, wRange);
+            rTracker.Range = wRange;
         }
-        if (!remainingUnusedTrackers.IsNullOrEmpty()) {
-            D.Warn("{0} has unused {1} attached.", elementGo.name, typeof(IRangeTracker).Name);
-        }
+        elementModel.AddWeapon(weapon, rTracker);
+        // IMPROVE how to keep track ranges from overlapping
     }
 
 }

@@ -40,9 +40,7 @@ namespace CodeEnv.Master.GameContent {
 
         private string _leaderName;
         public override string LeaderName {
-            get {
-                return !_leaderName.Equals(string.Empty) ? _leaderName : base.LeaderName;
-            }
+            get { return !_leaderName.Equals(string.Empty) ? _leaderName : base.LeaderName; }
         }
 
         private GameColor _color;

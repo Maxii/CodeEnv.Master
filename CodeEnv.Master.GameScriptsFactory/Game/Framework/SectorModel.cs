@@ -10,6 +10,10 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
+
 // default namespace
 
 using CodeEnv.Master.Common;
@@ -29,6 +33,11 @@ public class SectorModel : AItemModel, ISectorModel {
 
     public Index3D SectorIndex {
         get { return Data.SectorIndex; }
+    }
+
+    protected override void Awake() {
+        base.Awake();
+        Subscribe();
     }
 
     protected override void Initialize() { }

@@ -158,6 +158,7 @@ public class SystemCreator : AMonoBase, IDisposable {
     private PlanetoidData CreatePlanetData(PlanetoidCategory pCategory, string planetName) {
         PlanetoidData data = new PlanetoidData(pCategory, planetName, 10000F, 1000000F, _systemName) {
             Strength = new CombatStrength(),
+            Owner = TempGameValues.NoPlayer,
             Capacity = 25,
             Resources = new OpeYield(3.1F, 2.0F, 4.8F),
             SpecialResources = new XYield(XResource.Special_1, 0.3F),
@@ -261,6 +262,7 @@ public class SystemCreator : AMonoBase, IDisposable {
                     PlanetoidCategory moonCategory = DeriveCategory<PlanetoidCategory>(moon.transform);
                     PlanetoidData data = new PlanetoidData(moonCategory, moonName, 1000F, 100000F, _systemName) {
                         Strength = new CombatStrength(),
+                        Owner = TempGameValues.NoPlayer,
                         Capacity = 5,
                         Resources = new OpeYield(0.1F, 1.0F, 0.8F),
                         SpecialResources = null,

@@ -29,6 +29,11 @@ public class UniverseCenterModel : AItemModel, IUniverseCenterModel {
         set { base.Data = value; }
     }
 
+    protected override void Awake() {
+        base.Awake();
+        Subscribe();
+    }
+
     protected override void Initialize() { }
 
     public override string ToString() {

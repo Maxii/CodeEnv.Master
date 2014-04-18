@@ -48,9 +48,9 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
             Strength = new CombatStrength(),
             Weapons = new List<Weapon>() { 
                 new Weapon(WeaponCategory.BeamOffense, model: 1) {
-                Range = UnityEngine.Random.Range(3F, 5F),
-                ReloadPeriod = UnityEngine.Random.Range(0.6F, 0.9F),
-                Damage = UnityEngine.Random.Range(3F, 8F)
+                Range = UnityEngine.Random.Range(2F, 4F),
+                ReloadPeriod = UnityEngine.Random.Range(1.5F, 2.0F),
+                Damage = UnityEngine.Random.Range(1F, 1.5F)
                 }
             },
             CurrentHitPoints = UnityEngine.Random.Range(25F, 50F)

@@ -139,7 +139,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     private Camera _camera;
     private GameInput _gameInput;
     private GameStatus _gameStatus;
-    private UICamera _eventDispatcher;
+    private UICamera _nguiEventDispatcher;
 
     private IList<IDisposable> _subscribers;
 
@@ -151,12 +151,11 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
 
 
     private string[] keyboardAxesNames = new string[] { UnityConstants.KeyboardAxisName_Horizontal, UnityConstants.KeyboardAxisName_Vertical };
-    
+
     private LayerMask _universeEdgeOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.UniverseEdge);
     private LayerMask _dummyTargetOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.DummyTarget);
-    private LayerMask _cameraTargetsOnlyLayerMask
-        = LayerMaskExtensions.CreateExclusiveMask(Layers.UniverseEdge, Layers.DeepSpace, Layers.Gui2D, Layers.Vectrosity2D,
-        Layers.CelestialObjectKeepout, Layers.IgnoreRaycast);
+    private LayerMask _cameraTargetsOnlyLayerMask = LayerMaskExtensions.CreateExclusiveMask(Layers.UniverseEdge,
+        Layers.DeepSpace, Layers.Gui2D, Layers.Vectrosity2D, Layers.CelestialObjectKeepout, Layers.IgnoreRaycast);
     private LayerMask _layersVisibleToCamera = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
         Layers.DummyTarget, Layers.UniverseEdge, Layers.Ships, Layers.BasesSettlements, Layers.Planetoids, Layers.Stars);
 
@@ -236,7 +235,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         _playerPrefsMgr = PlayerPrefsManager.Instance;
         _gameInput = GameInput.Instance;
         _gameStatus = GameStatus.Instance;
-        _eventDispatcher = gameObject.GetSafeMonoBehaviourComponent<UICamera>();
+        _nguiEventDispatcher = gameObject.GetSafeMonoBehaviourComponent<UICamera>();
         Subscribe();
         ValidateActiveConfigurations();
         // need to raise this event in Awake as Start can be too late, since the true version of this event is called
@@ -269,7 +268,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     private void InitializeMainCamera() {
         InitializeFields();
         SetCameraSettings();
-        InitializeEventDispatcher();    // avoid doing in Awake as UICamera Awake() can override setting
+        InitializeNguiEventDispatcher();    // avoid doing in Awake as UICamera Awake() can override setting
         InitializeCameraPreferences();
         PositionCameraForGame();
         InitializeContextMenuSettings();
@@ -297,8 +296,8 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         _camera.layerCullDistances = cullDistances;
     }
 
-    private void InitializeEventDispatcher() {
-        _eventDispatcher.eventType = UICamera.EventType.World;
+    private void InitializeNguiEventDispatcher() {
+        _nguiEventDispatcher.eventType = UICamera.EventType.World;
         EnableEvents(false);    // turns off the event system until the game starts
     }
 
@@ -326,7 +325,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     /// </summary>
     /// <param name="toEnable">if set to <c>true</c> all layers the camera can see will be visible to the event system.</param>
     private void EnableEvents(bool toEnable) {
-        _eventDispatcher.eventReceiverMask = toEnable ? -1 : 0;
+        _nguiEventDispatcher.eventReceiverMask = toEnable ? -1 : 0;
     }
 
     private void PositionCameraForGame() {

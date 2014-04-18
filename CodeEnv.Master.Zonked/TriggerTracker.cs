@@ -23,7 +23,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Maintains a list of all ITargets present inside the trigger collider this script is attached too.
+/// Maintains a list of all IMortalTargets present inside the trigger collider this script is attached too.
 /// </summary>
 public class TriggerTracker : AMonoBase {
 
@@ -32,7 +32,7 @@ public class TriggerTracker : AMonoBase {
     /// </summary>
     public bool trackOtherTriggers;
 
-    public AElementData Data { get; set; }
+    public string ParentFullName { protected get; set; }
 
     private static IList<Collider> _collidersToIgnore = new List<Collider>();
 
@@ -66,9 +66,9 @@ public class TriggerTracker : AMonoBase {
     }
 
     void OnTriggerEnter(Collider other) {
-        //D.Log("OnTriggerEnter({0}) called.", other.name);
+        //D.Log("{0}.{1}.OnTriggerEnter({2}) called.", ParentFullName, _transform.name, other.name);
         if (!trackOtherTriggers && other.isTrigger) {
-            //D.Log("{0}.{1}.OnTriggerEnter ignored Trigger Collider {2}.", Data.Name, GetType().Name, other.name);
+            //D.Log("{0}.{1}.OnTriggerEnter ignored Trigger Collider {2}.", ParentFullName, _transform.name, other.name);
             return;
         }
 
@@ -79,7 +79,7 @@ public class TriggerTracker : AMonoBase {
         IMortalTarget target = other.gameObject.GetInterface<IMortalTarget>();
         if (target == null) {
             _collidersToIgnore.Add(other);
-            D.Log("{0}.{1} now ignoring Collider {2}.", Data.Name, GetType().Name, other.name);
+            D.Log("{0}.{1} now ignoring Collider {2}.", ParentFullName, _transform.name, other.name);
             return;
         }
 
@@ -87,9 +87,9 @@ public class TriggerTracker : AMonoBase {
     }
 
     void OnTriggerExit(Collider other) {
-        //D.Log("{0}.OnTriggerExit() called by Collider {1}.", GetType().Name, other.name);
+        //D.Log("{0}.{1}.OnTriggerExit() called by Collider {2}.", ParentFullName, _transform.name, other.name);
         if (!trackOtherTriggers && other.isTrigger) {
-            //D.Log("{0}.{1}.OnTriggerExit ignored Trigger Collider {2}.", Data.Name, GetType().Name, other.name);
+            //D.Log("{0}.{1}.OnTriggerExit ignored Trigger Collider {2}.", ParentFullName, _transform.name, other.name);
             return;
         }
 
@@ -106,29 +106,29 @@ public class TriggerTracker : AMonoBase {
     protected virtual void Add(IMortalTarget target) {
         if (!AllTargets.Contains(target)) {
             if (!target.IsDead) {
-                //D.Log("{0}.{1}.{2} now tracking target {3}.", Data.OptionalParentName, Data.Name, GetType().Name, target.Name);
+                //D.Log("{0}.{1} now tracking target {2}.", ParentFullName, _transform.name, target.FullName);
                 target.onItemDeath += OnTargetDeath;
                 target.onOwnerChanged += OnTargetOwnerChanged;
                 AllTargets.Add(target);
             }
             else {
-                D.Log("{0}.{1} avoided adding target {2} that is already dead but not yet destroyed.", Data.FullName, GetType().Name, target.FullName);
+                D.Log("{0}.{1} avoided adding target {2} that is already dead but not yet destroyed.", ParentFullName, _transform.name, target.FullName);
             }
         }
         else {
-            D.Warn("{0}.{1} attempted to add duplicate Target {2}.", Data.FullName, GetType().Name, target.FullName);
+            D.Warn("{0}.{1} attempted to add duplicate Target {2}.", ParentFullName, _transform.name, target.FullName);
         }
     }
 
     protected virtual void Remove(IMortalTarget target) {
         bool isRemoved = AllTargets.Remove(target);
         if (isRemoved) {
-            //D.Log("{0}.{1} no longer tracking target {2} at distance = {3}.", Data.Name, GetType().Name, target.Name, Vector3.Distance(target.Position, _transform.position));
+            //D.Log("{0}.{1} no longer tracking target {2} at distance = {3}.", ParentFullName, _transform.name, target.FullName, Vector3.Distance(target.Position, _transform.position));
             target.onItemDeath -= OnTargetDeath;
             target.onOwnerChanged -= OnTargetOwnerChanged;
         }
         else {
-            D.Warn("{0}.{1} target {2} not present to be removed.", Data.FullName, GetType().Name, target.FullName);
+            D.Warn("{0}.{1} target {2} not present to be removed.", ParentFullName, _transform.name, target.FullName);
         }
     }
 

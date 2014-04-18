@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
 
         new IShipModel HQElement { get; set; }
 
-        UnitOrder<FleetOrders> CurrentOrder { get; set; }
+        FleetOrder CurrentOrder { get; set; }
 
         /// <summary>
         /// Indicates whether all ships in the fleet have assumed the bearing

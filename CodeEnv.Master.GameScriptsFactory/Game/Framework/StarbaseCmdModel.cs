@@ -30,11 +30,12 @@ using System.Collections.Generic;
 /// </summary>
 public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
 
-    private UnitOrder<StarbaseOrders> _currentOrder;
-    public UnitOrder<StarbaseOrders> CurrentOrder {
+    private BaseOrder<StarbaseOrders> _currentOrder;
+    public BaseOrder<StarbaseOrders> CurrentOrder {
         get { return _currentOrder; }
-        set { SetProperty<UnitOrder<StarbaseOrders>>(ref _currentOrder, value, "CurrentOrder", OnOrdersChanged); }
+        set { SetProperty<BaseOrder<StarbaseOrders>>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
     }
+
 
     public new StarbaseCmdData Data {
         get { return base.Data as StarbaseCmdData; }
@@ -70,6 +71,36 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
 
     protected override IElementModel SelectHQElement() {
         return Elements.Single(e => (e as IFacilityModel).Data.Category == FacilityCategory.CentralHub);
+    }
+
+    private void OnCurrentOrderChanged() {
+        if (CurrentState == StarbaseState.Attacking) {
+            Return();
+        }
+        if (CurrentOrder != null) {
+            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Order.GetName());
+            StarbaseOrders order = CurrentOrder.Order;
+            switch (order) {
+                case StarbaseOrders.Attack:
+                    CurrentState = StarbaseState.ExecuteAttackOrder;
+                    break;
+                case StarbaseOrders.StopAttack:
+
+                    break;
+                case StarbaseOrders.Repair:
+
+                    break;
+                case StarbaseOrders.Refit:
+
+                    break;
+                case StarbaseOrders.Disband:
+
+                    break;
+                case StarbaseOrders.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
+            }
+        }
     }
 
     #region StateMachine
@@ -115,9 +146,9 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
 
     void Attacking_EnterState() {
         LogEvent();
-        _attackTarget = (CurrentOrder as UnitTargetOrder<StarbaseOrders>).Target;
+        _attackTarget = CurrentOrder.Target as IMortalTarget;
         _attackTarget.onItemDeath += OnTargetDeath;
-        var elementAttackOrder = new UnitTargetOrder<FacilityOrders>(FacilityOrders.Attack, _attackTarget);
+        var elementAttackOrder = new FacilityOrder(FacilityOrders.Attack, OrderSource.UnitCommand, _attackTarget);
         Elements.ForAll(e => (e as FacilityModel).CurrentOrder = elementAttackOrder);
     }
 
@@ -185,36 +216,6 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
     #endregion
 
     # region StateMachine Callbacks
-
-    void OnOrdersChanged() {
-        if (CurrentState == StarbaseState.Attacking) {
-            Return();
-        }
-        if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
-            StarbaseOrders order = CurrentOrder.Order;
-            switch (order) {
-                case StarbaseOrders.Attack:
-                    CurrentState = StarbaseState.ExecuteAttackOrder;
-                    break;
-                case StarbaseOrders.StopAttack:
-
-                    break;
-                case StarbaseOrders.Repair:
-
-                    break;
-                case StarbaseOrders.Refit:
-
-                    break;
-                case StarbaseOrders.Disband:
-
-                    break;
-                case StarbaseOrders.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
-            }
-        }
-    }
 
     #endregion
 

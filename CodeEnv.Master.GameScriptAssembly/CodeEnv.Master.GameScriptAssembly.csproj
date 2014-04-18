@@ -60,7 +60,6 @@
     <Compile Include="Game\Framework\FormationGenerator.cs" />
     <Compile Include="Game\Graphics\AFocusableItemView.cs" />
     <Compile Include="Generic\Framework\AUnitCreator.cs" />
-    <Compile Include="Generic\Framework\TriggerTracker.cs" />
     <Compile Include="Game\Graphics\AMortalItemView.cs" />
     <Compile Include="Game\Graphics\AUnitElementView.cs" />
     <Compile Include="ThirdParty\AMonoStateMachine_NoCall.cs" />

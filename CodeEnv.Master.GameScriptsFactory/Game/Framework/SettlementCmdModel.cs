@@ -10,6 +10,10 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
+
 // default namespace
 
 using System;
@@ -31,11 +35,12 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel {
         set { base.Data = value; }
     }
 
-    private UnitOrder<SettlementOrders> _currentOrder;
-    public UnitOrder<SettlementOrders> CurrentOrder {
+    private BaseOrder<SettlementOrders> _currentOrder;
+    public BaseOrder<SettlementOrders> CurrentOrder {
         get { return _currentOrder; }
-        set { SetProperty<UnitOrder<SettlementOrders>>(ref _currentOrder, value, "CurrentOrder", OnOrdersChanged); }
+        set { SetProperty<BaseOrder<SettlementOrders>>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
     }
+
 
     protected override void Awake() {
         base.Awake();
@@ -69,6 +74,36 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel {
         return Elements.Single(e => (e as IFacilityModel).Data.Category == FacilityCategory.CentralHub);
     }
 
+    private void OnCurrentOrderChanged() {
+        if (CurrentState == SettlementState.Attacking) {
+            Return();
+        }
+        if (CurrentOrder != null) {
+            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Order.GetName());
+            SettlementOrders order = CurrentOrder.Order;
+            switch (order) {
+                case SettlementOrders.Attack:
+                    CurrentState = SettlementState.ExecuteAttackOrder;
+                    break;
+                case SettlementOrders.StopAttack:
+
+                    break;
+                case SettlementOrders.Refit:
+
+                    break;
+                case SettlementOrders.Repair:
+
+                    break;
+                case SettlementOrders.Disband:
+
+                    break;
+                case SettlementOrders.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
+            }
+        }
+    }
+
     #region StateMachine
 
     public new SettlementState CurrentState {
@@ -94,7 +129,6 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel {
     #region ExecuteAttackOrder
 
     IEnumerator ExecuteAttackOrder_EnterState() {
-        //LogEvent();
         D.Log("{0}.ExecuteAttackOrder_EnterState.", Data.Name);
         Call(SettlementState.Attacking);
         yield return null;  // required immediately after Call() to avoid FSM bug
@@ -113,9 +147,9 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel {
 
     void Attacking_EnterState() {
         LogEvent();
-        _attackTarget = (CurrentOrder as UnitTargetOrder<SettlementOrders>).Target;
+        _attackTarget = CurrentOrder.Target as IMortalTarget;
         _attackTarget.onItemDeath += OnTargetDeath;
-        var elementAttackOrder = new UnitTargetOrder<FacilityOrders>(FacilityOrders.Attack, _attackTarget);
+        var elementAttackOrder = new FacilityOrder(FacilityOrders.Attack, OrderSource.UnitCommand, _attackTarget);
         Elements.ForAll(e => (e as FacilityModel).CurrentOrder = elementAttackOrder);
     }
 
@@ -183,36 +217,6 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel {
     #endregion
 
     # region StateMachine Callbacks
-
-    void OnOrdersChanged() {
-        if (CurrentState == SettlementState.Attacking) {
-            Return();
-        }
-        if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
-            SettlementOrders order = CurrentOrder.Order;
-            switch (order) {
-                case SettlementOrders.Attack:
-                    CurrentState = SettlementState.ExecuteAttackOrder;
-                    break;
-                case SettlementOrders.StopAttack:
-
-                    break;
-                case SettlementOrders.Refit:
-
-                    break;
-                case SettlementOrders.Repair:
-
-                    break;
-                case SettlementOrders.Disband:
-
-                    break;
-                case SettlementOrders.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
-            }
-        }
-    }
 
     #endregion
 

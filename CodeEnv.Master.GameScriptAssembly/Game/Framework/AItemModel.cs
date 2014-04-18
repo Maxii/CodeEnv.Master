@@ -10,6 +10,10 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
+
 // default namespace
 
 using System;
@@ -75,10 +79,18 @@ public abstract class AItemModel : AMonoBase, IModel, IDestinationTarget, IDispo
     }
 
     /// <summary>
-    /// Placeholder for subscribing to changes to values contained in Data. 
-    /// Does nothing.
+    /// Subscribes to changes to values contained in Data. 
     /// </summary>
-    protected virtual void SubscribeToDataValueChanges() { }
+    protected virtual void SubscribeToDataValueChanges() {
+        D.Assert(_subscribers != null);
+        _subscribers.Add(Data.SubscribeToPropertyChanged<AItemData, string>(d => d.Name, OnNamingChanged));
+        _subscribers.Add(Data.SubscribeToPropertyChanged<AItemData, string>(d => d.OptionalParentName, OnNamingChanged));
+    }
+
+    /// <summary>
+    /// Called when either the Item name or parentName is changed.
+    /// </summary>
+    protected virtual void OnNamingChanged() { }
 
     protected override void OnDestroy() {
         base.OnDestroy();

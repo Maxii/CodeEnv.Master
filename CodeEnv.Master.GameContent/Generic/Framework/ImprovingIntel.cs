@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ImprovingIntel.cs
-// Intel with a CurrentCoverage value that only can improve once instantiated.
+// Intel with a CurrentCoverage value that can only improve once instantiated.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Intel with a CurrentCoverage value that only can improve once instantiated. It never regresses to a lower value.
+    /// Intel with a CurrentCoverage value that can only improve once instantiated. It never regresses to a lower value.
     /// </summary>
     public class ImprovingIntel : Intel {
 

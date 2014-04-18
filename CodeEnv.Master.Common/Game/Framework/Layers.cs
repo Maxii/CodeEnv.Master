@@ -25,7 +25,7 @@ namespace CodeEnv.Master.Common {
 
         Default = 0,
         TransparentFX = 1,
-        IgnoreRaycast = 2,
+        IgnoreRaycast = 2,  // ignores ALL raycasts, including Unity built-in raycasts like detecting collisions
 
         [Obsolete]
         Water = 4,

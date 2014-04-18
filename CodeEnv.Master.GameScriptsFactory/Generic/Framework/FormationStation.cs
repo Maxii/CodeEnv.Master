@@ -78,7 +78,7 @@ public class FormationStation : AMonoBase, IFormationStation, IDestinationTarget
             // Note: OnTriggerEnter appears to detect ship is onStation once the collider is enabled even if already inside
             // Unfortunately, that detection has a small delay (collider init?) so this is needed to fill the gap
             if (IsShipAlreadyOnStation) {
-                D.Log("{0} is already OnStation.", AssignedShip.FullName);
+                //D.Log("{0} is already OnStation.", AssignedShip.FullName);
                 OnShipOnStation(true);
             }
             enabled = true;

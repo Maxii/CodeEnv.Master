@@ -30,10 +30,10 @@ using UnityEngine;
 /// </summary>
 public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
-    private UnitOrder<FleetOrders> _currentOrder;
-    public UnitOrder<FleetOrders> CurrentOrder {
+    private FleetOrder _currentOrder;
+    public FleetOrder CurrentOrder {
         get { return _currentOrder; }
-        set { SetProperty<UnitOrder<FleetOrders>>(ref _currentOrder, value, "CurrentOrder", OnOrdersChanged); }
+        set { SetProperty<FleetOrder>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
     }
 
     public new FleetCmdData Data {
@@ -76,10 +76,13 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     /// <summary>
     /// Sets the initial state of each element's state machine. There must already be a formation,
     /// and the game must already be running in case this initial state takes an action.
+    /// 
+    /// Warning: State_EnterState methods are executed when the frame's Coroutine's are run, 
+    /// not when the state itself is changed. The order in which those state execution coroutines 
+    /// are run has nothing to do with the order in which the element states are changed here.
     /// </summary>
     protected override void InitializeElementsState() {
-        HQElement.CurrentState = ShipState.Idling;
-        Elements.Except(HQElement).ForAll(e => (e as IShipModel).CurrentState = ShipState.Idling);
+        Elements.ForAll(e => (e as IShipModel).CurrentState = ShipState.Idling);
     }
 
     public override void AddElement(IElementModel element) {
@@ -125,10 +128,55 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     // ships, not by directly telling ships to modify their speed or heading. As such,
     // the ChangeHeading(), ChangeSpeed() and AllStop() methods have been removed.
 
+    private void OnCurrentOrderChanged() {
+        if (CurrentState == FleetState.Moving || CurrentState == FleetState.Attacking) {
+            Return();
+        }
+
+        if (CurrentOrder != null) {
+            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Order.GetName());
+            FleetOrders order = CurrentOrder.Order;
+            switch (order) {
+                case FleetOrders.Attack:
+                    CurrentState = FleetState.ExecuteAttackOrder;
+                    break;
+                case FleetOrders.StopAttack:
+                    break;
+                case FleetOrders.Disband:
+                    break;
+                case FleetOrders.DisbandAt:
+                    break;
+                case FleetOrders.Guard:
+                    break;
+                case FleetOrders.JoinFleet:
+                    CurrentState = FleetState.ExecuteJoinFleetOrder;
+                    break;
+                case FleetOrders.MoveTo:
+                    CurrentState = FleetState.ExecuteMoveOrder;
+                    break;
+                case FleetOrders.Patrol:
+                    break;
+                case FleetOrders.RefitAt:
+                    break;
+                case FleetOrders.Repair:
+                    break;
+                case FleetOrders.RepairAt:
+                    break;
+                case FleetOrders.Retreat:
+                    break;
+                case FleetOrders.RetreatTo:
+                    break;
+                case FleetOrders.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
+            }
+        }
+    }
+
     protected override void OnGameIsRunning() {
         base.OnGameIsRunning();
-        __GetFleetUnderway();
-        //__GetFleetAttackUnderway();
+        //StartCoroutine(__GetFleetUnderway());
+        StartCoroutine(__GetFleetAttackUnderway());
     }
 
     protected override void OnHQElementChanged() {
@@ -148,14 +196,9 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     protected override void PositionElementInFormation(IElementModel element, Vector3 stationOffset) {
         IShipModel ship = element as IShipModel;
         if (!GameStatus.Instance.IsRunning) {
-            // instantly place the ship in its proper position before assigning it to a tracker so the tracker will find it 'onStation'
+            // instantly places the ship in its proper position before assigning it to a tracker so the tracker will find it 'onStation'
             // during gameplay, the ships will move under power to their station
-            //D.Warn("{0}.Velocity = {1} before positioning.", ship.FullName, ship.Transform.rigidbody.velocity);
-            //ship.Transform.rigidbody.isKinematic = true;  // IMPROVE do rigidbodies assume velocity when repositioned?
             base.PositionElementInFormation(element, stationOffset);
-            //ship.Transform.rigidbody.velocity = Vector3.zero;
-            //ship.Transform.rigidbody.isKinematic = false;
-            //D.Warn("{0}.Velocity = {1} after positioning.", ship.FullName, ship.Transform.rigidbody.velocity);
         }
 
         IFormationStation selectedTracker = ship.Data.FormationStation;
@@ -164,16 +207,15 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
             var emptyTrackers = _formationStations.Where(fst => fst.AssignedShip == null);
             if (!emptyTrackers.IsNullOrEmpty()) {
                 // there are empty trackers so assign the ship to one of them
-                D.Log("{0} is being assigned an existing but unassigned FormationStation.", ship.FullName);
+                //D.Log("{0} is being assigned an existing but unassigned FormationStation.", ship.FullName);
                 selectedTracker = emptyTrackers.First();
                 selectedTracker.AssignedShip = ship;
                 ship.Data.FormationStation = selectedTracker;
             }
             else {
                 // there are no emptys so make a new one and assign the ship to it
-                D.Log("{0} is adding a new FormationStation.", ship.FullName);
+                //D.Log("{0} is adding a new FormationStation.", ship.FullName);
                 selectedTracker = UnitFactory.Instance.MakeFormationStationTrackerInstance(stationOffset, this);
-                //D.Log("{0} is adding a new FormationStation at {1} including Offset of {2} from FleetCmd at {3}.", ship.FullName, (selectedTracker as Component).transform.position, stationOffset, _transform.position);
                 selectedTracker.AssignedShip = ship;
                 ship.Data.FormationStation = selectedTracker;
                 _formationStations.Add(selectedTracker);
@@ -183,7 +225,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
             D.Log("{0} already has a FormationStation.", ship.FullName);
         }
         selectedTracker.StationOffset = stationOffset;
-        // as some ships were temporarily set to be immune to physics in FleetUnitCreator, make sure of their proper setting
+        // as ships were temporarily set to be immune to physics in FleetUnitCreator, make sure of their proper setting
         ship.Transform.rigidbody.isKinematic = false;
     }
 
@@ -199,37 +241,44 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         }
     }
 
-    private void __GetFleetUnderway() {
+    private IEnumerator __GetFleetUnderway() {
+        yield return null;  // delay by a frame to allow ship state machine execution coroutines to execute their state change to Idle
         IDestinationTarget destination = null; // = FindObjectOfType<SettlementCmdModel>();
         if (destination == null) {
             // in case Settlements are disabled
             destination = new StationaryLocation(Data.Position + UnityEngine.Random.onUnitSphere * 20F);
         }
-        CurrentOrder = new UnitMoveOrder<FleetOrders>(FleetOrders.MoveTo, destination, Speed.FleetStandard);
+        CurrentOrder = new FleetOrder(FleetOrders.MoveTo, destination, Speed.FleetStandard);
     }
 
-    private void __GetFleetAttackUnderway() {
+    private IEnumerator __GetFleetAttackUnderway() {
+        yield return null;  // delay by a frame to allow ship state machine execution coroutines to execute their state change to Idle
         IPlayer fleetOwner = Data.Owner;
         IEnumerable<IMortalTarget> attackTgts = FindObjectsOfType<StarbaseCmdModel>().Where(sb => fleetOwner.IsEnemyOf(sb.Owner)).Cast<IMortalTarget>();
         if (attackTgts.IsNullOrEmpty()) {
             // in case no Starbases qualify
-            attackTgts = FindObjectsOfType<SettlementCmdModel>().Where(sb => fleetOwner.IsEnemyOf(sb.Owner)).Cast<IMortalTarget>();
+            attackTgts = FindObjectsOfType<SettlementCmdModel>().Where(s => fleetOwner.IsEnemyOf(s.Owner)).Cast<IMortalTarget>();
             if (attackTgts.IsNullOrEmpty()) {
                 // in case no Settlements qualify
-                attackTgts = FindObjectsOfType<FleetCmdModel>().Where(sb => fleetOwner.IsEnemyOf(sb.Owner)).Cast<IMortalTarget>();
+                attackTgts = FindObjectsOfType<FleetCmdModel>().Where(f => fleetOwner.IsEnemyOf(f.Owner)).Cast<IMortalTarget>();
+                if (attackTgts.IsNullOrEmpty()) {
+                    // in case no Fleets qualify
+                    attackTgts = FindObjectsOfType<PlanetoidModel>().Where(p => fleetOwner.IsEnemyOf(p.Owner)).Cast<IMortalTarget>();
+                    if (attackTgts.IsNullOrEmpty()) {
+                        // in case no enemy Planetoids qualify
+                        attackTgts = FindObjectsOfType<PlanetoidModel>().Where(p => p.Owner == TempGameValues.NoPlayer).Cast<IMortalTarget>();
+                        D.Warn("{0} can find no AttackTargets that meet the enemy selection criteria. Picking an unowned Planet.", Data.Name);
+                    }
+                }
             }
         }
-        if (attackTgts.IsNullOrEmpty()) {
-            attackTgts = FindObjectsOfType<PlanetoidModel>().Cast<IMortalTarget>();
-            D.Warn("{0} can find no AttackTargets that meet the enemy selection criteria. Picking a Planet.", Data.Name);
-        }
         IMortalTarget attackTgt = attackTgts.MinBy(t => Vector3.Distance(t.Position, Data.Position));
-        CurrentOrder = new UnitTargetOrder<FleetOrders>(FleetOrders.Attack, attackTgt);
+        CurrentOrder = new FleetOrder(FleetOrders.Attack, attackTgt);
     }
 
     public void __IssueShipMovementOrders(IDestinationTarget target, Speed speed, float standoffDistance = Constants.ZeroF) {
-        var moveToOrder = new UnitMoveOrder<ShipOrders>(ShipOrders.MoveTo, target, speed, standoffDistance);
-        Elements.ForAll(e => (e as ShipModel).CurrentOrder = moveToOrder);
+        var shipMoveToOrder = new ShipOrder(ShipOrders.MoveTo, OrderSource.UnitCommand, target, speed, standoffDistance);
+        Elements.ForAll(e => (e as ShipModel).CurrentOrder = shipMoveToOrder);
     }
 
     public bool IsBearingConfirmed {
@@ -262,10 +311,9 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     #region ExecuteMoveOrder
 
     IEnumerator ExecuteMoveOrder_EnterState() {
-        D.Log("{0}.{1}.ExecuteMoveOrder_EnterState.", Data.OptionalParentName, Data.Name);
-        var moveOrder = CurrentOrder as UnitMoveOrder<FleetOrders>;
-        _moveSpeed = moveOrder.Speed;
-        _moveTarget = moveOrder.Target;
+        D.Log("{0}.ExecuteMoveOrder_EnterState.", FullName);
+        _moveTarget = CurrentOrder.Target;
+        _moveSpeed = CurrentOrder.Speed;
         Call(FleetState.Moving);
         yield return null;  // required immediately after Call() to avoid FSM bug
         // Return()s here - move error or not, we idle
@@ -372,8 +420,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     IEnumerator ExecuteAttackOrder_EnterState() {
         D.Log("{0}.ExecuteAttackOrder_EnterState.", FullName);
-        var attackOrder = CurrentOrder as UnitTargetOrder<FleetOrders>;
-        _moveTarget = attackOrder.Target;
+        _moveTarget = CurrentOrder.Target;
         _moveSpeed = Speed.FleetFull;
         Call(FleetState.Moving);
         yield return null;  // required immediately after Call() to avoid FSM bug
@@ -381,7 +428,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
             CurrentState = FleetState.Idling;
             yield break;
         }
-        if (attackOrder.Target.IsDead) {
+        if ((CurrentOrder.Target as IMortalTarget).IsDead) {
             // Moving Return()s if the target dies
             CurrentState = FleetState.Idling;
             yield break;
@@ -405,10 +452,10 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     void Attacking_EnterState() {
         LogEvent();
-        _attackTarget = (CurrentOrder as UnitTargetOrder<FleetOrders>).Target;
+        _attackTarget = CurrentOrder.Target as IMortalTarget;
         _attackTarget.onItemDeath += OnTargetDeath;
-        var elementAttackOrder = new UnitTargetOrder<ShipOrders>(ShipOrders.Attack, _attackTarget);
-        Elements.ForAll(e => (e as ShipModel).CurrentOrder = elementAttackOrder);
+        var shipAttackOrder = new ShipOrder(ShipOrders.Attack, OrderSource.UnitCommand, _attackTarget);
+        Elements.ForAll(e => (e as ShipModel).CurrentOrder = shipAttackOrder);
     }
 
     void Attacking_OnTargetDeath(IMortalModel deadTarget) {
@@ -450,10 +497,13 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     #region ExecuteJoinFleetOrder
 
     IEnumerator ExecuteJoinFleetOrder_EnterState() {
-        //LogEvent();
         D.Log("{0}.ExecuteJoinFleetOrder_EnterState.", FullName);
-        var joinOrder = CurrentOrder as UnitTargetOrder<FleetOrders>;
-        _moveTarget = joinOrder.Target;
+        //var joinOrder = CurrentOrder as UnitTargetOrder<FleetOrders>;
+        //_moveTarget = joinOrder.Target;
+        //_moveSpeed = Speed.FleetStandard;
+        _moveTarget = CurrentOrder.Target;
+        D.Assert(CurrentOrder.Speed == Speed.None,
+            "{0}.JoinFleetOrder has speed set to {1}.".Inject(FullName, CurrentOrder.Speed.GetName()));
         _moveSpeed = Speed.FleetStandard;
         Call(FleetState.Moving);
         yield return null;  // required immediately after Call() to avoid FSM bug
@@ -463,8 +513,8 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         }
 
         // we've arrived so transfer the ship to the fleet we are joining
-        var fleetToJoin = joinOrder.Target as IFleetCmdModel;
-        var ship = Elements[0] as IShipModel;
+        var fleetToJoin = CurrentOrder.Target as IFleetCmdModel;
+        var ship = Elements[0] as IShipModel;   // IMPROVE more than one ship?
         TransferShip(ship, fleetToJoin);
         // removing the only ship will immediately call FleetState.Dead
     }
@@ -525,61 +575,6 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     }
 
     // eliminated OnFlagshipTrackingError() as an overcomplication for now
-
-    void OnOrdersChanged() {
-        if (CurrentState == FleetState.Moving || CurrentState == FleetState.Attacking) {
-            Return();
-        }
-
-        if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
-            FleetOrders order = CurrentOrder.Order;
-            switch (order) {
-                case FleetOrders.Attack:
-                    CurrentState = FleetState.ExecuteAttackOrder;
-                    break;
-                case FleetOrders.StopAttack:
-
-                    break;
-                case FleetOrders.Disband:
-
-                    break;
-                case FleetOrders.DisbandAt:
-
-                    break;
-                case FleetOrders.Guard:
-
-                    break;
-                case FleetOrders.JoinFleet:
-                    CurrentState = FleetState.ExecuteJoinFleetOrder;
-                    break;
-                case FleetOrders.MoveTo:
-                    CurrentState = FleetState.ExecuteMoveOrder;
-                    break;
-                case FleetOrders.Patrol:
-
-                    break;
-                case FleetOrders.RefitAt:
-
-                    break;
-                case FleetOrders.Repair:
-
-                    break;
-                case FleetOrders.RepairAt:
-
-                    break;
-                case FleetOrders.Retreat:
-
-                    break;
-                case FleetOrders.RetreatTo:
-
-                    break;
-                case FleetOrders.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
-            }
-        }
-    }
 
     #endregion
 

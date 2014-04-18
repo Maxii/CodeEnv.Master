@@ -37,9 +37,11 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
     }
 
     protected Rigidbody _rigidbody;
-    protected IDictionary<Guid, IRangeTracker> _weaponRangeTrackerLookup;
+    /// <summary>
+    /// Weapon Range Tracker lookup table keyed by the Range Tracker's Guid ID.
+    /// </summary>
+    protected IDictionary<Guid, IWeaponRangeTracker> _weaponRangeTrackerLookup;
     protected float _gameSpeedMultiplier;
-
 
     protected override void Awake() {
         base.Awake();
@@ -55,21 +57,13 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
 
     protected override void Initialize() {
         _rigidbody.mass = Data.Mass;
-        InitializeWeaponRangeTrackers();
+        __InitializeWeaponRangeTrackers();
     }
 
-    private void InitializeWeaponRangeTrackers() {
-        _weaponRangeTrackerLookup = new Dictionary<Guid, IRangeTracker>();
-        var rangeTrackers = gameObject.GetSafeInterfacesInChildren<IRangeTracker>();
-
-        foreach (var rangeTracker in rangeTrackers) {
-            D.Assert(rangeTracker.Range != Constants.ZeroF, "{0} has an extra {1}.".Inject(Data.Name, typeof(IRangeTracker).Name));
-            rangeTracker.Data = Data;
-            rangeTracker.Owner = Data.Owner;
-            rangeTracker.onEnemyInRange += OnEnemyInRange;
-            _weaponRangeTrackerLookup.Add(rangeTracker.ID, rangeTracker);
-            // rangeTrackers enable themselves
-        }
+    // Element owners are currently not set until the elements are added to their Command
+    // Therefore, AddWeapon adds a null owner to the range trackers
+    private void __InitializeWeaponRangeTrackers() {
+        _weaponRangeTrackerLookup.Values.ForAll(rt => rt.Owner = Data.Owner);
     }
 
     protected override void SubscribeToDataValueChanges() {
@@ -88,27 +82,81 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
         }
     }
 
+    protected override void OnNamingChanged() {
+        base.OnNamingChanged();
+        if (enabled) {  // acts just like an isInitialized test as enabled results in Start() which calls Initialize 
+            _weaponRangeTrackerLookup.Values.ForAll(rt => rt.ParentFullName = Data.FullName);
+        }
+    }
+
+    #region Weapons
+
+    /// <summary>
+    /// Adds the weapon to this element, paired with the provided range tracker. Clients wishing to add
+    /// a weapon to this element should use UnitFactory.AddWeapon(weapon, element).
+    /// </summary>
+    /// <param name="weapon">The weapon.</param>
+    /// <param name="rangeTracker">The range tracker to pair with this weapon.</param>
+    public void AddWeapon(Weapon weapon, IWeaponRangeTracker rangeTracker) {
+        if (_weaponRangeTrackerLookup == null) {
+            _weaponRangeTrackerLookup = new Dictionary<Guid, IWeaponRangeTracker>();
+        }
+        if (!_weaponRangeTrackerLookup.ContainsKey(rangeTracker.ID)) {
+            // only need to record and setup range trackers once. The same rangeTracker can have more than 1 weapon
+            _weaponRangeTrackerLookup.Add(rangeTracker.ID, rangeTracker);
+            rangeTracker.Range = weapon.Range;
+            rangeTracker.ParentFullName = FullName;
+            rangeTracker.Owner = Data.Owner;
+            rangeTracker.onEnemyInRange += OnEnemyInRange;
+        }
+        // rangeTrackers enable themselves
+
+        Data.AddWeapon(weapon, rangeTracker.ID);
+        // IMPROVE how to keep track ranges from overlapping
+    }
+
+    /// <summary>
+    /// Removes the weapon from this element, destroying any associated range tracker
+    /// if it is no longer in use.
+    /// </summary>
+    /// <param name="weapon">The weapon.</param>
+    public void RemoveWeapon(Weapon weapon) {
+        bool isRangeTrackerStillInUse = Data.RemoveWeapon(weapon);
+        if (!isRangeTrackerStillInUse) {
+            IWeaponRangeTracker rangeTracker;
+            if (_weaponRangeTrackerLookup.TryGetValue(weapon.TrackerID, out rangeTracker)) {
+                _weaponRangeTrackerLookup.Remove(weapon.TrackerID);
+                D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(IWeaponRangeTracker).Name, weapon.Name);
+                GameObject.Destroy((rangeTracker as Component).gameObject);
+                return;
+            }
+            D.Error("{0} could not find {1} for {2}.", FullName, typeof(IWeaponRangeTracker).Name, weapon.Name);
+        }
+    }
+
     #region Weapon Reload System
 
     private IDictionary<Guid, Job> _weaponReloadJobs = new Dictionary<Guid, Job>();
 
     private void OnEnemyInRange(bool isInRange, Guid trackerID) {
+        D.Log("{0}.OnEnemyInRange(isInRange: {1}, trackerID: {2}).", FullName, isInRange, trackerID);
         var weapons = Data.GetWeapons(trackerID);
         foreach (var weapon in weapons) {
             var weaponID = weapon.ID;
             Job weaponReloadJob;
             if (isInRange) {
                 if (!_weaponReloadJobs.TryGetValue(weaponID, out weaponReloadJob)) {
+                    D.Log("{0} creating new weaponReloadJob for {1}.", FullName, weapon.Name);
                     weaponReloadJob = new Job(ReloadWeapon(weapon));
                     _weaponReloadJobs.Add(weaponID, weaponReloadJob);
                 }
-                D.Assert(!weaponReloadJob.IsRunning, "{0}.WeaponReloadJob should not be running.".Inject(Data.Name));
+                D.Assert(!weaponReloadJob.IsRunning, "{0}.{1}.WeaponReloadJob should not be running.".Inject(FullName, weapon.Name));
                 weaponReloadJob.Start();
             }
             else {
                 weaponReloadJob = _weaponReloadJobs[weaponID];
                 if (!weaponReloadJob.IsRunning) {
-                    D.Warn("{0}.WeaponReloadJob should be running.".Inject(Data.Name));
+                    D.Warn("{0}.{1}.WeaponReloadJob should be running.".Inject(FullName, weapon.Name));
                 }
                 weaponReloadJob.Kill();
             }
@@ -121,6 +169,8 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
             yield return new WaitForSeconds(weapon.ReloadPeriod);
         }
     }
+
+    #endregion
 
     #endregion
 

@@ -26,7 +26,14 @@ using CodeEnv.Master.Common;
 using UnityEngine;
 
 /// <summary>
-///  Abstract Base class for MortalItem State Machines to inherit from.
+///  Abstract Base class for MortalItemModel State Machines to inherit from.
+///  
+///  WARNING: State _EnterState and _ExitState methods that return IEnumerator are executed 
+///  when the frame's Coroutine's are run, not when the state itself is changed. If those methods
+///  return void, then they are executed immediately after the state change. In addition, the order
+///  in which a state machine is selected by the UnityEngine to run its execution coroutines, while
+///  repeatable, has nothing to do with the order the client choses to change the state machine's state.
+
 ///  NOTE: Is not generic as this is so deep in the Item heirarchy, that I was forced
 ///  to pass the StateType through MANY layers, making it difficult to create abstract
 ///  classes.
@@ -69,6 +76,8 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     /// A coroutine executor that can be interrupted
     /// </summary>
     public class InterruptableCoroutine {
+
+        private string _name;
 
         private IEnumerator _enumerator;
         private MonoBehaviour _behaviour;
@@ -116,8 +125,10 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
         private IEnumerator WaitForCoroutine(YieldInstruction instruction) {
             var ci = new CoroutineInfo { instruction = instruction, done = false };
             _behaviour.StartCoroutine(YieldInstructionCoroutine(ci));
-            while (!ci.done)
+            while (!ci.done) {
+                //D.Log("{0} looping, WaitingForCoroutine() to finish.", _name);
                 yield return null;
+            }
         }
 
         private IEnumerator Run() {
@@ -125,25 +136,31 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
             while (true) {
                 //Check if we have a current coroutine
                 if (_enumerator != null) {
+                    //D.Log("Another pass of {0}.Run() starting with non-null _enumerator.", _name);
                     //Make a copy of the enumerator in case it changes
                     var enm = _enumerator;
-                    //Execute the next step of the coroutine
-                    var valid = _enumerator.MoveNext();
+                    //Execute the next step of the coroutine    
+                    //D.Log("{0} beginning execution of code block. Time = {1}.", _name, Time.time);
+                    var valid = _enumerator.MoveNext(); // aka executes ALL your method,s code up to the next yield (not just one line)
+                    //D.Log("{0} after MoveNext(). Time = {1}.", _name, Time.time);
+                    //if (!valid) {
+                    //    D.Log("{0} has found end of method. Time = {1}.", _name, Time.time);
+                    //}
                     //See if the enumerator has changed
                     if (enm == _enumerator) {
                         //If this is the same enumerator
                         if (_enumerator != null && valid) {
                             //Get the result of the yield
-                            var result = _enumerator.Current;
+                            var result = _enumerator.Current;   // this is the next yield
                             //Check if it is a coroutine
-                            if (result is IEnumerator) {
+                            if (result is IEnumerator) {    // aka the yield wants to wait until another coroutine completes
                                 //Push the current coroutine and execute the new one
                                 _stack.Push(_enumerator);
                                 _enumerator = result as IEnumerator;
                                 yield return null;
                             }
                             //Check if it is a yield instruction
-                            else if (result is YieldInstruction) {
+                            else if (result is YieldInstruction) {  // a YieldInstruction is the parent of the WaitFor... classes
                                 //To be able to interrupt yield instructions we need to run them as a separate coroutine and wait for them
                                 _stack.Push(_enumerator);
                                 //Create the coroutine to wait for the yieldinstruction
@@ -152,6 +169,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
                             }
                             else {
                                 //Otherwise return the value
+                                //D.Log("{0} execution of code block completed. Time = {1}.", _name, Time.time);
                                 yield return _enumerator.Current;
                             }
                         }
@@ -174,12 +192,14 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
                         }
                     }
                     else {
-                        //If the enumerator changed then just yield
-                        yield return null;
+                        //If the enumerator changed then just yield     
+                        //D.Log("{0}.Run()._enumerator has changed. Time = {1}.", _name, Time.time);
+                        yield return null;  // aka a new method was supplied while your code was executing so start work on new method
                     }
                 }
                 else {
-                    //If the enumerator was null then just yield
+                    //If the enumerator was null then just yield    // aka there is no method currently present to execute right now
+                    //D.Log("{0}.Run() found null enumerator.", _name);
                     yield return null;
                 }
             }
@@ -191,8 +211,9 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
         /// <param name='behaviour'>
         /// The behaviour on which the coroutines should run
         /// </param>
-        public InterruptableCoroutine(MonoBehaviour behaviour) {
+        public InterruptableCoroutine(string coroutineName, MonoBehaviour behaviour) {
             _behaviour = behaviour;
+            _name = behaviour.GetType().Name + Constants.Underscore + coroutineName;
             _behaviour.StartCoroutine(Run());
         }
 
@@ -222,6 +243,10 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
         /// The stack that should be used for this coroutine
         /// </param>
         public void Run(IEnumerator enm, Stack<IEnumerator> stack = null) {
+            //D.Log("{0}.Run(IEnumerator) called. Time = {1}.", _name, Time.time);
+            //if (enm == null) {
+            //    D.Warn("{0}.Run(enm) enm is null. Time = {1}.", _name, Time.time);
+            //}
             _enumerator = enm;
             if (stack != null) {
                 _stack = stack;
@@ -375,11 +400,8 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     private float _timeEnteredState;
 
     /// <summary>
-    /// Gets the amount of time spent in the current state
+    /// Gets the seconds spent in the current state
     /// </summary>
-    /// <value>
-    /// The number of seconds in the current state
-    /// </value>
     public float timeInCurrentState {
         get {
             return Time.time - _timeEnteredState;
@@ -389,8 +411,8 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     protected override void Awake() {
         base.Awake();
         //Create the interruptable coroutines
-        enterStateCoroutine = new InterruptableCoroutine(this);
-        exitStateCoroutine = new InterruptableCoroutine(this);
+        enterStateCoroutine = new InterruptableCoroutine("EnterStateCoroutine", this);
+        exitStateCoroutine = new InterruptableCoroutine("ExitStateCoroutine", this);
     }
 
     #region Default Implementations Of Delegates
@@ -436,7 +458,6 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
         public Action DoOnDoubleClick = DoNothing;
 
         public object currentState;
-        //public StateType currentState;
 
         //Stack of the enter state enumerators
         public Stack<IEnumerator> enterStack;
@@ -487,8 +508,8 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
             //    return;
             //}
             ChangingState();
+            D.Log("{0} setting CurrentState to {1}.", FullName, value.ToString());
             state.currentState = value;
-            //D.Log("{0} setting CurrentState to {1}.", Data.Name, value.ToString());
             ConfigureCurrentState();
         }
     }
@@ -508,6 +529,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     /// </summary>
     /// <param name='stateToActivate'> State to activate. </param>
     public void Call(object stateToActivate) {
+        //D.Log("{0}.Call({1}) called.", FullName, stateToActivate.ToString());
         state.time = timeInCurrentState;
         state.enterStack = enterStateCoroutine.CreateStack();
         state.exitStack = exitStateCoroutine.CreateStack();
@@ -521,14 +543,12 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
 
     //Configures the state machine when the new state has been called
     private void ConfigureCurrentStateForCall() {
+        //D.Log("{0}.ConfigureCurrentStateForCall() called.", FullName);
         GetStateMethods();
         OnStateChanged();
         if (state.enterState != null) {
-            //D.Log("{0}.{1} EnterState method name = {2}.", Data.Name, state.currentState.ToString(), state.enterState.Method.Name);
+            //D.Log("{0} setting up {1}_EnterState() to execute a Call().", FullName, state.currentState.ToString());
             state.enterStateEnumerator = state.enterState();
-            //if (state.enterStateEnumerator != null) {
-            //    D.Log("{0}.{1} EnterState enumerator contents = {2}.", Data.Name, state.currentState.ToString(), state.enterStateEnumerator.ToString());
-            //}
             enterStateCoroutine.Run(state.enterStateEnumerator);
         }
     }
@@ -537,8 +557,9 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     /// Return this state from a call
     /// </summary>
     public void Return() {
+        //D.Log("{0}.Return() called.", FullName);
         if (state.exitState != null) {
-            //D.Log("{0}.{1} ExitState method name = {2}.", Data.Name, state.currentState.ToString(), state.exitState.Method.Name);
+            //D.Log("{0} setting up {1}_ExitState() to run in Return().", FullName, state.currentState.ToString());
             state.exitStateEnumerator = state.exitState();
             exitStateCoroutine.Run(state.exitStateEnumerator);
         }
@@ -546,8 +567,8 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
         //D.Log("On Return, Stack count = {0}.", _stack.Count);
         if (_stack.Count > 0) {
             state = _stack.Pop();
-            //D.Log("New State in StateMachine.Return() = {0}", state.currentState.ToString());
             OnStateChanged();
+            //D.Log("{0} setting up resumption of {1}_EnterState() in Return().", FullName, state.currentState.ToString());
             enterStateCoroutine.Run(state.enterStateEnumerator, state.enterStack);
             //WireEvents();
             _timeEnteredState = Time.time - state.time;
@@ -562,6 +583,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     /// The state to use if there is no waiting calling state
     /// </param>
     public void Return(object baseState) {
+        //D.Log("{0}.Return({1}) called.", FullName, baseState.ToString());
         //UnwireEvents();
         if (state.exitState != null) {
             state.exitStateEnumerator = state.exitState();
@@ -584,6 +606,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     /// Caches previous states
     /// </summary>
     private void ChangingState() {
+        //D.Log("{0}.ChangingState() called.", FullName);
         lastState = state.currentState;
         _timeEnteredState = Time.time;
     }
@@ -592,27 +615,31 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     /// Configures the state machine for the current state
     /// </summary>
     private void ConfigureCurrentState() {
+        //D.Log("{0}.ConfigureCurrentState() called.", FullName);
         if (state.exitState != null) {
             // runs the exitState of the PREVIOUS state as the state delegates haven't been changed yet
+            //if (state.exitState != DoNothingCoroutine) {
+            //    D.Log("{0} setting up {1}_ExitState() to run.", FullName, lastState.ToString());
+            //}
             exitStateCoroutine.Run(state.exitState());
         }
 
         GetStateMethods();
         OnStateChanged();
 
-        //if (state.enterState == null) {
-        //    D.Warn("{0}.EnterState() is null.", state.currentState.ToString());
-        //}
         if (state.enterState != null) {
+            //D.Log("{0} setting up {1}_EnterState() to run. Time = {2}.", FullName, state.currentState.ToString(), Time.time);
+            // void enterState() methods execute immediately when assigned here rather than wait until the enterCoroutine makes its next pass
+            //D.Log("{0} EnterState method name = {1}.", FullName, state.enterState.Method.Name);
             state.enterStateEnumerator = state.enterState();
-            //D.Log("{0}.EnterState preRun", state.currentState.ToString());
+            // void enterStates are set to return null by ConfigureDelegate when executed. Accordingly, Run(null) below does nothing
             enterStateCoroutine.Run(state.enterStateEnumerator);
-            // D.Log("{0}.EnterState postRun", state.currentState.ToString());
         }
     }
 
     //Retrieves all of the methods for the current state
     private void GetStateMethods() {
+        //D.Log("{0}.GetStateMethods() called.", FullName);
         //UnwireEvents();
         //Now we need to configure all of the methods
         state.DoUpdate = ConfigureDelegate<Action>("Update", DoNothing);
@@ -648,11 +675,11 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     /// IEnumerator wrapper around EnterState or ExitState methods that return void rather than
     /// IEnumerator.
     /// </summary>
-    /// <typeparam name="D"></typeparam>
+    /// <typeparam name="T">The type of delegate</typeparam>
     /// <param name="methodRoot">Substring of the methodName that follows "StateName_", eg EnterState from State1_EnterState.</param>
     /// <param name="Default">The default delegate to use if a method of the proper name is not found.</param>
     /// <returns></returns>
-    private D ConfigureDelegate<D>(string methodRoot, D Default) where D : class {
+    private T ConfigureDelegate<T>(string methodRoot, T Default) where T : class {
 
         Dictionary<string, Delegate> lookup;
         if (!_cache.TryGetValue(state.currentState, out lookup)) {
@@ -665,21 +692,21 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
                 | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.InvokeMethod);
 
             if (mtd != null) {
-                if (typeof(D) == typeof(Func<IEnumerator>) && mtd.ReturnType != typeof(IEnumerator)) {
+                if (typeof(T) == typeof(Func<IEnumerator>) && mtd.ReturnType != typeof(IEnumerator)) {
+                    // the enter or exit method returns void, so adjust it to execute properly when placed in the IEnumerable delegate
                     Action a = Delegate.CreateDelegate(typeof(Action), this, mtd) as Action;
                     Func<IEnumerator> func = () => { a(); return null; };
                     returnValue = func;
                 }
                 else
-                    returnValue = Delegate.CreateDelegate(typeof(D), this, mtd);
+                    returnValue = Delegate.CreateDelegate(typeof(T), this, mtd);
             }
             else {
                 returnValue = Default as Delegate;
             }
             lookup[methodRoot] = returnValue;
         }
-        return returnValue as D;
-
+        return returnValue as T;
     }
 
     #region Pass On Methods

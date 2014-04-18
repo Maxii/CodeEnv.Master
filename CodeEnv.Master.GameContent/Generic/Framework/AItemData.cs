@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AItemData : APropertyChangeTracking {
 
-        private string _name;
+        private string _name; // = string.Empty;
         /// <summary>
         /// Gets or sets the name of the item. 
         /// </summary>
@@ -33,15 +33,13 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<string>(ref _name, value, "Name", OnNameChanged); }
         }
 
-        private string _optionalParentName;
+        private string _optionalParentName; // = string.Empty;
         /// <summary>
         /// Gets or sets the name of the Parent of this item. Optional.
         /// </summary>
         public string OptionalParentName {
             get { return _optionalParentName; }
-            set {
-                SetProperty<string>(ref _optionalParentName, value, "OptionalParentName");
-            }
+            set { SetProperty<string>(ref _optionalParentName, value, "OptionalParentName"); }
         }
 
         public string FullName {
@@ -75,16 +73,16 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The name.</param>
         /// <param name="optionalParentName">Name of the optional parent.</param>
         public AItemData(string name, string optionalParentName = "") {
-            _name = name;
+            Name = name;
             OptionalParentName = optionalParentName;
         }
 
         protected virtual void OnOwnerChanged() {
             if (Owner != null) {
-                D.Log("{0} Owner has changed to {1}.", Name, Owner.LeaderName);
+                D.Log("{0} Owner has changed to {1}.", FullName, Owner.LeaderName);
             }
             else {
-                D.Log("{0} no longer has an owner.", Name);
+                D.Log("{0} no longer has an owner.", FullName);
             }
         }
 
@@ -93,7 +91,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void OnNameChanged() {
-            Transform.name = Name;
+            if (Transform != null) {    // Transform not set when Name initially set
+                Transform.name = Name;
+            }
         }
 
     }

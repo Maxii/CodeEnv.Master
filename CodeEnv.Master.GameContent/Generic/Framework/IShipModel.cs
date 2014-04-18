@@ -25,7 +25,9 @@ namespace CodeEnv.Master.GameContent {
 
         new ShipData Data { get; set; }
 
-        UnitOrder<ShipOrders> CurrentOrder { get; set; }
+        ShipOrder CurrentOrder { get; set; }
+
+        //UnitOrder<ShipOrders> CurrentOrder { get; set; }
 
         ShipState CurrentState { get; set; }
 

@@ -53,18 +53,18 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
             Drag = drag,
             FullThrust = mass * drag * UnityEngine.Random.Range(2F, 5F), // MaxThrust = Mass * Drag * MaxSpeed;
             MaxHitPoints = 50F,
-            MaxTurnRate = UnityEngine.Random.Range(45F, 315F),
+            MaxTurnRate = UnityEngine.Random.Range(300F, 315F),
             Strength = new CombatStrength(),
             CombatStance = Enums<ShipCombatStance>.GetRandom(excludeDefault: true),
             Weapons = new List<Weapon>() { 
                 new Weapon(WeaponCategory.BeamOffense, model: 1) {
-                Range = UnityEngine.Random.Range(3F, 6F),
-                ReloadPeriod = UnityEngine.Random.Range(0.4F, 0.6F),
+                Range = UnityEngine.Random.Range(2F, 4F),
+                ReloadPeriod = UnityEngine.Random.Range(1.4F, 1.6F),
                 Damage = UnityEngine.Random.Range(4F, 6F)
                 },
                 new Weapon(WeaponCategory.MissileOffense, model: 2) {
-                Range = UnityEngine.Random.Range(5F, 8F),
-                ReloadPeriod = UnityEngine.Random.Range(1F, 1.5F),
+                Range = UnityEngine.Random.Range(2F, 4F),
+                ReloadPeriod = UnityEngine.Random.Range(2F, 2.5F),
                 Damage = UnityEngine.Random.Range(8F, 12F)
                 }
             },

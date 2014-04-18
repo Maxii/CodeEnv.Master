@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IRangeTracker.cs
-//  Interface for access to RangeTrackers.
+// File: IWeaponRangeTracker.cs
+//  Interface for access to WeaponRangeTrackers.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,9 +21,9 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Interface for access to RangeTrackers.
+    /// Interface for access to WeaponRangeTrackers.
     /// </summary>
-    public interface IRangeTracker {
+    public interface IWeaponRangeTracker {
 
         /// <summary>
         /// Occurs once with <c>true</c> when the first of one or more enemies come into range and 
@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         event Action<bool, Guid> onEnemyInRange;
 
-        AElementData Data { get; set; } // TODO Temporary Just for debug messages
+        string ParentFullName { get; set; }
 
         Guid ID { get; }
 

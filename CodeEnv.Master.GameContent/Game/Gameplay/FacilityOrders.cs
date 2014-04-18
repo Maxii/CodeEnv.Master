@@ -29,6 +29,8 @@ namespace CodeEnv.Master.GameContent {
 
         Repair,
 
+        // Refit and Disband can also be issued by the Player
+
         Refit,
 
         Disband

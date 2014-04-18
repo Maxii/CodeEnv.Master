@@ -47,10 +47,17 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
         }
     }
 
-    private UnitOrder<FacilityOrders> _currentOrder;
-    public UnitOrder<FacilityOrders> CurrentOrder {
+    private FacilityOrder _currentOrder;
+    /// <summary>
+    /// The last order this facility was instructed to execute.
+    /// Note: Orders from UnitCommands and the Player can become standing orders until superceded by another order
+    /// from either the UnitCmd or the Player. They may not be lost when the Captain overrides one of these orders. 
+    /// Instead, the Captain can direct that his superior's order be recorded in the 'StandingOrder' property of his override order so 
+    /// the element may return to it after the Captain's order has been executed. 
+    /// </summary>
+    public FacilityOrder CurrentOrder {
         get { return _currentOrder; }
-        set { SetProperty<UnitOrder<FacilityOrders>>(ref _currentOrder, value, "CurrentOrder", OnOrdersChanged); }
+        set { SetProperty<FacilityOrder>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
     }
 
     public ICommandModel Command { get; set; }
@@ -66,6 +73,31 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
         //D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
     }
 
+    /// <summary>
+    /// The Captain uses this method to issue orders.
+    /// </summary>
+    /// <param name="order">The order.</param>
+    /// <param name="retainSuperiorsOrder">if set to <c>true</c> [retain superiors order].</param>
+    /// <param name="target">The target.</param>
+    private void OverrideCurrentOrder(FacilityOrders order, bool retainSuperiorsOrder, IMortalTarget target = null) {
+        // if the captain says to, and the current existing order is from his superior, then record it as a standing order
+        FacilityOrder standingOrder = null;
+        if (retainSuperiorsOrder && CurrentOrder != null) {
+            if (CurrentOrder.Source != OrderSource.ElementCaptain) {
+                // the current order is from the Captain's superior so retain it
+                standingOrder = CurrentOrder;
+            }
+            else if (CurrentOrder.StandingOrder != null) {
+                // the current order is from the Captain, but there is a standing order in it so retain it
+                standingOrder = CurrentOrder.StandingOrder;
+            }
+        }
+        FacilityOrder newOrder = new FacilityOrder(order, OrderSource.ElementCaptain, target) {
+            StandingOrder = standingOrder
+        };
+        CurrentOrder = newOrder;
+    }
+
     #region StateMachine
 
     public new FacilityState CurrentState {
@@ -75,8 +107,17 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
 
     #region Idling
 
-    void Idling_EnterState() {
-        LogEvent();
+    IEnumerator Idling_EnterState() {
+        D.Log("{0}.Idling_EnterState.", FullName);
+
+        if (CurrentOrder != null) {
+            // check for a standing order to execute if the current order (just completed) was issued by the Captain
+            if (CurrentOrder.Source == OrderSource.ElementCaptain && CurrentOrder.StandingOrder != null) {
+                D.Log("{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder.Order.GetName());
+                CurrentOrder = CurrentOrder.StandingOrder;
+                yield break;    // aka 'return', keeps the remaining code from executing following the completion of Idling_ExitState()
+            }
+        }
         // TODO register as available
     }
 
@@ -99,7 +140,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
 
     IEnumerator ExecuteAttackOrder_EnterState() {
         D.Log("{0}.ExecuteAttackOrder_EnterState() called.", FullName);
-        _ordersTarget = (CurrentOrder as UnitTargetOrder<FacilityOrders>).Target;
+        _ordersTarget = CurrentOrder.Target;
 
         while (!_ordersTarget.IsDead) {
             bool inRange = PickPrimaryTarget(out _primaryTarget);
@@ -115,7 +156,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
         if (_primaryTarget != null) {
             _attackTarget = _primaryTarget;
             _attackDamage = weapon.Damage;
-            D.Log("{0}.{1} initiating attack on {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
+            D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
             Call(FacilityState.Attacking);
         }
         else {
@@ -159,7 +200,6 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
     #region ExecuteRepairOrder
 
     IEnumerator ExecuteRepairOrder_EnterState() {
-        //LogEvent();
         D.Log("{0}.ExecuteRepairOrder_EnterState.", FullName);
         Call(FacilityState.Repairing);
         yield return null;  // required immediately after Call() to avoid FSM bug
@@ -262,12 +302,12 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
     /// <param name="weapon">The weapon.</param>
     private void TryFireOnAnyTarget(Weapon weapon) {
         if (_weaponRangeTrackerLookup[weapon.TrackerID].__TryGetRandomEnemyTarget(out _attackTarget)) {
-            D.Log("{0}.{1} initiating attack on {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
+            D.Log("{0}.{1} firing at {2} from State {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
             _attackDamage = weapon.Damage;
             Call(FacilityState.Attacking);
         }
         else {
-            D.Warn("{0}.{1} could not lockon {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
+            D.Warn("{0}.{1} could not lockon to a target from State {2}.", FullName, weapon.Name, CurrentState.GetName());
         }
     }
 
@@ -275,8 +315,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
     /// Picks the highest priority target from orders. First selection criteria is inRange.
     /// </summary>
     /// <param name="chosenTarget">The chosen target from orders or null if no targets remain.</param>
-    /// <returns>
-    /// True if the target is in range, false otherwise. 
+    /// <returns> <c>true</c>if the target is in range, <c>false</c> otherwise. 
     /// </returns>
     private bool PickPrimaryTarget(out IMortalTarget chosenTarget) {
         D.Assert(_ordersTarget != null && !_ordersTarget.IsDead, "{0}'s target from orders is null or dead.".Inject(FullName));
@@ -317,7 +356,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
     private void AssessNeedForRepair() {
         if (Data.Health < 0.30F) {
             if (CurrentOrder == null || CurrentOrder.Order != FacilityOrders.Repair) {
-                CurrentOrder = new UnitOrder<FacilityOrders>(FacilityOrders.Repair);
+                OverrideCurrentOrder(FacilityOrders.Repair, retainSuperiorsOrder: true);
             }
         }
     }
@@ -384,7 +423,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
 
     # region Callbacks
 
-    void OnOrdersChanged() {
+    void OnCurrentOrderChanged() {
         // TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated
         if (CurrentState == FacilityState.Repairing) {
             Return();
@@ -393,7 +432,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
         }
 
         if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", Data.Name, CurrentOrder.Order.GetName());
+            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Order.GetName());
             FacilityOrders order = CurrentOrder.Order;
             switch (order) {
                 case FacilityOrders.Attack:
@@ -430,7 +469,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
     #region IMortalTarget Members
 
     public override void TakeDamage(float damage) {
-        D.Log("{0} taking {1} damage.", Data.OptionalParentName, damage);
+        D.Log("{0} has been hit. Distributing {1} damage.", FullName, damage);
         DistributeDamage(damage);
     }
 

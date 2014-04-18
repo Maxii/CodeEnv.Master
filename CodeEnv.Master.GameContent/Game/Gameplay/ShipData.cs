@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -34,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public IFormationStation FormationStation { get; set; }
 
-        public ShipCombatStance CombatStance { get; set; }
+        public ShipCombatStance CombatStance { get; set; }  // TODO not currently used
 
         /// <summary>
         /// Readonly. Gets the current speed of the ship in Units per

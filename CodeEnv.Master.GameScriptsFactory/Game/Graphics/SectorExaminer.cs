@@ -11,6 +11,10 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
+
 // default namespace
 
 using System;
@@ -156,7 +160,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
         IFleetCmdModel selectedFleet = selectedFleetView.Presenter.Model;
         if (menuId == 4) {  // UNDONE
             Vector3 centerOfSector = SectorGrid.GetSector(Location).Position;
-            selectedFleet.CurrentOrder = new UnitMoveOrder<FleetOrders>(FleetOrders.MoveTo, centerOfSector, Speed.FleetStandard);
+            selectedFleet.CurrentOrder = new FleetOrder(FleetOrders.MoveTo, centerOfSector, Speed.FleetStandard);
         }
     }
 

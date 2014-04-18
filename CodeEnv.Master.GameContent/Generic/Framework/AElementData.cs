@@ -44,6 +44,11 @@ namespace CodeEnv.Master.GameContent {
             _weaponRangeTrackerLookup = new Dictionary<Guid, IList<Weapon>>();
         }
 
+        /// <summary>
+        /// Adds the weapon to this element data pairing it with the assigned tracker ID.
+        /// </summary>
+        /// <param name="weapon">The weapon.</param>
+        /// <param name="trackerID">The range tracker identifier.</param>
         public void AddWeapon(Weapon weapon, Guid trackerID) {
             weapon.TrackerID = trackerID;
             if (!_weaponRangeTrackerLookup.ContainsKey(trackerID)) {
@@ -53,21 +58,36 @@ namespace CodeEnv.Master.GameContent {
             RecalcMaxWeaponsRange();
         }
 
+        /// <summary>
+        /// Removes the weapon from the Element's collection of weapons, returning a flag indicating
+        /// whether this weapon's range tracker is still being utilized by other weapons.
+        /// </summary>
+        /// <param name="weapon">The weapon.</param>
+        /// <returns>
+        /// <c>true</c> if there are one or more weapons still utilizing this weapon's range tracker, 
+        /// <c>false</c> if this was the last weapon utilizing the weapon's range tracker.
+        /// </returns>
+        /// <exception cref="KeyNotFoundException">{0} has no weapon to remove named {1}..Inject(FullName, weapon.Name)</exception>
         public bool RemoveWeapon(Weapon weapon) {
             var trackerID = weapon.TrackerID;
-            var trackerWeapons = _weaponRangeTrackerLookup[trackerID];
-            var result = trackerWeapons.Remove(weapon);
+            var trackerWeapons = _weaponRangeTrackerLookup[trackerID];  // throws KeyNotFoundException 
+            if (!trackerWeapons.Remove(weapon)) {
+                throw new KeyNotFoundException("{0} has no weapon to remove named {1}.".Inject(FullName, weapon.Name));
+            }
+            var isRangeTrackerStillInUse = true;
             if (trackerWeapons.Count == Constants.Zero) {
                 _weaponRangeTrackerLookup.Remove(trackerID);
-                D.Warn("{0} has removed a weapon, leaving an unused {1}.", Name, typeof(IRangeTracker).Name);
+                isRangeTrackerStillInUse = false;
+                D.Warn("{0} has removed weapon {1}, leaving an unused {2}.", Name, weapon.Name, typeof(IWeaponRangeTracker).Name);
             }
             RecalcMaxWeaponsRange();
-            return result;
+            return isRangeTrackerStillInUse;
         }
 
         public IList<Weapon> GetWeapons(Guid trackerID) {
             IList<Weapon> weapons;
             if (!_weaponRangeTrackerLookup.TryGetValue(trackerID, out weapons)) {
+                D.Warn("{0} has no weapons utilizing provided tracker ID.", FullName);
                 weapons = new List<Weapon>(0);
             }
             return weapons;

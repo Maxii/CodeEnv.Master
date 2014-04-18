@@ -68,7 +68,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public bool ChangeSpeed(float newSpeedRequest) {
-            //D.Log("{0}.Velocity = {1}, AngularVelocity = {2} at EngineRoom.ChangeSpeed({3}).",
+            //D.Log("{0}'s velocity = {1}, angularVelocity = {2} at EngineRoom.ChangeSpeed({3}).",
             //    _data.FullName, _rigidbody.velocity, _rigidbody.angularVelocity, newSpeedRequest);
 
             if (_isFlapsDeployed) {
@@ -78,7 +78,7 @@ namespace CodeEnv.Master.GameContent {
             }
             //newSpeedRequest = Mathf.Clamp(newSpeedRequest, Constants.ZeroF, _data.FullSpeed); // FIXME what about flank speed?
             float previousRequestedSpeed = _data.RequestedSpeed;
-            float newSpeedToRequestedSpeedRatio = (previousRequestedSpeed != Constants.ZeroF) ? newSpeedRequest / previousRequestedSpeed : Constants.OneF;
+            float newSpeedToRequestedSpeedRatio = (previousRequestedSpeed != Constants.ZeroF) ? newSpeedRequest / previousRequestedSpeed : Constants.ZeroF;
             if (EngineRoom.SpeedTargetRange.Contains(newSpeedToRequestedSpeedRatio)) {
                 D.Log("{0} is already generating thrust for {1}. Requested speed unchanged.", _data.Name, newSpeedRequest);
                 return false;

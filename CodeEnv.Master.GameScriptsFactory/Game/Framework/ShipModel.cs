@@ -30,10 +30,17 @@ using UnityEngine;
 /// </summary>
 public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
-    private UnitOrder<ShipOrders> _currentOrder;
-    public UnitOrder<ShipOrders> CurrentOrder {
+    private ShipOrder _currentOrder;
+    /// <summary>
+    /// The last order this ship was instructed to execute.
+    /// Note: Orders from UnitCommands and the Player can become standing orders until superceded by another order
+    /// from either the UnitCmd or the Player. They may not be lost when the Captain overrides one of these orders. 
+    /// Instead, the Captain can direct that his superior's order be recorded in the 'StandingOrder' property of his override order so 
+    /// the element may return to it after the Captain's order has been executed. 
+    /// </summary>
+    public ShipOrder CurrentOrder {
         get { return _currentOrder; }
-        set { SetProperty<UnitOrder<ShipOrders>>(ref _currentOrder, value, "CurrentOrder", OnOrdersChanged); }
+        set { SetProperty<ShipOrder>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
     }
 
     public new ShipData Data {
@@ -54,7 +61,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         base.Initialize();
         InitializeHelm();
         CurrentState = ShipState.None;  // Idling now set from Cmd after the formation is deployed and the game is running
-        //D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
+        D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
     }
 
     private void InitializeHelm() {
@@ -63,6 +70,82 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         Helm.onCourseTrackingError += OnCourseTrackingError;
         Helm.onCoursePlotFailure += OnCoursePlotFailure;
         Helm.onCoursePlotSuccess += OnCoursePlotSuccess;
+    }
+
+    /// <summary>
+    /// The Captain uses this method to issue orders.
+    /// </summary>
+    /// <param name="order">The order.</param>
+    /// <param name="retainSuperiorsOrder">if set to <c>true</c> [retain superiors order].</param>
+    /// <param name="target">The target.</param>
+    /// <param name="speed">The speed.</param>
+    /// <param name="standoffDistance">The standoff distance.</param>
+    private void OverrideCurrentOrder(ShipOrders order, bool retainSuperiorsOrder, IDestinationTarget target = null, Speed speed = Speed.None,
+            float standoffDistance = Constants.ZeroF) {
+        // if the captain says to, and the current existing order is from his superior, then record it as a standing order
+        ShipOrder standingOrder = null;
+        if (retainSuperiorsOrder && CurrentOrder != null) {
+            if (CurrentOrder.Source != OrderSource.ElementCaptain) {
+                // the current order is from the Captain's superior so retain it
+                standingOrder = CurrentOrder;
+            }
+            else if (CurrentOrder.StandingOrder != null) {
+                // the current order is from the Captain, but there is a standing order in it so retain it
+                standingOrder = CurrentOrder.StandingOrder;
+            }
+        }
+        ShipOrder newOrder = new ShipOrder(order, OrderSource.ElementCaptain, target, speed, standoffDistance) {
+            StandingOrder = standingOrder
+        };
+        CurrentOrder = newOrder;
+    }
+
+    private void OnCurrentOrderChanged() {
+        if (CurrentOrder != null) {
+            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Order.GetName());
+
+            // TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated
+            if (CurrentState == ShipState.Moving || CurrentState == ShipState.Repairing) {
+                Return();
+                // IMPROVE Attacking is not here as it is not really a state so far. It has no duration so it could be replaced with a method
+                // I'm deferring doing that right now as it is unclear how Attacking will evolve
+            }
+
+            ShipOrders order = CurrentOrder.Order;
+            switch (order) {
+                case ShipOrders.Attack:
+                    CurrentState = ShipState.ExecuteAttackOrder;
+                    break;
+                case ShipOrders.StopAttack:
+                    // issued when peace declared while attacking
+                    CurrentState = ShipState.Idling;
+                    break;
+                case ShipOrders.Disband:
+                    CurrentState = ShipState.Disbanding;
+                    break;
+                case ShipOrders.Entrench:
+                    CurrentState = ShipState.Entrenching;
+                    break;
+                case ShipOrders.MoveTo:
+                    CurrentState = ShipState.ExecuteMoveOrder;
+                    break;
+                case ShipOrders.Repair:
+                    CurrentState = ShipState.ExecuteRepairOrder;
+                    break;
+                case ShipOrders.Refit:
+                    CurrentState = ShipState.Refitting;
+                    break;
+                case ShipOrders.JoinFleet:
+                    CurrentState = ShipState.ExecuteJoinFleetOrder;
+                    break;
+                case ShipOrders.AssumeStation:
+                    CurrentState = ShipState.ExecuteAssumeStationOrder;
+                    break;
+                case ShipOrders.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
+            }
+        }
     }
 
     #region Velocity Debugger
@@ -99,16 +182,44 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         set { base.CurrentState = value; }
     }
 
+    #region None
+
+    //void None_EnterState() {
+    IEnumerator None_EnterState() {
+        //LogEvent();
+        D.Log("{0}.None_EnterState called. Time = {1}.", FullName, Time.time);
+        yield return null;
+    }
+
+    void None_ExitState() {
+        LogEvent();
+    }
+
+    #endregion
+
     #region Idling
 
     IEnumerator Idling_EnterState() {
-        D.Log("{0}.Idling_EnterState.", FullName);
+        D.Log("{0}.Idling_EnterState line 1, Time = {1}.", FullName, Time.time);
+        D.Log("{0}.Idling_EnterState line 2, Time = {1}.", FullName, Time.time);
+
+        if (CurrentOrder != null) {
+            // check for a standing order to execute if the current order (just completed) was issued by the Captain
+            if (CurrentOrder.Source == OrderSource.ElementCaptain && CurrentOrder.StandingOrder != null) {
+                D.Log("{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder.Order.GetName());
+                CurrentOrder = CurrentOrder.StandingOrder;
+                yield break;    // aka 'return', keeps the remaining code from executing following the completion of Idling_ExitState()
+            }
+        }
+
         Helm.AllStop();
         if (!Data.FormationStation.IsOnStation) {
             ProceedToFormationStation();
         }
         // TODO register as available
+        D.Log("{0}.Idling_EnterState line x before yield. Time = {1}.", FullName, Time.time);
         yield return null;
+        // D.Log("{0}.Idling_EnterState after yield. Time = {1}.", FullName, Time.time);
     }
 
     void Idling_OnShipOnStation(bool isOnStation) {
@@ -132,8 +243,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     #region ExecuteAssumeStationOrder
 
-    IEnumerator ExecuteAssumeStationOrder_EnterState() {
-        // cannot use void as code after Call() executes without waiting for a Return()
+    IEnumerator ExecuteAssumeStationOrder_EnterState() {    // cannot return void as code after Call() executes without waiting for a Return()
         D.Log("{0}.ExecuteAssumeStationOrder_EnterState.", FullName);
         _moveSpeed = Speed.Slow;
         _moveTarget = Data.FormationStation as IDestinationTarget;
@@ -161,14 +271,14 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     #region ExecuteMoveOrder
 
-    IEnumerator ExecuteMoveOrder_EnterState() {
-        // cannot use void as code after Call() doesn't wait for a Return() to execute
+    IEnumerator ExecuteMoveOrder_EnterState() { // cannot return void as code after Call() executes without waiting for a Return()
         D.Log("{0}.ExecuteMoveOrder_EnterState.", FullName);
-        var moveOrder = (CurrentOrder as UnitMoveOrder<ShipOrders>);
-        _moveSpeed = moveOrder.Speed;
-        _moveTarget = moveOrder.Target;
-        _standoffDistance = moveOrder.StandoffDistance;
-        _isFleetMove = true;
+
+        _moveTarget = CurrentOrder.Target;
+        _moveSpeed = CurrentOrder.Speed;
+        _standoffDistance = CurrentOrder.StandoffDistance;
+        _isFleetMove = true;    // IMPROVE
+
         Call(ShipState.Moving);
         yield return null;  // required immediately after Call() to avoid FSM bug
         // Return()s here
@@ -222,12 +332,14 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     void Moving_OnCoursePlotFailure() {
         LogEvent();
+        D.Warn("{0} Move error.", FullName);
         _isMoveError = true;
         Return();
     }
 
     void Moving_OnCourseTrackingError() {
         LogEvent();
+        D.Warn("{0} Move error.", FullName);
         _isMoveError = true;
         Return();
     }
@@ -287,7 +399,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     IEnumerator ExecuteAttackOrder_EnterState() {
         D.Log("{0}.ExecuteAttackOrder_EnterState() called.", FullName);
-        _ordersTarget = (CurrentOrder as UnitTargetOrder<ShipOrders>).Target;
+        _ordersTarget = CurrentOrder.Target as IMortalTarget;
 
         while (!_ordersTarget.IsDead) {
             // once picked, _primaryTarget cannot be null when _ordersTarget is alive
@@ -303,7 +415,6 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
                 _isFleetMove = false;
                 Call(ShipState.Moving);
                 yield return null;  // required immediately after Call() to avoid FSM bug
-                //AllStop();  // stop and shoot after completing move
                 Helm.AllStop();  // stop and shoot after completing move
             }
             yield return null;
@@ -316,7 +427,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         if (_primaryTarget != null) {   // OnWeaponReady can occur before _primaryTarget is picked
             _attackTarget = _primaryTarget;
             _attackDamage = weapon.Damage;
-            D.Log("{0}.{1} initiating attack on {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
+            D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
             Call(ShipState.Attacking);
         }
         // No potshots at random enemies as the ship is either Moving or the primary target is in range
@@ -368,11 +479,12 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     #region ExecuteJoinFleetOrder
 
     IEnumerator ExecuteJoinFleetOrder_EnterState() {
-        D.Log("{0}.{1}.ExecuteJoinFleetOrder_EnterState() called.", Data.OptionalParentName, Data.Name);
+        D.Log("{0}.ExecuteJoinFleetOrder_EnterState() called.", FullName);
         // detach from fleet and create tempFleetCmd
         Command.RemoveElement(this);
 
-        var fleetToJoin = (CurrentOrder as UnitTargetOrder<ShipOrders>).Target;
+        var fleetToJoin = CurrentOrder.Target as ICommandTarget;
+        //var fleetToJoin = (CurrentOrder as UnitTargetOrder<ShipOrders>).Target;
         string tempFleetName = "Join_" + fleetToJoin.ParentName;
         var tempFleetCmd = UnitFactory.Instance.MakeFleetInstance(tempFleetName, Owner, this);
         yield return null;  // wait to allow tempFleetCmd and View to initialize
@@ -383,7 +495,8 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         // TODO PlayerIntelCoverage should be set through sensor detection
 
         // issue a JoinFleet order to our new tempFleetCmd
-        UnitTargetOrder<FleetOrders> joinFleetOrder = new UnitTargetOrder<FleetOrders>(FleetOrders.JoinFleet, fleetToJoin);
+        FleetOrder joinFleetOrder = new FleetOrder(FleetOrders.JoinFleet, fleetToJoin);
+        //UnitTargetOrder<FleetOrders> joinFleetOrder = new UnitTargetOrder<FleetOrders>(FleetOrders.JoinFleet, fleetToJoin);
         tempFleetCmd.CurrentOrder = joinFleetOrder;
         // once joinFleetOrder takes, this ship state will be changed by its new tempfleetCmd
     }
@@ -415,9 +528,9 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     #region ExecuteRepairOrder
 
     IEnumerator ExecuteRepairOrder_EnterState() {
-        D.Log("{0}.{1}.ExecuteRepairOrder_EnterState.", Data.OptionalParentName, Data.Name);
+        D.Log("{0}.ExecuteRepairOrder_EnterState.", FullName);
         _moveSpeed = Speed.Full;
-        _moveTarget = (CurrentOrder as UnitDestinationOrder<ShipOrders>).Target;
+        _moveTarget = CurrentOrder.Target;
         _standoffDistance = Constants.ZeroF;
         _isFleetMove = false;
         Call(ShipState.Moving);
@@ -431,6 +544,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         Helm.AllStop();
         Call(ShipState.Repairing);
         yield return null;  // required immediately after Call() to avoid FSM bug
+        CurrentState = ShipState.Idling;
     }
 
     void ExecuteRepairOrder_OnWeaponReady(Weapon weapon) {
@@ -532,7 +646,8 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
                 FullName, distanceFromStation, Data.FormationStation.StationOffset, Data.FormationStation.StationRadius);
             return;
         }
-        CurrentOrder = new UnitOrder<ShipOrders>(ShipOrders.AssumeStation);
+        // this is only called from Idle so there is no superior order that should be retained
+        OverrideCurrentOrder(ShipOrders.AssumeStation, retainSuperiorsOrder: false);
     }
 
     /// <summary>
@@ -541,12 +656,12 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     /// <param name="weapon">The weapon.</param>
     private void TryFireOnAnyTarget(Weapon weapon) {
         if (_weaponRangeTrackerLookup[weapon.TrackerID].__TryGetRandomEnemyTarget(out _attackTarget)) {
-            D.Log("{0}.{1} initiating attack on {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
+            D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
             _attackDamage = weapon.Damage;
-            Call(FacilityState.Attacking);
+            Call(ShipState.Attacking);
         }
         else {
-            D.Warn("{0}.{1} could not lockon {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
+            D.Warn("{0}.{1} could not lockon to a target from State {2}.", FullName, weapon.Name, CurrentState.GetName());
         }
     }
 
@@ -554,9 +669,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     /// Picks the highest priority target from orders. First selection criteria is inRange.
     /// </summary>
     /// <param name="chosenTarget">The chosen target from orders or null if no targets remain alive.</param>
-    /// <returns>
-    /// True if the target is in range, false otherwise.
-    /// </returns>
+    /// <returns> <c>true</c> if the target is in range, <c>false</c> otherwise.</returns>
     private bool PickPrimaryTarget(out IMortalTarget chosenTarget) {
         D.Assert(_ordersTarget != null && !_ordersTarget.IsDead, "{0}'s target from orders is null or dead.".Inject(Data.Name));
         bool isTargetInRange = false;
@@ -599,8 +712,8 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     private void AssessNeedForRepair() {
         if (Data.Health < 0.30F) {
             if (CurrentOrder == null || CurrentOrder.Order != ShipOrders.Repair) {
-                IDestinationTarget repairDestination = new StationaryLocation(Data.Position - _transform.forward * 20F);
-                CurrentOrder = new UnitDestinationOrder<ShipOrders>(ShipOrders.Repair, repairDestination);
+                IDestinationTarget repairDestination = new StationaryLocation(Data.Position - _transform.forward * 10F);
+                OverrideCurrentOrder(ShipOrders.Repair, retainSuperiorsOrder: true, target: repairDestination);
             }
         }
     }
@@ -613,54 +726,6 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     #endregion
 
     # region Callbacks
-
-    void OnOrdersChanged() {
-        if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Order.GetName());
-
-            // TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated
-            if (CurrentState == ShipState.Moving || CurrentState == ShipState.Repairing) {
-                Return();
-                // IMPROVE Attacking is not here as it is not really a state so far. It has no duration so it could be replaced with a method
-                // I'm deferring doing that right now as it is unclear how Attacking will evolve
-            }
-
-            ShipOrders order = CurrentOrder.Order;
-            switch (order) {
-                case ShipOrders.Attack:
-                    CurrentState = ShipState.ExecuteAttackOrder;
-                    break;
-                case ShipOrders.StopAttack:
-                    // issued when peace declared while attacking
-                    CurrentState = ShipState.Idling;
-                    break;
-                case ShipOrders.Disband:
-                    CurrentState = ShipState.Disbanding;
-                    break;
-                case ShipOrders.Entrench:
-                    CurrentState = ShipState.Entrenching;
-                    break;
-                case ShipOrders.MoveTo:
-                    CurrentState = ShipState.ExecuteMoveOrder;
-                    break;
-                case ShipOrders.Repair:
-                    CurrentState = ShipState.ExecuteRepairOrder;
-                    break;
-                case ShipOrders.Refit:
-                    CurrentState = ShipState.Refitting;
-                    break;
-                case ShipOrders.JoinFleet:
-                    CurrentState = ShipState.ExecuteJoinFleetOrder;
-                    break;
-                case ShipOrders.AssumeStation:
-                    CurrentState = ShipState.ExecuteAssumeStationOrder;
-                    break;
-                case ShipOrders.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
-            }
-        }
-    }
 
     void OnTargetDeath(IMortalModel deadTarget) {
         RelayToCurrentState(deadTarget);
@@ -697,8 +762,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         if (CurrentState == ShipState.Dead) {
             return;
         }
-        //LogEvent();
-        D.Log("{0} taking {1} damage.", FullName, damage);
+        D.Log("{0} has been hit. Taking {1} damage.", FullName, damage);
         bool isCmdHit = false;
         bool isElementAlive = ApplyDamage(damage);
         if (IsHQElement) {
@@ -722,6 +786,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     public bool IsBearingConfirmed { get { return Helm.IsBearingConfirmed; } }
 
     public void OnShipOnStation(bool isOnStation) {
+        if (IsHQElement) { return; }    // filter these out as the HQElement will always be OnStation
         D.Log("{0}.OnShipOnStation({1}) called.", FullName, isOnStation);
         if (CurrentState == ShipState.Moving || CurrentState == ShipState.Idling) {
             // filter these so I can allow RelayToCurrentState() to warn when it doesn't find a matching method
