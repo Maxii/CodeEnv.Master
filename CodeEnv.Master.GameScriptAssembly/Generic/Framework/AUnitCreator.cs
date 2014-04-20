@@ -63,18 +63,21 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     protected override void Awake() {
         base.Awake();
-        _gameMgr = References.GameManager;
-
         _elementStats = new List<ElementStatType>();
         _elementCategoriesUsed = new HashSet<ElementCategoryType>();
 
         UnitName = GetUnitName();
         _isPreset = _transform.childCount > 0;
+    }
+
+    protected override void Start() {
+        base.Start();
+        _gameMgr = References.GameManager;
         if (!GameStatus.Instance.IsRunning) {
             Subscribe();
         }
         else {
-            Initiate(); // TODO this has never been tried
+            Initiate(); // TODO this has never been tested
         }
     }
 
@@ -156,7 +159,6 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         _elements = new List<ElementType>();
         ElementType element = null;
         foreach (var stat in _elementStats) {
-
             if (_isPreset) {
                 // find a preExisting element of the right category first to provide to Make
                 var categoryElements = gameObject.GetSafeMonoBehaviourComponentsInChildren<ElementType>()
@@ -184,7 +186,6 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     private void AddElements() {
         _elements.ForAll(e => _command.AddElement(e));
-
         // command IS NOT assigned as a target of each element's CameraLOSChangedRelay as that would make the CommandIcon disappear when the elements disappear
     }
 

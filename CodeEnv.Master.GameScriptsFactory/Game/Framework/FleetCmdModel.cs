@@ -311,7 +311,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     #region ExecuteMoveOrder
 
     IEnumerator ExecuteMoveOrder_EnterState() {
-        D.Log("{0}.ExecuteMoveOrder_EnterState.", FullName);
+        D.Log("{0}.ExecuteMoveOrder_EnterState called.", FullName);
         _moveTarget = CurrentOrder.Target;
         _moveSpeed = CurrentOrder.Speed;
         Call(FleetState.Moving);
@@ -419,7 +419,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     #region ExecuteAttackOrder
 
     IEnumerator ExecuteAttackOrder_EnterState() {
-        D.Log("{0}.ExecuteAttackOrder_EnterState.", FullName);
+        D.Log("{0}.ExecuteAttackOrder_EnterState called.", FullName);
         _moveTarget = CurrentOrder.Target;
         _moveSpeed = Speed.FleetFull;
         Call(FleetState.Moving);
@@ -497,7 +497,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     #region ExecuteJoinFleetOrder
 
     IEnumerator ExecuteJoinFleetOrder_EnterState() {
-        D.Log("{0}.ExecuteJoinFleetOrder_EnterState.", FullName);
+        D.Log("{0}.ExecuteJoinFleetOrder_EnterState called.", FullName);
         //var joinOrder = CurrentOrder as UnitTargetOrder<FleetOrders>;
         //_moveTarget = joinOrder.Target;
         //_moveSpeed = Speed.FleetStandard;

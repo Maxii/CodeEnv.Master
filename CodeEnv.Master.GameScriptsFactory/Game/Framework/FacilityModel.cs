@@ -108,7 +108,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
     #region Idling
 
     IEnumerator Idling_EnterState() {
-        D.Log("{0}.Idling_EnterState.", FullName);
+        D.Log("{0}.Idling_EnterState called.", FullName);
 
         if (CurrentOrder != null) {
             // check for a standing order to execute if the current order (just completed) was issued by the Captain
@@ -200,7 +200,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
     #region ExecuteRepairOrder
 
     IEnumerator ExecuteRepairOrder_EnterState() {
-        D.Log("{0}.ExecuteRepairOrder_EnterState.", FullName);
+        D.Log("{0}.ExecuteRepairOrder_EnterState called.", FullName);
         Call(FacilityState.Repairing);
         yield return null;  // required immediately after Call() to avoid FSM bug
     }
@@ -219,7 +219,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
     #region Repairing
 
     IEnumerator Repairing_EnterState() {
-        D.Log("{0}.Repairing_EnterState.", FullName);
+        D.Log("{0}.Repairing_EnterState called.", FullName);
         OnShowAnimation(MortalAnimations.Repairing);
         yield return new WaitForSeconds(2);
         Data.CurrentHitPoints += 0.5F * (Data.MaxHitPoints - Data.CurrentHitPoints);

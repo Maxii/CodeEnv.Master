@@ -139,7 +139,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     private Camera _camera;
     private GameInput _gameInput;
     private GameStatus _gameStatus;
-    private UICamera _nguiEventDispatcher;
+    private UICamera _mainCameraEventDispatcher;
 
     private IList<IDisposable> _subscribers;
 
@@ -235,7 +235,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         _playerPrefsMgr = PlayerPrefsManager.Instance;
         _gameInput = GameInput.Instance;
         _gameStatus = GameStatus.Instance;
-        _nguiEventDispatcher = gameObject.GetSafeMonoBehaviourComponent<UICamera>();
+        _mainCameraEventDispatcher = gameObject.GetSafeMonoBehaviourComponent<UICamera>();
         Subscribe();
         ValidateActiveConfigurations();
         // need to raise this event in Awake as Start can be too late, since the true version of this event is called
@@ -243,7 +243,6 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         // being called first via ScriptExecutionOrder.
         _eventMgr.Raise<ElementReadyEvent>(new ElementReadyEvent(this, GameState.Waiting, isReady: false));
     }
-
 
     private void Subscribe() {
         if (_subscribers == null) {
@@ -268,7 +267,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     private void InitializeMainCamera() {
         InitializeFields();
         SetCameraSettings();
-        InitializeNguiEventDispatcher();    // avoid doing in Awake as UICamera Awake() can override setting
+        InitializeMainCameraEventDispatcher();    // avoid doing in Awake as UICamera Awake() can override setting
         InitializeCameraPreferences();
         PositionCameraForGame();
         InitializeContextMenuSettings();
@@ -296,9 +295,11 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         _camera.layerCullDistances = cullDistances;
     }
 
-    private void InitializeNguiEventDispatcher() {
-        _nguiEventDispatcher.eventType = UICamera.EventType.World;
-        EnableEvents(false);    // turns off the event system until the game starts
+    private void InitializeMainCameraEventDispatcher() {
+        _mainCameraEventDispatcher.eventType = UICamera.EventType.World;
+        _mainCameraEventDispatcher.useKeyboard = true;
+        _mainCameraEventDispatcher.useMouse = true;
+        // enabling the event system moved to GameManager, now covering both 2D and 3D events
     }
 
     private void InitializeCameraPreferences() {
@@ -313,19 +314,6 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         dragFreeRoll.activate = toEnable;
         keyFreeRoll.activate = toEnable;
         keyFocusRoll.activate = toEnable;
-    }
-
-    /// <summary>
-    /// Enables the Ngui Event System. Setting the eventReceiverMask to -1 means Everything
-    /// (all layers collliders) is visible to the event system. 0 means Nothing - no layers are visible
-    /// to the event system. The actual mask used in UICamera to determine which layers the 
-    /// event system will actually 'see' is the AND of the Camera culling mask and this eventReceiverMask.
-    /// This means that the event system will only 'see' layers that both the camera can see AND
-    /// the layer mask is allowed to see. 
-    /// </summary>
-    /// <param name="toEnable">if set to <c>true</c> all layers the camera can see will be visible to the event system.</param>
-    private void EnableEvents(bool toEnable) {
-        _nguiEventDispatcher.eventReceiverMask = toEnable ? -1 : 0;
     }
 
     private void PositionCameraForGame() {
@@ -451,6 +439,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
                 }
                 _eventMgr.Raise<ElementReadyEvent>(new ElementReadyEvent(this, GameState.Waiting, isReady: true));
                 break;
+            case GameState.Lobby:
             case GameState.Building:
             case GameState.Loading:
             case GameState.DeployingSystems:
@@ -469,7 +458,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
 
     private void OnIsRunningChanged() {
         __AssessEnabled();  // allows updating to begin when IsRunning occurs
-        EnableEvents(_gameStatus.IsRunning);
+        //EnableEvents(_gameStatus.IsRunning);
     }
 
     // Not currently used. Keep this for now as I expect there will be other reasons to modify camera behaviour during special modes.
@@ -1199,8 +1188,8 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     /// object at all is found, then the DummyTarget becomes the Target at the edge of the universe.
     /// </summary>
     /// <param name="screenPoint">The screen point.</param>
-    /// <returns>
-    /// true if the Target is changed, or if the dummyTarget has its location changed. false if the Target remains the same (or if the dummyTarget, its location remains the same).
+    /// <returns> <c>true</c> if the Target is changed, or if the dummyTarget has its location changed. 
+    /// <c>false</c> if the Target remains the same (or if the dummyTarget, its location remains the same).
     /// </returns>
     private bool TrySetTargetAtScreenPoint(Vector3 screenPoint) {
         Transform proposedZoomTarget;

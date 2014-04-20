@@ -34,7 +34,7 @@ public abstract class AMonoBaseSingleton<T> : AMonoBase, IInstanceIdentity where
     public override void LogEvent() {
         // NOTE:  Coroutines don't show the right method name when logged using stacktrace
         System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
-        D.Log("{0}.{1}{2}.{3}() called.".Inject(_transform.name, GetType().Name, _instanceID, stackFrame.GetMethod().Name));
+        D.Log("{0}.{1}{2}.{3}() called.", _transform.name + " (from transform)", GetType().Name, _instanceID, stackFrame.GetMethod().Name);
     }
 
     #region Singleton Pattern
@@ -93,7 +93,7 @@ public abstract class AMonoBaseSingleton<T> : AMonoBase, IInstanceIdentity where
 
     private void IncrementInstanceCounter() {
         InstanceID = System.Threading.Interlocked.Increment(ref _instanceCounter);
-        D.Log("{0}.InstanceID now set to {1}, static counter now {2}.", typeof(T).Name, InstanceID, _instanceCounter);
+        //D.Log("{0}.InstanceID now set to {1}, static counter now {2}.", typeof(T).Name, InstanceID, _instanceCounter);
     }
 
     #endregion

@@ -113,12 +113,14 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
     #region Idle
 
     void Idling_EnterState() {
+        //LogEvent();
         // register as available
     }
 
     void Idling_OnDetectedEnemy() { }
 
     void Idling_ExitState() {
+        //LogEvent();
         // register as unavailable
     }
 
@@ -128,7 +130,7 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
 
     IEnumerator ExecuteAttackOrder_EnterState() {
         //LogEvent();
-        D.Log("{0}.ExecuteAttackOrder_EnterState.", Data.Name);
+        D.Log("{0}.ExecuteAttackOrder_EnterState called.", Data.Name);
         Call(StarbaseState.Attacking);
         yield return null;  // required immediately after Call() to avoid FSM bug
         CurrentState = StarbaseState.Idling;

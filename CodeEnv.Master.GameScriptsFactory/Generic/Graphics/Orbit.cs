@@ -61,8 +61,8 @@ public class Orbit : AMonoBase, IDisposable {
 
         _orbitSpeed = (relativeOrbitSpeed * Constants.DegreesPerOrbit * (GameDate.HoursPerSecond / GameDate.HoursPerDay)) / orbitPeriod.PeriodInDays;
         UpdateRate = FrameUpdateFrequency.Frequent;
-        if (!_gameStatus.IsRunning) {
-            _gameStatus.onIsRunning_OneShot += OnGameIsRunning;
+        if (!GameStatus.Instance.IsRunning) {
+            GameStatus.Instance.onIsRunning_OneShot += OnGameIsRunning;
             enabled = false;
         }
     }

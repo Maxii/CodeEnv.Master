@@ -68,8 +68,16 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
         _gameTime = GameTime.Instance;   // delay until Instance is initialized
         // initialize values without initiating change events
         _pauseState = PauseState.NotPaused;
+
+        SceneLevel startScene = (SceneLevel)Application.loadedLevel;
+        InitializeStaticReferences(startScene);
         Subscribe();
-        __AwakeBasedOnStartScene();
+    }
+
+    protected override void Start() {
+        base.Start();
+        SceneLevel startScene = (SceneLevel)Application.loadedLevel;
+        SimulateStartup(startScene);
     }
 
     /// <summary>
@@ -91,6 +99,8 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
         }
     }
 
+    #region Language
+
     private void ChangeLanguage(string language) {
         CultureInfo newCulture = new CultureInfo(language);
         Thread.CurrentThread.CurrentCulture = newCulture;
@@ -98,6 +108,8 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
         D.Log("Current culture of thread is {0}.".Inject(Thread.CurrentThread.CurrentUICulture.DisplayName));
         D.Log("Current OS Language of Unity is {0}.".Inject(Application.systemLanguage.GetName()));
     }
+
+    #endregion
 
     private void Subscribe() {
         _eventMgr.AddListener<BuildNewGameEvent>(Instance, OnBuildNewGame);
@@ -107,60 +119,50 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
         _eventMgr.AddListener<SaveGameEvent>(Instance, OnSaveGame);
     }
 
-    protected override void Start() {
-        base.Start();
-        __StartBasedOnStartScene();
+    private void InitializeStaticReferences(SceneLevel sceneLevel) {
+        if (sceneLevel == SceneLevel.GameScene) {
+            D.Log("Initializing Static References for {0}.", sceneLevel.GetName());
+        }
+        switch (sceneLevel) {
+            case SceneLevel.IntroScene:
+                // No use for References currently in IntroScene
+                break;
+            case SceneLevel.GameScene:
+                References.GameManager = GameManager.Instance;
+                References.InputHelper = GameInputHelper.Instance;
+                References.DynamicObjects = DynamicObjects.Instance;
+                References.CameraControl = CameraControl.Instance;
+                // GuiHudPublisher factory reference settings moved to GuiCursorHud
+                break;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(sceneLevel));
+        }
     }
 
     #region Startup Simulation
 
-    private void __AwakeBasedOnStartScene() {
-        SceneLevel startScene = (SceneLevel)Application.loadedLevel;
-        switch (startScene) {
+    private void SimulateStartup(SceneLevel scene) {
+        switch (scene) {
             case SceneLevel.IntroScene:
                 CurrentState = GameState.Lobby;
                 break;
             case SceneLevel.GameScene:
-                __SimulateBuildGameFromLobby_Step1();
+                CurrentState = GameState.Lobby;  // avoids the Illegal state transition Error
+                CurrentState = GameState.Building;
+                GameSettings settings = new GameSettings {
+                    IsNewGame = true,
+                    UniverseSize = _playerPrefsMgr.UniverseSize,
+                    PlayerRace = new Race(new RaceStat(_playerPrefsMgr.PlayerRace, "Maxii", new StringBuilder("Maxii description"), _playerPrefsMgr.PlayerColor))
+                };
+                Settings = settings;
+                HumanPlayer = CreateHumanPlayer(settings);
+                CurrentState = GameState.Loading;
+                // GameState.Restoring only applies to loading saved games
+                CurrentState = GameState.Waiting;
                 break;
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(startScene));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(scene));
         }
-    }
-
-    private void __StartBasedOnStartScene() {
-        SceneLevel startScene = (SceneLevel)Application.loadedLevel;
-        switch (startScene) {
-            case SceneLevel.IntroScene:
-                break;
-            case SceneLevel.GameScene:
-                __SimulateBuildGameFromLobby_Step2();
-                break;
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(startScene));
-        }
-    }
-
-    /// <summary>
-    /// Temporary method that simulates the launch of a game from the Lobby, for use when
-    /// starting in GameScene.
-    /// </summary>
-    private void __SimulateBuildGameFromLobby_Step1() {
-        CurrentState = GameState.Lobby;  // avoids the Illegal state transition Error
-        CurrentState = GameState.Building;
-        GameSettings settings = new GameSettings {
-            IsNewGame = true,
-            UniverseSize = _playerPrefsMgr.UniverseSize,
-            PlayerRace = new Race(new RaceStat(_playerPrefsMgr.PlayerRace, "Maxii", new StringBuilder("Maxii description"), _playerPrefsMgr.PlayerColor))
-        };
-        Settings = settings;
-        HumanPlayer = CreateHumanPlayer(settings);
-        CurrentState = GameState.Loading;
-    }
-
-    private void __SimulateBuildGameFromLobby_Step2() {
-        // GameState.Restoring only applies to loading saved games
-        CurrentState = GameState.Waiting;
     }
 
     #endregion
@@ -172,8 +174,8 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
         new Job(WaitForGuiManager(), toStart: true, onJobComplete: delegate {
             BuildAndLoadNewGame(e.Settings);
         });
-        // the above is the anonymous method approach that allows you to ignore parameters if not used
-        // the lambda equivalent: (jobWasKilled) => { BuildAndLoadNewGame(e.Settings); }
+        //the above is the anonymous method approach that allows you to ignore parameters if not used
+        //the lambda equivalent: (jobWasKilled) => { BuildAndLoadNewGame(e.Settings); }
     }
 
     private IEnumerator WaitForGuiManager() {
@@ -183,6 +185,7 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
     }
 
     private void BuildAndLoadNewGame(GameSettings settings) {
+        D.Log("BuildAndLoadNewGame() called.");
         CurrentState = GameState.Building;
         // building the level begins here when implemented
         Settings = settings;
@@ -202,24 +205,30 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
 
     #endregion
 
-    // This substitutes my own Event for OnLevelWasLoaded so I don't have to use OnLevelWasLoaded anywhere else
-    // Wiki: OnLevelWasLoaded is NOT guaranteed to run before all of the Awake calls. In most cases it will, but in some 
-    // might produce some unexpected bugs. If you need some code to be executed before Awake calls, use OnDisable instead.
+    /// <summary>
+    /// This substitutes my own Event for OnLevelWasLoaded so I don't have to use OnLevelWasLoaded anywhere else
+    /// NOTE: Wiki: OnLevelWasLoaded is NOT guaranteed to run before all of the Awake calls. In most cases it will, but in some 
+    /// might produce some unexpected bugs. If you need some code to be executed before Awake calls, use OnDisable instead.
+    /// NOTE: In fact, my experience is that OnLevelWasLoaded occurs AFTER all Awake calls for objects that are already in the level.
+    /// </summary>
+    /// <param name="level">The scene level.</param>
     void OnLevelWasLoaded(int level) {
         if (enabled) {
-            // OnLevelWasLoaded is called on all active components and at any time. The earliest thing that happens after Destroy(gameObject)
-            // is component disablement. GameObject deactivation happens later, but before OnDestroy()
-            D.Log("{0}_{1}.OnLevelWasLoaded(level = {2}) called.".Inject(this.name, InstanceID, ((SceneLevel)level).GetName()));
+            // The earliest thing that happens after Destroy(gameObject) is component disablement so this is a good filter for gameObjects 
+            // in the process of being destroyed. GameObject deactivation happens later, but before OnDestroy()
+            D.Log("{0}_{1}.OnLevelWasLoaded({2}) called.", this.name, InstanceID, ((SceneLevel)level).GetName());
             SceneLevel newScene = (SceneLevel)level;
             if (newScene != SceneLevel.GameScene) {
                 D.Error("A Scene change to {0} is currently not implemented.", newScene.GetName());
                 return;
             }
+
             _eventMgr.Raise<SceneChangedEvent>(new SceneChangedEvent(this, newScene));
             if (LevelSerializer.IsDeserializing || !Settings.IsNewGame) {
                 CurrentState = GameState.Restoring;
             }
             else {
+                InitializeStaticReferences(newScene);
                 ResetConditionsForGameStartup();
                 _gameTime.PrepareToBeginNewGame();
                 CurrentState = GameState.Waiting;
@@ -274,6 +283,7 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
     // Assumes GameTime.PrepareToResumeSavedGame() can only be called AFTER OnLevelWasLoaded
     protected override void OnDeserialized() {
         D.Log("GameManager.OnDeserialized() called.");
+        // TODO InitializeStaticReferences(scene)?
         ResetConditionsForGameStartup();
         _gameTime.PrepareToResumeSavedGame();
         CurrentState = GameState.Waiting;
@@ -290,6 +300,23 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
     private void ResetConditionsForGameStartup() {
         if (_gameStatus.IsPaused) {
             ProcessPauseRequest(PauseRequest.PriorityResume);
+        }
+    }
+
+    /// <summary>
+    /// Enables the Ngui Event System in all UICamera's in the scene. 
+    /// 
+    /// Setting the eventReceiverMask to -1 means Everything (all layers) are visible to the event system. 
+    /// 0 means Nothing - no layers are visible to the event system. The actual mask used in UICamera 
+    /// to determine which layers the event system will actually 'see' is the AND of the Camera culling mask 
+    /// that the UICamera script is attached too and this eventReceiverMask. This means that the event 
+    /// system will only 'see' layers that both the camera can see AND the layer mask is allowed to see. 
+    /// </summary>
+    /// <param name="toEnable">if set to <c>true</c> all layers the camera can see will be visible to the event system.</param>
+    private void EnableEvents(bool toEnable) {
+        BetterList<UICamera> allEventDispatchersInScene = UICamera.list;
+        foreach (var eventDispatcher in allEventDispatchersInScene) {
+            eventDispatcher.eventReceiverMask = toEnable ? -1 : 0;
         }
     }
 
@@ -382,21 +409,44 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
     // 7. the event OnCurrentStateChanged() is sent to subscribers
     //          - when this event is received, a get_CurrentState property inquiry will properly return newState
 
-    void Lobby_ExitState() {
-        D.Assert(CurrentState == GameState.Building);
+    #region Lobby
+
+    void Lobby_EnterState() {
+        LogEvent();
+        EnableEvents(true);
     }
+
+    void Lobby_ExitState() {
+        LogEvent();
+        D.Assert(CurrentState == GameState.Building);
+        EnableEvents(false);
+    }
+
+    #endregion
+
+    #region Building
 
     void Building_ExitState() {
         D.Assert(CurrentState == GameState.Loading);
     }
 
+    #endregion
+
+    #region Loading
+
     void Loading_ExitState() {
         D.Assert(CurrentState == GameState.Waiting || CurrentState == GameState.Restoring);
     }
 
+    #endregion
+
+    #region Restoring
+
     void Restoring_ExitState() {
         D.Assert(CurrentState == GameState.Waiting);
     }
+
+    #endregion
 
     #region Waiting
 
@@ -508,6 +558,7 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
         if (_playerPrefsMgr.IsPauseOnLoadEnabled) {
             ProcessPauseRequest(PauseRequest.PriorityPause);
         }
+        EnableEvents(true);
         _gameStatus.IsRunning = true;
     }
 
@@ -515,6 +566,7 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
         LogEvent();
         D.Assert(CurrentState == GameState.Lobby || CurrentState == GameState.Building);
         _gameStatus.IsRunning = false;
+        EnableEvents(false);
     }
 
     #endregion

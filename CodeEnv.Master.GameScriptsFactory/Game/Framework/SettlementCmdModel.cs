@@ -114,13 +114,14 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel {
     #region Idle
 
     void Idling_EnterState() {
-        //D.Log("{0} Idling_EnterState", Data.Name);
+        //LogEvent();
         // TODO register as available
     }
 
     void Idling_OnDetectedEnemy() { }
 
     void Idling_ExitState() {
+        //LogEvent();
         // TODO register as unavailable
     }
 
@@ -129,7 +130,7 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel {
     #region ExecuteAttackOrder
 
     IEnumerator ExecuteAttackOrder_EnterState() {
-        D.Log("{0}.ExecuteAttackOrder_EnterState.", Data.Name);
+        D.Log("{0}.ExecuteAttackOrder_EnterState called.", Data.Name);
         Call(SettlementState.Attacking);
         yield return null;  // required immediately after Call() to avoid FSM bug
         CurrentState = SettlementState.Idling;

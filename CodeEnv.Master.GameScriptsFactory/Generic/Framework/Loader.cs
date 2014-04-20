@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -40,17 +40,11 @@ public class Loader : AMonoBaseSingleton<Loader>, IDisposable {
     private GameEventManager _eventMgr;
     private PlayerPrefsManager _playerPrefsMgr;
 
-    //*******************************************************************
-    // GameObjects or tValues you want to keep between scenes t here and
-    // can be accessed by Loader.currentInstance.variableName
-    //*******************************************************************
-
     protected override void Awake() {
         base.Awake();
         if (TryDestroyExtraCopies()) {
             return;
         }
-        InitializeStaticReferences();
         _eventMgr = GameEventManager.Instance;
         _gameMgr = GameManager.Instance;
         _playerPrefsMgr = PlayerPrefsManager.Instance;
@@ -80,25 +74,7 @@ public class Loader : AMonoBaseSingleton<Loader>, IDisposable {
         }
     }
 
-    private void InitializeStaticReferences() {
-        D.Log("Initializing Static References.");
-        References.InputHelper = GameInputHelper.Instance;
-        References.GameManager = GameManager.Instance;
-        References.DynamicObjects = DynamicObjects.Instance;
-        References.CameraControl = CameraControl.Instance;
-
-        AGuiHudPublisher.GuiCursorHud = GuiCursorHud.Instance;
-        GuiHudPublisher<ItemData>.TextFactory = GuiHudTextFactory.Instance;
-        GuiHudPublisher<SectorData>.TextFactory = SectorGuiHudTextFactory.Instance;
-        GuiHudPublisher<ShipData>.TextFactory = ShipGuiHudTextFactory.Instance;
-        GuiHudPublisher<FleetCmdData>.TextFactory = FleetGuiHudTextFactory.Instance;
-        GuiHudPublisher<SystemData>.TextFactory = SystemGuiHudTextFactory.Instance;
-        GuiHudPublisher<StarData>.TextFactory = StarGuiHudTextFactory.Instance;
-        GuiHudPublisher<PlanetoidData>.TextFactory = PlanetoidGuiHudTextFactory.Instance;
-        GuiHudPublisher<SettlementCmdData>.TextFactory = SettlementGuiHudTextFactory.Instance;
-        GuiHudPublisher<FacilityData>.TextFactory = FacilityGuiHudTextFactory.Instance;
-        GuiHudPublisher<StarbaseCmdData>.TextFactory = StarbaseGuiHudTextFactory.Instance;
-    }
+    // setting static References moved to GameManager and GuiCursorHud
 
     private void Subscribe() {
         if (_subscribers == null) {
@@ -153,12 +129,12 @@ public class Loader : AMonoBaseSingleton<Loader>, IDisposable {
         if (!e.IsReady) {
             D.Assert(!unreadyElements.Contains(source), "UnreadyElements for {0} already has {1} registered!".Inject(maxGameStateAllowedUntilReady.GetName(), source.name));
             unreadyElements.Add(source);
-            //D.Log("{0} has registered with Loader as unready to progress beyond {1}.", source.name, maxGameStateAllowedUntilReady.GetName());
+            D.Log("{0} has registered with Loader as unready to progress beyond {1}.", source.name, maxGameStateAllowedUntilReady.GetName());
         }
         else {
             D.Assert(unreadyElements.Contains(source), "UnreadyElements for {0} has no record of {1}!".Inject(maxGameStateAllowedUntilReady.GetName(), source.name));
             unreadyElements.Remove(source);
-            //D.Log("{0} is now ready to progress beyond {1}.", source.name, maxGameStateAllowedUntilReady.GetName());
+            D.Log("{0} is now ready to progress beyond {1}.", source.name, maxGameStateAllowedUntilReady.GetName());
         }
     }
 
@@ -171,9 +147,13 @@ public class Loader : AMonoBaseSingleton<Loader>, IDisposable {
 
     private void AssessReadinessToProgressGameState() {
         var gameState = _gameMgr.CurrentState;
+        if (gameState == GameState.Lobby) { // HACK for IntroScene
+            return;
+        }
         D.Assert(_gameStateProgressionReadinessLookup.ContainsKey(gameState), "{0} key not found.".Inject(gameState), pauseOnFail: true);
         // this will tell me what state failed, whereas failing while accessing the dictionary won't
-        IList<MonoBehaviour> unreadyElements = _gameStateProgressionReadinessLookup[_gameMgr.CurrentState];
+        IList<MonoBehaviour> unreadyElements = _gameStateProgressionReadinessLookup[gameState];
+        D.Log("AssessReadinessToProgressGameState() called. GameState = {0}, UnreadyElements count = {1}.", gameState.GetName(), unreadyElements.Count);
         if (unreadyElements != null && unreadyElements.Count == 0) {
             _gameMgr.ProgressState();
             if (_gameMgr.CurrentState == GameState.Running) {

@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -67,7 +67,8 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     /// </summary>
     public override void LogEvent() {
         System.Diagnostics.StackFrame stackFrame = new StackFrame(1);
-        D.Log("{0}.{1}() called.".Inject(FullName, stackFrame.GetMethod().Name));
+        string name = Utility.CheckForContent(FullName) ? FullName : _transform.name + " (from transform)";
+        D.Log("{0}.{1}() called.", name, stackFrame.GetMethod().Name);
     }
 
     #endregion

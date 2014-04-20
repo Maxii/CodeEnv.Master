@@ -33,15 +33,28 @@ public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud, IDisposable {
 
     protected override void Awake() {
         base.Awake();
+        InitializeHudPublishers();
         _gameMgr = GameManager.Instance;
         Subscribe();
         UpdateRate = FrameUpdateFrequency.Frequent;
     }
 
+    private void InitializeHudPublishers() {
+        AGuiHudPublisher.GuiCursorHud = Instance;
+        GuiHudPublisher<ItemData>.TextFactory = GuiHudTextFactory.Instance;
+        GuiHudPublisher<SectorData>.TextFactory = SectorGuiHudTextFactory.Instance;
+        GuiHudPublisher<ShipData>.TextFactory = ShipGuiHudTextFactory.Instance;
+        GuiHudPublisher<FleetCmdData>.TextFactory = FleetGuiHudTextFactory.Instance;
+        GuiHudPublisher<SystemData>.TextFactory = SystemGuiHudTextFactory.Instance;
+        GuiHudPublisher<StarData>.TextFactory = StarGuiHudTextFactory.Instance;
+        GuiHudPublisher<PlanetoidData>.TextFactory = PlanetoidGuiHudTextFactory.Instance;
+        GuiHudPublisher<SettlementCmdData>.TextFactory = SettlementGuiHudTextFactory.Instance;
+        GuiHudPublisher<FacilityData>.TextFactory = FacilityGuiHudTextFactory.Instance;
+        GuiHudPublisher<StarbaseCmdData>.TextFactory = StarbaseGuiHudTextFactory.Instance;
+    }
+
     private void Subscribe() {
-        if (_subscribers == null) {
-            _subscribers = new List<IDisposable>();
-        }
+        _subscribers = new List<IDisposable>();
         _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, PauseState>(gm => gm.PauseState, OnPauseStateChanged));
     }
 

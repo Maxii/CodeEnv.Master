@@ -111,7 +111,6 @@ public class WeaponRangeTracker : AMonoBase, IWeaponRangeTracker {
         }
     }
 
-
     private void OnTargetOwnerChanged(IMortalModel target) {
         var _target = target as IMortalTarget;
         if (Owner.IsEnemyOf(_target.Owner)) {

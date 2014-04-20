@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -351,7 +351,7 @@ namespace CodeEnv.Master.GameContent {
         /// moving in the direction and at the speed it had when it exited Moving.
         /// </summary>
         public void AllStop() {
-            D.Log("{0}.Idling_EnterState AllStop(), Time = {1}.", _ship.FullName, Time.time);
+            D.Log("{0}.AllStop() called.", _ship.FullName);
 
             ChangeSpeed(Speed.AllStop);
             if (IsAutoPilotEngaged) {

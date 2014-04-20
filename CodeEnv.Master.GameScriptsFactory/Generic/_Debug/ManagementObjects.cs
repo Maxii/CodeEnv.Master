@@ -28,8 +28,10 @@ using UnityEngine;
 /// </summary>
 public class ManagementObjects : AMonoBaseSingleton<ManagementObjects>, IDisposable {
 
+    private string GameSceneManagementFolderName = "GameManagement";
+
     /// <summary>
-    /// Gets the ManagementObjects folder transform.
+    /// The first and surviving ManagementObjects folder transform.
     /// </summary>
     public static Transform Folder { get { return Instance.transform; } }
 
@@ -55,8 +57,8 @@ public class ManagementObjects : AMonoBaseSingleton<ManagementObjects>, IDisposa
     /// </summary>
     /// <returns><c>true</c> if this instance is going to be destroyed, <c>false</c> if not.</returns>
     private bool TryDestroyExtraCopies() {
-        if (_instance && _instance != this) {
-            D.Log("{0}_{1} found as extra. Initiating destruction sequence.", this.name, InstanceID);
+        if (_instance != null && _instance != this) {
+            D.Log("{0}_{1} named {2} found as extra. Transfering children and destroying.", GetType().Name, InstanceID, this.name);
             TransferChildrenThenDestroy();
             return true;
         }
@@ -68,15 +70,13 @@ public class ManagementObjects : AMonoBaseSingleton<ManagementObjects>, IDisposa
     }
 
     private void TransferChildrenThenDestroy() {
-        D.Log("{0}_{1} has {2} children.".Inject(Instance.name, InstanceID, Folder.childCount));
+        D.Log("{0}_{1} with GO name {2} has {3} children being transferred.", GetType().Name, InstanceID, this.name, this._transform.childCount);
         Transform[] transforms = gameObject.GetComponentsInChildren<Transform>(includeInactive: true);   // includes the parent t
-        foreach (Transform t in transforms) {
-            if (t != Folder) {
-                //t.parent = Instance.transform;
-                UnityUtility.AttachChildToParent(t.gameObject, Instance.gameObject);
-                D.Log("Child [{0}].parent changed to {1}_{2}.".Inject(t.name, Instance.name, InstanceID));
-            }
-        }
+        transforms.Except(this._transform).ForAll(t => {
+            UnityUtility.AttachChildToParent(t.gameObject, Folder.gameObject);
+            D.Log("Child [{0}] now has new parent {1}_{2}.", t.name, Instance.name, Instance.InstanceID);
+        });
+        D.Log("Destroying {0}_{1}.", gameObject.name, InstanceID);
         Destroy(gameObject);
     }
 
@@ -94,14 +94,13 @@ public class ManagementObjects : AMonoBaseSingleton<ManagementObjects>, IDisposa
     private void OnSceneChanging(SceneChangingEvent e) {
         // what the scene is changing to is irrelevant
         Transform[] transforms = gameObject.GetComponentsInChildren<Transform>(includeInactive: true);
-        _children = (from t in transforms where t != Folder select t).ToArray<Transform>();
+        _children = transforms.Except(Folder).ToArray();
         Folder.DetachChildren();
     }
 
     private void OnSceneChanged(SceneChangedEvent e) {
-        var childrenToReattach = from t in _children where t != null select t;
-        //childrenToReattach.ForAll<Transform>(t => t.parent = Folder);
-        childrenToReattach.ForAll<Transform>(t => UnityUtility.AttachChildToParent(t.gameObject, Folder.gameObject));
+        var childrenToReattach = _children.Where(t => t != null);
+        childrenToReattach.ForAll(t => UnityUtility.AttachChildToParent(t.gameObject, Folder.gameObject));
         __FixGameObjectName();
     }
 
@@ -111,12 +110,13 @@ public class ManagementObjects : AMonoBaseSingleton<ManagementObjects>, IDisposa
     /// a separate prefab for IntroManagement.
     /// </summary>
     private void __FixGameObjectName() {
-        gameObject.name = "GameManagement";
+        D.Log("{0}_{1} name changed to {2}.", Folder.name, Instance.InstanceID, GameSceneManagementFolderName);
+        Folder.name = GameSceneManagementFolderName;
     }
 
     protected override void OnDestroy() {
         base.OnDestroy();
-        if (_isInitialized) {
+        if (_isInitialized) {   // IMPROVE if(enabled) as components in process of being destroyed are first disabled
             // no reason to cleanup if this object was destroyed before it was initialized.
             Dispose();
         }

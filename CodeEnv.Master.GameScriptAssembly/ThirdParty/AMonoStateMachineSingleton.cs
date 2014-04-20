@@ -38,7 +38,7 @@ public class AMonoStateMachineSingleton<T, E> : AMonoStateMachine_NoCall<E>, IIn
     public override void LogEvent() {
         // NOTE:  Coroutines don't show the right method name when logged using stacktrace
         System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
-        D.Log("{0}{1}.{2}() called.".Inject(GetType().Name, _instanceID, stackFrame.GetMethod().Name));
+        D.Log("{0}{1}.{2}() called.", GetType().Name, _instanceID, stackFrame.GetMethod().Name);
     }
 
     #region Singleton Pattern
@@ -100,7 +100,7 @@ public class AMonoStateMachineSingleton<T, E> : AMonoStateMachine_NoCall<E>, IIn
 
     private void IncrementInstanceCounter() {
         InstanceID = System.Threading.Interlocked.Increment(ref _instanceCounter);
-        D.Log("{0}.InstanceID now set to {1}, static counter now {2}.", typeof(T).Name, InstanceID, _instanceCounter);
+        //D.Log("{0}.InstanceID now set to {1}, static counter now {2}.", typeof(T).Name, InstanceID, _instanceCounter);
     }
 
     #endregion

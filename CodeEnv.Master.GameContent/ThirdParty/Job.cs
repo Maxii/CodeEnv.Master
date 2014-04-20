@@ -44,16 +44,11 @@ namespace CodeEnv.Master.GameContent {
         private bool _jobWasKilled;
         private Stack<Job> _childJobStack;
 
-
-        #region constructors
-
         public Job(IEnumerator coroutine, bool toStart = false, Action<bool> onJobComplete = null) {
             _coroutine = coroutine;
             this.onJobComplete = onJobComplete;
             if (toStart) { Start(); }
         }
-
-        #endregion
 
         private IEnumerator Run() {
             // null out the first run through in case we start paused

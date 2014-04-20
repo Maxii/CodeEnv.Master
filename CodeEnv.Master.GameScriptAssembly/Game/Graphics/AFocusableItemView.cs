@@ -41,10 +41,15 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
 
     protected override void Awake() {
         base.Awake();
-        _inputHelper = References.InputHelper;
-        _dynamicObjects = References.DynamicObjects;
         _collider = UnityUtility.ValidateComponentPresence<Collider>(gameObject);
         Radius = _collider.bounds.extents.magnitude;
+    }
+
+    protected override void Start() {
+        base.Start();
+        // use of References cannot occur in Awake
+        _inputHelper = References.InputHelper;
+        _dynamicObjects = References.DynamicObjects;
     }
 
     protected override void OnIsDiscernibleChanged() {

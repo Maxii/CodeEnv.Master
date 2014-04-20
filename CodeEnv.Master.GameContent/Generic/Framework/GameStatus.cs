@@ -57,17 +57,14 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<bool>(ref _isPaused, value, "IsPaused"); }
         }
 
-
         private GameStatus() {
             Initialize();
         }
 
-        protected override void Initialize() {
-            // TODO do any initialization here
-        }
+        protected override void Initialize() { }
 
         private void OnIsRunningChanged() {
-            D.Log("{0}.IsRunning changed to {1}.", Instance.GetType().Name, IsRunning);
+            D.Log("{0}.IsRunning changed to {1}.", GetType().Name, IsRunning);
             if (IsRunning) {
                 var temp = onIsRunning_OneShot;
                 if (temp != null) {

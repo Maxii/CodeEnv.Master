@@ -184,11 +184,8 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     #region None
 
-    //void None_EnterState() {
-    IEnumerator None_EnterState() {
-        //LogEvent();
-        D.Log("{0}.None_EnterState called. Time = {1}.", FullName, Time.time);
-        yield return null;
+    void None_EnterState() {
+        LogEvent();
     }
 
     void None_ExitState() {
@@ -200,8 +197,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     #region Idling
 
     IEnumerator Idling_EnterState() {
-        D.Log("{0}.Idling_EnterState line 1, Time = {1}.", FullName, Time.time);
-        D.Log("{0}.Idling_EnterState line 2, Time = {1}.", FullName, Time.time);
+        D.Log("{0}.Idling_EnterState called.", FullName);
 
         if (CurrentOrder != null) {
             // check for a standing order to execute if the current order (just completed) was issued by the Captain
@@ -217,9 +213,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             ProceedToFormationStation();
         }
         // TODO register as available
-        D.Log("{0}.Idling_EnterState line x before yield. Time = {1}.", FullName, Time.time);
         yield return null;
-        // D.Log("{0}.Idling_EnterState after yield. Time = {1}.", FullName, Time.time);
     }
 
     void Idling_OnShipOnStation(bool isOnStation) {
@@ -244,7 +238,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     #region ExecuteAssumeStationOrder
 
     IEnumerator ExecuteAssumeStationOrder_EnterState() {    // cannot return void as code after Call() executes without waiting for a Return()
-        D.Log("{0}.ExecuteAssumeStationOrder_EnterState.", FullName);
+        D.Log("{0}.ExecuteAssumeStationOrder_EnterState called.", FullName);
         _moveSpeed = Speed.Slow;
         _moveTarget = Data.FormationStation as IDestinationTarget;
         _standoffDistance = Constants.ZeroF;
@@ -272,7 +266,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     #region ExecuteMoveOrder
 
     IEnumerator ExecuteMoveOrder_EnterState() { // cannot return void as code after Call() executes without waiting for a Return()
-        D.Log("{0}.ExecuteMoveOrder_EnterState.", FullName);
+        D.Log("{0}.ExecuteMoveOrder_EnterState called.", FullName);
 
         _moveTarget = CurrentOrder.Target;
         _moveSpeed = CurrentOrder.Speed;
@@ -332,14 +326,12 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     void Moving_OnCoursePlotFailure() {
         LogEvent();
-        D.Warn("{0} Move error.", FullName);
         _isMoveError = true;
         Return();
     }
 
     void Moving_OnCourseTrackingError() {
         LogEvent();
-        D.Warn("{0} Move error.", FullName);
         _isMoveError = true;
         Return();
     }
@@ -528,7 +520,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     #region ExecuteRepairOrder
 
     IEnumerator ExecuteRepairOrder_EnterState() {
-        D.Log("{0}.ExecuteRepairOrder_EnterState.", FullName);
+        D.Log("{0}.ExecuteRepairOrder_EnterState called.", FullName);
         _moveSpeed = Speed.Full;
         _moveTarget = CurrentOrder.Target;
         _standoffDistance = Constants.ZeroF;
@@ -562,7 +554,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     #region Repairing
 
     IEnumerator Repairing_EnterState() {
-        D.Log("{0}.Repairing_EnterState.", FullName);
+        D.Log("{0}.Repairing_EnterState called.", FullName);
         OnShowAnimation(MortalAnimations.Repairing);
         yield return new WaitForSeconds(2);
         Data.CurrentHitPoints += 0.5F * (Data.MaxHitPoints - Data.CurrentHitPoints);
@@ -787,7 +779,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     public void OnShipOnStation(bool isOnStation) {
         if (IsHQElement) { return; }    // filter these out as the HQElement will always be OnStation
-        D.Log("{0}.OnShipOnStation({1}) called.", FullName, isOnStation);
+        //D.Log("{0}.OnShipOnStation({1}) called.", FullName, isOnStation);
         if (CurrentState == ShipState.Moving || CurrentState == ShipState.Idling) {
             // filter these so I can allow RelayToCurrentState() to warn when it doesn't find a matching method
             RelayToCurrentState(isOnStation);
