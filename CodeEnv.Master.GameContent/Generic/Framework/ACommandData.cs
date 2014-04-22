@@ -72,15 +72,19 @@ namespace CodeEnv.Master.GameContent {
         /// NOTE: Like CurrentHitPoints, this value will only reach 0 when the Unit's overall UnitHealth reaches 0.
         /// </summary>
         public override float Health {
-            get {
-                return base.Health;
-            }
+            get { return base.Health; }
         }
 
-        private int _cmdEffectiveness;
-        public int CmdEffectiveness {  // TODO make use of this
-            get { return _cmdEffectiveness; }
-            private set { SetProperty<int>(ref _cmdEffectiveness, value, "CmdEffectiveness"); }
+        private int _currentCmdEffectiveness;
+        public int CurrentCmdEffectiveness {  // TODO make use of this
+            get { return _currentCmdEffectiveness; }
+            private set { SetProperty<int>(ref _currentCmdEffectiveness, value, "CurrentCmdEffectiveness"); }
+        }
+
+        private int _maxCmdEffectiveness;
+        public int MaxCmdEffectiveness {
+            get { return _maxCmdEffectiveness; }
+            set { SetProperty<int>(ref _maxCmdEffectiveness, value, "MaxCmdEffectiveness", OnMaxCmdEffectivenessChanged); }
         }
 
         /// <summary>
@@ -190,13 +194,22 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void OnHealthChanged() {
             base.OnHealthChanged();
-            CmdEffectiveness = Mathf.RoundToInt(100 * Health);  // concept: staff and equipment are hurt as health of the Cmd declines
+            RefreshCurrentCmdEffectiveness();
+        }
+
+        private void OnMaxCmdEffectivenessChanged() {
+            RefreshCurrentCmdEffectiveness();
+        }
+
+        private void RefreshCurrentCmdEffectiveness() {
+            CurrentCmdEffectiveness = Mathf.RoundToInt(MaxCmdEffectiveness * Health);
+            // concept: staff and equipment are hurt as health of the Cmd declines
             // as Health of a Cmd cannot decline below 50% due to CurrentHitPoints override, neither can CmdEffectiveness, until the Unit is destroyed
         }
 
         public void AddElement(AElementData elementData) {
             if (!ElementsData.Contains(elementData)) {
-                AssignOwner(elementData);
+                VerifyOwner(elementData);
                 UpdateElementParentName(elementData);
                 ElementsData.Add(elementData);
 
@@ -208,19 +221,21 @@ namespace CodeEnv.Master.GameContent {
             D.Warn("Attempting to add {0} {1} that is already present.", typeof(AElementData), elementData.OptionalParentName);
         }
 
-        private void AssignOwner(AElementData elementData) {
-            if (Owner == null) {
-                D.Error("{0} owner must be set before adding elements.", Name);
-            }
+        private void VerifyOwner(AElementData elementData) {
+            D.Assert(Owner != null, "{0} owner should be set before adding elements.".Inject(Name));
             if (elementData.Owner == null) {
+                D.Warn("{0} owner should be set before adding element to {1}.", elementData.Name, Name);
                 elementData.Owner = Owner;
             }
-            D.Assert(Owner == elementData.Owner, "Owners {0} and {1} are different.".Inject(Owner.LeaderName, elementData.Owner.LeaderName));
+            else if (elementData.Owner != Owner) {
+                D.Warn("{0} owner {1} is different from {2} owner {3}.", elementData.Name, elementData.Owner.LeaderName, Name, Owner.LeaderName);
+                elementData.Owner = Owner;
+            }
         }
 
         private void UpdateElementParentName(AElementData elementData) {
             // TODO something more than just assigning a parent name?
-            elementData.OptionalParentName = OptionalParentName;
+            elementData.OptionalParentName = OptionalParentName;    // the name of the fleet, not the command
         }
 
         protected abstract void ChangeComposition(AElementData elementData, bool toAdd);

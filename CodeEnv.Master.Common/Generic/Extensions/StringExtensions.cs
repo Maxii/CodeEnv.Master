@@ -10,6 +10,10 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
+
 namespace CodeEnv.Master.Common {
 
     using System.Collections.Generic;
@@ -64,6 +68,25 @@ namespace CodeEnv.Master.Common {
         public static void Clear(this StringBuilder sb) {
             sb.Length = 0;
             sb.Capacity = 16;
+        }
+
+        /// <summary>
+        /// Removes the specified string (if present) from the source string and returns the result. 
+        /// Only the first instance of <c>stringToRemove</c> is removed. Case sensitive.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="stringToRemove">The string to remove.</param>
+        /// <returns></returns>
+        public static string Remove(this string source, string stringToRemove) {
+            int index = source.IndexOf(stringToRemove);
+            string result = index < 0 ? source : source.Remove(index, stringToRemove.Length);
+            if (source.Equals(result)) {
+                D.Warn("Attempted to remove {0} from {1} but did not find it.", stringToRemove, source);
+            }
+            else {
+                D.Log("Removed {0} from {1} resulting in {2}.", stringToRemove, source, result);
+            }
+            return result;
         }
 
     }

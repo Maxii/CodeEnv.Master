@@ -68,34 +68,53 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
                 Damage = UnityEngine.Random.Range(8F, 12F)
                 }
             },
-            CurrentHitPoints = UnityEngine.Random.Range(25F, 50F)
         };
         _elementStats.Add(stat);
     }
 
     protected override FleetCmdModel GetCommand(IPlayer owner) {
+        FleetCmdStats cmdStats = new FleetCmdStats() {
+            Name = UnitName,
+            MaxHitPoints = 10F,
+            MaxCmdEffectiveness = 100,
+            Strength = new CombatStrength(),
+            UnitFormation = Formation.Globe
+        };
         FleetCmdModel cmd;
-        if (_isPreset) {
+        if (isCompositionPreset) {
             cmd = gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCmdModel>();
-            _factory.PopulateCommand(UnitName, owner, ref cmd);
+            var existingCmdReference = cmd;
+            bool isCmdCompatibleWithOwner = _factory.MakeFleetCmdInstance(cmdStats, owner, ref cmd);
+            if (!isCmdCompatibleWithOwner) {
+                Destroy(existingCmdReference.gameObject);
+            }
         }
         else {
-            cmd = _factory.MakeFleetCmdInstance(UnitName, owner);
+            cmd = _factory.MakeFleetCmdInstance(cmdStats, owner);
             UnityUtility.AttachChildToParent(cmd.gameObject, gameObject);
         }
         return cmd;
     }
 
-    protected override IList<ShipStats> GetStats(ShipCategory elementCategory) {
-        return _elementStats.Where(s => s.Category == elementCategory).ToList();
+    protected override int GetStatsCount(ShipCategory elementCategory) {
+        return _elementStats.Where(s => s.Category == elementCategory).Count();
     }
 
-    protected override ShipModel MakeElement(ShipStats stat) {
-        return _factory.MakeInstance(stat);
+    protected override ShipModel MakeElement(ShipStats stat, IPlayer owner) {
+        return _factory.MakeInstance(stat, owner);
     }
 
-    protected override void MakeElement(ShipStats stat, ref ShipModel element) { // OPTIMIZE
-        _factory.MakeInstance(stat, ref element);
+    /// <summary>
+    /// Makes an element based off of the provided element. Returns true if the provided element is compatible
+    /// with the provided owner, false if it is not and had to be replaced. If an element is replaced, then clients
+    /// are responsible for destroying the original provided element.
+    /// </summary>
+    /// <param name="stat">The stat.</param>
+    /// <param name="owner">The owner.</param>
+    /// <param name="element">The element.</param>
+    /// <returns></returns>
+    protected override bool MakeElement(ShipStats stat, IPlayer owner, ref ShipModel element) { // OPTIMIZE
+        return _factory.MakeInstance(stat, owner, ref element);
     }
 
     protected override ShipCategory GetCategory(ShipStats stat) {

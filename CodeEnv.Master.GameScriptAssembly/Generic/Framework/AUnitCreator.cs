@@ -32,18 +32,14 @@ using UnityEngine;
 /// <typeparam name="ElementDataType">The Type of the Element's Data.</typeparam>
 /// <typeparam name="ElementStatType">The Type of the Element stat.</typeparam>
 /// <typeparam name="CommandType">The Type of the Command.</typeparam>
-public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementDataType, ElementStatType, CommandType> : AMonoBase, IDisposable
+public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementDataType, ElementStatType, CommandType> : ACreator, IDisposable
     where ElementType : AUnitElementModel
     where ElementCategoryType : struct
     where ElementDataType : AElementData
     where ElementStatType : class, new()
     where CommandType : AUnitCommandModel {
 
-    public DiplomaticRelations OwnerRelationshipWithHuman;
-
     public bool IsCompleted { get; private set; }
-
-    public int maxRandomElements = 8;
 
     /// <summary>
     /// The name of the top level Unit, aka the Settlement, Starbase or Fleet name.
@@ -52,27 +48,27 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     public string UnitName { get; private set; }
 
     protected IList<ElementStatType> _elementStats;
-    protected HashSet<ElementCategoryType> _elementCategoriesUsed;
-
-    protected IList<ElementType> _elements;
     protected CommandType _command;
-    private IList<IDisposable> _subscribers;
-    protected bool _isPreset;
 
-    protected IGameManager _gameMgr;
+    private HashSet<ElementCategoryType> _elementCategoriesUsed;
+    private IList<ElementType> _elements;
+    private IList<IDisposable> _subscribers;
+    private IGameManager _gameMgr;
+    private IPlayer _owner;
 
     protected override void Awake() {
         base.Awake();
         _elementStats = new List<ElementStatType>();
         _elementCategoriesUsed = new HashSet<ElementCategoryType>();
 
-        UnitName = GetUnitName();
-        _isPreset = _transform.childCount > 0;
+        UnitName = InitializeUnitName();
+        D.Assert(isCompositionPreset == _transform.childCount > 0, "{0}.{1} Composition Preset flag is incorrect.".Inject(UnitName, GetType().Name));
     }
 
     protected override void Start() {
         base.Start();
         _gameMgr = References.GameManager;
+        _owner = ValidateAndInitializeOwner();
         if (!GameStatus.Instance.IsRunning) {
             Subscribe();
         }
@@ -114,8 +110,14 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         }
     }
 
+    /// <summary>
+    /// Returns the GameState defining when creation should occur.
+    /// </summary>
+    /// <returns>The GameState that triggers creation.</returns>
+    protected abstract GameState GetCreationGameState();
+
     private void CreateComposition() {
-        if (_isPreset) {
+        if (isCompositionPreset) {
             CreateStatsFromChildren();
         }
         else {
@@ -149,9 +151,15 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         }
     }
 
+    protected abstract ElementCategoryType[] GetValidHQElementCategories();
+
+    protected abstract ElementCategoryType[] GetValidElementCategories();
+
+    protected abstract void CreateElementStat(ElementCategoryType category, string elementName);
+
     private void DeployUnit() {
         InitializeElements();
-        _command = GetCommand(GetOwner());
+        _command = GetCommand(_owner);
         AddElements();
     }
 
@@ -159,17 +167,20 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         _elements = new List<ElementType>();
         ElementType element = null;
         foreach (var stat in _elementStats) {
-            if (_isPreset) {
+            if (isCompositionPreset) {
                 // find a preExisting element of the right category first to provide to Make
                 var categoryElements = gameObject.GetSafeMonoBehaviourComponentsInChildren<ElementType>()
                     .Where(e => DeriveCategory(e).Equals(GetCategory(stat)));
                 var categoryElementsStillAvailable = categoryElements.Except(_elements);
                 element = categoryElementsStillAvailable.First();
-
-                MakeElement(stat, ref element);
+                var existingElementReference = element;
+                bool isElementCompatibleWithOwner = MakeElement(stat, _owner, ref element);
+                if (!isElementCompatibleWithOwner) {
+                    Destroy(existingElementReference.gameObject);
+                }
             }
             else {
-                element = MakeElement(stat);
+                element = MakeElement(stat, _owner);
             }
             // Note: Need to tell each element where this creator is located. This assures that whichever element is picked as the HQElement
             // will start with this position. However, the elements here are all placed on top of each other. When the physics engine starts
@@ -181,6 +192,12 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             _elements.Add(element);
         }
     }
+
+    protected abstract ElementCategoryType GetCategory(ElementStatType stat);
+
+    protected abstract bool MakeElement(ElementStatType stat, IPlayer owner, ref ElementType element);
+
+    protected abstract ElementType MakeElement(ElementStatType stat, IPlayer owner);
 
     protected abstract CommandType GetCommand(IPlayer owner);
 
@@ -201,75 +218,59 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         // Models now enable their corresponding View after they initialize
     }
 
-    protected abstract void CreateElementStat(ElementCategoryType category, string elementName);
+    protected virtual void OnCompleted() {
+        IsCompleted = true;
+    }
+
     protected abstract void __InitializeCommandIntel();
 
     private ElementCategoryType DeriveCategory(ElementType element) {
-        return Enums<ElementCategoryType>.Parse(element.gameObject.name);
+        string elementName = element.gameObject.name;
+        return GameUtility.DeriveEnumFromName<ElementCategoryType>(elementName);
     }
 
     private int GetCurrentCount(ElementCategoryType elementCategory) {
         if (!_elementCategoriesUsed.Contains(elementCategory)) {
             return 0;
         }
-        return GetStats(elementCategory).Count;
+        return GetStatsCount(elementCategory);
     }
 
-    protected abstract IList<ElementStatType> GetStats(ElementCategoryType elementCategory);
+    protected abstract int GetStatsCount(ElementCategoryType elementCategory);
 
-    private IPlayer GetOwner() {
+    private IPlayer ValidateAndInitializeOwner() {
         IPlayer humanPlayer = _gameMgr.HumanPlayer;
-        IPlayer owner = new Player();
+        if (isOwnerHuman) {
+            return humanPlayer;
+        }
+        IPlayer aiOwner = new Player();
         switch (OwnerRelationshipWithHuman) {
-            case DiplomaticRelations.Self:
-                owner = humanPlayer;
+            case DiploStateWithHuman.Enemy:
+                aiOwner.SetRelations(humanPlayer, DiplomaticRelations.Enemy);
+                humanPlayer.SetRelations(aiOwner, DiplomaticRelations.Enemy);
                 break;
-            case DiplomaticRelations.Enemy:
-                owner.SetRelations(humanPlayer, DiplomaticRelations.Enemy);
-                humanPlayer.SetRelations(owner, DiplomaticRelations.Enemy);
+            case DiploStateWithHuman.Ally:
+                aiOwner.SetRelations(humanPlayer, DiplomaticRelations.Ally);
+                humanPlayer.SetRelations(aiOwner, DiplomaticRelations.Ally);
                 break;
-            case DiplomaticRelations.Ally:
-                owner.SetRelations(humanPlayer, DiplomaticRelations.Ally);
-                humanPlayer.SetRelations(owner, DiplomaticRelations.Ally);
+            case DiploStateWithHuman.Friend:
+                aiOwner.SetRelations(humanPlayer, DiplomaticRelations.Friend);
+                humanPlayer.SetRelations(aiOwner, DiplomaticRelations.Friend);
                 break;
-            case DiplomaticRelations.Neutral:
-                owner.SetRelations(humanPlayer, DiplomaticRelations.Neutral);
-                humanPlayer.SetRelations(owner, DiplomaticRelations.Neutral);
-                break;
-            case DiplomaticRelations.Friend:
-                owner.SetRelations(humanPlayer, DiplomaticRelations.Friend);
-                humanPlayer.SetRelations(owner, DiplomaticRelations.Friend);
-                break;
-            case DiplomaticRelations.None:
-                D.WarnContext("Unit Owner not selected. Defaulting to Neutral relationship with HumanPlayer.", gameObject);
-                owner.SetRelations(humanPlayer, DiplomaticRelations.Neutral);
-                humanPlayer.SetRelations(owner, DiplomaticRelations.Neutral);
+            case DiploStateWithHuman.Neutral:
+                aiOwner.SetRelations(humanPlayer, DiplomaticRelations.Neutral);
+                humanPlayer.SetRelations(aiOwner, DiplomaticRelations.Neutral);
                 break;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(OwnerRelationshipWithHuman));
         }
-        return owner;
+        return aiOwner;
     }
 
-    protected virtual string GetUnitName() {
+    private string InitializeUnitName() {
         // usually, the name of the unit is carried by the name of the gameobject where this creator is located
         return _transform.name;
     }
-
-    protected virtual void OnCompleted() {
-        IsCompleted = true;
-    }
-
-    /// <summary>
-    /// Returns the GameState defining when creation should occur.
-    /// </summary>
-    /// <returns>The GameState that triggers creation.</returns>
-    protected abstract GameState GetCreationGameState();
-    protected abstract ElementCategoryType GetCategory(ElementStatType stat);
-    protected abstract void MakeElement(ElementStatType stat, ref ElementType element);
-    protected abstract ElementType MakeElement(ElementStatType stat);
-    protected abstract ElementCategoryType[] GetValidHQElementCategories();
-    protected abstract ElementCategoryType[] GetValidElementCategories();
 
     private void RemoveCreatorScript() {
         Destroy(this);
@@ -282,7 +283,6 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     private void Cleanup() {
         Unsubscribe();
-        // other cleanup here including any tracking Gui2D elements
     }
 
     private void Unsubscribe() {

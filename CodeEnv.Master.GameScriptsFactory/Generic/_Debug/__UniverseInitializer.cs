@@ -99,8 +99,8 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
         // if any settlements left over, destroy them
         if (!_settlementCreators.IsNullOrEmpty()) {
             foreach (var settlementCreator in _settlementCreators) {
-                //settlementCreator.gameObject.SetActive(false);
-                Destroy(settlementCreator.gameObject);
+                settlementCreator.gameObject.SetActive(false);
+                //Destroy(settlementCreator.gameObject);    // causes 'trying to access destroyed object' problems
             }
         }
     }

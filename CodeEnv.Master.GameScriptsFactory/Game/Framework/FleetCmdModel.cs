@@ -175,8 +175,11 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     protected override void OnGameIsRunning() {
         base.OnGameIsRunning();
-        //StartCoroutine(__GetFleetUnderway());
-        StartCoroutine(__GetFleetAttackUnderway());
+        // delay by a frame to allow ship state machine execution coroutines to execute their state change to Idle
+        new Job(__WaitFrames(1), toStart: true, onJobComplete: delegate {
+            //__GetFleetUnderway();
+            __GetFleetAttackUnderway();
+        });
     }
 
     protected override void OnHQElementChanged() {
@@ -241,8 +244,14 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         }
     }
 
-    private IEnumerator __GetFleetUnderway() {
-        yield return null;  // delay by a frame to allow ship state machine execution coroutines to execute their state change to Idle
+    private IEnumerator __WaitFrames(int framesToWait) {
+        int targetFrameCount = Time.frameCount + framesToWait;
+        while (Time.frameCount < targetFrameCount) {
+            yield return null;
+        }
+    }
+
+    private void __GetFleetUnderway() {
         IDestinationTarget destination = null; // = FindObjectOfType<SettlementCmdModel>();
         if (destination == null) {
             // in case Settlements are disabled
@@ -251,8 +260,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         CurrentOrder = new FleetOrder(FleetOrders.MoveTo, destination, Speed.FleetStandard);
     }
 
-    private IEnumerator __GetFleetAttackUnderway() {
-        yield return null;  // delay by a frame to allow ship state machine execution coroutines to execute their state change to Idle
+    private void __GetFleetAttackUnderway() {
         IPlayer fleetOwner = Data.Owner;
         IEnumerable<IMortalTarget> attackTgts = FindObjectsOfType<StarbaseCmdModel>().Where(sb => fleetOwner.IsEnemyOf(sb.Owner)).Cast<IMortalTarget>();
         if (attackTgts.IsNullOrEmpty()) {
@@ -267,7 +275,14 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
                     if (attackTgts.IsNullOrEmpty()) {
                         // in case no enemy Planetoids qualify
                         attackTgts = FindObjectsOfType<PlanetoidModel>().Where(p => p.Owner == TempGameValues.NoPlayer).Cast<IMortalTarget>();
-                        D.Warn("{0} can find no AttackTargets that meet the enemy selection criteria. Picking an unowned Planet.", Data.Name);
+                        if (attackTgts.Count() > 0) {
+                            D.Warn("{0} can find no AttackTargets that meet the enemy selection criteria. Picking an unowned Planet.", Data.Name);
+                        }
+                        else {
+                            D.Warn("{0} can find no AttackTargets of any sort. Defaulting to __GetFleetUnderway().", Data.Name);
+                            __GetFleetUnderway();
+                            return;
+                        }
                     }
                 }
             }

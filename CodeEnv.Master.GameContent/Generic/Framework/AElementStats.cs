@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AElementStats.cs
-// Abstract base class containing values and settings for Elements.
+// Abstract base class containing values and settings for building Elements.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,18 +20,13 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Abstract base class containing values and settings for Elements.
+    /// Abstract base class containing values and settings for building Elements.
     /// </summary>
-    public abstract class AElementStats {
+    public abstract class AElementStats : AItemStats {
 
-        public IList<Weapon> Weapons { get; set; }
-        public float MaxHitPoints { get; set; }
-        public float CurrentHitPoints { get; set; }
-        public CombatStrength Strength { get; set; }
         public float Mass { get; set; }
-        public string Name { get; set; }
+        public IList<Weapon> Weapons { get; set; }
         // Parent names are assigned when the ElementModel is assigned to a Command
-        // Owners are assigned when the ElementModel is assigned to a Command
         // Transforms are assigned when ElementData gets assigned to an ElementModel
 
     }

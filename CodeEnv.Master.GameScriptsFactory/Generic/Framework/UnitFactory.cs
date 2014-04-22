@@ -29,12 +29,20 @@ using UnityEngine;
 /// </summary>
 public class UnitFactory : AGenericSingleton<UnitFactory> {
 
-    private ShipModel[] shipPrefabs;
+    private GameObject[] _aiShipPrefabs;
+    private GameObject[] _humanShipPrefabs;
+
     private FacilityModel[] facilityPrefabs;
+    private GameObject _aiFleetCmdPrefab;
+    private GameObject _humanFleetCmdPrefab;
+
+    private GameObject _aiStarbaseCmdPrefab;
+    private GameObject _humanStarbaseCmdPrefab;
+
+    private GameObject _aiSettlementCmdPrefab;
+    private GameObject _humanSettlementCmdPrefab;
+
     private WeaponRangeTracker weaponRangeTrackerPrefab;
-    private FleetCmdModel fleetCmdPrefab;
-    private StarbaseCmdModel starbaseCmdPrefab;
-    private SettlementCmdModel settlementCmdPrefab;
     private FormationStation formationStationTrackerPrefab;
 
     private UnitFactory() {
@@ -42,42 +50,89 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     protected override void Initialize() {
-        shipPrefabs = RequiredPrefabs.Instance.ships;
-        facilityPrefabs = RequiredPrefabs.Instance.facilities;
-        weaponRangeTrackerPrefab = RequiredPrefabs.Instance.weaponRangeTracker;
-        fleetCmdPrefab = RequiredPrefabs.Instance.fleetCmd;
-        starbaseCmdPrefab = RequiredPrefabs.Instance.starbaseCmd;
-        settlementCmdPrefab = RequiredPrefabs.Instance.settlementCmd;
-        formationStationTrackerPrefab = RequiredPrefabs.Instance.formationStationTracker;
+        var reqdPrefabs = RequiredPrefabs.Instance;
+        _aiShipPrefabs = reqdPrefabs.aiShips.Select<ShipView, GameObject>(v => v.gameObject).ToArray();
+        _humanShipPrefabs = reqdPrefabs.humanShips.Select<ShipHumanView, GameObject>(v => v.gameObject).ToArray();
+
+        facilityPrefabs = reqdPrefabs.facilities;
+
+        _aiFleetCmdPrefab = reqdPrefabs.aiFleetCmd.gameObject;
+        _humanFleetCmdPrefab = reqdPrefabs.humanFleetCmd.gameObject;
+
+        _aiStarbaseCmdPrefab = reqdPrefabs.aiStarbaseCmd.gameObject;
+        _humanStarbaseCmdPrefab = reqdPrefabs.humanStarbaseCmd.gameObject;
+
+        _aiSettlementCmdPrefab = reqdPrefabs.aiSettlementCmd.gameObject;
+        _humanSettlementCmdPrefab = reqdPrefabs.humanSettlementCmd.gameObject;
+
+        weaponRangeTrackerPrefab = reqdPrefabs.weaponRangeTracker;
+        formationStationTrackerPrefab = reqdPrefabs.formationStationTracker;
     }
 
     /// <summary>
-    /// Makes an unparented, unenabled FleetCommand instance. 
+    /// Makes an unparented, unenabled FleetCommand instance for the owner.
     /// </summary>
-    /// <param name="unitName">The name of the Unit.</param>
+    /// <param name="stats">The stats for this Cmd.</param>
     /// <param name="owner">The owner of the Unit.</param>
     /// <returns></returns>
-    public FleetCmdModel MakeFleetCmdInstance(string unitName, IPlayer owner) {
-        GameObject cmdGo = UnityUtility.AddChild(null, fleetCmdPrefab.gameObject);
+    public FleetCmdModel MakeFleetCmdInstance(FleetCmdStats stats, IPlayer owner) {
+        GameObject cmdPrefab = owner.IsHuman ? _humanFleetCmdPrefab : _aiFleetCmdPrefab;
+        GameObject cmdGo = UnityUtility.AddChild(null, cmdPrefab);
         FleetCmdModel cmd = cmdGo.GetSafeMonoBehaviourComponent<FleetCmdModel>();
-        PopulateCommand(unitName, owner, ref cmd);
+        MakeFleetCmdInstance(stats, owner, ref cmd);
         return cmd;
     }
 
     /// <summary>
-    /// Populates the provided instance of FleetCmdModel with data. As this
-    /// <c>cmd</c> as yet has no elements, both the model and view are not yet enabled.
+    /// Populates the provided model instance with data from the stats object. If the provided model (view)
+    /// is compatible with the designated owner the method returns true. If not, the model is replaced, assuming the same position
+    /// and parent, and returns false. The Model and View will not be enabled.
     /// </summary>
-    /// <param name="unitName">Name of the unit.</param>
+    /// <param name="stats">The stat.</param>
     /// <param name="owner">The owner.</param>
-    /// <param name="cmd">The fleet command.</param>
-    public void PopulateCommand(string unitName, IPlayer owner, ref FleetCmdModel cmd) {
-        cmd.Data = new FleetCmdData(unitName, 10F) {
+    /// <param name="model">The model.</param>
+    /// <returns><c>false</c> if the model was not compatible and had to be replaced.</returns>
+    public bool MakeFleetCmdInstance(FleetCmdStats stats, IPlayer owner, ref FleetCmdModel model) {
+        if (owner.IsHuman == (model.gameObject.GetComponent<FleetCmdHumanView>() != null)) {
+            // the owner and model view are compatible
+            model.Data = new FleetCmdData(stats.Name, stats.MaxHitPoints) {
+                Strength = stats.Strength,
+                MaxCmdEffectiveness = stats.MaxCmdEffectiveness,
+                UnitFormation = stats.UnitFormation,
+                Owner = owner
+            };
+            model.gameObject.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(model.transform);
+            return true;
+        }
+        else {
+            D.Warn("Provided Cmd {0} is not compatible with owner {1}, replacing.", model.FullName, owner.LeaderName);
+            Vector3 existingPosition = model.transform.position;
+            GameObject existingParent = model.transform.parent.gameObject;
+            model = MakeFleetCmdInstance(stats, owner);
+            UnityUtility.AttachChildToParent(model.gameObject, existingParent);
+            model.transform.position = existingPosition;
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Makes a standalone fleet instance from a single ship using basic default FleetCmdStats. 
+    /// The FleetCmdModel returned, along with the provided ship is parented to an empty GameObject "the fleet" which itself is parented to
+    /// the Scene's Fleets folder. The fleetCmd model, view and ship (if not already enabled) are all enabled when returned.
+    /// </summary>
+    /// <param name="fleetName">Name of the fleet.</param>
+    /// <param name="owner">The owner.</param>
+    /// <param name="element">The element.</param>
+    /// <returns></returns>
+    public FleetCmdModel MakeFleetInstance(string fleetName, IPlayer owner, ShipModel element) {
+        FleetCmdStats cmdStats = new FleetCmdStats() {
+            Name = fleetName,
+            MaxHitPoints = 10F,
+            MaxCmdEffectiveness = 100,
             Strength = new CombatStrength(),
-            Owner = owner,
             UnitFormation = Formation.Globe
         };
-        cmd.gameObject.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(cmd.transform);
+        return MakeFleetInstance(cmdStats, owner, element);
     }
 
     /// <summary>
@@ -85,13 +140,14 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// provided ship is parented to an empty GameObject "the fleet" which itself is parented to
     /// the Scene's Fleets folder. The fleetCmd model, view and ship (if not already enabled) are all enabled when returned.
     /// </summary>
-    /// <param name="unitName">The name of the unit.</param>
+    /// <param name="stats">The stats for this fleetCmd.</param>
     /// <param name="owner">The owner of the unit.</param>
     /// <param name="element">The ship which becomes the HQ Element.</param>
     /// <returns></returns>
-    public FleetCmdModel MakeFleetInstance(string unitName, IPlayer owner, ShipModel element) {
-        FleetCmdModel cmd = MakeFleetCmdInstance(unitName, owner);
-        GameObject unitGo = new GameObject(unitName);
+    public FleetCmdModel MakeFleetInstance(FleetCmdStats stats, IPlayer owner, ShipModel element) {
+        D.Assert(owner.IsHuman == (element.gameObject.GetComponent<ShipHumanView>() != null), "Owner {0} is not compatible with {1} view.".Inject(owner.LeaderName, element.FullName));
+        FleetCmdModel cmd = MakeFleetCmdInstance(stats, owner);
+        GameObject unitGo = new GameObject(stats.Name);
         UnityUtility.AttachChildToParent(cmd.gameObject, unitGo);
         UnityUtility.AttachChildToParent(unitGo, Fleets.Instance.Folder.gameObject);
 
@@ -103,28 +159,28 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     /// <summary>
-    /// Makes an instance of a ship based on the ShipStats provided. The shipModel and View will not be enabled.
-    /// As the Ship is not yet attached to a Command, the GameObject will have no parent and will not yet have
-    /// a formation position assigned.
+    /// Makes an instance of an element based on the stats provided. The Model and View will not be enabled,
+    /// nor will their gameObject have a parent. The element has yet to be assigned to a Command.
     /// </summary>
-    /// <param name="stat">The stat.</param>
+    /// <param name="stats">The stat.</param>
+    /// <param name="owner">The owner.</param>
     /// <returns></returns>
-    public ShipModel MakeInstance(ShipStats stat) {
-        ShipData data = new ShipData(stat.Category, stat.Name, stat.MaxHitPoints, stat.Mass, stat.Drag) {
-            FullThrust = stat.FullThrust,
-            MaxTurnRate = stat.MaxTurnRate,
-            Strength = stat.Strength,
-            CurrentHitPoints = stat.CurrentHitPoints,
-            CombatStance = stat.CombatStance
+    public ShipModel MakeInstance(ShipStats stats, IPlayer owner) {
+        ShipData data = new ShipData(stats.Category, stats.Name, stats.MaxHitPoints, stats.Mass, stats.Drag) {
+            FullThrust = stats.FullThrust,
+            MaxTurnRate = stats.MaxTurnRate,
+            Strength = stats.Strength,
+            CombatStance = stats.CombatStance,
+            Owner = owner
         };
-
-        GameObject shipPrefabGo = shipPrefabs.Single(s => s.gameObject.name == stat.Category.GetName()).gameObject;
+        GameObject[] shipPrefabs = owner.IsHuman ? _humanShipPrefabs : _aiShipPrefabs;
+        GameObject shipPrefabGo = shipPrefabs.Single(s => s.name.Contains(stats.Category.GetName()));
         GameObject shipGoClone = UnityUtility.AddChild(null, shipPrefabGo);
 
         ShipModel model = shipGoClone.GetSafeMonoBehaviourComponent<ShipModel>();
         model.Data = data;
 
-        AttachWeapons(stat.Weapons, model);
+        AttachWeapons(stats.Weapons, model);
 
         // this is not really necessary as Ship's prefab should already have Model as its Mesh's CameraLOSChangedRelay target
         shipGoClone.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(shipGoClone.transform);
@@ -132,88 +188,140 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     /// <summary>
-    /// Populates the provided ShipModel instance with data from the stats object.
+    /// Populates the provided model instance with data from the stats object. If the provided model (view)
+    /// is compatible with the designated owner the method returns true. If not, the model is replaced, assuming the same position
+    /// and parent, and returns false. The Model and View will not be enabled. The element has yet to be assigned to a Command.
     /// </summary>
-    /// <param name="stat">The stat.</param>
+    /// <param name="stats">The stat.</param>
+    /// <param name="owner">The owner.</param>
     /// <param name="model">The model.</param>
-    public void MakeInstance(ShipStats stat, ref ShipModel model) {
-        GameObject shipGo = model.gameObject;
-        ShipCategory categoryFromModel = Enums<ShipCategory>.Parse(shipGo.name);
-        D.Assert(stat.Category == categoryFromModel, "{0} should be same as {1}.".Inject(stat.Category.GetName(), categoryFromModel.GetName()));
-        ShipData data = new ShipData(stat.Category, stat.Name, stat.MaxHitPoints, stat.Mass, stat.Drag) {
-            FullThrust = stat.FullThrust,
-            MaxTurnRate = stat.MaxTurnRate,
-            Strength = stat.Strength,
-            CurrentHitPoints = stat.CurrentHitPoints,
-            CombatStance = stat.CombatStance
-        };
-        model.Data = data;
-        AttachWeapons(stat.Weapons, model);
+    /// <returns><c>false</c> if the model was not compatible and had to be replaced.</returns>
+    public bool MakeInstance(ShipStats stats, IPlayer owner, ref ShipModel model) {
+        D.Assert(!model.enabled, "{0} should not be enabled.".Inject(model.FullName));
+        if (owner.IsHuman == (model.gameObject.GetComponent<ShipHumanView>() != null)) {
+            // owner and provided view are compatible
+            GameObject shipGo = model.gameObject;
+            ShipCategory categoryFromModel = GameUtility.DeriveEnumFromName<ShipCategory>(shipGo.name);
+            D.Assert(stats.Category == categoryFromModel, "{0} should be same as {1}.".Inject(stats.Category.GetName(), categoryFromModel.GetName()));
+            ShipData data = new ShipData(stats.Category, stats.Name, stats.MaxHitPoints, stats.Mass, stats.Drag) {
+                FullThrust = stats.FullThrust,
+                MaxTurnRate = stats.MaxTurnRate,
+                Strength = stats.Strength,
+                CombatStance = stats.CombatStance,
+                Owner = owner
+            };
+            model.Data = data;
+            AttachWeapons(stats.Weapons, model);
 
-        // this is not really necessary as ShipGo should already have Model as its Mesh's CameraLOSChangedRelay target
-        shipGo.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(shipGo.transform);
+            // this is not really necessary as ShipGo should already have Model as its Mesh's CameraLOSChangedRelay target
+            shipGo.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(shipGo.transform);
+            return true;
+        }
+        else {
+            D.Warn("Provided ship {0} is not compatible with owner {1}, replacing.", model.FullName, owner.LeaderName);
+            Vector3 existingPosition = model.transform.position;
+            GameObject existingParent = model.transform.parent.gameObject;
+            model = MakeInstance(stats, owner);
+            UnityUtility.AttachChildToParent(model.gameObject, existingParent);
+            model.transform.position = existingPosition;
+            return false;
+        }
     }
 
     /// <summary>
-    /// Makes an unparented, unenabled StarbaseCmd instance.
+    /// Makes an unparented, unenabled StarbaseCmd instance for the owner.
     /// </summary>
-    /// <param name="unitName">The name of the unit.</param>
+    /// <param name="stats">The stats.</param>
     /// <param name="owner">The owner of the unit.</param>
     /// <returns></returns>
-    public StarbaseCmdModel MakeStarbaseCmdInstance(string unitName, IPlayer owner) {
-        GameObject cmdGo = UnityUtility.AddChild(null, starbaseCmdPrefab.gameObject);
+    public StarbaseCmdModel MakeStarbaseCmdInstance(StarbaseCmdStats stats, IPlayer owner) {
+        GameObject cmdPrefab = owner.IsHuman ? _humanStarbaseCmdPrefab : _aiStarbaseCmdPrefab;
+        GameObject cmdGo = UnityUtility.AddChild(null, cmdPrefab);
         StarbaseCmdModel cmd = cmdGo.GetSafeMonoBehaviourComponent<StarbaseCmdModel>();
-        PopulateCommand(unitName, owner, ref cmd);
+        MakeStarbaseCmdInstance(stats, owner, ref cmd);
         return cmd;
     }
 
     /// <summary>
-    /// Populates the provided instance of StarbaseCmdModel with data. As this
-    /// <c>cmd</c> as yet has no elements, both the model and view are not yet enabled.
+    /// Populates the provided model instance with data from the stats object. If the provided model (view)
+    /// is compatible with the designated owner the method returns true. If not, the model is replaced, assuming the same position
+    /// and parent, and returns false. The Model and View will not be enabled.
     /// </summary>
-    /// <param name="unitName">Name of the unit.</param>
+    /// <param name="stats">The stats.</param>
     /// <param name="owner">The owner.</param>
-    /// <param name="cmd">The unit command.</param>
-    public void PopulateCommand(string unitName, IPlayer owner, ref StarbaseCmdModel cmd) {
-        cmd.Data = new StarbaseCmdData(unitName, 10F) {
-            Strength = new CombatStrength(),
-            Owner = owner,
-            UnitFormation = Formation.Circle
-        };
-        cmd.gameObject.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(cmd.transform);
+    /// <param name="model">The model.</param>
+    /// <returns><c>false</c> if the model was not compatible and had to be replaced.</returns>
+    public bool MakeStarbaseCmdInstance(StarbaseCmdStats stats, IPlayer owner, ref StarbaseCmdModel model) {
+        if (owner.IsHuman == (model.gameObject.GetComponent<StarbaseCmdHumanView>() != null)) {
+            // owner and model view are compatible
+            model.Data = new StarbaseCmdData(stats.Name, stats.MaxHitPoints) {
+                Strength = stats.Strength,
+                MaxCmdEffectiveness = stats.MaxCmdEffectiveness,
+                UnitFormation = stats.UnitFormation,
+                Owner = owner
+            };
+            model.gameObject.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(model.transform);
+            return true;
+        }
+        else {
+            D.Warn("Provided Cmd {0} is not compatible with owner {1}, replacing.", model.FullName, owner.LeaderName);
+            Vector3 existingPosition = model.transform.position;
+            GameObject existingParent = model.transform.parent.gameObject;
+            model = MakeStarbaseCmdInstance(stats, owner);
+            UnityUtility.AttachChildToParent(model.gameObject, existingParent);
+            model.transform.position = existingPosition;
+            return false;
+        }
     }
 
     /// <summary>
-    /// Makes an unparented, unenabled SettlementCmd instance.
+    /// Makes an unparented, unenabled SettlementCmd instance for the owner.
     /// </summary>
-    /// <param name="unitName">The name of the unit.</param>
+    /// <param name="stats">The stats.</param>
     /// <param name="owner">The owner of the unit.</param>
     /// <returns></returns>
-    public SettlementCmdModel MakeSettlementCmdInstance(string unitName, IPlayer owner) {
-        GameObject cmdGo = UnityUtility.AddChild(null, settlementCmdPrefab.gameObject);
+    public SettlementCmdModel MakeSettlementCmdInstance(SettlementCmdStats stats, IPlayer owner) {
+        GameObject cmdPrefab = owner.IsHuman ? _humanSettlementCmdPrefab : _aiSettlementCmdPrefab;
+        GameObject cmdGo = UnityUtility.AddChild(null, cmdPrefab);
         SettlementCmdModel cmd = cmdGo.GetSafeMonoBehaviourComponent<SettlementCmdModel>();
-        PopulateCommand(unitName, owner, ref cmd);
+        MakeSettlementCmdInstance(stats, owner, ref cmd);
         return cmd;
     }
 
     /// <summary>
-    /// Populates the provided instance of SettlementCmdModel with data. As this
-    /// <c>cmd</c> as yet has no elements, both the model and view are not yet enabled.
+    /// Populates the provided model instance with data from the stats object. If the provided model (view)
+    /// is compatible with the designated owner the method returns true. If not, the model is replaced, assuming the same position
+    /// and parent, and returns false. The Model and View will not be enabled.
     /// </summary>
-    /// <param name="unitName">Name of the unit.</param>
+    /// <param name="stats">The stats.</param>
     /// <param name="owner">The owner.</param>
-    /// <param name="cmd">The unit command.</param>
-    public void PopulateCommand(string unitName, IPlayer owner, ref SettlementCmdModel cmd) {
-        cmd.Data = new SettlementCmdData(unitName, 10F) {
-            Strength = new CombatStrength(0F, 10F, 0F, 10F, 0F, 10F),  // no offense, strong defense
-            Owner = owner,
-            UnitFormation = Formation.Circle,
-            Population = 100,
-            CapacityUsed = 10,
-            ResourcesUsed = new OpeYield(1.3F, 0.5F, 2.4F),
-            SpecialResourcesUsed = new XYield(new XYield.XResourceValuePair(XResource.Special_1, 0.2F))
-        };
-        cmd.gameObject.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(cmd.transform);
+    /// <param name="model">The model.</param>
+    /// <returns><c>false</c> if the model was not compatible and had to be replaced.</returns>
+    public bool MakeSettlementCmdInstance(SettlementCmdStats stats, IPlayer owner, ref SettlementCmdModel model) {
+        if (owner.IsHuman == (model.gameObject.GetComponent<SettlementCmdHumanView>() != null)) {
+            // the owner and model view are compatible
+            model.Data = new SettlementCmdData(stats.Name, stats.MaxHitPoints) {
+                Strength = stats.Strength, //new CombatStrength(0F, 10F, 0F, 10F, 0F, 10F),  // no offense, strong defense
+                MaxCmdEffectiveness = stats.MaxCmdEffectiveness,
+                UnitFormation = stats.UnitFormation,
+                Population = stats.Population,
+                CapacityUsed = stats.CapacityUsed,
+                ResourcesUsed = stats.ResourcesUsed,
+                SpecialResourcesUsed = stats.SpecialResourcesUsed,
+                Owner = owner
+            };
+            model.gameObject.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(model.transform);
+            return true;
+        }
+        else {
+            D.Warn("Provided Cmd {0} is not compatible with owner {1}, replacing.", model.FullName, owner.LeaderName);
+            Vector3 existingPosition = model.transform.position;
+            GameObject existingParent = model.transform.parent.gameObject;
+            model = MakeSettlementCmdInstance(stats, owner);
+            UnityUtility.AttachChildToParent(model.gameObject, existingParent);
+            model.transform.position = existingPosition;
+            return false;
+        }
     }
 
     /// <summary>
@@ -221,36 +329,36 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// As the Facility is not yet attached to a Command, the GameObject will have no parent and will not yet have
     /// a formation position assigned.
     /// </summary>
-    /// <param name="stat">The stat.</param>
+    /// <param name="stats">The stat.</param>
     /// <returns></returns>
-    public FacilityModel MakeInstance(FacilityStats stat) {
-        FacilityData data = new FacilityData(stat.Category, stat.Name, stat.MaxHitPoints, stat.Mass) {
-            Strength = stat.Strength,
-            CurrentHitPoints = stat.CurrentHitPoints
+    public FacilityModel MakeInstance(FacilityStats stats, IPlayer owner) {
+        FacilityData data = new FacilityData(stats.Category, stats.Name, stats.MaxHitPoints, stats.Mass) {
+            Strength = stats.Strength,
+            Owner = owner
         };
 
-        GameObject facilityPrefabGo = facilityPrefabs.Single(f => f.gameObject.name == stat.Category.GetName()).gameObject;
+        GameObject facilityPrefabGo = facilityPrefabs.Single(f => f.gameObject.name == stats.Category.GetName()).gameObject;
         GameObject facilityGoClone = UnityUtility.AddChild(null, facilityPrefabGo);
 
         FacilityModel model = facilityGoClone.GetSafeMonoBehaviourComponent<FacilityModel>();
         model.Data = data;
-        AttachWeapons(stat.Weapons, model);
+        AttachWeapons(stats.Weapons, model);
 
         // this is not really necessary as Facility's prefab should already have Model as its Mesh's CameraLOSChangedRelay target
         facilityGoClone.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(facilityGoClone.transform);
         return model;
     }
 
-    public void MakeInstance(FacilityStats stat, ref FacilityModel model) {
+    public void MakeInstance(FacilityStats stats, IPlayer owner, ref FacilityModel model) {
         GameObject facilityGo = model.gameObject;
         FacilityCategory categoryFromModel = Enums<FacilityCategory>.Parse(facilityGo.name);
-        D.Assert(stat.Category == categoryFromModel, "{0} should be same as {1}.".Inject(stat.Category.GetName(), categoryFromModel.GetName()));
-        FacilityData data = new FacilityData(stat.Category, stat.Name, stat.MaxHitPoints, stat.Mass) {
-            Strength = stat.Strength,
-            CurrentHitPoints = stat.CurrentHitPoints
+        D.Assert(stats.Category == categoryFromModel, "{0} should be same as {1}.".Inject(stats.Category.GetName(), categoryFromModel.GetName()));
+        FacilityData data = new FacilityData(stats.Category, stats.Name, stats.MaxHitPoints, stats.Mass) {
+            Strength = stats.Strength,
+            Owner = owner
         };
         model.Data = data;
-        AttachWeapons(stat.Weapons, model);
+        AttachWeapons(stats.Weapons, model);
 
         // this is not really necessary as facilityGo should already have Model as its Mesh's CameraLOSChangedRelay target
         facilityGo.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(facilityGo.transform);

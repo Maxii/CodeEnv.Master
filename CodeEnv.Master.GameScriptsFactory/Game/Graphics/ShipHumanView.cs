@@ -27,12 +27,21 @@ using UnityEngine;
 /// </summary>
 public class ShipHumanView : ShipView {
 
+    public new ShipHumanPresenter Presenter {
+        get { return base.Presenter as ShipHumanPresenter; }
+        protected set { base.Presenter = value; }
+    }
+
     private CtxObject _ctxObject;
 
     protected override void Start() {
         base.Start();
         InitializeContextMenu();
         //D.Log("{0}.{1} Initialization complete.", Presenter.Model.FullName, GetType().Name);
+    }
+
+    protected override void InitializePresenter() {
+        Presenter = new ShipHumanPresenter(this);
     }
 
     #region Mouse Events
@@ -45,7 +54,6 @@ public class ShipHumanView : ShipView {
     }
 
     #endregion
-
 
     #region ContextMenu
 

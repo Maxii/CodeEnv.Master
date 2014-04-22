@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FacilityStats.cs
-// Class containing values and settings for Facilities.
+// Class containing values and settings for building Facilities.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Class containing values and settings for Facilities.
+    /// Class containing values and settings for building Facilities.
     /// </summary>
     public class FacilityStats : AElementStats {
 

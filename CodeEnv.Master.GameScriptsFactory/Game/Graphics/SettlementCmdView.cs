@@ -53,10 +53,6 @@ public class SettlementCmdView : AUnitCommandView, ICameraFollowable {
         Presenter.OnIsSelectedChanged();
     }
 
-    protected override void RequestContextMenu(bool isDown) {
-        Presenter.RequestContextMenu(isDown);
-    }
-
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

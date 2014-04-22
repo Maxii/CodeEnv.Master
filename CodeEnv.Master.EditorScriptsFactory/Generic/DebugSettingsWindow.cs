@@ -98,7 +98,6 @@ public class DebugSettingsWindow : EditorWindow {
             definesToInclude.Add("DEBUG_LOG");
         }
         UnityEditorUtility.ResetConditionalCompilation(platformTargets, definesToInclude.ToArray<string>());
-
     }
 
     private class DebugStringComparer : IComparer<string> {

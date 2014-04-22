@@ -23,6 +23,7 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Instantiable base class for a player.
+    /// TODO Need a PlayerFactory to make players so there is only one instance of each player allowing == comparisons
     /// </summary>
     public class Player : APropertyChangeTracking, IPlayer {
 
@@ -40,7 +41,7 @@ namespace CodeEnv.Master.GameContent {
             IQ = iq;
             IsActive = true;
             _diplomaticRelations = new Dictionary<IPlayer, DiplomaticRelations>();
-            _diplomaticRelations[this] = DiplomaticRelations.Self;  // allows NoPlayer to make SetRelations illegal
+            _diplomaticRelations[this] = DiplomaticRelations.Self;  // assigning relations this way allows NoPlayer to make SetRelations illegal
             //SetRelations(this, DiplomaticRelations.Self);
         }
 

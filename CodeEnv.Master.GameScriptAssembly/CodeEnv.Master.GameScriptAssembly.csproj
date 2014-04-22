@@ -57,6 +57,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\ACreator.cs" />
     <Compile Include="Game\Framework\FormationGenerator.cs" />
     <Compile Include="Game\Graphics\AFocusableItemView.cs" />
     <Compile Include="Generic\Framework\AUnitCreator.cs" />

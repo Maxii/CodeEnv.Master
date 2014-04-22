@@ -56,21 +56,22 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
                 Damage = UnityEngine.Random.Range(3F, 8F) 
                 }
             },
-            CurrentHitPoints = UnityEngine.Random.Range(25F, 50F)
         };
         _elementStats.Add(stat);
     }
 
-    protected override IList<FacilityStats> GetStats(FacilityCategory elementCategory) {
-        return _elementStats.Where(s => s.Category == elementCategory).ToList();
+    protected override int GetStatsCount(FacilityCategory elementCategory) {
+        return _elementStats.Where(s => s.Category == elementCategory).Count();
     }
 
-    protected override FacilityModel MakeElement(FacilityStats stat) {
-        return _factory.MakeInstance(stat);
+
+    protected override FacilityModel MakeElement(FacilityStats stat, IPlayer owner) {
+        return _factory.MakeInstance(stat, owner);
     }
 
-    protected override void MakeElement(FacilityStats stat, ref FacilityModel element) {
-        _factory.MakeInstance(stat, ref element);
+    protected override bool MakeElement(FacilityStats stat, IPlayer owner, ref FacilityModel element) {
+        _factory.MakeInstance(stat, owner, ref element);
+        return true;    // IMPROVE dummy return for facilities to match signature of abstract MakeElement - facilties currently don't have a HumanView 
     }
 
     protected override FacilityCategory GetCategory(FacilityStats stat) {
@@ -86,13 +87,29 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
     }
 
     protected override SettlementCmdModel GetCommand(IPlayer owner) {
+        SettlementCmdStats cmdStats = new SettlementCmdStats() {
+            Name = UnitName,
+            MaxHitPoints = 10F,
+            MaxCmdEffectiveness = 100,
+            Strength = new CombatStrength(),
+            UnitFormation = Formation.Circle,
+            Population = 100,
+            CapacityUsed = 10,
+            ResourcesUsed = new OpeYield(1.3F, 0.5F, 2.4F),
+            SpecialResourcesUsed = new XYield(new XYield.XResourceValuePair(XResource.Special_1, 0.2F))
+        };
+
         SettlementCmdModel cmd;
-        if (_isPreset) {
+        if (isCompositionPreset) {
             cmd = gameObject.GetSafeMonoBehaviourComponentInChildren<SettlementCmdModel>();
-            _factory.PopulateCommand(UnitName, owner, ref cmd);
+            var existingCmdReference = cmd;
+            bool isCmdCompatibleWithOwner = _factory.MakeSettlementCmdInstance(cmdStats, owner, ref cmd);
+            if (!isCmdCompatibleWithOwner) {
+                Destroy(existingCmdReference.gameObject);
+            }
         }
         else {
-            cmd = _factory.MakeSettlementCmdInstance(UnitName, owner);
+            cmd = _factory.MakeSettlementCmdInstance(cmdStats, owner);
             UnityUtility.AttachChildToParent(cmd.gameObject, gameObject);
         }
         return cmd;

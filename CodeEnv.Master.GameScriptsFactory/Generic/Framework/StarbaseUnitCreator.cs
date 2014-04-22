@@ -53,21 +53,22 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
                 Damage = UnityEngine.Random.Range(1F, 1.5F)
                 }
             },
-            CurrentHitPoints = UnityEngine.Random.Range(25F, 50F)
         };
         _elementStats.Add(stat);
     }
 
-    protected override IList<FacilityStats> GetStats(FacilityCategory elementCategory) {
-        return _elementStats.Where(s => s.Category == elementCategory).ToList();
+    protected override int GetStatsCount(FacilityCategory elementCategory) {
+        return _elementStats.Where(s => s.Category == elementCategory).Count();
     }
 
-    protected override FacilityModel MakeElement(FacilityStats stat) {
-        return _factory.MakeInstance(stat);
+
+    protected override FacilityModel MakeElement(FacilityStats stat, IPlayer owner) {
+        return _factory.MakeInstance(stat, owner);
     }
 
-    protected override void MakeElement(FacilityStats stat, ref FacilityModel element) {
-        _factory.MakeInstance(stat, ref element);
+    protected override bool MakeElement(FacilityStats stat, IPlayer owner, ref FacilityModel element) {
+        _factory.MakeInstance(stat, owner, ref element);
+        return true;    // IMPROVE dummy return for facilities to match signature of abstract MakeElement - facilties currently don't have a HumanView 
     }
 
     protected override FacilityCategory GetCategory(FacilityStats stat) {
@@ -83,13 +84,25 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
     }
 
     protected override StarbaseCmdModel GetCommand(IPlayer owner) {
+        StarbaseCmdStats cmdStats = new StarbaseCmdStats() {
+            Name = UnitName,
+            MaxHitPoints = 10F,
+            MaxCmdEffectiveness = 100,
+            Strength = new CombatStrength(),
+            UnitFormation = Formation.Circle
+        };
+
         StarbaseCmdModel cmd;
-        if (_isPreset) {
+        if (isCompositionPreset) {
             cmd = gameObject.GetSafeMonoBehaviourComponentInChildren<StarbaseCmdModel>();
-            _factory.PopulateCommand(UnitName, owner, ref cmd);
+            var existingCmdReference = cmd;
+            bool isCmdCompatibleWithOwner = _factory.MakeStarbaseCmdInstance(cmdStats, owner, ref cmd);
+            if (!isCmdCompatibleWithOwner) {
+                Destroy(existingCmdReference.gameObject);
+            }
         }
         else {
-            cmd = _factory.MakeStarbaseCmdInstance(UnitName, owner);
+            cmd = _factory.MakeStarbaseCmdInstance(cmdStats, owner);
             UnityUtility.AttachChildToParent(cmd.gameObject, gameObject);
         }
         return cmd;

@@ -56,6 +56,10 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Graphics\FleetCmdHumanPresenter.cs" />
+    <Compile Include="Generic\Framework\ACommandStats.cs" />
+    <Compile Include="Generic\Framework\AItemStats.cs" />
+    <Compile Include="Game\Framework\FleetCmdStats.cs" />
     <Compile Include="Generic\Framework\BaseOrder.cs" />
     <Compile Include="Generic\Framework\FacilityOrder.cs" />
     <Compile Include="Generic\Framework\FleetOrder.cs" />
@@ -222,7 +226,12 @@
     <Compile Include="Generic\Framework\OrderSource.cs" />
     <Compile Include="Generic\Deferred\SensorRangeCategory.cs" />
     <Compile Include="Generic\Deferred\ShipCombatStance.cs" />
-    <Compile Include="NoPlayer.cs" />
+    <Compile Include="Generic\Framework\NoPlayer.cs" />
+    <Compile Include="Game\Framework\SettlementCmdStats.cs" />
+    <Compile Include="Game\Framework\StarbaseCmdStats.cs" />
+    <Compile Include="Game\Graphics\ShipHumanPresenter.cs" />
+    <Compile Include="Game\Graphics\SettlementCmdHumanPresenter.cs" />
+    <Compile Include="Game\Graphics\StarbaseCmdHumanPresenter.cs" />
     <Compile Include="ThirdParty\ICoroutineManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\SystemData.cs" />

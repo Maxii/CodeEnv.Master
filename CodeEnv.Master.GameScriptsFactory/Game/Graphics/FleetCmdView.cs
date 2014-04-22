@@ -123,10 +123,6 @@ public class FleetCmdView : AUnitCommandView, ICameraFollowable, IHighlightTrack
         }
     }
 
-    protected override void RequestContextMenu(bool isDown) {
-        Presenter.RequestContextMenu(isDown);
-    }
-
     private void InitializeTrackingLabel() {
         if (enableTrackingLabel) {
             float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;

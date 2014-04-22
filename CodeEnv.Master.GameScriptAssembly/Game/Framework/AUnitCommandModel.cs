@@ -208,7 +208,7 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
 
     protected override void Cleanup() {
         base.Cleanup();
-        Data.Dispose();
+        if (Data != null) { Data.Dispose(); }
     }
 
     # region StateMachine Support Methods

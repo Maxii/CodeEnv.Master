@@ -40,7 +40,6 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
     //private IIcon _cmdIcon;   // IMPROVE not really used for now
     private Vector3 _cmdIconSize;
 
-    private CtxObject _ctxObject;
     private Billboard _billboard;
 
     protected override void Awake() {
@@ -56,7 +55,6 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
 
     protected override void Start() {
         base.Start();
-        __InitializeContextMenu();
         InitializeTrackingTarget();
         //D.Log("{0}.{1} Initialization complete.", Presenter.Model.FullName, GetType().Name);
     }
@@ -173,38 +171,6 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
         _cmdIconTransform.localPosition = _cmdIconPivotOffset;
     }
 
-    #region ContextMenu
-
-    private void __InitializeContextMenu() {      // IMPROVE use of string
-        _ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
-        CtxMenu generalMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "GeneralMenu");
-        _ctxObject.contextMenu = generalMenu;
-        D.Assert(_ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
-        UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
-        //D.Log("Initial Fleet collider size = {0}.", _collider.size);
-        EventDelegate.Add(_ctxObject.onShow, OnContextMenuShow);
-        EventDelegate.Add(_ctxObject.onSelection, OnContextMenuSelection);
-        EventDelegate.Add(_ctxObject.onHide, OnContextMenuHide);
-    }
-
-    private void OnContextMenuShow() {
-        // UNDONE
-    }
-
-    private void OnContextMenuSelection() {
-        // int itemId = CtxObject.current.selectedItem;
-        // D.Log("{0} selected context menu item {1}.", _transform.name, itemId);
-        // UNDONE
-    }
-
-    private void OnContextMenuHide() {
-        // UNDONE
-    }
-
-    protected abstract void RequestContextMenu(bool isDown);
-
-    #endregion
-
     #region Intel Stealth Testing
 
     private IntelCoverage __normalIntelCoverage;
@@ -227,13 +193,6 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
     protected override void OnLeftDoubleClick() {
         base.OnLeftDoubleClick();
         __ToggleStealthSimulation();
-    }
-
-    protected override void OnRightPress(bool isDown) {
-        base.OnRightPress(isDown);
-        if (IsSelected) {
-            RequestContextMenu(isDown);
-        }
     }
 
     #endregion

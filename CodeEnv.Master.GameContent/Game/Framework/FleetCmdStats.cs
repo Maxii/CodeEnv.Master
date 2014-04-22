@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ShipStats.cs
-// Class containing values and settings for building Ships.
+// File: FleetCmdStats.cs
+// Class containing values and settings for building Fleet Commands.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,20 +19,13 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    ///  Class containing values and settings for building Ships.
+    /// Class containing values and settings for building Fleet Commands.
     /// </summary>
-    public class ShipStats : AElementStats {
-
-        public ShipCategory Category { get; set; }
-        public ShipCombatStance CombatStance { get; set; }
-        public float MaxTurnRate { get; set; }
-        public float Drag { get; set; }
-        public float FullThrust { get; set; }
+    public class FleetCmdStats : ACommandStats {
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
-
     }
 }
 

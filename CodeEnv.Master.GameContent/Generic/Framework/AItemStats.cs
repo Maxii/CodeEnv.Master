@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ShipStats.cs
-// Class containing values and settings for building Ships.
+// File: AItemStats.cs
+// Abstract base class containing values and settings for building Items.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,19 +19,13 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    ///  Class containing values and settings for building Ships.
+    /// Abstract base class containing values and settings for building Items.
     /// </summary>
-    public class ShipStats : AElementStats {
+    public abstract class AItemStats {
 
-        public ShipCategory Category { get; set; }
-        public ShipCombatStance CombatStance { get; set; }
-        public float MaxTurnRate { get; set; }
-        public float Drag { get; set; }
-        public float FullThrust { get; set; }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
+        public string Name { get; set; }
+        public float MaxHitPoints { get; set; }
+        public CombatStrength Strength { get; set; }
 
     }
 }

@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ShipStats.cs
-// Class containing values and settings for building Ships.
+// File: ShipHumanPresenter.cs
+// An MVPresenter associated with a ShipHumanView.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,20 +19,20 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    ///  Class containing values and settings for building Ships.
+    /// An MVPresenter associated with a ShipHumanView.
     /// </summary>
-    public class ShipStats : AElementStats {
+    public class ShipHumanPresenter : ShipPresenter {
 
-        public ShipCategory Category { get; set; }
-        public ShipCombatStance CombatStance { get; set; }
-        public float MaxTurnRate { get; set; }
-        public float Drag { get; set; }
-        public float FullThrust { get; set; }
+        public ShipHumanPresenter(IElementViewable view)
+            : base(view) { }
+
+        public void RequestContextMenu(bool isDown) {
+            _cameraControl.ShowContextMenuOnPress(isDown);
+        }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
-
     }
 }
 

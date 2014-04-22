@@ -57,12 +57,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public void RequestContextMenu(bool isDown) {
-            if (DebugSettings.Instance.AllowEnemyOrders || Model.Data.Owner.IsHuman) {
-                _cameraControl.ShowContextMenuOnPress(isDown);
-            }
-        }
-
         protected override void CleanupOnDeath() {
             base.CleanupOnDeath();
             if ((View as ISelectable).IsSelected) {

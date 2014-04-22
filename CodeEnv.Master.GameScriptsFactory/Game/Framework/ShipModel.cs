@@ -740,8 +740,8 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     protected override void Cleanup() {
         base.Cleanup();
-        Helm.Dispose();
-        Data.Dispose();
+        if (Helm != null) { Helm.Dispose(); }
+        if (Data != null) { Data.Dispose(); }
     }
 
     public override string ToString() {

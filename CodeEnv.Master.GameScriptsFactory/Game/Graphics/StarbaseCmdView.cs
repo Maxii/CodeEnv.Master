@@ -76,10 +76,6 @@ public class StarbaseCmdView : AUnitCommandView, IHighlightTrackingLabel {
         }
     }
 
-    protected override void RequestContextMenu(bool isDown) {
-        Presenter.RequestContextMenu(isDown);
-    }
-
     protected override void Cleanup() {
         base.Cleanup();
         if (_trackingLabel != null) {
