@@ -472,25 +472,32 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     IEnumerator ExecuteJoinFleetOrder_EnterState() {
         D.Log("{0}.ExecuteJoinFleetOrder_EnterState() called.", FullName);
-        // detach from fleet and create tempFleetCmd
-        Command.RemoveElement(this);
-
         var fleetToJoin = CurrentOrder.Target as ICommandTarget;
-        //var fleetToJoin = (CurrentOrder as UnitTargetOrder<ShipOrders>).Target;
-        string tempFleetName = "Join_" + fleetToJoin.ParentName;
-        var tempFleetCmd = UnitFactory.Instance.MakeFleetInstance(tempFleetName, Owner, this);
-        yield return null;  // wait to allow tempFleetCmd and View to initialize
+        IFleetCmdModel transferFleet = null;
+        string transferFleetName = "TransferTo" + fleetToJoin.ParentName;
+        if (Command.Elements.Count > 1) {
+            // detach from fleet and create tempFleetCmd
+            Command.RemoveElement(this);
 
-        // this ship's Command should now be the fleetToJoin
-        var fleetToJoinView = Command.Transform.GetSafeMonoBehaviourComponent<FleetCmdView>();
-        fleetToJoinView.PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
+            transferFleet = UnitFactory.Instance.MakeFleetInstance(transferFleetName, Owner, this);
+            yield return null;  // wait to allow transferFleet Model and View to initialize
+        }
+        else {
+            // this ship's current fleet only has this ship so simply issue the order to this fleet
+            D.Assert(Command.Elements.Single() == this);
+            transferFleet = Command;
+            transferFleet.Data.OptionalParentName = transferFleetName;
+        }
+        // this ship's Command and the transferFleet are now the same
+
+        var transferFleetView = transferFleet.Transform.GetSafeMonoBehaviourComponent<FleetCmdView>();
+        transferFleetView.PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
         // TODO PlayerIntelCoverage should be set through sensor detection
 
-        // issue a JoinFleet order to our new tempFleetCmd
+        // issue a JoinFleet order to our transferFleet
         FleetOrder joinFleetOrder = new FleetOrder(FleetOrders.JoinFleet, fleetToJoin);
-        //UnitTargetOrder<FleetOrders> joinFleetOrder = new UnitTargetOrder<FleetOrders>(FleetOrders.JoinFleet, fleetToJoin);
-        tempFleetCmd.CurrentOrder = joinFleetOrder;
-        // once joinFleetOrder takes, this ship state will be changed by its new tempfleetCmd
+        transferFleet.CurrentOrder = joinFleetOrder;
+        // once joinFleetOrder takes, this ship state will be changed by its 'new'  transferFleet Command
     }
 
     void ExecuteJoinFleetOrder_ExitState() {

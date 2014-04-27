@@ -399,7 +399,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var wRange = weapon.Range;
 
         // check trackers for range fit, if find it, assign ID, if not assign or create a tracker and assign its ID to the weapon
-        var rTracker = weaponTrackersInUse.FirstOrDefault(rt => rt.RangeSpan.Contains(wRange));
+        var rTracker = weaponTrackersInUse.FirstOrDefault(rt => rt.RangeSpan.ContainsValue(wRange));
         if (rTracker == null) {
             var unusedWeaponTrackers = allWeaponTrackers.Except(weaponTrackersInUse);
             if (!unusedWeaponTrackers.IsNullOrEmpty()) {

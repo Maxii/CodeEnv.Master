@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AItemPresenter : IDisposable {
 
-        protected IViewable View { get; private set; }
+        public string FullName { get { return Model.FullName; } }
 
         private IModel _model;
         public IModel Model {
@@ -38,6 +38,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        protected IViewable View { get; private set; }
         protected IList<IDisposable> _subscribers;
 
         protected GameObject _viewGameObject;

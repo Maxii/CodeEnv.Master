@@ -79,7 +79,7 @@ namespace CodeEnv.Master.GameContent {
             //newSpeedRequest = Mathf.Clamp(newSpeedRequest, Constants.ZeroF, _data.FullSpeed); // FIXME what about flank speed?
             float previousRequestedSpeed = _data.RequestedSpeed;
             float newSpeedToRequestedSpeedRatio = (previousRequestedSpeed != Constants.ZeroF) ? newSpeedRequest / previousRequestedSpeed : Constants.ZeroF;
-            if (EngineRoom.SpeedTargetRange.Contains(newSpeedToRequestedSpeedRatio)) {
+            if (EngineRoom.SpeedTargetRange.ContainsValue(newSpeedToRequestedSpeedRatio)) {
                 D.Log("{0} is already generating thrust for {1}. Requested speed unchanged.", _data.Name, newSpeedRequest);
                 return false;
             }
@@ -119,9 +119,9 @@ namespace CodeEnv.Master.GameContent {
             float targetThrust = requestedSpeed * _data.Drag * _data.Mass;
 
             //_targetThrustMinusMinus = Mathf.Min(targetThrust / _speedModeratelyAboveTarget.Max, maxThrust);
-            _targetThrustMinus = Mathf.Min(targetThrust / _speedSlightlyAboveTarget.Max, _data.FullThrust);
+            _targetThrustMinus = Mathf.Min(targetThrust / _speedSlightlyAboveTarget.Maximum, _data.FullThrust);
             _targetThrust = Mathf.Min(targetThrust, _data.FullThrust);
-            _targetThrustPlus = Mathf.Min(targetThrust / _speedSlightlyBelowTarget.Min, _data.FullThrust);
+            _targetThrustPlus = Mathf.Min(targetThrust / _speedSlightlyBelowTarget.Minimum, _data.FullThrust);
             // _targetThrustPlusPlus = Mathf.Min(targetThrust / _speedModeratelyBelowTarget.Min, maxThrust);
         }
 
@@ -132,25 +132,25 @@ namespace CodeEnv.Master.GameContent {
             }
 
             float sr = _data.CurrentSpeed / _data.RequestedSpeed;
-            if (SpeedTargetRange.Contains(sr)) {
+            if (SpeedTargetRange.ContainsValue(sr)) {
                 DeployFlaps(false);
                 return _targetThrust;
             }
-            if (_speedSlightlyBelowTarget.Contains(sr)) {
+            if (_speedSlightlyBelowTarget.ContainsValue(sr)) {
                 DeployFlaps(false);
                 return _targetThrustPlus;
             }
-            if (_speedSlightlyAboveTarget.Contains(sr)) {
+            if (_speedSlightlyAboveTarget.ContainsValue(sr)) {
                 DeployFlaps(false);
                 return _targetThrustMinus;
             }
             //if (_speedModeratelyBelowTarget.IsInRange(sr)) { return _targetThrustPlusPlus; }
             //if (_speedModeratelyAboveTarget.IsInRange(sr)) { return _targetThrustMinusMinus; }
-            if (_speedWayBelowTarget.Contains(sr)) {
+            if (_speedWayBelowTarget.ContainsValue(sr)) {
                 DeployFlaps(false);
                 return _data.FullThrust;
             }
-            if (_speedWayAboveTarget.Contains(sr)) {
+            if (_speedWayAboveTarget.ContainsValue(sr)) {
                 DeployFlaps(true);
                 return Constants.ZeroF;
             }
