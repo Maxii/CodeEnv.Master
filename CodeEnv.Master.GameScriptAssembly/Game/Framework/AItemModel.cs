@@ -128,10 +128,14 @@ public abstract class AItemModel : AMonoBase, IModel, IDestinationTarget, IDispo
 
     public Vector3 Position { get { return Data.Position; } }
 
-    /// <summary>
-    /// The radius in units of the conceptual 'globe' that encompasses this Item.
-    /// </summary>
-    public float Radius { get; set; }
+    private float _radius;
+    public float Radius {
+        get {
+            D.Assert(_radius != Constants.ZeroF);
+            return _radius;
+        }
+        protected set { _radius = value; }
+    }
 
     public virtual bool IsMovable { get { return false; } }
 

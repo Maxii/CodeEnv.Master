@@ -29,10 +29,9 @@ namespace CodeEnv.Master.GameContent {
         string FullName { get; }
 
         /// <summary>
-        /// The radius in units of the conceptual 'globe' that
-        /// encompasses this Item.
+        /// The radius in units of the conceptual 'globe' that encompasses this Item. Readonly.
         /// </summary>
-        float Radius { get; set; }
+        float Radius { get; }
 
         Transform Transform { get; }
 

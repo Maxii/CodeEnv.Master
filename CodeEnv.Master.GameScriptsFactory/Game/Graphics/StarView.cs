@@ -37,16 +37,12 @@ public class StarView : AFocusableItemView {
         protected set { base.Presenter = value; }
     }
 
-    private SphereCollider _keepoutCollider;
     private Light _starLight;
     private Billboard _billboard;
 
     protected override void Awake() {
         base.Awake();
-        (_collider as SphereCollider).radius = TempGameValues.StarRadius;
         circleScaleFactor = 1.0F;
-        _keepoutCollider = gameObject.GetComponentsInChildren<SphereCollider>().Single(c => c.gameObject.layer == (int)Layers.CelestialObjectKeepout);
-        _keepoutCollider.radius = (_collider as SphereCollider).radius * TempGameValues.KeepoutRadiusMultiplier;
         _starLight = gameObject.GetComponentInChildren<Light>();
         _billboard = gameObject.GetSafeMonoBehaviourComponentInChildren<Billboard>();
         Subscribe();    // no real need to subscribe at all if only subscription is PlayerIntelCoverage changes which these don't have

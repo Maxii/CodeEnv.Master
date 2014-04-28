@@ -53,12 +53,15 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
     }
 
     /// <summary>
-    /// Sets the initial state of each element's state machine. There must already be a formation,
-    /// and the game must already be running in case this initial state takes an action.
+    /// Sets the initial state of each element's state machine. This follows generation
+    /// of the formation, and makes sure the game is already running.
+    /// 
+    /// Warning: State_EnterState methods are executed when the frame's Coroutine's are run, 
+    /// not when the state itself is changed. The order in which those state execution coroutines 
+    /// are run has nothing to do with the order in which the element states are changed here.
     /// </summary>
     protected override void InitializeElementsState() {
-        (HQElement as IFacilityModel).CurrentState = FacilityState.Idling;
-        Elements.Except(HQElement).ForAll(e => (e as IFacilityModel).CurrentState = FacilityState.Idling);
+        Elements.ForAll(e => (e as IFacilityModel).CurrentState = FacilityState.Idling);
     }
 
     public override void AddElement(IElementModel element) {

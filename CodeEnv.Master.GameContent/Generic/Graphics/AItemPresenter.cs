@@ -28,15 +28,7 @@ namespace CodeEnv.Master.GameContent {
 
         public string FullName { get { return Model.FullName; } }
 
-        private IModel _model;
-        public IModel Model {
-            get { return _model; }
-            protected set {
-                _model = value;
-                _model.Radius = View.Radius;
-                //D.Log("{0}.Radius set to {1:0.0000}.", Model.FullName, View.Radius);
-            }
-        }
+        public IModel Model { get; protected set; }
 
         protected IViewable View { get; private set; }
         protected IList<IDisposable> _subscribers;

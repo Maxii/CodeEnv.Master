@@ -68,16 +68,10 @@ public class GuiTrackingLabel : AMonoBase {
 
     public float MinimumShowDistance { get; set; }
 
-    private bool _isShowing;
     /// <summary>
-    /// Gets or sets whether this <see cref="GuiTrackingLabel" /> is showing. Allows
-    /// the client to control whether the label displays or not without the label losing knowledge
-    /// of the content that has already been set.
+    /// Indicates whether this <see cref="GuiTrackingLabel" /> is currently showing. 
     /// </summary>
-    public bool IsShowing {
-        get { return _isShowing; }
-        set { SetProperty<bool>(ref _isShowing, value, "IsShowing", OnIsShowingChanged); }
-    }
+    public bool IsShowing { get; private set; }
 
     private GameColor _color = GameColor.White;
     public GameColor Color {
@@ -127,11 +121,35 @@ public class GuiTrackingLabel : AMonoBase {
             return;
         }
         _mainCamera = NGUITools.FindCameraForLayer(Target.gameObject.layer);
+        enabled = false;
+    }
+
+    /// <summary>
+    /// Clients call this method to show the label.  Allows the client to control whether the label 
+    /// displays or not without the label losing knowledge of the content that has already been set.
+    /// </summary>
+    public void Show() {
+        Show(true);
+        enabled = true;
+    }
+
+    /// <summary>
+    /// Clients call this method to hide the label.  Allows the client to control whether the label 
+    /// displays or not without the label losing knowledge of the content that has already been set.
+    /// </summary>
+    public void Hide() {
+        enabled = false;    // stops Occasional Update
+        Show(false);
+    }
+
+    private void Show(bool toShow) {
+        EnableWidgets(toShow);
+        IsShowing = toShow;
     }
 
     /// <summary>
     /// Populate the label with the provided text. To display
-    /// the text use IsShowing.
+    /// the text use Show().
     /// </summary>
     /// <param name="text">The text in label.</param>
     public void Set(string textInLabel) {
@@ -148,17 +166,13 @@ public class GuiTrackingLabel : AMonoBase {
     public void Clear() {
         Set(string.Empty);
         IsHighlighted = false;
-        IsShowing = false;
+        Hide();
     }
 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
-        if (TryUpdate()) {
-            IsShowing = true;
-        }
-        else {
-            IsShowing = false;
-        }
+        bool toShow = TryUpdate();
+        Show(toShow);
     }
 
     private bool TryUpdate() {
@@ -187,11 +201,6 @@ public class GuiTrackingLabel : AMonoBase {
         _transform.localScale = adjustedScale;
     }
 
-    private void OnIsShowingChanged() {
-        // must stay enabled to allow OccasionalUpdate to test distance to camera
-        EnableWidgets(IsShowing);
-    }
-
     private void OnColorChanged() {
         if (!IsHighlighted) {
             _label.color = Color.ToUnityColor();
@@ -209,10 +218,22 @@ public class GuiTrackingLabel : AMonoBase {
     /// </summary>
     /// <param name="toEnable">if set to <c>true</c> [to enable].</param>
     private void EnableWidgets(bool toEnable) {
-        if (this) { // for unknown reason, method can get called when this script has already been destroyed
-            foreach (UIWidget w in _widgets) {
+        if (this) { // can't use enabled here as it is also used to control OccasionalUpdate()
+            _widgets.ForAll(w => {
                 w.enabled = toEnable;
-            }
+                //D.Log("Widget {0}.enabled = {1}.", w.name, toEnable);
+            });
+        }
+    }
+
+    /// <summary>
+    /// Activates/deactivates all the UIWidgets in the heirarchy. Alternative to EnableWidgets.
+    /// Not currently used.
+    /// </summary>
+    /// <param name="toActivate">if set to <c>true</c> [to activate].</param>
+    private void ActivateWidgets(bool toActivate) {
+        if (enabled) {  // for unknown reason, method can get called when this script has already been destroyed
+            _widgets.ForAll(w => NGUITools.SetActive(w.gameObject, toActivate));
         }
     }
 

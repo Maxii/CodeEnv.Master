@@ -179,7 +179,6 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
         _sectorIDLabel.Set(_sectorIDLabelText);
     }
 
-
     private void OnLocationChanged() {
         _transform.position = SectorGrid.GetSector(Location).Position;
         UpdateSectorIDLabel();
@@ -203,7 +202,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
                 _centerCollider.enabled = true;
                 break;
             case PlayerViewMode.NormalView:
-                // turn off wireframe, collider, contextMenu and Hud
+                // turn off wireframe, sectorID label, collider, contextMenu and Hud
                 DynamicallySubscribe(false);
                 if (_sectorViewJob != null && _sectorViewJob.IsRunning) {
                     _sectorViewJob.Kill();
@@ -213,9 +212,12 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
                 _ctxObject.HideMenu();
 
                 // OPTIMIZE cache sector and sectorView
-                SectorView sectorView = SectorGrid.GetSector(Location).gameObject.GetSafeMonoBehaviourComponent<SectorView>();
-                if (sectorView.HudPublisher.IsHudShowing) {
-                    sectorView.ShowHud(false);
+                SectorModel sectorModel = SectorGrid.GetSector(Location);
+                if (sectorModel != null) {  // can be null if camera is located where no sector object was created
+                    SectorView sectorView = sectorModel.gameObject.GetSafeMonoBehaviourComponent<SectorView>();
+                    if (sectorView.HudPublisher.IsHudShowing) {
+                        sectorView.ShowHud(false);
+                    }
                 }
                 break;
             case PlayerViewMode.None:
@@ -245,6 +247,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
     }
 
     private void ShowSector(bool toShow) {
+        //D.Log("ShowSector({0})", toShow);
         if (!toShow && _wireframe == null) {
             return;
         }
@@ -256,7 +259,12 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
             UpdateSectorIDLabel();
         }
         _wireframe.Show(toShow);
-        _sectorIDLabel.IsShowing = toShow;
+        if (toShow) {
+            _sectorIDLabel.Show();
+        }
+        else {
+            _sectorIDLabel.Hide();
+        }
     }
 
     protected override void OnDestroy() {

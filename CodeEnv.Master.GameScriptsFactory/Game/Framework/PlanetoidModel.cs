@@ -36,7 +36,15 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel {
 
     protected override void Awake() {
         base.Awake();
+        // IMPROVE planetoid colliders vary in radius. They are currently manually preset via the editor to match their mesh size in their prefab
+        InitializeKeepoutCollider();
         Subscribe();
+    }
+
+    private void InitializeKeepoutCollider() {
+        SphereCollider keepoutCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
+        D.Assert(keepoutCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
+        keepoutCollider.radius = Radius * TempGameValues.KeepoutRadiusMultiplier;
     }
 
     protected override void Initialize() {

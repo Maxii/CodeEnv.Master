@@ -434,7 +434,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     #region ExecuteAttackOrder
 
     IEnumerator ExecuteAttackOrder_EnterState() {
-        D.Log("{0}.ExecuteAttackOrder_EnterState called.", FullName);
+        D.Log("{0}.ExecuteAttackOrder_EnterState called. Target = {1}.", FullName, CurrentOrder.Target.FullName);
         _moveTarget = CurrentOrder.Target;
         _moveSpeed = Speed.FleetFull;
         Call(FleetState.Moving);

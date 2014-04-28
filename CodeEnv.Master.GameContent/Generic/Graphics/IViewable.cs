@@ -37,10 +37,9 @@ namespace CodeEnv.Master.GameContent {
         IIntel PlayerIntel { get; }
 
         /// <summary>
-        /// The radius in units of the conceptual 'globe' that
-        /// encompasses this Item.
+        /// The radius in units of the conceptual 'globe' that encompasses this Item. Readonly.
         /// </summary>
-        float Radius { get; set; }
+        float Radius { get; }
 
         bool enabled { get; set; }
 

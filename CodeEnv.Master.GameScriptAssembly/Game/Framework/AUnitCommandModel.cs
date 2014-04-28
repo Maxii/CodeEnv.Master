@@ -30,8 +30,6 @@ using UnityEngine;
 /// </summary>
 public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommandModel, ICommandTarget {
 
-    public event Action onElementsInitializationCompleted_OneShot;
-
     public event Action<IElementModel> onSubordinateElementDeath;
 
     public string UnitName { get { return Data.OptionalParentName; } }
@@ -70,7 +68,6 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
 
     private IEnumerator InitializeAfterElementsEnabled() {
         yield return null;  // delay to allow Elements to initialize
-        OnElementsInitializationCompleted();
         _formationGenerator.RegenerateFormation();  // must follow element init as formation stations need ship radius
         FinishInitialization();
         if (GameStatus.Instance.IsRunning) {
@@ -138,14 +135,6 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
         InitializeElementsState();
     }
 
-    private void OnElementsInitializationCompleted() {
-        var temp = onElementsInitializationCompleted_OneShot;
-        if (temp != null) {
-            temp();
-        }
-        onElementsInitializationCompleted_OneShot = null;
-    }
-
     private void OnSubordinateElementDeath(IMortalModel mortalItem) {
         D.Assert(mortalItem is AUnitElementModel);
         D.Log("{0} acknowledging {1} has been lost.", FullName, mortalItem.Data.Name);
@@ -167,6 +156,7 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
     protected virtual void OnHQElementChanged() {
         HQElement.IsHQElement = true;
         Data.HQElementData = HQElement.Data;
+        Radius = HQElement.Radius;
         D.Log("{0} HQElement is now {1}.", FullName, HQElement.Data.Name);
     }
 

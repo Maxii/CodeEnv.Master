@@ -42,7 +42,6 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
     protected override void Awake() {
         base.Awake();
         _collider = UnityUtility.ValidateComponentPresence<Collider>(gameObject);
-        Radius = _collider.bounds.extents.magnitude;
     }
 
     protected override void Start() {
@@ -190,6 +189,14 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
         }
         if (_circles != null) { _circles.Dispose(); }
     }
+
+    # region IViewable Members
+
+    public override float Radius {
+        get { return Presenter.Model.Radius; }
+    }
+
+    #endregion
 
     #region ICameraTargetable Members
 

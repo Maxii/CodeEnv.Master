@@ -18,6 +18,7 @@
 
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// The data-holding class for all Stars in the game.
@@ -31,7 +32,16 @@ public class StarModel : AItemModel, IStarModel {
 
     protected override void Awake() {
         base.Awake();
+        (collider as SphereCollider).radius = TempGameValues.StarRadius;
+        Radius = TempGameValues.StarRadius;
+        InitializeKeepoutCollider();
         Subscribe();
+    }
+
+    private void InitializeKeepoutCollider() {
+        SphereCollider keepoutCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
+        D.Assert(keepoutCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
+        keepoutCollider.radius = Radius * TempGameValues.KeepoutRadiusMultiplier;
     }
 
     protected override void Initialize() { }

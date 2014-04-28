@@ -26,14 +26,9 @@ using UnityEngine;
 /// </summary>
 public class UniverseCenterView : AFocusableItemView {
 
-    private SphereCollider _keepoutCollider;
-
     protected override void Awake() {
         base.Awake();
         circleScaleFactor = 5F;
-        (_collider as SphereCollider).radius = TempGameValues.UniverseCenterRadius;
-        _keepoutCollider = gameObject.GetComponentsInChildren<SphereCollider>().Single(c => c.gameObject.layer == (int)Layers.CelestialObjectKeepout);
-        _keepoutCollider.radius = (_collider as SphereCollider).radius * TempGameValues.KeepoutRadiusMultiplier;
         Subscribe();    // no real need to subscribe at all if only subscription is PlayerIntelCoverage changes which these don't have
     }
 

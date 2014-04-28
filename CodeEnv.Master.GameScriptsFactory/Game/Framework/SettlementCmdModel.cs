@@ -41,7 +41,6 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel {
         set { SetProperty<BaseOrder<SettlementOrders>>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
     }
 
-
     protected override void Awake() {
         base.Awake();
         Subscribe();
@@ -56,11 +55,17 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel {
         //D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
     }
 
+    /// <summary>
+    /// Sets the initial state of each element's state machine. This follows generation
+    /// of the formation, and makes sure the game is already running.
+    /// 
+    /// Warning: State_EnterState methods are executed when the frame's Coroutine's are run, 
+    /// not when the state itself is changed. The order in which those state execution coroutines 
+    /// are run has nothing to do with the order in which the element states are changed here.
+    /// </summary>
     protected override void InitializeElementsState() {
-        (HQElement as IFacilityModel).CurrentState = FacilityState.Idling;
-        Elements.Except(HQElement).ForAll(e => (e as IFacilityModel).CurrentState = FacilityState.Idling);
+        Elements.ForAll(e => (e as IFacilityModel).CurrentState = FacilityState.Idling);
     }
-
 
     public override void AddElement(IElementModel element) {
         base.AddElement(element);

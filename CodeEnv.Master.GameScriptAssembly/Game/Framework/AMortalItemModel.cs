@@ -36,6 +36,14 @@ public abstract class AMortalItemModel : AItemModel, IMortalModel, IMortalTarget
         set { base.Data = value; }
     }
 
+    protected override void Awake() {
+        base.Awake();
+        // NOTE: MortalItemModel Planetoids, Ships and Facilities have their collider sizes preset in their prefabs so Radius can be set from the collider
+        // The radius of a Command has nothing to do with the size of its collider. Instead, they reset this value to the Radius of their HQElement
+        // The radius of a System, Star and Universe Center are constants and held in TempGameValues. They each set their own radius on Awake().
+        Radius = collider.bounds.extents.magnitude;
+    }
+
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
         _subscribers.Add(Data.SubscribeToPropertyChanged<AMortalItemData, float>(d => d.Health, OnHealthChanged));

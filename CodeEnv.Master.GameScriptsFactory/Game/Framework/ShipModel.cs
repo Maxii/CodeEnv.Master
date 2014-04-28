@@ -484,7 +484,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         }
         else {
             // this ship's current fleet only has this ship so simply issue the order to this fleet
-            D.Assert(Command.Elements.Single() == this);
+            D.Assert(Command.Elements.Single().Equals(this));
             transferFleet = Command;
             transferFleet.Data.OptionalParentName = transferFleetName;
         }

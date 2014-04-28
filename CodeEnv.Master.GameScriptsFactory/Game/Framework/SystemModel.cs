@@ -33,6 +33,8 @@ public class SystemModel : AItemModel, ISystemModel {
 
     protected override void Awake() {
         base.Awake();
+        // IMPROVE currently no need to set the radius of the System's orbital plane collider as it simply matches the mesh it is assigned too
+        Radius = TempGameValues.SystemRadius;
         Subscribe();
     }
 

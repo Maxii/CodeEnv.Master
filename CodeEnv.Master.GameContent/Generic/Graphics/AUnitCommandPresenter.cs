@@ -41,13 +41,8 @@ namespace CodeEnv.Master.GameContent {
         protected override void Subscribe() {
             base.Subscribe();
             _subscribers.Add(Model.SubscribeToPropertyChanged<ICommandModel, IElementModel>(sb => sb.HQElement, OnHQElementChanged));
-            Model.onElementsInitializationCompleted_OneShot += OnElementsInitializationCompleted;
             Model.onSubordinateElementDeath += OnSubordinateElementDeath;
             Model.Data.onCompositionChanged += OnCompositionChanged;
-        }
-
-        private void OnElementsInitializationCompleted() {
-            View.Radius = GetHQElementRadius();
         }
 
         private void OnSubordinateElementDeath(IElementModel element) {
@@ -75,7 +70,6 @@ namespace CodeEnv.Master.GameContent {
 
         private void OnHQElementChanged() {
             View.TrackingTarget = GetTrackingTarget();
-            View.Radius = GetHQElementRadius();
         }
 
         public virtual void OnIsSelectedChanged() {
@@ -87,11 +81,6 @@ namespace CodeEnv.Master.GameContent {
 
         public Transform GetTrackingTarget() {
             return Model.HQElement.Transform;
-        }
-
-        public float GetHQElementRadius() {
-            D.Assert(Model.HQElement.Radius != Constants.ZeroF, "{0}.Radius has not been initialized yet.".Inject(Model.HQElement.FullName));
-            return Model.HQElement.Radius;
         }
 
         private void AssessCmdIcon() {

@@ -37,6 +37,7 @@ public class SectorModel : AItemModel, ISectorModel {
 
     protected override void Awake() {
         base.Awake();
+        Radius = TempGameValues.SectorDiagonalLength * 0.5F;
         Subscribe();
     }
 

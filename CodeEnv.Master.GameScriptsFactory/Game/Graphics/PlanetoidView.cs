@@ -32,12 +32,8 @@ public class PlanetoidView : AMortalItemView, ICameraFollowable {
         protected set { base.Presenter = value; }
     }
 
-    private SphereCollider _keepoutCollider;
-
     protected override void Awake() {
         base.Awake();
-        _keepoutCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
-        _keepoutCollider.radius = (_collider as SphereCollider).radius * TempGameValues.KeepoutRadiusMultiplier;
         Subscribe();
     }
 
