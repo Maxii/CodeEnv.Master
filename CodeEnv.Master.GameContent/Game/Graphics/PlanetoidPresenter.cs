@@ -34,7 +34,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IModel AcquireModelReference() {
-            //return UnityUtility.ValidateMonoBehaviourPresence<PlanetoidModel>(_viewGameObject);
             return _viewGameObject.GetSafeInterface<IPlanetoidModel>();
         }
 

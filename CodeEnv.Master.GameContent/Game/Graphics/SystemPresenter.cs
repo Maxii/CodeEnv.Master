@@ -34,7 +34,6 @@ namespace CodeEnv.Master.GameContent {
         public SystemPresenter(IViewable view) : base(view) { }
 
         protected override IModel AcquireModelReference() {
-            //return UnityUtility.ValidateMonoBehaviourPresence<SystemModel>(_viewGameObject);
             return _viewGameObject.GetSafeInterface<ISystemModel>();
         }
 

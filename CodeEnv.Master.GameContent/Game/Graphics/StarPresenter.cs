@@ -33,12 +33,10 @@ namespace CodeEnv.Master.GameContent {
 
         public StarPresenter(IViewable view)
             : base(view) {
-            //_systemView = _viewGameObject.GetSafeMonoBehaviourComponentInParents<SystemView>();
             _systemView = _viewGameObject.GetSafeInterfaceInParents<IViewable>(excludeSelf: true);
         }
 
         protected override IModel AcquireModelReference() {
-            //return UnityUtility.ValidateMonoBehaviourPresence<StarModel>(_viewGameObject);
             return _viewGameObject.GetSafeInterface<IStarModel>();
         }
 

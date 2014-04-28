@@ -92,14 +92,14 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         D.Assert(ship.Data.FormationStation == null, "{0} should not yet have a FormationStation.".Inject(ship.FullName));
         if (enabled) {
             // if disabled, the HQElement hasn't been set yet. The initial generation of a formation comes during Initialize()
-            var emptyTrackers = _formationStations.Where(fst => fst.AssignedShip == null);
-            if (!emptyTrackers.IsNullOrEmpty()) {
-                var emptyFst = emptyTrackers.First();
-                ship.Data.FormationStation = emptyFst;
-                emptyFst.AssignedShip = ship;
+            var unusedFormationStations = _formationStations.Where(fst => fst.AssignedShip == null);
+            if (!unusedFormationStations.IsNullOrEmpty()) {
+                var unusedFst = unusedFormationStations.First();
+                ship.Data.FormationStation = unusedFst;
+                unusedFst.AssignedShip = ship;
             }
             else {
-                // there are no empty trackers so regenerate the whole formation
+                // there are no empty formation stations so regenerate the whole formation
                 _formationGenerator.RegenerateFormation();    // TODO instead, create a new one at the rear of the formation
             }
         }
