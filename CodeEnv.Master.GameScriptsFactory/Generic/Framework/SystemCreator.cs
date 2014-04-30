@@ -377,7 +377,11 @@ public class SystemCreator : AMonoBase, IDisposable {
         _moons.ForAll(m => m.enabled = true);
         _system.enabled = true;
         _star.enabled = true;
-        // Models now enable their corresponding View after they initialize
+        // Enable the Views of the Models 
+        _planets.ForAll(p => p.gameObject.GetSafeInterface<IViewable>().enabled = true);
+        _moons.ForAll(m => m.gameObject.GetSafeInterface<IViewable>().enabled = true);
+        _system.gameObject.GetSafeInterface<IViewable>().enabled = true;
+        _star.gameObject.GetSafeInterface<IViewable>().enabled = true;
     }
 
     private void __SetIntelLevel() {

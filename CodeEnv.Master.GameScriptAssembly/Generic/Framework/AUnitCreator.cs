@@ -215,7 +215,10 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     private void EnableUnit() {
         _command.enabled = true;
         // Commands now enable their elements during initialization
-        // Models now enable their corresponding View after they initialize
+
+        // Enable the Views of the models 
+        _command.Elements.ForAll(e => (e as Component).gameObject.GetSafeInterface<IElementViewable>().enabled = true);
+        _command.gameObject.GetSafeInterface<ICommandViewable>().enabled = true;
     }
 
     protected virtual void OnCompleted() {
@@ -244,7 +247,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             return humanPlayer;
         }
         IPlayer aiOwner = new Player();
-        switch (OwnerRelationshipWithHuman) {
+        switch (ownerRelationshipWithHuman) {
             case DiploStateWithHuman.Enemy:
                 aiOwner.SetRelations(humanPlayer, DiplomaticRelations.Enemy);
                 humanPlayer.SetRelations(aiOwner, DiplomaticRelations.Enemy);
@@ -262,7 +265,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
                 humanPlayer.SetRelations(aiOwner, DiplomaticRelations.Neutral);
                 break;
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(OwnerRelationshipWithHuman));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(ownerRelationshipWithHuman));
         }
         return aiOwner;
     }

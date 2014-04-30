@@ -52,7 +52,7 @@ public abstract class AItemModel : AMonoBase, IModel, IDestinationTarget, IDispo
     protected override void Start() {
         base.Start();
         Initialize();
-        EnableView();
+        //EnableView();
     }
 
     /// <summary>

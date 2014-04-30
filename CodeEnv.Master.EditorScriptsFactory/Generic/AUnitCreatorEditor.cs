@@ -33,8 +33,8 @@ public abstract class AUnitCreatorEditor<T> : Editor where T : ACreator {
 
         creator.isOwnerHuman = GUILayout.Toggle(creator.isOwnerHuman, "Owner is Human Player");
         if (!creator.isOwnerHuman) {
-            creator.OwnerRelationshipWithHuman = (ACreator.DiploStateWithHuman)
-                EditorGUILayout.EnumPopup("Diplomatic State with Human Player", creator.OwnerRelationshipWithHuman);
+            creator.ownerRelationshipWithHuman = (ACreator.DiploStateWithHuman)
+                EditorGUILayout.EnumPopup("Diplomatic State with Human Player", creator.ownerRelationshipWithHuman);
         }
 
         if (GUI.changed) {

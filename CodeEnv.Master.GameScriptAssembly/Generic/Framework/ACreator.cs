@@ -30,7 +30,7 @@ public abstract class ACreator : AMonoBase {
     }
 
     public bool isOwnerHuman;
-    public DiploStateWithHuman OwnerRelationshipWithHuman;
+    public DiploStateWithHuman ownerRelationshipWithHuman;
 
     public bool isCompositionPreset;
     public int maxRandomElements = 8;

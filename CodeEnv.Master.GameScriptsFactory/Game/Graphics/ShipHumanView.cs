@@ -105,7 +105,7 @@ public class ShipHumanView : ShipView {
             _shipMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>()
                 .Single(menu => menu.gameObject.name.Equals("ShipMenu"));
 
-            // NOTE: Cannot set CtxMenu.items from here as CtxMenu.Awake sets defaultItems = items (null) before I can set items programmatically
+            // NOTE: Cannot set CtxMenu.items from here as CtxMenu.Awake sets defaultItems = items (null) before I can set items programmatically.
             // Accordingly, the work around is to either use the editor to set the items, or have every CtxObject set their menuItems programmatically.
             // I've chosen to use the editor for now, and to verify my editor settings from here using ValidateShipMenuItems()
             var desiredShipMenuItems = new CtxMenu.Item[shipMenuOrders.Length];
@@ -147,7 +147,7 @@ public class ShipHumanView : ShipView {
     }
 
     private void ValidateShipMenuItems(CtxMenu.Item[] editorPopulatedShipMenuItems, CtxMenu.Item[] desiredShipMenuItems) {
-        D.Assert(editorPopulatedShipMenuItems.Length == desiredShipMenuItems.Length);
+        D.Assert(editorPopulatedShipMenuItems.Length == desiredShipMenuItems.Length, "Lengths: {0}, {1}.".Inject(editorPopulatedShipMenuItems.Length, desiredShipMenuItems.Length));
         for (int i = 0; i < editorPopulatedShipMenuItems.Length; i++) {
             var editorItem = editorPopulatedShipMenuItems[i];
             var desiredItem = desiredShipMenuItems[i];
