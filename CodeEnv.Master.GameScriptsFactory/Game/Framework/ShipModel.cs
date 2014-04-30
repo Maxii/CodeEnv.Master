@@ -794,5 +794,6 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     }
 
     #endregion
+
 }
 
