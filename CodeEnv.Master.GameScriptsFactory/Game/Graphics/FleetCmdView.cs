@@ -46,10 +46,6 @@ public class FleetCmdView : AUnitCommandView, ICameraFollowable, IHighlightTrack
         Presenter = new FleetCmdPresenter(this);
     }
 
-    protected override void InitializeTrackingTarget() {
-        TrackingTarget = Presenter.GetTrackingTarget();
-    }
-
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
         if (_trackingLabel != null) {

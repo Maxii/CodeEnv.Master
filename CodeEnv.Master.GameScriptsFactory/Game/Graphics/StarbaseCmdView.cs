@@ -42,10 +42,6 @@ public class StarbaseCmdView : AUnitCommandView, IHighlightTrackingLabel {
         Presenter = new StarbaseCmdPresenter(this);
     }
 
-    protected override void InitializeTrackingTarget() {
-        TrackingTarget = Presenter.GetTrackingTarget();
-    }
-
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
         if (_trackingLabel != null) {

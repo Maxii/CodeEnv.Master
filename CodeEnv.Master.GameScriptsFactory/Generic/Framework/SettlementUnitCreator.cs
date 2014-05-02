@@ -64,7 +64,6 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
         return _elementStats.Where(s => s.Category == elementCategory).Count();
     }
 
-
     protected override FacilityModel MakeElement(FacilityStats stat, IPlayer owner) {
         return _factory.MakeInstance(stat, owner);
     }
@@ -86,7 +85,7 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
         return new FacilityCategory[] { FacilityCategory.CentralHub };
     }
 
-    protected override SettlementCmdModel GetCommand(IPlayer owner) {
+    protected override SettlementCmdModel MakeCommand(IPlayer owner) {
         SettlementCmdStats cmdStats = new SettlementCmdStats() {
             Name = UnitName,
             MaxHitPoints = 10F,
@@ -115,9 +114,25 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
         return cmd;
     }
 
+    protected override void BeginElementsOperations() {
+        _elements.ForAll(e => (e as FacilityModel).CurrentState = FacilityState.Idling);
+    }
+
+    protected override void BeginCommandOperations() {
+        _command.CurrentState = SettlementState.Idling;
+    }
+
+    protected override void AssignHQElement() {
+        var candidateHQElements = _command.Elements.Where(e => GetValidHQElementCategories().Contains((e as FacilityModel).Data.Category));
+        D.Assert(!candidateHQElements.IsNullOrEmpty()); // bases must have a CentralHub, even if preset
+        _command.HQElement = RandomExtended<IElementModel>.Choice(candidateHQElements) as FacilityModel;
+    }
+
     protected override void __InitializeCommandIntel() {
         // For now settlements assume the intel coverage of their system when assigned
     }
+
+    protected override void IssueFirstUnitCommand() { }
 
     protected override void OnCompleted() {
         base.OnCompleted();

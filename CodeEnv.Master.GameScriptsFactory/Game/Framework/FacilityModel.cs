@@ -60,8 +60,6 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
         set { SetProperty<FacilityOrder>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
     }
 
-    public ICommandModel Command { get; set; }
-
     protected override void Awake() {
         base.Awake();
         Subscribe();
@@ -69,7 +67,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
 
     protected override void Initialize() {
         base.Initialize();
-        CurrentState = FacilityState.None;  // Idling now set from Cmd after the formation is deployed and the game is running
+        CurrentState = FacilityState.None;
         //D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
     }
 

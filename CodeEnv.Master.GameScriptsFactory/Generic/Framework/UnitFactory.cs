@@ -364,7 +364,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         facilityGo.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(facilityGo.transform);
     }
 
-    public FormationStation MakeFormationStationTrackerInstance(Vector3 stationOffset, FleetCmdModel fleetCmd) {
+    public FormationStation MakeFormationStation(Vector3 stationOffset, FleetCmdModel fleetCmd) {
         // make a folder for neatness if one doesn't yet exist
         GameObject stationTrackerFolder = null;
         var trackers = fleetCmd.gameObject.GetComponentsInChildren<FormationStation>();

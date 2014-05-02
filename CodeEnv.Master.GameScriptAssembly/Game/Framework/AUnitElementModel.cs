@@ -36,6 +36,12 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
         set { base.Data = value; }
     }
 
+    private ICommandModel _command;
+    public ICommandModel Command {
+        get { return _command; }
+        set { SetProperty<ICommandModel>(ref _command, value, "Command"); }
+    }
+
     protected Rigidbody _rigidbody;
     /// <summary>
     /// Weapon Range Tracker lookup table keyed by the Range Tracker's Guid ID.
@@ -57,18 +63,11 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
 
     protected override void Initialize() {
         _rigidbody.mass = Data.Mass;
-        __InitializeWeaponRangeTrackers();
-    }
-
-    // Element owners are currently not set until the elements are added to their Command
-    // Therefore, AddWeapon adds a null owner to the range trackers
-    private void __InitializeWeaponRangeTrackers() {
-        _weaponRangeTrackerLookup.Values.ForAll(rt => rt.Owner = Data.Owner);
     }
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
-        //TODO: Weapon values don't change but weapons do
+        //TODO: Weapon values don't change but weapons do so I need to know when that happens
     }
 
     private void OnGameSpeedChanged() {
@@ -84,9 +83,9 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
 
     protected override void OnNamingChanged() {
         base.OnNamingChanged();
-        if (enabled) {  // acts just like an isInitialized test as enabled results in Start() which calls Initialize 
-            _weaponRangeTrackerLookup.Values.ForAll(rt => rt.ParentFullName = Data.FullName);
-        }
+        //if (enabled) {  // UNCLEAR no longer needed?
+        _weaponRangeTrackerLookup.Values.ForAll(rt => rt.ParentFullName = Data.FullName);
+        //}
     }
 
     #region Weapons

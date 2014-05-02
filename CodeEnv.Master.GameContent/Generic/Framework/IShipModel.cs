@@ -27,29 +27,11 @@ namespace CodeEnv.Master.GameContent {
 
         ShipOrder CurrentOrder { get; set; }
 
-        //UnitOrder<ShipOrders> CurrentOrder { get; set; }
-
         ShipState CurrentState { get; set; }
 
-        IFleetCmdModel Command { get; set; }
+        new IFleetCmdModel Command { get; set; }
 
         bool IsBearingConfirmed { get; }
-
-        /// <summary>
-        /// Changes the speed of the ship.
-        /// </summary>
-        /// <param name="speed">The new speed request.</param>
-        /// <param name="isAutoPilot">if set to <c>true</c>the requester is the autopilot.</param>
-        /// <returns><c>true</c> if the speed change was accepted.</returns>
-        //bool ChangeSpeed(Speed speed, bool isAutoPilot);
-
-        /// <summary>
-        /// Changes the direction the ship is headed in normalized world space coordinates.
-        /// </summary>
-        /// <param name="newHeading">The new direction in world coordinates, normalized.</param>
-        /// <param name="isAutoPilot">if set to <c>true</c> the requester is the autopilot.</param>
-        /// <returns><c>true </c> if the heading change was accepted.</returns>
-        //bool ChangeHeading(Vector3 newHeading, bool isAutoPilot);
 
         /// <summary>
         /// Called by the ship's FormationStation when the ship arrives or leaves its station.

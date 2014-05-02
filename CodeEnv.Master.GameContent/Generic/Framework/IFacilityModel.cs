@@ -25,7 +25,6 @@ namespace CodeEnv.Master.GameContent {
 
         FacilityState CurrentState { get; set; }
 
-        ICommandModel Command { get; set; }
 
     }
 }

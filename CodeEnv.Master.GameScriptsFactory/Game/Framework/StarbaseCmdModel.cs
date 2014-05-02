@@ -36,7 +36,6 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
         set { SetProperty<BaseOrder<StarbaseOrders>>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
     }
 
-
     public new StarbaseCmdData Data {
         get { return base.Data as StarbaseCmdData; }
         set { base.Data = value; }
@@ -47,33 +46,22 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
         Subscribe();
     }
 
-    protected override void FinishInitialization() {
-        CurrentState = StarbaseState.Idling;
+    protected override void Initialize() {
+        CurrentState = StarbaseState.None;
         //D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
-    }
-
-    /// <summary>
-    /// Sets the initial state of each element's state machine. This follows generation
-    /// of the formation, and makes sure the game is already running.
-    /// 
-    /// Warning: State_EnterState methods are executed when the frame's Coroutine's are run, 
-    /// not when the state itself is changed. The order in which those state execution coroutines 
-    /// are run has nothing to do with the order in which the element states are changed here.
-    /// </summary>
-    protected override void InitializeElementsState() {
-        Elements.ForAll(e => (e as IFacilityModel).CurrentState = FacilityState.Idling);
     }
 
     public override void AddElement(IElementModel element) {
         base.AddElement(element);
-        (element as IFacilityModel).Command = this;
-        if (enabled) {  // if disabled, then this AddElement operation is occuring prior to initialization
+
+        IFacilityModel facility = element as IFacilityModel;
+        // A facility that is in Idle without being part of a unit might attempt something it is not yet prepared for
+        D.Assert(facility.CurrentState != FacilityState.Idling, "{0} is adding {1} while Idling.".Inject(FullName, facility.FullName));
+
+        facility.Command = this;
+        if (HQElement != null) {
             _formationGenerator.RegenerateFormation();    // Bases simply regenerate the formation when adding an element
         }
-    }
-
-    protected override IElementModel SelectHQElement() {
-        return Elements.Single(e => (e as IFacilityModel).Data.Category == FacilityCategory.CentralHub);
     }
 
     private void OnCurrentOrderChanged() {
@@ -104,6 +92,10 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
             }
         }
+    }
+
+    protected override void KillCommand() {
+        CurrentState = StarbaseState.Dead;
     }
 
     #region StateMachine
@@ -214,9 +206,6 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
 
     #region StateMachine Support Methods
 
-    protected override void KillCommand() {
-        CurrentState = StarbaseState.Dead;
-    }
 
     #endregion
 

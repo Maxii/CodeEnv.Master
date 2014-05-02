@@ -59,9 +59,9 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         Subscribe();
     }
 
-    protected override void FinishInitialization() {
+    protected override void Initialize() {
         InitializeNavigator();
-        CurrentState = FleetState.Idling;
+        CurrentState = FleetState.None;
         //D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
     }
 
@@ -73,25 +73,17 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         Navigator.onCoursePlotSuccess += OnCoursePlotSuccess;
     }
 
-    /// <summary>
-    /// Sets the initial state of each element's state machine. There must already be a formation,
-    /// and the game must already be running in case this initial state takes an action.
-    /// 
-    /// Warning: State_EnterState methods are executed when the frame's Coroutine's are run, 
-    /// not when the state itself is changed. The order in which those state execution coroutines 
-    /// are run has nothing to do with the order in which the element states are changed here.
-    /// </summary>
-    protected override void InitializeElementsState() {
-        Elements.ForAll(e => (e as IShipModel).CurrentState = ShipState.Idling);
-    }
-
     public override void AddElement(IElementModel element) {
         base.AddElement(element);
         IShipModel ship = element as IShipModel;
-        ship.Command = this;
+        // A ship that is in Idle without being part of a unit won't have a formation station to check its position
+        D.Assert(ship.CurrentState != ShipState.Idling, "{0} is adding {1} while Idling.".Inject(FullName, ship.FullName));
         D.Assert(ship.Data.FormationStation == null, "{0} should not yet have a FormationStation.".Inject(ship.FullName));
-        if (enabled) {
-            // if disabled, the HQElement hasn't been set yet. The initial generation of a formation comes during Initialize()
+
+        ship.Command = this;
+
+        if (HQElement != null) {
+            // regeneration of a formation requires a HQ element
             var unusedFormationStations = _formationStations.Where(fst => fst.AssignedShip == null);
             if (!unusedFormationStations.IsNullOrEmpty()) {
                 var unusedFst = unusedFormationStations.First();
@@ -106,22 +98,34 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     }
 
     public void TransferShip(IShipModel ship, IFleetCmdModel fleetCmd) {
+        ship.CurrentState = ShipState.None; // neutralize the ship before changing commands
         RemoveElement(ship);
         ship.IsHQElement = false;
         fleetCmd.AddElement(ship);
+        ship.CurrentState = ShipState.Idling; // UNCLEAR consider having the ship adopt the state/orders of the fleet?
     }
 
     public override void RemoveElement(IElementModel element) {
         base.RemoveElement(element);
-        // remove the formationStation from the ship and the ship from the FormationStation
+        if (this.IsDead) {
+            // fleetCmd has died
+            return;
+        }
+
         var ship = element as IShipModel;
+        if (ship == HQElement) {
+            // HQ Element has left
+            HQElement = SelectHQElement();
+        }
+
+        // remove the formationStation from the ship and the ship from the FormationStation
         var shipFst = ship.Data.FormationStation;
         shipFst.AssignedShip = null;
         ship.Data.FormationStation = null;
     }
 
-    protected override IElementModel SelectHQElement() {
-        return Elements.MaxBy(e => e.Data.Health);
+    private IShipModel SelectHQElement() {
+        return Elements.MaxBy(e => e.Data.Health) as IShipModel;
     }
 
     // A fleetCmd causes heading and speed changes to occur by issuing orders to
@@ -173,61 +177,38 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         }
     }
 
-    protected override void OnGameIsRunning() {
-        base.OnGameIsRunning();
-        // delay by a frame to allow ship state machine execution coroutines to execute their state change to Idle
-        new Job(__WaitFrames(1), toStart: true, onJobComplete: delegate {
-            //__GetFleetUnderway();
-            __GetFleetAttackUnderway();
-        });
-    }
-
-    protected override void OnHQElementChanged() {
-        base.OnHQElementChanged();
-        // eliminated OnFlagshipTrackingError as an overcomplication for now
-        if (_formationStations.Count != Constants.Zero) {
-            // a formation exists, so adjust all ship formation station offsets to reflect the new HQ ship assignment
-            AdjustFormationToReflectNewHQShipAssignment(HQElement);
-        }
-    }
-
-    private void AdjustFormationToReflectNewHQShipAssignment(IShipModel newHQShip) {
-        var newHQShipPreviousOffset = newHQShip.Data.FormationStation.StationOffset;
-        _formationStations.ForAll(fst => fst.StationOffset -= newHQShipPreviousOffset);
-    }
-
     protected override void PositionElementInFormation(IElementModel element, Vector3 stationOffset) {
         IShipModel ship = element as IShipModel;
         if (!GameStatus.Instance.IsRunning) {
-            // instantly places the ship in its proper position before assigning it to a tracker so the tracker will find it 'onStation'
-            // during gameplay, the ships will move under power to their station
+            // instantly places the ship in its proper position before assigning it to a station so the station will find it 'onStation'
+            // during runtime, the ships will move under power to their station when they are idle
             base.PositionElementInFormation(element, stationOffset);
         }
 
-        IFormationStation selectedTracker = ship.Data.FormationStation;
-        if (selectedTracker == null) {
+        IFormationStation shipStation = ship.Data.FormationStation;
+        if (shipStation == null) {
             // the ship does not yet have a formation station so find or make one
-            var emptyTrackers = _formationStations.Where(fst => fst.AssignedShip == null);
-            if (!emptyTrackers.IsNullOrEmpty()) {
-                // there are empty trackers so assign the ship to one of them
+            var unusedStations = _formationStations.Where(fst => fst.AssignedShip == null);
+            if (!unusedStations.IsNullOrEmpty()) {
+                // there are unused stations so assign the ship to one of them
                 //D.Log("{0} is being assigned an existing but unassigned FormationStation.", ship.FullName);
-                selectedTracker = emptyTrackers.First();
-                selectedTracker.AssignedShip = ship;
-                ship.Data.FormationStation = selectedTracker;
+                shipStation = unusedStations.First();
+                shipStation.AssignedShip = ship;
+                ship.Data.FormationStation = shipStation;
             }
             else {
-                // there are no emptys so make a new one and assign the ship to it
+                // there are no unused stations so make a new one and assign the ship to it
                 //D.Log("{0} is adding a new FormationStation.", ship.FullName);
-                selectedTracker = UnitFactory.Instance.MakeFormationStationTrackerInstance(stationOffset, this);
-                selectedTracker.AssignedShip = ship;
-                ship.Data.FormationStation = selectedTracker;
-                _formationStations.Add(selectedTracker);
+                shipStation = UnitFactory.Instance.MakeFormationStation(stationOffset, this);
+                shipStation.AssignedShip = ship;
+                ship.Data.FormationStation = shipStation;
+                _formationStations.Add(shipStation);
             }
         }
         else {
             D.Log("{0} already has a FormationStation.", ship.FullName);
         }
-        selectedTracker.StationOffset = stationOffset;
+        shipStation.StationOffset = stationOffset;
         // as ships were temporarily set to be immune to physics in FleetUnitCreator, make sure of their proper setting
         ship.Transform.rigidbody.isKinematic = false;
     }
@@ -235,60 +216,13 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     protected override void CleanupAfterFormationGeneration() {
         base.CleanupAfterFormationGeneration();
         // remove and destroy any remaining formation stations that may still exist
-        var emptyStations = _formationStations.Where(fst => fst.AssignedShip == null);
-        if (!emptyStations.IsNullOrEmpty()) {
-            emptyStations.ForAll(fst => {
+        var unusedStations = _formationStations.Where(fst => fst.AssignedShip == null);
+        if (!unusedStations.IsNullOrEmpty()) {
+            unusedStations.ForAll(fst => {
                 _formationStations.Remove(fst);
                 Destroy((fst as Component).gameObject);
             });
         }
-    }
-
-    private IEnumerator __WaitFrames(int framesToWait) {
-        int targetFrameCount = Time.frameCount + framesToWait;
-        while (Time.frameCount < targetFrameCount) {
-            yield return null;
-        }
-    }
-
-    private void __GetFleetUnderway() {
-        IDestinationTarget destination = null; // = FindObjectOfType<SettlementCmdModel>();
-        if (destination == null) {
-            // in case Settlements are disabled
-            destination = new StationaryLocation(Data.Position + UnityEngine.Random.onUnitSphere * 20F);
-        }
-        CurrentOrder = new FleetOrder(FleetOrders.MoveTo, destination, Speed.FleetStandard);
-    }
-
-    private void __GetFleetAttackUnderway() {
-        IPlayer fleetOwner = Data.Owner;
-        IEnumerable<IMortalTarget> attackTgts = FindObjectsOfType<StarbaseCmdModel>().Where(sb => fleetOwner.IsEnemyOf(sb.Owner)).Cast<IMortalTarget>();
-        if (attackTgts.IsNullOrEmpty()) {
-            // in case no Starbases qualify
-            attackTgts = FindObjectsOfType<SettlementCmdModel>().Where(s => fleetOwner.IsEnemyOf(s.Owner)).Cast<IMortalTarget>();
-            if (attackTgts.IsNullOrEmpty()) {
-                // in case no Settlements qualify
-                attackTgts = FindObjectsOfType<FleetCmdModel>().Where(f => fleetOwner.IsEnemyOf(f.Owner)).Cast<IMortalTarget>();
-                if (attackTgts.IsNullOrEmpty()) {
-                    // in case no Fleets qualify
-                    attackTgts = FindObjectsOfType<PlanetoidModel>().Where(p => fleetOwner.IsEnemyOf(p.Owner)).Cast<IMortalTarget>();
-                    if (attackTgts.IsNullOrEmpty()) {
-                        // in case no enemy Planetoids qualify
-                        attackTgts = FindObjectsOfType<PlanetoidModel>().Where(p => p.Owner == TempGameValues.NoPlayer).Cast<IMortalTarget>();
-                        if (attackTgts.Count() > 0) {
-                            D.Warn("{0} can find no AttackTargets that meet the enemy selection criteria. Picking an unowned Planet.", Data.Name);
-                        }
-                        else {
-                            D.Warn("{0} can find no AttackTargets of any sort. Defaulting to __GetFleetUnderway().", Data.Name);
-                            __GetFleetUnderway();
-                            return;
-                        }
-                    }
-                }
-            }
-        }
-        IMortalTarget attackTgt = attackTgts.MinBy(t => Vector3.Distance(t.Position, Data.Position));
-        CurrentOrder = new FleetOrder(FleetOrders.Attack, attackTgt);
     }
 
     public void __IssueShipMovementOrders(IDestinationTarget target, Speed speed, float standoffDistance = Constants.ZeroF) {
@@ -298,6 +232,10 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     public bool IsBearingConfirmed {
         get { return Elements.All(e => (e as ShipModel).IsBearingConfirmed); }
+    }
+
+    protected override void KillCommand() {
+        CurrentState = FleetState.Dead;
     }
 
     #region StateMachine
@@ -567,9 +505,6 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     #region StateMachine Support Methods
 
-    protected override void KillCommand() {
-        CurrentState = FleetState.Dead;
-    }
 
     #endregion
 

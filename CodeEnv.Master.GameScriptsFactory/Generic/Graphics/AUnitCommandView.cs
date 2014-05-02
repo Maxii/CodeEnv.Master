@@ -53,14 +53,6 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
         UpdateRate = FrameUpdateFrequency.Normal;
     }
 
-    protected override void Start() {
-        base.Start();
-        InitializeTrackingTarget();
-        //D.Log("{0}.{1} Initialization complete.", Presenter.Model.FullName, GetType().Name);
-    }
-
-    protected abstract void InitializeTrackingTarget();
-
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
         _collider.enabled = IsDiscernible;
@@ -85,7 +77,6 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
 
     private void KeepColliderOverIcon() {
         (_collider as BoxCollider).size = Vector3.Scale(_cmdIconSize, _cmdIconScaler.Scale);
-        //D.Log("Fleet collider size now = {0}.", _collider.size);
 
         Vector3[] iconWorldCorners = _cmdIconSprite.worldCorners;
         Vector3 iconWorldCenter = iconWorldCorners[0] + (iconWorldCorners[2] - iconWorldCorners[0]) * 0.5F;

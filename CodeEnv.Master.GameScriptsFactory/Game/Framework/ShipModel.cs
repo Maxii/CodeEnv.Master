@@ -50,7 +50,10 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     public Helm Helm { get; private set; }
 
-    public IFleetCmdModel Command { get; set; }
+    public new IFleetCmdModel Command {
+        get { return base.Command as IFleetCmdModel; }
+        set { base.Command = value; }
+    }
 
     protected override void Awake() {
         base.Awake();
@@ -60,8 +63,8 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     protected override void Initialize() {
         base.Initialize();
         InitializeHelm();
-        CurrentState = ShipState.None;  // Idling now set from Cmd after the formation is deployed and the game is running
-        D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
+        CurrentState = ShipState.None;
+        //D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
     }
 
     private void InitializeHelm() {

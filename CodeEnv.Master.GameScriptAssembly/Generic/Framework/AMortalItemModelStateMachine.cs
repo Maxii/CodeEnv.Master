@@ -489,12 +489,17 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     /// 5. the CurrentState's delegates are updated 
     ///          - meaning the EnterState delegate is changed from lastState_EnterState to newState_EnterState
     /// 6. the newState_EnterState() method is called
-    ///          - as the event in 7 has not yet been called, you CANNOT set CurrentState = nextState within newState_EnterState()
+    ///          - FIXME: as the event in 7 has not yet been called, you CANNOT set CurrentState = nextState within newState_EnterState()
     ///              - this would initiate the whole cycle above again, BEFORE the event in 7 is called
     ///              - you also can't just use a coroutine to wait then change it as the event is still held up
     ///          - instead, change it in newState_Update() which allows the event in 7 to complete before this change occurs again
     /// 7. the event OnCurrentStateChanged() is sent to subscribers
     ///          - when this event is received, a get_CurrentState property inquiry will properly return newState
+    ///          
+    /// WARNING: IEnumerator State_EnterState methods are executed when the frame's Coroutine's are run, 
+    /// not when the state itself is changed. The order in which those state execution coroutines 
+    /// are run has nothing to do with the order in which the item's state is changed, aka if item1's state
+    /// is changed before item2's state, that DOES NOT mean item1's enterState will be called before item2's enterState.
     /// </summary>
     public object CurrentState {
         get { return state.currentState; }

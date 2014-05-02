@@ -61,7 +61,6 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
         return _elementStats.Where(s => s.Category == elementCategory).Count();
     }
 
-
     protected override FacilityModel MakeElement(FacilityStats stat, IPlayer owner) {
         return _factory.MakeInstance(stat, owner);
     }
@@ -83,7 +82,7 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
         return new FacilityCategory[] { FacilityCategory.CentralHub };
     }
 
-    protected override StarbaseCmdModel GetCommand(IPlayer owner) {
+    protected override StarbaseCmdModel MakeCommand(IPlayer owner) {
         StarbaseCmdStats cmdStats = new StarbaseCmdStats() {
             Name = UnitName,
             MaxHitPoints = 10F,
@@ -108,9 +107,25 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
         return cmd;
     }
 
+    protected override void BeginElementsOperations() {
+        _elements.ForAll(e => (e as FacilityModel).CurrentState = FacilityState.Idling);
+    }
+
+    protected override void BeginCommandOperations() {
+        _command.CurrentState = StarbaseState.Idling;
+    }
+
+    protected override void AssignHQElement() {
+        var candidateHQElements = _command.Elements.Where(e => GetValidHQElementCategories().Contains((e as FacilityModel).Data.Category));
+        D.Assert(!candidateHQElements.IsNullOrEmpty()); // bases must have a CentralHub, even if preset
+        _command.HQElement = RandomExtended<IElementModel>.Choice(candidateHQElements) as FacilityModel;
+    }
+
     protected override void __InitializeCommandIntel() {
         _command.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
     }
+
+    protected override void IssueFirstUnitCommand() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

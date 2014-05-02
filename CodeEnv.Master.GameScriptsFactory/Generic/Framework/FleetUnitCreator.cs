@@ -72,7 +72,7 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
         _elementStats.Add(stat);
     }
 
-    protected override FleetCmdModel GetCommand(IPlayer owner) {
+    protected override FleetCmdModel MakeCommand(IPlayer owner) {
         FleetCmdStats cmdStats = new FleetCmdStats() {
             Name = UnitName,
             MaxHitPoints = 10F,
@@ -129,8 +129,70 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
         return new ShipCategory[] { ShipCategory.Cruiser, ShipCategory.Carrier, ShipCategory.Dreadnaught };
     }
 
+    protected override void AssignHQElement() {
+        var candidateHQElements = _command.Elements.Where(e => GetValidHQElementCategories().Contains((e as ShipModel).Data.Category));
+        if (candidateHQElements.IsNullOrEmpty()) {
+            // _command might not hold a valid HQ Element if preset
+            candidateHQElements = _command.Elements;
+        }
+        _command.HQElement = RandomExtended<IElementModel>.Choice(candidateHQElements) as ShipModel;
+    }
+
+    protected override void BeginElementsOperations() {
+        _elements.ForAll(e => (e as ShipModel).CurrentState = ShipState.Idling);
+    }
+
+    protected override void BeginCommandOperations() {
+        _command.CurrentState = FleetState.Idling;
+    }
+
     protected override void __InitializeCommandIntel() {
         _command.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
+    }
+
+    protected override void IssueFirstUnitCommand() {
+        __GetFleetAttackUnderway();
+        //__GetFleetUnderway();
+    }
+
+    private void __GetFleetUnderway() {
+        IDestinationTarget destination = null; // = FindObjectOfType<SettlementCmdModel>();
+        if (destination == null) {
+            // in case Settlements are disabled
+            destination = new StationaryLocation(_transform.position + UnityEngine.Random.onUnitSphere * 20F);
+        }
+        _command.CurrentOrder = new FleetOrder(FleetOrders.MoveTo, destination, Speed.FleetStandard);
+    }
+
+    private void __GetFleetAttackUnderway() {
+        IPlayer fleetOwner = _owner;
+        IEnumerable<IMortalTarget> attackTgts = FindObjectsOfType<StarbaseCmdModel>().Where(sb => fleetOwner.IsEnemyOf(sb.Owner)).Cast<IMortalTarget>();
+        if (attackTgts.IsNullOrEmpty()) {
+            // in case no Starbases qualify
+            attackTgts = FindObjectsOfType<SettlementCmdModel>().Where(s => fleetOwner.IsEnemyOf(s.Owner)).Cast<IMortalTarget>();
+            if (attackTgts.IsNullOrEmpty()) {
+                // in case no Settlements qualify
+                attackTgts = FindObjectsOfType<FleetCmdModel>().Where(f => fleetOwner.IsEnemyOf(f.Owner)).Cast<IMortalTarget>();
+                if (attackTgts.IsNullOrEmpty()) {
+                    // in case no Fleets qualify
+                    attackTgts = FindObjectsOfType<PlanetoidModel>().Where(p => fleetOwner.IsEnemyOf(p.Owner)).Cast<IMortalTarget>();
+                    if (attackTgts.IsNullOrEmpty()) {
+                        // in case no enemy Planetoids qualify
+                        attackTgts = FindObjectsOfType<PlanetoidModel>().Where(p => p.Owner == TempGameValues.NoPlayer).Cast<IMortalTarget>();
+                        if (attackTgts.Count() > 0) {
+                            D.Warn("{0} can find no AttackTargets that meet the enemy selection criteria. Picking an unowned Planet.", UnitName);
+                        }
+                        else {
+                            D.Warn("{0} can find no AttackTargets of any sort. Defaulting to __GetFleetUnderway().", UnitName);
+                            __GetFleetUnderway();
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+        IMortalTarget attackTgt = attackTgts.MinBy(t => Vector3.Distance(t.Position, _transform.position));
+        _command.CurrentOrder = new FleetOrder(FleetOrders.Attack, attackTgt);
     }
 
     public override string ToString() {

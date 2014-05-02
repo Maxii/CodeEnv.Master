@@ -56,39 +56,7 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
         // Derived class should call Subscribe() after all used references have been established
     }
 
-    protected sealed override void Initialize() {
-        EnableElements();
-        new Job(InitializeAfterElementsEnabled(), toStart: true);
-    }
-
-    private void EnableElements() {
-        HQElement = SelectHQElement();
-        Elements.ForAll(e => e.enabled = true);
-    }
-
-    private IEnumerator InitializeAfterElementsEnabled() {
-        yield return null;  // delay to allow Elements to initialize
-        _formationGenerator.RegenerateFormation();  // must follow element init as formation stations need ship radius
-        FinishInitialization();
-        if (GameStatus.Instance.IsRunning) {
-            InitializeElementsState();
-        }
-        else {
-            GameStatus.Instance.onIsRunning_OneShot += OnGameIsRunning;
-        }
-    }
-
-    /// <summary>
-    /// Sets the initial state of each element's state machine. This follows generation
-    /// of the formation, and makes sure the game is already running.
-    /// </summary>
-    protected abstract void InitializeElementsState();
-
-    /// <summary>
-    /// Finishes the initialization process. All Elements are already initialized but
-    /// their state machine has not yet been activated.
-    /// </summary>
-    protected abstract void FinishInitialization();
+    // formations are now generated when an element is added and/or when a HQ element is assigned
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
@@ -100,11 +68,10 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
     /// </summary>
     /// <param name="element">The Element to add.</param>
     public virtual void AddElement(IElementModel element) {
+        D.Assert(!Elements.Contains(element), "{0} attempting to add {1} that is already present.".Inject(FullName, element.FullName));
         D.Assert(!element.IsHQElement, "{0} adding element {1} already designated as the HQ Element.".Inject(FullName, element.FullName));
-        if (enabled) {
-            // UNCLEAR it is not yet clear whether this method should enable selected elements during runtime. This will flag me of the issue
-            D.Assert(element.enabled, "{0} is not yet enabled.".Inject(element.FullName));
-        }
+        // elements should already be enabled when added to a Cmd as that is commonly their state when transferred during runtime
+        D.Assert(element.enabled, "{0} is not yet enabled.".Inject(element.FullName));
         element.onItemDeath += OnSubordinateElementDeath;
         Elements.Add(element);
         Data.AddElement(element.Data);
@@ -123,16 +90,7 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
         if (Elements.Count == Constants.Zero) {
             D.Assert(Data.UnitHealth <= Constants.ZeroF, "{0} UnitHealth error.".Inject(FullName));
             KillCommand();
-            return;
         }
-        if (element == HQElement) {
-            // HQ Element has left
-            HQElement = SelectHQElement();
-        }
-    }
-
-    protected virtual void OnGameIsRunning() {
-        InitializeElementsState();
     }
 
     private void OnSubordinateElementDeath(IMortalModel mortalItem) {
@@ -148,8 +106,14 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
     }
 
     protected virtual void OnHQElementChanging(IElementModel newElement) {
+        Arguments.ValidateNotNull(newElement);
         if (HQElement != null) {
             HQElement.IsHQElement = false;
+        }
+        if (!Elements.Contains(newElement)) {
+            // the player will typically select/change the HQ element of a Unit from the elements already present in the unit
+            D.Warn("{0} assigned HQElement {1} that is not already present in Unit.", FullName, newElement.FullName);
+            AddElement(newElement);
         }
     }
 
@@ -158,6 +122,7 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
         Data.HQElementData = HQElement.Data;
         Radius = HQElement.Radius;
         D.Log("{0} HQElement is now {1}.", FullName, HQElement.Data.Name);
+        _formationGenerator.RegenerateFormation();
     }
 
     private void OnFormationChanged() {
@@ -193,8 +158,6 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
     protected internal virtual void CleanupAfterFormationGeneration() { }
 
     protected abstract void KillCommand();
-
-    protected abstract IElementModel SelectHQElement();
 
     protected override void Cleanup() {
         base.Cleanup();

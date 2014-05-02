@@ -43,6 +43,7 @@ public class FormationGenerator {
     /// <param name="minimumSeparation">The minimum separation between elements. TODO implement so ship formationStations do not overlap.</param>
     /// <exception cref="System.NotImplementedException"></exception>
     public void RegenerateFormation(float minimumSeparation = Constants.ZeroF) {
+        D.Assert(_unitCmd.HQElement != null, "{0} does not have a HQ Element needed to generate a formation.".Inject(_unitCmd.FullName), true);
         D.Log("{0} is about to regenerate its formation to {1}.", _unitCmd.FullName, _unitCmd.Data.UnitFormation.GetName());
         switch (_unitCmd.Data.UnitFormation) {
             case Formation.Circle:
@@ -141,7 +142,7 @@ public class FormationGenerator {
         _unitCmd.PositionElementInFormation(hqElement, Vector3.zero);
 
         var elementsToPositionInCircle = _unitCmd.Elements.Except(hqElement);
-        //D.Log("{0}.elementsCount = {1}.", GetType().Name, _elements.Count);
+        D.Log("{0}.elementsCount = {1}.", GetType().Name, elementsToPositionInCircle.Count());
         Stack<Vector3> formationStationOffsets = new Stack<Vector3>(Mathfx.UniformPointsOnCircle(globeRadius, elementsToPositionInCircle.Count()));
         foreach (var element in elementsToPositionInCircle) {
             Vector3 stationOffset = formationStationOffsets.Pop();

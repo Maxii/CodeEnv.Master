@@ -69,7 +69,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnHQElementChanged() {
-            View.TrackingTarget = GetTrackingTarget();
+            View.TrackingTarget = Model.HQElement.Transform;
         }
 
         public virtual void OnIsSelectedChanged() {
@@ -77,10 +77,6 @@ namespace CodeEnv.Master.GameContent {
                 SelectionManager.Instance.CurrentSelection = View as ISelectable;
             }
             Model.Elements.ForAll(e => e.Transform.GetSafeInterface<IElementViewable>().AssessHighlighting());
-        }
-
-        public Transform GetTrackingTarget() {
-            return Model.HQElement.Transform;
         }
 
         private void AssessCmdIcon() {

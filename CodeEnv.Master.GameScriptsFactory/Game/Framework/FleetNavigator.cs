@@ -44,7 +44,7 @@ public class FleetNavigator : ANavigator {
     private float CloseEnoughDistanceToTarget {
         get { return _closeEnoughDistanceToTarget; }
         set {
-            _closeEnoughDistanceToTarget = Target.Radius + value;
+            _closeEnoughDistanceToTarget = Target != null ? Target.Radius + value : value;  // Target will be null during init
             _closeEnoughDistanceToTargetSqrd = _closeEnoughDistanceToTarget * _closeEnoughDistanceToTarget;
         }
     }

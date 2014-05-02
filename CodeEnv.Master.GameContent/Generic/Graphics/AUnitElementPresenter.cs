@@ -37,14 +37,22 @@ namespace CodeEnv.Master.GameContent {
 
         public AUnitElementPresenter(IElementViewable view)
             : base(view) {
-            GameObject viewParent = _viewGameObject.transform.parent.gameObject;
-            _commandView = viewParent.GetSafeInterfaceInChildren<ICommandViewable>();
             // derived classes should call Subscribe() after they have acquired needed references
+        }
+
+        protected override void Subscribe() {
+            base.Subscribe();
+            _subscribers.Add(Model.SubscribeToPropertyChanged<IElementModel, ICommandModel>(e => e.Command, OnCommandChanged));
         }
 
         public bool IsCommandSelected {
             get { return (_commandView as ISelectable).IsSelected; }
             set { (_commandView as ISelectable).IsSelected = value; }
+        }
+
+        private void OnCommandChanged() {
+            //D.Log("{0}.{1}.OnCommandChanged() called.", Model.FullName, GetType().Name);
+            _commandView = (Model.Command as Component).gameObject.GetSafeInterface<ICommandViewable>();
         }
 
         protected override void CleanupFocusOnDeath() {

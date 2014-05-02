@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
@@ -51,10 +52,10 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     protected CommandType _command;
 
     private HashSet<ElementCategoryType> _elementCategoriesUsed;
-    private IList<ElementType> _elements;
+    protected IList<ElementType> _elements;
     private IList<IDisposable> _subscribers;
     private IGameManager _gameMgr;
-    private IPlayer _owner;
+    protected IPlayer _owner;
 
     protected override void Awake() {
         base.Awake();
@@ -84,29 +85,25 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     private void Initiate() {
         CreateComposition();
-        DeployUnit();
-        EnableUnit();
-        // FIXME need to allow time for Starts to run to choose HQ after EnableUnit() is called
+        PrepareUnitForOperations();
         OnCompleted();
-        __InitializeCommandIntel();
+        BeginUnitOperations();
     }
 
     private void OnGameStateChanged() {
         if (_gameMgr.CurrentState == GetCreationGameState()) {
             D.Assert(_gameMgr.CurrentState != GameState.RunningCountdown_2);    // interferes with positioning
             CreateComposition();
-            DeployUnit();
-            EnableUnit();  // must make View operational before starting state changes within it
+            PrepareUnitForOperations();
         }
         if (_gameMgr.CurrentState == GameState.RunningCountdown_2) {
-            // allows time for Starts to run to choose HQ after EnableUnit() is called
             OnCompleted();
         }
         if (_gameMgr.CurrentState == GameState.RunningCountdown_1) {
-            __InitializeCommandIntel();
+            // do nothing
         }
         if (_gameMgr.CurrentState == GameState.Running) {
-            RemoveCreatorScript();
+            BeginUnitOperations();
         }
     }
 
@@ -123,6 +120,28 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         else {
             CreateRandomStats();
         }
+    }
+
+    private void PrepareUnitForOperations() {
+        _elements = MakeElements();
+        EnableElements();   // new
+        _command = MakeCommand(_owner);
+        EnableCommand();    // new
+        new Job(__WaitFrames(1), toStart: true, onJobComplete: delegate {
+            // delay 1 frame to make sure elements and command have initialized, then continue
+            AddElements();
+            AssignHQElement();
+        });
+    }
+
+    private void BeginUnitOperations() {
+        BeginElementsOperations();
+        BeginCommandOperations();
+        new Job(__WaitFrames(1), toStart: true, onJobComplete: delegate {
+            __InitializeCommandIntel();
+            IssueFirstUnitCommand();
+            RemoveCreatorScript();
+        });
     }
 
     private void CreateStatsFromChildren() {
@@ -157,21 +176,15 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     protected abstract void CreateElementStat(ElementCategoryType category, string elementName);
 
-    private void DeployUnit() {
-        InitializeElements();
-        _command = GetCommand(_owner);
-        AddElements();
-    }
-
-    private void InitializeElements() {
-        _elements = new List<ElementType>();
-        ElementType element = null;
+    private IList<ElementType> MakeElements() {
+        var elements = new List<ElementType>();
         foreach (var stat in _elementStats) {
+            ElementType element = null;
             if (isCompositionPreset) {
                 // find a preExisting element of the right category first to provide to Make
                 var categoryElements = gameObject.GetSafeMonoBehaviourComponentsInChildren<ElementType>()
                     .Where(e => DeriveCategory(e).Equals(GetCategory(stat)));
-                var categoryElementsStillAvailable = categoryElements.Except(_elements);
+                var categoryElementsStillAvailable = categoryElements.Except(elements);
                 element = categoryElementsStillAvailable.First();
                 var existingElementReference = element;
                 bool isElementCompatibleWithOwner = MakeElement(stat, _owner, ref element);
@@ -189,8 +202,9 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             // into a formation. Accordingly, make the rigidbody kinematic here, then change the ships back when the formation is made.
             element.transform.rigidbody.isKinematic = true;
             element.transform.position = _transform.position;
-            _elements.Add(element);
+            elements.Add(element);
         }
+        return elements;
     }
 
     protected abstract ElementCategoryType GetCategory(ElementStatType stat);
@@ -199,27 +213,40 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     protected abstract ElementType MakeElement(ElementStatType stat, IPlayer owner);
 
-    protected abstract CommandType GetCommand(IPlayer owner);
+    protected abstract CommandType MakeCommand(IPlayer owner);
+
+    private void EnableElements() {
+        _elements.ForAll(e => {
+            e.enabled = true;
+            (e as Component).gameObject.GetSafeInterface<IViewable>().enabled = true;
+        });
+    }
+
+    private void EnableCommand() {
+        _command.enabled = true;
+        (_command as Component).gameObject.GetSafeInterface<IViewable>().enabled = true;
+    }
 
     private void AddElements() {
         _elements.ForAll(e => _command.AddElement(e));
         // command IS NOT assigned as a target of each element's CameraLOSChangedRelay as that would make the CommandIcon disappear when the elements disappear
     }
 
+    protected abstract void AssignHQElement();
+
     // Element positioning and formationPosition assignments have been moved to AUnitCommandModel to support runtime adds and removals
 
     /// <summary>
-    /// Enables the Unit's elements and command which allows Start() and Initialize() to run. 
-    /// Commands pick their HQ Element when they initialize. 
+    /// Starts the state machine of each element in this Unit.
     /// </summary>
-    private void EnableUnit() {
-        _command.enabled = true;
-        // Commands now enable their elements during initialization
+    protected abstract void BeginElementsOperations();
 
-        // Enable the Views of the models 
-        _command.Elements.ForAll(e => (e as Component).gameObject.GetSafeInterface<IElementViewable>().enabled = true);
-        _command.gameObject.GetSafeInterface<ICommandViewable>().enabled = true;
-    }
+    /// <summary>
+    /// Starts the state machine of this Unit's Command.
+    /// </summary>
+    protected abstract void BeginCommandOperations();
+
+    protected abstract void IssueFirstUnitCommand();
 
     protected virtual void OnCompleted() {
         IsCompleted = true;
@@ -277,6 +304,13 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     private void RemoveCreatorScript() {
         Destroy(this);
+    }
+
+    private IEnumerator __WaitFrames(int framesToWait) {
+        int targetFrameCount = Time.frameCount + framesToWait;
+        while (Time.frameCount < targetFrameCount) {
+            yield return null;
+        }
     }
 
     protected override void OnDestroy() {

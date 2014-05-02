@@ -52,21 +52,14 @@ public abstract class AItemModel : AMonoBase, IModel, IDestinationTarget, IDispo
     protected override void Start() {
         base.Start();
         Initialize();
-        //EnableView();
+        // Views are now enabled by Item Creators after they enable the view's model
     }
 
     /// <summary>
-    /// Called from Start(), just before EnableView(). Do any 
-    /// initialization required before the corresponding view is enabled.
+    /// Called from Start() within 1 frame of when this Model is enabled. A model's
+    /// Data must be set before being enabled.
     /// </summary>
     protected abstract void Initialize();
-
-    /// <summary>
-    /// Enables the corresponding View for this model. Called after Initialize().
-    /// </summary>
-    private void EnableView() {
-        gameObject.GetSafeInterface<IViewable>().enabled = true;
-    }
 
     protected virtual void Subscribe() {
         _subscribers = new List<IDisposable>();

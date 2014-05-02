@@ -73,24 +73,6 @@ namespace CodeEnv.Master.Common {
             return collection.ToArray<T>()[Random.Range(0, collection.Count())];
         }
 
-        ///// <summary>
-        /////This method returns a random element chosen from an array of elements.
-        ///// </summary>
-        ///// <param name="array">The array.</param>
-        ///// <returns></returns>
-        //public static T Choice(T[] array) {
-        //    return array[Random.Range(0, array.Length)];
-        //}
-
-        ///// <summary>
-        ///// This method returns a random element chosen from a list of elements.
-        ///// </summary>
-        ///// <param name="list">The list.</param>
-        ///// <returns></returns>
-        //public static T Choice(IList<T> list) {
-        //    return list[Random.Range(0, list.Count)];
-        //}
-
         /// <summary>
         /// This method returns a random element chosen from an array of elements based on the respective weights of the elements.
         /// </summary>

@@ -25,6 +25,8 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsHQElement { get; set; }
 
+        ICommandModel Command { get; set; }
+
     }
 }
 

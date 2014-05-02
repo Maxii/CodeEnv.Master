@@ -39,10 +39,6 @@ public class SettlementCmdView : AUnitCommandView, ICameraFollowable {
         Presenter = new SettlementCmdPresenter(this);
     }
 
-    protected override void InitializeTrackingTarget() {
-        TrackingTarget = Presenter.GetTrackingTarget();
-    }
-
     protected override void OnPlayerIntelCoverageChanged() {
         base.OnPlayerIntelCoverageChanged();
         Presenter.OnPlayerIntelCoverageChanged();
