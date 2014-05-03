@@ -60,7 +60,9 @@
     <Compile Include="ThirdParty\ATask.cs" />
     <Compile Include="ThirdParty\ActionTask.cs" />
     <Compile Include="Generic\IO\AInputConfigurationBase.cs" />
+    <Compile Include="ThirdParty\ICoroutineManager.cs" />
     <Compile Include="ThirdParty\ITaskManager.cs" />
+    <Compile Include="ThirdParty\Job.cs" />
     <Compile Include="ThirdParty\TaskState.cs" />
     <Compile Include="ThirdParty\Recycler.cs" />
     <Compile Include="ThirdParty\Easing.cs" />

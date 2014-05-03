@@ -34,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.Name);
                 case GuiHudLineKeys.ParentName:
-                    return new ColoredTextList_String(data.OptionalParentName);
+                    return new ColoredTextList_String(data.ParentName);
                 case GuiHudLineKeys.Distance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:

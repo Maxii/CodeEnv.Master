@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -106,6 +106,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="toAdd">if set to <c>true</c> add the ship, otherwise remove it.</param>
         protected override void ChangeComposition(AElementData elementData, bool toAdd) {
             bool isChanged = toAdd ? Composition.Add(elementData as ShipData) : Composition.Remove(elementData as ShipData);
+            D.Log("{0}.ChangeComposition({1}.Data, toAdd:{2}) called. IsChanged = {3}.", Name, elementData.FullName, toAdd, isChanged);
             if (isChanged) {
                 AssessCommandCategory();
                 OnCompositionChanged();
@@ -155,6 +156,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void AssessCommandCategory() {
+            D.Log("{0}.Composition.ElementCount = {1}.", FullName, Composition.ElementCount);
             if (Composition.ElementCount >= 22) {
                 Category = FleetCategory.Armada;
                 return;

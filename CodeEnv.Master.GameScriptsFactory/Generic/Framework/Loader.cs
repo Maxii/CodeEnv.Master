@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -129,12 +129,12 @@ public class Loader : AMonoBaseSingleton<Loader>, IDisposable {
         if (!e.IsReady) {
             D.Assert(!unreadyElements.Contains(source), "UnreadyElements for {0} already has {1} registered!".Inject(maxGameStateAllowedUntilReady.GetName(), source.name));
             unreadyElements.Add(source);
-            D.Log("{0} has registered with Loader as unready to progress beyond {1}.", source.name, maxGameStateAllowedUntilReady.GetName());
+            //D.Log("{0} has registered with Loader as unready to progress beyond {1}.", source.name, maxGameStateAllowedUntilReady.GetName());
         }
         else {
             D.Assert(unreadyElements.Contains(source), "UnreadyElements for {0} has no record of {1}!".Inject(maxGameStateAllowedUntilReady.GetName(), source.name));
             unreadyElements.Remove(source);
-            D.Log("{0} is now ready to progress beyond {1}.", source.name, maxGameStateAllowedUntilReady.GetName());
+            //D.Log("{0} is now ready to progress beyond {1}.", source.name, maxGameStateAllowedUntilReady.GetName());
         }
     }
 
@@ -153,7 +153,7 @@ public class Loader : AMonoBaseSingleton<Loader>, IDisposable {
         D.Assert(_gameStateProgressionReadinessLookup.ContainsKey(gameState), "{0} key not found.".Inject(gameState), pauseOnFail: true);
         // this will tell me what state failed, whereas failing while accessing the dictionary won't
         IList<MonoBehaviour> unreadyElements = _gameStateProgressionReadinessLookup[gameState];
-        D.Log("AssessReadinessToProgressGameState() called. GameState = {0}, UnreadyElements count = {1}.", gameState.GetName(), unreadyElements.Count);
+        //D.Log("AssessReadinessToProgressGameState() called. GameState = {0}, UnreadyElements count = {1}.", gameState.GetName(), unreadyElements.Count);
         if (unreadyElements != null && unreadyElements.Count == 0) {
             _gameMgr.ProgressState();
             if (_gameMgr.CurrentState == GameState.Running) {

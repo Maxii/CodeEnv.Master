@@ -513,7 +513,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     private void OnCurrentFocusChanged() {
         if (CurrentFocus != null) {
             Transform newFocus = (CurrentFocus as Component).transform;
-            D.Log("New Focus {0}.".Inject(newFocus.name));
+            D.Log("New Focus is now {0}.".Inject(newFocus.gameObject.GetSafeMonoBehaviourComponent<AItemModel>().FullName));
             SetFocus(newFocus);
         }
         else if (CurrentState != CameraState.Freeform) {
@@ -937,7 +937,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         LogEvent();
         // some values are continuously recalculated in update as the target moves so they don't need to be here too
 
-        D.Log("Follow Target is {0}.", _target.name);
+        D.Log("Follow Target is now {0}.", _target.gameObject.GetSafeMonoBehaviourComponent<AItemModel>().FullName);
         ICameraFollowable icfTarget = _target.GetInterface<ICameraFollowable>();
         _cameraRotationDampener = icfTarget.CameraFollowRotationDampener;
         _cameraPositionDampener = icfTarget.CameraFollowDistanceDampener;

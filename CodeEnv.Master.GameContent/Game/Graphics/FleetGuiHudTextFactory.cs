@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
         protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, FleetCmdData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
-                    return new ColoredTextList_String(data.Name);
+                    return new ColoredTextList_String(data.ParentName); // the name of the Fleet is the parentName of the Command
                 case GuiHudLineKeys.Distance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:

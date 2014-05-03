@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -139,10 +139,10 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Initializes a new instance of the <see cref="ACommandData" /> class.
         /// </summary>
-        /// <param name="cmdParentName">Name of the parent of this Command, eg. the FleetName for a FleetCommand.</param>
+        /// <param name="unitName">Name of this Unit, eg. the FleetName for a FleetCommand.</param>
         /// <param name="cmdMaxHitPoints">The maximum hit points of this Command staff.</param>
-        public ACommandData(string cmdParentName, float cmdMaxHitPoints)
-            : base(cmdParentName + Constants.Space + CommonTerms.Command, cmdMaxHitPoints, mass: 0.1F, optionalParentName: cmdParentName) {
+        public ACommandData(string unitName, float cmdMaxHitPoints)
+            : base(CommonTerms.Command, cmdMaxHitPoints, mass: 0.1F, optionalParentName: unitName) {
             // A command's UnitMaxHitPoints are constructed from the sum of the elements
             InitializeCollections();
         }
@@ -201,6 +201,14 @@ namespace CodeEnv.Master.GameContent {
             RefreshCurrentCmdEffectiveness();
         }
 
+        protected override void OnParentNameChanged() {
+            base.OnParentNameChanged();
+            // the parent name of a command is the unit name
+            if (!ElementsData.IsNullOrEmpty()) {
+                ElementsData.ForAll(eData => eData.ParentName = ParentName);
+            }
+        }
+
         private void RefreshCurrentCmdEffectiveness() {
             CurrentCmdEffectiveness = Mathf.RoundToInt(MaxCmdEffectiveness * Health);
             // concept: staff and equipment are hurt as health of the Cmd declines
@@ -218,7 +226,7 @@ namespace CodeEnv.Master.GameContent {
                 UpdatePropertiesDerivedFromCombinedElements();
                 return;
             }
-            D.Warn("Attempting to add {0} {1} that is already present.", typeof(AElementData), elementData.OptionalParentName);
+            D.Warn("Attempting to add {0} {1} that is already present.", typeof(AElementData), elementData.ParentName);
         }
 
         private void VerifyOwner(AElementData elementData) {
@@ -235,7 +243,8 @@ namespace CodeEnv.Master.GameContent {
 
         private void UpdateElementParentName(AElementData elementData) {
             // TODO something more than just assigning a parent name?
-            elementData.OptionalParentName = OptionalParentName;    // the name of the fleet, not the command
+            D.Log("{0} OptionalParentName changing to {1}.", elementData.Name, ParentName);
+            elementData.ParentName = ParentName;    // the name of the fleet, not the command
         }
 
         protected abstract void ChangeComposition(AElementData elementData, bool toAdd);
@@ -249,7 +258,7 @@ namespace CodeEnv.Master.GameContent {
                 UpdatePropertiesDerivedFromCombinedElements();
                 return isRemoved;
             }
-            D.Warn("Attempting to remove {0} {1} that is not present.", typeof(AElementData), elementData.OptionalParentName);
+            D.Warn("Attempting to remove {0} {1} that is not present.", typeof(AElementData), elementData.ParentName);
             return false;
         }
 

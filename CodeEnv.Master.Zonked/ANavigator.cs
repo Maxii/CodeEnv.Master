@@ -18,7 +18,9 @@ namespace CodeEnv.Master.GameContent {
 
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
+    using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
 
     /// <summary>
@@ -26,46 +28,71 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class ANavigator : APropertyChangeTracking, IDisposable {
 
-        private Vector3 _destination;
         /// <summary>
-        /// Readonly. The destination of the item this navigator belongs too. If a fleet, it is the
-        /// fleet's final destination, not a waypoint. If a ship, it is the ship's current destination,
-        /// many times being a waypoint of the fleet it is part of, 
-        /// adjusted for the ship's relative local position in the fleet's formation.
+        /// Optional events for notification of the course plot being completed. 
         /// </summary>
-        public Vector3 Destination {
-            get { return _destination; }
-            protected set { SetProperty<Vector3>(ref _destination, value, "Destination"); }
+        public event Action onCoursePlotFailure;
+        public event Action onCoursePlotSuccess;
+
+        /// <summary>
+        /// Optional event for notification of destination reached.
+        /// </summary>
+        public event Action onDestinationReached;
+
+        /// <summary>
+        /// Optional event for notification of when the pilot 
+        /// detects an error while trying to get to the target. 
+        /// </summary>
+        public event Action onCourseTrackingError;
+
+        /// <summary>
+        /// The IDestinationTarget this navigator is trying to reach. Can simply be a 
+        /// StationaryLocation or even null if the ship or fleet has not attempted to move.
+        /// </summary>
+        public IDestinationTarget Target { get; protected set; }
+
+        private Speed _speed;
+        /// <summary>
+        /// The speed to travel at.
+        /// </summary>
+        public Speed Speed {
+            get { return _speed; }
+            set { SetProperty<Speed>(ref _speed, value, "Speed"); }
         }
+
+        /// <summary>
+        /// The world space location of the target.
+        /// </summary>
+        protected virtual Vector3 Destination { get { return Target.Position; } }
 
         public bool IsEngaged {
             get { return _pilotJob != null && _pilotJob.IsRunning; }
         }
 
+        protected AMortalItemData Data { get; private set; }
+
+        protected static LayerMask _keepoutOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.CelestialObjectKeepout);
+
         /// <summary>
-        /// The duration in seconds between course updates. The default is
-        /// every second at normal gamespeed.
+        /// The duration in seconds between course progress assessments. The default is
+        /// every second at a speed of 1 unit per day and normal gamespeed.
         /// </summary>
-        protected float _courseUpdatePeriod = 1F;
-        protected float _closeEnoughDistanceSqrd = 25F;
-        //private float _courseTrackingErrorDistanceToleranceSqrd = 25F;
+        protected float _courseProgressCheckPeriod = 1F;
 
         protected IList<IDisposable> _subscribers;
-
         private GameTime _gameTime;
         protected float _gameSpeedMultiplier;
-
         protected Job _pilotJob;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ShipNavigator"/> class.
+        /// Initializes a new instance of the <see cref="ANavigator" /> class.
         /// </summary>
-        /// <param name="t">Ship Transform</param>
-        /// <param name="data">Ship data.</param>
-        public ANavigator() {
+        /// <param name="data">Item data.</param>
+        public ANavigator(AMortalItemData data) {
+            Data = data;
             _gameTime = GameTime.Instance;
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
-            _courseProgressAssessmentPeriod /= _gameSpeedMultiplier;
+            AssessFrequencyOfCourseProgressChecks();
             // Subscribe called by derived classes so all constructor references can be initialized before they are used by Subscribe
         }
 
@@ -74,26 +101,49 @@ namespace CodeEnv.Master.GameContent {
             _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
         }
 
+        protected void OnCoursePlotFailure() {
+            var temp = onCoursePlotFailure;
+            if (temp != null) {
+                temp();
+            }
+        }
+
+        protected void OnCoursePlotSuccess() {
+            var temp = onCoursePlotSuccess;
+            if (temp != null) {
+                temp();
+            }
+        }
+
         protected virtual void OnDestinationReached() {
             _pilotJob.Kill();
+            D.Log("{0} at {1} reached Destination {2} at {3} (w/station offset). Actual proximity {4:0.0000} units.", Data.FullName, Data.Position, Target.FullName, Destination, Vector3.Distance(Destination, Data.Position));
+            var temp = onDestinationReached;
+            if (temp != null) {
+                temp();
+            }
         }
 
         protected virtual void OnCourseTrackingError() {
             _pilotJob.Kill();
+            var temp = onCourseTrackingError;
+            if (temp != null) {
+                temp();
+            }
         }
 
-        private void OnGameSpeedChanged() {
-            float previousGameSpeedMultiplier = _gameSpeedMultiplier;   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
+        protected void OnWeaponsRangeChanged() {
+            InitializeTargetValues();
+        }
+
+        protected virtual void OnFullSpeedChanged() {
+            AssessFrequencyOfCourseProgressChecks();
+        }
+
+        protected virtual void OnGameSpeedChanged() {
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();
-            float gameSpeedChangeRatio = _gameSpeedMultiplier / previousGameSpeedMultiplier;
-            AdjustForGameSpeed(gameSpeedChangeRatio);
+            AssessFrequencyOfCourseProgressChecks();
         }
-
-        /// <summary>
-        /// Plots a course and notifies the requester of the outcome via the onCoursePlotCompleted event if set.
-        /// </summary>
-        /// <param name="destination">The destination.</param>
-        public abstract void PlotCourse(Vector3 destination);
 
         /// <summary>
         /// Engages pilot execution to Destination either by direct
@@ -108,32 +158,16 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Primary external control to disengage the pilot once Engage has been called.
         /// </summary>
-        public void Disengage() {
+        public virtual void Disengage() {
             if (IsEngaged) {
+                D.Log("{0} Navigator disengaging.", Data.FullName);
                 _pilotJob.Kill();
             }
         }
 
-        //[Obsolete] // replaced by GameUtility.CheckForIncreasingSeparation
-        //protected bool CheckForCourseTrackingError(float distanceToCurrentDestinationSqrd, ref float previousDistanceSqrd) {
-        //    if (distanceToCurrentDestinationSqrd > previousDistanceSqrd + _courseTrackingErrorDistanceToleranceSqrd) {
-        //        return true;
-        //    }
-        //    if (distanceToCurrentDestinationSqrd < previousDistanceSqrd) {
-        //        // while we continue to move closer to the current destination, keep previous distance current
-        //        // once we start to move away, we must not update it if we want the tolerance check to catch it
-        //        previousDistanceSqrd = distanceToCurrentDestinationSqrd;
-        //    }
-        //    return false;
-        //}
+        protected abstract void InitializeTargetValues();
 
-        /// <summary>
-        /// Adjusts various factors to reflect the new GameClockSpeed setting. 
-        /// </summary>
-        /// <param name="gameSpeed">The game speed.</param>
-        protected virtual void AdjustForGameSpeed(float gameSpeedChangeRatio) {
-            _courseProgressAssessmentPeriod /= gameSpeedChangeRatio;
-        }
+        protected abstract void AssessFrequencyOfCourseProgressChecks();
 
         protected virtual void Cleanup() {
             Unsubscribe();
@@ -151,7 +185,8 @@ namespace CodeEnv.Master.GameContent {
 
         #region IDisposable
         [DoNotSerialize]
-        private bool alreadyDisposed = false;
+        private bool _alreadyDisposed = false;
+        protected bool _isDisposing = false;
 
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
@@ -168,17 +203,18 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
         protected virtual void Dispose(bool isDisposing) {
             // Allows Dispose(isDisposing) to be called more than once
-            if (alreadyDisposed) {
+            if (_alreadyDisposed) {
                 return;
             }
 
+            _isDisposing = isDisposing;
             if (isDisposing) {
                 // free managed resources here including unhooking events
                 Cleanup();
             }
             // free unmanaged resources here
 
-            alreadyDisposed = true;
+            _alreadyDisposed = true;
         }
 
         // Example method showing check for whether the object has been disposed

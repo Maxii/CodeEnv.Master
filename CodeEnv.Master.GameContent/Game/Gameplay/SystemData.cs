@@ -131,7 +131,7 @@ namespace CodeEnv.Master.GameContent {
                 OnCompositionChanged();
                 return true;
             }
-            D.Warn("Attempting to remove {0} {1} that is not present.", typeof(PlanetoidData), data.OptionalParentName);
+            D.Warn("Attempting to remove {0} {1} that is not present.", typeof(PlanetoidData), data.ParentName);
             return false;
         }
 

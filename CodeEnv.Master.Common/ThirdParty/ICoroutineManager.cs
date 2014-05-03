@@ -14,7 +14,7 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-namespace CodeEnv.Master.GameContent {
+namespace CodeEnv.Master.Common {
 
     using System.Collections;
     using UnityEngine;

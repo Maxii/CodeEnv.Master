@@ -38,9 +38,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The name of the Element.</param>
         /// <param name="maxHitPoints">The maximum hit points.</param>
         /// <param name="mass">The mass of the Element.</param>
-        /// <param name="optionalParentName">Name of the optional parent.</param>
-        public AElementData(string name, float maxHitPoints, float mass, string optionalParentName = "")
-            : base(name, maxHitPoints, mass, optionalParentName) {
+        public AElementData(string name, float maxHitPoints, float mass)
+            : base(name, maxHitPoints, mass) {
             _weaponRangeTrackerLookup = new Dictionary<Guid, IList<Weapon>>();
         }
 

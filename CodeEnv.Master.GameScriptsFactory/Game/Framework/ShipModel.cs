@@ -473,31 +473,33 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     #region ExecuteJoinFleetOrder
 
-    IEnumerator ExecuteJoinFleetOrder_EnterState() {
-        D.Log("{0}.ExecuteJoinFleetOrder_EnterState() called.", FullName);
+    void ExecuteJoinFleetOrder_EnterState() {
+        LogEvent();
         var fleetToJoin = CurrentOrder.Target as ICommandTarget;
-        IFleetCmdModel transferFleet = null;
-        string transferFleetName = "TransferTo" + fleetToJoin.ParentName;
+        FleetCmdModel transferFleet = null;
+        string transferFleetName = "TransferTo_" + fleetToJoin.ParentName;
         if (Command.Elements.Count > 1) {
             // detach from fleet and create tempFleetCmd
             Command.RemoveElement(this);
-
-            transferFleet = UnitFactory.Instance.MakeFleetInstance(transferFleetName, Owner, this);
-            yield return null;  // wait to allow transferFleet Model and View to initialize
+            UnitFactory.Instance.MakeFleetInstance(transferFleetName, Owner, this, OnMakeFleetCompleted);
         }
         else {
             // this ship's current fleet only has this ship so simply issue the order to this fleet
             D.Assert(Command.Elements.Single().Equals(this));
-            transferFleet = Command;
-            transferFleet.Data.OptionalParentName = transferFleetName;
+            transferFleet = Command as FleetCmdModel;
+            transferFleet.Data.ParentName = transferFleetName;
+            OnMakeFleetCompleted(transferFleet);
         }
-        // this ship's Command and the transferFleet are now the same
+    }
 
+    void ExecuteJoinFleetOrder_OnMakeFleetCompleted(FleetCmdModel transferFleet) {
+        LogEvent();
         var transferFleetView = transferFleet.Transform.GetSafeMonoBehaviourComponent<FleetCmdView>();
         transferFleetView.PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
         // TODO PlayerIntelCoverage should be set through sensor detection
 
         // issue a JoinFleet order to our transferFleet
+        var fleetToJoin = CurrentOrder.Target as ICommandTarget;
         FleetOrder joinFleetOrder = new FleetOrder(FleetOrders.JoinFleet, fleetToJoin);
         transferFleet.CurrentOrder = joinFleetOrder;
         // once joinFleetOrder takes, this ship state will be changed by its 'new'  transferFleet Command
@@ -729,9 +731,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     # region Callbacks
 
-    void OnTargetDeath(IMortalModel deadTarget) {
-        RelayToCurrentState(deadTarget);
-    }
+    void OnTargetDeath(IMortalModel deadTarget) { RelayToCurrentState(deadTarget); }
 
     void OnCoursePlotSuccess() { RelayToCurrentState(); }
 
@@ -743,6 +743,8 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     void OnDestinationReached() { RelayToCurrentState(); }
 
     void OnCourseTrackingError() { RelayToCurrentState(); }
+
+    void OnMakeFleetCompleted(FleetCmdModel fleet) { RelayToCurrentState(fleet); }
 
     #endregion
 

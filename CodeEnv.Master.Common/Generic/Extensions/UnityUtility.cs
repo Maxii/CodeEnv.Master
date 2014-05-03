@@ -248,6 +248,22 @@ namespace CodeEnv.Master.Common {
             return new Vector3(x / length, y / length, z / length);
         }
 
+        /// <summary>
+        /// Waits the designated number of frames. Usage:
+        /// new Job(UnityUtility.WaitFrames(1), toStart: true, onJobCompletion: delegate {
+        ///     Code to execute after the wait;
+        ///     });
+        /// WARNING: this code will execute immediately after the Job starts
+        /// </summary>
+        /// <param name="framesToWait">The frames to wait.</param>
+        /// <returns></returns>
+        public static IEnumerator WaitFrames(int framesToWait) {
+            int targetFrameCount = Time.frameCount + framesToWait;
+            while (Time.frameCount < targetFrameCount) {
+                yield return null;
+            }
+        }
+
         #region Common Animation Coroutines
 
         /// <summary>

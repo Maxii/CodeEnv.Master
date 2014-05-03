@@ -39,7 +39,7 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
     private ICommandModel _command;
     public ICommandModel Command {
         get { return _command; }
-        set { SetProperty<ICommandModel>(ref _command, value, "Command"); }
+        set { SetProperty<ICommandModel>(ref _command, value, "Command", OnCommandChanged); }
     }
 
     protected Rigidbody _rigidbody;
@@ -79,6 +79,10 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
         if (enabled) {  // acts just like an isInitialized test as enabled results in Start() which calls Initialize 
             _weaponRangeTrackerLookup.Values.ForAll(rt => rt.Owner = Data.Owner);
         }
+    }
+
+    private void OnCommandChanged() {
+        //Data.OptionalParentName = Command.Data.OptionalParentName;
     }
 
     protected override void OnNamingChanged() {

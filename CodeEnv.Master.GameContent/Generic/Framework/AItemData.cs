@@ -24,26 +24,27 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AItemData : APropertyChangeTracking {
 
-        private string _name; // = string.Empty;
+        private string _name; // default of string is null
         /// <summary>
         /// Gets or sets the name of the item. 
         /// </summary>
         public string Name {
             get { return _name; }
-            set { SetProperty<string>(ref _name, value, "Name", OnNameChanged); }
+            set { SetProperty<string>(ref _name, value, "Name", OnNameChanged, OnNameChanging); }
         }
 
-        private string _optionalParentName; // = string.Empty;
+        private string _parentName; // default of string is null
         /// <summary>
         /// Gets or sets the name of the Parent of this item. Optional.
         /// </summary>
-        public string OptionalParentName {
-            get { return _optionalParentName; }
-            set { SetProperty<string>(ref _optionalParentName, value, "OptionalParentName"); }
+        public string ParentName {
+            get { return _parentName; }
+            set { SetProperty<string>(ref _parentName, value, "ParentName", OnParentNameChanged, OnParentNameChanging); }
         }
 
+
         public string FullName {
-            get { return OptionalParentName == string.Empty ? Name : OptionalParentName + Constants.Underscore + Name; }
+            get { return ParentName == string.Empty ? Name : ParentName + Constants.Underscore + Name; }
         }
 
         private IPlayer _owner;
@@ -74,7 +75,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="optionalParentName">Name of the optional parent.</param>
         public AItemData(string name, string optionalParentName = "") {
             Name = name;
-            OptionalParentName = optionalParentName;
+            ParentName = optionalParentName;
         }
 
         protected virtual void OnOwnerChanged() {
@@ -82,7 +83,7 @@ namespace CodeEnv.Master.GameContent {
                 D.Log("{0} Owner has changed to {1}.", FullName, Owner.LeaderName);
             }
             else {
-                D.Log("{0} no longer has an owner.", FullName);
+                D.Warn("{0} no longer has an owner.", FullName);
             }
         }
 
@@ -90,10 +91,26 @@ namespace CodeEnv.Master.GameContent {
             Transform.name = Name;
         }
 
+        private void OnNameChanging(string newName) {
+            string existingName = Name.IsNullOrEmpty() ? "'nullOrEmpty'" : Name;
+            D.Log("{0}.Name changing from {1} to {2}.", GetType().Name, existingName, newName);
+        }
+
         protected virtual void OnNameChanged() {
             if (Transform != null) {    // Transform not set when Name initially set
                 Transform.name = Name;
             }
+        }
+
+        private void OnParentNameChanging(string newParentName) {
+            string existingParentName = ParentName.IsNullOrEmpty() ? "'nullOrEmpty'" : ParentName;
+            string incomingParentName = newParentName.IsNullOrEmpty() ? "'nullOrEmpty'" : newParentName;
+            D.Log("{0}.ParentName changing from {1} to {2}.", Name, existingParentName, incomingParentName);
+        }
+
+        protected virtual void OnParentNameChanged() {
+            //string newParentName = ParentName.IsNullOrEmpty() ? "'nullOrEmpty'" : ParentName;
+            //D.Log("{0}.ParentName changed to {1}.", Name, newParentName);
         }
 
     }

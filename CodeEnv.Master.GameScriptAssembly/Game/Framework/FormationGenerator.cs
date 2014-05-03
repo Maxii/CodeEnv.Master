@@ -44,7 +44,7 @@ public class FormationGenerator {
     /// <exception cref="System.NotImplementedException"></exception>
     public void RegenerateFormation(float minimumSeparation = Constants.ZeroF) {
         D.Assert(_unitCmd.HQElement != null, "{0} does not have a HQ Element needed to generate a formation.".Inject(_unitCmd.FullName), true);
-        D.Log("{0} is about to regenerate its formation to {1}.", _unitCmd.FullName, _unitCmd.Data.UnitFormation.GetName());
+        D.Log("{0} is about to regenerate its formation to {1}.", _unitCmd.Data.ParentName, _unitCmd.Data.UnitFormation.GetName());
         switch (_unitCmd.Data.UnitFormation) {
             case Formation.Circle:
                 PositionElementsEquidistantInCircle();

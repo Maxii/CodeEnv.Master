@@ -180,7 +180,7 @@ public class ShipHumanView : ShipView {
                         for (int i = 0; i < joinFleetSubmenuItemCount; i++) {
                             joinFleetSubmenuItems[i] = new CtxMenu.Item();
 
-                            joinFleetSubmenuItems[i].text = joinableFleets[i].Data.OptionalParentName;
+                            joinFleetSubmenuItems[i].text = joinableFleets[i].Data.ParentName;
                             int subMenuItemId = i + _lowestUnusedItemId; // submenu item IDs can't interfere with IDs already assigned
                             joinFleetSubmenuItems[i].id = subMenuItemId;
                             _joinableFleetLookup.Add(subMenuItemId, joinableFleets[i]);

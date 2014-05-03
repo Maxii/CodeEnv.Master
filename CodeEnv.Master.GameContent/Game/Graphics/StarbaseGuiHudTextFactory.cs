@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
         protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, StarbaseCmdData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
-                    return new ColoredTextList_String(data.Name);
+                    return new ColoredTextList_String(data.ParentName);   // the name of the Starbase is the parentName of the Command
                 case GuiHudLineKeys.Distance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
@@ -55,7 +55,7 @@ namespace CodeEnv.Master.GameContent {
                 //return new ColoredTextList_Composition(data.Composition);
 
                 // The following is a fall through catcher for line keys that aren't processed. An empty ColoredTextList will be returned which will be ignored by GuiCursorHudText
-                case GuiHudLineKeys.ParentName: // fleets do not have parent names
+                case GuiHudLineKeys.ParentName: // bases do not have parent names
                 case GuiHudLineKeys.Speed:
                 case GuiHudLineKeys.Capacity:
                 case GuiHudLineKeys.Resources:

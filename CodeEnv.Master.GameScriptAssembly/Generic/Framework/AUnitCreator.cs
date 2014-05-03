@@ -127,7 +127,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         EnableElements();   // new
         _command = MakeCommand(_owner);
         EnableCommand();    // new
-        new Job(__WaitFrames(1), toStart: true, onJobComplete: delegate {
+        new Job(UnityUtility.WaitFrames(1), toStart: true, onJobComplete: delegate {
             // delay 1 frame to make sure elements and command have initialized, then continue
             AddElements();
             AssignHQElement();
@@ -135,10 +135,11 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     }
 
     private void BeginUnitOperations() {
+        __InitializeCommandIntel();
         BeginElementsOperations();
         BeginCommandOperations();
-        new Job(__WaitFrames(1), toStart: true, onJobComplete: delegate {
-            __InitializeCommandIntel();
+        new Job(UnityUtility.WaitFrames(1), toStart: true, onJobComplete: delegate {
+            // delay 1 frame to allow Element and Command Idling_EnterState to execute
             IssueFirstUnitCommand();
             RemoveCreatorScript();
         });
@@ -304,13 +305,6 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     private void RemoveCreatorScript() {
         Destroy(this);
-    }
-
-    private IEnumerator __WaitFrames(int framesToWait) {
-        int targetFrameCount = Time.frameCount + framesToWait;
-        while (Time.frameCount < targetFrameCount) {
-            yield return null;
-        }
     }
 
     protected override void OnDestroy() {

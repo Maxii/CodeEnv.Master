@@ -77,7 +77,7 @@ public abstract class AItemModel : AMonoBase, IModel, IDestinationTarget, IDispo
     protected virtual void SubscribeToDataValueChanges() {
         D.Assert(_subscribers != null);
         _subscribers.Add(Data.SubscribeToPropertyChanged<AItemData, string>(d => d.Name, OnNamingChanged));
-        _subscribers.Add(Data.SubscribeToPropertyChanged<AItemData, string>(d => d.OptionalParentName, OnNamingChanged));
+        _subscribers.Add(Data.SubscribeToPropertyChanged<AItemData, string>(d => d.ParentName, OnNamingChanged));
     }
 
     /// <summary>

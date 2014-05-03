@@ -132,7 +132,7 @@ public abstract class AMortalItemModel : AItemModel, IMortalModel, IMortalTarget
 
     public float MaxWeaponsRange { get { return Data.MaxWeaponsRange; } }
 
-    public string ParentName { get { return Data.OptionalParentName; } }
+    public string ParentName { get { return Data.ParentName; } }
 
     #endregion
 

@@ -95,6 +95,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     public bool MakeFleetCmdInstance(FleetCmdStats stats, IPlayer owner, ref FleetCmdModel model) {
         if (owner.IsHuman == (model.gameObject.GetComponent<FleetCmdHumanView>() != null)) {
             // the owner and model view are compatible
+            D.Assert(!model.enabled, "{0} should not be enabled.".Inject(model.FullName));
             model.Data = new FleetCmdData(stats.Name, stats.MaxHitPoints) {
                 Strength = stats.Strength,
                 MaxCmdEffectiveness = stats.MaxCmdEffectiveness,
@@ -105,7 +106,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             return true;
         }
         else {
-            D.Warn("Provided Cmd {0} is not compatible with owner {1}, replacing.", model.FullName, owner.LeaderName);
+            D.Warn("Provided Cmd {0} is not compatible with owner {1}. Replacing.", model.FullName, owner.LeaderName);
             Vector3 existingPosition = model.transform.position;
             GameObject existingParent = model.transform.parent.gameObject;
             model = MakeFleetCmdInstance(stats, owner);
@@ -116,15 +117,15 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     /// <summary>
-    /// Makes a standalone fleet instance from a single ship using basic default FleetCmdStats. 
+    /// Makes a standalone fleet instance from a single ship using basic default FleetCmdStats.
     /// The FleetCmdModel returned, along with the provided ship is parented to an empty GameObject "the fleet" which itself is parented to
     /// the Scene's Fleets folder. The fleetCmd model, view and ship (if not already enabled) are all enabled when returned.
     /// </summary>
     /// <param name="fleetName">Name of the fleet.</param>
     /// <param name="owner">The owner.</param>
     /// <param name="element">The element.</param>
-    /// <returns></returns>
-    public FleetCmdModel MakeFleetInstance(string fleetName, IPlayer owner, ShipModel element) {
+    /// <param name="onCompletion">Delegate that returns the Fleet on completion.</param>
+    public void MakeFleetInstance(string fleetName, IPlayer owner, ShipModel element, Action<FleetCmdModel> onCompletion) {
         FleetCmdStats cmdStats = new FleetCmdStats() {
             Name = fleetName,
             MaxHitPoints = 10F,
@@ -132,7 +133,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             Strength = new CombatStrength(),
             UnitFormation = Formation.Globe
         };
-        return MakeFleetInstance(cmdStats, owner, element);
+        MakeFleetInstance(cmdStats, owner, element, onCompletion);
+        // return MakeFleetInstance()   // this non-delegate approach returned the cmd immediately after the Job started
     }
 
     /// <summary>
@@ -142,20 +144,34 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// </summary>
     /// <param name="stats">The stats for this fleetCmd.</param>
     /// <param name="owner">The owner of the unit.</param>
-    /// <param name="element">The ship which becomes the HQ Element.</param>
-    /// <returns></returns>
-    public FleetCmdModel MakeFleetInstance(FleetCmdStats stats, IPlayer owner, ShipModel element) {
+    /// <param name="element">The ship which is designated the HQ Element.</param>
+    /// <param name="onCompletion">Delegate that returns the Fleet on completion.</param>
+    public void MakeFleetInstance(FleetCmdStats stats, IPlayer owner, ShipModel element, Action<FleetCmdModel> onCompletion) {
         D.Assert(owner.IsHuman == (element.gameObject.GetComponent<ShipHumanView>() != null), "Owner {0} is not compatible with {1} view.".Inject(owner.LeaderName, element.FullName));
         FleetCmdModel cmd = MakeFleetCmdInstance(stats, owner);
         GameObject unitGo = new GameObject(stats.Name);
-        UnityUtility.AttachChildToParent(cmd.gameObject, unitGo);
         UnityUtility.AttachChildToParent(unitGo, Fleets.Instance.Folder.gameObject);
+        UnityUtility.AttachChildToParent(cmd.gameObject, unitGo);
 
-        cmd.AddElement(element);  // resets the element's Command property and parents element to Cmd's parent GO
-        cmd.enabled = true;    // picks this element as the HQ Element. Cmd positions itself over element
-        // enabling cmd model also enables the view and the ship
-        // can't set PlayerIntelLevel here as View needs time to initialize Presenter after enabled
-        return cmd;
+        if (!element.enabled) {
+            D.Warn("{0}.{1} is not enabled. Enabling.", element.Data.Name, element.GetType().Name);
+            element.enabled = true;
+        }
+        var elementView = element.gameObject.GetSafeMonoBehaviourComponent<ShipView>();
+        if (!elementView.enabled) {
+            D.Warn("{0}.{1} is not enabled. Enabling.", element.Data.Name, elementView.GetType().Name);
+            elementView.enabled = true;
+        }
+
+        cmd.enabled = true;
+        cmd.gameObject.GetSafeMonoBehaviourComponent<FleetCmdView>().enabled = true;
+        new Job(UnityUtility.WaitFrames(1), toStart: true, onJobComplete: delegate {
+            // wait 1 frame to allow Cmd to initialize
+            cmd.AddElement(element);  // resets the element's Command property and parents element to Cmd's parent GO
+            cmd.HQElement = element;
+            onCompletion(cmd);  // without this delegate, the method returns
+        });
+        // return cmd   // this non-delegate approach returned the cmd immediately after the Job started
     }
 
     /// <summary>

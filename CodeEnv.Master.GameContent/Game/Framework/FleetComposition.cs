@@ -44,6 +44,7 @@ namespace CodeEnv.Master.GameContent {
 
         public bool Add(ShipData elementData) {
             ShipCategory category = elementData.Category;
+            D.Assert(category != default(ShipCategory), "{0}.Category is {1}.".Inject(elementData.FullName, default(ShipCategory).GetName()));
             if (!_composition.ContainsKey(category)) {
                 _composition.Add(category, new List<ShipData>());
             }
@@ -57,6 +58,7 @@ namespace CodeEnv.Master.GameContent {
 
         public bool Remove(ShipData elementData) {
             ShipCategory category = elementData.Category;
+            D.Assert(category != default(ShipCategory), "{0}.Category is {1}.".Inject(elementData.FullName, default(ShipCategory).GetName()));
             bool isRemoved = _composition[category].Remove(elementData);
             if (_composition[category].Count == Constants.Zero) {
                 _composition.Remove(category);

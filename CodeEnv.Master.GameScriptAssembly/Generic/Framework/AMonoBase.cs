@@ -439,9 +439,10 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
 
     [System.Diagnostics.Conditional("UNITY_EDITOR")]
     private static void TryWarn<T>(T backingStore, T value, string propertyName) {
-        if (!typeof(T).IsValueType) {
-            if (DebugSettings.Instance.EnableVerboseDebugLog) {
-                if (value != null) {
+        Type tType = typeof(T);
+        if (!tType.IsValueType) {
+            if (value != null) {
+                if (DebugSettings.Instance.EnableVerboseDebugLog || tType == typeof(string)) {
                     D.Warn("{0} BackingStore {1} and value {2} are equal. Property not changed.", propertyName, backingStore, value);
                 }
                 else {

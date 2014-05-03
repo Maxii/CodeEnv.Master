@@ -32,9 +32,7 @@ namespace CodeEnv.Master.GameContent {
         protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, SettlementCmdData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
-                    return new ColoredTextList_String(data.Name);
-                case GuiHudLineKeys.ParentName:
-                    return data.OptionalParentName != string.Empty ? new ColoredTextList_String(data.OptionalParentName) : _emptyColoredTextList;
+                    return new ColoredTextList_String(data.ParentName); // the name of the Settlement is the parentName of the Command
                 case GuiHudLineKeys.Distance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
@@ -53,6 +51,7 @@ namespace CodeEnv.Master.GameContent {
                     return new ColoredTextList_Settlement(data);
 
                 // The following is a fall through catcher for line keys that aren't processed. An empty ColoredTextList will be returned which will be ignored by GuiCursorHudText
+                case GuiHudLineKeys.ParentName:
                 case GuiHudLineKeys.Capacity:
                 case GuiHudLineKeys.Resources:
                 case GuiHudLineKeys.Specials:

@@ -32,7 +32,7 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
 
     public event Action<IElementModel> onSubordinateElementDeath;
 
-    public string UnitName { get { return Data.OptionalParentName; } }
+    public string UnitName { get { return Data.ParentName; } }
 
     public new ACommandData Data {
         get { return base.Data as ACommandData; }
@@ -121,7 +121,7 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
         HQElement.IsHQElement = true;
         Data.HQElementData = HQElement.Data;
         Radius = HQElement.Radius;
-        D.Log("{0} HQElement is now {1}.", FullName, HQElement.Data.Name);
+        D.Log("{0}'s HQElement is now {1}.", Data.ParentName, HQElement.Data.Name);
         _formationGenerator.RegenerateFormation();
     }
 
