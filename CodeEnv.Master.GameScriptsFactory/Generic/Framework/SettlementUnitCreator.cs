@@ -29,8 +29,6 @@ using UnityEngine;
 /// </summary>
 public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategory, FacilityData, FacilityStats, SettlementCmdModel> {
 
-    public event Action<SettlementUnitCreator> onCompleted;
-
     private UnitFactory _factory;
 
     protected override void Awake() {
@@ -39,10 +37,10 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
     }
 
     protected override GameState GetCreationGameState() {
-        return GameState.DeployingSystems;  // Building can take place anytime? Placing in Systems takes place in DeployingSettlements
+        return GameState.DeployingSystems;  // Building can take place anytime? Placing in Systems can take place in DeployingSettlements
     }
 
-    protected override void CreateElementStat(FacilityCategory category, string elementName) {
+    protected override FacilityStats CreateElementStat(FacilityCategory category, string elementName) {
         FacilityStats stat = new FacilityStats() {
             Category = category,
             Name = elementName,
@@ -57,7 +55,7 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
                 }
             },
         };
-        _elementStats.Add(stat);
+        return stat;
     }
 
     protected override int GetStatsCount(FacilityCategory elementCategory) {
@@ -133,14 +131,6 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
     }
 
     protected override void IssueFirstUnitCommand() { }
-
-    protected override void OnCompleted() {
-        base.OnCompleted();
-        var temp = onCompleted;
-        if (temp != null) {
-            temp(this);
-        }
-    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

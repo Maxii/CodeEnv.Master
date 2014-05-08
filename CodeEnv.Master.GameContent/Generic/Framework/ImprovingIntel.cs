@@ -17,6 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using CodeEnv.Master.Common;
+    using System;
 
     /// <summary>
     /// Intel with a CurrentCoverage value that can only improve once instantiated. It never regresses to a lower value.
@@ -24,10 +25,7 @@ namespace CodeEnv.Master.GameContent {
     public class ImprovingIntel : Intel {
 
         public override IntelCoverage DatedCoverage {
-            get {
-                D.Warn("{0} does not support DatedCoverage.", typeof(ImprovingIntel).Name);
-                return base.DatedCoverage;
-            }
+            get { throw new InvalidOperationException("{0} does not support DateStamp.".Inject(GetType().Name)); }
         }
 
         /// <summary>
@@ -37,18 +35,14 @@ namespace CodeEnv.Master.GameContent {
             get { return base.CurrentCoverage; }
             set {
                 if (value < CurrentCoverage) {
-                    D.Warn("{0} does not support regressing coverage from {1} to {2}.", typeof(ImprovingIntel).Name, value.GetName(), CurrentCoverage.GetName());
-                    return;
+                    throw new InvalidOperationException("{0} does not support regressing coverage from {1} to {2}.".Inject(GetType().Name, value.GetName(), CurrentCoverage.GetName()));
                 }
                 base.CurrentCoverage = value;
             }
         }
 
-        public override IGameDate DateStamp {
-            get {
-                D.Warn("{0} does not support DateStamp.", typeof(ImprovingIntel).Name);
-                return base.DateStamp;
-            }
+        public override GameDate DateStamp {
+            get { throw new InvalidOperationException("{0} does not support DateStamp.".Inject(GetType().Name)); }
         }
 
         public ImprovingIntel() : this(IntelCoverage.None) { }

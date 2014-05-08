@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
 
         IntelCoverage CurrentCoverage { get; set; }
 
-        IGameDate DateStamp { get; }
+        GameDate DateStamp { get; }
 
     }
 }

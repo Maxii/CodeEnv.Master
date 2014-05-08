@@ -45,7 +45,7 @@ public class Orbit : AMonoBase, IDisposable {
     /// <summary>
     /// The duration of one orbit of the object around the location.
     /// </summary>
-    public GameTimePeriod orbitPeriod;
+    private GameTimeDuration _orbitPeriod; // IMPROVE use custom editor to make setable from inspector
 
     /// <summary>
     /// The orbit speed of the object around the stationary location in degrees per second.
@@ -57,9 +57,8 @@ public class Orbit : AMonoBase, IDisposable {
     protected override void Awake() {
         base.Awake();
         _gameStatus = GameStatus.Instance;
-        orbitPeriod = orbitPeriod ?? new GameTimePeriod(days: 0, years: 1);
-
-        _orbitSpeed = (relativeOrbitSpeed * Constants.DegreesPerOrbit * (GameDate.HoursPerSecond / GameDate.HoursPerDay)) / orbitPeriod.PeriodInDays;
+        _orbitPeriod = GameTimeDuration.OneYear;
+        _orbitSpeed = relativeOrbitSpeed * Constants.DegreesPerOrbit * (GameTime.HoursPerSecond / (float)_orbitPeriod.totalInHours);
         UpdateRate = FrameUpdateFrequency.Frequent;
         if (!GameStatus.Instance.IsRunning) {
             GameStatus.Instance.onIsRunning_OneShot += OnGameIsRunning;

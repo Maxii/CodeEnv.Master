@@ -40,35 +40,29 @@ public class SystemModel : AItemModel, ISystemModel {
 
     protected override void Initialize() { }
 
-    public void AssignSettlement(SettlementUnitCreator settlementCreator) {
-        D.Assert(gameObject.GetComponentInChildren<SettlementUnitCreator>() == null, "{0} already has a Settlement.".Inject(Data.Name));
+    public void AssignSettlement(SettlementCmdModel settlementCmd) {
+        D.Assert(gameObject.GetComponentInChildren<SettlementCmdModel>() == null, "{0} already has a Settlement.".Inject(FullName));
         GameObject orbitGo = UnityUtility.AddChild(gameObject, RequiredPrefabs.Instance.orbit.gameObject);
         orbitGo.name = "SettlementOrbit";
-        UnityUtility.AttachChildToParent(settlementCreator.gameObject, orbitGo);
+        Transform settlementUnit = settlementCmd.transform.parent;
+        UnityUtility.AttachChildToParent(settlementUnit.gameObject, orbitGo);
         // position this settlement piece in the orbit slot already reserved for it
-        settlementCreator.transform.localPosition = Data.SettlementOrbitSlot;
-        if (settlementCreator.IsCompleted) {
-            _isLocalCallFlag = true;
-            InitializeSettlement(settlementCreator);
-        }
-        else {
-            settlementCreator.onCompleted += InitializeSettlement;
-        }
+        settlementUnit.localPosition = Data.SettlementOrbitSlot;
+        InitializeSettlement(settlementCmd);
     }
 
-    private bool _isLocalCallFlag;
-    private void InitializeSettlement(SettlementUnitCreator creator) {
-        if (!_isLocalCallFlag) {
-            creator.onCompleted -= InitializeSettlement;
-        }
-        SettlementCmdModel settlementCmd = creator.gameObject.GetSafeMonoBehaviourComponentInChildren<SettlementCmdModel>();
+    private void InitializeSettlement(SettlementCmdModel settlementCmd) {
+        D.Log("{0} is being deployed to {1}.", settlementCmd.Data.ParentName, FullName);
         Data.SettlementData = settlementCmd.Data;
 
         AddSystemAsLOSChangedRelayTarget(settlementCmd);
 
-        IIntel systemPlayerIntel = gameObject.GetSafeInterface<IViewable>().PlayerIntel;
+        var systemIntelCoverage = gameObject.GetSafeInterface<IViewable>().PlayerIntel.CurrentCoverage;
+        if (systemIntelCoverage == IntelCoverage.None) {
+            D.Warn("{0}.IntelCoverage set to None by its assigned System {1}.", settlementCmd.Data.Name, FullName);
+        }
         // UNCLEAR should a new settlement being attached to a System take on the PlayerIntel state of the System??  See SystemPresenter.OnPlayerIntelCoverageChanged()
-        settlementCmd.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel.CurrentCoverage = systemPlayerIntel.CurrentCoverage;
+        settlementCmd.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel.CurrentCoverage = systemIntelCoverage;
     }
 
     private void AddSystemAsLOSChangedRelayTarget(SettlementCmdModel settlementCmd) {

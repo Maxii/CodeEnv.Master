@@ -50,7 +50,7 @@ public class GuiDateReadout : AGuiLabelReadoutBase, IDisposable {
 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
-        RefreshReadout(GameTime.Date.FormattedDate);
+        RefreshReadout(GameTime.CurrentDate.ToString());
     }
 
     private void OnIsRunningChanged() {
@@ -60,7 +60,7 @@ public class GuiDateReadout : AGuiLabelReadoutBase, IDisposable {
     private void OnIsPausedChanging(bool isPausing) {
         if (isPausing) {
             // we are about to pause so refresh the date in case the game pauses on load
-            RefreshReadout(GameTime.Date.FormattedDate);
+            RefreshReadout(GameTime.CurrentDate.ToString());
         }
     }
 

@@ -257,7 +257,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="framesToWait">The frames to wait.</param>
         /// <returns></returns>
-        public static IEnumerator WaitFrames(int framesToWait) {
+        public static IEnumerator WaitForFrames(int framesToWait) {
             int targetFrameCount = Time.frameCount + framesToWait;
             while (Time.frameCount < targetFrameCount) {
                 yield return null;

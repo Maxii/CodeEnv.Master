@@ -96,6 +96,7 @@
     <Compile Include="FramesLastUpdate.cs" />
     <Compile Include="GameClockCommand.cs" />
     <Compile Include="GameClockEvent.cs" />
+    <Compile Include="GameDate.cs" />
     <Compile Include="GameInput.cs" />
     <Compile Include="GameInputHelper.cs" />
     <Compile Include="GameManager.cs" />
@@ -106,6 +107,7 @@
     <Compile Include="GameSpeedChangeEvent.cs" />
     <Compile Include="GameStateChangedEvent.cs" />
     <Compile Include="GameStateChangingEvent.cs" />
+    <Compile Include="GameTimePeriod.cs" />
     <Compile Include="GuiHudPublisher.cs" />
     <Compile Include="GuiHudTextFactory.cs" />
     <Compile Include="GuiVisibilityChangeEvent.cs" />
@@ -129,6 +131,7 @@
     <Compile Include="IFacilityViewable.cs" />
     <Compile Include="IFleetCommand.cs" />
     <Compile Include="IFleetViewable.cs" />
+    <Compile Include="IGameDate.cs" />
     <Compile Include="IGuiHudPublisher.cs" />
     <Compile Include="IHasData.cs" />
     <Compile Include="Intel.cs" />

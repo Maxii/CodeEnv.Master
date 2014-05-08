@@ -266,7 +266,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     }
 
     private Vector3 CalculateGridBoxLocationFromSectorIndex(Index3D index) {
-        int xIndex = index.X, yIndex = index.Y, zIndex = index.Z;
+        int xIndex = index.x, yIndex = index.y, zIndex = index.z;
         D.Assert(xIndex != 0 && yIndex != 0 && zIndex != 0, "Illegal Index {0}.".Inject(index));
         float x = xIndex > Constants.Zero ? xIndex - 1F : xIndex;
         float y = yIndex > Constants.Zero ? yIndex - 1F : yIndex;
@@ -372,9 +372,9 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     /// <returns></returns>
     public static IList<Index3D> GetNeighbors(Index3D center) {
         IList<Index3D> neighbors = new List<Index3D>();
-        int[] xValuePair = CalcNeighborPair(center.X);
-        int[] yValuePair = CalcNeighborPair(center.Y);
-        int[] zValuePair = CalcNeighborPair(center.Z);
+        int[] xValuePair = CalcNeighborPair(center.x);
+        int[] yValuePair = CalcNeighborPair(center.y);
+        int[] zValuePair = CalcNeighborPair(center.z);
         foreach (var x in xValuePair) {
             foreach (var y in yValuePair) {
                 foreach (var z in zValuePair) {

@@ -35,5 +35,7 @@ public abstract class ACreator : AMonoBase {
     public bool isCompositionPreset;
     public int maxRandomElements = 8;
 
+    public bool toDeployInRuntime;
+
 }
 

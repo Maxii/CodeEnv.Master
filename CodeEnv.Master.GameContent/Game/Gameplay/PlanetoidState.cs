@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
 
         None,
 
-        Normal,
+        Idling,
 
         Dead
 

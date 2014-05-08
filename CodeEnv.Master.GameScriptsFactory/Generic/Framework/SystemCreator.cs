@@ -64,6 +64,7 @@ public class SystemCreator : AMonoBase, IDisposable {
     private IList<PlanetoidModel> _planets;
     private IEnumerable<PlanetoidModel> _moons;
     private Vector3 _settlementOrbitSlot;
+    private GameManager _gameMgr;
 
     // Removed Settlement treatment. Now built separately like a Starbase and assigned to a system
 
@@ -72,6 +73,7 @@ public class SystemCreator : AMonoBase, IDisposable {
 
     protected override void Awake() {
         base.Awake();
+        _gameMgr = GameManager.Instance;
         _systemsFolder = _transform.parent;
         _isExistingSystem = _transform.childCount > 0;
         _systemName = _transform.name;  // the SystemCreator will carry the name of the System
@@ -85,23 +87,26 @@ public class SystemCreator : AMonoBase, IDisposable {
     }
 
     private void Subscribe() {
-        if (_subscribers == null) {
-            _subscribers = new List<IDisposable>();
-        }
-        _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
+        _subscribers = new List<IDisposable>();
+        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
     }
 
     private void OnGameStateChanged() {
-        if (GameManager.Instance.CurrentState == GameState.DeployingSystems) {
+        if (_gameMgr.CurrentState == GameState.DeployingSystems) {
             DeploySystem();
             EnableSystem(); // must make View operational before starting state changes (like IntelLevel) within it 
-            RegisterGameStateProgressionReadiness(isReady: true);
+            new Job(UnityUtility.WaitForFrames(1), toStart: true, onJobComplete: delegate {
+                // wait to allow systems models and views to initialize themselves
+                __SetIntelLevel();
+                RegisterGameStateProgressionReadiness(isReady: true);
+            });
         }
-        if (GameManager.Instance.CurrentState == GameState.RunningCountdown_2) {
-            __SetIntelLevel();
-        }
-        if (GameManager.Instance.CurrentState == GameState.Running) {
-            DestroyCreationObject(); // destruction deferred so __UniverseInitializer can complete its work
+        if (_gameMgr.CurrentState == GameState.Running) {
+            BeginSystemOperations();
+            new Job(UnityUtility.WaitForFrames(1), toStart: true, onJobComplete: delegate {
+                // wait to allow any cellestial objects using the IEnumerator StateMachine to enter their starting state
+                DestroyCreationObject(); // destruction deferred so __UniverseInitializer can complete its work
+            });
         }
     }
 
@@ -346,7 +351,7 @@ public class SystemCreator : AMonoBase, IDisposable {
             planetsToDestroy.ForAll(p => {
                 _planets.Remove(p);
                 _composition.RemovePlanet(p.Data);
-                D.Log("Destroying Planet {0}.", p.gameObject.name);
+                D.Log("Destroying Planet {0}.", p.FullName);
                 Destroy(p.gameObject);
             });
         }
@@ -400,15 +405,21 @@ public class SystemCreator : AMonoBase, IDisposable {
         }
     }
 
-    private T DeriveCategory<T>(Transform transformContainingCategoryName) where T : struct {
-        return Enums<T>.Parse(transformContainingCategoryName.name);
+    private void BeginSystemOperations() {
+        _planets.ForAll(p => p.CurrentState = PlanetoidState.Idling);
+        _moons.ForAll(m => m.CurrentState = PlanetoidState.Idling);
     }
 
     private void DestroyCreationObject() {
+        D.Assert(_transform.childCount == 1);
         foreach (Transform child in _transform) {
             child.parent = _systemsFolder;
         }
         Destroy(gameObject);
+    }
+
+    private T DeriveCategory<T>(Transform transformContainingCategoryName) where T : struct {
+        return Enums<T>.Parse(transformContainingCategoryName.name);
     }
 
     protected override void OnDestroy() {

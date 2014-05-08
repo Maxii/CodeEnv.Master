@@ -20,6 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using System.Linq;
     using CodeEnv.Master.Common.LocalResources;
     using CodeEnv.Master.Common;
+    using System.Diagnostics;
 
     /// <summary>
     /// Collection of tools and utilities specific to the game.
@@ -37,6 +38,21 @@ namespace CodeEnv.Master.GameContent {
             Arguments.ValidateForContent(name);
             return Enums<E>.GetValues().Single(e => name.Trim().ToLower().Contains(e.ToString().ToLower()));
         }
+
+        /// <summary>
+        /// Validates the provided GameDate is within the designated range, inclusive.
+        /// </summary>
+        /// <param name="date">The date to validate.</param>
+        /// <param name="earliest">The earliest acceptable date.</param>
+        /// <param name="latest">The latest acceptable date.</param>
+        /// <exception cref="IllegalArgumentException"></exception>
+        public static void ValidateForRange(GameDate date, GameDate earliest, GameDate latest) {
+            if (latest <= earliest || date < earliest || date > latest) {
+                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                throw new ArgumentOutOfRangeException(ErrorMessages.OutOfRange.Inject(date, earliest, latest, callingMethodName));
+            }
+        }
+
 
         //public static bool CheckForIncreasingSeparation(float distanceToCurrentDestinationSqrd, ref float previousDistanceSqrd) {
         //    if (distanceToCurrentDestinationSqrd > previousDistanceSqrd + TempGameValues.IncreasingSeparationDistanceTestToleranceSqrd) {

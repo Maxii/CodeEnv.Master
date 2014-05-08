@@ -29,15 +29,26 @@ namespace CodeEnv.Master.GameContent {
 
         #region Integer
 
-        private int _startingYear;
-        public int StartingYear {
+        private int _gameStartYear;
+        public int GameStartYear {
             get {
                 if (!isPropertyValuesInitialized) {
                     InitializePropertyValues();
                 }
-                return _startingYear;
+                return _gameStartYear;
             }
-            private set { _startingYear = value; }
+            private set { _gameStartYear = value; }
+        }
+
+        private int _gameEndYear;
+        public int GameEndYear {
+            get {
+                if (!isPropertyValuesInitialized) {
+                    InitializePropertyValues();
+                }
+                return _gameEndYear;
+            }
+            private set { _gameEndYear = value; }
         }
 
         private int _daysPerYear;

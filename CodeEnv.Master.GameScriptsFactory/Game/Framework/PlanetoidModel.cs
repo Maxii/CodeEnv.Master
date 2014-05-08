@@ -47,9 +47,7 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel {
         keepoutCollider.radius = Radius * TempGameValues.KeepoutRadiusMultiplier;
     }
 
-    protected override void Initialize() {
-        CurrentState = PlanetoidState.Normal;
-    }
+    protected override void Initialize() { }
 
     protected override void OnOwnerChanged() {
         base.OnOwnerChanged();
@@ -65,6 +63,8 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel {
 
     #region StateMachine - Simple Alternative
 
+    // state machine is started by SystemCreator onIsRunning
+
     private PlanetoidState _currentState;
     public PlanetoidState CurrentState {
         get { return _currentState; }
@@ -74,7 +74,7 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel {
     private void OnCurrentStateChanged() {
         //D.Log("{0}.CurrentState changed to {1}.", Data.Name, CurrentState.GetName());
         switch (CurrentState) {
-            case PlanetoidState.Normal:
+            case PlanetoidState.Idling:
                 // do nothing
                 break;
             case PlanetoidState.Dead:
@@ -94,7 +94,7 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel {
                     D.Log("{0} has been destroyed.", FullName);
                 });
                 break;
-            case PlanetoidState.Normal:
+            case PlanetoidState.Idling:
                 // do nothing
                 break;
             case PlanetoidState.None:

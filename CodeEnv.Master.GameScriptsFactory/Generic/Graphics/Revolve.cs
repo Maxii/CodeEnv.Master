@@ -41,7 +41,7 @@ public class Revolve : AMonoBase, IDisposable {
     /// <summary>
     /// The duration of one rotation of the object on its own axis.
     /// </summary>
-    public GameTimePeriod rotationPeriod;
+    private GameTimeDuration _rotationPeriod; // IMPROVE use custom editor to make setable from inspector
 
     /// <summary>
     /// The self rotation speed of the object around its own axis in degrees per second.
@@ -51,10 +51,8 @@ public class Revolve : AMonoBase, IDisposable {
     protected override void Awake() {
         base.Awake();
         UnityUtility.ValidateComponentPresence<MeshRenderer>(gameObject);
-        rotationPeriod = rotationPeriod ?? new GameTimePeriod(days: 1, years: 0);
-
-        _rotationSpeed = (relativeRotationSpeed * Constants.DegreesPerRotation *
-            (GameDate.HoursPerSecond / GameDate.HoursPerDay)) / rotationPeriod.PeriodInDays;
+        _rotationPeriod = GameTimeDuration.OneDay;
+        _rotationSpeed = relativeRotationSpeed * Constants.DegreesPerRotation * (GameTime.HoursPerSecond / (float)_rotationPeriod.totalInHours);
 
         UpdateRate = FrameUpdateFrequency.Frequent;
         if (!GameStatus.Instance.IsRunning) {

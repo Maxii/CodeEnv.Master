@@ -10,8 +10,12 @@
 
   <Integer>
     <Setting>
-      <PropertyName>StartingYear</PropertyName>
+      <PropertyName>GameStartYear</PropertyName>
       <PropertyValue>2700</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>GameEndYear</PropertyName>
+      <PropertyValue>9000</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>DaysPerYear</PropertyName>

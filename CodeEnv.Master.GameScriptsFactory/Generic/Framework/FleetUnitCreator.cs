@@ -42,7 +42,7 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
         return GameState.DeployingSettlements;  // Can be anytime? Should be after GeneratePathGraph so no interference
     }
 
-    protected override void CreateElementStat(ShipCategory category, string elementName) {
+    protected override ShipStats CreateElementStat(ShipCategory category, string elementName) {
         float mass = TempGameValues.__GetMass(category);
         float drag = 0.1F;
 
@@ -69,7 +69,7 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
                 }
             },
         };
-        _elementStats.Add(stat);
+        return stat;
     }
 
     protected override FleetCmdModel MakeCommand(IPlayer owner) {

@@ -60,8 +60,9 @@ namespace CodeEnv.Master.Common {
         public const string PercentNumericFormat = "P00";
 
         public const string GameDateFormat = "{0}.{1:D3}.{2:D2}";
-        public const string GamePeriodYearsFormat = "{0} years, {1:D3} days";
-        public const string GamePeriodNoYearsFormat = "{0:D3} days";
+        public const string GamePeriodYearsFormat = "{0} years, {1:D3} days, {2:D2} hours";
+        public const string GamePeriodNoYearsFormat = "{0:D3} days, {1:D2} hours";
+        public const string GamePeriodHoursOnlyFormat = "{0:D2} hours";
 
         // Common Strings
         public static string UserCurrentWorkingDirectoryPath {

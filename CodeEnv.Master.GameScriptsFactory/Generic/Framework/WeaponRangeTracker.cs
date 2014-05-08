@@ -75,9 +75,9 @@ public class WeaponRangeTracker : AMonoBase, IWeaponRangeTracker {
     }
 
     void OnTriggerEnter(Collider other) {
-        //D.Log("{0}.{1}.OnTriggerEnter({2}) called.", ParentFullName, _transform.name, other.name);
+        //D.Log("{0}.{1}.OnTriggerEnter({2}) called.", ParentFullName, GetType().Name, other.name);
         if (other.isTrigger) {
-            //D.Log("{0}.{1}.OnTriggerEnter ignored Trigger Collider {2}.", ParentFullName, _transform.name, other.name);
+            //D.Log("{0}.{1}.OnTriggerEnter ignored Trigger Collider {2}.", ParentFullName, GetType().Name, other.name);
             return;
         }
 
@@ -88,16 +88,16 @@ public class WeaponRangeTracker : AMonoBase, IWeaponRangeTracker {
         IMortalTarget target = other.gameObject.GetInterface<IMortalTarget>();
         if (target == null) {
             _collidersToIgnore.Add(other);
-            D.Log("{0}.{1} now ignoring Collider {2}.", ParentFullName, _transform.name, other.name);
+            //D.Log("{0}.{1} now ignoring Collider {2}.", ParentFullName, GetType().Name, other.name);
             return;
         }
         Add(target);
     }
 
     void OnTriggerExit(Collider other) {
-        //D.Log("{0}.{1}.OnTriggerExit() called by Collider {2}.", ParentFullName, _transform.name, other.name);
+        //D.Log("{0}.{1}.OnTriggerExit() called by Collider {2}.", ParentFullName, GetType().Name, other.name);
         if (other.isTrigger) {
-            //D.Log("{0}.{1}.OnTriggerExit ignored Trigger Collider {2}.", ParentFullName, _transform.name, other.name);
+            //D.Log("{0}.{1}.OnTriggerExit ignored Trigger Collider {2}.", ParentFullName, GetType().Name, other.name);
             return;
         }
 
@@ -147,7 +147,7 @@ public class WeaponRangeTracker : AMonoBase, IWeaponRangeTracker {
         _collider.radius = Range;
         RangeSpan = new Range<float>(0.9F * Range, 1.10F * Range);
         if (enabled) {
-            D.Log("{0}.{1}.Range changed to {2:0.00}.", ParentFullName, _transform.name, Range);
+            //D.Log("{0}.{1}.Range changed to {2:0.00}.", ParentFullName, GetType().Name, Range);
             _collider.enabled = false;
             AllTargets.ForAll(t => Remove(t));  // clears both AllTargets and EnemyTargets
             _collider.enabled = true;    //  TODO unconfirmed - this should repopulate the Targets when re-enabled with new radius
@@ -168,17 +168,17 @@ public class WeaponRangeTracker : AMonoBase, IWeaponRangeTracker {
     private void Add(IMortalTarget target) {
         if (!AllTargets.Contains(target)) {
             if (!target.IsDead) {
-                //D.Log("{0}.{1} now tracking target {2}.", ParentFullName, _transform.name, target.FullName);
+                //D.Log("{0}.{1} now tracking target {2}.", ParentFullName, GetType().Name, target.FullName);
                 target.onItemDeath += OnTargetDeath;
                 target.onOwnerChanged += OnTargetOwnerChanged;
                 AllTargets.Add(target);
             }
             else {
-                D.Log("{0}.{1} avoided adding target {2} that is already dead but not yet destroyed.", ParentFullName, _transform.name, target.FullName);
+                D.Log("{0}.{1} avoided adding target {2} that is already dead but not yet destroyed.", ParentFullName, GetType().Name, target.FullName);
             }
         }
         else {
-            D.Warn("{0}.{1} attempted to add duplicate Target {2}.", ParentFullName, _transform.name, target.FullName);
+            D.Warn("{0}.{1} attempted to add duplicate Target {2}.", ParentFullName, GetType().Name, target.FullName);
         }
 
         if (Owner.IsEnemyOf(target.Owner) && !target.IsDead && !EnemyTargets.Contains(target)) {
@@ -187,8 +187,8 @@ public class WeaponRangeTracker : AMonoBase, IWeaponRangeTracker {
     }
 
     private void AddEnemyTarget(IMortalTarget enemyTarget) {
-        D.Log("{0}.{1}({2:0.00}) added Enemy {3} at distance {4}.",
-             ParentFullName, _transform.name, Range, enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
+        //D.Log("{0}.{1}({2:0.00}) added Enemy {3} at distance {4}.",
+        // ParentFullName, GetType().Name, Range, enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
         if (EnemyTargets.Count == 0) {
             OnEnemyInRange(true);   // there are now enemies in range
         }
@@ -198,12 +198,12 @@ public class WeaponRangeTracker : AMonoBase, IWeaponRangeTracker {
     private void Remove(IMortalTarget target) {
         bool isRemoved = AllTargets.Remove(target);
         if (isRemoved) {
-            //D.Log("{0}.{1} no longer tracking target {2} at distance = {3}.", ParentFullName, _transform.name, target.FullName, Vector3.Distance(target.Position, _transform.position));
+            //D.Log("{0}.{1} no longer tracking target {2} at distance = {3}.", ParentFullName, GetType().Name, target.FullName, Vector3.Distance(target.Position, _transform.position));
             target.onItemDeath -= OnTargetDeath;
             target.onOwnerChanged -= OnTargetOwnerChanged;
         }
         else {
-            D.Warn("{0}.{1} target {2} not present to be removed.", ParentFullName, _transform.name, target.FullName);
+            D.Warn("{0}.{1} target {2} not present to be removed.", ParentFullName, GetType().Name, target.FullName);
         }
         RemoveEnemyTarget(target);
     }
@@ -213,8 +213,8 @@ public class WeaponRangeTracker : AMonoBase, IWeaponRangeTracker {
             if (EnemyTargets.Count == 0) {
                 OnEnemyInRange(false);  // no longer any Enemies in range
             }
-            D.Log("{0}.{1}({2:0.00}) removed Enemy Target {3} at distance {4}.",
-                ParentFullName, _transform.name, Range, enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
+            //D.Log("{0}.{1}({2:0.00}) removed Enemy Target {3} at distance {4}.",
+            //ParentFullName, GetType().Name, Range, enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
         }
     }
 

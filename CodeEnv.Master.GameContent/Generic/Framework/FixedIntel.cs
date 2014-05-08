@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -24,22 +25,16 @@ namespace CodeEnv.Master.GameContent {
     public class FixedIntel : Intel {
 
         public override IntelCoverage DatedCoverage {
-            get {
-                D.Warn("{0} does not support DatedCoverage.", typeof(FixedIntel).Name);
-                return base.DatedCoverage;
-            }
+            get { throw new InvalidOperationException("{0} does not support DatedCoverage.".Inject(GetType().Name)); }
         }
 
         public override IntelCoverage CurrentCoverage {
             get { return base.CurrentCoverage; }
-            set { D.Warn("{0} does not support setting CurrentCoverage. Use FixedIntel(fixedCoverage) instead.", typeof(FixedIntel).Name); }
+            set { throw new InvalidOperationException("{0} does not support setting CurrentCoverage. Use FixedIntel(fixedCoverage) instead.".Inject(GetType().Name)); }
         }
 
-        public override IGameDate DateStamp {
-            get {
-                D.Warn("{0} does not support DateStamp.", typeof(FixedIntel).Name);
-                return base.DateStamp;
-            }
+        public override GameDate DateStamp {
+            get { throw new InvalidOperationException("{0} does not support DateStamp.".Inject(GetType().Name)); }
         }
 
         public FixedIntel(IntelCoverage fixedCoverage) : base(fixedCoverage) { }

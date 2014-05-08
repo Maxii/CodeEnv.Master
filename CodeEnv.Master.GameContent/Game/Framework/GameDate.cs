@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GameDate.cs
-// Data container class that holds the game date.
+// Immutable, data container structure that holds the game date.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,146 +16,155 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using CodeEnv.Master.Common;
-    using UnityEngine;
     using System;
+    using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
+    using UnityEngine;
 
     /// <summary>
-    /// Data container class that holds the game date.
+    /// Immutable, data container structure that holds the game date.
     /// </summary>
-    public class GameDate : IGameDate, IEquatable<GameDate> {
+    public struct GameDate : IEquatable<GameDate> {
 
-        public enum PresetDateSelector {
+        #region Comparison Operators Override
 
-            /// <summary>
-            /// The game's starting date.
-            /// </summary>
-            Start,
+        // see C# 4.0 In a Nutshell, page 254
 
-            /// <summary>
-            /// The current date in the game.
-            /// </summary>
-            Current
+        public static bool operator <(GameDate left, GameDate right) {
+            if (left.year < right.year) { return true; }
+            if (left.year == right.year) {
+                if (left.dayOfYear < right.dayOfYear) { return true; }
+                if (left.dayOfYear == right.dayOfYear) {
+                    if (left.hourOfDay < right.hourOfDay) { return true; }
+                }
+            }
+            return false;
         }
 
-        public static int HoursPerDay = GeneralSettings.Instance.HoursPerDay;
-        public static int DaysPerYear = GeneralSettings.Instance.DaysPerYear;
-        public static float HoursPerSecond = GeneralSettings.Instance.HoursPerSecond;
-        public static int StartingYear = GeneralSettings.Instance.StartingYear;
-
-        public int HourOfDay { get; private set; }
-
-        public int DayOfYear { get; private set; }
-
-        public int Year { get; private set; }
-
-        public string FormattedDate {
-            get {
-                return Constants.GameDateFormat.Inject(Year, DayOfYear, HourOfDay);
+        public static bool operator <=(GameDate left, GameDate right) {
+            if (left.year < right.year) { return true; }
+            if (left.year == right.year) {
+                if (left.dayOfYear < right.dayOfYear) { return true; }
+                if (left.dayOfYear == right.dayOfYear) {
+                    if (left.hourOfDay < right.hourOfDay) { return true; }
+                    if (left.hourOfDay == right.hourOfDay) { return true; }
+                }
             }
+            return false;
+        }
+
+        public static bool operator >(GameDate left, GameDate right) {
+            if (left.year > right.year) { return true; }
+            if (left.year == right.year) {
+                if (left.dayOfYear > right.dayOfYear) { return true; }
+                if (left.dayOfYear == right.dayOfYear) {
+                    if (left.hourOfDay > right.hourOfDay) { return true; }
+                }
+            }
+            return false;
+        }
+
+        public static bool operator >=(GameDate left, GameDate right) {
+            if (left.year > right.year) { return true; }
+            if (left.year == right.year) {
+                if (left.dayOfYear > right.dayOfYear) { return true; }
+                if (left.dayOfYear == right.dayOfYear) {
+                    if (left.hourOfDay > right.hourOfDay) { return true; }
+                    if (left.hourOfDay == right.hourOfDay) { return true; }
+                }
+            }
+            return false;
+        }
+
+        public static bool operator ==(GameDate left, GameDate right) {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(GameDate left, GameDate right) {
+            return !left.Equals(right);
+        }
+
+        #endregion
+
+        public static GameDate GameStartDate;
+        public static GameDate GameEndDate;
+
+        static GameDate() {
+            GameStartDate = new GameDate(Constants.Zero, Constants.One, GameTime.GameStartYear);
+            GameEndDate = new GameDate(GameTime.HoursPerDay - 1, GameTime.DaysPerYear - 1, GameTime.GameEndYear);
+        }
+
+        public readonly int hourOfDay;
+        public readonly int dayOfYear;
+        public readonly int year;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GameDate"/> struct.
+        /// </summary>
+        /// <param name="dayOfYear">The day of year.</param>
+        /// <param name="year">The year.</param>
+        public GameDate(int dayOfYear, int year) : this(Constants.Zero, dayOfYear, year) { }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GameDate"/> struct.
+        /// </summary>
+        /// <param name="hourOfDay">The hour of day.</param>
+        /// <param name="dayOfYear">The day of year.</param>
+        /// <param name="year">The year.</param>
+        public GameDate(int hourOfDay, int dayOfYear, int year) {
+            Arguments.ValidateForRange(hourOfDay, Constants.Zero, GameTime.HoursPerDay - 1);
+            Arguments.ValidateForRange(dayOfYear, Constants.One, GameTime.DaysPerYear);  // UNCLEAR is this range correct?
+            Arguments.ValidateForRange(year, GameTime.GameStartYear, GameTime.GameEndYear);
+            this.hourOfDay = hourOfDay;
+            this.dayOfYear = dayOfYear;
+            this.year = year;
         }
 
         /// <summary>
-        /// Convenience constructor that initializes a new instance of the <see cref="GameDate" /> class
-        /// set to Day 1 of the starting year.
+        /// Initializes a new instance of the <see cref="GameDate"/> struct synched to the gameClock value provided.
         /// </summary>
-        /// <param name="preset">The preset date selector.</param>
-        /// <exception cref="System.NotImplementedException"></exception>
-        public GameDate(PresetDateSelector preset) {
-            switch (preset) {
-                case PresetDateSelector.Start:
-                    HourOfDay = Constants.Zero;
-                    DayOfYear = Constants.One;
-                    Year = StartingYear;
-                    break;
-                case PresetDateSelector.Current:
-                    HourOfDay = GameTime.Date.HourOfDay;
-                    DayOfYear = GameTime.Date.DayOfYear;
-                    Year = GameTime.Date.Year;
-                    break;
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(preset));
-            }
+        /// <param name="gameClock">The game clock.</param>
+        internal GameDate(float gameClock) {
+            int elapsedHours = Mathf.FloorToInt(gameClock * GameTime.HoursPerSecond);
+            int elapsedDays = elapsedHours / GameTime.HoursPerDay;
+            int hoursPerYear = GameTime.DaysPerYear * GameTime.HoursPerDay;
+            year = GameTime.GameStartYear + Mathf.FloorToInt(elapsedHours / hoursPerYear);
+            dayOfYear = 1 + (elapsedDays % GameTime.DaysPerYear);
+            hourOfDay = elapsedHours % GameTime.HoursPerDay;
         }
 
-        public GameDate(int hourOfDay, int dayOfYear, int year) {
-            Arguments.ValidateNotNegative(hourOfDay);
-            Arguments.ValidateNotNegative(dayOfYear);
-            HourOfDay = hourOfDay;
-            DayOfYear = dayOfYear;
-            Year = year;
+        #region Object.Equals and GetHashCode Override
+
+        public override bool Equals(object obj) {
+            if (!(obj is GameDate)) { return false; }
+            return Equals((GameDate)obj);
         }
 
-        public GameDate(int dayOfYear, int year) : this(Constants.Zero, dayOfYear, year) { }
-
-        internal void SyncDateToGameClock(float gameClock) {
-            int elapsedHours = Mathf.FloorToInt(gameClock * HoursPerSecond);
-            int elapsedDays = elapsedHours / HoursPerDay;
-            int hoursPerYear = DaysPerYear * HoursPerDay;
-            Year = StartingYear + Mathf.FloorToInt(elapsedHours / hoursPerYear);
-            DayOfYear = 1 + (elapsedDays % DaysPerYear);
-            HourOfDay = elapsedHours % HoursPerDay;
-        }
-
-        // Override object.Equals on reference types when you do not want your
-        // reference type to obey reference semantics, as defined by System.Object.
-        // Always override ValueType.Equals for your own Value Types.
-        public override bool Equals(object right) {
-            // TODO the containing class T must extend IEquatable<T>
-            //       
-            // See the full list of guidelines at
-            //   http://go.microsoft.com/fwlink/?LinkID=85237  
-            // and also the guidance for operator== at
-            //   http://go.microsoft.com/fwlink/?LinkId=85238 aka
-            // "Rarely override the operator==() when you create reference types as
-            // the .NET Framework classes expect it to follow reference semantics for
-            // all reference types. Always override the == operator for your own
-            // Value Types. See Effective C#, Item 6.
-
-            // No need to check 'this' for null as the CLR throws an exception before
-            // calling any instance method through a null reference.
-            if (object.ReferenceEquals(right, null)) {
-                return false;
-            }
-
-            if (object.ReferenceEquals(this, right)) {
-                return true;
-            }
-
-            if (this.GetType() != right.GetType()) {
-                return false;
-            }
-
-            // now call IEquatable's Equals
-            return this.Equals(right as GameDate);
-        }
-
-        // Generally, do not override object.GetHashCode as object's version is reliable
-        // although not efficient. You should override it IFF operator==() is redefined which
-        // is rare. 
-        // You should always override ValueType.GetHashCode and redefine ==() for your
-        // value types. If the value type is used as a hash key, it must be immutable.
-        // See Effective C# Item 7.
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// </summary>
+        /// <see cref="Page 254, C# 4.0 in a Nutshell."/>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+        /// </returns>
         public override int GetHashCode() {
-            // TODO: write your implementation of GetHashCode() here
-            return base.GetHashCode();
+            int hash = 17;  // 17 = some prime number
+            hash = hash * 31 + hourOfDay.GetHashCode(); // 31 = another prime number
+            hash = hash * 31 + dayOfYear.GetHashCode();
+            hash = hash * 31 + year.GetHashCode();
+            return hash;
         }
+
+        #endregion
 
         public override string ToString() {
-            return FormattedDate;
+            return Constants.GameDateFormat.Inject(year, dayOfYear, hourOfDay);
         }
 
         #region IEquatable<GameDate> Members
 
         public bool Equals(GameDate other) {
-            // TODO add your equality test here. Call the base class Equals only if the
-            // base class version is not provided by System.Object or System.ValueType
-            // as all that occurs is either a check for reference equality or content equality.
-            if (other == null) {    // the runtime will use this IEquatable Equals implementation directly
-                return false;       // rather than the Object.Equals above, IF the 'other' passed for equivalence testing is of Type T
-            }   // In that case, 'other' must be tested for null as the null test for 'right' in Object.Equals never occurs
-            return HourOfDay == other.HourOfDay && DayOfYear == other.DayOfYear && Year == other.Year;
+            return hourOfDay == other.hourOfDay && dayOfYear == other.dayOfYear && year == other.year;
         }
 
         #endregion

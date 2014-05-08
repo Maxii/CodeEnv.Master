@@ -12,9 +12,12 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
+
     /// <summary>
     /// Restricted access Interface for GameDate.
     /// </summary>
+    [Obsolete]
     public interface IGameDate {
 
         int Year { get; }

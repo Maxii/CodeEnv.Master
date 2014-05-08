@@ -204,6 +204,7 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
         //_cmdIcon = icon;
         _cmdIconSprite.spriteName = icon.Filename;
         _cmdIconSprite.color = icon.Color.ToUnityColor();
+        //D.Log("{0} Icon color is {1}.", Presenter.FullName, icon.Color.GetName());
     }
 
     #endregion

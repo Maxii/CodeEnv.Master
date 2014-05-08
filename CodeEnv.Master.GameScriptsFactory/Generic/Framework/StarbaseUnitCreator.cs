@@ -39,7 +39,7 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
         return GameState.DeployingSystems;
     }
 
-    protected override void CreateElementStat(FacilityCategory category, string elementName) {
+    protected override FacilityStats CreateElementStat(FacilityCategory category, string elementName) {
         FacilityStats stat = new FacilityStats() {
             Category = category,
             Name = elementName,
@@ -54,7 +54,7 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
                 }
             },
         };
-        _elementStats.Add(stat);
+        return stat;
     }
 
     protected override int GetStatsCount(FacilityCategory elementCategory) {

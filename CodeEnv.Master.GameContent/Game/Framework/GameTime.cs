@@ -29,6 +29,12 @@ namespace CodeEnv.Master.GameContent {
     [SerializeAll]
     public class GameTime : APropertyChangeTracking, IDisposable {
 
+        public static int HoursPerDay = GeneralSettings.Instance.HoursPerDay;
+        public static int DaysPerYear = GeneralSettings.Instance.DaysPerYear;
+        public static float HoursPerSecond = GeneralSettings.Instance.HoursPerSecond;
+        public static int GameStartYear = GeneralSettings.Instance.GameStartYear;
+        public static int GameEndYear = GeneralSettings.Instance.GameEndYear;
+
         private GameClockSpeed _gameSpeed;
         public GameClockSpeed GameSpeed {
             get { return _gameSpeed; }
@@ -129,20 +135,18 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private static GameDate _date;
         /// <summary>
-        /// The GameDate in the game. This value takes into account when the game was begun,
+        /// The current GameDate in the game. This value takes into account when the game was begun,
         /// game speed changes and pauses.
         /// </summary>
-        public static IGameDate Date {
+        public static GameDate CurrentDate {
             get {
                 D.Assert(Instance._isClockEnabled);
                 if (!GameStatus.Instance.IsPaused) {
                     Instance.SyncGameClock();   // OK to ask for date while paused (ie. HUD needs), but Syncing clock won't do anything
                 }
-                // the only time the date needs to be synced is when it is about to be used
-                _date.SyncDateToGameClock(Instance._currentDateTime);
-                return _date;
+                // the only time a new date instance is needed is when it is about to be used
+                return new GameDate(Instance._currentDateTime); // OPTIMIZE avoid new instance each time when date hasn't changed
             }
         }
 
@@ -251,7 +255,7 @@ namespace CodeEnv.Master.GameContent {
             // don't wait for the Gui to set GameSpeed. Use the backing field as the Property calls OnGameSpeedChanged()
             _gameSpeed = _playerPrefsMgr.GameSpeedOnLoad;
             _gameSpeedMultiplier = _gameSpeed.SpeedMultiplier();
-            _date = new GameDate(GameDate.PresetDateSelector.Start);
+            // no need to assign a new CurrentDate as the change to _currentDateTime results in a new, synched CurrentDate instance once Date is requested
         }
 
         public void PrepareToSaveGame() {

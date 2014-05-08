@@ -32,9 +32,20 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
     private GameManager _gameMgr;
     private IList<IDisposable> _subscribers;
 
-    private SystemCreator[] _systemCreators;
-    private UniverseCenterModel _universeCenter;
-    private Stack<SettlementUnitCreator> _settlementCreators;
+    /// <summary>
+    /// Systems that have no settlements. Note: The SystemModel is used 
+    /// because the SystemCreator and its top-level gameobject is 
+    /// destroyed once the system becomes operational.
+    /// </summary>
+    private Stack<SystemModel> _systemsWithoutSettlements;
+
+    /// <summary>
+    /// Settlements available to be deployed to systems. Note: These are the
+    /// top level GameObjects where the SettlementCreator is located. The
+    /// Creator's gameObject is used because the SettlementCreator is 
+    /// removed once it becomes operational.
+    /// </summary>
+    private Stack<SettlementCmdModel> _deployableSettlements;
 
     protected override void Awake() {
         base.Awake();
@@ -42,14 +53,89 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
         Subscribe();
         RegisterGameStateProgressionReadiness(GameState.DeployingSystems, isReady: false);
         RegisterGameStateProgressionReadiness(GameState.DeployingSettlements, isReady: false);
-        AcquireObjectsPresentInScene();
+        NotifySettlementsToRegisterWhenBuilt(); // SettlementUnitCreators, if active, are currently present in the scene from the beginning
     }
 
     private void Subscribe() {
-        if (_subscribers == null) {
-            _subscribers = new List<IDisposable>();
-        }
+        _subscribers = new List<IDisposable>();
+        _subscribers.Add(_gameMgr.SubscribeToPropertyChanging<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanging));
         _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
+    }
+
+    private void OnGameStateChanging(GameState enteringGameState) {
+        GameState exitingGameState = _gameMgr.CurrentState;
+        if (exitingGameState == GameState.DeployingSystems) {
+            // all the systemModels have been built so it is now safe to acquire them
+            AcquireActiveSystemsInScene();
+        }
+    }
+
+    private void OnGameStateChanged() {
+        GameState gameState = _gameMgr.CurrentState;
+        if (gameState == GameState.DeployingSystems) {
+            InitializeUniverseCenter();
+            // Systems build and initialize themselves during this state
+            RegisterGameStateProgressionReadiness(GameState.DeployingSystems, isReady: true);
+        }
+        if (gameState == GameState.DeployingSettlements) {
+            if (_deployableSettlements != null) {   // if null, no settlements have registered to be deployed during startup
+                DeploySettlements();    // must occur after SystemData has been set...
+            }
+            RegisterGameStateProgressionReadiness(GameState.DeployingSettlements, isReady: true);
+        }
+        //InitializeUniverseCenterPlayerIntel();    // no longer needed as UniverseCenter.PlayerIntel.Coverage is fixed to Comprehensive
+    }
+
+    private void AcquireActiveSystemsInScene() {
+        var systemModels = gameObject.GetSafeMonoBehaviourComponentsInChildren<SystemModel>();
+        _systemsWithoutSettlements = new Stack<SystemModel>(systemModels);
+    }
+
+    private void NotifySettlementsToRegisterWhenBuilt() {
+        var settlementCreators = gameObject.GetComponentsInChildren<SettlementUnitCreator>();
+        settlementCreators.ForAll(creator => creator.onUnitBuildComplete_OneShot += RegisterSettlementForDeployment);
+    }
+
+    private void RegisterSettlementForDeployment(SettlementCmdModel settlement) {   // can occur in runtime if settlementCreator setup that way
+        _deployableSettlements = _deployableSettlements ?? new Stack<SettlementCmdModel>();
+        _deployableSettlements.Push(settlement);
+        if (GameStatus.Instance.IsRunning) {
+            DeploySettlements();
+        }
+    }
+
+    private void DeploySettlements() {
+        var availableSystemsCount = _systemsWithoutSettlements.Count;
+        for (int i = 0; i < availableSystemsCount; i++) {
+            if (_deployableSettlements.Count == 0) {
+                // out of settlements to deploy
+                break;
+            }
+            SettlementCmdModel settlement = _deployableSettlements.Pop();
+            SystemModel system = _systemsWithoutSettlements.Pop();
+            system.AssignSettlement(settlement);
+        }
+
+        if (_systemsWithoutSettlements.Count == 0) {
+            // no more systems without Settlements, so destroy any remaining settlements
+            int extraSettlementsCount = _deployableSettlements.Count;
+            for (int i = 0; i < extraSettlementsCount; i++) {
+                var settlement = _deployableSettlements.Pop();
+                GameObject topLevelSettlementGo = settlement.Transform.parent.gameObject;
+                D.Log("{0} is destroying leftover Settlement {1}.", GetType().Name, topLevelSettlementGo.name);
+                Destroy(topLevelSettlementGo);
+            }
+        }
+    }
+
+    private void InitializeUniverseCenter() {
+        var universeCenter = gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterModel>();
+        if (universeCenter != null) {
+            ItemData data = new ItemData("UniverseCenter");
+            universeCenter.Data = data;
+            universeCenter.enabled = true;
+            universeCenter.gameObject.GetSafeMonoBehaviourComponent<UniverseCenterView>().enabled = true;
+        }
     }
 
     // UNCLEAR how useful this is in the cases here
@@ -57,67 +143,7 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
         GameEventManager.Instance.Raise(new ElementReadyEvent(this, stateToNotMoveBeyondUntilReady, isReady));
     }
 
-    private void AcquireObjectsPresentInScene() {
-        _systemCreators = gameObject.GetSafeMonoBehaviourComponentsInChildren<SystemCreator>();
-        _settlementCreators = new Stack<SettlementUnitCreator>(gameObject.GetSafeMonoBehaviourComponentsInChildren<SettlementUnitCreator>());
-        _universeCenter = gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterModel>();
-    }
-
-    private void OnGameStateChanged() {
-        if (_gameMgr.CurrentState == GameState.DeployingSystems) {
-            InitializeUniverseCenter();
-            RegisterGameStateProgressionReadiness(GameState.DeployingSystems, isReady: true);
-        }
-        if (_gameMgr.CurrentState == GameState.DeployingSettlements) {
-            AssignSettlementsToSystems();   // must occur after SystemData has been set...
-            RegisterGameStateProgressionReadiness(GameState.DeployingSettlements, isReady: true);
-        }
-
-        if (_gameMgr.CurrentState == GameState.RunningCountdown_1) {
-            //InitializeUniverseCenterPlayerIntel();    // no longer needed as UniverseCenter.PlayerIntel.Coverage is fixed to Comprehensive
-        }
-    }
-
-    private void InitializeUniverseCenter() {
-        if (_universeCenter) {
-            ItemData data = new ItemData("UniverseCenter");
-
-            _universeCenter.Data = data;
-            _universeCenter.enabled = true;
-            _universeCenter.gameObject.GetSafeMonoBehaviourComponent<UniverseCenterView>().enabled = true;
-        }
-    }
-
-    private void AssignSettlementsToSystems() {
-        foreach (var sysCreator in _systemCreators) {
-            if (!_settlementCreators.IsNullOrEmpty()) {
-                var settlementCreator = _settlementCreators.Pop();
-                sysCreator.gameObject.GetSafeMonoBehaviourComponentInChildren<SystemModel>().AssignSettlement(settlementCreator);
-            }
-        }
-
-        // if any settlements left over, destroy them
-        if (!_settlementCreators.IsNullOrEmpty()) {
-            foreach (var settlementCreator in _settlementCreators) {
-                settlementCreator.gameObject.SetActive(false);
-                //Destroy(settlementCreator.gameObject);    // causes 'trying to access destroyed object' problems
-            }
-        }
-    }
-
-
     // *****************************************************************************************************************************************************************
-
-
-    /// <summary>
-    /// PlayerIntelLevel changes immediately propogate through COs and Ships so initialize this last in case the change pulls Data.
-    /// </summary>
-    //private void InitializeUniverseCenterPlayerIntel() {
-    //    if (_universeCenter != null) {  // allows me to deactivate it
-    //        //_universeCenter.gameObject.GetSafeInterface<IViewable>().PlayerIntel = new Intel(IntelScope.Comprehensive, IntelSource.InfoNet);
-    //        _universeCenter.gameObject.GetSafeInterface<IViewable>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
-    //    }
-    //}
 
     protected override void OnDestroy() {
         base.OnDestroy();

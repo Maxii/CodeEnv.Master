@@ -56,6 +56,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Framework\GameTimeDuration.cs" />
     <Compile Include="Game\Graphics\FleetCmdHumanPresenter.cs" />
     <Compile Include="Generic\Framework\ACommandStats.cs" />
     <Compile Include="Generic\Framework\AItemStats.cs" />
@@ -140,11 +141,9 @@
     <Compile Include="Game\GUI\BuildNewGameEvent.cs" />
     <Compile Include="Generic\Framework\AMortalItemData.cs" />
     <Compile Include="Game\Gameplay\FleetCmdData.cs" />
-    <Compile Include="Game\Framework\GameTimePeriod.cs" />
     <Compile Include="Game\_Debug\TempGameValues.cs" />
     <Compile Include="Game\Framework\GameTime.cs" />
     <Compile Include="Game\Framework\GameDate.cs" />
-    <Compile Include="Game\Framework\IGameDate.cs" />
     <Compile Include="Generic\Graphics\IHud.cs" />
     <Compile Include="Generic\Graphics\ICameraLOSChangedClient.cs" />
     <Compile Include="Generic\IO\GameInput.cs" />

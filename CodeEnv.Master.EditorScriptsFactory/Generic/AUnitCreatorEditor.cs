@@ -26,6 +26,9 @@ public abstract class AUnitCreatorEditor<T> : Editor where T : ACreator {
 
     public override void OnInspectorGUI() {
         var creator = target as T;
+
+        creator.toDeployInRuntime = GUILayout.Toggle(creator.toDeployInRuntime, "Deploy during Runtime");
+
         creator.isCompositionPreset = GUILayout.Toggle(creator.isCompositionPreset, "Composition is preset");
         if (!creator.isCompositionPreset) {
             creator.maxRandomElements = EditorGUILayout.IntSlider("Max Random Elements", creator.maxRandomElements, 1, 25);

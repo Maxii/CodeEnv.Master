@@ -41,7 +41,14 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<IntelCoverage>(ref _currentCoverage, value, "CurrentCoverage", null, OnCurrentCoverageChanging); }
         }
 
-        public virtual IGameDate DateStamp { get; private set; }
+        private GameDate _dateStamp;
+        public virtual GameDate DateStamp {
+            get {
+                D.Assert(_dateStamp != default(GameDate));
+                return _dateStamp;
+            }
+            private set { _dateStamp = value; }
+        }
 
         public Intel() : this(IntelCoverage.None) { }
 
@@ -50,19 +57,18 @@ namespace CodeEnv.Master.GameContent {
             _currentCoverage = currentCoverage;
         }
 
-        protected virtual void ProcessChange(IntelCoverage newCurrentCoverage) {
-            if (newCurrentCoverage < CurrentCoverage) {
+        protected virtual void ProcessChange(IntelCoverage newCoverage) {
+            if (newCoverage < CurrentCoverage) {
                 // we have less data than before so record the level we had and stamp the date
                 DatedCoverage = CurrentCoverage;
-                GameDate currentDate = new GameDate(GameDate.PresetDateSelector.Current);
-                if (!currentDate.Equals(DateStamp)) {
-                    DateStamp = currentDate;    // avoids PropertyChangeTracking equals warning
+                if (DateStamp != GameTime.CurrentDate) {
+                    DateStamp = GameTime.CurrentDate;    // avoids PropertyChangeTracking equals warning
                 }
             }
-            if (newCurrentCoverage > CurrentCoverage && newCurrentCoverage >= DatedCoverage) {
+            if (newCoverage > CurrentCoverage && newCoverage >= DatedCoverage) {
                 // we have more data than before and it is the same or more than our previous record, so erase the previous record
                 DatedCoverage = IntelCoverage.None;
-                DateStamp = null;
+                DateStamp = default(GameDate);  // = null;
             }
             // if newCoverage is same as currentCoverage than they are both None and this is a new instance - nothing to change
             // if we have more data than before, but we still haven't reached our record, then nothing to change

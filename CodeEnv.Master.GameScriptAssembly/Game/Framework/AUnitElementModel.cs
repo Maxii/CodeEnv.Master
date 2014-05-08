@@ -107,8 +107,8 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
         if (!_weaponRangeTrackerLookup.ContainsKey(rangeTracker.ID)) {
             // only need to record and setup range trackers once. The same rangeTracker can have more than 1 weapon
             _weaponRangeTrackerLookup.Add(rangeTracker.ID, rangeTracker);
-            rangeTracker.Range = weapon.Range;
             rangeTracker.ParentFullName = FullName;
+            rangeTracker.Range = weapon.Range;
             rangeTracker.Owner = Data.Owner;
             rangeTracker.onEnemyInRange += OnEnemyInRange;
         }

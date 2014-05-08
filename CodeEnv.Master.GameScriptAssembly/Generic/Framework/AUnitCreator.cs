@@ -40,7 +40,13 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     where ElementStatType : class, new()
     where CommandType : AUnitCommandModel {
 
-    public bool IsCompleted { get; private set; }
+    /// <summary>
+    /// OneShot event indicating the creation of the unit has completed meaning
+    /// it has been built and enabled, but its state machine is not yet operating. 
+    /// This final operational step will occur once the game is running.
+    /// NOTE: Currently only used by UniverseInitializer to deploy Settlements to Systems when built.
+    /// </summary>
+    public event Action<CommandType> onUnitBuildComplete_OneShot;
 
     /// <summary>
     /// The name of the top level Unit, aka the Settlement, Starbase or Fleet name.
@@ -70,11 +76,11 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         base.Start();
         _gameMgr = References.GameManager;
         _owner = ValidateAndInitializeOwner();
-        if (!GameStatus.Instance.IsRunning) {
-            Subscribe();
+        if (toDeployInRuntime) {
+            GameStatus.Instance.onIsRunning_OneShot += OnGameIsRunning;
         }
         else {
-            Initiate(); // TODO this has never been tested
+            Subscribe();
         }
     }
 
@@ -83,34 +89,33 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         _gameMgr.onCurrentStateChanged += OnGameStateChanged;
     }
 
-    private void Initiate() {
-        CreateComposition();
-        PrepareUnitForOperations();
-        OnCompleted();
-        BeginUnitOperations();
+    private void OnGameStateChanged() {
+        DeployDuringStartup(_gameMgr.CurrentState);
     }
 
-    private void OnGameStateChanged() {
-        if (_gameMgr.CurrentState == GetCreationGameState()) {
-            D.Assert(_gameMgr.CurrentState != GameState.RunningCountdown_2);    // interferes with positioning
+    private void OnGameIsRunning() {
+        DeployDuringRuntime();
+    }
+
+    private void DeployDuringStartup(GameState gameState) {
+        if (gameState == GetCreationGameState()) {
+            //D.Assert(gameState != GameState.RunningCountdown_2);    // interferes with positioning
             CreateComposition();
             PrepareUnitForOperations();
         }
-        if (_gameMgr.CurrentState == GameState.RunningCountdown_2) {
-            OnCompleted();
-        }
-        if (_gameMgr.CurrentState == GameState.RunningCountdown_1) {
-            // do nothing
-        }
-        if (_gameMgr.CurrentState == GameState.Running) {
+        if (gameState == GameState.Running) {
             BeginUnitOperations();
         }
+    }
+
+    private void DeployDuringRuntime() {
+        CreateComposition();
+        PrepareUnitForOperations(onCompleted: BeginUnitOperations);
     }
 
     /// <summary>
     /// Returns the GameState defining when creation should occur.
     /// </summary>
-    /// <returns>The GameState that triggers creation.</returns>
     protected abstract GameState GetCreationGameState();
 
     private void CreateComposition() {
@@ -122,15 +127,19 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         }
     }
 
-    private void PrepareUnitForOperations() {
+    private void PrepareUnitForOperations(Action onCompleted = null) {
         _elements = MakeElements();
-        EnableElements();   // new
+        EnableElements();
         _command = MakeCommand(_owner);
-        EnableCommand();    // new
-        new Job(UnityUtility.WaitFrames(1), toStart: true, onJobComplete: delegate {
+        EnableCommand();
+        new Job(UnityUtility.WaitForFrames(1), toStart: true, onJobComplete: delegate {
             // delay 1 frame to make sure elements and command have initialized, then continue
             AddElements();
             AssignHQElement();
+            OnUnitBuildComplete();
+            if (onCompleted != null) {
+                onCompleted();
+            }
         });
     }
 
@@ -138,7 +147,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         __InitializeCommandIntel();
         BeginElementsOperations();
         BeginCommandOperations();
-        new Job(UnityUtility.WaitFrames(1), toStart: true, onJobComplete: delegate {
+        new Job(UnityUtility.WaitForFrames(1), toStart: true, onJobComplete: delegate {
             // delay 1 frame to allow Element and Command Idling_EnterState to execute
             IssueFirstUnitCommand();
             RemoveCreatorScript();
@@ -152,7 +161,8 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             _elementCategoriesUsed.Add(category);
             // don't change the name as I need to derive category from it in InitializeElements
             string elementInstanceName = element.gameObject.name;
-            CreateElementStat(category, elementInstanceName);
+            //CreateElementStat(category, elementInstanceName);   // FIXME this should be _elementStats.Add(CreateElementStat())
+            _elementStats.Add(CreateElementStat(category, elementInstanceName));
         }
     }
 
@@ -167,7 +177,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             _elementCategoriesUsed.Add(category);
             int elementInstanceIndex = GetCurrentCount(category) + 1;
             string elementInstanceName = category.ToString() + Constants.Underscore + elementInstanceIndex;
-            CreateElementStat(category, elementInstanceName);
+            _elementStats.Add(CreateElementStat(category, elementInstanceName));
         }
     }
 
@@ -175,7 +185,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     protected abstract ElementCategoryType[] GetValidElementCategories();
 
-    protected abstract void CreateElementStat(ElementCategoryType category, string elementName);
+    protected abstract ElementStatType CreateElementStat(ElementCategoryType category, string elementName);
 
     private IList<ElementType> MakeElements() {
         var elements = new List<ElementType>();
@@ -249,8 +259,12 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     protected abstract void IssueFirstUnitCommand();
 
-    protected virtual void OnCompleted() {
-        IsCompleted = true;
+    private void OnUnitBuildComplete() {
+        var temp = onUnitBuildComplete_OneShot;
+        if (temp != null) {
+            temp(_command);
+        }
+        onUnitBuildComplete_OneShot = null;
     }
 
     protected abstract void __InitializeCommandIntel();

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: Index3D.cs
-// General container class holding 3 ints.
+// Immutable location struct holding 3 ints.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,85 +19,70 @@ using UnityEngine;
 namespace CodeEnv.Master.Common {
 
     /// <summary>
-    /// General container class holding 3 ints.
+    /// Immutable location struct holding 3 ints.
     /// </summary>
-    public class Index3D : IEquatable<Index3D> {
+    public struct Index3D : IEquatable<Index3D> {
 
-        public int X { get; private set; }
+        #region Comparison Operators Override
 
-        public int Y { get; private set; }
+        // see C# 4.0 In a Nutshell, page 254
 
-        public int Z { get; private set; }
+        public static bool operator ==(Index3D left, Index3D right) {
+            return left.Equals(right);
+        }
 
-        public Index3D() : this(1, 1, 1) { }
+        public static bool operator !=(Index3D left, Index3D right) {
+            return !left.Equals(right);
+        }
+
+        #endregion
+
+        public readonly int x;
+        public readonly int y;
+        public readonly int z;
 
         public Index3D(int x, int y, int z) {
-            X = x;
-            Y = y;
-            Z = z;
+            this.x = x;
+            this.y = y;
+            this.z = z;
         }
 
-        // Override object.Equals on reference types when you do not want your
-        // reference type to obey reference semantics, as defined by System.Object.
-        // Always override ValueType.Equals for your own Value Types.
-        public override bool Equals(object right) {
-            // TODO the containing class T must extend IEquatable<T>
-            //       
-            // See the full list of guidelines at
-            //   http://go.microsoft.com/fwlink/?LinkID=85237  
-            // and also the guidance for operator== at
-            //   http://go.microsoft.com/fwlink/?LinkId=85238 aka
-            // "Rarely override the operator==() when you create reference types as
-            // the .NET Framework classes expect it to follow reference semantics for
-            // all reference types. Always override the == operator for your own
-            // Value Types. See Effective C#, Item 6.
+        #region Object.Equals and GetHashCode Override
 
-            // No need to check 'this' for null as the CLR throws an exception before
-            // calling any instance method through a null reference.
-            if (object.ReferenceEquals(right, null)) {
-                return false;
-            }
-
-            if (object.ReferenceEquals(this, right)) {
-                return true;
-            }
-
-            if (this.GetType() != right.GetType()) {
-                return false;
-            }
-
-            // now call IEquatable's Equals
-            return this.Equals(right as Index3D);
+        public override bool Equals(object obj) {
+            if (!(obj is Index3D)) { return false; }
+            return Equals((Index3D)obj);
         }
 
-        // Generally, do not override object.GetHashCode as object's version is reliable
-        // although not efficient. You should override it IFF operator==() is redefined which
-        // is rare. 
-        // You should always override ValueType.GetHashCode and redefine ==() for your
-        // value types. If the value type is used as a hash key, it must be immutable.
-        // See Effective C# Item 7.
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// </summary>
+        /// <see cref="Page 254, C# 4.0 in a Nutshell."/>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+        /// </returns>
         public override int GetHashCode() {
-            // TODO: write your implementation of GetHashCode() here
-            return base.GetHashCode();
+            int hash = 17;  // 17 = some prime number
+            hash = hash * 31 + x.GetHashCode(); // 31 = another prime number
+            hash = hash * 31 + y.GetHashCode();
+            hash = hash * 31 + z.GetHashCode();
+            return hash;
         }
+
+        #endregion
 
         public override string ToString() {
-            return string.Format("({0}, {1}, {2})", X, Y, Z);
+            return string.Format("({0}, {1}, {2})", x, y, z);
         }
 
         #region IEquatable<Index3D> Members
 
         public bool Equals(Index3D other) {
-            // TODO add your equality test here. Call the base class Equals only if the
-            // base class version is not provided by System.Object or System.ValueType
-            // as all that occurs is either a check for reference equality or content equality.
-            if (other == null) {    // the runtime will use this IEquatable Equals implementation directly
-                return false;       // rather than the Object.Equals above, IF the 'other' passed for equivalence testing is of Type T
-            }   // In that case, 'other' must be tested for null as the null test for 'right' in Object.Equals never occurs
-            return X == other.X && Y == other.Y && Z == other.Z;
+            return x == other.x && y == other.y && z == other.z;
         }
 
         #endregion
+
 
     }
 }
