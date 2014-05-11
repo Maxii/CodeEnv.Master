@@ -38,10 +38,15 @@ public abstract class AMortalItemModel : AItemModel, IMortalModel, IMortalTarget
 
     protected override void Awake() {
         base.Awake();
-        // NOTE: MortalItemModel Planetoids, Ships and Facilities have their collider sizes preset in their prefabs so Radius can be set from the collider
+        // NOTE: MortalItemModel Planetoids, Ships and Facilities have their collider sizes preset in their prefabs so Radius can be set from the collider bounds here
         // The radius of a Command has nothing to do with the size of its collider. Instead, they reset this value to the Radius of their HQElement
         // The radius of a System, Star and Universe Center are constants and held in TempGameValues. They each set their own radius on Awake().
         Radius = collider.bounds.extents.magnitude;
+        collider.enabled = false;   // enable when the item becomes operational
+    }
+
+    protected override void Initialize() {
+        IsAlive = true;
     }
 
     protected override void SubscribeToDataValueChanges() {
@@ -67,7 +72,7 @@ public abstract class AMortalItemModel : AItemModel, IMortalModel, IMortalTarget
 
     protected virtual void OnItemDeath() {
         enabled = false;
-        IsDead = true;
+        IsAlive = false;
         var temp = onItemDeath;
         if (temp != null) {
             temp(this);
@@ -88,6 +93,11 @@ public abstract class AMortalItemModel : AItemModel, IMortalModel, IMortalTarget
         if (temp != null) {
             temp(animation);
         }
+    }
+
+    private void OnIsOperationalChanged() {
+        //D.Log("{0}.IsOperational and collider.enabled changed to {1}.", FullName, IsOperational);
+        collider.enabled = IsOperational;
     }
 
     public abstract void OnShowCompletion();
@@ -122,7 +132,7 @@ public abstract class AMortalItemModel : AItemModel, IMortalModel, IMortalTarget
 
     public event Action<IMortalModel> onOwnerChanged;
 
-    public bool IsDead { get; private set; }
+    public bool IsAlive { get; protected set; }
 
     public override bool IsMovable { get { return true; } }
 
@@ -133,6 +143,16 @@ public abstract class AMortalItemModel : AItemModel, IMortalModel, IMortalTarget
     public float MaxWeaponsRange { get { return Data.MaxWeaponsRange; } }
 
     public string ParentName { get { return Data.ParentName; } }
+
+    #endregion
+
+    #region IMortalModel Members
+
+    private bool _isOperational;
+    public bool IsOperational {
+        get { return _isOperational; }
+        set { SetProperty<bool>(ref _isOperational, value, "IsOperational", OnIsOperationalChanged); }
+    }
 
     #endregion
 

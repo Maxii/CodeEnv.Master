@@ -28,7 +28,10 @@ namespace CodeEnv.Master.GameContent {
 
         event Action<IMortalModel> onOwnerChanged;
 
-        bool IsDead { get; }
+        /// <summary>
+        /// Flag indicating whether the MortalItem is dead.
+        /// </summary>
+        bool IsAlive { get; }
 
         void TakeDamage(float damage);
 

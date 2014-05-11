@@ -105,7 +105,7 @@ public class TriggerTracker : AMonoBase {
 
     protected virtual void Add(IMortalTarget target) {
         if (!AllTargets.Contains(target)) {
-            if (!target.IsDead) {
+            if (!target.IsAlive) {
                 //D.Log("{0}.{1} now tracking target {2}.", ParentFullName, _transform.name, target.FullName);
                 target.onItemDeath += OnTargetDeath;
                 target.onOwnerChanged += OnTargetOwnerChanged;

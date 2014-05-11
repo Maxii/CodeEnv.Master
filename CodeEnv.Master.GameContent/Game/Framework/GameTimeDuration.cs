@@ -26,13 +26,10 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public struct GameTimeDuration : IEquatable<GameTimeDuration> {
 
-        public static GameTimeDuration OneYear;
-        public static GameTimeDuration OneDay;
+        public static GameTimeDuration OneDay = new GameTimeDuration(days: 1, years: 0);
+        public static GameTimeDuration OneYear = new GameTimeDuration(days: 0, years: 1);
 
-        static GameTimeDuration() {
-            OneDay = new GameTimeDuration(days: 1, years: 0);
-            OneYear = new GameTimeDuration(days: 0, years: 1);
-        }
+        // Bug: use of static constructor with struct causes intellisense for constructors to fail
 
         #region Comparison Operators Override
 
@@ -200,7 +197,6 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-
         public override string ToString() {
             if (years == Constants.Zero) {
                 if (days == Constants.Zero) {
@@ -218,7 +214,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
-
 
     }
 }

@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
 // File: OpeYield.cs
-// Data container holding Organic, Particulate and Energy yields.
+// Immutable data container holding the yield values associated with OpeResources.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,127 +19,99 @@ namespace CodeEnv.Master.GameContent {
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using CodeEnv.Master.Common.LocalResources;
     using CodeEnv.Master.Common;
+    using CodeEnv.Master.Common.LocalResources;
+    using CodeEnv.Master.GameContent;
+    using UnityEngine;
 
     /// <summary>
-    /// Data container holding Organic, Particulate and Energy yields.
+    /// Immutable data container holding the yield values associated with OpeResources.
     /// </summary>
-    public class OpeYield : APropertyChangeTracking {
+    public struct OpeYield : IEquatable<OpeYield> {
 
-        public class OpeResourceValuePair {
+        #region Operators Override
 
-            public OpeResource Resource { get; private set; }
-            public float Value { get; internal set; }
+        // see C# 4.0 In a Nutshell, page 254
 
-            public OpeResourceValuePair(OpeResource opeResource, float value) {
-                Resource = opeResource;
-                Value = value;
-            }
+        public static bool operator ==(OpeYield left, OpeYield right) {
+            return left.Equals(right);
         }
 
-        private float _organics;
-        public float Organics {
-            get { return _organics; }
-            set {
-                Arguments.ValidateNotNegative(value);
-                SetProperty<float>(ref _organics, value, "Organics", null, OnOrganicsChanging);
-            }
+        public static bool operator !=(OpeYield left, OpeYield right) {
+            return !left.Equals(right);
         }
 
-        private float _particulates;
-        public float Particulates {
-            get { return _particulates; }
-            set {
-                Arguments.ValidateNotNegative(value);
-                SetProperty<float>(ref _particulates, value, "Particulates", null, OnParticulatesChanging);
-            }
+        public static OpeYield operator +(OpeYield left, OpeYield right) {
+            var o = left.Organics + right.Organics;
+            var p = left.Particulates + right.Particulates;
+            var e = left.Energy + right.Energy;
+            return new OpeYield(o, p, e);
         }
 
-        private float _energy;
-        public float Energy {
-            get { return _energy; }
-            set {
-                Arguments.ValidateNotNegative(value);
-                SetProperty<float>(ref _energy, value, "Energy", null, OnEnergyChanging);
-            }
-        }
+        #endregion
 
-        private IDictionary<OpeResource, OpeResourceValuePair> resources = new Dictionary<OpeResource, OpeResourceValuePair>();
+        public float Organics { get; private set; }
 
-        public OpeYield() : this(0F, 0F, 0F) { }
+        public float Particulates { get; private set; }
+
+        public float Energy { get; private set; }
 
         public OpeYield(float organics, float particulates, float energy)
-            : this(new OpeResourceValuePair(OpeResource.Organics, organics), new OpeResourceValuePair(OpeResource.Particulates, particulates),
-            new OpeResourceValuePair(OpeResource.Energy, energy)) { }
-
-        private OpeYield(OpeResourceValuePair organics, OpeResourceValuePair particulates, OpeResourceValuePair energy) {
-            Arguments.ValidateNotNegative(organics.Value); Arguments.ValidateNotNegative(particulates.Value); Arguments.ValidateNotNegative(energy.Value);
-            resources.Add(organics.Resource, organics);
-            _organics = organics.Value;
-            resources.Add(particulates.Resource, particulates);
-            _particulates = particulates.Value;
-            resources.Add(energy.Resource, energy);
-            _energy = energy.Value;
+            : this() {
+            Organics = organics;
+            Particulates = particulates;
+            Energy = energy;
         }
 
-        private void OnOrganicsChanging(float value) {
-            resources[OpeResource.Organics].Value = value;
-        }
-
-        private void OnParticulatesChanging(float value) {
-            resources[OpeResource.Particulates].Value = value;
-        }
-
-        private void OnEnergyChanging(float value) {
-            resources[OpeResource.Energy].Value = value;
-        }
-
-        public float GetYield(OpeResource opeResource) {
-            OpeResourceValuePair valuePair;
-            if (resources.TryGetValue(opeResource, out valuePair)) {
-                return valuePair.Value;
+        public float GetYield(OpeResource resource) {
+            switch (resource) {
+                case OpeResource.Organics:
+                    return Organics;
+                case OpeResource.Particulates:
+                    return Particulates;
+                case OpeResource.Energy:
+                    return Energy;
+                case OpeResource.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(resource));
             }
-            D.Error("{0} {1} should be present but is not. Value of 0 returned.", typeof(OpeResource), opeResource);
-            return Constants.ZeroF;
         }
 
-        public IList<OpeResourceValuePair> GetAllResources() {
-            return resources.Values.ToList<OpeResourceValuePair>();
+        #region Object.Equals and GetHashCode Override
+
+        public override bool Equals(object obj) {
+            if (!(obj is OpeYield)) { return false; }
+            return Equals((OpeYield)obj);
         }
 
         /// <summary>
-        /// Sets the yield of the indicated resource.
+        /// Returns a hash code for this instance.
         /// </summary>
-        /// <param name="opeResource">The ope resource.</param>
-        /// <param name="value">The value.</param>
-        /// <exception cref="System.NotImplementedException"></exception>
-        public void SetYield(OpeResource opeResource, float value) {
-            switch (opeResource) {
-                case OpeResource.Organics:
-                    Organics = value;
-                    break;
-                case OpeResource.Particulates:
-                    Particulates = value;
-                    break;
-                case OpeResource.Energy:
-                    Energy = value;
-                    break;
-                case OpeResource.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(opeResource));
-            }
+        /// <see cref="Page 254, C# 4.0 in a Nutshell."/>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+        /// </returns>
+        public override int GetHashCode() {
+            int hash = 17;  // 17 = some prime number
+            hash = hash * 31 + Organics.GetHashCode(); // 31 = another prime number
+            hash = hash * 31 + Particulates.GetHashCode();
+            hash = hash * 31 + Energy.GetHashCode();
+            return hash;
         }
 
-        public void Add(OpeYield other) {
-            Organics += other.Organics;
-            Particulates += other.Particulates;
-            Energy += other.Energy;
-        }
+        #endregion
 
         public override string ToString() {
             return "O[{0:0.#}], P[{1:0.#}], E[{2:0.#}]".Inject(Organics, Particulates, Energy);
         }
+
+        #region IEquatable<OpeYield> Members
+
+        public bool Equals(OpeYield other) {
+            return Organics == other.Organics && Particulates == other.Particulates && Energy == other.Energy;
+        }
+
+        #endregion
 
     }
 }

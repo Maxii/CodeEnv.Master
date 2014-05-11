@@ -21,6 +21,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common.LocalResources;
     using CodeEnv.Master.Common;
     using System.Diagnostics;
+    using System.Collections;
 
     /// <summary>
     /// Collection of tools and utilities specific to the game.
@@ -53,18 +54,39 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        /// <summary>
+        /// Waits for the designated GameDate, then executes the provided delegate.
+        /// Usage:
+        /// WaitForDate(futureDate, onWaitFinished: (jobWasKilled) =&gt; {
+        /// Code to execute after the wait;
+        /// });
+        /// Warning: This method uses a coroutine Job. Accordingly, after being called it will
+        /// immediately return which means the code you have following it will execute
+        /// before the code assigned to the onWaitFinished delegate.
+        /// </summary>
+        /// <param name="futureDate">The future date.</param>
+        /// <param name="onWaitFinished">The delegate to execute once the wait is finished. The
+        /// signature is onWaitFinished(jobWasKilled).</param>
+        /// <returns>A reference to the WaitJob so it can be killed before it finishes, if needed.</returns>
+        public static WaitJob WaitForDate(GameDate futureDate, Action<bool> onWaitFinished) {
+            return new WaitJob(WaitForDate(futureDate), toStart: true, onJobComplete: onWaitFinished);
+        }
 
-        //public static bool CheckForIncreasingSeparation(float distanceToCurrentDestinationSqrd, ref float previousDistanceSqrd) {
-        //    if (distanceToCurrentDestinationSqrd > previousDistanceSqrd + TempGameValues.IncreasingSeparationDistanceTestToleranceSqrd) {
-        //        return true;
-        //    }
-        //    if (distanceToCurrentDestinationSqrd < previousDistanceSqrd) {
-        //        // while we continue to move closer to the current destination, keep previous distance current
-        //        // once we start to move away, we must not update it if we want the tolerance check to catch it
-        //        previousDistanceSqrd = distanceToCurrentDestinationSqrd;
-        //    }
-        //    return false;
-        //}
+        /// <summary>
+        /// Waits for the designated GameDate. Usage:
+        /// new Job(GameUtility.WaitForDate(futureDate), toStart: true, onJobCompletion: (jobWasKilled) =&gt; {
+        /// Code to execute after the wait;
+        /// });
+        /// WARNING: the code in this location will execute immediately after the Job starts
+        /// </summary>
+        /// <param name="futureDate">The date.</param>
+        /// <returns></returns>
+        private static IEnumerator WaitForDate(GameDate futureDate) {
+            D.Assert(futureDate > GameTime.CurrentDate);
+            while (futureDate > GameTime.CurrentDate) {
+                yield return null;
+            }
+        }
 
     }
 }

@@ -150,6 +150,7 @@
     <Compile Include="Generic\Framework\DisposePropertyChangedSubscription.cs" />
     <Compile Include="Generic\IO\UnityUpdateEvent.cs" />
     <Compile Include="Generic\Math\Vector3EqualityComparer.cs" />
+    <Compile Include="ThirdParty\WaitJob.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeEnv.Master.Common.LocalResources\CodeEnv.Master.Common.LocalResources.csproj">

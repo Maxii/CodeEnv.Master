@@ -62,6 +62,7 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
     }
 
     protected override void Initialize() {
+        base.Initialize();
         _rigidbody.mass = Data.Mass;
     }
 
@@ -82,7 +83,7 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
     }
 
     private void OnCommandChanged() {
-        //Data.OptionalParentName = Command.Data.OptionalParentName;
+        // Changing the parentName of this element is handled by the new Command's Data
     }
 
     protected override void OnNamingChanged() {

@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// COMMENT 
 /// </summary>
-public class SensorRangeTracker : AMonoBase {
+public class SensorRangeTracker : AMonoBase, IDisposable {
 
     public SensorRangeCategory SensorRangeCategory { get; set; }
 
@@ -148,7 +148,7 @@ public class SensorRangeTracker : AMonoBase {
 
     private void Add(ICommandTarget target) {
         if (!AllTargets.Contains(target)) {
-            if (!target.IsDead) {
+            if (target.IsAlive) {
                 D.Log("{0}.{1} now tracking target {2}.", Command.FullName, GetType().Name, target.FullName);
                 target.onItemDeath += OnTargetDeath;
                 target.onOwnerChanged += OnTargetOwnerChanged;
@@ -162,7 +162,7 @@ public class SensorRangeTracker : AMonoBase {
             D.Warn("{0}.{1} attempted to add duplicate Target {2}.", Command.FullName, GetType().Name, target.FullName);
         }
 
-        if (Command.Owner.IsEnemyOf(target.Owner) && !target.IsDead && !EnemyTargets.Contains(target)) {
+        if (Command.Owner.IsEnemyOf(target.Owner) && target.IsAlive && !EnemyTargets.Contains(target)) {
             AddEnemyTarget(target);
         }
     }
@@ -212,9 +212,70 @@ public class SensorRangeTracker : AMonoBase {
     //    }
     //}
 
+    protected override void OnDestroy() {
+        base.OnDestroy();
+        Dispose();
+    }
+
+    private void Cleanup() {
+        Unsubscribe();
+    }
+
+    private void Unsubscribe() {
+        // This gameObject's parent (element) can be destroyed before the game isRunning
+        // Examples includes the destruction of a SettlementCreator when there are more 
+        // settlements than systems to assign them too
+        GameStatus.Instance.onIsRunning_OneShot -= OnGameIsRunning;
+    }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region IDisposable
+    [DoNotSerialize]
+    private bool _alreadyDisposed = false;
+    protected bool _isDisposing = false;
+
+    /// <summary>
+    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// </summary>
+    public void Dispose() {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
+    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
+    /// </summary>
+    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+    protected virtual void Dispose(bool isDisposing) {
+        // Allows Dispose(isDisposing) to be called more than once
+        if (_alreadyDisposed) {
+            return;
+        }
+
+        _isDisposing = true;
+        if (isDisposing) {
+            // free managed resources here including unhooking events
+            Cleanup();
+        }
+        // free unmanaged resources here
+
+        _alreadyDisposed = true;
+    }
+
+    // Example method showing check for whether the object has been disposed
+    //public void ExampleMethod() {
+    //    // throw Exception if called on object that is already disposed
+    //    if(alreadyDisposed) {
+    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
+    //    }
+
+    //    // method content here
+    //}
+    #endregion
 
 }
 

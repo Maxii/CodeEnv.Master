@@ -29,16 +29,14 @@ using UnityEngine;
 /// </summary>
 public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategory, FacilityData, FacilityStats, SettlementCmdModel> {
 
-    private UnitFactory _factory;
+    private UnitFactory _factory;   // not accesible from AUnitCreator
 
     protected override void Awake() {
         base.Awake();
         _factory = UnitFactory.Instance;
     }
 
-    protected override GameState GetCreationGameState() {
-        return GameState.DeployingSystems;  // Building can take place anytime? Placing in Systems can take place in DeployingSettlements
-    }
+    // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
 
     protected override FacilityStats CreateElementStat(FacilityCategory category, string elementName) {
         FacilityStats stat = new FacilityStats() {
@@ -56,10 +54,6 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
             },
         };
         return stat;
-    }
-
-    protected override int GetStatsCount(FacilityCategory elementCategory) {
-        return _elementStats.Where(s => s.Category == elementCategory).Count();
     }
 
     protected override FacilityModel MakeElement(FacilityStats stat, IPlayer owner) {
@@ -111,6 +105,18 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
         }
         return cmd;
     }
+
+    protected override void DeployUnit() {
+        var allSystems = SystemCreator.AllSystems; // = __UniverseInitializer.systemModels;
+        var availableSystems = allSystems.Where(sys => sys.Data.Owner == TempGameValues.NoPlayer);
+        if (availableSystems.IsNullOrEmpty()) {
+            //D.Log("Destroying {0} for {1}.", GetType().Name, UnitName);
+            Destroy(gameObject);
+            return;
+        }
+        availableSystems.First().AssignSettlement(_command);
+    }
+
 
     protected override void BeginElementsOperations() {
         _elements.ForAll(e => (e as FacilityModel).CurrentState = FacilityState.Idling);

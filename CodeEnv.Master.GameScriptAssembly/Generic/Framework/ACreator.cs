@@ -20,6 +20,7 @@
 /// Abstract base class for Unit Creators. Primarily used as
 /// a non-generic constraint for CreatorEditors.
 /// </summary>
+[SerializeAll]
 public abstract class ACreator : AMonoBase {
 
     public enum DiploStateWithHuman {
@@ -35,7 +36,11 @@ public abstract class ACreator : AMonoBase {
     public bool isCompositionPreset;
     public int maxRandomElements = 8;
 
-    public bool toDeployInRuntime;
+    public bool toDelayOperations;
+    public bool toDelayBuild;
+    public int hourDelay = 0;
+    public int dayDelay = 0;
+    public int yearDelay = 0;
 
 }
 

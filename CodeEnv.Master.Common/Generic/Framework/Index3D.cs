@@ -72,7 +72,7 @@ namespace CodeEnv.Master.Common {
         #endregion
 
         public override string ToString() {
-            return string.Format("({0}, {1}, {2})", x, y, z);
+            return string.Format("({0},{1},{2})", x, y, z);
         }
 
         #region IEquatable<Index3D> Members

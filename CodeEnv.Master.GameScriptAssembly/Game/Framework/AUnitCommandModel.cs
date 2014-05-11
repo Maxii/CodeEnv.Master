@@ -56,6 +56,10 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
         // Derived class should call Subscribe() after all used references have been established
     }
 
+    protected override void Initialize() {
+        base.Initialize();
+    }
+
     // formations are now generated when an element is added and/or when a HQ element is assigned
 
     protected override void SubscribeToDataValueChanges() {

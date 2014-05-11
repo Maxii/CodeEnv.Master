@@ -103,10 +103,23 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
         set { base.CurrentState = value; }
     }
 
+    #region None
+
+    void None_EnterState() {
+        //LogEvent();
+    }
+
+    void None_ExitState() {
+        LogEvent();
+        IsOperational = true;
+    }
+
+    #endregion
+
     #region Idling
 
     IEnumerator Idling_EnterState() {
-        D.Log("{0}.Idling_EnterState called.", FullName);
+        //D.Log("{0}.Idling_EnterState called.", FullName);
 
         if (CurrentOrder != null) {
             // check for a standing order to execute if the current order (just completed) was issued by the Captain
@@ -125,7 +138,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
     }
 
     void Idling_ExitState() {
-        LogEvent();
+        //LogEvent();
         // TODO register as unavailable
     }
 
@@ -140,7 +153,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
         D.Log("{0}.ExecuteAttackOrder_EnterState() called.", FullName);
         _ordersTarget = CurrentOrder.Target;
 
-        while (!_ordersTarget.IsDead) {
+        while (_ordersTarget.IsAlive) {
             bool inRange = PickPrimaryTarget(out _primaryTarget);
             // if a primaryTarget is inRange, primary target is not null so OnWeaponReady will attack it
             // if not in range, then primary target will be null, so OnWeaponReady will attack other targets of opportunity, if any
@@ -316,7 +329,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
     /// <returns> <c>true</c>if the target is in range, <c>false</c> otherwise. 
     /// </returns>
     private bool PickPrimaryTarget(out IMortalTarget chosenTarget) {
-        D.Assert(_ordersTarget != null && !_ordersTarget.IsDead, "{0}'s target from orders is null or dead.".Inject(FullName));
+        D.Assert(_ordersTarget != null && _ordersTarget.IsAlive, "{0}'s target from orders is null or dead.".Inject(FullName));
         bool isTargetInRange = false;
         var uniqueEnemyTargetsInRange = Enumerable.Empty<IMortalTarget>();
         foreach (var rt in _weaponRangeTrackerLookup.Values) {

@@ -152,6 +152,7 @@
     <Compile Include="MyCtxPickHandler.cs" />
     <Compile Include="MyNguiButtonPlayAnimation.cs" />
     <Compile Include="Navigator.cs" />
+    <Compile Include="OpeYield.cs" />
     <Compile Include="OrbitalPlane.cs" />
     <Compile Include="OrbitalPlaneManager.cs" />
     <Compile Include="PlanetoidPresenter.cs" />
@@ -205,6 +206,7 @@
     <Compile Include="VelocityRay.cs" />
     <Compile Include="View.cs" />
     <Compile Include="ViewDisplayMode.cs" />
+    <Compile Include="XYield.cs" />
     <Compile Include="ZoomOutOnCursorOptionChangedEvent.cs" />
     <Compile Include="GuiFollowerLabel.cs" />
     <Compile Include="SceneStartupSequenceEvent.cs" />

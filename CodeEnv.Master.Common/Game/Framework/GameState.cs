@@ -56,10 +56,10 @@ namespace CodeEnv.Master.Common {
         Waiting,
 
         /// <summary>
-        /// The buildout of all Systems and other potential pathfinding obstacles prior to generating the network
-        /// of waypoints known as a PathGraph.
+        /// The build, initialize and deploy all Systems and other potential pathfinding obstacles prior to generating the network
+        /// of waypoints known as a PathGraph. Planetoid operations donot commence until Running.
         /// </summary>
-        DeployingSystems,
+        BuildAndDeploySystems,
 
         /// <summary>
         /// Primary focus is to allow the AStar Pathfinding system time to generate the overall graph
@@ -68,19 +68,19 @@ namespace CodeEnv.Master.Common {
         GeneratingPathGraphs,
 
         /// <summary>
-        /// The deployment of Settlements to Systems that start out settled.
+        /// Build and initialize all starting units in preparation for deployment into the universe during
+        /// DeployingUnits. Unit operations donot commence until on or after Running.
         /// </summary>
-        DeployingSettlements,
+        PrepareUnitsForDeployment,
 
         /// <summary>
-        /// A placeholder countdown step in progressing to Running, following GeneratingPathfindingGraphs.
-        /// Primary used for sequencing startup progression.
+        /// Deploy all initialized units to their starting location in the universe. Currently, a physical
+        /// change in location occurs only for Settlements as they are assigned to Systems.
         /// </summary>
-        RunningCountdown_2,
+        DeployingUnits,
 
         /// <summary>
-        /// The final countdown step in progression prior to Running, following RunningCountdown_2.
-        /// Primary used for sequencing startup progression.
+        /// The final countdown step in progression prior to Running.
         /// </summary>
         RunningCountdown_1,
 

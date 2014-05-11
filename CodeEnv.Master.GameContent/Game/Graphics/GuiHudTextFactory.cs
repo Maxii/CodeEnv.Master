@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.IntelState:
                     return new ColoredTextList_Intel(intel);
                 case GuiHudLineKeys.Owner:
-                    return data.Owner != null ? new ColoredTextList_Owner(data.Owner) : _emptyColoredTextList;
+                    return data.Owner != TempGameValues.NoPlayer ? new ColoredTextList_Owner(data.Owner) : _emptyColoredTextList;
 
                 // The following is a fall through catcher for line keys that aren't processed. An empty ColoredTextList will be returned which will be ignored by GuiCursorHudText
                 case GuiHudLineKeys.Health:

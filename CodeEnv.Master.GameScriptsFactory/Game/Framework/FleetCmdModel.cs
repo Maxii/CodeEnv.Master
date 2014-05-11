@@ -60,6 +60,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     }
 
     protected override void Initialize() {
+        base.Initialize();
         InitializeNavigator();
         CurrentState = FleetState.None;
         //D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
@@ -107,7 +108,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     public override void RemoveElement(IElementModel element) {
         base.RemoveElement(element);
-        if (this.IsDead) {
+        if (!this.IsAlive) {
             // fleetCmd has died
             return;
         }
@@ -245,6 +246,19 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         set { base.CurrentState = value; }
     }
 
+    #region None
+
+    void None_EnterState() {
+        //LogEvent();
+    }
+
+    void None_ExitState() {
+        LogEvent();
+        IsOperational = true;
+    }
+
+    #endregion
+
     #region Idle
 
     void Idling_EnterState() {
@@ -381,7 +395,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
             CurrentState = FleetState.Idling;
             yield break;
         }
-        if ((CurrentOrder.Target as IMortalTarget).IsDead) {
+        if (!(CurrentOrder.Target as IMortalTarget).IsAlive) {
             // Moving Return()s if the target dies
             CurrentState = FleetState.Idling;
             yield break;

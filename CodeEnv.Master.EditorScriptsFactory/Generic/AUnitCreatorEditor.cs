@@ -27,7 +27,13 @@ public abstract class AUnitCreatorEditor<T> : Editor where T : ACreator {
     public override void OnInspectorGUI() {
         var creator = target as T;
 
-        creator.toDeployInRuntime = GUILayout.Toggle(creator.toDeployInRuntime, "Deploy during Runtime");
+        creator.toDelayOperations = GUILayout.Toggle(creator.toDelayOperations, "Delay Operations");
+        if (creator.toDelayOperations) {
+            creator.toDelayBuild = GUILayout.Toggle(creator.toDelayBuild, "Delay Build");
+            creator.hourDelay = EditorGUILayout.IntSlider("Hours to delay", creator.hourDelay, 0, 19);
+            creator.dayDelay = EditorGUILayout.IntSlider("Days to delay", creator.dayDelay, 0, 99);
+            creator.yearDelay = EditorGUILayout.IntSlider("Years to delay", creator.yearDelay, 0, 10);
+        }
 
         creator.isCompositionPreset = GUILayout.Toggle(creator.isCompositionPreset, "Composition is preset");
         if (!creator.isCompositionPreset) {

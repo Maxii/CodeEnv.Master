@@ -172,7 +172,7 @@ public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
     }
 
     public override void AssessDiscernability() {
-        IsDiscernible = InCameraLOS && PlayerIntel.CurrentCoverage != IntelCoverage.None && Presenter.IsAlive;
+        IsDiscernible = InCameraLOS && PlayerIntel.CurrentCoverage != IntelCoverage.None && Presenter.Model.IsAlive;
     }
 
     #endregion

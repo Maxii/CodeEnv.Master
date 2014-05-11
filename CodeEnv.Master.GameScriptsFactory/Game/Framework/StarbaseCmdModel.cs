@@ -47,6 +47,7 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
     }
 
     protected override void Initialize() {
+        base.Initialize();
         CurrentState = StarbaseState.None;
         //D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
     }
@@ -104,6 +105,19 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
         get { return (StarbaseState)base.CurrentState; }
         set { base.CurrentState = value; }
     }
+
+    #region None
+
+    void None_EnterState() {
+        //LogEvent();
+    }
+
+    void None_ExitState() {
+        LogEvent();
+        IsOperational = true;
+    }
+
+    #endregion
 
     #region Idle
 

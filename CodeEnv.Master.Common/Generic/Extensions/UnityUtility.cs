@@ -248,16 +248,52 @@ namespace CodeEnv.Master.Common {
             return new Vector3(x / length, y / length, z / length);
         }
 
+
+        /// <summary>
+        /// Waits one frame, then executes the provided delegate.
+        /// Usage:
+        ///     WaitThenExecute(onWaitFinished: (jobWasKilled) =&gt; {
+        ///         Code to execute after the wait;
+        ///     });
+        /// Warning: This method uses a coroutine Job. Accordingly, after being called it will 
+        /// immediately return which means the code you have following it will execute 
+        /// before the code assigned to the onWaitFinished delegate.
+        /// </summary>
+        /// <param name="onWaitFinished">The delegate to execute once the wait is finished. The 
+        /// signature is onWaitFinished(jobWasKilled).</param>
+        public static void WaitOneToExecute(Action<bool> onWaitFinished) {
+            WaitForFrames(Constants.One, onWaitFinished);
+        }
+
+        /// <summary>
+        /// Waits the designated number of frames, then executes the provided delegate.
+        /// Usage:
+        /// WaitForFrames(framesToWait, onWaitFinished: (jobWasKilled) =&gt; {
+        /// Code to execute after the wait;
+        /// });
+        /// Warning: This method uses a coroutine Job. Accordingly, after being called it will
+        /// immediately return which means the code you have following it will execute
+        /// before the code assigned to the onWaitFinished delegate.
+        /// </summary>
+        /// <param name="framesToWait">The frames to wait.</param>
+        /// <param name="onWaitFinished">The delegate to execute once the wait is finished. The
+        /// signature is onWaitFinished(jobWasKilled).</param>
+        /// <returns>A reference to the WaitJob so it can be killed before it finishes, if needed.</returns>
+        public static WaitJob WaitForFrames(int framesToWait, Action<bool> onWaitFinished) {
+            return new WaitJob(WaitForFrames(framesToWait), toStart: true, onJobComplete: onWaitFinished);
+        }
+
         /// <summary>
         /// Waits the designated number of frames. Usage:
-        /// new Job(UnityUtility.WaitFrames(1), toStart: true, onJobCompletion: delegate {
-        ///     Code to execute after the wait;
-        ///     });
-        /// WARNING: this code will execute immediately after the Job starts
+        /// new Job(UnityUtility.WaitFrames(1), toStart: true, onJobCompletion: (jobWasKilled) =&gt; {
+        /// Code to execute after the wait;
+        /// });
+        /// WARNING: the code in this location will execute immediately after the Job starts
         /// </summary>
         /// <param name="framesToWait">The frames to wait.</param>
         /// <returns></returns>
-        public static IEnumerator WaitForFrames(int framesToWait) {
+        private static IEnumerator WaitForFrames(int framesToWait) {
+            D.Assert(framesToWait > Constants.Zero);
             int targetFrameCount = Time.frameCount + framesToWait;
             while (Time.frameCount < targetFrameCount) {
                 yield return null;

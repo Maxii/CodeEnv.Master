@@ -188,11 +188,13 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     #region None
 
     void None_EnterState() {
-        LogEvent();
+        //LogEvent();
+        IsOperational = false;    // needed as ships uniquely cycle through None when transferring between fleets
     }
 
     void None_ExitState() {
-        LogEvent();
+        //LogEvent();
+        IsOperational = true;
     }
 
     #endregion
@@ -200,7 +202,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     #region Idling
 
     IEnumerator Idling_EnterState() {
-        D.Log("{0}.Idling_EnterState called.", FullName);
+        // D.Log("{0}.Idling_EnterState called.", FullName);
 
         if (CurrentOrder != null) {
             // check for a standing order to execute if the current order (just completed) was issued by the Captain
@@ -220,7 +222,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     }
 
     void Idling_OnShipOnStation(bool isOnStation) {
-        LogEvent();
+        //LogEvent();
         if (!isOnStation) {
             ProceedToFormationStation();
         }
@@ -232,7 +234,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     }
 
     void Idling_ExitState() {
-        LogEvent();
+        //LogEvent();
         // TODO register as unavailable
     }
 
@@ -396,7 +398,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         D.Log("{0}.ExecuteAttackOrder_EnterState() called.", FullName);
         _ordersTarget = CurrentOrder.Target as IMortalTarget;
 
-        while (!_ordersTarget.IsDead) {
+        while (_ordersTarget.IsAlive) {
             // once picked, _primaryTarget cannot be null when _ordersTarget is alive
             bool inRange = PickPrimaryTarget(out _primaryTarget);
             if (inRange) {
@@ -675,7 +677,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     /// <param name="chosenTarget">The chosen target from orders or null if no targets remain alive.</param>
     /// <returns> <c>true</c> if the target is in range, <c>false</c> otherwise.</returns>
     private bool PickPrimaryTarget(out IMortalTarget chosenTarget) {
-        D.Assert(_ordersTarget != null && !_ordersTarget.IsDead, "{0}'s target from orders is null or dead.".Inject(Data.Name));
+        D.Assert(_ordersTarget != null && _ordersTarget.IsAlive, "{0}'s target from orders is null or dead.".Inject(Data.Name));
         bool isTargetInRange = false;
         var uniqueEnemyTargetsInRange = Enumerable.Empty<IMortalTarget>();
         foreach (var rt in _weaponRangeTrackerLookup.Values) {

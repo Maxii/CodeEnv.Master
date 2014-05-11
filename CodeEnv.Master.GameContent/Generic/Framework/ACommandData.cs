@@ -230,8 +230,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void VerifyOwner(AElementData elementData) {
-            D.Assert(Owner != null, "{0} owner should be set before adding elements.".Inject(Name));
-            if (elementData.Owner == null) {
+            D.Assert(Owner != TempGameValues.NoPlayer, "{0} owner should be set before adding elements.".Inject(Name));
+            if (elementData.Owner == TempGameValues.NoPlayer) {
                 D.Warn("{0} owner should be set before adding element to {1}.", elementData.Name, Name);
                 elementData.Owner = Owner;
             }

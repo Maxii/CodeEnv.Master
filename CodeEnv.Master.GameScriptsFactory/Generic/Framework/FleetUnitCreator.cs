@@ -31,16 +31,14 @@ using UnityEngine;
 /// </summary>
 public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, ShipStats, FleetCmdModel> {
 
-    private UnitFactory _factory;
+    private UnitFactory _factory;   // not accesible from AUnitCreator
 
     protected override void Awake() {
         base.Awake();
         _factory = UnitFactory.Instance;
     }
 
-    protected override GameState GetCreationGameState() {
-        return GameState.DeployingSettlements;  // Can be anytime? Should be after GeneratePathGraph so no interference
-    }
+    // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
 
     protected override ShipStats CreateElementStat(ShipCategory category, string elementName) {
         float mass = TempGameValues.__GetMass(category);
@@ -96,10 +94,6 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
         return cmd;
     }
 
-    protected override int GetStatsCount(ShipCategory elementCategory) {
-        return _elementStats.Where(s => s.Category == elementCategory).Count();
-    }
-
     protected override ShipModel MakeElement(ShipStats stat, IPlayer owner) {
         return _factory.MakeInstance(stat, owner);
     }
@@ -138,6 +132,10 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
         _command.HQElement = RandomExtended<IElementModel>.Choice(candidateHQElements) as ShipModel;
     }
 
+    protected override void DeployUnit() {
+        // Fleets don't need to be deployed. They are already on location.
+    }
+
     protected override void BeginElementsOperations() {
         _elements.ForAll(e => (e as ShipModel).CurrentState = ShipState.Idling);
     }
@@ -166,21 +164,21 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
 
     private void __GetFleetAttackUnderway() {
         IPlayer fleetOwner = _owner;
-        IEnumerable<IMortalTarget> attackTgts = FindObjectsOfType<StarbaseCmdModel>().Where(sb => fleetOwner.IsEnemyOf(sb.Owner)).Cast<IMortalTarget>();
+        IEnumerable<IMortalTarget> attackTgts = FindObjectsOfType<StarbaseCmdModel>().Where(sb => sb.IsOperational && fleetOwner.IsEnemyOf(sb.Owner)).Cast<IMortalTarget>();
         if (attackTgts.IsNullOrEmpty()) {
             // in case no Starbases qualify
-            attackTgts = FindObjectsOfType<SettlementCmdModel>().Where(s => fleetOwner.IsEnemyOf(s.Owner)).Cast<IMortalTarget>();
+            attackTgts = FindObjectsOfType<SettlementCmdModel>().Where(s => s.IsOperational && fleetOwner.IsEnemyOf(s.Owner)).Cast<IMortalTarget>();
             if (attackTgts.IsNullOrEmpty()) {
                 // in case no Settlements qualify
-                attackTgts = FindObjectsOfType<FleetCmdModel>().Where(f => fleetOwner.IsEnemyOf(f.Owner)).Cast<IMortalTarget>();
+                attackTgts = FindObjectsOfType<FleetCmdModel>().Where(f => f.IsOperational && fleetOwner.IsEnemyOf(f.Owner)).Cast<IMortalTarget>();
                 if (attackTgts.IsNullOrEmpty()) {
                     // in case no Fleets qualify
-                    attackTgts = FindObjectsOfType<PlanetoidModel>().Where(p => fleetOwner.IsEnemyOf(p.Owner)).Cast<IMortalTarget>();
+                    attackTgts = FindObjectsOfType<PlanetoidModel>().Where(p => p.IsOperational && fleetOwner.IsEnemyOf(p.Owner)).Cast<IMortalTarget>();
                     if (attackTgts.IsNullOrEmpty()) {
                         // in case no enemy Planetoids qualify
-                        attackTgts = FindObjectsOfType<PlanetoidModel>().Where(p => p.Owner == TempGameValues.NoPlayer).Cast<IMortalTarget>();
+                        attackTgts = FindObjectsOfType<PlanetoidModel>().Where(p => p.IsOperational && p.Owner == TempGameValues.NoPlayer).Cast<IMortalTarget>();
                         if (attackTgts.Count() > 0) {
-                            D.Warn("{0} can find no AttackTargets that meet the enemy selection criteria. Picking an unowned Planet.", UnitName);
+                            D.Log("{0} can find no AttackTargets that meet the enemy selection criteria. Picking an unowned Planet.", UnitName);
                         }
                         else {
                             D.Warn("{0} can find no AttackTargets of any sort. Defaulting to __GetFleetUnderway().", UnitName);

@@ -442,10 +442,10 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
             case GameState.Lobby:
             case GameState.Building:
             case GameState.Loading:
-            case GameState.DeployingSystems:
+            case GameState.BuildAndDeploySystems:
             case GameState.GeneratingPathGraphs:
-            case GameState.DeployingSettlements:
-            case GameState.RunningCountdown_2:
+            case GameState.PrepareUnitsForDeployment:
+            case GameState.DeployingUnits:
             case GameState.RunningCountdown_1:
             case GameState.Running:
                 // do nothing

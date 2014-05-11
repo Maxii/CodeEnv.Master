@@ -165,7 +165,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
         cmd.enabled = true;
         cmd.gameObject.GetSafeMonoBehaviourComponent<FleetCmdView>().enabled = true;
-        new Job(UnityUtility.WaitForFrames(1), toStart: true, onJobComplete: delegate {
+        UnityUtility.WaitOneToExecute( delegate {
             // wait 1 frame to allow Cmd to initialize
             cmd.AddElement(element);  // resets the element's Command property and parents element to Cmd's parent GO
             cmd.HQElement = element;

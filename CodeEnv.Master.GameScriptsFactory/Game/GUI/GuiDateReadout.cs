@@ -27,14 +27,10 @@ using CodeEnv.Master.GameContent;
 public class GuiDateReadout : AGuiLabelReadoutBase, IDisposable {
 
     private IList<IDisposable> _subscribers;
-    private GameStatus _gameStatus;
 
     protected override void Awake() {
         base.Awake();
-        _gameStatus = GameStatus.Instance;
         Subscribe();
-        UpdateRate = FrameUpdateFrequency.Normal;
-        enabled = false;
     }
 
     protected override void InitializeTooltip() {
@@ -43,33 +39,12 @@ public class GuiDateReadout : AGuiLabelReadoutBase, IDisposable {
 
     private void Subscribe() {
         _subscribers = new List<IDisposable>();
-        _subscribers.Add(_gameStatus.SubscribeToPropertyChanging<GameStatus, bool>(gs => gs.IsPaused, OnIsPausedChanging));
-        _subscribers.Add(_gameStatus.SubscribeToPropertyChanged<GameStatus, bool>(gs => gs.IsPaused, OnIsPausedChanged));
-        _subscribers.Add(_gameStatus.SubscribeToPropertyChanged<GameStatus, bool>(gs => gs.IsRunning, OnIsRunningChanged));
+        //D.Log("{0} subscribing to {1}.onDateChanged.", GetType().Name, typeof(GameTime).Name);
+        GameTime.Instance.onDateChanged += OnDateChanged;
     }
 
-    protected override void OccasionalUpdate() {
-        base.OccasionalUpdate();
-        RefreshReadout(GameTime.CurrentDate.ToString());
-    }
-
-    private void OnIsRunningChanged() {
-        AssessEnabled();
-    }
-
-    private void OnIsPausedChanging(bool isPausing) {
-        if (isPausing) {
-            // we are about to pause so refresh the date in case the game pauses on load
-            RefreshReadout(GameTime.CurrentDate.ToString());
-        }
-    }
-
-    private void OnIsPausedChanged() {
-        AssessEnabled();
-    }
-
-    private void AssessEnabled() {
-        enabled = _gameStatus.IsRunning && !_gameStatus.IsPaused;
+    private void OnDateChanged(GameDate newDate) {
+        RefreshReadout(newDate.ToString());
     }
 
     private void Cleanup() {
@@ -79,6 +54,7 @@ public class GuiDateReadout : AGuiLabelReadoutBase, IDisposable {
     private void Unsubscribe() {
         _subscribers.ForAll<IDisposable>(s => s.Dispose());
         _subscribers.Clear();
+        GameTime.Instance.onDateChanged -= OnDateChanged;
     }
 
     protected override void OnDestroy() {

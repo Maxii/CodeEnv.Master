@@ -415,7 +415,7 @@ public class CameraControl : AMonoBaseSingleton<CameraControl> {
             case GameState.Building:
             case GameState.Loading:
             case GameState.GeneratingPathGraphs:
-            case GameState.RunningCountdown_2:
+            case GameState.DeployingUnits:
             case GameState.RunningCountdown_1:
             case GameState.Running:
                 // do nothing

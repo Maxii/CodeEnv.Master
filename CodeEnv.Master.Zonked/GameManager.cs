@@ -366,16 +366,16 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
         switch (GameState) {
             case GameState.Waiting:
                 GameState = GameState.GeneratingPathGraphs;
-                GameState = GameState.RunningCountdown_2;
+                GameState = GameState.DeployingUnits;
                 GameState = GameState.RunningCountdown_1;
                 GameState = GameState.Running;
                 break;
             case GameState.GeneratingPathGraphs:
-                GameState = GameState.RunningCountdown_2;
+                GameState = GameState.DeployingUnits;
                 GameState = GameState.RunningCountdown_1;
                 GameState = GameState.Running;
                 break;
-            case GameState.RunningCountdown_2:
+            case GameState.DeployingUnits:
                 GameState = GameState.RunningCountdown_1;
                 GameState = GameState.Running;
                 break;
@@ -410,9 +410,9 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
                 if (proposedNewState != GameState.GeneratingPathGraphs) { isError = true; }
                 break;
             case GameState.GeneratingPathGraphs:
-                if (proposedNewState != GameState.RunningCountdown_2) { isError = true; }
+                if (proposedNewState != GameState.DeployingUnits) { isError = true; }
                 break;
-            case GameState.RunningCountdown_2:
+            case GameState.DeployingUnits:
                 if (proposedNewState != GameState.RunningCountdown_1) { isError = true; }
                 break;
             case GameState.RunningCountdown_1:
@@ -445,7 +445,7 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
             case GameState.Restoring:
             case GameState.Waiting:
             case GameState.GeneratingPathGraphs:
-            case GameState.RunningCountdown_2:
+            case GameState.DeployingUnits:
             case GameState.RunningCountdown_1:
                 _gameStatus.IsRunning = false;
                 break;

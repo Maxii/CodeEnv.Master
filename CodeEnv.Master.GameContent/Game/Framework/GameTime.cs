@@ -29,11 +29,17 @@ namespace CodeEnv.Master.GameContent {
     [SerializeAll]
     public class GameTime : APropertyChangeTracking, IDisposable {
 
+        #region Static Constants
+
         public static int HoursPerDay = GeneralSettings.Instance.HoursPerDay;
         public static int DaysPerYear = GeneralSettings.Instance.DaysPerYear;
         public static float HoursPerSecond = GeneralSettings.Instance.HoursPerSecond;
         public static int GameStartYear = GeneralSettings.Instance.GameStartYear;
         public static int GameEndYear = GeneralSettings.Instance.GameEndYear;
+
+        #endregion
+
+        public event Action<GameDate> onDateChanged;
 
         private GameClockSpeed _gameSpeed;
         public GameClockSpeed GameSpeed {
@@ -102,7 +108,7 @@ namespace CodeEnv.Master.GameContent {
         public static float TimeInCurrentSession {
             get {
                 float result = Time.time;
-                D.Log("TimeInCurrentSession = {0:0.00}.", result);
+                //D.Log("TimeInCurrentSession = {0:0.00}.", result);
                 return result;
             }
         }
@@ -115,7 +121,7 @@ namespace CodeEnv.Master.GameContent {
             get {
                 D.Assert(Instance._isClockEnabled);
                 float result = Instance._cumTimeInPriorSessions + TimeInCurrentSession - Instance._timeGameBeganInCurrentSession;
-                D.Log("RealTime_Game = {0:0.00}.", result);
+                //D.Log("RealTime_Game = {0:0.00}.", result);
                 return result;
             }
         }
@@ -135,6 +141,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        private static GameDate _currentDate;
         /// <summary>
         /// The current GameDate in the game. This value takes into account when the game was begun,
         /// game speed changes and pauses.
@@ -142,11 +149,25 @@ namespace CodeEnv.Master.GameContent {
         public static GameDate CurrentDate {
             get {
                 D.Assert(Instance._isClockEnabled);
-                if (!GameStatus.Instance.IsPaused) {
-                    Instance.SyncGameClock();   // OK to ask for date while paused (ie. HUD needs), but Syncing clock won't do anything
+                Instance.CheckForDateChange();
+                return _currentDate;
+            }
+            private set { _currentDate = value; }
+        }
+
+        public void CheckForDateChange() {
+            if (!_isClockEnabled || _gameStatus.IsPaused) { return; }
+            SyncGameClock();
+            var updatedDate = new GameDate(_currentDateTime);
+            //D.Log("GameDate {0} generated for CurrentDate changed check.", updatedDate);
+            if (updatedDate != _currentDate) {   // use of _currentDate rather than CurrentDate.get() avoids infinite loop 
+                // updatedDate can be < _currentDate when a new game is started
+                CurrentDate = updatedDate;
+                if (onDateChanged != null) {
+                    //string subscribers = onDateChanged.GetInvocationList().Select(d => d.Target.GetType().Name).Concatenate();
+                    //D.Log("{0}.onDateChanged. List = {1}.", GetType().Name, subscribers);
+                    onDateChanged(updatedDate);
                 }
-                // the only time a new date instance is needed is when it is about to be used
-                return new GameDate(Instance._currentDateTime); // OPTIMIZE avoid new instance each time when date hasn't changed
             }
         }
 
@@ -162,7 +183,10 @@ namespace CodeEnv.Master.GameContent {
         private float _cumTimePaused;
         private float _timeCurrentPauseBegan;
 
-        // time in seconds used to calculate the Date. Accounts for speed and pausing
+        /// <summary>
+        /// The time this instance of the game has been running in seconds. Accounts for changes in gameSpeed
+        /// and Pauses. Used to calculate the CurrentDate.
+        /// </summary>
         private float _currentDateTime;
         private float _savedCurrentDateTime;    // FIXME required to save currentDateTime and then restore it. A bug?
 
@@ -207,7 +231,7 @@ namespace CodeEnv.Master.GameContent {
         /// Called once from the constructor, this does all required initialization
         /// </summary>
         private void Initialize() {
-            D.Log("{0}.Initialize() called.", typeof(GameTime).Name);
+            //D.Log("{0}.Initialize() called.", GetType().Name);
             _gameStatus = GameStatus.Instance;
             _eventMgr = GameEventManager.Instance;
             UnityEngine.Time.timeScale = Constants.OneF;
@@ -256,6 +280,7 @@ namespace CodeEnv.Master.GameContent {
             _gameSpeed = _playerPrefsMgr.GameSpeedOnLoad;
             _gameSpeedMultiplier = _gameSpeed.SpeedMultiplier();
             // no need to assign a new CurrentDate as the change to _currentDateTime results in a new, synched CurrentDate instance once Date is requested
+            // onDateChanged = null;   // new subscribers tend to subscribe on Awake, but nulling the list here clears it. All previous subscribers need to unsubscribe!
         }
 
         public void PrepareToSaveGame() {
@@ -287,6 +312,7 @@ namespace CodeEnv.Master.GameContent {
             _gameSpeed = _playerPrefsMgr.GameSpeedOnLoad; // the speed the clock was running at when saved is not relevant in the following session
             _gameSpeedMultiplier = _gameSpeed.SpeedMultiplier();
             // date that is saved is fine and should be accurate. It gets recalculated from currentDateTime everytime it is used
+            // the list of subscribers to onDateChanged should be fine as saved
         }
 
         public void EnableClock(bool toEnable) {
@@ -305,7 +331,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void StartClock() {
             _timeGameBeganInCurrentSession = TimeInCurrentSession;
-            D.Log("TimeGameBegunInCurrentSession set to {0:0.00}.", _timeGameBeganInCurrentSession);
+            D.Log("Starting GameClock. _timeGameBegunInCurrentSession set to {0:0.00}.", _timeGameBeganInCurrentSession);
             _gameRealTimeAtLastSync = RealTime_Game;
             SyncGameClock();
         }
@@ -331,7 +357,7 @@ namespace CodeEnv.Master.GameContent {
             }
             _currentDateTime += GameSpeed.SpeedMultiplier() * (RealTime_Game - _gameRealTimeAtLastSync);
             _gameRealTimeAtLastSync = RealTime_Game;
-            D.Log("GameClock synced to {0:0.00}.", _currentDateTime);
+            D.Log("GameClock for Date synced to {0:0.00}.", _currentDateTime);
         }
 
         private void Cleanup() {

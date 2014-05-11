@@ -381,9 +381,9 @@ namespace CodeEnv.Master.GameContent {
             D.Log("{0} changing heading to {1}.", _ship.FullName, newHeading);
             _data.RequestedHeading = newHeading;
             IsBearingConfirmed = false;
-            _headingJob = new Job(ExecuteHeadingChange(), toStart: true, onJobComplete: (wasKilled) => {
+            _headingJob = new Job(ExecuteHeadingChange(), toStart: true, onJobComplete: (jobWasKilled) => {
                 if (!_isDisposing) {
-                    if (wasKilled) {
+                    if (jobWasKilled) {
                         D.Log("{0}'s turn order to {1} has been cancelled.", _ship.FullName, _data.RequestedHeading);
                     }
                     else {

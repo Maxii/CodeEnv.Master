@@ -28,16 +28,14 @@ using UnityEngine;
 /// </summary>
 public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory, FacilityData, FacilityStats, StarbaseCmdModel> {
 
-    private UnitFactory _factory;
+    private UnitFactory _factory;   // not accesible from AUnitCreator
 
     protected override void Awake() {
         base.Awake();
         _factory = UnitFactory.Instance;
     }
 
-    protected override GameState GetCreationGameState() {
-        return GameState.DeployingSystems;
-    }
+    // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
 
     protected override FacilityStats CreateElementStat(FacilityCategory category, string elementName) {
         FacilityStats stat = new FacilityStats() {
@@ -55,10 +53,6 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
             },
         };
         return stat;
-    }
-
-    protected override int GetStatsCount(FacilityCategory elementCategory) {
-        return _elementStats.Where(s => s.Category == elementCategory).Count();
     }
 
     protected override FacilityModel MakeElement(FacilityStats stat, IPlayer owner) {
@@ -105,6 +99,10 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
             UnityUtility.AttachChildToParent(cmd.gameObject, gameObject);
         }
         return cmd;
+    }
+
+    protected override void DeployUnit() {
+        // Starbases don't need to be deployed. They are already on location.
     }
 
     protected override void BeginElementsOperations() {

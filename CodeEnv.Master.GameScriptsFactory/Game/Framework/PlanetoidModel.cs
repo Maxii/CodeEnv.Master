@@ -47,7 +47,10 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel {
         keepoutCollider.radius = Radius * TempGameValues.KeepoutRadiusMultiplier;
     }
 
-    protected override void Initialize() { }
+    protected override void Initialize() {
+        base.Initialize();
+        CurrentState = PlanetoidState.None;
+    }
 
     protected override void OnOwnerChanged() {
         base.OnOwnerChanged();
@@ -68,14 +71,28 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel {
     private PlanetoidState _currentState;
     public PlanetoidState CurrentState {
         get { return _currentState; }
-        set { SetProperty<PlanetoidState>(ref _currentState, value, "CurrentState", OnCurrentStateChanged); }
+        set { SetProperty<PlanetoidState>(ref _currentState, value, "CurrentState", OnCurrentStateChanged, OnCurrentStateChanging); }
+    }
+
+    private void OnCurrentStateChanging(PlanetoidState newState) {
+        PlanetoidState previousState = CurrentState;
+        //D.Log("{0}.CurrentState changing from {1} to {2}.", Data.Name, previousState.GetName(), newState.GetName());
+        switch (previousState) {
+            case PlanetoidState.None:
+                IsOperational = true;
+                break;
+            case PlanetoidState.Idling:
+                break;
+            case PlanetoidState.Dead:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(previousState));
+        }
     }
 
     private void OnCurrentStateChanged() {
         //D.Log("{0}.CurrentState changed to {1}.", Data.Name, CurrentState.GetName());
         switch (CurrentState) {
             case PlanetoidState.Idling:
-                // do nothing
                 break;
             case PlanetoidState.Dead:
                 OnItemDeath();
@@ -112,27 +129,27 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel {
     //    set { base.CurrentState = value; }
     //}
 
-    //#region Normal
+    //#region None
 
-    //void Normal_EnterState() {
-    //    // TODO register as available
+    //void None_EnterState() {
+    //    LogEvent();
     //}
 
-    //void Normal_ExitState() {
-    //    // TODO register as unavailable
+    //void None_ExitState() {
+    //    LogEvent();
+    //    IsOperational = true;
     //}
 
     //#endregion
 
-    //#region ShowHit
+    //#region Idling
 
-    //void ShowHit_EnterState() {
-    //    OnStartShow();
+    //void Idling_EnterState() {
+    //    // LogEvent();
     //}
 
-    //void ShowHit_OnShowCompletion() {
-    //    // View is showing Hit
-    //    Return();
+    //void Idling_ExitState() {
+    //LogEvent();
     //}
 
     //#endregion

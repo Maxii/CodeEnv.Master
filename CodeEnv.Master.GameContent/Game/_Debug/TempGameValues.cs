@@ -111,6 +111,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public static readonly Player NoPlayer = new NoPlayer();
+
+        public static readonly XYield NoSpecialResourceYield = new XYield(XResource.None, Constants.ZeroF); // or new XYield()
     }
 }
 

@@ -65,7 +65,8 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
         _playerPrefsMgr = PlayerPrefsManager.Instance;
 
         _gameStatus = GameStatus.Instance;
-        _gameTime = GameTime.Instance;   // delay until Instance is initialized
+        _gameTime = GameTime.Instance;
+        UpdateRate = FrameUpdateFrequency.Infrequent;
         // initialize values without initiating change events
         _pauseState = PauseState.NotPaused;
 
@@ -78,6 +79,7 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
         base.Start();
         SceneLevel startScene = (SceneLevel)Application.loadedLevel;
         SimulateStartup(startScene);
+        // WARNING: enabled is used to determine if an extra GameMgr instance is being destroyed. Donot manipulate it for other purposes
     }
 
     /// <summary>
@@ -128,7 +130,7 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
                 // No use for References currently in IntroScene
                 break;
             case SceneLevel.GameScene:
-                References.GameManager = GameManager.Instance;
+                References.GameManager = Instance;
                 References.InputHelper = GameInputHelper.Instance;
                 References.DynamicObjects = DynamicObjects.Instance;
                 References.CameraControl = CameraControl.Instance;
@@ -213,10 +215,11 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
     /// </summary>
     /// <param name="level">The scene level.</param>
     void OnLevelWasLoaded(int level) {
+        D.Log("{0}_{1}.OnLevelWasLoaded({2}) called.", this.name, InstanceID, ((SceneLevel)level).GetName());
         if (enabled) {
             // The earliest thing that happens after Destroy(gameObject) is component disablement so this is a good filter for gameObjects 
             // in the process of being destroyed. GameObject deactivation happens later, but before OnDestroy()
-            D.Log("{0}_{1}.OnLevelWasLoaded({2}) called.", this.name, InstanceID, ((SceneLevel)level).GetName());
+            D.Log("{0}_{1}.OnLevelWasLoaded({2}) initializing.", this.name, InstanceID, ((SceneLevel)level).GetName());
             SceneLevel newScene = (SceneLevel)level;
             if (newScene != SceneLevel.GameScene) {
                 D.Error("A Scene change to {0} is currently not implemented.", newScene.GetName());
@@ -234,6 +237,13 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
                 CurrentState = GameState.Waiting;
             }
         }
+    }
+
+    protected override void OccasionalUpdate() {
+        base.OccasionalUpdate();
+        // update is allowed to run all the time as I need enabled for detecting extra GameMgr instances
+        // CheckForDateChange() will ignore the call if clock is not enabled or is paused
+        _gameTime.CheckForDateChange();
     }
 
     #region Saving and Restoring
@@ -455,28 +465,29 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
     }
 
     void Waiting_ProgressState() {
-        CurrentState = GameState.DeployingSystems;
+        CurrentState = GameState.BuildAndDeploySystems;
     }
 
     void Waiting_ExitState() {
         LogEvent();
-        D.Assert(CurrentState == GameState.DeployingSystems);
+        D.Assert(CurrentState == GameState.BuildAndDeploySystems);
     }
 
     #endregion
 
-    #region DeployingSystems
+    #region BuildAndDeploySystems
 
-    void DeployingSystems_EnterState() {
-        LogEvent();
+    void BuildAndDeploySystems_EnterState() {
+        //LogEvent();
     }
 
-    void DeployingSystems_ProgressState() {
+    void BuildAndDeploySystems_ProgressState() {
+        LogEvent();
         CurrentState = GameState.GeneratingPathGraphs;
     }
 
-    void DeployingSystems_ExitState() {
-        LogEvent();
+    void BuildAndDeploySystems_ExitState() {
+        //LogEvent();
         D.Assert(CurrentState == GameState.GeneratingPathGraphs);
     }
 
@@ -485,49 +496,52 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
     #region GeneratingPathGraphs
 
     void GeneratingPathGraphs_EnterState() {
-        LogEvent();
+        //LogEvent();
     }
 
     void GeneratingPathGraphs_ProgressState() {
-        CurrentState = GameState.DeployingSettlements;
+        LogEvent();
+        CurrentState = GameState.PrepareUnitsForDeployment;
     }
 
     void GeneratingPathGraphs_ExitState() {
-        LogEvent();
-        D.Assert(CurrentState == GameState.DeployingSettlements);
+        //LogEvent();
+        D.Assert(CurrentState == GameState.PrepareUnitsForDeployment);
     }
 
     #endregion
 
-    #region DeployingSettlements
+    #region PrepareUnitsForDeployment
 
-    void DeployingSettlements_EnterState() {
-        LogEvent();
+    void PrepareUnitsForDeployment_EnterState() {
+        //LogEvent();
     }
 
-    void DeployingSettlements_ProgressState() {
-        CurrentState = GameState.RunningCountdown_2;
+    void PrepareUnitsForDeployment_ProgressState() {
+        LogEvent();
+        CurrentState = GameState.DeployingUnits;
     }
 
-    void DeployingSettlements_ExitState() {
-        LogEvent();
-        D.Assert(CurrentState == GameState.RunningCountdown_2);
+    void PrepareUnitsForDeployment_ExitState() {
+        //LogEvent();
+        D.Assert(CurrentState == GameState.DeployingUnits);
     }
 
     #endregion
 
-    #region RunningCountdown_2
+    #region DeployingUnits
 
-    void RunningCountdown_2_EnterState() {
-        LogEvent();
+    void DeployingUnits_EnterState() {
+        //LogEvent();
     }
 
-    void RunningCountdown_2_ProgressState() {
+    void DeployingUnits_ProgressState() {
+        LogEvent();
         CurrentState = GameState.RunningCountdown_1;
     }
 
-    void RunningCountdown_2_ExitState() {
-        LogEvent();
+    void DeployingUnits_ExitState() {
+        //LogEvent();
         D.Assert(CurrentState == GameState.RunningCountdown_1);
     }
 
@@ -536,15 +550,16 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
     #region RunningCountdown_1
 
     void RunningCountdown_1_EnterState() {
-        LogEvent();
+        //LogEvent();
     }
 
     void RunningCountdown_1_ProgressState() {
+        LogEvent();
         CurrentState = GameState.Running;
     }
 
     void RunningCountdown_1_ExitState() {
-        LogEvent();
+        //LogEvent();
         D.Assert(CurrentState == GameState.Running);
     }
 

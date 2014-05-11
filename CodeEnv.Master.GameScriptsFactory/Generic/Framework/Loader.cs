@@ -107,10 +107,10 @@ public class Loader : AMonoBaseSingleton<Loader>, IDisposable {
     private void InitializeGameStateReadinessSystem() {
         _gameStateProgressionReadinessLookup = new Dictionary<GameState, IList<MonoBehaviour>>();
         _gameStateProgressionReadinessLookup.Add(GameState.Waiting, new List<MonoBehaviour>());
-        _gameStateProgressionReadinessLookup.Add(GameState.DeployingSystems, new List<MonoBehaviour>());
+        _gameStateProgressionReadinessLookup.Add(GameState.BuildAndDeploySystems, new List<MonoBehaviour>());
         _gameStateProgressionReadinessLookup.Add(GameState.GeneratingPathGraphs, new List<MonoBehaviour>());
-        _gameStateProgressionReadinessLookup.Add(GameState.DeployingSettlements, new List<MonoBehaviour>());
-        _gameStateProgressionReadinessLookup.Add(GameState.RunningCountdown_2, new List<MonoBehaviour>());
+        _gameStateProgressionReadinessLookup.Add(GameState.PrepareUnitsForDeployment, new List<MonoBehaviour>());
+        _gameStateProgressionReadinessLookup.Add(GameState.DeployingUnits, new List<MonoBehaviour>());
         _gameStateProgressionReadinessLookup.Add(GameState.RunningCountdown_1, new List<MonoBehaviour>());
     }
 

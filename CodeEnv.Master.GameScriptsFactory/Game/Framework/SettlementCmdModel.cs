@@ -47,6 +47,7 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel {
     }
 
     protected override void Initialize() {
+        base.Initialize();
         CurrentState = SettlementState.None;
         //D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
     }
@@ -104,6 +105,19 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel {
         get { return (SettlementState)base.CurrentState; }
         set { base.CurrentState = value; }
     }
+
+    #region None
+
+    void None_EnterState() {
+        //LogEvent();
+    }
+
+    void None_ExitState() {
+        LogEvent();
+        IsOperational = true;
+    }
+
+    #endregion
 
     #region Idle
 

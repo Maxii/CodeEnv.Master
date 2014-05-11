@@ -96,13 +96,13 @@ public class Revolve : AMonoBase, IDisposable {
 
     private void Cleanup() {
         Unsubscribe();
-        // other cleanup here including any tracking Gui2D elements
     }
 
     private void Unsubscribe() {
-        // even though the OneShot will unsubscribe this object once Raised, this object can be destroyed
-        // prior to the game starting (when an extra planet is destroyed by SystemCreator) so we need
-        // to unsubscribe in case destruction occurs before the game starts running
+        // This gameObject's parent(s) can be destroyed before the game isRunning.
+        // Examples include 1) SettlementCreators when there are more 
+        // settlements than systems to assign them too, 2) Planets when there are more
+        // planets than orbit slots, etc.
         GameStatus.Instance.onIsRunning_OneShot -= OnGameIsRunning;
     }
 
@@ -134,7 +134,7 @@ public class Revolve : AMonoBase, IDisposable {
             return;
         }
 
-        _isDisposing = isDisposing;
+        _isDisposing = true;
         if (isDisposing) {
             // free managed resources here including unhooking events
             Cleanup();

@@ -175,16 +175,36 @@ namespace CodeEnv.Master.GameContent {
         public class ColoredTextList_Specials : ColoredTextListBase {
 
             public ColoredTextList_Specials(XYield x, string valueFormat = Constants.FormatFloat_1DpMax) {
-                // TODO how to display variable number of XResources
-                IList<XYield.XResourceValuePair> allX = x.GetAllResources();
+                var resourcesPresent = x.GetAllResources();
+                foreach (var resource in resourcesPresent) {
+                    string resourceName = resource.GetName();
+                    float resourceYield = x.GetYield(resource);
+                    string resourceYield_formatted = valueFormat.Inject(resourceYield);
+                    _list.Add(new ColoredText(resourceName));
+                    _list.Add(new ColoredText(resourceYield_formatted));
+                    if (_list.Count == 2) {
+                        //  HACK only shows 1 xResource. How to display variable number of XResources?
+                        break;
+                    }
 
-                string resourceName = allX[0].Resource.GetName();
-                float resourceYield = allX[0].Value;
-                string resourceYield_formatted = valueFormat.Inject(resourceYield);
-                _list.Add(new ColoredText(resourceName));
-                _list.Add(new ColoredText(resourceYield_formatted));
+                }
             }
         }
+
+
+        //public class ColoredTextList_Specials : ColoredTextListBase {
+
+        //    public ColoredTextList_Specials(XYield x, string valueFormat = Constants.FormatFloat_1DpMax) {
+        //        // TODO how to display variable number of XResources
+        //        IList<XYield.XResourceValuePair> allX = x.GetAllResourceValues();
+
+        //        string resourceName = allX[0].Resource.GetName();
+        //        float resourceYield = allX[0].Value;
+        //        string resourceYield_formatted = valueFormat.Inject(resourceYield);
+        //        _list.Add(new ColoredText(resourceName));
+        //        _list.Add(new ColoredText(resourceYield_formatted));
+        //    }
+        //}
 
         public class ColoredTextList_Combat : ColoredTextListBase {
 

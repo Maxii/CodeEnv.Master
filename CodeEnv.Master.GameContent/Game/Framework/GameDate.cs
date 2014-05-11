@@ -86,17 +86,46 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        public static GameDate GameStartDate;
-        public static GameDate GameEndDate;
+        public static GameDate GameStartDate = new GameDate(Constants.Zero, Constants.Zero, GameTime.GameStartYear);    // 2700.000.00
+        public static GameDate GameEndDate = new GameDate(GameTime.HoursPerDay - 1, GameTime.DaysPerYear - 1, GameTime.GameEndYear);    // 8999.099.19
 
-        static GameDate() {
-            GameStartDate = new GameDate(Constants.Zero, Constants.One, GameTime.GameStartYear);
-            GameEndDate = new GameDate(GameTime.HoursPerDay - 1, GameTime.DaysPerYear - 1, GameTime.GameEndYear);
-        }
+        // Bug: use of static constructor with struct causes intellisense for constructors to fail
 
         public readonly int hourOfDay;
         public readonly int dayOfYear;
         public readonly int year;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GameDate"/> struct whose values
+        /// are set to the future that is <c>timeFromCurrentDate</c> from the CurrentDate.
+        /// </summary>
+        /// <param name="timeFromCurrentDate">The time from current date. Cannot be the default (0.0.0).</param>
+        public GameDate(GameTimeDuration timeFromCurrentDate) {
+            // If timeFromCurrentDate is the default (0.0.0), this constructs a GameDate that is identical to CurrentDate. 
+            // As CurrentDate has already changed, the next time onCurrentDateChanged will be raised will be CurrentDate + 1 hour. 
+            // Therefore this constructed GameDate can never be matched to a date delivered by onCurrentDateChanged
+            D.Assert(timeFromCurrentDate != default(GameTimeDuration));
+
+            GameDate currentDate = GameTime.CurrentDate;
+            int futureYear = currentDate.year + timeFromCurrentDate.years;
+            int futureDay = currentDate.dayOfYear + timeFromCurrentDate.days;
+            if (futureDay >= GameTime.DaysPerYear) {
+                futureYear++;
+                futureDay = futureDay % GameTime.DaysPerYear;
+            }
+            int futureHour = currentDate.hourOfDay + timeFromCurrentDate.hours;
+            if (futureHour >= GameTime.HoursPerDay) {
+                futureDay++;
+                futureHour = futureHour % GameTime.HoursPerDay;
+                if (futureDay == GameTime.DaysPerYear) {
+                    futureYear++;
+                    futureDay = 0;
+                }
+            }
+            hourOfDay = futureHour;
+            dayOfYear = futureDay;
+            year = futureYear;
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GameDate"/> struct.
@@ -113,7 +142,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="year">The year.</param>
         public GameDate(int hourOfDay, int dayOfYear, int year) {
             Arguments.ValidateForRange(hourOfDay, Constants.Zero, GameTime.HoursPerDay - 1);
-            Arguments.ValidateForRange(dayOfYear, Constants.One, GameTime.DaysPerYear);  // UNCLEAR is this range correct?
+            Arguments.ValidateForRange(dayOfYear, Constants.Zero, GameTime.DaysPerYear - 1);  // UNCLEAR is this range correct?
             Arguments.ValidateForRange(year, GameTime.GameStartYear, GameTime.GameEndYear);
             this.hourOfDay = hourOfDay;
             this.dayOfYear = dayOfYear;
@@ -129,7 +158,7 @@ namespace CodeEnv.Master.GameContent {
             int elapsedDays = elapsedHours / GameTime.HoursPerDay;
             int hoursPerYear = GameTime.DaysPerYear * GameTime.HoursPerDay;
             year = GameTime.GameStartYear + Mathf.FloorToInt(elapsedHours / hoursPerYear);
-            dayOfYear = 1 + (elapsedDays % GameTime.DaysPerYear);
+            dayOfYear = elapsedDays % GameTime.DaysPerYear;
             hourOfDay = elapsedHours % GameTime.HoursPerDay;
         }
 

@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.IntelState:
                     return new ColoredTextList_Intel(intel);
                 case GuiHudLineKeys.Owner:
-                    return data.Owner != null ? new ColoredTextList_Owner(data.Owner) : _emptyColoredTextList;
+                    return data.Owner != TempGameValues.NoPlayer ? new ColoredTextList_Owner(data.Owner) : _emptyColoredTextList;
                 case GuiHudLineKeys.Health:
                     return (data.SettlementData != null) ? new ColoredTextList_Health(data.SettlementData.UnitHealth, data.SettlementData.MaxHitPoints) : _emptyColoredTextList;
                 case GuiHudLineKeys.CombatStrength:
@@ -50,7 +50,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Resources:
                     return new ColoredTextList_Resources(data.Resources);
                 case GuiHudLineKeys.Specials:
-                    return (data.SpecialResources != null) ? new ColoredTextList_Specials(data.SpecialResources) : _emptyColoredTextList;
+                    return (data.SpecialResources != TempGameValues.NoSpecialResourceYield) ? new ColoredTextList_Specials(data.SpecialResources) : _emptyColoredTextList;
                 case GuiHudLineKeys.Category:
                     return (data.SettlementData != null) ? new ColoredTextList_String(data.SettlementData.Category.GetName(), data.SettlementData.Category.GetDescription()) : _emptyColoredTextList;
                 case GuiHudLineKeys.SettlementDetails:

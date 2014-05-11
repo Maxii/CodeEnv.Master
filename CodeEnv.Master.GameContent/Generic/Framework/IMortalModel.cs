@@ -31,6 +31,10 @@ namespace CodeEnv.Master.GameContent {
 
         void OnShowCompletion();
 
+        bool IsAlive { get; }
+
+        bool IsOperational { get; }
+
         void __SimulateAttacked();
 
     }

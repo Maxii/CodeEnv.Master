@@ -65,7 +65,7 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
     protected override void Add(IMortalTarget target) {
         base.Add(target);
         D.Assert(Owner != null);
-        if (Owner.IsEnemyOf(target.Owner) && !target.IsDead && !EnemyTargets.Contains(target)) {
+        if (Owner.IsEnemyOf(target.Owner) && !target.IsAlive && !EnemyTargets.Contains(target)) {
             AddEnemyTarget(target);
         }
     }

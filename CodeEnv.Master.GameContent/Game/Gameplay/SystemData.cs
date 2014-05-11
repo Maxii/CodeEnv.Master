@@ -153,7 +153,7 @@ namespace CodeEnv.Master.GameContent {
                 OnSettlementOwnerChanged();
             }
             else {
-                Owner = null;
+                Owner = TempGameValues.NoPlayer;
                 UnsubscribeSettlement();
             }
         }
@@ -187,36 +187,56 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void UpdateResources() {
-            OpeYield totalResource = new OpeYield();
+            OpeYield totalResourcesFromPlanets = new OpeYield();
             var resources = Composition.GetPlanetData().Select(pd => pd.Resources);
             if (!resources.IsNullOrEmpty()) {   // Aggregate throws up if source enumerable is empty
-                var totalResourceFromPlanets = resources.Aggregate<OpeYield>(
-                    (accumulator, ope) => new OpeYield() {
-                        Organics = accumulator.Organics + ope.Organics,
-                        Particulates = accumulator.Particulates + ope.Particulates,
-                        Energy = accumulator.Energy + ope.Energy
-                    });
-                totalResource.Add(totalResourceFromPlanets);
+                totalResourcesFromPlanets = resources.Aggregate((accumulator, ope) => accumulator + ope);
             }
-            totalResource.Add(Composition.StarData.Resources);
-            Resources = totalResource;
+            Resources = totalResourcesFromPlanets + Composition.StarData.Resources;
         }
 
         private void UpdateSpecialResources() {
-            XYield totalSpecial = new XYield();
-            var specialResources = Composition.GetPlanetData().Select(pd => pd.SpecialResources);
-            if (!specialResources.IsNullOrEmpty()) {
-                var totalSpecialFromPlanets = specialResources.Aggregate<XYield>(
-                    (accumulator, x) => new XYield() {   // Aggregate throws up if source enumerable is empty
-                        Special_1 = accumulator.Special_1 + x.Special_1,
-                        Special_2 = accumulator.Special_2 + x.Special_2,
-                        Special_3 = accumulator.Special_3 + x.Special_3
-                    });
-                totalSpecial.Add(totalSpecialFromPlanets);
+            XYield totalResourcesFromPlanets = new XYield();
+            var resources = Composition.GetPlanetData().Select(pd => pd.SpecialResources);
+            if (!resources.IsNullOrEmpty()) {   // Aggregate throws up if source enumerable is empty
+                totalResourcesFromPlanets = resources.Aggregate((accumulator, ope) => accumulator + ope);
             }
-            totalSpecial.Add(Composition.StarData.SpecialResources);
-            SpecialResources = totalSpecial;
+            SpecialResources = totalResourcesFromPlanets + Composition.StarData.SpecialResources;
         }
+
+
+
+        //private void UpdateResources() {
+        //    OpeYield totalResource = new OpeYield();
+        //    var resources = Composition.GetPlanetData().Select(pd => pd.Resources);
+        //    if (!resources.IsNullOrEmpty()) {   // Aggregate throws up if source enumerable is empty
+        //        var totalResourceFromPlanets = resources.Aggregate<OpeYield>(
+        //            (accumulator, ope) => new OpeYield() {
+        //                Organics = accumulator.Organics + ope.Organics,
+        //                Particulates = accumulator.Particulates + ope.Particulates,
+        //                Energy = accumulator.Energy + ope.Energy
+        //            });
+        //        totalResource.Add(totalResourceFromPlanets);
+        //    }
+        //    totalResource.Add(Composition.StarData.Resources);
+        //    Resources = totalResource;
+        //}
+
+        //private void UpdateSpecialResources() {
+        //    XYield totalSpecial = new XYield();
+        //    var specialResources = Composition.GetPlanetData().Select(pd => pd.SpecialResources);
+        //    if (!specialResources.IsNullOrEmpty()) {
+        //        var totalSpecialFromPlanets = specialResources.Aggregate<XYield>(
+        //            (accumulator, x) => new XYield() {   // Aggregate throws up if source enumerable is empty
+        //                Special_1 = accumulator.Special_1 + x.Special_1,
+        //                Special_2 = accumulator.Special_2 + x.Special_2,
+        //                Special_3 = accumulator.Special_3 + x.Special_3
+        //            });
+        //        totalSpecial.Add(totalSpecialFromPlanets);
+        //    }
+        //    totalSpecial.Add(Composition.StarData.SpecialResources);
+        //    SpecialResources = totalSpecial;
+        //}
 
         private void Unsubscribe(PlanetoidData planetData) {
             _planetSubscribers[planetData].ForAll<IDisposable>(d => d.Dispose());

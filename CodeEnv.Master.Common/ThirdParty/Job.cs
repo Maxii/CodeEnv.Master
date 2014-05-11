@@ -36,7 +36,7 @@ namespace CodeEnv.Master.Common {
 
         public bool IsRunning { get; private set; }
 
-        public bool IsPaused { get; private set; }
+        public virtual bool IsPaused { get; private set; }
 
         private IEnumerator _coroutine;
         private bool _jobWasKilled;
@@ -119,11 +119,11 @@ namespace CodeEnv.Master.Common {
             yield return coroutineManager.StartCoroutine(Run());
         }
 
-        public void Pause() {
+        public virtual void Pause() {
             IsPaused = true;
         }
 
-        public void Unpause() {
+        public virtual void Unpause() {
             IsPaused = false;
         }
 

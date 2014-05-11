@@ -36,10 +36,7 @@ namespace CodeEnv.Master.GameContent {
 
         public AMortalItemPresenter(IMortalViewable view)
             : base(view) {
-            IsAlive = true;
         }
-
-        public bool IsAlive { get; private set; }
 
         protected override void Subscribe() {
             base.Subscribe();
@@ -56,7 +53,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void CleanupOnDeath() {
-            IsAlive = false;
             View.AssessDiscernability();
             CleanupFocusOnDeath();
             // UNDONE other cleanup needed if recycled

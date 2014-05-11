@@ -49,11 +49,11 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Capacity:
                     return new ColoredTextList<int>(Constants.FormatInt_2DMin, data.Capacity);
                 case GuiHudLineKeys.Resources:
-                    return (data.Resources != null) ? new ColoredTextList_Resources(data.Resources) : _emptyColoredTextList;
+                    return new ColoredTextList_Resources(data.Resources);
                 case GuiHudLineKeys.Specials:
-                    return (data.SpecialResources != null) ? new ColoredTextList_Specials(data.SpecialResources) : _emptyColoredTextList;
+                    return (data.SpecialResources != TempGameValues.NoSpecialResourceYield) ? new ColoredTextList_Specials(data.SpecialResources) : _emptyColoredTextList;
                 case GuiHudLineKeys.Owner:
-                    return data.Owner != null ? new ColoredTextList_Owner(data.Owner) : _emptyColoredTextList;
+                    return data.Owner != TempGameValues.NoPlayer ? new ColoredTextList_Owner(data.Owner) : _emptyColoredTextList;
 
                 // The following is a fall through catcher for line keys that aren't processed. An empty ColoredTextList will be returned which will be ignored by GuiCursorHudText
                 case GuiHudLineKeys.CombatStrength:

@@ -28,7 +28,7 @@ using UnityEngine;
 ///  an event when the first or last enemy target enters/exits the range.
 /// TODO Account for a diploRelations change with an owner
 /// </summary>
-public class WeaponRangeTracker : AMonoBase, IWeaponRangeTracker {
+public class WeaponRangeTracker : AMonoBase, IWeaponRangeTracker, IDisposable {
 
     public Guid ID { get; private set; }
 
@@ -167,7 +167,7 @@ public class WeaponRangeTracker : AMonoBase, IWeaponRangeTracker {
 
     private void Add(IMortalTarget target) {
         if (!AllTargets.Contains(target)) {
-            if (!target.IsDead) {
+            if (target.IsAlive) {
                 //D.Log("{0}.{1} now tracking target {2}.", ParentFullName, GetType().Name, target.FullName);
                 target.onItemDeath += OnTargetDeath;
                 target.onOwnerChanged += OnTargetOwnerChanged;
@@ -181,7 +181,7 @@ public class WeaponRangeTracker : AMonoBase, IWeaponRangeTracker {
             D.Warn("{0}.{1} attempted to add duplicate Target {2}.", ParentFullName, GetType().Name, target.FullName);
         }
 
-        if (Owner.IsEnemyOf(target.Owner) && !target.IsDead && !EnemyTargets.Contains(target)) {
+        if (Owner.IsEnemyOf(target.Owner) && target.IsAlive && !EnemyTargets.Contains(target)) {
             AddEnemyTarget(target);
         }
     }
@@ -240,9 +240,71 @@ public class WeaponRangeTracker : AMonoBase, IWeaponRangeTracker {
         return result;
     }
 
+    protected override void OnDestroy() {
+        base.OnDestroy();
+        Dispose();
+    }
+
+    private void Cleanup() {
+        Unsubscribe();
+    }
+
+    private void Unsubscribe() {
+        // This gameObject's parent(s) can be destroyed before the game isRunning.
+        // Examples include 1) SettlementCreators when there are more 
+        // settlements than systems to assign them too, 2) Planets when there are more
+        // planets than orbit slots, etc.
+        GameStatus.Instance.onIsRunning_OneShot -= OnGameIsRunning;
+    }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region IDisposable
+    [DoNotSerialize]
+    private bool _alreadyDisposed = false;
+    protected bool _isDisposing = false;
+
+    /// <summary>
+    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// </summary>
+    public void Dispose() {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
+    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
+    /// </summary>
+    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+    protected virtual void Dispose(bool isDisposing) {
+        // Allows Dispose(isDisposing) to be called more than once
+        if (_alreadyDisposed) {
+            return;
+        }
+
+        _isDisposing = true;
+        if (isDisposing) {
+            // free managed resources here including unhooking events
+            Cleanup();
+        }
+        // free unmanaged resources here
+
+        _alreadyDisposed = true;
+    }
+
+    // Example method showing check for whether the object has been disposed
+    //public void ExampleMethod() {
+    //    // throw Exception if called on object that is already disposed
+    //    if(alreadyDisposed) {
+    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
+    //    }
+
+    //    // method content here
+    //}
+    #endregion
 
 }
 

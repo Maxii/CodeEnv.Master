@@ -47,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
             get { return ParentName == string.Empty ? Name : ParentName + Constants.Underscore + Name; }
         }
 
-        private IPlayer _owner;
+        private IPlayer _owner = TempGameValues.NoPlayer;
         public IPlayer Owner {
             get { return _owner; }
             set { SetProperty<IPlayer>(ref _owner, value, "Owner", OnOwnerChanged); }
@@ -79,7 +79,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void OnOwnerChanged() {
-            if (Owner != null) {
+            if (Owner != TempGameValues.NoPlayer) {
                 D.Log("{0} Owner has changed to {1}.", FullName, Owner.LeaderName);
             }
             else {

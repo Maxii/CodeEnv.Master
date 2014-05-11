@@ -41,34 +41,21 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     where CommandType : AUnitCommandModel {
 
     /// <summary>
-    /// OneShot event indicating the creation of the unit has completed meaning
-    /// it has been built and enabled, but its state machine is not yet operating. 
-    /// This final operational step will occur once the game is running.
-    /// NOTE: Currently only used by UniverseInitializer to deploy Settlements to Systems when built.
-    /// </summary>
-    public event Action<CommandType> onUnitBuildComplete_OneShot;
-
-    /// <summary>
     /// The name of the top level Unit, aka the Settlement, Starbase or Fleet name.
     /// A Unit contains a Command and one or more Elements.
     /// </summary>
-    public string UnitName { get; private set; }
+    public string UnitName { get { return _transform.name; } }
 
     protected IList<ElementStatType> _elementStats;
-    protected CommandType _command;
-
-    private HashSet<ElementCategoryType> _elementCategoriesUsed;
     protected IList<ElementType> _elements;
+    protected CommandType _command;
+    protected IPlayer _owner;
+
     private IList<IDisposable> _subscribers;
     private IGameManager _gameMgr;
-    protected IPlayer _owner;
 
     protected override void Awake() {
         base.Awake();
-        _elementStats = new List<ElementStatType>();
-        _elementCategoriesUsed = new HashSet<ElementCategoryType>();
-
-        UnitName = InitializeUnitName();
         D.Assert(isCompositionPreset == _transform.childCount > 0, "{0}.{1} Composition Preset flag is incorrect.".Inject(UnitName, GetType().Name));
     }
 
@@ -76,12 +63,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         base.Start();
         _gameMgr = References.GameManager;
         _owner = ValidateAndInitializeOwner();
-        if (toDeployInRuntime) {
-            GameStatus.Instance.onIsRunning_OneShot += OnGameIsRunning;
-        }
-        else {
-            Subscribe();
-        }
+        Subscribe();
     }
 
     private void Subscribe() {
@@ -90,41 +72,111 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     }
 
     private void OnGameStateChanged() {
-        DeployDuringStartup(_gameMgr.CurrentState);
-    }
+        var gameState = _gameMgr.CurrentState;
 
-    private void OnGameIsRunning() {
-        DeployDuringRuntime();
-    }
-
-    private void DeployDuringStartup(GameState gameState) {
-        if (gameState == GetCreationGameState()) {
-            //D.Assert(gameState != GameState.RunningCountdown_2);    // interferes with positioning
-            CreateComposition();
-            PrepareUnitForOperations();
+        if (toDelayOperations) {
+            if (toDelayBuild) {
+                DelayBuildDeployAndBeginUnitOperations(gameState);
+                return;
+            }
+            BuildDeployDuringStartupAndDelayBeginUnitOperations(gameState);
+            return;
         }
+        BuildDeployAndBeginUnitOperationsDuringStartup(gameState);
+    }
+
+    private void BuildDeployAndBeginUnitOperationsDuringStartup(GameState gameState) {
+        D.Assert(!toDelayOperations);  // toDelayBuild can be true from previous editor setting
+        if (gameState == GameState.PrepareUnitsForDeployment) {
+            RegisterReadinessForGameStateProgression(GameState.PrepareUnitsForDeployment, isReady: false);
+            CreateElementStats();
+            PrepareUnitForOperations(onCompleted: delegate {
+                RegisterReadinessForGameStateProgression(GameState.PrepareUnitsForDeployment, isReady: true);
+            });
+        }
+
+        if (gameState == GameState.DeployingUnits) {
+            RegisterReadinessForGameStateProgression(GameState.DeployingUnits, isReady: false);
+            DeployUnit();
+            RegisterReadinessForGameStateProgression(GameState.DeployingUnits, isReady: true);
+        }
+
         if (gameState == GameState.Running) {
             BeginUnitOperations();
         }
     }
 
-    private void DeployDuringRuntime() {
-        CreateComposition();
-        PrepareUnitForOperations(onCompleted: BeginUnitOperations);
+    #region Delay into Runtime System
+
+    private GameDate _delayedDateInRuntime;
+
+    private void BuildDeployDuringStartupAndDelayBeginUnitOperations(GameState gameState) {
+        D.Assert(toDelayOperations && !toDelayBuild);
+        if (gameState == GameState.PrepareUnitsForDeployment) {
+            RegisterReadinessForGameStateProgression(GameState.PrepareUnitsForDeployment, isReady: false);
+            CreateElementStats();
+            PrepareUnitForOperations(onCompleted: delegate {
+                RegisterReadinessForGameStateProgression(GameState.PrepareUnitsForDeployment, isReady: true);
+            });
+        }
+
+        if (gameState == GameState.DeployingUnits) {
+            RegisterReadinessForGameStateProgression(GameState.DeployingUnits, isReady: false);
+            DeployUnit();
+            RegisterReadinessForGameStateProgression(GameState.DeployingUnits, isReady: true);
+        }
+
+        if (gameState == GameState.Running) {
+            var delay = new GameTimeDuration(hourDelay, dayDelay, yearDelay);
+            if (delay == default(GameTimeDuration)) {
+                // delayOperations selected but delay is 0 so begin operations now
+                BeginUnitOperations();
+            }
+            else {
+                _delayedDateInRuntime = new GameDate(delay);
+                GameTime.Instance.onDateChanged += OnCurrentDateChanged;
+            }
+        }
     }
 
-    /// <summary>
-    /// Returns the GameState defining when creation should occur.
-    /// </summary>
-    protected abstract GameState GetCreationGameState();
+    private void DelayBuildDeployAndBeginUnitOperations(GameState gameState) {
+        D.Assert(toDelayOperations && toDelayBuild);
 
-    private void CreateComposition() {
-        if (isCompositionPreset) {
-            CreateStatsFromChildren();
+        if (gameState == GameState.Running) {
+            var runtimeDelay = new GameTimeDuration(hourDelay, dayDelay, yearDelay);
+            if (runtimeDelay == default(GameTimeDuration)) {
+                // delayOperations selected but delay is 0 so begin operations now
+                BuildDeployAndBeginUnitOperations();
+            }
+            else {
+                _delayedDateInRuntime = new GameDate(runtimeDelay);
+                GameTime.Instance.onDateChanged += OnCurrentDateChanged;
+            }
         }
-        else {
-            CreateRandomStats();
+    }
+
+    private void OnCurrentDateChanged(GameDate currentDate) {
+        //D.Log("{0} for {1} received OnCurrentDateChanged({2}).", GetType().Name, UnitName, currentDate);
+        D.Assert(toDelayOperations);
+        D.Assert(currentDate <= _delayedDateInRuntime);
+        if (currentDate == _delayedDateInRuntime) {
+            if (toDelayBuild) {
+                D.Log("{0} is about to build, deploy and begin ops on Runtime date {1}.", UnitName, _delayedDateInRuntime);
+                BuildDeployAndBeginUnitOperations();
+            }
+            else {
+                D.Log("{0} has already been built and deployed. It is about to begin ops on Runtime date {1}.", UnitName, _delayedDateInRuntime);
+                BeginUnitOperations();
+            }
+            //D.Log("{0} for {1} is unsubscribing from GameTime.onDateChanged.", GetType().Name, UnitName);
+            GameTime.Instance.onDateChanged -= OnCurrentDateChanged;
         }
+    }
+
+    #endregion
+
+    private void CreateElementStats() {
+        _elementStats = isCompositionPreset ? CreateStatsFromChildren() : CreateRandomStats();
     }
 
     private void PrepareUnitForOperations(Action onCompleted = null) {
@@ -132,53 +184,79 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         EnableElements();
         _command = MakeCommand(_owner);
         EnableCommand();
-        new Job(UnityUtility.WaitForFrames(1), toStart: true, onJobComplete: delegate {
+        UnityUtility.WaitOneToExecute(delegate {
             // delay 1 frame to make sure elements and command have initialized, then continue
             AddElements();
             AssignHQElement();
-            OnUnitBuildComplete();
             if (onCompleted != null) {
                 onCompleted();
             }
         });
     }
 
+    protected abstract void DeployUnit();
+
     private void BeginUnitOperations() {
         __InitializeCommandIntel();
         BeginElementsOperations();
         BeginCommandOperations();
-        new Job(UnityUtility.WaitForFrames(1), toStart: true, onJobComplete: delegate {
+        UnityUtility.WaitOneToExecute((wasKilled) => {
             // delay 1 frame to allow Element and Command Idling_EnterState to execute
             IssueFirstUnitCommand();
             RemoveCreatorScript();
         });
     }
 
-    private void CreateStatsFromChildren() {
-        var elements = gameObject.GetSafeMonoBehaviourComponentsInChildren<ElementType>();
-        foreach (var element in elements) {
-            ElementCategoryType category = DeriveCategory(element);
-            _elementCategoriesUsed.Add(category);
-            // don't change the name as I need to derive category from it in InitializeElements
-            string elementInstanceName = element.gameObject.name;
-            //CreateElementStat(category, elementInstanceName);   // FIXME this should be _elementStats.Add(CreateElementStat())
-            _elementStats.Add(CreateElementStat(category, elementInstanceName));
-        }
+    private void BuildDeployAndBeginUnitOperations() {
+        CreateElementStats();
+        PrepareUnitForOperations(onCompleted: delegate {
+            DeployUnit();
+            if (enabled) {  // creator will be disabled if Destroyed during DeployUnit
+                BeginUnitOperations();
+            }
+        });
     }
 
-    private void CreateRandomStats() {
+    private IList<ElementStatType> CreateStatsFromChildren() {
+        var elements = gameObject.GetSafeMonoBehaviourComponentsInChildren<ElementType>();
+        var elementStats = new List<ElementStatType>(elements.Count());
+        var elementCategoriesUsedCount = new Dictionary<ElementCategoryType, int>();
+        foreach (var element in elements) {
+            ElementCategoryType category = DeriveCategory(element);
+            if (!elementCategoriesUsedCount.ContainsKey(category)) {
+                elementCategoriesUsedCount.Add(category, Constants.One);
+            }
+            else {
+                elementCategoriesUsedCount[category]++;
+            }
+            int elementInstanceIndex = elementCategoriesUsedCount[category];
+            string elementInstanceName = category.ToString() + Constants.Underscore + elementInstanceIndex;
+            elementStats.Add(CreateElementStat(category, elementInstanceName));
+        }
+        return elementStats;
+    }
+
+    private IList<ElementStatType> CreateRandomStats() {
         ElementCategoryType[] validHQCategories = GetValidHQElementCategories();
         ElementCategoryType[] validCategories = GetValidElementCategories();
 
+        var elementCategoriesUsedCount = new Dictionary<ElementCategoryType, int>();
         int elementCount = RandomExtended<int>.Range(1, maxRandomElements);
         D.Log("{0} Element count is {1}.", UnitName, elementCount);
+        var elementStats = new List<ElementStatType>(elementCount);
         for (int i = 0; i < elementCount; i++) {
             ElementCategoryType category = (i == 0) ? RandomExtended<ElementCategoryType>.Choice(validHQCategories) : RandomExtended<ElementCategoryType>.Choice(validCategories);
-            _elementCategoriesUsed.Add(category);
-            int elementInstanceIndex = GetCurrentCount(category) + 1;
-            string elementInstanceName = category.ToString() + Constants.Underscore + elementInstanceIndex;
-            _elementStats.Add(CreateElementStat(category, elementInstanceName));
+            if (!elementCategoriesUsedCount.ContainsKey(category)) {
+                elementCategoriesUsedCount.Add(category, Constants.One);
+            }
+            else {
+                elementCategoriesUsedCount[category]++;
+            }
+            int elementInstanceIndex = elementCategoriesUsedCount[category];
+            string elementInstanceName = (i == 0) ? category.ToString() : category.ToString() + Constants.Underscore + elementInstanceIndex;
+            elementStats.Add(CreateElementStat(category, elementInstanceName));
         }
+        return elementStats;
     }
 
     protected abstract ElementCategoryType[] GetValidHQElementCategories();
@@ -259,29 +337,12 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     protected abstract void IssueFirstUnitCommand();
 
-    private void OnUnitBuildComplete() {
-        var temp = onUnitBuildComplete_OneShot;
-        if (temp != null) {
-            temp(_command);
-        }
-        onUnitBuildComplete_OneShot = null;
-    }
-
     protected abstract void __InitializeCommandIntel();
 
     private ElementCategoryType DeriveCategory(ElementType element) {
         string elementName = element.gameObject.name;
         return GameUtility.DeriveEnumFromName<ElementCategoryType>(elementName);
     }
-
-    private int GetCurrentCount(ElementCategoryType elementCategory) {
-        if (!_elementCategoriesUsed.Contains(elementCategory)) {
-            return 0;
-        }
-        return GetStatsCount(elementCategory);
-    }
-
-    protected abstract int GetStatsCount(ElementCategoryType elementCategory);
 
     private IPlayer ValidateAndInitializeOwner() {
         IPlayer humanPlayer = _gameMgr.HumanPlayer;
@@ -312,13 +373,12 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         return aiOwner;
     }
 
-    private string InitializeUnitName() {
-        // usually, the name of the unit is carried by the name of the gameobject where this creator is located
-        return _transform.name;
-    }
-
     private void RemoveCreatorScript() {
         Destroy(this);
+    }
+
+    private void RegisterReadinessForGameStateProgression(GameState stateToNotProgressBeyondUntilReady, bool isReady) {
+        GameEventManager.Instance.Raise(new ElementReadyEvent(this, stateToNotProgressBeyondUntilReady, isReady));
     }
 
     protected override void OnDestroy() {
