@@ -14,7 +14,7 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-//namespace CodeEnv.Master.GameContent {
+namespace CodeEnv.Master.Zonked {
 
     using System;
     using System.Collections.Generic;
@@ -142,5 +142,5 @@
         }
 
     }
-//}
+}
 

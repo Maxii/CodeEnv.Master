@@ -6,8 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SystemComposition.cs
-// Wrapper for System Composition dictionary containing planet,
-// star and settlement Data.
+// Wrapper for System Composition dictionary containing planet and star Data.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -25,8 +24,7 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Wrapper for System Composition dictionary containing planet,
-    /// star and settlement Data.
+    /// Wrapper for System Composition dictionary containing planet and star Data.
     /// </summary>
     public class SystemComposition {
         // SystemComposition no longer contains any SettlementData or Orbit info

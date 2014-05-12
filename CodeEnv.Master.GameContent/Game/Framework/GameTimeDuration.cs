@@ -36,46 +36,46 @@ namespace CodeEnv.Master.GameContent {
         // see C# 4.0 In a Nutshell, page 254
 
         public static bool operator <(GameTimeDuration left, GameTimeDuration right) {
-            if (left.years < right.years) { return true; }
-            if (left.years == right.years) {
-                if (left.days < right.days) { return true; }
-                if (left.days == right.days) {
-                    if (left.hours < right.hours) { return true; }
+            if (left.Years < right.Years) { return true; }
+            if (left.Years == right.Years) {
+                if (left.Days < right.Days) { return true; }
+                if (left.Days == right.Days) {
+                    if (left.Hours < right.Hours) { return true; }
                 }
             }
             return false;
         }
 
         public static bool operator <=(GameTimeDuration left, GameTimeDuration right) {
-            if (left.years < right.years) { return true; }
-            if (left.years == right.years) {
-                if (left.days < right.days) { return true; }
-                if (left.days == right.days) {
-                    if (left.hours < right.hours) { return true; }
-                    if (left.hours == right.hours) { return true; }
+            if (left.Years < right.Years) { return true; }
+            if (left.Years == right.Years) {
+                if (left.Days < right.Days) { return true; }
+                if (left.Days == right.Days) {
+                    if (left.Hours < right.Hours) { return true; }
+                    if (left.Hours == right.Hours) { return true; }
                 }
             }
             return false;
         }
 
         public static bool operator >(GameTimeDuration left, GameTimeDuration right) {
-            if (left.years > right.years) { return true; }
-            if (left.years == right.years) {
-                if (left.days > right.days) { return true; }
-                if (left.days == right.days) {
-                    if (left.hours > right.hours) { return true; }
+            if (left.Years > right.Years) { return true; }
+            if (left.Years == right.Years) {
+                if (left.Days > right.Days) { return true; }
+                if (left.Days == right.Days) {
+                    if (left.Hours > right.Hours) { return true; }
                 }
             }
             return false;
         }
 
         public static bool operator >=(GameTimeDuration left, GameTimeDuration right) {
-            if (left.years > right.years) { return true; }
-            if (left.years == right.years) {
-                if (left.days > right.days) { return true; }
-                if (left.days == right.days) {
-                    if (left.hours > right.hours) { return true; }
-                    if (left.hours == right.hours) { return true; }
+            if (left.Years > right.Years) { return true; }
+            if (left.Years == right.Years) {
+                if (left.Days > right.Days) { return true; }
+                if (left.Days == right.Days) {
+                    if (left.Hours > right.Hours) { return true; }
+                    if (left.Hours == right.Hours) { return true; }
                 }
             }
             return false;
@@ -94,22 +94,22 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The years setting of this duration. Note: The total duration is acquired using totalInHours.
         /// </summary>
-        public readonly int years;
+        public int Years { get; private set; }
 
         /// <summary>
         /// The days setting of this duration. Note: The total duration is acquired using totalInHours.
         /// </summary>
-        public readonly int days;
+        public int Days { get; private set; }
 
         /// <summary>
         /// The hours setting of this duration. Note: The total duration is acquired using totalInHours.
         /// </summary>
-        public readonly int hours;
+        public int Hours { get; private set; }
 
         /// <summary>
         /// The total duration in hours.
         /// </summary>
-        public readonly int totalInHours;
+        public int TotalInHours { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GameTimeDuration" /> class representing the values provided. 
@@ -124,14 +124,15 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="hours">The hours.</param>
         /// <param name="days">The days.</param>
         /// <param name="years">The years.</param>
-        public GameTimeDuration(int hours, int days, int years) {
+        public GameTimeDuration(int hours, int days, int years)
+            : this() {
             Arguments.ValidateForRange(hours, Constants.Zero, GameTime.HoursPerDay - 1);
             Arguments.ValidateForRange(days, Constants.Zero, GameTime.DaysPerYear - 1);
             Arguments.ValidateNotNegative(years);
-            this.hours = hours;
-            this.days = days;
-            this.years = years;
-            totalInHours = (years * GameTime.DaysPerYear + days) * GameTime.HoursPerDay + hours;
+            Hours = hours;
+            Days = days;
+            Years = years;
+            TotalInHours = (years * GameTime.DaysPerYear + days) * GameTime.HoursPerDay + hours;
         }
 
         /// <summary>
@@ -146,18 +147,19 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="startDate">The start date.</param>
         /// <param name="endDate">The end date.</param>
-        public GameTimeDuration(GameDate startDate, GameDate endDate) {
+        public GameTimeDuration(GameDate startDate, GameDate endDate)
+            : this() {
             GameUtility.ValidateForRange(startDate, GameDate.GameStartDate, GameDate.GameEndDate);
             GameUtility.ValidateForRange(endDate, GameDate.GameStartDate, GameDate.GameEndDate);
             D.Assert(startDate != endDate);
 
-            int years = endDate.year - startDate.year;
-            int days = endDate.dayOfYear - startDate.dayOfYear;
+            int years = endDate.Year - startDate.Year;
+            int days = endDate.DayOfYear - startDate.DayOfYear;
             if (days < 0) {
                 years--;
                 days = GameTime.DaysPerYear + days;
             }
-            int hours = endDate.hourOfDay - startDate.hourOfDay;
+            int hours = endDate.HourOfDay - startDate.HourOfDay;
             if (hours < 0) {
                 days--;
                 hours = GameTime.HoursPerDay + hours;
@@ -166,10 +168,10 @@ namespace CodeEnv.Master.GameContent {
                     days = GameTime.DaysPerYear + days;
                 }
             }
-            this.hours = hours;
-            this.days = days;
-            this.years = years;
-            totalInHours = (years * GameTime.DaysPerYear + days) * GameTime.HoursPerDay + hours;
+            Hours = hours;
+            Days = days;
+            Years = years;
+            TotalInHours = (years * GameTime.DaysPerYear + days) * GameTime.HoursPerDay + hours;
         }
 
         #region Object.Equals and GetHashCode Override
@@ -181,36 +183,36 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Returns a hash code for this instance.
+        /// See Page 254, C# 4.0 in a Nutshell.
         /// </summary>
-        /// <see cref="Page 254, C# 4.0 in a Nutshell."/>
         /// <returns>
         /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
         /// </returns>
         public override int GetHashCode() {
             int hash = 17;  // 17 = some prime number
-            hash = hash * 31 + hours.GetHashCode(); // 31 = another prime number
-            hash = hash * 31 + days.GetHashCode();
-            hash = hash * 31 + years.GetHashCode();
-            hash = hash * 31 + totalInHours.GetHashCode();
+            hash = hash * 31 + Hours.GetHashCode(); // 31 = another prime number
+            hash = hash * 31 + Days.GetHashCode();
+            hash = hash * 31 + Years.GetHashCode();
+            hash = hash * 31 + TotalInHours.GetHashCode();
             return hash;
         }
 
         #endregion
 
         public override string ToString() {
-            if (years == Constants.Zero) {
-                if (days == Constants.Zero) {
-                    return Constants.GamePeriodHoursOnlyFormat.Inject(hours);
+            if (Years == Constants.Zero) {
+                if (Days == Constants.Zero) {
+                    return Constants.GamePeriodHoursOnlyFormat.Inject(Hours);
                 }
-                return Constants.GamePeriodNoYearsFormat.Inject(days, hours);
+                return Constants.GamePeriodNoYearsFormat.Inject(Days, Hours);
             }
-            return Constants.GamePeriodYearsFormat.Inject(years, days, hours);
+            return Constants.GamePeriodYearsFormat.Inject(Years, Days, Hours);
         }
 
         #region IEquatable<GameTimeDuration> Members
 
         public bool Equals(GameTimeDuration other) {
-            return hours == other.hours && days == other.days && years == other.years && totalInHours == other.totalInHours;
+            return Hours == other.Hours && Days == other.Days && Years == other.Years && TotalInHours == other.TotalInHours;
         }
 
         #endregion

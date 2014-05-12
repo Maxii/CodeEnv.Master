@@ -50,7 +50,8 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Resources:
                     return new ColoredTextList_Resources(data.Resources);
                 case GuiHudLineKeys.Specials:
-                    return (data.SpecialResources != TempGameValues.NoSpecialResourceYield) ? new ColoredTextList_Specials(data.SpecialResources) : _emptyColoredTextList;
+                    return (data.SpecialResources != TempGameValues.NoSpecialResourceYield) ? new ColoredTextList_Specials(data.SpecialResources)
+                        : _emptyColoredTextList;
                 case GuiHudLineKeys.Category:
                     return (data.SettlementData != null) ? new ColoredTextList_String(data.SettlementData.Category.GetName(), data.SettlementData.Category.GetDescription()) : _emptyColoredTextList;
                 case GuiHudLineKeys.SettlementDetails:

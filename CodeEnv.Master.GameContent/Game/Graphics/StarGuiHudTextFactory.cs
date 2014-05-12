@@ -46,7 +46,8 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Resources:
                     return new ColoredTextList_Resources(data.Resources);
                 case GuiHudLineKeys.Specials:
-                    return (data.SpecialResources != TempGameValues.NoSpecialResourceYield) ? new ColoredTextList_Specials(data.SpecialResources) : _emptyColoredTextList;
+                    return (data.SpecialResources != TempGameValues.NoSpecialResourceYield) ? new ColoredTextList_Specials(data.SpecialResources)
+                        : _emptyColoredTextList;
                 case GuiHudLineKeys.Owner:
                     return data.Owner != TempGameValues.NoPlayer ? new ColoredTextList_Owner(data.Owner) : _emptyColoredTextList;
 

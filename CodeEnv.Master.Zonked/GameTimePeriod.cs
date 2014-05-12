@@ -130,13 +130,13 @@ namespace CodeEnv.Master.GameContent {
         private void SetPeriodValues(GameDate startDate, GameDate endDate) {
             _startDate = startDate;
             _endDate = endDate;
-            int years = endDate.year - startDate.year;
-            int days = endDate.dayOfYear - startDate.dayOfYear;
+            int years = endDate.Year - startDate.Year;
+            int days = endDate.DayOfYear - startDate.DayOfYear;
             if (days < 0) {
                 years--;
                 days = GameDate.DaysPerYear + days;
             }
-            int hours = endDate.hourOfDay - startDate.hourOfDay;
+            int hours = endDate.HourOfDay - startDate.HourOfDay;
             if (hours < 0) {
                 days--;
                 hours = GameDate.HoursPerDay + hours;

@@ -52,7 +52,7 @@ public class Revolve : AMonoBase, IDisposable {
         base.Awake();
         UnityUtility.ValidateComponentPresence<MeshRenderer>(gameObject);
         _rotationPeriod = GameTimeDuration.OneDay;
-        _rotationSpeed = relativeRotationSpeed * Constants.DegreesPerRotation * (GameTime.HoursPerSecond / (float)_rotationPeriod.totalInHours);
+        _rotationSpeed = relativeRotationSpeed * Constants.DegreesPerRotation * (GameTime.HoursPerSecond / (float)_rotationPeriod.TotalInHours);
 
         UpdateRate = FrameUpdateFrequency.Frequent;
         if (!GameStatus.Instance.IsRunning) {

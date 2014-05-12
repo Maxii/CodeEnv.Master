@@ -17,12 +17,8 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
-    using UnityEngine;
 
     /// <summary>
     /// Immutable data container holding the yield values associated with OpeResources.
@@ -86,8 +82,8 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Returns a hash code for this instance.
+        /// See Page 254, C# 4.0 in a Nutshell.
         /// </summary>
-        /// <see cref="Page 254, C# 4.0 in a Nutshell."/>
         /// <returns>
         /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
         /// </returns>
