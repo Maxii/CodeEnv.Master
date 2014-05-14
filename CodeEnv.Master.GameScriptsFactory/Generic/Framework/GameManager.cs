@@ -154,7 +154,7 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
                 GameSettings settings = new GameSettings {
                     IsNewGame = true,
                     UniverseSize = _playerPrefsMgr.UniverseSize,
-                    PlayerRace = new Race(new RaceStat(_playerPrefsMgr.PlayerRace, "Maxii", new StringBuilder("Maxii description"), _playerPrefsMgr.PlayerColor))
+                    PlayerRace = TempGameValues.HumanPlayersRace
                 };
                 Settings = settings;
                 HumanPlayer = CreateHumanPlayer(settings);

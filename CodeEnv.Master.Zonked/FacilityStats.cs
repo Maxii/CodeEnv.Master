@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AItemStats.cs
-// Abstract base class containing values and settings for building Items.
+// File: FacilityStats.cs
+// Class containing values and settings for building Facilities.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,16 +16,20 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Abstract base class containing values and settings for building Items.
+    /// Class containing values and settings for building Facilities.
     /// </summary>
-    public abstract class AItemStats {
+    [Obsolete]
+    public class FacilityStats : AElementStats {
 
-        public string Name { get; set; }
-        public float MaxHitPoints { get; set; }
-        public CombatStrength Strength { get; set; }
+        public FacilityCategory Category { get; set; }
+
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
+        }
 
     }
 }

@@ -96,6 +96,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private CombatStrength _unitStrength;
+        /// <summary>
+        /// Readonly. The combat strength of the entire Unit, aka the sum of all
+        /// of this Unit's Elements combat strength.
+        /// </summary>
+        /// <value>
+        /// The unit strength.
+        /// </value>
         public CombatStrength UnitStrength {
             get {
                 return _unitStrength;
@@ -106,12 +113,20 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private float _unitMaxHitPoints;
+        /// <summary>
+        /// Readonly. The max hit points of the entire Unit, aka the sum of all
+        /// of this Unit's Elements max hit points.
+        /// </summary>
         public float UnitMaxHitPoints {
             get { return _unitMaxHitPoints; }
             private set { SetProperty<float>(ref _unitMaxHitPoints, value, "UnitMaxHitPoints", OnUnitMaxHitPointsChanged, OnUnitMaxHitPointsChanging); }
         }
 
         private float _unitCurrentHitPoints;
+        /// <summary>
+        /// Readonly. The current hit points of the entire Unit, aka the sum of all
+        /// of this Unit's Elements current hit points.
+        /// </summary>
         public float UnitCurrentHitPoints {
             get { return _unitCurrentHitPoints; }
             private set { SetProperty<float>(ref _unitCurrentHitPoints, value, "UnitCurrentHitPoints", OnUnitCurrentHitPointsChanged); }
@@ -142,7 +157,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="unitName">Name of this Unit, eg. the FleetName for a FleetCommand.</param>
         /// <param name="cmdMaxHitPoints">The maximum hit points of this Command staff.</param>
         public ACommandData(string unitName, float cmdMaxHitPoints)
-            : base(CommonTerms.Command, cmdMaxHitPoints, mass: 0.1F, optionalParentName: unitName) {
+            //: base(CommonTerms.Command, cmdMaxHitPoints, mass: 0.1F, optionalParentName: unitName) {
+            : base(CommonTerms.Command, mass: 0.1F, maxHitPts: cmdMaxHitPoints) {
+            ParentName = unitName;
             // A command's UnitMaxHitPoints are constructed from the sum of the elements
             InitializeCollections();
         }
@@ -223,7 +240,7 @@ namespace CodeEnv.Master.GameContent {
 
                 ChangeComposition(elementData, toAdd: true);
                 Subscribe(elementData);
-                UpdatePropertiesDerivedFromCombinedElements();
+                RecalcPropertiesDerivedFromCombinedElements();
                 return;
             }
             D.Warn("Attempting to add {0} {1} that is already present.", typeof(AElementData), elementData.ParentName);
@@ -255,7 +272,7 @@ namespace CodeEnv.Master.GameContent {
 
                 ChangeComposition(elementData, toAdd: false);
                 Unsubscribe(elementData);
-                UpdatePropertiesDerivedFromCombinedElements();
+                RecalcPropertiesDerivedFromCombinedElements();
                 return isRemoved;
             }
             D.Warn("Attempting to remove {0} {1} that is not present.", typeof(AElementData), elementData.ParentName);
@@ -265,30 +282,27 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Recalculates any Command properties that are dependant upon the total element population.
         /// </summary>
-        protected virtual void UpdatePropertiesDerivedFromCombinedElements() {
-            UpdateUnitStrength();
-            UpdateUnitMaxHitPoints();   // must preceed current as current uses max as a clamp
-            UpdateUnitCurrentHitPoints();
-            UpdateUnitMaxWeaponsRange();
+        protected virtual void RecalcPropertiesDerivedFromCombinedElements() {
+            RecalcUnitStrength();
+            RecalcUnitMaxHitPoints();   // must preceed current as current uses max as a clamp
+            RecalcUnitCurrentHitPoints();
+            RecalcUnitMaxWeaponsRange();
         }
 
-        private void UpdateUnitStrength() { // IMPROVE avoid creating new each time
-            CombatStrength sum = new CombatStrength();
-            foreach (var eData in ElementsData) {
-                sum.AddToTotal(eData.Strength);
-            }
-            UnitStrength = sum;
+        private void RecalcUnitStrength() {
+            var defaultValueIfEmpty = default(CombatStrength);
+            UnitStrength = ElementsData.Select(ed => ed.Strength).Aggregate(defaultValueIfEmpty, (accum, strength) => accum + strength);
         }
 
-        private void UpdateUnitMaxHitPoints() {
+        private void RecalcUnitMaxHitPoints() {
             UnitMaxHitPoints = ElementsData.Sum<AElementData>(ed => ed.MaxHitPoints);
         }
 
-        private void UpdateUnitCurrentHitPoints() {
+        private void RecalcUnitCurrentHitPoints() {
             UnitCurrentHitPoints = ElementsData.Sum<AElementData>(ed => ed.CurrentHitPoints);
         }
 
-        private void UpdateUnitMaxWeaponsRange() {
+        private void RecalcUnitMaxWeaponsRange() {
             MaxWeaponsRange = ElementsData.Count == 0 ? Constants.ZeroF : ElementsData.Max<AElementData>(ed => ed.MaxWeaponsRange);
         }
 
@@ -304,19 +318,19 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnElementStrengthChanged() {
-            UpdateUnitStrength();
+            RecalcUnitStrength();
         }
 
         private void OnElementCurrentHitPointsChanged() {
-            UpdateUnitCurrentHitPoints();
+            RecalcUnitCurrentHitPoints();
         }
 
         private void OnElementMaxHitPointsChanged() {
-            UpdateUnitMaxHitPoints();
+            RecalcUnitMaxHitPoints();
         }
 
         private void OnElementMaxWeaponsRangeChanged() {
-            UpdateUnitMaxWeaponsRange();
+            RecalcUnitMaxWeaponsRange();
         }
 
         private void Unsubscribe(AElementData elementData) {

@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -66,9 +66,11 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     /// Logs the event. WARNING:  Coroutines showup as &lt;IEnumerator.MoveNext&gt; rather than the method name
     /// </summary>
     public override void LogEvent() {
-        System.Diagnostics.StackFrame stackFrame = new StackFrame(1);
-        string name = Utility.CheckForContent(FullName) ? FullName : _transform.name + " (from transform)";
-        D.Log("{0}.{1}() called.", name, stackFrame.GetMethod().Name);
+        if (DebugSettings.Instance.EnableItemStateLogEvent) {
+            System.Diagnostics.StackFrame stackFrame = new StackFrame(1);
+            string name = Utility.CheckForContent(FullName) ? FullName : _transform.name + " (from transform)";
+            D.Log("{0}.{1}() called.", name, stackFrame.GetMethod().Name);
+        }
     }
 
     #endregion

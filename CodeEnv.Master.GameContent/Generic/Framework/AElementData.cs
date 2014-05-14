@@ -36,10 +36,10 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="AElementData" /> class.
         /// </summary>
         /// <param name="name">The name of the Element.</param>
-        /// <param name="maxHitPoints">The maximum hit points.</param>
         /// <param name="mass">The mass of the Element.</param>
-        public AElementData(string name, float maxHitPoints, float mass)
-            : base(name, maxHitPoints, mass) {
+        /// <param name="maxHitPoints">The maximum hit points.</param>
+        public AElementData(string name, float mass, float maxHitPoints)
+            : base(name, mass, maxHitPoints) {
             _weaponRangeTrackerLookup = new Dictionary<Guid, IList<Weapon>>();
         }
 
@@ -55,6 +55,7 @@ namespace CodeEnv.Master.GameContent {
             }
             _weaponRangeTrackerLookup[trackerID].Add(weapon);   // duplicates allowed
             RecalcMaxWeaponsRange();
+            RecalcCombatStrength();
         }
 
         /// <summary>
@@ -80,6 +81,7 @@ namespace CodeEnv.Master.GameContent {
                 D.Warn("{0} has removed weapon {1}, leaving an unused {2}.", Name, weapon.Name, typeof(IWeaponRangeTracker).Name);
             }
             RecalcMaxWeaponsRange();
+            RecalcCombatStrength();
             return isRangeTrackerStillInUse;
         }
 
@@ -93,23 +95,16 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public IEnumerable<Weapon> GetWeapons() {
-            IEnumerable<Weapon> result = Enumerable.Empty<Weapon>();
-            foreach (var key in _weaponRangeTrackerLookup.Keys) {
-                result = result.Concat(_weaponRangeTrackerLookup[key]);
-            }
-            return result;
+            return _weaponRangeTrackerLookup.Values.SelectMany(weap => weap);
         }
 
         private void RecalcMaxWeaponsRange() {
-            float result = Constants.ZeroF;
-            foreach (var key in _weaponRangeTrackerLookup.Keys) {
-                var weapons = _weaponRangeTrackerLookup[key];
-                var maxRange = weapons.Max<Weapon>(w => w.Range);
-                if (maxRange > result) {
-                    result = maxRange;
-                }
-            }
-            MaxWeaponsRange = result;
+            MaxWeaponsRange = GetWeapons().Max(weap => weap.Range);
+        }
+
+        private void RecalcCombatStrength() {
+            var defaultValueIfEmpty = default(CombatStrength);
+            Strength = GetWeapons().Select(weap => weap.Strength).Aggregate(defaultValueIfEmpty, (accum, wStrength) => accum + wStrength);
         }
 
     }

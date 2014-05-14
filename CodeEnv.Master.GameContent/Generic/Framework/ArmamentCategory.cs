@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ACommandStats.cs
-// Abstract base class containing values and settings for building Commands.
+// File: WeaponCategory.cs
+// Enum delineating the different types of damage or protection provided by Armaments.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,16 +16,19 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using CodeEnv.Master.Common;
-
     /// <summary>
-    /// Abstract base class containing values and settings for building Commands.
+    /// Enum delineating the different types of damage or protection provided by Armaments.
     /// </summary>
-    public abstract class ACommandStats : AItemStats {
+    public enum ArmamentCategory {
 
-        public int MaxCmdEffectiveness { get; set; }
-        public Formation UnitFormation { get; set; }
+        None,
 
+        BeamOffense,
+        BeamDefense,
+        MissileOffense,
+        MissileDefense,
+        ParticleOffense,
+        ParticleDefense
     }
 }
 

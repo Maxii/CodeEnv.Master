@@ -42,5 +42,7 @@ public abstract class ACreator : AMonoBase {
     public int dayDelay = 0;
     public int yearDelay = 0;
 
+    public int weaponsPerElement = 2;
+
 }
 

@@ -92,7 +92,6 @@
     <Compile Include="Generic\IO\NguiMouseButton.cs" />
     <Compile Include="Generic\Framework\APropertyChangeTracking.cs" />
     <Compile Include="Generic\Framework\AEnumValueChangeEvent.cs" />
-    <Compile Include="Game\Gameplay\CombatStrength.cs" />
     <Compile Include="Generic\Framework\GameEventManager.cs" />
     <Compile Include="Generic\IO\AEnumValuesHelper.cs" />
     <Compile Include="Game\Framework\AGameEvent.cs" />

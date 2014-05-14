@@ -29,7 +29,7 @@ using UnityEngine;
 /// deployed will simply be initialized if already present in the scene. If it is not present, then
 /// it will be built and then initialized.
 /// </summary>
-public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, ShipStats, FleetCmdModel> {
+public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, ShipStat, FleetCmdModel> {
 
     private UnitFactory _factory;   // not accesible from AUnitCreator
 
@@ -40,62 +40,36 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
 
     // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
 
-    protected override ShipStats CreateElementStat(ShipCategory category, string elementName) {
+    protected override ShipStat CreateElementStat(ShipCategory category, string elementName) {
         float mass = TempGameValues.__GetMass(category);
         float drag = 0.1F;
+        var combatStance = Enums<ShipCombatStance>.GetRandom(excludeDefault: true);
+        float maxTurnRate = UnityEngine.Random.Range(300F, 315F);
+        float fullThrust = mass * drag * UnityEngine.Random.Range(2F, 5F); // MaxThrust = Mass * Drag * MaxSpeed;
 
-        ShipStats stat = new ShipStats() {
-            Category = category,
-            Name = elementName,
-            Mass = mass,
-            Drag = drag,
-            FullThrust = mass * drag * UnityEngine.Random.Range(2F, 5F), // MaxThrust = Mass * Drag * MaxSpeed;
-            MaxHitPoints = 50F,
-            MaxTurnRate = UnityEngine.Random.Range(300F, 315F),
-            Strength = new CombatStrength(),
-            CombatStance = Enums<ShipCombatStance>.GetRandom(excludeDefault: true),
-            Weapons = new List<Weapon>() { 
-                new Weapon(WeaponCategory.BeamOffense, model: 1) {
-                Range = UnityEngine.Random.Range(2F, 4F),
-                ReloadPeriod = UnityEngine.Random.Range(1.4F, 1.6F),
-                Damage = UnityEngine.Random.Range(4F, 6F)
-                },
-                new Weapon(WeaponCategory.MissileOffense, model: 2) {
-                Range = UnityEngine.Random.Range(2F, 4F),
-                ReloadPeriod = UnityEngine.Random.Range(2F, 2.5F),
-                Damage = UnityEngine.Random.Range(8F, 12F)
-                }
-            },
-        };
-        return stat;
+        return new ShipStat(elementName, mass, 50F, category, combatStance, maxTurnRate, drag, fullThrust);
     }
 
     protected override FleetCmdModel MakeCommand(IPlayer owner) {
-        FleetCmdStats cmdStats = new FleetCmdStats() {
-            Name = UnitName,
-            MaxHitPoints = 10F,
-            MaxCmdEffectiveness = 100,
-            Strength = new CombatStrength(),
-            UnitFormation = Formation.Globe
-        };
+        FleetCmdStat cmdStat = new FleetCmdStat(UnitName, 10F, 100, Formation.Globe, new CombatStrength(0F, 5F, 0F, 5F, 0F, 5F));
         FleetCmdModel cmd;
         if (isCompositionPreset) {
             cmd = gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCmdModel>();
             var existingCmdReference = cmd;
-            bool isCmdCompatibleWithOwner = _factory.MakeFleetCmdInstance(cmdStats, owner, ref cmd);
+            bool isCmdCompatibleWithOwner = _factory.MakeFleetCmdInstance(cmdStat, owner, ref cmd);
             if (!isCmdCompatibleWithOwner) {
                 Destroy(existingCmdReference.gameObject);
             }
         }
         else {
-            cmd = _factory.MakeFleetCmdInstance(cmdStats, owner);
+            cmd = _factory.MakeFleetCmdInstance(cmdStat, owner);
             UnityUtility.AttachChildToParent(cmd.gameObject, gameObject);
         }
         return cmd;
     }
 
-    protected override ShipModel MakeElement(ShipStats stat, IPlayer owner) {
-        return _factory.MakeInstance(stat, owner);
+    protected override ShipModel MakeElement(ShipStat shipStat, IEnumerable<WeaponStat> weaponStats, IPlayer owner) {
+        return _factory.MakeInstance(shipStat, weaponStats, owner);
     }
 
     /// <summary>
@@ -104,14 +78,15 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
     /// are responsible for destroying the original provided element.
     /// </summary>
     /// <param name="stat">The stat.</param>
+    /// <param name="weaponStats">The weapon stats.</param>
     /// <param name="owner">The owner.</param>
     /// <param name="element">The element.</param>
     /// <returns></returns>
-    protected override bool MakeElement(ShipStats stat, IPlayer owner, ref ShipModel element) { // OPTIMIZE
-        return _factory.MakeInstance(stat, owner, ref element);
+    protected override bool MakeElement(ShipStat stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner, ref ShipModel element) { // OPTIMIZE
+        return _factory.MakeInstance(stat, weaponStats, owner, ref element);
     }
 
-    protected override ShipCategory GetCategory(ShipStats stat) {
+    protected override ShipCategory GetCategory(ShipStat stat) {
         return stat.Category;
     }
 
@@ -177,7 +152,7 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
                     if (attackTgts.IsNullOrEmpty()) {
                         // in case no enemy Planetoids qualify
                         attackTgts = FindObjectsOfType<PlanetoidModel>().Where(p => p.IsOperational && p.Owner == TempGameValues.NoPlayer).Cast<IMortalTarget>();
-                        if (attackTgts.Count() > 0) {
+                        if (attackTgts.Any()) {
                             D.Log("{0} can find no AttackTargets that meet the enemy selection criteria. Picking an unowned Planet.", UnitName);
                         }
                         else {

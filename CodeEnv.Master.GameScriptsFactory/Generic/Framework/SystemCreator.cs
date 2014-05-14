@@ -61,6 +61,7 @@ public class SystemCreator : AMonoBase, IDisposable {
     private Vector3[] _orbitSlots;
     private Transform _systemsFolder;
 
+    private SystemFactory _factory;
     private SystemComposition _composition;
     private SystemModel _system;
     private StarModel _star;
@@ -78,6 +79,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         base.Awake();
         _gameMgr = GameManager.Instance;
         _systemsFolder = _transform.parent;
+        _factory = SystemFactory.Instance;
         _isPresetSystem = _transform.childCount > 0;
         GenerateOrbitSlotStartLocation();
         _composition = CreateSystemComposition();
@@ -161,22 +163,30 @@ public class SystemCreator : AMonoBase, IDisposable {
     }
 
     private PlanetoidData CreatePlanetData(PlanetoidCategory pCategory, string planetName) {
-        PlanetoidData data = new PlanetoidData(pCategory, planetName, 10000F, 1000000F, SystemName) {
-            Strength = new CombatStrength(),
-            // Owners are all initialized to TempGameValues.NoPlayer by AItemData
-            Capacity = 25,
-            Resources = new OpeYield(3.1F, 2.0F, 4.8F),
-            SpecialResources = new XYield(XResource.Special_1, 0.3F),
+        PlanetoidStat stat = new PlanetoidStat(planetName, 1000000F, 10000F, pCategory, 25, new OpeYield(3.1F, 2F, 4.8F), new XYield(XResource.Special_1, 0.3F));
+        //PlanetoidData data = new PlanetoidData(pCategory, planetName, 10000F, 1000000F, SystemName) {
+        //    // Owners are all initialized to TempGameValues.NoPlayer by AItemData
+        //    Capacity = 25,
+        //    Resources = new OpeYield(3.1F, 2.0F, 4.8F),
+        //    SpecialResources = new XYield(XResource.Special_1, 0.3F),
+        //};
+        PlanetoidData data = new PlanetoidData(stat) {
+            ParentName = SystemName
+            // a Planet's CombatStrength is default(CombatStrength), aka all values zero'd out
         };
         return data;
     }
 
     private StarData CreateStarData(StarCategory sCategory) {
         string starName = SystemName + Constants.Space + CommonTerms.Star;
-        StarData data = new StarData(sCategory, starName, SystemName) {
-            Capacity = 100,
-            Resources = new OpeYield(0F, 0F, 100F),
-            SpecialResources = new XYield(XResource.Special_3, 0.3F),
+        StarStat stat = new StarStat(starName, sCategory, 100, new OpeYield(0F, 0F, 100F), new XYield(XResource.Special_3, 0.3F));
+        //StarData data = new StarData(sCategory, starName, SystemName) {
+        //    Capacity = 100,
+        //    Resources = new OpeYield(0F, 0F, 100F),
+        //    SpecialResources = new XYield(XResource.Special_3, 0.3F),
+        //};
+        StarData data = new StarData(stat) {
+            ParentName = SystemName
         };
         return data;
     }
@@ -265,12 +275,18 @@ public class SystemCreator : AMonoBase, IDisposable {
                     string planetName = planet.Data.Name;
                     string moonName = planetName + _moonLetters[letterIndex];
                     PlanetoidCategory moonCategory = DeriveCategory<PlanetoidCategory>(moon.transform);
-                    PlanetoidData data = new PlanetoidData(moonCategory, moonName, 1000F, 100000F, SystemName) {
-                        Strength = new CombatStrength(),
+                    PlanetoidStat stat = new PlanetoidStat(moonName, 1000F, 100000F, moonCategory, 5, new OpeYield(0.1F, 1F, 0.8F));
+                    //PlanetoidData data = new PlanetoidData(moonCategory, moonName, 1000F, 100000F, SystemName) {
+                    //    // Owners are all initialized to TempGameValues.NoPlayer by AItemData
+                    //    Capacity = 5,
+                    //    Resources = new OpeYield(0.1F, 1.0F, 0.8F),
+                    //    // a Moon's CombatStrength is default(CombatStrength), aka all values zero'd out
+                    //};
+
+                    PlanetoidData data = new PlanetoidData(stat) {
+                        ParentName = SystemName
                         // Owners are all initialized to TempGameValues.NoPlayer by AItemData
-                        Capacity = 5,
-                        Resources = new OpeYield(0.1F, 1.0F, 0.8F),
-                        SpecialResources = TempGameValues.NoSpecialResourceYield
+                        // a Moon's CombatStrength is default(CombatStrength), aka all values zero'd out
                     };
 
                     moon.Data = data;

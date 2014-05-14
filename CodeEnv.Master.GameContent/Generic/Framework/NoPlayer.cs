@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class NoPlayer : Player {
 
-        public NoPlayer() : base(new Race(Races.None), IQ.None) { }
+        public NoPlayer() : base(new Race(Species.None), IQ.None) { }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

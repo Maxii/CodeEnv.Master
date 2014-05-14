@@ -56,11 +56,11 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\IO\FacilityStat.cs" />
+    <Compile Include="Generic\IO\FleetCmdStat.cs" />
+    <Compile Include="Generic\Framework\CombatStrength.cs" />
     <Compile Include="Game\Framework\GameTimeDuration.cs" />
     <Compile Include="Game\Graphics\FleetCmdHumanPresenter.cs" />
-    <Compile Include="Generic\Framework\ACommandStats.cs" />
-    <Compile Include="Generic\Framework\AItemStats.cs" />
-    <Compile Include="Game\Framework\FleetCmdStats.cs" />
     <Compile Include="Generic\Framework\BaseOrder.cs" />
     <Compile Include="Generic\Framework\FacilityOrder.cs" />
     <Compile Include="Generic\Framework\FleetOrder.cs" />
@@ -81,8 +81,6 @@
     <Compile Include="Generic\Graphics\AMortalItemPresenter.cs" />
     <Compile Include="Generic\Graphics\AUnitCommandPresenter.cs" />
     <Compile Include="Generic\Graphics\AUnitElementPresenter.cs" />
-    <Compile Include="Generic\Framework\AElementStats.cs" />
-    <Compile Include="Game\Framework\FacilityStats.cs" />
     <Compile Include="Game\Gameplay\FacilityOrders.cs" />
     <Compile Include="Generic\Framework\FixedIntel.cs" />
     <Compile Include="Game\Gameplay\FleetCategory.cs" />
@@ -112,9 +110,9 @@
     <Compile Include="Game\Framework\IPlayer.cs" />
     <Compile Include="Game\Framework\Player.cs" />
     <Compile Include="Game\Framework\Race.cs" />
-    <Compile Include="Game\Framework\RaceStat.cs" />
+    <Compile Include="Generic\IO\RaceStat.cs" />
     <Compile Include="Game\Gameplay\OpeResource.cs" />
-    <Compile Include="Game\Gameplay\Races.cs" />
+    <Compile Include="Game\Gameplay\Species.cs" />
     <Compile Include="Game\Gameplay\SettlementCmdData.cs" />
     <Compile Include="Game\Gameplay\SettlementCategory.cs" />
     <Compile Include="Game\Gameplay\ShipCategory.cs" />
@@ -201,7 +199,6 @@
     <Compile Include="Generic\Extensions\ShipSpeedExtensions.cs" />
     <Compile Include="Generic\Framework\Speed.cs" />
     <Compile Include="Generic\Framework\IShipNavigatorClient.cs" />
-    <Compile Include="Game\Framework\ShipStats.cs" />
     <Compile Include="Generic\Framework\IElementTarget.cs" />
     <Compile Include="Generic\Framework\IShipTarget.cs" />
     <Compile Include="Generic\Framework\ICommandModel.cs" />
@@ -224,12 +221,11 @@
     <Compile Include="Generic\Deferred\SensorRangeCategory.cs" />
     <Compile Include="Generic\Deferred\ShipCombatStance.cs" />
     <Compile Include="Generic\Framework\NoPlayer.cs" />
-    <Compile Include="Game\Framework\SettlementCmdStats.cs" />
-    <Compile Include="Game\Framework\StarbaseCmdStats.cs" />
     <Compile Include="Game\Graphics\ShipHumanPresenter.cs" />
     <Compile Include="Game\Graphics\SettlementCmdHumanPresenter.cs" />
     <Compile Include="Game\Graphics\StarbaseCmdHumanPresenter.cs" />
     <Compile Include="Game\Gameplay\OpeYield.cs" />
+    <Compile Include="Generic\IO\PlanetoidStat.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\SystemData.cs" />
     <Compile Include="Game\Gameplay\ShipData.cs" />
@@ -238,9 +234,14 @@
     <Compile Include="Game\_Debug\VelocityRay.cs" />
     <Compile Include="Game\Graphics\MortalAnimations.cs" />
     <Compile Include="Generic\Framework\Weapon.cs" />
-    <Compile Include="Generic\Framework\WeaponCategory.cs" />
+    <Compile Include="Generic\Framework\ArmamentCategory.cs" />
     <Compile Include="Generic\Framework\ShipOrder.cs" />
-    <Compile Include="XYield.cs" />
+    <Compile Include="Game\Gameplay\XYield.cs" />
+    <Compile Include="Generic\IO\SettlementCmdStat.cs" />
+    <Compile Include="Generic\IO\ShipStat.cs" />
+    <Compile Include="Generic\IO\StarbaseCmdStat.cs" />
+    <Compile Include="Generic\IO\WeaponStat.cs" />
+    <Compile Include="Generic\IO\StarStat.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Generic\Math\" />

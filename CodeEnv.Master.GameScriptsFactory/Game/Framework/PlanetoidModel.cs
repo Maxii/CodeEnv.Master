@@ -200,11 +200,15 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel {
 
     #region IMortalTarget Members
 
-    public override void TakeDamage(float damage) {
+    public override void TakeHit(CombatStrength attackerWeaponStrength) {
         if (CurrentState == PlanetoidState.Dead) {
             return;
         }
         LogEvent();
+        float damage = Data.Strength - attackerWeaponStrength;
+        if (damage == Constants.ZeroF) {
+            return;
+        }
         bool isAlive = ApplyDamage(damage);
         if (!isAlive) {
             CurrentState = PlanetoidState.Dead;
@@ -212,6 +216,7 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel {
         }
         OnShowAnimation(MortalAnimations.Hit);
     }
+
 
     #endregion
 

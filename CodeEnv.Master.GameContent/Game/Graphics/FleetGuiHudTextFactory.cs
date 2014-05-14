@@ -44,9 +44,9 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Health:
                     return new ColoredTextList_Health(data.UnitHealth, data.UnitMaxHitPoints);
                 case GuiHudLineKeys.CombatStrength:
-                    return new ColoredTextList<float>(Constants.FormatFloat_0Dp, data.Strength.Combined);
+                    return new ColoredTextList<float>(Constants.FormatFloat_0Dp, data.UnitStrength.Combined);
                 case GuiHudLineKeys.CombatStrengthDetails:
-                    return new ColoredTextList_Combat(data.Strength);
+                    return new ColoredTextList_Combat(data.UnitStrength);
                 case GuiHudLineKeys.Category:
                     return new ColoredTextList_String(data.Category.GetName(), data.Category.GetDescription());
                 case GuiHudLineKeys.Composition:

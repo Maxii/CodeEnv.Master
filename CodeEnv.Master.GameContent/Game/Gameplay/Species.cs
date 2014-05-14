@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2013 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: WeaponCategory.cs
-// Enum delineating the different categories for Weapons.
+// File: Species.cs
+// The breed of a race.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,18 +17,26 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Enum delineating the different categories for Weapons.
+    /// The breed of a race.
     /// </summary>
-    public enum WeaponCategory {
+    public enum Species {
 
         None,
 
-        MissileDefense,
-        MissileOffense,
-        ParticleDefense,
-        ParticleOffense,
-        BeamDefense,
-        BeamOffense
+        Human,
+
+        KlingonLike,
+
+        FrerengiLike,
+
+        RomulanLike,
+
+        BorgLike,
+
+        DominionLike,
+
+        GodLike
+
     }
 }
 

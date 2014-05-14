@@ -28,7 +28,7 @@ using UnityEngine;
 public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
 
     private UniverseSize _universeSize;
-    private Races _playerRace;
+    private Species _playerRace;
     private GameColor _playerColor;
 
     protected override void InitializeTooltip() {
@@ -47,8 +47,8 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
             //D.Log("UniverseSize recorded as {0}.".Inject(selectionName));
             _universeSize = universeSize;
         }
-        Races playerRace;
-        if (Enums<Races>.TryParse(selectionName, true, out playerRace)) {
+        Species playerRace;
+        if (Enums<Species>.TryParse(selectionName, true, out playerRace)) {
             //D.Log("Player recorded as {0}.".Inject(selectionName));
             _playerRace = playerRace;
         }
@@ -62,14 +62,14 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
         GameSettings gameSettings = new GameSettings();
         gameSettings.IsNewGame = true;
         gameSettings.UniverseSize = _universeSize;
-        gameSettings.PlayerRace = new Race(new RaceStat(_playerRace, "Maxii", new StringBuilder("Maxii description"), _playerColor));
+        gameSettings.PlayerRace = TempGameValues.HumanPlayersRace;
         _eventMgr.Raise<BuildNewGameEvent>(new BuildNewGameEvent(this, gameSettings));
     }
 
     [Conditional("UNITY_EDITOR")]
     private void ValidateState() {
         D.Assert(_universeSize != UniverseSize.None, "UniverseSize!");
-        D.Assert(_playerRace != Races.None, "PlayerRace!");
+        D.Assert(_playerRace != Species.None, "PlayerRace!");
     }
 
     public override string ToString() {

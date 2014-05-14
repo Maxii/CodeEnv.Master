@@ -29,35 +29,35 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class Race {
 
-        public Races RaceType { get; private set; }
+        public Species Species { get; private set; }
 
-        public string LeaderName { get; private set; }
+        public string LeaderName { get; set; }
 
-        public StringBuilder Description { get; private set; }
+        public string Description { get; set; }
 
-        public GameColor Color { get; private set; }
-
-        //private IList<Trait> _traits;
-        //public IList<Trait> Traits { get { return _traits; } }     // return an unmodifialbe list - ArrayList.ReadOnly?
+        public GameColor Color { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Race"/> class for testing.
         /// </summary>
-        /// <param name="raceType">Type of the race.</param>
-        public Race(Races raceType) {
-            RaceType = raceType;
-            LeaderName = raceType.GetName() + " Leader";
-            Description = new StringBuilder(raceType.GetDescription());
+        /// <param name="species">Type of the race.</param>
+        public Race(Species species) {
+            Species = species;
+            LeaderName = species.GetName() + " Leader";
+            Description = species.GetDescription();
             Color = RandomExtended<GameColor>.Choice(Enums<GameColor>.GetValues()
                 .Except(default(GameColor), GameColor.Black, GameColor.Clear));
         }
 
-        public Race(RaceStat stats) {
-            RaceType = stats.Race;
-            LeaderName = stats.LeaderName;
-            Description = stats.Description;
-            Color = stats.Color;
-            //Traits = stats.Traits;
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Race"/> class.
+        /// </summary>
+        /// <param name="stat">The stat.</param>
+        public Race(RaceStat stat) {
+            Species = stat.Species;
+            LeaderName = stat.LeaderName;
+            Description = stat.Description;
+            Color = stat.Color;
         }
 
         /// <summary>
@@ -65,22 +65,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="race">The race to copy.</param>
         public Race(Race race) {
-            RaceType = race.RaceType;
+            Species = race.Species;
             LeaderName = race.LeaderName;
             Description = race.Description;
             Color = race.Color;
-            // _traits = new List<Trait>();
-            // race.Traits.ForAll<Trait>(t => _traits.Add(t));
-        }
-
-        public void AddTrait() {
-            // UNDONE
-            throw new NotImplementedException();
-        }
-
-        public void RemoveTrait() {
-            // UNDONE
-            throw new NotImplementedException();
         }
 
         public override string ToString() {

@@ -69,11 +69,11 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private CombatStrength _combatStrength = new CombatStrength();
+        private CombatStrength _strength;
         public CombatStrength Strength {
-            get { return _combatStrength; }
+            get { return _strength; }
             set {
-                SetProperty<CombatStrength>(ref _combatStrength, value, "Strength");
+                SetProperty<CombatStrength>(ref _strength, value, "Strength");
             }
         }
 
@@ -90,11 +90,18 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="maxHitPoints">The maximum hit points.</param>
         /// <param name="mass">The mass of the Item.</param>
         /// <param name="optionalParentName">Name of the optional parent.</param>
-        public AMortalItemData(string name, float maxHitPoints, float mass, string optionalParentName = "")
-            : base(name, optionalParentName) {
-            _maxHitPoints = maxHitPoints;
-            CurrentHitPoints = maxHitPoints;
+        //public AMortalItemData(string name, float maxHitPoints, float mass, string optionalParentName = "")
+        //    : base(name, optionalParentName) {
+        //    _maxHitPoints = maxHitPoints;
+        //    CurrentHitPoints = maxHitPoints;
+        //    Mass = mass;
+        //}
+
+        public AMortalItemData(string name, float mass, float maxHitPts)
+            : base(name) {
             Mass = mass;
+            MaxHitPoints = maxHitPts;
+            CurrentHitPoints = maxHitPts;
         }
 
         private void OnMaxHitPointsChanging(float newMaxHitPoints) {

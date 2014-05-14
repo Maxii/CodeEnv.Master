@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SettlementCmdStats.cs
-// Class containing values and settings for building Settlement Commands.
+// File: ACommandStats.cs
+// Abstract base class containing values and settings for building Commands.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,21 +16,19 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Class containing values and settings for building Settlement Commands.
+    /// Abstract base class containing values and settings for building Commands.
     /// </summary>
-    public class SettlementCmdStats : ACommandStats {
+    [Obsolete]
+    public abstract class ACommandStats : AItemStats {
 
-        public int Population { get; set; }
-        public int CapacityUsed { get; set; }
-        public OpeYield ResourcesUsed { get; set; }
-        public XYield SpecialResourcesUsed { get; set; }
+        public int MaxCmdEffectiveness { get; set; }
+        public Formation UnitFormation { get; set; }
+        public CombatStrength Strength { get; set; }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
     }
 }
 

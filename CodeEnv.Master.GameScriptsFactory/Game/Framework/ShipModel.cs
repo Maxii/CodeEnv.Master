@@ -202,7 +202,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     #region Idling
 
     IEnumerator Idling_EnterState() {
-        // D.Log("{0}.Idling_EnterState called.", FullName);
+        D.Log("{0}.Idling_EnterState called.", FullName);
 
         if (CurrentOrder != null) {
             // check for a standing order to execute if the current order (just completed) was issued by the Captain
@@ -263,7 +263,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     }
 
     void ExecuteAssumeStationOrder_ExitState() {
-        LogEvent();
+        //LogEvent();
     }
 
     #endregion
@@ -423,7 +423,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         LogEvent();
         if (_primaryTarget != null) {   // OnWeaponReady can occur before _primaryTarget is picked
             _attackTarget = _primaryTarget;
-            _attackDamage = weapon.Damage;
+            _attackStrength = weapon.Strength;
             D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
             Call(ShipState.Attacking);
         }
@@ -442,7 +442,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     #region Attacking
 
     private IMortalTarget _attackTarget;
-    private float _attackDamage;
+    private CombatStrength _attackStrength;
 
     void Attacking_EnterState() {
         LogEvent();
@@ -452,14 +452,14 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             return;
         }
         OnShowAnimation(MortalAnimations.Attacking);
-        _attackTarget.TakeDamage(_attackDamage);
+        _attackTarget.TakeHit(_attackStrength);
         Return();
     }
 
     void Attacking_ExitState() {
         LogEvent();
         _attackTarget = null;
-        _attackDamage = Constants.ZeroF;
+        _attackStrength = TempGameValues.NoCombatStrength;
     }
 
     #endregion
@@ -663,7 +663,8 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     private void TryFireOnAnyTarget(Weapon weapon) {
         if (_weaponRangeTrackerLookup[weapon.TrackerID].__TryGetRandomEnemyTarget(out _attackTarget)) {
             D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
-            _attackDamage = weapon.Damage;
+            //_attackDamage = weapon.Damage;
+            _attackStrength = weapon.Strength;
             Call(ShipState.Attacking);
         }
         else {
@@ -764,8 +765,13 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     #region IMortalTarget Members
 
-    public override void TakeDamage(float damage) {
+    public override void TakeHit(CombatStrength attackerWeaponStrength) {
         if (CurrentState == ShipState.Dead) {
+            return;
+        }
+        float damage = Data.Strength - attackerWeaponStrength;
+        if (damage == Constants.ZeroF) {
+            D.Log("{0} has been hit but incurred no damage.", FullName);
             return;
         }
         D.Log("{0} has been hit. Taking {1} damage.", FullName, damage);

@@ -42,9 +42,12 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<string>(ref _parentName, value, "ParentName", OnParentNameChanged, OnParentNameChanging); }
         }
 
+        //public string FullName {
+        //    get { return ParentName == string.Empty ? Name : ParentName + Constants.Underscore + Name; }
+        //}
 
         public string FullName {
-            get { return ParentName == string.Empty ? Name : ParentName + Constants.Underscore + Name; }
+            get { return ParentName.IsNullOrEmpty() ? Name : ParentName + Constants.Underscore + Name; }
         }
 
         private IPlayer _owner = TempGameValues.NoPlayer;
@@ -73,9 +76,13 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="optionalParentName">Name of the optional parent.</param>
-        public AItemData(string name, string optionalParentName = "") {
+        //public AItemData(string name, string optionalParentName = "") {
+        //    Name = name;
+        //    ParentName = optionalParentName;
+        //}
+
+        public AItemData(string name) {
             Name = name;
-            ParentName = optionalParentName;
         }
 
         protected virtual void OnOwnerChanged() {

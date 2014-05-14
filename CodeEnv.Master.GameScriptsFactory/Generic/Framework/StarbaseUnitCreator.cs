@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Initialization class that deploys a Starbase at the location of this StarbaseCreator. 
 /// </summary>
-public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory, FacilityData, FacilityStats, StarbaseCmdModel> {
+public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory, FacilityData, FacilityStat, StarbaseCmdModel> {
 
     private UnitFactory _factory;   // not accesible from AUnitCreator
 
@@ -37,34 +37,20 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
 
     // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
 
-    protected override FacilityStats CreateElementStat(FacilityCategory category, string elementName) {
-        FacilityStats stat = new FacilityStats() {
-            Category = category,
-            Name = elementName,
-            Mass = 10000F,
-            MaxHitPoints = 50F,
-            Strength = new CombatStrength(),
-            Weapons = new List<Weapon>() { 
-                new Weapon(WeaponCategory.BeamOffense, model: 1) {
-                Range = UnityEngine.Random.Range(2F, 4F),
-                ReloadPeriod = UnityEngine.Random.Range(1.5F, 2.0F),
-                Damage = UnityEngine.Random.Range(1F, 1.5F)
-                }
-            },
-        };
-        return stat;
+    protected override FacilityStat CreateElementStat(FacilityCategory category, string elementName) {
+        return new FacilityStat(elementName, 10000F, 50F, category);
     }
 
-    protected override FacilityModel MakeElement(FacilityStats stat, IPlayer owner) {
-        return _factory.MakeInstance(stat, owner);
+    protected override FacilityModel MakeElement(FacilityStat stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner) {
+        return _factory.MakeInstance(stat, weaponStats, owner);
     }
 
-    protected override bool MakeElement(FacilityStats stat, IPlayer owner, ref FacilityModel element) {
-        _factory.MakeInstance(stat, owner, ref element);
+    protected override bool MakeElement(FacilityStat stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner, ref FacilityModel element) {
+        _factory.MakeInstance(stat, weaponStats, owner, ref element);
         return true;    // IMPROVE dummy return for facilities to match signature of abstract MakeElement - facilties currently don't have a HumanView 
     }
 
-    protected override FacilityCategory GetCategory(FacilityStats stat) {
+    protected override FacilityCategory GetCategory(FacilityStat stat) {
         return stat.Category;
     }
 
@@ -77,25 +63,19 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
     }
 
     protected override StarbaseCmdModel MakeCommand(IPlayer owner) {
-        StarbaseCmdStats cmdStats = new StarbaseCmdStats() {
-            Name = UnitName,
-            MaxHitPoints = 10F,
-            MaxCmdEffectiveness = 100,
-            Strength = new CombatStrength(),
-            UnitFormation = Formation.Circle
-        };
+        StarbaseCmdStat cmdStat = new StarbaseCmdStat(UnitName, 10F, 100, Formation.Circle, new CombatStrength(0F, 5F, 0F, 5F, 0F, 5F));
 
         StarbaseCmdModel cmd;
         if (isCompositionPreset) {
             cmd = gameObject.GetSafeMonoBehaviourComponentInChildren<StarbaseCmdModel>();
             var existingCmdReference = cmd;
-            bool isCmdCompatibleWithOwner = _factory.MakeStarbaseCmdInstance(cmdStats, owner, ref cmd);
+            bool isCmdCompatibleWithOwner = _factory.MakeStarbaseCmdInstance(cmdStat, owner, ref cmd);
             if (!isCmdCompatibleWithOwner) {
                 Destroy(existingCmdReference.gameObject);
             }
         }
         else {
-            cmd = _factory.MakeStarbaseCmdInstance(cmdStats, owner);
+            cmd = _factory.MakeStarbaseCmdInstance(cmdStat, owner);
             UnityUtility.AttachChildToParent(cmd.gameObject, gameObject);
         }
         return cmd;

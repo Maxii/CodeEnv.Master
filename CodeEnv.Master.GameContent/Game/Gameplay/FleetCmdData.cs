@@ -91,9 +91,13 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Initializes a new instance of the <see cref="FleetCmdData"/> class.
         /// </summary>
-        /// <param name="fleetName">Name of the fleet.</param>
-        /// <param name="cmdMaxHitPoints">The command maximum hit points.</param>
-        public FleetCmdData(string fleetName, float cmdMaxHitPoints) : base(fleetName, cmdMaxHitPoints) { }
+        /// <param name="stat">The stat.</param>
+        public FleetCmdData(FleetCmdStat stat)
+            : base(stat.Name, stat.MaxHitPoints) {
+            MaxCmdEffectiveness = stat.MaxCmdEffectiveness;
+            UnitFormation = stat.UnitFormation;
+            Strength = stat.Strength;
+        }
 
         protected override void InitializeComposition() {
             Composition = new FleetComposition();
@@ -113,8 +117,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override void UpdatePropertiesDerivedFromCombinedElements() {
-            base.UpdatePropertiesDerivedFromCombinedElements();
+        protected override void RecalcPropertiesDerivedFromCombinedElements() {
+            base.RecalcPropertiesDerivedFromCombinedElements();
             UpdateFullSpeed();
             UpdateMaxTurnRate();
         }

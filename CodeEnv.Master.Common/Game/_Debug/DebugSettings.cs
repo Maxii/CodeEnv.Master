@@ -109,6 +109,21 @@ namespace CodeEnv.Master.Common {
             private set { _forceFpsToTarget = value; }
         }
 
+        private bool _enableItemStateLogEvent;
+        /// <summary>
+        /// Controls whether LogEvent() will print debug messages
+        /// for Items that inherit from AMortalItemStateMachine.
+        /// </summary>
+        public bool EnableItemStateLogEvent {
+            get {
+                if (!isPropertyValuesInitialized) {
+                    InitializePropertyValues();
+                }
+                return _enableItemStateLogEvent;
+            }
+            private set { _enableItemStateLogEvent = value; }
+        }
+
         private bool _enableVerboseDebugLog;
         /// <summary>
         /// Debug readouts (console, etc.) will be comprehensive

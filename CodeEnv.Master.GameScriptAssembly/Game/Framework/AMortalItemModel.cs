@@ -102,9 +102,17 @@ public abstract class AMortalItemModel : AItemModel, IMortalModel, IMortalTarget
 
     public abstract void OnShowCompletion();
 
+    #region Attack Simulation
+
+    public static ArmamentCategory[] offensiveArmamentCategories = new ArmamentCategory[3] {    ArmamentCategory.BeamOffense, 
+                                                                                                ArmamentCategory.MissileOffense, 
+                                                                                                ArmamentCategory.ParticleOffense };
     public virtual void __SimulateAttacked() {
-        TakeDamage(UnityEngine.Random.Range(Constants.ZeroF, Data.MaxHitPoints + 1F));
+        TakeHit(new CombatStrength(RandomExtended<ArmamentCategory>.Choice(offensiveArmamentCategories),
+            UnityEngine.Random.Range(Constants.ZeroF, Data.MaxHitPoints + 1F)));
     }
+
+    #endregion
 
     #region StateMachine Support Methods
 
@@ -136,7 +144,7 @@ public abstract class AMortalItemModel : AItemModel, IMortalModel, IMortalTarget
 
     public override bool IsMovable { get { return true; } }
 
-    public abstract void TakeDamage(float damage);
+    public abstract void TakeHit(CombatStrength weaponStrength);
 
     public IPlayer Owner { get { return Data.Owner; } }
 

@@ -128,17 +128,16 @@ namespace CodeEnv.Master.GameContent {
         private float _gameSpeedMultiplier;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ShipData" /> class.
+        /// Initializes a new instance of the <see cref="ShipData"/> class.
         /// </summary>
-        /// <param name="category">The category of ship.</param>
-        /// <param name="shipName">Name of the ship.</param>
-        /// <param name="maxHitPoints">The maximum hit points.</param>
-        /// <param name="mass">The mass.</param>
-        /// <param name="drag">The drag.</param>
-        public ShipData(ShipCategory category, string shipName, float maxHitPoints, float mass, float drag)
-            : base(shipName, maxHitPoints, mass) {
-            Category = category;
-            _drag = drag;   // avoid OnDragChanged as the rigidbody is not yet known
+        /// <param name="stat">The stat.</param>
+        public ShipData(ShipStat stat)
+            : base(stat.Name, stat.Mass, stat.MaxHitPoints) {
+            _drag = stat.Drag;  // avoid OnDragChanged as the rigidbody is not yet known
+            Category = stat.Category;
+            CombatStance = stat.CombatStance;
+            FullThrust = stat.FullThrust;
+            MaxTurnRate = stat.MaxTurnRate;
             Initialize();
         }
 

@@ -44,9 +44,9 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Owner:
                     return new ColoredTextList_Owner(data.Owner);
                 case GuiHudLineKeys.CombatStrength:
-                    return new ColoredTextList<float>(Constants.FormatFloat_0Dp, data.Strength.Combined);
+                    return new ColoredTextList<float>(Constants.FormatFloat_0Dp, data.UnitStrength.Combined);
                 case GuiHudLineKeys.CombatStrengthDetails:
-                    return new ColoredTextList_Combat(data.Strength);
+                    return new ColoredTextList_Combat(data.UnitStrength);
                 case GuiHudLineKeys.SettlementDetails:
                     return new ColoredTextList_Settlement(data);
 

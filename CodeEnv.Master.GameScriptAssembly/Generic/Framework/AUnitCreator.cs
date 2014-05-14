@@ -37,7 +37,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     where ElementType : AUnitElementModel
     where ElementCategoryType : struct
     where ElementDataType : AElementData
-    where ElementStatType : class, new()
+    where ElementStatType : struct
     where CommandType : AUnitCommandModel {
 
     /// <summary>
@@ -46,6 +46,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     /// </summary>
     public string UnitName { get { return _transform.name; } }
 
+    protected IList<WeaponStat> _availableWeaponsStats;
     protected IList<ElementStatType> _elementStats;
     protected IList<ElementType> _elements;
     protected CommandType _command;
@@ -63,6 +64,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         base.Start();
         _gameMgr = References.GameManager;
         _owner = ValidateAndInitializeOwner();
+        _availableWeaponsStats = __CreateAvailableWeaponsStats(9);
         Subscribe();
     }
 
@@ -176,7 +178,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     #endregion
 
     private void CreateElementStats() {
-        _elementStats = isCompositionPreset ? CreateStatsFromChildren() : CreateRandomStats();
+        _elementStats = isCompositionPreset ? CreateElementStatsFromChildren() : CreateRandomElementStats();
     }
 
     private void PrepareUnitForOperations(Action onCompleted = null) {
@@ -217,7 +219,50 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         });
     }
 
-    private IList<ElementStatType> CreateStatsFromChildren() {
+    #region Alternative Weapon Stats to choose from
+
+    private static ArmamentCategory[] _offensiveArmsCategories = new ArmamentCategory[] { ArmamentCategory.BeamOffense, ArmamentCategory.MissileOffense, ArmamentCategory.ParticleOffense };
+
+    private IList<WeaponStat> __CreateAvailableWeaponsStats(int weaponCount) {
+        IList<WeaponStat> statsList = new List<WeaponStat>(weaponCount);
+        for (int i = 0; i < weaponCount; i++) {
+            float range = UnityEngine.Random.Range(3F, 5F);
+            float reloadPeriod = UnityEngine.Random.Range(1F, 2F);
+            string name = string.Empty;
+            float strengthValue;
+            ArmamentCategory offensiveArmsCategory = RandomExtended<ArmamentCategory>.Choice(_offensiveArmsCategories);
+            switch (offensiveArmsCategory) {
+                case ArmamentCategory.BeamOffense:
+                    range = UnityEngine.Random.Range(2F, 4F);
+                    reloadPeriod = UnityEngine.Random.Range(1F, 2F);
+                    name = "Phaser";
+                    strengthValue = UnityEngine.Random.Range(3F, 4F);
+                    break;
+                case ArmamentCategory.MissileOffense:
+                    range = UnityEngine.Random.Range(4F, 6F);
+                    reloadPeriod = UnityEngine.Random.Range(3F, 4F);
+                    name = "Torpedo";
+                    strengthValue = UnityEngine.Random.Range(5F, 6F);
+                    break;
+                case ArmamentCategory.ParticleOffense:
+                    range = UnityEngine.Random.Range(3F, 5F);
+                    reloadPeriod = UnityEngine.Random.Range(2F, 3F);
+                    name = "Disruptor";
+                    strengthValue = UnityEngine.Random.Range(4F, 5F);
+                    break;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(offensiveArmsCategory));
+            }
+            CombatStrength strength = new CombatStrength(offensiveArmsCategory, strengthValue);
+            WeaponStat weapStat = new WeaponStat(name, strength, range, reloadPeriod, 0F, 0F);
+            statsList.Add(weapStat);
+        }
+        return statsList;
+    }
+
+    #endregion
+
+    private IList<ElementStatType> CreateElementStatsFromChildren() {
         var elements = gameObject.GetSafeMonoBehaviourComponentsInChildren<ElementType>();
         var elementStats = new List<ElementStatType>(elements.Count());
         var elementCategoriesUsedCount = new Dictionary<ElementCategoryType, int>();
@@ -236,7 +281,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         return elementStats;
     }
 
-    private IList<ElementStatType> CreateRandomStats() {
+    private IList<ElementStatType> CreateRandomElementStats() {
         ElementCategoryType[] validHQCategories = GetValidHQElementCategories();
         ElementCategoryType[] validCategories = GetValidElementCategories();
 
@@ -267,22 +312,23 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     private IList<ElementType> MakeElements() {
         var elements = new List<ElementType>();
-        foreach (var stat in _elementStats) {
+        foreach (var elementStat in _elementStats) {
+            var weaponStats = _availableWeaponsStats.Shuffle().Take(weaponsPerElement);
             ElementType element = null;
             if (isCompositionPreset) {
                 // find a preExisting element of the right category first to provide to Make
                 var categoryElements = gameObject.GetSafeMonoBehaviourComponentsInChildren<ElementType>()
-                    .Where(e => DeriveCategory(e).Equals(GetCategory(stat)));
+                    .Where(e => DeriveCategory(e).Equals(GetCategory(elementStat)));
                 var categoryElementsStillAvailable = categoryElements.Except(elements);
                 element = categoryElementsStillAvailable.First();
                 var existingElementReference = element;
-                bool isElementCompatibleWithOwner = MakeElement(stat, _owner, ref element);
+                bool isElementCompatibleWithOwner = MakeElement(elementStat, weaponStats, _owner, ref element);
                 if (!isElementCompatibleWithOwner) {
                     Destroy(existingElementReference.gameObject);
                 }
             }
             else {
-                element = MakeElement(stat, _owner);
+                element = MakeElement(elementStat, weaponStats, _owner);
             }
             // Note: Need to tell each element where this creator is located. This assures that whichever element is picked as the HQElement
             // will start with this position. However, the elements here are all placed on top of each other. When the physics engine starts
@@ -298,9 +344,9 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     protected abstract ElementCategoryType GetCategory(ElementStatType stat);
 
-    protected abstract bool MakeElement(ElementStatType stat, IPlayer owner, ref ElementType element);
+    protected abstract bool MakeElement(ElementStatType stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner, ref ElementType element);
 
-    protected abstract ElementType MakeElement(ElementStatType stat, IPlayer owner);
+    protected abstract ElementType MakeElement(ElementStatType stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner);
 
     protected abstract CommandType MakeCommand(IPlayer owner);
 

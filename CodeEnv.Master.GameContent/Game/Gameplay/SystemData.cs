@@ -187,20 +187,16 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void UpdateResources() {
-            OpeYield totalResourcesFromPlanets = new OpeYield();
+            var defaultValueIfEmpty = default(OpeYield);
             var resources = Composition.GetPlanetData().Select(pd => pd.Resources);
-            if (!resources.IsNullOrEmpty()) {   // Aggregate throws up if source enumerable is empty
-                totalResourcesFromPlanets = resources.Aggregate((accumulator, ope) => accumulator + ope);
-            }
+            OpeYield totalResourcesFromPlanets = resources.Aggregate(defaultValueIfEmpty, (accumulator, ope) => accumulator + ope);
             Resources = totalResourcesFromPlanets + Composition.StarData.Resources;
         }
 
         private void UpdateSpecialResources() {
-            XYield totalResourcesFromPlanets = new XYield();
+            var defaultValueIfEmpty = default(XYield);
             var resources = Composition.GetPlanetData().Select(pd => pd.SpecialResources);
-            if (!resources.IsNullOrEmpty()) {   // Aggregate throws up if source enumerable is empty
-                totalResourcesFromPlanets = resources.Aggregate((accumulator, ope) => accumulator + ope);
-            }
+            XYield totalResourcesFromPlanets = resources.Aggregate(defaultValueIfEmpty, (accumulator, ope) => accumulator + ope);
             SpecialResources = totalResourcesFromPlanets + Composition.StarData.SpecialResources;
         }
 

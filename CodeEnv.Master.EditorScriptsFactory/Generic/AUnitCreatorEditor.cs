@@ -46,6 +46,8 @@ public abstract class AUnitCreatorEditor<T> : Editor where T : ACreator {
                 EditorGUILayout.EnumPopup("Diplomatic State with Human Player", creator.ownerRelationshipWithHuman);
         }
 
+        creator.weaponsPerElement = EditorGUILayout.IntSlider("Number of Weapons per element", creator.weaponsPerElement, 1, 5);
+
         if (GUI.changed) {
             EditorUtility.SetDirty(target);
         }

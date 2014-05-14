@@ -29,13 +29,10 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Initializes a new instance of the <see cref="FacilityData" /> class.
         /// </summary>
-        /// <param name="category">The kind of Facility.</param>
-        /// <param name="name">Name of the Facility.</param>
-        /// <param name="maxHitPoints">The maximum hit points.</param>
-        /// <param name="mass">The mass.</param>
-        public FacilityData(FacilityCategory category, string name, float maxHitPoints, float mass)
-            : base(name, maxHitPoints, mass) {
-            Category = category;
+        /// <param name="stat">The stat.</param>
+        public FacilityData(FacilityStat stat)
+            : base(stat.Name, stat.Mass, stat.MaxHitPoints) {
+            Category = stat.Category;
         }
 
         public override string ToString() {

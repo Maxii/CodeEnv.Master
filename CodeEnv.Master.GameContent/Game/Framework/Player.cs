@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new random instance of the <see cref="Player"/> class for testing. Excludes Humans.
         /// </summary>
         public Player()
-            : this(new Race(RandomExtended<Races>.Choice(Enums<Races>.GetValues().Except(Races.None, Races.Human))),
+            : this(new Race(RandomExtended<Species>.Choice(Enums<Species>.GetValues().Except(Species.None, Species.Human))),
                 Enums<IQ>.GetRandom(excludeDefault: true)) { }
 
         public Player(Race race, IQ iq) {

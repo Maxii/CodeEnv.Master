@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -462,7 +462,7 @@ namespace CodeEnv.Master.GameContent {
             float previousDistanceSqrd = distanceToDestinationSqrd;
 
             while (distanceToDestinationSqrd > _targetInfo.CloseEnoughDistanceSqrd) {
-                //D.Log("{0} distance to {1} = {2}.", Data.FullName, Target.FullName, Mathf.Sqrt(distanceToDestinationSqrd));
+                D.Log("{0} distance to {1} = {2}.", _ship.FullName, _targetInfo.Target.FullName, Mathf.Sqrt(distanceToDestinationSqrd));
                 if (!isSpeedChecked) {    // adjusts speed as a oneshot until we get there
                     isSpeedChecked = AdjustSpeedOnHeadingConfirmation();
                 }

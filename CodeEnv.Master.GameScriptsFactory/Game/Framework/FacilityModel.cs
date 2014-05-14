@@ -166,7 +166,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
         LogEvent();
         if (_primaryTarget != null) {
             _attackTarget = _primaryTarget;
-            _attackDamage = weapon.Damage;
+            _attackStrength = weapon.Strength;
             D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
             Call(FacilityState.Attacking);
         }
@@ -186,7 +186,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
     #region Attacking
 
     private IMortalTarget _attackTarget;
-    private float _attackDamage;
+    private CombatStrength _attackStrength;
 
     void Attacking_EnterState() {
         LogEvent();
@@ -196,14 +196,14 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
             return;
         }
         OnShowAnimation(MortalAnimations.Attacking);
-        _attackTarget.TakeDamage(_attackDamage);
+        _attackTarget.TakeHit(_attackStrength);
         Return();
     }
 
     void Attacking_ExitState() {
         LogEvent();
         _attackTarget = null;
-        _attackDamage = Constants.ZeroF;
+        _attackStrength = TempGameValues.NoCombatStrength;
     }
 
     #endregion
@@ -314,7 +314,8 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
     private void TryFireOnAnyTarget(Weapon weapon) {
         if (_weaponRangeTrackerLookup[weapon.TrackerID].__TryGetRandomEnemyTarget(out _attackTarget)) {
             D.Log("{0}.{1} firing at {2} from State {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
-            _attackDamage = weapon.Damage;
+            //_attackDamage = weapon.Damage;
+            _attackStrength = weapon.Strength;
             Call(FacilityState.Attacking);
         }
         else {
@@ -406,7 +407,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
     /// <summary>
     /// The method Facilities use to actually incur individual damage.
     /// </summary>
-    /// <param name="damage">The damage.</param>
+    /// <param name="damage">The damage to apply to this facility.</param>
     /// <param name="isDirectlyAttacked">if set to <c>true</c> this facility is the one being directly attacked.</param>
     private void TakeDistributedDamage(float damage, bool isDirectlyAttacked) {
         D.Assert(CurrentState != FacilityState.Dead, "{0} should not already be dead!".Inject(Data.Name));
@@ -479,7 +480,12 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
 
     #region IMortalTarget Members
 
-    public override void TakeDamage(float damage) {
+    public override void TakeHit(CombatStrength attackerWeaponStrength) {
+        float damage = Data.Strength - attackerWeaponStrength;
+        if (damage == Constants.ZeroF) {
+            D.Log("{0} has been hit but incurred no damage.", FullName);
+            return;
+        }
         D.Log("{0} has been hit. Distributing {1} damage.", FullName, damage);
         DistributeDamage(damage);
     }

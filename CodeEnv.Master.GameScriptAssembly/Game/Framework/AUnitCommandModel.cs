@@ -142,10 +142,10 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
     /// </summary>
     /// <param name="isHQElementAlive">if set to <c>true</c> [is hq element alive].</param>
     /// <returns><c>true</c> if the Command has taken damage.</returns>
-    public bool __CheckForDamage(bool isHQElementAlive) {
+    public bool __CheckForDamage(bool isHQElementAlive) {   // HACK needs work. Cmds should be hardened to defend against weapons, so pass along attackerWeaponStrength?
         bool isHit = (isHQElementAlive) ? RandomExtended<bool>.SplitChance() : true;
         if (isHit) {
-            TakeDamage(UnityEngine.Random.Range(1F, Data.MaxHitPoints + 1F));
+            TakeHit(new CombatStrength(RandomExtended<ArmamentCategory>.Choice(offensiveArmamentCategories), UnityEngine.Random.Range(1F, Data.MaxHitPoints)));
         }
         else {
             D.Log("{0} avoided a hit.", FullName);
@@ -199,7 +199,8 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
 
     #region IMortalTarget Members
 
-    public override void TakeDamage(float damage) {
+    public override void TakeHit(CombatStrength attackerWeaponStrength) {
+        float damage = Data.Strength - attackerWeaponStrength;
         bool isCmdAlive = ApplyDamage(damage);
         D.Assert(isCmdAlive, "{0} should never die as a result of being hit.".Inject(Data.Name));
     }

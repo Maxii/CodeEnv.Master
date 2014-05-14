@@ -17,6 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Collections.Generic;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -24,36 +25,41 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class Weapon {
 
+        static private string _toStringFormat = "{0}: Name[{1}], Operational[{2}], Strength[{3:0.#}], Range[{4:0.#}], ReloadPeriod[{5:0.#}], Size[{6:0.#}], Power[{7:0.#}]";
+
+        private static string _nameFormat = "{0}_{1:0.#}";
+
         public Guid ID { get; private set; }
 
         public Guid TrackerID { get; set; }
 
         public bool IsOperational { get; set; }
 
-        public string Name { get { return Category.GetName() + Constants.Underscore + "Model" + Model; } }
+        public string Name { get { return _nameFormat.Inject(_stat.BaseName, _stat.Strength.Combined); } }
 
-        public WeaponCategory Category { get; private set; }
+        public CombatStrength Strength { get { return _stat.Strength; } }
 
-        public int Model { get; private set; }
+        public float Range { get { return _stat.Range; } }
 
-        public float Range { get; set; }
+        public float ReloadPeriod { get { return _stat.ReloadPeriod; } }
 
-        public float ReloadPeriod { get; set; }
+        public float PhysicalSize { get { return _stat.ReloadPeriod; } }
 
-        public float Damage { get; set; }
+        public float PowerRequirement { get { return _stat.PowerRequirement; } }
 
-        public float PhysicalSize { get; set; }
+        private WeaponStat _stat;
 
-        public float PowerRequirements { get; set; }
-
-        public Weapon(WeaponCategory category, int model) {
-            Category = category;
-            Model = model;
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Weapon"/> class.
+        /// </summary>
+        /// <param name="stat">The stat.</param>
+        public Weapon(WeaponStat stat) {
+            _stat = stat;
             ID = Guid.NewGuid();
         }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return _toStringFormat.Inject(GetType().Name, Name, IsOperational, Strength.Combined, Range, ReloadPeriod, PhysicalSize, PowerRequirement);
         }
 
     }

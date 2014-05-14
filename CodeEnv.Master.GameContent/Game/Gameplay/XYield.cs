@@ -50,10 +50,11 @@ namespace CodeEnv.Master.GameContent {
 
             #endregion
 
-            public readonly XResource Resource;
-            public readonly float Value;
+            public XResource Resource { get; private set; }
+            public float Value { get; private set; }
 
-            public XResourceValuePair(XResource xResource, float value) {
+            public XResourceValuePair(XResource xResource, float value)
+                : this() {
                 Resource = xResource;
                 Value = value;
             }
@@ -67,8 +68,8 @@ namespace CodeEnv.Master.GameContent {
 
             /// <summary>
             /// Returns a hash code for this instance.
+            /// See Page 254, C# 4.0 in a Nutshell.
             /// </summary>
-            /// <see cref="Page 254, C# 4.0 in a Nutshell."/>
             /// <returns>
             /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
             /// </returns>
@@ -120,6 +121,9 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        private static string _firstResourceToStringFormat = "{0}[1:0.#]";
+        private static string _continuingToStringFormat = ", {0}[1:0.#]";
+
         public float Special_1 { get; private set; }
 
         public float Special_2 { get; private set; }
@@ -127,9 +131,8 @@ namespace CodeEnv.Master.GameContent {
         public float Special_3 { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="XYield"/> struct. Providing
-        /// XResource.None, no matter what the value provided will result in 
-        /// the default instance.
+        /// Initializes a new instance of the <see cref="XYield"/> struct. 
+        /// XResource.None is illegal.
         /// </summary>
         /// <param name="xResource">The x resource.</param>
         /// <param name="value">The value.</param>
@@ -137,58 +140,48 @@ namespace CodeEnv.Master.GameContent {
             : this(new XResourceValuePair(xResource, value)) { }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="XYield"/> struct. There must be at least
-        /// one XResourceValuePair provided.
+        /// Initializes a new instance of the <see cref="XYield" /> struct.
+        /// There must be at least 1 XResourceValuePair provided. XResource.None
+        /// is illegal.
         /// </summary>
         /// <param name="resourceValuePairs">The resource value pairs.</param>
-        /// <exception cref="System.ArgumentException">if value pairs specifying the same XResource are found.</exception>
+        /// <exception cref="System.ArgumentException">if more than 1 value pair specifying the same XResource are found.</exception>
         /// <exception cref="System.NotImplementedException"></exception>
         public XYield(params XResourceValuePair[] resourceValuePairs)
-            : this() {  // reference to default constructor is req'd to use Properties with struct
+            : this() {
             Arguments.ValidateNotNullOrEmpty(resourceValuePairs);
             // multiple pairs with the same resource type are not allowed
-            var duplicates = resourceValuePairs.GroupBy(xRes => xRes.Resource).Where(group => group.Count() > 1);
-            if (duplicates.Count() > Constants.Zero) {
+            var duplicates = resourceValuePairs.GroupBy(rvp => rvp.Resource).Where(group => group.Count() > 1);
+            if (duplicates.Any()) {
                 string duplicateResourceTypes = duplicates.Select(group => group.Key).Concatenate();
                 throw new ArgumentException("Duplicate {0} values found: {1}.".Inject(typeof(XResource).Name, duplicateResourceTypes));
             }
 
-            var xResourceNoneCount = resourceValuePairs.Where(rvp => rvp.Resource == XResource.None).Count();
-            if (resourceValuePairs.Count() > Constants.One) {
-                D.Assert(xResourceNoneCount == Constants.Zero); // XResource.None not allowed except by itself
-            }
-            if (xResourceNoneCount == Constants.One) {
-                // Only value pair provided and it is None so just stick with this default instance
-            }
-            else {
-                foreach (var resValuePair in resourceValuePairs) {
-                    var xResource = resValuePair.Resource;
-                    switch (xResource) {
-                        case XResource.Special_1:
-                            Special_1 = resValuePair.Value;
-                            break;
-                        case XResource.Special_2:
-                            Special_2 = resValuePair.Value;
-                            break;
-                        case XResource.Special_3:
-                            Special_3 = resValuePair.Value;
-                            break;
-                        case XResource.None:
-                        default:
-                            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(xResource));
-                    }
+            foreach (var resValuePair in resourceValuePairs) {
+                var xResource = resValuePair.Resource;
+                switch (xResource) {
+                    case XResource.Special_1:
+                        Special_1 = resValuePair.Value;
+                        break;
+                    case XResource.Special_2:
+                        Special_2 = resValuePair.Value;
+                        break;
+                    case XResource.Special_3:
+                        Special_3 = resValuePair.Value;
+                        break;
+                    case XResource.None:
+                    default:
+                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(xResource));
                 }
             }
 
             // as a struct field, _toString must be assigned in the Constructor
-            string firstFormat = "{0}[1:0.#]";
-            string continuingFormat = ", {0}[1:0.#]";
             var sb = new StringBuilder();
             for (int i = 0; i < resourceValuePairs.Count(); i++) {
                 var valuePair = resourceValuePairs[i];
-                string format = continuingFormat;
+                string format = _continuingToStringFormat;
                 if (i == Constants.Zero) {
-                    format = firstFormat;
+                    format = _firstResourceToStringFormat;
                 }
                 sb.AppendFormat(format, valuePair.Resource, valuePair.Value);
             }
@@ -257,8 +250,8 @@ namespace CodeEnv.Master.GameContent {
         private string _toString;
         public override string ToString() {
             if (_toString.IsNullOrEmpty()) {
-                D.Warn("{0} is the default value.", GetType().Name);
-                _toString = "{0}[{1:0.#}]".Inject(XResource.None.GetName(), Constants.ZeroF);
+                D.Warn("Value is default({0}).", GetType().Name);
+                _toString = "{0}.{1}".Inject(GetType().Name, XResource.None.GetName());
             }
             return _toString;
         }

@@ -73,11 +73,16 @@ namespace CodeEnv.Master.GameContent {
         public BaseComposition Composition { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="StarbaseCmdData" /> class.
+        /// Initializes a new instance of the <see cref="SettlementCmdData"/> class.
         /// </summary>
-        /// <param name="settlementName">Name of the settlement.</param>
-        /// <param name="cmdMaxHitPoints">The command maximum hit points.</param>
-        public SettlementCmdData(string settlementName, float cmdMaxHitPoints) : base(settlementName, cmdMaxHitPoints) { }
+        /// <param name="stat">The stat.</param>
+        public SettlementCmdData(SettlementCmdStat stat)
+            : base(stat.Name, stat.MaxHitPoints) {
+            MaxCmdEffectiveness = stat.MaxCmdEffectiveness;
+            Population = stat.Population;
+            UnitFormation = stat.UnitFormation;
+            Strength = stat.Strength;
+        }
 
         protected override void InitializeComposition() {
             Composition = new BaseComposition();

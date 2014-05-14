@@ -37,6 +37,8 @@ namespace CodeEnv.Master.Common {
 
         #endregion
 
+        private static string _toStringFormat = "({0},{1},{2})";
+
         public readonly int x;
         public readonly int y;
         public readonly int z;
@@ -56,8 +58,8 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Returns a hash code for this instance.
+        /// See "Page 254, C# 4.0 in a Nutshell."
         /// </summary>
-        /// <see cref="Page 254, C# 4.0 in a Nutshell."/>
         /// <returns>
         /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
         /// </returns>
@@ -72,7 +74,7 @@ namespace CodeEnv.Master.Common {
         #endregion
 
         public override string ToString() {
-            return string.Format("({0},{1},{2})", x, y, z);
+            return _toStringFormat.Inject(x, y, z);
         }
 
         #region IEquatable<Index3D> Members

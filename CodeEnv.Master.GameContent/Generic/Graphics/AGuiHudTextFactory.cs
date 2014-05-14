@@ -195,12 +195,12 @@ namespace CodeEnv.Master.GameContent {
 
             public ColoredTextList_Combat(CombatStrength cs, string format = Constants.FormatFloat_0Dp) {
                 _list.Add(new ColoredText(format.Inject(cs.Combined)));
-                _list.Add(new ColoredText(format.Inject(cs.Beam_Offense)));
-                _list.Add(new ColoredText(format.Inject(cs.Beam_Defense)));
-                _list.Add(new ColoredText(format.Inject(cs.Particle_Offense)));
-                _list.Add(new ColoredText(format.Inject(cs.Particle_Defense)));
-                _list.Add(new ColoredText(format.Inject(cs.Missile_Offense)));
-                _list.Add(new ColoredText(format.Inject(cs.Missile_Defense)));
+                _list.Add(new ColoredText(format.Inject(cs.BeamOffense)));
+                _list.Add(new ColoredText(format.Inject(cs.BeamDefense)));
+                _list.Add(new ColoredText(format.Inject(cs.ParticleOffense)));
+                _list.Add(new ColoredText(format.Inject(cs.ParticleDefense)));
+                _list.Add(new ColoredText(format.Inject(cs.MissileOffense)));
+                _list.Add(new ColoredText(format.Inject(cs.MissileDefense)));
             }
         }
 

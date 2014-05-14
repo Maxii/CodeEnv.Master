@@ -22,7 +22,7 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// Player Race selection popup list in the Gui.
 /// </summary>
-public class GuiPlayerRacePopupList : AGuiEnumPopupListBase<Races> {
+public class GuiPlayerRacePopupList : AGuiEnumPopupListBase<Species> {
 
     // no need for taking an action OnPopupListSelectionChange as changes aren't recorded 
     // from this popup list until the NewGameLaunchAcceptButton is pushed

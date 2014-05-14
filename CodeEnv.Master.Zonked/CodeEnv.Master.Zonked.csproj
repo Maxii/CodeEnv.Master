@@ -53,6 +53,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="ACommandStats.cs" />
+    <Compile Include="AElementStats.cs" />
     <Compile Include="AFocusableItem.cs" />
     <Compile Include="AFocusablePresenter.cs" />
     <Compile Include="AFocusableView.cs" />
@@ -62,6 +64,7 @@
     <Compile Include="AGameObjectManager.cs" />
     <Compile Include="AGraphics.cs" />
     <Compile Include="AItem.cs" />
+    <Compile Include="AItemStats.cs" />
     <Compile Include="AMonoBehaviourBaseSingletonInstanceIdentity.cs" />
     <Compile Include="AMonoStateMachineSingleton.cs" />
     <Compile Include="AMortalFocusablePresenter.cs" />
@@ -77,9 +80,11 @@
     <Compile Include="CoroutineManager.cs" />
     <Compile Include="CoroutineNode.cs" />
     <Compile Include="CoroutineScheduler.cs" />
+    <Compile Include="FacilityStats.cs" />
     <Compile Include="FleetAdmiralIcon.cs" />
     <Compile Include="FleetAutoPilot.cs" />
     <Compile Include="FleetAutoPilot2.cs" />
+    <Compile Include="FleetCmdStats.cs" />
     <Compile Include="FleetCommand.cs" />
     <Compile Include="FleetGraphics.cs" />
     <Compile Include="FleetIdleTask.cs" />
@@ -164,6 +169,7 @@
     <Compile Include="Sector.cs" />
     <Compile Include="SectorPresenter.cs" />
     <Compile Include="SectorView.cs" />
+    <Compile Include="SettlementCmdStats.cs" />
     <Compile Include="SettlementPresenter.cs" />
     <Compile Include="SettlementView.cs" />
     <Compile Include="ShipAttackTask.cs" />
@@ -174,9 +180,11 @@
     <Compile Include="ShipMoveTask.cs" />
     <Compile Include="ShipNavigator.cs" />
     <Compile Include="ShipPresenter.cs" />
+    <Compile Include="ShipStats.cs" />
     <Compile Include="ShipView.cs" />
     <Compile Include="Star.cs" />
     <Compile Include="StarAnimator.cs" />
+    <Compile Include="StarbaseCmdStats.cs" />
     <Compile Include="StarBaseData.cs" />
     <Compile Include="StarBaseGuiHudTextFactory.cs" />
     <Compile Include="StarBaseItem.cs" />

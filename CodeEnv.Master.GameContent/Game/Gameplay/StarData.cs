@@ -55,9 +55,17 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="category">The category of Star.</param>
         /// <param name="name">The name.</param>
         /// <param name="parentName">Name of the parent.</param>
-        public StarData(StarCategory category, string name, string parentName)
-            : base(name, parentName) {
-            Category = category;
+        //public StarData(StarCategory category, string name, string parentName)
+        //    : base(name, parentName) {
+        //    Category = category;
+        //}
+
+        public StarData(StarStat stat)
+            : base(stat.Name) {
+            Category = stat.Category;
+            Capacity = stat.Capacity;
+            Resources = stat.Resources;
+            SpecialResources = stat.SpecialResources;
         }
 
         public override string ToString() {

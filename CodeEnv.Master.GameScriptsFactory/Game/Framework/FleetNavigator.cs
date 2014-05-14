@@ -202,15 +202,13 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
 
         while (_currentWaypointIndex < _course.Count) {
             float distanceToWaypointSqrd = Vector3.SqrMagnitude(currentWaypointPosition - _data.Position);
-            //D.Log("{0} distance to Waypoint_{1} = {2}.", Data.Name, _currentWaypointIndex, Mathf.Sqrt(distanceToWaypointSqrd));
+            D.Log("{0} distance to Waypoint_{1} = {2}.", _fleet.FullName, _currentWaypointIndex, Mathf.Sqrt(distanceToWaypointSqrd));
             if (distanceToWaypointSqrd < _closeEnoughDistanceToTargetSqrd) {
                 if (___CheckTargetIsLocal()) {
                     if (CheckApproachTo(Destination)) {
-                        //D.Log("{0} initiating homing course to {1} from waypoint {2}.", Data.Name, Target.Name, _currentWaypointIndex);
                         InitiateHomingCourseToTarget();
                     }
                     else {
-                        //D.Log("{0} initiating course around obstacle to {1} from waypoint {2}.", Data.Name, Target.Name, _currentWaypointIndex);
                         InitiateCourseAroundObstacleTo(Destination);
                     }
                 }
@@ -257,7 +255,9 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
     /// <returns></returns>
     private IEnumerator EngageHomingCourseToTarget() {
         _fleet.__IssueShipMovementOrders(Target, Speed, CloseEnoughDistanceToTarget);
-        while (Vector3.SqrMagnitude(Destination - _data.Position) > _closeEnoughDistanceToTargetSqrd) {
+        float sqrDistance;
+        while ((sqrDistance = Vector3.SqrMagnitude(Destination - _data.Position)) > _closeEnoughDistanceToTargetSqrd) {
+            D.Log("{0} (homing) distance to {1} = {2}.", _fleet.FullName, Target.FullName, Mathf.Sqrt(sqrDistance));
             yield return new WaitForSeconds(_courseProgressCheckPeriod);
         }
         OnDestinationReached();
@@ -350,7 +350,7 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
     }
 
     private void InitiateHomingCourseToTarget() {
-        D.Log("Initiating homing course to Target. Distance to target = {0}.", Vector3.Distance(_data.Position, Destination));
+        D.Log("{0} initiating homing course to Target {1}. Distance to target = {2}.", _fleet.FullName, Target.FullName, Vector3.Distance(_data.Position, Destination));
         if (_pilotJob != null && _pilotJob.IsRunning) {
             _pilotJob.Kill();
         }
@@ -358,7 +358,7 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
     }
 
     private void InitiateCourseAroundObstacleTo(Vector3 location) {
-        D.Log("Initiating obstacle avoidance course. Distance to destination = {0}.", Vector3.Distance(_data.Position, location));
+        D.Log("{0} initiating obstacle avoidance course. Distance to obstacle avoidance destination = {1}.", Vector3.Distance(_data.Position, location));
         if (_pilotJob != null && _pilotJob.IsRunning) {
             _pilotJob.Kill();
         }
@@ -418,7 +418,7 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
         float maxDirectApproachDistance = TempGameValues.SectorSideLength;
         if (distanceToDestination > maxDirectApproachDistance) {
             // limit direct approaches to within a sector so we normally follow the pathfinder course
-            //D.Log("{0} direct approach distance {1} to {2} exceeds maxiumum of {3}.", Data.Name, distanceToDestination, Target.Name, maxDirectApproachDistance);
+            D.Log("{0} direct approach distance {1} to {2} exceeds maxiumum of {3}.", _fleet.FullName, distanceToDestination, Target.FullName, maxDirectApproachDistance);
             return false;
         }
         return true;
@@ -505,7 +505,7 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
         // frequency of course progress checks increases as fullSpeed value and gameSpeed increase
         float courseProgressCheckFrequency = 1F + (_data.FullSpeed * _gameSpeedMultiplier);
         _courseProgressCheckPeriod = 1F / courseProgressCheckFrequency;
-        //D.Log("{0}.{1} frequency of course progress checks adjusted to {2:0.##}.", Data.Name, GetType().Name, courseProgressCheckFrequency);
+        D.Log("{0}.{1} frequency of course progress checks adjusted to {2:0.##}.", _fleet.FullName, GetType().Name, courseProgressCheckFrequency);
     }
 
     /// <summary>

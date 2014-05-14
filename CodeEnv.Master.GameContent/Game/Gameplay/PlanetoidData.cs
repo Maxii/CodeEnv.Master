@@ -28,25 +28,19 @@ namespace CodeEnv.Master.GameContent {
         private int _capacity;
         public int Capacity {
             get { return _capacity; }
-            set {
-                SetProperty<int>(ref _capacity, value, "Capacity");
-            }
+            set { SetProperty<int>(ref _capacity, value, "Capacity"); }
         }
 
         private OpeYield _resources;
         public OpeYield Resources {
             get { return _resources; }
-            set {
-                SetProperty<OpeYield>(ref _resources, value, "Resources");
-            }
+            set { SetProperty<OpeYield>(ref _resources, value, "Resources"); }
         }
 
         private XYield _specialResources;
         public XYield SpecialResources {
             get { return _specialResources; }
-            set {
-                SetProperty<XYield>(ref _specialResources, value, "SpecialResources");
-            }
+            set { SetProperty<XYield>(ref _specialResources, value, "SpecialResources"); }
         }
 
         /// <summary>
@@ -57,9 +51,17 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="maxHitPoints">The maximum hit points.</param>
         /// <param name="mass">The mass.</param>
         /// <param name="parentName">Name of the parent.</param>
-        public PlanetoidData(PlanetoidCategory category, string name, float maxHitPoints, float mass, string parentName)
-            : base(name, maxHitPoints, mass, parentName) {
-            Category = category;
+        //public PlanetoidData(PlanetoidCategory category, string name, float maxHitPoints, float mass, string parentName)
+        //    : base(name, maxHitPoints, mass, parentName) {
+        //    Category = category;
+        //}
+
+        public PlanetoidData(PlanetoidStat stat)
+            : base(stat.Name, stat.Mass, stat.MaxHitPoints) {
+            Category = stat.Category;
+            Capacity = stat.Capacity;
+            Resources = stat.Resources;
+            SpecialResources = stat.SpecialResources;
         }
 
         public override string ToString() {

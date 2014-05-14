@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         bool IsAlive { get; }
 
-        void TakeDamage(float damage);
+        void TakeHit(CombatStrength attackerWeaponStrength);
 
         IPlayer Owner { get; }
 

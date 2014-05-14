@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: Races.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// File: AItemStats.cs
+// Abstract base class containing values and settings for building Items.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,23 +16,18 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    public enum Races {
+    using System;
+    using CodeEnv.Master.Common;
 
-        None,
+    /// <summary>
+    /// Abstract base class containing values and settings for building Items.
+    /// </summary>
+    [Obsolete]
+    public abstract class AItemStats {
 
-        Human,
+        public string Name { get; set; }
+        public float MaxHitPoints { get; set; }
 
-        KlingonLike,
-
-        FrerengiLike,
-
-        RomulanLike,
-
-        BorgLike,
-
-        DominionLike,
-
-        GodRace
     }
 }
 

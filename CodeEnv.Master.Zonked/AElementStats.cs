@@ -16,16 +16,18 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using System.Collections.Generic;
     using CodeEnv.Master.Common;
 
     /// <summary>
     /// Abstract base class containing values and settings for building Elements.
     /// </summary>
+    [Obsolete]
     public abstract class AElementStats : AItemStats {
 
         public float Mass { get; set; }
-        public IList<Weapon> Weapons { get; set; }
+
         // Parent names are assigned when the ElementModel is assigned to a Command
         // Transforms are assigned when ElementData gets assigned to an ElementModel
 

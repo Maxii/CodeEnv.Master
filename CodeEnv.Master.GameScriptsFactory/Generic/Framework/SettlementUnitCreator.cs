@@ -27,7 +27,7 @@ using UnityEngine;
 ///  Initialization class that deploys a Settlement that is available for assignment to a System.
 ///  When assigned, the Settlement relocates to the orbital slot for Settlements held open by the System.
 /// </summary>
-public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategory, FacilityData, FacilityStats, SettlementCmdModel> {
+public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategory, FacilityData, FacilityStat, SettlementCmdModel> {
 
     private UnitFactory _factory;   // not accesible from AUnitCreator
 
@@ -38,34 +38,20 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
 
     // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
 
-    protected override FacilityStats CreateElementStat(FacilityCategory category, string elementName) {
-        FacilityStats stat = new FacilityStats() {
-            Category = category,
-            Name = elementName,
-            Mass = 10000F,
-            MaxHitPoints = 50F,
-            Strength = new CombatStrength(),
-            Weapons = new List<Weapon>() { 
-                new Weapon(WeaponCategory.BeamOffense, model: 1) {
-                Range = UnityEngine.Random.Range(3F, 5F),
-                ReloadPeriod = UnityEngine.Random.Range(0.6F, 0.9F),
-                Damage = UnityEngine.Random.Range(3F, 8F) 
-                }
-            },
-        };
-        return stat;
+    protected override FacilityStat CreateElementStat(FacilityCategory category, string elementName) {
+        return new FacilityStat(elementName, 10000F, 50F, category);
     }
 
-    protected override FacilityModel MakeElement(FacilityStats stat, IPlayer owner) {
-        return _factory.MakeInstance(stat, owner);
+    protected override FacilityModel MakeElement(FacilityStat stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner) {
+        return _factory.MakeInstance(stat, weaponStats, owner);
     }
 
-    protected override bool MakeElement(FacilityStats stat, IPlayer owner, ref FacilityModel element) {
-        _factory.MakeInstance(stat, owner, ref element);
+    protected override bool MakeElement(FacilityStat stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner, ref FacilityModel element) {
+        _factory.MakeInstance(stat, weaponStats, owner, ref element);
         return true;    // IMPROVE dummy return for facilities to match signature of abstract MakeElement - facilties currently don't have a HumanView 
     }
 
-    protected override FacilityCategory GetCategory(FacilityStats stat) {
+    protected override FacilityCategory GetCategory(FacilityStat stat) {
         return stat.Category;
     }
 
@@ -78,36 +64,26 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
     }
 
     protected override SettlementCmdModel MakeCommand(IPlayer owner) {
-        SettlementCmdStats cmdStats = new SettlementCmdStats() {
-            Name = UnitName,
-            MaxHitPoints = 10F,
-            MaxCmdEffectiveness = 100,
-            Strength = new CombatStrength(),
-            UnitFormation = Formation.Circle,
-            Population = 100,
-            CapacityUsed = 10,
-            ResourcesUsed = new OpeYield(1.3F, 0.5F, 2.4F),
-            SpecialResourcesUsed = new XYield(new XYield.XResourceValuePair(XResource.Special_1, 0.2F))
-        };
+        SettlementCmdStat cmdStat = new SettlementCmdStat(UnitName, 10F, 100, Formation.Circle, new CombatStrength(0F, 5F, 0F, 5F, 0F, 5F), 100);
 
         SettlementCmdModel cmd;
         if (isCompositionPreset) {
             cmd = gameObject.GetSafeMonoBehaviourComponentInChildren<SettlementCmdModel>();
             var existingCmdReference = cmd;
-            bool isCmdCompatibleWithOwner = _factory.MakeSettlementCmdInstance(cmdStats, owner, ref cmd);
+            bool isCmdCompatibleWithOwner = _factory.MakeSettlementCmdInstance(cmdStat, owner, ref cmd);
             if (!isCmdCompatibleWithOwner) {
                 Destroy(existingCmdReference.gameObject);
             }
         }
         else {
-            cmd = _factory.MakeSettlementCmdInstance(cmdStats, owner);
+            cmd = _factory.MakeSettlementCmdInstance(cmdStat, owner);
             UnityUtility.AttachChildToParent(cmd.gameObject, gameObject);
         }
         return cmd;
     }
 
     protected override void DeployUnit() {
-        var allSystems = SystemCreator.AllSystems; // = __UniverseInitializer.systemModels;
+        var allSystems = SystemCreator.AllSystems;
         var availableSystems = allSystems.Where(sys => sys.Data.Owner == TempGameValues.NoPlayer);
         if (availableSystems.IsNullOrEmpty()) {
             //D.Log("Destroying {0} for {1}.", GetType().Name, UnitName);

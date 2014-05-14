@@ -23,12 +23,13 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ItemData : AItemData {
 
+        //public ItemData(string name, string optionalParentName = "") : base(name, optionalParentName) { }
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="ItemData"/> class.
+        /// Initializes a new instance of the <see cref="ItemData" /> class.
         /// </summary>
         /// <param name="name">The name.</param>
-        /// <param name="optionalParentName">Name of the optional parent.</param>
-        public ItemData(string name, string optionalParentName = "") : base(name, optionalParentName) { }
+        public ItemData(string name) : base(name) { }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

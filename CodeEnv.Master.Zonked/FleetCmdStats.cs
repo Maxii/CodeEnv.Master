@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FacilityStats.cs
-// Class containing values and settings for building Facilities.
+// File: FleetCmdStats.cs
+// Class containing values and settings for building Fleet Commands.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,19 +16,18 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Class containing values and settings for building Facilities.
+    /// Class containing values and settings for building Fleet Commands.
     /// </summary>
-    public class FacilityStats : AElementStats {
-
-        public FacilityCategory Category { get; set; }
+    [Obsolete]
+    public class FleetCmdStats : ACommandStats {
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
-
     }
 }
 

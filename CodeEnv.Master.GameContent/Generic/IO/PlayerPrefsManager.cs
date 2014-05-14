@@ -43,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
         // notifications not needed as no change will be allowed to affect an existing game instance    // TODO
         public UniverseSize UniverseSize { get; private set; }
         public GameClockSpeed GameSpeedOnLoad { get; private set; }
-        public Races PlayerRace { get; private set; }
+        public Species PlayerRace { get; private set; }
         public GameColor PlayerColor { get; private set; }
 
         public bool IsPauseOnLoadEnabled { get; private set; }
@@ -120,7 +120,7 @@ namespace CodeEnv.Master.GameContent {
         private void OnBuildNewGame(BuildNewGameEvent e) {
             GameSettings settings = e.Settings;
             UniverseSize = settings.UniverseSize;
-            PlayerRace = settings.PlayerRace.RaceType;
+            PlayerRace = settings.PlayerRace.Species;
             PlayerColor = settings.PlayerRace.Color;
             ValidateState();
         }
@@ -155,7 +155,7 @@ namespace CodeEnv.Master.GameContent {
                 encryptedStringValue = Encrypt(GameSpeedOnLoad.GetName());
                 PlayerPrefs.SetString(_gameSpeedOnLoadKey, encryptedStringValue);
             }
-            if (PlayerRace != Races.None) {
+            if (PlayerRace != Species.None) {
                 encryptedStringValue = Encrypt(PlayerRace.GetName());
                 PlayerPrefs.SetString(_playerRaceKey, encryptedStringValue);
             }
@@ -188,7 +188,7 @@ namespace CodeEnv.Master.GameContent {
         public void Retrieve() {
             UniverseSize = PlayerPrefs.HasKey(_universeSizeKey) ? RetrieveEnumPref<UniverseSize>(_universeSizeKey) : UniverseSize.Normal;
             GameSpeedOnLoad = PlayerPrefs.HasKey(_gameSpeedOnLoadKey) ? RetrieveEnumPref<GameClockSpeed>(_gameSpeedOnLoadKey) : GameClockSpeed.Normal;
-            PlayerRace = PlayerPrefs.HasKey(_playerRaceKey) ? RetrieveEnumPref<Races>(_playerRaceKey) : Races.Human;
+            PlayerRace = PlayerPrefs.HasKey(_playerRaceKey) ? RetrieveEnumPref<Species>(_playerRaceKey) : Species.Human;
             PlayerColor = PlayerPrefs.HasKey(_playerColorKey) ? RetrieveEnumPref<GameColor>(_playerColorKey) : GameColor.Blue;
 
             IsPauseOnLoadEnabled = (PlayerPrefs.HasKey(_isPauseAfterLoadEnabledKey)) ? bool.Parse(Decrypt(PlayerPrefs.GetString(_isPauseAfterLoadEnabledKey))) : false;

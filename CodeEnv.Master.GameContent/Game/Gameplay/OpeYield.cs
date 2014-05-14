@@ -46,6 +46,8 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        private static string _toStringFormat = "O[{0:0.#}], P[{1:0.#}], E[{2:0.#}]";
+
         public float Organics { get; private set; }
 
         public float Particulates { get; private set; }
@@ -98,7 +100,7 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         public override string ToString() {
-            return "O[{0:0.#}], P[{1:0.#}], E[{2:0.#}]".Inject(Organics, Particulates, Energy);
+            return _toStringFormat.Inject(Organics, Particulates, Energy);
         }
 
         #region IEquatable<OpeYield> Members

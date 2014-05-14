@@ -110,9 +110,16 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        public static readonly Race HumanPlayersRace = new Race(new RaceStat(PlayerPrefsManager.Instance.PlayerRace, "Maxii",
+            "Maxii description", PlayerPrefsManager.Instance.PlayerColor));
+
         public static readonly Player NoPlayer = new NoPlayer();
 
-        public static readonly XYield NoSpecialResourceYield = new XYield(XResource.None, Constants.ZeroF); // or new XYield()
+        public static readonly XYield NoSpecialResources = default(XYield);
+
+        public static readonly CombatStrength NoCombatStrength = default(CombatStrength);
+
+
     }
 }
 

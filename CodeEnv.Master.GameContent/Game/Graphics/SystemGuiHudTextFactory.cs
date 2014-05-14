@@ -42,15 +42,15 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Health:
                     return (data.SettlementData != null) ? new ColoredTextList_Health(data.SettlementData.UnitHealth, data.SettlementData.MaxHitPoints) : _emptyColoredTextList;
                 case GuiHudLineKeys.CombatStrength:
-                    return (data.SettlementData != null) ? new ColoredTextList<float>(Constants.FormatFloat_0Dp, data.SettlementData.Strength.Combined) : _emptyColoredTextList;
+                    return (data.SettlementData != null) ? new ColoredTextList<float>(Constants.FormatFloat_0Dp, data.SettlementData.UnitStrength.Combined) : _emptyColoredTextList;
                 case GuiHudLineKeys.CombatStrengthDetails:
-                    return (data.SettlementData != null) ? new ColoredTextList_Combat(data.SettlementData.Strength) : _emptyColoredTextList;
+                    return (data.SettlementData != null) ? new ColoredTextList_Combat(data.SettlementData.UnitStrength) : _emptyColoredTextList;
                 case GuiHudLineKeys.Capacity:
                     return new ColoredTextList<int>(Constants.FormatInt_2DMin, data.Capacity);
                 case GuiHudLineKeys.Resources:
                     return new ColoredTextList_Resources(data.Resources);
                 case GuiHudLineKeys.Specials:
-                    return (data.SpecialResources != TempGameValues.NoSpecialResourceYield) ? new ColoredTextList_Specials(data.SpecialResources)
+                    return (data.SpecialResources != TempGameValues.NoSpecialResources) ? new ColoredTextList_Specials(data.SpecialResources)
                         : _emptyColoredTextList;
                 case GuiHudLineKeys.Category:
                     return (data.SettlementData != null) ? new ColoredTextList_String(data.SettlementData.Category.GetName(), data.SettlementData.Category.GetDescription()) : _emptyColoredTextList;

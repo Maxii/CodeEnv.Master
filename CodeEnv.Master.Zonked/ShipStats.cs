@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: StarbaseCmdStats.cs
-// Class containing values and settings for building Starbase Commands.
+// File: ShipStats.cs
+// Class containing values and settings for building Ships.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,16 +16,25 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Class containing values and settings for building Starbase Commands.
+    ///  Class containing values and settings for building Ships.
     /// </summary>
-    public class StarbaseCmdStats : ACommandStats {
+    [Obsolete]
+    public class ShipStats : AElementStats {
+
+        public ShipCategory Category { get; set; }
+        public ShipCombatStance CombatStance { get; set; }
+        public float MaxTurnRate { get; set; }
+        public float Drag { get; set; }
+        public float FullThrust { get; set; }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
     }
 }
 
