@@ -51,6 +51,7 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
     }
 
     protected override FleetCmdModel MakeCommand(IPlayer owner) {
+        LogEvent();
         FleetCmdStat cmdStat = new FleetCmdStat(UnitName, 10F, 100, Formation.Globe, new CombatStrength(0F, 5F, 0F, 5F, 0F, 5F));
         FleetCmdModel cmd;
         if (isCompositionPreset) {
@@ -99,6 +100,7 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
     }
 
     protected override void AssignHQElement() {
+        LogEvent();
         var candidateHQElements = _command.Elements.Where(e => GetValidHQElementCategories().Contains((e as ShipModel).Data.Category));
         if (candidateHQElements.IsNullOrEmpty()) {
             // _command might not hold a valid HQ Element if preset
@@ -108,27 +110,33 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
     }
 
     protected override void DeployUnit() {
+        LogEvent();
         // Fleets don't need to be deployed. They are already on location.
     }
 
     protected override void BeginElementsOperations() {
+        LogEvent();
         _elements.ForAll(e => (e as ShipModel).CurrentState = ShipState.Idling);
     }
 
     protected override void BeginCommandOperations() {
+        LogEvent();
         _command.CurrentState = FleetState.Idling;
     }
 
     protected override void __InitializeCommandIntel() {
+        LogEvent();
         _command.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
     }
 
     protected override void IssueFirstUnitCommand() {
+        LogEvent();
         __GetFleetAttackUnderway();
         //__GetFleetUnderway();
     }
 
     private void __GetFleetUnderway() {
+        LogEvent();
         IDestinationTarget destination = null; // = FindObjectOfType<SettlementCmdModel>();
         if (destination == null) {
             // in case Settlements are disabled
@@ -138,6 +146,7 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
     }
 
     private void __GetFleetAttackUnderway() {
+        LogEvent();
         IPlayer fleetOwner = _owner;
         IEnumerable<IMortalTarget> attackTgts = FindObjectsOfType<StarbaseCmdModel>().Where(sb => sb.IsOperational && fleetOwner.IsEnemyOf(sb.Owner)).Cast<IMortalTarget>();
         if (attackTgts.IsNullOrEmpty()) {

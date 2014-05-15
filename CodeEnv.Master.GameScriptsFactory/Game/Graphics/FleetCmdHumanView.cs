@@ -34,6 +34,7 @@ public class FleetCmdHumanView : FleetCmdView {
     }
 
     protected override void InitializePresenter() {
+        LogEvent();
         Presenter = new FleetCmdHumanPresenter(this);
     }
 

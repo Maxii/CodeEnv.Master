@@ -26,20 +26,21 @@ using UnityEngine;
 /// </summary>
 public class SettlementCmdHumanView : SettlementCmdView {
 
-    private CtxObject _ctxObject;
-
     public new SettlementCmdHumanPresenter Presenter {
         get { return base.Presenter as SettlementCmdHumanPresenter; }
         protected set { base.Presenter = value; }
     }
 
-    protected override void InitializePresenter() {
-        Presenter = new SettlementCmdHumanPresenter(this);
-    }
+    private CtxObject _ctxObject;
 
     protected override void Start() {
         base.Start();
         __InitializeContextMenu();
+    }
+
+    protected override void InitializePresenter() {
+        LogEvent();
+        Presenter = new SettlementCmdHumanPresenter(this);
     }
 
     #region ContextMenu

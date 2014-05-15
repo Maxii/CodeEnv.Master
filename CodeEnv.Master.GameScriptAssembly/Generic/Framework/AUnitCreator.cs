@@ -182,6 +182,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     }
 
     private void PrepareUnitForOperations(Action onCompleted = null) {
+        LogEvent();
         _elements = MakeElements();
         EnableElements();
         _command = MakeCommand(_owner);
@@ -199,6 +200,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     protected abstract void DeployUnit();
 
     private void BeginUnitOperations() {
+        LogEvent();
         __InitializeCommandIntel();
         BeginElementsOperations();
         BeginCommandOperations();
@@ -263,6 +265,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     #endregion
 
     private IList<ElementStatType> CreateElementStatsFromChildren() {
+        LogEvent();
         var elements = gameObject.GetSafeMonoBehaviourComponentsInChildren<ElementType>();
         var elementStats = new List<ElementStatType>(elements.Count());
         var elementCategoriesUsedCount = new Dictionary<ElementCategoryType, int>();
@@ -282,6 +285,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     }
 
     private IList<ElementStatType> CreateRandomElementStats() {
+        LogEvent();
         ElementCategoryType[] validHQCategories = GetValidHQElementCategories();
         ElementCategoryType[] validCategories = GetValidElementCategories();
 
@@ -311,6 +315,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     protected abstract ElementStatType CreateElementStat(ElementCategoryType category, string elementName);
 
     private IList<ElementType> MakeElements() {
+        LogEvent();
         var elements = new List<ElementType>();
         foreach (var elementStat in _elementStats) {
             var weaponStats = _availableWeaponsStats.Shuffle().Take(weaponsPerElement);
@@ -351,6 +356,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     protected abstract CommandType MakeCommand(IPlayer owner);
 
     private void EnableElements() {
+        LogEvent();
         _elements.ForAll(e => {
             e.enabled = true;
             (e as Component).gameObject.GetSafeInterface<IViewable>().enabled = true;
@@ -358,11 +364,13 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     }
 
     private void EnableCommand() {
+        LogEvent();
         _command.enabled = true;
         (_command as Component).gameObject.GetSafeInterface<IViewable>().enabled = true;
     }
 
     private void AddElements() {
+        LogEvent();
         _elements.ForAll(e => _command.AddElement(e));
         // command IS NOT assigned as a target of each element's CameraLOSChangedRelay as that would make the CommandIcon disappear when the elements disappear
     }

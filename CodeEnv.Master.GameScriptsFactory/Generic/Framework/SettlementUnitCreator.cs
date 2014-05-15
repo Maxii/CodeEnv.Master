@@ -64,6 +64,7 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
     }
 
     protected override SettlementCmdModel MakeCommand(IPlayer owner) {
+        LogEvent();
         SettlementCmdStat cmdStat = new SettlementCmdStat(UnitName, 10F, 100, Formation.Circle, new CombatStrength(0F, 5F, 0F, 5F, 0F, 5F), 100);
 
         SettlementCmdModel cmd;
@@ -83,10 +84,11 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
     }
 
     protected override void DeployUnit() {
+        LogEvent();
         var allSystems = SystemCreator.AllSystems;
         var availableSystems = allSystems.Where(sys => sys.Data.Owner == TempGameValues.NoPlayer);
         if (availableSystems.IsNullOrEmpty()) {
-            //D.Log("Destroying {0} for {1}.", GetType().Name, UnitName);
+            D.Log("Destroying {0} for {1}.", GetType().Name, UnitName);
             Destroy(gameObject);
             return;
         }
@@ -95,24 +97,30 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
 
 
     protected override void BeginElementsOperations() {
+        LogEvent();
         _elements.ForAll(e => (e as FacilityModel).CurrentState = FacilityState.Idling);
     }
 
     protected override void BeginCommandOperations() {
+        LogEvent();
         _command.CurrentState = SettlementState.Idling;
     }
 
     protected override void AssignHQElement() {
+        LogEvent();
         var candidateHQElements = _command.Elements.Where(e => GetValidHQElementCategories().Contains((e as FacilityModel).Data.Category));
         D.Assert(!candidateHQElements.IsNullOrEmpty()); // bases must have a CentralHub, even if preset
         _command.HQElement = RandomExtended<IElementModel>.Choice(candidateHQElements) as FacilityModel;
     }
 
     protected override void __InitializeCommandIntel() {
+        LogEvent();
         // For now settlements assume the intel coverage of their system when assigned
     }
 
-    protected override void IssueFirstUnitCommand() { }
+    protected override void IssueFirstUnitCommand() {
+        LogEvent();
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

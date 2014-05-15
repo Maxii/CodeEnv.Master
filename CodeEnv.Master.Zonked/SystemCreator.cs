@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SystemCreator.cs
-// Creates a system at the location of this script's GameObject. 
+//  Initialization class that deploys a system at the location of this SystemCreator. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -25,9 +25,9 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Creates a system at the location of this script's GameObject. The system
-/// deployed will be fleshed out and operationalized if already present in the scene. If it is not present, then
-/// it will first be built, then fleshed out and operationalized.
+/// Initialization class that deploys a system at the location of this SystemCreator. The system
+/// deployed will simply be initialized if already present in the scene. If it is not present, then
+/// it will be built and then initialized.
 /// <remarks>Naming approach: 
 /// <list type="bullet" >
 /// <item>
@@ -41,7 +41,7 @@ using UnityEngine;
 /// </item>
 /// /// <item>
 ///     <description>Stars, Settlements and Moons: Likewise, names of Stars, Settlements and Moons
-/// will automatically be assigned when initialized, always bearing the name of their parent. (eg. [SystemName] Star, 
+/// will automatically be assigned when initialized, always bearing the name of the system. (eg. [SystemName] Star, 
 /// [SystemName] City, [PlanetName]a indicating a moon </description>
 /// </item>
 ///  </remarks>
@@ -56,28 +56,32 @@ public class SystemCreator : AMonoBase, IDisposable {
     private static int[] _planetNumbers = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     private static string[] _moonLetters = new string[] { "a", "b", "c", "d", "e" };
 
-    private static IEnumerable<PlanetoidCategory> _acceptablePlanetCategories = new PlanetoidCategory[] { 
-        PlanetoidCategory.GasGiant, PlanetoidCategory.Ice, PlanetoidCategory.Terrestrial, PlanetoidCategory.Volcanic 
-    };
+    private static IEnumerable<PlanetoidCategory> _acceptablePlanetCategories = new PlanetoidCategory[] { PlanetoidCategory.GasGiant, PlanetoidCategory.Ice, PlanetoidCategory.Terrestrial, PlanetoidCategory.Volcanic };
 
-    public string SystemName { get { return _transform.name; } }    // the SystemCreator carries the name of the System
+
+    public string SystemName { get { return _transform.name; } }    // the SystemCreator will carry the name of the System
 
     private Vector3[] _orbitSlots;
-    private Vector3 _settlementOrbitSlot;
+    private Transform _systemsFolder;
 
+    private SystemFactory _factory;
+    //private SystemComposition _composition;
     private StarStat _starStat;
     private IList<PlanetoidStat> _planetStats;
+
+
+
     private SystemModel _system;
     private StarModel _star;
     private IList<PlanetoidModel> _planets;
     private IEnumerable<PlanetoidModel> _moons;
+    private Vector3 _settlementOrbitSlot;
+    private GameManager _gameMgr;
 
-    private Transform _systemsFolder;
-    private bool _isPresetSystem;
+    // Removed Settlement treatment. Now built separately and assigned to a system by SettlementCreator
 
     private IList<IDisposable> _subscribers;
-    private SystemFactory _factory;
-    private GameManager _gameMgr;
+    private bool _isPresetSystem;
 
     protected override void Awake() {
         base.Awake();
@@ -86,6 +90,10 @@ public class SystemCreator : AMonoBase, IDisposable {
         _factory = SystemFactory.Instance;
         _isPresetSystem = _transform.childCount > 0;
         GenerateOrbitSlotStartLocation();
+        //_composition = CreateSystemComposition();
+        //_starStat = CreateStarStat();
+        //_planetStats = CreatePlanetStats();
+        //_moonStats = CreateMoonStats();
         Subscribe();
     }
 
@@ -103,21 +111,20 @@ public class SystemCreator : AMonoBase, IDisposable {
     }
 
     private void OnGameStateChanged() {
-        GameState gameState = _gameMgr.CurrentState;
-        BuildDeployAndBeginSystemOperationsDuringStartup(gameState);
-    }
-
-    private void BuildDeployAndBeginSystemOperationsDuringStartup(GameState gameState) {
-        if (gameState == GameState.BuildAndDeploySystems) {
+        if (_gameMgr.CurrentState == GameState.BuildAndDeploySystems) {
             RegisterGameStateProgressionReadiness(isReady: false);
             CreateStats();
             PrepareForOperations(onCompleted: delegate {
                 __SetIntelLevel();
                 RegisterGameStateProgressionReadiness(isReady: true);
             });
+            //BuildSystem();
+            //EnableSystem(onCompletion: delegate {   // must make View operational before starting state changes (like IntelLevel) within it 
+            //    __SetIntelLevel();
+            //    RegisterGameStateProgressionReadiness(isReady: true);
+            //});
         }
-
-        if (gameState == GameState.Running) {
+        if (_gameMgr.CurrentState == GameState.Running) {
             BeginSystemOperations(onCompletion: delegate {
                 // wait to allow any cellestial objects using the IEnumerator StateMachine to enter their starting state
                 DestroyCreationObject(); // destruction deferred so __UniverseInitializer can complete its work
@@ -125,7 +132,6 @@ public class SystemCreator : AMonoBase, IDisposable {
         }
     }
 
-    #region Create Stats
     private void CreateStats() {
         _starStat = CreateStarStat();
         _planetStats = CreatePlanetStats();
@@ -175,24 +181,148 @@ public class SystemCreator : AMonoBase, IDisposable {
         return planetStats;
     }
 
-    #endregion
 
 
     private void PrepareForOperations(Action onCompleted = null) {
         LogEvent();
-        MakeSystem();   // stars and planets need a system parent when built
-        MakeStar();     // makes the star a child of the system
-        MakePlanets();  // makes each planet a child of the system
-        AssignMembersToOrbitSlots();    // modifies planet names to reflect the assigned orbit
-        PopulateMoonsWithData();        // makes moon names based on the moon's (modified) planet name
-        InitializeSystemData();         // adds star and planet data to the system's data component
-        CompleteSystem();               // misc final touchup
+        MakeSystem();
+        MakeStar();
+        MakePlanets();
+        AssignElementsToOrbitSlots();
+        PopulateMoonsWithData();
+        InitializeSystemData();
+        CompleteSystem();
         EnableSystem(onCompletion: delegate {
             if (onCompleted != null) {
                 onCompleted();
             }
         });
     }
+
+
+    //private SystemComposition CreateSystemComposition() {
+    //    return _isPresetSystem ? CreateCompositionFromChildren() : CreateRandomComposition();
+    //}
+
+    //private SystemComposition CreateCompositionFromChildren() {
+    //    IEnumerable<PlanetoidModel> allPlanetoids = gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetoidModel>();
+    //    _planets = allPlanetoids.Where(p => p.gameObject.GetComponentInParents<PlanetoidModel>(excludeSelf: true) == null).ToList();
+    //    var composition = new SystemComposition();
+    //    foreach (var planet in _planets) {
+    //        Transform transformCarryingPlanetCategory = planet.transform.parent.parent;
+    //        PlanetoidCategory pCategory = DeriveCategory<PlanetoidCategory>(transformCarryingPlanetCategory);
+    //        string planetName = planet.gameObject.name; // if already in scene, the planet should already be named for its system and orbit
+    //        PlanetoidData data = CreatePlanetData(pCategory, planetName);
+    //        composition.AddPlanet(data);
+    //    }
+
+    //    _star = gameObject.GetSafeMonoBehaviourComponentInChildren<StarModel>();
+    //    Transform transformCarryingStarCategory = _star.transform;
+    //    StarCategory starCategory = DeriveCategory<StarCategory>(transformCarryingStarCategory);
+    //    composition.StarData = CreateStarData(starCategory);
+    //    return composition;
+    //}
+
+    //private SystemComposition CreateRandomComposition() {
+    //    var composition = new SystemComposition();
+
+    //    //determine how many planets of which types for the system, then build PlanetoidData and add to composition
+    //    int orbitSlotsAvailableForPlanets = _numberOfOrbitSlots - 1;    // 1 reserved for a Settlement 
+    //    int planetCount = RandomExtended<int>.Range(0, orbitSlotsAvailableForPlanets);
+    //    for (int i = 0; i < planetCount; i++) {
+
+    //        IEnumerable<PlanetoidCategory> planetoidCategoriesToExclude = new PlanetoidCategory[] { default(PlanetoidCategory), 
+    //            PlanetoidCategory.Moon_001, PlanetoidCategory.Moon_002, PlanetoidCategory.Moon_003, PlanetoidCategory.Moon_004, PlanetoidCategory.Moon_005 };
+    //        PlanetoidCategory planetCategory = RandomExtended<PlanetoidCategory>.Choice(Enums<PlanetoidCategory>.GetValues().Except(planetoidCategoriesToExclude).ToArray());
+
+    //        string planetName = "{0}, rest deferred until orbit assigned.".Inject(planetCategory.GetName());
+    //        PlanetoidData planetData = CreatePlanetData(planetCategory, planetName);
+    //        composition.AddPlanet(planetData);
+    //    }
+
+    //    StarCategory starCategory = Enums<StarCategory>.GetRandom(excludeDefault: true);
+    //    StarData starData = CreateStarData(starCategory);
+    //    composition.StarData = starData;
+    //    return composition;
+    //}
+
+    //private PlanetoidData CreatePlanetData(PlanetoidCategory pCategory, string planetName) {
+    //    PlanetoidStat stat = new PlanetoidStat(planetName, 1000000F, 10000F, pCategory, 25, new OpeYield(3.1F, 2F, 4.8F), new XYield(XResource.Special_1, 0.3F));
+    //    //PlanetoidData data = new PlanetoidData(pCategory, planetName, 10000F, 1000000F, SystemName) {
+    //    //    // Owners are all initialized to TempGameValues.NoPlayer by AItemData
+    //    //    Capacity = 25,
+    //    //    Resources = new OpeYield(3.1F, 2.0F, 4.8F),
+    //    //    SpecialResources = new XYield(XResource.Special_1, 0.3F),
+    //    //};
+    //    PlanetoidData data = new PlanetoidData(stat) {
+    //        ParentName = SystemName
+    //        // a Planet's CombatStrength is default(CombatStrength), aka all values zero'd out
+    //    };
+    //    return data;
+    //}
+
+    //private StarData CreateStarData(StarCategory sCategory) {
+    //    string starName = SystemName + Constants.Space + CommonTerms.Star;
+    //    StarStat stat = new StarStat(starName, sCategory, 100, new OpeYield(0F, 0F, 100F), new XYield(XResource.Special_3, 0.3F));
+    //    //StarData data = new StarData(sCategory, starName, SystemName) {
+    //    //    Capacity = 100,
+    //    //    Resources = new OpeYield(0F, 0F, 100F),
+    //    //    SpecialResources = new XYield(XResource.Special_3, 0.3F),
+    //    //};
+    //    StarData data = new StarData(stat) {
+    //        ParentName = SystemName
+    //    };
+    //    return data;
+    //}
+
+    //private void BuildSystem() {
+    //    if (_isPresetSystem) {
+    //        BuildPresetSystem();
+    //    }
+    //    else {
+    //        BuildRandomSystem();
+    //    }
+    //}
+
+    //private void BuildPresetSystem() {
+    //    _system = gameObject.GetSafeMonoBehaviourComponentInChildren<SystemModel>();
+    //    InitializePlanets();
+    //    AssignElementsToOrbitSlots();   // repositions planet orbits and changes name to reflect slot
+    //    PopulateMoonsWithData();
+    //    InitializeStar();
+    //    InitializeSystem();
+    //}
+
+    //private void BuildRandomSystem() {
+    //    BuildSystemModel();  // first as planets, stars and settlements need a system parent
+    //    BuildPlanets();
+    //    BuildStar();
+    //    InitializePlanets();
+    //    AssignElementsToOrbitSlots(); // after InitPlanets so planet names can be changed according to orbit
+    //    PopulateMoonsWithData();
+    //    InitializeStar();
+    //    InitializeSystem();
+    //}
+
+    //private void BuildSystemModel() {
+    //    GameObject systemGo = UnityUtility.AddChild(gameObject, RequiredPrefabs.Instance.system.gameObject);
+    //    systemGo.name = SystemName;     // assign the name of the system
+    //    _system = systemGo.GetSafeMonoBehaviourComponent<SystemModel>();
+    //}
+
+    //private void BuildPlanets() {
+    //    _planets = new List<PlanetoidModel>();
+    //    foreach (var pCat in _composition.PlanetCategories) {
+    //        GameObject planetPrefab = RequiredPrefabs.Instance.planets.First(p => p.gameObject.name == pCat.GetName());
+    //        GameObject systemGo = _system.gameObject;
+
+    //        _composition.GetPlanetData(pCat).ForAll(pd => {
+    //            GameObject topLevelPlanetGo = UnityUtility.AddChild(systemGo, planetPrefab);
+    //            PlanetoidModel planet = topLevelPlanetGo.GetSafeMonoBehaviourComponentInChildren<PlanetoidModel>();
+    //            _planets.Add(planet);
+    //        });
+    //    }
+    //}
 
     private void MakeSystem() {
         LogEvent();
@@ -205,6 +335,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         }
     }
 
+
     private void MakeStar() {
         LogEvent();
         if (_isPresetSystem) {
@@ -214,6 +345,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         else {
             _star = _factory.MakeInstance(_starStat, _system.gameObject);
         }
+
     }
 
     private void MakePlanets() {
@@ -241,7 +373,34 @@ public class SystemCreator : AMonoBase, IDisposable {
         }
     }
 
-    private void AssignMembersToOrbitSlots() {
+
+
+    //private void BuildStar() {
+    //    StarCategory starCat = _composition.StarData.Category;
+    //    GameObject starPrefab = RequiredPrefabs.Instance.stars.First(sp => sp.gameObject.name == starCat.GetName()).gameObject;
+    //    GameObject systemGo = _system.gameObject;
+    //    GameObject starGo = UnityUtility.AddChild(systemGo, starPrefab);
+    //    _star = starGo.GetSafeMonoBehaviourComponent<StarModel>();
+    //}
+
+    //private void InitializePlanets() {
+    //    IDictionary<PlanetoidCategory, Stack<PlanetoidData>> planetCategoryLookup = new Dictionary<PlanetoidCategory, Stack<PlanetoidData>>();
+    //    foreach (var planet in _planets) {
+    //        Transform transformCarryingPlanetType = planet.transform.parent.parent; // top level planetarySystem go holding orbits, planet and moons
+    //        PlanetoidCategory pCategory = DeriveCategory<PlanetoidCategory>(transformCarryingPlanetType);
+
+    //        Stack<PlanetoidData> dataStack;
+    //        if (!planetCategoryLookup.TryGetValue(pCategory, out dataStack)) {
+    //            dataStack = new Stack<PlanetoidData>(_composition.GetPlanetData(pCategory));
+    //            planetCategoryLookup.Add(pCategory, dataStack);
+    //        }
+    //        planet.Data = dataStack.Pop();  // automatically adds the planet's transform to Data when set
+    //        // include the System and planet as a target in any child with a CameraLOSChangedRelay
+    //        planet.gameObject.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(r => r.AddTarget(_system.transform, planet.transform));
+    //    }
+    //}
+
+    private void AssignElementsToOrbitSlots() {
         LogEvent();
         int innerOrbitsCount = Mathf.FloorToInt(0.25F * _numberOfOrbitSlots);
         int midOrbitsCount = Mathf.CeilToInt(0.6F * _numberOfOrbitSlots) - innerOrbitsCount;
@@ -297,6 +456,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         if (planetsToDestroy != null) {
             planetsToDestroy.ForAll(p => {
                 _planets.Remove(p);
+                //_composition.RemovePlanet(p.Data);
                 D.Log("Destroying Planet {0}.", p.FullName);
                 Destroy(p.gameObject);
             });
@@ -314,6 +474,13 @@ public class SystemCreator : AMonoBase, IDisposable {
         return false;
     }
 
+    private void InitializeSystemData() {
+        LogEvent();
+        _system.Data.StarData = _star.Data;
+        _planets.Select(p => p.Data).ForAll(pd => _system.Data.AddPlanet(pd));
+        _system.Data.SettlementOrbitSlot = _settlementOrbitSlot;
+    }
+
     private void PopulateMoonsWithData() {
         LogEvent();
         _moons = new List<PlanetoidModel>();
@@ -326,11 +493,17 @@ public class SystemCreator : AMonoBase, IDisposable {
                     string moonName = planetName + _moonLetters[letterIndex];
                     PlanetoidCategory moonCategory = DeriveCategory<PlanetoidCategory>(moon.transform);
                     PlanetoidStat stat = new PlanetoidStat(moonName, 1000F, 100000F, moonCategory, 5, new OpeYield(0.1F, 1F, 0.8F));
+                    //PlanetoidData data = new PlanetoidData(moonCategory, moonName, 1000F, 100000F, SystemName) {
+                    //    // Owners are all initialized to TempGameValues.NoPlayer by AItemData
+                    //    Capacity = 5,
+                    //    Resources = new OpeYield(0.1F, 1.0F, 0.8F),
+                    //    // a Moon's CombatStrength is default(CombatStrength), aka all values zero'd out
+                    //};
 
                     PlanetoidData data = new PlanetoidData(stat) {
                         ParentName = SystemName
                         // Owners are all initialized to TempGameValues.NoPlayer by AItemData
-                        // CombatStrength is default(CombatStrength), aka all values zero'd out
+                        // a Moon's CombatStrength is default(CombatStrength), aka all values zero'd out
                     };
 
                     moon.Data = data;
@@ -343,12 +516,99 @@ public class SystemCreator : AMonoBase, IDisposable {
         }
     }
 
-    private void InitializeSystemData() {
-        LogEvent();
-        _system.Data.StarData = _star.Data;
-        _planets.Select(p => p.Data).ForAll(pd => _system.Data.AddPlanet(pd));
-        _system.Data.SettlementOrbitSlot = _settlementOrbitSlot;
-    }
+    //private void InitializeStar() {
+    //    _star.Data = _composition.StarData; // automatically assigns the transform to data and aligns the transform's name to held by data
+    //    // include the System and Star as a target in any child with a CameraLOSChangedRelay
+    //    _star.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().AddTarget(_system.transform, _star.transform);
+    //    // PlayerIntel coverage is fixed at Comprehensive
+    //}
+
+    /// <summary>
+    /// Assigns each element to an appropriate orbit slot including reserving a slot for a future settlement.
+    /// If an appropriate orbit slot is no longer available for a planet, the planet is removed and destroyed.
+    /// </summary>
+    /// <exception cref="System.NotImplementedException"></exception>
+    //private void AssignElementsToOrbitSlots() {
+    //    int innerOrbitsCount = Mathf.FloorToInt(0.25F * _numberOfOrbitSlots);
+    //    int midOrbitsCount = Mathf.CeilToInt(0.6F * _numberOfOrbitSlots) - innerOrbitsCount;
+    //    int outerOrbitsCount = _numberOfOrbitSlots - innerOrbitsCount - midOrbitsCount;
+    //    var innerStack = new Stack<int>(Enumerable.Range(0, innerOrbitsCount).Shuffle());
+    //    var midStack = new Stack<int>(Enumerable.Range(innerOrbitsCount, midOrbitsCount).Shuffle());
+    //    var outerStack = new Stack<int>(Enumerable.Range(innerOrbitsCount + midOrbitsCount, outerOrbitsCount).Shuffle());
+
+    //    // start by reserving the slot for the Settlement
+    //    int slotIndex = midStack.Pop();
+    //    _settlementOrbitSlot = _orbitSlots[slotIndex];
+
+    //    // now divy up the remaining slots among the planets
+    //    IList<PlanetoidModel> planetsToDestroy = null;
+    //    Stack<int>[] slots;
+    //    foreach (var planet in _planets) {
+    //        var planetCategory = planet.Data.Category;
+    //        switch (planetCategory) {
+    //            case PlanetoidCategory.Volcanic:
+    //                slots = new Stack<int>[] { innerStack, midStack };
+    //                break;
+    //            case PlanetoidCategory.Terrestrial:
+    //                slots = new Stack<int>[] { midStack, innerStack, outerStack };
+    //                break;
+    //            case PlanetoidCategory.Ice:
+    //                slots = new Stack<int>[] { outerStack, midStack };
+    //                break;
+    //            case PlanetoidCategory.GasGiant:
+    //                slots = new Stack<int>[] { outerStack, midStack };
+    //                break;
+    //            case PlanetoidCategory.Moon_001:
+    //            case PlanetoidCategory.Moon_002:
+    //            case PlanetoidCategory.Moon_003:
+    //            case PlanetoidCategory.Moon_004:
+    //            case PlanetoidCategory.Moon_005:
+    //            case PlanetoidCategory.None:
+    //            default:
+    //                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(planetCategory));
+    //        }
+
+    //        if (TryFindOrbitSlot(out slotIndex, slots)) {
+    //            planet.transform.localPosition = _orbitSlots[slotIndex];
+    //            // assign the planet's name using its orbital slot
+    //            planet.Data.Name = SystemName + Constants.Space + _planetNumbers[slotIndex];
+    //        }
+    //        else {
+    //            if (planetsToDestroy == null) {
+    //                planetsToDestroy = new List<PlanetoidModel>();
+    //            }
+    //            planetsToDestroy.Add(planet);
+    //        }
+    //    }
+    //    if (planetsToDestroy != null) {
+    //        planetsToDestroy.ForAll(p => {
+    //            _planets.Remove(p);
+    //            _composition.RemovePlanet(p.Data);
+    //            D.Log("Destroying Planet {0}.", p.FullName);
+    //            Destroy(p.gameObject);
+    //        });
+    //    }
+    //}
+
+    //private bool TryFindOrbitSlot(out int slot, params Stack<int>[] slotStacks) {
+    //    foreach (var slotStack in slotStacks) {
+    //        if (slotStack.Count > 0) {
+    //            slot = slotStack.Pop();
+    //            return true;
+    //        }
+    //    }
+    //    slot = -1;
+    //    return false;
+    //}
+
+    //private void InitializeSystem() {
+    //    SystemData data = new SystemData(SystemName, _composition) {
+    //        SettlementOrbitSlot = _settlementOrbitSlot
+    //    };
+    //    _system.Data = data;
+    //    // include the System as a target in any child with a CameraLOSChangedRelay
+    //    _system.gameObject.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(r => r.AddTarget(_system.transform));
+    //}
 
     private void EnableSystem(Action onCompletion = null) {
         LogEvent();
@@ -384,6 +644,18 @@ public class SystemCreator : AMonoBase, IDisposable {
         _moons.ForAll(m => m.gameObject.GetSafeInterface<IViewable>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive);
     }
 
+    private void GenerateOrbitSlotStartLocation() {
+        LogEvent();
+        _orbitSlots = new Vector3[_numberOfOrbitSlots];
+        float systemRadiusAvailableForOrbits = TempGameValues.SystemRadius - TempGameValues.StarKeepoutRadius;
+        float slotSpacing = systemRadiusAvailableForOrbits / _numberOfOrbitSlots;
+        for (int i = 0; i < _numberOfOrbitSlots; i++) {
+            float orbitRadius = TempGameValues.StarKeepoutRadius + slotSpacing * (i + 1);
+            Vector2 startOrbitPoint2D = RandomExtended<float>.OnCircle(orbitRadius);
+            _orbitSlots[i] = new Vector3(startOrbitPoint2D.x, 0F, startOrbitPoint2D.y);
+        }
+    }
+
     private void BeginSystemOperations(Action onCompletion) {
         LogEvent();
         _planets.ForAll(p => p.CurrentState = PlanetoidState.Idling);
@@ -399,18 +671,6 @@ public class SystemCreator : AMonoBase, IDisposable {
             child.parent = _systemsFolder;
         }
         Destroy(gameObject);
-    }
-
-    private void GenerateOrbitSlotStartLocation() {
-        LogEvent();
-        _orbitSlots = new Vector3[_numberOfOrbitSlots];
-        float systemRadiusAvailableForOrbits = TempGameValues.SystemRadius - TempGameValues.StarKeepoutRadius;
-        float slotSpacing = systemRadiusAvailableForOrbits / _numberOfOrbitSlots;
-        for (int i = 0; i < _numberOfOrbitSlots; i++) {
-            float orbitRadius = TempGameValues.StarKeepoutRadius + slotSpacing * (i + 1);
-            Vector2 startOrbitPoint2D = RandomExtended<float>.OnCircle(orbitRadius);
-            _orbitSlots[i] = new Vector3(startOrbitPoint2D.x, 0F, startOrbitPoint2D.y);
-        }
     }
 
     private T DeriveCategory<T>(Transform transformContainingCategoryName) where T : struct {

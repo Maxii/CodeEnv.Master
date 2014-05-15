@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -61,6 +61,8 @@ public abstract class AItemView : AMonoBase, IViewable, ICameraLOSChangedClient,
     }
 
     protected virtual void OnPlayerIntelCoverageChanged() {
+        string parentName = _transform.parent != null ? _transform.parent.name : "(no parent)";
+        D.Log("{0}.{1}.{2}.OnPlayerIntelCoverageChanged() called. Coverage changed to {3}.", parentName, _transform.name, GetType().Name, PlayerIntel.CurrentCoverage.GetName());
         AssessDiscernability();
         if (HudPublisher != null && HudPublisher.IsHudShowing) {
             ShowHud(true);
@@ -68,12 +70,14 @@ public abstract class AItemView : AMonoBase, IViewable, ICameraLOSChangedClient,
     }
 
     protected virtual void OnInCameraLOSChanged() {
-        D.Log("{0}.InCameraLOS now {1}.", gameObject.name, InCameraLOS);
+        string parentName = _transform.parent != null ? _transform.parent.name : "(no parent)";
+        D.Log("{0}.{1}.{2}.InCameraLOS now {3}.", parentName, _transform.name, GetType().Name, InCameraLOS);
         AssessDiscernability();
     }
 
     protected virtual void OnIsDiscernibleChanged() {
-        D.Log("{0}.OnIsDiscernibleChanged(), isDiscernible = {1}.", _transform.name, IsDiscernible);
+        string parentName = _transform.parent != null ? _transform.parent.name : "(no parent)";
+        D.Log("{0}.{1}.{2}.OnIsDiscernibleChanged(), isDiscernible = {3}.", parentName, _transform.name, GetType().Name, IsDiscernible);
         if (!IsDiscernible) {
             ShowHud(false);
         }
@@ -94,14 +98,16 @@ public abstract class AItemView : AMonoBase, IViewable, ICameraLOSChangedClient,
     }
 
     public virtual void AssessDiscernability() {
-        //D.Log("{0}.{1}.AssessDiscernability() called.", _transform.parent.name, _transform.name);
+        string parentName = _transform.parent != null ? _transform.parent.name : "(no parent)";
+        D.Log("{0}.{1}.{2}.AssessDiscernability() called.", parentName, _transform.name, GetType().Name);
         IsDiscernible = InCameraLOS && PlayerIntel.CurrentCoverage != IntelCoverage.None;
     }
 
     public void ShowHud(bool toShow) {
         if (!enabled) { return; }
         if (HudPublisher == null) {
-            D.Warn("{0} HudPublisher is null.", gameObject.name);
+            string parentName = _transform.parent != null ? _transform.parent.name : "(no parent)";
+            D.Warn("{0}.{1}.{2} HudPublisher is null.", parentName, _transform.name, GetType().Name);
             return;
         }
         HudPublisher.ShowHud(toShow, PlayerIntel);

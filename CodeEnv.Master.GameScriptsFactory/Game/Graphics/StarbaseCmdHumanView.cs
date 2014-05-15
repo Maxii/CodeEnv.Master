@@ -26,20 +26,21 @@ using UnityEngine;
 /// </summary>
 public class StarbaseCmdHumanView : StarbaseCmdView {
 
-    private CtxObject _ctxObject;
-
     public new StarbaseCmdHumanPresenter Presenter {
         get { return base.Presenter as StarbaseCmdHumanPresenter; }
         protected set { base.Presenter = value; }
     }
 
-    protected override void InitializePresenter() {
-        Presenter = new StarbaseCmdHumanPresenter(this);
-    }
+    private CtxObject _ctxObject;
 
     protected override void Start() {
         base.Start();
         __InitializeContextMenu();
+    }
+
+    protected override void InitializePresenter() {
+        LogEvent();
+        Presenter = new StarbaseCmdHumanPresenter(this);
     }
 
     #region ContextMenu

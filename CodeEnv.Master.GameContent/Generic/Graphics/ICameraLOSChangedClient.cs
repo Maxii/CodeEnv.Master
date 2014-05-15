@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface ICameraLOSChangedClient {
 
-        bool InCameraLOS { get; }
+        //bool InCameraLOS { get; }
 
         void NotifyCameraLOSChanged(Transform sender, bool inLOS);
 

@@ -63,6 +63,7 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
     }
 
     protected override StarbaseCmdModel MakeCommand(IPlayer owner) {
+        LogEvent();
         StarbaseCmdStat cmdStat = new StarbaseCmdStat(UnitName, 10F, 100, Formation.Circle, new CombatStrength(0F, 5F, 0F, 5F, 0F, 5F));
 
         StarbaseCmdModel cmd;
@@ -82,28 +83,35 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
     }
 
     protected override void DeployUnit() {
+        LogEvent();
         // Starbases don't need to be deployed. They are already on location.
     }
 
     protected override void BeginElementsOperations() {
+        LogEvent();
         _elements.ForAll(e => (e as FacilityModel).CurrentState = FacilityState.Idling);
     }
 
     protected override void BeginCommandOperations() {
+        LogEvent();
         _command.CurrentState = StarbaseState.Idling;
     }
 
     protected override void AssignHQElement() {
+        LogEvent();
         var candidateHQElements = _command.Elements.Where(e => GetValidHQElementCategories().Contains((e as FacilityModel).Data.Category));
         D.Assert(!candidateHQElements.IsNullOrEmpty()); // bases must have a CentralHub, even if preset
         _command.HQElement = RandomExtended<IElementModel>.Choice(candidateHQElements) as FacilityModel;
     }
 
     protected override void __InitializeCommandIntel() {
+        LogEvent();
         _command.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
     }
 
-    protected override void IssueFirstUnitCommand() { }
+    protected override void IssueFirstUnitCommand() {
+        LogEvent();
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

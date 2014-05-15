@@ -195,6 +195,7 @@
     <Compile Include="StarPresenter.cs" />
     <Compile Include="StarView.cs" />
     <Compile Include="StationaryItem.cs" />
+    <Compile Include="SystemCreator.cs" />
     <Compile Include="SystemGraphics.cs" />
     <Compile Include="SystemManager.cs" />
     <Compile Include="SystemPresenter.cs" />
