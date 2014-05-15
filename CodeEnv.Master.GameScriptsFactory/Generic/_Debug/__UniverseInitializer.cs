@@ -59,10 +59,10 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
             universeCenter.Data = data;
             universeCenter.enabled = true;
             universeCenter.gameObject.GetSafeMonoBehaviourComponent<UniverseCenterView>().enabled = true;
-            UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
-                RegisterReadinessForGameStateProgression(GameState.BuildAndDeploySystems, isReady: true);
-            });
         }
+        UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
+            RegisterReadinessForGameStateProgression(GameState.BuildAndDeploySystems, isReady: true);
+        });
     }
 
     private void RegisterReadinessForGameStateProgression(GameState stateToNotProgressBeyondUntilReady, bool isReady) {

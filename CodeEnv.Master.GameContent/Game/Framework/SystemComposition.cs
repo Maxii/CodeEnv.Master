@@ -26,6 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Wrapper for System Composition dictionary containing planet and star Data.
     /// </summary>
+    [Obsolete]
     public class SystemComposition {
         // SystemComposition no longer contains any SettlementData or Orbit info
 
