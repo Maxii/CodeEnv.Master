@@ -111,13 +111,16 @@ public class SystemCreator : AMonoBase, IDisposable {
         if (gameState == GameState.BuildAndDeploySystems) {
             RegisterGameStateProgressionReadiness(isReady: false);
             CreateStats();
-            PrepareForOperations(onCompleted: delegate {
+            PrepareForOperations();
+            EnableSystem(onCompletion: delegate {
                 __SetIntelLevel();
                 RegisterGameStateProgressionReadiness(isReady: true);
             });
+            // System is now prepared to receive a Settlement when it deploys
         }
 
         if (gameState == GameState.Running) {
+            EnableOtherWhenRunning();
             BeginSystemOperations(onCompletion: delegate {
                 // wait to allow any cellestial objects using the IEnumerator StateMachine to enter their starting state
                 DestroyCreationObject(); // destruction deferred so __UniverseInitializer can complete its work
@@ -126,6 +129,7 @@ public class SystemCreator : AMonoBase, IDisposable {
     }
 
     #region Create Stats
+
     private void CreateStats() {
         _starStat = CreateStarStat();
         _planetStats = CreatePlanetStats();
@@ -177,8 +181,7 @@ public class SystemCreator : AMonoBase, IDisposable {
 
     #endregion
 
-
-    private void PrepareForOperations(Action onCompleted = null) {
+    private void PrepareForOperations() {
         LogEvent();
         MakeSystem();   // stars and planets need a system parent when built
         MakeStar();     // makes the star a child of the system
@@ -187,11 +190,6 @@ public class SystemCreator : AMonoBase, IDisposable {
         PopulateMoonsWithData();        // makes moon names based on the moon's (modified) planet name
         InitializeSystemData();         // adds star and planet data to the system's data component
         CompleteSystem();               // misc final touchup
-        EnableSystem(onCompletion: delegate {
-            if (onCompleted != null) {
-                onCompleted();
-            }
-        });
     }
 
     private void MakeSystem() {
@@ -357,10 +355,27 @@ public class SystemCreator : AMonoBase, IDisposable {
         _system.enabled = true;
         _star.enabled = true;
         // Enable the Views of the Models 
-        _planets.ForAll(p => p.gameObject.GetSafeInterface<IViewable>().enabled = true);
-        _moons.ForAll(m => m.gameObject.GetSafeInterface<IViewable>().enabled = true);
-        _system.gameObject.GetSafeInterface<IViewable>().enabled = true;
-        _star.gameObject.GetSafeInterface<IViewable>().enabled = true;
+        _planets.ForAll(p => p.gameObject.GetSafeMonoBehaviourComponent<AItemView>().enabled = true);
+        _moons.ForAll(m => m.gameObject.GetSafeMonoBehaviourComponent<AItemView>().enabled = true);
+        _system.gameObject.GetSafeMonoBehaviourComponent<AItemView>().enabled = true;
+        _star.gameObject.GetSafeMonoBehaviourComponent<AItemView>().enabled = true;
+        UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
+            if (onCompletion != null) {
+                onCompletion();
+            }
+        });
+    }
+
+    /// <summary>
+    /// Enables selected children of the system, star, planets and moons. e.g. - cameraLOSRelays
+    /// Revolve and Orbits, etc. These scripts that are enabled should only be enabled on or after IsRunning.
+    /// </summary>
+    /// <param name="onCompletion">The on completion.</param>
+    private void EnableOtherWhenRunning(Action onCompletion = null) {
+        D.Assert(GameStatus.Instance.IsRunning);
+        gameObject.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(relay => relay.enabled = true);
+        gameObject.GetSafeMonoBehaviourComponentsInChildren<Orbit>().ForAll(orbit => orbit.enabled = true);
+        gameObject.GetSafeMonoBehaviourComponentsInChildren<Revolve>().ForAll(rev => rev.enabled = true);
         UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
             if (onCompletion != null) {
                 onCompletion();

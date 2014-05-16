@@ -83,18 +83,17 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
         return cmd;
     }
 
-    protected override void DeployUnit() {
+    protected override bool DeployUnit() {
         LogEvent();
         var allSystems = SystemCreator.AllSystems;
         var availableSystems = allSystems.Where(sys => sys.Data.Owner == TempGameValues.NoPlayer);
         if (availableSystems.IsNullOrEmpty()) {
-            D.Log("Destroying {0} for {1}.", GetType().Name, UnitName);
-            Destroy(gameObject);
-            return;
+            D.Warn("No Systems available to deploy {0}..", UnitName);
+            return false;
         }
         availableSystems.First().AssignSettlement(_command);
+        return true;
     }
-
 
     protected override void BeginElementsOperations() {
         LogEvent();
@@ -116,6 +115,19 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
     protected override void __InitializeCommandIntel() {
         LogEvent();
         // For now settlements assume the intel coverage of their system when assigned
+    }
+
+    protected override void EnableOtherWhenRunning() {
+        D.Assert(GameStatus.Instance.IsRunning);
+        // the entire settlementUnit gameobject has already been detached from this creator at this point
+        GameObject settlementUnitGo = _command.transform.parent.gameObject;
+        settlementUnitGo.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(relay => relay.enabled = true);
+        settlementUnitGo.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeTracker>().ForAll(wrt => wrt.enabled = true);
+        settlementUnitGo.GetSafeMonoBehaviourComponentsInChildren<Revolve>().ForAll(rev => rev.enabled = true);
+        settlementUnitGo.GetSafeMonoBehaviourComponentInParents<Orbit>().enabled = true;    // the overall settlement unit orbit around the system's star
+        settlementUnitGo.GetSafeMonoBehaviourComponentInChildren<UISprite>().enabled = true;
+        // no other orbits present,  // other possibles: Billboard, ScaleRelativeToCamera
+        // TODO SensorRangeTracker
     }
 
     protected override void IssueFirstUnitCommand() {

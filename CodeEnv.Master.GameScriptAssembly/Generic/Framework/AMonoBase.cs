@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -37,10 +37,16 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
 
     #region Debug
 
+    [System.Diagnostics.Conditional("DEBUG_LOG")]
+    /// <summary>
+    /// Logs the method name called. WARNING:  Coroutines showup as &lt;IEnumerator.MoveNext&gt; rather than the method name
+    /// </summary>
     public virtual void LogEvent() {
-        // NOTE:  Coroutines don't show the right method name when logged using stacktrace
-        System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
-        D.Log("{0}.{1}.{2}() called.".Inject(_transform.name, GetType().Name, stackFrame.GetMethod().Name));
+        if (DebugSettings.Instance.EnableEventLogging) {
+            System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackFrame(1);
+            string name = _transform.name + "(from transform)";
+            Debug.Log("{0}.{1}.{2}() called.".Inject(name, GetType().Name, stackFrame.GetMethod().Name));
+        }
     }
 
     #endregion

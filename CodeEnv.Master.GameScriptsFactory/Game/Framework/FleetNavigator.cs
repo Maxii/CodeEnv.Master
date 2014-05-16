@@ -202,7 +202,7 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
 
         while (_currentWaypointIndex < _course.Count) {
             float distanceToWaypointSqrd = Vector3.SqrMagnitude(currentWaypointPosition - _data.Position);
-            D.Log("{0} distance to Waypoint_{1} = {2}.", _fleet.FullName, _currentWaypointIndex, Mathf.Sqrt(distanceToWaypointSqrd));
+            //D.Log("{0} distance to Waypoint_{1} = {2}.", _fleet.FullName, _currentWaypointIndex, Mathf.Sqrt(distanceToWaypointSqrd));
             if (distanceToWaypointSqrd < _closeEnoughDistanceToTargetSqrd) {
                 if (___CheckTargetIsLocal()) {
                     if (CheckApproachTo(Destination)) {
@@ -257,7 +257,7 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
         _fleet.__IssueShipMovementOrders(Target, Speed, CloseEnoughDistanceToTarget);
         float sqrDistance;
         while ((sqrDistance = Vector3.SqrMagnitude(Destination - _data.Position)) > _closeEnoughDistanceToTargetSqrd) {
-            D.Log("{0} (homing) distance to {1} = {2}.", _fleet.FullName, Target.FullName, Mathf.Sqrt(sqrDistance));
+            //D.Log("{0} (homing) distance to {1} is {2}.", _fleet.FullName, Target.FullName, Mathf.Sqrt(sqrDistance));
             yield return new WaitForSeconds(_courseProgressCheckPeriod);
         }
         OnDestinationReached();
@@ -505,7 +505,7 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
         // frequency of course progress checks increases as fullSpeed value and gameSpeed increase
         float courseProgressCheckFrequency = 1F + (_data.FullSpeed * _gameSpeedMultiplier);
         _courseProgressCheckPeriod = 1F / courseProgressCheckFrequency;
-        D.Log("{0}.{1} frequency of course progress checks adjusted to {2:0.##}.", _fleet.FullName, GetType().Name, courseProgressCheckFrequency);
+        //D.Log("{0}.{1} frequency of course progress checks adjusted to {2:0.##}.", _fleet.FullName, GetType().Name, courseProgressCheckFrequency);
     }
 
     /// <summary>

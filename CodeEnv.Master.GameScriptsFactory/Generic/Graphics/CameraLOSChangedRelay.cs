@@ -11,7 +11,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -30,7 +30,7 @@ using System.Text;
 /// one or more client gameobjects that implement the ICameraLOSChangedClient interface.
 ///<remarks>Used when I wish to separate a mesh and its renderer from a parent GameObject that does most of the work.</remarks>
 /// </summary>
-public class CameraLOSChangedRelay : AMonoBase, ICameraLOSChangedRelay, IDisposable {
+public class CameraLOSChangedRelay : AMonoBase, ICameraLOSChangedRelay {
 
     public List<Transform> relayTargets;
 
@@ -62,11 +62,7 @@ public class CameraLOSChangedRelay : AMonoBase, ICameraLOSChangedRelay, IDisposa
             }
             _iRelayTargets.Add(iTarget);
         }
-
-        if (!GameStatus.Instance.IsRunning) {
-            GameStatus.Instance.onIsRunning_OneShot += OnGameIsRunning;
-            enabled = false;
-        }
+        enabled = false;
     }
 
     private void InitializeRenderer() {
@@ -77,6 +73,11 @@ public class CameraLOSChangedRelay : AMonoBase, ICameraLOSChangedRelay, IDisposa
             SetupInvisibleBoundsMesh();
         }
     }
+
+    //protected override void OnEnable() {
+    //    base.OnEnable();
+    //    D.Log("{0}.OnEnable().", _transform.name);
+    //}
 
     protected override void Start() {
         base.Start();
@@ -106,19 +107,15 @@ public class CameraLOSChangedRelay : AMonoBase, ICameraLOSChangedRelay, IDisposa
         }
     }
 
-    private void OnGameIsRunning() {
-        enabled = true;
-    }
-
     void OnBecameVisible() {
-        //D.Log("{0} CameraLOSChangedRelay has received OnBecameVisible(). IsRunning = {1}, IsInitialization = {2}.", _transform.name, _isRunning, __isInitialization);
+        //D.Log("{0} CameraLOSChangedRelay has received OnBecameVisible(), enabled = {1}.", _transform.name, enabled);
         if (ValidateCameraLOSChange(inLOS: true)) {
             NotifyClientsOfChange(inLOS: true);
         }
     }
 
     void OnBecameInvisible() {
-        //D.Log("{0} CameraLOSChangedRelay has received OnBecameInvisible(). IsRunning = {1}.", _transform.name, _isRunning);
+        //D.Log("{0} CameraLOSChangedRelay has received OnBecameInvisible(), enabled = {1}.", _transform.name, enabled);
         if (ValidateCameraLOSChange(inLOS: false)) {
             NotifyClientsOfChange(inLOS: false);
         }
@@ -227,72 +224,9 @@ public class CameraLOSChangedRelay : AMonoBase, ICameraLOSChangedRelay, IDisposa
 
     #endregion
 
-    protected override void OnDestroy() {
-        base.OnDestroy();
-        Dispose();
-    }
-
-    private void Cleanup() {
-        Unsubscribe();
-        // other cleanup here including any tracking Gui2D elements
-    }
-
-    private void Unsubscribe() {
-        // This gameObject's parent(s) can be destroyed before the game isRunning.
-        // Examples include 1) SettlementCreators when there are more 
-        // settlements than systems to assign them too, 2) Planets when there are more
-        // planets than orbit slots, etc.
-        GameStatus.Instance.onIsRunning_OneShot -= OnGameIsRunning;
-    }
-
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region IDisposable
-    [DoNotSerialize]
-    private bool _alreadyDisposed = false;
-    protected bool _isDisposing = false;
-
-    /// <summary>
-    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-    /// </summary>
-    public void Dispose() {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
-    /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool isDisposing) {
-        // Allows Dispose(isDisposing) to be called more than once
-        if (_alreadyDisposed) {
-            return;
-        }
-
-        _isDisposing = isDisposing;
-        if (isDisposing) {
-            // free managed resources here including unhooking events
-            Cleanup();
-        }
-        // free unmanaged resources here
-
-        _alreadyDisposed = true;
-    }
-
-    // Example method showing check for whether the object has been disposed
-    //public void ExampleMethod() {
-    //    // throw Exception if called on object that is already disposed
-    //    if(alreadyDisposed) {
-    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-    //    }
-
-    //    // method content here
-    //}
-    #endregion
 
 }
 

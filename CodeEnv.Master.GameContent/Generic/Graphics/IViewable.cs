@@ -41,8 +41,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         float Radius { get; }
 
-        bool enabled { get; set; }
-
     }
 }
 

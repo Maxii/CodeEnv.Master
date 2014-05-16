@@ -75,7 +75,7 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
         D.Assert(!Elements.Contains(element), "{0} attempting to add {1} that is already present.".Inject(FullName, element.FullName));
         D.Assert(!element.IsHQElement, "{0} adding element {1} already designated as the HQ Element.".Inject(FullName, element.FullName));
         // elements should already be enabled when added to a Cmd as that is commonly their state when transferred during runtime
-        D.Assert(element.enabled, "{0} is not yet enabled.".Inject(element.FullName));
+        D.Assert((element as MonoBehaviour).enabled, "{0} is not yet enabled.".Inject(element.FullName));
         element.onItemDeath += OnSubordinateElementDeath;
         Elements.Add(element);
         Data.AddElement(element.Data);

@@ -46,8 +46,8 @@ public class SystemModel : AItemModel, ISystemModel {
         orbitGo.name = "SettlementOrbit";
         Transform settlementUnit = settlementCmd.transform.parent;
         UnityUtility.AttachChildToParent(settlementUnit.gameObject, orbitGo);
-        // position this settlement piece in the orbit slot already reserved for it
-        settlementUnit.localPosition = Data.SettlementOrbitSlot;
+        // the orbit is enabled by the SettlementCreator once isRunning
+        settlementUnit.localPosition = Data.SettlementOrbitSlot;        // position this settlement unit in the orbit slot already reserved for it
         InitializeSettlement(settlementCmd);
     }
 
@@ -59,7 +59,7 @@ public class SystemModel : AItemModel, ISystemModel {
 
         var systemIntelCoverage = gameObject.GetSafeInterface<IViewable>().PlayerIntel.CurrentCoverage;
         if (systemIntelCoverage == IntelCoverage.None) {
-            D.Warn("{0}.IntelCoverage set to None by its assigned System {1}.", settlementCmd.Data.Name, FullName);
+            D.Warn("{0}.IntelCoverage set to None by its assigned System {1}.", settlementCmd.FullName, FullName);
         }
         // UNCLEAR should a new settlement being attached to a System take on the PlayerIntel state of the System??  See SystemPresenter.OnPlayerIntelCoverageChanged()
         settlementCmd.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel.CurrentCoverage = systemIntelCoverage;

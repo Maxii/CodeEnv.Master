@@ -35,8 +35,6 @@ namespace CodeEnv.Master.GameContent {
 
         Transform Transform { get; }
 
-        bool enabled { get; set; }
-
     }
 }
 

@@ -146,11 +146,31 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
 
     protected virtual void InitializeCmdIcon() {
         _cmdIconSprite = gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>();
+        __DisableIcon();
         _cmdIconTransform = _cmdIconSprite.transform;
         _cmdIconScaler = _cmdIconSprite.gameObject.GetSafeMonoBehaviourComponent<ScaleRelativeToCamera>();
         // I need the collider sitting over the CmdIcon to be 3D as it's rotation tracks the Cmd object, not the billboarded icon
         Vector2 iconSize = _cmdIconSprite.localSize;
         _cmdIconSize = new Vector3(iconSize.x, iconSize.y, iconSize.x);
+    }
+
+    /// <summary>
+    /// Disables the UISprite right after it is instantiated. Normally I would do this
+    /// in the UISprite.Awake() method, but since I don't control UISprite, I'll do it 
+    /// this way. UnitCreators will enable the icon once unit operations begin.
+    /// </summary>
+    private void __DisableIcon() {
+        if (_cmdIconSprite.enabled) {
+            _cmdIconSprite.enabled = false;
+        }
+        else {
+            // UISprite.Awake() has not yet run so wait, then disable
+            UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
+                D.Assert(_cmdIconSprite.enabled);
+                D.Warn("{0} had to wait to disable UISprite CmdIcon.", Presenter.FullName);
+                _cmdIconSprite.enabled = false;
+            });
+        }
     }
 
     protected void PositionIcon() {

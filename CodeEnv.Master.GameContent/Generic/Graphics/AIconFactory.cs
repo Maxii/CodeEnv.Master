@@ -23,14 +23,17 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
-    /// Singleton. Abstract, generic base Factory that makes instances of IIcon, caches and reuses them. The reuse is critical as 
+    /// Singleton. Abstract, generic base Factory that makes instances of IIcon, caches and reuses them. The reuse is critical as
     /// the object's equality comparer (same instance in memory) is used by the client of the factory
     /// to determine which icon is currently showing.
     /// </summary>
-    public abstract class AIconFactory<IconType, DataType, ClassType> : AGenericSingleton<ClassType>
+    /// <typeparam name="IconType">The type of the Icon.</typeparam>
+    /// <typeparam name="DataType">The type of CommandData.</typeparam>
+    /// <typeparam name="FactoryType">The type of the Factory.</typeparam>
+    public abstract class AIconFactory<IconType, DataType, FactoryType> : AGenericSingleton<FactoryType>
         where IconType : AIcon
         where DataType : ACommandData
-        where ClassType : class {
+        where FactoryType : class {
 
         private static IDictionary<IconSection, IDictionary<IEnumerable<IconSelectionCriteria>, IIcon>> _iconCache;
 

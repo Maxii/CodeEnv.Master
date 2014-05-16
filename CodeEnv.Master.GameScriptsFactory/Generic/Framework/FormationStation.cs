@@ -32,6 +32,8 @@ public class FormationStation : AMonoBase, IFormationStation, IDestinationTarget
         base.Awake();
         _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
         _collider.isTrigger = true;
+        enabled = false;
+        // stations control enabled themselves when AssignedShip changes
     }
 
     void OnTriggerEnter(Collider other) {

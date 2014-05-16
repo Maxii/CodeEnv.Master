@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -29,13 +29,22 @@ using UnityEngine;
 /// </summary>
 public abstract class AMonoBaseSingleton<T> : AMonoBase, IInstanceIdentity where T : AMonoBase {
 
+    #region Debug
+
     private string _instanceID;
 
+    /// <summary>
+    /// Logs the method name called. WARNING:  Coroutines showup as &lt;IEnumerator.MoveNext&gt; rather than the method name
+    /// </summary>
     public override void LogEvent() {
-        // NOTE:  Coroutines don't show the right method name when logged using stacktrace
-        System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
-        D.Log("{0}.{1}{2}.{3}() called.", _transform.name + " (from transform)", GetType().Name, _instanceID, stackFrame.GetMethod().Name);
+        if (DebugSettings.Instance.EnableEventLogging) {
+            System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackFrame(1);
+            string name = _transform.name + "(from transform)";
+            Debug.Log("{0}.{1}{2}.{3}() called.".Inject(name, GetType().Name, _instanceID, stackFrame.GetMethod().Name));
+        }
     }
+
+    #endregion
 
     #region Singleton Pattern
     // NOTE: Acquiring a reference to T.Instance this way DOES NOT cause Awake() to be called when acquired. Awake() is called on its own schedule.

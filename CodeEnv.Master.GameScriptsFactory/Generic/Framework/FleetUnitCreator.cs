@@ -109,9 +109,10 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
         _command.HQElement = RandomExtended<IElementModel>.Choice(candidateHQElements) as ShipModel;
     }
 
-    protected override void DeployUnit() {
+    protected override bool DeployUnit() {
         LogEvent();
         // Fleets don't need to be deployed. They are already on location.
+        return true;
     }
 
     protected override void BeginElementsOperations() {
@@ -127,6 +128,16 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
     protected override void __InitializeCommandIntel() {
         LogEvent();
         _command.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
+    }
+
+    protected override void EnableOtherWhenRunning() {
+        D.Assert(GameStatus.Instance.IsRunning);
+        gameObject.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(relay => relay.enabled = true);
+        gameObject.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeTracker>().ForAll(wrt => wrt.enabled = true);
+        gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>().enabled = true;
+        // formation stations control enabled themselves when the assigned ship changes
+        // no orbits or revolves present  // other possibles: Billboard, ScaleRelativeToCamera
+        // TODO SensorRangeTracker
     }
 
     protected override void IssueFirstUnitCommand() {

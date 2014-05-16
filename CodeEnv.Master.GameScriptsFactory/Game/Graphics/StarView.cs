@@ -16,11 +16,7 @@
 
 // default namespace
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 

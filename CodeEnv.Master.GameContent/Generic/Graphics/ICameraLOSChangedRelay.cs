@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using CodeEnv.Master.Common;
     using UnityEngine;
 
     /// <summary>

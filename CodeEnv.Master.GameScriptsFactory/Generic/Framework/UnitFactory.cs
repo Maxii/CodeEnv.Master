@@ -43,7 +43,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     private GameObject _humanSettlementCmdPrefab;
 
     private WeaponRangeTracker weaponRangeTrackerPrefab;
-    private FormationStation formationStationTrackerPrefab;
+    private FormationStation formationStationPrefab;
 
     private UnitFactory() {
         Initialize();
@@ -66,7 +66,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         _humanSettlementCmdPrefab = reqdPrefabs.humanSettlementCmd.gameObject;
 
         weaponRangeTrackerPrefab = reqdPrefabs.weaponRangeTracker;
-        formationStationTrackerPrefab = reqdPrefabs.formationStationTracker;
+        formationStationPrefab = reqdPrefabs.formationStation;
     }
 
     /// <summary>
@@ -362,22 +362,22 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     public FormationStation MakeFormationStation(Vector3 stationOffset, FleetCmdModel fleetCmd) {
         // make a folder for neatness if one doesn't yet exist
-        GameObject stationTrackerFolder = null;
-        var trackers = fleetCmd.gameObject.GetComponentsInChildren<FormationStation>();
-        if (trackers.IsNullOrEmpty()) {
-            stationTrackerFolder = new GameObject("StationTrackers");
-            UnityUtility.AttachChildToParent(stationTrackerFolder, fleetCmd.gameObject);
-            stationTrackerFolder.layer = (int)Layers.IgnoreRaycast;
+        GameObject formationStationsFolder = null;
+        var stations = fleetCmd.gameObject.GetComponentsInChildren<FormationStation>();
+        if (stations.IsNullOrEmpty()) {
+            formationStationsFolder = new GameObject("FormationStations");
+            UnityUtility.AttachChildToParent(formationStationsFolder, fleetCmd.gameObject);
+            formationStationsFolder.layer = (int)Layers.IgnoreRaycast;
         }
         else {
-            stationTrackerFolder = trackers.First().transform.parent.gameObject;
+            formationStationsFolder = stations.First().transform.parent.gameObject;
         }
 
-        GameObject stGo = UnityUtility.AddChild(stationTrackerFolder, formationStationTrackerPrefab.gameObject);
-        FormationStation st = stGo.GetSafeMonoBehaviourComponent<FormationStation>();
-        st.StationOffset = stationOffset;
+        GameObject stationGo = UnityUtility.AddChild(formationStationsFolder, formationStationPrefab.gameObject);
+        FormationStation station = stationGo.GetSafeMonoBehaviourComponent<FormationStation>();
+        station.StationOffset = stationOffset;
         //D.Log("New FormationStation created at {0}, Offset = {1}, FleetCmd at {2}.", st.transform.position, stationOffset, fleetCmd.transform.position);
-        return st;
+        return station;
     }
 
     private void AttachWeapons(IEnumerable<WeaponStat> weapStats, AUnitElementModel elementModel) {

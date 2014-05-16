@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -61,8 +61,7 @@ public abstract class AItemView : AMonoBase, IViewable, ICameraLOSChangedClient,
     }
 
     protected virtual void OnPlayerIntelCoverageChanged() {
-        string parentName = _transform.parent != null ? _transform.parent.name : "(no parent)";
-        D.Log("{0}.{1}.{2}.OnPlayerIntelCoverageChanged() called. Coverage changed to {3}.", parentName, _transform.name, GetType().Name, PlayerIntel.CurrentCoverage.GetName());
+        CustomLogEvent("Coverage = {0}".Inject(PlayerIntel.CurrentCoverage.GetName()));
         AssessDiscernability();
         if (HudPublisher != null && HudPublisher.IsHudShowing) {
             ShowHud(true);
@@ -70,14 +69,12 @@ public abstract class AItemView : AMonoBase, IViewable, ICameraLOSChangedClient,
     }
 
     protected virtual void OnInCameraLOSChanged() {
-        string parentName = _transform.parent != null ? _transform.parent.name : "(no parent)";
-        D.Log("{0}.{1}.{2}.InCameraLOS now {3}.", parentName, _transform.name, GetType().Name, InCameraLOS);
+        CustomLogEvent("InCameraLOS = {0}".Inject(InCameraLOS));
         AssessDiscernability();
     }
 
     protected virtual void OnIsDiscernibleChanged() {
-        string parentName = _transform.parent != null ? _transform.parent.name : "(no parent)";
-        D.Log("{0}.{1}.{2}.OnIsDiscernibleChanged(), isDiscernible = {3}.", parentName, _transform.name, GetType().Name, IsDiscernible);
+        CustomLogEvent("IsDiscernible = {0}".Inject(IsDiscernible));
         if (!IsDiscernible) {
             ShowHud(false);
         }
@@ -98,8 +95,7 @@ public abstract class AItemView : AMonoBase, IViewable, ICameraLOSChangedClient,
     }
 
     public virtual void AssessDiscernability() {
-        string parentName = _transform.parent != null ? _transform.parent.name : "(no parent)";
-        D.Log("{0}.{1}.{2}.AssessDiscernability() called.", parentName, _transform.name, GetType().Name);
+        CustomLogEvent();
         IsDiscernible = InCameraLOS && PlayerIntel.CurrentCoverage != IntelCoverage.None;
     }
 
@@ -112,6 +108,17 @@ public abstract class AItemView : AMonoBase, IViewable, ICameraLOSChangedClient,
         }
         HudPublisher.ShowHud(toShow, PlayerIntel);
     }
+
+    #region Debug
+
+    [System.Diagnostics.Conditional("DEBUG_LOG")]
+    private void CustomLogEvent(string arg = "") { // custom for this base method as parents don't always exist
+        System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
+        string parentName = _transform.parent != null ? _transform.parent.name : "(no parent)";
+        D.Log("{0}.{1}.{2}.{3}() called. {4}.".Inject(parentName, _transform.name, GetType().Name, stackFrame.GetMethod().Name, arg));
+    }
+
+    #endregion
 
     protected override void OnDestroy() {
         base.OnDestroy();

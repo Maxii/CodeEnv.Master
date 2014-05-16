@@ -26,10 +26,10 @@ using UnityEngine;
 /// </summary>
 public class Billboard : AMonoBase {
 
-    protected Transform cameraTransform;
-
     public bool reverseFacing;
     public bool reverseLabelFacing;
+
+    private Transform _cameraTransform;
 
     protected override void Awake() {
         base.Awake();
@@ -38,7 +38,7 @@ public class Billboard : AMonoBase {
 
     protected override void Start() {
         base.Start();
-        cameraTransform = Camera.main.transform;
+        _cameraTransform = Camera.main.transform;
         TryPrepareLabel();
     }
 
@@ -62,8 +62,8 @@ public class Billboard : AMonoBase {
         // Rotates the billboard t provided so its forward aligns with that of the provided camera's t, ie. the direction the camera is looking.
         // In effect, by adopting the camera's forward direction, the billboard is pointing at the camera's focal plane, not at the camera. 
         // It is the camera's focal plane whose image is projected onto the screen so that is what must be 'looked at'.
-        Vector3 targetPos = _transform.position + cameraTransform.rotation * (reverseFacing ? Vector3.forward : Vector3.back);
-        Vector3 targetOrientation = cameraTransform.rotation * Vector3.up;
+        Vector3 targetPos = _transform.position + _cameraTransform.rotation * (reverseFacing ? Vector3.forward : Vector3.back);
+        Vector3 targetOrientation = _cameraTransform.rotation * Vector3.up;
         _transform.LookAt(targetPos, targetOrientation);
     }
 

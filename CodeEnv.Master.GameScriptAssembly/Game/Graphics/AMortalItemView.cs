@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -18,7 +18,6 @@
 
 using System;
 using System.Collections;
-using System.Diagnostics;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
@@ -28,6 +27,21 @@ using UnityEngine;
 ///  Abstract class managing the UI View for a mortal object.
 ///  </summary>
 public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
+
+    #region Debug
+
+    /// <summary>
+    /// Logs the method name called. WARNING:  Coroutines showup as &lt;IEnumerator.MoveNext&gt; rather than the method name
+    /// </summary>
+    public override void LogEvent() {
+        if (DebugSettings.Instance.EnableEventLogging) {
+            System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackFrame(1);
+            string name = Presenter != null ? Presenter.Model.FullName : _transform.name + "(from transform)";
+            Debug.Log("{0}.{1}.{2}() called.".Inject(name, GetType().Name, stackFrame.GetMethod().Name));
+        }
+    }
+
+    #endregion
 
     public new AMortalItemPresenter Presenter {
         get { return base.Presenter as AMortalItemPresenter; }
@@ -42,6 +56,7 @@ public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
     protected override void Awake() {
         base.Awake();
         _audioSource = UnityUtility.ValidateComponentPresence<AudioSource>(gameObject);
+        LogEvent();
     }
 
     #region Mouse Events
@@ -111,18 +126,6 @@ public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
 
     #endregion
 
-    #region Debug
-
-    /// <summary>
-    /// Logs the event. WARNING:  Coroutines showup as &lt;IEnumerator.MoveNext&gt; rather than the method name
-    /// </summary>
-    public override void LogEvent() {
-        System.Diagnostics.StackFrame stackFrame = new StackFrame(1);
-        string name = Presenter != null ? Presenter.Model.FullName : _transform.name + " (from transform)";
-        D.Log("{0}.{1}.{2}() called.", name, GetType().Name, stackFrame.GetMethod().Name);
-    }
-
-    #endregion
 
     #region ICameraTargetable Members
 
@@ -180,6 +183,7 @@ public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
     }
 
     #endregion
+
 
 }
 

@@ -31,7 +31,7 @@
       <PropertyValue>false</PropertyValue>
     </Setting>
     <Setting>
-      <PropertyName>EnableItemStateLogEvent</PropertyName>
+      <PropertyName>EnableEventLogging</PropertyName>
       <PropertyValue>false</PropertyValue>
     </Setting>
     <Setting>

@@ -51,6 +51,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     protected IList<ElementType> _elements;
     protected CommandType _command;
     protected IPlayer _owner;
+    private bool _isUnitDeployed;
 
     private IList<IDisposable> _subscribers;
     private IGameManager _gameMgr;
@@ -99,11 +100,14 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
         if (gameState == GameState.DeployingUnits) {
             RegisterReadinessForGameStateProgression(GameState.DeployingUnits, isReady: false);
-            DeployUnit();
+            _isUnitDeployed = DeployUnit();
             RegisterReadinessForGameStateProgression(GameState.DeployingUnits, isReady: true);
+            if (!_isUnitDeployed) {
+                Destroy(gameObject);
+            }
         }
 
-        if (gameState == GameState.Running) {
+        if (gameState == GameState.Running && _isUnitDeployed) {
             BeginUnitOperations();
         }
     }
@@ -124,11 +128,14 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
         if (gameState == GameState.DeployingUnits) {
             RegisterReadinessForGameStateProgression(GameState.DeployingUnits, isReady: false);
-            DeployUnit();
+            _isUnitDeployed = DeployUnit();
             RegisterReadinessForGameStateProgression(GameState.DeployingUnits, isReady: true);
+            if (!_isUnitDeployed) {
+                Destroy(gameObject);
+            }
         }
 
-        if (gameState == GameState.Running) {
+        if (gameState == GameState.Running && _isUnitDeployed) {
             var delay = new GameTimeDuration(hourDelay, dayDelay, yearDelay);
             if (delay == default(GameTimeDuration)) {
                 // delayOperations selected but delay is 0 so begin operations now
@@ -160,14 +167,14 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     private void OnCurrentDateChanged(GameDate currentDate) {
         //D.Log("{0} for {1} received OnCurrentDateChanged({2}).", GetType().Name, UnitName, currentDate);
         D.Assert(toDelayOperations);
-        D.Assert(currentDate <= _delayedDateInRuntime);
+        D.Assert(currentDate <= _delayedDateInRuntime, "{0} for {1} recorded current date {2} beyond target date {3}.".Inject(GetType().Name, UnitName, currentDate, _delayedDateInRuntime));
         if (currentDate == _delayedDateInRuntime) {
             if (toDelayBuild) {
-                D.Log("{0} is about to build, deploy and begin ops on Runtime date {1}.", UnitName, _delayedDateInRuntime);
+                D.Log("{0} is about to build, deploy and begin ops on {1}.", UnitName, _delayedDateInRuntime);
                 BuildDeployAndBeginUnitOperations();
             }
             else {
-                D.Log("{0} has already been built and deployed. It is about to begin ops on Runtime date {1}.", UnitName, _delayedDateInRuntime);
+                D.Log("{0} has already been built and deployed. It is about to begin ops on {1}.", UnitName, _delayedDateInRuntime);
                 BeginUnitOperations();
             }
             //D.Log("{0} for {1} is unsubscribing from GameTime.onDateChanged.", GetType().Name, UnitName);
@@ -184,11 +191,8 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     private void PrepareUnitForOperations(Action onCompleted = null) {
         LogEvent();
         _elements = MakeElements();
-        EnableElements();
         _command = MakeCommand(_owner);
-        EnableCommand();
-        UnityUtility.WaitOneToExecute(delegate {
-            // delay 1 frame to make sure elements and command have initialized, then continue
+        EnableUnit(onCompletion: delegate {
             AddElements();
             AssignHQElement();
             if (onCompleted != null) {
@@ -197,7 +201,12 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         });
     }
 
-    protected abstract void DeployUnit();
+    /// <summary>
+    /// Deploys the unit. Returns true if successfully deployed, false
+    /// if not and therefore destroyed.
+    /// </summary>
+    /// <returns></returns>
+    protected abstract bool DeployUnit();
 
     private void BeginUnitOperations() {
         LogEvent();
@@ -206,6 +215,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         BeginCommandOperations();
         UnityUtility.WaitOneToExecute((wasKilled) => {
             // delay 1 frame to allow Element and Command Idling_EnterState to execute
+            EnableOtherWhenRunning();
             IssueFirstUnitCommand();
             RemoveCreatorScript();
         });
@@ -214,10 +224,12 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     private void BuildDeployAndBeginUnitOperations() {
         CreateElementStats();
         PrepareUnitForOperations(onCompleted: delegate {
-            DeployUnit();
-            if (enabled) {  // creator will be disabled if Destroyed during DeployUnit
-                BeginUnitOperations();
+            _isUnitDeployed = DeployUnit();
+            if (!_isUnitDeployed) {
+                Destroy(gameObject);
+                return;
             }
+            BeginUnitOperations();
         });
     }
 
@@ -355,19 +367,40 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     protected abstract CommandType MakeCommand(IPlayer owner);
 
+    #region Enablement
+
+    private void EnableUnit(Action onCompletion = null) {
+        LogEvent();
+        EnableElements();
+        EnableCommand();
+        UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
+            if (onCompletion != null) {
+                onCompletion();
+            }
+        });
+    }
+
     private void EnableElements() {
         LogEvent();
         _elements.ForAll(e => {
             e.enabled = true;
-            (e as Component).gameObject.GetSafeInterface<IViewable>().enabled = true;
+            e.gameObject.GetSafeMonoBehaviourComponent<AItemView>().enabled = true;
         });
     }
 
     private void EnableCommand() {
         LogEvent();
         _command.enabled = true;
-        (_command as Component).gameObject.GetSafeInterface<IViewable>().enabled = true;
+        _command.gameObject.GetSafeMonoBehaviourComponent<AItemView>().enabled = true;
     }
+
+    /// <summary>
+    /// Enables selected children of the command and its elements. e.g. - cameraLOSRelays, WeaponTrackers,
+    /// Revolve and Orbits, etc. These scripts that are enabled should only be enabled on or after IsRunning.
+    /// </summary>
+    protected abstract void EnableOtherWhenRunning();
+
+    #endregion
 
     private void AddElements() {
         LogEvent();

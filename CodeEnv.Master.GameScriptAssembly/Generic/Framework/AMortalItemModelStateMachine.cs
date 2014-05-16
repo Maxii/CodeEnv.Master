@@ -19,7 +19,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using CodeEnv.Master.Common;
@@ -63,13 +62,13 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     #region Debug
 
     /// <summary>
-    /// Logs the event. WARNING:  Coroutines showup as &lt;IEnumerator.MoveNext&gt; rather than the method name
+    /// Logs the method name called. WARNING:  Coroutines showup as &lt;IEnumerator.MoveNext&gt; rather than the method name
     /// </summary>
     public override void LogEvent() {
-        if (DebugSettings.Instance.EnableItemStateLogEvent) {
-            System.Diagnostics.StackFrame stackFrame = new StackFrame(1);
-            string name = Utility.CheckForContent(FullName) ? FullName : _transform.name + " (from transform)";
-            D.Log("{0}.{1}() called.", name, stackFrame.GetMethod().Name);
+        if (DebugSettings.Instance.EnableEventLogging) {
+            System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackFrame(1);
+            string name = Utility.CheckForContent(FullName) ? FullName : _transform.name + "(from transform)";
+            Debug.Log("{0}.{1}.{2}() called.".Inject(name, GetType().Name, stackFrame.GetMethod().Name));
         }
     }
 
@@ -300,7 +299,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     /// <returns>true if a method in the current state was invoked, false if no method is present.</returns>
     protected bool RelayToCurrentState(params object[] param) {
         if (CurrentState == null) { return false; }
-        var message = CurrentState.ToString() + Constants.Underscore + new StackFrame(1).GetMethod().Name;
+        var message = CurrentState.ToString() + Constants.Underscore + new System.Diagnostics.StackFrame(1).GetMethod().Name;
         //D.Log("{0} looking for method signature {1}.", Data.Name, message);
         return SendMessageEx(message, param);
     }
@@ -516,7 +515,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
             //    return;
             //}
             ChangingState();
-            D.Log("{0} setting CurrentState to {1}.", FullName, value.ToString());
+            //D.Log("{0} setting CurrentState to {1}.", FullName, value.ToString());
             state.currentState = value;
             ConfigureCurrentState();
         }

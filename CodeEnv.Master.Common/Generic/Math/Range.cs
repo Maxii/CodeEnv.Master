@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: Range.cs
-// Helper class that holds a range in the form of a min and max and 
+// Immutable helper class that holds a range in the form of a min and max and 
 // provides a simple method to determine whether a value is within that range, inclusive.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -20,12 +20,15 @@ namespace CodeEnv.Master.Common {
     using System;
 
     /// <summary>
-    /// Helper class that holds a range in the form of a min and max and 
+    /// Immutable helper class that holds a range in the form of a min and max and 
     /// provides a simple method to determine whether a value is within
-    /// that range, inclusive.
+    /// that range, inclusive. WARNING: While immutable, this is a class not a struct
+    /// and as such, all equality comparisons use Reference semantics not Value semantics.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public class Range<T> where T : IComparable {
+
+        private static string _toStringFormat = "[{0}-{1}]";
 
         public T Minimum { get; private set; }
 
@@ -73,7 +76,7 @@ namespace CodeEnv.Master.Common {
         /// Presents the Range in readable format
         /// </summary>
         /// <returns>String representation of the Range</returns>
-        public override string ToString() { return String.Format("[{0} - {1}]", Minimum, Maximum); }
+        public override string ToString() { return _toStringFormat.Inject(Minimum, Maximum); }
 
     }
 }
