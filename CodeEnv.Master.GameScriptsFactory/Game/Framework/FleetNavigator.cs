@@ -155,7 +155,7 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
     /// approach or following a course.
     /// </summary>
     public void Engage() {
-        if (IsEngaged) { Disengage(); }
+        Disengage();
 
         if (_course == null) {
             D.Warn("{0} has not plotted a course to {1}. PlotCourse to a destination, then Engage.", _fleet.FullName, Target.FullName);
@@ -175,6 +175,7 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
 
     /// <summary>
     /// Primary external control to disengage the pilot once Engage has been called.
+    /// Does nothing if not already engaged.
     /// </summary>
     public void Disengage() {
         if (IsEngaged) {
@@ -263,7 +264,7 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
     }
 
     /// <summary>
-    /// Engages the ships of the fleet to home-in on the stationary location. No A* course is used.
+    /// Engages the ships of the fleet on a direct course to stationary location. No A* course is used.
     /// </summary>
     /// <param name="stationaryLocation">The stationary location.</param>
     /// <returns></returns>

@@ -30,8 +30,8 @@ namespace CodeEnv.Master.GameContent {
         private class TargetInfo {
 
             /// <summary>
-            /// The target this navigator is trying to reach. Can be a FormationStationTracker, 
-            /// StationaryLocation, UnitCommand or UnitElement.
+            /// The target this navigator is trying to reach. Can be a FormationStation, 
+            /// StationaryLocation, UnitCommand, UnitElement or other MortalItem.
             /// </summary>
             public IDestinationTarget Target { get; private set; }
 
@@ -69,7 +69,7 @@ namespace CodeEnv.Master.GameContent {
             public TargetInfo(StationaryLocation sl, Vector3 fstOffset, float fullSpeed) {
                 Target = sl;
                 Destination = sl.Position + fstOffset;
-                CloseEnoughDistance = fullSpeed * 0.5F;
+                CloseEnoughDistance = fullSpeed;    // FIXME this value does not get adjusted when OnFullSpeedChanged() occurs
                 CloseEnoughDistanceSqrd = CloseEnoughDistance * CloseEnoughDistance;
             }
 
@@ -90,9 +90,11 @@ namespace CodeEnv.Master.GameContent {
             public TargetInfo(IMortalTarget planetoid, Vector3 fstOffset, float standoffDistance) {
                 Target = planetoid;
                 Destination = planetoid.Position + fstOffset;
-                CloseEnoughDistance = planetoid.Radius + standoffDistance;
+                CloseEnoughDistance = planetoid.Radius + standoffDistance;      // TODO should account for keepoutRadius
                 CloseEnoughDistanceSqrd = CloseEnoughDistance * CloseEnoughDistance;
             }
+
+            // TODO Star and System should be acceptable targets too
         }
 
         /// <summary>
@@ -118,6 +120,8 @@ namespace CodeEnv.Master.GameContent {
         public Speed Speed { get; private set; }
 
         public bool IsBearingConfirmed { get; private set; }
+        // always accurate but expensive
+        //public bool IsBearingConfirmed { get { return _data.CurrentHeading.IsSameDirection(_data.RequestedHeading, 1F); } } 
 
         public bool IsAutoPilotEngaged {
             get { return _pilotJob != null && _pilotJob.IsRunning; }
@@ -156,6 +160,9 @@ namespace CodeEnv.Master.GameContent {
         /// every second at a speed of 1 unit per day and normal gamespeed.
         /// </summary>
         private float _courseProgressCheckPeriod = 1F;
+
+        private float _waypointCloseEnoughDistance;
+        private float _waypointCloseEnoughDistanceSqrd;
 
         private TargetInfo _targetInfo;
         private ShipData _data;
@@ -303,12 +310,17 @@ namespace CodeEnv.Master.GameContent {
             PlotCourse();
         }
 
+        //private void PlotCourse() {
+        //    InitializeTargetValues();
+        //    if (!CheckApproachTo(_targetInfo.Destination)) {
+        //        OnCoursePlotFailure();
+        //        return;
+        //    }
+        //    OnCoursePlotSuccess();
+        //}
+
         private void PlotCourse() {
             InitializeTargetValues();
-            if (!CheckApproachTo(_targetInfo.Destination)) {
-                OnCoursePlotFailure();
-                return;
-            }
             OnCoursePlotSuccess();
         }
 
@@ -318,15 +330,27 @@ namespace CodeEnv.Master.GameContent {
         /// Engages pilot execution to destination by direct
         /// approach. A ship does not use A* pathing.
         /// </summary>
+        //public void EngageAutoPilot() {
+        //    if (_pilotJob != null && _pilotJob.IsRunning) {
+        //        _pilotJob.Kill();
+        //    }
+        //    _pilotJob = new Job(EngageDirectCourseToTarget(), true);
+        //}
+
         public void EngageAutoPilot() {
-            if (_pilotJob != null && _pilotJob.IsRunning) {
-                _pilotJob.Kill();
+            DisengageAutoPilot();
+            if (CheckApproachTo(_targetInfo.Destination)) {
+                InitiateDirectCourseToTarget();
             }
-            _pilotJob = new Job(EngageDirectCourseToTarget(), true);
+            else {
+                InitiateCourseAroundObstacleTo(_targetInfo.Destination);
+            }
         }
+
 
         /// <summary>
         /// Primary external control to disengage the pilot once Engage has been called.
+        /// Does nothing if not already Engaged.
         /// </summary>
         public void DisengageAutoPilot() {
             if (IsAutoPilotEngaged) {
@@ -468,11 +492,16 @@ namespace CodeEnv.Master.GameContent {
                     isSpeedChecked = AdjustSpeedOnHeadingConfirmation();
                 }
                 Vector3 correctedHeading;
-                if (CheckForCourseCorrection(distanceToDestinationSqrd, out correctedHeading, ref courseCorrectionCheckCountdown)) {
+                if (CheckForCourseCorrection(_targetInfo.Destination, distanceToDestinationSqrd, out correctedHeading, ref courseCorrectionCheckCountdown)) {
                     D.Log("{0} is making a midcourse correction of {1:0.00} degrees.", _ship.FullName, Vector3.Angle(correctedHeading, _data.RequestedHeading));
                     AdjustHeadingAndSpeedForTurn(correctedHeading);
                     isSpeedChecked = false;
                 }
+
+                if (!CheckApproachTo(_targetInfo.Destination)) {    // TODO make less frequent
+                    InitiateCourseAroundObstacleTo(_targetInfo.Destination);
+                }
+
                 if (CheckSeparation(distanceToDestinationSqrd, ref previousDistanceSqrd)) {
                     // we've missed the target or its getting away
                     OnCourseTrackingError();
@@ -515,7 +544,40 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="correctedHeading">The corrected heading.</param>
         /// <param name="checkCount">The check count. When the value reaches 0, the course is checked.</param>
         /// <returns>true if a course correction to <c>correctedHeading</c> is needed.</returns>
-        private bool CheckForCourseCorrection(float distanceToDestinationSqrd, out Vector3 correctedHeading, ref int checkCount) {
+        //private bool CheckForCourseCorrection(float distanceToDestinationSqrd, out Vector3 correctedHeading, ref int checkCount) {
+        //    if (distanceToDestinationSqrd < _courseCorrectionCheckDistanceThresholdSqrd) {
+        //        checkCount = 0;
+        //    }
+        //    if (checkCount == 0) {
+        //        // check the course
+        //        //D.Log("{0} is attempting to check its course.", Data.Name);
+        //        if (IsBearingConfirmed) {
+        //            Vector3 testHeading = (_targetInfo.Destination - _data.Position);
+        //            if (!testHeading.IsSameDirection(_data.RequestedHeading, 1F)) {
+        //                correctedHeading = testHeading.normalized;
+        //                return true;
+        //            }
+        //        }
+        //        checkCount = _courseCorrectionCheckCountSetting;
+        //    }
+        //    else {
+        //        checkCount--;
+        //    }
+        //    correctedHeading = Vector3.zero;
+        //    return false;
+        //}
+
+        /// <summary>
+        /// Checks the course and provides any heading corrections needed.
+        /// </summary>
+        /// <param name="currentDestination">The current destination.</param>
+        /// <param name="distanceToDestinationSqrd">The distance to destination SQRD.</param>
+        /// <param name="correctedHeading">The corrected heading.</param>
+        /// <param name="checkCount">The check count. When the value reaches 0, the course is checked.</param>
+        /// <returns>
+        /// true if a course correction to <c>correctedHeading</c> is needed.
+        /// </returns>
+        private bool CheckForCourseCorrection(Vector3 currentDestination, float distanceToDestinationSqrd, out Vector3 correctedHeading, ref int checkCount) {
             if (distanceToDestinationSqrd < _courseCorrectionCheckDistanceThresholdSqrd) {
                 checkCount = 0;
             }
@@ -523,7 +585,7 @@ namespace CodeEnv.Master.GameContent {
                 // check the course
                 //D.Log("{0} is attempting to check its course.", Data.Name);
                 if (IsBearingConfirmed) {
-                    Vector3 testHeading = (_targetInfo.Destination - _data.Position);
+                    Vector3 testHeading = (currentDestination - _data.Position);
                     if (!testHeading.IsSameDirection(_data.RequestedHeading, 1F)) {
                         correctedHeading = testHeading.normalized;
                         return true;
@@ -537,6 +599,7 @@ namespace CodeEnv.Master.GameContent {
             correctedHeading = Vector3.zero;
             return false;
         }
+
 
         private void OnCoursePlotFailure() {
             var temp = onCoursePlotFailure;
@@ -593,6 +656,10 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes the values that depend on the target and speed.
         /// </summary>
         private void InitializeTargetValues() {
+            // IMPROVE proportional to actual Speed? Sync with TargetInfo(StationaryLocation) constructor
+            _waypointCloseEnoughDistance = _data.FullSpeed; // no need for gameSpeedMultiplier as check frequency accounts for it
+            _waypointCloseEnoughDistanceSqrd = _waypointCloseEnoughDistance * _waypointCloseEnoughDistance;
+
             float speedFactor = _data.FullSpeed * _gameSpeedMultiplier * 3F;
             __separationTestToleranceDistanceSqrd = speedFactor * speedFactor;   // FIXME needs work - courseUpdatePeriod???
             //D.Log("{0} SeparationToleranceSqrd = {1}, FullSpeed = {2}.", Data.FullName, __separationTestToleranceDistanceSqrd, Data.FullSpeed);
@@ -608,6 +675,10 @@ namespace CodeEnv.Master.GameContent {
             }
             _courseCorrectionCheckDistanceThresholdSqrd = Mathf.Max(_courseCorrectionCheckDistanceThresholdSqrd, _targetInfo.CloseEnoughDistanceSqrd * 2);
             //D.Log("{0}: CourseCheckPeriod = {1}, CourseCheckDistanceThreshold = {2}.", Data.FullName, _courseHeadingCheckPeriod, Mathf.Sqrt(_courseHeadingCheckDistanceThresholdSqrd));
+
+            // heading change coroutine could be interrupted immediately after begun leaving isBearingConfirmed false, even while it is still actually true
+            // if the first move command was to proceed on the current bearing, then no turn would begin to fix this state, and isBearing would never become true
+            IsBearingConfirmed = _data.CurrentHeading.IsSameDirection(_data.RequestedHeading, 1F);
         }
 
         /// <summary>
@@ -621,12 +692,13 @@ namespace CodeEnv.Master.GameContent {
             Vector3 currentPosition = _data.Position;
             Vector3 vectorToLocation = location - currentPosition;
             float distanceToLocation = vectorToLocation.magnitude;
-            if (distanceToLocation < _targetInfo.CloseEnoughDistance) {
+            float closeEnoughDistance = location.IsSame(_targetInfo.Destination) ? _targetInfo.CloseEnoughDistance : _waypointCloseEnoughDistance;
+            if (distanceToLocation < closeEnoughDistance) {
                 // already inside close enough distance
                 return true;
             }
             Vector3 directionToLocation = vectorToLocation.normalized;
-            float rayDistance = distanceToLocation - _targetInfo.CloseEnoughDistance;
+            float rayDistance = distanceToLocation - closeEnoughDistance;
             float clampedRayDistance = Mathf.Clamp(rayDistance, 0.1F, Mathf.Infinity);
             RaycastHit hitInfo;
             if (Physics.Raycast(currentPosition, directionToLocation, out hitInfo, clampedRayDistance, _keepoutOnlyLayerMask.value)) {
@@ -637,6 +709,149 @@ namespace CodeEnv.Master.GameContent {
             return true;
         }
 
+
+        private void InitiateDirectCourseToTarget() {
+            D.Log("{0} initiating direct course to target {1}. Distance: {2}.", _ship.FullName, _targetInfo.Target.FullName, Vector3.Magnitude(_targetInfo.Destination - _data.Position));
+            D.Assert(!IsAutoPilotEngaged);
+            _pilotJob = new Job(EngageDirectCourseToTarget(), true);
+        }
+
+        private void InitiateCourseAroundObstacleTo(Vector3 location) {
+            D.Log("{0} initiating course to avoid obstacle to {1}. Distance: {2}.", _ship.FullName, location, Vector3.Distance(_data.Position, location));
+            DisengageAutoPilot();   // can be called while already engaged
+            // even if this is an obstacle that has appeared on the way to another obstacle avoidance waypoint, go around it, then try direct to target
+            Vector3 waypointAroundObstacle = GetWaypointAroundObstacleTo(location);
+            _pilotJob = new Job(EngageDirectCourseTo(waypointAroundObstacle), true);
+            _pilotJob.CreateAndAddChildJob(EngageDirectCourseToTarget());
+        }
+
+        /// <summary>
+        /// Finds the obstacle obstructing a direct course to the location and develops and
+        /// returns a waypoint that will avoid it.
+        /// </summary>
+        /// <param name="location">The location we are trying to reach that has an obstacle in the way.</param>
+        /// <returns>A waypoint location that will avoid the obstacle.</returns>
+        private Vector3 GetWaypointAroundObstacleTo(Vector3 location) {
+            Vector3 currentPosition = _data.Position;
+            Vector3 vectorToLocation = location - currentPosition;
+            float distanceToLocation = vectorToLocation.magnitude;
+            Vector3 directionToLocation = vectorToLocation.normalized;
+
+            Vector3 waypoint = Vector3.zero;
+
+            Ray ray = new Ray(currentPosition, directionToLocation);
+            RaycastHit hitInfo;
+            if (Physics.Raycast(ray, out hitInfo, distanceToLocation, _keepoutOnlyLayerMask.value)) {
+                // found a keepout zone, so find the point on the other side of the zone where the ray came out
+                string obstacleName = hitInfo.collider.transform.parent.name + "." + hitInfo.collider.name;
+                Vector3 rayEntryPoint = hitInfo.point;
+                float keepoutRadius = (hitInfo.collider as SphereCollider).radius;
+                float maxKeepoutDiameter = TempGameValues.MaxKeepoutRadius * 2F;
+                Vector3 pointBeyondKeepoutZone = ray.GetPoint(hitInfo.distance + maxKeepoutDiameter);
+                if (Physics.Raycast(pointBeyondKeepoutZone, -ray.direction, out hitInfo, maxKeepoutDiameter, _keepoutOnlyLayerMask.value)) {
+                    Vector3 rayExitPoint = hitInfo.point;
+                    Vector3 halfWayPointInsideKeepoutZone = rayEntryPoint + (rayExitPoint - rayEntryPoint) / 2F;
+                    Vector3 obstacleCenter = hitInfo.collider.transform.position;
+                    waypoint = obstacleCenter + (halfWayPointInsideKeepoutZone - obstacleCenter).normalized * (keepoutRadius + _targetInfo.CloseEnoughDistance);
+                    D.Log("{0}'s waypoint to avoid obstacle = {1}.", _ship.FullName, waypoint);
+                }
+                else {
+                    D.Error("{0} did not find a ray exit point when casting through {1}.", _ship.FullName, obstacleName);    // hitInfo is null
+                }
+            }
+            else {
+                D.Error("{0} did not find an obstacle.", _ship.FullName);
+            }
+            return waypoint;
+        }
+
+
+
+
+        /// <summary>
+        /// Engages the ships of the fleet on a direct course to stationary location. No A* course is used.
+        /// </summary>
+        /// <param name="stationaryLocation">The stationary location.</param>
+        /// <returns></returns>
+        private IEnumerator EngageDirectCourseTo(Vector3 stationaryLocation) {
+            D.Log("{0} beginning prep for direct course to {1}. Distance: {2}.",
+                _ship.FullName, stationaryLocation, Vector3.Magnitude(stationaryLocation - _data.Position));
+            Vector3 newHeading = (stationaryLocation - _data.Position).normalized;
+            if (!newHeading.IsSameDirection(_data.RequestedHeading, 0.1F)) {
+                ChangeHeading(newHeading);
+            }
+            if (_isFleetMove) {
+                while (!_ship.Command.IsBearingConfirmed) {
+                    // wait here until the fleet is ready for departure
+                    yield return null;
+                }
+            }
+            D.Log("Fleet has matched bearing. {0} powering up. Distance to {1}: {2}.",
+                _ship.FullName, stationaryLocation, Vector3.Magnitude(stationaryLocation - _data.Position));
+
+            int courseCorrectionCheckCountdown = _courseCorrectionCheckCountSetting;
+            bool isSpeedChecked = false;
+
+            float distanceToDestinationSqrd = Vector3.SqrMagnitude(stationaryLocation - _data.Position);
+            float previousDistanceSqrd = distanceToDestinationSqrd;
+
+            while (distanceToDestinationSqrd > _waypointCloseEnoughDistanceSqrd) {
+                D.Log("{0} distance to {1} = {2}.", _ship.FullName, stationaryLocation, Vector3.Magnitude(stationaryLocation - _data.Position));
+                if (!isSpeedChecked) {    // adjusts speed as a oneshot until we get there
+                    isSpeedChecked = AdjustSpeedOnHeadingConfirmation();
+                }
+                Vector3 correctedHeading;
+                if (CheckForCourseCorrection(stationaryLocation, distanceToDestinationSqrd, out correctedHeading, ref courseCorrectionCheckCountdown)) {
+                    D.Log("{0} is making a midcourse correction of {1:0.00} degrees.", _ship.FullName, Vector3.Angle(correctedHeading, _data.RequestedHeading));
+                    AdjustHeadingAndSpeedForTurn(correctedHeading);
+                    isSpeedChecked = false;
+                }
+
+                if (!CheckApproachTo(stationaryLocation)) {    // TODO make less frequent
+                    InitiateCourseAroundObstacleTo(stationaryLocation);
+                }
+
+                if (CheckSeparation(distanceToDestinationSqrd, ref previousDistanceSqrd)) {
+                    // we've missed the target or its getting away
+                    OnCourseTrackingError();
+                    yield break;
+                }
+                distanceToDestinationSqrd = Vector3.SqrMagnitude(stationaryLocation - _data.Position);
+                yield return new WaitForSeconds(_courseProgressCheckPeriod);
+            }
+            D.Log("{0} has arrived at {1}.", _ship.FullName, stationaryLocation);
+        }
+
+
+
+
+
+
+
+
+
+
+
+        ///// <summary>
+        ///// Checks whether the distance between this ship and its destination is increasing.
+        ///// </summary>
+        ///// <param name="distanceToCurrentDestinationSqrd">The current distance to the destination SQRD.</param>
+        ///// <param name="previousDistanceSqrd">The previous distance SQRD.</param>
+        ///// <returns>true if the separation distance is increasing.</returns>
+        //private bool CheckSeparation(float distanceToCurrentDestinationSqrd, ref float previousDistanceSqrd) {
+        //    if (distanceToCurrentDestinationSqrd > previousDistanceSqrd + __separationTestToleranceDistanceSqrd) {
+        //        D.Warn("{0} separating from {1}. DistanceSqrd = {2}, previousSqrd = {3}, tolerance = {4}.", _ship.FullName,
+        //            _targetInfo.Target.FullName, distanceToCurrentDestinationSqrd, previousDistanceSqrd, __separationTestToleranceDistanceSqrd);
+        //        return true;
+        //    }
+        //    if (distanceToCurrentDestinationSqrd < previousDistanceSqrd) {
+        //        // while we continue to move closer to the current destination, keep previous distance current
+        //        // once we start to move away, we must not update it if we want the tolerance check to catch it
+        //        previousDistanceSqrd = distanceToCurrentDestinationSqrd;
+        //    }
+        //    return false;
+        //}
+
         /// <summary>
         /// Checks whether the distance between this ship and its destination is increasing.
         /// </summary>
@@ -645,8 +860,8 @@ namespace CodeEnv.Master.GameContent {
         /// <returns>true if the separation distance is increasing.</returns>
         private bool CheckSeparation(float distanceToCurrentDestinationSqrd, ref float previousDistanceSqrd) {
             if (distanceToCurrentDestinationSqrd > previousDistanceSqrd + __separationTestToleranceDistanceSqrd) {
-                D.Warn("{0} separating from {1}. DistanceSqrd = {2}, previousSqrd = {3}, tolerance = {4}.", _ship.FullName,
-                    _targetInfo.Target.FullName, distanceToCurrentDestinationSqrd, previousDistanceSqrd, __separationTestToleranceDistanceSqrd);
+                D.Warn("{0} is separating from current destination. DistanceSqrd = {1}, previousSqrd = {2}, tolerance = {3}.", _ship.FullName,
+                    distanceToCurrentDestinationSqrd, previousDistanceSqrd, __separationTestToleranceDistanceSqrd);
                 return true;
             }
             if (distanceToCurrentDestinationSqrd < previousDistanceSqrd) {
@@ -656,6 +871,7 @@ namespace CodeEnv.Master.GameContent {
             }
             return false;
         }
+
 
         private void AssessFrequencyOfCourseProgressChecks() {
             // frequency of course progress checks increases as fullSpeed and gameSpeed increase

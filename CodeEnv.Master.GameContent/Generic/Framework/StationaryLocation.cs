@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: StationaryLocation.cs
-// A dummy ITarget wrapping a stationary location.
+// A dummy IDestinationTarget wrapping a stationary location.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// A dummy ITarget wrapping a stationary location.
+    /// A dummy IDestinationTarget wrapping a stationary location.
     /// </summary>
     public class StationaryLocation : IDestinationTarget {
 

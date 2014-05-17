@@ -48,6 +48,10 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     public FleetNavigator Navigator { get; private set; }
 
+    public bool IsBearingConfirmed {
+        get { return Elements.All(e => (e as ShipModel).IsBearingConfirmed); }
+    }
+
     /// <summary>
     /// The formation's stations.
     /// </summary>
@@ -229,10 +233,6 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     public void __IssueShipMovementOrders(IDestinationTarget target, Speed speed, float standoffDistance = Constants.ZeroF) {
         var shipMoveToOrder = new ShipOrder(ShipOrders.MoveTo, OrderSource.UnitCommand, target, speed, standoffDistance);
         Elements.ForAll(e => (e as ShipModel).CurrentOrder = shipMoveToOrder);
-    }
-
-    public bool IsBearingConfirmed {
-        get { return Elements.All(e => (e as ShipModel).IsBearingConfirmed); }
     }
 
     protected override void KillCommand() {
