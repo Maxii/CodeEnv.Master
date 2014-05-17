@@ -144,7 +144,7 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
     public void PlotCourse(IDestinationTarget target, Speed speed) {
         Target = target;
         Speed = speed;
-        D.Assert(speed != Speed.AllStop, "Designated speed to new target {0} is 0!".Inject(target.FullName));
+        D.Assert(speed != Speed.AllStop, "{0} designated speed to new target {1} is 0!".Inject(_fleet.FullName, target.FullName));
         InitializeTargetValues();
         InitializeReplotValues();
         GenerateCourse();
@@ -155,17 +155,15 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
     /// approach or following a course.
     /// </summary>
     public void Engage() {
-        if (_pilotJob != null && _pilotJob.IsRunning) {
-            _pilotJob.Kill();
-        }
+        if (IsEngaged) { Disengage(); }
 
         if (_course == null) {
-            D.Warn("A course to {0} has not been plotted. PlotCourse to a destination, then Engage.");
+            D.Warn("{0} has not plotted a course to {1}. PlotCourse to a destination, then Engage.", _fleet.FullName, Target.FullName);
             return;
         }
         if (___CheckTargetIsLocal()) {
             if (CheckApproachTo(Destination)) {
-                InitiateHomingCourseToTarget();
+                InitiateDirectCourseToTarget();
             }
             else {
                 InitiateCourseAroundObstacleTo(Destination);
@@ -180,7 +178,7 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
     /// </summary>
     public void Disengage() {
         if (IsEngaged) {
-            D.Log("{0} Navigator disengaging.", _data.FullName);
+            D.Log("{0} Navigator disengaging.", _fleet.FullName);
             _pilotJob.Kill();
         }
     }
@@ -190,9 +188,10 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
     /// </summary>
     /// <returns></returns>
     private IEnumerator EngageWaypointCourse() {
-        //D.Log("{0} initiating coroutine to follow course to {1}.", Data.Name, Destination);
+        D.Log("{0} initiating waypoint course to target {1}. Distance: {2}.",
+            _fleet.FullName, Target.FullName, Vector3.Magnitude(Destination - _data.Position));
         if (_course == null) {
-            D.Error("{0}'s course to {1} is null. Exiting coroutine.", _data.Name, Destination);
+            D.Error("{0}'s course to {1} is null. Exiting coroutine.", _fleet.FullName, Destination);
             yield break;    // exit immediately
         }
 
@@ -206,7 +205,7 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
             if (distanceToWaypointSqrd < _closeEnoughDistanceToTargetSqrd) {
                 if (___CheckTargetIsLocal()) {
                     if (CheckApproachTo(Destination)) {
-                        InitiateHomingCourseToTarget();
+                        InitiateDirectCourseToTarget();
                     }
                     else {
                         InitiateCourseAroundObstacleTo(Destination);
@@ -216,10 +215,10 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
                     _currentWaypointIndex++;
                     if (_currentWaypointIndex == _course.Count) {
                         // arrived at final waypoint
-                        D.Log("{0} has reached final waypoint {1} at {2}.", _data.FullName, _currentWaypointIndex - 1, currentWaypointPosition);
+                        D.Log("{0} has reached final waypoint {1} at {2}.", _fleet.FullName, _currentWaypointIndex - 1, currentWaypointPosition);
                         continue;
                     }
-                    D.Log("{0} has reached Waypoint_{1} at {2}. Current destination is now Waypoint_{3} at {4}.", _data.FullName,
+                    D.Log("{0} has reached Waypoint_{1} at {2}. Current destination is now Waypoint_{3} at {4}.", _fleet.FullName,
                         _currentWaypointIndex - 1, currentWaypointPosition, _currentWaypointIndex, _course[_currentWaypointIndex]);
 
                     currentWaypointPosition = _course[_currentWaypointIndex];
@@ -244,20 +243,20 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
         }
         else {
             // the final waypoint is not close enough and we can't directly approach the Destination
-            D.Warn("{0} reached final waypoint, but {1} from {2} with obstacles in between.", _data.FullName, Vector3.Distance(Destination, _data.Position), Target.FullName);
+            D.Warn("{0} reached final waypoint, but {1} from {2} with obstacles in between.", _fleet.FullName, Vector3.Distance(Destination, _data.Position), Target.FullName);
             OnCourseTrackingError();
         }
     }
 
     /// <summary>
-    /// Engages the ships of the fleet to home-in on the Target. No A* course is used.
+    /// Engages the ships of the fleet in a direct course to the Target. No A* course is used.
     /// </summary>
     /// <returns></returns>
-    private IEnumerator EngageHomingCourseToTarget() {
+    private IEnumerator EngageDirectCourseToTarget() {
         _fleet.__IssueShipMovementOrders(Target, Speed, CloseEnoughDistanceToTarget);
         float sqrDistance;
         while ((sqrDistance = Vector3.SqrMagnitude(Destination - _data.Position)) > _closeEnoughDistanceToTargetSqrd) {
-            //D.Log("{0} (homing) distance to {1} is {2}.", _fleet.FullName, Target.FullName, Mathf.Sqrt(sqrDistance));
+            D.Log("{0} in route to target {1}. Distance: {2}.", _fleet.FullName, Target.FullName, Vector3.Magnitude(Destination - _data.Position));
             yield return new WaitForSeconds(_courseProgressCheckPeriod);
         }
         OnDestinationReached();
@@ -268,12 +267,13 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
     /// </summary>
     /// <param name="stationaryLocation">The stationary location.</param>
     /// <returns></returns>
-    private IEnumerator EngageHomingCourseTo(Vector3 stationaryLocation) {
+    private IEnumerator EngageDirectCourseTo(Vector3 stationaryLocation) {
         _fleet.__IssueShipMovementOrders(new StationaryLocation(stationaryLocation), Speed);
         while (Vector3.SqrMagnitude(stationaryLocation - _data.Position) > _closeEnoughDistanceToTargetSqrd) {
+            D.Log("{0} in route to {1}. Distance: {2}", _fleet.FullName, stationaryLocation, Vector3.Magnitude(stationaryLocation - _data.Position));
             yield return new WaitForSeconds(_courseProgressCheckPeriod);
         }
-        D.Log("{0} has arrived at {1}.", _data.FullName, stationaryLocation);
+        D.Log("{0} has arrived at {1}.", _fleet.FullName, stationaryLocation);
     }
 
     private void OnCoursePlotCompleted(Path course) {
@@ -297,7 +297,7 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
                 Engage();
             }
             else {
-                D.Warn("{0}'s course to {1} couldn't be replotted.", _data.FullName, Target.FullName);
+                D.Warn("{0}'s course to {1} couldn't be replotted.", _fleet.FullName, Target.FullName);
                 OnCoursePlotFailure();
             }
         }
@@ -332,7 +332,7 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
 
     private void OnDestinationReached() {
         _pilotJob.Kill();
-        D.Log("{0} at {1} reached Destination {2} at {3} (w/station offset). Actual proximity {4:0.0000} units.", _data.FullName, _data.Position, Target.FullName, Destination, Vector3.Distance(Destination, _data.Position));
+        D.Log("{0} at {1} reached Destination {2} at {3} (w/station offset). Actual proximity {4:0.0000} units.", _fleet.FullName, _data.Position, Target.FullName, Destination, Vector3.Distance(Destination, _data.Position));
         var temp = onDestinationReached;
         if (temp != null) {
             temp();
@@ -349,28 +349,28 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
         _course.Clear();
     }
 
-    private void InitiateHomingCourseToTarget() {
-        D.Log("{0} initiating homing course to Target {1}. Distance to target = {2}.", _fleet.FullName, Target.FullName, Vector3.Distance(_data.Position, Destination));
+    private void InitiateDirectCourseToTarget() {
+        D.Log("{0} initiating direct course to target {1}. Distance: {2}.", _fleet.FullName, Target.FullName, Vector3.Magnitude(Destination - _data.Position));
         if (_pilotJob != null && _pilotJob.IsRunning) {
             _pilotJob.Kill();
         }
-        _pilotJob = new Job(EngageHomingCourseToTarget(), true);
+        _pilotJob = new Job(EngageDirectCourseToTarget(), true);
     }
 
     private void InitiateCourseAroundObstacleTo(Vector3 location) {
-        D.Log("{0} initiating obstacle avoidance course. Distance to obstacle avoidance destination = {1}.", Vector3.Distance(_data.Position, location));
+        D.Log("{0} initiating course to avoid obstacle to {1}. Distance: {2}.", _fleet.FullName, location, Vector3.Distance(_data.Position, location));
         if (_pilotJob != null && _pilotJob.IsRunning) {
             _pilotJob.Kill();
         }
 
         Vector3 waypointAroundObstacle = GetWaypointAroundObstacleTo(location);
-        _pilotJob = new Job(EngageHomingCourseTo(waypointAroundObstacle), true);
-        _pilotJob.CreateAndAddChildJob(EngageHomingCourseToTarget());
+        _pilotJob = new Job(EngageDirectCourseTo(waypointAroundObstacle), true);
+        _pilotJob.CreateAndAddChildJob(EngageDirectCourseToTarget());
     }
 
     /// <summary>
-    /// Finds the obstacle in the way of approaching location and develops and
-    /// returns a waypoint location that will avoid it.
+    /// Finds the obstacle obstructing a direct course to the location and develops and
+    /// returns a waypoint that will avoid it.
     /// </summary>
     /// <param name="location">The location we are trying to reach that has an obstacle in the way.</param>
     /// <returns>A waypoint location that will avoid the obstacle.</returns>
@@ -396,14 +396,14 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
                 Vector3 halfWayPointInsideKeepoutZone = rayEntryPoint + (rayExitPoint - rayEntryPoint) / 2F;
                 Vector3 obstacleCenter = hitInfo.collider.transform.position;
                 waypoint = obstacleCenter + (halfWayPointInsideKeepoutZone - obstacleCenter).normalized * (keepoutRadius + CloseEnoughDistanceToTarget);
-                D.Log("{0}'s waypoint to avoid obstacle = {1}.", _data.FullName, waypoint);
+                D.Log("{0}'s waypoint to avoid obstacle = {1}.", _fleet.FullName, waypoint);
             }
             else {
-                D.Error("{0} did not find a ray exit point when casting through {1}.", _data.FullName, obstacleName);    // hitInfo is null
+                D.Error("{0} did not find a ray exit point when casting through {1}.", _fleet.FullName, obstacleName);    // hitInfo is null
             }
         }
         else {
-            D.Error("{0} did not find an obstacle.", _data.FullName);
+            D.Error("{0} did not find an obstacle.", _fleet.FullName);
         }
         return waypoint;
     }
@@ -444,7 +444,7 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
         float clampedRayDistance = Mathf.Clamp(rayDistance, 0.1F, Mathf.Infinity);
         RaycastHit hitInfo;
         if (Physics.Raycast(currentPosition, directionToLocation, out hitInfo, clampedRayDistance, _keepoutOnlyLayerMask.value)) {
-            D.Log("{0} encountered obstacle {1} when checking approach to {2}.", _data.FullName, hitInfo.collider.name, location);
+            D.Log("{0} encountered obstacle {1} when checking approach to {2}.", _fleet.FullName, hitInfo.collider.name, location);
             // there is a keepout zone obstacle in the way 
             return false;
         }
@@ -478,8 +478,8 @@ public class FleetNavigator : APropertyChangeTracking, IDisposable {
 
     private void GenerateCourse() {
         Vector3 start = _data.Position;
-        string replot = _isCourseReplot ? "replotted" : "plotted";
-        D.Log("Course being {0}. Start = {1}, Destination = {2}.", replot, start, Destination);
+        string replot = _isCourseReplot ? "replotting" : "plotting";
+        D.Log("{0} is {1} course to {2}. Start = {3}, Destination = {4}.", _fleet.FullName, replot, Target.FullName, start, Destination);
         //Debug.DrawLine(start, Destination, Color.yellow, 20F, false);
         //Path path = new Path(startPosition, targetPosition, null);    // Path is now abstract
         //Path path = PathPool<ABPath>.GetPath();   // don't know how to assign start and target points

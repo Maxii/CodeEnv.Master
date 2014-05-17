@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -196,8 +196,7 @@ namespace CodeEnv.Master.GameContent {
         #region PlotCourse
 
         /// <summary>
-        /// Plots the course to the target and notifies the requester of the 
-        /// outcome via the onCoursePlotSuccess or Failure events.
+        /// Plots the course to the target and notifies the requester of the outcome via the onCoursePlotSuccess or Failure events.
         /// </summary>
         /// <param name="target">The target.</param>
         /// <param name="speed">The speed.</param>
@@ -323,7 +322,7 @@ namespace CodeEnv.Master.GameContent {
             if (_pilotJob != null && _pilotJob.IsRunning) {
                 _pilotJob.Kill();
             }
-            _pilotJob = new Job(EngageHomingCourseToTarget(), true);
+            _pilotJob = new Job(EngageDirectCourseToTarget(), true);
         }
 
         /// <summary>
@@ -438,11 +437,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Engages pilot execution of a direct homing course to the Target. No A* course is used.
+        /// Engages pilot execution of a direct course to the Target. No A* course is used.
         /// </summary>
         /// <returns></returns>
-        private IEnumerator EngageHomingCourseToTarget() {
-            //D.Log("{0} initiating coroutine for homing course to {0}.", _ship.FullName, _targetInfo.Destination);
+        private IEnumerator EngageDirectCourseToTarget() {
+            D.Log("{0} beginning prep for direct course to target {1}. Distance: {2}.",
+                _ship.FullName, _targetInfo.Target.FullName, Vector3.Magnitude(_targetInfo.Destination - _data.Position));
             Vector3 newHeading = (_targetInfo.Destination - _data.Position).normalized;
             if (!newHeading.IsSameDirection(_data.RequestedHeading, 0.1F)) {
                 ChangeHeading(newHeading);
@@ -453,7 +453,8 @@ namespace CodeEnv.Master.GameContent {
                     yield return null;
                 }
             }
-            D.Log("{0} powering up for homing course to {1}.", _ship.FullName, _targetInfo.Destination);
+            D.Log("Fleet has matched bearing. {0} powering up. Distance to target {1}: {2}.",
+                _ship.FullName, _targetInfo.Target.FullName, Vector3.Magnitude(_targetInfo.Destination - _data.Position));
 
             int courseCorrectionCheckCountdown = _courseCorrectionCheckCountSetting;
             bool isSpeedChecked = false;
@@ -462,7 +463,7 @@ namespace CodeEnv.Master.GameContent {
             float previousDistanceSqrd = distanceToDestinationSqrd;
 
             while (distanceToDestinationSqrd > _targetInfo.CloseEnoughDistanceSqrd) {
-                D.Log("{0} distance to {1} = {2}.", _ship.FullName, _targetInfo.Target.FullName, Mathf.Sqrt(distanceToDestinationSqrd));
+                D.Log("{0} distance to {1} = {2}.", _ship.FullName, _targetInfo.Target.FullName, Vector3.Magnitude(_targetInfo.Destination - _data.Position));
                 if (!isSpeedChecked) {    // adjusts speed as a oneshot until we get there
                     isSpeedChecked = AdjustSpeedOnHeadingConfirmation();
                 }
@@ -495,10 +496,9 @@ namespace CodeEnv.Master.GameContent {
         /// <returns><c>true</c> if the heading was confirmed and speed checked.</returns>
         private bool AdjustSpeedOnHeadingConfirmation() {
             if (IsBearingConfirmed) {
-                D.Log("{0} heading {1} is confirmed.", _ship.FullName, _data.RequestedHeading);
+                D.Log("{0} heading {1} is confirmed. Deviation is {2:0.00} degrees.", _ship.FullName, _data.RequestedHeading, Vector3.Angle(_data.CurrentHeading, _data.RequestedHeading));
                 if (ChangeSpeed(Speed)) {
-                    D.Log("{0} adjusting speed to {1}. Heading deviation is {2:0.00} degrees.",
-                        _ship.FullName, Speed.GetName(), Vector3.Angle(_data.CurrentHeading, _data.RequestedHeading));
+                    D.Log("{0} adjusting speed to {1}. ", _ship.FullName, Speed.GetName());
                 }
                 else {
                     D.Log("{0} continuing at speed of {1}.", _ship.FullName, Speed.GetName());
