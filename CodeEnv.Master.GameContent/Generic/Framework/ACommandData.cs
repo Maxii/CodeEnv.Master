@@ -30,11 +30,9 @@ namespace CodeEnv.Master.GameContent {
 
         public event Action onCompositionChanged;
 
-        protected void OnCompositionChanged() {
-            var temp = onCompositionChanged;
-            if (temp != null) {
-                temp();
-            }
+        public override SpaceTopography Topography {
+            get { return HQElementData.Topography; }
+            set { throw new NotImplementedException(); }
         }
 
         private Formation _unitFormation;
@@ -209,6 +207,12 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        protected void OnCompositionChanged() {
+            if (onCompositionChanged != null) {
+                onCompositionChanged();
+            }
+        }
+
         protected override void OnHealthChanged() {
             base.OnHealthChanged();
             RefreshCurrentCmdEffectiveness();
@@ -232,18 +236,15 @@ namespace CodeEnv.Master.GameContent {
             // as Health of a Cmd cannot decline below 50% due to CurrentHitPoints override, neither can CmdEffectiveness, until the Unit is destroyed
         }
 
-        public void AddElement(AElementData elementData) {
-            if (!ElementsData.Contains(elementData)) {
-                VerifyOwner(elementData);
-                UpdateElementParentName(elementData);
-                ElementsData.Add(elementData);
+        public virtual void AddElement(AElementData elementData) {
+            D.Assert(!ElementsData.Contains(elementData), "Attempted to add {0} {1} that is already present.".Inject(typeof(AElementData).Name, elementData.ParentName));
+            VerifyOwner(elementData);
+            UpdateElementParentName(elementData);
+            ElementsData.Add(elementData);
 
-                ChangeComposition(elementData, toAdd: true);
-                Subscribe(elementData);
-                RecalcPropertiesDerivedFromCombinedElements();
-                return;
-            }
-            D.Warn("Attempting to add {0} {1} that is already present.", typeof(AElementData), elementData.ParentName);
+            ChangeComposition(elementData, toAdd: true);
+            Subscribe(elementData);
+            RecalcPropertiesDerivedFromCombinedElements();
         }
 
         private void VerifyOwner(AElementData elementData) {
@@ -266,17 +267,14 @@ namespace CodeEnv.Master.GameContent {
 
         protected abstract void ChangeComposition(AElementData elementData, bool toAdd);
 
-        public bool RemoveElement(AElementData elementData) {
-            if (ElementsData.Contains(elementData)) {
-                bool isRemoved = ElementsData.Remove(elementData);
+        public virtual bool RemoveElement(AElementData elementData) {
+            D.Assert(ElementsData.Contains(elementData), "Attempted to remove {0} {1} that is not present.".Inject(typeof(AElementData).Name, elementData.ParentName));
+            bool isRemoved = ElementsData.Remove(elementData);
 
-                ChangeComposition(elementData, toAdd: false);
-                Unsubscribe(elementData);
-                RecalcPropertiesDerivedFromCombinedElements();
-                return isRemoved;
-            }
-            D.Warn("Attempting to remove {0} {1} that is not present.", typeof(AElementData), elementData.ParentName);
-            return false;
+            ChangeComposition(elementData, toAdd: false);
+            Unsubscribe(elementData);
+            RecalcPropertiesDerivedFromCombinedElements();
+            return isRemoved;
         }
 
         /// <summary>

@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Subscribe() {
             base.Subscribe();
-            _subscribers.Add(Model.SubscribeToPropertyChanged<IElementModel, ICommandModel>(e => e.Command, OnCommandChanged));
+            _subscribers.Add(Model.SubscribeToPropertyChanged<IElementModel, ICmdModel>(e => e.Command, OnCommandChanged));
         }
 
         public bool IsCommandSelected {

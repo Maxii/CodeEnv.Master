@@ -19,7 +19,7 @@ namespace CodeEnv.Master.Common {
     /// Simple Enum for Layers that avoids typing out strings or trying to remember the int value. 
     /// Use Layers.[Constant].GetName() extension for the string name or (int){Layers.[Constant] 
     /// for the index. Generate a bit mask to isolate a layer like this: 
-    /// <c>collideWithUniverseEdgeLayerOnlyBitMask = 1 << (int)Layers.UniverseEdge;</c>
+    /// <c>int universeEdgeLayerOnlyMask = LayerMaskExtensions.CreateInclusiveMask(Layers.UniverseEdge);</c>
     /// </summary>
     public enum Layers {
 
@@ -37,10 +37,10 @@ namespace CodeEnv.Master.Common {
         DummyTarget = 10,
         SectorView = 11,  // Unused
 
-        Ships = 14,
-        BasesSettlements = 15,
-        Planetoids = 16,
-        Stars = 17,
+        Ship = 14,
+        Facility = 15,
+        Planetoid = 16,
+        Star = 17,
 
 
         DeepSpace = 20,

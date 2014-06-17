@@ -31,6 +31,9 @@ using UnityEngine;
 /// </summary>
 public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, ShipStat, FleetCmdModel> {
 
+    private static IList<FleetCmdModel> _allFleets = new List<FleetCmdModel>();
+    public static IList<FleetCmdModel> AllFleets { get { return _allFleets; } }
+
     private UnitFactory _factory;   // not accesible from AUnitCreator
 
     protected override void Awake() {
@@ -45,9 +48,10 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
         float drag = 0.1F;
         var combatStance = Enums<ShipCombatStance>.GetRandom(excludeDefault: true);
         float maxTurnRate = UnityEngine.Random.Range(300F, 315F);
-        float fullThrust = mass * drag * UnityEngine.Random.Range(2F, 5F); // MaxThrust = Mass * Drag * MaxSpeed;
+        float fullStlThrust = mass * drag * UnityEngine.Random.Range(0.1F, 0.3F); // 2 - 6 units/day
+        float fullFtlThrust = fullStlThrust * TempGameValues.__FtlMultiplier;
 
-        return new ShipStat(elementName, mass, 50F, category, combatStance, maxTurnRate, drag, fullThrust);
+        return new ShipStat(elementName, mass, 50F, category, combatStance, maxTurnRate, drag, fullStlThrust, fullFtlThrust);
     }
 
     protected override FleetCmdModel MakeCommand(IPlayer owner) {
@@ -101,12 +105,13 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
 
     protected override void AssignHQElement() {
         LogEvent();
-        var candidateHQElements = _command.Elements.Where(e => GetValidHQElementCategories().Contains((e as ShipModel).Data.Category));
+        var candidateHQElements = _command.Elements.Where(e => GetValidHQElementCategories().Contains((e as IShipModel).Data.Category));
         if (candidateHQElements.IsNullOrEmpty()) {
             // _command might not hold a valid HQ Element if preset
+            D.Log("Is Empty.");
             candidateHQElements = _command.Elements;
         }
-        _command.HQElement = RandomExtended<IElementModel>.Choice(candidateHQElements) as ShipModel;
+        _command.HQElement = RandomExtended<IElementModel>.Choice(candidateHQElements) as IShipModel;
     }
 
     protected override bool DeployUnit() {
@@ -133,7 +138,7 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
     protected override void EnableOtherWhenRunning() {
         D.Assert(GameStatus.Instance.IsRunning);
         gameObject.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(relay => relay.enabled = true);
-        gameObject.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeTracker>().ForAll(wrt => wrt.enabled = true);
+        gameObject.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeMonitor>().ForAll(wrt => wrt.enabled = true);
         gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>().enabled = true;
         // formation stations control enabled themselves when the assigned ship changes
         // no orbits or revolves present  // other possibles: Billboard, ScaleRelativeToCamera
@@ -142,18 +147,45 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
 
     protected override void IssueFirstUnitCommand() {
         LogEvent();
-        __GetFleetAttackUnderway();
-        //__GetFleetUnderway();
+        //__GetFleetAttackUnderway();
+        __GetFleetUnderway();
     }
 
     private void __GetFleetUnderway() {
         LogEvent();
-        IDestinationTarget destination = null; // = FindObjectOfType<SettlementCmdModel>();
-        if (destination == null) {
-            // in case Settlements are disabled
-            destination = new StationaryLocation(_transform.position + UnityEngine.Random.onUnitSphere * 20F);
+        IPlayer fleetOwner = _owner;
+        IEnumerable<IDestinationTarget> moveTgts = FindObjectsOfType<StarbaseCmdModel>().Where(sb => sb.IsOperational && fleetOwner.IsRelationship(sb.Owner, DiplomaticRelations.Ally)).Cast<IDestinationTarget>();
+        if (moveTgts.IsNullOrEmpty()) {
+            // no starbases qualify
+            moveTgts = FindObjectsOfType<SettlementCmdModel>().Where(s => s.IsOperational && fleetOwner.IsRelationship(s.Owner, DiplomaticRelations.Ally)).Cast<IDestinationTarget>();
+            if (moveTgts.IsNullOrEmpty()) {
+                // no Settlements qualify
+                moveTgts = FindObjectsOfType<SystemModel>().Where(sys => sys.Owner == TempGameValues.NoPlayer).Cast<IDestinationTarget>();
+                if (moveTgts.IsNullOrEmpty()) {
+                    // no Systems qualify
+                    moveTgts = FindObjectsOfType<PlanetoidModel>().Where(p => p.IsOperational && fleetOwner.IsRelationship(p.Owner, DiplomaticRelations.Ally)).Cast<IDestinationTarget>();
+                    if (moveTgts.IsNullOrEmpty()) {
+                        // no Planetoids qualify
+                        moveTgts = FindObjectsOfType<FleetCmdModel>().Where(f => f.IsOperational && fleetOwner.IsRelationship(f.Owner, DiplomaticRelations.Ally)).Cast<IDestinationTarget>();
+                        if (moveTgts.IsNullOrEmpty()) {
+                            // no fleets qualify
+                            moveTgts = FindObjectsOfType<SectorModel>().Where(s => s.Owner == TempGameValues.NoPlayer).Cast<IDestinationTarget>();
+                            if (moveTgts.Any()) {
+                                D.Log("{0} can find no MoveTargets that meet the selection criteria. Picking an unowned Sector.", UnitName);
+                            }
+                            else {
+                                D.Warn("{0} can find no MoveTargets of any sort. MoveOrder has been cancelled.", UnitName);
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
         }
-        _command.CurrentOrder = new FleetOrder(FleetOrders.MoveTo, destination, Speed.FleetStandard);
+        IDestinationTarget destination = moveTgts.MaxBy(mt => Vector3.SqrMagnitude(mt.Position - _transform.position));
+        //IDestinationTarget destination = moveTgts.MinBy(mt => Vector3.SqrMagnitude(mt.Position - _transform.position));
+
+        _command.CurrentOrder = new FleetOrder(FleetDirective.MoveTo, destination, Speed.FleetStandard);
     }
 
     private void __GetFleetAttackUnderway() {
@@ -184,8 +216,8 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
                 }
             }
         }
-        IMortalTarget attackTgt = attackTgts.MinBy(t => Vector3.Distance(t.Position, _transform.position));
-        _command.CurrentOrder = new FleetOrder(FleetOrders.Attack, attackTgt);
+        IMortalTarget attackTgt = attackTgts.MinBy(t => Vector3.SqrMagnitude(t.Position - _transform.position));
+        _command.CurrentOrder = new FleetOrder(FleetDirective.Attack, attackTgt);
     }
 
     public override string ToString() {

@@ -79,12 +79,12 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The slowest Full speed of any ship in the fleet.
         /// </summary>
-        FleetFull,
+        FleetFull
 
         /// <summary>
         /// The maximum speed, 110% of Full.  Inefficient and unsustainable.
         /// </summary>
-        Flank
+        //Flank
 
     }
 }

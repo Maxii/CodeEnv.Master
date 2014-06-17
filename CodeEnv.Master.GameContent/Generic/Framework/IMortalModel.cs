@@ -25,7 +25,13 @@ namespace CodeEnv.Master.GameContent {
 
         event Action<MortalAnimations> onShowAnimation;
         event Action<MortalAnimations> onStopAnimation;
-        event Action<IMortalModel> onItemDeath;
+
+        /// <summary>
+        /// Occurs when this mortal model has died. Intended for internal
+        /// communication from the model to its view and presenter as the
+        /// object reference included makes the whole model accessible.
+        /// </summary>
+        event Action<IMortalModel> onDeath;
 
         new AMortalItemData Data { get; set; }
 

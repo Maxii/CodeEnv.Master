@@ -27,6 +27,34 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipData : AElementData, IDisposable {
 
+        #region FTL
+
+        // Assume for now that all ships are FTL capable. In the future, I will want some defensive ships to be limited to System space 
+        // IMPROVE will need to replace this with FtlShipData-derived class as non-Ftl ships won't be part of fleets, aka FormationStation, etc
+        // public bool IsShipFtlCapable { get { return true; } }
+
+        /// <summary>
+        /// Indicates whether the FTL engines are damaged.
+        /// </summary>
+        public bool IsFtlDamaged { get; set; }
+
+        /// <summary>
+        /// Indicates whether the FTL engines are damped by an FTL Damping Field.
+        /// </summary>
+        public bool IsFtlDampedByField { get; set; }
+
+        private bool _isFtlAvailableForUse;
+        /// <summary>
+        /// Indicates whether the FTL engines are available for use - ie. undamaged, 
+        /// not damped by a dampingField and currently located in OpenSpace.
+        /// </summary>
+        public bool IsFtlAvailableForUse {
+            get { return _isFtlAvailableForUse; }
+            set { SetProperty<bool>(ref _isFtlAvailableForUse, value, "IsFtlAvailableForUse"); }
+        }
+
+        #endregion
+
         public ShipCategory Category { get; private set; }
 
         /// <summary>
@@ -37,23 +65,21 @@ namespace CodeEnv.Master.GameContent {
         public ShipCombatStance CombatStance { get; set; }  // TODO not currently used
 
         /// <summary>
-        /// Readonly. Gets the current speed of the ship in Units per
-        /// day, normalized for game speed.
+        /// Readonly. Gets the current speed of the ship in Units per hour, normalized for game speed.
         /// </summary>
         public float CurrentSpeed {
-            get { return (_gameStatus.IsPaused) ? _currentSpeedOnPause : _rigidbody.velocity.magnitude / _gameSpeedMultiplier; }
+            get { return (_gameStatus.IsPaused) ? _currentSpeedOnPause : (_rigidbody.velocity.magnitude / GeneralSettings.Instance.HoursPerSecond) / _gameSpeedMultiplier; }
         }
 
         private float _requestedSpeed;
         /// <summary>
-        /// Gets or sets the desired speed this ship should
-        /// be traveling at in Units per day. The thrust of the ship will be adjusted
-        /// to accelerate or decelerate to this speed.
+        /// The desired speed this ship should be traveling at in Units per hour. 
+        /// The thrust of the ship will be adjusted to accelerate or decelerate to this speed.
         /// </summary>
         public float RequestedSpeed {
             get { return _requestedSpeed; }
             set {
-                value = value < FullSpeed ? value : FullSpeed;
+                D.Assert(value <= FullFtlSpeed, "{0} RequestedSpeed {1} > FullFtlSpeed {2}.".Inject(FullName, RequestedSpeed, FullFtlSpeed));
                 SetProperty<float>(ref _requestedSpeed, value, "RequestedSpeed");
             }
         }
@@ -67,13 +93,26 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<float>(ref _drag, value, "Drag", OnDragChanged, OnDragChanging); }
         }
 
-        private float _fullThrust;
+        private float _fullStlThrust;
         /// <summary>
-        /// Gets or sets the maximum sustainable thrust achievable by the engines.
+        /// The maximum force projected by the STL engines. FullStlSpeed = FullStlThrust / (Mass * Drag).
+        /// NOTE: This value uses a Game Hour denominator. It is adjusted in
+        /// realtime to a Unity seconds value in EngineRoom.ApplyThrust() using GeneralSettings.HoursPerSecond.
         /// </summary>
-        public float FullThrust {
-            get { return _fullThrust; }
-            set { SetProperty<float>(ref _fullThrust, value, "FullThrust", OnFullThrustChanged); }
+        public float FullStlThrust {
+            get { return _fullStlThrust; }
+            set { SetProperty<float>(ref _fullStlThrust, value, "FullStlThrust", OnFullStlThrustChanged); }
+        }
+
+        private float _fullFtlThrust;
+        /// <summary>
+        /// The maximum force projected by the FTL engines. FullFtlSpeed = FullFtlThrust / (Mass * Drag).
+        /// NOTE: This value uses a Game Hour denominator. It is adjusted in
+        /// realtime to a Unity seconds value in EngineRoom.ApplyThrust() using GeneralSettings.HoursPerSecond.
+        /// </summary>
+        public float FullFtlThrust {
+            get { return _fullFtlThrust; }
+            set { SetProperty<float>(ref _fullFtlThrust, value, "FullFtlThrust", OnFullFtlThrustChanged); }
         }
 
         private Vector3 _requestedHeading;
@@ -97,16 +136,24 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private float _fullSpeed;
+        private float _fullFtlSpeed;
         /// <summary>
-        /// Readonly. Gets the maximum sustainable speed that the ship can achieve in units per day.
-        /// Derived directly from FullThrust, mass and drag of the ship.
+        /// Readonly. Gets the maximum FTL speed that the ship can achieve in units per hour.
+        /// Derived directly from FullFtlThrust, mass and drag of the ship.
         /// </summary>
-        public float FullSpeed {
-            get {
-                if (_fullSpeed == Constants.ZeroF) { _fullSpeed = FullThrust / (Mass * Drag); }
-                return _fullSpeed;
-            }
+        public float FullFtlSpeed {
+            get { return _fullFtlSpeed; }
+            private set { SetProperty<float>(ref _fullFtlSpeed, value, "FullFtlSpeed"); }
+        }
+
+        private float _fullStlSpeed;
+        /// <summary>
+        /// Readonly. Gets the maximum STL speed that the ship can achieve in units per hour.
+        /// Derived directly from FullStlThrust, mass and drag of the ship.
+        /// </summary>
+        public float FullStlSpeed {
+            get { return _fullStlSpeed; }
+            private set { SetProperty<float>(ref _fullStlSpeed, value, "FullStlSpeed"); }
         }
 
         private float _maxTurnRate;
@@ -115,9 +162,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float MaxTurnRate {
             get { return _maxTurnRate; }
-            set {
-                SetProperty<float>(ref _maxTurnRate, value, "MaxTurnRate");
-            }
+            set { SetProperty<float>(ref _maxTurnRate, value, "MaxTurnRate"); }
         }
 
         private float _currentSpeedOnPause;
@@ -136,7 +181,8 @@ namespace CodeEnv.Master.GameContent {
             _drag = stat.Drag;  // avoid OnDragChanged as the rigidbody is not yet known
             Category = stat.Category;
             CombatStance = stat.CombatStance;
-            FullThrust = stat.FullThrust;
+            FullStlThrust = stat.FullStlThrust;
+            FullFtlThrust = stat.FullFtlThrust;
             MaxTurnRate = stat.MaxTurnRate;
             Initialize();
         }
@@ -170,13 +216,18 @@ namespace CodeEnv.Master.GameContent {
 
         private void OnDragChanged() {
             _rigidbody.drag = Drag;
-            _fullSpeed = FullThrust / (Mass * Drag);
-            D.Log("{0} FullSpeed set to {1}, FullThrust = {2}, Mass = {3}, Drag = {4}.", Name, _fullSpeed, FullThrust, Mass, Drag);
+            OnFullStlThrustChanged();
+            OnFullFtlThrustChanged();
         }
 
-        private void OnFullThrustChanged() {
-            _fullSpeed = FullThrust / (Mass * Drag);
-            D.Log("{0} FullSpeed set to {1}, FullThrust = {2}, Mass = {3}, Drag = {4}.", Name, _fullSpeed, FullThrust, Mass, Drag);
+        private void OnFullStlThrustChanged() {
+            FullStlSpeed = FullStlThrust / (Mass * Drag);
+            D.Log("{0} FullStlSpeed set to {1} units/hour, FullStlThrust = {2}, Mass = {3}, Drag = {4}.", Name, FullStlSpeed, FullStlThrust, Mass, Drag);
+        }
+
+        private void OnFullFtlThrustChanged() {
+            FullFtlSpeed = FullFtlThrust / (Mass * Drag);
+            D.Log("{0} FullFtlSpeed set to {1} units/hour, FullFtlThrust = {2}, Mass = {3}, Drag = {4}.", Name, FullFtlSpeed, FullFtlThrust, Mass, Drag);
         }
 
         private void OnIsPausedChanging(bool isPausing) {

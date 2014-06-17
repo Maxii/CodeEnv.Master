@@ -82,21 +82,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float Mass { get; private set; }
 
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="AMortalItemData" /> class.
-        /// </summary>
-        /// <param name="name">The name.</param>
-        /// <param name="maxHitPoints">The maximum hit points.</param>
-        /// <param name="mass">The mass of the Item.</param>
-        /// <param name="optionalParentName">Name of the optional parent.</param>
-        //public AMortalItemData(string name, float maxHitPoints, float mass, string optionalParentName = "")
-        //    : base(name, optionalParentName) {
-        //    _maxHitPoints = maxHitPoints;
-        //    CurrentHitPoints = maxHitPoints;
-        //    Mass = mass;
-        //}
-
         public AMortalItemData(string name, float mass, float maxHitPts)
             : base(name) {
             Mass = mass;

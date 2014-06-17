@@ -31,9 +31,16 @@ public class FormationGenerator {
 
     // NOTE: don't replace with ICommandModel as this will force addition of 2 little used methods to the interface
     private AUnitCommandModel _unitCmd;
+    private int _maxElementCount;
 
     public FormationGenerator(AUnitCommandModel unitCmd) {
         _unitCmd = unitCmd;
+        if (unitCmd is IFleetCmdModel) {
+            _maxElementCount = TempGameValues.MaxShipsPerFleet;
+        }
+        else {
+            _maxElementCount = TempGameValues.MaxFacilitiesPerBase;
+        }
     }
 
     /// <summary>
@@ -63,7 +70,7 @@ public class FormationGenerator {
     /// Randomly positions the elements of the unit in a spherical globe around the HQ Element.
     /// </summary>
     private void PositionElementsRandomlyInSphere() {
-        float globeRadius = 1F * (float)Math.Pow(_unitCmd.Elements.Count * 0.2F, 0.33F);  // cube root of number of groups of 5 elements
+        float globeRadius = (float)Math.Pow(_maxElementCount * 0.2F, 0.33F);  // ~ 1.7
 
         IElementModel hqElement = _unitCmd.HQElement;
         var elementsToPositionAroundHQ = _unitCmd.Elements.Except(hqElement).ToArray();
@@ -136,14 +143,14 @@ public class FormationGenerator {
     /// Positions the elements equidistant in a circle around the HQ Element.
     /// </summary>
     protected void PositionElementsEquidistantInCircle() {
-        float globeRadius = 1F * (float)Math.Pow(_unitCmd.Elements.Count * 0.2F, 0.33F);  // cube root of number of groups of 5 elements
+        float circleRadius = (float)Math.Pow(_maxElementCount * 0.2F, 0.5F);  // ~ 2.2
 
         IElementModel hqElement = _unitCmd.HQElement;
         _unitCmd.PositionElementInFormation(hqElement, Vector3.zero);
 
         var elementsToPositionInCircle = _unitCmd.Elements.Except(hqElement);
         D.Log("{0}.elementsCount = {1}.", GetType().Name, elementsToPositionInCircle.Count());
-        Stack<Vector3> formationStationOffsets = new Stack<Vector3>(Mathfx.UniformPointsOnCircle(globeRadius, elementsToPositionInCircle.Count()));
+        Stack<Vector3> formationStationOffsets = new Stack<Vector3>(Mathfx.UniformPointsOnCircle(circleRadius, elementsToPositionInCircle.Count()));
         foreach (var element in elementsToPositionInCircle) {
             Vector3 stationOffset = formationStationOffsets.Pop();
             _unitCmd.PositionElementInFormation(element, stationOffset);

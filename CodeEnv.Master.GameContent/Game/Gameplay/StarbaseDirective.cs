@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ShipOrders.cs
-// The orders that can be issued to a ship.
+// File: StarbaseDirective.cs
+// The directives that can be issued to a Starbase.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,31 +17,16 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// The orders that can be issued to a ship.
+    /// The directives that can be issued to a Starbase.
     /// </summary>
-    public enum ShipOrders {
+    public enum StarbaseDirective {
 
         None,
-
-        AssumeStation,
-
-        MoveTo,
-
         Attack,
-
         StopAttack,
-
         Repair,
-
-        Entrench,
-
-        // Refit, Disband and JoinFleet can also be issued by the Player
-
         Refit,
-
-        Disband,
-
-        JoinFleet
+        Disband
 
     }
 }

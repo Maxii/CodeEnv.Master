@@ -36,15 +36,6 @@ public abstract class AMortalItemModel : AItemModel, IMortalModel, IMortalTarget
         set { base.Data = value; }
     }
 
-    protected override void Awake() {
-        base.Awake();
-        // NOTE: MortalItemModel Planetoids, Ships and Facilities have their collider sizes preset in their prefabs so Radius can be set from the collider bounds here
-        // The radius of a Command has nothing to do with the size of its collider. Instead, they reset this value to the Radius of their HQElement
-        // The radius of a System, Star and Universe Center are constants and held in TempGameValues. They each set their own radius on Awake().
-        Radius = collider.bounds.extents.magnitude;
-        collider.enabled = false;   // enable when the item becomes operational
-    }
-
     protected override void Initialize() {
         IsAlive = true;
     }
@@ -63,35 +54,28 @@ public abstract class AMortalItemModel : AItemModel, IMortalModel, IMortalTarget
     /// </summary>
     protected virtual void OnHealthChanged() { }
 
-    protected virtual void OnOwnerChanged() {
-        var temp = onOwnerChanged;
-        if (temp != null) {
-            temp(this);
-        }
-    }
-
-    protected virtual void OnItemDeath() {
+    protected virtual void OnDeath() {
         enabled = false;
         IsAlive = false;
-        var temp = onItemDeath;
-        if (temp != null) {
-            temp(this);
+        if (onTargetDeath != null) {
+            onTargetDeath(this);
+        }
+        if (onDeath != null) {
+            onDeath(this);
         }
         // OPTIMIZE not clear this event will ever be used
         GameEventManager.Instance.Raise<MortalItemDeathEvent>(new MortalItemDeathEvent(this, this));
     }
 
     protected void OnShowAnimation(MortalAnimations animation) {
-        var temp = onShowAnimation;
-        if (temp != null) {
-            temp(animation);
+        if (onShowAnimation != null) {
+            onShowAnimation(animation);
         }
     }
 
     protected void OnStopAnimation(MortalAnimations animation) {
-        var temp = onStopAnimation;
-        if (temp != null) {
-            temp(animation);
+        if (onStopAnimation != null) {
+            onStopAnimation(animation);
         }
     }
 
@@ -121,7 +105,7 @@ public abstract class AMortalItemModel : AItemModel, IMortalModel, IMortalTarget
     /// if the Item survived the hit.
     /// </summary>
     /// <returns><c>true</c> if the Item survived.</returns>
-    protected bool ApplyDamage(float damage) {
+    protected virtual bool ApplyDamage(float damage) {
         Data.CurrentHitPoints -= damage;
         return Data.Health > Constants.ZeroF;
     }
@@ -136,17 +120,11 @@ public abstract class AMortalItemModel : AItemModel, IMortalModel, IMortalTarget
 
     #region IMortalTarget Members
 
-    public event Action<IMortalModel> onItemDeath;
-
-    public event Action<IMortalModel> onOwnerChanged;
+    public event Action<IMortalTarget> onTargetDeath;
 
     public bool IsAlive { get; protected set; }
 
-    public override bool IsMovable { get { return true; } }
-
     public abstract void TakeHit(CombatStrength weaponStrength);
-
-    public IPlayer Owner { get { return Data.Owner; } }
 
     public float MaxWeaponsRange { get { return Data.MaxWeaponsRange; } }
 
@@ -155,6 +133,8 @@ public abstract class AMortalItemModel : AItemModel, IMortalModel, IMortalTarget
     #endregion
 
     #region IMortalModel Members
+
+    public event Action<IMortalModel> onDeath;
 
     private bool _isOperational;
     public bool IsOperational {

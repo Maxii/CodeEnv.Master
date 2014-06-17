@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AItemData : APropertyChangeTracking {
 
-        private string _name; // default of string is null
+        private string _name;
         /// <summary>
         /// Gets or sets the name of the item. 
         /// </summary>
@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<string>(ref _name, value, "Name", OnNameChanged, OnNameChanging); }
         }
 
-        private string _parentName; // default of string is null
+        private string _parentName;
         /// <summary>
         /// Gets or sets the name of the Parent of this item. Optional.
         /// </summary>
@@ -41,10 +41,6 @@ namespace CodeEnv.Master.GameContent {
             get { return _parentName; }
             set { SetProperty<string>(ref _parentName, value, "ParentName", OnParentNameChanged, OnParentNameChanging); }
         }
-
-        //public string FullName {
-        //    get { return ParentName == string.Empty ? Name : ParentName + Constants.Underscore + Name; }
-        //}
 
         public string FullName {
             get { return ParentName.IsNullOrEmpty() ? Name : ParentName + Constants.Underscore + Name; }
@@ -55,6 +51,8 @@ namespace CodeEnv.Master.GameContent {
             get { return _owner; }
             set { SetProperty<IPlayer>(ref _owner, value, "Owner", OnOwnerChanged); }
         }
+
+        public virtual SpaceTopography Topography { get; set; }
 
         /// <summary>
         /// Readonly. Gets the position of the gameObject containing this data.
@@ -75,12 +73,6 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="AItemData" /> class.
         /// </summary>
         /// <param name="name">The name.</param>
-        /// <param name="optionalParentName">Name of the optional parent.</param>
-        //public AItemData(string name, string optionalParentName = "") {
-        //    Name = name;
-        //    ParentName = optionalParentName;
-        //}
-
         public AItemData(string name) {
             Name = name;
         }

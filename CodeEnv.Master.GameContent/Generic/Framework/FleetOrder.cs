@@ -30,17 +30,18 @@ namespace CodeEnv.Master.GameContent {
 
         public IDestinationTarget Target { get; private set; }
 
-        public FleetOrders Order { get; private set; }
+        public FleetDirective Directive { get; private set; }
 
-        public FleetOrder(FleetOrders order, IDestinationTarget target = null, Speed speed = Speed.None, float standoffDistance = Constants.ZeroF) {
-            Order = order;
+        public FleetOrder(FleetDirective directive, IDestinationTarget target = null, Speed speed = Speed.None, float standoffDistance = Constants.ZeroF) {
+            D.Assert(target == null || !(target is StationaryLocation));    // Fleet targets should never be a StationaryLocation
+            Directive = directive;
             Target = target;
             Speed = speed;
             StandoffDistance = standoffDistance;
         }
 
-        public FleetOrder(FleetOrders order, Vector3 destination, Speed speed) :
-            this(order, new StationaryLocation(destination), speed) { }
+        //public FleetOrder(FleetDirective order, Vector3 destination, Speed speed) :
+        //    this(order, new StationaryLocation(destination), speed) { }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

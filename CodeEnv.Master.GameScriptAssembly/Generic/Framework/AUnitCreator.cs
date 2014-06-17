@@ -247,19 +247,19 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             ArmamentCategory offensiveArmsCategory = RandomExtended<ArmamentCategory>.Choice(_offensiveArmsCategories);
             switch (offensiveArmsCategory) {
                 case ArmamentCategory.BeamOffense:
-                    range = UnityEngine.Random.Range(2F, 4F);
+                    range = UnityEngine.Random.Range(5F, 7F);   // planet orbit to surface distance currently varies from 0.4 - 6.0
                     reloadPeriod = UnityEngine.Random.Range(1F, 2F);
                     name = "Phaser";
                     strengthValue = UnityEngine.Random.Range(3F, 4F);
                     break;
                 case ArmamentCategory.MissileOffense:
-                    range = UnityEngine.Random.Range(4F, 6F);
+                    range = UnityEngine.Random.Range(9F, 11F);
                     reloadPeriod = UnityEngine.Random.Range(3F, 4F);
                     name = "Torpedo";
                     strengthValue = UnityEngine.Random.Range(5F, 6F);
                     break;
                 case ArmamentCategory.ParticleOffense:
-                    range = UnityEngine.Random.Range(3F, 5F);
+                    range = UnityEngine.Random.Range(7F, 9F);
                     reloadPeriod = UnityEngine.Random.Range(2F, 3F);
                     name = "Disruptor";
                     strengthValue = UnityEngine.Random.Range(4F, 5F);

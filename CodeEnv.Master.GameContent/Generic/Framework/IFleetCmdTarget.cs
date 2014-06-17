@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: StarbaseOrders.cs
-// The orders that can be issued to a Starbase.
+// File: IFleetCmdTarget.cs
+// Interface for a target that is a FleetCommand.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,16 +17,10 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// The orders that can be issued to a Starbase.
+    /// Interface for a target that is a FleetCommand.
     /// </summary>
-    public enum StarbaseOrders {
+    public interface IFleetCmdTarget : ICmdTarget {
 
-        None,
-        Attack,
-        StopAttack,
-        Repair,
-        Refit,
-        Disband
 
     }
 }

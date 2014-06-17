@@ -32,16 +32,16 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public OrderSource Source { get; private set; }
 
-        public FacilityOrders Order { get; private set; }
+        public FacilityDirective Directive { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FacilityOrder" /> class.
         /// </summary>
-        /// <param name="order">The order.</param>
+        /// <param name="directive">The order.</param>
         /// <param name="source">The source of this order.</param>
         /// <param name="target">The target.</param>
-        public FacilityOrder(FacilityOrders order, OrderSource source = OrderSource.ElementCaptain, IMortalTarget target = null) {
-            Order = order;
+        public FacilityOrder(FacilityDirective directive, OrderSource source = OrderSource.ElementCaptain, IMortalTarget target = null) {
+            Directive = directive;
             Source = source;
             Target = target;
         }

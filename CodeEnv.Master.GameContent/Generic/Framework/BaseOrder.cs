@@ -25,10 +25,10 @@ namespace CodeEnv.Master.GameContent {
 
         public IMortalTarget Target { get; private set; }
 
-        public T Order { get; private set; }
+        public T Directive { get; private set; }
 
-        public BaseOrder(T order, IMortalTarget target) {
-            Order = order;
+        public BaseOrder(T directive, IMortalTarget target) {
+            Directive = directive;
             Target = target;
         }
 

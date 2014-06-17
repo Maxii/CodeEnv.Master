@@ -23,7 +23,7 @@ using UnityEngine;
 /// <summary>
 /// The Item at the center of the universe.
 /// </summary>
-public class UniverseCenterModel : AItemModel, IUniverseCenterModel {
+public class UniverseCenterModel : AItemModel, IUniverseCenterModel, IUniverseCenterTarget, IOrbitable {
 
     public new ItemData Data {
         get { return base.Data as ItemData; }
@@ -32,16 +32,19 @@ public class UniverseCenterModel : AItemModel, IUniverseCenterModel {
 
     protected override void Awake() {
         base.Awake();
-        (collider as SphereCollider).radius = TempGameValues.UniverseCenterRadius;
-        Radius = TempGameValues.UniverseCenterRadius;
-        InitializeKeepoutCollider();
         Subscribe();
     }
 
-    private void InitializeKeepoutCollider() {
+    protected override void InitializeRadiiComponents() {
+        var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
+        Radius = meshRenderer.bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
+        D.Assert(Mathfx.Approx(Radius, TempGameValues.UniverseCenterRadius, 1F));    // 50
+        (collider as SphereCollider).radius = Radius;
+
         SphereCollider keepoutCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
         D.Assert(keepoutCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
         keepoutCollider.radius = Radius * TempGameValues.KeepoutRadiusMultiplier;
+        OrbitDistance = keepoutCollider.radius + 1F;
     }
 
     protected override void Initialize() { }
@@ -49,6 +52,12 @@ public class UniverseCenterModel : AItemModel, IUniverseCenterModel {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region IOrbitable Members
+
+    public float OrbitDistance { get; private set; }
+
+    #endregion
 
 }
 

@@ -80,6 +80,7 @@
     <Compile Include="CoroutineManager.cs" />
     <Compile Include="CoroutineNode.cs" />
     <Compile Include="CoroutineScheduler.cs" />
+    <Compile Include="EngineRoom.cs" />
     <Compile Include="FacilityStats.cs" />
     <Compile Include="FleetAdmiralIcon.cs" />
     <Compile Include="FleetAutoPilot.cs" />
@@ -130,6 +131,7 @@
     <Compile Include="GameClockGuiManager.cs" />
     <Compile Include="GameOptionsGuiManager.cs" />
     <Compile Include="GuiZoomOutOnCursorOption.cs" />
+    <Compile Include="Helm.cs" />
     <Compile Include="HudPublisher.cs" />
     <Compile Include="IColliderRelayTarget.cs" />
     <Compile Include="IData.cs" />
@@ -195,6 +197,7 @@
     <Compile Include="StarPresenter.cs" />
     <Compile Include="StarView.cs" />
     <Compile Include="StationaryItem.cs" />
+    <Compile Include="SystemComposition.cs" />
     <Compile Include="SystemCreator.cs" />
     <Compile Include="SystemGraphics.cs" />
     <Compile Include="SystemManager.cs" />

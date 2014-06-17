@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -24,6 +24,16 @@ namespace CodeEnv.Master.Common {
     using System.Collections;
 
     public static class UnityUtility {
+
+        private static Vector3EqualityComparer _vector3EqualityComparer;
+        public static Vector3EqualityComparer Vector3EqualityComparer {
+            get {
+                if (_vector3EqualityComparer == null) {
+                    _vector3EqualityComparer = new Vector3EqualityComparer();
+                }
+                return _vector3EqualityComparer;
+            }
+        }
 
         /// <summary>
         /// Determines whether the world point provided is currently visible from the main camera.
@@ -177,7 +187,7 @@ namespace CodeEnv.Master.Common {
             GameObject clone = GameObject.Instantiate(prefab) as GameObject;
             clone.name = prefab.name;
             if (clone != null && parent != null) {
-                D.Log("Instantiated {0} and parented to {1}. Awake() can preceed this!", prefab.name, parent.name);
+                //D.Log("Instantiated {0} and parented to {1}. Awake() can preceed this!", prefab.name, parent.name);
                 AttachChildToParent(clone, parent);
             }
             return clone;
@@ -204,6 +214,34 @@ namespace CodeEnv.Master.Common {
                 }
             }
             return vertices;
+        }
+
+        /// <summary>
+        /// Calculates the vertices of an inscribed box inside a sphere with 
+        /// the provided radius and center point.
+        /// </summary>
+        /// <param name="center">The center.</param>
+        /// <param name="radius">The radius.</param>
+        /// <returns></returns>
+        public static IList<Vector3> CalcVerticesOfInscribedBoxInsideSphere(Vector3 center, float radius) {
+            IList<Vector3> vertices = new List<Vector3>(8);
+            IList<Vector3> normalizedVertices = Constants.NormalizedBoxVertices;
+            foreach (var normalizedVertex in normalizedVertices) {
+                vertices.Add(center + normalizedVertex * radius);
+            }
+            //D.Log("Center = {0}, Radius = {1}, Vertices = {2}.", center, radius, vertices.Concatenate());
+            return vertices;
+        }
+
+        /// <summary>
+        /// Finds the closest location on the surface of a sphere to the provided point.
+        /// </summary>
+        /// <param name="point">The point.</param>
+        /// <param name="sphereCenter">The sphere center.</param>
+        /// <param name="sphereRadius">The sphere radius.</param>
+        /// <returns></returns>
+        public static Vector3 FindClosestPointOnSphereSurfaceTo(Vector3 point, Vector3 sphereCenter, float sphereRadius) {
+            return sphereCenter + (point - sphereCenter).normalized * sphereRadius;
         }
 
         /// <summary>

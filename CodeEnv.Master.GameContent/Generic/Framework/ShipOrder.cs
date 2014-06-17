@@ -37,19 +37,19 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public OrderSource Source { get; private set; }
 
-        public ShipOrders Order { get; private set; }
+        public ShipDirective Directive { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ShipOrder" /> class.
         /// </summary>
-        /// <param name="order">The order.</param>
+        /// <param name="directive">The order.</param>
         /// <param name="source">The source of this order.</param>
         /// <param name="target">The target.</param>
         /// <param name="speed">The speed.</param>
         /// <param name="standoffDistance">The standoff distance.</param>
-        public ShipOrder(ShipOrders order, OrderSource source = OrderSource.ElementCaptain, IDestinationTarget target = null,
+        public ShipOrder(ShipDirective directive, OrderSource source = OrderSource.ElementCaptain, IDestinationTarget target = null,
             Speed speed = Speed.None, float standoffDistance = Constants.ZeroF) {
-            Order = order;
+            Directive = directive;
             Source = source;
             Target = target;
             Speed = speed;
@@ -63,8 +63,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="source">The source of this order.</param>
         /// <param name="destination">The destination location.</param>
         /// <param name="speed">The speed.</param>
-        public ShipOrder(ShipOrders order, OrderSource source, Vector3 destination, Speed speed)
-            : this(order, source, new StationaryLocation(destination), speed) { }
+        //public ShipOrder(ShipDirective order, OrderSource source, Vector3 destination, Speed speed)
+        //    : this(order, source, new StationaryLocation(destination), speed) { }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

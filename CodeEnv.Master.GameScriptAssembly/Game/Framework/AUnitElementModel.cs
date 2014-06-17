@@ -36,17 +36,17 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
         set { base.Data = value; }
     }
 
-    private ICommandModel _command;
-    public ICommandModel Command {
+    private ICmdModel _command;
+    public ICmdModel Command {
         get { return _command; }
-        set { SetProperty<ICommandModel>(ref _command, value, "Command", OnCommandChanged); }
+        set { SetProperty<ICmdModel>(ref _command, value, "Command", OnCommandChanged); }
     }
 
     protected Rigidbody _rigidbody;
     /// <summary>
     /// Weapon Range Tracker lookup table keyed by the Range Tracker's Guid ID.
     /// </summary>
-    protected IDictionary<Guid, IWeaponRangeTracker> _weaponRangeTrackerLookup;
+    protected IDictionary<Guid, IWeaponRangeMonitor> _weaponRangeTrackerLookup;
     protected float _gameSpeedMultiplier;
 
     protected override void Awake() {
@@ -101,9 +101,9 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     /// <param name="rangeTracker">The range tracker to pair with this weapon.</param>
-    public void AddWeapon(Weapon weapon, IWeaponRangeTracker rangeTracker) {
+    public void AddWeapon(Weapon weapon, IWeaponRangeMonitor rangeTracker) {
         if (_weaponRangeTrackerLookup == null) {
-            _weaponRangeTrackerLookup = new Dictionary<Guid, IWeaponRangeTracker>();
+            _weaponRangeTrackerLookup = new Dictionary<Guid, IWeaponRangeMonitor>();
         }
         if (!_weaponRangeTrackerLookup.ContainsKey(rangeTracker.ID)) {
             // only need to record and setup range trackers once. The same rangeTracker can have more than 1 weapon
@@ -127,14 +127,14 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
     public void RemoveWeapon(Weapon weapon) {
         bool isRangeTrackerStillInUse = Data.RemoveWeapon(weapon);
         if (!isRangeTrackerStillInUse) {
-            IWeaponRangeTracker rangeTracker;
+            IWeaponRangeMonitor rangeTracker;
             if (_weaponRangeTrackerLookup.TryGetValue(weapon.TrackerID, out rangeTracker)) {
                 _weaponRangeTrackerLookup.Remove(weapon.TrackerID);
-                D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(IWeaponRangeTracker).Name, weapon.Name);
+                D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(IWeaponRangeMonitor).Name, weapon.Name);
                 GameObject.Destroy((rangeTracker as Component).gameObject);
                 return;
             }
-            D.Error("{0} could not find {1} for {2}.", FullName, typeof(IWeaponRangeTracker).Name, weapon.Name);
+            D.Error("{0} could not find {1} for {2}.", FullName, typeof(IWeaponRangeMonitor).Name, weapon.Name);
         }
     }
 
@@ -185,8 +185,8 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
         D.Error("{0}.Dead_ExitState should not occur.", Data.Name);
     }
 
-    protected override void OnItemDeath() {
-        base.OnItemDeath();
+    protected override void OnDeath() {
+        base.OnDeath();
         _weaponRangeTrackerLookup.Values.ForAll(rt => rt.onEnemyInRange -= OnEnemyInRange);
         if (_weaponReloadJobs.Count != Constants.Zero) {
             _weaponReloadJobs.ForAll<KeyValuePair<Guid, Job>>(kvp => kvp.Value.Kill());

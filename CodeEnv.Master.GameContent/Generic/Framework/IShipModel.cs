@@ -16,12 +16,16 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
+    using CodeEnv.Master.Common;
     using UnityEngine;
 
     /// <summary>
     /// Interface for ShipModels.
     /// </summary>
     public interface IShipModel : IElementModel {
+
+        event Action onDestinationReached;
 
         new ShipData Data { get; set; }
 
@@ -38,6 +42,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="isOnStation">if set to <c>true</c> [is on station].</param>
         void OnShipOnStation(bool isOnStation);
+
+        void OnTopographicBoundaryTransition(SpaceTopography newTopography);
+
     }
 }
 

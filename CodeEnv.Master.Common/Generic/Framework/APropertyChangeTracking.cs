@@ -57,7 +57,7 @@ namespace CodeEnv.Master.Common {
             D.Log("SetProperty called. {0} changing to {1}.", propertyName, value);
 
             if (onChanging != null) { onChanging(value); }
-            OnPropertyChanging(propertyName, value);
+            OnPropertyChanging<T>(propertyName, value);
 
             backingStore = value;
 

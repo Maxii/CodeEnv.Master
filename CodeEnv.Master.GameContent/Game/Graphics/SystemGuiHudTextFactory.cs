@@ -33,6 +33,8 @@ namespace CodeEnv.Master.GameContent {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.Name);
+                case GuiHudLineKeys.SectorIndex:
+                    return new ColoredTextList_String(data.SectorIndex.ToString());
                 case GuiHudLineKeys.Distance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
@@ -62,7 +64,6 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Composition:
                 case GuiHudLineKeys.CompositionDetails:
                 case GuiHudLineKeys.ShipDetails:
-                case GuiHudLineKeys.SectorIndex:
                 case GuiHudLineKeys.Density:
                 case GuiHudLineKeys.Speed:
                     return _emptyColoredTextList;

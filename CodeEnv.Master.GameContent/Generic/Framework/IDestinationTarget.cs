@@ -16,6 +16,8 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
+    using CodeEnv.Master.Common;
     using UnityEngine;
 
     /// <summary>
@@ -33,6 +35,8 @@ namespace CodeEnv.Master.GameContent {
         /// The radius in units of the conceptual 'globe' that encompasses this Item. Readonly.
         /// </summary>
         float Radius { get; }
+
+        SpaceTopography Topography { get; }
 
     }
 }

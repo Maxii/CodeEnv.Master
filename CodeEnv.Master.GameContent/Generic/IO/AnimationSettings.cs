@@ -37,18 +37,18 @@ namespace CodeEnv.Master.GameContent {
             private set { _shipLayerCullingDistanceFactor = value; }
         }
 
-        private int _starBaseSettlementLayerCullingDistanceFactor;
+        private int _facilityLayerCullingDistanceFactor;
         /// <summary>
         /// The multiplication factor to use in generating the farClipPlane distance for the named layer.
         /// </summary>
-        public int StarBaseSettlementLayerCullingDistanceFactor {
+        public int FacilityLayerCullingDistanceFactor {
             get {
                 if (!isPropertyValuesInitialized) {
                     InitializePropertyValues();
                 }
-                return _starBaseSettlementLayerCullingDistanceFactor;
+                return _facilityLayerCullingDistanceFactor;
             }
-            private set { _starBaseSettlementLayerCullingDistanceFactor = value; }
+            private set { _facilityLayerCullingDistanceFactor = value; }
         }
 
         private int _planetoidLayerCullingDistanceFactor;

@@ -63,17 +63,15 @@ public class AMonoStateMachine_NoCall<E> : AMonoStateMachine<E> where E : struct
 
     protected virtual void OnCurrentStateChanging(E incomingState) {
         ChangingState();
-        var temp = onCurrentStateChanging;
-        if (temp != null) {
-            temp(incomingState);
+        if (onCurrentStateChanging != null) {
+            onCurrentStateChanging(incomingState);
         }
     }
 
     protected virtual void OnCurrentStateChanged() {
         ConfigureCurrentState();
-        var temp = onCurrentStateChanged;
-        if (temp != null) {
-            temp();
+        if (onCurrentStateChanged != null) {
+            onCurrentStateChanged();
         }
     }
 

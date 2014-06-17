@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: MyAStarPointGeneratorEditor.cs
+// File: MyAStarPointGraphEditor.cs
 // My implementation of a Pathfinding Graph Editor, customized for MyAStarPointGenerator.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -24,11 +24,11 @@ using UnityEngine;
 /// <summary>
 /// My implementation of a Pathfinding Graph Editor, customized for MyAStarPointGenerator.
 /// </summary>
-[CustomGraphEditor(typeof(MyAStarPointGenerator), "MyAStarPointGenerator")]
-public class MyAStarPointGeneratorEditor : GraphEditor {
+[CustomGraphEditor(typeof(MyAStarPointGraph), "MyAStarPointGraph")]
+public class MyAStarPointGraphEditor : GraphEditor {
 
     public override void OnInspectorGUI(NavGraph target) {
-        MyAStarPointGenerator graph = target as MyAStarPointGenerator;
+        MyAStarPointGraph graph = target as MyAStarPointGraph;
 
         graph.maxDistance = EditorGUILayout.FloatField(new GUIContent("Max Distance", "The max distance in world space for a connection to be valid. A zero counts as infinity"), graph.maxDistance);
 

@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for StarbaseCmdModels.
     /// </summary>
-    public interface IStarbaseCmdModel : ICommandModel {
+    public interface IStarbaseCmdModel : ICmdModel {
 
         new StarbaseCmdData Data { get; set; }
 

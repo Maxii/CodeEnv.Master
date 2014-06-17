@@ -26,6 +26,8 @@ namespace CodeEnv.Master.GameContent {
 
         AItemData Data { get; set; }
 
+        string Name { get; }
+
         string FullName { get; }
 
         /// <summary>

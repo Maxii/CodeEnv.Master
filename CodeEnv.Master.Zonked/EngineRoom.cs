@@ -119,9 +119,9 @@ namespace CodeEnv.Master.GameContent {
             float targetThrust = requestedSpeed * _data.Drag * _data.Mass;
 
             //_targetThrustMinusMinus = Mathf.Min(targetThrust / _speedModeratelyAboveTarget.Max, maxThrust);
-            _targetThrustMinus = Mathf.Min(targetThrust / _speedSlightlyAboveTarget.Maximum, _data.FullThrust);
-            _targetThrust = Mathf.Min(targetThrust, _data.FullThrust);
-            _targetThrustPlus = Mathf.Min(targetThrust / _speedSlightlyBelowTarget.Minimum, _data.FullThrust);
+            _targetThrustMinus = Mathf.Min(targetThrust / _speedSlightlyAboveTarget.Maximum, _data.FullStlThrust);
+            _targetThrust = Mathf.Min(targetThrust, _data.FullStlThrust);
+            _targetThrustPlus = Mathf.Min(targetThrust / _speedSlightlyBelowTarget.Minimum, _data.FullStlThrust);
             // _targetThrustPlusPlus = Mathf.Min(targetThrust / _speedModeratelyBelowTarget.Min, maxThrust);
         }
 
@@ -148,7 +148,7 @@ namespace CodeEnv.Master.GameContent {
             //if (_speedModeratelyAboveTarget.IsInRange(sr)) { return _targetThrustMinusMinus; }
             if (_speedWayBelowTarget.ContainsValue(sr)) {
                 DeployFlaps(false);
-                return _data.FullThrust;
+                return _data.FullStlThrust;
             }
             if (_speedWayAboveTarget.ContainsValue(sr)) {
                 DeployFlaps(true);

@@ -30,6 +30,8 @@ using UnityEngine;
 /// </summary>
 public class FacilityModel : AUnitElementModel, IFacilityModel {
 
+    //public static float MaxRadius { get; private set; }
+
     public new FacilityData Data {
         get { return base.Data as FacilityData; }
         set { base.Data = value; }
@@ -65,6 +67,14 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
         Subscribe();
     }
 
+    protected override void InitializeRadiiComponents() {
+        var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
+        Radius = meshRenderer.bounds.extents.magnitude;
+        // D.Log("Facility {0}.Radius = {1}.", FullName, Radius);
+        // MaxRadius = Mathf.Max(Radius, MaxRadius);
+        // IMPROVE for now, a Facilities collider is a capsule with size values preset in its prefab 
+    }
+
     protected override void Initialize() {
         base.Initialize();
         CurrentState = FacilityState.None;
@@ -77,7 +87,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
     /// <param name="order">The order.</param>
     /// <param name="retainSuperiorsOrder">if set to <c>true</c> [retain superiors order].</param>
     /// <param name="target">The target.</param>
-    private void OverrideCurrentOrder(FacilityOrders order, bool retainSuperiorsOrder, IMortalTarget target = null) {
+    private void OverrideCurrentOrder(FacilityDirective order, bool retainSuperiorsOrder, IMortalTarget target = null) {
         // if the captain says to, and the current existing order is from his superior, then record it as a standing order
         FacilityOrder standingOrder = null;
         if (retainSuperiorsOrder && CurrentOrder != null) {
@@ -124,7 +134,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
         if (CurrentOrder != null) {
             // check for a standing order to execute if the current order (just completed) was issued by the Captain
             if (CurrentOrder.Source == OrderSource.ElementCaptain && CurrentOrder.StandingOrder != null) {
-                D.Log("{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder.Order.GetName());
+                D.Log("{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder.Directive.GetName());
                 CurrentOrder = CurrentOrder.StandingOrder;
                 yield break;    // aka 'return', keeps the remaining code from executing following the completion of Idling_ExitState()
             }
@@ -292,7 +302,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
 
     void Dead_EnterState() {
         LogEvent();
-        OnItemDeath();
+        OnDeath();
         OnShowAnimation(MortalAnimations.Dying);
     }
 
@@ -337,7 +347,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
             uniqueEnemyTargetsInRange = uniqueEnemyTargetsInRange.Union<IMortalTarget>(rt.EnemyTargets);  // OPTIMIZE
         }
 
-        ICommandTarget cmdTarget = _ordersTarget as ICommandTarget;
+        ICmdTarget cmdTarget = _ordersTarget as ICmdTarget;
         if (cmdTarget != null) {
             var primaryTargets = cmdTarget.ElementTargets.Cast<IMortalTarget>();
             var primaryTargetsInRange = primaryTargets.Intersect(uniqueEnemyTargetsInRange);
@@ -367,8 +377,8 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
 
     private void AssessNeedForRepair() {
         if (Data.Health < 0.30F) {
-            if (CurrentOrder == null || CurrentOrder.Order != FacilityOrders.Repair) {
-                OverrideCurrentOrder(FacilityOrders.Repair, retainSuperiorsOrder: true);
+            if (CurrentOrder == null || CurrentOrder.Directive != FacilityDirective.Repair) {
+                OverrideCurrentOrder(FacilityDirective.Repair, retainSuperiorsOrder: true);
             }
         }
     }
@@ -444,26 +454,26 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
         }
 
         if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Order.GetName());
-            FacilityOrders order = CurrentOrder.Order;
+            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetName());
+            FacilityDirective order = CurrentOrder.Directive;
             switch (order) {
-                case FacilityOrders.Attack:
+                case FacilityDirective.Attack:
                     CurrentState = FacilityState.ExecuteAttackOrder;
                     break;
-                case FacilityOrders.StopAttack:
+                case FacilityDirective.StopAttack:
                     // issued when peace declared while attacking
                     CurrentState = FacilityState.Idling;
                     break;
-                case FacilityOrders.Repair:
+                case FacilityDirective.Repair:
                     CurrentState = FacilityState.Repairing;
                     break;
-                case FacilityOrders.Refit:
+                case FacilityDirective.Refit:
                     CurrentState = FacilityState.Refitting;
                     break;
-                case FacilityOrders.Disband:
+                case FacilityDirective.Disband:
                     CurrentState = FacilityState.Disbanding;
                     break;
-                case FacilityOrders.None:
+                case FacilityDirective.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
             }

@@ -17,6 +17,7 @@
 // default namespace
 
 using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
 using UnityEditor;
 
 /// <summary>
@@ -25,9 +26,14 @@ using UnityEditor;
 [CustomEditor(typeof(StarbaseUnitCreator))]
 public class StarbaseCreatorEditor : AUnitCreatorEditor<StarbaseUnitCreator> {
 
+    protected override int GetMaxElements() {
+        return TempGameValues.MaxFacilitiesPerBase;
+    }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
 
 }
 

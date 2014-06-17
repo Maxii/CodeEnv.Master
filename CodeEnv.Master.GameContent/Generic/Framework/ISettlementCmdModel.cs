@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for SettlementCmdModels.
     /// </summary>
-    public interface ISettlementCmdModel : ICommandModel {
+    public interface ISettlementCmdModel : ICmdModel {
 
         new SettlementCmdData Data { get; set; }
 

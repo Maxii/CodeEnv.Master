@@ -28,6 +28,16 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FleetCmdData : ACommandData {
 
+        private bool _isFtlAvailableForUse;
+        /// <summary>
+        /// Indicates whether the FTL engines of the flagship are available for use - ie. undamaged, 
+        /// not damped by a dampingField and currently located in OpenSpace.
+        /// </summary>
+        public bool IsFtlAvailableForUse {
+            get { return _isFtlAvailableForUse; }
+            set { SetProperty<bool>(ref _isFtlAvailableForUse, value, "IsFtlAvailableForUse"); }
+        }
+
         private FleetCategory _category;
         public FleetCategory Category {
             get { return _category; }
@@ -40,37 +50,41 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Readonly. The current speed of the LeadShip of the Fleet
-        /// in Units per day, normalized for game speed.
+        /// Readonly. The current speed of the Flagship of the Fleet in Units per hour, normalized for game speed.
         /// </summary>
         public float CurrentSpeed { get { return HQElementData.CurrentSpeed; } }
 
         /// <summary>
-        /// Readonly. The requested speed of the LeadShip in Units per day.
+        /// Readonly. The requested speed of the Flagship in Units per hour.
         /// </summary>
         public float RequestedSpeed { get { return HQElementData.RequestedSpeed; } }
 
         /// <summary>
-        /// Readonly. The normalized requested heading of the LeadShip in worldspace coordinates.
+        /// Readonly. The normalized requested heading of the Flagship in worldspace coordinates.
         /// </summary>
         public Vector3 RequestedHeading { get { return HQElementData.RequestedHeading; } }
 
         /// <summary>
-        /// Readonly. The real-time, normalized heading of the LeadShip in worldspace coordinates. Equivalent to transform.forward.
+        /// Readonly. The real-time, normalized heading of the Flagship in worldspace coordinates. Equivalent to transform.forward.
         /// </summary>
         public Vector3 CurrentHeading { get { return HQElementData.CurrentHeading; } }
 
-        private float _fullSpeed;
+        private float _fullStlSpeed;
         /// <summary>
-        /// Gets the maximum sustainable speed of the fleet in units per day.
+        /// Gets the maximum sustainable STL speed of the fleet in units per hour.
         /// </summary>
-        public float FullSpeed {
-            get {
-                return _fullSpeed;
-            }
-            private set {
-                SetProperty<float>(ref _fullSpeed, value, "FullSpeed");
-            }
+        public float FullStlSpeed {
+            get { return _fullStlSpeed; }
+            private set { SetProperty<float>(ref _fullStlSpeed, value, "FullStlSpeed"); }
+        }
+
+        private float _fullFtlSpeed;
+        /// <summary>
+        /// Gets the maximum sustainable FTL speed of the fleet in units per hour.
+        /// </summary>
+        public float FullFtlSpeed {
+            get { return _fullFtlSpeed; }
+            private set { SetProperty<float>(ref _fullFtlSpeed, value, "FullFtlSpeed"); }
         }
 
         private float _maxTurnRate;
@@ -124,30 +138,29 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void UpdateFullSpeed() {
-            // MinBy is a MoreLinq Nuget package extension method made available by Radical. I can also get it from
-            // Nuget package manager, but installing it placed alot of things in my solution that I didn't know how to organize
             if (ElementsData.IsNullOrEmpty()) {
-                FullSpeed = Constants.ZeroF;
+                FullStlSpeed = Constants.ZeroF;
+                FullFtlSpeed = Constants.ZeroF;
                 return;
             }
-            FullSpeed = (ElementsData.MinBy(data => (data as ShipData).FullSpeed) as ShipData).FullSpeed;
+            FullStlSpeed = ElementsData.Min(data => (data as ShipData).FullStlSpeed);
+            FullFtlSpeed = ElementsData.Min(data => (data as ShipData).FullFtlSpeed);
         }
 
         private void UpdateMaxTurnRate() {
-            // MinBy is a MoreLinq Nuget package extension method made available by Radical. I can also get it from
-            // Nuget package manager, but installing it placed alot of things in my solution that I didn't know how to organize
             if (ElementsData.IsNullOrEmpty()) {
                 MaxTurnRate = Constants.ZeroF;
                 return;
             }
-            MaxTurnRate = (ElementsData.MinBy(data => (data as ShipData).MaxTurnRate) as ShipData).MaxTurnRate;
+            MaxTurnRate = ElementsData.Min(data => (data as ShipData).MaxTurnRate);
         }
 
         protected override void Subscribe(AElementData elementData) {
             base.Subscribe(elementData);
             IList<IDisposable> anElementsSubscriptions = _subscribers[elementData];
             ShipData shipData = elementData as ShipData;
-            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.FullSpeed, OnShipElementFullSpeedChanged));
+            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.FullStlSpeed, OnShipElementFullSpeedChanged));
+            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.FullFtlSpeed, OnShipElementFullSpeedChanged));
             anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.MaxTurnRate, OnShipElementMaxTurnRateChanged));
         }
 

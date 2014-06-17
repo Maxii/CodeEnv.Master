@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FacilityOrders.cs
-// The orders that can be issued to a facility.
+// File: ISystemTarget.cs
+// Interface for an IDestinationTarget that is a System.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,23 +17,9 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// The orders that can be issued to a facility.
+    /// Interface for an IDestinationTarget that is a System.
     /// </summary>
-    public enum FacilityOrders {
-
-        None,
-
-        Attack,
-
-        StopAttack,
-
-        Repair,
-
-        // Refit and Disband can also be issued by the Player
-
-        Refit,
-
-        Disband
+    public interface ISystemTarget : IOwnedTarget {
 
     }
 }

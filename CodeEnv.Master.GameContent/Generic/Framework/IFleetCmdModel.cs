@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for FleetCommandModels.
     /// </summary>
-    public interface IFleetCmdModel : ICommandModel {
+    public interface IFleetCmdModel : ICmdModel {
 
         new FleetCmdData Data { get; set; }
 
@@ -35,6 +35,8 @@ namespace CodeEnv.Master.GameContent {
         /// all fleet ships move together.
         /// </summary>
         bool IsBearingConfirmed { get; }
+
+        void __OnHQElementEmergency();
 
     }
 }

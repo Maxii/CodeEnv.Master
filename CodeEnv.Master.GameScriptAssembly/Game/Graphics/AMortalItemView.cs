@@ -114,18 +114,13 @@ public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
         OnShowCompletion();
     }
 
-    /// <summary>
-    /// Safely invokes the onShowCompletion event.
-    /// </summary>
     protected void OnShowCompletion() {
-        var temp = onShowCompletion;
-        if (temp != null) {
-            temp();
+        if (onShowCompletion != null) {
+            onShowCompletion();
         }
     }
 
     #endregion
-
 
     #region ICameraTargetable Members
 
@@ -183,7 +178,6 @@ public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
     }
 
     #endregion
-
 
 }
 

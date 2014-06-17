@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -23,13 +24,20 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ItemData : AItemData {
 
-        //public ItemData(string name, string optionalParentName = "") : base(name, optionalParentName) { }
+        public override SpaceTopography Topography {
+            get { return base.Topography; }
+            set { throw new NotImplementedException(); }
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ItemData" /> class.
         /// </summary>
         /// <param name="name">The name.</param>
-        public ItemData(string name) : base(name) { }
+        /// <param name="topography">The topography.</param>
+        public ItemData(string name, SpaceTopography topography)
+            : base(name) {
+            base.Topography = topography;
+        }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

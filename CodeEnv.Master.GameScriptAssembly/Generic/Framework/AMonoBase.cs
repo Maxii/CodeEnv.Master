@@ -204,6 +204,10 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
         //LogEvent();
     }
 
+    protected virtual void FixedUpdate() {
+        //LogEvent();
+    }
+
     #endregion
 
     #region Invoke
@@ -434,7 +438,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
         //D.Log("SetProperty called. {0} changing to {1}.", propertyName, value);
 
         if (onChanging != null) { onChanging(value); }
-        OnPropertyChanging(propertyName, value);
+        OnPropertyChanging<T>(propertyName, value);
 
         backingStore = value;
 

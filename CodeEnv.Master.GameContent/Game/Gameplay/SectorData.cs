@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -24,6 +25,11 @@ namespace CodeEnv.Master.GameContent {
     public class SectorData : AItemData {
 
         public Index3D SectorIndex { get; private set; }
+
+        public override SpaceTopography Topography {
+            get { return base.Topography; }
+            set { throw new NotImplementedException(); }    // TODO may need this public set capability if topography is determined after Sectors are made
+        }
 
         /// <summary>
         /// UNDONE
@@ -42,6 +48,7 @@ namespace CodeEnv.Master.GameContent {
         public SectorData(Index3D index)
             : base("Sector {0}".Inject(index)) {
             SectorIndex = index;
+            base.Topography = SpaceTopography.OpenSpace;
         }
 
         public override string ToString() {

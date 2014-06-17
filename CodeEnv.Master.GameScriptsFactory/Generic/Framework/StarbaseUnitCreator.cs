@@ -42,11 +42,11 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
     }
 
     protected override FacilityModel MakeElement(FacilityStat stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner) {
-        return _factory.MakeInstance(stat, weaponStats, owner);
+        return _factory.MakeInstance(stat, SpaceTopography.OpenSpace, weaponStats, owner);
     }
 
     protected override bool MakeElement(FacilityStat stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner, ref FacilityModel element) {
-        _factory.MakeInstance(stat, weaponStats, owner, ref element);
+        _factory.MakeInstance(stat, SpaceTopography.OpenSpace, weaponStats, owner, ref element);
         return true;    // IMPROVE dummy return for facilities to match signature of abstract MakeElement - facilties currently don't have a HumanView 
     }
 
@@ -113,7 +113,7 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
     protected override void EnableOtherWhenRunning() {
         D.Assert(GameStatus.Instance.IsRunning);
         gameObject.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(relay => relay.enabled = true);
-        gameObject.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeTracker>().ForAll(wrt => wrt.enabled = true);
+        gameObject.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeMonitor>().ForAll(wrt => wrt.enabled = true);
         gameObject.GetSafeMonoBehaviourComponentsInChildren<Revolve>().ForAll(rev => rev.enabled = true);
         gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>().enabled = true;
         // no orbits present,  // other possibles: Billboard, ScaleRelativeToCamera

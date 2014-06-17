@@ -32,6 +32,7 @@ namespace CodeEnv.Master.GameContent {
         private static IList<GuiHudLineKeys> _displayLineOrder = new List<GuiHudLineKeys>() {
                 {GuiHudLineKeys.Name},
                 {GuiHudLineKeys.ParentName},
+                {GuiHudLineKeys.SectorIndex},
                 {GuiHudLineKeys.Category},
                 {GuiHudLineKeys.IntelState},
                 {GuiHudLineKeys.Capacity},
@@ -46,7 +47,6 @@ namespace CodeEnv.Master.GameContent {
                 {GuiHudLineKeys.Composition},
                 {GuiHudLineKeys.CompositionDetails},
                 {GuiHudLineKeys.ShipDetails},
-                {GuiHudLineKeys.SectorIndex},
                 {GuiHudLineKeys.Density},
                 {GuiHudLineKeys.Distance}
         };

@@ -43,12 +43,12 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
     }
 
     protected override FacilityModel MakeElement(FacilityStat stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner) {
-        return _factory.MakeInstance(stat, weaponStats, owner);
+        return _factory.MakeInstance(stat, SpaceTopography.System, weaponStats, owner);
     }
 
     protected override bool MakeElement(FacilityStat stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner, ref FacilityModel element) {
-        _factory.MakeInstance(stat, weaponStats, owner, ref element);
-        return true;    // IMPROVE dummy return for facilities to match signature of abstract MakeElement - facilties currently don't have a HumanView 
+        _factory.MakeInstance(stat, SpaceTopography.System, weaponStats, owner, ref element);
+        return true;    // IMPROVE dummy return for facilities to match signature of abstract MakeElement - facilities currently don't have a HumanView 
     }
 
     protected override FacilityCategory GetCategory(FacilityStat stat) {
@@ -122,9 +122,9 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
         // the entire settlementUnit gameobject has already been detached from this creator at this point
         GameObject settlementUnitGo = _command.transform.parent.gameObject;
         settlementUnitGo.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(relay => relay.enabled = true);
-        settlementUnitGo.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeTracker>().ForAll(wrt => wrt.enabled = true);
+        settlementUnitGo.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeMonitor>().ForAll(wrt => wrt.enabled = true);
         settlementUnitGo.GetSafeMonoBehaviourComponentsInChildren<Revolve>().ForAll(rev => rev.enabled = true);
-        settlementUnitGo.GetSafeMonoBehaviourComponentInParents<Orbit>().enabled = true;    // the overall settlement unit orbit around the system's star
+        // settlementUnitGo.GetSafeMonoBehaviourComponentInParents<Orbit>().enabled = true;    // currently keeping Settlements in a fixed location
         settlementUnitGo.GetSafeMonoBehaviourComponentInChildren<UISprite>().enabled = true;
         // no other orbits present,  // other possibles: Billboard, ScaleRelativeToCamera
         // TODO SensorRangeTracker

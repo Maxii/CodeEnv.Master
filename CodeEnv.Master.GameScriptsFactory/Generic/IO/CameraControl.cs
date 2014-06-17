@@ -157,7 +157,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     private LayerMask _cameraTargetsOnlyLayerMask = LayerMaskExtensions.CreateExclusiveMask(Layers.UniverseEdge,
         Layers.DeepSpace, Layers.Gui2D, Layers.Vectrosity2D, Layers.CelestialObjectKeepout, Layers.IgnoreRaycast);
     private LayerMask _layersVisibleToCamera = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
-        Layers.DummyTarget, Layers.UniverseEdge, Layers.Ships, Layers.BasesSettlements, Layers.Planetoids, Layers.Stars);
+        Layers.DummyTarget, Layers.UniverseEdge, Layers.Ship, Layers.Facility, Layers.Planetoid, Layers.Star);
 
     private Vector3 _screenCenter = new Vector3(Screen.width / 2, Screen.height / 2, 0F);
 
@@ -264,7 +264,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         D.Assert(isValid, "Incompatable Camera Configuration.", pauseOnFail: true);
     }
 
-    private void InitializeMainCamera() {
+    private void InitializeMainCamera() {   // called from OnGameStateChanged()
         InitializeFields();
         SetCameraSettings();
         InitializeMainCameraEventDispatcher();    // avoid doing in Awake as UICamera Awake() can override setting
@@ -288,10 +288,10 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         _camera.farClipPlane = _universeRadius * 2F;
         //_camera.layerCullSpherical = true;
         float[] cullDistances = new float[32];
-        cullDistances[(int)Layers.Ships] = TempGameValues.ShipRadius_Max * AnimationSettings.Instance.ShipLayerCullingDistanceFactor;   // 5
-        cullDistances[(int)Layers.BasesSettlements] = TempGameValues.StarBaseRadius * AnimationSettings.Instance.StarBaseSettlementLayerCullingDistanceFactor;  // 100
-        cullDistances[(int)Layers.Planetoids] = TempGameValues.PlanetoidRadius_Max * AnimationSettings.Instance.PlanetoidLayerCullingDistanceFactor; // 500
-        cullDistances[(int)Layers.Stars] = TempGameValues.StarRadius * AnimationSettings.Instance.StarLayerCullingDistanceFactor; // 3000
+        cullDistances[(int)Layers.Ship] = TempGameValues.ShipMaxRadius * AnimationSettings.Instance.ShipLayerCullingDistanceFactor;   // 5
+        cullDistances[(int)Layers.Facility] = TempGameValues.FacilityMaxRadius * AnimationSettings.Instance.FacilityLayerCullingDistanceFactor;  // 12.5
+        cullDistances[(int)Layers.Planetoid] = TempGameValues.PlanetoidMaxRadius * AnimationSettings.Instance.PlanetoidLayerCullingDistanceFactor;   // 500
+        cullDistances[(int)Layers.Star] = TempGameValues.StarMaxRadius * AnimationSettings.Instance.StarLayerCullingDistanceFactor; // 3000
         _camera.layerCullDistances = cullDistances;
     }
 

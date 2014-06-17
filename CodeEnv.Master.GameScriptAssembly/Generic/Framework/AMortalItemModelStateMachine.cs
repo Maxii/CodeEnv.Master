@@ -51,9 +51,8 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
 
     private void OnStateChanged() {
         //D.Log("{0}.State changed to {1}.", Data.Name, CurrentState.ToString());
-        var temp = onStateChanged;
-        if (temp != null) {
-            temp();
+        if (onStateChanged != null) {
+            onStateChanged();
         }
     }
 
@@ -732,7 +731,8 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
         state.DoLateUpdate();
     }
 
-    void FixedUpdate() {
+    protected override void FixedUpdate() {
+        base.FixedUpdate();
         state.DoFixedUpdate();
     }
 

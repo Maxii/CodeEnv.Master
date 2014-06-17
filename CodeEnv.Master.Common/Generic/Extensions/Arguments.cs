@@ -120,19 +120,18 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Validates the provided Collection is not empty or null;
+        /// Validates the provided IEnumerable is not empty or null;
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="collection">The collection.</param>
-        /// <exception cref="ArgumentException">Collection is empty.</exception>
-        /// <exception cref="ArgumentNullException">Collection is null.</exception>
-        public static void ValidateNotNullOrEmpty<T>(ICollection<T> collection) {
-            ValidateNotNull(collection);
-            if (collection.Count == 0) {
+        /// <param name="enumerable">The collection.</param>
+        /// <exception cref="System.ArgumentException">enumerable is null or empty</exception>
+        public static void ValidateNotNullOrEmpty<T>(IEnumerable<T> enumerable) {
+            if (enumerable.IsNullOrEmpty()) {
                 string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
                 throw new ArgumentException(ErrorMessages.CollectionEmpty.Inject(callingMethodName));
             }
         }
+
 
         /// <summary>
         /// Validates the objects provided are all of Type T.

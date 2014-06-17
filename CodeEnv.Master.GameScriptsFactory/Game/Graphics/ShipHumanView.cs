@@ -60,7 +60,7 @@ public class ShipHumanView : ShipView {
     // NOTE: Can't move all this to Presenter as CtxMenu and CtxObject are loose scripts from Contextual in the default namespace
     // IMPROVE These fields can all be static as long as ships can't have different order options available from the context menu
 
-    private static ShipOrders[] shipMenuOrders = new ShipOrders[] { ShipOrders.JoinFleet, ShipOrders.Disband, ShipOrders.Refit };
+    private static ShipDirective[] shipMenuOrders = new ShipDirective[] { ShipDirective.JoinFleet, ShipDirective.Disband, ShipDirective.Refit };
     private static CtxMenu _shipMenu;
 
     /// <summary>
@@ -72,7 +72,7 @@ public class ShipHumanView : ShipView {
     /// know for certain) that I need to construct the submenu for each order when I show the context menu, even 
     /// if the player only accesses only one of the orders.
     /// </summary>
-    private static IDictionary<ShipOrders, CtxMenu> _subMenuLookup;
+    private static IDictionary<ShipDirective, CtxMenu> _subMenuLookup;
 
     /// <summary>
     /// Lookup table for fleets that this ship would be allowed to join, keyed by the selection item ID.
@@ -87,7 +87,7 @@ public class ShipHumanView : ShipView {
     /// <summary>
     /// A lookup for finding the order associated with a range of submenu item IDs.
     /// </summary>
-    private static IDictionary<Range<int>, ShipOrders> _subMenuOrderLookup;
+    private static IDictionary<Range<int>, ShipDirective> _subMenuOrderLookup;
 
     /// <summary>
     /// The _lowest unused item ID available for use by submenus.
@@ -121,7 +121,7 @@ public class ShipHumanView : ShipView {
             _lowestUnusedItemId = _shipMenu.items.Length;
         }
         if (_subMenuLookup == null) {
-            _subMenuLookup = new Dictionary<ShipOrders, CtxMenu>(shipMenuOrders.Length);
+            _subMenuLookup = new Dictionary<ShipDirective, CtxMenu>(shipMenuOrders.Length);
             var availableSubMenus = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>()
                 .Where(menu => menu.gameObject.name.Equals("SubMenu")).ToArray();
             D.Assert(shipMenuOrders.Length <= availableSubMenus.Length);
@@ -130,7 +130,7 @@ public class ShipHumanView : ShipView {
             }
         }
         if (_subMenuOrderLookup == null) {
-            _subMenuOrderLookup = new Dictionary<Range<int>, ShipOrders>();
+            _subMenuOrderLookup = new Dictionary<Range<int>, ShipDirective>();
         }
         if (_joinableFleetLookup == null) {
             _joinableFleetLookup = new Dictionary<int, FleetCmdModel>();
@@ -167,7 +167,7 @@ public class ShipHumanView : ShipView {
             int orderItemID = shipMenuOrders.IndexOf(order);
             CtxMenu subMenu = _subMenuLookup[order];
             switch (order) {
-                case ShipOrders.JoinFleet:
+                case ShipDirective.JoinFleet:
                     //D.Log("JoinFleet order ID = {0}.", orderItemID);
                     FleetCmdModel[] joinableFleets = FindObjectsOfType<FleetCmdModel>().Where(f => f.Owner.IsHuman).Except(Presenter.Model.Command as FleetCmdModel).ToArray();
                     var joinFleetSubmenuItemCount = joinableFleets.Length;
@@ -195,11 +195,11 @@ public class ShipHumanView : ShipView {
                         _shipMenu.items[orderItemID].isDisabled = true;
                     }
                     break;
-                case ShipOrders.Disband:
-                case ShipOrders.Refit:
+                case ShipDirective.Disband:
+                case ShipDirective.Refit:
                     // TODO
                     break;
-                case ShipOrders.None:
+                case ShipDirective.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
             }
@@ -209,19 +209,19 @@ public class ShipHumanView : ShipView {
     private void OnContextMenuSelection() {
         int subMenuItemId = _ctxObject.selectedItem; // IMPROVE assumes all menu items have submenus
         Range<int> orderKey = _subMenuOrderLookup.Keys.Single<Range<int>>(subMenuItemIdRange => subMenuItemIdRange.ContainsValue(subMenuItemId));
-        ShipOrders orderSelected = _subMenuOrderLookup[orderKey];
+        ShipDirective orderSelected = _subMenuOrderLookup[orderKey];
         IMortalTarget targetSelected = GetTargetSelected(orderSelected, subMenuItemId);
         D.Log("{0} selected order {1} and submenu item {2} from context menu.", Presenter.FullName, orderSelected.GetName(), targetSelected.FullName);
         ShipOrder order = new ShipOrder(orderSelected, OrderSource.Player, targetSelected);
         Presenter.Model.CurrentOrder = order;
     }
 
-    private IMortalTarget GetTargetSelected(ShipOrders orderSelected, int subMenuItemId) {
+    private IMortalTarget GetTargetSelected(ShipDirective orderSelected, int subMenuItemId) {
         switch (orderSelected) {
-            case ShipOrders.JoinFleet:
+            case ShipDirective.JoinFleet:
                 return _joinableFleetLookup[subMenuItemId] as IMortalTarget;
-            case ShipOrders.Disband:
-            case ShipOrders.Refit:
+            case ShipDirective.Disband:
+            case ShipDirective.Refit:
                 return _disbandRefitBaseLookup[subMenuItemId] as IMortalTarget;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(orderSelected));

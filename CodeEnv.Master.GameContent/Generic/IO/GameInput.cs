@@ -115,9 +115,8 @@ namespace CodeEnv.Master.GameContent {
         /// Called when a mouse button click event occurs but no collider consumes it.
         /// </summary>
         public void OnUnconsumedClick() {
-            var temp = onUnconsumedClick;
-            if (temp != null) {
-                temp(References.InputHelper.GetMouseButton());
+            if (onUnconsumedClick != null) {
+                onUnconsumedClick(References.InputHelper.GetMouseButton());
             }
         }
 
@@ -157,9 +156,8 @@ namespace CodeEnv.Master.GameContent {
             if (inputHelper.IsAnyKeyOrMouseButtonDown()) {
                 KeyCode keyPressed;
                 if (inputHelper.TryIsKeyDown(out keyPressed, _viewModeKeyCodesToSearch)) {
-                    var temp = onViewModeKeyPressed;
-                    if (temp != null) {
-                        temp((ViewModeKeys)keyPressed);
+                    if (onViewModeKeyPressed != null) {
+                        onViewModeKeyPressed((ViewModeKeys)keyPressed);
                     }
                 }
             }

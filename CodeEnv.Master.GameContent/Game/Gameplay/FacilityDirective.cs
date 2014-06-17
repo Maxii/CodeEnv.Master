@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ICommandTarget.cs
-// Interface for a target that is a UnitCommand.
+// File: FacilityDirective.cs
+// The directives that can be issued to a facility.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,14 +16,24 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System.Collections.Generic;
-
     /// <summary>
-    /// Interface for a target that is a UnitCommand.
+    /// The directives that can be issued to a facility.
     /// </summary>
-    public interface ICommandTarget : IMortalTarget {
+    public enum FacilityDirective {
 
-        IEnumerable<IElementTarget> ElementTargets { get; }
+        None,
+
+        Attack,
+
+        StopAttack,
+
+        Repair,
+
+        // Refit and Disband can also be issued by the Player
+
+        Refit,
+
+        Disband
 
     }
 }

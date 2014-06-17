@@ -27,12 +27,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SystemData : AItemData, IDisposable {
 
-        public event Action onCompositionChanged;
-        private void OnCompositionChanged() {
-            var temp = onCompositionChanged;
-            if (temp != null) {
-                temp();
-            }
+        public Index3D SectorIndex { get; private set; }
+
+        public override SpaceTopography Topography {
+            get { return base.Topography; }
+            set { throw new NotImplementedException(); }
         }
 
         private Vector3 _settlementOrbitSlot;
@@ -85,63 +84,33 @@ namespace CodeEnv.Master.GameContent {
 
         private StarData _starData;
         public StarData StarData {
-            get {                return _starData;            }
+            get { return _starData; }
             set { SetProperty<StarData>(ref _starData, value, "StarData", OnStarDataChanged, OnStarDataChanging); }
         }
 
-
         private IList<PlanetoidData> _planetsData = new List<PlanetoidData>();
-
-        //public SystemComposition Composition { get; private set; }
 
         private IDictionary<PlanetoidData, IList<IDisposable>> _planetSubscribers;
         private IList<IDisposable> _starSubscribers;
         private IList<IDisposable> _settlementSubscribers;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SystemData"/> class.
+        /// Initializes a new instance of the <see cref="SystemData" /> class.
         /// </summary>
         /// <param name="systemName">Name of the system.</param>
-        /// <param name="composition">The composition.</param>
-        //public SystemData(string systemName, SystemComposition composition)
-        //    : base(systemName) {
-        //    Composition = composition;
-        //    Subscribe();
-        //    UpdateProperties();
-        //}
-
-        public SystemData(string systemName)
+        /// <param name="sectorIndex">Index of the sector.</param>
+        /// <param name="topography">The topography.</param>
+        public SystemData(string systemName, Index3D sectorIndex, SpaceTopography topography)
             : base(systemName) {
-                Subscribe();
+            SectorIndex = sectorIndex;
+            base.Topography = topography;
+            Subscribe();
         }
 
         private void Subscribe() {
             _planetSubscribers = new Dictionary<PlanetoidData, IList<IDisposable>>();
             _starSubscribers = new List<IDisposable>();
         }
-
-        //private void Subscribe() {
-        //    _planetSubscribers = new Dictionary<PlanetoidData, IList<IDisposable>>();
-        //    foreach (var planetData in Composition.GetPlanetData()) {
-        //        _planetSubscribers.Add(planetData, new List<IDisposable>());
-        //        IList<IDisposable> planetSubscriptions = _planetSubscribers[planetData];
-        //        planetSubscriptions.Add(planetData.SubscribeToPropertyChanged<PlanetoidData, int>(pd => pd.Capacity, OnCapacityChangedInComposition));
-        //        planetSubscriptions.Add(planetData.SubscribeToPropertyChanged<PlanetoidData, OpeYield>(pd => pd.Resources, OnResourcesChangedInComposition));
-        //        planetSubscriptions.Add(planetData.SubscribeToPropertyChanged<PlanetoidData, XYield>(pd => pd.SpecialResources, OnSpecialResourcesChangedInComposition));
-        //    }
-
-        //    StarData starData = Composition.StarData;
-        //    _starSubscribers = new List<IDisposable>();
-        //    _starSubscribers.Add(starData.SubscribeToPropertyChanged<StarData, int>(sd => sd.Capacity, OnCapacityChangedInComposition));
-        //    _starSubscribers.Add(starData.SubscribeToPropertyChanged<StarData, OpeYield>(sd => sd.Resources, OnResourcesChangedInComposition));
-        //    _starSubscribers.Add(starData.SubscribeToPropertyChanged<StarData, XYield>(sd => sd.SpecialResources, OnSpecialResourcesChangedInComposition));
-
-        //    _settlementSubscribers = new List<IDisposable>();
-        //}
-
-        //private void SubscribeToSettlementDataValuesChanged() {
-        //    _settlementSubscribers.Add(SettlementData.SubscribeToPropertyChanged<SettlementCmdData, IPlayer>(sd => sd.Owner, OnSettlementOwnerChanged));
-        //}
 
         public void AddPlanet(PlanetoidData data) {
             _planetsData.Add(data);
@@ -160,17 +129,6 @@ namespace CodeEnv.Master.GameContent {
             return true;
         }
 
-        //public bool RemovePlanet(PlanetoidData data) {
-        //    if (Composition.RemovePlanet(data)) {
-        //        Unsubscribe(data);
-        //        UpdateProperties();
-        //        OnCompositionChanged();
-        //        return true;
-        //    }
-        //    D.Warn("Attempting to remove {0} {1} that is not present.", typeof(PlanetoidData), data.ParentName);
-        //    return false;
-        //}
-
         private void OnSystemMemberCapacityChanged() {
             UpdateCapacity();
         }
@@ -182,17 +140,6 @@ namespace CodeEnv.Master.GameContent {
         private void OnSystemMemberSpecialResourceValueChanged() {
             UpdateSpecialResources();
         }
-
-        //private void OnSettlementDataChanged() {
-        //    if (SettlementData != null) {
-        //        SubscribeToSettlementDataValuesChanged();
-        //        OnSettlementOwnerChanged();
-        //    }
-        //    else {
-        //        Owner = TempGameValues.NoPlayer;
-        //        UnsubscribeToSettlementDataValueChanges();
-        //    }
-        //}
 
         private void OnSettlementDataChanged() {
             // Existing settlements will always be destroyed (data = null) before changing to a new settlement
@@ -214,14 +161,10 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-
-
         private void OnStarDataChanged() {
             SubscribeToStarDataValueChanges();
             RecalcAllProperties();
         }
-
-
 
         private void OnSettlementOwnerChanged() {
             Owner = SettlementData.Owner;
@@ -237,22 +180,6 @@ namespace CodeEnv.Master.GameContent {
             StarData.Owner = Owner;
         }
 
-
-        //private void PropogateOwnerChange() {
-        //    Composition.GetPlanetData().ForAll(pd => pd.Owner = Owner);
-        //    Composition.StarData.Owner = Owner;
-        //}
-
-        /// <summary>
-        /// Recalculates any properties that are dependant upon the 
-        /// composition of the system
-        /// </summary>
-        //private void UpdateProperties() {
-        //    UpdateCapacity();
-        //    UpdateResources();
-        //    UpdateSpecialResources();
-        //}
-
         private void RecalcAllProperties() {
             UpdateCapacity();
             UpdateResources();
@@ -263,11 +190,6 @@ namespace CodeEnv.Master.GameContent {
             Capacity = _planetsData.Sum(data => data.Capacity) + StarData.Capacity;
         }
 
-
-        //private void UpdateCapacity() {
-        //    Capacity = Composition.GetPlanetData().Sum<PlanetoidData>(data => data.Capacity) + Composition.StarData.Capacity;
-        //}
-
         private void UpdateResources() {
             var defaultValueIfEmpty = default(OpeYield);
             var resources = _planetsData.Select(pd => pd.Resources);
@@ -275,28 +197,12 @@ namespace CodeEnv.Master.GameContent {
             Resources = totalResourcesFromPlanets + StarData.Resources;
         }
 
-
-        //private void UpdateResources() {
-        //    var defaultValueIfEmpty = default(OpeYield);
-        //    var resources = Composition.GetPlanetData().Select(pd => pd.Resources);
-        //    OpeYield totalResourcesFromPlanets = resources.Aggregate(defaultValueIfEmpty, (accumulator, ope) => accumulator + ope);
-        //    Resources = totalResourcesFromPlanets + Composition.StarData.Resources;
-        //}
-
         private void UpdateSpecialResources() {
             var defaultValueIfEmpty = default(XYield);
             var resources = _planetsData.Select(pd => pd.SpecialResources);
             XYield totalResourcesFromPlanets = resources.Aggregate(defaultValueIfEmpty, (accumulator, ope) => accumulator + ope);
             SpecialResources = totalResourcesFromPlanets + StarData.SpecialResources;
         }
-
-
-        //private void UpdateSpecialResources() {
-        //    var defaultValueIfEmpty = default(XYield);
-        //    var resources = Composition.GetPlanetData().Select(pd => pd.SpecialResources);
-        //    XYield totalResourcesFromPlanets = resources.Aggregate(defaultValueIfEmpty, (accumulator, ope) => accumulator + ope);
-        //    SpecialResources = totalResourcesFromPlanets + Composition.StarData.SpecialResources;
-        //}
 
         private void SubscribeToPlanetDataValueChanges(PlanetoidData data) {
             if (!_planetSubscribers.ContainsKey(data)) {

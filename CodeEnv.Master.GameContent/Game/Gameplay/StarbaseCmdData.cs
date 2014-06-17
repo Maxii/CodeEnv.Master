@@ -40,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
         public BaseComposition Composition { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="StarbaseCmdData"/> class.
+        /// Initializes a new instance of the <see cref="StarbaseCmdData" /> class.
         /// </summary>
         /// <param name="stat">The stat.</param>
         public StarbaseCmdData(StarbaseCmdStat stat)

@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: WeaponRangeTracker.cs
+// File: WeaponRangeMonitor.cs
 // Maintains a list of all IMortalTargets within a specified range of this trigger collider object and generates
 //  an event when the first or last enemy target enters/exits the range.
 // </summary> 
@@ -28,7 +28,7 @@ using UnityEngine;
 ///  an event when the first or last enemy target enters/exits the range.
 /// TODO Account for a diploRelations change with an owner
 /// </summary>
-public class WeaponRangeTracker : AMonoBase, IWeaponRangeTracker {
+public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
 
     public Guid ID { get; private set; }
 
@@ -107,7 +107,7 @@ public class WeaponRangeTracker : AMonoBase, IWeaponRangeTracker {
         }
     }
 
-    private void OnTargetOwnerChanged(IMortalModel target) {
+    private void OnTargetOwnerChanged(IOwnedTarget target) {
         var _target = target as IMortalTarget;
         if (Owner.IsEnemyOf(_target.Owner)) {
             if (!EnemyTargets.Contains(_target)) {
@@ -147,21 +147,20 @@ public class WeaponRangeTracker : AMonoBase, IWeaponRangeTracker {
     }
 
     private void OnEnemyInRange(bool isEnemyInRange) {
-        var temp = onEnemyInRange;
-        if (temp != null) {
-            temp(isEnemyInRange, ID);
+        if (onEnemyInRange != null) {
+            onEnemyInRange(isEnemyInRange, ID);
         }
     }
 
-    private void OnTargetDeath(IMortalModel target) {
-        Remove(target as IMortalTarget);
+    private void OnTargetDeath(IMortalTarget target) {
+        Remove(target);
     }
 
     private void Add(IMortalTarget target) {
         if (!AllTargets.Contains(target)) {
             if (target.IsAlive) {
                 //D.Log("{0}.{1} now tracking target {2}.", ParentFullName, GetType().Name, target.FullName);
-                target.onItemDeath += OnTargetDeath;
+                target.onTargetDeath += OnTargetDeath;
                 target.onOwnerChanged += OnTargetOwnerChanged;
                 AllTargets.Add(target);
             }
@@ -191,7 +190,7 @@ public class WeaponRangeTracker : AMonoBase, IWeaponRangeTracker {
         bool isRemoved = AllTargets.Remove(target);
         if (isRemoved) {
             //D.Log("{0}.{1} no longer tracking target {2} at distance = {3}.", ParentFullName, GetType().Name, target.FullName, Vector3.Distance(target.Position, _transform.position));
-            target.onItemDeath -= OnTargetDeath;
+            target.onTargetDeath -= OnTargetDeath;
             target.onOwnerChanged -= OnTargetOwnerChanged;
         }
         else {

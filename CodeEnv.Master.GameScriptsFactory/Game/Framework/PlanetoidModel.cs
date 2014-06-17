@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Linq;
 using System.Collections;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -26,8 +27,10 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all planetoids in the game.
 /// </summary>
-public class PlanetoidModel : AMortalItemModel, IPlanetoidModel {
+public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IPlanetoidTarget, IOrbitable {
     //public class PlanetoidModel : AMortalItemModelStateMachine {
+
+    //public static float MaxRadius { get; private set; }
 
     public new PlanetoidData Data {
         get { return base.Data as PlanetoidData; }
@@ -37,19 +40,41 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel {
     protected override void Awake() {
         base.Awake();
         // IMPROVE planetoid colliders vary in radius. They are currently manually preset via the editor to match their mesh size in their prefab
-        InitializeKeepoutCollider();
         Subscribe();
     }
 
-    private void InitializeKeepoutCollider() {
-        SphereCollider keepoutCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
-        D.Assert(keepoutCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
-        keepoutCollider.radius = Radius * TempGameValues.KeepoutRadiusMultiplier;
+    protected override void InitializeRadiiComponents() {
+        var meshRenderers = gameObject.GetComponentsInImmediateChildren<Renderer>();    // some planetoids have an atmosphere
+        Radius = meshRenderers.First().bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
+        //MaxRadius = Mathf.Max(Radius, MaxRadius);
+
+        (collider as SphereCollider).radius = Radius;
+
+        SphereCollider keepoutZoneCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
+        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
+        keepoutZoneCollider.radius = Radius * TempGameValues.KeepoutRadiusMultiplier;
+        float orbitBufferDistanceAboveKeepoutZone = Mathf.Min(Radius, 1F);   // 0.2 - 1
+        OrbitDistance = keepoutZoneCollider.radius + orbitBufferDistanceAboveKeepoutZone;
+        //D.Log("{0} distance from orbit to planet surface (collider) = {1}.", FullName, OrbitDistance - Radius);
     }
 
     protected override void Initialize() {
         base.Initialize();
         CurrentState = PlanetoidState.None;
+        __CheckForOrbitingBodiesInsideOrbitDistance();
+    }
+
+    [System.Diagnostics.Conditional("DEBUG_LOG")]
+    private void __CheckForOrbitingBodiesInsideOrbitDistance() {
+        var moons = gameObject.GetComponentsInChildren<PlanetoidModel>().Except(this);
+        if (!moons.IsNullOrEmpty()) {
+            var moonsInsideKeepoutZoneRadius = moons.Where(moon => moon.transform.localPosition.magnitude + moon.Radius <= OrbitDistance);
+            if (!moonsInsideKeepoutZoneRadius.IsNullOrEmpty()) {
+                moonsInsideKeepoutZoneRadius.ForAll(moon => {
+                    D.Warn("{0} is inside {1}'s OrbitDistance of {2}.", moon.FullName, FullName, OrbitDistance);
+                });
+            }
+        }
     }
 
     protected override void OnOwnerChanged() {
@@ -95,7 +120,7 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel {
             case PlanetoidState.Idling:
                 break;
             case PlanetoidState.Dead:
-                OnItemDeath();
+                OnDeath();
                 OnShowAnimation(MortalAnimations.Dying);
                 break;
             case PlanetoidState.None:
@@ -217,6 +242,17 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel {
         OnShowAnimation(MortalAnimations.Hit);
     }
 
+    #endregion
+
+    #region IPlanetoidTarget Members
+
+    public override bool IsMovable { get { return true; } }
+
+    #endregion
+
+    #region IOrbitable Members
+
+    public float OrbitDistance { get; private set; }
 
     #endregion
 

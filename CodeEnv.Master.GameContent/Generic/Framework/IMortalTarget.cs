@@ -22,11 +22,14 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for a target that is mortal.
     /// </summary>
-    public interface IMortalTarget : IDestinationTarget {
+    public interface IMortalTarget : IOwnedTarget {
 
-        event Action<IMortalModel> onItemDeath;
-
-        event Action<IMortalModel> onOwnerChanged;
+        /// <summary>
+        /// Occurs when this mortal target has died. Intended for external
+        /// notification to others that have targeted this mortal target as the
+        /// IMortalTarget interface provides only limited access to the model.
+        /// </summary>
+        event Action<IMortalTarget> onTargetDeath;
 
         /// <summary>
         /// Flag indicating whether the MortalItem is dead.
@@ -34,8 +37,6 @@ namespace CodeEnv.Master.GameContent {
         bool IsAlive { get; }
 
         void TakeHit(CombatStrength attackerWeaponStrength);
-
-        IPlayer Owner { get; }
 
         float MaxWeaponsRange { get; }
 

@@ -297,18 +297,18 @@ namespace CodeEnv.Master.GameContent {
 
         public class ColoredTextList_Speed : ColoredTextListBase {
 
-            private static string normalSpeedText = "{0}/{1}";
-            private static string speedNoMaxText = "{0}";
+            private static string normalSpeedText = "{0:0.##}/{1:0.##}";
+            private static string speedNoRequestedText = "{0:0.##}";
 
-            public ColoredTextList_Speed(float currentSpeed, float maxSpeed = Constants.ZeroF, string format = Constants.FormatFloat_1DpMax) {
+            public ColoredTextList_Speed(float currentSpeed, float requestedSpeed = Constants.ZeroF, string format = Constants.FormatFloat_2DpMax) {
                 D.Assert(currentSpeed >= Constants.ZeroF, "Current Speed is {0}.".Inject(currentSpeed));
                 string speedText;
-                if (maxSpeed > Constants.ZeroF) {
+                if (requestedSpeed > Constants.ZeroF) {
                     speedText = normalSpeedText;
-                    speedText = speedText.Inject(format.Inject(currentSpeed), format.Inject(maxSpeed));
+                    speedText = speedText.Inject(format.Inject(currentSpeed), format.Inject(requestedSpeed));
                 }
                 else {
-                    speedText = speedNoMaxText;
+                    speedText = speedNoRequestedText;
                     speedText = speedText.Inject(format.Inject(currentSpeed));
                 }
                 _list.Add(new ColoredText(speedText));

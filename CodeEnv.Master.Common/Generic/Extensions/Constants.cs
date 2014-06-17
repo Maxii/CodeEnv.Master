@@ -6,13 +6,19 @@
 // </copyright> 
 // <summary> 
 // File: Constants.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// Static Class of common constants. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
+
 namespace CodeEnv.Master.Common {
 
+    using System.Collections.Generic;
     using System.IO;
+    using UnityEngine;
 
     /// <summary>
     /// Static Class of common constants. 
@@ -139,6 +145,29 @@ namespace CodeEnv.Master.Common {
 
         public const bool Won = true;
         public const bool Lost = false;
+
+        private static IList<Vector3> _normalizedBoxVertices;
+        /// <summary>
+        /// List of the eight vertices of a box at a normalized distance of 1 unit from the box center.
+        /// </summary>
+        public static IList<Vector3> NormalizedBoxVertices {
+            get {
+                if (_normalizedBoxVertices.IsNullOrEmpty()) {
+                    _normalizedBoxVertices = new List<Vector3>(8);
+                    var pair = new float[] { -1F, 1F };
+                    foreach (var x in pair) {
+                        foreach (var y in pair) {
+                            foreach (var z in pair) {
+                                var normalizedBoxVertex = new Vector3(x, y, z).normalized;
+                                _normalizedBoxVertices.Add(normalizedBoxVertex);
+                            }
+                        }
+                    }
+                }
+                //D.Log("Normalized box vertices: {0}.", _normalizedBoxVertices.Concatenate());
+                return _normalizedBoxVertices;
+            }
+        }
     }
 }
 

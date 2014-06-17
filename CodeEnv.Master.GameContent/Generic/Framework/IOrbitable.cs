@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FleetOrders.cs
-//  The orders that can be issued to a fleet.
+// File: IOrbitable.cs
+// Interface for objects that can be orbited.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,40 +17,15 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    ///  The orders that can be issued to a fleet.
+    /// Interface for objects that can be orbited.
     /// </summary>
-    public enum FleetOrders {
-
-        None,
-
-        Attack,
-
-        Disband,
-
-        DisbandAt,
-
-        Guard,
-
-        JoinFleet,
+    public interface IOrbitable {
 
         /// <summary>
-        /// Move to an IDestinationTarget.
+        /// Readonly. The distance from the object's position (center) that ships
+        /// and fleets should orbit. 
         /// </summary>
-        MoveTo,
-
-        Patrol,
-
-        RefitAt,
-
-        Repair,
-
-        RepairAt,
-
-        Retreat,
-
-        RetreatTo,
-
-        StopAttack
+        float OrbitDistance { get; }
 
     }
 }

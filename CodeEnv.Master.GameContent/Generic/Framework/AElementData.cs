@@ -78,7 +78,7 @@ namespace CodeEnv.Master.GameContent {
             if (trackerWeapons.Count == Constants.Zero) {
                 _weaponRangeTrackerLookup.Remove(trackerID);
                 isRangeTrackerStillInUse = false;
-                D.Warn("{0} has removed weapon {1}, leaving an unused {2}.", Name, weapon.Name, typeof(IWeaponRangeTracker).Name);
+                D.Warn("{0} has removed weapon {1}, leaving an unused {2}.", Name, weapon.Name, typeof(IWeaponRangeMonitor).Name);
             }
             RecalcMaxWeaponsRange();
             RecalcCombatStrength();

@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ICommandModel.cs
+// File: ICmdModel.cs
 //  Interface for UnitCommandModels.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for UnitCommandModels.
     /// </summary>
-    public interface ICommandModel : IMortalModel {
+    public interface ICmdModel : IMortalModel {
 
         event Action<IElementModel> onSubordinateElementDeath;
 

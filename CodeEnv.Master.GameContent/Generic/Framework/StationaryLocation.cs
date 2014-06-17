@@ -16,21 +16,72 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
     /// <summary>
     /// A dummy IDestinationTarget wrapping a stationary location.
     /// </summary>
-    public class StationaryLocation : IDestinationTarget {
+    public struct StationaryLocation : IDestinationTarget, IEquatable<StationaryLocation> {
 
-        public StationaryLocation(Vector3 position) {
-            Position = position;
+        public static float CloseEnoughDistance { get { return 3F; } }
+
+        #region Equality Operators Override
+
+        // see C# 4.0 In a Nutshell, page 254
+
+        public static bool operator ==(StationaryLocation left, StationaryLocation right) {
+            return left.Equals(right);
         }
+
+        public static bool operator !=(StationaryLocation left, StationaryLocation right) {
+            return !left.Equals(right);
+        }
+
+        #endregion
+
+
+        public StationaryLocation(Vector3 position, SpaceTopography topography)
+            : this() {
+            Position = position;
+            Topography = topography;
+        }
+
+        #region Object.Equals and GetHashCode Override
+
+        public override bool Equals(object obj) {
+            if (!(obj is StationaryLocation)) { return false; }
+            return Equals((StationaryLocation)obj);
+        }
+
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// See Page 254, C# 4.0 in a Nutshell.
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+        /// </returns>
+        public override int GetHashCode() {
+            int hash = 17;  // 17 = some prime number
+            hash = hash * 31 + Position.GetHashCode(); // 31 = another prime number
+            hash = hash * 31 + Topography.GetHashCode();
+            return hash;
+        }
+
+        #endregion
 
         public override string ToString() {
             return FullName;
         }
+
+        #region IEquatable<StationaryLocation> Members
+
+        public bool Equals(StationaryLocation other) {
+            return Position == other.Position && Topography == other.Topography;
+        }
+
+        #endregion
 
         #region IDestinationTarget Members
 
@@ -46,6 +97,8 @@ namespace CodeEnv.Master.GameContent {
         public bool IsMovable { get { return false; } }
 
         public float Radius { get { return Constants.ZeroF; } }
+
+        public SpaceTopography Topography { get; private set; }
 
         #endregion
     }

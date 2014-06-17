@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -24,6 +25,11 @@ namespace CodeEnv.Master.GameContent {
     public class StarData : AItemData {
 
         public StarCategory Category { get; private set; }
+
+        public override SpaceTopography Topography {
+            get { return base.Topography; }
+            set { throw new NotImplementedException(); }
+        }
 
         private int _capacity;
         public int Capacity {
@@ -52,20 +58,14 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Initializes a new instance of the <see cref="StarData"/> class.
         /// </summary>
-        /// <param name="category">The category of Star.</param>
-        /// <param name="name">The name.</param>
-        /// <param name="parentName">Name of the parent.</param>
-        //public StarData(StarCategory category, string name, string parentName)
-        //    : base(name, parentName) {
-        //    Category = category;
-        //}
-
+        /// <param name="stat">The stat.</param>
         public StarData(StarStat stat)
             : base(stat.Name) {
             Category = stat.Category;
             Capacity = stat.Capacity;
             Resources = stat.Resources;
             SpecialResources = stat.SpecialResources;
+            base.Topography = SpaceTopography.System;
         }
 
         public override string ToString() {

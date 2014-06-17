@@ -29,13 +29,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class GameStatus : AGenericSingleton<GameStatus> {
 
-        /// <summary>
-        /// Occurs once when the game initially starts Running. The invocation list is cleared
-        /// after use so it is a one-shot implementation requiring no client cleanup to unsubscribe.
-        /// This event is NOT called when the game changes FROM Running.
-        /// </summary>
-        //public event Action onIsRunning_OneShot;
-
         private bool _isRunning;
         /// <summary>
         /// Treat as Readonly except by GameManager. Indicates whether the game
@@ -65,13 +58,6 @@ namespace CodeEnv.Master.GameContent {
 
         private void OnIsRunningChanged() {
             D.Log("{0}.IsRunning changed to {1}.", GetType().Name, IsRunning);
-            //if (IsRunning) {
-            //    var temp = onIsRunning_OneShot;
-            //    if (temp != null) {
-            //        temp();
-            //    }
-            //    onIsRunning_OneShot = null; // clears the invocation list thereby requiring no cleanup on the client end
-            //}
         }
     }
 }

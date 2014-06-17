@@ -24,7 +24,7 @@ using UnityEngine;
 /// The data-holding class for all Systems in the game.  
 /// WARNING: Donot change name to "System", a protected word.
 /// </summary>
-public class SystemModel : AItemModel, ISystemModel {
+public class SystemModel : AItemModel, ISystemModel, ISystemTarget {
 
     public new SystemData Data {
         get { return base.Data as SystemData; }
@@ -33,9 +33,12 @@ public class SystemModel : AItemModel, ISystemModel {
 
     protected override void Awake() {
         base.Awake();
-        // IMPROVE currently no need to set the radius of the System's orbital plane collider as it simply matches the mesh it is assigned too
-        Radius = TempGameValues.SystemRadius;
         Subscribe();
+    }
+
+    protected override void InitializeRadiiComponents() {
+        Radius = TempGameValues.SystemRadius;
+        // IMPROVE currently no need to set the radius of the System's orbital plane collider as it simply matches the mesh it is assigned too
     }
 
     protected override void Initialize() { }
@@ -46,7 +49,7 @@ public class SystemModel : AItemModel, ISystemModel {
         orbitGo.name = "SettlementOrbit";
         Transform settlementUnit = settlementCmd.transform.parent;
         UnityUtility.AttachChildToParent(settlementUnit.gameObject, orbitGo);
-        // the orbit is enabled by the SettlementCreator once isRunning
+        // enabling (or not) the orbit around the star is handled by the SettlementCreator once isRunning
         settlementUnit.localPosition = Data.SettlementOrbitSlot;        // position this settlement unit in the orbit slot already reserved for it
         InitializeSettlement(settlementCmd);
     }

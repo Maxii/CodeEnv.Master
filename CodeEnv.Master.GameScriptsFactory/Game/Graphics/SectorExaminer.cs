@@ -34,14 +34,14 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
 
     public int distanceInSectorsFromCamera = 2;
 
-    private Index3D _location = new Index3D();
+    private Index3D _currentSectorIndex = new Index3D();
     /// <summary>
     /// The Location of this SectorViewer expressed as the index of the 
     /// Sector it is over.
     /// </summary>
-    public Index3D Location {
-        get { return _location; }
-        private set { SetProperty<Index3D>(ref _location, value, "Location", OnLocationChanged); }
+    public Index3D CurrentSectorIndex {
+        get { return _currentSectorIndex; }
+        private set { SetProperty<Index3D>(ref _currentSectorIndex, value, "CurrentSectorIndex", OnCurrentSectorIndexChanged); }
     }
 
     private float _distanceToHighlightedSector;
@@ -100,8 +100,8 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
 
     void OnHover(bool isOver) {
         if (_viewMode == PlayerViewMode.SectorView) {
-            D.Log("SectorExaminer calling Sector {0}.ShowHud({1}).", Location, isOver);
-            SectorGrid.GetSector(Location).gameObject.GetSafeMonoBehaviourComponent<SectorView>().ShowHud(isOver);
+            D.Log("SectorExaminer calling Sector {0}.ShowHud({1}).", CurrentSectorIndex, isOver);
+            SectorGrid.GetSector(CurrentSectorIndex).gameObject.GetSafeMonoBehaviourComponent<SectorView>().ShowHud(isOver);
         }
     }
 
@@ -159,8 +159,9 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
         FleetCmdView selectedFleetView = _selectionMgr.CurrentSelection as FleetCmdView;
         IFleetCmdModel selectedFleet = selectedFleetView.Presenter.Model;
         if (menuId == 4) {  // UNDONE
-            Vector3 centerOfSector = SectorGrid.GetSector(Location).Position;
-            selectedFleet.CurrentOrder = new FleetOrder(FleetOrders.MoveTo, centerOfSector, Speed.FleetStandard);
+            SectorModel sector = SectorGrid.GetSector(CurrentSectorIndex);
+            var sectorCenterLocation = new StationaryLocation(sector.Position, sector.Topography);
+            selectedFleet.CurrentOrder = new FleetOrder(FleetDirective.MoveTo, sectorCenterLocation, Speed.FleetStandard);
         }
     }
 
@@ -175,12 +176,12 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
             _sectorIDLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(_transform, GuiTrackingLabelFactory.LabelPlacement.OverTarget);
             _sectorIDLabel.Color = UnityDebugConstants.SectorHighlightColor;
         }
-        _sectorIDLabelText = "Sector {0}" + Constants.NewLine + "GridBox {1}.".Inject(Location, SectorGrid.GetGridBoxLocation(Location));
+        _sectorIDLabelText = "Sector {0}" + Constants.NewLine + "GridBox {1}.".Inject(CurrentSectorIndex, SectorGrid.GetGridBoxLocation(CurrentSectorIndex));
         _sectorIDLabel.Set(_sectorIDLabelText);
     }
 
-    private void OnLocationChanged() {
-        _transform.position = SectorGrid.GetSector(Location).Position;
+    private void OnCurrentSectorIndexChanged() {
+        _transform.position = SectorGrid.GetSector(CurrentSectorIndex).Position;
         UpdateSectorIDLabel();
     }
 
@@ -212,7 +213,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
                 _ctxObject.HideMenu();
 
                 // OPTIMIZE cache sector and sectorView
-                SectorModel sectorModel = SectorGrid.GetSector(Location);
+                SectorModel sectorModel = SectorGrid.GetSector(CurrentSectorIndex);
                 if (sectorModel != null) {  // can be null if camera is located where no sector object was created
                     SectorView sectorView = sectorModel.gameObject.GetSafeMonoBehaviourComponent<SectorView>();
                     if (sectorView.HudPublisher.IsHudShowing) {
@@ -236,8 +237,8 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
                 bool toShow;
                 SectorModel notUsed;
                 if (toShow = SectorGrid.TryGetSector(sectorIndexUnderMouse, out notUsed)) {
-                    if (!Location.Equals(sectorIndexUnderMouse)) {
-                        Location = sectorIndexUnderMouse; // avoid the SetProperty equivalent warnings
+                    if (!CurrentSectorIndex.Equals(sectorIndexUnderMouse)) {
+                        CurrentSectorIndex = sectorIndexUnderMouse; // avoid the SetProperty equivalent warnings
                     }
                 }
                 ShowSector(toShow);

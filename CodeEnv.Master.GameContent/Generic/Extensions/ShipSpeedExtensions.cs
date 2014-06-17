@@ -26,8 +26,8 @@ namespace CodeEnv.Master.GameContent {
     public static class ShipSpeedExtensions {
 
         /// <summary>
-        /// Gets the speed in units per day for this ship or fleet. Either data
-        /// can be null if you are certain which speed you are asking for.
+        /// Gets the speed in units per hour for this ship or fleet. Either data
+        /// can be null (but not both) if you are certain which speed you are asking for.
         /// </summary>
         /// <param name="speed">The speed enum value.</param>
         /// <param name="fleetData">The fleet data.</param>
@@ -35,38 +35,63 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
         public static float GetValue(this Speed speed, FleetCmdData fleetData, ShipData shipData = null) {
+            D.Assert(fleetData != null || shipData != null);
+            float fleetFullSpeed = Constants.ZeroF;
+            if (fleetData != null) {
+                fleetFullSpeed = fleetData.IsFtlAvailableForUse ? fleetData.FullFtlSpeed : fleetData.FullStlSpeed;
+            }
+
+            float shipFullSpeed = Constants.ZeroF;
+            if (shipData != null) {
+                shipFullSpeed = shipData.IsFtlAvailableForUse ? shipData.FullFtlSpeed : shipData.FullStlSpeed;
+            }
+
+            float result;
+
             switch (speed) {
                 case Speed.AllStop:
                     return Constants.ZeroF;
-
                 case Speed.Slow:
-                    return 0.10F * shipData.FullSpeed;
+                    result = 0.10F * shipFullSpeed;
+                    break;
                 case Speed.OneThird:
-                    return 0.25F * shipData.FullSpeed;
+                    result = 0.25F * shipFullSpeed;
+                    break;
                 case Speed.TwoThirds:
-                    return 0.5F * shipData.FullSpeed;
+                    result = 0.5F * shipFullSpeed;
+                    break;
                 case Speed.Standard:
-                    return 0.75F * shipData.FullSpeed;
+                    result = 0.75F * shipFullSpeed;
+                    break;
                 case Speed.Full:
-                    return 1.0F * shipData.FullSpeed;
-                case Speed.Flank:
-                    return 1.10F * shipData.FullSpeed;
+                    result = 1.0F * shipFullSpeed;
+                    break;
+                //case Speed.Flank:
+                //    stlSpeed = 1.10F * shipFullSpeed;
+                //    break;
 
                 case Speed.FleetSlow:
-                    return 0.10F * fleetData.FullSpeed;
+                    result = 0.10F * fleetFullSpeed;
+                    break;
                 case Speed.FleetOneThird:
-                    return 0.25F * fleetData.FullSpeed;
+                    result = 0.25F * fleetFullSpeed;
+                    break;
                 case Speed.FleetTwoThirds:
-                    return 0.5F * fleetData.FullSpeed;
+                    result = 0.5F * fleetFullSpeed;
+                    break;
                 case Speed.FleetStandard:
-                    return 0.75F * fleetData.FullSpeed;
+                    result = 0.75F * fleetFullSpeed;
+                    break;
                 case Speed.FleetFull:
-                    return 1.0F * fleetData.FullSpeed;
+                    result = 1.0F * fleetFullSpeed;
+                    break;
 
                 case Speed.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(speed));
             }
+            D.Assert(result != Constants.ZeroF, "Error: ShipData or FleetData is null.");
+            return result;
         }
 
         /// <summary>
@@ -76,6 +101,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="speed">The speed.</param>
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
+        [Obsolete]
         public static Speed GetFaster(this Speed speed) {
             switch (speed) {
                 case Speed.AllStop:
@@ -90,8 +116,8 @@ namespace CodeEnv.Master.GameContent {
                 case Speed.Standard:
                     return Speed.Full;
                 case Speed.Full:
-                    return Speed.Flank;
-                case Speed.Flank:
+                    //    return Speed.Flank;
+                    //case Speed.Flank:
                     return Speed.None;
 
                 case Speed.FleetSlow:
@@ -118,6 +144,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="speed">The speed.</param>
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
+        [Obsolete]
         public static Speed GetSlower(this Speed speed) {
             switch (speed) {
                 case Speed.AllStop:
@@ -133,8 +160,8 @@ namespace CodeEnv.Master.GameContent {
                     return Speed.TwoThirds;
                 case Speed.Full:
                     return Speed.Standard;
-                case Speed.Flank:
-                    return Speed.Full;
+                //case Speed.Flank:
+                //    return Speed.Full;
 
                 case Speed.FleetSlow:
                     return Speed.None;

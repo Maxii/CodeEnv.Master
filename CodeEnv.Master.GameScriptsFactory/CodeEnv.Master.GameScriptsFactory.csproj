@@ -60,6 +60,7 @@
     </Compile>
     <Compile Include="Game\Graphics\FleetCmdHumanView.cs" />
     <Compile Include="Game\_Debug\Fleets.cs" />
+    <Compile Include="Generic\Framework\TopographyMonitor.cs" />
     <Compile Include="Generic\Framework\UnitFactory.cs" />
     <Compile Include="Generic\Framework\PathfindingManager.cs" />
     <Compile Include="Generic\Graphics\AUnitCommandView.cs" />
@@ -143,7 +144,7 @@
     <Compile Include="Game\Graphics\SettlementCmdHumanView.cs" />
     <Compile Include="Game\Graphics\StarbaseCmdHumanView.cs" />
     <Compile Include="Generic\Framework\SystemFactory.cs" />
-    <Compile Include="ThirdParty\MyAStarPointGenerator.cs" />
+    <Compile Include="ThirdParty\MyAStarPointGraph.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Generic\Framework\Loader.cs" />
     <Compile Include="Generic\Framework\RequiredPrefabs.cs" />
@@ -160,9 +161,8 @@
     <Compile Include="Generic\IO\PlayerViews.cs" />
     <Compile Include="Game\_Debug\Universe.cs" />
     <Compile Include="Game\Graphics\UniverseCenterView.cs" />
-    <Compile Include="Game\Framework\FleetNavigator.cs" />
     <Compile Include="Game\Framework\UniverseCenterModel.cs" />
-    <Compile Include="Generic\Framework\WeaponRangeTracker.cs" />
+    <Compile Include="Generic\Framework\WeaponRangeMonitor.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">

@@ -37,7 +37,7 @@ public abstract class AUnitCreatorEditor<T> : Editor where T : ACreator {
 
         creator.isCompositionPreset = GUILayout.Toggle(creator.isCompositionPreset, "Composition is preset");
         if (!creator.isCompositionPreset) {
-            creator.maxRandomElements = EditorGUILayout.IntSlider("Max Random Elements", creator.maxRandomElements, 1, 25);
+            creator.maxRandomElements = EditorGUILayout.IntSlider("Max Random Elements", creator.maxRandomElements, 1, GetMaxElements());
         }
 
         creator.isOwnerHuman = GUILayout.Toggle(creator.isOwnerHuman, "Owner is Human Player");
@@ -52,6 +52,8 @@ public abstract class AUnitCreatorEditor<T> : Editor where T : ACreator {
             EditorUtility.SetDirty(target);
         }
     }
+
+    protected abstract int GetMaxElements();
 
 }
 

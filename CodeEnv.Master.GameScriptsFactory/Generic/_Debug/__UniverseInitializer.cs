@@ -55,7 +55,7 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
     private void InitializeUniverseCenter() {
         var universeCenter = gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterModel>();
         if (universeCenter != null) {
-            ItemData data = new ItemData("UniverseCenter");
+            ItemData data = new ItemData("UniverseCenter", SpaceTopography.OpenSpace);
             universeCenter.Data = data;
             universeCenter.enabled = true;
             universeCenter.gameObject.GetSafeMonoBehaviourComponent<UniverseCenterView>().enabled = true;

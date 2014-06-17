@@ -26,6 +26,17 @@ namespace CodeEnv.Master.GameContent {
         public const int MinTrackingLabelShowDistance = 50;
         public const int MaxTrackingLabelShowDistance = 5000;
 
+        /// <summary>
+        /// The multiplier to apply to speed and thrust when using FasterThanLight technology.
+        /// </summary>
+        public const float __FtlMultiplier = 10F;
+
+        /// <summary>
+        /// The maximum number of facilities a starbase or settlement can have.
+        /// </summary>
+        public const int MaxFacilitiesPerBase = 25;
+
+        public const int MaxShipsPerFleet = 25;
 
         /// <summary>
         /// The length in world units of a sector side along any of the axis. As a sector
@@ -34,15 +45,15 @@ namespace CodeEnv.Master.GameContent {
         public const float SectorSideLength = 1200F;
 
         /// <summary>
-        /// The length in world units of the diagonal across a sector side. Sqrt(SectorSIdeLengthSqrd x 2).
+        /// The length in world units of the diagonal across a sector side. Sqrt(SectorSideLengthSqrd x 2).
         /// </summary>
         public static readonly float SectorSideDiagonalLength = SectorSideLength * Mathf.Sqrt(2F);    // 1697.06
 
         /// <summary>
         /// The length in world units of the diagonal across a sector, aka the longest distance between corners.
-        /// Sqrt(SectorSideLengthSqrd + SectorSideDiagonalLenghtSqrd).
+        /// Sqrt(SectorSideLengthSqrd + SectorSideDiagonalLengthSqrd).
         /// </summary>
-        public static readonly float SectorDiagonalLength = (float)Math.Sqrt(Math.Pow(SectorSideLength, 2F) + Math.Pow(SectorSideDiagonalLength, 2F));    // 2078.46
+        public static readonly float SectorDiagonalLength = (float)Mathf.Sqrt(Mathf.Pow(SectorSideLength, 2F) + Mathf.Pow(SectorSideDiagonalLength, 2F));    // 2078.46
 
         public static readonly Vector3 SectorSize = new Vector3(SectorSideLength, SectorSideLength, SectorSideLength);
 
@@ -50,18 +61,21 @@ namespace CodeEnv.Master.GameContent {
 
         public const float UniverseCenterRadius = 50F;
 
-        /// <summary>
-        /// The radius of the star sphere.
-        /// </summary>
-        public const float StarRadius = 10F;    // 10 x 300(factor) = 3000(cullingDistance)
+        #region Max Radius values for setting culling distances
 
-        public const float PlanetoidRadius_Max = 5.0F;  // Moons are 0.2 - 1.0, Planets 1.0 - 5.0   // 5 x 200(factor) = 1000(cullingDistance)
+        // Note on MaxRadius values. Use of a static dynamically generated MaxRadius on each Model type works, but it only gets populated 
+        // when a model is built. Some models like ships and facilities may not be built until runtime so the max value is zero. As CameraControl 
+        // needs these values during startup to set the layer culling distances, I had to return to these values for now.
 
-        public const float StarBaseRadius = 0.5F;
+        public const float StarMaxRadius = 10F;    // 10 x 300(factor) = 3000(cullingDistance)
 
-        public const float SettlementRadius = 1.0F; // 1 x 50(factor) = 50(cullingDistance)
+        public const float PlanetoidMaxRadius = 5.0F;  // Moons are 0.2 - 1.0, Planets 1.0 - 5.0   // 5 x 200(factor) = 1000(cullingDistance)
 
-        public const float ShipRadius_Max = 0.2F;   // range is 0.04 - 0.2      // 0.2 x 25(factor) = 5(cullingDistance)
+        public const float FacilityMaxRadius = 0.25F;  // range is 0.125 - 0.25  // .25 x 50(factor) = 12.5(cullingDistance)
+
+        public const float ShipMaxRadius = 0.2F;   // range is 0.04 - 0.2      // 0.2 x 25(factor) = 5(cullingDistance)
+
+        #endregion
 
         /// <summary>
         /// The distance from the center of an obstacle to the side of the box of graphPoint vertices surrounding it. 
@@ -74,17 +88,15 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The multiplier used to determine the radius of the keepoutZone around celestial objects.
         /// </summary>
-        public const float KeepoutRadiusMultiplier = 2.5F;
+        public const float KeepoutRadiusMultiplier = 2F;
+
+        public const float MaxKeepoutDiameter = UniverseCenterRadius * KeepoutRadiusMultiplier * 2F;
 
         /// <summary>
-        /// The radius of the keepout zone around the center of a star. Used to avoid
-        /// ships, planets and moons getting unrealistically close.
+        /// The total number of orbit slots in a System, including those for planets,
+        /// settlements and the inner-most slot reserved for ships orbiting the star.
         /// </summary>
-        public const float StarKeepoutRadius = StarRadius * KeepoutRadiusMultiplier;
-
-        public const float MaxKeepoutRadius = UniverseCenterRadius * KeepoutRadiusMultiplier;
-
-        public const int SystemOrbitSlots = 7;
+        public const int TotalOrbitSlotsPerSystem = 7;
 
         public static float __GetMass(ShipCategory hull) {
             switch (hull) {

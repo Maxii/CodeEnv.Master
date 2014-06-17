@@ -40,6 +40,8 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     /// </summary>
     public IList<Vector3> SectorCorners { get { return _worldVertexLocations; } }
 
+    public IList<SectorModel> AllSectors { get { return _sectors.Values.ToList(); } }
+
     public float sectorVisibilityDepth = 2F;
 
     private Vector3 gridSize; // = new Vector3(5F, 5F, 5F);
@@ -275,12 +277,28 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     }
 
     /// <summary>
+    /// Generates and returns 8 world space vertices of a box surrounding the center of a sector
+    /// where each vertex is <c>distance</c> from the center. The box defined by the vertices
+    /// is essentially a box inscribed inside a sphere of radius <c>distance</c> centered on the sector.
+    /// </summary>
+    /// <param name="index">The index.</param>
+    /// <param name="distance">The distance from any vertex to the sector's center in units.</param>
+    /// <returns></returns>
+    public static IList<Vector3> GenerateVerticesOfBoxAroundCenter(Index3D index, float distance) {
+        Arguments.ValidateNotNegative(distance);
+        var sectorGridBoxLoc = GetGridBoxLocation(index);
+        Vector3 sectorCenterWorldLoc = _grid.GridToWorld(sectorGridBoxLoc);
+        return UnityUtility.CalcVerticesOfInscribedBoxInsideSphere(sectorCenterWorldLoc, distance);
+    }
+
+    /// <summary>
     ///  Calculates the location in world space of 8 vertices of a box surrounding the center of a sector.
     /// </summary>
     /// <param name="sectorCenterWorldLocation">The world location of the sector's center.</param>
     /// <param name="distance">The desired relative distance of each box vertex as measured from the center 
     /// to the corner of the sector where 0.0 is the sector center and 1.0 is the corner of the sector.</param>
     /// <returns>The 8 corner vertexes of the box surrounding the center of the sector and box.</returns>
+    [Obsolete]
     public IList<Vector3> CalcBoxVerticesAroundCenter(Vector3 sectorCenterWorldLocation, float distance) {
         Index3D index = GetSectorIndex(sectorCenterWorldLocation);
         return CalcBoxVerticesAroundCenter(index, distance);
@@ -293,6 +311,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     /// <param name="distance">The desired relative distance of each box vertex as measured from the center 
     /// to the corner of the sector where 0.0 is the sector center and 1.0 is the corner of the sector.</param>
     /// <returns></returns>
+    [Obsolete]
     public IList<Vector3> CalcBoxVerticesAroundCenter(Index3D index, float distance) {
         Arguments.ValidateForRange(distance, Constants.ZeroF, 1.0F);
         IList<Vector3> vertices = new List<Vector3>(8);
@@ -319,6 +338,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     /// <param name="gridAxisValue">The grid axis value between the pair.</param>
     /// <param name="distance">The relative distance between 0.0 and 1.0.</param>
     /// <returns></returns>
+    [Obsolete]
     private float[] CalcGridLocationPair(float gridAxisValue, float distance) {
         Arguments.ValidateForRange(distance, Constants.ZeroF, 1.0F);
         float[] vertexPair = new float[2];
@@ -357,8 +377,8 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
 
     public static SectorModel GetSector(Index3D index) {
         SectorModel sector;
-        if (!_sectors.TryGetValue(index, out sector)) {
-            D.Warn("No Sector at {0}, returning null.", index);
+        if (!TryGetSector(index, out sector)) {
+            D.Warn("No SectorModel at {0}, returning null.", index);
         }
         return sector;
     }

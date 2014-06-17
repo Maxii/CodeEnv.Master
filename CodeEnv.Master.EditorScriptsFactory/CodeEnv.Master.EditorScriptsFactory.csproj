@@ -54,7 +54,7 @@
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Game\FleetCreatorEditor.cs" />
-    <Compile Include="Game\MyAStarPointGeneratorEditor.cs" />
+    <Compile Include="Game\MyAStarPointGraphEditor.cs" />
     <Compile Include="Game\SettlementCreatorEditor.cs" />
     <Compile Include="Game\StarbaseCreatorEditor.cs" />
     <Compile Include="ThirdParty\AEditorBase.cs" />

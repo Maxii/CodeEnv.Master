@@ -55,6 +55,7 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// This method returns either true or false with the chance of the former derived from the parameters passed to the method.
+        /// Usage: result = RandomExtended.Chance(1, 9); // 10% chance of true
         /// </summary>
         /// <param name="probabilityFactor">The probability factor.</param>
         /// <param name="probabilitySpace">The probability space.</param>

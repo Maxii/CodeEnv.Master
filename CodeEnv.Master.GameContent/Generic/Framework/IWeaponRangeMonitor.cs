@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IWeaponRangeTracker.cs
-//  Interface for access to WeaponRangeTrackers.
+// File: IWeaponRangeMonitor.cs
+//  Interface for access to WeaponRangeMonitors.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,9 +21,9 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Interface for access to WeaponRangeTrackers.
+    /// Interface for access to WeaponRangeMonitors.
     /// </summary>
-    public interface IWeaponRangeTracker {
+    public interface IWeaponRangeMonitor {
 
         /// <summary>
         /// Occurs once with <c>true</c> when the first of one or more enemies come into range and 

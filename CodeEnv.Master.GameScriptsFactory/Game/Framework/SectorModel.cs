@@ -24,7 +24,7 @@ using UnityEngine;
 /// A placeholder container class for TBD items that will be present in a Sector.
 /// eg. a nebula particle system.
 /// </summary>
-public class SectorModel : AItemModel, ISectorModel {
+public class SectorModel : AItemModel, ISectorModel, ISectorTarget {
 
     public new SectorData Data {
         get { return base.Data as SectorData; }
@@ -37,8 +37,11 @@ public class SectorModel : AItemModel, ISectorModel {
 
     protected override void Awake() {
         base.Awake();
-        Radius = TempGameValues.SectorDiagonalLength * 0.5F;
         Subscribe();
+    }
+
+    protected override void InitializeRadiiComponents() {
+        Radius = TempGameValues.SectorSideLength / 2F;  // the radius of the sphere inscribed inside a sector box
     }
 
     protected override void Initialize() { }

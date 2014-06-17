@@ -102,25 +102,22 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected void OnCoursePlotFailure() {
-            var temp = onCoursePlotFailure;
-            if (temp != null) {
-                temp();
+            if (onCoursePlotFailure != null) {
+                onCoursePlotFailure();
             }
         }
 
         protected void OnCoursePlotSuccess() {
-            var temp = onCoursePlotSuccess;
-            if (temp != null) {
-                temp();
+            if (onCoursePlotSuccess != null) {
+                onCoursePlotSuccess();
             }
         }
 
         protected virtual void OnDestinationReached() {
             _pilotJob.Kill();
             D.Log("{0} at {1} reached Destination {2} at {3} (w/station offset). Actual proximity {4:0.0000} units.", Data.FullName, Data.Position, Target.FullName, Destination, Vector3.Distance(Destination, Data.Position));
-            var temp = onDestinationReached;
-            if (temp != null) {
-                temp();
+            if (onDestinationReached != null) {
+                onDestinationReached();
             }
         }
 

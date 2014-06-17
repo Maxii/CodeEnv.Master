@@ -42,7 +42,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     private GameObject _aiSettlementCmdPrefab;
     private GameObject _humanSettlementCmdPrefab;
 
-    private WeaponRangeTracker weaponRangeTrackerPrefab;
+    private WeaponRangeMonitor weaponRangeTrackerPrefab;
     private FormationStation formationStationPrefab;
 
     private UnitFactory() {
@@ -173,20 +173,13 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="owner">The owner.</param>
     /// <returns></returns>
     public ShipModel MakeInstance(ShipStat shipStat, IEnumerable<WeaponStat> weapStats, IPlayer owner) {
-        ShipData data = new ShipData(shipStat) {
-            Owner = owner
-        };
         GameObject[] shipPrefabs = owner.IsHuman ? _humanShipPrefabs : _aiShipPrefabs;
         GameObject shipPrefabGo = shipPrefabs.Single(s => s.name.Contains(shipStat.Category.GetName()));
         GameObject shipGoClone = UnityUtility.AddChild(null, shipPrefabGo);
 
         ShipModel model = shipGoClone.GetSafeMonoBehaviourComponent<ShipModel>();
-        model.Data = data;
-
-        AttachWeapons(weapStats, model);
-
-        // this is not really necessary as Ship's prefab should already have Model as its Mesh's CameraLOSChangedRelay target
-        shipGoClone.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(shipGoClone.transform);
+        var wasCompatible = MakeInstance(shipStat, weapStats, owner, ref model);
+        D.Assert(wasCompatible);    // by definition, the model submitted should be compatible
         return model;
     }
 
@@ -252,7 +245,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cmdStat">The stat.</param>
     /// <param name="owner">The owner.</param>
     /// <param name="model">The model.</param>
-    /// <returns><c>false</c> if the model was not compatible and had to be replaced.</returns>
+    /// <returns>
+    ///   <c>false</c> if the model was not compatible and had to be replaced.
+    /// </returns>
     public bool MakeStarbaseCmdInstance(StarbaseCmdStat cmdStat, IPlayer owner, ref StarbaseCmdModel model) {
         if (owner.IsHuman == (model.gameObject.GetComponent<StarbaseCmdHumanView>() != null)) {
             // owner and model view are compatible
@@ -322,43 +317,32 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// a formation position assigned.
     /// </summary>
     /// <param name="facStat">The facility stat.</param>
+    /// <param name="topography">The topography.</param>
     /// <param name="weapStats">The weapon stats.</param>
     /// <param name="owner">The owner.</param>
     /// <returns></returns>
-    public FacilityModel MakeInstance(FacilityStat facStat, IEnumerable<WeaponStat> weapStats, IPlayer owner) {
-        //FacilityData data = new FacilityData(facStat.Category, facStat.Name, facStat.MaxHitPoints, facStat.Mass) {
-        //    Owner = owner
-        //};
-        FacilityData data = new FacilityData(facStat) {
-            Owner = owner
-        };
-
+    public FacilityModel MakeInstance(FacilityStat facStat, SpaceTopography topography, IEnumerable<WeaponStat> weapStats, IPlayer owner) {
         GameObject facilityPrefabGo = facilityPrefabs.Single(f => f.gameObject.name == facStat.Category.GetName()).gameObject;
         GameObject facilityGoClone = UnityUtility.AddChild(null, facilityPrefabGo);
-
         FacilityModel model = facilityGoClone.GetSafeMonoBehaviourComponent<FacilityModel>();
-        model.Data = data;
-        AttachWeapons(weapStats, model);
-
-        // this is not really necessary as Facility's prefab should already have Model as its Mesh's CameraLOSChangedRelay target
-        facilityGoClone.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(facilityGoClone.transform);
+        MakeInstance(facStat, topography, weapStats, owner, ref model);
         return model;
     }
 
-    public void MakeInstance(FacilityStat facStat, IEnumerable<WeaponStat> weapStats, IPlayer owner, ref FacilityModel model) {
+    public void MakeInstance(FacilityStat facStat, SpaceTopography topography, IEnumerable<WeaponStat> weapStats, IPlayer owner, ref FacilityModel model) {
         GameObject facilityGo = model.gameObject;
         FacilityCategory categoryFromModel = Enums<FacilityCategory>.Parse(facilityGo.name);
         D.Assert(facStat.Category == categoryFromModel, "{0} should be same as {1}.".Inject(facStat.Category.GetName(), categoryFromModel.GetName()));
-        FacilityData data = new FacilityData(facStat) {
+        FacilityData data = new FacilityData(facStat, topography) {
             Owner = owner
         };
-
         model.Data = data;
         AttachWeapons(weapStats, model);
 
         // this is not really necessary as facilityGo should already have Model as its Mesh's CameraLOSChangedRelay target
         facilityGo.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(facilityGo.transform);
     }
+
 
     public FormationStation MakeFormationStation(Vector3 stationOffset, FleetCmdModel fleetCmd) {
         // make a folder for neatness if one doesn't yet exist
@@ -391,7 +375,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="elementModel">The element model to attach the weapon too.</param>
     private void MakeAndAddWeapon(WeaponStat weapStat, AUnitElementModel elementModel) {
         var weapon = new Weapon(weapStat);
-        var allWeaponTrackers = elementModel.gameObject.GetInterfacesInChildren<IWeaponRangeTracker>();
+        var allWeaponTrackers = elementModel.gameObject.GetInterfacesInChildren<IWeaponRangeMonitor>();
         var weaponTrackersInUse = allWeaponTrackers.Where(rt => rt.Range != Constants.ZeroF);
         var wRange = weapon.Range;
 
@@ -405,7 +389,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             else {
                 GameObject rTrackerGo = UnityUtility.AddChild(elementModel.gameObject, weaponRangeTrackerPrefab.gameObject);
                 rTrackerGo.layer = (int)Layers.IgnoreRaycast; // AddChild resets prefab layer to elementGo's layer
-                rTracker = rTrackerGo.GetSafeInterfaceInChildren<IWeaponRangeTracker>();
+                rTracker = rTrackerGo.GetSafeInterfaceInChildren<IWeaponRangeMonitor>();
             }
             //D.Log("{0}'s {1} with Range {2} assigned new Range {3}.", elementModel.FullName, typeof(IWeaponRangeTracker).Name, rTracker.Range, wRange);
             rTracker.Range = wRange;

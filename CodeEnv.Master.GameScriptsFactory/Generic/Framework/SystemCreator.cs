@@ -48,10 +48,25 @@ using UnityEngine;
 /// </summary>
 public class SystemCreator : AMonoBase, IDisposable {
 
-    private static IList<SystemModel> _allSystems = new List<SystemModel>();
-    public static IList<SystemModel> AllSystems { get { return _allSystems; } }
+    public static IList<SystemModel> AllSystems { get { return _systemLookupBySectorIndex.Values.ToList(); } }
 
-    private static int _numberOfOrbitSlots = TempGameValues.SystemOrbitSlots;
+    /// <summary>
+    /// Returns true if the sector indicated by sectorIndex contains a System.
+    /// </summary>
+    /// <param name="sectorIndex">Index of the sector.</param>
+    /// <param name="system">The system if present in the sector.</param>
+    /// <returns></returns>
+    public static bool TryGetSystem(Index3D sectorIndex, out SystemModel system) {
+        return _systemLookupBySectorIndex.TryGetValue(sectorIndex, out system);
+    }
+
+    private static IDictionary<Index3D, SystemModel> _systemLookupBySectorIndex = new Dictionary<Index3D, SystemModel>();
+
+    /// <summary>
+    /// The _number of orbit slots in a system available for assignment to planets and settlements.
+    /// This does not include the inner slot which is reserved for ships orbiting the star.
+    /// </summary>
+    private static int _numberOfOrbitSlotsAvailableForPlanetsAndSettlements = TempGameValues.TotalOrbitSlotsPerSystem - 1;
 
     private static int[] _planetNumbers = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     private static string[] _moonLetters = new string[] { "a", "b", "c", "d", "e" };
@@ -61,9 +76,6 @@ public class SystemCreator : AMonoBase, IDisposable {
     };
 
     public string SystemName { get { return _transform.name; } }    // the SystemCreator carries the name of the System
-
-    private Vector3[] _orbitSlots;
-    private Vector3 _settlementOrbitSlot;
 
     private StarStat _starStat;
     private IList<PlanetoidStat> _planetStats;
@@ -85,7 +97,6 @@ public class SystemCreator : AMonoBase, IDisposable {
         _systemsFolder = _transform.parent;
         _factory = SystemFactory.Instance;
         _isPresetSystem = _transform.childCount > 0;
-        GenerateOrbitSlotStartLocation();
         Subscribe();
     }
 
@@ -98,7 +109,7 @@ public class SystemCreator : AMonoBase, IDisposable {
     private void OnGameStateChanging(GameState newGameState) {
         GameState previousGameState = _gameMgr.CurrentState;
         if (previousGameState == GameState.BuildAndDeploySystems) {
-            AllSystems.Add(_system);
+            _systemLookupBySectorIndex.Add(_system.Data.SectorIndex, _system);
         }
     }
 
@@ -167,8 +178,9 @@ public class SystemCreator : AMonoBase, IDisposable {
             }
         }
         else {
-            int orbitSlotsAvailableForPlanets = _numberOfOrbitSlots - 1;    // 1 reserved for a Settlement 
+            int orbitSlotsAvailableForPlanets = _numberOfOrbitSlotsAvailableForPlanetsAndSettlements - 1;    // 1 reserved for a Settlement
             int planetCount = RandomExtended<int>.Range(0, orbitSlotsAvailableForPlanets);
+            D.Log("{0} random planet count = {1}.", SystemName, planetCount);
             for (int i = 0; i < planetCount; i++) {
                 PlanetoidCategory pCategory = RandomExtended<PlanetoidCategory>.Choice(_acceptablePlanetCategories);
                 string planetName = "{0}, rest deferred until orbit assigned.".Inject(pCategory.GetName());
@@ -186,20 +198,22 @@ public class SystemCreator : AMonoBase, IDisposable {
         MakeSystem();   // stars and planets need a system parent when built
         MakeStar();     // makes the star a child of the system
         MakePlanets();  // makes each planet a child of the system
-        AssignMembersToOrbitSlots();    // modifies planet names to reflect the assigned orbit
+        PlaceMembersInOrbitSlots();    // modifies planet names to reflect the assigned orbit
         PopulateMoonsWithData();        // makes moon names based on the moon's (modified) planet name
-        InitializeSystemData();         // adds star and planet data to the system's data component
+        AddMembersToSystemData();         // adds star and planet data to the system's data component
+        InitializeTopographyMonitor();
         CompleteSystem();               // misc final touchup
     }
 
     private void MakeSystem() {
         LogEvent();
+        Index3D sectorIndex = SectorGrid.GetSectorIndex(_transform.position);
         if (_isPresetSystem) {
             _system = gameObject.GetSafeMonoBehaviourComponentInChildren<SystemModel>();
-            _factory.MakeSystemInstance(SystemName, ref _system);
+            _factory.MakeSystemInstance(SystemName, sectorIndex, SpaceTopography.OpenSpace, ref _system);
         }
         else {
-            _system = _factory.MakeSystemInstance(SystemName, gameObject);
+            _system = _factory.MakeSystemInstance(SystemName, sectorIndex, SpaceTopography.OpenSpace, gameObject);
         }
     }
 
@@ -239,18 +253,26 @@ public class SystemCreator : AMonoBase, IDisposable {
         }
     }
 
-    private void AssignMembersToOrbitSlots() {
+    /// <summary>
+    /// Assigns each planetary subsystem (planet and optional moons) to an orbit slot and adjusts its
+    /// position and name to reflect that orbit. Applies to both randomly-generated and preset planets.
+    /// Also reserves an orbit slot for a future settlement.
+    /// </summary>
+    /// <exception cref="System.NotImplementedException"></exception>
+    private void PlaceMembersInOrbitSlots() {
         LogEvent();
-        int innerOrbitsCount = Mathf.FloorToInt(0.25F * _numberOfOrbitSlots);
-        int midOrbitsCount = Mathf.CeilToInt(0.6F * _numberOfOrbitSlots) - innerOrbitsCount;
-        int outerOrbitsCount = _numberOfOrbitSlots - innerOrbitsCount - midOrbitsCount;
+        int innerOrbitsCount = Mathf.FloorToInt(0.25F * _numberOfOrbitSlotsAvailableForPlanetsAndSettlements);
+        int midOrbitsCount = Mathf.CeilToInt(0.6F * _numberOfOrbitSlotsAvailableForPlanetsAndSettlements) - innerOrbitsCount;
+        int outerOrbitsCount = _numberOfOrbitSlotsAvailableForPlanetsAndSettlements - innerOrbitsCount - midOrbitsCount;
         var innerStack = new Stack<int>(Enumerable.Range(0, innerOrbitsCount).Shuffle());
         var midStack = new Stack<int>(Enumerable.Range(innerOrbitsCount, midOrbitsCount).Shuffle());
         var outerStack = new Stack<int>(Enumerable.Range(innerOrbitsCount + midOrbitsCount, outerOrbitsCount).Shuffle());
 
+        Vector3[] orbitSlotLocationsForPlanetsAndSettlements = GenerateOrbitSlotLocationsAvailableForPlanetsAndSettlements();
+
         // start by reserving the slot for the Settlement
         int slotIndex = midStack.Pop();
-        _settlementOrbitSlot = _orbitSlots[slotIndex];
+        _system.Data.SettlementOrbitSlot = orbitSlotLocationsForPlanetsAndSettlements[slotIndex];
 
         // now divy up the remaining slots among the planets
         IList<PlanetoidModel> planetsToDestroy = null;
@@ -281,7 +303,7 @@ public class SystemCreator : AMonoBase, IDisposable {
             }
 
             if (TryFindOrbitSlot(out slotIndex, slots)) {
-                planet.transform.localPosition = _orbitSlots[slotIndex];
+                planet.transform.localPosition = orbitSlotLocationsForPlanetsAndSettlements[slotIndex];
                 // assign the planet's name using its orbital slot
                 planet.Data.Name = SystemName + Constants.Space + _planetNumbers[slotIndex];
             }
@@ -341,11 +363,23 @@ public class SystemCreator : AMonoBase, IDisposable {
         }
     }
 
-    private void InitializeSystemData() {
+    private void AddMembersToSystemData() {
         LogEvent();
         _system.Data.StarData = _star.Data;
         _planets.Select(p => p.Data).ForAll(pd => _system.Data.AddPlanet(pd));
-        _system.Data.SettlementOrbitSlot = _settlementOrbitSlot;
+    }
+
+    private void InitializeTopographyMonitor() {
+        var monitor = gameObject.GetSafeMonoBehaviourComponentInChildren<TopographyMonitor>();
+        monitor.Topography = SpaceTopography.System;
+        monitor.SurroundingTopography = SpaceTopography.OpenSpace;
+        monitor.TopographyRadius = TempGameValues.SystemRadius;
+    }
+
+    private void CompleteSystem() {
+        LogEvent();
+        // include the System as a target in any child with a CameraLOSChangedRelay
+        _system.gameObject.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(r => r.AddTarget(_system.transform));
     }
 
     private void EnableSystem(Action onCompletion = null) {
@@ -374,19 +408,20 @@ public class SystemCreator : AMonoBase, IDisposable {
     private void EnableOtherWhenRunning(Action onCompletion = null) {
         D.Assert(GameStatus.Instance.IsRunning);
         gameObject.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(relay => relay.enabled = true);
-        gameObject.GetSafeMonoBehaviourComponentsInChildren<Orbit>().ForAll(orbit => orbit.enabled = true);
-        gameObject.GetSafeMonoBehaviourComponentsInChildren<Revolve>().ForAll(rev => rev.enabled = true);
+        // Enable planet and moon orbits. Leave any possible settlement that might already be present to the SettlementCreator
+        _planets.ForAll(p => p.gameObject.GetComponentInParents<Orbit>().enabled = true);   // planet orbits
+        _planets.ForAll(p => p.gameObject.GetComponentsInChildren<Orbit>().ForAll(o => o.enabled = true));  // moon orbits
+
+        // Enable planet, moon and star revolves. Leave any possible settlement that might already be present to the SettlementCreator
+        _planets.ForAll(p => p.gameObject.GetComponentsInChildren<Revolve>().ForAll(r => r.enabled = true));    // planets and moons
+        _star.gameObject.GetComponentsInChildren<Revolve>().ForAll(r => r.enabled = true);
+
+        gameObject.GetSafeMonoBehaviourComponentInChildren<TopographyMonitor>().enabled = true;
         UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
             if (onCompletion != null) {
                 onCompletion();
             }
         });
-    }
-
-    private void CompleteSystem() {
-        LogEvent();
-        // include the System as a target in any child with a CameraLOSChangedRelay
-        _system.gameObject.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(r => r.AddTarget(_system.transform));
     }
 
     private void __SetIntelLevel() {    // UNCLEAR how should system, star, planet and moon intel coverage levels relate to each other?
@@ -416,16 +451,19 @@ public class SystemCreator : AMonoBase, IDisposable {
         Destroy(gameObject);
     }
 
-    private void GenerateOrbitSlotStartLocation() {
+    private Vector3[] GenerateOrbitSlotLocationsAvailableForPlanetsAndSettlements() {
         LogEvent();
-        _orbitSlots = new Vector3[_numberOfOrbitSlots];
-        float systemRadiusAvailableForOrbits = TempGameValues.SystemRadius - TempGameValues.StarKeepoutRadius;
-        float slotSpacing = systemRadiusAvailableForOrbits / _numberOfOrbitSlots;
-        for (int i = 0; i < _numberOfOrbitSlots; i++) {
-            float orbitRadius = TempGameValues.StarKeepoutRadius + slotSpacing * (i + 1);
-            Vector2 startOrbitPoint2D = RandomExtended<float>.OnCircle(orbitRadius);
-            _orbitSlots[i] = new Vector3(startOrbitPoint2D.x, 0F, startOrbitPoint2D.y);
+        D.Assert(_star.OrbitDistance != Constants.ZeroF);   // confirm the star's Awake() has run
+        float systemRadiusAvailableForAllOrbits = TempGameValues.SystemRadius - _star.OrbitDistance;
+        float slotSpacing = systemRadiusAvailableForAllOrbits / TempGameValues.TotalOrbitSlotsPerSystem;
+
+        var orbitSlotLocationsForPlanetsAndSettlements = new Vector3[_numberOfOrbitSlotsAvailableForPlanetsAndSettlements];
+        for (int i = 0; i < _numberOfOrbitSlotsAvailableForPlanetsAndSettlements; i++) {
+            float unreservedOrbitSlotRadius = _star.OrbitDistance + slotSpacing * (i + 2);  // skips the space for the first slot
+            Vector2 startOrbitPoint2D = RandomExtended<float>.OnCircle(unreservedOrbitSlotRadius);
+            orbitSlotLocationsForPlanetsAndSettlements[i] = new Vector3(startOrbitPoint2D.x, 0F, startOrbitPoint2D.y);
         }
+        return orbitSlotLocationsForPlanetsAndSettlements;
     }
 
     private T DeriveCategory<T>(Transform transformContainingCategoryName) where T : struct {

@@ -30,10 +30,22 @@ namespace CodeEnv.Master.GameContent {
         public ShipCombatStance CombatStance { get; private set; }
         public float MaxTurnRate { get; private set; }
         public float Drag { get; private set; }
-        public float FullThrust { get; private set; }
+        /// <summary>
+        /// The maximum force projected by the STL engines. FullStlSpeed = FullStlThrust / (Mass * Drag).
+        /// NOTE: This value uses a Game Hour denominator. It is adjusted in
+        /// realtime to a Unity seconds value in EngineRoom.ApplyThrust() using GeneralSettings.HoursPerSecond.
+        /// </summary>
+        public float FullStlThrust { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ShipStat"/> struct.
+        /// The maximum force projected by the FTL engines. FullFtlSpeed = FullFtlThrust / (Mass * Drag).
+        /// NOTE: This value uses a Game Hour denominator. It is adjusted in
+        /// realtime to a Unity seconds value in EngineRoom.ApplyThrust() using GeneralSettings.HoursPerSecond.
+        /// </summary>
+        public float FullFtlThrust { get; private set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ShipStat" /> struct.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="mass">The mass.</param>
@@ -42,9 +54,14 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="stance">The stance.</param>
         /// <param name="maxTurnRate">The maximum turn rate.</param>
         /// <param name="drag">The drag.</param>
-        /// <param name="fullthrust">The fullthrust.</param>
+        /// <param name="fullStlThrust">The maximum force projected by the STL engines. FullStlSpeed = FullStlThrust / (Mass * Drag).
+        /// NOTE: This value uses a Game Hour denominator. It is adjusted in
+        /// realtime to a Unity seconds value in EngineRoom.ApplyThrust() using GeneralSettings.HoursPerSecond.</param>
+        /// <param name="fullFtlThrust">The maximum force projected by the FTL engines. FullFtlSpeed = FullFtlThrust / (Mass * Drag).
+        /// NOTE: This value uses a Game Hour denominator. It is adjusted in
+        /// realtime to a Unity seconds value in EngineRoom.ApplyThrust() using GeneralSettings.HoursPerSecond.</param>
         public ShipStat(string name, float mass, float maxHitPts, ShipCategory category, ShipCombatStance stance,
-            float maxTurnRate, float drag, float fullthrust)
+            float maxTurnRate, float drag, float fullStlThrust, float fullFtlThrust)
             : this() {
             Name = name;
             Mass = mass;
@@ -53,7 +70,8 @@ namespace CodeEnv.Master.GameContent {
             CombatStance = stance;
             MaxTurnRate = maxTurnRate;
             Drag = drag;
-            FullThrust = fullthrust;
+            FullStlThrust = fullStlThrust;
+            FullFtlThrust = fullFtlThrust;
         }
 
         public override string ToString() {

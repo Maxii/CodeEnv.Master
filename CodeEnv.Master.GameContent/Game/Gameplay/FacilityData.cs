@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -26,13 +27,20 @@ namespace CodeEnv.Master.GameContent {
 
         public FacilityCategory Category { get; private set; }
 
+        public override SpaceTopography Topography {
+            get { return base.Topography; }
+            set { throw new NotImplementedException(); }
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="FacilityData" /> class.
         /// </summary>
         /// <param name="stat">The stat.</param>
-        public FacilityData(FacilityStat stat)
+        /// <param name="topography">The topography.</param>
+        public FacilityData(FacilityStat stat, SpaceTopography topography)
             : base(stat.Name, stat.Mass, stat.MaxHitPoints) {
             Category = stat.Category;
+            base.Topography = topography;
         }
 
         public override string ToString() {

@@ -255,8 +255,11 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// Generic extension method that subscribes to SPECIFIC PropertyChanging event notifications from objects that implement
         /// INotifyPropertyChanging and use APropertyChangeTracking's SetProperty method in their property setters.
+        /// 
+        /// WARNING: Use the specific type (or interface) of the publisher and property, not a derived type. Use of a derived Property
+        /// Type can result in a casting exception when onChanging is called.
         /// </summary>
-        /// <typeparam name="TSource">The type of the publisher.</typeparam>
+        /// <typeparam name="TSource">The type of the publisher where this method is called.</typeparam>
         /// <typeparam name="TProp">The type of the publisher's property.</typeparam>
         /// <param name="source">The publisher.</param>
         /// <param name="propertySelector">The lambda property selector: pub =&gt; pub.Property</param>
@@ -270,6 +273,8 @@ namespace CodeEnv.Master.Common {
             var subscribedPropertyName = GetPropertyName<TSource, TProp>(propertySelector);
             PropertyChangingEventHandler handler = (s, e) => {
                 if (string.Equals(e.PropertyName, subscribedPropertyName, StringComparison.InvariantCulture)) {
+                    //D.Warn("TSource = {0}, TProp = {1}.", typeof(TSource).Name, typeof(TProp).Name);
+                    //D.Warn("Type of e = {0}, genericType = {1}.", e.GetType().Name, e.GetType().GetGenericArguments().First().Name);
                     onChanging(((PropertyChangingValueEventArgs<TProp>)e).NewValue);    // My custom modification to provide the newValue
                 }
             };

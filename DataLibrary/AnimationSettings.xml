@@ -14,7 +14,7 @@
       <PropertyValue>25</PropertyValue>
     </Setting>
     <Setting>
-      <PropertyName>StarBaseSettlementLayerCullingDistanceFactor</PropertyName>
+      <PropertyName>FacilityLayerCullingDistanceFactor</PropertyName>
       <PropertyValue>150</PropertyValue>
     </Setting>
     <Setting>

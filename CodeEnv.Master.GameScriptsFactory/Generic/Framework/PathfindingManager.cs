@@ -56,8 +56,10 @@ public class PathfindingManager : AMonoBase, IDisposable {
         // Assumptions:
         // points surrounding obstacles are set at 0.05 grids away (0.5 * 0.1) from obstacle center
         // interior sector points are 0.25 grids away from sector center (0.5 * 0.5) ~ 520 (0.25 x sectorDiag of 2078)
-        _astarPath.maxNearestNodeDistance = 600F;
-        // TODO other settings
+        //_astarPath.maxNearestNodeDistance = 600F; // trying no constraint for now - controlled by FleetCmdModel.GenerateCourse()
+        //_astarPath.logPathResults = PathLog.Heavy;    // Editor controls will work if save change as prefab
+
+        // Can't programmatically set TagNames. They appear to only be setable through the Editor
     }
 
     private void OnGameStateChanged() {
@@ -71,7 +73,6 @@ public class PathfindingManager : AMonoBase, IDisposable {
         // WARNING: I must not directly cause the game state to change as the other subscribers to 
         // GameStateChanged may not have been called yet. This GraphScansCompletedEvent occurs 
         // while we are still processing OnGameStateChanged
-        //}
     }
 
     protected override void OnDestroy() {

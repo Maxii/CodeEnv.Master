@@ -23,7 +23,9 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all Stars in the game.
 /// </summary>
-public class StarModel : AItemModel, IStarModel {
+public class StarModel : AItemModel, IStarModel, IStarTarget, IOrbitable {
+
+    //public static float MaxRadius { get; private set; }
 
     public new StarData Data {
         get { return base.Data as StarData; }
@@ -32,16 +34,21 @@ public class StarModel : AItemModel, IStarModel {
 
     protected override void Awake() {
         base.Awake();
-        (collider as SphereCollider).radius = TempGameValues.StarRadius;
-        Radius = TempGameValues.StarRadius;
-        InitializeKeepoutCollider();
         Subscribe();
     }
 
-    private void InitializeKeepoutCollider() {
-        SphereCollider keepoutCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
-        D.Assert(keepoutCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
-        keepoutCollider.radius = Radius * TempGameValues.KeepoutRadiusMultiplier;
+    protected override void InitializeRadiiComponents() {
+        var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
+        Radius = meshRenderer.bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
+        //MaxRadius = Mathf.Max(Radius, MaxRadius);
+
+        (collider as SphereCollider).radius = Radius;
+
+        SphereCollider keepoutZoneCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
+        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
+        keepoutZoneCollider.radius = Radius * TempGameValues.KeepoutRadiusMultiplier;
+        float orbitBufferDistanceAboveKeepoutZone = 1F;
+        OrbitDistance = keepoutZoneCollider.radius + orbitBufferDistanceAboveKeepoutZone;
     }
 
     protected override void Initialize() { }
@@ -49,6 +56,12 @@ public class StarModel : AItemModel, IStarModel {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region IOrbitable Members
+
+    public float OrbitDistance { get; private set; }
+
+    #endregion
 
 }
 

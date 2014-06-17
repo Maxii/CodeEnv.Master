@@ -28,7 +28,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for a CommandItem, an object that commands Elements.
 /// </summary>
-public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommandModel, ICommandTarget {
+public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICmdModel, ICmdTarget {
 
     public event Action<IElementModel> onSubordinateElementDeath;
 
@@ -56,6 +56,13 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
         // Derived class should call Subscribe() after all used references have been established
     }
 
+    protected override void InitializeRadiiComponents() {
+        // the radius of a Command is the radius of its HQElement and is set from OnHQElementChanged()
+        // a Command's collider size is dynamiccally adjusted to the size of the CmdIcon. It has nothing to do with the radius of the Command
+        // the orbitalDistance of a Cmd is a function of the radius of the HQElement, the number of elements and their formation. It is
+        // set when the formation is changed
+    }
+
     protected override void Initialize() {
         base.Initialize();
     }
@@ -76,7 +83,7 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
         D.Assert(!element.IsHQElement, "{0} adding element {1} already designated as the HQ Element.".Inject(FullName, element.FullName));
         // elements should already be enabled when added to a Cmd as that is commonly their state when transferred during runtime
         D.Assert((element as MonoBehaviour).enabled, "{0} is not yet enabled.".Inject(element.FullName));
-        element.onItemDeath += OnSubordinateElementDeath;
+        element.onDeath += OnSubordinateElementDeath;
         Elements.Add(element);
         Data.AddElement(element.Data);
         Transform parentTransform = _transform.parent;
@@ -87,7 +94,7 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
     }
 
     public virtual void RemoveElement(IElementModel element) {
-        element.onItemDeath -= OnSubordinateElementDeath;
+        element.onDeath -= OnSubordinateElementDeath;
         bool isRemoved = Elements.Remove(element);
         isRemoved = isRemoved && Data.RemoveElement(element.Data);
         D.Assert(isRemoved, "{0} not found.".Inject(element.FullName));
@@ -103,9 +110,8 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
         AUnitElementModel element = mortalItem as AUnitElementModel;
         RemoveElement(element);
 
-        var temp = onSubordinateElementDeath;
-        if (temp != null) {
-            temp(element);
+        if (onSubordinateElementDeath != null) {
+            onSubordinateElementDeath(element);
         }
     }
 
@@ -183,7 +189,7 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICommand
         RelayToCurrentState();
     }
 
-    protected void OnTargetDeath(IMortalModel deadTarget) {
+    protected void OnTargetDeath(IMortalTarget deadTarget) {
         //LogEvent();
         RelayToCurrentState(deadTarget);
     }

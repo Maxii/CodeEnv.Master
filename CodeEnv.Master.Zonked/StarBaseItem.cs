@@ -28,8 +28,8 @@ using UnityEngine;
 /// </summary>
 public class StarBaseItem : AMortalItemStateMachine<StarbaseState>, IMortalTarget {
 
-    private UnitOrder<StarbaseOrders> _currentOrder;
-    public UnitOrder<StarbaseOrders> CurrentOrder {
+    private UnitOrder<StarbaseDirective> _currentOrder;
+    public UnitOrder<StarbaseDirective> CurrentOrder {
         get { return _currentOrder; }
         set { SetProperty<ItemOrder<StarbaseOrders>>(ref _currentOrder, value, "CurrentOrder", OnOrdersChanged); }
     }
@@ -95,7 +95,7 @@ public class StarBaseItem : AMortalItemStateMachine<StarbaseState>, IMortalTarge
 
     #region ProcessOrders
 
-    private UnitOrder<StarbaseOrders> _orderBeingExecuted;
+    private UnitOrder<StarbaseDirective> _orderBeingExecuted;
     private bool _isNewOrderWaiting;
 
     void ProcessOrders_EnterState() { }
@@ -106,24 +106,24 @@ public class StarBaseItem : AMortalItemStateMachine<StarbaseState>, IMortalTarge
         // 2. the last new order (_orderBeingExecuted) has been completed
         _isNewOrderWaiting = _orderBeingExecuted != CurrentOrder;
         if (_isNewOrderWaiting) {
-            StarbaseOrders order = CurrentOrder.Order;
+            StarbaseDirective order = CurrentOrder.Order;
             switch (order) {
-                case StarbaseOrders.Attack:
+                case StarbaseDirective.Attack:
 
                     break;
-                case StarbaseOrders.StopAttack:
+                case StarbaseDirective.StopAttack:
 
                     break;
-                case StarbaseOrders.Disband:
+                case StarbaseDirective.Disband:
 
                     break;
-                case StarbaseOrders.Refit:
+                case StarbaseDirective.Refit:
 
                     break;
-                case StarbaseOrders.Repair:
+                case StarbaseDirective.Repair:
 
                     break;
-                case StarbaseOrders.None:
+                case StarbaseDirective.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
             }

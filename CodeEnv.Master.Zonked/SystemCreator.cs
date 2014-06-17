@@ -51,7 +51,7 @@ public class SystemCreator : AMonoBase, IDisposable {
     private static IList<SystemModel> _allSystems = new List<SystemModel>();
     public static IList<SystemModel> AllSystems { get { return _allSystems; } }
 
-    private static int _numberOfOrbitSlots = TempGameValues.SystemOrbitSlots;
+    private static int _numberOfOrbitSlots = TempGameValues.TotalOrbitSlotsPerSystem;
 
     private static int[] _planetNumbers = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     private static string[] _moonLetters = new string[] { "a", "b", "c", "d", "e" };

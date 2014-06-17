@@ -24,8 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitCommandPresenter : AMortalItemPresenter {
 
-        public new ICommandModel Model {
-            get { return base.Model as ICommandModel; }
+        public new ICmdModel Model {
+            get { return base.Model as ICmdModel; }
             protected set { base.Model = value; }
         }
 
@@ -40,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Subscribe() {
             base.Subscribe();
-            _subscribers.Add(Model.SubscribeToPropertyChanged<ICommandModel, IElementModel>(sb => sb.HQElement, OnHQElementChanged));
+            _subscribers.Add(Model.SubscribeToPropertyChanged<ICmdModel, IElementModel>(sb => sb.HQElement, OnHQElementChanged));
             Model.onSubordinateElementDeath += OnSubordinateElementDeath;
             Model.Data.onCompositionChanged += OnCompositionChanged;
         }

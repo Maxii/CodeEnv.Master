@@ -114,7 +114,7 @@ namespace CodeEnv.Master.GameContent {
         private void Subscribe() {
             _subscribers = new List<IDisposable>();
             _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
-            _subscribers.Add(_data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullSpeed, OnFullSpeedChanged));
+            _subscribers.Add(_data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullStlSpeed, OnFullSpeedChanged));
         }
 
         #region PlotCourse
@@ -135,8 +135,8 @@ namespace CodeEnv.Master.GameContent {
             else if (target is StationaryLocation) {
                 PlotCourse(target as StationaryLocation, speed, isFleetMove);
             }
-            else if (target is ICommandTarget) {
-                PlotCourse(target as ICommandTarget, speed, standoffDistance);
+            else if (target is ICmdTarget) {
+                PlotCourse(target as ICmdTarget, speed, standoffDistance);
             }
             else if (target is IElementTarget) {
                 PlotCourse(target as IElementTarget, speed, standoffDistance);
@@ -173,7 +173,7 @@ namespace CodeEnv.Master.GameContent {
         private void PlotCourse(StationaryLocation location, Speed speed, bool isFleetMove) {
             // a formationOffset is required if this is a fleet move
             Vector3 destinationOffset = isFleetMove ? _data.FormationStation.StationOffset : Vector3.zero;
-            _targetInfo = new TargetInfo(location, destinationOffset, _data.FullSpeed);
+            _targetInfo = new TargetInfo(location, destinationOffset, _data.FullStlSpeed);
             Speed = speed;
             _isFleetMove = isFleetMove;
             PlotCourse();
@@ -187,7 +187,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="speed">The speed.</param>
         /// <param name="standoffDistance">The distance to standoff from the target. This is added to the radius of the target to
         /// determine how close the ship is allowed to approach the target.</param>
-        private void PlotCourse(ICommandTarget cmd, Speed speed, float standoffDistance) {
+        private void PlotCourse(ICmdTarget cmd, Speed speed, float standoffDistance) {
             _targetInfo = new TargetInfo(cmd, _data.FormationStation.StationOffset, standoffDistance);
             Speed = speed;
             _isFleetMove = true;
@@ -411,7 +411,7 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes the values that depend on the target and speed.
         /// </summary>
         private void InitializeTargetValues() {
-            float speedFactor = _data.FullSpeed * _gameSpeedMultiplier * 3F;
+            float speedFactor = _data.FullStlSpeed * _gameSpeedMultiplier * 3F;
             __separationTestToleranceDistanceSqrd = speedFactor * speedFactor;   // FIXME needs work - courseUpdatePeriod???
             //D.Log("{0} SeparationToleranceSqrd = {1}, FullSpeed = {2}.", Data.FullName, __separationTestToleranceDistanceSqrd, Data.FullSpeed);
 
@@ -475,7 +475,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void AssessFrequencyOfCourseProgressChecks() {
             // frequency of course progress checks increases as fullSpeed and gameSpeed increase
-            float courseProgressCheckFrequency = 1F + (_data.FullSpeed * _gameSpeedMultiplier);
+            float courseProgressCheckFrequency = 1F + (_data.FullStlSpeed * _gameSpeedMultiplier);
             _courseProgressCheckPeriod = 1F / courseProgressCheckFrequency;
             //D.Log("{0} frequency of course progress checks adjusted to {1:0.##}.", Data.FullName, courseProgressCheckFrequency);
         }
@@ -544,7 +544,7 @@ namespace CodeEnv.Master.GameContent {
                 CloseEnoughDistanceSqrd = CloseEnoughDistance * CloseEnoughDistance;
             }
 
-            public TargetInfo(ICommandTarget cmd, Vector3 fstOffset, float standoffDistance) {
+            public TargetInfo(ICmdTarget cmd, Vector3 fstOffset, float standoffDistance) {
                 Target = cmd;
                 Destination = cmd.Position + fstOffset;
                 CloseEnoughDistance = cmd.Radius + standoffDistance;

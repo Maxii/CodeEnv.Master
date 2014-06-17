@@ -17,6 +17,7 @@
 // default namespace
 
 using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
 using UnityEditor;
 
 /// <summary>
@@ -24,6 +25,10 @@ using UnityEditor;
 /// </summary>
 [CustomEditor(typeof(FleetUnitCreator))]
 public class FleetCreatorEditor : AUnitCreatorEditor<FleetUnitCreator> {
+
+    protected override int GetMaxElements() {
+        return TempGameValues.MaxShipsPerFleet;
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

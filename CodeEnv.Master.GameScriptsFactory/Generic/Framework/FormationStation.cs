@@ -40,9 +40,9 @@ public class FormationStation : AMonoBase, IFormationStation, IDestinationTarget
         if (enabled) {
             if (other.isTrigger) { return; }
             //D.Log("OnTriggerEnter({0}) called.", other.name);
-            IShipModel target = other.gameObject.GetInterface<IShipModel>();
-            if (target != null) {
-                if (target == AssignedShip) {
+            IShipModel arrivingShip = other.gameObject.GetInterface<IShipModel>();
+            if (arrivingShip != null) {
+                if (arrivingShip == AssignedShip) {
                     OnShipOnStation(true);
                 }
             }
@@ -53,9 +53,9 @@ public class FormationStation : AMonoBase, IFormationStation, IDestinationTarget
         if (enabled) {
             if (other.isTrigger) { return; }
             //D.Log("{0}.OnTriggerExit() called by Collider {1}.", GetType().Name, other.name);
-            IShipModel target = other.gameObject.GetInterface<IShipModel>();
-            if (target != null) {
-                if (target == AssignedShip) {
+            IShipModel departingShip = other.gameObject.GetInterface<IShipModel>();
+            if (departingShip != null) {
+                if (departingShip == AssignedShip) {
                     OnShipOnStation(false);
                 }
             }
@@ -161,11 +161,11 @@ public class FormationStation : AMonoBase, IFormationStation, IDestinationTarget
         get { return _transform.position; }
     }
 
-    public bool IsMovable {
-        get { return true; }
-    }
+    public bool IsMovable { get { return true; } }
 
     public float Radius { get { return Constants.ZeroF; } }
+
+    public SpaceTopography Topography { get { return Universe.GetSpaceTopography(Position); } }
 
     #endregion
 

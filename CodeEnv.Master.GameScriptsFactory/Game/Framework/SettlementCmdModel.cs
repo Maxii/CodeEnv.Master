@@ -28,17 +28,17 @@ using System.Collections.Generic;
 /// <summary>
 /// The data-holding class for all Settlements in the game. Includes a state machine.
 /// </summary>
-public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel {
+public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel, IBaseCmdTarget, IOrbitable {
 
     public new SettlementCmdData Data {
         get { return base.Data as SettlementCmdData; }
         set { base.Data = value; }
     }
 
-    private BaseOrder<SettlementOrders> _currentOrder;
-    public BaseOrder<SettlementOrders> CurrentOrder {
+    private BaseOrder<SettlementDirective> _currentOrder;
+    public BaseOrder<SettlementDirective> CurrentOrder {
         get { return _currentOrder; }
-        set { SetProperty<BaseOrder<SettlementOrders>>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
+        set { SetProperty<BaseOrder<SettlementDirective>>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
     }
 
     protected override void Awake() {
@@ -70,29 +70,35 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel {
             Return();
         }
         if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Order.GetName());
-            SettlementOrders order = CurrentOrder.Order;
+            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetName());
+            SettlementDirective order = CurrentOrder.Directive;
             switch (order) {
-                case SettlementOrders.Attack:
+                case SettlementDirective.Attack:
                     CurrentState = SettlementState.ExecuteAttackOrder;
                     break;
-                case SettlementOrders.StopAttack:
+                case SettlementDirective.StopAttack:
 
                     break;
-                case SettlementOrders.Refit:
+                case SettlementDirective.Refit:
 
                     break;
-                case SettlementOrders.Repair:
+                case SettlementDirective.Repair:
 
                     break;
-                case SettlementOrders.Disband:
+                case SettlementDirective.Disband:
 
                     break;
-                case SettlementOrders.None:
+                case SettlementDirective.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
             }
         }
+    }
+
+    protected override void PositionElementInFormation(IElementModel element, Vector3 stationOffset) {
+        base.PositionElementInFormation(element, stationOffset);
+        // set visitor orbit distance just outside of 'orbiting' facilities
+        OrbitDistance = (element != HQElement) ? stationOffset.magnitude + 1F : 2F;   // base HQElement offset is always Vector3.zero     // IMPROVE  
     }
 
     protected override void KillCommand() {
@@ -157,8 +163,8 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel {
     void Attacking_EnterState() {
         LogEvent();
         _attackTarget = CurrentOrder.Target as IMortalTarget;
-        _attackTarget.onItemDeath += OnTargetDeath;
-        var elementAttackOrder = new FacilityOrder(FacilityOrders.Attack, OrderSource.UnitCommand, _attackTarget);
+        _attackTarget.onTargetDeath += OnTargetDeath;
+        var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, OrderSource.UnitCommand, _attackTarget);
         Elements.ForAll(e => (e as FacilityModel).CurrentOrder = elementAttackOrder);
     }
 
@@ -170,7 +176,7 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel {
 
     void Attacking_ExitState() {
         LogEvent();
-        _attackTarget.onItemDeath -= OnTargetDeath;
+        _attackTarget.onTargetDeath -= OnTargetDeath;
         _attackTarget = null;
     }
 
@@ -204,7 +210,7 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel {
 
     void Dead_EnterState() {
         LogEvent();
-        OnItemDeath();
+        OnDeath();
         OnShowAnimation(MortalAnimations.Dying);
     }
 
@@ -231,6 +237,12 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region IOrbitable Members
+
+    public float OrbitDistance { get; private set; }
+
+    #endregion
 
 }
 

@@ -40,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.IntelState:
                     return new ColoredTextList_Intel(intel);
                 case GuiHudLineKeys.Speed:
-                    return new ColoredTextList_Speed(data.CurrentSpeed, data.FullSpeed);
+                    return new ColoredTextList_Speed(data.CurrentSpeed, data.RequestedSpeed);
                 case GuiHudLineKeys.Owner:
                     return new ColoredTextList_Owner(data.Owner);
                 case GuiHudLineKeys.Health:

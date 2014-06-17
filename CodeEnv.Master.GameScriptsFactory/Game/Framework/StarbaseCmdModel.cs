@@ -28,12 +28,12 @@ using System.Collections.Generic;
 /// <summary>
 /// The data-holding class for all Starbases in the game. Includes a state machine. 
 /// </summary>
-public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
+public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel, IBaseCmdTarget, IOrbitable {
 
-    private BaseOrder<StarbaseOrders> _currentOrder;
-    public BaseOrder<StarbaseOrders> CurrentOrder {
+    private BaseOrder<StarbaseDirective> _currentOrder;
+    public BaseOrder<StarbaseDirective> CurrentOrder {
         get { return _currentOrder; }
-        set { SetProperty<BaseOrder<StarbaseOrders>>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
+        set { SetProperty<BaseOrder<StarbaseDirective>>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
     }
 
     public new StarbaseCmdData Data {
@@ -44,6 +44,10 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
     protected override void Awake() {
         base.Awake();
         Subscribe();
+    }
+
+    protected override void InitializeRadiiComponents() {
+        base.InitializeRadiiComponents();
     }
 
     protected override void Initialize() {
@@ -70,29 +74,35 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
             Return();
         }
         if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Order.GetName());
-            StarbaseOrders order = CurrentOrder.Order;
+            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetName());
+            StarbaseDirective order = CurrentOrder.Directive;
             switch (order) {
-                case StarbaseOrders.Attack:
+                case StarbaseDirective.Attack:
                     CurrentState = StarbaseState.ExecuteAttackOrder;
                     break;
-                case StarbaseOrders.StopAttack:
+                case StarbaseDirective.StopAttack:
 
                     break;
-                case StarbaseOrders.Repair:
+                case StarbaseDirective.Repair:
 
                     break;
-                case StarbaseOrders.Refit:
+                case StarbaseDirective.Refit:
 
                     break;
-                case StarbaseOrders.Disband:
+                case StarbaseDirective.Disband:
 
                     break;
-                case StarbaseOrders.None:
+                case StarbaseDirective.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
             }
         }
+    }
+
+    protected override void PositionElementInFormation(IElementModel element, Vector3 stationOffset) {
+        base.PositionElementInFormation(element, stationOffset);
+        // set visitor orbit distance just outside of 'orbiting' facilities
+        OrbitDistance = (element != HQElement) ? stationOffset.magnitude + 1F : 2F;   // base HQElement offset is always Vector3.zero     // IMPROVE  
     }
 
     protected override void KillCommand() {
@@ -158,8 +168,8 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
     void Attacking_EnterState() {
         LogEvent();
         _attackTarget = CurrentOrder.Target as IMortalTarget;
-        _attackTarget.onItemDeath += OnTargetDeath;
-        var elementAttackOrder = new FacilityOrder(FacilityOrders.Attack, OrderSource.UnitCommand, _attackTarget);
+        _attackTarget.onTargetDeath += OnTargetDeath;
+        var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, OrderSource.UnitCommand, _attackTarget);
         Elements.ForAll(e => (e as FacilityModel).CurrentOrder = elementAttackOrder);
     }
 
@@ -171,7 +181,7 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
 
     void Attacking_ExitState() {
         LogEvent();
-        _attackTarget.onItemDeath -= OnTargetDeath;
+        _attackTarget.onTargetDeath -= OnTargetDeath;
         _attackTarget = null;
     }
 
@@ -205,7 +215,7 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
 
     void Dead_EnterState() {
         LogEvent();
-        OnItemDeath();
+        OnDeath();
         OnShowAnimation(MortalAnimations.Dying);
     }
 
@@ -233,9 +243,9 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel {
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region IDestinationTarget Members
+    #region IOrbitable Members
 
-    public override bool IsMovable { get { return false; } }
+    public float OrbitDistance { get; private set; }
 
     #endregion
 

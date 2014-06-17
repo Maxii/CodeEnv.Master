@@ -5,9 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: RangeTrackerID.cs
-// Enum for simple ID of the different RangeTracker instances
-// present in a specific Element.
+// File: ICmdTarget.cs
+// Interface for a target that is a UnitCommand.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -15,27 +14,16 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-namespace CodeEnv.Master.Common {
+namespace CodeEnv.Master.GameContent {
 
+    using System.Collections.Generic;
 
     /// <summary>
-    /// Enum for simple ID of the different RangeTracker instances
-    /// present in a specific Element.
+    /// Interface for a target that is a UnitCommand.
     /// </summary>
-    public enum RangeTrackerID {
+    public interface ICmdTarget : IMortalTarget {
 
-        None,
-
-        ID_0,
-        ID_1,
-        ID_2,
-        ID_3,
-        ID_4,
-        ID_5,
-        ID_6,
-        ID_7,
-        ID_8,
-        ID_9
+        IEnumerable<IElementTarget> ElementTargets { get; }
 
     }
 }

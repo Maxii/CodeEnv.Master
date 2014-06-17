@@ -140,31 +140,35 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     }
 
     /// <summary>
-    /// Makes an instance of a System from the name provided. The returned Model (with its Data) and View 
+    /// Makes an instance of a System from the name provided. The returned Model (with its Data) and View
     /// will not be enabled but their gameObject will be parented to the provided parent. Their are
     /// no subordinate planets or stars attached yet.
     /// </summary>
     /// <param name="systemName">Name of the system.</param>
+    /// <param name="sectorIndex">Index of the sector.</param>
+    /// <param name="topography">The topography.</param>
     /// <param name="parent">The parent.</param>
     /// <returns></returns>
-    public SystemModel MakeSystemInstance(string systemName, GameObject parent) {
+    public SystemModel MakeSystemInstance(string systemName, Index3D sectorIndex, SpaceTopography topography, GameObject parent) {
         GameObject systemPrefab = _systemPrefab.gameObject;
         GameObject systemGo = UnityUtility.AddChild(parent, systemPrefab);
         systemGo.name = systemName;
         SystemModel model = systemGo.GetSafeMonoBehaviourComponent<SystemModel>();
-        MakeSystemInstance(systemName, ref model);
+        MakeSystemInstance(systemName, sectorIndex, topography, ref model);
         return model;
     }
 
     /// <summary>
-    ///Makes an instance of a System from the name and model provided. The Model (with its Data) and View
-    ///will not be enabled. The model's transform will have the same parent and children it arrived with. 
+    /// Makes an instance of a System from the name and model provided. The Model (with its Data) and View
+    /// will not be enabled. The model's transform will have the same parent and children it arrived with.
     /// </summary>
     /// <param name="systemName">Name of the system.</param>
+    /// <param name="sectorIndex">Index of the sector.</param>
+    /// <param name="topography">The topography.</param>
     /// <param name="model">The model.</param>
-    public void MakeSystemInstance(string systemName, ref SystemModel model) {
+    public void MakeSystemInstance(string systemName, Index3D sectorIndex, SpaceTopography topography, ref SystemModel model) {
         D.Assert(model.transform.parent != null, "{0} should already have a parent.".Inject(model.FullName));
-        SystemData data = new SystemData(systemName);
+        SystemData data = new SystemData(systemName, sectorIndex, topography);
         model.Data = data;
         // this is not really necessary as the provided model should already have its transform as its Mesh's CameraLOSChangedRelay target
         var modelTransform = model.transform;   // assigns the planet's transform as the target for the planet and moon mesh relays

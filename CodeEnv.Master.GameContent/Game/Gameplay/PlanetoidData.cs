@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -24,6 +25,11 @@ namespace CodeEnv.Master.GameContent {
     public class PlanetoidData : AMortalItemData {
 
         public PlanetoidCategory Category { get; private set; }
+
+        public override SpaceTopography Topography {
+            get { return base.Topography; }
+            set { throw new NotImplementedException(); }
+        }
 
         private int _capacity;
         public int Capacity {
@@ -44,24 +50,16 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PlanetoidData" /> class.
+        /// Initializes a new instance of the <see cref="PlanetoidData"/> class.
         /// </summary>
-        /// <param name="category">The category of planet.</param>
-        /// <param name="name">The name.</param>
-        /// <param name="maxHitPoints">The maximum hit points.</param>
-        /// <param name="mass">The mass.</param>
-        /// <param name="parentName">Name of the parent.</param>
-        //public PlanetoidData(PlanetoidCategory category, string name, float maxHitPoints, float mass, string parentName)
-        //    : base(name, maxHitPoints, mass, parentName) {
-        //    Category = category;
-        //}
-
+        /// <param name="stat">The stat.</param>
         public PlanetoidData(PlanetoidStat stat)
             : base(stat.Name, stat.Mass, stat.MaxHitPoints) {
             Category = stat.Category;
             Capacity = stat.Capacity;
             Resources = stat.Resources;
             SpecialResources = stat.SpecialResources;
+            base.Topography = SpaceTopography.System;
         }
 
         public override string ToString() {

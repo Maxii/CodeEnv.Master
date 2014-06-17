@@ -17,9 +17,9 @@
 // default namespace
 
 using System;
-using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
@@ -29,6 +29,1182 @@ using UnityEngine;
 /// The data-holding class for all ships in the game. Includes a state machine.
 /// </summary>
 public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
+
+    /// <summary>
+    /// Navigator class for Ships.
+    /// </summary>
+    private class ShipHelm : IDisposable {
+
+        private class ShipDestinationInfo {
+
+            /// <summary>
+            /// The target this ship is trying to reach. Can be a FormationStation, 
+            /// StationaryLocation, UnitCommand, UnitElement or other MortalItem.
+            /// </summary>
+            public IDestinationTarget Target { get; private set; }
+
+            /// <summary>
+            /// The actual worldspace location this ship is trying to reach, derived
+            /// from the Target. Can be offset from the actual Target position by the
+            /// ship's formation station offset.
+            /// </summary>
+            public Vector3 Destination { get { return Target.Position + _fstOffset; } }
+
+            /// <summary>
+            /// The distance from the Destination that is 'close enough' to have arrived. This value
+            /// is automatically adjusted to accomodate various factors including the radius or orbitDistance
+            /// of the target as well as any desired standoff distance.
+            /// </summary>
+            public float CloseEnoughDistance { get; private set; }
+
+            private Vector3 _fstOffset;
+
+            public ShipDestinationInfo(IFormationStation fst) {
+                Target = fst as IDestinationTarget;
+                _fstOffset = Vector3.zero;
+                CloseEnoughDistance = Constants.ZeroF;
+            }
+
+            public ShipDestinationInfo(ISectorTarget sector, Vector3 fstOffset) {
+                Target = sector;
+                _fstOffset = fstOffset;
+                CloseEnoughDistance = sector.Radius;
+            }
+
+            public ShipDestinationInfo(StationaryLocation location, Vector3 fstOffset) {
+                Target = location;
+                _fstOffset = fstOffset;
+                CloseEnoughDistance = StationaryLocation.CloseEnoughDistance;
+            }
+
+            public ShipDestinationInfo(IFleetCmdTarget cmd, Vector3 fstOffset, float standoffDistance) {
+                Target = cmd;
+                _fstOffset = fstOffset;
+                CloseEnoughDistance = cmd.Radius + standoffDistance;
+            }
+
+            public ShipDestinationInfo(IBaseCmdTarget cmd, Vector3 fstOffset, float standoffDistance) {
+                Target = cmd;
+                _fstOffset = fstOffset;
+                CloseEnoughDistance = (cmd as IOrbitable).OrbitDistance + standoffDistance;
+            }
+
+            public ShipDestinationInfo(IElementTarget element, float standoffDistance) {
+                Target = element;
+                _fstOffset = Vector3.zero;
+                CloseEnoughDistance = element.Radius + standoffDistance;
+            }
+
+            public ShipDestinationInfo(IPlanetoidTarget planetoid, Vector3 fstOffset) {
+                Target = planetoid;
+                _fstOffset = fstOffset;
+                CloseEnoughDistance = (planetoid as IOrbitable).OrbitDistance;
+            }
+
+            public ShipDestinationInfo(ISystemTarget system, Vector3 fstOffset) {
+                Target = system;
+                _fstOffset = fstOffset;
+                CloseEnoughDistance = system.Radius;
+            }
+
+            public ShipDestinationInfo(IStarTarget star, Vector3 fstOffset) {
+                Target = star;
+                _fstOffset = fstOffset;
+                CloseEnoughDistance = (star as IOrbitable).OrbitDistance;
+            }
+
+            public ShipDestinationInfo(IUniverseCenterTarget universeCenter, Vector3 fstOffset) {
+                Target = universeCenter;
+                _fstOffset = fstOffset;
+                CloseEnoughDistance = (universeCenter as IOrbitable).OrbitDistance;
+            }
+        }
+
+        /// <summary>
+        /// Runs the engines of a ship generating thrust.
+        /// </summary>
+        private class EngineRoom : IDisposable {
+
+            private static Range<float> SpeedTargetRange = new Range<float>(0.99F, 1.01F);
+
+            private static Range<float> _speedWayAboveTarget = new Range<float>(1.10F, float.PositiveInfinity);
+            //private static Range<float> _speedModeratelyAboveTarget = new Range<float>(1.10F, 1.25F);
+            private static Range<float> _speedSlightlyAboveTarget = new Range<float>(1.01F, 1.10F);
+            private static Range<float> _speedSlightlyBelowTarget = new Range<float>(0.90F, 0.99F);
+            //private static Range<float> _speedModeratelyBelowTarget = new Range<float>(0.75F, 0.90F);
+            private static Range<float> _speedWayBelowTarget = new Range<float>(Constants.ZeroF, 0.90F);
+
+            //private float _targetThrustMinusMinus;
+            private float _targetThrustMinus;
+            private float _targetThrust;
+            private float _targetThrustPlus;
+
+            private bool _isFlapsDeployed;
+
+            private Vector3 _localTravelDirection = new Vector3(0F, 0F, 1F);
+            private float _gameSpeedMultiplier;
+            private Vector3 _velocityOnPause;
+
+            private ShipData _shipData;
+            private Rigidbody _shipRigidbody;
+
+            private Job _operateEnginesJob;
+            private IList<IDisposable> _subscribers;
+
+            public EngineRoom(ShipModel ship) {
+                _shipData = ship.Data;
+                _shipRigidbody = ship.rigidbody;
+                _shipRigidbody.useGravity = false;
+                _gameSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
+                //D.Log("{0}.EngineRoom._gameSpeedMultiplier is {1}.", ship.FullName, _gameSpeedMultiplier);
+                Subscribe();
+            }
+
+            private void Subscribe() {
+                _subscribers = new List<IDisposable>();
+                _subscribers.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
+                _subscribers.Add(GameStatus.Instance.SubscribeToPropertyChanged<GameStatus, bool>(gs => gs.IsPaused, OnIsPausedChanged));
+            }
+
+            /// <summary>
+            /// Changes the speed.
+            /// </summary>
+            /// <param name="newSpeedRequest">The new speed request in units per hour.</param>
+            /// <returns></returns>
+            public bool ChangeSpeed(float newSpeedRequest) {
+                //D.Log("{0}'s speed = {1} at EngineRoom.ChangeSpeed({2}).", _shipData.FullName, _shipData.CurrentSpeed, newSpeedRequest);
+
+                if (_isFlapsDeployed) {
+                    // reset drag to normal so max speed and thrust calculations are accurate
+                    // they will be applied again during GetThrust() if needed
+                    DeployFlaps(false);
+                }
+
+                float maxAllowableSpeed = _shipData.IsFtlAvailableForUse ? _shipData.FullFtlSpeed : _shipData.FullStlSpeed;
+                if (newSpeedRequest > maxAllowableSpeed) {
+                    D.Warn("{0} received speed request of {1} which is greater than current max of {2}. Request changed to {2}.", _shipData.FullName, newSpeedRequest, maxAllowableSpeed);
+                    newSpeedRequest = maxAllowableSpeed;
+                }
+                float previousRequestedSpeed = _shipData.RequestedSpeed;
+                float newSpeedToRequestedSpeedRatio = (previousRequestedSpeed != Constants.ZeroF) ? newSpeedRequest / previousRequestedSpeed : Constants.ZeroF;
+                if (EngineRoom.SpeedTargetRange.ContainsValue(newSpeedToRequestedSpeedRatio)) {
+                    D.Log("{0} is already generating thrust for {1:0.##} units/hour. Requested speed unchanged.", _shipData.Name, newSpeedRequest);
+                    return false;
+                }
+
+                SetThrustFor(newSpeedRequest);
+
+                if (_operateEnginesJob == null || !_operateEnginesJob.IsRunning) {
+                    _operateEnginesJob = new Job(OperateEngines(), toStart: true, onJobComplete: delegate {
+                        if (_isDisposing) { return; }
+                        string message = "{0} thrust stopped.  Coasting speed is {1:0.##} units/hour.";
+                        D.Log(message, _shipData.Name, _shipData.CurrentSpeed);
+                    });
+                }
+                return true;
+            }
+
+            private void OnGameSpeedChanged() {
+                float previousGameSpeedMultiplier = _gameSpeedMultiplier;   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
+                _gameSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();
+                float gameSpeedChangeRatio = _gameSpeedMultiplier / previousGameSpeedMultiplier;
+                AdjustForGameSpeed(gameSpeedChangeRatio);
+            }
+
+            private void OnIsPausedChanged() {
+                if (GameStatus.Instance.IsPaused) {
+                    _velocityOnPause = _shipRigidbody.velocity;
+                    _shipRigidbody.isKinematic = true;
+                }
+                else {
+                    _shipRigidbody.isKinematic = false;
+                    _shipRigidbody.velocity = _velocityOnPause;
+                    _shipRigidbody.WakeUp();
+                }
+            }
+
+            /// <summary>
+            /// Sets the thrust values needed to achieve the requested speed. This speed has already
+            /// been tested for acceptability, ie. it has been clamped.
+            /// </summary>
+            /// <param name="acceptableRequestedSpeed">The acceptable requested speed.</param>
+            private void SetThrustFor(float acceptableRequestedSpeed) {
+                D.Log("{0} adjusting thrust to achieve requested speed of {1:0.##} units/hour.", _shipData.Name, acceptableRequestedSpeed);
+                float upperThrustLimit = _shipData.FullStlThrust;
+                if (_shipData.IsFtlAvailableForUse) {
+                    upperThrustLimit = _shipData.FullFtlThrust;
+                }
+                _shipData.RequestedSpeed = acceptableRequestedSpeed;
+                float acceptableThrust = acceptableRequestedSpeed * _shipData.Drag * _shipData.Mass;
+
+                _targetThrust = acceptableThrust;
+                _targetThrustMinus = _targetThrust / _speedSlightlyAboveTarget.Maximum;
+                _targetThrustPlus = Mathf.Min(_targetThrust / _speedSlightlyBelowTarget.Minimum, upperThrustLimit);
+
+                //_targetThrust = Mathf.Min(requestedThrust, upperThrustLimit);
+                //_targetThrustMinus = Mathf.Min(_targetThrust / _speedSlightlyAboveTarget.Maximum, upperThrustLimit);
+                //_targetThrustPlus = Mathf.Min(_targetThrust / _speedSlightlyBelowTarget.Minimum, upperThrustLimit);
+                // _targetThrustPlusPlus = Mathf.Min(targetThrust / _speedModeratelyBelowTarget.Min, maxThrust);
+                //_targetThrustMinusMinus = Mathf.Min(targetThrust / _speedModeratelyAboveTarget.Max, maxThrust);
+            }
+
+            // IMPROVE this approach will cause ships with higher speed capability to accelerate faster than ships with lower, separating members of the fleet
+            private float GetThrust() {
+                if (_shipData.RequestedSpeed == Constants.ZeroF) {
+                    DeployFlaps(true);
+                    return Constants.ZeroF;
+                }
+
+                float fullThrust = _shipData.IsFtlAvailableForUse ? _shipData.FullFtlThrust : _shipData.FullStlThrust;
+
+                float sr = _shipData.CurrentSpeed / _shipData.RequestedSpeed;
+                //D.Log("{0}.EngineRoom speed ratio = {1:0.##}.", _shipData.FullName, sr);
+                if (SpeedTargetRange.ContainsValue(sr)) {
+                    DeployFlaps(false);
+                    return _targetThrust;
+                }
+                if (_speedSlightlyBelowTarget.ContainsValue(sr)) {
+                    DeployFlaps(false);
+                    return _targetThrustPlus;
+                }
+                if (_speedSlightlyAboveTarget.ContainsValue(sr)) {
+                    DeployFlaps(false);
+                    return _targetThrustMinus;
+                }
+                //if (_speedModeratelyBelowTarget.IsInRange(sr)) { return _targetThrustPlusPlus; }
+                //if (_speedModeratelyAboveTarget.IsInRange(sr)) { return _targetThrustMinusMinus; }
+                if (_speedWayBelowTarget.ContainsValue(sr)) {
+                    DeployFlaps(false);
+                    return fullThrust;
+                }
+                if (_speedWayAboveTarget.ContainsValue(sr)) {
+                    DeployFlaps(true);
+                    return Constants.ZeroF;
+                }
+                return Constants.ZeroF;
+            }
+
+            #region Flaps
+
+            // IMPROVE once I implement FTL speed and reduce drag to get faster speeds
+            // I'll have to rethink the whole subject of Data.Drag. Changing Data.Drag
+            // for flaps causes Data.FullSpeed to change which affects lots of other things
+            // especially in Navigator where the FullSpeed value affects a number of factors
+
+            //private void DeployFlaps(bool toDeploy) {
+            //    if (!_isFlapsDeployed && toDeploy) {
+            //        _data.Drag = _data.Drag * 100F;
+            //        _isFlapsDeployed = true;
+            //        D.Log("{0} has deployed flaps. Drag = {1}.", _data.Name, _data.Drag);
+            //    }
+            //    else if (_isFlapsDeployed && !toDeploy) {
+            //        _data.Drag = _data.Drag * 0.01F;
+            //        _isFlapsDeployed = false;
+            //        D.Log("{0} has retracted flaps. Drag = {1}.", _data.Name, _data.Drag);
+            //    }
+            //}
+
+            private void DeployFlaps(bool toDeploy) {
+                if (!_isFlapsDeployed && toDeploy) {
+                    _shipRigidbody.drag *= 100F;
+                    _isFlapsDeployed = true;
+                    D.Log("{0} has deployed flaps.", _shipData.Name);
+                }
+                else if (_isFlapsDeployed && !toDeploy) {
+                    _shipRigidbody.drag *= 0.01F;
+                    _isFlapsDeployed = false;
+                    D.Log("{0} has retracted flaps.", _shipData.Name);
+                }
+            }
+
+            #endregion
+
+            /// <summary>
+            /// Coroutine that continuously applies thrust while RequestedSpeed is not Zero.
+            /// </summary>
+            /// <returns></returns>
+            private IEnumerator OperateEngines() {
+                while (_shipData.RequestedSpeed != Constants.ZeroF) {
+                    ApplyThrust();
+                    yield return new WaitForFixedUpdate();
+                }
+                DeployFlaps(true);
+            }
+
+            /// <summary>
+            /// Applies Thrust (direction and magnitude), adjusted for game speed. Clients should
+            /// call this method at a pace consistent with FixedUpdate().
+            /// </summary>
+            private void ApplyThrust() {
+                float hoursPerSecondAdjustment = GeneralSettings.Instance.HoursPerSecond;
+                Vector3 adjustedThrust = _localTravelDirection * GetThrust() * hoursPerSecondAdjustment * _gameSpeedMultiplier;
+                _shipRigidbody.AddRelativeForce(adjustedThrust);
+                //D.Log("Speed is now {0}.", _shipData.CurrentSpeed);
+            }
+
+            /// <summary>
+            /// Adjusts the velocity and thrust of the ship to reflect the new GameClockSpeed setting. 
+            /// The reported speed and directional heading of the ship is not affected.
+            /// </summary>
+            /// <param name="gameSpeed">The game speed.</param>
+            private void AdjustForGameSpeed(float gameSpeedChangeRatio) {
+                // must immediately adjust velocity when game speed changes as just adjusting thrust takes
+                // a long time to get to increased/decreased velocity
+                if (GameStatus.Instance.IsPaused) {
+                    _velocityOnPause = _velocityOnPause * gameSpeedChangeRatio;
+                }
+                else {
+                    _shipRigidbody.velocity = _shipRigidbody.velocity * gameSpeedChangeRatio;
+                    // drag should not be adjusted as it will change the velocity that can be supported by the adjusted thrust
+                }
+            }
+
+            private void Cleanup() {
+                Unsubscribe();
+                if (_operateEnginesJob != null) {
+                    _operateEnginesJob.Kill();
+                }
+                // other cleanup here including any tracking Gui2D elements
+            }
+
+            private void Unsubscribe() {
+                _subscribers.ForAll(d => d.Dispose());
+                _subscribers.Clear();
+            }
+
+            public override string ToString() {
+                return new ObjectAnalyzer().ToString(this);
+            }
+
+            #region IDisposable
+            [DoNotSerialize]
+            private bool _alreadyDisposed = false;
+            protected bool _isDisposing = false;
+
+            /// <summary>
+            /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+            /// </summary>
+            public void Dispose() {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+
+            /// <summary>
+            /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
+            /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
+            /// </summary>
+            /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+            protected virtual void Dispose(bool isDisposing) {
+                // Allows Dispose(isDisposing) to be called more than once
+                if (_alreadyDisposed) {
+                    return;
+                }
+
+                _isDisposing = isDisposing;
+                if (isDisposing) {
+                    // free managed resources here including unhooking events
+                    Cleanup();
+                }
+                // free unmanaged resources here
+
+                _alreadyDisposed = true;
+            }
+
+            // Example method showing check for whether the object has been disposed
+            //public void ExampleMethod() {
+            //    // throw Exception if called on object that is already disposed
+            //    if(alreadyDisposed) {
+            //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
+            //    }
+
+            //    // method content here
+            //}
+            #endregion
+
+        }
+
+        /// <summary>
+        /// The speed to travel at.
+        /// </summary>
+        public Speed ShipSpeed { get; private set; }
+
+        public string TargetName {
+            get {
+                if (_destinationInfo == null) {
+                    return "No Target";
+                }
+                return _destinationInfo.Target.FullName;
+            }
+        }
+
+        public float DistanceToDestination { get { return Vector3.Distance(_destinationInfo.Destination, _ship.Data.Position); } }
+
+        public bool IsAutoPilotEngaged {
+            get { return _pilotJob != null && _pilotJob.IsRunning; }
+        }
+
+        private static LayerMask _keepoutOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.CelestialObjectKeepout);
+
+        /// <summary>
+        /// The number of course progress assessments allowed between course correction checks 
+        /// while the target is beyond the _courseCorrectionCheckDistanceThreshold.
+        /// </summary>
+        private int _numberOfProgressChecksBetweenCourseCorrectionChecks;
+
+        /// <summary>
+        /// The (sqrd) distance threshold from the target where the course correction check
+        /// frequency is determined by the _courseCorrectionCheckCountSetting. Once inside
+        /// this distance threshold, course correction checks occur every time course progress is
+        /// assessed.
+        /// </summary>
+        private float _sqrdDistanceWhereContinuousCourseCorrectionChecksBegin;
+
+        /// <summary>
+        /// The tolerance value used to test whether separation between 2 items is increasing. This 
+        /// is a squared value.
+        /// </summary>
+        private float __separationTestToleranceDistanceSqrd;
+
+        /// <summary>
+        /// Indicates whether the movement of the ship is constrained by fleet coordination requirements.
+        /// Initially, if true, this means the ship does not depart until the fleet is ready.
+        /// </summary>
+        private bool _isFleetMove;
+
+        /// <summary>
+        /// The duration in seconds between course progress assessments. The default is
+        /// every second at a speed of 1 unit per day and normal gamespeed.
+        /// </summary>
+        private float _courseProgressCheckPeriod = 1F;
+
+        private ShipDestinationInfo _destinationInfo;
+        private ShipModel _ship;
+        private EngineRoom _engineRoom;
+
+        private Job _pilotJob;
+        private Job _headingJob;
+
+        private IList<IDisposable> _subscribers;
+        private GameStatus _gameStatus;
+        private GameTime _gameTime;
+        private float _gameSpeedMultiplier;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ShipHelm" /> class.
+        /// </summary>
+        /// <param name="ship">The ship.</param>
+        public ShipHelm(ShipModel ship) {
+            _ship = ship;
+            _gameTime = GameTime.Instance;
+            _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
+            _gameStatus = GameStatus.Instance;
+            _engineRoom = new EngineRoom(_ship);
+            //AssessFrequencyOfCourseProgressChecks();
+            Subscribe();
+        }
+
+        private void Subscribe() {
+            _subscribers = new List<IDisposable>();
+            _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
+            _subscribers.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullStlSpeed, OnFullSpeedChanged));
+            _subscribers.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullFtlSpeed, OnFullSpeedChanged));
+            _subscribers.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, bool>(d => d.IsFtlAvailableForUse, OnFtlAvailableForUseChanged));
+        }
+
+        #region PlotCourse
+
+        /// <summary>
+        /// Plots the course to the target and notifies the requester of the outcome via the onCoursePlotSuccess or Failure events.
+        /// </summary>
+        /// <param name="target">The target.</param>
+        /// <param name="speed">The speed.</param>
+        /// <param name="standoffDistance">The distance to standoff from the target. When appropriate, this is added to the radius of the target to
+        /// determine how close the ship is allowed to approach.</param>
+        /// <param name="isFleetMove">if set to <c>true</c> the ship will only move when the fleet is ready.</param>
+        public void PlotCourse(IDestinationTarget target, Speed speed, float standoffDistance, bool isFleetMove) {
+            D.Assert(speed != default(Speed) && speed != Speed.AllStop, "{0} speed of {1} is illegal.".Inject(_ship.FullName, speed.GetName()));
+
+            // NOTE: I know of no way to check whether a target is unreachable at this stage since many targets move, 
+            // and most have a closeEnoughDistance that makes them reachable even when enclosed in a keepoutZone
+
+            if (target is IFormationStation) {
+                D.Assert(!isFleetMove);
+                PlotCourse(target as IFormationStation, speed);
+            }
+            else if (target is ISectorTarget) {
+                PlotCourse(target as ISectorTarget, speed, isFleetMove);
+            }
+            else if (target is StationaryLocation) {
+                PlotCourse((StationaryLocation)target, speed, isFleetMove);
+            }
+            else if (target is ICmdTarget) {
+                D.Assert(isFleetMove);
+                PlotCourse(target as ICmdTarget, speed, standoffDistance);
+            }
+            else if (target is IElementTarget) {
+                D.Assert(!isFleetMove);
+                PlotCourse(target as IElementTarget, speed, standoffDistance);
+            }
+            else if (target is IPlanetoidTarget) {
+                PlotCourse(target as IPlanetoidTarget, speed, isFleetMove);
+            }
+            else if (target is ISystemTarget) {
+                PlotCourse(target as ISystemTarget, speed, isFleetMove);
+            }
+            else if (target is IStarTarget) {
+                PlotCourse(target as IStarTarget, speed, isFleetMove);
+            }
+            else {
+                D.Error("{0} of Type {1} not anticipated.", target.FullName, target.GetType().Name);
+                return;
+            }
+            //AssessFrequencyOfCourseProgressChecks();
+            RefreshNavigationalValues();
+            OnCoursePlotSuccess();
+        }
+
+        /// <summary>
+        /// Plots a course to the ship's FormationStation.
+        /// </summary>
+        /// <param name="station">The formation station.</param>
+        /// <param name="speed">The speed.</param>
+        private void PlotCourse(IFormationStation station, Speed speed) {
+            _destinationInfo = new ShipDestinationInfo(station);
+            ShipSpeed = speed;
+            _isFleetMove = false;
+        }
+
+        private void PlotCourse(ISectorTarget sector, Speed speed, bool isFleetMove) {
+            // a formationOffset is required if this is a fleet move
+            Vector3 destinationOffset = isFleetMove ? _ship.Data.FormationStation.StationOffset : Vector3.zero;
+            _destinationInfo = new ShipDestinationInfo(sector, destinationOffset);
+            ShipSpeed = speed;
+            _isFleetMove = isFleetMove;
+        }
+
+        /// <summary>
+        /// Plots a course to a stationary location.
+        /// </summary>
+        /// <param name="location">The stationary location.</param>
+        /// <param name="speed">The speed.</param>
+        /// <param name="isFleetMove">if set to <c>true</c> this navigator will only move when the fleet is ready.</param>
+        private void PlotCourse(StationaryLocation location, Speed speed, bool isFleetMove) {
+            // a formationOffset is required if this is a fleet move
+            Vector3 destinationOffset = isFleetMove ? _ship.Data.FormationStation.StationOffset : Vector3.zero;
+            _destinationInfo = new ShipDestinationInfo(location, destinationOffset);
+            ShipSpeed = speed;
+            _isFleetMove = isFleetMove;
+        }
+
+        /// <summary>
+        /// Plots a course to a Command target.
+        /// </summary>
+        /// <param name="cmd">The command target.</param>
+        /// <param name="speed">The speed.</param>
+        /// <param name="standoffDistance">The distance to standoff from the target. This is added to the radius of the target to
+        /// determine how close the ship is allowed to approach the target.</param>
+        private void PlotCourse(ICmdTarget cmd, Speed speed, float standoffDistance) {
+            var fleetCmd = cmd as IFleetCmdTarget;
+            if (fleetCmd != null) {
+                _destinationInfo = new ShipDestinationInfo(fleetCmd, _ship.Data.FormationStation.StationOffset, standoffDistance);
+            }
+            else {
+                _destinationInfo = new ShipDestinationInfo(cmd as IBaseCmdTarget, _ship.Data.FormationStation.StationOffset, standoffDistance);
+            }
+            ShipSpeed = speed;
+            _isFleetMove = true;
+        }
+
+        /// <summary>
+        /// Plots a course to a Element target.
+        /// </summary>
+        /// <param name="element">The element target.</param>
+        /// <param name="speed">The speed.</param>
+        /// <param name="standoffDistance">The distance to standoff from the target. This is added to the radius of the target to
+        /// determine how close the ship is allowed to approach the target.</param>
+        private void PlotCourse(IElementTarget element, Speed speed, float standoffDistance) {
+            _destinationInfo = new ShipDestinationInfo(element, standoffDistance);
+            ShipSpeed = speed;
+            _isFleetMove = false;
+        }
+
+        /// <summary>
+        /// Plots a course to a Planetoid target.
+        /// </summary>
+        /// <param name="planetoid">The planetoid.</param>
+        /// <param name="speed">The speed.</param>
+        /// <param name="isFleetMove">>if set to <c>true</c> this navigator will only move when the fleet is ready.</param>
+        private void PlotCourse(IPlanetoidTarget planetoid, Speed speed, bool isFleetMove) {
+            // a formationOffset is required if this is a fleet move
+            Vector3 destinationOffset = isFleetMove ? _ship.Data.FormationStation.StationOffset : Vector3.zero;
+            _destinationInfo = new ShipDestinationInfo(planetoid, destinationOffset);
+            ShipSpeed = speed;
+            _isFleetMove = isFleetMove;
+        }
+
+        /// <summary>
+        /// Plots a course to a System target.
+        /// </summary>
+        /// <param name="system">The System.</param>
+        /// <param name="speed">The speed.</param>
+        /// <param name="isFleetMove">>if set to <c>true</c> this navigator will only move when the fleet is ready.</param>
+        private void PlotCourse(ISystemTarget system, Speed speed, bool isFleetMove) {
+            // a formationOffset is required if this is a fleet move
+            Vector3 destinationOffset = isFleetMove ? _ship.Data.FormationStation.StationOffset : Vector3.zero;
+            _destinationInfo = new ShipDestinationInfo(system, destinationOffset);
+            ShipSpeed = speed;
+            _isFleetMove = isFleetMove;
+        }
+
+        /// <summary>
+        /// Plots a course to a Star target.
+        /// </summary>
+        /// <param name="star">The star.</param>
+        /// <param name="speed">The speed.</param>
+        /// <param name="isFleetMove">>if set to <c>true</c> this navigator will only move when the fleet is ready.</param>
+        private void PlotCourse(IStarTarget star, Speed speed, bool isFleetMove) {
+            // a formationOffset is required if this is a fleet move
+            Vector3 destinationOffset = isFleetMove ? _ship.Data.FormationStation.StationOffset : Vector3.zero;
+            _destinationInfo = new ShipDestinationInfo(star, destinationOffset);
+            ShipSpeed = speed;
+            _isFleetMove = isFleetMove;
+        }
+
+        /// <summary>
+        /// Plots a course to the UniverseCenter.
+        /// </summary>
+        /// <param name="universeCenter">The universe center.</param>
+        /// <param name="speed">The speed.</param>
+        /// <param name="isFleetMove">>if set to <c>true</c> this navigator will only move when the fleet is ready.</param>
+        private void PlotCourse(IUniverseCenterTarget universeCenter, Speed speed, bool isFleetMove) {
+            // a formationOffset is required if this is a fleet move
+            Vector3 destinationOffset = isFleetMove ? _ship.Data.FormationStation.StationOffset : Vector3.zero;
+            _destinationInfo = new ShipDestinationInfo(universeCenter, destinationOffset);
+            ShipSpeed = speed;
+            _isFleetMove = isFleetMove;
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Engages the autoPilot to move to the destination, avoiding
+        /// obstacles if necessary. A ship does not use A* pathing.
+        /// </summary>
+        public void EngageAutoPilot() {
+            DisengageAutoPilot();
+            // before anything, check to see if we are already there
+            if (DistanceToDestination < _destinationInfo.CloseEnoughDistance) {
+                OnDestinationReached();
+                return;
+            }
+
+            Vector3 detour;
+            if (CheckForObstacleEnrouteTo(_destinationInfo.Destination, _destinationInfo.CloseEnoughDistance, out detour)) {
+                InitiateCourseToTargetVia(detour);
+            }
+            else {
+                InitiateDirectCourseToTarget();
+            }
+        }
+
+        /// <summary>
+        /// Primary external control to disengage the pilot once Engage has been called.
+        /// Does nothing if not already Engaged.
+        /// </summary>
+        public void DisengageAutoPilot() {
+            if (IsAutoPilotEngaged) {
+                D.Log("{0} AutoPilot disengaging.", _ship.FullName);
+                _pilotJob.Kill();
+            }
+        }
+
+        private void InitiateDirectCourseToTarget() {
+            D.Assert(!IsAutoPilotEngaged);
+            D.Log("{0} initiating direct course to target {1}. Distance: {2}.", _ship.FullName, _destinationInfo.Target.FullName, DistanceToDestination);
+            _pilotJob = new Job(EngageDirectCourseTo(_destinationInfo.Destination, _destinationInfo.CloseEnoughDistance), toStart: true, onJobComplete: (wasKilled) => {
+                if (!wasKilled) {
+                    OnDestinationReached();
+                }
+            });
+        }
+
+        private void InitiateCourseToTargetVia(Vector3 obstacleDetour) {
+            D.Log("{0} initiating course to target via obstacle detour {1}. Distance: {2}.", _ship.FullName, obstacleDetour, Vector3.Distance(obstacleDetour, _ship.Data.Position));
+            DisengageAutoPilot();   // can be called while already engaged
+            // even if this is an obstacle that has appeared on the way to another obstacle detour, go around it, then try direct to target
+            Job obstacleAvoidanceJob = new Job(EngageDirectCourseTo(obstacleDetour, StationaryLocation.CloseEnoughDistance), toStart: true);
+            _pilotJob = obstacleAvoidanceJob;
+            Job proceedToTargetJob = new Job(EngageDirectCourseTo(_destinationInfo.Destination, _destinationInfo.CloseEnoughDistance), toStart: false, onJobComplete: (wasKilled) => {
+                if (!wasKilled) {
+                    OnDestinationReached();
+                }
+            });
+            _pilotJob.AddChildJob(proceedToTargetJob);
+        }
+
+        #region Course Execution Coroutines
+
+        /// <summary>
+        /// Coroutine that moves the ship directly to the provided location. No A* course is used.
+        /// WARNING: Any changes in value to the 'closeEnoughDistance' provided will not be reflected in the
+        /// coroutine once it starts running. Accordingly, closeEnoughDistance values that are derived from
+        /// Speed should not be used as speed can automatically change as Topography changes.
+        /// </summary>
+        /// <param name="location">The location to move too.</param>
+        /// <param name="closeEnoughDistance">The distance from the location that is close enough to have arrived.</param>
+        /// <returns></returns>
+        private IEnumerator EngageDirectCourseTo(Vector3 location, float closeEnoughDistance) {
+            D.Log("{0} beginning prep for direct course to {1}. Distance: {2}.",
+                _ship.FullName, location, Vector3.Magnitude(location - _ship.Data.Position));   // TODO slow ship before waiting for bearing?
+            Vector3 newHeading = (location - _ship.Data.Position).normalized;
+            if (!newHeading.IsSameDirection(_ship.Data.RequestedHeading, 0.1F)) {
+                ChangeHeading(newHeading);
+            }
+            if (_isFleetMove) {
+                while (!_ship.Command.IsBearingConfirmed) {
+                    // wait here until the fleet is ready for departure
+                    yield return null;
+                }
+            }
+            D.Log("Fleet has matched bearing. {0} powering up. Distance to {1}: {2}.",
+                _ship.FullName, location, Vector3.Magnitude(location - _ship.Data.Position));
+
+            int courseCorrectionCheckCountdown = _numberOfProgressChecksBetweenCourseCorrectionChecks;
+            bool isSpeedChecked = false;
+
+            float closeEnoughDistanceSqrd = closeEnoughDistance * closeEnoughDistance;
+            float distanceToLocationSqrd = Vector3.SqrMagnitude(location - _ship.Data.Position);
+            float previousDistanceSqrd = distanceToLocationSqrd;
+
+            while (distanceToLocationSqrd > closeEnoughDistanceSqrd) {
+                //D.Log("{0} distance to {1} = {2}. CloseEnough = {3}.", _ship.FullName, location, Vector3.Magnitude(location - _ship.Data.Position), closeEnoughDistance);
+                if (!isSpeedChecked) {    // adjusts speed as a oneshot until we get there
+                    isSpeedChecked = AdjustSpeedOnHeadingConfirmation();
+                }
+                Vector3 correctedHeading;
+                if (CheckForCourseCorrection(location, distanceToLocationSqrd, out correctedHeading, ref courseCorrectionCheckCountdown)) {
+                    D.Log("{0} is making a midcourse correction of {1:0.00} degrees.", _ship.FullName, Vector3.Angle(correctedHeading, _ship.Data.RequestedHeading));
+                    AdjustHeadingAndSpeedForTurn(correctedHeading);
+                    isSpeedChecked = false;
+                }
+
+                Vector3 detour;
+                if (CheckForObstacleEnrouteTo(location, closeEnoughDistance, out detour)) {
+                    InitiateCourseToTargetVia(detour);
+                }
+
+                if (CheckSeparation(distanceToLocationSqrd, ref previousDistanceSqrd)) {
+                    // we've missed the target or its getting away
+                    OnDestinationUnreachable();
+                    yield break;
+                }
+                distanceToLocationSqrd = Vector3.SqrMagnitude(location - _ship.Data.Position);
+                yield return new WaitForSeconds(_courseProgressCheckPeriod);
+            }
+            D.Log("{0} has arrived at {1}.", _ship.FullName, location);
+        }
+
+        #endregion
+
+        #region Change Heading and/or Speed
+
+        /// <summary>
+        /// Changes the direction the ship is headed in normalized world space coordinates.
+        /// </summary>
+        /// <param name="newHeading">The new direction in world coordinates, normalized.</param>
+        /// <returns><c>true</c> if the heading change was accepted.</returns>
+        private bool ChangeHeading(Vector3 newHeading) {
+            if (DebugSettings.Instance.StopShipMovement) {
+                DisengageAutoPilot();
+                return false;
+            }
+
+            newHeading.ValidateNormalized();
+            if (newHeading.IsSameDirection(_ship.Data.RequestedHeading, 0.1F)) {
+                D.Warn("{0} received a duplicate ChangeHeading Command to {1}.", _ship.FullName, newHeading);
+                return false;
+            }
+            if (_headingJob != null && _headingJob.IsRunning) {
+                _headingJob.Kill();
+            }
+            D.Log("{0} changing heading to {1}.", _ship.FullName, newHeading);
+            _ship.Data.RequestedHeading = newHeading;
+            _ship.IsBearingConfirmed = false;
+            _headingJob = new Job(ExecuteHeadingChange(), toStart: true, onJobComplete: (jobWasKilled) => {
+                if (!_isDisposing) {
+                    if (jobWasKilled) {
+                        D.Log("{0}'s turn order to {1} has been cancelled.", _ship.FullName, _ship.Data.RequestedHeading);
+                    }
+                    else {
+                        _ship.IsBearingConfirmed = true;
+                        D.Log("{0}'s turn to {1} is complete.  Heading deviation is {2:0.00}.",
+                            _ship.FullName, _ship.Data.RequestedHeading, Vector3.Angle(_ship.Data.CurrentHeading, _ship.Data.RequestedHeading));
+                    }
+                    // ExecuteHeadingChange() appeared to generate angular velocity which continued to turn the ship after the Job was complete.
+                    // The actual culprit was the physics engine which when started, found Creators had placed the non-kinematic ships at the same
+                    // location, relying on the formation generator to properly separate them later. The physics engine came on before the formation
+                    // had been deployed, resulting in both velocity and angular velocity from the collisions. The fix was to make the ship rigidbodies
+                    // kinematic until the formation had been deployed.
+                    //_rigidbody.angularVelocity = Vector3.zero;
+                }
+            });
+            return true;
+        }
+
+        /// <summary>
+        /// Coroutine that executes a heading change without overshooting.
+        /// </summary>
+        /// <returns></returns>
+        private IEnumerator ExecuteHeadingChange() {
+            int previousFrameCount = Time.frameCount - 1;   // FIXME makes initial framesSinceLastPass = 1
+
+            float maxRadianTurnRatePerSecond = Mathf.Deg2Rad * _ship.Data.MaxTurnRate * (GameTime.HoursPerSecond / GameTime.HoursPerDay);
+            //D.Log("New coroutine. {0} coming to heading {1} at {2} radians/day.", _data.Name, _data.RequestedHeading, _data.MaxTurnRate);
+            while (!_ship.Data.CurrentHeading.IsSameDirection(_ship.Data.RequestedHeading, 1F)) {
+                int framesSinceLastPass = Time.frameCount - previousFrameCount; // needed when using yield return WaitForSeconds()
+                previousFrameCount = Time.frameCount;
+                float allowedTurn = maxRadianTurnRatePerSecond * GameTime.DeltaTimeOrPausedWithGameSpeed * framesSinceLastPass;
+                Vector3 newHeading = Vector3.RotateTowards(_ship.Data.CurrentHeading, _ship.Data.RequestedHeading, allowedTurn, maxMagnitudeDelta: 1F);
+                // maxMagnitudeDelta > 0F appears to be important. Otherwise RotateTowards can stop rotating when it gets very close
+                //D.Log("AllowedTurn = {0:0.0000}, CurrentHeading = {1}, ReqHeading = {2}, NewHeading = {3}", allowedTurn, Data.CurrentHeading, Data.RequestedHeading, newHeading);
+                _ship._transform.rotation = Quaternion.LookRotation(newHeading); // UNCLEAR turn kinematic on and off while rotating?
+                //D.Log("{0} heading is now {1}.", FullName, Data.CurrentHeading);
+                yield return null; // new WaitForSeconds(0.5F); // new WaitForFixedUpdate();
+            }
+        }
+
+        /// <summary>
+        /// Stops the ship. The ship will actually not stop instantly as it has
+        /// momentum even with flaps deployed. Typically, this is called in the state
+        /// machine after a Return() from the Moving state. Otherwise, the ship keeps
+        /// moving in the direction and at the speed it had when it exited Moving.
+        /// </summary>
+        public void AllStop() {
+            D.Log("{0}.AllStop() called.", _ship.FullName);
+            ChangeSpeed(Speed.AllStop);
+            if (IsAutoPilotEngaged) {
+                D.Warn("{0}.AutoPilot remains engaged.", _ship.FullName);
+            }
+        }
+
+        /// <summary>
+        /// Changes the speed of the ship.
+        /// </summary>
+        /// <param name="newSpeed">The new speed request.</param>
+        /// <returns><c>true</c> if the speed change was accepted.</returns>
+        public bool ChangeSpeed(Speed newSpeed) {
+            if (DebugSettings.Instance.StopShipMovement) {
+                DisengageAutoPilot();
+                return false;
+            }
+            return _engineRoom.ChangeSpeed(newSpeed.GetValue(_ship.Command.Data, _ship.Data));
+        }
+
+        public void AlignBearingWithFlagship() {
+            D.Log("{0} is aligning its bearing to {1}'s bearing {2}.", _ship.FullName, _ship.Command.HQElement.FullName, _ship.Command.HQElement.Data.RequestedHeading);
+            ChangeHeading(_ship.Command.HQElement.Data.RequestedHeading);
+            if (IsAutoPilotEngaged) {
+                D.Warn("{0}.AutoPilot remains engaged.", _ship.FullName);
+            }
+        }
+
+        private void AdjustHeadingAndSpeedForTurn(Vector3 newHeading) {
+            float turnAngleInDegrees = Vector3.Angle(_ship.Data.CurrentHeading, newHeading);
+            Speed turnSpeed = turnAngleInDegrees > 3F ? ((_isFleetMove) ? Speed.FleetOneThird : Speed.OneThird) : ShipSpeed;
+            ChangeSpeed(turnSpeed);
+            ChangeHeading(newHeading);
+        }
+
+        /// <summary>
+        /// Adjusts the speed of the ship (if needed) when the ship has finished its turn.
+        /// </summary>
+        /// <returns><c>true</c> if the heading was confirmed and speed checked.</returns>
+        private bool AdjustSpeedOnHeadingConfirmation() {
+            if (_ship.IsBearingConfirmed) {
+                D.Log("{0} heading {1} is confirmed. Deviation is {2:0.00} degrees.", _ship.FullName, _ship.Data.RequestedHeading, Vector3.Angle(_ship.Data.CurrentHeading, _ship.Data.RequestedHeading));
+                if (ChangeSpeed(ShipSpeed)) {
+                    D.Log("{0} adjusting speed to {1}. ", _ship.FullName, ShipSpeed.GetName());
+                }
+                else {
+                    D.Log("{0} continuing at {1} speed.", _ship.FullName, ShipSpeed.GetName());
+                }
+                return true;
+            }
+            return false;
+        }
+
+        #endregion
+
+        private void OnCoursePlotFailure() {
+            _ship.OnCoursePlotFailure();
+        }
+
+        private void OnCoursePlotSuccess() {
+            _ship.OnCoursePlotSuccess();
+        }
+
+        /// <summary>
+        /// Called when the ship gets 'close enough' to the destination
+        /// EXCEPT when the destination is a formation station. In that case,
+        /// closeEnoughDistance is 0 (radius and standoffDistance are not used)
+        /// which means this event will never be raised. The actual arrival onStation
+        /// is detected by the formation station itself which tells the ship's
+        /// state machine, ending the move.
+        /// </summary>
+        private void OnDestinationReached() {
+            //_pilotJob.Kill(); // should be handled by the ship's state machine ordering a Disengage()
+            D.Log("{0} at {1} reached {2} at {3} (w/station offset). Actual proximity {4:0.00} units.",
+                _ship.FullName, _ship.Data.Position, _destinationInfo.Target.FullName, _destinationInfo.Destination, DistanceToDestination);
+            _ship.OnDestinationReached();
+        }
+
+        private void OnDestinationUnreachable() {
+            //_pilotJob.Kill(); // should be handled by the ship's state machine ordering a Disengage()
+            _ship.OnDestinationUnreachable();
+        }
+
+        private void OnFtlAvailableForUseChanged() {
+            if (_ship.IsHQElement) {
+                _ship.Command.Data.IsFtlAvailableForUse = _ship.Data.IsFtlAvailableForUse;
+            }   // fleet will refresh this ship's speed values
+            else {
+                _ship.RefreshSpeedValues();
+            }
+            RefreshNavigationalValues();
+        }
+
+        private void OnFullSpeedChanged() {
+            _ship.RefreshSpeedValues();
+            RefreshNavigationalValues();
+        }
+
+        private void OnGameSpeedChanged() {
+            _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();
+            RefreshNavigationalValues();
+        }
+
+        /// <summary>
+        /// Refreshes the values that depend on the target and speed. IMPROVE
+        /// </summary>
+        private void RefreshNavigationalValues() {
+            D.Assert(_destinationInfo != null, "{0}.Helm destinationInfo is null, implying no course has yet been plotted.".Inject(_ship.FullName));
+            var fullSpeed = _ship.Data.IsFtlAvailableForUse ? _ship.Data.FullFtlSpeed : _ship.Data.FullStlSpeed;  // 0.2 - 2
+
+            // frequency of course progress checks increases as fullSpeed and gameSpeed increase
+            float courseProgressCheckFrequency = Mathf.Max(fullSpeed * _gameSpeedMultiplier, 1F);
+            _courseProgressCheckPeriod = 1F / courseProgressCheckFrequency;
+            D.Log("{0} frequency of course progress checks adjusted to {1:0.##}/sec.", _ship.FullName, courseProgressCheckFrequency);
+
+            float speedFactor = Mathf.Max(fullSpeed * _gameSpeedMultiplier, 1F);   // 1 - 8
+            __separationTestToleranceDistanceSqrd = Mathf.Max(speedFactor * speedFactor, 9F);   // 9 - 64 
+            D.Log("{0}.SeparationToleranceSqrd = {1} units, Current FullSpeed = {2} units/hour.", _ship.FullName, __separationTestToleranceDistanceSqrd, fullSpeed);
+
+            // higher speeds need more frequent checks, and continous checks starting further away
+            _numberOfProgressChecksBetweenCourseCorrectionChecks = Mathf.RoundToInt(40 / speedFactor);  // 40 - 5 updates skipped
+            _sqrdDistanceWhereContinuousCourseCorrectionChecksBegin = 25F * speedFactor * speedFactor;   //  25 - 1600 (5 - 40 units out)
+
+            if (_destinationInfo.Target != null && !_destinationInfo.Target.IsMovable) {  // target can be null
+                // the target doesn't move so course checks are much less important
+                _numberOfProgressChecksBetweenCourseCorrectionChecks *= 5;    // 200 - 25  updates skipped
+                _sqrdDistanceWhereContinuousCourseCorrectionChecksBegin /= 5F;  // 5 - 320 (2.2 - 18 units away)
+            }
+            float courseCorrectionCheckPeriod = _courseProgressCheckPeriod * _numberOfProgressChecksBetweenCourseCorrectionChecks;
+            D.Log("{0}: Normal course correction check every {1} seconds, \nContinuous course correction checks start {2} units from destination.",
+                _ship.FullName, courseCorrectionCheckPeriod, Mathf.Sqrt(_sqrdDistanceWhereContinuousCourseCorrectionChecksBegin));
+
+            // heading change coroutine could be interrupted immediately after begun leaving isBearingConfirmed false, even while it is still actually true
+            // if the first move command was to proceed on the current bearing, then no turn would begin to fix this state, and isBearing would never become true
+            _ship.IsBearingConfirmed = _ship.Data.CurrentHeading.IsSameDirection(_ship.Data.RequestedHeading, 1F);
+        }
+
+        /// <summary>
+        /// Checks the course and provides any heading corrections needed.
+        /// </summary>
+        /// <param name="currentDestination">The current destination.</param>
+        /// <param name="distanceToDestinationSqrd">The distance to destination SQRD.</param>
+        /// <param name="correctedHeading">The corrected heading.</param>
+        /// <param name="checkCount">The check count. When the value reaches 0, the course is checked.</param>
+        /// <returns>
+        /// true if a course correction to <c>correctedHeading</c> is needed.
+        /// </returns>
+        private bool CheckForCourseCorrection(Vector3 currentDestination, float distanceToDestinationSqrd, out Vector3 correctedHeading, ref int checkCount) {
+            if (distanceToDestinationSqrd < _sqrdDistanceWhereContinuousCourseCorrectionChecksBegin) {
+                checkCount = 0;
+            }
+            if (checkCount == 0) {
+                // check the course
+                //D.Log("{0} is attempting to check its course.", Data.Name);
+                if (_ship.IsBearingConfirmed) {
+                    Vector3 testHeading = (currentDestination - _ship.Data.Position);
+                    if (!testHeading.IsSameDirection(_ship.Data.RequestedHeading, 1F)) {
+                        correctedHeading = testHeading.normalized;
+                        return true;
+                    }
+                }
+                checkCount = _numberOfProgressChecksBetweenCourseCorrectionChecks;
+            }
+            else {
+                checkCount--;
+            }
+            correctedHeading = Vector3.zero;
+            return false;
+        }
+
+        /// <summary>
+        /// Checks for an obstacle enroute to the designated location. Returns true if one
+        /// is found and provides the detour around it.
+        /// </summary>
+        /// <param name="location">The location to which we are enroute.</param>
+        /// <param name="closeEnoughDistance">The distance to the location that is already close enough.</param>
+        /// <param name="detour">The detour around the obstacle, if any.</param>
+        /// <returns>
+        ///   <c>true</c> if an obstacle was found, false if the way is clear.
+        /// </returns>
+        private bool CheckForObstacleEnrouteTo(Vector3 location, float closeEnoughDistance, out Vector3 detour) {
+            detour = Vector3.zero;
+            Vector3 currentPosition = _ship.Data.Position;
+            Vector3 vectorToLocation = location - currentPosition;
+            float distanceToLocation = vectorToLocation.magnitude;
+            if (distanceToLocation <= closeEnoughDistance) {
+                return false;
+            }
+            Vector3 directionToLocation = vectorToLocation.normalized;
+            float rayLength = Mathf.Clamp(distanceToLocation - closeEnoughDistance, 0.1F, Mathf.Infinity);
+            Ray ray = new Ray(currentPosition, directionToLocation);
+
+            RaycastHit hitInfo;
+            if (Physics.Raycast(ray, out hitInfo, rayLength, _keepoutOnlyLayerMask.value)) {
+                string obstacleName = hitInfo.transform.parent.name;
+                D.Log("{0} encountered obstacle {1} when checking approach to {2}.", _ship.FullName, obstacleName, location);
+                D.Log("Ray length = {0}, rayHitDistance = {1}.", rayLength, hitInfo.distance);
+                // there is a keepout zone obstacle in the way 
+                detour = GenerateDetourAroundObstacle(ray, hitInfo);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Generates a detour waypoint that avoids the obstacle that was found by the provided ray and hitInfo.
+        /// </summary>
+        /// <param name="ray">The ray.</param>
+        /// <param name="hitInfo">The hit information.</param>
+        /// <returns></returns>
+        private Vector3 GenerateDetourAroundObstacle(Ray ray, RaycastHit hitInfo) {
+            Vector3 detour = Vector3.zero;
+            string obstacleName = hitInfo.collider.transform.parent.name + "." + hitInfo.collider.name;
+            Vector3 rayEntryPoint = hitInfo.point;
+            float keepoutRadius = (hitInfo.collider as SphereCollider).radius;
+            float maxKeepoutDiameter = TempGameValues.MaxKeepoutDiameter;
+            Vector3 pointBeyondKeepoutZone = ray.GetPoint(hitInfo.distance + maxKeepoutDiameter);
+            if (Physics.Raycast(pointBeyondKeepoutZone, -ray.direction, out hitInfo, maxKeepoutDiameter, _keepoutOnlyLayerMask.value)) {
+                Vector3 rayExitPoint = hitInfo.point;
+                Vector3 halfWayPointInsideKeepoutZone = rayEntryPoint + (rayExitPoint - rayEntryPoint) / 2F;
+                Vector3 obstacleCenter = hitInfo.collider.transform.position;
+                float obstacleClearanceLeeway = StationaryLocation.CloseEnoughDistance;
+                detour = UnityUtility.FindClosestPointOnSphereSurfaceTo(halfWayPointInsideKeepoutZone, obstacleCenter, keepoutRadius + obstacleClearanceLeeway);
+                D.Log("{0}'s detour to avoid obstacle = {1}. Distance: {2}.", _ship.FullName, detour, Vector3.Magnitude(detour - _ship.Data.Position));
+                float detourDistanceFromObstacleCenter = (detour - obstacleCenter).magnitude;
+                D.Log("Obstacle keepout radius = {0}. Detour is {1} from obstacle center.", keepoutRadius, detourDistanceFromObstacleCenter);
+            }
+            else {
+                D.Error("{0} did not find a ray exit point when casting through {1}.", _ship.FullName, obstacleName);    // hitInfo is null
+            }
+            return detour;
+        }
+
+        /// <summary>
+        /// Checks whether the distance between this ship and its destination is increasing.
+        /// </summary>
+        /// <param name="distanceToCurrentDestinationSqrd">The current distance to the destination SQRD.</param>
+        /// <param name="previousDistanceSqrd">The previous distance SQRD.</param>
+        /// <returns>true if the separation distance is increasing.</returns>
+        private bool CheckSeparation(float distanceToCurrentDestinationSqrd, ref float previousDistanceSqrd) {
+            if (distanceToCurrentDestinationSqrd > previousDistanceSqrd + __separationTestToleranceDistanceSqrd) {
+                D.Warn("{0} is separating from current destination. DistanceSqrd = {1}, previousSqrd = {2}, tolerance = {3}.", _ship.FullName,
+                    distanceToCurrentDestinationSqrd, previousDistanceSqrd, __separationTestToleranceDistanceSqrd);
+                return true;
+            }
+            if (distanceToCurrentDestinationSqrd < previousDistanceSqrd) {
+                // while we continue to move closer to the current destination, keep previous distance current
+                // once we start to move away, we must not update it if we want the tolerance check to catch it
+                previousDistanceSqrd = distanceToCurrentDestinationSqrd;
+            }
+            return false;
+        }
+
+        private void Cleanup() {
+            Unsubscribe();
+            if (_pilotJob != null) {
+                _pilotJob.Kill();
+            }
+            if (_headingJob != null) {
+                _headingJob.Kill();
+            }
+            _engineRoom.Dispose();
+        }
+
+        private void Unsubscribe() {
+            _subscribers.ForAll<IDisposable>(s => s.Dispose());
+            _subscribers.Clear();
+            // subscriptions contained completely within this gameobject (both subscriber
+            // and subscribee) donot have to be cleaned up as all instances are destroyed
+        }
+
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
+        }
+
+        #region IDisposable
+        [DoNotSerialize]
+        private bool _alreadyDisposed = false;
+        protected bool _isDisposing = false;
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose() {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
+        /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
+        /// </summary>
+        /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool isDisposing) {
+            // Allows Dispose(isDisposing) to be called more than once
+            if (_alreadyDisposed) {
+                return;
+            }
+
+            _isDisposing = isDisposing;
+            if (isDisposing) {
+                // free managed resources here including unhooking events
+                Cleanup();
+            }
+            // free unmanaged resources here
+
+            _alreadyDisposed = true;
+        }
+
+        // Example method showing check for whether the object has been disposed
+        //public void ExampleMethod() {
+        //    // throw Exception if called on object that is already disposed
+        //    if(alreadyDisposed) {
+        //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
+        //    }
+
+        //    // method content here
+        //}
+        #endregion
+
+    }
+
+    //public static float MaxRadius { get; private set; }
+
+    public event Action onDestinationReached;
 
     private ShipOrder _currentOrder;
     /// <summary>
@@ -48,16 +1224,24 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         set { base.Data = value; }
     }
 
-    public Helm Helm { get; private set; }
-
     public new IFleetCmdModel Command {
         get { return base.Command as IFleetCmdModel; }
         set { base.Command = value; }
     }
 
+    private ShipHelm _helm;
+
     protected override void Awake() {
         base.Awake();
         Subscribe();
+    }
+
+    protected override void InitializeRadiiComponents() {
+        var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
+        Radius = meshRenderer.bounds.extents.magnitude;
+        //MaxRadius = Mathf.Max(Radius, MaxRadius);
+
+        (collider as BoxCollider).size = meshRenderer.bounds.size;  // ship collider is a box
     }
 
     protected override void Initialize() {
@@ -68,11 +1252,23 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     }
 
     private void InitializeHelm() {
-        Helm = new Helm(this);
-        Helm.onDestinationReached += OnDestinationReached;
-        Helm.onCourseTrackingError += OnCourseTrackingError;
-        Helm.onCoursePlotFailure += OnCoursePlotFailure;
-        Helm.onCoursePlotSuccess += OnCoursePlotSuccess;
+        _helm = new ShipHelm(this);
+    }
+
+    /// <summary>
+    /// Refreshes the speed values being used by the Helm and EngineRoom. Used in cases where
+    /// FTL availability or FullSpeed values have changed after an order engaging the Helm was issued. If the
+    /// AutoPilot is not engaged, this method is ignored.
+    /// </summary>
+    public void RefreshSpeedValues() {
+        if (_helm.IsAutoPilotEngaged) {
+            _helm.ChangeSpeed(_helm.ShipSpeed); // EngineRoom will automatically adjust the speed value to reflect the current state of IsFtlAvailableForUse
+        }
+    }
+
+
+    private void AssessFtlAvailability() {
+        Data.IsFtlAvailableForUse = Data.Topography == SpaceTopography.OpenSpace && !Data.IsFtlDamaged && !Data.IsFtlDampedByField;
     }
 
     /// <summary>
@@ -83,7 +1279,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     /// <param name="target">The target.</param>
     /// <param name="speed">The speed.</param>
     /// <param name="standoffDistance">The standoff distance.</param>
-    private void OverrideCurrentOrder(ShipOrders order, bool retainSuperiorsOrder, IDestinationTarget target = null, Speed speed = Speed.None,
+    private void OverrideCurrentOrder(ShipDirective order, bool retainSuperiorsOrder, IDestinationTarget target = null, Speed speed = Speed.None,
             float standoffDistance = Constants.ZeroF) {
         // if the captain says to, and the current existing order is from his superior, then record it as a standing order
         ShipOrder standingOrder = null;
@@ -91,6 +1287,10 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             if (CurrentOrder.Source != OrderSource.ElementCaptain) {
                 // the current order is from the Captain's superior so retain it
                 standingOrder = CurrentOrder;
+                if (IsHQElement) {
+                    // the captain is overriding his superior on the flagship so declare an emergency   // HACK
+                    Command.__OnHQElementEmergency();
+                }
             }
             else if (CurrentOrder.StandingOrder != null) {
                 // the current order is from the Captain, but there is a standing order in it so retain it
@@ -105,7 +1305,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     private void OnCurrentOrderChanged() {
         if (CurrentOrder != null) {
-            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Order.GetName());
+            D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetName());
 
             // TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated
             if (CurrentState == ShipState.Moving || CurrentState == ShipState.Repairing) {
@@ -114,37 +1314,37 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
                 // I'm deferring doing that right now as it is unclear how Attacking will evolve
             }
 
-            ShipOrders order = CurrentOrder.Order;
+            ShipDirective order = CurrentOrder.Directive;
             switch (order) {
-                case ShipOrders.Attack:
+                case ShipDirective.Attack:
                     CurrentState = ShipState.ExecuteAttackOrder;
                     break;
-                case ShipOrders.StopAttack:
+                case ShipDirective.StopAttack:
                     // issued when peace declared while attacking
                     CurrentState = ShipState.Idling;
                     break;
-                case ShipOrders.Disband:
+                case ShipDirective.Disband:
                     CurrentState = ShipState.Disbanding;
                     break;
-                case ShipOrders.Entrench:
+                case ShipDirective.Entrench:
                     CurrentState = ShipState.Entrenching;
                     break;
-                case ShipOrders.MoveTo:
+                case ShipDirective.MoveTo:
                     CurrentState = ShipState.ExecuteMoveOrder;
                     break;
-                case ShipOrders.Repair:
+                case ShipDirective.Repair:
                     CurrentState = ShipState.ExecuteRepairOrder;
                     break;
-                case ShipOrders.Refit:
+                case ShipDirective.Refit:
                     CurrentState = ShipState.Refitting;
                     break;
-                case ShipOrders.JoinFleet:
+                case ShipDirective.JoinFleet:
                     CurrentState = ShipState.ExecuteJoinFleetOrder;
                     break;
-                case ShipOrders.AssumeStation:
+                case ShipDirective.AssumeStation:
                     CurrentState = ShipState.ExecuteAssumeStationOrder;
                     break;
-                case ShipOrders.None:
+                case ShipDirective.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
             }
@@ -156,8 +1356,8 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     private Vector3 __lastPosition;
     private float __lastTime;
 
-    //protected override void Update() {
-    //    base.Update();
+    //protected override void FixedUpdate() {
+    //    base.FixedUpdate();
     //    if (GameStatus.Instance.IsRunning) {
     //        __CompareVelocity();
     //    }
@@ -172,7 +1372,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         float elapsedTime = currentTime - __lastTime;
         __lastTime = currentTime;
         float calcVelocity = distanceTraveled / elapsedTime;
-        D.Log("{0}.Rigidbody.velocity = {1}, ShipData.currentSpeed = {2}, Calculated Velocity = {3}.",
+        D.Log("{0}.Rigidbody.velocity = {1} units/sec, ShipData.currentSpeed = {2} units/hour, Calculated Velocity = {3} units/sec.",
             FullName, rigidbody.velocity.magnitude, Data.CurrentSpeed, calcVelocity);
     }
 
@@ -207,13 +1407,13 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         if (CurrentOrder != null) {
             // check for a standing order to execute if the current order (just completed) was issued by the Captain
             if (CurrentOrder.Source == OrderSource.ElementCaptain && CurrentOrder.StandingOrder != null) {
-                D.Log("{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder.Order.GetName());
+                D.Log("{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder.Directive.GetName());
                 CurrentOrder = CurrentOrder.StandingOrder;
                 yield break;    // aka 'return', keeps the remaining code from executing following the completion of Idling_ExitState()
             }
         }
 
-        Helm.AllStop();
+        _helm.AllStop();
         if (!Data.FormationStation.IsOnStation) {
             ProceedToFormationStation();
         }
@@ -251,13 +1451,12 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         Call(ShipState.Moving);
         yield return null;  // required immediately after Call() to avoid FSM bug
         // Return()s here
-        if (_isMoveError) {
-            // TODO how to handle move errors?
-            CurrentState = ShipState.Idling;
+        if (_isDestinationUnreachable) {
+            __HandleDestinationUnreachable();
             yield break;
         }
-        Helm.AllStop();
-        Helm.AlignBearingWithFlagship();
+        _helm.AllStop();
+        _helm.AlignBearingWithFlagship();
 
         CurrentState = ShipState.Idling;
     }
@@ -281,15 +1480,16 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         Call(ShipState.Moving);
         yield return null;  // required immediately after Call() to avoid FSM bug
         // Return()s here
-        if (_isMoveError || !_isMoveError) {
-            // TODO how to handle move errors?
-            CurrentState = ShipState.Idling;
+        if (_isDestinationUnreachable) {
+            __HandleDestinationUnreachable();
+            yield break;
         }
+        CurrentState = ShipState.Idling;
     }
 
     void ExecuteMoveOrder_ExitState() {
         LogEvent();
-        _isMoveError = false;
+        _isDestinationUnreachable = false;
     }
 
     #endregion
@@ -313,35 +1513,35 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     private IDestinationTarget _moveTarget;
     private float _standoffDistance;
     private bool _isFleetMove;
-    private bool _isMoveError;
+    private bool _isDestinationUnreachable;
 
     void Moving_EnterState() {
         LogEvent();
-        var mortalMoveTarget = _moveTarget as IMortalModel;
+        var mortalMoveTarget = _moveTarget as IMortalTarget;
         if (mortalMoveTarget != null) {
-            mortalMoveTarget.onItemDeath += OnTargetDeath;
+            mortalMoveTarget.onTargetDeath += OnTargetDeath;
         }
-        Helm.PlotCourse(_moveTarget, _moveSpeed, _standoffDistance, _isFleetMove);
+        _helm.PlotCourse(_moveTarget, _moveSpeed, _standoffDistance, _isFleetMove);
     }
 
     void Moving_OnCoursePlotSuccess() {
         LogEvent();
-        Helm.EngageAutoPilot();
+        _helm.EngageAutoPilot();
     }
 
     void Moving_OnCoursePlotFailure() {
         LogEvent();
-        _isMoveError = true;
+        _isDestinationUnreachable = true;
         Return();
     }
 
-    void Moving_OnCourseTrackingError() {
+    void Moving_OnDestinationUnreachable() {
         LogEvent();
-        _isMoveError = true;
+        _isDestinationUnreachable = true;
         Return();
     }
 
-    void Moving_OnTargetDeath(IMortalModel deadTarget) {
+    void Moving_OnTargetDeath(IMortalTarget deadTarget) {
         LogEvent();
         D.Assert(_moveTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(FullName, _moveTarget.FullName, deadTarget.FullName));
         Return();
@@ -366,15 +1566,15 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     void Moving_ExitState() {
         LogEvent();
-        var mortalMoveTarget = _moveTarget as IMortalModel;
+        var mortalMoveTarget = _moveTarget as IMortalTarget;
         if (mortalMoveTarget != null) {
-            mortalMoveTarget.onItemDeath -= OnTargetDeath;
+            mortalMoveTarget.onTargetDeath -= OnTargetDeath;
         }
         _moveTarget = null;
         _moveSpeed = Speed.None;
         _standoffDistance = Constants.ZeroF;
         _isFleetMove = false;
-        Helm.DisengageAutoPilot();
+        _helm.DisengageAutoPilot();
         // the ship retains its existing speed and heading upon exit
     }
 
@@ -412,7 +1612,11 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
                 _isFleetMove = false;
                 Call(ShipState.Moving);
                 yield return null;  // required immediately after Call() to avoid FSM bug
-                Helm.AllStop();  // stop and shoot after completing move
+                if (_isDestinationUnreachable) {
+                    __HandleDestinationUnreachable();
+                    yield break;
+                }
+                _helm.AllStop();  // stop and shoot after completing move
             }
             yield return null;
         }
@@ -434,7 +1638,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         LogEvent();
         _ordersTarget = null;
         _primaryTarget = null;
-        _isMoveError = false;
+        _isDestinationUnreachable = false;
     }
 
     #endregion
@@ -446,14 +1650,13 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     void Attacking_EnterState() {
         LogEvent();
-        if (_attackTarget == null) {
-            D.Error("{0} attackTarget is null. Return()ing.", Data.Name);
-            Return();
-            return;
-        }
         OnShowAnimation(MortalAnimations.Attacking);
         _attackTarget.TakeHit(_attackStrength);
         Return();
+    }
+
+    void Attacking_OnTargetDeath(IMortalTarget deadTarget) {
+        // this can occur as a result of TakeHit but since we currently Return() right after TakeHit we shouldn't double up
     }
 
     void Attacking_ExitState() {
@@ -477,7 +1680,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     void ExecuteJoinFleetOrder_EnterState() {
         LogEvent();
-        var fleetToJoin = CurrentOrder.Target as ICommandTarget;
+        var fleetToJoin = CurrentOrder.Target as ICmdTarget;
         FleetCmdModel transferFleet = null;
         string transferFleetName = "TransferTo_" + fleetToJoin.ParentName;
         if (Command.Elements.Count > 1) {
@@ -501,8 +1704,8 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         // TODO PlayerIntelCoverage should be set through sensor detection
 
         // issue a JoinFleet order to our transferFleet
-        var fleetToJoin = CurrentOrder.Target as ICommandTarget;
-        FleetOrder joinFleetOrder = new FleetOrder(FleetOrders.JoinFleet, fleetToJoin);
+        var fleetToJoin = CurrentOrder.Target as ICmdTarget;
+        FleetOrder joinFleetOrder = new FleetOrder(FleetDirective.JoinFleet, fleetToJoin);
         transferFleet.CurrentOrder = joinFleetOrder;
         // once joinFleetOrder takes, this ship state will be changed by its 'new'  transferFleet Command
     }
@@ -542,12 +1745,12 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         Call(ShipState.Moving);
         yield return null;  // required immediately after Call() to avoid FSM bug
         // Return()s here
-        if (_isMoveError) {
+        if (_isDestinationUnreachable) {
             // TODO how to handle move errors?
             CurrentState = ShipState.Idling;
             yield break;
         }
-        Helm.AllStop();
+        _helm.AllStop();
         Call(ShipState.Repairing);
         yield return null;  // required immediately after Call() to avoid FSM bug
         CurrentState = ShipState.Idling;
@@ -560,7 +1763,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     void ExecuteRepairOrder_ExitState() {
         LogEvent();
-        _isMoveError = false;
+        _isDestinationUnreachable = false;
     }
 
     #endregion
@@ -630,7 +1833,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     void Dead_EnterState() {
         LogEvent();
-        OnItemDeath();
+        OnDeath();
         OnShowAnimation(MortalAnimations.Dying);
     }
 
@@ -645,6 +1848,16 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     #region StateMachine Support Methods
 
+    private void __HandleDestinationUnreachable() {
+        D.Warn("{0} reporting destination {1} as unreachable.", FullName, _helm.TargetName);
+        if (IsHQElement) {
+            Command.__OnHQElementEmergency();   // HACK stays in this state, assuming this will cause a new order from Cmd
+        }
+        else {
+            CurrentState = ShipState.Idling;
+        }
+    }
+
     private void ProceedToFormationStation() {
         if (IsHQElement) {
             var distanceFromStation = Vector3.Distance(Position, (Data.FormationStation as Component).transform.position);
@@ -653,7 +1866,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             return;
         }
         // this is only called from Idle so there is no superior order that should be retained
-        OverrideCurrentOrder(ShipOrders.AssumeStation, retainSuperiorsOrder: false);
+        OverrideCurrentOrder(ShipDirective.AssumeStation, retainSuperiorsOrder: false);
     }
 
     /// <summary>
@@ -681,11 +1894,11 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         D.Assert(_ordersTarget != null && _ordersTarget.IsAlive, "{0}'s target from orders is null or dead.".Inject(Data.Name));
         bool isTargetInRange = false;
         var uniqueEnemyTargetsInRange = Enumerable.Empty<IMortalTarget>();
-        foreach (var rt in _weaponRangeTrackerLookup.Values) {
-            uniqueEnemyTargetsInRange = uniqueEnemyTargetsInRange.Union<IMortalTarget>(rt.EnemyTargets);  // OPTIMIZE
+        foreach (var rangeTracker in _weaponRangeTrackerLookup.Values) {
+            uniqueEnemyTargetsInRange = uniqueEnemyTargetsInRange.Union<IMortalTarget>(rangeTracker.EnemyTargets);  // OPTIMIZE
         }
 
-        ICommandTarget cmdTarget = _ordersTarget as ICommandTarget;
+        ICmdTarget cmdTarget = _ordersTarget as ICmdTarget;
         if (cmdTarget != null) {
             var primaryTargets = cmdTarget.ElementTargets.Cast<IMortalTarget>();
             var primaryTargetsInRange = primaryTargets.Intersect(uniqueEnemyTargetsInRange);
@@ -698,9 +1911,18 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
                 chosenTarget = __SelectHighestPriorityTarget(primaryTargets);
             }
         }
-        else {
-            chosenTarget = _ordersTarget;   // Planetoid
-            isTargetInRange = uniqueEnemyTargetsInRange.Contains(_ordersTarget);
+        else {            // Planetoid
+            D.Assert(_ordersTarget is IPlanetoidTarget);
+            if (!uniqueEnemyTargetsInRange.Contains(_ordersTarget)) {
+                if (_weaponRangeTrackerLookup.Values.Any(rangeTracker => rangeTracker.AllTargets.Contains(_ordersTarget))) {
+                    // the planetoid is not an enemy, but it is in range and therefore fair game
+                    isTargetInRange = true;
+                }
+            }
+            else {
+                isTargetInRange = true;
+            }
+            chosenTarget = _ordersTarget;
         }
         if (chosenTarget != null) {
             // no need for knowing about death event as primaryTarget is continuously checked while under orders to attack
@@ -718,34 +1940,60 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     private void AssessNeedForRepair() {
         if (Data.Health < 0.30F) {
-            if (CurrentOrder == null || CurrentOrder.Order != ShipOrders.Repair) {
-                IDestinationTarget repairDestination = new StationaryLocation(Data.Position - _transform.forward * 10F);
-                OverrideCurrentOrder(ShipOrders.Repair, retainSuperiorsOrder: true, target: repairDestination);
+            if (CurrentOrder == null || CurrentOrder.Directive != ShipDirective.Repair) {
+                var repairLoc = Data.Position - _transform.forward * 10F;
+                var repairLocTopography = Universe.GetSpaceTopography(repairLoc);
+                IDestinationTarget repairDestination = new StationaryLocation(repairLoc, repairLocTopography);
+                OverrideCurrentOrder(ShipDirective.Repair, retainSuperiorsOrder: true, target: repairDestination);
             }
         }
     }
 
-    protected override void OnItemDeath() {
-        base.OnItemDeath();
-        Helm.DisengageAutoPilot();
+    protected override void OnDeath() {
+        base.OnDeath();
+        _helm.DisengageAutoPilot();
+    }
+
+    protected override bool ApplyDamage(float damage) {
+        bool isAlive = base.ApplyDamage(damage);
+        if (isAlive) {
+            __AssessCriticalHits(damage);
+        }
+        return isAlive;
+    }
+
+    private void __AssessCriticalHits(float damage) {
+        if (Data.Health < 0.50F) {
+            // hurting
+            if (damage > 0.20F * Data.CurrentHitPoints) {
+                // big hit relative to what is left
+                Data.IsFtlDamaged = RandomExtended<bool>.Chance(probabilityFactor: 1, probabilitySpace: 9); // 10% chance
+                AssessFtlAvailability();
+            }
+        }
     }
 
     #endregion
 
     # region Callbacks
 
-    void OnTargetDeath(IMortalModel deadTarget) { RelayToCurrentState(deadTarget); }
+    void OnTargetDeath(IMortalTarget deadTarget) { RelayToCurrentState(deadTarget); }
 
     void OnCoursePlotSuccess() { RelayToCurrentState(); }
 
     void OnCoursePlotFailure() {
-        //D.Warn("{0} course plot to {1} failed.", Data.Name, Navigator.Target.FullName);
+        //D.Warn("{0} course plot to {1} failed.", FullName, Helm.Target.FullName);
         RelayToCurrentState();
     }
 
-    void OnDestinationReached() { RelayToCurrentState(); }
+    void OnDestinationReached() {
+        RelayToCurrentState();
+        if (onDestinationReached != null) {
+            onDestinationReached();
+        }
+    }
 
-    void OnCourseTrackingError() { RelayToCurrentState(); }
+    void OnDestinationUnreachable() { RelayToCurrentState(); }
 
     void OnMakeFleetCompleted(FleetCmdModel fleet) { RelayToCurrentState(fleet); }
 
@@ -755,7 +2003,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     protected override void Cleanup() {
         base.Cleanup();
-        if (Helm != null) { Helm.Dispose(); }
+        if (_helm != null) { _helm.Dispose(); }
         if (Data != null) { Data.Dispose(); }
     }
 
@@ -791,11 +2039,14 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         AssessNeedForRepair();
     }
 
+    public override bool IsMovable { get { return true; } }
+
     #endregion
 
     #region IShipModel Members
 
-    public bool IsBearingConfirmed { get { return Helm.IsBearingConfirmed; } }
+    public bool IsBearingConfirmed { get; private set; }
+    //public bool IsBearingConfirmed { get { return Data.CurrentHeading.IsSameDirection(Data.RequestedHeading, 1F); } }         // always accurate but expensive
 
     public void OnShipOnStation(bool isOnStation) {
         if (IsHQElement) { return; }    // filter these out as the HQElement will always be OnStation
@@ -804,6 +2055,12 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             // filter these so I can allow RelayToCurrentState() to warn when it doesn't find a matching method
             RelayToCurrentState(isOnStation);
         }
+    }
+
+    public void OnTopographicBoundaryTransition(SpaceTopography newTopography) {
+        D.Log("{0}.OnTopographicBoundaryTransition({1}).", FullName, newTopography.GetName());
+        Data.Topography = newTopography;
+        AssessFtlAvailability();
     }
 
     #endregion

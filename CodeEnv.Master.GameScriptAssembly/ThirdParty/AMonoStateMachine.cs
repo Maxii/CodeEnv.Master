@@ -636,7 +636,8 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
         state.DoLateUpdate();
     }
 
-    void FixedUpdate() {
+    protected override void FixedUpdate() {
+        base.FixedUpdate();
         state.DoFixedUpdate();
     }
 

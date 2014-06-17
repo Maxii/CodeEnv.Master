@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SettlementOrders.cs
-// The orders that can be issued to a Settlement.
+// File: IBaseCmdTarget.cs
+// Interface for a target that is a Starbase or Settlement Command.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,16 +17,9 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// The orders that can be issued to a Settlement.
+    /// Interface for a target that is a Starbase or Settlement Command.
     /// </summary>
-    public enum SettlementOrders {
-
-        None,
-        Attack,
-        StopAttack,
-        Repair,
-        Refit,
-        Disband
+    public interface IBaseCmdTarget : ICmdTarget {
 
     }
 }

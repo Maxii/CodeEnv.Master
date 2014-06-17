@@ -31,7 +31,7 @@ public class SensorRangeTracker : AMonoBase {
 
     public SensorRangeCategory SensorRangeCategory { get; set; }
 
-    public ICommandTarget Command { get; set; }
+    public ICmdTarget Command { get; set; }
 
     private float _range;
     public float Range {
@@ -39,8 +39,8 @@ public class SensorRangeTracker : AMonoBase {
         set { SetProperty<float>(ref _range, value, "Range", OnRangeChanged); }
     }
 
-    public IList<ICommandTarget> EnemyTargets { get; private set; }
-    public IList<ICommandTarget> AllTargets { get; private set; }
+    public IList<ICmdTarget> EnemyTargets { get; private set; }
+    public IList<ICmdTarget> AllTargets { get; private set; }
 
     private static HashSet<Collider> _collidersToIgnore = new HashSet<Collider>();
 
@@ -52,8 +52,8 @@ public class SensorRangeTracker : AMonoBase {
         _collider.isTrigger = true;
         _collider.radius = Constants.ZeroF;  // initialize to same value as Range
 
-        AllTargets = new List<ICommandTarget>();
-        EnemyTargets = new List<ICommandTarget>();
+        AllTargets = new List<ICmdTarget>();
+        EnemyTargets = new List<ICmdTarget>();
 
         enabled = false;    // TODO Creators should enable during runtime
     }
@@ -69,7 +69,7 @@ public class SensorRangeTracker : AMonoBase {
             return;
         }
 
-        ICommandTarget target = other.gameObject.GetInterface<ICommandTarget>();
+        ICmdTarget target = other.gameObject.GetInterface<ICmdTarget>();
         if (target == null) {
             _collidersToIgnore.Add(other);
             D.Log("{0}.{1} now ignoring Collider {2}.", Command.FullName, GetType().Name, other.name);
@@ -90,15 +90,15 @@ public class SensorRangeTracker : AMonoBase {
             return;
         }
 
-        ICommandTarget target = other.gameObject.GetInterface<ICommandTarget>();
+        ICmdTarget target = other.gameObject.GetInterface<ICmdTarget>();
         if (target != null) {
             Remove(target);
         }
     }
 
 
-    private void OnTargetOwnerChanged(IMortalModel target) {
-        var cmdTarget = target as ICommandTarget;
+    private void OnTargetOwnerChanged(IOwnedTarget target) {
+        var cmdTarget = target as ICmdTarget;
         if (Command.Owner.IsEnemyOf(cmdTarget.Owner)) {
             if (!EnemyTargets.Contains(cmdTarget)) {
                 AddEnemyTarget(cmdTarget);
@@ -135,15 +135,15 @@ public class SensorRangeTracker : AMonoBase {
         }
     }
 
-    private void OnTargetDeath(IMortalModel target) {
-        Remove(target as ICommandTarget);
+    private void OnTargetDeath(IMortalTarget target) {
+        Remove(target as ICmdTarget);
     }
 
-    private void Add(ICommandTarget target) {
+    private void Add(ICmdTarget target) {
         if (!AllTargets.Contains(target)) {
             if (target.IsAlive) {
                 D.Log("{0}.{1} now tracking target {2}.", Command.FullName, GetType().Name, target.FullName);
-                target.onItemDeath += OnTargetDeath;
+                target.onTargetDeath += OnTargetDeath;
                 target.onOwnerChanged += OnTargetOwnerChanged;
                 AllTargets.Add(target);
             }
@@ -160,7 +160,7 @@ public class SensorRangeTracker : AMonoBase {
         }
     }
 
-    private void AddEnemyTarget(ICommandTarget enemyTarget) {
+    private void AddEnemyTarget(ICmdTarget enemyTarget) {
         D.Log("{0}.{1}({2:0.00}) added Enemy {3} at distance {4}.",
              Command.FullName, GetType().Name, Range, enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
         //if (EnemyTargets.Count == 0) {
@@ -169,11 +169,11 @@ public class SensorRangeTracker : AMonoBase {
         EnemyTargets.Add(enemyTarget);
     }
 
-    private void Remove(ICommandTarget target) {
+    private void Remove(ICmdTarget target) {
         bool isRemoved = AllTargets.Remove(target);
         if (isRemoved) {
             //D.Log("{0}.{1} no longer tracking target {2} at distance = {3}.", ParentFullName, _transform.name, target.FullName, Vector3.Distance(target.Position, _transform.position));
-            target.onItemDeath -= OnTargetDeath;
+            target.onTargetDeath -= OnTargetDeath;
             target.onOwnerChanged -= OnTargetOwnerChanged;
         }
         else {
@@ -183,7 +183,7 @@ public class SensorRangeTracker : AMonoBase {
         RemoveEnemyTarget(target);
     }
 
-    private void RemoveEnemyTarget(ICommandTarget enemyTarget) {
+    private void RemoveEnemyTarget(ICmdTarget enemyTarget) {
         if (EnemyTargets.Remove(enemyTarget)) {
             //if (EnemyTargets.Count == 0) {
             //    OnEnemyInRange(false);  // no longer any Enemies in range
