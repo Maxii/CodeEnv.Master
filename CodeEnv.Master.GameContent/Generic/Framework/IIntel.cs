@@ -23,11 +23,13 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IIntel {
 
+        bool HasDatedCoverage { get; }
+
         IntelCoverage DatedCoverage { get; }
 
-        IntelCoverage CurrentCoverage { get; set; }
-
         GameDate DateStamp { get; }
+
+        IntelCoverage CurrentCoverage { get; set; }
 
     }
 }

@@ -36,14 +36,17 @@ namespace CodeEnv.Master.GameContent {
         /// <exception cref="System.NotImplementedException"></exception>
         public static float GetValue(this Speed speed, FleetCmdData fleetData, ShipData shipData = null) {
             D.Assert(fleetData != null || shipData != null);
+
             float fleetFullSpeed = Constants.ZeroF;
             if (fleetData != null) {
-                fleetFullSpeed = fleetData.IsFtlAvailableForUse ? fleetData.FullFtlSpeed : fleetData.FullStlSpeed;
+                fleetFullSpeed = fleetData.FullSpeed;
+                //D.Log("{0}.FullSpeed = {1} units/hour.", fleetData.FullName, fleetFullSpeed);
             }
 
             float shipFullSpeed = Constants.ZeroF;
             if (shipData != null) {
-                shipFullSpeed = shipData.IsFtlAvailableForUse ? shipData.FullFtlSpeed : shipData.FullStlSpeed;
+                shipFullSpeed = shipData.FullSpeed;
+                //D.Log("{0}.FullSpeed = {1} units/hour. FtlAvailable = {2}.", shipData.FullName, shipFullSpeed, shipData.IsFtlAvailableForUse);
             }
 
             float result;

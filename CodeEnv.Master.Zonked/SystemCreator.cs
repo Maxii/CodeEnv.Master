@@ -88,7 +88,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         _gameMgr = GameManager.Instance;
         _systemsFolder = _transform.parent;
         _factory = SystemFactory.Instance;
-        _isPresetSystem = _transform.childCount > 0;
+        isCompositionPreset = _transform.childCount > 0;
         GenerateOrbitSlotStartLocation();
         //_composition = CreateSystemComposition();
         //_starStat = CreateStarStat();
@@ -146,7 +146,7 @@ public class SystemCreator : AMonoBase, IDisposable {
 
     private StarCategory GetStarCategory() {
         LogEvent();
-        if (_isPresetSystem) {
+        if (isCompositionPreset) {
             Transform transformCarryingStarCategory = gameObject.GetSafeMonoBehaviourComponentInChildren<StarModel>().transform;
             return DeriveCategory<StarCategory>(transformCarryingStarCategory);
         }
@@ -156,7 +156,7 @@ public class SystemCreator : AMonoBase, IDisposable {
     private IList<PlanetoidStat> CreatePlanetStats() {
         LogEvent();
         var planetStats = new List<PlanetoidStat>();
-        if (_isPresetSystem) {
+        if (isCompositionPreset) {
             IEnumerable<PlanetoidModel> allPlanetoids = gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetoidModel>();
             // exclude moons
             var planets = allPlanetoids.Where(p => p.gameObject.GetComponentInParents<PlanetoidModel>(excludeSelf: true) == null).ToList();
@@ -326,7 +326,7 @@ public class SystemCreator : AMonoBase, IDisposable {
 
     private void MakeSystem() {
         LogEvent();
-        if (_isPresetSystem) {
+        if (isCompositionPreset) {
             _system = gameObject.GetSafeMonoBehaviourComponentInChildren<SystemModel>();
             _factory.MakeSystemInstance(SystemName, ref _system);
         }
@@ -338,7 +338,7 @@ public class SystemCreator : AMonoBase, IDisposable {
 
     private void MakeStar() {
         LogEvent();
-        if (_isPresetSystem) {
+        if (isCompositionPreset) {
             _star = gameObject.GetSafeMonoBehaviourComponentInChildren<StarModel>();
             _factory.MakeInstance(_starStat, SystemName, ref _star);
         }
@@ -350,7 +350,7 @@ public class SystemCreator : AMonoBase, IDisposable {
 
     private void MakePlanets() {
         LogEvent();
-        if (_isPresetSystem) {
+        if (isCompositionPreset) {
             IEnumerable<PlanetoidModel> allPlanetoids = gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetoidModel>();
             // exclude moons
             _planets = allPlanetoids.Where(p => p.gameObject.GetComponentInParents<PlanetoidModel>(excludeSelf: true) == null).ToList();

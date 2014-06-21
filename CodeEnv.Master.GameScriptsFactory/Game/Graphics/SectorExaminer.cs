@@ -100,7 +100,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
 
     void OnHover(bool isOver) {
         if (_viewMode == PlayerViewMode.SectorView) {
-            D.Log("SectorExaminer calling Sector {0}.ShowHud({1}).", CurrentSectorIndex, isOver);
+            //D.Log("SectorExaminer calling Sector {0}.ShowHud({1}).", CurrentSectorIndex, isOver);
             SectorGrid.GetSector(CurrentSectorIndex).gameObject.GetSafeMonoBehaviourComponent<SectorView>().ShowHud(isOver);
         }
     }
@@ -156,12 +156,13 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
 
     private void OnContextMenuSelection() {
         int menuId = CtxObject.current.selectedItem;
-        FleetCmdView selectedFleetView = _selectionMgr.CurrentSelection as FleetCmdView;
+        FleetCmdHumanView selectedFleetView = _selectionMgr.CurrentSelection as FleetCmdHumanView;
         IFleetCmdModel selectedFleet = selectedFleetView.Presenter.Model;
         if (menuId == 4) {  // UNDONE
             SectorModel sector = SectorGrid.GetSector(CurrentSectorIndex);
-            var sectorCenterLocation = new StationaryLocation(sector.Position, sector.Topography);
-            selectedFleet.CurrentOrder = new FleetOrder(FleetDirective.MoveTo, sectorCenterLocation, Speed.FleetStandard);
+            //var sectorCenterLocation = new StationaryLocation(sector.Position, sector.Topography);
+            //selectedFleet.CurrentOrder = new FleetOrder(FleetDirective.MoveTo, sectorCenterLocation, Speed.FleetStandard);
+            selectedFleet.CurrentOrder = new FleetOrder(FleetDirective.MoveTo, sector, Speed.FleetStandard);
         }
     }
 

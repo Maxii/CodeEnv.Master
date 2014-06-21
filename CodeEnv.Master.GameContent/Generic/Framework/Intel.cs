@@ -20,8 +20,13 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Metadata describing the intelligence data known about a particular object.
+    /// This version keeps track of the previous high of knowledge obtained on the object (DatedCoverage)
+    /// along with the date it was obtained (DateStamp), so that we remember how much was known at a
+    /// particular point in history, even if our CurrentCoverage is no longer that high.
     /// </summary>
     public class Intel : APropertyChangeTracking, IIntel {
+
+        public virtual bool HasDatedCoverage { get { return DatedCoverage != default(IntelCoverage) && DateStamp != default(GameDate); } }
 
         private IntelCoverage _datedCoverage;
         /// <summary>
@@ -32,6 +37,12 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<IntelCoverage>(ref _datedCoverage, value, "DatedCoverage", null, OnDatedCoverageChanging); }
         }
 
+        /// <summary>
+        /// The "time stamp" associated with the DatedCoverage, aka when DatedCoverage was last updated.
+        /// Used to calculate the age of the dated coverage level of intel.
+        /// </summary>
+        public virtual GameDate DateStamp { get; private set; }
+
         private IntelCoverage _currentCoverage;
         /// <summary>
         /// The current level of data coverage achieved on this object.
@@ -41,41 +52,39 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<IntelCoverage>(ref _currentCoverage, value, "CurrentCoverage", null, OnCurrentCoverageChanging); }
         }
 
-        private GameDate _dateStamp;
-        public virtual GameDate DateStamp {
-            get {
-                D.Assert(_dateStamp != default(GameDate));
-                return _dateStamp;
-            }
-            private set { _dateStamp = value; }
-        }
-
         public Intel() : this(IntelCoverage.None) { }
 
         public Intel(IntelCoverage currentCoverage) {
-            ProcessChange(currentCoverage);
+            PreProcessChange(currentCoverage);
             _currentCoverage = currentCoverage;
         }
 
-        protected virtual void ProcessChange(IntelCoverage newCoverage) {
+        /// <summary>
+        /// Processes the change to a new level of coverage BEFORE the new level of coverage
+        /// is applied.
+        /// </summary>
+        /// <param name="newCoverage">The new coverage.</param>
+        protected virtual void PreProcessChange(IntelCoverage newCoverage) {
             if (newCoverage < CurrentCoverage) {
                 // we have less data than before so record the level we had and stamp the date
                 DatedCoverage = CurrentCoverage;
-                if (DateStamp != GameTime.CurrentDate) {
-                    DateStamp = GameTime.CurrentDate;    // avoids PropertyChangeTracking equals warning
+                if (DateStamp != GameTime.CurrentDate) {    // avoids PropertyChangeTracking equals warning
+                    DateStamp = GameTime.CurrentDate;
                 }
             }
             if (newCoverage > CurrentCoverage && newCoverage >= DatedCoverage) {
                 // we have more data than before and it is the same or more than our previous record, so erase the previous record
-                DatedCoverage = IntelCoverage.None;
-                DateStamp = default(GameDate);  // = null;
+                DatedCoverage = default(IntelCoverage);
+                DateStamp = default(GameDate);
             }
             // if newCoverage is same as currentCoverage than they are both None and this is a new instance - nothing to change
             // if we have more data than before, but we still haven't reached our record, then nothing to change
+
+            // CurrentCoverage is set to newCoverage after PreProcessChange(newCoverage) finishes
         }
 
         private void OnCurrentCoverageChanging(IntelCoverage newCurrentCoverage) {
-            ProcessChange(newCurrentCoverage);
+            PreProcessChange(newCurrentCoverage);
         }
 
         private void OnDatedCoverageChanging(IntelCoverage newDatedCoverage) {

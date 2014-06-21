@@ -21,11 +21,13 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public enum OrderSource {
 
+        None,
+
         ElementCaptain,
 
         UnitCommand,
 
-        Player
+        Player  // UNDONE This has largely not been rolled in yet
 
     }
 }

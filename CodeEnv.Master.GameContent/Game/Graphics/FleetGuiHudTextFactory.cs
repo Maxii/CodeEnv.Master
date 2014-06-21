@@ -54,6 +54,8 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.CompositionDetails:
                     // TODO
                     return new ColoredTextList_Composition(data.Composition);
+                case GuiHudLineKeys.Target:
+                    return data.Target != null ? new ColoredTextList_String(data.Target.FullName) : _emptyColoredTextList;
 
                 // The following is a fall through catcher for line keys that aren't processed. An empty ColoredTextList will be returned which will be ignored by GuiCursorHudText
                 case GuiHudLineKeys.ParentName: // fleets do not have parent names

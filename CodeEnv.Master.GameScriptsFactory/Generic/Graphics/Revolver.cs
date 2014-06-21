@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: Revolve.cs
+// File: Revolver.cs
 // Class that rotates an object around a designated axis.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Class that rotates an object around a designated axis.
 /// </summary>
-public class Revolve : AMonoBase {
+public class Revolver : AMonoBase {
 
     /// <summary>
     /// The axis of self rotation in local space.

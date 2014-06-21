@@ -24,7 +24,13 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ImprovingIntel : Intel {
 
+        public override bool HasDatedCoverage { get { return false; } }
+
         public override IntelCoverage DatedCoverage {
+            get { throw new InvalidOperationException("{0} does not support DateStamp.".Inject(GetType().Name)); }
+        }
+
+        public override GameDate DateStamp {
             get { throw new InvalidOperationException("{0} does not support DateStamp.".Inject(GetType().Name)); }
         }
 
@@ -41,15 +47,11 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public override GameDate DateStamp {
-            get { throw new InvalidOperationException("{0} does not support DateStamp.".Inject(GetType().Name)); }
-        }
-
         public ImprovingIntel() : this(IntelCoverage.None) { }
 
         public ImprovingIntel(IntelCoverage currentCoverage) : base(currentCoverage) { }
 
-        protected override void ProcessChange(IntelCoverage newCurrentCoverage) {
+        protected override void PreProcessChange(IntelCoverage newCurrentCoverage) {
             // does nothing as DatedCoverage and DateStamp aren't supported
         }
 

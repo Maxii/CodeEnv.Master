@@ -241,7 +241,8 @@ namespace CodeEnv.Master.Common {
         /// <param name="sphereRadius">The sphere radius.</param>
         /// <returns></returns>
         public static Vector3 FindClosestPointOnSphereSurfaceTo(Vector3 point, Vector3 sphereCenter, float sphereRadius) {
-            return sphereCenter + (point - sphereCenter).normalized * sphereRadius;
+            D.Assert(point != sphereCenter);
+            return sphereCenter + ((point - sphereCenter).normalized * sphereRadius);
         }
 
         /// <summary>

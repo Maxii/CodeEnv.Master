@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
 
         new FacilityData Data { get; set; }
 
-        FacilityState CurrentState { get; set; }
+        FacilityState CurrentState { get; }
 
 
     }

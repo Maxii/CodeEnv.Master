@@ -34,7 +34,8 @@ public class RequiredPrefabs : AMonoBaseSingleton<RequiredPrefabs> {
     public GuiTrackingLabel guiTrackingLabel;
     public SectorModel sector;
 
-    public Orbit orbit;
+    public Orbiter orbiter;
+    public ShipOrbit shipOrbit;
 
     public FleetCmdView aiFleetCmd;
     public ShipView[] aiShips;
@@ -54,7 +55,7 @@ public class RequiredPrefabs : AMonoBaseSingleton<RequiredPrefabs> {
     public StarModel[] stars;
     public GameObject[] planets;
 
-    public WeaponRangeMonitor weaponRangeTracker;
+    public WeaponRangeMonitor weaponRangeMonitor;
     public FormationStation formationStation;
 
     protected override void Awake() {

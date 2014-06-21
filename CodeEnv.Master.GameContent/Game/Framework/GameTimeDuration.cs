@@ -151,7 +151,7 @@ namespace CodeEnv.Master.GameContent {
             : this() {
             GameUtility.ValidateForRange(startDate, GameDate.GameStartDate, GameDate.GameEndDate);
             GameUtility.ValidateForRange(endDate, GameDate.GameStartDate, GameDate.GameEndDate);
-            D.Assert(startDate != endDate);
+            //D.Assert(startDate != endDate);   // a GameTimeDuration of zero should be legal
 
             int years = endDate.Year - startDate.Year;
             int days = endDate.DayOfYear - startDate.DayOfYear;

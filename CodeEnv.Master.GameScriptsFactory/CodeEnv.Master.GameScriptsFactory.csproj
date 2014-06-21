@@ -111,8 +111,8 @@
     <Compile Include="Generic\Graphics\GuiTrackingLabel.cs" />
     <Compile Include="Game\GUI\GuiPlayerColorPopupList.cs" />
     <Compile Include="Game\GUI\GuiPlayerRacePopupList.cs" />
-    <Compile Include="Generic\Graphics\Orbit.cs" />
-    <Compile Include="Generic\Graphics\OrbitMoveable.cs" />
+    <Compile Include="Generic\Graphics\Orbiter.cs" />
+    <Compile Include="Generic\Graphics\MovingOrbiter.cs" />
     <Compile Include="Generic\Graphics\GuiTrackingLabelFactory.cs" />
     <Compile Include="Generic\IO\NguiGenericEventHandler.cs" />
     <Compile Include="Game\GUI\GuiGraphicsOptionMenuAcceptButton.cs" />
@@ -129,7 +129,7 @@
     <Compile Include="Game\Graphics\SettlementCmdView.cs" />
     <Compile Include="Game\Framework\ShipModel.cs" />
     <Compile Include="Game\Graphics\SectorView.cs" />
-    <Compile Include="Generic\Graphics\Revolve.cs" />
+    <Compile Include="Generic\Graphics\Revolver.cs" />
     <Compile Include="Generic\Framework\StarbaseUnitCreator.cs" />
     <Compile Include="Game\Framework\StarbaseCmdModel.cs" />
     <Compile Include="Game\Graphics\StarbaseCmdView.cs" />
@@ -144,6 +144,7 @@
     <Compile Include="Game\Graphics\SettlementCmdHumanView.cs" />
     <Compile Include="Game\Graphics\StarbaseCmdHumanView.cs" />
     <Compile Include="Generic\Framework\SystemFactory.cs" />
+    <Compile Include="Generic\Graphics\ShipOrbit.cs" />
     <Compile Include="ThirdParty\MyAStarPointGraph.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Generic\Framework\Loader.cs" />

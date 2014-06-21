@@ -503,7 +503,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     /// </summary>
     public object CurrentState {
         get { return state.currentState; }
-        set {
+        protected set {
             if (state.Equals(value)) {
                 D.Error("This should never occur.");
                 return;

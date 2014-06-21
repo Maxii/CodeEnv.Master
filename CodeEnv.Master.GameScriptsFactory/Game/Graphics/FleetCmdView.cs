@@ -77,23 +77,23 @@ public class FleetCmdView : AUnitCommandView, ICameraFollowable, IHighlightTrack
 
     protected override void OnLeftClick() {
         base.OnLeftClick();
-        __ToggleIntelChangingTest();
+        //__ToggleIntelChangingTest();
     }
 
     #endregion
 
     #region Intel Change Testing
 
-    private Job _intelTestJob;
+    private Job __intelTestJob;
     private void __ToggleIntelChangingTest() {
-        if (_intelTestJob == null) {
-            _intelTestJob = new Job(__CycleIntel());
+        if (__intelTestJob == null) {
+            __intelTestJob = new Job(__CycleIntel());
         }
-        if (!_intelTestJob.IsRunning) {
-            _intelTestJob.Start();
+        if (!__intelTestJob.IsRunning) {
+            __intelTestJob.Start();
         }
         else {
-            _intelTestJob.Kill();
+            __intelTestJob.Kill();
         }
     }
 

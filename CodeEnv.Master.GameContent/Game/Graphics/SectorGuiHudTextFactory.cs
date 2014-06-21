@@ -59,6 +59,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Category:
                 case GuiHudLineKeys.ShipDetails:
                 case GuiHudLineKeys.Speed:
+                case GuiHudLineKeys.Target:
                     return _emptyColoredTextList;
 
                 case GuiHudLineKeys.None:

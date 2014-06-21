@@ -27,6 +27,12 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         float OrbitDistance { get; }
 
+        void AssumeOrbit(IShipModel ship);
+
+        void LeaveOrbit(IShipModel orbitingShip);
+
+        string FullName { get; }
+
     }
 }
 

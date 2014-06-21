@@ -408,6 +408,11 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         // command IS NOT assigned as a target of each element's CameraLOSChangedRelay as that would make the CommandIcon disappear when the elements disappear
     }
 
+    /// <summary>
+    /// Assigns the hq element to the command. The assignment itself regenerates the formation,
+    /// resulting in each element assuming the proper position.
+    /// Note: This method must not be called before AddElements().
+    /// </summary>
     protected abstract void AssignHQElement();
 
     // Element positioning and formationPosition assignments have been moved to AUnitCommandModel to support runtime adds and removals

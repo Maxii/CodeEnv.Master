@@ -47,6 +47,11 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         Specials,
 
+        /// <summary>
+        /// The target of the Cmd or CmdElement.
+        /// </summary>
+        Target,
+
         SettlementDetails,
         Owner,
         Health,

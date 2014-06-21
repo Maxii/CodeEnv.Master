@@ -61,6 +61,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.SectorIndex:
                 case GuiHudLineKeys.Density:
                 case GuiHudLineKeys.Speed:
+                case GuiHudLineKeys.Target:
                     return _emptyColoredTextList;
 
                 case GuiHudLineKeys.None:

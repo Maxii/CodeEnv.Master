@@ -90,12 +90,12 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
 
     protected override void BeginElementsOperations() {
         LogEvent();
-        _elements.ForAll(e => (e as FacilityModel).CurrentState = FacilityState.Idling);
+        _elements.ForAll(e => e.CommenceOperations());
     }
 
     protected override void BeginCommandOperations() {
         LogEvent();
-        _command.CurrentState = StarbaseState.Idling;
+        _command.CommenceOperations();
     }
 
     protected override void AssignHQElement() {
@@ -114,8 +114,8 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
         D.Assert(GameStatus.Instance.IsRunning);
         gameObject.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(relay => relay.enabled = true);
         gameObject.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeMonitor>().ForAll(wrt => wrt.enabled = true);
-        gameObject.GetSafeMonoBehaviourComponentsInChildren<Revolve>().ForAll(rev => rev.enabled = true);
-        gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>().enabled = true;
+        gameObject.GetSafeMonoBehaviourComponentsInChildren<Revolver>().ForAll(rev => rev.enabled = true);
+        //gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>().enabled = true;
         // no orbits present,  // other possibles: Billboard, ScaleRelativeToCamera
         // TODO SensorRangeTracker
     }

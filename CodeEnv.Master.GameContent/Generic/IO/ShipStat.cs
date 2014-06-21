@@ -28,6 +28,9 @@ namespace CodeEnv.Master.GameContent {
         public float MaxHitPoints { get; private set; }
         public ShipCategory Category { get; private set; }
         public ShipCombatStance CombatStance { get; private set; }
+        /// <summary>
+        /// The ship's maximum turn rate in degrees per hour.
+        /// </summary>
         public float MaxTurnRate { get; private set; }
         public float Drag { get; private set; }
         /// <summary>
@@ -52,7 +55,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="maxHitPts">The maximum hit PTS.</param>
         /// <param name="category">The category.</param>
         /// <param name="stance">The stance.</param>
-        /// <param name="maxTurnRate">The maximum turn rate.</param>
+        /// <param name="maxTurnRate">The ship's maximum turn rate in degrees per hour.</param>
         /// <param name="drag">The drag.</param>
         /// <param name="fullStlThrust">The maximum force projected by the STL engines. FullStlSpeed = FullStlThrust / (Mass * Drag).
         /// NOTE: This value uses a Game Hour denominator. It is adjusted in

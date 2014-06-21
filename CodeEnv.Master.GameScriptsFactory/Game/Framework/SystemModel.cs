@@ -45,7 +45,7 @@ public class SystemModel : AItemModel, ISystemModel, ISystemTarget {
 
     public void AssignSettlement(SettlementCmdModel settlementCmd) {
         D.Assert(gameObject.GetComponentInChildren<SettlementCmdModel>() == null, "{0} already has a Settlement.".Inject(FullName));
-        GameObject orbitGo = UnityUtility.AddChild(gameObject, RequiredPrefabs.Instance.orbit.gameObject);
+        GameObject orbitGo = UnityUtility.AddChild(gameObject, RequiredPrefabs.Instance.orbiter.gameObject);
         orbitGo.name = "SettlementOrbit";
         Transform settlementUnit = settlementCmd.transform.parent;
         UnityUtility.AttachChildToParent(settlementUnit.gameObject, orbitGo);

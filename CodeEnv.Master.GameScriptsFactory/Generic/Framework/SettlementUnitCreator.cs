@@ -97,12 +97,12 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
 
     protected override void BeginElementsOperations() {
         LogEvent();
-        _elements.ForAll(e => (e as FacilityModel).CurrentState = FacilityState.Idling);
+        _elements.ForAll(e => e.CommenceOperations());
     }
 
     protected override void BeginCommandOperations() {
         LogEvent();
-        _command.CurrentState = SettlementState.Idling;
+        _command.CommenceOperations();
     }
 
     protected override void AssignHQElement() {
@@ -123,9 +123,9 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
         GameObject settlementUnitGo = _command.transform.parent.gameObject;
         settlementUnitGo.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(relay => relay.enabled = true);
         settlementUnitGo.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeMonitor>().ForAll(wrt => wrt.enabled = true);
-        settlementUnitGo.GetSafeMonoBehaviourComponentsInChildren<Revolve>().ForAll(rev => rev.enabled = true);
+        settlementUnitGo.GetSafeMonoBehaviourComponentsInChildren<Revolver>().ForAll(rev => rev.enabled = true);
         // settlementUnitGo.GetSafeMonoBehaviourComponentInParents<Orbit>().enabled = true;    // currently keeping Settlements in a fixed location
-        settlementUnitGo.GetSafeMonoBehaviourComponentInChildren<UISprite>().enabled = true;
+        // settlementUnitGo.GetSafeMonoBehaviourComponentInChildren<UISprite>().enabled = true;
         // no other orbits present,  // other possibles: Billboard, ScaleRelativeToCamera
         // TODO SensorRangeTracker
     }

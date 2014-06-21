@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
 
         ShipOrder CurrentOrder { get; set; }
 
-        ShipState CurrentState { get; set; }
+        ShipState CurrentState { get; }
 
         new IFleetCmdModel Command { get; set; }
 

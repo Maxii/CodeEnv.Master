@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: Orbit.cs
+// File: Orbiter.cs
 // Class that simulates the movement of an object orbiting around a stationary location. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -23,13 +23,12 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Class that simulates the movement of an object orbiting around a stationary
-/// location. Both orbital movement and self rotation of the orbiting object are implemented.
+/// Class that simulates the movement of an object orbiting around a stationary location. 
 /// Assumes this script is attached to the parent of an orbiting object. The position  of this
 /// parent should be coincident with that of the stationary object the orbiting object is orbiting. 
 /// This script simulates orbital movement of the orbiting object by rotating this parent object.
 /// </summary>
-public class Orbit : AMonoBase {
+public class Orbiter : AMonoBase {
 
     /// <summary>
     /// The axis of orbit in local space.
@@ -79,6 +78,23 @@ public class Orbit : AMonoBase {
     protected virtual void UpdateOrbit(float deltaTime) {
         _transform.Rotate(axisOfOrbit * _orbitSpeed * deltaTime, relativeTo: Space.Self);
     }
+
+    private float _speedInUnitsPerHour;
+
+    /// <summary>
+    /// Does a one-time calculation of the speed at which the body located at <c>radius</c> units
+    /// from the orbit center is traveling.
+    /// </summary>
+    /// <param name="radius">The distance from the center to the body that is orbiting.</param>
+    /// <returns></returns>
+    public void CalcSpeedOfBodyInOrbit(float radius) {
+        _speedInUnitsPerHour = (2F * Mathf.PI * radius) / (_orbitPeriod.TotalInHours / relativeOrbitSpeed);
+    }
+
+    /// <summary>
+    /// Gets the speed of the body contained in this orbit in units per hour.
+    /// </summary>
+    public float SpeedOfOrbitalBody { get { return _speedInUnitsPerHour; } }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

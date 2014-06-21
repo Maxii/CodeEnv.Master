@@ -56,6 +56,10 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel, IBaseCmdTa
         //D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
     }
 
+    public void CommenceOperations() {
+        CurrentState = StarbaseState.Idling;
+    }
+
     public override void AddElement(IElementModel element) {
         base.AddElement(element);
 
@@ -113,7 +117,7 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel, IBaseCmdTa
 
     public new StarbaseState CurrentState {
         get { return (StarbaseState)base.CurrentState; }
-        set { base.CurrentState = value; }
+        protected set { base.CurrentState = value; }
     }
 
     #region None
@@ -246,6 +250,24 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel, IBaseCmdTa
     #region IOrbitable Members
 
     public float OrbitDistance { get; private set; }
+
+    public void AssumeOrbit(IShipModel ship) {
+        var shipOrbit = gameObject.GetComponentInImmediateChildren<ShipOrbit>();
+        if (shipOrbit == null) {
+            UnitFactory.Instance.MakeShipOrbitInstance(gameObject, ship);
+        }
+        else {
+            UnitFactory.Instance.AttachShipToShipOrbit(ship, ref shipOrbit);
+        }
+    }
+
+    public void LeaveOrbit(IShipModel orbitingShip) {
+        var shipOrbit = gameObject.GetComponentInImmediateChildren<ShipOrbit>();
+        D.Assert(shipOrbit != null, "{0}.{1} is not present.".Inject(FullName, typeof(ShipOrbit).Name));
+        var ship = shipOrbit.gameObject.GetSafeInterfacesInChildren<IShipModel>().Single(s => s == orbitingShip);
+        var parentFleetTransform = ship.Command.Transform.parent;
+        ship.Transform.parent = parentFleetTransform;
+    }
 
     #endregion
 

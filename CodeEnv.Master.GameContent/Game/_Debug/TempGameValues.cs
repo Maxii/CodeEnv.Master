@@ -31,6 +31,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public const float __FtlMultiplier = 10F;
 
+        public const float FlapsMultiplier = 100F;
+
         /// <summary>
         /// The maximum number of facilities a starbase or settlement can have.
         /// </summary>
@@ -90,7 +92,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public const float KeepoutRadiusMultiplier = 2F;
 
-        public const float MaxKeepoutDiameter = UniverseCenterRadius * KeepoutRadiusMultiplier * 2F;
+        //public const float MaxKeepoutDiameter = UniverseCenterRadius * KeepoutRadiusMultiplier * 2F;
 
         /// <summary>
         /// The total number of orbit slots in a System, including those for planets,

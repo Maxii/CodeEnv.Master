@@ -24,6 +24,10 @@ using UnityEngine;
 
 /// <summary>
 /// Singleton factory that makes instances of Stars, Planets (with attached moons) and Systems.
+/// 
+/// Note on ownership: Systems, Stars and Planets all have the same owner, the owner of the Settlement,
+/// if any, that is present in the System. The owner value held in each data is automatically changed by
+/// SystemData when a Settlement owner changes, or the settlement is added or removed from the system.
 /// </summary>
 public class SystemFactory : AGenericSingleton<SystemFactory> {
 

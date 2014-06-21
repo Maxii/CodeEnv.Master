@@ -93,7 +93,9 @@ namespace CodeEnv.Master.GameContent {
                                                                            GuiHudLineKeys.CompositionDetails,
            
                                                                        GuiHudLineKeys.SettlementDetails,
-                                                                           GuiHudLineKeys.ShipDetails }}
+                                                                           GuiHudLineKeys.ShipDetails,
+                                                                            GuiHudLineKeys.Target
+       }}
     };
 
 
@@ -214,13 +216,10 @@ namespace CodeEnv.Master.GameContent {
             private string ConstructIntelText(IIntel intel) {
                 string intelMsg = intel.CurrentCoverage.GetName();
                 string addendum = ". Intel is current.";
-                if (!(intel is FixedIntel) && !(intel is ImprovingIntel)) { // IMPROVE avoid having to inspect Intel Types
-                    if (intel.DatedCoverage != IntelCoverage.None) {  // OutOfDateScope is None if there is no previous record, DateStamp is null
-                        //D.Log("DateStamp = {0}, CurrentDate = {1}.", intel.DateStamp, GameTime.Date);
-
-                        GameTimeDuration intelAge = new GameTimeDuration(intel.DateStamp, GameTime.CurrentDate);
-                        addendum = String.Format(". Intel age {0}.", intelAge.ToString());
-                    }
+                if (intel.HasDatedCoverage) {
+                    //D.Log("DateStamp = {0}, CurrentDate = {1}.", intel.DateStamp, GameTime.CurrentDate);
+                    GameTimeDuration intelAge = new GameTimeDuration(intel.DateStamp, GameTime.CurrentDate);
+                    addendum = String.Format(". Intel age {0}.", intelAge.ToString());
                 }
                 intelMsg = intelMsg + addendum;
                 D.Log(intelMsg);

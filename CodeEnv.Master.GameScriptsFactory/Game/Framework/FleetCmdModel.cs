@@ -34,25 +34,24 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
     /// <summary>
     /// Navigator class for fleets.
     /// </summary>
-    private class FleetNavigator : IDisposable {
+    public class FleetNavigator : IDisposable {
 
-        private class FleetDestinationInfo {
+        public class FleetDestinationInfo {
 
             /// <summary>
-            /// The target this fleet is trying to reach. Can be a 
-            /// StationaryLocation, UnitCommand or Planetoid.
+            /// The target this fleet is trying to reach. Can be the UniverseCenter, a Sector, System, Star, Planetoid or Command.
+            /// Cannot be a StationaryLocation or an element of a command.
             /// </summary>
             public IDestinationTarget Target { get; private set; }
 
             /// <summary>
-            /// The actual worldspace location this ship is trying to reach, derived
-            /// from the Target. 
+            /// The real-time worldspace location of the target.
             /// </summary>
             public Vector3 Destination { get { return Target.Position; } }
 
             /// <summary>
             /// The desired distance to "stand off" from the Target/Destination. This value
-            /// is set based on the target's type and its curent state. Factors accommodated include
+            /// is set based on the target's type and its current state. Factors accommodated include
             /// the target's radius, orbit distance and max weapons range if applicable.
             /// </summary>
             public float DesiredStandoffDistance { get; private set; }
@@ -104,13 +103,6 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
             }
         }
 
-        public string TargetName {
-            get {
-                if (_destinationInfo == null) { return "No Target"; }
-                return _destinationInfo.Target.FullName;
-            }
-        }
-
         /// <summary>
         /// The speed to travel at.
         /// </summary>
@@ -121,15 +113,18 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
         }
 
         public float DistanceToDestination {
-            get { return Vector3.Distance(_destinationInfo.Destination, _fleet.Data.Position); }
+            get { return Vector3.Distance(DestinationInfo.Destination, _fleet.Data.Position); }
         }
 
         private static LayerMask _keepoutOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.CelestialObjectKeepout);
 
-        private bool IsCourseReplotNeeded { // IMPROVE
+        /// <summary>
+        /// Returns true if the fleet's target has moved far enough to require a new waypoint course to find it.
+        /// </summary>
+        private bool IsCourseReplotNeeded {
             get {
-                return _destinationInfo.Target.IsMovable &&
-                    Vector3.SqrMagnitude(_destinationInfo.Destination - _destinationAtLastPlot) > _targetMovementReplotThresholdDistanceSqrd;
+                return DestinationInfo.Target.IsMovable &&
+                    Vector3.SqrMagnitude(DestinationInfo.Destination - _destinationAtLastPlot) > _targetMovementReplotThresholdDistanceSqrd;
             }
         }
 
@@ -149,7 +144,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
         private int _currentWaypointIndex;
         private Seeker _seeker;
         private FleetCmdModel _fleet;
-        private FleetDestinationInfo _destinationInfo;
+        public FleetDestinationInfo DestinationInfo { get; private set; }
         private bool _hasFlagshipReachedDestination;
         private Vector3 _targetSystemEntryPoint;
         private Vector3 _fleetSystemExitPoint;
@@ -159,19 +154,19 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
             _seeker = seeker;
             _gameTime = GameTime.Instance;
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
-            //AssessFrequencyOfCourseProgressChecks();
             Subscribe();
         }
 
         private void Subscribe() {
             _subscribers = new List<IDisposable>();
             _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
-            _subscribers.Add(_fleet.Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.FullStlSpeed, OnFullSpeedChanged));
-            _subscribers.Add(_fleet.Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.FullFtlSpeed, OnFullSpeedChanged));
+            //_subscribers.Add(_fleet.Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.FullStlSpeed, OnFullSpeedChanged));
+            //_subscribers.Add(_fleet.Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.FullFtlSpeed, OnFullSpeedChanged));
+            _subscribers.Add(_fleet.Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.FullSpeed, OnFullSpeedChanged));
             _seeker.pathCallback += OnCoursePlotCompleted;
             _subscribers.Add(_fleet.SubscribeToPropertyChanging<AUnitCommandModel, IElementModel>(cmd => cmd.HQElement, OnHQElementChanging));
             _subscribers.Add(_fleet.SubscribeToPropertyChanged<AUnitCommandModel, IElementModel>(cmd => cmd.HQElement, OnHQElementChanged));
-            _subscribers.Add(_fleet.Data.SubscribeToPropertyChanged<FleetCmdData, bool>(d => d.IsFtlAvailableForUse, OnFtlAvailableForUseChanged));
+            //_subscribers.Add(_fleet.Data.SubscribeToPropertyChanged<FleetCmdData, bool>(d => d.IsFtlAvailableForUse, OnFtlAvailableForUseChanged));
 
             // No subscription to changes in a target's maxWeaponsRange as a fleet should not automatically get an enemy target's maxWeaponRange update when it changes
         }
@@ -187,30 +182,30 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
             TryCheckForSystemAccessPoints(target, out _fleetSystemExitPoint, out _targetSystemEntryPoint);
 
             if (target is ISectorTarget) {
-                _destinationInfo = new FleetDestinationInfo(target as ISectorTarget);
+                DestinationInfo = new FleetDestinationInfo(target as ISectorTarget);
             }
             else if (target is IFleetCmdTarget) {
                 float fleetFullSpeed = Speed.FleetFull.GetValue(_fleet.Data);
                 var fleetCmd = target as IFleetCmdTarget;
                 bool isEnemy = _fleet.Owner.IsEnemyOf(fleetCmd.Owner);
-                _destinationInfo = new FleetDestinationInfo(fleetCmd, fleetFullSpeed, isEnemy);
+                DestinationInfo = new FleetDestinationInfo(fleetCmd, fleetFullSpeed, isEnemy);
             }
             else if (target is IBaseCmdTarget) {
                 var baseCmd = target as IBaseCmdTarget;
                 bool isEnemy = _fleet.Owner.IsEnemyOf(baseCmd.Owner);
-                _destinationInfo = new FleetDestinationInfo(baseCmd, isEnemy);
+                DestinationInfo = new FleetDestinationInfo(baseCmd, isEnemy);
             }
             else if (target is IPlanetoidTarget) {
-                _destinationInfo = new FleetDestinationInfo(target as IPlanetoidTarget);
+                DestinationInfo = new FleetDestinationInfo(target as IPlanetoidTarget);
             }
             else if (target is ISystemTarget) {
-                _destinationInfo = new FleetDestinationInfo(target as ISystemTarget);
+                DestinationInfo = new FleetDestinationInfo(target as ISystemTarget);
             }
             else if (target is IStarTarget) {
-                _destinationInfo = new FleetDestinationInfo(target as IStarTarget);
+                DestinationInfo = new FleetDestinationInfo(target as IStarTarget);
             }
             else if (target is IUniverseCenterTarget) {
-                _destinationInfo = new FleetDestinationInfo(target as IUniverseCenterTarget);
+                DestinationInfo = new FleetDestinationInfo(target as IUniverseCenterTarget);
             }
             else {
                 D.Error("{0} of Type {1} not anticipated.", target.FullName, target.GetType().Name);
@@ -228,7 +223,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
         /// approach or following a waypoint course.
         /// </summary>
         public void EngageAutoPilot() {
-            D.Assert(_course != null, "{0} has not plotted a course to {1}. PlotCourse to a destination, then Engage.".Inject(_fleet.FullName, TargetName));
+            D.Assert(_course != null, "{0} has not plotted a course. PlotCourse to a destination, then Engage.".Inject(_fleet.FullName));
             DisengageAutoPilot();
 
             _fleet.HQElement.onDestinationReached += OnFlagshipReachedDestination;
@@ -254,7 +249,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
         }
 
         private void InitiateDirectCourseToTarget() {
-            D.Log("{0} initiating direct course to target {1} at {2}. Distance: {3}.", _fleet.FullName, TargetName, _destinationInfo.Destination, DistanceToDestination);
+            D.Log("{0} initiating direct course to target {1} at {2}. Distance: {3}.", _fleet.FullName, DestinationInfo.Target.FullName, DestinationInfo.Destination, DistanceToDestination);
             if (_pilotJob != null && _pilotJob.IsRunning) {
                 _pilotJob.Kill();
             }
@@ -263,7 +258,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
 
         private void InitiateWaypointCourseToTarget() {
             D.Assert(!IsAutoPilotEngaged);
-            D.Log("{0} initiating waypoint course to target {1}. Distance: {2}.", _fleet.FullName, TargetName, DistanceToDestination);
+            D.Log("{0} initiating waypoint course to target {1}. Distance: {2}.", _fleet.FullName, DestinationInfo.Target.FullName, DistanceToDestination);
             _pilotJob = new Job(EngageWaypointCourse(), true);
         }
 
@@ -275,12 +270,12 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
         /// <returns></returns>
         private IEnumerator EngageWaypointCourse() {
             if (_course == null) {
-                D.Error("{0}'s course to {1} is null. Exiting coroutine.", _fleet.FullName, _destinationInfo.Destination);
+                D.Error("{0}'s course to {1} is null. Exiting coroutine.", _fleet.FullName, DestinationInfo.Destination);
                 yield break;    // exit immediately
             }
             D.Assert(_course.Count > 2);    // course is not just start and destination
 
-            _currentWaypointIndex = 1;
+            _currentWaypointIndex = 1;  // skip the starting position
             Vector3 currentWaypointLocation = _course[_currentWaypointIndex];
             SpaceTopography waypointTopography = Universe.GetSpaceTopography(currentWaypointLocation);
             _fleet.__IssueShipMovementOrders(new StationaryLocation(currentWaypointLocation, waypointTopography), FleetSpeed);
@@ -328,7 +323,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
         /// </summary>
         /// <returns></returns>
         private IEnumerator EngageDirectCourseToTarget() {
-            _fleet.__IssueShipMovementOrders(_destinationInfo.Target, FleetSpeed, _destinationInfo.DesiredStandoffDistance);
+            _fleet.__IssueShipMovementOrders(DestinationInfo.Target, FleetSpeed, DestinationInfo.DesiredStandoffDistance);
             while (!_hasFlagshipReachedDestination) {
                 //D.Log("{0} waiting for {1} to reach target {2} at {3}. Distance: {4}.", _fleet.FullName, _fleet.HQElement.Name, TargetName, _destinationInfo.Destination, DistanceToDestination);
                 yield return new WaitForSeconds(_courseProgressCheckPeriod);
@@ -352,11 +347,13 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
 
             _course.Clear();
             _course.AddRange(course.vectorPath);
-            D.Log("{0}'s waypoint course to {1} is: {2}.", _fleet.FullName, _destinationInfo.Target.FullName, _course.Concatenate());
+            D.Log("{0}'s waypoint course to {1} is: {2}.", _fleet.FullName, DestinationInfo.Target.FullName, _course.Concatenate());
             //PrintNonOpenSpaceNodes(course);
 
-            // test the assumption that the first location in course is our start location, and last is the destination
-            D.Assert(_course[0].IsSame(_fleet.Data.Position) && _course[_course.Count - 1].IsSame(_destinationInfo.Destination));
+            // Note: The assumption that the first location in course is our start location, and last is the destination appears to be true
+            // Unfortunately, the test below only works when the fleet is not already moving - ie. the values change in the time it takes to plot the course
+            // D.Assert(_course[0].IsSame(_fleet.Data.Position) && _course[_course.Count - 1].IsSame(DestinationInfo.Destination),
+            //    "Course start = {0}, FleetPosition = {1}. Course end = {2}, Destination = {3}.".Inject(_course[0], _fleet.Data.Position, _course[_course.Count - 1], DestinationInfo.Destination));
 
             TryImproveCourseWithSystemAccessPoints();
 
@@ -386,11 +383,6 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
             AssessFrequencyOfCourseProgressChecks();
         }
 
-        private void OnFtlAvailableForUseChanged() {
-            _fleet.__RefreshShipSpeedValues();
-            AssessFrequencyOfCourseProgressChecks();
-        }
-
         private void OnGameSpeedChanged() {
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();
             AssessFrequencyOfCourseProgressChecks();
@@ -398,7 +390,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
 
         private void OnCoursePlotFailure() {
             if (_isCourseReplot) {
-                D.Warn("{0}'s course to {1} couldn't be replotted.", _fleet.FullName, TargetName);
+                D.Warn("{0}'s course to {1} couldn't be replotted.", _fleet.FullName, DestinationInfo.Target.FullName);
             }
             _fleet.OnCoursePlotFailure();
         }
@@ -409,7 +401,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
 
         private void OnDestinationReached() {
             //_pilotJob.Kill(); // handled by Fleet statemachine which should call Disengage
-            D.Log("{0} at {1} reached Destination {2} at {3} (w/station offset). Actual proximity {4:0.0000} units.", _fleet.FullName, _fleet.Data.Position, TargetName, _destinationInfo.Destination, DistanceToDestination);
+            D.Log("{0} at {1} reached Destination {2} at {3} (w/station offset). Actual proximity {4:0.0000} units.", _fleet.FullName, _fleet.Data.Position, DestinationInfo.Target.FullName, DestinationInfo.Destination, DistanceToDestination);
             _fleet.OnDestinationReached();
             _course.Clear();
         }
@@ -447,7 +439,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
             if (target.Topography == SpaceTopography.System) {
                 var targetSectorIndex = SectorGrid.GetSectorIndex(target.Position);
                 D.Assert(SystemCreator.TryGetSystem(targetSectorIndex, out targetSystem));  // error if a system isn't found
-                D.Log("{0} target {1} is within {1}.", _fleet.FullName, target.FullName, targetSystem.FullName);
+                D.Log("{0} target {1} is within {2}.", _fleet.FullName, target.FullName, targetSystem.FullName);
             }
 
             var result = false;
@@ -498,20 +490,20 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
             string obstacleName = hitInfo.collider.transform.parent.name + "." + hitInfo.collider.name;
             Vector3 rayEntryPoint = hitInfo.point;
             float keepoutRadius = (hitInfo.collider as SphereCollider).radius;
-            float maxKeepoutDiameter = TempGameValues.MaxKeepoutDiameter;
-            Vector3 pointBeyondKeepoutZone = ray.GetPoint(hitInfo.distance + maxKeepoutDiameter);
-            if (Physics.Raycast(pointBeyondKeepoutZone, -ray.direction, out hitInfo, maxKeepoutDiameter, _keepoutOnlyLayerMask.value)) {
+            float keepoutDiameter = keepoutRadius * 2F;
+            Vector3 pointBeyondKeepoutZone = ray.GetPoint(hitInfo.distance + keepoutDiameter);
+            if (Physics.Raycast(pointBeyondKeepoutZone, -ray.direction, out hitInfo, keepoutDiameter, _keepoutOnlyLayerMask.value)) {
                 Vector3 rayExitPoint = hitInfo.point;
                 Vector3 halfWayPointInsideKeepoutZone = rayEntryPoint + (rayExitPoint - rayEntryPoint) / 2F;
                 Vector3 obstacleCenter = hitInfo.collider.transform.position;
-                float obstacleClearanceLeeway = _fleet.Data.FullStlSpeed;
-                detour = obstacleCenter + (halfWayPointInsideKeepoutZone - obstacleCenter).normalized * (keepoutRadius + obstacleClearanceLeeway);
+                float obstacleClearanceLeeway = StationaryLocation.CloseEnoughDistance;
+                detour = UnityUtility.FindClosestPointOnSphereSurfaceTo(halfWayPointInsideKeepoutZone, obstacleCenter, keepoutRadius + obstacleClearanceLeeway);
                 D.Log("{0}'s detour to avoid obstacle = {1}. Distance: {2}.", _fleet.FullName, detour, Vector3.Magnitude(detour - _fleet.Data.Position));
                 float detourDistanceFromObstacleCenter = (detour - obstacleCenter).magnitude;
                 D.Log("Obstacle keepout radius = {0}. Detour is {1} from obstacle center.", keepoutRadius, detourDistanceFromObstacleCenter);
             }
             else {
-                D.Error("{0} did not find a ray exit point when casting through {1}.", _fleet.FullName, obstacleName);    // hitInfo is null
+                D.Error("{0} did not find a ray exit point when casting through {1}.", _fleet.FullName, obstacleName);
             }
             return detour;
         }
@@ -519,6 +511,8 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
         /// <summary>
         /// Checks for an obstacle enroute to the designated waypoint. Returns true if one
         /// is found and provides the detour around it.
+        /// Note: Waypoints only. Not suitable for Vector3 locations that might have a 
+        /// keepoutZone around them.
         /// </summary>
         /// <param name="waypoint">The waypoint to which we are enroute.</param>
         /// <param name="detour">The detour around the obstacle, if any.</param>
@@ -534,8 +528,8 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
             RaycastHit hitInfo;
             if (Physics.Raycast(ray, out hitInfo, rayLength, _keepoutOnlyLayerMask.value)) {
                 string obstacleName = hitInfo.transform.parent.name;
-                D.Log("{0} encountered obstacle {1} when checking approach to {2}.", _fleet.FullName, obstacleName, waypoint);
-                D.Log("Ray length = {0}, rayHitDistance = {1}.", rayLength, hitInfo.distance);
+                D.Log("{0} encountered obstacle {1} when checking approach to {2}. \nRay length = {0}, rayHitDistance = {1}.",
+                    _fleet.FullName, obstacleName, waypoint, rayLength, hitInfo.distance);
                 // there is a keepout zone obstacle in the way 
                 detour = GenerateDetourAroundObstacle(ray, hitInfo);
                 return true;
@@ -547,11 +541,11 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
         private void GenerateCourse() {
             Vector3 start = _fleet.Data.Position;
             string replot = _isCourseReplot ? "replotting" : "plotting";
-            D.Log("{0} is {1} course to {2}. Start = {3}, Destination = {4}.", _fleet.FullName, replot, TargetName, start, _destinationInfo.Destination);
+            D.Log("{0} is {1} course to {2}. Start = {3}, Destination = {4}.", _fleet.FullName, replot, DestinationInfo.Target.FullName, start, DestinationInfo.Destination);
             //Debug.DrawLine(start, Destination, Color.yellow, 20F, false);
             //Path path = new Path(startPosition, targetPosition, null);    // Path is now abstract
             //Path path = PathPool<ABPath>.GetPath();   // don't know how to assign start and target points
-            Path path = ABPath.Construct(start, _destinationInfo.Destination, null);
+            Path path = ABPath.Construct(start, DestinationInfo.Destination, null);
 
             // Node qualifying constraint instance that checks that nodes are walkable, and within the seeker-specified
             // max search distance. Tags and area testing are turned off, primarily because I don't yet understand them
@@ -591,19 +585,27 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
             GenerateCourse();
         }
 
+        //private void AssessFrequencyOfCourseProgressChecks() {
+        //    // frequency of course progress checks increases as fullSpeed value and gameSpeed increase
+        //    var fullSpeed = _fleet.Data.IsFtlAvailableForUse ? _fleet.Data.FullFtlSpeed : _fleet.Data.FullStlSpeed;  // 0.2 - 2
+        //    float courseProgressCheckFrequency = 1F + (fullSpeed * _gameSpeedMultiplier);
+        //    _courseProgressCheckPeriod = 1F / courseProgressCheckFrequency;
+        //    //D.Log("{0}.{1} frequency of course progress checks adjusted to {2:0.##}.", _fleet.FullName, GetType().Name, courseProgressCheckFrequency);
+        //}
+
         private void AssessFrequencyOfCourseProgressChecks() {
             // frequency of course progress checks increases as fullSpeed value and gameSpeed increase
-            var fullSpeed = _fleet.Data.IsFtlAvailableForUse ? _fleet.Data.FullFtlSpeed : _fleet.Data.FullStlSpeed;  // 0.2 - 2
-            float courseProgressCheckFrequency = 1F + (fullSpeed * _gameSpeedMultiplier);
+            float courseProgressCheckFrequency = 1F + (_fleet.Data.FullSpeed * _gameSpeedMultiplier);
             _courseProgressCheckPeriod = 1F / courseProgressCheckFrequency;
             //D.Log("{0}.{1} frequency of course progress checks adjusted to {2:0.##}.", _fleet.FullName, GetType().Name, courseProgressCheckFrequency);
         }
+
 
         /// <summary>
         /// Initializes the values needed to support a Fleet's attempt to replot its course.
         /// </summary>
         private void InitializeReplotValues() {
-            _destinationAtLastPlot = _destinationInfo.Destination;
+            _destinationAtLastPlot = DestinationInfo.Destination;
             _isCourseReplot = false;
         }
 
@@ -789,11 +791,16 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
         _navigator = new FleetNavigator(this, gameObject.GetSafeMonoBehaviourComponent<Seeker>());
     }
 
+    public void CommenceOperations() {
+        CurrentState = FleetState.Idling;
+    }
+
     public override void AddElement(IElementModel element) {
         base.AddElement(element);
         IShipModel ship = element as IShipModel;
-        // A ship that is in Idle without being part of a unit won't have a formation station to check its position
-        D.Assert(ship.CurrentState != ShipState.Idling, "{0} is adding {1} while Idling.".Inject(FullName, ship.FullName));
+        D.Log("{0}.CurrentState = {1} when being added to {2}.", ship.FullName, ship.CurrentState.GetName(), FullName);
+
+        // fleets have formation stations (or create them) and allocate them to new ships. Ships should not come with their own
         D.Assert(ship.Data.FormationStation == null, "{0} should not yet have a FormationStation.".Inject(ship.FullName));
 
         ship.Command = this;
@@ -814,30 +821,31 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
     }
 
     public void TransferShip(IShipModel ship, IFleetCmdModel fleetCmd) {
-        ship.CurrentState = ShipState.None; // neutralize the ship before changing commands
+        // UNCLEAR does this ship need to be in ShipState.None while these changes take place?
         RemoveElement(ship);
-        ship.IsHQElement = false;
+        ship.IsHQElement = false; // Needed - RemoveElement never changes HQ Element as the TransferCmd is dead as soon as ship removed
         fleetCmd.AddElement(ship);
-        ship.CurrentState = ShipState.Idling; // UNCLEAR consider having the ship adopt the state/orders of the fleet?
     }
 
     public override void RemoveElement(IElementModel element) {
         base.RemoveElement(element);
+
+        // remove the formationStation from the ship and the ship from the FormationStation
+        var ship = element as IShipModel;
+        var shipFst = ship.Data.FormationStation;
+        shipFst.AssignedShip = null;
+        ship.Data.FormationStation = null;
+
         if (!this.IsAlive) {
             // fleetCmd has died
             return;
         }
 
-        var ship = element as IShipModel;
         if (ship == HQElement) {
             // HQ Element has left
             HQElement = SelectHQElement();
         }
 
-        // remove the formationStation from the ship and the ship from the FormationStation
-        var shipFst = ship.Data.FormationStation;
-        shipFst.AssignedShip = null;
-        ship.Data.FormationStation = null;
     }
 
     private IShipModel SelectHQElement() {
@@ -854,6 +862,8 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
         }
 
         if (CurrentOrder != null) {
+            Data.Target = CurrentOrder.Target;  // can be null
+
             D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetName());
             FleetDirective order = CurrentOrder.Directive;
             switch (order) {
@@ -915,7 +925,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
             else {
                 // there are no unused stations so make a new one and assign the ship to it
                 //D.Log("{0} is adding a new FormationStation.", ship.FullName);
-                shipStation = UnitFactory.Instance.MakeFormationStation(stationOffset, this);
+                shipStation = UnitFactory.Instance.MakeFormationStationInstance(stationOffset, this);
                 shipStation.AssignedShip = ship;
                 ship.Data.FormationStation = shipStation;
                 _formationStations.Add(shipStation);
@@ -964,7 +974,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
 
     public new FleetState CurrentState {
         get { return (FleetState)base.CurrentState; }
-        set { base.CurrentState = value; }
+        protected set { base.CurrentState = value; }
     }
 
     #region None
@@ -984,6 +994,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
 
     void Idling_EnterState() {
         LogEvent();
+        Data.Target = null; // temp to remove target from data after order has been completed or failed
         // register as available
     }
 
@@ -1186,9 +1197,6 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
 
     IEnumerator ExecuteJoinFleetOrder_EnterState() {
         D.Log("{0}.ExecuteJoinFleetOrder_EnterState called.", FullName);
-        //var joinOrder = CurrentOrder as UnitTargetOrder<FleetOrders>;
-        //_moveTarget = joinOrder.Target;
-        //_moveSpeed = Speed.FleetStandard;
         _moveTarget = CurrentOrder.Target;
         D.Assert(CurrentOrder.Speed == Speed.None,
             "{0}.JoinFleetOrder has speed set to {1}.".Inject(FullName, CurrentOrder.Speed.GetName()));
@@ -1249,10 +1257,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel, IFleetCmdTarget 
 
     void OnCoursePlotSuccess() { RelayToCurrentState(); }
 
-    void OnDestinationReached() {
-        D.Log("{0} Destination {1} reached.", FullName, _navigator.TargetName);
-        RelayToCurrentState();
-    }
+    void OnDestinationReached() { RelayToCurrentState(); }
 
     void OnDestinationUnreachable() {
         // the final waypoint is not close enough and we can't directly approach the Destination

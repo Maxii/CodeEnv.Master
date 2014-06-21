@@ -81,6 +81,10 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
         //D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
     }
 
+    public void CommenceOperations() {
+        CurrentState = FacilityState.Idling;
+    }
+
     /// <summary>
     /// The Captain uses this method to issue orders.
     /// </summary>
@@ -110,7 +114,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
 
     public new FacilityState CurrentState {
         get { return (FacilityState)base.CurrentState; }
-        set { base.CurrentState = value; }
+        protected set { base.CurrentState = value; }
     }
 
     #region None

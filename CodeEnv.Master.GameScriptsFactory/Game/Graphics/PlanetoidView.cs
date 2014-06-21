@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Linq;
 using System.Collections;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
@@ -34,7 +35,13 @@ public class PlanetoidView : AMortalItemView, ICameraFollowable {
 
     protected override void Awake() {
         base.Awake();
+        _selectionMgr = SelectionManager.Instance;
         Subscribe();
+    }
+
+    protected override void Start() {
+        base.Start();
+        InitializeContextMenu();
     }
 
     protected override IIntel InitializePlayerIntel() {
@@ -48,6 +55,62 @@ public class PlanetoidView : AMortalItemView, ICameraFollowable {
     protected override void SubscribeToPlayerIntelCoverageChanged() {
         _subscribers.Add((PlayerIntel as ImprovingIntel).SubscribeToPropertyChanged<ImprovingIntel, IntelCoverage>(pi => pi.CurrentCoverage, OnPlayerIntelCoverageChanged));
     }
+
+    #region ContextMenu
+
+    private SelectionManager _selectionMgr;
+    private CtxObject _ctxObject;
+
+
+    void OnPress(bool isDown) {
+        if (GameInputHelper.Instance.IsRightMouseButton() && !isDown) {
+            OnRightPressRelease();
+        }
+    }
+
+    private void OnRightPressRelease() {
+        FleetCmdView selectedFleetView = _selectionMgr.CurrentSelection as FleetCmdView;
+        if (selectedFleetView != null) {
+            _ctxObject.ShowMenu();
+        }
+    }
+
+    private void InitializeContextMenu() {    // IMPROVE string use
+        _ctxObject = UnityUtility.ValidateMonoBehaviourPresence<CtxObject>(gameObject);
+        CtxMenu planetMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "PlanetMenu");
+        _ctxObject.contextMenu = planetMenu;
+        D.Assert(_ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
+        UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
+
+        EventDelegate.Add(_ctxObject.onShow, OnContextMenuShow);
+        EventDelegate.Add(_ctxObject.onSelection, OnContextMenuSelection);
+        EventDelegate.Add(_ctxObject.onHide, OnContextMenuHide);
+    }
+
+    private void OnContextMenuShow() {
+        // TODO
+    }
+
+    private void OnContextMenuSelection() {
+        int menuId = CtxObject.current.selectedItem;
+        FleetCmdHumanView selectedFleetView = _selectionMgr.CurrentSelection as FleetCmdHumanView;
+        IFleetCmdModel selectedFleet = selectedFleetView.Presenter.Model;
+        var planetTarget = Presenter.Model as IDestinationTarget;
+        if (menuId == 0) {  // UNDONE
+            // MoveTo
+            selectedFleet.CurrentOrder = new FleetOrder(FleetDirective.MoveTo, planetTarget, Speed.FleetStandard);
+        }
+        else if (menuId == 1) {
+            // Attack
+            selectedFleet.CurrentOrder = new FleetOrder(FleetDirective.Attack, planetTarget, Speed.FleetStandard);
+        }
+    }
+
+    private void OnContextMenuHide() {
+        // TODO
+    }
+
+    #endregion
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

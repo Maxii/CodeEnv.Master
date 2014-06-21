@@ -24,8 +24,14 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FixedIntel : Intel {
 
+        public override bool HasDatedCoverage { get { return false; } }
+
         public override IntelCoverage DatedCoverage {
             get { throw new InvalidOperationException("{0} does not support DatedCoverage.".Inject(GetType().Name)); }
+        }
+
+        public override GameDate DateStamp {
+            get { throw new InvalidOperationException("{0} does not support DateStamp.".Inject(GetType().Name)); }
         }
 
         public override IntelCoverage CurrentCoverage {
@@ -33,13 +39,9 @@ namespace CodeEnv.Master.GameContent {
             set { throw new InvalidOperationException("{0} does not support setting CurrentCoverage. Use FixedIntel(fixedCoverage) instead.".Inject(GetType().Name)); }
         }
 
-        public override GameDate DateStamp {
-            get { throw new InvalidOperationException("{0} does not support DateStamp.".Inject(GetType().Name)); }
-        }
-
         public FixedIntel(IntelCoverage fixedCoverage) : base(fixedCoverage) { }
 
-        protected override void ProcessChange(IntelCoverage newCurrentCoverage) {
+        protected override void PreProcessChange(IntelCoverage newCurrentCoverage) {
             // does nothing as DatedCoverage and DateStamp aren't supported
         }
 

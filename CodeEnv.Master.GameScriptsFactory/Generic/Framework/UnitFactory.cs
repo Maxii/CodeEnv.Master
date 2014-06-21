@@ -42,8 +42,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     private GameObject _aiSettlementCmdPrefab;
     private GameObject _humanSettlementCmdPrefab;
 
-    private WeaponRangeMonitor weaponRangeTrackerPrefab;
-    private FormationStation formationStationPrefab;
+    private GameObject _weaponRangeMonitorPrefab;
+    private GameObject _formationStationPrefab;
+    private GameObject _shipOrbitPrefab;
 
     private UnitFactory() {
         Initialize();
@@ -65,8 +66,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         _aiSettlementCmdPrefab = reqdPrefabs.aiSettlementCmd.gameObject;
         _humanSettlementCmdPrefab = reqdPrefabs.humanSettlementCmd.gameObject;
 
-        weaponRangeTrackerPrefab = reqdPrefabs.weaponRangeTracker;
-        formationStationPrefab = reqdPrefabs.formationStation;
+        _weaponRangeMonitorPrefab = reqdPrefabs.weaponRangeMonitor.gameObject;
+        _formationStationPrefab = reqdPrefabs.formationStation.gameObject;
+        _shipOrbitPrefab = reqdPrefabs.shipOrbit.gameObject;
     }
 
     /// <summary>
@@ -344,7 +346,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
 
-    public FormationStation MakeFormationStation(Vector3 stationOffset, FleetCmdModel fleetCmd) {
+    public FormationStation MakeFormationStationInstance(Vector3 stationOffset, FleetCmdModel fleetCmd) {
         // make a folder for neatness if one doesn't yet exist
         GameObject formationStationsFolder = null;
         var stations = fleetCmd.gameObject.GetComponentsInChildren<FormationStation>();
@@ -357,7 +359,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             formationStationsFolder = stations.First().transform.parent.gameObject;
         }
 
-        GameObject stationGo = UnityUtility.AddChild(formationStationsFolder, formationStationPrefab.gameObject);
+        GameObject stationGo = UnityUtility.AddChild(formationStationsFolder, _formationStationPrefab);
         FormationStation station = stationGo.GetSafeMonoBehaviourComponent<FormationStation>();
         station.StationOffset = stationOffset;
         //D.Log("New FormationStation created at {0}, Offset = {1}, FleetCmd at {2}.", st.transform.position, stationOffset, fleetCmd.transform.position);
@@ -375,27 +377,39 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="elementModel">The element model to attach the weapon too.</param>
     private void MakeAndAddWeapon(WeaponStat weapStat, AUnitElementModel elementModel) {
         var weapon = new Weapon(weapStat);
-        var allWeaponTrackers = elementModel.gameObject.GetInterfacesInChildren<IWeaponRangeMonitor>();
-        var weaponTrackersInUse = allWeaponTrackers.Where(rt => rt.Range != Constants.ZeroF);
+        var allWeaponMonitors = elementModel.gameObject.GetInterfacesInChildren<IWeaponRangeMonitor>();
+        var weaponMonitorsInUse = allWeaponMonitors.Where(m => m.Range != Constants.ZeroF);
         var wRange = weapon.Range;
 
-        // check trackers for range fit, if find it, assign ID, if not assign or create a tracker and assign its ID to the weapon
-        var rTracker = weaponTrackersInUse.FirstOrDefault(rt => rt.RangeSpan.ContainsValue(wRange));
-        if (rTracker == null) {
-            var unusedWeaponTrackers = allWeaponTrackers.Except(weaponTrackersInUse);
-            if (!unusedWeaponTrackers.IsNullOrEmpty()) {
-                rTracker = unusedWeaponTrackers.First();
+        // check monitors for range fit, if find it, assign ID, if not assign or create a monitor and assign its ID to the weapon
+        var monitor = weaponMonitorsInUse.FirstOrDefault(m => m.RangeSpan.ContainsValue(wRange));
+        if (monitor == null) {
+            var unusedWeaponMonitors = allWeaponMonitors.Except(weaponMonitorsInUse);
+            if (!unusedWeaponMonitors.IsNullOrEmpty()) {
+                monitor = unusedWeaponMonitors.First();
             }
             else {
-                GameObject rTrackerGo = UnityUtility.AddChild(elementModel.gameObject, weaponRangeTrackerPrefab.gameObject);
-                rTrackerGo.layer = (int)Layers.IgnoreRaycast; // AddChild resets prefab layer to elementGo's layer
-                rTracker = rTrackerGo.GetSafeInterfaceInChildren<IWeaponRangeMonitor>();
+                GameObject monitorGo = UnityUtility.AddChild(elementModel.gameObject, _weaponRangeMonitorPrefab);
+                monitorGo.layer = (int)Layers.IgnoreRaycast; // AddChild resets prefab layer to elementGo's layer
+                monitor = monitorGo.GetSafeInterfaceInChildren<IWeaponRangeMonitor>();
             }
             //D.Log("{0}'s {1} with Range {2} assigned new Range {3}.", elementModel.FullName, typeof(IWeaponRangeTracker).Name, rTracker.Range, wRange);
-            rTracker.Range = wRange;
+            monitor.Range = wRange;
         }
-        elementModel.AddWeapon(weapon, rTracker);
+        elementModel.AddWeapon(weapon, monitor);
         // IMPROVE how to keep track ranges from overlapping
+    }
+
+    public ShipOrbit MakeShipOrbitInstance(GameObject parent, IShipModel ship) {
+        GameObject shipOrbitGo = UnityUtility.AddChild(parent, _shipOrbitPrefab);
+        ShipOrbit shipOrbit = shipOrbitGo.GetSafeMonoBehaviourComponent<ShipOrbit>();
+        AttachShipToShipOrbit(ship, ref shipOrbit);
+        return shipOrbit;
+    }
+
+    public void AttachShipToShipOrbit(IShipModel ship, ref ShipOrbit shipOrbit) {
+        D.Assert(shipOrbit.transform.parent != null, "ShipOrbit being applied to {0} must have a parent.".Inject(ship.FullName));
+        ship.Transform.parent = shipOrbit.transform;    // ship retains existing position, rotation, scale and layer
     }
 
 

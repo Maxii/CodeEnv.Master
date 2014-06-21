@@ -189,7 +189,7 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
     private void Remove(IMortalTarget target) {
         bool isRemoved = AllTargets.Remove(target);
         if (isRemoved) {
-            //D.Log("{0}.{1} no longer tracking target {2} at distance = {3}.", ParentFullName, GetType().Name, target.FullName, Vector3.Distance(target.Position, _transform.position));
+            D.Log("{0}.{1} no longer tracking target {2} at distance = {3}.", ParentFullName, GetType().Name, target.FullName, Vector3.Distance(target.Position, _transform.position));
             target.onTargetDeath -= OnTargetDeath;
             target.onOwnerChanged -= OnTargetOwnerChanged;
         }

@@ -52,7 +52,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<IPlayer>(ref _owner, value, "Owner", OnOwnerChanged); }
         }
 
-        public virtual SpaceTopography Topography { get; set; }
+        public virtual SpaceTopography Topography { get; set; } // can't use OnPropertyChanged approach as default(SpaceTopography) = OpenSpace, aka 0 tag
 
         /// <summary>
         /// Readonly. Gets the position of the gameObject containing this data.
@@ -66,7 +66,7 @@ namespace CodeEnv.Master.GameContent {
         private Transform _transform;
         public Transform Transform {
             protected get { return _transform; }
-            set { SetProperty<Transform>(ref _transform, value, "Transform", OnTransformChanged); }
+            set { SetProperty<Transform>(ref _transform, value, "Transform", OnTransformChanged, OnTransformChanging); }
         }
 
         /// <summary>
@@ -84,6 +84,10 @@ namespace CodeEnv.Master.GameContent {
             else {
                 D.Warn("{0} no longer has an owner.", FullName);
             }
+        }
+
+        private void OnTransformChanging(Transform newTransform) {
+            D.Assert(Transform == null);    // Transform should only change once
         }
 
         protected virtual void OnTransformChanged() {

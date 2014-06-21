@@ -33,6 +33,9 @@ namespace CodeEnv.Master.GameContent {
                 {GuiHudLineKeys.Name},
                 {GuiHudLineKeys.ParentName},
                 {GuiHudLineKeys.SectorIndex},
+                {GuiHudLineKeys.Target},
+                {GuiHudLineKeys.Speed}, 
+                {GuiHudLineKeys.Distance},
                 {GuiHudLineKeys.Category},
                 {GuiHudLineKeys.IntelState},
                 {GuiHudLineKeys.Capacity},
@@ -43,12 +46,10 @@ namespace CodeEnv.Master.GameContent {
                 {GuiHudLineKeys.CombatStrength},
                 {GuiHudLineKeys.CombatStrengthDetails},
                 {GuiHudLineKeys.Health}, 
-                {GuiHudLineKeys.Speed}, 
                 {GuiHudLineKeys.Composition},
                 {GuiHudLineKeys.CompositionDetails},
                 {GuiHudLineKeys.ShipDetails},
-                {GuiHudLineKeys.Density},
-                {GuiHudLineKeys.Distance}
+                {GuiHudLineKeys.Density}
         };
 
         private static IDictionary<GuiHudLineKeys, string> _baseDisplayLineContent;
@@ -87,7 +88,8 @@ namespace CodeEnv.Master.GameContent {
                 {GuiHudLineKeys.ShipDetails, "{0}, Mass: {1}, TurnRate: {2}"},
                 {GuiHudLineKeys.SectorIndex, "Sector {0}"},
                 {GuiHudLineKeys.Density, "Density: {0}"},
-                {GuiHudLineKeys.Distance, "Distance from Camera: {0} Units"} 
+                {GuiHudLineKeys.Distance, "Distance from Camera: {0} Units"},
+                {GuiHudLineKeys.Target, "Target: {0}"}
             };
             return baseDisplayLineContent;
         }

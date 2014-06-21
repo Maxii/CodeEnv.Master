@@ -77,8 +77,12 @@ namespace CodeEnv.Master.Common {
         /// <param name="go">The source gameobject.</param>
         /// <returns>The component of type T or null if none exists.</returns>
         public static T GetComponentInImmediateChildren<T>(this GameObject go) where T : Component {
+            T result = null;
             T[] components = go.GetComponentsInChildren<T>();
-            return components.Single(c => c.transform.parent == go.transform);
+            if (!components.IsNullOrEmpty()) {
+                result = components.Single(c => c.transform.parent == go.transform);
+            }
+            return result;
         }
 
         /// <summary>

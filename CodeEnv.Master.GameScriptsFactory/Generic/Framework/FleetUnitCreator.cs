@@ -34,11 +34,13 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
     private static IList<FleetCmdModel> _allFleets = new List<FleetCmdModel>();
     public static IList<FleetCmdModel> AllFleets { get { return _allFleets; } }
 
-    private UnitFactory _factory;   // not accesible from AUnitCreator
+    private static UnitFactory _factory;
 
     protected override void Awake() {
         base.Awake();
-        _factory = UnitFactory.Instance;
+        if (_factory == null) {
+            _factory = UnitFactory.Instance;
+        }
     }
 
     // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
@@ -47,7 +49,7 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
         float mass = TempGameValues.__GetMass(category);
         float drag = 0.1F;
         var combatStance = Enums<ShipCombatStance>.GetRandom(excludeDefault: true);
-        float maxTurnRate = UnityEngine.Random.Range(300F, 315F);
+        float maxTurnRate = UnityEngine.Random.Range(90F, 270F);
         float fullStlThrust = mass * drag * UnityEngine.Random.Range(0.1F, 0.3F); // 2 - 6 units/day
         float fullFtlThrust = fullStlThrust * TempGameValues.__FtlMultiplier;
 
@@ -108,7 +110,7 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
         var candidateHQElements = _command.Elements.Where(e => GetValidHQElementCategories().Contains((e as IShipModel).Data.Category));
         if (candidateHQElements.IsNullOrEmpty()) {
             // _command might not hold a valid HQ Element if preset
-            D.Log("Is Empty.");
+            D.Warn("No valid HQElements for {0} found.", UnitName);
             candidateHQElements = _command.Elements;
         }
         _command.HQElement = RandomExtended<IElementModel>.Choice(candidateHQElements) as IShipModel;
@@ -122,12 +124,12 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
 
     protected override void BeginElementsOperations() {
         LogEvent();
-        _elements.ForAll(e => (e as ShipModel).CurrentState = ShipState.Idling);
+        _elements.ForAll(e => e.CommenceOperations());
     }
 
     protected override void BeginCommandOperations() {
         LogEvent();
-        _command.CurrentState = FleetState.Idling;
+        _command.CommenceOperations();
     }
 
     protected override void __InitializeCommandIntel() {
@@ -138,8 +140,9 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
     protected override void EnableOtherWhenRunning() {
         D.Assert(GameStatus.Instance.IsRunning);
         gameObject.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(relay => relay.enabled = true);
-        gameObject.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeMonitor>().ForAll(wrt => wrt.enabled = true);
-        gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>().enabled = true;
+        gameObject.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeMonitor>().ForAll(monitor => monitor.enabled = true);
+        //gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>().enabled = true;    // doesn't appear to be needed
+
         // formation stations control enabled themselves when the assigned ship changes
         // no orbits or revolves present  // other possibles: Billboard, ScaleRelativeToCamera
         // TODO SensorRangeTracker
@@ -155,35 +158,33 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
         LogEvent();
         IPlayer fleetOwner = _owner;
         IEnumerable<IDestinationTarget> moveTgts = FindObjectsOfType<StarbaseCmdModel>().Where(sb => sb.IsOperational && fleetOwner.IsRelationship(sb.Owner, DiplomaticRelations.Ally)).Cast<IDestinationTarget>();
-        if (moveTgts.IsNullOrEmpty()) {
+        if (!moveTgts.Any()) {
             // no starbases qualify
             moveTgts = FindObjectsOfType<SettlementCmdModel>().Where(s => s.IsOperational && fleetOwner.IsRelationship(s.Owner, DiplomaticRelations.Ally)).Cast<IDestinationTarget>();
-            if (moveTgts.IsNullOrEmpty()) {
+            if (!moveTgts.Any()) {
                 // no Settlements qualify
-                moveTgts = FindObjectsOfType<SystemModel>().Where(sys => sys.Owner == TempGameValues.NoPlayer).Cast<IDestinationTarget>();
-                if (moveTgts.IsNullOrEmpty()) {
-                    // no Systems qualify
-                    moveTgts = FindObjectsOfType<PlanetoidModel>().Where(p => p.IsOperational && fleetOwner.IsRelationship(p.Owner, DiplomaticRelations.Ally)).Cast<IDestinationTarget>();
-                    if (moveTgts.IsNullOrEmpty()) {
+                moveTgts = FindObjectsOfType<PlanetoidModel>().Where(p => p.IsOperational && p.Owner == TempGameValues.NoPlayer).Cast<IDestinationTarget>();
+                if (!moveTgts.Any()) {
+                    // no Planetoids qualify
+                    moveTgts = FindObjectsOfType<SystemModel>().Where(sys => sys.Owner == TempGameValues.NoPlayer).Cast<IDestinationTarget>();
+                    if (!moveTgts.Any()) {
                         // no Planetoids qualify
                         moveTgts = FindObjectsOfType<FleetCmdModel>().Where(f => f.IsOperational && fleetOwner.IsRelationship(f.Owner, DiplomaticRelations.Ally)).Cast<IDestinationTarget>();
-                        if (moveTgts.IsNullOrEmpty()) {
+                        if (!moveTgts.Any()) {
                             // no fleets qualify
                             moveTgts = FindObjectsOfType<SectorModel>().Where(s => s.Owner == TempGameValues.NoPlayer).Cast<IDestinationTarget>();
-                            if (moveTgts.Any()) {
-                                D.Log("{0} can find no MoveTargets that meet the selection criteria. Picking an unowned Sector.", UnitName);
-                            }
-                            else {
+                            if (!moveTgts.Any()) {
                                 D.Warn("{0} can find no MoveTargets of any sort. MoveOrder has been cancelled.", UnitName);
                                 return;
                             }
+                            D.Log("{0} can find no MoveTargets that meet the selection criteria. Picking an unowned Sector.", UnitName);
                         }
                     }
                 }
             }
         }
-        IDestinationTarget destination = moveTgts.MaxBy(mt => Vector3.SqrMagnitude(mt.Position - _transform.position));
-        //IDestinationTarget destination = moveTgts.MinBy(mt => Vector3.SqrMagnitude(mt.Position - _transform.position));
+        //IDestinationTarget destination = moveTgts.MaxBy(mt => Vector3.SqrMagnitude(mt.Position - _transform.position));
+        IDestinationTarget destination = moveTgts.MinBy(mt => Vector3.SqrMagnitude(mt.Position - _transform.position));
 
         _command.CurrentOrder = new FleetOrder(FleetDirective.MoveTo, destination, Speed.FleetStandard);
     }

@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: OrbitMoveable.cs
+// File: MovingOrbiter.cs
 // Class that simulates the movement of an object orbiting around a location that is moveable.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -21,13 +21,12 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Class that simulates the movement of an object orbiting around a location that
-/// is moveable. Both orbital movement and self rotation of the orbiting object are implemented.
-/// Assumes this script is attached to a parent of [rotatingObject] whose position is coincident
-/// with that of the moveable object it is orbiting. This script simulates
-/// orbital movement of [rotatingObject] by rotating this parent object.
+/// Class that simulates the movement of an object orbiting around a location that is moveable. 
+/// Assumes this script is attached to a parent of the orbiting object whose position is coincident
+/// with that of the moveable object that is being orbited. This script simulates
+/// orbital movement of the orbiting object by rotating this parent object.
 /// </summary>
-public class OrbitMoveable : Orbit {
+public class MovingOrbiter : Orbiter {
 
     /// <summary>
     /// Updates the rotation of this object around its current location in worldspace

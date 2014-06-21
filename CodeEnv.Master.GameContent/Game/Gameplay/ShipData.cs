@@ -33,15 +33,23 @@ namespace CodeEnv.Master.GameContent {
         // IMPROVE will need to replace this with FtlShipData-derived class as non-Ftl ships won't be part of fleets, aka FormationStation, etc
         // public bool IsShipFtlCapable { get { return true; } }
 
+        private bool _isFtlDamaged;
         /// <summary>
         /// Indicates whether the FTL engines are damaged.
         /// </summary>
-        public bool IsFtlDamaged { get; set; }
+        public bool IsFtlDamaged {
+            get { return _isFtlDamaged; }
+            set { SetProperty<bool>(ref _isFtlDamaged, value, "IsFtlDamaged", OnIsFtlDamagedChanged); }
+        }
 
+        public bool _isFtlDampedByField;
         /// <summary>
-        /// Indicates whether the FTL engines are damped by an FTL Damping Field.
+        /// Indicates whether the FTL engines are damped by an FTL Damping Field. 
         /// </summary>
-        public bool IsFtlDampedByField { get; set; }
+        public bool IsFtlDampedByField {
+            get { return _isFtlDampedByField; }
+            set { SetProperty<bool>(ref _isFtlDampedByField, value, "IsFtlDampedByField", OnIsFtlDampedByFieldChanged); }
+        }
 
         private bool _isFtlAvailableForUse;
         /// <summary>
@@ -54,6 +62,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
+
+        private bool _isFlapsDeployed;
+        public bool IsFlapsDeployed {
+            get { return _isFlapsDeployed; }
+            set { SetProperty<bool>(ref _isFlapsDeployed, value, "IsFlapsDeployed", OnIsFlapsDeployedChanged); }
+        }
 
         public ShipCategory Category { get; private set; }
 
@@ -93,6 +107,8 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<float>(ref _drag, value, "Drag", OnDragChanged, OnDragChanging); }
         }
 
+        public float FullThrust { get { return IsFtlAvailableForUse ? FullFtlThrust : FullStlThrust; } }
+
         private float _fullStlThrust;
         /// <summary>
         /// The maximum force projected by the STL engines. FullStlSpeed = FullStlThrust / (Mass * Drag).
@@ -122,7 +138,7 @@ namespace CodeEnv.Master.GameContent {
         public Vector3 RequestedHeading {
             get { return _requestedHeading; }
             set {
-                value = value.normalized;
+                value.ValidateNormalized();
                 SetProperty<Vector3>(ref _requestedHeading, value, "RequestedHeading");
             }
         }
@@ -135,6 +151,8 @@ namespace CodeEnv.Master.GameContent {
                 return Transform.forward;
             }
         }
+
+        public float FullSpeed { get { return IsFtlAvailableForUse ? FullFtlSpeed : FullStlSpeed; } }
 
         private float _fullFtlSpeed;
         /// <summary>
@@ -158,7 +176,7 @@ namespace CodeEnv.Master.GameContent {
 
         private float _maxTurnRate;
         /// <summary>
-        /// Gets or sets the maximum turn rate of the ship in degrees per day.
+        /// The maximum turn rate of the ship in degrees per hour.
         /// </summary>
         public float MaxTurnRate {
             get { return _maxTurnRate; }
@@ -200,11 +218,31 @@ namespace CodeEnv.Master.GameContent {
             _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
         }
 
+        /// <summary>
+        /// Assesses the availability of the ship's FTL Engines. This must always be called immediately after Topography is potentially changed as there is no
+        /// OnTopographyChanged() method - see note.
+        /// 
+        /// Note: Must be public and handled this way as Topography Property will not reliably generate OnTopographyChanged() as default(Topography) 
+        /// is OpenSpace rather than None. Can't use None = 0, as OpenSpace = 0 is used to generate a Pathfinding bitmask tag used to assign penalty values.
+        /// </summary>
+        public void AssessFtlAvailability() {
+            IsFtlAvailableForUse = Topography == SpaceTopography.OpenSpace && !IsFtlDamaged && !IsFtlDampedByField;
+        }
+
         protected override void OnTransformChanged() {
             base.OnTransformChanged();
             _rigidbody = Transform.rigidbody;
             _rigidbody.mass = Mass;
             _rigidbody.drag = Drag;
+            _requestedHeading = CurrentHeading;  // initialize to something other than Vector3.zero which causes problems with LookRotation
+        }
+
+        private void OnIsFtlDamagedChanged() {
+            AssessFtlAvailability();
+        }
+
+        private void OnIsFtlDampedByFieldChanged() {
+            AssessFtlAvailability();
         }
 
         private void OnDragChanging(float newDrag) {
@@ -215,9 +253,14 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnDragChanged() {
-            _rigidbody.drag = Drag;
+            _rigidbody.drag = IsFlapsDeployed ? Drag / TempGameValues.FlapsMultiplier : Drag;
             OnFullStlThrustChanged();
             OnFullFtlThrustChanged();
+        }
+
+        private void OnIsFlapsDeployedChanged() {
+            string msg = IsFlapsDeployed ? "deployed" : "retracted";
+            D.Log("{0} has {1} flaps.", FullName, msg);
         }
 
         private void OnFullStlThrustChanged() {
@@ -232,7 +275,6 @@ namespace CodeEnv.Master.GameContent {
 
         private void OnIsPausedChanging(bool isPausing) {
             if (isPausing) {
-                // game is about to pause
                 _currentSpeedOnPause = CurrentSpeed;
             }
         }
