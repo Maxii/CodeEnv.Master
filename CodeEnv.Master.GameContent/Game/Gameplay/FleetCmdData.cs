@@ -28,7 +28,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FleetCmdData : ACommandData {
 
-        public IDestinationTarget Target { get; set; }
+        private IDestinationTarget _target;
+        public IDestinationTarget Target {
+            get { return _target; }
+            set { SetProperty<IDestinationTarget>(ref _target, value, "Target"); }
+        }
 
         private FleetCategory _category;
         public FleetCategory Category {

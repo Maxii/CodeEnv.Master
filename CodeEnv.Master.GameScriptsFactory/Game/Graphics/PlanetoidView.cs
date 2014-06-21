@@ -61,7 +61,6 @@ public class PlanetoidView : AMortalItemView, ICameraFollowable {
     private SelectionManager _selectionMgr;
     private CtxObject _ctxObject;
 
-
     void OnPress(bool isDown) {
         if (GameInputHelper.Instance.IsRightMouseButton() && !isDown) {
             OnRightPressRelease();

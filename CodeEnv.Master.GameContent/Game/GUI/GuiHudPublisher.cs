@@ -103,7 +103,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void PrepareHudText(IIntel intel) {        // OPTIMIZE Detect individual data property changes and replace them individually
+        // NOTE: The HUD will update the value of a _dataProperty IFF the property is implemented with APropertyChangeTracking, aka _data.IsChanged will know
+        private void PrepareHudText(IIntel intel) {
             if (_guiCursorHudText == null || _guiCursorHudText.IntelCoverage != intel.CurrentCoverage || _data.IsChanged) {
                 // don't have the right version of GuiCursorHudText so make one
                 _guiCursorHudText = TextFactory.MakeInstance(intel, _data);
