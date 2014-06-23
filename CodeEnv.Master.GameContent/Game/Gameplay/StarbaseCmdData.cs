@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: StarbaseCmdData.cs
-// All the data associated with a Starbase.
+// All the data associated with a StarbaseCmd.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,9 +22,15 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
-    /// All the data associated with a Starbase.
+    /// All the data associated with a StarbaseCmd.
     /// </summary>
     public class StarbaseCmdData : ACommandData {
+
+        private OrbitalSlot _shipOrbitSlot;
+        public OrbitalSlot ShipOrbitSlot {
+            get { return _shipOrbitSlot; }
+            set { SetProperty<OrbitalSlot>(ref _shipOrbitSlot, value, "ShipOrbitSlot"); }
+        }
 
         private StarbaseCategory _category;
         public StarbaseCategory Category {

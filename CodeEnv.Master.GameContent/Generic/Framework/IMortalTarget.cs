@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IMortalTarget.cs
-// Interface for a target that is mortal.
+// Interface for a target that can take damage and die.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,9 +20,9 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for a target that is mortal.
+    /// Interface for a target that can take damage and die.
     /// </summary>
-    public interface IMortalTarget : IOwnedTarget {
+    public interface IMortalTarget : IOwnedTarget, IDestinationTarget {
 
         /// <summary>
         /// Occurs when this mortal target has died. Intended for external
@@ -37,8 +37,6 @@ namespace CodeEnv.Master.GameContent {
         bool IsAlive { get; }
 
         void TakeHit(CombatStrength attackerWeaponStrength);
-
-        float MaxWeaponsRange { get; }
 
         string ParentName { get; }
 

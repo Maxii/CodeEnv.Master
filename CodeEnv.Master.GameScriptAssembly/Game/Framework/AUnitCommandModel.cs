@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AUnitCommandModel.cs
-//  Abstract base class for a CommandItem, an object that commands Elements.
+//  Abstract base class for a UnitCommandModel, an object that commands Elements.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -26,9 +26,9 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract base class for a CommandItem, an object that commands Elements.
+/// Abstract base class for a UnitCommandModel, an object that commands Elements.
 /// </summary>
-public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICmdModel, ICmdTarget {
+public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarget {
 
     public event Action<IElementModel> onSubordinateElementDeath;
 
@@ -59,12 +59,6 @@ public abstract class AUnitCommandModel : AMortalItemModelStateMachine, ICmdMode
     protected override void InitializeRadiiComponents() {
         // the radius of a Command is the radius of its HQElement and is set from OnHQElementChanged()
         // a Command's collider size is dynamiccally adjusted to the size of the CmdIcon. It has nothing to do with the radius of the Command
-        // the orbitalDistance of a Cmd is a function of the radius of the HQElement, the number of elements and their formation. It is
-        // set when the formation is changed
-    }
-
-    protected override void Initialize() {
-        base.Initialize();
     }
 
     // formations are now generated when an element is added and/or when a HQ element is assigned

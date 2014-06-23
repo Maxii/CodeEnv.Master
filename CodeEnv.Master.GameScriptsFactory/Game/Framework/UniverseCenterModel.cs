@@ -24,10 +24,10 @@ using UnityEngine;
 /// <summary>
 /// The Item at the center of the universe.
 /// </summary>
-public class UniverseCenterModel : AItemModel, IUniverseCenterModel, IUniverseCenterTarget, IOrbitable {
+public class UniverseCenterModel : AItemModel, IUniverseCenterModel, IDestinationTarget, IShipOrbitable {
 
-    public new ItemData Data {
-        get { return base.Data as ItemData; }
+    public new UniverseCenterData Data {
+        get { return base.Data as UniverseCenterData; }
         set { base.Data = value; }
     }
 
@@ -41,22 +41,38 @@ public class UniverseCenterModel : AItemModel, IUniverseCenterModel, IUniverseCe
         Radius = meshRenderer.bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
         D.Assert(Mathfx.Approx(Radius, TempGameValues.UniverseCenterRadius, 1F));    // 50
         (collider as SphereCollider).radius = Radius;
-
-        SphereCollider keepoutCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
-        D.Assert(keepoutCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
-        keepoutCollider.radius = Radius * TempGameValues.KeepoutRadiusMultiplier;
-        OrbitDistance = keepoutCollider.radius + 1F;
     }
 
     protected override void Initialize() { }
+
+    protected override void OnDataChanged() {
+        base.OnDataChanged();
+        SetKeepoutZoneRadius();
+    }
+
+    private void SetKeepoutZoneRadius() {
+        SphereCollider keepoutZoneCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
+        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
+        keepoutZoneCollider.radius = Data.ShipOrbitSlot.MinimumDistance;
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
 
+    #region IDestinationTarget Members
+
+    public Vector3 Position { get { return Data.Position; } }
+
+    public virtual bool IsMobile { get { return false; } }
+
+    public SpaceTopography Topography { get { return Data.Topography; } }
+
+    #endregion
+
     #region IOrbitable Members
 
-    public float OrbitDistance { get; private set; }
+    public float MaximumShipOrbitDistance { get { return Data.ShipOrbitSlot.MaximumDistance; } }
 
     public void AssumeOrbit(IShipModel ship) {
         var shipOrbit = gameObject.GetComponentInImmediateChildren<ShipOrbit>();

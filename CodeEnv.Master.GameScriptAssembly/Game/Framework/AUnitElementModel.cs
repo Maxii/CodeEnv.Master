@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for an Element, an object that is under the command of a CommandItem.
 /// </summary>
-public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElementModel, IElementTarget {
+public abstract class AUnitElementModel : /*AMortalItemModelStateMachine, */ ACombatItemModel, IElementModel, IElementTarget {
 
     public virtual bool IsHQElement { get; set; }
 
@@ -44,9 +44,9 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
 
     protected Rigidbody _rigidbody;
     /// <summary>
-    /// Weapon Range Tracker lookup table keyed by the Range Tracker's Guid ID.
+    /// Weapon Range Monitor lookup table keyed by the Monitor's Guid ID.
     /// </summary>
-    protected IDictionary<Guid, IWeaponRangeMonitor> _weaponRangeTrackerLookup;
+    protected IDictionary<Guid, IWeaponRangeMonitor> _weaponRangeMonitorLookup;
     protected float _gameSpeedMultiplier;
 
     protected override void Awake() {
@@ -78,7 +78,7 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
     protected override void OnOwnerChanged() {
         base.OnOwnerChanged();
         if (enabled) {  // acts just like an isInitialized test as enabled results in Start() which calls Initialize 
-            _weaponRangeTrackerLookup.Values.ForAll(rt => rt.Owner = Data.Owner);
+            _weaponRangeMonitorLookup.Values.ForAll(rt => rt.Owner = Data.Owner);
         }
     }
 
@@ -88,34 +88,32 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
 
     protected override void OnNamingChanged() {
         base.OnNamingChanged();
-        //if (enabled) {  // UNCLEAR no longer needed?
-        _weaponRangeTrackerLookup.Values.ForAll(rt => rt.ParentFullName = Data.FullName);
-        //}
+        _weaponRangeMonitorLookup.Values.ForAll(rt => rt.ParentFullName = Data.FullName);
     }
 
     #region Weapons
 
     /// <summary>
-    /// Adds the weapon to this element, paired with the provided range tracker. Clients wishing to add
+    /// Adds the weapon to this element, paired with the provided range monitor. Clients wishing to add
     /// a weapon to this element should use UnitFactory.AddWeapon(weapon, element).
     /// </summary>
     /// <param name="weapon">The weapon.</param>
-    /// <param name="rangeTracker">The range tracker to pair with this weapon.</param>
-    public void AddWeapon(Weapon weapon, IWeaponRangeMonitor rangeTracker) {
-        if (_weaponRangeTrackerLookup == null) {
-            _weaponRangeTrackerLookup = new Dictionary<Guid, IWeaponRangeMonitor>();
+    /// <param name="rangeMonitor">The range monitor to pair with this weapon.</param>
+    public void AddWeapon(Weapon weapon, IWeaponRangeMonitor rangeMonitor) {
+        if (_weaponRangeMonitorLookup == null) {
+            _weaponRangeMonitorLookup = new Dictionary<Guid, IWeaponRangeMonitor>();
         }
-        if (!_weaponRangeTrackerLookup.ContainsKey(rangeTracker.ID)) {
+        if (!_weaponRangeMonitorLookup.ContainsKey(rangeMonitor.ID)) {
             // only need to record and setup range trackers once. The same rangeTracker can have more than 1 weapon
-            _weaponRangeTrackerLookup.Add(rangeTracker.ID, rangeTracker);
-            rangeTracker.ParentFullName = FullName;
-            rangeTracker.Range = weapon.Range;
-            rangeTracker.Owner = Data.Owner;
-            rangeTracker.onEnemyInRange += OnEnemyInRange;
+            _weaponRangeMonitorLookup.Add(rangeMonitor.ID, rangeMonitor);
+            rangeMonitor.ParentFullName = FullName;
+            rangeMonitor.Range = weapon.Range;
+            rangeMonitor.Owner = Data.Owner;
+            rangeMonitor.onEnemyInRange += OnEnemyInRange;
         }
-        // rangeTrackers enable themselves
+        // rangeMonitors enable themselves
 
-        Data.AddWeapon(weapon, rangeTracker.ID);
+        Data.AddWeapon(weapon, rangeMonitor.ID);
         // IMPROVE how to keep track ranges from overlapping
     }
 
@@ -128,8 +126,8 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
         bool isRangeTrackerStillInUse = Data.RemoveWeapon(weapon);
         if (!isRangeTrackerStillInUse) {
             IWeaponRangeMonitor rangeTracker;
-            if (_weaponRangeTrackerLookup.TryGetValue(weapon.TrackerID, out rangeTracker)) {
-                _weaponRangeTrackerLookup.Remove(weapon.TrackerID);
+            if (_weaponRangeMonitorLookup.TryGetValue(weapon.TrackerID, out rangeTracker)) {
+                _weaponRangeMonitorLookup.Remove(weapon.TrackerID);
                 D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(IWeaponRangeMonitor).Name, weapon.Name);
                 GameObject.Destroy((rangeTracker as Component).gameObject);
                 return;
@@ -142,9 +140,9 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
 
     private IDictionary<Guid, Job> _weaponReloadJobs = new Dictionary<Guid, Job>();
 
-    private void OnEnemyInRange(bool isInRange, Guid trackerID) {
-        D.Log("{0}.OnEnemyInRange(isInRange: {1}, trackerID: {2}).", FullName, isInRange, trackerID);
-        var weapons = Data.GetWeapons(trackerID);
+    private void OnEnemyInRange(bool isInRange, Guid monitorID) {
+        D.Log("{0}.OnEnemyInRange(isInRange: {1}, monitorID: {2}).", FullName, isInRange, monitorID);
+        var weapons = Data.GetWeapons(monitorID);
         foreach (var weapon in weapons) {
             var weaponID = weapon.ID;
             Job weaponReloadJob;
@@ -187,7 +185,7 @@ public abstract class AUnitElementModel : AMortalItemModelStateMachine, IElement
 
     protected override void OnDeath() {
         base.OnDeath();
-        _weaponRangeTrackerLookup.Values.ForAll(rt => rt.onEnemyInRange -= OnEnemyInRange);
+        _weaponRangeMonitorLookup.Values.ForAll(rt => rt.onEnemyInRange -= OnEnemyInRange);
         if (_weaponReloadJobs.Count != Constants.Zero) {
             _weaponReloadJobs.ForAll<KeyValuePair<Guid, Job>>(kvp => kvp.Value.Kill());
         }

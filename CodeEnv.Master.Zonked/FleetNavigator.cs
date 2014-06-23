@@ -89,7 +89,7 @@ public class FleetNavigator : IDisposable {
 
     private bool IsCourseReplotNeeded {
         get {
-            return Target.IsMovable && Vector3.SqrMagnitude(Target.Position - _targetPositionAtLastPlot) > _targetMovementReplotThresholdDistanceSqrd;
+            return Target.IsMobile && Vector3.SqrMagnitude(Target.Position - _targetPositionAtLastPlot) > _targetMovementReplotThresholdDistanceSqrd;
         }
     }
 

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ACommandData.cs
-// Abstract base class for data associated with a Unit Command.
+// Abstract base class that holds data for Items that are a unit command.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -24,9 +24,9 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Abstract base class for data associated with a Unit Command.
+    /// Abstract base class that holds data for Items that are a unit command.
     /// </summary>
-    public abstract class ACommandData : AMortalItemData, IDisposable {
+    public abstract class ACommandData : ACombatItemData, IDisposable {
 
         public event Action onCompositionChanged;
 
@@ -86,7 +86,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// The maximum range of this Unit's weapons.
+        /// The maximum range of all the element's weapons that are part of this unit.
         /// </summary>
         public override float MaxWeaponsRange {
             get { return base.MaxWeaponsRange; }

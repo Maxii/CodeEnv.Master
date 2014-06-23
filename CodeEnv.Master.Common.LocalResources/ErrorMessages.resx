@@ -141,6 +141,9 @@
   <data name="InvalidAccess" xml:space="preserve">
     <value>Accessing an object or method that is either not initialized, closed or otherwise invalid.  Calling Method: {0}</value>
   </data>
+  <data name="InvalidArguments" xml:space="preserve">
+    <value>Argument(s) are not valid. Calling Method: {0}.</value>
+  </data>
   <data name="LowGreaterThanHigh" xml:space="preserve">
     <value>The low value {0} is greater than the high value {1}.  Calling Method: {2}.</value>
   </data>

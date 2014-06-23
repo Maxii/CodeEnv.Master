@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
-            return new GuiHudPublisher<ItemData>(Model.Data);
+            return new GuiHudPublisher<UniverseCenterData>(Model.Data);
         }
 
         public override string ToString() {

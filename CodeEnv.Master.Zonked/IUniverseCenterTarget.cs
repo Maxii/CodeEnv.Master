@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ISectorTarget.cs
-// Interface for an IDestinationTarget that is a Sector.
+// File: IUniverseCenterTarget.cs
+// Interface for a IDestinationTarget that is the UniverseCenter.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,10 +16,13 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
+
     /// <summary>
-    /// Interface for an IDestinationTarget that is a Sector.
+    /// Interface for a IDestinationTarget that is the UniverseCenter.
     /// </summary>
-    public interface ISectorTarget : IOwnedTarget {
+    [Obsolete]
+    public interface IUniverseCenterTarget : IDestinationTarget {
 
     }
 }

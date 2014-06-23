@@ -27,10 +27,8 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all planetoids in the game.
 /// </summary>
-public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IPlanetoidTarget, IOrbitable {
+public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, /*IPlanetoidTarget, */IShipOrbitable {
     //public class PlanetoidModel : AMortalItemModelStateMachine {
-
-    //public static float MaxRadius { get; private set; }
 
     public new PlanetoidData Data {
         get { return base.Data as PlanetoidData; }
@@ -46,16 +44,7 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IPlanetoidTarge
     protected override void InitializeRadiiComponents() {
         var meshRenderers = gameObject.GetComponentsInImmediateChildren<Renderer>();    // some planetoids have an atmosphere
         Radius = meshRenderers.First().bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
-        //MaxRadius = Mathf.Max(Radius, MaxRadius);
-
         (collider as SphereCollider).radius = Radius;
-
-        SphereCollider keepoutZoneCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
-        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
-        keepoutZoneCollider.radius = Radius * TempGameValues.KeepoutRadiusMultiplier;
-        float orbitBufferDistanceAboveKeepoutZone = Mathf.Min(Radius, 1F);   // 0.2 - 1
-        OrbitDistance = keepoutZoneCollider.radius + orbitBufferDistanceAboveKeepoutZone;
-        //D.Log("{0} distance from orbit to planet surface (collider) = {1}.", FullName, OrbitDistance - Radius);
     }
 
     protected override void Initialize() {
@@ -68,13 +57,18 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IPlanetoidTarge
     private void __CheckForOrbitingBodiesInsideOrbitDistance() {
         var moons = gameObject.GetComponentsInChildren<PlanetoidModel>().Except(this);
         if (!moons.IsNullOrEmpty()) {
-            var moonsInsideKeepoutZoneRadius = moons.Where(moon => moon.transform.localPosition.magnitude + moon.Radius <= OrbitDistance);
+            var moonsInsideKeepoutZoneRadius = moons.Where(moon => moon.transform.localPosition.magnitude + moon.Radius <= MaximumShipOrbitDistance);
             if (!moonsInsideKeepoutZoneRadius.IsNullOrEmpty()) {
                 moonsInsideKeepoutZoneRadius.ForAll(moon => {
-                    D.Warn("{0} is inside {1}'s OrbitDistance of {2}.", moon.FullName, FullName, OrbitDistance);
+                    D.Warn("{0} is inside {1}'s OrbitDistance of {2}.", moon.FullName, FullName, MaximumShipOrbitDistance);
                 });
             }
         }
+    }
+
+    protected override void OnDataChanged() {
+        base.OnDataChanged();
+        SetKeepoutZoneRadius();
     }
 
     protected override void OnOwnerChanged() {
@@ -87,6 +81,12 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IPlanetoidTarge
         if (!moons.IsNullOrEmpty()) {
             moons.ForAll(m => m.Data.Owner = Data.Owner);
         }
+    }
+
+    private void SetKeepoutZoneRadius() {
+        SphereCollider keepoutZoneCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
+        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
+        keepoutZoneCollider.radius = Data.ShipOrbitSlot.MinimumDistance;
     }
 
     #region StateMachine - Simple Alternative
@@ -244,15 +244,15 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IPlanetoidTarge
 
     #endregion
 
-    #region IPlanetoidTarget Members
+    #region IDestinationTarget Members
 
-    public override bool IsMovable { get { return true; } }
+    public override bool IsMobile { get { return true; } }
 
     #endregion
 
     #region IOrbitable Members
 
-    public float OrbitDistance { get; private set; }
+    public float MaximumShipOrbitDistance { get { return Data.ShipOrbitSlot.MaximumDistance; } }
 
     public void AssumeOrbit(IShipModel ship) {
         var shipOrbit = gameObject.GetComponentInImmediateChildren<ShipOrbit>();

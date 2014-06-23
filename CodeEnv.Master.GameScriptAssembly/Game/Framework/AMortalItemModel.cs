@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AMortalItemModel.cs
-// Abstract base class for an AItem that can die.
+// Abstract base class for an Item that can take damage and die.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -24,9 +24,9 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract base class for an AItem that can die. 
+/// Abstract base class for an Item that can take damage and die.
 /// </summary>
-public abstract class AMortalItemModel : AItemModel, IMortalModel, IMortalTarget {
+public abstract class AMortalItemModel : AOwnedItemModel, IMortalModel, IMortalTarget {
 
     public event Action<MortalAnimations> onShowAnimation;
     public event Action<MortalAnimations> onStopAnimation;
@@ -118,6 +118,16 @@ public abstract class AMortalItemModel : AItemModel, IMortalModel, IMortalTarget
 
     #endregion
 
+    #region IDestinationTarget Members
+
+    public Vector3 Position { get { return Data.Position; } }
+
+    public virtual bool IsMobile { get { return false; } }
+
+    public SpaceTopography Topography { get { return Data.Topography; } }
+
+    #endregion
+
     #region IMortalTarget Members
 
     public event Action<IMortalTarget> onTargetDeath;
@@ -125,8 +135,6 @@ public abstract class AMortalItemModel : AItemModel, IMortalModel, IMortalTarget
     public bool IsAlive { get; protected set; }
 
     public abstract void TakeHit(CombatStrength weaponStrength);
-
-    public float MaxWeaponsRange { get { return Data.MaxWeaponsRange; } }
 
     public string ParentName { get { return Data.ParentName; } }
 

@@ -41,7 +41,7 @@ public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud, IDisposable {
 
     private void InitializeHudPublishers() {
         AGuiHudPublisher.GuiCursorHud = Instance;
-        GuiHudPublisher<ItemData>.TextFactory = GuiHudTextFactory.Instance;
+        //GuiHudPublisher<ItemData>.TextFactory = GuiHudTextFactory.Instance;
         GuiHudPublisher<SectorData>.TextFactory = SectorGuiHudTextFactory.Instance;
         GuiHudPublisher<ShipData>.TextFactory = ShipGuiHudTextFactory.Instance;
         GuiHudPublisher<FleetCmdData>.TextFactory = FleetGuiHudTextFactory.Instance;
@@ -51,6 +51,7 @@ public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud, IDisposable {
         GuiHudPublisher<SettlementCmdData>.TextFactory = SettlementGuiHudTextFactory.Instance;
         GuiHudPublisher<FacilityData>.TextFactory = FacilityGuiHudTextFactory.Instance;
         GuiHudPublisher<StarbaseCmdData>.TextFactory = StarbaseGuiHudTextFactory.Instance;
+        GuiHudPublisher<UniverseCenterData>.TextFactory = UniverseCenterGuiHudTextFactory.Instance;
     }
 
     private void Subscribe() {

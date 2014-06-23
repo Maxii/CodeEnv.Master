@@ -417,7 +417,7 @@ namespace CodeEnv.Master.GameContent {
 
             _courseCorrectionCheckCountSetting = Mathf.RoundToInt(1000 / (speedFactor * 5));  // higher speeds mean a shorter period between course checks, aka more frequent checks
             _courseCorrectionCheckDistanceThresholdSqrd = speedFactor * speedFactor;   // higher speeds mean course checks become continuous further away
-            if (_targetInfo.Target != null && !_targetInfo.Target.IsMovable) {  // target can be null
+            if (_targetInfo.Target != null && !_targetInfo.Target.IsMobile) {  // target can be null
                 // the target doesn't move so course checks are much less important
                 _courseCorrectionCheckCountSetting *= 5;
                 _courseCorrectionCheckDistanceThresholdSqrd /= 5F;

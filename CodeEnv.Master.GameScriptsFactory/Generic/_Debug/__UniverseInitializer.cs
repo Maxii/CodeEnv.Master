@@ -29,6 +29,8 @@ using UnityEngine;
 /// </summary>
 public class __UniverseInitializer : AMonoBase, IDisposable {
 
+    private UniverseCenterModel _universeCenter;
+
     private GameManager _gameMgr;
     private IList<IDisposable> _subscribers;
 
@@ -50,19 +52,34 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
             InitializeUniverseCenter();
             // SystemCreators build, initialize and deploy their system during this state, then they allow the state to progress
         }
+        if (gameState == GameState.Running) {
+            EnableOtherWhenRunning();
+        }
     }
 
     private void InitializeUniverseCenter() {
-        var universeCenter = gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterModel>();
-        if (universeCenter != null) {
-            ItemData data = new ItemData("UniverseCenter", SpaceTopography.OpenSpace);
-            universeCenter.Data = data;
-            universeCenter.enabled = true;
-            universeCenter.gameObject.GetSafeMonoBehaviourComponent<UniverseCenterView>().enabled = true;
+        _universeCenter = gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterModel>();
+        if (_universeCenter != null) {
+            float minimumShipOrbitDistance = _universeCenter.Radius * TempGameValues.KeepoutRadiusMultiplier;
+            float maximumShipOrbitDistance = minimumShipOrbitDistance + TempGameValues.DefaultShipOrbitSlotDepth;
+            UniverseCenterData data = new UniverseCenterData("UniverseCenter") {
+                ShipOrbitSlot = new OrbitalSlot(minimumShipOrbitDistance, maximumShipOrbitDistance)
+            };
+            _universeCenter.Data = data;
+            _universeCenter.enabled = true;
+            _universeCenter.gameObject.GetSafeMonoBehaviourComponent<UniverseCenterView>().enabled = true;
         }
         UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
             RegisterReadinessForGameStateProgression(GameState.BuildAndDeploySystems, isReady: true);
         });
+    }
+
+    private void EnableOtherWhenRunning() {
+        D.Assert(GameStatus.Instance.IsRunning);
+        if (_universeCenter != null) {
+            _universeCenter.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().enabled = true;
+            //_universeCenter.gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>().enabled = true;    // doesn't appear to be needed
+        }
     }
 
     private void RegisterReadinessForGameStateProgression(GameState stateToNotProgressBeyondUntilReady, bool isReady) {

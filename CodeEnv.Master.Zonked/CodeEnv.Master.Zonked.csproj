@@ -136,6 +136,7 @@
     <Compile Include="IColliderRelayTarget.cs" />
     <Compile Include="IData.cs" />
     <Compile Include="IFacilityViewable.cs" />
+    <Compile Include="IFleetCmdTarget.cs" />
     <Compile Include="IFleetCommand.cs" />
     <Compile Include="IFleetViewable.cs" />
     <Compile Include="IGameDate.cs" />
@@ -145,13 +146,18 @@
     <Compile Include="IntelFreshness.cs" />
     <Compile Include="IntelLevel.cs" />
     <Compile Include="IntelSource.cs" />
+    <Compile Include="IPlanetoidTarget.cs" />
     <Compile Include="IRangeTracker.cs" />
+    <Compile Include="ISectorTarget.cs" />
     <Compile Include="ISettlementViewable.cs" />
     <Compile Include="IShipViewable.cs" />
     <Compile Include="IStarBaseViewable.cs" />
+    <Compile Include="IStarTarget.cs" />
+    <Compile Include="ISystemTarget.cs" />
     <Compile Include="ISystemViewable.cs" />
     <Compile Include="ItemGraphics.cs" />
     <Compile Include="IUnitTarget.cs" />
+    <Compile Include="IUniverseCenterTarget.cs" />
     <Compile Include="IViewable.cs" />
     <Compile Include="IZoomToClosest.cs" />
     <Compile Include="KeyboardAxis.cs" />

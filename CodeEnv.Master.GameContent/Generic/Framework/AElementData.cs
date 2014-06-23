@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ADefendedData.cs
-// Abstract base class for data associated with Elements (Items under a Command).
+// File: AElementData.cs
+// Abstract base class that holds data for Items that are elements of a command.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,9 +23,9 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Abstract base class for data associated with Elements (Items under a Command).
+    /// Abstract base class that holds data for Items that are elements of a command.
     /// </summary>
-    public abstract class AElementData : AMortalItemData {
+    public abstract class AElementData : ACombatItemData {
 
         /// <summary>
         /// Dictionary for finding the list of weapons associated with a particular rangeTracker.

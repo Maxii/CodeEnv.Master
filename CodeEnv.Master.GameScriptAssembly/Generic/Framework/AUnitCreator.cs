@@ -303,7 +303,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
         var elementCategoriesUsedCount = new Dictionary<ElementCategoryType, int>();
         int elementCount = RandomExtended<int>.Range(1, maxRandomElements);
-        D.Log("{0} Element count is {1}.", UnitName, elementCount);
+        //D.Log("{0} Element count is {1}.", UnitName, elementCount);
         var elementStats = new List<ElementStatType>(elementCount);
         for (int i = 0; i < elementCount; i++) {
             ElementCategoryType category = (i == 0) ? RandomExtended<ElementCategoryType>.Choice(validHQCategories) : RandomExtended<ElementCategoryType>.Choice(validCategories);

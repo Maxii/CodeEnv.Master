@@ -160,6 +160,19 @@ namespace CodeEnv.Master.Common {
                 }
             }
         }
+
+        /// <summary>
+        /// General purpose validation method that throws an exception if isValid is false.
+        /// </summary>
+        /// <param name="isValid">if set to <c>true</c> [is valid].</param>
+        /// <exception cref="System.ArgumentException"></exception>
+        public static void Validate(bool isValid) {
+            if (!isValid) {
+                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                throw new ArgumentException(ErrorMessages.InvalidArguments.Inject(callingMethodName));
+            }
+        }
+
     }
 }
 

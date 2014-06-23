@@ -33,6 +33,8 @@ namespace CodeEnv.Master.GameContent {
 
         public const float FlapsMultiplier = 100F;
 
+        public const float DefaultShipOrbitSlotDepth = 3F;
+
         /// <summary>
         /// The maximum number of facilities a starbase or settlement can have.
         /// </summary>
@@ -88,7 +90,9 @@ namespace CodeEnv.Master.GameContent {
         public const float PathGraphPointPercentDistanceAroundObstacles = 0.1F;
 
         /// <summary>
-        /// The multiplier used to determine the radius of the keepoutZone around celestial objects.
+        /// The multiplier used to determine the radius of the keepoutZone around objects. 
+        /// Note: This could also be called the MinOrbitDistanceMultiplier since the radius of the
+        /// keepoutzone is the same as the minimumShipOrbitDistance.
         /// </summary>
         public const float KeepoutRadiusMultiplier = 2F;
 

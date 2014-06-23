@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IElementTarget.cs
-//  Interface for a target that is a UnitElement.
+//  Interface for a target that is an element of a command.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,12 +17,9 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    ///  Interface for a target that is a UnitElement.
+    ///  Interface for a target that is an element of a command.
     /// </summary>
-    public interface IElementTarget : IMortalTarget {
-
-        //IUnitElement HQElement { get; set; }
-    }
+    public interface IElementTarget : ICombatTarget { }
 
 }
 

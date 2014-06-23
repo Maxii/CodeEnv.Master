@@ -30,8 +30,6 @@ using UnityEngine;
 /// </summary>
 public class FacilityModel : AUnitElementModel, IFacilityModel {
 
-    //public static float MaxRadius { get; private set; }
-
     public new FacilityData Data {
         get { return base.Data as FacilityData; }
         set { base.Data = value; }
@@ -71,7 +69,6 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
         var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
         Radius = meshRenderer.bounds.extents.magnitude;
         // D.Log("Facility {0}.Radius = {1}.", FullName, Radius);
-        // MaxRadius = Mathf.Max(Radius, MaxRadius);
         // IMPROVE for now, a Facilities collider is a capsule with size values preset in its prefab 
     }
 
@@ -326,7 +323,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     private void TryFireOnAnyTarget(Weapon weapon) {
-        if (_weaponRangeTrackerLookup[weapon.TrackerID].__TryGetRandomEnemyTarget(out _attackTarget)) {
+        if (_weaponRangeMonitorLookup[weapon.TrackerID].__TryGetRandomEnemyTarget(out _attackTarget)) {
             D.Log("{0}.{1} firing at {2} from State {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
             //_attackDamage = weapon.Damage;
             _attackStrength = weapon.Strength;
@@ -347,7 +344,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
         D.Assert(_ordersTarget != null && _ordersTarget.IsAlive, "{0}'s target from orders is null or dead.".Inject(FullName));
         bool isTargetInRange = false;
         var uniqueEnemyTargetsInRange = Enumerable.Empty<IMortalTarget>();
-        foreach (var rt in _weaponRangeTrackerLookup.Values) {
+        foreach (var rt in _weaponRangeMonitorLookup.Values) {
             uniqueEnemyTargetsInRange = uniqueEnemyTargetsInRange.Union<IMortalTarget>(rt.EnemyTargets);  // OPTIMIZE
         }
 

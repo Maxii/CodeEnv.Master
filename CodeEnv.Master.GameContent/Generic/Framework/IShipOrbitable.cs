@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IUniverseCenterTarget.cs
-// Interface for a IDestinationTarget that is the UniverseCenter.
+// File: IShipOrbitable.cs
+// Interface for objects that can be orbited by ships.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,9 +17,20 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for a IDestinationTarget that is the UniverseCenter.
+    /// Interface for objects that can be orbited by ships.
     /// </summary>
-    public interface IUniverseCenterTarget : IDestinationTarget {
+    public interface IShipOrbitable {
+
+        /// <summary>
+        /// Readonly. The maximum distance from the object's position (center) that ships can orbit. 
+        /// </summary>
+        float MaximumShipOrbitDistance { get; }
+
+        void AssumeOrbit(IShipModel ship);
+
+        void LeaveOrbit(IShipModel orbitingShip);
+
+        string FullName { get; }
 
     }
 }

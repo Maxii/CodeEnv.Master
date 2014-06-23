@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ISystemTarget.cs
-// Interface for an IDestinationTarget that is a System.
+// File: IFleetCmdTarget.cs
+// Interface for a target that is a FleetCommand.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,11 +16,12 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    /// <summary>
-    /// Interface for an IDestinationTarget that is a System.
-    /// </summary>
-    public interface ISystemTarget : IOwnedTarget {
+    using System;
 
-    }
+    /// <summary>
+    /// Interface for a target that is a FleetCommand.
+    /// </summary>
+    [Obsolete]
+    public interface IFleetCmdTarget : ICmdTarget { }
 }
 

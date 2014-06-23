@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AMortalItemData.cs
-// Abstract base class for data associated with mortal items.
+// Abstract base class that holds data for Items that can take damage and die.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,24 +20,15 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Abstract base class for data associated with mortal items.
+    /// Abstract base class that holds data for Items that can take damage and die.
     /// </summary>
-    public abstract class AMortalItemData : AItemData {
-
-        private float _maxWeaponsRange;
-        /// <summary>
-        /// The maximum range of this item's weapons.
-        /// </summary>
-        public virtual float MaxWeaponsRange {
-            get { return _maxWeaponsRange; }
-            set { SetProperty<float>(ref _maxWeaponsRange, value, "MaxWeaponsRange"); }
-        }
+    public abstract class AMortalItemData : AOwnedItemData {
 
         private float _maxHitPoints;
         public float MaxHitPoints {
             get { return _maxHitPoints; }
             set {
-                value = Mathf.Clamp(value, Constants.ZeroF, Mathf.Infinity);
+                D.Assert(value >= Constants.ZeroF);
                 SetProperty<float>(ref _maxHitPoints, value, "MaxHitPoints", OnMaxHitPointsChanged, OnMaxHitPointsChanging);
             }
         }

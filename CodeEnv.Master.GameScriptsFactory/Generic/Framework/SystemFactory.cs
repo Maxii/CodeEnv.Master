@@ -93,8 +93,12 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         Transform transformContainingCategoryName = model.transform;
         D.Assert(starStat.Category == GameUtility.DeriveEnumFromName<StarCategory>(transformContainingCategoryName.name),
             "{0} {1} should = {2}.".Inject(typeof(StarCategory).Name, starStat.Category.GetName(), transformContainingCategoryName.name));
+
+        float minimumShipOrbitDistance = model.Radius * TempGameValues.KeepoutRadiusMultiplier;
+        float maximumShipOrbitDistance = minimumShipOrbitDistance + TempGameValues.DefaultShipOrbitSlotDepth;
         model.Data = new StarData(starStat) {
-            ParentName = systemName
+            ParentName = systemName,
+            ShipOrbitSlot = new OrbitalSlot(minimumShipOrbitDistance, maximumShipOrbitDistance)
         };
 
         // this is not really necessary as the provided model should already have its transform as its Mesh's CameraLOSChangedRelay target
@@ -132,10 +136,13 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         D.Assert(model.transform.parent != null, "{0} should already have a parent.".Inject(model.FullName));
         Transform transformContainingCategoryName = model.transform.parent.parent;
         D.Assert(planetStat.Category == GameUtility.DeriveEnumFromName<PlanetoidCategory>(transformContainingCategoryName.name),
-    "{0} {1} should = {2}.".Inject(typeof(PlanetoidCategory).Name, planetStat.Category.GetName(), transformContainingCategoryName.name));
+            "{0} {1} should = {2}.".Inject(typeof(PlanetoidCategory).Name, planetStat.Category.GetName(), transformContainingCategoryName.name));
 
+        float minimumShipOrbitDistance = model.Radius * TempGameValues.KeepoutRadiusMultiplier;
+        float maximumShipOrbitDistance = minimumShipOrbitDistance + TempGameValues.DefaultShipOrbitSlotDepth;
         model.Data = new PlanetoidData(planetStat) {
-            ParentName = systemName
+            ParentName = systemName,
+            ShipOrbitSlot = new OrbitalSlot(minimumShipOrbitDistance, maximumShipOrbitDistance)
         };
 
         // this is not really necessary as the provided model should already have its transform as its Mesh's CameraLOSChangedRelay target

@@ -28,7 +28,7 @@ using System.Collections.Generic;
 /// <summary>
 /// The data-holding class for all Settlements in the game. Includes a state machine.
 /// </summary>
-public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel, IBaseCmdTarget, IOrbitable {
+public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel, IBaseCmdTarget, IShipOrbitable {
 
     public new SettlementCmdData Data {
         get { return base.Data as SettlementCmdData; }
@@ -44,6 +44,11 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel, IBaseC
     protected override void Awake() {
         base.Awake();
         Subscribe();
+    }
+
+    protected override void SubscribeToDataValueChanges() {
+        base.SubscribeToDataValueChanges();
+        _subscribers.Add(Data.SubscribeToPropertyChanged<SettlementCmdData, OrbitalSlot>(data => data.ShipOrbitSlot, OnShipOrbitSlotChanged));
     }
 
     protected override void Initialize() {
@@ -67,6 +72,10 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel, IBaseC
         if (HQElement != null) {
             _formationGenerator.RegenerateFormation();    // Bases simply regenerate the formation when adding an element
         }
+    }
+
+    private void OnShipOrbitSlotChanged() {
+        SetKeepoutZoneRadius();
     }
 
     private void OnCurrentOrderChanged() {
@@ -101,8 +110,26 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel, IBaseC
 
     protected override void PositionElementInFormation(IElementModel element, Vector3 stationOffset) {
         base.PositionElementInFormation(element, stationOffset);
-        // set visitor orbit distance just outside of 'orbiting' facilities
-        OrbitDistance = (element != HQElement) ? stationOffset.magnitude + 1F : 2F;   // base HQElement offset is always Vector3.zero     // IMPROVE  
+        // set ship orbit distance just outside of 'orbiting' facilities
+        ResetShipOrbitSlot(stationOffset.magnitude + element.Radius);
+    }
+
+    /// <summary>
+    /// Resets the ship orbit slot to be outside all facilities.
+    /// </summary>
+    /// <param name="distanceToOuterEdgeOfElement">The distance to outer edge of element.</param>
+    private void ResetShipOrbitSlot(float distanceToOuterEdgeOfElement) {
+        float minimumShipOrbitDistance = distanceToOuterEdgeOfElement * TempGameValues.KeepoutRadiusMultiplier;
+        float maximumShipOrbitDistance = minimumShipOrbitDistance + TempGameValues.DefaultShipOrbitSlotDepth;
+        if (Data.ShipOrbitSlot == default(OrbitalSlot) || Data.ShipOrbitSlot.MinimumDistance < minimumShipOrbitDistance) {
+            Data.ShipOrbitSlot = new OrbitalSlot(minimumShipOrbitDistance, maximumShipOrbitDistance);
+        }
+    }
+
+    private void SetKeepoutZoneRadius() {
+        SphereCollider keepoutZoneCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
+        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
+        keepoutZoneCollider.radius = Data.ShipOrbitSlot.MinimumDistance;
     }
 
     protected override void KillCommand() {
@@ -244,7 +271,7 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel, IBaseC
 
     #region IOrbitable Members
 
-    public float OrbitDistance { get; private set; }
+    public float MaximumShipOrbitDistance { get; private set; }
 
     public void AssumeOrbit(IShipModel ship) {
         var shipOrbit = gameObject.GetComponentInImmediateChildren<ShipOrbit>();

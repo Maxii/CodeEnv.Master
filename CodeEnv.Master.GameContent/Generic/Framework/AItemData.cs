@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AItemData.cs
-// Abstract base class for an Item's data.
+// Abstract base class that holds the data for an Item.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Abstract base class for an Item's data.
+    /// Abstract base class that holds the data for an Item.
     /// </summary>
     public abstract class AItemData : APropertyChangeTracking {
 
@@ -46,12 +46,6 @@ namespace CodeEnv.Master.GameContent {
             get { return ParentName.IsNullOrEmpty() ? Name : ParentName + Constants.Underscore + Name; }
         }
 
-        private IPlayer _owner = TempGameValues.NoPlayer;
-        public IPlayer Owner {
-            get { return _owner; }
-            set { SetProperty<IPlayer>(ref _owner, value, "Owner", OnOwnerChanged); }
-        }
-
         public virtual SpaceTopography Topography { get; set; } // can't use OnPropertyChanged approach as default(SpaceTopography) = OpenSpace, aka 0 tag
 
         /// <summary>
@@ -75,15 +69,6 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The name.</param>
         public AItemData(string name) {
             Name = name;
-        }
-
-        protected virtual void OnOwnerChanged() {
-            if (Owner != TempGameValues.NoPlayer) {
-                D.Log("{0} Owner has changed to {1}.", FullName, Owner.LeaderName);
-            }
-            else {
-                D.Warn("{0} no longer has an owner.", FullName);
-            }
         }
 
         private void OnTransformChanging(Transform newTransform) {

@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IOrbitable.cs
-// Interface for objects that can be orbited.
+// File: ITarget.cs
+// The base interface that all other 'target' interfaces are derived from.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,19 +17,9 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for objects that can be orbited.
+    /// The base interface that all other 'target' interfaces are derived from.
     /// </summary>
-    public interface IOrbitable {
-
-        /// <summary>
-        /// Readonly. The distance from the object's position (center) that ships
-        /// and fleets should orbit. 
-        /// </summary>
-        float OrbitDistance { get; }
-
-        void AssumeOrbit(IShipModel ship);
-
-        void LeaveOrbit(IShipModel orbitingShip);
+    public interface ITarget {
 
         string FullName { get; }
 

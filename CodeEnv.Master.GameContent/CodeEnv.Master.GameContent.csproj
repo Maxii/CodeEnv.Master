@@ -56,6 +56,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\ACombatItemData.cs" />
+    <Compile Include="Generic\Framework\AOwnedItemData.cs" />
     <Compile Include="Generic\IO\FacilityStat.cs" />
     <Compile Include="Generic\IO\FleetCmdStat.cs" />
     <Compile Include="Generic\Framework\CombatStrength.cs" />
@@ -223,15 +225,12 @@
     <Compile Include="Game\Graphics\StarbaseCmdHumanPresenter.cs" />
     <Compile Include="Game\Gameplay\OpeYield.cs" />
     <Compile Include="Generic\IO\PlanetoidStat.cs" />
-    <Compile Include="Generic\Framework\IPlanetoidTarget.cs" />
-    <Compile Include="Generic\Framework\IStarTarget.cs" />
-    <Compile Include="Generic\Framework\ISectorTarget.cs" />
     <Compile Include="Generic\Framework\IOwnedTarget.cs" />
-    <Compile Include="Generic\Framework\ISystemTarget.cs" />
-    <Compile Include="Generic\Framework\IOrbitable.cs" />
+    <Compile Include="Generic\Framework\IShipOrbitable.cs" />
     <Compile Include="Generic\Framework\IBaseCmdTarget.cs" />
-    <Compile Include="Generic\Framework\IFleetCmdTarget.cs" />
-    <Compile Include="Generic\Framework\IUniverseCenterTarget.cs" />
+    <Compile Include="Generic\Framework\ICombatTarget.cs" />
+    <Compile Include="Generic\Framework\ITarget.cs" />
+    <Compile Include="Generic\Framework\OrbitalSlot.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\SystemData.cs" />
     <Compile Include="Game\Gameplay\ShipData.cs" />
@@ -248,6 +247,8 @@
     <Compile Include="Generic\IO\StarbaseCmdStat.cs" />
     <Compile Include="Generic\IO\WeaponStat.cs" />
     <Compile Include="Generic\IO\StarStat.cs" />
+    <Compile Include="Game\Gameplay\UniverseCenterData.cs" />
+    <Compile Include="Game\Graphics\UniverseCenterGuiHudTextFactory.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Generic\Math\" />

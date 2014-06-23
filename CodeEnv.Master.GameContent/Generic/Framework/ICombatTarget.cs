@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IModel.cs
-// Interface for an ItemModel.
+// File: ICombatTarget.cs
+// Interface for a target that can engage in combat, causing weapons to fire.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,24 +16,12 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System.ComponentModel;
-    using UnityEngine;
-
     /// <summary>
-    /// Interface for an ItemModel.
+    /// Interface for a target that can engage in combat, causing weapons to fire.
     /// </summary>
-    public interface IModel : IChangeTracking, INotifyPropertyChanged, INotifyPropertyChanging {
+    public interface ICombatTarget : IMortalTarget {
 
-        AItemData Data { get; set; }
-
-        string FullName { get; }
-
-        /// <summary>
-        /// The radius in units of the conceptual 'globe' that encompasses this Item. Readonly.
-        /// </summary>
-        float Radius { get; }
-
-        Transform Transform { get; }
+        float MaxWeaponsRange { get; }
 
     }
 }

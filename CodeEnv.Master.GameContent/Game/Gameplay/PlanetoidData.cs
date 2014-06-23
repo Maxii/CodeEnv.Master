@@ -24,6 +24,17 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PlanetoidData : AMortalItemData {
 
+        private OrbitalSlot _systemOrbitSlot;
+        /// <summary>
+        /// The OrbitSlot that this planet occupies in the system.
+        /// </summary>
+        public OrbitalSlot SystemOrbitSlot {
+            get { return _systemOrbitSlot; }
+            set { SetProperty<OrbitalSlot>(ref _systemOrbitSlot, value, "SystemOrbitSlot", OnSystemOrbitSlotChanged); }
+        }
+
+        public OrbitalSlot ShipOrbitSlot { get; set; }
+
         public PlanetoidCategory Category { get; private set; }
 
         public override SpaceTopography Topography {
@@ -60,6 +71,10 @@ namespace CodeEnv.Master.GameContent {
             Resources = stat.Resources;
             SpecialResources = stat.SpecialResources;
             base.Topography = SpaceTopography.System;
+        }
+
+        private void OnSystemOrbitSlotChanged() {
+            Transform.localPosition = SystemOrbitSlot.GenerateRandomPositionWithinSlot();
         }
 
         public override string ToString() {

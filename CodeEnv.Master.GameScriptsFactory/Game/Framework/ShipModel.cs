@@ -65,7 +65,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
                 CloseEnoughDistance = Constants.ZeroF;
             }
 
-            public ShipDestinationInfo(ISectorTarget sector, Vector3 fstOffset) {
+            public ShipDestinationInfo(SectorModel sector, Vector3 fstOffset) {
                 Target = sector;
                 _fstOffset = fstOffset;
                 CloseEnoughDistance = sector.Radius;
@@ -77,7 +77,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
                 CloseEnoughDistance = StationaryLocation.CloseEnoughDistance;
             }
 
-            public ShipDestinationInfo(IFleetCmdTarget cmd, Vector3 fstOffset, float standoffDistance) {
+            public ShipDestinationInfo(FleetCmdModel cmd, Vector3 fstOffset, float standoffDistance) {
                 Target = cmd;
                 _fstOffset = fstOffset;
                 CloseEnoughDistance = cmd.Radius + standoffDistance;
@@ -86,7 +86,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             public ShipDestinationInfo(IBaseCmdTarget cmd, Vector3 fstOffset, float standoffDistance) {
                 Target = cmd;
                 _fstOffset = fstOffset;
-                CloseEnoughDistance = (cmd as IOrbitable).OrbitDistance + standoffDistance;
+                CloseEnoughDistance = (cmd as IShipOrbitable).MaximumShipOrbitDistance + standoffDistance;
             }
 
             public ShipDestinationInfo(IElementTarget element, float standoffDistance) {
@@ -95,28 +95,28 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
                 CloseEnoughDistance = element.Radius + standoffDistance;
             }
 
-            public ShipDestinationInfo(IPlanetoidTarget planetoid, Vector3 fstOffset) {
+            public ShipDestinationInfo(PlanetoidModel planetoid, Vector3 fstOffset) {
                 Target = planetoid;
                 _fstOffset = fstOffset;
-                CloseEnoughDistance = (planetoid as IOrbitable).OrbitDistance;
+                CloseEnoughDistance = (planetoid as IShipOrbitable).MaximumShipOrbitDistance;
             }
 
-            public ShipDestinationInfo(ISystemTarget system, Vector3 fstOffset) {
+            public ShipDestinationInfo(SystemModel system, Vector3 fstOffset) {
                 Target = system;
                 _fstOffset = fstOffset;
                 CloseEnoughDistance = system.Radius;
             }
 
-            public ShipDestinationInfo(IStarTarget star, Vector3 fstOffset) {
+            public ShipDestinationInfo(StarModel star, Vector3 fstOffset) {
                 Target = star;
                 _fstOffset = fstOffset;
-                CloseEnoughDistance = (star as IOrbitable).OrbitDistance;
+                CloseEnoughDistance = (star as IShipOrbitable).MaximumShipOrbitDistance;
             }
 
-            public ShipDestinationInfo(IUniverseCenterTarget universeCenter, Vector3 fstOffset) {
+            public ShipDestinationInfo(UniverseCenterModel universeCenter, Vector3 fstOffset) {
                 Target = universeCenter;
                 _fstOffset = fstOffset;
-                CloseEnoughDistance = (universeCenter as IOrbitable).OrbitDistance;
+                CloseEnoughDistance = (universeCenter as IShipOrbitable).MaximumShipOrbitDistance;
             }
         }
 
@@ -228,7 +228,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             /// </summary>
             /// <param name="acceptableRequestedSpeed">The acceptable requested speed.</param>
             private void SetThrustFor(float acceptableRequestedSpeed) {
-                D.Log("{0} adjusting thrust to achieve requested speed of {1:0.##} units/hour.", _shipData.FullName, acceptableRequestedSpeed);
+                //D.Log("{0} adjusting thrust to achieve requested speed of {1:0.##} units/hour.", _shipData.FullName, acceptableRequestedSpeed);
                 _shipData.RequestedSpeed = acceptableRequestedSpeed;
                 float acceptableThrust = acceptableRequestedSpeed * _shipData.Drag * _shipData.Mass;
 
@@ -497,17 +497,17 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
                 D.Assert(orderSource == OrderSource.ElementCaptain);
                 DestinationInfo = new ShipDestinationInfo(target as IFormationStation);
             }
-            else if (target is ISectorTarget) {
+            else if (target is SectorModel) {
                 Vector3 destinationOffset = orderSource == OrderSource.UnitCommand ? _ship.Data.FormationStation.StationOffset : Vector3.zero;
-                DestinationInfo = new ShipDestinationInfo(target as ISectorTarget, destinationOffset);
+                DestinationInfo = new ShipDestinationInfo(target as SectorModel, destinationOffset);
             }
             else if (target is StationaryLocation) {
                 Vector3 destinationOffset = orderSource == OrderSource.UnitCommand ? _ship.Data.FormationStation.StationOffset : Vector3.zero;
                 DestinationInfo = new ShipDestinationInfo((StationaryLocation)target, destinationOffset);
             }
-            else if (target is IFleetCmdTarget) {
+            else if (target is FleetCmdModel) {
                 D.Assert(orderSource == OrderSource.UnitCommand);
-                DestinationInfo = new ShipDestinationInfo(target as IFleetCmdTarget, _ship.Data.FormationStation.StationOffset, standoffDistance);
+                DestinationInfo = new ShipDestinationInfo(target as FleetCmdModel, _ship.Data.FormationStation.StationOffset, standoffDistance);
             }
             else if (target is IBaseCmdTarget) {
                 D.Assert(orderSource == OrderSource.UnitCommand);
@@ -517,21 +517,21 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
                 D.Assert(orderSource == OrderSource.ElementCaptain);
                 DestinationInfo = new ShipDestinationInfo(target as IElementTarget, standoffDistance);
             }
-            else if (target is IPlanetoidTarget) {
+            else if (target is PlanetoidModel) {
                 Vector3 destinationOffset = orderSource == OrderSource.UnitCommand ? _ship.Data.FormationStation.StationOffset : Vector3.zero;
-                DestinationInfo = new ShipDestinationInfo(target as IPlanetoidTarget, destinationOffset);
+                DestinationInfo = new ShipDestinationInfo(target as PlanetoidModel, destinationOffset);
             }
-            else if (target is ISystemTarget) {
+            else if (target is SystemModel) {
                 Vector3 destinationOffset = orderSource == OrderSource.UnitCommand ? _ship.Data.FormationStation.StationOffset : Vector3.zero;
-                DestinationInfo = new ShipDestinationInfo(target as ISystemTarget, destinationOffset);
+                DestinationInfo = new ShipDestinationInfo(target as SystemModel, destinationOffset);
             }
-            else if (target is IStarTarget) {
+            else if (target is StarModel) {
                 Vector3 destinationOffset = orderSource == OrderSource.UnitCommand ? _ship.Data.FormationStation.StationOffset : Vector3.zero;
-                DestinationInfo = new ShipDestinationInfo(target as IStarTarget, destinationOffset);
+                DestinationInfo = new ShipDestinationInfo(target as StarModel, destinationOffset);
             }
-            else if (target is IUniverseCenterTarget) {
+            else if (target is UniverseCenterModel) {
                 Vector3 destinationOffset = orderSource == OrderSource.UnitCommand ? _ship.Data.FormationStation.StationOffset : Vector3.zero;
-                DestinationInfo = new ShipDestinationInfo(target as IUniverseCenterTarget, destinationOffset);
+                DestinationInfo = new ShipDestinationInfo(target as UniverseCenterModel, destinationOffset);
             }
             else {
                 D.Error("{0} of Type {1} not anticipated.", target.FullName, target.GetType().Name);
@@ -927,13 +927,13 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
             float speedFactor = Mathf.Max(fullSpeed * _gameSpeedMultiplier, 1F);   // 1 - 8
             __separationTestToleranceDistanceSqrd = Mathf.Max(speedFactor * speedFactor, 9F);   // 9 - 64 
-            D.Log("{0}.SeparationToleranceSqrd = {1} units, Current FullSpeed = {2} units/hour.", _ship.FullName, __separationTestToleranceDistanceSqrd, fullSpeed);
+            //D.Log("{0}.SeparationToleranceSqrd = {1} units, Current FullSpeed = {2} units/hour.", _ship.FullName, __separationTestToleranceDistanceSqrd, fullSpeed);
 
             // higher speeds need more frequent checks, and continous checks starting further away
             _numberOfProgressChecksBetweenCourseCorrectionChecks = Mathf.RoundToInt(16 / speedFactor);  // 16 - 2 progress checks skipped
             _sqrdDistanceWhereContinuousCourseCorrectionChecksBegin = 25F * speedFactor * speedFactor;   //  25 - 1600 (5 - 40 units out)
 
-            if (DestinationInfo != null && !DestinationInfo.Target.IsMovable) {  // DestinationInfo can be null if no course has yet been plotted
+            if (DestinationInfo != null && !DestinationInfo.Target.IsMobile) {  // DestinationInfo can be null if no course has yet been plotted
                 // the target doesn't move so course checks are much less important
                 _numberOfProgressChecksBetweenCourseCorrectionChecks *= 3;    // 48 - 6  updates skipped
                 _sqrdDistanceWhereContinuousCourseCorrectionChecksBegin /= 3F;  // 8 - 533 (2.8 - 22 units away)
@@ -963,7 +963,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             }
             if (checkCount == 0) {
                 // check the course
-                D.Log("{0} is attempting to check its course.", _ship.FullName);
+                D.Log("{0} is checking its course.", _ship.FullName);
                 if (_ship.IsBearingConfirmed) {
                     Vector3 testHeading = (currentDestination - _ship.Data.Position);
                     //D.Log("{0}'s angle between correct heading and requested heading is {1}.", _ship.FullName, Vector3.Angle(testHeading, _ship.Data.RequestedHeading));
@@ -1028,24 +1028,23 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             Vector3 rayEntryPoint = hitInfo.point;
             SphereCollider rayEntryCollider = hitInfo.collider as SphereCollider;
             float keepoutRadius = rayEntryCollider.radius;
-            D.Log("RayEntryPoint = {0}, KeepoutRadius = {1}.", rayEntryPoint, keepoutRadius);
-            float keepoutDiameter = keepoutRadius * 2F;
-            Vector3 pointBeyondKeepoutZone = ray.GetPoint(hitInfo.distance + keepoutDiameter);
-            if (Physics.Raycast(pointBeyondKeepoutZone, -ray.direction, out hitInfo, keepoutDiameter, _keepoutOnlyLayerMask.value)) {
+            float rayLength = (2F * keepoutRadius) + 1F;
+            Vector3 pointBeyondKeepoutZone = ray.GetPoint(hitInfo.distance + rayLength);
+            if (Physics.Raycast(pointBeyondKeepoutZone, -ray.direction, out hitInfo, rayLength, _keepoutOnlyLayerMask.value)) {
                 Vector3 rayExitPoint = hitInfo.point;
                 SphereCollider rayExitCollider = hitInfo.collider as SphereCollider;
                 D.Assert(rayEntryCollider == rayExitCollider);  // verify we didn't hit some other keep out zone coming back
-                D.Log("RayExitPoint = {0}. Entry to exit distance = {1}.", rayExitPoint, Vector3.Distance(rayEntryPoint, rayExitPoint));
+                //D.Log("RayExitPoint = {0}. Entry to exit distance = {1}.", rayExitPoint, Vector3.Distance(rayEntryPoint, rayExitPoint));
                 Vector3 halfWayPointInsideKeepoutZone = rayEntryPoint + (rayExitPoint - rayEntryPoint) / 2F;
-                Vector3 obstacleCenter = hitInfo.collider.transform.position;
-                D.Assert(hitInfo.collider.bounds.Contains(halfWayPointInsideKeepoutZone), "HalfwayPt = {0}, obstacleCenter = {1}.".Inject(halfWayPointInsideKeepoutZone, obstacleCenter));
+                Vector3 obstacleLocation = hitInfo.transform.position;
+                D.Assert(hitInfo.collider.bounds.Contains(halfWayPointInsideKeepoutZone), "HalfwayPt = {0}, obstacleCenter = {1}.".Inject(halfWayPointInsideKeepoutZone, obstacleLocation));
                 float obstacleClearanceLeeway = StationaryLocation.CloseEnoughDistance;
-                detour = UnityUtility.FindClosestPointOnSphereSurfaceTo(halfWayPointInsideKeepoutZone, obstacleCenter, keepoutRadius + obstacleClearanceLeeway);
+                detour = UnityUtility.FindClosestPointOnSphereSurfaceTo(halfWayPointInsideKeepoutZone, obstacleLocation, keepoutRadius + obstacleClearanceLeeway);
                 D.Log("{0} found detour at {1} to avoid obstacle {2} at {3}. \nDistance to detour = {4}. Obstacle keepout radius = {5}. Detour is {6} from obstacle center.",
-                    _ship.FullName, detour, obstacleName, obstacleCenter, Vector3.Magnitude(detour - _ship.Data.Position), keepoutRadius, (detour - obstacleCenter).magnitude);
+                    _ship.FullName, detour, obstacleName, obstacleLocation, Vector3.Magnitude(detour - _ship.Data.Position), keepoutRadius, (detour - obstacleLocation).magnitude);
             }
             else {
-                D.Error("{0} did not find a ray exit point when casting through {1}.", _ship.FullName, obstacleName);    // hitInfo is null
+                D.Error("{0} did not find a ray exit point when casting through {1}.", _ship.FullName, obstacleName);
             }
             return detour;
         }
@@ -1139,8 +1138,6 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     }
 
-    //public static float MaxRadius { get; private set; }
-
     public event Action onDestinationReached;
 
     private ShipOrder _currentOrder;
@@ -1176,8 +1173,6 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     protected override void InitializeRadiiComponents() {
         var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
         Radius = meshRenderer.bounds.extents.magnitude;
-        //MaxRadius = Mathf.Max(Radius, MaxRadius);
-
         (collider as BoxCollider).size = meshRenderer.bounds.size;  // ship collider is a box
     }
 
@@ -1339,7 +1334,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     #region Idling
 
     IEnumerator Idling_EnterState() {
-        D.Log("{0}.Idling_EnterState called.", FullName);
+        //D.Log("{0}.Idling_EnterState called.", FullName);
 
         if (CurrentOrder != null) {
             // check for a standing order to execute if the current order (just completed) was issued by the Captain
@@ -1820,14 +1815,14 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     #region StateMachine Support Methods
 
-    private IOrbitable _objectBeingOrbited;
+    private IShipOrbitable _objectBeingOrbited;
 
-    private bool TryOrbiting(out IOrbitable objectBeingOrbited) {
-        var orbitableTarget = _helm.DestinationInfo.Target as IOrbitable;
+    private bool TryOrbiting(out IShipOrbitable objectBeingOrbited) {
+        var orbitableTarget = _helm.DestinationInfo.Target as IShipOrbitable;
         if (orbitableTarget != null) {
             objectBeingOrbited = orbitableTarget;
             orbitableTarget.AssumeOrbit(this);
-            D.Warn("{0} is now orbiting {1}.", FullName, orbitableTarget.FullName);
+            D.Log("{0} is now orbiting {1}.", FullName, orbitableTarget.FullName);
             return true;
         }
         objectBeingOrbited = null;
@@ -1837,7 +1832,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     private bool TryLeaveOrbit() {
         if (_objectBeingOrbited != null) {
             _objectBeingOrbited.LeaveOrbit(this);
-            D.Warn("{0} has left orbit of {1}.", FullName, _objectBeingOrbited.FullName);
+            D.Log("{0} has left orbit of {1}.", FullName, _objectBeingOrbited.FullName);
             _objectBeingOrbited = null;
             return true;
         }
@@ -1868,7 +1863,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     private void TryFireOnAnyTarget(Weapon weapon) {
-        if (_weaponRangeTrackerLookup[weapon.TrackerID].__TryGetRandomEnemyTarget(out _attackTarget)) {
+        if (_weaponRangeMonitorLookup[weapon.TrackerID].__TryGetRandomEnemyTarget(out _attackTarget)) {
             D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
             _attackStrength = weapon.Strength;
             Call(ShipState.Attacking);
@@ -1887,7 +1882,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         D.Assert(_ordersTarget != null && _ordersTarget.IsAlive, "{0}'s target from orders is null or dead.".Inject(Data.FullName));
         bool isTargetInRange = false;
         var uniqueEnemyTargetsInRange = Enumerable.Empty<IMortalTarget>();
-        foreach (var rangeTracker in _weaponRangeTrackerLookup.Values) {
+        foreach (var rangeTracker in _weaponRangeMonitorLookup.Values) {
             uniqueEnemyTargetsInRange = uniqueEnemyTargetsInRange.Union<IMortalTarget>(rangeTracker.EnemyTargets);  // OPTIMIZE
         }
 
@@ -1905,9 +1900,9 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             }
         }
         else {            // Planetoid
-            D.Assert(_ordersTarget is IPlanetoidTarget);
+            D.Assert(_ordersTarget is PlanetoidModel);
             if (!uniqueEnemyTargetsInRange.Contains(_ordersTarget)) {
-                if (_weaponRangeTrackerLookup.Values.Any(rangeTracker => rangeTracker.AllTargets.Contains(_ordersTarget))) {
+                if (_weaponRangeMonitorLookup.Values.Any(rangeTracker => rangeTracker.AllTargets.Contains(_ordersTarget))) {
                     // the planetoid is not an enemy, but it is in range and therefore fair game
                     isTargetInRange = true;
                 }
@@ -2031,7 +2026,11 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         AssessNeedForRepair();
     }
 
-    public override bool IsMovable { get { return true; } }
+    #endregion
+
+    #region IDestinationTarget Members
+
+    public override bool IsMobile { get { return true; } }
 
     #endregion
 

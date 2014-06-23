@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IPlanetoidTarget.cs
-// Interface for a IMortalTarget that is a planetoid.
+// File: IStarTarget.cs
+// Interface for a IDestinationTarget that is a Star.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,10 +16,13 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
+
     /// <summary>
-    /// Interface for a IMortalTarget that is a planetoid.
+    /// Interface for a IDestinationTarget that is a Star.
     /// </summary>
-    public interface IPlanetoidTarget : IMortalTarget {
+    [Obsolete]
+    public interface IStarTarget : /*IOwnedTarget*/ IDestinationTarget {
 
     }
 }

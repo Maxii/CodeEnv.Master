@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AItemModel.cs
-// The abstract data-holding base class for all solid and non-solid objects in the game.
+// The abstract data-holding base class for most objects in the game.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,9 +23,9 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// The abstract data-holding base class for all solid and non-solid objects in the game.
+/// The abstract data-holding base class for most objects in the game.
 /// </summary>
-public abstract class AItemModel : AMonoBase, IModel, IOwnedTarget, IDisposable {
+public abstract class AItemModel : AMonoBase, IModel, ITarget, IDisposable {
 
     private AItemData _data;
     /// <summary>
@@ -51,8 +51,8 @@ public abstract class AItemModel : AMonoBase, IModel, IOwnedTarget, IDisposable 
     }
 
     /// <summary>
-    /// Called from Awake(), this method initializes the Radius value of this Item along with any 
-    /// components that are linked to its value. Examples include mesh colliders and keepoutZone colliders
+    /// Called from Awake(), this method initializes the Radius value of this Item along with the
+    /// radius of any dedicated collider.
     /// </summary>
     protected abstract void InitializeRadiiComponents();
 
@@ -87,12 +87,6 @@ public abstract class AItemModel : AMonoBase, IModel, IOwnedTarget, IDisposable 
         _subscribers.Add(Data.SubscribeToPropertyChanged<AItemData, string>(d => d.ParentName, OnNamingChanged));
     }
 
-    protected virtual void OnOwnerChanged() {
-        if (onOwnerChanged != null) {
-            onOwnerChanged(this);
-        }
-    }
-
     /// <summary>
     /// Called when either the Item name or parentName is changed.
     /// </summary>
@@ -119,30 +113,6 @@ public abstract class AItemModel : AMonoBase, IModel, IOwnedTarget, IDisposable 
 
     public Transform Transform { get { return _transform; } }
 
-    public string Name {
-        get {
-            if (Data != null) {
-                return Data.Name;
-            }
-            return _transform.name + "(from transform)";
-        }
-    }
-
-    #endregion
-
-    #region IOwnedTarget Members
-
-    public virtual string FullName {
-        get {
-            if (Data != null) {
-                return Data.FullName;
-            }
-            return _transform.name + "(from transform)";
-        }
-    }
-
-    public Vector3 Position { get { return Data.Position; } }
-
     private float _radius;
     public float Radius {
         get {
@@ -152,13 +122,18 @@ public abstract class AItemModel : AMonoBase, IModel, IOwnedTarget, IDisposable 
         protected set { _radius = value; }
     }
 
-    public virtual bool IsMovable { get { return false; } }
+    #endregion
 
-    public SpaceTopography Topography { get { return Data.Topography; } }
+    #region ITarget Members
 
-    public event Action<IOwnedTarget> onOwnerChanged;
-
-    public IPlayer Owner { get { return Data.Owner; } }
+    public virtual string FullName {
+        get {
+            if (Data != null) {
+                return Data.FullName;
+            }
+            return _transform.name + "(from transform)";
+        }
+    }
 
     #endregion
 

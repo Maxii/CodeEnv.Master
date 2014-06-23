@@ -24,7 +24,7 @@ using UnityEngine;
 /// The data-holding class for all Systems in the game.  
 /// WARNING: Donot change name to "System", a protected word.
 /// </summary>
-public class SystemModel : AItemModel, ISystemModel, ISystemTarget {
+public class SystemModel : AOwnedItemModel, ISystemModel, IDestinationTarget {
 
     public new SystemData Data {
         get { return base.Data as SystemData; }
@@ -45,12 +45,14 @@ public class SystemModel : AItemModel, ISystemModel, ISystemTarget {
 
     public void AssignSettlement(SettlementCmdModel settlementCmd) {
         D.Assert(gameObject.GetComponentInChildren<SettlementCmdModel>() == null, "{0} already has a Settlement.".Inject(FullName));
-        GameObject orbitGo = UnityUtility.AddChild(gameObject, RequiredPrefabs.Instance.orbiter.gameObject);
+        GameObject systemGo = gameObject;
+        GameObject orbitGo = UnityUtility.AddChild(systemGo, RequiredPrefabs.Instance.orbiter.gameObject);
         orbitGo.name = "SettlementOrbit";
-        Transform settlementUnit = settlementCmd.transform.parent;
-        UnityUtility.AttachChildToParent(settlementUnit.gameObject, orbitGo);
+        Transform settlementUnitTransform = settlementCmd.transform.parent;
+        UnityUtility.AttachChildToParent(settlementUnitTransform.gameObject, orbitGo);
         // enabling (or not) the orbit around the star is handled by the SettlementCreator once isRunning
-        settlementUnit.localPosition = Data.SettlementOrbitSlot;        // position this settlement unit in the orbit slot already reserved for it
+        settlementUnitTransform.localPosition = Data.SettlementOrbitSlot.GenerateRandomPositionWithinSlot(); // position this settlement unit in the orbit slot already reserved for it
+        // IMPROVE should really be assigning the SettlementOrbitSlot to Settlement.Data.OrbitSlot and let it auto position, just like PlanetoidData.OrbitSlot
         InitializeSettlement(settlementCmd);
     }
 
@@ -76,6 +78,16 @@ public class SystemModel : AItemModel, ISystemModel, ISystemTarget {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region IDestinationTarget Members
+
+    public Vector3 Position { get { return Data.Position; } }
+
+    public virtual bool IsMobile { get { return false; } }
+
+    public SpaceTopography Topography { get { return Data.Topography; } }
+
+    #endregion
 
 }
 

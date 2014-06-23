@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IFleetCmdTarget.cs
-// Interface for a target that is a FleetCommand.
+// File: IPlanetoidTarget.cs
+// Interface for a IMortalTarget that is a planetoid.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,11 +16,13 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    /// <summary>
-    /// Interface for a target that is a FleetCommand.
-    /// </summary>
-    public interface IFleetCmdTarget : ICmdTarget {
+    using System;
 
+    /// <summary>
+    /// Interface for a IMortalTarget that is a planetoid.
+    /// </summary>
+    [Obsolete]
+    public interface IPlanetoidTarget : IMortalTarget {
 
     }
 }

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IDestinationTarget.cs
-//  Interface for a target that is simply a destination.
+//  Interface for a target that can be a movement destination.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,15 +21,13 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for a target that is simply a destination.
+    /// Interface for a target that can be a movement destination.
     /// </summary>
-    public interface IDestinationTarget {
-
-        string FullName { get; }
+    public interface IDestinationTarget : ITarget {
 
         Vector3 Position { get; }
 
-        bool IsMovable { get; }
+        bool IsMobile { get; }
 
         /// <summary>
         /// The radius in units of the conceptual 'globe' that encompasses this Item. Readonly.

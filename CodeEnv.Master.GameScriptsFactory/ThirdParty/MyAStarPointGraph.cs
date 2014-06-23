@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -34,11 +34,7 @@ namespace Pathfinding {
         public static int deepNebulaTagMask = 1 << (int)SpaceTopography.DeepNebula; // x0100
         public static int systemTagMask = 1 << (int)SpaceTopography.System;         // x1000
 
-        //public IList<Vector3> GraphWaypoints { get; private set; }
-
         public IDictionary<SpaceTopography, IList<Vector3>> GraphWaypointsLookupByTag { get; private set; }
-
-        //private UniverseCenterView _universeCenterView;
 
         /// <summary>
         /// This will be called on the same time as Awake on the gameObject which the AstarPath script is attached to. (remember, not in the editor)
@@ -94,12 +90,12 @@ namespace Pathfinding {
             #region Debugging
 
             if (minConstNode != null) {
-                D.Log("Closest Node is at {0}, {1} from {2}.", nnInfo.constClampedPosition, Vector3.Distance(nnInfo.constClampedPosition, position), position);
-                D.Log("Constraints on Node: ConstrainDistance = {0}, DistanceConstraint = {1}.", constraint.constrainDistance, Mathf.Sqrt(maxDistSqr));
+                //D.Log("Closest Node is at {0}, {1} from {2}. \nNodeConstrainDistance = {3}, DistanceConstraint = {4}.", 
+                //    nnInfo.constClampedPosition, Vector3.Distance(nnInfo.constClampedPosition, position), position, constraint.constrainDistance, Mathf.Sqrt(maxDistSqr));
             }
             else {
-                D.Log("Closest Node is at {0}, {1} from {2}. Penalty = {3}.", nnInfo.clampedPosition, Vector3.Distance(nnInfo.clampedPosition, position), position, minNode.penalty);
-                D.Log("Constraints on Node: ConstrainDistance = {0}, DistanceConstraint = {1}.", constraint.constrainDistance, Mathf.Sqrt(maxDistSqr));
+                //D.Log("Closest Node is at {0}, {1} from {2}. Penalty = {3}. \nNodeConstrainDistance = {4}, DistanceConstraint = {5}.", 
+                //    nnInfo.clampedPosition, Vector3.Distance(nnInfo.clampedPosition, position), position, minNode.penalty, constraint.constrainDistance, Mathf.Sqrt(maxDistSqr));
             }
 
             #endregion
@@ -160,7 +156,7 @@ namespace Pathfinding {
                     node.connectionCosts = costs.ToArray();
                 }
                 int totalConnectionsAttempted = connectionCount + invalidConnectionCount;
-                D.Log("{0}/{1} valid connections.", connectionCount, totalConnectionsAttempted);
+                //D.Log("{0}/{1} valid connections.", connectionCount, totalConnectionsAttempted);
             }
         }
 
@@ -182,7 +178,7 @@ namespace Pathfinding {
 
             var universeCenter = Universe.Instance.Folder.GetComponentInChildren<UniverseCenterModel>();
             if (universeCenter != null) {
-                var pointsAroundUniverseCenter = UnityUtility.CalcVerticesOfInscribedBoxInsideSphere(universeCenter.Position, universeCenter.OrbitDistance);
+                var pointsAroundUniverseCenter = UnityUtility.CalcVerticesOfInscribedBoxInsideSphere(universeCenter.Position, universeCenter.MaximumShipOrbitDistance);
                 openSpaceWaypoints = openSpaceWaypoints.Except(new List<Vector3>() { universeCenter.Position }, UnityUtility.Vector3EqualityComparer);
                 openSpaceWaypoints = openSpaceWaypoints.Union(pointsAroundUniverseCenter, UnityUtility.Vector3EqualityComparer);
             }
@@ -229,12 +225,12 @@ namespace Pathfinding {
         private Node[] PopulateNodes() {
             int waypointCount = GraphWaypointsLookupByTag.Values.Sum(list => list.Count);
             Node[] populatedNodes = CreateNodes(waypointCount); // assigns initial penalty of 0 to each node
-            D.Log("{0} pathfinding nodes will be created.", waypointCount);
+            //D.Log("{0} pathfinding nodes will be created.", waypointCount);
             D.Assert(waypointCount == populatedNodes.Length);
 
             // initialize nodes that will be tagged OpenSpace
             var waypoints = GraphWaypointsLookupByTag[SpaceTopography.OpenSpace];
-            D.Log("Creating {0} pathfinding nodes with tag {1}.", waypoints.Count, SpaceTopography.OpenSpace.GetName());
+            //D.Log("Creating {0} pathfinding nodes with tag {1}.", waypoints.Count, SpaceTopography.OpenSpace.GetName());
             int tagMask = openSpaceTagMask;
             //D.Log("{0} tag mask = {1}.", PathfindingTags.OpenSpace.GetName(), StringExtensions.GetBinaryString(tagMask));
             for (int i = 0; i < waypoints.Count; i++) {
@@ -246,7 +242,7 @@ namespace Pathfinding {
 
             // initialize nodes that will be tagged System
             waypoints = GraphWaypointsLookupByTag[SpaceTopography.System];
-            D.Log("Creating {0} pathfinding nodes with tag {1}.", waypoints.Count, SpaceTopography.System.GetName());
+            //D.Log("Creating {0} pathfinding nodes with tag {1}.", waypoints.Count, SpaceTopography.System.GetName());
             tagMask = systemTagMask;
             //D.Log("{0} tag mask = {1}.", PathfindingTags.System.GetName(), StringExtensions.GetBinaryString(tagMask));
             for (int i = nextNodeIndex; i < nextNodeIndex + waypoints.Count; i++) {

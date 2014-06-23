@@ -94,7 +94,7 @@ namespace CodeEnv.Master.GameContent {
         // OPTIMIZE consider letting this be settable so navigator's don't have to create a new one every time
         public Vector3 Position { get; private set; }
 
-        public bool IsMovable { get { return false; } }
+        public bool IsMobile { get { return false; } }
 
         public float Radius { get { return Constants.ZeroF; } }
 

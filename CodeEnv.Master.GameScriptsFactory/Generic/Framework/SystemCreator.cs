@@ -63,12 +63,6 @@ public class SystemCreator : AMonoBase, IDisposable {
 
     private static IDictionary<Index3D, SystemModel> _systemLookupBySectorIndex = new Dictionary<Index3D, SystemModel>();
 
-    /// <summary>
-    /// The _number of orbit slots in a system available for assignment to planets and settlements.
-    /// This does not include the inner slot which is reserved for ships orbiting the star.
-    /// </summary>
-    private static int _numberOfOrbitSlotsAvailableForPlanetsAndSettlements = TempGameValues.TotalOrbitSlotsPerSystem - 1;
-
     private static int[] _planetNumbers = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     private static string[] _moonLetters = new string[] { "a", "b", "c", "d", "e" };
 
@@ -256,25 +250,27 @@ public class SystemCreator : AMonoBase, IDisposable {
     }
 
     /// <summary>
-    /// Assigns each planetary subsystem (planet and optional moons) to an orbit slot and adjusts its
-    /// position and name to reflect that orbit. Applies to both randomly-generated and preset planets.
-    /// Also reserves an orbit slot for a future settlement.
+    /// Assigns an orbit slot to each planetary subsystem (planet and optional moons) and adjusts its
+    /// name to reflect that orbit. The position of the planet is automatically adjusted to fit within the slot
+    /// when the orbit slot is assigned. Applies to both randomly-generated and preset planets.
+    /// Also assigns an orbit slot for a future settlement.
     /// </summary>
     /// <exception cref="System.NotImplementedException"></exception>
     private void PlaceMembersInOrbitSlots() {
         LogEvent();
-        int innerOrbitsCount = Mathf.FloorToInt(0.25F * _numberOfOrbitSlotsAvailableForPlanetsAndSettlements);
-        int midOrbitsCount = Mathf.CeilToInt(0.6F * _numberOfOrbitSlotsAvailableForPlanetsAndSettlements) - innerOrbitsCount;
-        int outerOrbitsCount = _numberOfOrbitSlotsAvailableForPlanetsAndSettlements - innerOrbitsCount - midOrbitsCount;
-        var innerStack = new Stack<int>(Enumerable.Range(0, innerOrbitsCount).Shuffle());
-        var midStack = new Stack<int>(Enumerable.Range(innerOrbitsCount, midOrbitsCount).Shuffle());
-        var outerStack = new Stack<int>(Enumerable.Range(innerOrbitsCount + midOrbitsCount, outerOrbitsCount).Shuffle());
+        int innerOrbitsCount = Mathf.FloorToInt(0.25F * TempGameValues.TotalOrbitSlotsPerSystem);
+        int midOrbitsCount = Mathf.CeilToInt(0.6F * TempGameValues.TotalOrbitSlotsPerSystem) - innerOrbitsCount;
+        int outerOrbitsCount = TempGameValues.TotalOrbitSlotsPerSystem - innerOrbitsCount - midOrbitsCount;
 
-        Vector3[] orbitSlotLocationsForPlanetsAndSettlements = GenerateOrbitSlotLocationsAvailableForPlanetsAndSettlements();
+        var shuffledInnerStack = new Stack<int>(Enumerable.Range(0, innerOrbitsCount).Shuffle());
+        var shuffledMidStack = new Stack<int>(Enumerable.Range(innerOrbitsCount, midOrbitsCount).Shuffle());
+        var shuffledOuterStack = new Stack<int>(Enumerable.Range(innerOrbitsCount + midOrbitsCount, outerOrbitsCount).Shuffle());
 
-        // start by reserving the slot for the Settlement
-        int slotIndex = midStack.Pop();
-        _system.Data.SettlementOrbitSlot = orbitSlotLocationsForPlanetsAndSettlements[slotIndex];
+        OrbitalSlot[] allOrbitSlots = GenerateAllSystemOrbitSlots();
+
+        // reserve a slot for a future Settlement
+        int settlementOrbitSlotIndex = shuffledMidStack.Pop();
+        _system.Data.SettlementOrbitSlot = allOrbitSlots[settlementOrbitSlotIndex];
 
         // now divy up the remaining slots among the planets
         IList<PlanetoidModel> planetsToDestroy = null;
@@ -283,16 +279,16 @@ public class SystemCreator : AMonoBase, IDisposable {
             var planetCategory = planet.Data.Category;
             switch (planetCategory) {
                 case PlanetoidCategory.Volcanic:
-                    slots = new Stack<int>[] { innerStack, midStack };
+                    slots = new Stack<int>[] { shuffledInnerStack, shuffledMidStack };
                     break;
                 case PlanetoidCategory.Terrestrial:
-                    slots = new Stack<int>[] { midStack, innerStack, outerStack };
+                    slots = new Stack<int>[] { shuffledMidStack, shuffledInnerStack, shuffledOuterStack };
                     break;
                 case PlanetoidCategory.Ice:
-                    slots = new Stack<int>[] { outerStack, midStack };
+                    slots = new Stack<int>[] { shuffledOuterStack, shuffledMidStack };
                     break;
                 case PlanetoidCategory.GasGiant:
-                    slots = new Stack<int>[] { outerStack, midStack };
+                    slots = new Stack<int>[] { shuffledOuterStack, shuffledMidStack };
                     break;
                 case PlanetoidCategory.Moon_001:
                 case PlanetoidCategory.Moon_002:
@@ -304,8 +300,9 @@ public class SystemCreator : AMonoBase, IDisposable {
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(planetCategory));
             }
 
+            int slotIndex = 0;
             if (TryFindOrbitSlot(out slotIndex, slots)) {
-                planet.transform.localPosition = orbitSlotLocationsForPlanetsAndSettlements[slotIndex];
+                planet.Data.SystemOrbitSlot = allOrbitSlots[slotIndex];
                 // assign the planet's name using its orbital slot
                 planet.Data.Name = SystemName + Constants.Space + _planetNumbers[slotIndex];
             }
@@ -453,19 +450,26 @@ public class SystemCreator : AMonoBase, IDisposable {
         Destroy(gameObject);
     }
 
-    private Vector3[] GenerateOrbitSlotLocationsAvailableForPlanetsAndSettlements() {
-        LogEvent();
-        D.Assert(_star.OrbitDistance != Constants.ZeroF);   // confirm the star's Awake() has run
-        float systemRadiusAvailableForAllOrbits = TempGameValues.SystemRadius - _star.OrbitDistance;
-        float slotSpacing = systemRadiusAvailableForAllOrbits / TempGameValues.TotalOrbitSlotsPerSystem;
+    /// <summary>
+    /// Generates an ordered array of all orbit slots in the system. The first slot (index = 0) is the closest to the star, just outside
+    /// the star's ShipOrbitDistance
+    /// Note: These are system orbit slots that can be occupied by planets and settlements. These orbit slots begin just outside the
+    /// star's ShipOrbitSlot.
+    /// </summary>
+    /// <returns></returns>
+    private OrbitalSlot[] GenerateAllSystemOrbitSlots() {
+        D.Assert(_star.Radius != Constants.ZeroF, "{0}.Radius has not yet been set.".Inject(_star.FullName));   // confirm the star's Awake() has run so Radius is valid
+        float minOrbitRadius = _star.MaximumShipOrbitDistance;
+        float systemRadiusAvailableForAllOrbits = TempGameValues.SystemRadius - minOrbitRadius;
+        float slotSpacing = systemRadiusAvailableForAllOrbits / (float)TempGameValues.TotalOrbitSlotsPerSystem;
 
-        var orbitSlotLocationsForPlanetsAndSettlements = new Vector3[_numberOfOrbitSlotsAvailableForPlanetsAndSettlements];
-        for (int i = 0; i < _numberOfOrbitSlotsAvailableForPlanetsAndSettlements; i++) {
-            float unreservedOrbitSlotRadius = _star.OrbitDistance + slotSpacing * (i + 2);  // skips the space for the first slot
-            Vector2 startOrbitPoint2D = RandomExtended<float>.OnCircle(unreservedOrbitSlotRadius);
-            orbitSlotLocationsForPlanetsAndSettlements[i] = new Vector3(startOrbitPoint2D.x, 0F, startOrbitPoint2D.y);
+        var allOrbitSlots = new OrbitalSlot[TempGameValues.TotalOrbitSlotsPerSystem];
+        for (int i = 0; i < TempGameValues.TotalOrbitSlotsPerSystem; i++) {
+            float minOrbitSlotRadius = minOrbitRadius + slotSpacing * i;
+            float maxOrbitSlotRadius = minOrbitSlotRadius + slotSpacing;
+            allOrbitSlots[i] = new OrbitalSlot(minOrbitSlotRadius, maxOrbitSlotRadius);
         }
-        return orbitSlotLocationsForPlanetsAndSettlements;
+        return allOrbitSlots;
     }
 
     private T DeriveCategory<T>(Transform transformContainingCategoryName) where T : struct {

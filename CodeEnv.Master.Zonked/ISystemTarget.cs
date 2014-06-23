@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IStarTarget.cs
-// Interface for a IDestinationTarget that is a Star.
+// File: ISystemTarget.cs
+// Interface for an IDestinationTarget that is a System.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,10 +16,13 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
+
     /// <summary>
-    /// Interface for a IDestinationTarget that is a Star.
+    /// Interface for an IDestinationTarget that is a System.
     /// </summary>
-    public interface IStarTarget : IOwnedTarget {
+    [Obsolete]
+    public interface ISystemTarget : /*IOwnedTarget */ IDestinationTarget {
 
     }
 }

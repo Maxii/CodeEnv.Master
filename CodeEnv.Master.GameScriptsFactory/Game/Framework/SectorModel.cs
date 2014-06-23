@@ -24,7 +24,7 @@ using UnityEngine;
 /// A placeholder container class for TBD items that will be present in a Sector.
 /// eg. a nebula particle system.
 /// </summary>
-public class SectorModel : AItemModel, ISectorModel, ISectorTarget {
+public class SectorModel : AOwnedItemModel, ISectorModel, IDestinationTarget {
 
     public new SectorData Data {
         get { return base.Data as SectorData; }
@@ -42,6 +42,7 @@ public class SectorModel : AItemModel, ISectorModel, ISectorTarget {
 
     protected override void InitializeRadiiComponents() {
         Radius = TempGameValues.SectorSideLength / 2F;  // the radius of the sphere inscribed inside a sector box
+        // there is no dedicated collider associated with a Sector. The collider used for context menu activation is part of the SectorExaminer
     }
 
     protected override void Initialize() { }
@@ -49,6 +50,17 @@ public class SectorModel : AItemModel, ISectorModel, ISectorTarget {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region IDestinationTarget Members
+
+    public Vector3 Position { get { return Data.Position; } }
+
+    public virtual bool IsMobile { get { return false; } }
+
+    public SpaceTopography Topography { get { return Data.Topography; } }
+
+    #endregion
+
 
 }
 

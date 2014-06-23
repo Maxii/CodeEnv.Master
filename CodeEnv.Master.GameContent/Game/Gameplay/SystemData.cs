@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// All the data associated with a particular system.
     /// </summary>
-    public class SystemData : AItemData, IDisposable {
+    public class SystemData : AOwnedItemData, IDisposable {
 
         public Index3D SectorIndex { get; private set; }
 
@@ -34,21 +34,13 @@ namespace CodeEnv.Master.GameContent {
             set { throw new NotImplementedException(); }
         }
 
-        private Vector3 _settlementOrbitSlot;
         /// <summary>
-        ///  The orbital start position (in local space) of any current or
-        /// future settlement. The transform holding the SettlementCreator (whose
-        /// children are SettlementCmd and the Settlement's Facilities) has
-        /// its localPosition assigned this value. It is then attached to an orbit
+        ///  The orbital slot within this system that any current or future settlement can occupy. 
+        ///  The transform holding the SettlementCreator (whose children are SettlementCmd and its Facilities) 
+        ///  has its localPosition assigned a random position within the slot. It is then attached to an orbit
         /// object which is parented to the System.
         /// </summary>
-        public Vector3 SettlementOrbitSlot {
-            get { return _settlementOrbitSlot; }
-            set {
-                _settlementOrbitSlot = value;
-                D.Log("System's SettlementOrbitSlot set to {0}.", _settlementOrbitSlot);
-            }
-        }
+        public OrbitalSlot SettlementOrbitSlot { get; set; }
 
         private int _capacity;
         public int Capacity {

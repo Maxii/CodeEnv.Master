@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IOwnedTarget.cs
-// Interface for a IDestinationTarget that has an owner.
+// Interface for a target that can have an owner.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,9 +19,9 @@ namespace CodeEnv.Master.GameContent {
     using System;
 
     /// <summary>
-    /// Interface for a IDestinationTarget that has an owner.
+    /// Interface for a target that can have an owner.
     /// </summary>
-    public interface IOwnedTarget : IDestinationTarget {
+    public interface IOwnedTarget : ITarget {
 
         event Action<IOwnedTarget> onOwnerChanged;
 

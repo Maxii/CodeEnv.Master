@@ -242,7 +242,7 @@ public class StarBaseItem : AMortalItemStateMachine<StarbaseState>, IMortalTarge
         get { return Data.Position; }
     }
 
-    public bool IsMovable { get { return false; } }
+    public bool IsMobile { get { return false; } }
 
     #endregion
 

@@ -161,7 +161,7 @@ public class FormationStation : AMonoBase, IFormationStation, IDestinationTarget
         get { return _transform.position; }
     }
 
-    public bool IsMovable { get { return true; } }
+    public bool IsMobile { get { return true; } }
 
     public float Radius { get { return Constants.ZeroF; } }
 

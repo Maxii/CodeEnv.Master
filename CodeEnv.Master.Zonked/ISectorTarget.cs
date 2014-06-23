@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IModel.cs
-// Interface for an ItemModel.
+// File: ISectorTarget.cs
+// Interface for an IDestinationTarget that is a Sector.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,24 +16,13 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System.ComponentModel;
-    using UnityEngine;
+    using System;
 
     /// <summary>
-    /// Interface for an ItemModel.
+    /// Interface for an IDestinationTarget that is a Sector.
     /// </summary>
-    public interface IModel : IChangeTracking, INotifyPropertyChanged, INotifyPropertyChanging {
-
-        AItemData Data { get; set; }
-
-        string FullName { get; }
-
-        /// <summary>
-        /// The radius in units of the conceptual 'globe' that encompasses this Item. Readonly.
-        /// </summary>
-        float Radius { get; }
-
-        Transform Transform { get; }
+    [Obsolete]
+    public interface ISectorTarget : /*IOwnedTarget*/ IDestinationTarget {
 
     }
 }
