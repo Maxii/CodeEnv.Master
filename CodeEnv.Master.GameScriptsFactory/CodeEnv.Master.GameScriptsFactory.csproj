@@ -149,6 +149,9 @@
     <Compile Include="Game\Graphics\MoonView.cs" />
     <Compile Include="Game\Framework\PlanetModel.cs" />
     <Compile Include="Game\Graphics\PlanetView.cs" />
+    <Compile Include="Generic\Framework\NewSystemCreator.cs" />
+    <Compile Include="Game\Framework\NewSystemModel.cs" />
+    <Compile Include="Game\Graphics\NewSystemView.cs" />
     <Compile Include="ThirdParty\MyAStarPointGraph.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Generic\Framework\Loader.cs" />

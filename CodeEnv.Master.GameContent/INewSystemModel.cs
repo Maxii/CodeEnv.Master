@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ISystemModel.cs
+// File: INewSystemModel.cs
 // Interface for easy access to a SystemModel.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -19,9 +19,9 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for easy access to a SystemModel.
     /// </summary>
-    public interface ISystemModel : IModel {
+    public interface INewSystemModel : IModel {
 
-        new SystemData Data { get; set; }
+        new NewSystemData Data { get; set; }
     }
 }
 

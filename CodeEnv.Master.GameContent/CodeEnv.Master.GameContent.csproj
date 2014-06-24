@@ -240,6 +240,10 @@
     <Compile Include="Game\Graphics\PlanetPresenter.cs" />
     <Compile Include="Game\GUI\MoonGuiHudTextFactory.cs" />
     <Compile Include="Game\GUI\PlanetGuiHudTextFactory.cs" />
+    <Compile Include="INewSystemModel.cs" />
+    <Compile Include="NewSystemData.cs" />
+    <Compile Include="NewSystemGuiHudTextFactory.cs" />
+    <Compile Include="NewSystemPresenter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\SystemData.cs" />
     <Compile Include="Game\Gameplay\ShipData.cs" />

@@ -52,6 +52,11 @@ public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud, IDisposable {
         GuiHudPublisher<FacilityData>.TextFactory = FacilityGuiHudTextFactory.Instance;
         GuiHudPublisher<StarbaseCmdData>.TextFactory = StarbaseGuiHudTextFactory.Instance;
         GuiHudPublisher<UniverseCenterData>.TextFactory = UniverseCenterGuiHudTextFactory.Instance;
+
+        GuiHudPublisher<PlanetData>.TextFactory = PlanetGuiHudTextFactory.Instance;
+        GuiHudPublisher<MoonData>.TextFactory = MoonGuiHudTextFactory.Instance;
+        GuiHudPublisher<NewSystemData>.TextFactory = NewSystemGuiHudTextFactory.Instance;
+
     }
 
     private void Subscribe() {
