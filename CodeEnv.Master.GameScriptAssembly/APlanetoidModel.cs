@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: PlanetoidModel.cs
-// The data-holding class for all planetoids in the game.
+// File: APlanetoidModel.cs
+// Abstract base class for Planet and Moon Models.  
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,27 +18,19 @@
 
 using System;
 using System.Linq;
-using System.Collections;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// The data-holding class for all planetoids in the game.
+/// Abstract base class for Planet and Moon Models.  
 /// </summary>
-public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IShipOrbitable {
-    //public class PlanetoidModel : AMortalItemModelStateMachine {
+public abstract class APlanetoidModel : AMortalItemModel {
 
-    public new PlanetoidData Data {
-        get { return base.Data as PlanetoidData; }
+    public new APlanetoidData Data {
+        get { return base.Data as APlanetoidData; }
         set { base.Data = value; }
-    }
-
-    protected override void Awake() {
-        base.Awake();
-        // IMPROVE planetoid colliders vary in radius. They are currently manually preset via the editor to match their mesh size in their prefab
-        Subscribe();
     }
 
     protected override void InitializeRadiiComponents() {
@@ -50,41 +42,29 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IShipOrbitable 
     protected override void Initialize() {
         base.Initialize();
         CurrentState = PlanetoidState.None;
-        __CheckForOrbitingBodiesInsideOrbitDistance();
+        //__CheckForOrbitingBodiesInsideOrbitDistance();
     }
 
     public void CommenceOperations() {
         CurrentState = PlanetoidState.Idling;
     }
 
-    [System.Diagnostics.Conditional("DEBUG_LOG")]
-    private void __CheckForOrbitingBodiesInsideOrbitDistance() {
-        var moons = gameObject.GetComponentsInChildren<PlanetoidModel>().Except(this);
-        if (!moons.IsNullOrEmpty()) {
-            var moonsInsideKeepoutZoneRadius = moons.Where(moon => moon.transform.localPosition.magnitude + moon.Radius <= MaximumShipOrbitDistance);
-            if (!moonsInsideKeepoutZoneRadius.IsNullOrEmpty()) {
-                moonsInsideKeepoutZoneRadius.ForAll(moon => {
-                    D.Warn("{0} is inside {1}'s OrbitDistance of {2}.", moon.FullName, FullName, MaximumShipOrbitDistance);
-                });
-            }
-        }
-    }
+    //[System.Diagnostics.Conditional("DEBUG_LOG")]
+    //private void __CheckForOrbitingBodiesInsideOrbitDistance() {
+    //    var moons = gameObject.GetComponentsInChildren<PlanetoidModel>().Except(this);
+    //    if (!moons.IsNullOrEmpty()) {
+    //        var moonsInsideKeepoutZoneRadius = moons.Where(moon => moon.transform.localPosition.magnitude + moon.Radius <= MaximumShipOrbitDistance);
+    //        if (!moonsInsideKeepoutZoneRadius.IsNullOrEmpty()) {
+    //            moonsInsideKeepoutZoneRadius.ForAll(moon => {
+    //                D.Warn("{0} is inside {1}'s OrbitDistance of {2}.", moon.FullName, FullName, MaximumShipOrbitDistance);
+    //            });
+    //        }
+    //    }
+    //}
 
     protected override void OnDataChanged() {
         base.OnDataChanged();
         SetKeepoutZoneRadius();
-    }
-
-    protected override void OnOwnerChanged() {
-        base.OnOwnerChanged();
-        PropogateOwnerChangeToMoons();
-    }
-
-    private void PropogateOwnerChangeToMoons() {
-        var moons = gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetoidModel>().Except(this);
-        if (!moons.IsNullOrEmpty()) {
-            moons.ForAll(m => m.Data.Owner = Data.Owner);
-        }
     }
 
     private void SetKeepoutZoneRadius() {
@@ -94,8 +74,6 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IShipOrbitable 
     }
 
     #region StateMachine - Simple Alternative
-
-    // state machine is started by SystemCreator onIsRunning
 
     private PlanetoidState _currentState;
     public PlanetoidState CurrentState {
@@ -151,82 +129,6 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IShipOrbitable 
 
     #endregion
 
-    #region StateMachine - Full featured
-
-    //public new PlanetoidState CurrentState {
-    //    get { return (PlanetoidState)base.CurrentState; }
-    //    set { base.CurrentState = value; }
-    //}
-
-    //#region None
-
-    //void None_EnterState() {
-    //    LogEvent();
-    //}
-
-    //void None_ExitState() {
-    //    LogEvent();
-    //    IsOperational = true;
-    //}
-
-    //#endregion
-
-    //#region Idling
-
-    //void Idling_EnterState() {
-    //    // LogEvent();
-    //}
-
-    //void Idling_ExitState() {
-    //LogEvent();
-    //}
-
-    //#endregion
-
-    //#region Dead
-
-    //void Dead_EnterState() {
-    //    LogEvent();
-    //    OnItemDeath();
-    //    OnStartShow();
-    //}
-
-    //void Dead_OnShowCompletion() {
-    //    LogEvent();
-    //    StartCoroutine(DelayedDestroy(3));
-    //}
-    //#endregion
-
-    //# region StateMachine Callbacks
-
-    //public override void OnShowCompletion() {
-    //    RelayToCurrentState();
-    //}
-
-    //protected override void OnHit(float damage) {
-    //    if (CurrentState == PlanetoidState.Dead) {
-    //        return;
-    //    }
-    //    Data.CurrentHitPoints -= damage;
-    //    if (Data.Health > Constants.ZeroF) {
-    //        CurrentState = PlanetoidState.Dead;
-    //        return;
-    //    }
-    //    if (CurrentState == PlanetoidState.ShowHit) {
-    //        // View can not 'queue' show animations so don't interrupt what is showing with another like show
-    //        return;
-    //    }
-    //    Call(PlanetoidState.ShowHit);
-    //}
-
-    //#endregion
-
-    #endregion
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
     #region IMortalTarget Members
 
     public override void TakeHit(CombatStrength attackerWeaponStrength) {
@@ -257,24 +159,6 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IShipOrbitable 
     #region IShipOrbitable Members
 
     public float MaximumShipOrbitDistance { get { return Data.ShipOrbitSlot.MaximumDistance; } }
-
-    public void AssumeOrbit(IShipModel ship) {
-        var shipOrbit = gameObject.GetComponentInImmediateChildren<ShipOrbit>();
-        if (shipOrbit == null) {
-            UnitFactory.Instance.MakeShipOrbitInstance(gameObject, ship);
-        }
-        else {
-            UnitFactory.Instance.AttachShipToShipOrbit(ship, ref shipOrbit);
-        }
-    }
-
-    public void LeaveOrbit(IShipModel orbitingShip) {
-        var shipOrbit = gameObject.GetComponentInImmediateChildren<ShipOrbit>();
-        D.Assert(shipOrbit != null, "{0}.{1} is not present.".Inject(FullName, typeof(ShipOrbit).Name));
-        var ship = shipOrbit.gameObject.GetSafeInterfacesInChildren<IShipModel>().Single(s => s == orbitingShip);
-        var parentFleetTransform = ship.Command.Transform.parent;
-        ship.Transform.parent = parentFleetTransform;
-    }
 
     #endregion
 

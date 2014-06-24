@@ -56,6 +56,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\APlanetoidData.cs" />
     <Compile Include="Generic\Framework\ACombatItemData.cs" />
     <Compile Include="Generic\Framework\AOwnedItemData.cs" />
     <Compile Include="Generic\IO\FacilityStat.cs" />
@@ -88,7 +89,7 @@
     <Compile Include="Game\Gameplay\FleetCategory.cs" />
     <Compile Include="Generic\Framework\ACommandData.cs" />
     <Compile Include="Generic\Framework\AElementData.cs" />
-    <Compile Include="Game\Graphics\FacilityGuiHudTextFactory.cs" />
+    <Compile Include="Game\GUI\FacilityGuiHudTextFactory.cs" />
     <Compile Include="Game\Gameplay\FacilityCategory.cs" />
     <Compile Include="Game\Gameplay\FacilityData.cs" />
     <Compile Include="Game\Gameplay\FacilityState.cs" />
@@ -150,10 +151,10 @@
     <Compile Include="Game\GUI\GuiHudText.cs" />
     <Compile Include="Generic\Graphics\IGuiHud.cs" />
     <Compile Include="Game\GUI\GuiHudPublisher.cs" />
-    <Compile Include="Game\Graphics\GuiHudTextFactory.cs" />
-    <Compile Include="Game\Graphics\FleetGuiHudTextFactory.cs" />
-    <Compile Include="Game\Graphics\ShipGuiHudTextFactory.cs" />
-    <Compile Include="Game\Graphics\SystemGuiHudTextFactory.cs" />
+    <Compile Include="Game\GUI\GuiHudTextFactory.cs" />
+    <Compile Include="Game\GUI\FleetGuiHudTextFactory.cs" />
+    <Compile Include="Game\GUI\ShipGuiHudTextFactory.cs" />
+    <Compile Include="Game\GUI\SystemGuiHudTextFactory.cs" />
     <Compile Include="Generic\Graphics\IGuiHudPublisher.cs" />
     <Compile Include="Generic\Graphics\IGuiHudTextFactory.cs" />
     <Compile Include="Generic\_Debug\IDebugHud.cs" />
@@ -164,15 +165,15 @@
     <Compile Include="Game\Gameplay\PlanetoidCategory.cs" />
     <Compile Include="Game\Gameplay\StarData.cs" />
     <Compile Include="Game\Gameplay\StarCategory.cs" />
-    <Compile Include="Game\Graphics\PlanetoidGuiHudTextFactory.cs" />
-    <Compile Include="Game\Graphics\StarGuiHudTextFactory.cs" />
-    <Compile Include="Game\Graphics\SettlementGuiHudTextFactory.cs" />
+    <Compile Include="Game\GUI\PlanetoidGuiHudTextFactory.cs" />
+    <Compile Include="Game\GUI\StarGuiHudTextFactory.cs" />
+    <Compile Include="Game\GUI\SettlementGuiHudTextFactory.cs" />
     <Compile Include="Game\Gameplay\ShipState.cs" />
     <Compile Include="Game\Gameplay\ShipDirective.cs" />
     <Compile Include="Generic\Framework\StationaryLocation.cs" />
     <Compile Include="Game\Gameplay\SectorData.cs" />
     <Compile Include="Game\Gameplay\ItemData.cs" />
-    <Compile Include="Game\Graphics\SectorGuiHudTextFactory.cs" />
+    <Compile Include="Game\GUI\SectorGuiHudTextFactory.cs" />
     <Compile Include="Game\Gameplay\StarbaseDirective.cs" />
     <Compile Include="Game\Gameplay\SettlementDirective.cs" />
     <Compile Include="Game\Gameplay\SettlementState.cs" />
@@ -180,7 +181,7 @@
     <Compile Include="Game\Gameplay\StarbaseCategory.cs" />
     <Compile Include="Game\Framework\BaseComposition.cs" />
     <Compile Include="Game\Gameplay\StarbaseCmdData.cs" />
-    <Compile Include="Game\Graphics\StarbaseGuiHudTextFactory.cs" />
+    <Compile Include="Game\GUI\StarbaseGuiHudTextFactory.cs" />
     <Compile Include="Generic\Graphics\ICommandViewable.cs" />
     <Compile Include="Generic\Graphics\IElementViewable.cs" />
     <Compile Include="Game\GUI\SettlementIconFactory.cs" />
@@ -231,6 +232,14 @@
     <Compile Include="Generic\Framework\ICombatTarget.cs" />
     <Compile Include="Generic\Framework\ITarget.cs" />
     <Compile Include="Generic\Framework\OrbitalSlot.cs" />
+    <Compile Include="Generic\Framework\IMoonModel.cs" />
+    <Compile Include="Generic\Framework\IPlanetModel.cs" />
+    <Compile Include="Game\Gameplay\MoonData.cs" />
+    <Compile Include="Game\Graphics\MoonPresenter.cs" />
+    <Compile Include="Game\Gameplay\PlanetData.cs" />
+    <Compile Include="Game\Graphics\PlanetPresenter.cs" />
+    <Compile Include="Game\GUI\MoonGuiHudTextFactory.cs" />
+    <Compile Include="Game\GUI\PlanetGuiHudTextFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\SystemData.cs" />
     <Compile Include="Game\Gameplay\ShipData.cs" />
@@ -248,7 +257,7 @@
     <Compile Include="Generic\IO\WeaponStat.cs" />
     <Compile Include="Generic\IO\StarStat.cs" />
     <Compile Include="Game\Gameplay\UniverseCenterData.cs" />
-    <Compile Include="Game\Graphics\UniverseCenterGuiHudTextFactory.cs" />
+    <Compile Include="Game\GUI\UniverseCenterGuiHudTextFactory.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Generic\Math\" />

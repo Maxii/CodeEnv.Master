@@ -57,6 +57,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="APlanetoidModel.cs" />
+    <Compile Include="APlanetoidView.cs" />
     <Compile Include="Game\Framework\ACombatItemModel.cs" />
     <Compile Include="Game\Framework\AOwnedItemModel.cs" />
     <Compile Include="Generic\Framework\ACreator.cs" />

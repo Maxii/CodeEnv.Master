@@ -145,6 +145,10 @@
     <Compile Include="Game\Graphics\StarbaseCmdHumanView.cs" />
     <Compile Include="Generic\Framework\SystemFactory.cs" />
     <Compile Include="Generic\Graphics\ShipOrbit.cs" />
+    <Compile Include="Game\Framework\MoonModel.cs" />
+    <Compile Include="Game\Graphics\MoonView.cs" />
+    <Compile Include="Game\Framework\PlanetModel.cs" />
+    <Compile Include="Game\Graphics\PlanetView.cs" />
     <Compile Include="ThirdParty\MyAStarPointGraph.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Generic\Framework\Loader.cs" />

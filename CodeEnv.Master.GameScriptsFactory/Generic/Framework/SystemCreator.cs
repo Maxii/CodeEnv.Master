@@ -435,8 +435,8 @@ public class SystemCreator : AMonoBase, IDisposable {
 
     private void BeginSystemOperations(Action onCompletion) {
         LogEvent();
-        _planets.ForAll(p => p.CurrentState = PlanetoidState.Idling);
-        _moons.ForAll(m => m.CurrentState = PlanetoidState.Idling);
+        _planets.ForAll(p => p.CommenceOperations());
+        _moons.ForAll(m => m.CommenceOperations());
         UnityUtility.WaitOneToExecute(onWaitFinished: (wasKilled) => {
             onCompletion();
         });
