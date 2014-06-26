@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PlanetData : APlanetoidData {
 
+        public float OrbitalSpeed { get; set; }
+
         private OrbitalSlot _systemOrbitSlot;
         /// <summary>
         /// The OrbitSlot that this planet occupies in the system.
@@ -36,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
         public PlanetData(PlanetoidStat stat) : base(stat) { }
 
         private void OnSystemOrbitSlotChanged() {
-            Transform.localPosition = SystemOrbitSlot.GenerateRandomPositionWithinSlot();
+            Transform.localPosition = SystemOrbitSlot.GenerateRandomLocalPositionWithinSlot();
         }
 
         public override string ToString() {

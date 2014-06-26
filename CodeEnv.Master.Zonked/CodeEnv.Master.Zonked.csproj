@@ -146,6 +146,7 @@
     <Compile Include="IntelFreshness.cs" />
     <Compile Include="IntelLevel.cs" />
     <Compile Include="IntelSource.cs" />
+    <Compile Include="IPlanetoidModel.cs" />
     <Compile Include="IPlanetoidTarget.cs" />
     <Compile Include="IRangeTracker.cs" />
     <Compile Include="ISectorTarget.cs" />
@@ -153,6 +154,7 @@
     <Compile Include="IShipViewable.cs" />
     <Compile Include="IStarBaseViewable.cs" />
     <Compile Include="IStarTarget.cs" />
+    <Compile Include="ISystemModel.cs" />
     <Compile Include="ISystemTarget.cs" />
     <Compile Include="ISystemViewable.cs" />
     <Compile Include="ItemGraphics.cs" />
@@ -168,6 +170,8 @@
     <Compile Include="OpeYield.cs" />
     <Compile Include="OrbitalPlane.cs" />
     <Compile Include="OrbitalPlaneManager.cs" />
+    <Compile Include="PlanetoidGuiHudTextFactory.cs" />
+    <Compile Include="PlanetoidModel.cs" />
     <Compile Include="PlanetoidPresenter.cs" />
     <Compile Include="PlanetoidView.cs" />
     <Compile Include="PlayerSettingsSetup.cs" />
@@ -187,6 +191,7 @@
     <Compile Include="ShipItem.cs" />
     <Compile Include="ShipMoveTask.cs" />
     <Compile Include="ShipNavigator.cs" />
+    <Compile Include="ShipOrbit.cs" />
     <Compile Include="ShipPresenter.cs" />
     <Compile Include="ShipStats.cs" />
     <Compile Include="ShipView.cs" />
@@ -205,8 +210,11 @@
     <Compile Include="StationaryItem.cs" />
     <Compile Include="SystemComposition.cs" />
     <Compile Include="SystemCreator.cs" />
+    <Compile Include="SystemData.cs" />
     <Compile Include="SystemGraphics.cs" />
+    <Compile Include="SystemGuiHudTextFactory.cs" />
     <Compile Include="SystemManager.cs" />
+    <Compile Include="SystemModel.cs" />
     <Compile Include="SystemPresenter.cs" />
     <Compile Include="SystemView.cs" />
     <Compile Include="TransformExtensions.cs" />

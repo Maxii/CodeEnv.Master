@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
         public MoonData(PlanetoidStat stat) : base(stat) { }
 
         private void OnPlanetOrbitSlotChanged() {
-            Transform.localPosition = PlanetOrbitSlot.GenerateRandomPositionWithinSlot();
+            Transform.localPosition = PlanetOrbitSlot.GenerateRandomLocalPositionWithinSlot();
         }
 
         public override string ToString() {

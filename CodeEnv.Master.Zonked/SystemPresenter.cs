@@ -14,65 +14,60 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-// default namespace
+namespace CodeEnv.Master.GameContent {
 
-using System.Linq;
-using CodeEnv.Master.Common;
-using CodeEnv.Master.GameContent;
-using UnityEngine;
+    using System.Collections.Generic;
+    using System.Linq;
+    using CodeEnv.Master.Common;
+    using UnityEngine;
 
-/// <summary>
-/// An MVPresenter associated with a SystemView.
-/// </summary>
-public class SystemPresenter : AFocusableItemPresenter {
+    /// <summary>
+    /// An MVPresenter associated with a SystemView.
+    /// </summary>
+    public class SystemPresenter : AFocusableItemPresenter {
 
-    public new SystemModel Item {
-        get { return base.Model as SystemModel; }
-        protected set { base.Model = value; }
-    }
+        public new ISystemModel Model {
+            get { return base.Model as ISystemModel; }
+            protected set { base.Model = value; }
+        }
 
-    protected new ISystemViewable View {
-        get { return base.View as ISystemViewable; }
-    }
+        public SystemPresenter(IViewable view) : base(view) { }
 
-    private IViewable[] _childViewsInSystem;
+        protected override IModel AcquireModelReference() {
+            return _viewGameObject.GetSafeInterface<ISystemModel>();
+        }
 
-    public SystemPresenter(IViewable view)
-        : base(view) {
-        _childViewsInSystem = _viewGameObject.GetSafeInterfacesInChildren<IViewable>().Except(view).ToArray();
-    }
+        protected override IGuiHudPublisher InitializeHudPublisher() {
+            return new GuiHudPublisher<SystemData>(Model.Data);
+        }
 
-    protected override AItemModel AcquireModelReference() {
-        return UnityUtility.ValidateMonoBehaviourPresence<SystemModel>(_viewGameObject);
-    }
+        public void RequestContextMenu(bool isDown) {
+            SettlementCmdData settlementData = Model.Data.SettlementData;
+            //D.Log("Settlement null = {0}, isHumanOwner = {1}.", settlement == null, settlement.Owner.IsHuman);
+            if (settlementData != null && (DebugSettings.Instance.AllowEnemyOrders || settlementData.Owner.IsHuman)) {
+                _cameraControl.ShowContextMenuOnPress(isDown);
+            }
+        }
 
-    protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<SystemData>(Model.Data);
-    }
+        public void OnIsSelected() {
+            SelectionManager.Instance.CurrentSelection = View as ISelectable;
+        }
 
-    public void OnPressWhileSelected(bool isDown) {
-        OnPressRequestContextMenu(isDown);
-    }
+        // UNCLEAR what should the relationship be between System.IntelCoverage and Settlement/Planet?, implemented Settlement for now
+        public void OnPlayerIntelCoverageChanged() {
+            // construct list each time as Settlement presence can change with time
+            var settlementView = _viewGameObject.GetInterfaceInChildren<ICommandViewable>();
+            if (settlementView != null) {
+                settlementView.PlayerIntel.CurrentCoverage = View.PlayerIntel.CurrentCoverage;
+            }
+            // The approach below acquired all views in the system and gave them the same IntelCoverage as the system
+            //IEnumerable<IViewable> childViewsInSystem = _viewGameObject.GetSafeInterfacesInChildren<IViewable>().Except(View);
+            //childViewsInSystem.ForAll<IViewable>(v => v.PlayerIntel.CurrentCoverage = View.PlayerIntel.CurrentCoverage);
+        }
 
-    private void OnPressRequestContextMenu(bool isDown) {
-        SettlementCmdData settlement = Model.Data.Settlement;
-        //D.Log("Settlement null = {0}, isHumanOwner = {1}.", settlement == null, settlement.Owner.IsHuman);
-        if (settlement != null && (DebugSettings.Instance.AllowEnemyOrders || settlement.Owner.IsHuman)) {
-            _cameraControl.Instance.ShowContextMenuOnPress(isDown);
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
         }
     }
-
-    public void OnIsSelected() {
-        SelectionManager.Instance.CurrentSelection = View as ISelectable;
-    }
-
-    public void OnPlayerIntelLevelChanged() {
-        _childViewsInSystem.ForAll<IViewable>(cov => cov.PlayerIntelLevel = View.PlayerIntelLevel);
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
 }
 

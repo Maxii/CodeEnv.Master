@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.ParentName);   // the name of the Starbase is the parentName of the Command
-                case GuiHudLineKeys.Distance:
+                case GuiHudLineKeys.CameraDistance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
                     return new ColoredTextList_Intel(intel);
@@ -64,7 +64,8 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.SectorIndex:
                 case GuiHudLineKeys.Density:
                 case GuiHudLineKeys.ShipDetails:
-                case GuiHudLineKeys.Target:
+                case GuiHudLineKeys.TargetName:
+                case GuiHudLineKeys.TargetDistance:
                     return _emptyColoredTextList;
 
                 case GuiHudLineKeys.None:

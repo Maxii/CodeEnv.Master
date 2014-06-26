@@ -1,6 +1,6 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
@@ -16,10 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
-    using UnityEngine;
 
     /// <summary>
     /// An MVPresenter associated with a SystemView.

@@ -74,7 +74,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnSystemOrbitSlotChanged() {
-            Transform.localPosition = SystemOrbitSlot.GenerateRandomPositionWithinSlot();
+            Transform.localPosition = SystemOrbitSlot.GenerateRandomLocalPositionWithinSlot();
         }
 
         public override string ToString() {

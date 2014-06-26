@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2013 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: NewSystemGuiHudTextFactory.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// File: PlanetoidGuiHudTextFactory.cs
+//  Factory that makes GuiCursorHudText and IColoredTextList instances for Planetoids.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,36 +21,31 @@ namespace CodeEnv.Master.GameContent {
     using System.Linq;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
     using UnityEngine;
 
     /// <summary>
-    /// 
+    ///  Factory that makes GuiCursorHudText and IColoredTextList instances for Planetoids.
     /// </summary>
-    public class NewSystemGuiHudTextFactory : AGuiHudTextFactory<NewSystemGuiHudTextFactory, NewSystemData> {
+    public class PlanetoidGuiHudTextFactory : AGuiHudTextFactory<PlanetoidGuiHudTextFactory, PlanetoidData> {
 
-        private NewSystemGuiHudTextFactory() {
+        private PlanetoidGuiHudTextFactory() {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, NewSystemData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, PlanetoidData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.Name);
-                case GuiHudLineKeys.SectorIndex:
-                    return new ColoredTextList_String(data.SectorIndex.ToString());
-                case GuiHudLineKeys.Distance:
+                case GuiHudLineKeys.ParentName:
+                    return data.ParentName != string.Empty ? new ColoredTextList_String(data.ParentName) : _emptyColoredTextList;
+                case GuiHudLineKeys.CameraDistance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
                     return new ColoredTextList_Intel(intel);
-                case GuiHudLineKeys.Owner:
-                    return data.Owner != TempGameValues.NoPlayer ? new ColoredTextList_Owner(data.Owner) : _emptyColoredTextList;
+                case GuiHudLineKeys.Category:
+                    return new ColoredTextList_String(data.Category.GetName(), data.Category.GetDescription());
                 case GuiHudLineKeys.Health:
-                    return (data.SettlementData != null) ? new ColoredTextList_Health(data.SettlementData.UnitHealth, data.SettlementData.MaxHitPoints) : _emptyColoredTextList;
-                case GuiHudLineKeys.CombatStrength:
-                    return (data.SettlementData != null) ? new ColoredTextList<float>(Constants.FormatFloat_0Dp, data.SettlementData.UnitStrength.Combined) : _emptyColoredTextList;
-                case GuiHudLineKeys.CombatStrengthDetails:
-                    return (data.SettlementData != null) ? new ColoredTextList_Combat(data.SettlementData.UnitStrength) : _emptyColoredTextList;
+                    return new ColoredTextList_Health(data.Health, data.MaxHitPoints);
                 case GuiHudLineKeys.Capacity:
                     return new ColoredTextList<int>(Constants.FormatInt_2DMin, data.Capacity);
                 case GuiHudLineKeys.Resources:
@@ -58,19 +53,20 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Specials:
                     return (data.SpecialResources != TempGameValues.NoSpecialResources) ? new ColoredTextList_Specials(data.SpecialResources)
                         : _emptyColoredTextList;
-                case GuiHudLineKeys.Category:
-                    return (data.SettlementData != null) ? new ColoredTextList_String(data.SettlementData.Category.GetName(), data.SettlementData.Category.GetDescription()) : _emptyColoredTextList;
-                case GuiHudLineKeys.SettlementDetails:
-                    return (data.SettlementData != null) ? new ColoredTextList_Settlement(data.SettlementData) : _emptyColoredTextList;
+                case GuiHudLineKeys.Owner:
+                    return data.Owner != TempGameValues.NoPlayer ? new ColoredTextList_Owner(data.Owner) : _emptyColoredTextList;
 
                 // The following is a fall through catcher for line keys that aren't processed. An empty ColoredTextList will be returned which will be ignored by GuiCursorHudText
-                case GuiHudLineKeys.ParentName: // systems do not have parent names
+                case GuiHudLineKeys.CombatStrength:
+                case GuiHudLineKeys.CombatStrengthDetails:
+                case GuiHudLineKeys.SettlementDetails:
                 case GuiHudLineKeys.Composition:
                 case GuiHudLineKeys.CompositionDetails:
                 case GuiHudLineKeys.ShipDetails:
+                case GuiHudLineKeys.SectorIndex:
                 case GuiHudLineKeys.Density:
                 case GuiHudLineKeys.Speed:
-                case GuiHudLineKeys.Target:
+                case GuiHudLineKeys.TargetName:
                     return _emptyColoredTextList;
 
                 case GuiHudLineKeys.None:

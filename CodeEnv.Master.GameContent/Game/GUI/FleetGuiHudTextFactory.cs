@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.ParentName); // the name of the Fleet is the parentName of the Command
-                case GuiHudLineKeys.Distance:
+                case GuiHudLineKeys.CameraDistance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
                     return new ColoredTextList_Intel(intel);
@@ -54,8 +54,10 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.CompositionDetails:
                     // TODO
                     return new ColoredTextList_Composition(data.Composition);
-                case GuiHudLineKeys.Target:
+                case GuiHudLineKeys.TargetName:
                     return data.Target != null ? new ColoredTextList_String(data.Target.FullName) : _emptyColoredTextList;
+                case GuiHudLineKeys.TargetDistance:
+                    return data.Target != null ? new ColoredTextList_Distance(data.Position, data.Target.Position) : _emptyColoredTextList;
 
                 // The following is a fall through catcher for line keys that aren't processed. An empty ColoredTextList will be returned which will be ignored by GuiCursorHudText
                 case GuiHudLineKeys.ParentName: // fleets do not have parent names

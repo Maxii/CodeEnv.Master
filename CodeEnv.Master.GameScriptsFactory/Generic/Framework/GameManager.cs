@@ -134,6 +134,7 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
                 References.InputHelper = GameInputHelper.Instance;
                 References.DynamicObjects = DynamicObjects.Instance;
                 References.CameraControl = CameraControl.Instance;
+                References.UnitFactory = UnitFactory.Instance;
                 // GuiHudPublisher factory reference settings moved to GuiCursorHud
                 break;
             default:

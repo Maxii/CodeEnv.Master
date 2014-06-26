@@ -69,6 +69,12 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<bool>(ref _isFlapsDeployed, value, "IsFlapsDeployed", OnIsFlapsDeployedChanged); }
         }
 
+        private IDestinationTarget _target;
+        public IDestinationTarget Target {
+            get { return _target; }
+            set { SetProperty<IDestinationTarget>(ref _target, value, "Target"); }
+        }
+
         public ShipCategory Category { get; private set; }
 
         /// <summary>

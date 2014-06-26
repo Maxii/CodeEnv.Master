@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
 // File: SystemModel.cs
-// The data-holding class for all Systems in the game.
+// The data-holding class for all Systems in the game.  
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,7 +22,7 @@ using UnityEngine;
 
 /// <summary>
 /// The data-holding class for all Systems in the game.  
-/// WARNING: Donot change name to "System", a protected word.
+/// WARNING: Donot change name to "System", a protected word. 
 /// </summary>
 public class SystemModel : AOwnedItemModel, ISystemModel, IDestinationTarget {
 
@@ -51,7 +51,7 @@ public class SystemModel : AOwnedItemModel, ISystemModel, IDestinationTarget {
         Transform settlementUnitTransform = settlementCmd.transform.parent;
         UnityUtility.AttachChildToParent(settlementUnitTransform.gameObject, orbitGo);
         // enabling (or not) the orbit around the star is handled by the SettlementCreator once isRunning
-        settlementUnitTransform.localPosition = Data.SettlementOrbitSlot.GenerateRandomPositionWithinSlot(); // position this settlement unit in the orbit slot already reserved for it
+        settlementUnitTransform.localPosition = Data.SettlementOrbitSlot.GenerateRandomLocalPositionWithinSlot(); // position this settlement unit in the orbit slot already reserved for it
         // IMPROVE should really be assigning the SettlementOrbitSlot to Settlement.Data.OrbitSlot and let it auto position, just like PlanetoidData.OrbitSlot
         InitializeSettlement(settlementCmd);
     }
@@ -88,6 +88,5 @@ public class SystemModel : AOwnedItemModel, ISystemModel, IDestinationTarget {
     public SpaceTopography Topography { get { return Data.Topography; } }
 
     #endregion
-
 }
 

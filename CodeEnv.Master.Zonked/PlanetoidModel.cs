@@ -90,7 +90,7 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IShipOrbitable 
     private void SetKeepoutZoneRadius() {
         SphereCollider keepoutZoneCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
         D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
-        keepoutZoneCollider.radius = Data.ShipOrbitSlot.MinimumDistance;
+        keepoutZoneCollider.radius = Data.ShipOrbitSlot.InnerRadius;
     }
 
     #region StateMachine - Simple Alternative
@@ -256,7 +256,7 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IShipOrbitable 
 
     #region IShipOrbitable Members
 
-    public float MaximumShipOrbitDistance { get { return Data.ShipOrbitSlot.MaximumDistance; } }
+    public float MaximumShipOrbitDistance { get { return Data.ShipOrbitSlot.OuterRadius; } }
 
     public void AssumeOrbit(IShipModel ship) {
         var shipOrbit = gameObject.GetComponentInImmediateChildren<ShipOrbit>();

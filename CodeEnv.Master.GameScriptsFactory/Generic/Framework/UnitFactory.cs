@@ -27,7 +27,7 @@ using UnityEngine;
 /// Singleton factory that makes instances of Elements and Commands.
 /// It also can make a standalone Fleet encompassing a single ship.
 /// </summary>
-public class UnitFactory : AGenericSingleton<UnitFactory> {
+public class UnitFactory : AGenericSingleton<UnitFactory>, IUnitFactory {
 
     private GameObject[] _aiShipPrefabs;
     private GameObject[] _humanShipPrefabs;
@@ -44,7 +44,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     private GameObject _weaponRangeMonitorPrefab;
     private GameObject _formationStationPrefab;
-    private GameObject _shipOrbitPrefab;
+
+    private OrbiterForShips _orbiterForShipsPrefab;
+    private MovingOrbiterForShips _movingOrbiterForShipsPrefab;
 
     private UnitFactory() {
         Initialize();
@@ -68,7 +70,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
         _weaponRangeMonitorPrefab = reqdPrefabs.weaponRangeMonitor.gameObject;
         _formationStationPrefab = reqdPrefabs.formationStation.gameObject;
-        _shipOrbitPrefab = reqdPrefabs.shipOrbit.gameObject;
+
+        _orbiterForShipsPrefab = reqdPrefabs.orbiterForShips;
+        _movingOrbiterForShipsPrefab = reqdPrefabs.movingOrbiterForShips;
     }
 
     /// <summary>
@@ -400,18 +404,30 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         // IMPROVE how to keep track ranges from overlapping
     }
 
-    public ShipOrbit MakeShipOrbitInstance(GameObject parent, IShipModel ship) {
-        GameObject shipOrbitGo = UnityUtility.AddChild(parent, _shipOrbitPrefab);
-        ShipOrbit shipOrbit = shipOrbitGo.GetSafeMonoBehaviourComponent<ShipOrbit>();
-        AttachShipToShipOrbit(ship, ref shipOrbit);
-        return shipOrbit;
+    /// <summary>
+    /// Attaches the provided ship to a newly instantiated IOrbiterForShips which is parented to the provided GameObject.
+    /// </summary>
+    /// <param name="parent">The parent GameObject for the new Orbiter.</param>
+    /// <param name="ship">The ship.</param>
+    /// <param name="orbitedObjectIsMobile">if set to <c>true</c> [orbited object is mobile].</param>
+    public void AttachShipToOrbiter(GameObject parent, IShipModel ship, bool orbitedObjectIsMobile) {
+        GameObject orbiterPrefab = orbitedObjectIsMobile ? _movingOrbiterForShipsPrefab.gameObject : _orbiterForShipsPrefab.gameObject;
+        Transform shipOrbitTransform = UnityUtility.AddChild(parent, orbiterPrefab).transform;
+        AttachShipToOrbiter(ship, ref shipOrbitTransform);
     }
 
-    public void AttachShipToShipOrbit(IShipModel ship, ref ShipOrbit shipOrbit) {
-        D.Assert(shipOrbit.transform.parent != null, "ShipOrbit being applied to {0} must have a parent.".Inject(ship.FullName));
-        ship.Transform.parent = shipOrbit.transform;    // ship retains existing position, rotation, scale and layer
+    /// <summary>
+    /// Attaches the provided ship to the provided orbiter transform and enables the orbiter script.
+    /// </summary>
+    /// <param name="ship">The ship.</param>
+    /// <param name="orbiterTransform">The orbiter transform.</param>
+    public void AttachShipToOrbiter(IShipModel ship, ref Transform orbiterTransform) {
+        D.Assert(orbiterTransform.parent != null, "OrbiterTransform being attached to {0} must already have a parent.".Inject(ship.FullName));
+        var orbiter = orbiterTransform.GetSafeInterface<IOrbiterForShips>();
+        D.Assert(orbiter != null, "The provided orbiter transform is not a {0}.".Inject(typeof(IOrbiterForShips).Name));
+        ship.Transform.parent = orbiterTransform;    // ship retains existing position, rotation, scale and layer
+        orbiter.enabled = true;
     }
-
 
 }
 

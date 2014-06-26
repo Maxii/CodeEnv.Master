@@ -51,7 +51,7 @@ public class StarModel : AOwnedItemModel, IStarModel, IDestinationTarget, IShipO
     private void SetKeepoutZoneRadius() {
         SphereCollider keepoutZoneCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
         D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
-        keepoutZoneCollider.radius = Data.ShipOrbitSlot.MinimumDistance;
+        keepoutZoneCollider.radius = Data.ShipOrbitSlot.InnerRadius;
     }
 
     protected override void Initialize() { }
@@ -70,26 +70,29 @@ public class StarModel : AOwnedItemModel, IStarModel, IDestinationTarget, IShipO
 
     #endregion
 
-    #region IOrbitable Members
+    #region IShipOrbitable Members
 
-    public float MaximumShipOrbitDistance { get { return Data.ShipOrbitSlot.MaximumDistance; } }
+    public OrbitalSlot ShipOrbitSlot { get { return Data.ShipOrbitSlot; } }
 
     public void AssumeOrbit(IShipModel ship) {
-        var shipOrbit = gameObject.GetComponentInImmediateChildren<ShipOrbit>();
-        if (shipOrbit == null) {
-            UnitFactory.Instance.MakeShipOrbitInstance(gameObject, ship);
+        IOrbiterForShips orbiter;
+        var orbiterTransform = _transform.GetTransformWithInterfaceInChildren<IOrbiterForShips>(out orbiter);
+        if (orbiterTransform != null) {
+            References.UnitFactory.AttachShipToOrbiter(ship, ref orbiterTransform);
         }
         else {
-            UnitFactory.Instance.AttachShipToShipOrbit(ship, ref shipOrbit);
+            References.UnitFactory.AttachShipToOrbiter(gameObject, ship, orbitedObjectIsMobile: false);
         }
     }
 
     public void LeaveOrbit(IShipModel orbitingShip) {
-        var shipOrbit = gameObject.GetComponentInImmediateChildren<ShipOrbit>();
-        D.Assert(shipOrbit != null, "{0}.{1} is not present.".Inject(FullName, typeof(ShipOrbit).Name));
-        var ship = shipOrbit.gameObject.GetSafeInterfacesInChildren<IShipModel>().Single(s => s == orbitingShip);
+        IOrbiterForShips orbiter;
+        var orbiterTransform = _transform.GetTransformWithInterfaceInChildren<IOrbiterForShips>(out orbiter);
+        D.Assert(orbiterTransform != null, "{0}.{1} is not present.".Inject(FullName, typeof(IOrbiterForShips).Name));
+        var ship = orbiterTransform.gameObject.GetSafeInterfacesInChildren<IShipModel>().Single(s => s == orbitingShip);
         var parentFleetTransform = ship.Command.Transform.parent;
         ship.Transform.parent = parentFleetTransform;
+        // OPTIMIZE remove empty orbiters?
     }
 
     #endregion

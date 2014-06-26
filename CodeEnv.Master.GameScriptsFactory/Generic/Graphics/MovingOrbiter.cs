@@ -21,10 +21,11 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Class that simulates the movement of an object orbiting around a location that is moveable. 
-/// Assumes this script is attached to a parent of the orbiting object whose position is coincident
-/// with that of the moveable object that is being orbited. This script simulates
-/// orbital movement of the orbiting object by rotating this parent object.
+/// Class that simulates the movement of an object orbiting around a location that is mobile.
+/// Assumes this script is attached to an otherwise empty gameobject [the orbiterGO] whose parent is the object
+/// being orbited. The position of this orbiterGO should be coincident with that of the object being orbited. The
+/// object that is orbiting is parented to this orbiterGO, thus simulating orbital movement by 
+/// changing the rotation of the orbiterGO.
 /// </summary>
 public class MovingOrbiter : Orbiter {
 
@@ -35,7 +36,7 @@ public class MovingOrbiter : Orbiter {
     /// </summary>
     /// <param name="deltaTime">The delta time.</param>
     protected override void UpdateOrbit(float deltaTime) {
-        _transform.RotateAround(_transform.position, _transform.up, _orbitSpeed * deltaTime);
+        _transform.RotateAround(_transform.position, _transform.up, _orbitSpeedInDegreesPerSecond * deltaTime);
     }
 
     public override string ToString() {

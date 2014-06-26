@@ -72,14 +72,21 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
             public FleetDestinationInfo(IBaseCmdTarget cmd, bool isEnemy) {   // TODO update values if isEnemy changes
                 Target = cmd;
-                DesiredStandoffDistance = (cmd as IShipOrbitable).MaximumShipOrbitDistance;
+                // ships know to approach to max ship orbit radius unless there is a non-zero standoff distance
+                DesiredStandoffDistance = Constants.ZeroF;
                 if (isEnemy) {
-                    DesiredStandoffDistance += cmd.MaxWeaponsRange;
+                    DesiredStandoffDistance = cmd.MaxWeaponsRange;
                 }
             }
 
-            public FleetDestinationInfo(PlanetoidModel planetoid) {
-                Target = planetoid;
+            public FleetDestinationInfo(PlanetModel planet) {
+                Target = planet;
+                // ships know to place themselves at the orbit distance when the fleet targets a planetoid. This standoff distance value provided is ignored
+                DesiredStandoffDistance = Constants.ZeroF;
+            }
+
+            public FleetDestinationInfo(MoonModel moon) {
+                Target = moon;
                 // ships know to place themselves at the orbit distance when the fleet targets a planetoid. This standoff distance value provided is ignored
                 DesiredStandoffDistance = Constants.ZeroF;
             }
@@ -191,8 +198,11 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
                 bool isEnemy = _fleet.Owner.IsEnemyOf(baseCmd.Owner);
                 DestinationInfo = new FleetDestinationInfo(baseCmd, isEnemy);
             }
-            else if (target is PlanetoidModel) {
-                DestinationInfo = new FleetDestinationInfo(target as PlanetoidModel);
+            else if (target is PlanetModel) {
+                DestinationInfo = new FleetDestinationInfo(target as PlanetModel);
+            }
+            else if (target is MoonModel) {
+                DestinationInfo = new FleetDestinationInfo(target as MoonModel);
             }
             else if (target is SystemModel) {
                 DestinationInfo = new FleetDestinationInfo(target as SystemModel);
@@ -979,7 +989,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     #endregion
 
-    #region Idle
+    #region Idling
 
     void Idling_EnterState() {
         LogEvent();

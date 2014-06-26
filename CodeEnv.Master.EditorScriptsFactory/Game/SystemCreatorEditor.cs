@@ -32,10 +32,11 @@ public class SystemCreatorEditor : Editor {
 
         creator.isCompositionPreset = GUILayout.Toggle(creator.isCompositionPreset, "Composition is preset");
         if (!creator.isCompositionPreset) {
-            creator.maxRandomPlanets = EditorGUILayout.IntSlider("Max Random Planets", creator.maxRandomPlanets, 0, TempGameValues.TotalOrbitSlotsPerSystem - 2);
+            creator.maxRandomPlanets = EditorGUILayout.IntSlider("Max Random Planets", creator.maxRandomPlanets,
+                Constants.Zero, TempGameValues.TotalOrbitSlotsPerSystem - 1);   // SystemOrbitSlot reserved for a Settlement
         }
 
-        // Note: The owner of a System (and Star and Planets) is automatically set to the owner of the Settlement located in the System, if any.
+        // Note: The owner of a System (and Star, Planets and Moons) is automatically set to the owner of the Settlement located in the System, if any.
 
         if (GUI.changed) {
             EditorUtility.SetDirty(target);

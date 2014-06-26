@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: INewSystemModel.cs
-// Interface for easy access to a SystemModel.
+// File: IOrbiter.cs
+// Interface for easy access to Orbiter objects.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,11 +17,12 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for easy access to a SystemModel.
+    /// Interface for easy access to Orbiter objects.
     /// </summary>
-    public interface INewSystemModel : IModel {
+    public interface IOrbiter {
 
-        new NewSystemData Data { get; set; }
+        float GetSpeedOfBodyInOrbit(float radius);
+
     }
 }
 

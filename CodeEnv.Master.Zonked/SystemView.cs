@@ -11,9 +11,14 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
+
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -24,7 +29,7 @@ using UnityEngine;
 ///  A class for managing the elements of a system's UI, those, that are not already handled by 
 ///  the UI classes for stars, planets and moons.
 /// </summary>
-public class SystemView : AFocusableItemView, ISystemViewable, ISelectable, IZoomToFurthest {
+public class SystemView : AFocusableItemView, ISelectable, IZoomToFurthest, IHighlightTrackingLabel {
 
     private static string __highlightName = "SystemHighlightMesh";  // IMPROVE
 
@@ -40,13 +45,12 @@ public class SystemView : AFocusableItemView, ISystemViewable, ISelectable, IZoo
     public float optimalPlaneFocusDistance = 400F;
 
     private CtxObject _ctxObject;
-
     private MeshRenderer _systemHighlightRenderer;
 
     protected override void Awake() {
         base.Awake();
-        maxAnimateDistance = AnimationSettings.Instance.MaxSystemAnimateDistance;
         _systemHighlightRenderer = __FindSystemHighlight();
+        Subscribe();
     }
 
     protected override void Start() {
@@ -59,42 +63,42 @@ public class SystemView : AFocusableItemView, ISystemViewable, ISelectable, IZoo
         Presenter = new SystemPresenter(this);
     }
 
-    protected override void RegisterComponentsToDisable() {
-        base.RegisterComponentsToDisable();
-        disableGameObjectOnNotDiscernible = disableGameObjectOnNotDiscernible.Union(new GameObject[] { _systemHighlightRenderer.gameObject });
-        Component[] orbitalPlaneCollider = new Component[] { collider };
-        Component[] renderersWithoutVisibilityRelays = gameObject.GetComponentsInChildren<Renderer>()
-            .Where(r => r.gameObject.GetComponent<CameraLOSChangedRelay>() == null).ToArray();
-
-        disableComponentOnNotDiscernible = disableComponentOnNotDiscernible.Union<Component>(renderersWithoutVisibilityRelays)
-            .Union<Component>(orbitalPlaneCollider);
+    protected override void OnIsDiscernibleChanged() {
+        base.OnIsDiscernibleChanged();
+        if (_trackingLabel != null) {
+            _trackingLabel.gameObject.SetActive(IsDiscernible);
+        }
+        _collider.enabled = IsDiscernible;
+        // no reason to manage orbitalPlane LineRenderers as they don't render when not visible to the camera
+        // other renderers are handled by their own Views
     }
+
+    #region Mouse Events
 
     protected override void OnHover(bool isOver) {
         base.OnHover(isOver);
-        HighlightTrackingLabel(isOver);
-    }
-
-    void OnPress(bool isDown) {
-        if (IsSelected) {
-            Presenter.OnPressWhileSelected(isDown);
+        if (IsDiscernible) {
+            HighlightTrackingLabel(isOver);
         }
     }
 
-    protected override void OnClick() {
-        base.OnClick();
-        if (GameInputHelper.IsLeftMouseButton()) {
-            OnLeftClick();
-        }
-    }
-
-    private void OnLeftClick() {
+    protected override void OnLeftClick() {
+        base.OnLeftClick();
         IsSelected = true;
     }
 
-    protected override void OnPlayerIntelLevelChanged() {
-        base.OnPlayerIntelLevelChanged();
-        Presenter.OnPlayerIntelLevelChanged();
+    protected override void OnRightPress(bool isDown) {
+        base.OnRightPress(isDown);
+        if (IsSelected) {
+            Presenter.RequestContextMenu(isDown);
+        }
+    }
+
+    #endregion
+
+    protected override void OnPlayerIntelCoverageChanged() {
+        base.OnPlayerIntelCoverageChanged();
+        Presenter.OnPlayerIntelCoverageChanged();
     }
 
     private void OnIsSelectedChanged() {
@@ -105,41 +109,46 @@ public class SystemView : AFocusableItemView, ISystemViewable, ISelectable, IZoo
     }
 
     public override void AssessHighlighting() {
-        if (!InCameraLOS || (!IsSelected && !IsFocus)) {
-            _systemHighlightRenderer.gameObject.SetActive(false);
+        if (!IsDiscernible) {
             Highlight(Highlights.None);
             return;
         }
         if (IsFocus) {
             if (IsSelected) {
-                _systemHighlightRenderer.gameObject.SetActive(true);
                 Highlight(Highlights.SelectedAndFocus);
                 return;
             }
-            _systemHighlightRenderer.gameObject.SetActive(true);
             Highlight(Highlights.Focused);
             return;
         }
-        _systemHighlightRenderer.gameObject.SetActive(true);
-        Highlight(Highlights.Selected);
+        if (IsSelected) {
+            Highlight(Highlights.Selected);
+            return;
+        }
+        Highlight(Highlights.None);
     }
 
     protected override void Highlight(Highlights highlight) {
+        //D.Log("{0}.Highlight({1}) called. IsDiscernible = {2}, SystemHighlightRendererGO.activeSelf = {3}.",
+        //gameObject.name, highlight, IsDiscernible, _systemHighlightRenderer.gameObject.activeSelf);
         switch (highlight) {
             case Highlights.Focused:
+                _systemHighlightRenderer.gameObject.SetActive(true);
                 _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Main, UnityDebugConstants.FocusedColor.ToUnityColor());
                 _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Outline, UnityDebugConstants.FocusedColor.ToUnityColor());
                 break;
             case Highlights.Selected:
+                _systemHighlightRenderer.gameObject.SetActive(true);
                 _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Main, UnityDebugConstants.SelectedColor.ToUnityColor());
                 _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Outline, UnityDebugConstants.SelectedColor.ToUnityColor());
                 break;
             case Highlights.SelectedAndFocus:
+                _systemHighlightRenderer.gameObject.SetActive(true);
                 _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Main, UnityDebugConstants.GeneralHighlightColor.ToUnityColor());
                 _systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Outline, UnityDebugConstants.GeneralHighlightColor.ToUnityColor());
                 break;
             case Highlights.None:
-                // nothing to do as the highlighter should already be inactive
+                _systemHighlightRenderer.gameObject.SetActive(false);
                 break;
             case Highlights.General:
             case Highlights.FocusAndGeneral:
@@ -152,14 +161,13 @@ public class SystemView : AFocusableItemView, ISystemViewable, ISelectable, IZoo
         if (enableTrackingLabel) {
             float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
             _trackingLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(_transform, GuiTrackingLabelFactory.LabelPlacement.AboveTarget, minShowDistance);
-            disableComponentOnNotDiscernible = disableComponentOnNotDiscernible.Union(new Component[] { _trackingLabel });
         }
     }
 
     private MeshRenderer __FindSystemHighlight() {
         MeshRenderer[] meshes = gameObject.GetComponentsInChildren<MeshRenderer>();
         MeshRenderer renderer = meshes.Single<MeshRenderer>(m => m.gameObject.name == __highlightName);
-        renderer.gameObject.SetActive(false);
+        //renderer.gameObject.SetActive(false);
         return renderer;
     }
 
@@ -204,7 +212,7 @@ public class SystemView : AFocusableItemView, ISystemViewable, ISelectable, IZoo
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region ISystemViewable Members
+    #region IHighlightTrackingLabel Members
 
     public void HighlightTrackingLabel(bool toHighlight) {
         if (_trackingLabel != null) {   // can be gap between checking enableTrackingLabel and instantiating it

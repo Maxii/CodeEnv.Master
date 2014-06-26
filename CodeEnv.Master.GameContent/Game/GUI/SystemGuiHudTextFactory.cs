@@ -1,11 +1,11 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SystemGuiHudTextFactory.cs
+// File: NewSystemGuiHudTextFactory.cs
 // Factory that makes GuiCursorHudText and IColoredTextList instances for Systems.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
                     return new ColoredTextList_String(data.Name);
                 case GuiHudLineKeys.SectorIndex:
                     return new ColoredTextList_String(data.SectorIndex.ToString());
-                case GuiHudLineKeys.Distance:
+                case GuiHudLineKeys.CameraDistance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
                     return new ColoredTextList_Intel(intel);
@@ -66,7 +66,8 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.ShipDetails:
                 case GuiHudLineKeys.Density:
                 case GuiHudLineKeys.Speed:
-                case GuiHudLineKeys.Target:
+                case GuiHudLineKeys.TargetName:
+                case GuiHudLineKeys.TargetDistance:
                     return _emptyColoredTextList;
 
                 case GuiHudLineKeys.None:

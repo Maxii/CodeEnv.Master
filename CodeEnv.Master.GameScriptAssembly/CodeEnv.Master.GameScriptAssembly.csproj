@@ -57,16 +57,16 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="APlanetoidModel.cs" />
-    <Compile Include="APlanetoidView.cs" />
+    <Compile Include="Game\Framework\APlanetoidModel.cs" />
+    <Compile Include="Generic\Graphics\APlanetoidView.cs" />
     <Compile Include="Game\Framework\ACombatItemModel.cs" />
     <Compile Include="Game\Framework\AOwnedItemModel.cs" />
     <Compile Include="Generic\Framework\ACreator.cs" />
     <Compile Include="Game\Framework\FormationGenerator.cs" />
-    <Compile Include="Game\Graphics\AFocusableItemView.cs" />
+    <Compile Include="Generic\Graphics\AFocusableItemView.cs" />
     <Compile Include="Generic\Framework\AUnitCreator.cs" />
-    <Compile Include="Game\Graphics\AMortalItemView.cs" />
-    <Compile Include="Game\Graphics\AUnitElementView.cs" />
+    <Compile Include="Generic\Graphics\AMortalItemView.cs" />
+    <Compile Include="Generic\Graphics\AUnitElementView.cs" />
     <Compile Include="ThirdParty\AMonoStateMachine_NoCall.cs" />
     <Compile Include="Game\Framework\AItemModel.cs" />
     <Compile Include="Game\Framework\AMortalItemModel.cs" />
@@ -102,6 +102,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Game\Gameplay\" />
+    <Folder Include="Game\Graphics\" />
     <Folder Include="Game\GUI\" />
     <Folder Include="Game\_Debug\" />
     <Folder Include="Generic\Extensions\" />

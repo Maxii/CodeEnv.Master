@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
                     return new ColoredTextList_String(data.Name);
                 case GuiHudLineKeys.ParentName:
                     return data.ParentName != string.Empty ? new ColoredTextList_String(data.ParentName) : _emptyColoredTextList;
-                case GuiHudLineKeys.Distance:
+                case GuiHudLineKeys.CameraDistance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
                     return new ColoredTextList_Intel(intel);
@@ -59,7 +59,8 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Category:
                 case GuiHudLineKeys.ShipDetails:
                 case GuiHudLineKeys.Speed:
-                case GuiHudLineKeys.Target:
+                case GuiHudLineKeys.TargetName:
+                case GuiHudLineKeys.TargetDistance:
                     return _emptyColoredTextList;
 
                 case GuiHudLineKeys.None:

@@ -1,6 +1,6 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
@@ -10,17 +10,16 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
     using System;
-    using System.Linq;
     using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
-    using UnityEngine;
 
     /// <summary>
     /// All the data associated with a particular system.
@@ -80,9 +79,9 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<StarData>(ref _starData, value, "StarData", OnStarDataChanged, OnStarDataChanging); }
         }
 
-        private IList<PlanetoidData> _planetsData = new List<PlanetoidData>();
+        private IList<APlanetoidData> _allPlanetoidData = new List<APlanetoidData>();
 
-        private IDictionary<PlanetoidData, IList<IDisposable>> _planetSubscribers;
+        private IDictionary<APlanetoidData, IList<IDisposable>> _planetoidSubscribers;
         private IList<IDisposable> _starSubscribers;
         private IList<IDisposable> _settlementSubscribers;
 
@@ -100,23 +99,23 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Subscribe() {
-            _planetSubscribers = new Dictionary<PlanetoidData, IList<IDisposable>>();
+            _planetoidSubscribers = new Dictionary<APlanetoidData, IList<IDisposable>>();
             _starSubscribers = new List<IDisposable>();
         }
 
-        public void AddPlanet(PlanetoidData data) {
-            _planetsData.Add(data);
-            SubscribeToPlanetDataValueChanges(data);
+        public void AddPlanetoid(APlanetoidData data) {
+            _allPlanetoidData.Add(data);
+            SubscribeToPlanetoidDataValueChanges(data);
             RecalcAllProperties();
         }
 
-        public bool RemovePlanet(PlanetoidData data) {
-            bool isRemoved = _planetsData.Remove(data);
+        public bool RemovePlanetoid(APlanetoidData data) {
+            bool isRemoved = _allPlanetoidData.Remove(data);
             if (!isRemoved) {
-                D.Warn("Attempting to remove {0}.{1} that is not present.", data.FullName, typeof(PlanetoidData));
+                D.Warn("Attempting to remove {0}.{1} that is not present.", data.FullName, typeof(APlanetoidData));
                 return false;
             }
-            UnsubscribeToPlanetDataValueChanges(data);
+            UnsubscribeToPlanetoidDataValueChanges(data);
             RecalcAllProperties();
             return true;
         }
@@ -168,7 +167,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void PropogateOwnerChange() {
-            _planetsData.ForAll(pd => pd.Owner = Owner);
+            _allPlanetoidData.ForAll(pd => pd.Owner = Owner);
             StarData.Owner = Owner;
         }
 
@@ -179,31 +178,31 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void UpdateCapacity() {
-            Capacity = _planetsData.Sum(data => data.Capacity) + StarData.Capacity;
+            Capacity = _allPlanetoidData.Sum(pData => pData.Capacity) + StarData.Capacity;
         }
 
         private void UpdateResources() {
             var defaultValueIfEmpty = default(OpeYield);
-            var resources = _planetsData.Select(pd => pd.Resources);
+            var resources = _allPlanetoidData.Select(pd => pd.Resources);
             OpeYield totalResourcesFromPlanets = resources.Aggregate(defaultValueIfEmpty, (accumulator, ope) => accumulator + ope);
             Resources = totalResourcesFromPlanets + StarData.Resources;
         }
 
         private void UpdateSpecialResources() {
             var defaultValueIfEmpty = default(XYield);
-            var resources = _planetsData.Select(pd => pd.SpecialResources);
+            var resources = _allPlanetoidData.Select(pd => pd.SpecialResources);
             XYield totalResourcesFromPlanets = resources.Aggregate(defaultValueIfEmpty, (accumulator, ope) => accumulator + ope);
             SpecialResources = totalResourcesFromPlanets + StarData.SpecialResources;
         }
 
-        private void SubscribeToPlanetDataValueChanges(PlanetoidData data) {
-            if (!_planetSubscribers.ContainsKey(data)) {
-                _planetSubscribers.Add(data, new List<IDisposable>());
+        private void SubscribeToPlanetoidDataValueChanges(APlanetoidData data) {
+            if (!_planetoidSubscribers.ContainsKey(data)) {
+                _planetoidSubscribers.Add(data, new List<IDisposable>());
             }
-            var planetSubscriber = _planetSubscribers[data];
-            planetSubscriber.Add(data.SubscribeToPropertyChanged<PlanetoidData, int>(pd => pd.Capacity, OnSystemMemberCapacityChanged));
-            planetSubscriber.Add(data.SubscribeToPropertyChanged<PlanetoidData, OpeYield>(pd => pd.Resources, OnSystemMemberResourceValueChanged));
-            planetSubscriber.Add(data.SubscribeToPropertyChanged<PlanetoidData, XYield>(pd => pd.SpecialResources, OnSystemMemberSpecialResourceValueChanged));
+            var planetSubscriber = _planetoidSubscribers[data];
+            planetSubscriber.Add(data.SubscribeToPropertyChanged<APlanetoidData, int>(pd => pd.Capacity, OnSystemMemberCapacityChanged));
+            planetSubscriber.Add(data.SubscribeToPropertyChanged<APlanetoidData, OpeYield>(pd => pd.Resources, OnSystemMemberResourceValueChanged));
+            planetSubscriber.Add(data.SubscribeToPropertyChanged<APlanetoidData, XYield>(pd => pd.SpecialResources, OnSystemMemberSpecialResourceValueChanged));
         }
 
         private void SubscribeToStarDataValueChanges() {
@@ -219,9 +218,9 @@ namespace CodeEnv.Master.GameContent {
             _settlementSubscribers.Add(SettlementData.SubscribeToPropertyChanged<SettlementCmdData, IPlayer>(sd => sd.Owner, OnSettlementOwnerChanged));
         }
 
-        private void UnsubscribeToPlanetDataValueChanges(PlanetoidData planetData) {
-            _planetSubscribers[planetData].ForAll<IDisposable>(d => d.Dispose());
-            _planetSubscribers.Remove(planetData);
+        private void UnsubscribeToPlanetoidDataValueChanges(APlanetoidData data) {
+            _planetoidSubscribers[data].ForAll<IDisposable>(d => d.Dispose());
+            _planetoidSubscribers.Remove(data);
         }
 
         private void UnsubscribeToStarDataValueChanges() {
@@ -239,12 +238,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Unsubscribe() {
-            IList<PlanetoidData> subscriberKeys = new List<PlanetoidData>(_planetSubscribers.Keys);
+            IList<APlanetoidData> subscriberKeys = new List<APlanetoidData>(_planetoidSubscribers.Keys);
             // copy of key list as you can't remove keys from a list while you are iterating over the list
-            foreach (PlanetoidData data in subscriberKeys) {
-                UnsubscribeToPlanetDataValueChanges(data);
+            foreach (APlanetoidData data in subscriberKeys) {
+                UnsubscribeToPlanetoidDataValueChanges(data);
             }
-            _planetSubscribers.Clear();
+            _planetoidSubscribers.Clear();
 
             _starSubscribers.ForAll(ss => ss.Dispose());
             _starSubscribers.Clear();

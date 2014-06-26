@@ -66,8 +66,8 @@ public class PlanetView : APlanetoidView {
 
     private void InitializeContextMenu() {    // IMPROVE string use
         _ctxObject = UnityUtility.ValidateMonoBehaviourPresence<CtxObject>(gameObject);
-        CtxMenu planetMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "PlanetMenu");
-        _ctxObject.contextMenu = planetMenu;
+        CtxMenu planetoidMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "PlanetoidMenu");
+        _ctxObject.contextMenu = planetoidMenu;
         D.Assert(_ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
         UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
 
@@ -84,20 +84,21 @@ public class PlanetView : APlanetoidView {
         int menuId = CtxObject.current.selectedItem;
         FleetCmdHumanView selectedFleetView = _selectionMgr.CurrentSelection as FleetCmdHumanView;
         IFleetCmdModel selectedFleet = selectedFleetView.Presenter.Model;
-        var planetTarget = Presenter.Model as IDestinationTarget;
+        var thisPlanetoidTarget = Presenter.Model as IDestinationTarget;
         if (menuId == 0) {  // UNDONE
             // MoveTo
-            selectedFleet.CurrentOrder = new FleetOrder(FleetDirective.MoveTo, planetTarget, Speed.FleetStandard);
+            selectedFleet.CurrentOrder = new FleetOrder(FleetDirective.MoveTo, thisPlanetoidTarget, Speed.FleetStandard);
         }
         else if (menuId == 1) {
             // Attack
-            selectedFleet.CurrentOrder = new FleetOrder(FleetDirective.Attack, planetTarget, Speed.FleetStandard);
+            selectedFleet.CurrentOrder = new FleetOrder(FleetDirective.Attack, thisPlanetoidTarget, Speed.FleetStandard);
         }
     }
 
     private void OnContextMenuHide() {
         // TODO
     }
+
 
     #endregion
 

@@ -34,7 +34,7 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
     private static IList<FleetCmdModel> _allFleets = new List<FleetCmdModel>();
     public static IList<FleetCmdModel> AllFleets { get { return _allFleets; } }
 
-    private static UnitFactory _factory;
+    private static UnitFactory _factory;    // IMPROVE move back to AUnitCreator using References.IUnitFactory?
 
     protected override void Awake() {
         base.Awake();
@@ -159,19 +159,19 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
         IPlayer fleetOwner = _owner;
         IEnumerable<IDestinationTarget> moveTgts = FindObjectsOfType<StarbaseCmdModel>().Where(sb => sb.IsOperational && fleetOwner.IsRelationship(sb.Owner, DiplomaticRelations.Ally)).Cast<IDestinationTarget>();
         if (!moveTgts.Any()) {
-            // no starbases qualify
+            // in case no starbases qualify
             moveTgts = FindObjectsOfType<SettlementCmdModel>().Where(s => s.IsOperational && fleetOwner.IsRelationship(s.Owner, DiplomaticRelations.Ally)).Cast<IDestinationTarget>();
             if (!moveTgts.Any()) {
-                // no Settlements qualify
-                moveTgts = FindObjectsOfType<PlanetoidModel>().Where(p => p.IsOperational && p.Owner == TempGameValues.NoPlayer).Cast<IDestinationTarget>();
+                // in case no Settlements qualify
+                moveTgts = FindObjectsOfType<PlanetModel>().Where(p => p.IsOperational && p.Owner == TempGameValues.NoPlayer).Cast<IDestinationTarget>();
                 if (!moveTgts.Any()) {
-                    // no Planetoids qualify
+                    // in case no Planets qualify
                     moveTgts = FindObjectsOfType<SystemModel>().Where(sys => sys.Owner == TempGameValues.NoPlayer).Cast<IDestinationTarget>();
                     if (!moveTgts.Any()) {
-                        // no Planetoids qualify
+                        // in case no Systems qualify
                         moveTgts = FindObjectsOfType<FleetCmdModel>().Where(f => f.IsOperational && fleetOwner.IsRelationship(f.Owner, DiplomaticRelations.Ally)).Cast<IDestinationTarget>();
                         if (!moveTgts.Any()) {
-                            // no fleets qualify
+                            // in case no fleets qualify
                             moveTgts = FindObjectsOfType<SectorModel>().Where(s => s.Owner == TempGameValues.NoPlayer).Cast<IDestinationTarget>();
                             if (!moveTgts.Any()) {
                                 D.Warn("{0} can find no MoveTargets of any sort. MoveOrder has been cancelled.", UnitName);
@@ -201,10 +201,10 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
                 attackTgts = FindObjectsOfType<FleetCmdModel>().Where(f => f.IsOperational && fleetOwner.IsEnemyOf(f.Owner)).Cast<IMortalTarget>();
                 if (attackTgts.IsNullOrEmpty()) {
                     // in case no Fleets qualify
-                    attackTgts = FindObjectsOfType<PlanetoidModel>().Where(p => p.IsOperational && fleetOwner.IsEnemyOf(p.Owner)).Cast<IMortalTarget>();
+                    attackTgts = FindObjectsOfType<PlanetModel>().Where(p => p.IsOperational && fleetOwner.IsEnemyOf(p.Owner)).Cast<IMortalTarget>();
                     if (attackTgts.IsNullOrEmpty()) {
-                        // in case no enemy Planetoids qualify
-                        attackTgts = FindObjectsOfType<PlanetoidModel>().Where(p => p.IsOperational && p.Owner == TempGameValues.NoPlayer).Cast<IMortalTarget>();
+                        // in case no enemy Planets qualify
+                        attackTgts = FindObjectsOfType<PlanetModel>().Where(p => p.IsOperational && p.Owner == TempGameValues.NoPlayer).Cast<IMortalTarget>();
                         if (attackTgts.Any()) {
                             D.Log("{0} can find no AttackTargets that meet the enemy selection criteria. Picking an unowned Planet.", UnitName);
                         }

@@ -86,7 +86,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             public ShipDestinationInfo(IBaseCmdTarget cmd, Vector3 fstOffset, float standoffDistance) {
                 Target = cmd;
                 _fstOffset = fstOffset;
-                CloseEnoughDistance = (cmd as IShipOrbitable).MaximumShipOrbitDistance + standoffDistance;
+                CloseEnoughDistance = (cmd as IShipOrbitable).ShipOrbitSlot.OuterRadius + standoffDistance;
             }
 
             public ShipDestinationInfo(IElementTarget element, float standoffDistance) {
@@ -95,10 +95,16 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
                 CloseEnoughDistance = element.Radius + standoffDistance;
             }
 
-            public ShipDestinationInfo(PlanetoidModel planetoid, Vector3 fstOffset) {
-                Target = planetoid;
+            public ShipDestinationInfo(PlanetModel planet, Vector3 fstOffset) {
+                Target = planet;
                 _fstOffset = fstOffset;
-                CloseEnoughDistance = (planetoid as IShipOrbitable).MaximumShipOrbitDistance;
+                CloseEnoughDistance = (planet as IShipOrbitable).ShipOrbitSlot.OuterRadius;
+            }
+
+            public ShipDestinationInfo(MoonModel moon, Vector3 fstOffset) {
+                Target = moon;
+                _fstOffset = fstOffset;
+                CloseEnoughDistance = (moon as IShipOrbitable).ShipOrbitSlot.OuterRadius;
             }
 
             public ShipDestinationInfo(SystemModel system, Vector3 fstOffset) {
@@ -110,13 +116,13 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             public ShipDestinationInfo(StarModel star, Vector3 fstOffset) {
                 Target = star;
                 _fstOffset = fstOffset;
-                CloseEnoughDistance = (star as IShipOrbitable).MaximumShipOrbitDistance;
+                CloseEnoughDistance = (star as IShipOrbitable).ShipOrbitSlot.OuterRadius;
             }
 
             public ShipDestinationInfo(UniverseCenterModel universeCenter, Vector3 fstOffset) {
                 Target = universeCenter;
                 _fstOffset = fstOffset;
-                CloseEnoughDistance = (universeCenter as IShipOrbitable).MaximumShipOrbitDistance;
+                CloseEnoughDistance = (universeCenter as IShipOrbitable).ShipOrbitSlot.OuterRadius;
             }
         }
 
@@ -517,9 +523,13 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
                 D.Assert(orderSource == OrderSource.ElementCaptain);
                 DestinationInfo = new ShipDestinationInfo(target as IElementTarget, standoffDistance);
             }
-            else if (target is PlanetoidModel) {
+            else if (target is PlanetModel) {
                 Vector3 destinationOffset = orderSource == OrderSource.UnitCommand ? _ship.Data.FormationStation.StationOffset : Vector3.zero;
-                DestinationInfo = new ShipDestinationInfo(target as PlanetoidModel, destinationOffset);
+                DestinationInfo = new ShipDestinationInfo(target as PlanetModel, destinationOffset);
+            }
+            else if (target is MoonModel) {
+                Vector3 destinationOffset = orderSource == OrderSource.UnitCommand ? _ship.Data.FormationStation.StationOffset : Vector3.zero;
+                DestinationInfo = new ShipDestinationInfo(target as MoonModel, destinationOffset);
             }
             else if (target is SystemModel) {
                 Vector3 destinationOffset = orderSource == OrderSource.UnitCommand ? _ship.Data.FormationStation.StationOffset : Vector3.zero;
@@ -1236,15 +1246,16 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     }
 
     private void OnCurrentOrderChanged() {
+        // TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated
+        if (CurrentState == ShipState.Moving || CurrentState == ShipState.Repairing) {
+            Return();
+            // IMPROVE Attacking is not here as it is not really a state so far. It has no duration so it could be replaced with a method
+            // I'm deferring doing that right now as it is unclear how Attacking will evolve
+        }
+
         if (CurrentOrder != null) {
             D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetName());
-
-            // TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated
-            if (CurrentState == ShipState.Moving || CurrentState == ShipState.Repairing) {
-                Return();
-                // IMPROVE Attacking is not here as it is not really a state so far. It has no duration so it could be replaced with a method
-                // I'm deferring doing that right now as it is unclear how Attacking will evolve
-            }
+            Data.Target = CurrentOrder.Target;  // can be null
 
             ShipDirective order = CurrentOrder.Directive;
             switch (order) {
@@ -1335,6 +1346,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     IEnumerator Idling_EnterState() {
         //D.Log("{0}.Idling_EnterState called.", FullName);
+        Data.Target = null; // temp to remove target from data after order has been completed or failed
 
         if (CurrentOrder != null) {
             // check for a standing order to execute if the current order (just completed) was issued by the Captain
@@ -1347,16 +1359,16 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
         _helm.AllStop();
         if (!Data.FormationStation.IsOnStation) {
-            ProceedToFormationStation();
+            // ProceedToFormationStation();
         }
         // TODO register as available
         yield return null;
     }
 
     void Idling_OnShipOnStation(bool isOnStation) {
-        //LogEvent();
+        LogEvent();
         if (!isOnStation) {
-            ProceedToFormationStation();
+            // ProceedToFormationStation();
         }
     }
 
@@ -1368,12 +1380,12 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     void Idling_OnCollisionEnter(Collision collision) {
         D.Warn("While {0}, {1} collided with {2} at a relative velocity of {3}. \nResulting velocity = {4} units/sec, angular velocity = {5} radians/sec.",
             CurrentState.GetName(), FullName, collision.transform.name, collision.relativeVelocity.magnitude, _rigidbody.velocity, _rigidbody.angularVelocity);
-        D.Warn("{0}.isKinematic = {1}, {2}.isKinematic = {3}.", FullName, rigidbody.isKinematic, collision.transform.name, collision.rigidbody.isKinematic);
+        D.Assert(!_rigidbody.isKinematic && !collision.rigidbody.isKinematic, "{0}.isKinematic = {1}, {2}.isKinematic = {3}."
+            .Inject(FullName, rigidbody.isKinematic, collision.transform.name, collision.rigidbody.isKinematic));
         //foreach (ContactPoint contact in collision.contacts) {
         //    Debug.DrawRay(contact.point, contact.normal, Color.white);
         //}
     }
-
 
     void Idling_ExitState() {
         //LogEvent();
@@ -1419,7 +1431,6 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         _moveTarget = CurrentOrder.Target;
         _moveSpeed = CurrentOrder.Speed;
         _standoffDistance = CurrentOrder.StandoffDistance;
-        //_isFleetMove = true;    // IMPROVE
         _orderSource = OrderSource.UnitCommand;
 
         Call(ShipState.Moving);
@@ -1429,6 +1440,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             __HandleDestinationUnreachable();
             yield break;
         }
+        TryAssumeOrbit();
         CurrentState = ShipState.Idling;
     }
 
@@ -1503,7 +1515,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     void Moving_OnDestinationReached() {
         LogEvent();
-        TryOrbiting(out _objectBeingOrbited);
+        //TryAssumeOrbit();
         Return();
     }
 
@@ -1717,7 +1729,8 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             CurrentState = ShipState.Idling;
             yield break;
         }
-        _helm.AllStop();
+        TryAssumeOrbit();
+        //_helm.AllStop();
         Call(ShipState.Repairing);
         yield return null;  // required immediately after Call() to avoid FSM bug
         CurrentState = ShipState.Idling;
@@ -1739,6 +1752,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     IEnumerator Repairing_EnterState() {
         D.Log("{0}.Repairing_EnterState called.", FullName);
+        _helm.AllStop();
         OnShowAnimation(MortalAnimations.Repairing);
         yield return new WaitForSeconds(2);
         Data.CurrentHitPoints += 0.5F * (Data.MaxHitPoints - Data.CurrentHitPoints);
@@ -1817,21 +1831,34 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     private IShipOrbitable _objectBeingOrbited;
 
-    private bool TryOrbiting(out IShipOrbitable objectBeingOrbited) {
-        var orbitableTarget = _helm.DestinationInfo.Target as IShipOrbitable;
-        if (orbitableTarget != null) {
-            objectBeingOrbited = orbitableTarget;
-            orbitableTarget.AssumeOrbit(this);
-            D.Log("{0} is now orbiting {1}.", FullName, orbitableTarget.FullName);
-            return true;
+    private bool TryAssumeOrbit() {
+        bool isOrbitAssumed = false;
+        D.Assert(_objectBeingOrbited == null);
+        var objectToOrbit = _helm.DestinationInfo.Target as IShipOrbitable;
+        if (objectToOrbit != null) {
+            float distanceFromObjectToOrbit = Vector3.Distance(Position, objectToOrbit.Position);
+            if (objectToOrbit.ShipOrbitSlot.Contains(distanceFromObjectToOrbit)) {
+                objectToOrbit.AssumeOrbit(this);
+                _objectBeingOrbited = objectToOrbit;
+                D.Log("{0} has assumed orbit around {1}.", FullName, objectToOrbit.FullName);
+                isOrbitAssumed = true;
+            }
+            else {
+                D.Warn("{0} cannot assume orbit around {1} as proposed orbit distance {2} is not within orbit slot {3}.",
+                    FullName, objectToOrbit.FullName, distanceFromObjectToOrbit, objectToOrbit.ShipOrbitSlot);
+            }
+            _helm.AllStop();
         }
-        objectBeingOrbited = null;
-        return false;
+        return isOrbitAssumed;
     }
 
     private bool TryLeaveOrbit() {
         if (_objectBeingOrbited != null) {
             _objectBeingOrbited.LeaveOrbit(this);
+            float orbitRadius = Vector3.Distance(Position, _objectBeingOrbited.Position);
+            if (!_objectBeingOrbited.ShipOrbitSlot.Contains(orbitRadius)) {
+                D.Warn("The radius {0} of {1}'s orbit is not within {2}'s orbit slot {3}.", orbitRadius, FullName, _objectBeingOrbited.FullName, _objectBeingOrbited.ShipOrbitSlot);
+            }
             D.Log("{0} has left orbit of {1}.", FullName, _objectBeingOrbited.FullName);
             _objectBeingOrbited = null;
             return true;
@@ -1849,7 +1876,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     private void ProceedToFormationStation() {
         if (IsHQElement) {
-            var distanceFromStation = Vector3.Distance(Position, (Data.FormationStation as Component).transform.position);
+            var distanceFromStation = Vector3.Distance(Position, (Data.FormationStation.Position));
             D.Error("HQElement {0} is not OnStation, {1:0.00} away. StationOffset = {2}, StationRadius = {3}.",
                 FullName, distanceFromStation, Data.FormationStation.StationOffset, Data.FormationStation.StationRadius);
             return;
@@ -1900,7 +1927,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             }
         }
         else {            // Planetoid
-            D.Assert(_ordersTarget is PlanetoidModel);
+            D.Assert(_ordersTarget is APlanetoidModel);
             if (!uniqueEnemyTargetsInRange.Contains(_ordersTarget)) {
                 if (_weaponRangeMonitorLookup.Values.Any(rangeTracker => rangeTracker.AllTargets.Contains(_ordersTarget))) {
                     // the planetoid is not an enemy, but it is in range and therefore fair game

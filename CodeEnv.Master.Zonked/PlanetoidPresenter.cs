@@ -14,45 +14,38 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-// default namespace
+namespace CodeEnv.Master.GameContent {
 
-using CodeEnv.Master.Common;
-using CodeEnv.Master.GameContent;
+    using CodeEnv.Master.Common;
 
-/// <summary>
-/// An MVPresenter associated with a PlanetoidView.
-/// </summary>
-public class PlanetoidPresenter : AMortalItemPresenter {
+    /// <summary>
+    /// An MVPresenter associated with a PlanetoidView.
+    /// </summary>
+    public class PlanetoidPresenter : AMortalItemPresenter {
 
-    public new PlanetoidModel Item {
-        get { return base.Model as PlanetoidModel; }
-        protected set { base.Model = value; }
-    }
+        public new IPlanetoidModel Model {
+            get { return base.Model as IPlanetoidModel; }
+            protected set { base.Model = value; }
+        }
 
-    public PlanetoidPresenter(IViewable view) : base(view) { }
+        public PlanetoidPresenter(IMortalViewable view)
+            : base(view) {
+            Subscribe();
+        }
 
-    protected override AItemModel AcquireModelReference() {
-        return UnityUtility.ValidateMonoBehaviourPresence<PlanetoidModel>(_viewGameObject);
-    }
+        protected override IModel AcquireModelReference() {
+            return _viewGameObject.GetSafeInterface<IPlanetoidModel>();
+        }
 
-    protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<PlanetoidData>(Model.Data);
-    }
+        protected override IGuiHudPublisher InitializeHudPublisher() {
+            var publisher = new GuiHudPublisher<PlanetoidData>(Model.Data);
+            publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
+            return publisher;
+        }
 
-    protected override void OnItemDeath(MortalItemDeathEvent e) {
-        if ((e.Source as PlanetoidModel) == Model) {
-            CleanupOnDeath();
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
         }
     }
-
-    protected override void CleanupOnDeath() {
-        base.CleanupOnDeath();
-        // TODO initiate death of a planet...
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
 }
 

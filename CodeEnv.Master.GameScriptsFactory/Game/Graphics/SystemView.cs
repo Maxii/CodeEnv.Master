@@ -1,13 +1,13 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
 // File: SystemView.cs
 // A class for managing the elements of a system's UI, those, that are not already handled by 
-//  the UI classes for stars, planets and moons.
+// the UI classes for stars, planets and moons.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,7 +18,6 @@
 // default namespace
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -26,8 +25,8 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-///  A class for managing the elements of a system's UI, those, that are not already handled by 
-///  the UI classes for stars, planets and moons.
+/// A class for managing the elements of a system's UI, those, that are not already handled by 
+/// the UI classes for stars, planets and moons. 
 /// </summary>
 public class SystemView : AFocusableItemView, ISelectable, IZoomToFurthest, IHighlightTrackingLabel {
 

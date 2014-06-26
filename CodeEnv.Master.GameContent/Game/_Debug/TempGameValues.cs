@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
 
         public const float FlapsMultiplier = 100F;
 
-        public const float DefaultShipOrbitSlotDepth = 3F;
+        public const float DefaultShipOrbitSlotDepth = 2F;
 
         /// <summary>
         /// The maximum number of facilities a starbase or settlement can have.
@@ -94,15 +94,14 @@ namespace CodeEnv.Master.GameContent {
         /// Note: This could also be called the MinOrbitDistanceMultiplier since the radius of the
         /// keepoutzone is the same as the minimumShipOrbitDistance.
         /// </summary>
-        public const float KeepoutRadiusMultiplier = 2F;
-
-        //public const float MaxKeepoutDiameter = UniverseCenterRadius * KeepoutRadiusMultiplier * 2F;
+        public const float KeepoutRadiusMultiplier = 1.5F;
 
         /// <summary>
-        /// The total number of orbit slots in a System, including those for planets,
-        /// settlements and the inner-most slot reserved for ships orbiting the star.
+        /// The total number of orbit slots in a System available for planets and
+        /// settlements. The orbit slot for ships around the star is a ShipOrbitSlot, not
+        /// one of these SystemOrbitSlots.
         /// </summary>
-        public const int TotalOrbitSlotsPerSystem = 7;
+        public const int TotalOrbitSlotsPerSystem = 6;
 
         public static float __GetMass(ShipCategory hull) {
             switch (hull) {

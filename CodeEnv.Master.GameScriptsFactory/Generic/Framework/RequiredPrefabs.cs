@@ -35,7 +35,9 @@ public class RequiredPrefabs : AMonoBaseSingleton<RequiredPrefabs> {
     public SectorModel sector;
 
     public Orbiter orbiter;
-    public ShipOrbit shipOrbit;
+    public MovingOrbiter movingOrbiter;
+    public OrbiterForShips orbiterForShips;
+    public MovingOrbiterForShips movingOrbiterForShips;
 
     public FleetCmdView aiFleetCmd;
     public ShipView[] aiShips;
@@ -51,7 +53,7 @@ public class RequiredPrefabs : AMonoBaseSingleton<RequiredPrefabs> {
 
     public FacilityModel[] facilities;
 
-    public SystemModel system; // without the star and settlement
+    public SystemModel system;   // without the star and settlement
     public StarModel[] stars;
     public GameObject[] planets;
 

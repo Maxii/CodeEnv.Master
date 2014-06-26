@@ -349,18 +349,45 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Gets the first transform that contains an interface of Type I in this transform's peer components or any of the gameObject's children.
+        /// Gets the transform that contains an interface of Type I in this transform's peer components or any of the gameObject's children.
+        /// If more than 1 is found, an InvalidOperationException is thrown. If none are found, returns null.
         /// </summary>
-        /// <typeparam name="I"></typeparam>
+        /// <typeparam name="I">The interface type.</typeparam>
         /// <param name="transform">The transform.</param>
+        /// <param name="i">The interface instance if found.</param>
         /// <returns></returns>
-        public static Transform GetTransformWithInterfaceInChildren<I>(this Transform transform) where I : class {
-            Transform[] transforms = transform.GetComponentsInChildren<Transform>();
-            return transforms.First<Transform>(t => t.GetInterface<I>() != null);
+        public static Transform GetTransformWithInterfaceInChildren<I>(this Transform transform, out I i) where I : class {
+            Transform result = null;
+            i = null;
+            var interfaces = transform.gameObject.GetInterfacesInChildren<I>();
+            if (interfaces.Any()) {
+                i = interfaces.Single();
+                result = (i as Component).transform;
+            }
+            return result;
         }
 
         /// <summary>
-        /// Returns all Interfaces of Type I in the GameObject or any of its children.
+        /// Gets the transform that contains an interface of Type I in this transform's immediate children.
+        /// If more than 1 is found, an InvalidOperationException is thrown. If none are found, returns null.
+        /// </summary>
+        /// <typeparam name="I">The interface type.</typeparam>
+        /// <param name="transform">The transform.</param>
+        /// <param name="i">The interface instance if found.</param>
+        /// <returns></returns>
+        public static Transform GetTransformWithInterfaceInImmediateChildren<I>(this Transform transform, out I i) where I : class {
+            Transform result = null;
+            i = null;
+            var interfaces = transform.gameObject.GetInterfacesInImmediateChildren<I>();
+            if (interfaces.Any()) {
+                i = interfaces.Single();
+                result = (i as Component).transform;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Returns all Interfaces of Type I in the GameObject or any of its children. Can be empty.
         /// </summary>
         /// <typeparam name="I"></typeparam>
         /// <param name="go">The gameObject.</param>
@@ -368,6 +395,16 @@ namespace CodeEnv.Master.Common {
         public static I[] GetInterfacesInChildren<I>(this GameObject go) where I : class {
             // GetComponent(typeof(I)) works, but GetComponents(typeof(I)) does not
             return go.GetComponentsInChildren<Component>().OfType<I>().ToArray();
+        }
+
+        /// <summary>
+        /// Returns all Interfaces of Type I in the immediate children of GameObject. Can be empty.
+        /// </summary>
+        /// <typeparam name="I"></typeparam>
+        /// <param name="go">The go.</param>
+        /// <returns></returns>
+        public static I[] GetInterfacesInImmediateChildren<I>(this GameObject go) where I : class {
+            return go.GetInterfacesInChildren<I>().Where(i => (i as Component).transform.parent == go.transform).ToArray();
         }
 
         /// <summary>

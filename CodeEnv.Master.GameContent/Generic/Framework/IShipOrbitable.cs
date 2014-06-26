@@ -16,21 +16,22 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using UnityEngine;
+
     /// <summary>
     /// Interface for objects that can be orbited by ships.
     /// </summary>
     public interface IShipOrbitable {
 
-        /// <summary>
-        /// Readonly. The maximum distance from the object's position (center) that ships can orbit. 
-        /// </summary>
-        float MaximumShipOrbitDistance { get; }
-
         void AssumeOrbit(IShipModel ship);
 
         void LeaveOrbit(IShipModel orbitingShip);
 
+        OrbitalSlot ShipOrbitSlot { get; }
+
         string FullName { get; }
+
+        Vector3 Position { get; }
 
     }
 }

@@ -160,7 +160,6 @@ namespace Pathfinding {
             }
         }
 
-
         private IDictionary<SpaceTopography, IList<Vector3>> ConstructGraphWaypoints() {
             var sectors = SectorGrid.Instance.AllSectors;
             var sectorCenters = SectorGrid.Instance.SectorCenters;
@@ -178,7 +177,7 @@ namespace Pathfinding {
 
             var universeCenter = Universe.Instance.Folder.GetComponentInChildren<UniverseCenterModel>();
             if (universeCenter != null) {
-                var pointsAroundUniverseCenter = UnityUtility.CalcVerticesOfInscribedBoxInsideSphere(universeCenter.Position, universeCenter.MaximumShipOrbitDistance);
+                var pointsAroundUniverseCenter = UnityUtility.CalcVerticesOfInscribedBoxInsideSphere(universeCenter.Position, universeCenter.ShipOrbitSlot.OuterRadius);
                 openSpaceWaypoints = openSpaceWaypoints.Except(new List<Vector3>() { universeCenter.Position }, UnityUtility.Vector3EqualityComparer);
                 openSpaceWaypoints = openSpaceWaypoints.Union(pointsAroundUniverseCenter, UnityUtility.Vector3EqualityComparer);
             }
@@ -254,6 +253,27 @@ namespace Pathfinding {
             D.Assert(waypointCount == nextNodeIndex);
             // TODO initialize nodes that will be tagged Nebula and DeepNebula
             return populatedNodes;
+        }
+
+
+        // UNDONE
+        public void UpdateGraph(IShipOrbitable baseCmd) {
+            OrbitalSlot baseShipOrbitSlot = baseCmd.ShipOrbitSlot;
+            D.Assert(baseShipOrbitSlot != default(OrbitalSlot), "{0}.ShipOrbitSlot is not set.".Inject(baseCmd.FullName));
+            Vector3 basePosition = baseCmd.Position;
+            float baseKeepoutZoneRadius = baseShipOrbitSlot.InnerRadius;
+            Vector3 unwalkableSize = Vector3.one * 2F * baseKeepoutZoneRadius;
+            Bounds unwalkableArea = new Bounds(basePosition, unwalkableSize);
+            GraphUpdateObject guo = new GraphUpdateObject(unwalkableArea);
+            guo.modifyWalkability = true;
+            guo.setWalkability = false;
+            guo.updatePhysics = true;   // refreshes connections
+            AstarPath.active.UpdateGraphs(guo); // makes any existing node located in the keepoutZone unwalkable
+
+            // generate new waypoints surrounding the base
+            float baseSurroundingWaypointsRadius = baseShipOrbitSlot.OuterRadius * 3F;
+            var waypoints = UnityUtility.CalcVerticesOfInscribedBoxInsideSphere(basePosition, baseSurroundingWaypointsRadius);
+            //AstarPath.active.AddWorkItem(new AstarPath.AstarWorkItem) // need to update AStar to 3.5.1
         }
 
         /// <summary>

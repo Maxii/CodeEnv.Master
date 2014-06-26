@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
             var hudPublisher = new GuiHudPublisher<FleetCmdData>(Model.Data);
-            hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed, GuiHudLineKeys.Health);
+            hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed, GuiHudLineKeys.Health, GuiHudLineKeys.TargetDistance);
             return hudPublisher;
         }
 

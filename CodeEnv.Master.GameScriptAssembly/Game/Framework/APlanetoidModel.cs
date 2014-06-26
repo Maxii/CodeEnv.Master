@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for Planet and Moon Models.  
 /// </summary>
-public abstract class APlanetoidModel : AMortalItemModel {
+public abstract class APlanetoidModel : AMortalItemModel, IShipOrbitable {
 
     public new APlanetoidData Data {
         get { return base.Data as APlanetoidData; }
@@ -70,7 +70,7 @@ public abstract class APlanetoidModel : AMortalItemModel {
     private void SetKeepoutZoneRadius() {
         SphereCollider keepoutZoneCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
         D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
-        keepoutZoneCollider.radius = Data.ShipOrbitSlot.MinimumDistance;
+        keepoutZoneCollider.radius = Data.ShipOrbitSlot.InnerRadius;
     }
 
     #region StateMachine - Simple Alternative
@@ -158,7 +158,28 @@ public abstract class APlanetoidModel : AMortalItemModel {
 
     #region IShipOrbitable Members
 
-    public float MaximumShipOrbitDistance { get { return Data.ShipOrbitSlot.MaximumDistance; } }
+    public OrbitalSlot ShipOrbitSlot { get { return Data.ShipOrbitSlot; } }
+
+    public void AssumeOrbit(IShipModel ship) {
+        IOrbiterForShips orbiter;
+        var orbiterTransform = _transform.GetTransformWithInterfaceInImmediateChildren<IOrbiterForShips>(out orbiter);
+        if (orbiterTransform != null) {
+            References.UnitFactory.AttachShipToOrbiter(ship, ref orbiterTransform);
+        }
+        else {
+            References.UnitFactory.AttachShipToOrbiter(gameObject, ship, orbitedObjectIsMobile: true);
+        }
+    }
+
+    public void LeaveOrbit(IShipModel orbitingShip) {
+        IOrbiterForShips orbiter;
+        var orbiterTransform = _transform.GetTransformWithInterfaceInImmediateChildren<IOrbiterForShips>(out orbiter);
+        D.Assert(orbiterTransform != null, "{0}.{1} is not present.".Inject(FullName, typeof(IOrbiterForShips).Name));
+        var ship = orbiterTransform.gameObject.GetSafeInterfacesInChildren<IShipModel>().Single(s => s == orbitingShip);
+        var parentFleetTransform = ship.Command.Transform.parent;
+        ship.Transform.parent = parentFleetTransform;
+        // OPTIMIZE disable or remove empty orbiters?
+    }
 
     #endregion
 

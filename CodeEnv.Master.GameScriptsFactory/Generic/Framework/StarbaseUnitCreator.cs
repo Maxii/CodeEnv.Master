@@ -28,11 +28,13 @@ using UnityEngine;
 /// </summary>
 public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory, FacilityData, FacilityStat, StarbaseCmdModel> {
 
-    private UnitFactory _factory;   // not accesible from AUnitCreator
+    private static UnitFactory _factory;   // IMPROVE move back to AUnitCreator using References.IUnitFactory?
 
     protected override void Awake() {
         base.Awake();
-        _factory = UnitFactory.Instance;
+        if (_factory == null) {
+            _factory = UnitFactory.Instance;
+        }
     }
 
     // all starting units are now built and initialized during GameState.PrepareUnitsForOperations

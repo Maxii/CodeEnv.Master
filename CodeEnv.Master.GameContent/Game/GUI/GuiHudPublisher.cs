@@ -91,7 +91,7 @@ namespace CodeEnv.Master.GameContent {
 
         private IEnumerator DisplayHudAtCursor(IIntel intel) {
             while (true) {
-                UpdateGuiCursorHudText(intel, GuiHudLineKeys.Distance);
+                UpdateGuiCursorHudText(intel, GuiHudLineKeys.CameraDistance);
                 // always update IntelState as the Coverage can change even if data age does not need refreshing
                 UpdateGuiCursorHudText(intel, GuiHudLineKeys.IntelState);
 

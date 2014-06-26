@@ -39,24 +39,58 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        public float MinimumDistance { get; private set; }
+        /// <summary>
+        /// The slot's closest distance from the body orbited.
+        /// </summary>
+        public float InnerRadius { get; private set; }
 
-        public float MaximumDistance { get; private set; }
+        /// <summary>
+        /// The slot's furthest distance from the body orbited.
+        /// </summary>
+        public float OuterRadius { get; private set; }
 
-        public float MeanDistance { get; private set; }
+        /// <summary>
+        /// The slot's mean distance from the body orbited.
+        /// </summary>
+        public float MeanRadius { get; private set; }
 
-        public OrbitalSlot(float minimumRadius, float maximumRadius)
+        /// <summary>
+        /// The slot's depth, aka OutsideRadius - InsideRadius.
+        /// </summary>
+        public float Depth { get; private set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="OrbitalSlot"/> struct.
+        /// </summary>
+        /// <param name="innerRadius">The closest distance to the body orbited.</param>
+        /// <param name="outerRadius">The furthest distance from the body orbited.</param>
+        public OrbitalSlot(float innerRadius, float outerRadius)
             : this() {
-            Arguments.Validate(minimumRadius != maximumRadius);
-            Arguments.ValidateForRange(minimumRadius, Constants.ZeroF, maximumRadius);
-            Arguments.ValidateForRange(maximumRadius, minimumRadius, Mathf.Infinity);
-            MinimumDistance = minimumRadius;
-            MaximumDistance = maximumRadius;
-            MeanDistance = minimumRadius + (maximumRadius - minimumRadius) / 2F;
+            Arguments.Validate(innerRadius != outerRadius);
+            Arguments.ValidateForRange(innerRadius, Constants.ZeroF, outerRadius);
+            Arguments.ValidateForRange(outerRadius, innerRadius, Mathf.Infinity);
+            InnerRadius = innerRadius;
+            OuterRadius = outerRadius;
+            MeanRadius = innerRadius + (outerRadius - innerRadius) / 2F;
+            Depth = outerRadius - innerRadius;
         }
 
-        public Vector3 GenerateRandomPositionWithinSlot() {
-            Vector2 pointOnCircle = RandomExtended<Vector2>.OnCircle(MeanDistance);
+        /// <summary>
+        /// Determines whether [contains] [the specified orbit radius].
+        /// </summary>
+        /// <param name="orbitRadius">The orbit radius.</param>
+        /// <returns></returns>
+        public bool Contains(float orbitRadius) {
+            return Utility.IsInRange(orbitRadius, InnerRadius, OuterRadius);
+        }
+
+        /// <summary>
+        /// Generates a random local position within the orbit slot at <c>MeanDistance</c> from the body orbited.
+        /// Use to set the local position of the orbiting object once attached to the orbiter.
+        /// </summary>
+        /// <returns></returns>
+        public Vector3 GenerateRandomLocalPositionWithinSlot() {
+            Vector2 pointOnCircle = RandomExtended<Vector2>.OnCircle(MeanRadius);
             return new Vector3(pointOnCircle.x, Constants.ZeroF, pointOnCircle.y);
         }
 
@@ -76,8 +110,8 @@ namespace CodeEnv.Master.GameContent {
         /// </returns>
         public override int GetHashCode() {
             int hash = 17;  // 17 = some prime number
-            hash = hash * 31 + MinimumDistance.GetHashCode(); // 31 = another prime number
-            hash = hash * 31 + MaximumDistance.GetHashCode();
+            hash = hash * 31 + InnerRadius.GetHashCode(); // 31 = another prime number
+            hash = hash * 31 + OuterRadius.GetHashCode();
             return hash;
         }
 
@@ -86,13 +120,13 @@ namespace CodeEnv.Master.GameContent {
         #region IEquatable<OrbitalSlot> Members
 
         public bool Equals(OrbitalSlot other) {
-            return MinimumDistance == other.MinimumDistance && MaximumDistance == other.MaximumDistance;
+            return InnerRadius == other.InnerRadius && OuterRadius == other.OuterRadius;
         }
 
         #endregion
 
         public override string ToString() {
-            return "{0} [{1} - {2}]".Inject(GetType().Name, MinimumDistance, MaximumDistance);
+            return "{0} [{1} - {2}]".Inject(GetType().Name, InnerRadius, OuterRadius);
         }
 
     }

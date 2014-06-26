@@ -40,11 +40,11 @@ namespace CodeEnv.Master.GameContent {
         {IntelCoverage.Aware, new List<GuiHudLineKeys> { GuiHudLineKeys.SectorIndex,
 
                                                                        GuiHudLineKeys.IntelState,
-                                                                       GuiHudLineKeys.Distance }},
+                                                                       GuiHudLineKeys.CameraDistance }},
 
         {IntelCoverage.Minimal, new List<GuiHudLineKeys> { GuiHudLineKeys.SectorIndex,
                                                                         GuiHudLineKeys.IntelState,
-                                                                        GuiHudLineKeys.Distance, 
+                                                                        GuiHudLineKeys.CameraDistance, 
                                                                         
                                                                         GuiHudLineKeys.Name,
                                                                         GuiHudLineKeys.ParentName,
@@ -59,7 +59,7 @@ namespace CodeEnv.Master.GameContent {
 
          {IntelCoverage.Moderate, new List<GuiHudLineKeys> { GuiHudLineKeys.SectorIndex,
                                                                         GuiHudLineKeys.IntelState,
-                                                                        GuiHudLineKeys.Distance, 
+                                                                        GuiHudLineKeys.CameraDistance, 
                                                                         GuiHudLineKeys.Name,
                                                                         GuiHudLineKeys.ParentName,
                                                                        GuiHudLineKeys.Category,
@@ -77,7 +77,7 @@ namespace CodeEnv.Master.GameContent {
 
        {IntelCoverage.Comprehensive, new List<GuiHudLineKeys> { GuiHudLineKeys.SectorIndex,
                                                                         GuiHudLineKeys.IntelState,
-                                                                        GuiHudLineKeys.Distance,
+                                                                        GuiHudLineKeys.CameraDistance,
                                                                         GuiHudLineKeys.Name,
                                                                         GuiHudLineKeys.ParentName,
                                                                        GuiHudLineKeys.Category,
@@ -94,7 +94,8 @@ namespace CodeEnv.Master.GameContent {
            
                                                                        GuiHudLineKeys.SettlementDetails,
                                                                            GuiHudLineKeys.ShipDetails,
-                                                                            GuiHudLineKeys.Target
+                                                                            GuiHudLineKeys.TargetName,
+                                                                            GuiHudLineKeys.TargetDistance
        }}
     };
 
@@ -158,6 +159,11 @@ namespace CodeEnv.Master.GameContent {
                 // TODO calculate from Data.Position and <code>static GetSelected()<code>
                 //if(nothing selected) return empty
                 float distance = position.DistanceToCamera();
+                _list.Add(new ColoredText(format.Inject(distance)));
+            }
+
+            public ColoredTextList_Distance(Vector3 targeterPosition, Vector3 targetedPosition, string format = Constants.FormatFloat_1DpMax) {
+                float distance = Vector3.Distance(targeterPosition, targetedPosition);
                 _list.Add(new ColoredText(format.Inject(distance)));
             }
         }

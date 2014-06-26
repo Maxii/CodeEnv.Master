@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IFormationStation.cs
-// Interface for access to FormationStation.
+// File: IOrbiterForShips.cs
+// Interface for easy access to OrbiterForShips objects.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,26 +16,12 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using UnityEngine;
-
     /// <summary>
-    /// Interface for access to FormationStation.
+    /// Interface for easy access to OrbiterForShips objects.
     /// </summary>
-    public interface IFormationStation {
+    public interface IOrbiterForShips : IOrbiter {
 
-        bool IsOnStation { get; }
-
-        float StationRadius { get; }
-
-        Vector3 Position { get; }
-
-        /// <summary>
-        /// The offset of this formation station from the HQ Element.
-        /// </summary>
-        Vector3 StationOffset { get; set; }
-
-        IShipModel AssignedShip { get; set; }
+        bool enabled { get; set; }
 
     }
 }

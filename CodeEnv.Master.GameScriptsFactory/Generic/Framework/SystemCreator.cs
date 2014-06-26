@@ -1,6 +1,6 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
@@ -79,8 +79,8 @@ public class SystemCreator : AMonoBase, IDisposable {
     private IList<PlanetoidStat> _planetStats;
     private SystemModel _system;
     private StarModel _star;
-    private IList<PlanetoidModel> _planets;
-    private IEnumerable<PlanetoidModel> _moons;
+    private IList<PlanetModel> _planets;
+    private IList<MoonModel> _moons;
 
     private Transform _systemsFolder;
 
@@ -163,13 +163,11 @@ public class SystemCreator : AMonoBase, IDisposable {
         LogEvent();
         var planetStats = new List<PlanetoidStat>();
         if (isCompositionPreset) {
-            IEnumerable<PlanetoidModel> allPlanetoids = gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetoidModel>();
-            // exclude moons
-            var planets = allPlanetoids.Where(p => p.gameObject.GetComponentInParents<PlanetoidModel>(excludeSelf: true) == null).ToList();
+            var planets = gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetModel>();
             foreach (var planet in planets) {
                 Transform transformCarryingPlanetCategory = planet.transform.parent.parent;
                 PlanetoidCategory pCategory = DeriveCategory<PlanetoidCategory>(transformCarryingPlanetCategory);
-                string planetName = planet.gameObject.name; // if already in scene, the planet should already be named for its system and orbit
+                string planetName = planet.gameObject.name; // if already in scene, the planet should already be named for its system and orbit // IMPROVE redundant w/orbit assignment
                 PlanetoidStat stat = new PlanetoidStat(planetName, 1000000F, 10000F, pCategory, 25, new OpeYield(3.1F, 2F, 4.8F), new XYield(XResource.Special_1, 0.3F));
                 planetStats.Add(stat);
             }
@@ -194,8 +192,9 @@ public class SystemCreator : AMonoBase, IDisposable {
         MakeSystem();   // stars and planets need a system parent when built
         MakeStar();     // makes the star a child of the system
         MakePlanets();  // makes each planet a child of the system
-        PlaceMembersInOrbitSlots();    // modifies planet names to reflect the assigned orbit
+        AssignSystemOrbitSlotsToPlanets();    // modifies planet names to reflect the assigned orbit
         PopulateMoonsWithData();        // makes moon names based on the moon's (modified) planet name
+        AssignPlanetOrbitSlotsToMoons();
         AddMembersToSystemData();         // adds star and planet data to the system's data component
         InitializeTopographyMonitor();
         CompleteSystem();               // misc final touchup
@@ -227,10 +226,8 @@ public class SystemCreator : AMonoBase, IDisposable {
     private void MakePlanets() {
         LogEvent();
         if (isCompositionPreset) {
-            IEnumerable<PlanetoidModel> allPlanetoids = gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetoidModel>();
-            // exclude moons
-            _planets = allPlanetoids.Where(p => p.gameObject.GetComponentInParents<PlanetoidModel>(excludeSelf: true) == null).ToList();
-            var planetsAlreadyUsed = new List<PlanetoidModel>();
+            _planets = gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetModel>();
+            var planetsAlreadyUsed = new List<PlanetModel>();
             foreach (var planetStat in _planetStats) {
                 // find a preExisting planet of the right category first to provide to Make
                 var planetsOfStatCategory = _planets.Where(p => DeriveCategory<PlanetoidCategory>(p.transform.parent.parent) == (planetStat.Category));
@@ -241,7 +238,7 @@ public class SystemCreator : AMonoBase, IDisposable {
             }
         }
         else {
-            _planets = new List<PlanetoidModel>();
+            _planets = new List<PlanetModel>();
             foreach (var planetStat in _planetStats) {
                 var planet = _factory.MakeInstance(planetStat, _system.gameObject);
                 _planets.Add(planet);
@@ -250,13 +247,13 @@ public class SystemCreator : AMonoBase, IDisposable {
     }
 
     /// <summary>
-    /// Assigns an orbit slot to each planetary subsystem (planet and optional moons) and adjusts its
+    /// Assigns a system orbit slot to each planetary subsystem (planet and optional moons) and adjusts its
     /// name to reflect that orbit. The position of the planet is automatically adjusted to fit within the slot
     /// when the orbit slot is assigned. Applies to both randomly-generated and preset planets.
-    /// Also assigns an orbit slot for a future settlement.
+    /// Also reserves an orbit slot for a future settlement.
     /// </summary>
     /// <exception cref="System.NotImplementedException"></exception>
-    private void PlaceMembersInOrbitSlots() {
+    private void AssignSystemOrbitSlotsToPlanets() {
         LogEvent();
         int innerOrbitsCount = Mathf.FloorToInt(0.25F * TempGameValues.TotalOrbitSlotsPerSystem);
         int midOrbitsCount = Mathf.CeilToInt(0.6F * TempGameValues.TotalOrbitSlotsPerSystem) - innerOrbitsCount;
@@ -273,7 +270,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         _system.Data.SettlementOrbitSlot = allOrbitSlots[settlementOrbitSlotIndex];
 
         // now divy up the remaining slots among the planets
-        IList<PlanetoidModel> planetsToDestroy = null;
+        IList<PlanetModel> planetsToDestroy = null;
         Stack<int>[] slots;
         foreach (var planet in _planets) {
             var planetCategory = planet.Data.Category;
@@ -308,7 +305,7 @@ public class SystemCreator : AMonoBase, IDisposable {
             }
             else {
                 if (planetsToDestroy == null) {
-                    planetsToDestroy = new List<PlanetoidModel>();
+                    planetsToDestroy = new List<PlanetModel>();
                 }
                 planetsToDestroy.Add(planet);
             }
@@ -335,10 +332,10 @@ public class SystemCreator : AMonoBase, IDisposable {
 
     private void PopulateMoonsWithData() {
         LogEvent();
-        _moons = new List<PlanetoidModel>();
+        _moons = new List<MoonModel>();
         foreach (var planet in _planets) {
-            IEnumerable<PlanetoidModel> moons = planet.gameObject.GetComponentsInChildren<PlanetoidModel>().Except(planet);
-            if (!moons.IsNullOrEmpty()) {
+            IEnumerable<MoonModel> moons = planet.gameObject.GetComponentsInChildren<MoonModel>();
+            if (moons.Any()) {
                 int letterIndex = 0;
                 foreach (var moon in moons) {
                     string planetName = planet.Data.Name;
@@ -346,26 +343,74 @@ public class SystemCreator : AMonoBase, IDisposable {
                     PlanetoidCategory moonCategory = DeriveCategory<PlanetoidCategory>(moon.transform);
                     PlanetoidStat stat = new PlanetoidStat(moonName, 1000F, 100000F, moonCategory, 5, new OpeYield(0.1F, 1F, 0.8F));
 
-                    PlanetoidData data = new PlanetoidData(stat) {
-                        ParentName = SystemName
+                    float minimumShipOrbitDistance = moon.Radius * TempGameValues.KeepoutRadiusMultiplier;
+                    float maximumShipOrbitDistance = minimumShipOrbitDistance + TempGameValues.DefaultShipOrbitSlotDepth;
+
+                    MoonData data = new MoonData(stat) {
+                        ParentName = SystemName,
+                        ShipOrbitSlot = new OrbitalSlot(minimumShipOrbitDistance, maximumShipOrbitDistance)
                         // Owners are all initialized to TempGameValues.NoPlayer by AItemData
                         // CombatStrength is default(CombatStrength), aka all values zero'd out
                     };
-
                     moon.Data = data;
-                    letterIndex++;
                     // include the System and moon as a target in any child with a CameraLOSChangedRelay
                     moon.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().AddTarget(_system.transform, moon.transform);
+                    letterIndex++;
                 }
-                _moons = _moons.Concat(moons);
+                _moons = _moons.Concat(moons).ToList();
             }
         }
     }
 
+    /// <summary>
+    /// Assigns a planetary orbit slot to each moon. If the orbit slot proposed would potentially 
+    /// interfere with other orbiting bodies or ships, the moon is destroyed. The position of the moon 
+    /// is automatically adjusted to fit within the slot when the orbit slot is assigned. 
+    /// Applies to both randomly-generated and preset planets.
+    /// </summary>
+    private void AssignPlanetOrbitSlotsToMoons() {
+        LogEvent();
+        IList<MoonModel> moonsToDestroy = null;
+        foreach (var planet in _planets) {
+            float depthAvailForMoonOrbitsAroundPlanet = planet.Data.SystemOrbitSlot.Depth;
+            float startDepthForMoonOrbitSlot = planet.ShipOrbitSlot.OuterRadius;
+            IEnumerable<MoonModel> moons = planet.gameObject.GetComponentsInChildren<MoonModel>();
+            if (moons.Any()) {
+                foreach (var moon in moons) {
+                    float depthReqdForMoonOrbitSlot = 2F * moon.ShipOrbitSlot.OuterRadius;
+                    float endDepthForMoonOrbitSlot = startDepthForMoonOrbitSlot + depthReqdForMoonOrbitSlot;
+                    if (endDepthForMoonOrbitSlot <= depthAvailForMoonOrbitsAroundPlanet) {
+
+                        moon.Data.PlanetOrbitSlot = new OrbitalSlot(startDepthForMoonOrbitSlot, endDepthForMoonOrbitSlot);
+                        startDepthForMoonOrbitSlot = endDepthForMoonOrbitSlot;
+                    }
+                    else {
+                        if (moonsToDestroy == null) {
+                            moonsToDestroy = new List<MoonModel>();
+                        }
+                        D.Warn("{0} scheduled for destruction. OrbitSlot outer depth {1} > available depth {2}.",
+                            moon.FullName, endDepthForMoonOrbitSlot, depthAvailForMoonOrbitsAroundPlanet);
+                        moonsToDestroy.Add(moon);
+                        break;
+                    }
+                }
+            }
+        }
+        if (moonsToDestroy != null) {
+            moonsToDestroy.ForAll(m => {
+                _moons.Remove(m);
+                D.Log("Destroying Moon {0}.", m.FullName);
+                Destroy(m.transform.parent.gameObject); // destroys the moon orbiter object and its children
+            });
+        }
+    }
+
+
     private void AddMembersToSystemData() {
         LogEvent();
         _system.Data.StarData = _star.Data;
-        _planets.Select(p => p.Data).ForAll(pd => _system.Data.AddPlanet(pd));
+        _planets.Select(p => p.Data).ForAll(pd => _system.Data.AddPlanetoid(pd));
+        _moons.Select(m => m.Data).ForAll(md => _system.Data.AddPlanetoid(md));
     }
 
     private void InitializeTopographyMonitor() {
@@ -459,15 +504,15 @@ public class SystemCreator : AMonoBase, IDisposable {
     /// <returns></returns>
     private OrbitalSlot[] GenerateAllSystemOrbitSlots() {
         D.Assert(_star.Radius != Constants.ZeroF, "{0}.Radius has not yet been set.".Inject(_star.FullName));   // confirm the star's Awake() has run so Radius is valid
-        float minOrbitRadius = _star.MaximumShipOrbitDistance;
-        float systemRadiusAvailableForAllOrbits = TempGameValues.SystemRadius - minOrbitRadius;
+        float sysOrbitSlotsStartRadius = _star.ShipOrbitSlot.OuterRadius;
+        float systemRadiusAvailableForAllOrbits = TempGameValues.SystemRadius - sysOrbitSlotsStartRadius;
         float slotSpacing = systemRadiusAvailableForAllOrbits / (float)TempGameValues.TotalOrbitSlotsPerSystem;
 
         var allOrbitSlots = new OrbitalSlot[TempGameValues.TotalOrbitSlotsPerSystem];
         for (int i = 0; i < TempGameValues.TotalOrbitSlotsPerSystem; i++) {
-            float minOrbitSlotRadius = minOrbitRadius + slotSpacing * i;
-            float maxOrbitSlotRadius = minOrbitSlotRadius + slotSpacing;
-            allOrbitSlots[i] = new OrbitalSlot(minOrbitSlotRadius, maxOrbitSlotRadius);
+            float orbitSlotInsideRadius = sysOrbitSlotsStartRadius + slotSpacing * i;
+            float orbitSlotOutsideRadius = orbitSlotInsideRadius + slotSpacing;
+            allOrbitSlots[i] = new OrbitalSlot(orbitSlotInsideRadius, orbitSlotOutsideRadius);
         }
         return allOrbitSlots;
     }
@@ -543,4 +588,5 @@ public class SystemCreator : AMonoBase, IDisposable {
     #endregion
 
 }
+
 

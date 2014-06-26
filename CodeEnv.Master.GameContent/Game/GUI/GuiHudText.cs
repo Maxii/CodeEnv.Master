@@ -31,13 +31,14 @@ namespace CodeEnv.Master.GameContent {
         // This is needed as the order of Dictionary.Keys is not defined when iterating through it, even if they were added in the right order
         private static IList<GuiHudLineKeys> _displayLineOrder = new List<GuiHudLineKeys>() {
                 {GuiHudLineKeys.Name},
-                {GuiHudLineKeys.ParentName},
-                {GuiHudLineKeys.SectorIndex},
-                {GuiHudLineKeys.Target},
+                {GuiHudLineKeys.TargetName},
+                {GuiHudLineKeys.TargetDistance},
                 {GuiHudLineKeys.Speed}, 
-                {GuiHudLineKeys.Distance},
+                {GuiHudLineKeys.CameraDistance},
+                {GuiHudLineKeys.SectorIndex},
                 {GuiHudLineKeys.Category},
                 {GuiHudLineKeys.IntelState},
+                {GuiHudLineKeys.ParentName},
                 {GuiHudLineKeys.Capacity},
                 {GuiHudLineKeys.Resources},
                 {GuiHudLineKeys.Specials}, 
@@ -88,8 +89,9 @@ namespace CodeEnv.Master.GameContent {
                 {GuiHudLineKeys.ShipDetails, "{0}, Mass: {1}, TurnRate: {2}"},
                 {GuiHudLineKeys.SectorIndex, "Sector {0}"},
                 {GuiHudLineKeys.Density, "Density: {0}"},
-                {GuiHudLineKeys.Distance, "Distance from Camera: {0} Units"},
-                {GuiHudLineKeys.Target, "Target: {0}"}
+                {GuiHudLineKeys.CameraDistance, "Camera Distance: {0} Units"},
+                {GuiHudLineKeys.TargetName, "Target Name: {0}"}, 
+                {GuiHudLineKeys.TargetDistance, "Target Distance: {0} Units"}
             };
             return baseDisplayLineContent;
         }

@@ -30,7 +30,7 @@ namespace CodeEnv.Master.GameContent {
         ///  Info key for distance in Units from the camera. 
         /// Intended to become distance from Selected.
         /// </summary>
-        Distance,
+        CameraDistance,
 
         /// <summary>
         ///  Info key for facility?/production? capacity...
@@ -48,9 +48,11 @@ namespace CodeEnv.Master.GameContent {
         Specials,
 
         /// <summary>
-        /// The target of the Cmd or CmdElement.
+        /// The target of the FleetCmd or Ship.
+        /// TODO expand to target of all Cmds or Elements?
         /// </summary>
-        Target,
+        TargetName,
+        TargetDistance,
 
         SettlementDetails,
         Owner,

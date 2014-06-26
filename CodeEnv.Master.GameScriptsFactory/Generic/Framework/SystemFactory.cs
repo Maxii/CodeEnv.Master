@@ -112,48 +112,14 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="planetStat">The planet stat.</param>
     /// <param name="parent">The parent.</param>
     /// <returns></returns>
-    public PlanetoidModel MakeInstance(PlanetoidStat planetStat, GameObject parent) {
+    public PlanetModel MakeInstance(PlanetoidStat planetStat, GameObject parent) {
         GameObject planetPrefab = _planetPrefabs.First(pGo => pGo.name == planetStat.Category.GetName());
         GameObject planetGo = UnityUtility.AddChild(parent, planetPrefab);
 
-        IEnumerable<PlanetoidModel> allPlanetoidModels = planetGo.GetSafeMonoBehaviourComponentsInChildren<PlanetoidModel>();
-        // exclude moons
-        PlanetoidModel planetModel = allPlanetoidModels.Single(pModel => pModel.gameObject.GetComponentInParents<PlanetoidModel>(excludeSelf: true) == null);
-
+        PlanetModel planetModel = planetGo.GetSafeMonoBehaviourComponentInChildren<PlanetModel>();
         MakeInstance(planetStat, parent.name, ref planetModel);
         return planetModel;
     }
-
-    /// <summary>
-    /// Makes an instance of a Planet (with optionally already attached moons) from the stat and model provided. 
-    /// The Model (with its Data) and View will not be enabled. The model's transform will have the same parent it arrived with.
-    /// </summary>
-    /// <param name="planetStat">The planet stat.</param>
-    /// <param name="systemName">Name of the system.</param>
-    /// <param name="model">The model.</param>
-    public void MakeInstance(PlanetoidStat planetStat, string systemName, ref PlanetoidModel model) {
-        D.Assert(!model.enabled, "{0} should not be enabled.".Inject(model.FullName));
-        D.Assert(model.transform.parent != null, "{0} should already have a parent.".Inject(model.FullName));
-        Transform transformContainingCategoryName = model.transform.parent.parent;
-        D.Assert(planetStat.Category == GameUtility.DeriveEnumFromName<PlanetoidCategory>(transformContainingCategoryName.name),
-            "{0} {1} should = {2}.".Inject(typeof(PlanetoidCategory).Name, planetStat.Category.GetName(), transformContainingCategoryName.name));
-
-        float minimumShipOrbitDistance = model.Radius * TempGameValues.KeepoutRadiusMultiplier;
-        float maximumShipOrbitDistance = minimumShipOrbitDistance + TempGameValues.DefaultShipOrbitSlotDepth;
-        model.Data = new PlanetoidData(planetStat) {
-            ParentName = systemName,
-            ShipOrbitSlot = new OrbitalSlot(minimumShipOrbitDistance, maximumShipOrbitDistance)
-        };
-
-        // this is not really necessary as the provided model should already have its transform as its Mesh's CameraLOSChangedRelay target
-        var modelTransform = model.transform;   // assigns the planet's transform as the target for the planet and moon mesh relays
-        model.gameObject.GetInterfacesInChildren<ICameraLOSChangedRelay>().ForAll(iRelay => iRelay.AddTarget(modelTransform));
-    }
-
-
-
-
-
 
     /// <summary>
     /// Makes an instance of a Planet (with optionally already attached moons) from the stat and model provided. 
@@ -180,28 +146,6 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         var modelTransform = model.transform;   // assigns the planet's transform as the target for the planet and moon mesh relays
         model.gameObject.GetInterfacesInChildren<ICameraLOSChangedRelay>().ForAll(iRelay => iRelay.AddTarget(modelTransform));
     }
-
-    /// <summary>
-    /// Makes an instance of a System from the name and model provided. The Model (with its Data) and View
-    /// will not be enabled. The model's transform will have the same parent and children it arrived with.
-    /// </summary>
-    /// <param name="systemName">Name of the system.</param>
-    /// <param name="sectorIndex">Index of the sector.</param>
-    /// <param name="topography">The topography.</param>
-    /// <param name="model">The model.</param>
-    public void MakeSystemInstance(string systemName, Index3D sectorIndex, SpaceTopography topography, ref NewSystemModel model) {
-        D.Assert(model.transform.parent != null, "{0} should already have a parent.".Inject(model.FullName));
-        NewSystemData data = new NewSystemData(systemName, sectorIndex, topography);
-        model.Data = data;
-        // this is not really necessary as the provided model should already have its transform as its Mesh's CameraLOSChangedRelay target
-        var modelTransform = model.transform;   // assigns the planet's transform as the target for the planet and moon mesh relays
-        model.gameObject.GetInterfacesInChildren<ICameraLOSChangedRelay>().ForAll(iRelay => iRelay.AddTarget(modelTransform));
-    }
-
-
-
-
-
 
     /// <summary>
     /// Makes an instance of a System from the name provided. The returned Model (with its Data) and View

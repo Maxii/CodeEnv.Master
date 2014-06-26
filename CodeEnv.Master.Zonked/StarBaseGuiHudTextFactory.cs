@@ -39,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
                     return intel.CurrentCoverage != IntelCoverage.Aware ? new ColoredTextList_String(data.Name) : _emptyColoredTextList;
                 case GuiHudLineKeys.ParentName:
                     return data.ParentName != string.Empty ? new ColoredTextList_String(data.ParentName) : _emptyColoredTextList;
-                case GuiHudLineKeys.Distance:
+                case GuiHudLineKeys.CameraDistance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
                     return (intel.DateStamp != null) ? new ColoredTextList_Intel(intel) : _emptyColoredTextList;
