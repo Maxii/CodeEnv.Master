@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -23,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// Structure that describes key characteristics of an orbit around an object. 
     /// Also can generate a random position within the slot for the orbiter to start orbiting.
     /// </summary>
-    public struct OrbitalSlot {
+    public struct OrbitalSlot : IEquatable<OrbitalSlot> {
 
         #region Equality Operators Override
 

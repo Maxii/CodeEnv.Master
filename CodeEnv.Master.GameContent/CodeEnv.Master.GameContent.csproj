@@ -44,10 +44,6 @@
       <HintPath>$(ProgramFiles)\Unity\Editor\Data\Managed\UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Vectrosity">
-      <HintPath>..\..\..\UnityEnv\Support\Vectrosity\Assets\Plugins\Vectrosity.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\AssemblyVersionInfo.cs">
@@ -56,6 +52,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\AOrbitSlot.cs" />
     <Compile Include="Generic\Framework\APlanetoidData.cs" />
     <Compile Include="Generic\Framework\ACombatItemData.cs" />
     <Compile Include="Generic\Framework\AOwnedItemData.cs" />
@@ -241,6 +238,8 @@
     <Compile Include="Generic\Framework\IUnitFactory.cs" />
     <Compile Include="Generic\Framework\IOrbiter.cs" />
     <Compile Include="Generic\Framework\IOrbiterForShips.cs" />
+    <Compile Include="Generic\Framework\IGeneralFactory.cs" />
+    <Compile Include="Game\Gameplay\CelestialOrbitSlot.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\ShipData.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
@@ -258,12 +257,17 @@
     <Compile Include="Generic\IO\StarStat.cs" />
     <Compile Include="Game\Gameplay\UniverseCenterData.cs" />
     <Compile Include="Game\GUI\UniverseCenterGuiHudTextFactory.cs" />
+    <Compile Include="Game\Gameplay\ShipOrbitSlot.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Generic\Math\" />
     <Folder Include="ThirdParty\" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Plugins\Vectrosity\Vectrosity.csproj">
+      <Project>{742472e2-310c-430c-a59b-1b527d852181}</Project>
+      <Name>Vectrosity</Name>
+    </ProjectReference>
     <ProjectReference Include="..\CodeEnv.Master.Common.LocalResources\CodeEnv.Master.Common.LocalResources.csproj">
       <Project>{30988a11-a4f0-4fdc-82d5-41b87ea410be}</Project>
       <Name>CodeEnv.Master.Common.LocalResources</Name>

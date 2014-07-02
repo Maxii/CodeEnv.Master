@@ -90,18 +90,10 @@ public class Loader : AMonoBaseSingleton<Loader>, IDisposable {
         OnQualitySettingChanged();
     }
 
-    private void OnQualitySettingChanged() {
-        int newQualitySetting = _playerPrefsMgr.QualitySetting;
-        if (newQualitySetting != QualitySettings.GetQualityLevel()) {
-            QualitySettings.SetQualityLevel(newQualitySetting, applyExpensiveChanges: true);
-        }
-        CheckDebugSettings(newQualitySetting);
-    }
-
     private void InitializeVectrosity() {
         VectorLine.useMeshLines = true;
         VectorLine.useMeshPoints = true;
-        VectorLine.useMeshQuads = true;
+        //VectorLine.useMeshQuads = true;       // removed in Vectrosity 3.0 as no advantages to using it
     }
 
     private void InitializeGameStateReadinessSystem() {
@@ -120,6 +112,14 @@ public class Loader : AMonoBaseSingleton<Loader>, IDisposable {
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = TargetFPS;
         }
+    }
+
+    private void OnQualitySettingChanged() {
+        int newQualitySetting = _playerPrefsMgr.QualitySetting;
+        if (newQualitySetting != QualitySettings.GetQualityLevel()) {
+            QualitySettings.SetQualityLevel(newQualitySetting, applyExpensiveChanges: true);
+        }
+        CheckDebugSettings(newQualitySetting);
     }
 
     private void OnElementReady(ElementReadyEvent e) {

@@ -75,6 +75,7 @@ public class SystemCreator : AMonoBase, IDisposable {
 
     public string SystemName { get { return _transform.name; } }    // the SystemCreator carries the name of the System
 
+    private float _systemOrbitSlotDepth;
     private StarStat _starStat;
     private IList<PlanetoidStat> _planetStats;
     private SystemModel _system;
@@ -263,7 +264,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         var shuffledMidStack = new Stack<int>(Enumerable.Range(innerOrbitsCount, midOrbitsCount).Shuffle());
         var shuffledOuterStack = new Stack<int>(Enumerable.Range(innerOrbitsCount + midOrbitsCount, outerOrbitsCount).Shuffle());
 
-        OrbitalSlot[] allOrbitSlots = GenerateAllSystemOrbitSlots();
+        OrbitalSlot[] allOrbitSlots = GenerateAllSystemOrbitSlots(out _systemOrbitSlotDepth);
 
         // reserve a slot for a future Settlement
         int settlementOrbitSlotIndex = shuffledMidStack.Pop();
@@ -299,7 +300,9 @@ public class SystemCreator : AMonoBase, IDisposable {
 
             int slotIndex = 0;
             if (TryFindOrbitSlot(out slotIndex, slots)) {
-                planet.Data.SystemOrbitSlot = allOrbitSlots[slotIndex];
+                //planet.Data.SystemOrbitSlot = allOrbitSlots[slotIndex];
+                OrbitalSlot orbitSlotForPlanet = allOrbitSlots[slotIndex];
+                planet.transform.localPosition = orbitSlotForPlanet.GenerateRandomLocalPositionWithinSlot();
                 // assign the planet's name using its orbital slot
                 planet.Data.Name = SystemName + Constants.Space + _planetNumbers[slotIndex];
             }
@@ -372,7 +375,9 @@ public class SystemCreator : AMonoBase, IDisposable {
         LogEvent();
         IList<MoonModel> moonsToDestroy = null;
         foreach (var planet in _planets) {
-            float depthAvailForMoonOrbitsAroundPlanet = planet.Data.SystemOrbitSlot.Depth;
+            //float depthAvailForMoonOrbitsAroundPlanet = planet.Data.SystemOrbitSlot.Depth;
+            float depthAvailForMoonOrbitsAroundPlanet = _systemOrbitSlotDepth;
+
             float startDepthForMoonOrbitSlot = planet.ShipOrbitSlot.OuterRadius;
             IEnumerable<MoonModel> moons = planet.gameObject.GetComponentsInChildren<MoonModel>();
             if (moons.Any()) {
@@ -381,7 +386,9 @@ public class SystemCreator : AMonoBase, IDisposable {
                     float endDepthForMoonOrbitSlot = startDepthForMoonOrbitSlot + depthReqdForMoonOrbitSlot;
                     if (endDepthForMoonOrbitSlot <= depthAvailForMoonOrbitsAroundPlanet) {
 
-                        moon.Data.PlanetOrbitSlot = new OrbitalSlot(startDepthForMoonOrbitSlot, endDepthForMoonOrbitSlot);
+                        //moon.Data.PlanetOrbitSlot = new OrbitalSlot(startDepthForMoonOrbitSlot, endDepthForMoonOrbitSlot);
+                        var moonOrbitSlot = new OrbitalSlot(startDepthForMoonOrbitSlot, endDepthForMoonOrbitSlot);
+                        moon.transform.localPosition = moonOrbitSlot.GenerateRandomLocalPositionWithinSlot();
                         startDepthForMoonOrbitSlot = endDepthForMoonOrbitSlot;
                     }
                     else {
@@ -502,16 +509,20 @@ public class SystemCreator : AMonoBase, IDisposable {
     /// star's ShipOrbitSlot.
     /// </summary>
     /// <returns></returns>
-    private OrbitalSlot[] GenerateAllSystemOrbitSlots() {
+    private OrbitalSlot[] GenerateAllSystemOrbitSlots(out float systemOrbitSlotDepth) {
         D.Assert(_star.Radius != Constants.ZeroF, "{0}.Radius has not yet been set.".Inject(_star.FullName));   // confirm the star's Awake() has run so Radius is valid
         float sysOrbitSlotsStartRadius = _star.ShipOrbitSlot.OuterRadius;
         float systemRadiusAvailableForAllOrbits = TempGameValues.SystemRadius - sysOrbitSlotsStartRadius;
-        float slotSpacing = systemRadiusAvailableForAllOrbits / (float)TempGameValues.TotalOrbitSlotsPerSystem;
+        //float slotSpacing = systemRadiusAvailableForAllOrbits / (float)TempGameValues.TotalOrbitSlotsPerSystem;
+        systemOrbitSlotDepth = systemRadiusAvailableForAllOrbits / (float)TempGameValues.TotalOrbitSlotsPerSystem;
 
         var allOrbitSlots = new OrbitalSlot[TempGameValues.TotalOrbitSlotsPerSystem];
         for (int i = 0; i < TempGameValues.TotalOrbitSlotsPerSystem; i++) {
-            float orbitSlotInsideRadius = sysOrbitSlotsStartRadius + slotSpacing * i;
-            float orbitSlotOutsideRadius = orbitSlotInsideRadius + slotSpacing;
+            //float orbitSlotInsideRadius = sysOrbitSlotsStartRadius + slotSpacing * i;
+            //float orbitSlotOutsideRadius = orbitSlotInsideRadius + slotSpacing;
+            float orbitSlotInsideRadius = sysOrbitSlotsStartRadius + _systemOrbitSlotDepth * i;
+            float orbitSlotOutsideRadius = orbitSlotInsideRadius + _systemOrbitSlotDepth;
+
             allOrbitSlots[i] = new OrbitalSlot(orbitSlotInsideRadius, orbitSlotOutsideRadius);
         }
         return allOrbitSlots;

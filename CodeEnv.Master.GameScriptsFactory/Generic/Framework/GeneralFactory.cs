@@ -1,0 +1,59 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright>
+// Copyright © 2012 - 2013 Strategic Forge
+//
+// Email: jim@strategicforge.com
+// </copyright> 
+// <summary> 
+// File: GeneralFactory.cs
+// Singleton factory that makes miscellaneous instances that aren't made by either UnitFactory or SystemFactory.
+// </summary> 
+// -------------------------------------------------------------------------------------------------------------------- 
+
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
+
+// default namespace
+
+using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
+using UnityEngine;
+
+/// <summary>
+/// Singleton factory that makes miscellaneous instances that aren't made by either UnitFactory or SystemFactory.
+/// </summary>
+public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory {
+
+    private Orbiter _orbiterPrefab;
+    private MovingOrbiter _movingOrbiterPrefab;
+    private OrbiterForShips _orbiterForShipsPrefab;
+    private MovingOrbiterForShips _movingOrbiterForShipsPrefab;
+
+    private GeneralFactory() {
+        Initialize();
+    }
+
+    protected override void Initialize() {
+        _orbiterPrefab = RequiredPrefabs.Instance.orbiter;
+        _movingOrbiterPrefab = RequiredPrefabs.Instance.movingOrbiter;
+        _orbiterForShipsPrefab = RequiredPrefabs.Instance.orbiterForShips;
+        _movingOrbiterForShipsPrefab = RequiredPrefabs.Instance.movingOrbiterForShips;
+    }
+
+    public GameObject MakeOrbiterInstance(GameObject parent, bool isParentMobile, bool isForShips, string orbiterName = "") {
+        GameObject orbiterPrefab = null;
+        if (isParentMobile) {
+            orbiterPrefab = isForShips ? _movingOrbiterForShipsPrefab.gameObject : _movingOrbiterPrefab.gameObject;
+        }
+        else {
+            orbiterPrefab = isForShips ? _orbiterForShipsPrefab.gameObject : _orbiterPrefab.gameObject;
+        }
+        string name = orbiterName.IsNullOrEmpty() ? orbiterPrefab.name : orbiterName;
+        GameObject orbiterCloneGo = UnityUtility.AddChild(parent, orbiterPrefab);
+        orbiterCloneGo.name = name;
+        return orbiterCloneGo;
+    }
+
+}
+

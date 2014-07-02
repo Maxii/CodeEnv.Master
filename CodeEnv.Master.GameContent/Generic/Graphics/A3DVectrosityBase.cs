@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<Vector3[]>(ref _points, value, "Points", OnPointsChanged); }
         }
 
-        protected Transform _target;
+        protected Transform _target;    // can be null as GridWireframe doesn t use a target Transform
 
         /// <summary>
         /// Initializes a new instance of the <see cref="A3DVectrosityBase" /> class.
@@ -65,6 +65,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Initialize() {
             _line = new VectorLine(LineName, _points, Color.ToUnityColor(), material, LineWidth);
+            if (_target != null) { _line.drawTransform = _target; } // added as Vectrosity 3.0 removed Draw3D(Transform)
             if (Parent != null) { OnParentChanged(); }
         }
 
@@ -100,12 +101,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void Draw3D() {
-            if (_target != null) {
-                _line.Draw3D(_target);
-            }
-            else {
-                _line.Draw3D();
-            }
+            _line.Draw3D();
+            //if (_target != null) {  
+            //    _line.Draw3D(_target); // _line.Draw3D(_target);  removed by Vectrosity 3.0
+            //}
+            //else {
+            //    _line.Draw3D();
+            //}
         }
 
         private void OnColorChanged() {

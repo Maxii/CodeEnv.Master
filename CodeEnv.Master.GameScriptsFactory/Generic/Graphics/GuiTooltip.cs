@@ -34,7 +34,7 @@ public class GuiTooltip : AMonoBase {
         base.Awake();
         InitializeTooltip();
         if (_tooltipHasContent = Utility.CheckForContent(tooltip)) {
-            UnityUtility.ValidateComponentPresence<Collider>(gameObject);
+            UnityUtility.ValidateComponentPresence<Collider2D>(gameObject);
         }
     }
 

@@ -412,8 +412,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory>, IUnitFactory {
     /// <param name="orbitedObjectIsMobile">if set to <c>true</c> [orbited object is mobile].</param>
     public void AttachShipToOrbiter(GameObject parent, IShipModel ship, bool orbitedObjectIsMobile) {
         GameObject orbiterPrefab = orbitedObjectIsMobile ? _movingOrbiterForShipsPrefab.gameObject : _orbiterForShipsPrefab.gameObject;
-        Transform shipOrbitTransform = UnityUtility.AddChild(parent, orbiterPrefab).transform;
-        AttachShipToOrbiter(ship, ref shipOrbitTransform);
+        Transform orbiterTransform = UnityUtility.AddChild(parent, orbiterPrefab).transform;
+        AttachShipToOrbiter(ship, ref orbiterTransform);
     }
 
     /// <summary>

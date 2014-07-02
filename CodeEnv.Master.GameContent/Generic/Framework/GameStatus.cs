@@ -29,6 +29,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class GameStatus : AGenericSingleton<GameStatus> {
 
+        public event Action onIsRunningOneShot;
+
         private bool _isRunning;
         /// <summary>
         /// Treat as Readonly except by GameManager. Indicates whether the game
@@ -58,6 +60,12 @@ namespace CodeEnv.Master.GameContent {
 
         private void OnIsRunningChanged() {
             D.Log("{0}.IsRunning changed to {1}.", GetType().Name, IsRunning);
+            if (IsRunning) {
+                if (onIsRunningOneShot != null) {
+                    onIsRunningOneShot();
+                    onIsRunningOneShot = null;
+                }
+            }
         }
     }
 }

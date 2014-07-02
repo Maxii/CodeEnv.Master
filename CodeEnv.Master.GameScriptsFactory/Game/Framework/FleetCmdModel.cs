@@ -545,7 +545,6 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
             return detour;
         }
 
-
         private void GenerateCourse() {
             Vector3 start = _fleet.Data.Position;
             string replot = _isCourseReplot ? "replotting" : "plotting";
@@ -611,12 +610,12 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         // UNCLEAR course.path contains nodes not contained in course.vectorPath?
         [System.Diagnostics.Conditional("DEBUG_LOG")]
         private void PrintNonOpenSpaceNodes(Path course) {
-            var nonOpenSpaceNodes = course.path.Where(node => node.tags != MyAStarPointGraph.openSpaceTagMask);
+            var nonOpenSpaceNodes = course.path.Where(node => node.Tag != (uint)MyAStarPointGraph.openSpaceTagMask);
             if (nonOpenSpaceNodes.Any()) {
                 nonOpenSpaceNodes.ForAll(node => {
-                    D.Assert(Mathf.IsPowerOfTwo(node.tags));    // confirms that tags contains only 1 SpaceTopography value
-                    SpaceTopography tag = (SpaceTopography)Mathf.Log(node.tags, 2F);
-                    D.Warn("Node at {0} has tag {1}, penalty = {2}.", (Vector3)node.position, tag, _seeker.tagPenalties[(int)tag]);
+                    D.Assert(Mathf.IsPowerOfTwo((int)node.Tag));    // confirms that tags contains only 1 SpaceTopography value
+                    SpaceTopography tag = (SpaceTopography)Mathf.Log((int)node.Tag, 2F);
+                    D.Warn("Node at {0} has tag {1}, penalty = {2}.", (Vector3)node.position, tag.GetName(), _seeker.tagPenalties[(int)tag]);
                 });
             }
         }

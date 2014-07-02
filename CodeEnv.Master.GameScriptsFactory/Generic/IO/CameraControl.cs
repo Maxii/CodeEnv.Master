@@ -296,7 +296,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     }
 
     private void InitializeMainCameraEventDispatcher() {
-        _mainCameraEventDispatcher.eventType = UICamera.EventType.World;
+        _mainCameraEventDispatcher.eventType = UICamera.EventType.World_3D; //World;
         _mainCameraEventDispatcher.useKeyboard = true;
         _mainCameraEventDispatcher.useMouse = true;
         // enabling the event system moved to GameManager, now covering both 2D and 3D events

@@ -48,6 +48,8 @@ namespace CodeEnv.Master.GameContent {
 
         public static IUnitFactory UnitFactory { get; set; }
 
+        public static IGeneralFactory GeneralFactory { get; set; }
+
     }
 }
 

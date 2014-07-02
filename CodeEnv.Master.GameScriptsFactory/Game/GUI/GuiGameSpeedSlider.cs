@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GuiGameSpeedSlider.cs
-// COMMENT - one line to give a brief idea of what this file does.
+// Gui Slider that changes the speed of the game.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,7 +22,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// COMMENT 
+/// Gui Slider that changes the speed of the game.
 /// </summary>
 public class GuiGameSpeedSlider : AGuiEnumSliderBase<GameClockSpeed> {
 

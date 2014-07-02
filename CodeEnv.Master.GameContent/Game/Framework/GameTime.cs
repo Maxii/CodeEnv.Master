@@ -44,9 +44,7 @@ namespace CodeEnv.Master.GameContent {
         private GameClockSpeed _gameSpeed;
         public GameClockSpeed GameSpeed {
             get { return _gameSpeed; }
-            set {
-                SetProperty<GameClockSpeed>(ref _gameSpeed, value, "GameSpeed", OnGameSpeedChanged, OnGameSpeedChanging);
-            }
+            set { SetProperty<GameClockSpeed>(ref _gameSpeed, value, "GameSpeed", OnGameSpeedChanged, OnGameSpeedChanging); }
         }
 
         /// <summary>

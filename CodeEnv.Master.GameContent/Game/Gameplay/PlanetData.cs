@@ -26,20 +26,20 @@ namespace CodeEnv.Master.GameContent {
 
         public float OrbitalSpeed { get; set; }
 
-        private OrbitalSlot _systemOrbitSlot;
-        /// <summary>
-        /// The OrbitSlot that this planet occupies in the system.
-        /// </summary>
-        public OrbitalSlot SystemOrbitSlot {
-            get { return _systemOrbitSlot; }
-            set { SetProperty<OrbitalSlot>(ref _systemOrbitSlot, value, "SystemOrbitSlot", OnSystemOrbitSlotChanged); }
-        }
+        //private OrbitalSlot _systemOrbitSlot;
+        ///// <summary>
+        ///// The OrbitSlot that this planet occupies in the system.
+        ///// </summary>
+        //public OrbitalSlot SystemOrbitSlot {
+        //    get { return _systemOrbitSlot; }
+        //    set { SetProperty<OrbitalSlot>(ref _systemOrbitSlot, value, "SystemOrbitSlot", OnSystemOrbitSlotChanged); }
+        //}
 
         public PlanetData(PlanetoidStat stat) : base(stat) { }
 
-        private void OnSystemOrbitSlotChanged() {
-            Transform.localPosition = SystemOrbitSlot.GenerateRandomLocalPositionWithinSlot();
-        }
+        //private void OnSystemOrbitSlotChanged() {
+        //    Transform.localPosition = SystemOrbitSlot.GenerateRandomLocalPositionWithinSlot();
+        //}
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

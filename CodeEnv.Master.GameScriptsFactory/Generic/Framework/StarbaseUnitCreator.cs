@@ -86,7 +86,8 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
 
     protected override bool DeployUnit() {
         LogEvent();
-        // Starbases don't need to be deployed. They are already on location.
+        // Starbases don't need to be deployed. They are already on location
+        PathfindingManager.Instance.Graph.UpdateGraph(_command);
         return true;
     }
 

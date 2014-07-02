@@ -90,7 +90,7 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
         var allSystems = SystemCreator.AllSystems;
         var availableSystems = allSystems.Where(sys => sys.Data.Owner == TempGameValues.NoPlayer);
         if (availableSystems.IsNullOrEmpty()) {
-            D.Warn("No Systems available to deploy {0}..", UnitName);
+            D.Warn("No Systems available to deploy {0}.", UnitName);
             return false;
         }
         availableSystems.First().AssignSettlement(_command);

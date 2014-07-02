@@ -59,6 +59,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="color">The color.</param>
         public CubeWireframe(string name, Transform target, Vector3 boxSize, Transform parent = null, float width = 1F, GameColor color = GameColor.White)
             : base(name, new Vector3[24], target, parent, width, color) {
+            Arguments.ValidateNotNull(target);
             _size = boxSize;
         }
 
@@ -67,6 +68,7 @@ namespace CodeEnv.Master.GameContent {
             _line.MakeCube(Vector3.zero, Size.x, Size.y, Size.z);
             Vector3[] centerPoint = new Vector3[] { new Vector3(0F, 0F, 0F) };
             _pointLine = new VectorPoints("CenterPoint", centerPoint, Color.ToUnityColor(), material, 2F);
+            _pointLine.drawTransform = _target; // _line.Draw3D(_target);  removed by Vectrosity 3.0
         }
 
         public override void Show(bool toShow) {
@@ -76,12 +78,13 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Draw3D() {
             base.Draw3D();
-            if (_target != null) {
-                _pointLine.Draw3D(_target);
-            }
-            else {
-                _pointLine.Draw3D();
-            }
+            //if (_target != null) {
+            //    _pointLine.Draw3D(_target);   // _line.Draw3D(_target);  removed by Vectrosity 3.0
+            //}
+            //else {
+            //    _pointLine.Draw3D();
+            //}
+            _pointLine.Draw3D();
         }
 
         private void OnSizeChanged() {

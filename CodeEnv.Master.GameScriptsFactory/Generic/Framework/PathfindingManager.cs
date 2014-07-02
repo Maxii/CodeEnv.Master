@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: PathfindingManager.cs
-//  The manager for the AStar Pathfinding system. 
+//  The singleton manager for the AStar Pathfinding system. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,13 +20,18 @@ using System;
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using Pathfinding;
+using UnityEngine;
 
 // NOTE: Can't move this to GameScriptAssembly as it requires loose AStar scripts in Unity when compiled
 
 /// <summary>
-/// The manager for the AStar Pathfinding system. 
+/// The singleton manager for the AStar Pathfinding system. 
 /// </summary>
-public class PathfindingManager : AMonoBase, IDisposable {
+public class PathfindingManager : AMonoBaseSingleton<PathfindingManager>, IDisposable {
+    //public class PathfindingManager : AMonoBase, IDisposable {
+
+    public MyAStarPointGraph Graph { get; private set; }
 
     private IList<IDisposable> _subscribers;
     private AstarPath _astarPath;
@@ -42,6 +47,7 @@ public class PathfindingManager : AMonoBase, IDisposable {
         _subscribers = new List<IDisposable>();
         _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
         AstarPath.OnLatePostScan += OnGraphScansCompleted;
+        AstarPath.OnGraphsUpdated += OnGraphRuntimeUpdateCompleted;
     }
 
     private void RegisterGameStateProgressionReadiness(bool isReady) {
@@ -69,10 +75,23 @@ public class PathfindingManager : AMonoBase, IDisposable {
     }
 
     private void OnGraphScansCompleted(AstarPath astarPath) {
+        Graph = astarPath.graphs[0] as MyAStarPointGraph;
         RegisterGameStateProgressionReadiness(isReady: true);
         // WARNING: I must not directly cause the game state to change as the other subscribers to 
         // GameStateChanged may not have been called yet. This GraphScansCompletedEvent occurs 
         // while we are still processing OnGameStateChanged
+    }
+
+    private void OnGraphRuntimeUpdateCompleted(AstarPath script) {
+        D.Assert(script.graphs[0] == Graph);
+        D.Log("{0} node count after graph update.", Graph.nodeCount);
+        Graph.GetNodes(delegate(GraphNode node) {   // while return true, passes each node to this anonymous method
+            if (!node.Walkable) {
+                D.Log("Node {0} is not walkable.", (Vector3)node.position);
+                return false;   // no need to pass any more nodes
+            }
+            return true;    // pass the next node
+        });
     }
 
     protected override void OnDestroy() {
@@ -89,6 +108,7 @@ public class PathfindingManager : AMonoBase, IDisposable {
         _subscribers.ForAll(d => d.Dispose());
         _subscribers.Clear();
         AstarPath.OnLatePostScan -= OnGraphScansCompleted;
+        AstarPath.OnGraphsUpdated -= OnGraphRuntimeUpdateCompleted;
     }
 
     public override string ToString() {
