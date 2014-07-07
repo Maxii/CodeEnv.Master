@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IFacilityModel : IElementModel {
 
-        new FacilityData Data { get; set; }
+        //new FacilityData Data { get; set; }
 
         FacilityState CurrentState { get; }
 

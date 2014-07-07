@@ -28,6 +28,8 @@ namespace CodeEnv.Master.GameContent {
             protected set { base.Model = value; }
         }
 
+        protected new PlanetData Data { get { return base.Data as PlanetData; } }
+
         public PlanetPresenter(IMortalViewable view)
             : base(view) {
             Subscribe();
@@ -38,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
-            var publisher = new GuiHudPublisher<PlanetData>(Model.Data);
+            var publisher = new GuiHudPublisher<PlanetData>(Data);
             publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
             return publisher;
         }

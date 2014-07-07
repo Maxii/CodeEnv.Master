@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IStarbaseCmdModel : ICmdModel {
 
-        new StarbaseCmdData Data { get; set; }
+        //new StarbaseCmdData Data { get; set; }
 
     }
 }

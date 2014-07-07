@@ -28,6 +28,8 @@ namespace CodeEnv.Master.GameContent {
             protected set { base.Model = value; }
         }
 
+        protected new MoonData Data { get { return base.Data as MoonData; } }
+
         public MoonPresenter(IMortalViewable view)
             : base(view) {
             Subscribe();
@@ -38,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
-            var publisher = new GuiHudPublisher<MoonData>(Model.Data);
+            var publisher = new GuiHudPublisher<MoonData>(Data);
             publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
             return publisher;
         }

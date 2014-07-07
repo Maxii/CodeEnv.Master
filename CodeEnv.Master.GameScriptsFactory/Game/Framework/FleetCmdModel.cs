@@ -760,8 +760,8 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         set { base.Data = value; }
     }
 
-    public new IShipModel HQElement {
-        get { return base.HQElement as IShipModel; }
+    public new ShipModel HQElement {
+        get { return base.HQElement as ShipModel; }
         set { base.HQElement = value; }
     }
 
@@ -802,7 +802,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         CurrentState = FleetState.Idling;
     }
 
-    public override void AddElement(IElementModel element) {
+    public override void AddElement(AUnitElementModel element) {
         base.AddElement(element);
         IShipModel ship = element as IShipModel;
         //D.Log("{0}.CurrentState = {1} when being added to {2}.", ship.FullName, ship.CurrentState.GetName(), FullName);
@@ -827,14 +827,14 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         }
     }
 
-    public void TransferShip(IShipModel ship, IFleetCmdModel fleetCmd) {
+    public void TransferShip(ShipModel ship, FleetCmdModel fleetCmd) {
         // UNCLEAR does this ship need to be in ShipState.None while these changes take place?
         RemoveElement(ship);
         ship.IsHQElement = false; // Needed - RemoveElement never changes HQ Element as the TransferCmd is dead as soon as ship removed
         fleetCmd.AddElement(ship);
     }
 
-    public override void RemoveElement(IElementModel element) {
+    public override void RemoveElement(AUnitElementModel element) {
         base.RemoveElement(element);
 
         // remove the formationStation from the ship and the ship from the FormationStation

@@ -31,6 +31,8 @@ namespace CodeEnv.Master.GameContent {
             protected set { base.Model = value; }
         }
 
+        protected new SettlementCmdData Data { get { return base.Data as SettlementCmdData; } }
+
         public SettlementCmdPresenter(ICommandViewable view)
             : base(view) {
             Subscribe();
@@ -41,13 +43,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
-            var publisher = new GuiHudPublisher<SettlementCmdData>(Model.Data);
+            var publisher = new GuiHudPublisher<SettlementCmdData>(Data);
             publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
             return publisher;
         }
 
         protected override IIcon MakeCmdIconInstance() {
-            return SettlementIconFactory.Instance.MakeInstance(Model.Data, View.PlayerIntel);
+            return SettlementIconFactory.Instance.MakeInstance(Data, View.PlayerIntel);
         }
 
         public override string ToString() {

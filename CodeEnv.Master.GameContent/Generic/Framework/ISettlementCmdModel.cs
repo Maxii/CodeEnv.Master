@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface ISettlementCmdModel : ICmdModel {
 
-        new SettlementCmdData Data { get; set; }
+        // new SettlementCmdData Data { get; set; }
 
     }
 }

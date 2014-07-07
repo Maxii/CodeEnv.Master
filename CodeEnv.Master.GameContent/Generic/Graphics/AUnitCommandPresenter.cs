@@ -29,6 +29,8 @@ namespace CodeEnv.Master.GameContent {
             protected set { base.Model = value; }
         }
 
+        protected new ACommandData Data { get { return base.Data as ACommandData; } }
+
         protected new ICommandViewable View {
             get { return base.View as ICommandViewable; }
         }
@@ -42,7 +44,8 @@ namespace CodeEnv.Master.GameContent {
             base.Subscribe();
             _subscribers.Add(Model.SubscribeToPropertyChanged<ICmdModel, IElementModel>(sb => sb.HQElement, OnHQElementChanged));
             Model.onSubordinateElementDeath += OnSubordinateElementDeath;
-            Model.Data.onCompositionChanged += OnCompositionChanged;
+            Data.onCompositionChanged += OnCompositionChanged;
+            //Model.Data.onCompositionChanged += OnCompositionChanged;
         }
 
         private void OnSubordinateElementDeath(IElementModel element) {

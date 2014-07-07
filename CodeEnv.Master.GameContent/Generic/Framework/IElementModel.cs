@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IElementModel : IMortalModel {
 
-        new AElementData Data { get; set; }
+        //new AElementData Data { get; set; }
 
         bool IsHQElement { get; set; }
 

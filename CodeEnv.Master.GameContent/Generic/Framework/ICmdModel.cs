@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
 
         event Action<IElementModel> onSubordinateElementDeath;
 
-        new ACommandData Data { get; set; }
+        //new ACommandData Data { get; set; }
 
         string UnitName { get; }
 

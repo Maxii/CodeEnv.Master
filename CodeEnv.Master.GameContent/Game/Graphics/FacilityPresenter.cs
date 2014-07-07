@@ -31,6 +31,8 @@ namespace CodeEnv.Master.GameContent {
             protected set { base.Model = value; }
         }
 
+        protected new FacilityData Data { get { return base.Data as FacilityData; } }
+
         public FacilityPresenter(IElementViewable view)
             : base(view) {
             Subscribe();
@@ -41,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
-            var publisher = new GuiHudPublisher<FacilityData>(Model.Data);
+            var publisher = new GuiHudPublisher<FacilityData>(Data);
             publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
             return publisher;
         }

@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IPlanetModel.cs
-// Interface providing access to PlanetModels.
+// File: IHasData.cs
+// Interface providing access to a Model's ItemData.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,11 +17,11 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface providing access to PlanetModels.
+    /// Interface providing access to a Model's ItemData.
     /// </summary>
-    public interface IPlanetModel : IMortalModel {
+    public interface IHasData {
 
-        //new PlanetData Data { get; set; }
+        AItemData Data { get; }
 
     }
 }

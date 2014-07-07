@@ -31,6 +31,8 @@ namespace CodeEnv.Master.GameContent {
             protected set { base.Model = value; }
         }
 
+        protected new FleetCmdData Data { get { return base.Data as FleetCmdData; } }
+
         public FleetCmdPresenter(ICommandViewable view)
             : base(view) {
             Subscribe();
@@ -41,17 +43,17 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
-            var hudPublisher = new GuiHudPublisher<FleetCmdData>(Model.Data);
+            var hudPublisher = new GuiHudPublisher<FleetCmdData>(Data);
             hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed, GuiHudLineKeys.Health, GuiHudLineKeys.TargetDistance);
             return hudPublisher;
         }
 
         public Reference<float> GetFleetSpeedReference() {
-            return new Reference<float>(() => Model.Data.CurrentSpeed);
+            return new Reference<float>(() => Data.CurrentSpeed);
         }
 
         protected override IIcon MakeCmdIconInstance() {
-            return FleetIconFactory.Instance.MakeInstance(Model.Data, View.PlayerIntel);
+            return FleetIconFactory.Instance.MakeInstance(Data, View.PlayerIntel);
         }
 
         public override string ToString() {

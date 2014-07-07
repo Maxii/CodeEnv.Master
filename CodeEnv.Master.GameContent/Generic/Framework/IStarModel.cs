@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IStarModel : IModel {
 
-        new StarData Data { get; set; }
+        //new StarData Data { get; set; }
 
     }
 }

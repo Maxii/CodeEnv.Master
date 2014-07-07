@@ -28,6 +28,8 @@ namespace CodeEnv.Master.GameContent {
             protected set { base.Model = value; }
         }
 
+        protected new SystemData Data { get { return base.Data as SystemData; } }
+
         public SystemPresenter(IViewable view) : base(view) { }
 
         protected override IModel AcquireModelReference() {
@@ -35,11 +37,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
-            return new GuiHudPublisher<SystemData>(Model.Data);
+            return new GuiHudPublisher<SystemData>(Data as SystemData);
         }
 
         public void RequestContextMenu(bool isDown) {
-            SettlementCmdData settlementData = Model.Data.SettlementData;
+            SettlementCmdData settlementData = Data.SettlementData;
             //D.Log("Settlement null = {0}, isHumanOwner = {1}.", settlement == null, settlement.Owner.IsHuman);
             if (settlementData != null && (DebugSettings.Instance.AllowEnemyOrders || settlementData.Owner.IsHuman)) {
                 _cameraControl.ShowContextMenuOnPress(isDown);

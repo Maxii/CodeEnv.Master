@@ -31,6 +31,8 @@ namespace CodeEnv.Master.GameContent {
             protected set { base.Model = value; }
         }
 
+        protected new StarbaseCmdData Data { get { return base.Data as StarbaseCmdData; } }
+
         public StarbaseCmdPresenter(ICommandViewable view)
             : base(view) {
             Subscribe();
@@ -41,13 +43,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
-            var publisher = new GuiHudPublisher<StarbaseCmdData>(Model.Data);
+            var publisher = new GuiHudPublisher<StarbaseCmdData>(Data);
             publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
             return publisher;
         }
 
         protected override IIcon MakeCmdIconInstance() {
-            return StarbaseIconFactory.Instance.MakeInstance(Model.Data, View.PlayerIntel);
+            return StarbaseIconFactory.Instance.MakeInstance(Data, View.PlayerIntel);
         }
 
         public override string ToString() {

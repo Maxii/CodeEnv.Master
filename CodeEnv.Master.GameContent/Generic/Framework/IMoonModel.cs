@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IMoonModel : IMortalModel {
 
-        new MoonData Data { get; set; }
+        //new MoonData Data { get; set; }
 
     }
 }

@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
 
         event Action onDestinationReached;
 
-        new ShipData Data { get; set; }
+        //new ShipData Data { get; set; }
 
         ShipOrder CurrentOrder { get; set; }
 

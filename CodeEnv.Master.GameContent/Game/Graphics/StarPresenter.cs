@@ -29,6 +29,8 @@ namespace CodeEnv.Master.GameContent {
             protected set { base.Model = value; }
         }
 
+        protected new StarData Data { get { return base.Data as StarData; } }
+
         private IViewable _systemView;
 
         public StarPresenter(IViewable view)
@@ -41,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
-            return new GuiHudPublisher<StarData>(Model.Data);
+            return new GuiHudPublisher<StarData>(Data);
         }
 
         public void OnHover(bool isOver) {

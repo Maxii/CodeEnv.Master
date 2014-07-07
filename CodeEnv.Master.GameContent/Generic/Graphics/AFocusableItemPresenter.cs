@@ -32,10 +32,6 @@ namespace CodeEnv.Master.GameContent {
         public void OnIsFocus() {
             _cameraControl.CurrentFocus = View as ICameraFocusable;
         }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
     }
 }
 

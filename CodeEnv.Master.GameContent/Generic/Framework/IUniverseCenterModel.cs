@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IUniverseCenterModel : IModel {
 
-        new UniverseCenterData Data { get; set; }
+        //new UniverseCenterData Data { get; set; }
 
     }
 }

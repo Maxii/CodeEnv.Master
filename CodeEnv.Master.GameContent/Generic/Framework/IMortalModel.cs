@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         event Action<IMortalModel> onDeathOneShot;
 
-        new AMortalItemData Data { get; set; }
+        //new AMortalItemData Data { get; set; }
 
         void OnShowCompletion();
 

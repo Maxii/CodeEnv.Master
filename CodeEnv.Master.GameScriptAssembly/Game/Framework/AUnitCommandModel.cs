@@ -39,19 +39,19 @@ public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarge
         set { base.Data = value; }
     }
 
-    private IElementModel _hqElement;
-    public IElementModel HQElement {
+    private AUnitElementModel _hqElement;
+    public AUnitElementModel HQElement {
         get { return _hqElement; }
-        set { SetProperty<IElementModel>(ref _hqElement, value, "HQElement", OnHQElementChanged, OnHQElementChanging); }
+        set { SetProperty<AUnitElementModel>(ref _hqElement, value, "HQElement", OnHQElementChanged, OnHQElementChanging); }
     }
 
-    public IList<IElementModel> Elements { get; set; }
+    public IList<AUnitElementModel> Elements { get; set; }
 
     protected FormationGenerator _formationGenerator;
 
     protected override void Awake() {
         base.Awake();
-        Elements = new List<IElementModel>();
+        Elements = new List<AUnitElementModel>();
         _formationGenerator = new FormationGenerator(this);
         // Derived class should call Subscribe() after all used references have been established
     }
@@ -67,7 +67,7 @@ public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarge
     /// Adds the Element to this Command including parenting if needed.
     /// </summary>
     /// <param name="element">The Element to add.</param>
-    public virtual void AddElement(IElementModel element) {
+    public virtual void AddElement(AUnitElementModel element) {
         D.Assert(!Elements.Contains(element), "{0} attempting to add {1} that is already present.".Inject(FullName, element.FullName));
         D.Assert(!element.IsHQElement, "{0} adding element {1} already designated as the HQ Element.".Inject(FullName, element.FullName));
         // elements should already be enabled when added to a Cmd as that is commonly their state when transferred during runtime
@@ -82,7 +82,7 @@ public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarge
         // TODO consider changing HQElement
     }
 
-    public virtual void RemoveElement(IElementModel element) {
+    public virtual void RemoveElement(AUnitElementModel element) {
         element.onDeathOneShot -= OnSubordinateElementDeath;
         bool isRemoved = Elements.Remove(element);
         isRemoved = isRemoved && Data.RemoveElement(element.Data);
@@ -104,7 +104,7 @@ public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarge
         }
     }
 
-    protected virtual void OnHQElementChanging(IElementModel newHQElement) {
+    protected virtual void OnHQElementChanging(AUnitElementModel newHQElement) {
         Arguments.ValidateNotNull(newHQElement);
         if (HQElement != null) {
             HQElement.IsHQElement = false;
@@ -147,7 +147,7 @@ public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarge
         return isHit;
     }
 
-    protected internal virtual void PositionElementInFormation(IElementModel element, Vector3 stationOffset) {
+    protected internal virtual void PositionElementInFormation(AUnitElementModel element, Vector3 stationOffset) {
         element.Transform.position = HQElement.Transform.position + stationOffset;
         //D.Log("{0} positioned at {1}, offset by {2} from {3} at {4}.",
         //    element.FullName, element.Transform.position, stationOffset, HQElement.FullName, HQElement.Transform.position);

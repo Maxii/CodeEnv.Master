@@ -28,6 +28,8 @@ namespace CodeEnv.Master.GameContent {
             protected set { base.Model = value; }
         }
 
+        protected new UniverseCenterData Data { get { return base.Data as UniverseCenterData; } }
+
         public UniverseCenterPresenter(IViewable view) : base(view) { }
 
         protected override IModel AcquireModelReference() {
@@ -35,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
-            return new GuiHudPublisher<UniverseCenterData>(Model.Data);
+            return new GuiHudPublisher<UniverseCenterData>(Data);
         }
 
         public override string ToString() {

@@ -28,6 +28,8 @@ namespace CodeEnv.Master.GameContent {
             protected set { base.Model = value; }
         }
 
+        protected new ShipData Data { get { return base.Data as ShipData; } }
+
         public ShipPresenter(IElementViewable view)
             : base(view) {
             Subscribe();
@@ -38,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
-            var hudPublisher = new GuiHudPublisher<ShipData>(Model.Data);
+            var hudPublisher = new GuiHudPublisher<ShipData>(Data);
             hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed, GuiHudLineKeys.Health, GuiHudLineKeys.TargetDistance);
             return hudPublisher;
         }
@@ -48,7 +50,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public Reference<float> GetShipSpeedReference() {
-            return new Reference<float>(() => Model.Data.CurrentSpeed);
+            return new Reference<float>(() => Data.CurrentSpeed);
         }
 
         public void OnIsSelected() {

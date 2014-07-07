@@ -191,7 +191,6 @@
     <Compile Include="Generic\Framework\IDestinationTarget.cs" />
     <Compile Include="Generic\Extensions\ShipSpeedExtensions.cs" />
     <Compile Include="Generic\Framework\Speed.cs" />
-    <Compile Include="Generic\Framework\IShipNavigatorClient.cs" />
     <Compile Include="Generic\Framework\IElementTarget.cs" />
     <Compile Include="Generic\Framework\IShipTarget.cs" />
     <Compile Include="Generic\Framework\ICmdModel.cs" />
@@ -240,6 +239,7 @@
     <Compile Include="Game\Gameplay\CelestialOrbitSlot.cs" />
     <Compile Include="Generic\Framework\IUniverse.cs" />
     <Compile Include="Generic\Framework\IUsefulTools.cs" />
+    <Compile Include="IHasData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\ShipData.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />

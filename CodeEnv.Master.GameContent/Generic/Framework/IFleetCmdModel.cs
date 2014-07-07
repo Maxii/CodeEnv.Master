@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IFleetCmdModel : ICmdModel {
 
-        new FleetCmdData Data { get; set; }
+        //new FleetCmdData Data { get; set; }
 
         new IShipModel HQElement { get; set; }
 

@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// The abstract data-holding base class for most objects in the game.
 /// </summary>
-public abstract class AItemModel : AMonoBase, IModel, ITarget, IDisposable {
+public abstract class AItemModel : AMonoBase, IModel, ITarget, IHasData, IDisposable {
 
     private AItemData _data;
     /// <summary>

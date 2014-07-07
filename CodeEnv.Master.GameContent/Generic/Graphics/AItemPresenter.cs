@@ -30,16 +30,23 @@ namespace CodeEnv.Master.GameContent {
 
         public IModel Model { get; protected set; }
 
+        protected AItemData Data { get; private set; }
+
         protected IViewable View { get; private set; }
         protected IList<IDisposable> _subscribers;
 
         protected GameObject _viewGameObject;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AItemPresenter"/> class.
+        /// Note: Presenters use Model Data, so Views should only be enabled to create this Presenter after the Model's Data has been set
+        /// </summary>
+        /// <param name="view">The view.</param>
         public AItemPresenter(IViewable view) {
             View = view;
             _viewGameObject = (view as Component).gameObject;
             Model = AcquireModelReference();
-            // the following use ItemData so Views should only be enabled to create this Presenter after ItemData is set
+            Data = (Model as IHasData).Data;
             View.HudPublisher = InitializeHudPublisher();
             // derived Presenters should call Subscribe() if they have any subscriptions to make
         }

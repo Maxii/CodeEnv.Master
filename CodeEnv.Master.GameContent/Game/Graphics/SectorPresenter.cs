@@ -28,6 +28,8 @@ namespace CodeEnv.Master.GameContent {
             protected set { base.Model = value; }
         }
 
+        protected new SectorData Data { get { return base.Data as SectorData; } }
+
         public SectorPresenter(IViewable view) : base(view) { }
 
         protected override IModel AcquireModelReference() {
@@ -35,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
-            return new GuiHudPublisher<SectorData>(Model.Data);
+            return new GuiHudPublisher<SectorData>(Data);
         }
 
         public override string ToString() {

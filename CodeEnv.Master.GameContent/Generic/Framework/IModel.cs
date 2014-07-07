@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IModel : IChangeTracking, INotifyPropertyChanged, INotifyPropertyChanging {
 
-        AItemData Data { get; set; }
+        //AItemData Data { get; set; }
 
         string FullName { get; }
 
