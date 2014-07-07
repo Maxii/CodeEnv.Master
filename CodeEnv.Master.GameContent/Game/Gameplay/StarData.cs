@@ -24,8 +24,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class StarData : AOwnedItemData {
 
-        public OrbitalSlot ShipOrbitSlot { get; set; }
-
         public StarCategory Category { get; private set; }
 
         public override SpaceTopography Topography {
@@ -62,7 +60,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="stat">The stat.</param>
         public StarData(StarStat stat)
-            : base(stat.Name) {
+            : base(stat.Category.GetName()) {
             Category = stat.Category;
             Capacity = stat.Capacity;
             Resources = stat.Resources;

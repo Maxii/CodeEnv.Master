@@ -28,10 +28,16 @@ namespace CodeEnv.Master.GameContent {
 
         public static GameTimeDuration OneDay = new GameTimeDuration(days: 1, years: 0);
         public static GameTimeDuration OneYear = new GameTimeDuration(days: 0, years: 1);
+        //public static GameTimeDuration TwoYears = new GameTimeDuration(days: 0, years: 2);
+        //public static GameTimeDuration ThreeYears = new GameTimeDuration(days: 0, years: 3);
+        //public static GameTimeDuration FourYears = new GameTimeDuration(days: 0, years: 4);
+        //public static GameTimeDuration FiveYears = new GameTimeDuration(days: 0, years: 5);
+        //public static GameTimeDuration SixYears = new GameTimeDuration(days: 0, years: 6);
+        //public static GameTimeDuration SevenYears = new GameTimeDuration(days: 0, years: 7);
 
         // Bug: use of static constructor with struct causes intellisense for constructors to fail
 
-        #region Comparison Operators Override
+        #region Operators Override
 
         // see C# 4.0 In a Nutshell, page 254
 
@@ -88,6 +94,41 @@ namespace CodeEnv.Master.GameContent {
         public static bool operator !=(GameTimeDuration left, GameTimeDuration right) {
             return !left.Equals(right);
         }
+
+        public static GameTimeDuration operator +(GameTimeDuration left, GameTimeDuration right) {
+            int years = left.Years + right.Years;
+            int days = left.Days + right.Days;
+            if (days >= GameTime.DaysPerYear) {
+                days = days % GameTime.DaysPerYear;
+                years++;
+            }
+            int hours = left.Hours + right.Hours;
+            if (hours >= GameTime.HoursPerDay) {
+                hours = hours % GameTime.HoursPerDay;
+                days++;
+                if (days >= GameTime.DaysPerYear) {
+                    days = days % GameTime.DaysPerYear;
+                    years++;
+                }
+            }
+            return new GameTimeDuration(hours, days, years);
+        }
+
+        public static GameTimeDuration operator *(int scaler, GameTimeDuration right) {
+            Arguments.ValidateNotNegative(scaler);
+            GameTimeDuration result = new GameTimeDuration();
+            for (int i = 0; i < scaler; i++) {
+                result += right;
+            }
+            return result;
+        }
+
+        public static GameTimeDuration operator *(GameTimeDuration left, int scaler) {
+            return scaler * left;
+        }
+
+
+        // NOTE: no division or subtraction operators 
 
         #endregion
 

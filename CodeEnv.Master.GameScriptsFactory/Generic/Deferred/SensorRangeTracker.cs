@@ -143,7 +143,7 @@ public class SensorRangeTracker : AMonoBase {
         if (!AllTargets.Contains(target)) {
             if (target.IsAlive) {
                 D.Log("{0}.{1} now tracking target {2}.", Command.FullName, GetType().Name, target.FullName);
-                target.onTargetDeath += OnTargetDeath;
+                target.onTargetDeathOneShot += OnTargetDeath;
                 target.onOwnerChanged += OnTargetOwnerChanged;
                 AllTargets.Add(target);
             }
@@ -173,7 +173,7 @@ public class SensorRangeTracker : AMonoBase {
         bool isRemoved = AllTargets.Remove(target);
         if (isRemoved) {
             //D.Log("{0}.{1} no longer tracking target {2} at distance = {3}.", ParentFullName, _transform.name, target.FullName, Vector3.Distance(target.Position, _transform.position));
-            target.onTargetDeath -= OnTargetDeath;
+            target.onTargetDeathOneShot -= OnTargetDeath;
             target.onOwnerChanged -= OnTargetOwnerChanged;
         }
         else {

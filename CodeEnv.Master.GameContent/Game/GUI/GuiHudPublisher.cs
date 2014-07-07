@@ -52,13 +52,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Subscribe() {
-            if (_subscribers == null) {
-                _subscribers = new List<IDisposable>();
-            }
+            _subscribers = new List<IDisposable>();
             _subscribers.Add(GameTime.Instance.SubscribeToPropertyChanging<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanging));
         }
 
         private void OnGameSpeedChanging(GameClockSpeed newSpeed) { // OPTIMIZE static?
+            D.Log("{0}.OnGameSpeedChanging() called. OldSpeed = {1}, NewSpeed = {2}.", GetType().Name, GameTime.Instance.GameSpeed.GetName(), newSpeed.GetName());
             float currentSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();
             float speedChangeRatio = newSpeed.SpeedMultiplier() / currentSpeedMultiplier;
             _hudRefreshRate *= speedChangeRatio;

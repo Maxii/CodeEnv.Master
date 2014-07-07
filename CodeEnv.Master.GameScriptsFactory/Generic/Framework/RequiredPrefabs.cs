@@ -55,7 +55,8 @@ public class RequiredPrefabs : AMonoBaseSingleton<RequiredPrefabs> {
 
     public SystemModel system;   // without the star and settlement
     public StarModel[] stars;
-    public GameObject[] planets;
+    public PlanetModel[] planets;   // no bundled moons or orbiters
+    public MoonModel[] moons;       // no orbiters
 
     public WeaponRangeMonitor weaponRangeMonitor;
     public FormationStation formationStation;

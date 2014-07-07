@@ -26,10 +26,14 @@ using UnityEngine;
 /// </summary>
 public class StarModel : AOwnedItemModel, IStarModel, IDestinationTarget, IShipOrbitable {
 
+    public StarCategory category;
+
     public new StarData Data {
         get { return base.Data as StarData; }
         set { base.Data = value; }
     }
+
+    private SphereCollider _starCollider;
 
     protected override void Awake() {
         base.Awake();
@@ -39,22 +43,30 @@ public class StarModel : AOwnedItemModel, IStarModel, IDestinationTarget, IShipO
     protected override void InitializeRadiiComponents() {
         var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
         Radius = meshRenderer.bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
-        (collider as SphereCollider).radius = Radius;
+        _starCollider = collider as SphereCollider;
+        _starCollider.radius = Radius;
+        _starCollider.isTrigger = false;
+        InitializeShipOrbitSlot();
+        InitializeKeepoutZone();
         //D.Log("{0}.Radius set to {1}.", FullName, Radius);
     }
 
-    protected override void OnDataChanged() {
-        base.OnDataChanged();
-        SetKeepoutZoneRadius();
+    private void InitializeShipOrbitSlot() {
+        float innerOrbitRadius = Radius * TempGameValues.KeepoutRadiusMultiplier;
+        float outerOrbitRadius = innerOrbitRadius + TempGameValues.DefaultShipOrbitSlotDepth;
+        ShipOrbitSlot = new ShipOrbitSlot(innerOrbitRadius, outerOrbitRadius, this);
     }
 
-    private void SetKeepoutZoneRadius() {
+    private void InitializeKeepoutZone() {
         SphereCollider keepoutZoneCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
         D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
-        keepoutZoneCollider.radius = Data.ShipOrbitSlot.InnerRadius;
+        keepoutZoneCollider.isTrigger = true;
+        keepoutZoneCollider.radius = ShipOrbitSlot.InnerRadius;
     }
 
-    protected override void Initialize() { }
+    protected override void Initialize() {
+        D.Assert(category == Data.Category);
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
@@ -64,7 +76,7 @@ public class StarModel : AOwnedItemModel, IStarModel, IDestinationTarget, IShipO
 
     public Vector3 Position { get { return Data.Position; } }
 
-    public virtual bool IsMobile { get { return false; } }
+    //public virtual bool IsMobile { get { return false; } }
 
     public SpaceTopography Topography { get { return Data.Topography; } }
 
@@ -72,28 +84,7 @@ public class StarModel : AOwnedItemModel, IStarModel, IDestinationTarget, IShipO
 
     #region IShipOrbitable Members
 
-    public OrbitalSlot ShipOrbitSlot { get { return Data.ShipOrbitSlot; } }
-
-    public void AssumeOrbit(IShipModel ship) {
-        IOrbiterForShips orbiter;
-        var orbiterTransform = _transform.GetTransformWithInterfaceInChildren<IOrbiterForShips>(out orbiter);
-        if (orbiterTransform != null) {
-            References.UnitFactory.AttachShipToOrbiter(ship, ref orbiterTransform);
-        }
-        else {
-            References.UnitFactory.AttachShipToOrbiter(gameObject, ship, orbitedObjectIsMobile: false);
-        }
-    }
-
-    public void LeaveOrbit(IShipModel orbitingShip) {
-        IOrbiterForShips orbiter;
-        var orbiterTransform = _transform.GetTransformWithInterfaceInChildren<IOrbiterForShips>(out orbiter);
-        D.Assert(orbiterTransform != null, "{0}.{1} is not present.".Inject(FullName, typeof(IOrbiterForShips).Name));
-        var ship = orbiterTransform.gameObject.GetSafeInterfacesInChildren<IShipModel>().Single(s => s == orbitingShip);
-        var parentFleetTransform = ship.Command.Transform.parent;
-        ship.Transform.parent = parentFleetTransform;
-        // OPTIMIZE remove empty orbiters?
-    }
+    public ShipOrbitSlot ShipOrbitSlot { get; private set; }
 
     #endregion
 

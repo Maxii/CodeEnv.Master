@@ -167,8 +167,10 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     private void OnCurrentDateChanged(GameDate currentDate) {
         //D.Log("{0} for {1} received OnCurrentDateChanged({2}).", GetType().Name, UnitName, currentDate);
         D.Assert(toDelayOperations);
-        D.Assert(currentDate <= _delayedDateInRuntime, "{0} for {1} recorded current date {2} beyond target date {3}.".Inject(GetType().Name, UnitName, currentDate, _delayedDateInRuntime));
-        if (currentDate == _delayedDateInRuntime) {
+        if (currentDate >= _delayedDateInRuntime) {
+            if (currentDate > _delayedDateInRuntime) {
+                D.Warn("{0} for {1} recorded current date {2} beyond target date {3}.", GetType().Name, UnitName, currentDate, _delayedDateInRuntime);
+            }
             if (toDelayBuild) {
                 D.Log("{0} is about to build, deploy and begin ops on {1}.", UnitName, _delayedDateInRuntime);
                 BuildDeployAndBeginUnitOperations();

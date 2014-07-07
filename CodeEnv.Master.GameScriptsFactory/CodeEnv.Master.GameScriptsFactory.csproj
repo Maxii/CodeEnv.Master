@@ -149,7 +149,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Generic\Framework\Loader.cs" />
     <Compile Include="Generic\Framework\RequiredPrefabs.cs" />
-    <Compile Include="Generic\Framework\UsefulPrefabs.cs" />
+    <Compile Include="Generic\Framework\UsefulTools.cs" />
     <Compile Include="Generic\Graphics\CameraLOSChangedRelay.cs" />
     <Compile Include="Generic\_Debug\__UniverseInitializer.cs" />
     <Compile Include="Generic\Graphics\StarFlare.cs" />

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AFolderAccess.cs
-// Generic abstract class providing static access to the folder named after T.
+// Generic singleton abstract class providing static access to the folder named after T.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ using CodeEnv.Master.Common;
 using UnityEngine;
 
 /// <summary>
-/// Generic abstract class providing static access to the folder named after T.
+/// Generic singleton abstract class providing static access to the folder named after T.
 /// </summary>
 public abstract class AFolderAccess<T> : AMonoBaseSingleton<T> where T : AMonoBase {
 

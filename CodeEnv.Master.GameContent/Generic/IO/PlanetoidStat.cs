@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public struct PlanetoidStat {
 
-        public string Name { get; private set; }
+        // A Planetoid's name is assigned once its parent's name and its orbit are known
         public float Mass { get; private set; }
         public float MaxHitPoints { get; private set; }
         public PlanetoidCategory Category { get; private set; }
@@ -31,12 +31,28 @@ namespace CodeEnv.Master.GameContent {
         public OpeYield Resources { get; private set; }
         public XYield SpecialResources { get; private set; }
 
-        public PlanetoidStat(string name, float mass, float maxHitPts, PlanetoidCategory category, int capacity, OpeYield resources)
-            : this(name, mass, maxHitPts, category, capacity, resources, new XYield()) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PlanetoidStat"/> struct.
+        /// </summary>
+        /// <param name="mass">The mass.</param>
+        /// <param name="maxHitPts">The maximum hit PTS.</param>
+        /// <param name="category">The category.</param>
+        /// <param name="capacity">The capacity.</param>
+        /// <param name="resources">The resources.</param>
+        public PlanetoidStat(float mass, float maxHitPts, PlanetoidCategory category, int capacity, OpeYield resources)
+            : this(mass, maxHitPts, category, capacity, resources, new XYield()) { }
 
-        public PlanetoidStat(string name, float mass, float maxHitPts, PlanetoidCategory category, int capacity, OpeYield resources, XYield xResources)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PlanetoidStat"/> struct.
+        /// </summary>
+        /// <param name="mass">The mass.</param>
+        /// <param name="maxHitPts">The maximum hit PTS.</param>
+        /// <param name="category">The category.</param>
+        /// <param name="capacity">The capacity.</param>
+        /// <param name="resources">The resources.</param>
+        /// <param name="xResources">The x resources.</param>
+        public PlanetoidStat(float mass, float maxHitPts, PlanetoidCategory category, int capacity, OpeYield resources, XYield xResources)
             : this() {
-            Name = name;
             Mass = mass;
             MaxHitPoints = maxHitPts;
             Category = category;

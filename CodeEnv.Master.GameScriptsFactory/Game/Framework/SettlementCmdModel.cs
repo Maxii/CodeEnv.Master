@@ -46,9 +46,25 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel, IBaseC
         Subscribe();
     }
 
-    protected override void SubscribeToDataValueChanges() {
-        base.SubscribeToDataValueChanges();
-        _subscribers.Add(Data.SubscribeToPropertyChanged<SettlementCmdData, OrbitalSlot>(data => data.ShipOrbitSlot, OnShipOrbitSlotChanged));
+    protected override void InitializeRadiiComponents() {
+        // the radius of a BaseCommand is fixed to include all of its elements
+        Radius = TempGameValues.BaseRadius;
+        // a Command's collider size is dynamically adjusted to the size of the CmdIcon. It has nothing to do with the radius of the Command
+        InitializeShipOrbitSlot();
+        InitializeKeepoutZone();
+    }
+
+    private void InitializeShipOrbitSlot() {
+        float innerOrbitRadius = Radius * TempGameValues.KeepoutRadiusMultiplier;
+        float outerOrbitRadius = innerOrbitRadius + TempGameValues.DefaultShipOrbitSlotDepth;
+        ShipOrbitSlot = new ShipOrbitSlot(innerOrbitRadius, outerOrbitRadius, this);
+    }
+
+    private void InitializeKeepoutZone() {
+        SphereCollider keepoutZoneCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.isTrigger).Single();
+        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
+        keepoutZoneCollider.isTrigger = true;
+        keepoutZoneCollider.radius = ShipOrbitSlot.InnerRadius;
     }
 
     protected override void Initialize() {
@@ -72,10 +88,6 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel, IBaseC
         if (HQElement != null) {
             _formationGenerator.RegenerateFormation();    // Bases simply regenerate the formation when adding an element
         }
-    }
-
-    private void OnShipOrbitSlotChanged() {
-        SetKeepoutZoneRadius();
     }
 
     private void OnCurrentOrderChanged() {
@@ -108,28 +120,14 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel, IBaseC
         }
     }
 
-    protected override void PositionElementInFormation(IElementModel element, Vector3 stationOffset) {
-        base.PositionElementInFormation(element, stationOffset);
-        // set ship orbit distance just outside of 'orbiting' facilities
-        ResetShipOrbitSlot(stationOffset.magnitude + element.Radius);
+    protected override void OnDeath() {
+        base.OnDeath();
+        //ShipOrbitSlot.OnOrbitedObjectDeath();
+        DisableParentOrbiter();
     }
 
-    /// <summary>
-    /// Resets the ship orbit slot to be outside all facilities.
-    /// </summary>
-    /// <param name="distanceToOuterEdgeOfElement">The distance to outer edge of element.</param>
-    private void ResetShipOrbitSlot(float distanceToOuterEdgeOfElement) {
-        float minimumShipOrbitDistance = distanceToOuterEdgeOfElement * TempGameValues.KeepoutRadiusMultiplier;
-        float maximumShipOrbitDistance = minimumShipOrbitDistance + TempGameValues.DefaultShipOrbitSlotDepth;
-        if (Data.ShipOrbitSlot == default(OrbitalSlot) || Data.ShipOrbitSlot.InnerRadius < minimumShipOrbitDistance) {
-            Data.ShipOrbitSlot = new OrbitalSlot(minimumShipOrbitDistance, maximumShipOrbitDistance);
-        }
-    }
-
-    private void SetKeepoutZoneRadius() {
-        SphereCollider keepoutZoneCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
-        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
-        keepoutZoneCollider.radius = Data.ShipOrbitSlot.InnerRadius;
+    private void DisableParentOrbiter() {
+        _transform.GetSafeInterfaceInParents<IOrbiter>().enabled = false;   // 2 layers up
     }
 
     protected override void KillCommand() {
@@ -194,7 +192,7 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel, IBaseC
     void Attacking_EnterState() {
         LogEvent();
         _attackTarget = CurrentOrder.Target as IMortalTarget;
-        _attackTarget.onTargetDeath += OnTargetDeath;
+        _attackTarget.onTargetDeathOneShot += OnTargetDeath;
         var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, OrderSource.UnitCommand, _attackTarget);
         Elements.ForAll(e => (e as FacilityModel).CurrentOrder = elementAttackOrder);
     }
@@ -207,7 +205,7 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel, IBaseC
 
     void Attacking_ExitState() {
         LogEvent();
-        _attackTarget.onTargetDeath -= OnTargetDeath;
+        _attackTarget.onTargetDeathOneShot -= OnTargetDeath;
         _attackTarget = null;
     }
 
@@ -247,9 +245,7 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel, IBaseC
 
     void Dead_OnShowCompletion() {
         LogEvent();
-        new Job(DelayedDestroy(3), toStart: true, onJobComplete: (wasKilled) => {
-            D.Log("{0} has been destroyed.", FullName);
-        });
+        DestroyMortalItem(3F);
     }
 
     #endregion
@@ -271,31 +267,9 @@ public class SettlementCmdModel : AUnitCommandModel, ISettlementCmdModel, IBaseC
 
     #region IShipOrbitable Members
 
-    public OrbitalSlot ShipOrbitSlot { get { return Data.ShipOrbitSlot; } }
-
-    public void AssumeOrbit(IShipModel ship) {
-        IOrbiterForShips orbiter;
-        var orbiterTransform = _transform.GetTransformWithInterfaceInChildren<IOrbiterForShips>(out orbiter);
-        if (orbiterTransform != null) {
-            References.UnitFactory.AttachShipToOrbiter(ship, ref orbiterTransform);
-        }
-        else {
-            References.UnitFactory.AttachShipToOrbiter(gameObject, ship, orbitedObjectIsMobile: false);
-        }
-    }
-
-    public void LeaveOrbit(IShipModel orbitingShip) {
-        IOrbiterForShips orbiter;
-        var orbiterTransform = _transform.GetTransformWithInterfaceInChildren<IOrbiterForShips>(out orbiter);
-        D.Assert(orbiterTransform != null, "{0}.{1} is not present.".Inject(FullName, typeof(IOrbiterForShips).Name));
-        var ship = orbiterTransform.gameObject.GetSafeInterfacesInChildren<IShipModel>().Single(s => s == orbitingShip);
-        var parentFleetTransform = ship.Command.Transform.parent;
-        ship.Transform.parent = parentFleetTransform;
-        // OPTIMIZE remove empty orbiters?
-    }
+    public ShipOrbitSlot ShipOrbitSlot { get; private set; }
 
     #endregion
-
 
 }
 

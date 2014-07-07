@@ -46,37 +46,28 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float Depth { get; private set; }
 
-        public GameObject OrbitedObject { get; set; }
-
         protected bool _isOrbitedObjectMobile;
 
+        protected GameTimeDuration _orbitPeriod;
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="OrbitalSlot" /> struct.
+        /// Initializes a new instance of the <see cref="AOrbitSlot" /> struct.
         /// </summary>
         /// <param name="innerRadius">The closest distance to the body orbited.</param>
         /// <param name="outerRadius">The furthest distance from the body orbited.</param>
         /// <param name="isOrbitedObjectMobile">if set to <c>true</c> [is orbited object mobile].</param>
-        public AOrbitSlot(float innerRadius, float outerRadius, bool isOrbitedObjectMobile) {
+        /// <param name="orbitPeriod">The orbit period.</param>
+        public AOrbitSlot(float innerRadius, float outerRadius, bool isOrbitedObjectMobile, GameTimeDuration orbitPeriod) {
             Arguments.Validate(innerRadius != outerRadius);
             Arguments.ValidateForRange(innerRadius, Constants.ZeroF, outerRadius);
             Arguments.ValidateForRange(outerRadius, innerRadius, Mathf.Infinity);
+            Arguments.Validate(orbitPeriod != default(GameTimeDuration));
             InnerRadius = innerRadius;
             OuterRadius = outerRadius;
             MeanRadius = innerRadius + (outerRadius - innerRadius) / 2F;
             Depth = outerRadius - innerRadius;
             _isOrbitedObjectMobile = isOrbitedObjectMobile;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CelestialOrbitSlot"/> class.
-        /// </summary>
-        /// <param name="innerRadius">The closest distance to the body orbited.</param>
-        /// <param name="outerRadius">The furthest distance from the body orbited.</param>
-        /// <param name="isOrbitedObjectMobile">if set to <c>true</c> [is object being orbited mobile].</param>
-        /// <param name="orbitedObject">The object being orbited.</param>
-        public AOrbitSlot(float innerRadius, float outerRadius, bool isOrbitedObjectMobile, GameObject orbitedObject)
-            : this(innerRadius, outerRadius, isOrbitedObjectMobile) {
-            OrbitedObject = orbitedObject;
+            _orbitPeriod = orbitPeriod;
         }
 
         /// <summary>
@@ -84,7 +75,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="orbitRadius">The orbit radius.</param>
         /// <returns></returns>
-        public bool Contains(float orbitRadius) {
+        protected bool Contains(float orbitRadius) {
             return Utility.IsInRange(orbitRadius, InnerRadius, OuterRadius);
         }
 

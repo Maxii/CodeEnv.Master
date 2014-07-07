@@ -40,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Subscribe() {
             base.Subscribe();
-            Model.onDeath += OnDeath;
+            Model.onDeathOneShot += OnDeath;
             Model.onShowAnimation += View.ShowAnimation;
             Model.onStopAnimation += View.StopAnimation;
             View.onShowCompletion += Model.OnShowCompletion;

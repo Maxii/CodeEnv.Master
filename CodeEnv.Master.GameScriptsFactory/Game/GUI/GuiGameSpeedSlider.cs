@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -30,7 +30,8 @@ public class GuiGameSpeedSlider : AGuiEnumSliderBase<GameClockSpeed> {
         tooltip = "Controls how fast time in the Game progresses.";
     }
 
-    protected override void OnSliderValueChange(GameClockSpeed value) {
+    protected override void OnSliderTValueChange(GameClockSpeed value) {
+        //D.Log("{0}.OnSliderTValueChange({1}.{2}) called.", GetType().Name, typeof(GameClockSpeed).Name, value.GetName());
         GameTime.Instance.GameSpeed = value;
     }
 

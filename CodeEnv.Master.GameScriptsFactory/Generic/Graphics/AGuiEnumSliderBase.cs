@@ -47,7 +47,9 @@ public abstract class AGuiEnumSliderBase<T> : GuiTooltip where T : struct {
         int numberOfSliderSteps = tValues.Length;
         _slider.numberOfSteps = numberOfSliderSteps;
         _orderedTValues = tValues.OrderBy(tv => tv).ToArray<T>();    // assumes T has assigned values in ascending order
+        //D.Log("T is {0}. OrderedTValues = {1}.", typeof(T).Name, _orderedTValues.Concatenate());
         _orderedSliderStepValues = MyNguiUtilities.GenerateOrderedSliderStepValues(numberOfSliderSteps);
+        //D.Log("OrderedSliderSteps = {0}.", _orderedSliderStepValues.Concatenate());
     }
 
     private void InitializeSliderValue() {
@@ -59,6 +61,7 @@ public abstract class AGuiEnumSliderBase<T> : GuiTooltip where T : struct {
             int tPrefsValueIndex = _orderedTValues.FindIndex<T>(tValue => (tValue.Equals(tPrefsValue)));
             float sliderValueAtTPrefsValueIndex = _orderedSliderStepValues[tPrefsValueIndex];
             _slider.value = sliderValueAtTPrefsValueIndex;
+            //D.Log("{0}.sliderValue initialized to {1}.", GetType().Name, _slider.value);
         }
         else {
             _slider.value = _orderedSliderStepValues[_orderedSliderStepValues.Length - 1];
@@ -78,10 +81,11 @@ public abstract class AGuiEnumSliderBase<T> : GuiTooltip where T : struct {
         int index = _orderedSliderStepValues.FindIndex<float>(v => Mathfx.Approx(sliderValue, v, tolerance));
         Arguments.ValidateNotNegative(index);
         T tValue = _orderedTValues[index];
-        OnSliderValueChange(tValue);
+        //D.Log("{0}.index = {1}, TValue = {2}.", GetType().Name, index, tValue);
+        OnSliderTValueChange(tValue);
     }
 
-    protected abstract void OnSliderValueChange(T value);
+    protected abstract void OnSliderTValueChange(T value);
 
     // IDisposable Note: No reason to remove Ngui event currentListeners OnDestroy() as the EventListener or
     // Delegate to be removed is attached to this same GameObject that is being destroyed. In addition,

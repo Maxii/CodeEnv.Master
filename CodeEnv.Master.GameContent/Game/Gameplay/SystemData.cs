@@ -34,12 +34,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        ///  The orbital slot within this system that any current or future settlement can occupy. 
-        ///  The transform holding the SettlementCreator (whose children are SettlementCmd and its Facilities) 
-        ///  has its localPosition assigned a random position within the slot. It is then attached to an orbit
-        /// object which is parented to the System.
+        ///  The orbit slot within this system that any current or future settlement can occupy. 
         /// </summary>
-        public OrbitalSlot SettlementOrbitSlot { get; set; }
+        public CelestialOrbitSlot SettlementOrbitSlot { get; set; }
 
         private int _capacity;
         public int Capacity {

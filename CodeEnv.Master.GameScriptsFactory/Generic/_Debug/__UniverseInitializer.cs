@@ -60,11 +60,7 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
     private void InitializeUniverseCenter() {
         _universeCenter = gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterModel>();
         if (_universeCenter != null) {
-            float minimumShipOrbitDistance = _universeCenter.Radius * TempGameValues.KeepoutRadiusMultiplier;
-            float maximumShipOrbitDistance = minimumShipOrbitDistance + TempGameValues.DefaultShipOrbitSlotDepth;
-            UniverseCenterData data = new UniverseCenterData("UniverseCenter") {
-                ShipOrbitSlot = new OrbitalSlot(minimumShipOrbitDistance, maximumShipOrbitDistance)
-            };
+            UniverseCenterData data = new UniverseCenterData("UniverseCenter");
             _universeCenter.Data = data;
             _universeCenter.enabled = true;
             _universeCenter.gameObject.GetSafeMonoBehaviourComponent<UniverseCenterView>().enabled = true;

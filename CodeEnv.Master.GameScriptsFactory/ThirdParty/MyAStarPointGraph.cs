@@ -44,81 +44,6 @@ namespace Pathfinding {
         //    base.Awake();
         //}
 
-        // Not really necessary. I just override this NavGraph method to add the debug line at the bottom. Otherwise its identical
-        //public override NNInfo GetNearest(Vector3 position, NNConstraint constraint, Node hint) {
-
-        //    if (nodes == null) {
-        //        return new NNInfo();
-        //    }
-
-        //    float maxDistSqr = constraint.constrainDistance ? AstarPath.active.maxNearestNodeDistanceSqr : float.PositiveInfinity;
-
-        //    float minDist = float.PositiveInfinity;
-        //    Node minNode = null;
-
-        //    float minConstDist = float.PositiveInfinity;
-        //    Node minConstNode = null;
-
-        //    for (int i = 0; i < nodes.Length; i++) {
-
-        //        Node node = nodes[i];
-        //        float dist = (position - (Vector3)node.position).sqrMagnitude;
-
-        //        if (dist < minDist) {
-        //            minDist = dist;
-        //            minNode = node;
-        //        }
-
-        //        if (dist < minConstDist && dist < maxDistSqr && constraint.Suitable(node)) {
-        //            minConstDist = dist;
-        //            minConstNode = node;
-        //        }
-        //    }
-
-        //    NNInfo nnInfo = new NNInfo(minNode);
-
-        //    nnInfo.constrainedNode = minConstNode;
-
-        //    if (minConstNode != null) {
-        //        nnInfo.constClampedPosition = (Vector3)minConstNode.position;
-        //    }
-        //    else if (minNode != null) {
-        //        nnInfo.constrainedNode = minNode;
-        //        nnInfo.constClampedPosition = (Vector3)minNode.position;
-        //    }
-
-        //    #region Debugging
-
-        //    if (minConstNode != null) {
-        //        //D.Log("Closest Node is at {0}, {1} from {2}. \nNodeConstrainDistance = {3}, DistanceConstraint = {4}.", 
-        //        //    nnInfo.constClampedPosition, Vector3.Distance(nnInfo.constClampedPosition, position), position, constraint.constrainDistance, Mathf.Sqrt(maxDistSqr));
-        //    }
-        //    else {
-        //        //D.Log("Closest Node is at {0}, {1} from {2}. Penalty = {3}. \nNodeConstrainDistance = {4}, DistanceConstraint = {5}.", 
-        //        //    nnInfo.clampedPosition, Vector3.Distance(nnInfo.clampedPosition, position), position, minNode.penalty, constraint.constrainDistance, Mathf.Sqrt(maxDistSqr));
-        //    }
-
-        //    #endregion
-
-        //    return nnInfo;
-        //}
-
-        //private Node __FindClosestNode(Vector3 position, out float closestDistance) {
-        //    closestDistance = float.PositiveInfinity;
-        //    Node closestNode = null;
-        //    for (int i = 0; i < nodes.Length; i++) {
-
-        //        Node node = nodes[i];
-        //        float dist = (position - (Vector3)node.position).magnitude;
-
-        //        if (dist < closestDistance) {
-        //            closestDistance = dist;
-        //            closestNode = node;
-        //        }
-        //    }
-        //    return closestNode;
-        //}
-
         /// <summary>
         ///  This will be called on the same time as OnDisable on the gameObject which the AstarPath script is attached to (remember, not in the editor)
         /// Use for any cleanup code such as cleaning up static variables which otherwise might prevent resources from being collected
@@ -129,6 +54,66 @@ namespace Pathfinding {
         //}
 
         #endregion
+
+        public override NNInfo GetNearestForce(Vector3 position, NNConstraint constraint) {
+            if (nodes == null) return new NNInfo();
+
+            float maxDistSqr = constraint.constrainDistance ? AstarPath.active.maxNearestNodeDistanceSqr : float.PositiveInfinity;
+
+            float minDist = float.PositiveInfinity;
+            GraphNode minNode = null;
+
+            float minConstDist = float.PositiveInfinity;
+            GraphNode minConstNode = null;
+
+            for (int i = 0; i < nodeCount; i++) {
+                PointNode node = nodes[i];
+                float dist = (position - (Vector3)node.position).sqrMagnitude;
+
+                if (dist < minDist) {
+                    minDist = dist;
+                    minNode = node;
+                }
+
+                if (constraint == null || (dist < minConstDist && dist < maxDistSqr && constraint.Suitable(node))) {
+                    minConstDist = dist;
+                    minConstNode = node;
+                }
+            }
+
+            NNInfo nnInfo = new NNInfo(minNode);
+
+            nnInfo.constrainedNode = minConstNode;
+
+            if (minConstNode != null) {
+                nnInfo.constClampedPosition = (Vector3)minConstNode.position;
+            }
+            else if (minNode != null) {
+                nnInfo.constrainedNode = minNode;
+                nnInfo.constClampedPosition = (Vector3)minNode.position;
+            }
+
+            #region Debugging
+
+            //D.Log("Constraint: GraphMask: {0}, ConstrainArea: {1}, Area: {2}, ConstrainWalkability: {3}, \nWalkable: {4}, ConstrainTags: {5}, Tags: {6}, ConstrainDistance: {7}.",
+            //    constraint.graphMask, constraint.constrainArea, constraint.area, constraint.constrainWalkability, constraint.walkable, 
+            //    constraint.constrainTags, constraint.tags, constraint.constrainDistance);
+
+            //if (minConstNode != null) {
+            //    D.Log("Constaint criteria met. Closest Node is at {0}, {1} from {2}. \nNodeConstrainDistance = {3}, DistanceConstraint = {4}.",
+            //        nnInfo.constClampedPosition, Vector3.Distance(nnInfo.constClampedPosition, position), position,
+            //        constraint.constrainDistance, Mathf.Sqrt(maxDistSqr));
+            //}
+            //else {
+            //    D.Log("Constraint critieria NOT met. Closest Node is at {0}, {1} from {2}. \nNodeConstrainDistance = {3}, DistanceConstraint = {4}.",
+            //        nnInfo.clampedPosition, Vector3.Distance(nnInfo.clampedPosition, position), position,
+            //        constraint.constrainDistance, Mathf.Sqrt(maxDistSqr));
+            //}
+
+            #endregion
+
+            return nnInfo;
+        }
 
         // Scan() has been deprecated, replaced by ScanInternal. // IMPROVE Docs recommend using AstarPath.Scan() 
         public override void ScanInternal(OnScanStatus statusCallback) {
@@ -286,7 +271,7 @@ namespace Pathfinding {
         }
 
 
-        private IDictionary<StarbaseCmdModel, List<GraphUpdateObject>> _starbaseGuos = new Dictionary<StarbaseCmdModel, List<GraphUpdateObject>>();
+        //private IDictionary<StarbaseCmdModel, List<GraphUpdateObject>> _starbaseGuos = new Dictionary<StarbaseCmdModel, List<GraphUpdateObject>>();
         // FIXME check all dictionaries for mutable keys and replace with a GuidID
 
         /// <summary>
@@ -295,60 +280,71 @@ namespace Pathfinding {
         /// </summary>
         /// <param name="baseCmd">The Starbase command.</param>
         public void UpdateGraph(StarbaseCmdModel baseCmd) {
-            List<GraphUpdateObject> guos = null;
-            if (_starbaseGuos.TryGetValue(baseCmd, out guos)) {
-                // this base is being removed
-                guos.ForAll(guo => guo.RevertFromBackup()); // reverses the node changes made when base was added    // UNDONE not yet supported
-                _starbaseGuos.Remove(baseCmd);
-            }
-            else {
-                // base is being added
-                OrbitalSlot baseShipOrbitSlot = baseCmd.ShipOrbitSlot;
-                D.Assert(baseShipOrbitSlot != default(OrbitalSlot), "{0}.ShipOrbitSlot is not set.".Inject(baseCmd.FullName));
-                Vector3 basePosition = baseCmd.Position;
+            throw new System.NotImplementedException("{0}.UpdateGraph(StarbaseCmdModel) is awaiting upgrade to AstarPath.Pro.".Inject(GetType().Name));
+            // *****************************************************************************
+            // TODO Aren: "PointGraphs implement GraphUpdateObject.Apply() only in Pro"
+            // GraphUpdateObject.RevertFromBackup() implementation was forgotten by devs
+            // Currently, using this generates Nodes around the starbase, but without connections
+            // As a result, those nodes are in another GraphNode.area which leads to a course plotting error
+            // *****************************************************************************
 
-                guos = new List<GraphUpdateObject>(9);
+            //List<GraphUpdateObject> guos = null;
+            //if (_starbaseGuos.TryGetValue(baseCmd, out guos)) {
+            //    // this base is being removed
+            //    guos.ForAll(guo => guo.RevertFromBackup()); // reverses the node changes made when base was added    // UNDONE not yet supported
+            //    _starbaseGuos.Remove(baseCmd);
+            //}
+            //else {
+            //    // base is being added
+            //    ShipOrbitSlot baseShipOrbitSlot = baseCmd.ShipOrbitSlot;
+            //    D.Assert(baseShipOrbitSlot != null, "{0}.ShipOrbitSlot is not set.".Inject(baseCmd.FullName));
 
-                // create keepoutZone GUO that makes any existing nodes in the keepoutZone unwalkable
-                float baseKeepoutZoneRadius = baseShipOrbitSlot.InnerRadius;
-                Vector3 keepoutZoneSize = Vector3.one * 2F * baseKeepoutZoneRadius;
-                Bounds keepoutZoneBounds = new Bounds(basePosition, keepoutZoneSize);
-                //D.Log("KeepoutZoneBounds {0} contains {1}: {2}.", keepoutZoneBounds, basePosition, keepoutZoneBounds.Contains(basePosition));
-                GraphUpdateObject keepoutZoneGuo = new GraphUpdateObject(keepoutZoneBounds) {
-                    modifyWalkability = true,
-                    setWalkability = false,
-                    updatePhysics = true,    // default
-                    trackChangedNodes = true
-                };
-                guos.Add(keepoutZoneGuo);
+            //    //OrbitalSlot baseShipOrbitSlot = baseCmd.ShipOrbitSlot;
+            //    //D.Assert(baseShipOrbitSlot != default(OrbitalSlot), "{0}.ShipOrbitSlot is not set.".Inject(baseCmd.FullName));
+            //    Vector3 basePosition = baseCmd.Position;
 
-                // create new waypoint nodes that surround the starbase  
-                //D.Log("{0} node count before adding {1}.", nodeCount, baseCmd.FullName);
-                float surroundingAreaWaypointRadius = baseShipOrbitSlot.OuterRadius * 3F;
-                var waypoints = UnityUtility.CalcVerticesOfInscribedBoxInsideSphere(basePosition, surroundingAreaWaypointRadius);
-                AstarPath.active.AddWorkItem(new AstarPath.AstarWorkItem(delegate() {
-                    waypoints.ForAll(w => AddNode((Int3)w));
-                }, null));
+            //    guos = new List<GraphUpdateObject>(9);
 
-                // create surrounding waypoint GUOs that flesh out the newly made waypoint nodes 
-                IList<GraphUpdateObject> surroundWaypointGuos = new List<GraphUpdateObject>(8);
-                for (int i = 0; i < 8; i++) {
-                    var waypointBounds = new Bounds(waypoints[i], Vector3.one);
-                    surroundWaypointGuos.Add(new GraphUpdateObject(waypointBounds) {
-                        modifyWalkability = true,
-                        setWalkability = true,
-                        modifyTag = true,
-                        setTag = openSpaceTagMask,
-                        updatePhysics = true,   // default
-                        trackChangedNodes = true
-                    });
-                }
-                guos.AddRange(surroundWaypointGuos);    // guos must be List (not IList) to support .AddRange()
+            //    // create keepoutZone GUO that makes any existing nodes in the keepoutZone unwalkable
+            //    float baseKeepoutZoneRadius = baseShipOrbitSlot.InnerRadius;
+            //    Vector3 keepoutZoneSize = Vector3.one * 2F * baseKeepoutZoneRadius;
+            //    Bounds keepoutZoneBounds = new Bounds(basePosition, keepoutZoneSize);
+            //    //D.Log("KeepoutZoneBounds {0} contains {1}: {2}.", keepoutZoneBounds, basePosition, keepoutZoneBounds.Contains(basePosition));
+            //    GraphUpdateObject keepoutZoneGuo = new GraphUpdateObject(keepoutZoneBounds) {
+            //        modifyWalkability = true,
+            //        setWalkability = false,
+            //        updatePhysics = true,    // default
+            //        trackChangedNodes = true
+            //    };
+            //    guos.Add(keepoutZoneGuo);
 
-                // Note: GraphUpdateObject internally queues another AstarWorkItem when UpdateGraphs(guo) is called
-                guos.ForAll(guo => AstarPath.active.UpdateGraphs(guo));
-                _starbaseGuos.Add(baseCmd, guos);
-            }
+            //    // create new waypoint nodes that surround the starbase  
+            //    //D.Log("{0} node count before adding {1}.", nodeCount, baseCmd.FullName);
+            //    float surroundingAreaWaypointRadius = baseShipOrbitSlot.OuterRadius * 3F;
+            //    var waypoints = UnityUtility.CalcVerticesOfInscribedBoxInsideSphere(basePosition, surroundingAreaWaypointRadius);
+            //    AstarPath.active.AddWorkItem(new AstarPath.AstarWorkItem(delegate() {
+            //        waypoints.ForAll(w => AddNode((Int3)w));
+            //    }, null));
+
+            //    // create surrounding waypoint GUOs that flesh out the newly made waypoint nodes 
+            //    IList<GraphUpdateObject> surroundWaypointGuos = new List<GraphUpdateObject>(8);
+            //    for (int i = 0; i < 8; i++) {
+            //        var waypointBounds = new Bounds(waypoints[i], Vector3.one);
+            //        surroundWaypointGuos.Add(new GraphUpdateObject(waypointBounds) {
+            //            modifyWalkability = true,
+            //            setWalkability = true,
+            //            modifyTag = true,
+            //            setTag = openSpaceTagMask,
+            //            updatePhysics = true,   // default
+            //            trackChangedNodes = true
+            //        });
+            //    }
+            //    guos.AddRange(surroundWaypointGuos);    // guos must be List (not IList) to support .AddRange()
+
+            //    // Note: GraphUpdateObject internally queues another AstarWorkItem when UpdateGraphs(guo) is called
+            //    guos.ForAll(guo => AstarPath.active.UpdateGraphs(guo));
+            //    _starbaseGuos.Add(baseCmd, guos);
+            //}
         }
 
         // NOTE: For now, no UpdateGraph(Settlement). Settlements aren't likely to be on top of existing waypoints, and,

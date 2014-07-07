@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
         /// communication from the model to its view and presenter as the
         /// object reference included makes the whole model accessible.
         /// </summary>
-        event Action<IMortalModel> onDeath;
+        event Action<IMortalModel> onDeathOneShot;
 
         new AMortalItemData Data { get; set; }
 

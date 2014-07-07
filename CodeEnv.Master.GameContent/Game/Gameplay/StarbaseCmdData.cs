@@ -26,12 +26,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class StarbaseCmdData : ACommandData {
 
-        private OrbitalSlot _shipOrbitSlot;
-        public OrbitalSlot ShipOrbitSlot {
-            get { return _shipOrbitSlot; }
-            set { SetProperty<OrbitalSlot>(ref _shipOrbitSlot, value, "ShipOrbitSlot"); }
-        }
-
         private StarbaseCategory _category;
         public StarbaseCategory Category {
             get { return _category; }

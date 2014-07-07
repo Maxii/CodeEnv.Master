@@ -170,6 +170,8 @@
     <Compile Include="OpeYield.cs" />
     <Compile Include="OrbitalPlane.cs" />
     <Compile Include="OrbitalPlaneManager.cs" />
+    <Compile Include="OrbitalSlot.cs" />
+    <Compile Include="PlanetoidData.cs" />
     <Compile Include="PlanetoidGuiHudTextFactory.cs" />
     <Compile Include="PlanetoidModel.cs" />
     <Compile Include="PlanetoidPresenter.cs" />

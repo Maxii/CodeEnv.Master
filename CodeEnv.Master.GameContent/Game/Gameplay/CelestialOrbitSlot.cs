@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: CelestialOrbitSlot.cs
-// Class for Celestial orbit slots that know how to place a Celestial object into orbit.
+// Class for orbit slots that know how to place an object into orbit around a Celestial object.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,29 +20,42 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Class for Celestial orbit slots that know how to place a Celestial 
-    /// object into orbit.
+    /// Class for orbit slots that know how to place an object into orbit around a Celestial object.
+    /// These orbit slots are currently used to create orbits in Systems (aka 'around' a star) and 
+    /// around planets.
     /// </summary>
     public class CelestialOrbitSlot : AOrbitSlot {
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="OrbitalSlot" /> struct.
-        /// </summary>
-        /// <param name="innerRadius">The closest distance to the body orbited.</param>
-        /// <param name="outerRadius">The furthest distance from the body orbited.</param>
-        /// <param name="isOrbitedObjectMobile">if set to <c>true</c> [is orbited object mobile].</param>
-        public CelestialOrbitSlot(float innerRadius, float outerRadius, bool isOrbitedObjectMobile)
-            : base(innerRadius, outerRadius, isOrbitedObjectMobile) {
-        }
+        public GameObject OrbitedObject { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CelestialOrbitSlot"/> class.
+        /// Initializes a new instance of the <see cref="CelestialOrbitSlot" /> class.
         /// </summary>
         /// <param name="innerRadius">The closest distance to the body orbited.</param>
         /// <param name="outerRadius">The furthest distance from the body orbited.</param>
         /// <param name="isOrbitedObjectMobile">if set to <c>true</c> [is object being orbited mobile].</param>
         /// <param name="orbitedObject">The object being orbited.</param>
-        public CelestialOrbitSlot(float innerRadius, float outerRadius, bool isOrbitedObjectMobile, GameObject orbitedObject) : base(innerRadius, outerRadius, isOrbitedObjectMobile, orbitedObject) { }
+        /// <param name="orbitPeriod">The orbit period.</param>
+        public CelestialOrbitSlot(float innerRadius, float outerRadius, bool isOrbitedObjectMobile, GameObject orbitedObject, GameTimeDuration orbitPeriod)
+            : base(innerRadius, outerRadius, isOrbitedObjectMobile, orbitPeriod) {
+            OrbitedObject = orbitedObject;
+        }
+
+        /// <summary>
+        /// The orbitingObject assumes an orbit around the preset OrbitedObject,
+        /// beginning at a random point on the meanRadius of this orbit slot. Returns the newly instantiated
+        /// IOrbiter, parented to the OrbitedObject and the parent of <c>orbitingObject</c>.
+        /// </summary>
+        /// <param name="orbitingObject">The object that wants to assume an orbit.</param>
+        /// <param name="orbiterName">Name of the <c>Orbiter</c> object created to simulate orbit movement.</param>
+        /// <returns></returns>
+        public IOrbiter AssumeOrbit(Transform orbitingObject, string orbiterName = "") {
+            D.Assert(orbitingObject.GetInterface<IShipModel>() == null);
+            IOrbiter orbiter = References.GeneralFactory.MakeOrbiterInstance(OrbitedObject, _isOrbitedObjectMobile, false, _orbitPeriod, orbiterName: orbiterName);
+            UnityUtility.AttachChildToParent(orbitingObject.gameObject, orbiter.Transform.gameObject);
+            orbitingObject.localPosition = GenerateRandomLocalPositionWithinSlot();
+            return orbiter;
+        }
 
         /// <summary>
         /// Generates a random local position within the orbit slot at <c>MeanDistance</c> from the body orbited.
@@ -54,16 +67,8 @@ namespace CodeEnv.Master.GameContent {
             return new Vector3(pointOnCircle.x, Constants.ZeroF, pointOnCircle.y);
         }
 
-        public void AssumeOrbit(Transform celestialObject) {
-            D.Assert(celestialObject.GetInterface<IShipModel>() == null);
-            D.Assert(celestialObject.parent == null, "{0} should not have parent {1}.".Inject(celestialObject.name, celestialObject.parent.name));
-            GameObject orbiterGo = References.GeneralFactory.MakeOrbiterInstance(OrbitedObject, _isOrbitedObjectMobile, isForShips: false, name: "");
-            UnityUtility.AttachChildToParent(celestialObject.gameObject, orbiterGo);
-            celestialObject.localPosition = GenerateRandomLocalPositionWithinSlot();
-        }
-
         public override string ToString() {
-            return "{0} [{1}-{2}]".Inject(GetType().Name, InnerRadius, OuterRadius);
+            return "{0} [{1:0.#}-{2:0.#}]".Inject(GetType().Name, InnerRadius, OuterRadius);
         }
 
     }

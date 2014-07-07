@@ -36,7 +36,9 @@ public class MovingOrbiter : Orbiter {
     /// </summary>
     /// <param name="deltaTime">The delta time.</param>
     protected override void UpdateOrbit(float deltaTime) {
-        _transform.RotateAround(_transform.position, _transform.up, _orbitSpeedInDegreesPerSecond * deltaTime);
+        float desiredStepAngle = _orbitSpeedInDegreesPerSecond * deltaTime;
+        //D.Log("{0}.{1}.desiredStepAngle = {2}.", _transform.name, GetType().Name, desiredStepAngle);
+        _transform.RotateAround(_transform.position, axisOfOrbit, desiredStepAngle);
     }
 
     public override string ToString() {

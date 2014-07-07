@@ -34,6 +34,8 @@ public class SystemCreatorEditor : Editor {
         if (!creator.isCompositionPreset) {
             creator.maxRandomPlanets = EditorGUILayout.IntSlider("Max Random Planets", creator.maxRandomPlanets,
                 Constants.Zero, TempGameValues.TotalOrbitSlotsPerSystem - 1);   // SystemOrbitSlot reserved for a Settlement
+            creator.maxRandomMoons = EditorGUILayout.IntSlider("Max Random Moons", creator.maxRandomMoons,
+                Constants.Zero, 2 * creator.maxRandomPlanets);
         }
 
         // Note: The owner of a System (and Star, Planets and Moons) is automatically set to the owner of the Settlement located in the System, if any.

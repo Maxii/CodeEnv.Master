@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: UsefulPrefabs.cs
-// Singleton container that holds prefabs that are likely to be used across scenes.
+// File: UsefulTools.cs
+// Singleton MonoBehaviour that holds tools that are useful across scenes.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,16 +18,17 @@
 
 using System;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Container that holds prefabs that are likely to be used across scenes. 
+/// Singleton MonoBehaviour that holds tools that are useful across scenes.
 /// <remarks>
 /// I think these are a real reference to the prefab in the Project view, not a separate instance
 /// clone of the Prefab in the startScene. As such, they must be Instantiated before use.
 /// </remarks>
 /// </summary>
-public class UsefulPrefabs : AMonoBaseSingleton<UsefulPrefabs> {
+public class UsefulTools : AMonoBaseSingleton<UsefulTools>, IUsefulTools {
 
     //*******************************************************************
     // Prefabs you want to keep between scenes t here and
@@ -60,6 +61,11 @@ public class UsefulPrefabs : AMonoBaseSingleton<UsefulPrefabs> {
             _instance = this;
             return false;
         }
+    }
+
+    public void DestroyGameObject(GameObject objectToDestroy) {
+        D.Log("Destroying {0}.", objectToDestroy.name);
+        Destroy(objectToDestroy);
     }
 
     public override string ToString() {

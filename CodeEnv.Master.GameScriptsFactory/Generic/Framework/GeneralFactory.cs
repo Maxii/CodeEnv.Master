@@ -41,7 +41,16 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
         _movingOrbiterForShipsPrefab = RequiredPrefabs.Instance.movingOrbiterForShips;
     }
 
-    public GameObject MakeOrbiterInstance(GameObject parent, bool isParentMobile, bool isForShips, string orbiterName = "") {
+    /// <summary>
+    /// Makes the appropriate instance of IOrbiter parented to <c>parent</c> and not yet enabled.
+    /// </summary>
+    /// <param name="parent">The GameObject the IOrbiter should be parented too.</param>
+    /// <param name="isParentMobile">if set to <c>true</c> [is parent mobile].</param>
+    /// <param name="isForShips">if set to <c>true</c> [is for ships].</param>
+    /// <param name="orbitPeriod">The orbit period.</param>
+    /// <param name="orbiterName">Name of the orbiter.</param>
+    /// <returns></returns>
+    public IOrbiter MakeOrbiterInstance(GameObject parent, bool isParentMobile, bool isForShips, GameTimeDuration orbitPeriod, string orbiterName = "") {
         GameObject orbiterPrefab = null;
         if (isParentMobile) {
             orbiterPrefab = isForShips ? _movingOrbiterForShipsPrefab.gameObject : _movingOrbiterPrefab.gameObject;
@@ -52,8 +61,11 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
         string name = orbiterName.IsNullOrEmpty() ? orbiterPrefab.name : orbiterName;
         GameObject orbiterCloneGo = UnityUtility.AddChild(parent, orbiterPrefab);
         orbiterCloneGo.name = name;
-        return orbiterCloneGo;
+        var orbiter = orbiterCloneGo.GetSafeInterface<IOrbiter>();
+        orbiter.OrbitPeriod = orbitPeriod;
+        return orbiter;
     }
+
 
 }
 

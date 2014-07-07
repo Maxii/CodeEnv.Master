@@ -48,7 +48,7 @@ public class PlayerViews : AMonoBaseSingleton<PlayerViews> {
     //private LayerMask _normalViewModeEventReceiverLayerMask;
     //private LayerMask _normalViewModeCameraCullingLayerMask;
     //private UICamera _mainUICamera;
-    private Camera _mainCamera;
+    //private Camera _mainCamera;
 
     private IList<IDisposable> _subscribers;
     private PlayerViewModeKeyConfiguration[] _keyConfigs;
@@ -56,7 +56,7 @@ public class PlayerViews : AMonoBaseSingleton<PlayerViews> {
 
     protected override void Awake() {
         base.Awake();
-        _mainCamera = Camera.main;
+        //_mainCamera = Camera.main;
         //_mainUICamera = _mainCamera.gameObject.GetSafeMonoBehaviourComponent<UICamera>();
         _gameInput = GameInput.Instance;
         _viewMode = PlayerViewMode.NormalView;

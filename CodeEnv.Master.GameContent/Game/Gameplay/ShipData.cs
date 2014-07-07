@@ -72,7 +72,10 @@ namespace CodeEnv.Master.GameContent {
         private IDestinationTarget _target;
         public IDestinationTarget Target {
             get { return _target; }
-            set { SetProperty<IDestinationTarget>(ref _target, value, "Target"); }
+            set {
+                if (_target == value) { return; }   // eliminates equality warning when targets are the same
+                SetProperty<IDestinationTarget>(ref _target, value, "Target");
+            }
         }
 
         public ShipCategory Category { get; private set; }

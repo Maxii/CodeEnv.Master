@@ -39,6 +39,11 @@ namespace CodeEnv.Master.GameContent {
         /// The maximum number of facilities a starbase or settlement can have.
         /// </summary>
         public const int MaxFacilitiesPerBase = 25;
+        /// <summary>
+        /// The radius of a Settlement or Starbase, including all of the base's facilities.
+        /// TODO MaxFacilitiesPerBase and [Max]BaseRadius should be tied together.
+        /// </summary>
+        public const float BaseRadius = 3F;
 
         public const int MaxShipsPerFleet = 25;
 

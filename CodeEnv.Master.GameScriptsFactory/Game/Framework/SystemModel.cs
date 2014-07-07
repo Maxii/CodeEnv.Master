@@ -45,14 +45,9 @@ public class SystemModel : AOwnedItemModel, ISystemModel, IDestinationTarget {
 
     public void AssignSettlement(SettlementCmdModel settlementCmd) {
         D.Assert(gameObject.GetComponentInChildren<SettlementCmdModel>() == null, "{0} already has a Settlement.".Inject(FullName));
-        GameObject systemGo = gameObject;
-        GameObject orbitGo = UnityUtility.AddChild(systemGo, RequiredPrefabs.Instance.orbiter.gameObject);
-        orbitGo.name = "SettlementOrbit";
-        Transform settlementUnitTransform = settlementCmd.transform.parent;
-        UnityUtility.AttachChildToParent(settlementUnitTransform.gameObject, orbitGo);
-        // enabling (or not) the orbit around the star is handled by the SettlementCreator once isRunning
-        settlementUnitTransform.localPosition = Data.SettlementOrbitSlot.GenerateRandomLocalPositionWithinSlot(); // position this settlement unit in the orbit slot already reserved for it
-        // IMPROVE should really be assigning the SettlementOrbitSlot to Settlement.Data.OrbitSlot and let it auto position, just like PlanetoidData.OrbitSlot
+        Transform settlementUnit = settlementCmd.transform.parent;
+        Data.SettlementOrbitSlot.AssumeOrbit(settlementUnit, "Settlement Orbiter"); // IMPROVE the only remaining OrbitSlot held in Data
+        // enabling (or not) the system orbiter is handled by the SettlementCreator once isRunning
         InitializeSettlement(settlementCmd);
     }
 
@@ -83,10 +78,11 @@ public class SystemModel : AOwnedItemModel, ISystemModel, IDestinationTarget {
 
     public Vector3 Position { get { return Data.Position; } }
 
-    public virtual bool IsMobile { get { return false; } }
+    //public virtual bool IsMobile { get { return false; } }
 
     public SpaceTopography Topography { get { return Data.Topography; } }
 
     #endregion
+
 }
 

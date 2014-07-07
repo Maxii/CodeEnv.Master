@@ -283,8 +283,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
             _currentWaypointIndex = 1;  // skip the starting position
             Vector3 currentWaypointLocation = _course[_currentWaypointIndex];
-            SpaceTopography waypointTopography = Universe.GetSpaceTopography(currentWaypointLocation);
-            _fleet.__IssueShipMovementOrders(new StationaryLocation(currentWaypointLocation, waypointTopography), FleetSpeed);
+            _fleet.__IssueShipMovementOrders(new StationaryLocation(currentWaypointLocation), FleetSpeed);
 
             int targetDestinationIndex = _course.Count - 1;
             while (_currentWaypointIndex < targetDestinationIndex) {
@@ -309,8 +308,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
                         // validate that the detour provided does not itself leave us with another obstacle to encounter
                         D.Assert(!CheckForObstacleEnrouteToWaypointAt(currentWaypointLocation, out detour));
                     }
-                    waypointTopography = Universe.GetSpaceTopography(currentWaypointLocation);
-                    _fleet.__IssueShipMovementOrders(new StationaryLocation(currentWaypointLocation, waypointTopography), FleetSpeed);
+                    _fleet.__IssueShipMovementOrders(new StationaryLocation(currentWaypointLocation), FleetSpeed);
                 }
                 else if (IsCourseReplotNeeded) {
                     RegenerateCourse();
@@ -346,7 +344,13 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         }
 
         private void OnCoursePlotCompleted(Path course) {
-            if (course.error || !course.vectorPath.Any()) {
+            if (course.error) {
+                D.Error("{0} generated an error plotting a course to {1}.", _fleet.FullName, DestinationInfo.Target.FullName);
+                OnCoursePlotFailure();
+                return;
+            }
+            if (!course.vectorPath.Any()) {
+                D.Error("{0}'s course contains no path to {1}.", _fleet.FullName, DestinationInfo.Target.FullName);
                 OnCoursePlotFailure();
                 return;
             }
@@ -778,6 +782,11 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         Subscribe();
     }
 
+    protected override void InitializeRadiiComponents() {
+        // the radius of a FleetCmd is the radius of its HQElement and is set from OnHQElementChanged()
+        // a Command's collider size is dynamically adjusted to the size of the CmdIcon. It has nothing to do with the radius of the Command
+    }
+
     protected override void Initialize() {
         base.Initialize();
         InitializeNavigator();
@@ -843,7 +852,6 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
             // HQ Element has left
             HQElement = SelectHQElement();
         }
-
     }
 
     private IShipModel SelectHQElement() {
@@ -853,6 +861,11 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     // A fleetCmd causes heading and speed changes to occur by issuing orders to
     // ships, not by directly telling ships to modify their speed or heading. As such,
     // the ChangeHeading(), ChangeSpeed() and AllStop() methods have been removed.
+
+    protected override void OnHQElementChanged() {
+        base.OnHQElementChanged();
+        Radius = HQElement.Radius;
+    }
 
     private void OnCurrentOrderChanged() {
         if (CurrentState == FleetState.Moving || CurrentState == FleetState.Attacking) {
@@ -1014,10 +1027,12 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         Call(FleetState.Moving);
         yield return null;  // required immediately after Call() to avoid FSM bug
         // Return()s here - move error or not, we idle
-        if (_isDestinationUnreachable || !_isDestinationUnreachable) {
+
+        if (_isDestinationUnreachable) {
             // TODO how to handle move errors?
-            CurrentState = FleetState.Idling;
+            D.Error("{0} move order to {1} is unreachable.", FullName, CurrentOrder.Target.FullName);
         }
+        CurrentState = FleetState.Idling;
     }
 
     void ExecuteMoveOrder_ExitState() {
@@ -1042,7 +1057,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         LogEvent();
         var mortalMoveTarget = _moveTarget as IMortalTarget;
         if (mortalMoveTarget != null) {
-            mortalMoveTarget.onTargetDeath += OnTargetDeath;
+            mortalMoveTarget.onTargetDeathOneShot += OnTargetDeath;
         }
         _navigator.PlotCourse(_moveTarget, _moveSpeed);
     }
@@ -1079,7 +1094,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         LogEvent();
         var mortalMoveTarget = _moveTarget as IMortalTarget;
         if (mortalMoveTarget != null) {
-            mortalMoveTarget.onTargetDeath -= OnTargetDeath;
+            mortalMoveTarget.onTargetDeathOneShot -= OnTargetDeath;
         }
         _moveTarget = null;
         _navigator.DisengageAutoPilot();
@@ -1150,7 +1165,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     void Attacking_EnterState() {
         LogEvent();
         _attackTarget = CurrentOrder.Target as IMortalTarget;
-        _attackTarget.onTargetDeath += OnTargetDeath;
+        _attackTarget.onTargetDeathOneShot += OnTargetDeath;
         var shipAttackOrder = new ShipOrder(ShipDirective.Attack, OrderSource.UnitCommand, _attackTarget);
         Elements.ForAll(e => (e as ShipModel).CurrentOrder = shipAttackOrder);
     }
@@ -1163,7 +1178,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     void Attacking_ExitState() {
         LogEvent();
-        _attackTarget.onTargetDeath -= OnTargetDeath;
+        _attackTarget.onTargetDeathOneShot -= OnTargetDeath;
         _attackTarget = null;
     }
 
@@ -1237,9 +1252,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     void Dead_OnShowCompletion() {
         LogEvent();
-        new Job(DelayedDestroy(3), toStart: true, onJobComplete: (wasKilled) => {
-            D.Log("{0} has been destroyed.", FullName);
-        });
+        DestroyMortalItem(3F);
     }
 
     #endregion

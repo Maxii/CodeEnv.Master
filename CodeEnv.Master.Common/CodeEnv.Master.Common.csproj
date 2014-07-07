@@ -145,7 +145,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Game\Framework\UniverseSize.cs" />
-    <Compile Include="Generic\Framework\UnityConstants.cs" />
+    <Compile Include="Generic\Extensions\UnityConstants.cs" />
     <Compile Include="Generic\Framework\DisposePropertyChangedSubscription.cs" />
     <Compile Include="Generic\IO\UnityUpdateEvent.cs" />
     <Compile Include="Generic\Math\Vector3EqualityComparer.cs" />

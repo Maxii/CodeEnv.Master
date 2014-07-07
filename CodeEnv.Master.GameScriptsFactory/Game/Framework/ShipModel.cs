@@ -460,7 +460,6 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         private Job _headingJob;
 
         private IList<IDisposable> _subscribers;
-        private GameStatus _gameStatus;
         private GameTime _gameTime;
         private float _gameSpeedMultiplier;
 
@@ -472,7 +471,6 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             _ship = ship;
             _gameTime = GameTime.Instance;
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
-            _gameStatus = GameStatus.Instance;
             _engineRoom = new EngineRoom(_ship);
             Subscribe();
         }
@@ -738,7 +736,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         /// </summary>
         /// <param name="newHeading">The new direction in world coordinates, normalized.</param>
         /// <returns><c>true</c> if the heading change was accepted.</returns>
-        private bool ChangeHeading(Vector3 newHeading) {
+        public bool ChangeHeading(Vector3 newHeading) {
             if (DebugSettings.Instance.StopShipMovement) {
                 DisengageAutoPilot();
                 return false;
@@ -762,8 +760,8 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
                         D.Log("{0}'s previous turn order to {1} has been cancelled.", _ship.FullName, killedJobRequestedHeading);
                     }
                     else {
-                        D.Log("{0}'s turn to {1} is complete.  Heading deviation is {2:0.00}.",
-                            _ship.FullName, _ship.Data.RequestedHeading, Vector3.Angle(_ship.Data.CurrentHeading, _ship.Data.RequestedHeading));
+                        D.Log("{0}'s turn to {1} is complete.  Heading deviation is {2:0.#}, Angular velocity is {3:0.##}.",
+                            _ship.FullName, _ship.Data.RequestedHeading, Vector3.Angle(_ship.Data.CurrentHeading, _ship.Data.RequestedHeading), _ship._rigidbody.angularVelocity);
                         _ship.IsBearingConfirmed = true;
                     }
                     // ExecuteHeadingChange() appeared to generate angular velocity which continued to turn the ship after the Job was complete.
@@ -785,7 +783,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             int previousFrameCount = Time.frameCount - 1;   // FIXME makes initial framesSinceLastPass = 1
 
             float maxRadianTurnRatePerSecond = Mathf.Deg2Rad * _ship.Data.MaxTurnRate * GameTime.HoursPerSecond;
-            D.Log("{0} initiating turn to heading {1} at {2} degrees/hour.", _ship.FullName, _ship.Data.RequestedHeading, _ship.Data.MaxTurnRate);
+            D.Log("{0} initiating turn to heading {1} at {2:0.#} degrees/hour.", _ship.FullName, _ship.Data.RequestedHeading, _ship.Data.MaxTurnRate);
             while (!_ship.Data.CurrentHeading.IsSameDirection(_ship.Data.RequestedHeading, 1F)) {
                 int framesSinceLastPass = Time.frameCount - previousFrameCount; // needed when using yield return WaitForSeconds()
                 previousFrameCount = Time.frameCount;
@@ -806,8 +804,9 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         /// moving in the direction and at the speed it had when it exited Moving.
         /// </summary>
         public void AllStop() {
-            D.Log("{0}.AllStop() called.", _ship.FullName);
-            ChangeSpeed(Speed.AllStop);
+            if (ChangeSpeed(Speed.AllStop)) {
+                D.Log("{0}.AllStop() called.", _ship.FullName);
+            }
             if (IsAutoPilotEngaged) {
                 D.Warn("{0}.AutoPilot remains engaged.", _ship.FullName);
             }
@@ -848,7 +847,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         /// <returns><c>true</c> if the heading was confirmed and speed checked.</returns>
         private bool AdjustSpeedOnHeadingConfirmation() {
             if (_ship.IsBearingConfirmed) {
-                D.Log("{0} heading {1} is confirmed. Deviation is {2:0.00} degrees.", _ship.FullName, _ship.Data.RequestedHeading, Vector3.Angle(_ship.Data.CurrentHeading, _ship.Data.RequestedHeading));
+                D.Log("{0} heading {1} is confirmed. Deviation is {2:0.#} degrees.", _ship.FullName, _ship.Data.RequestedHeading, Vector3.Angle(_ship.Data.CurrentHeading, _ship.Data.RequestedHeading));
                 if (ChangeSpeed(ShipSpeed)) {
                     D.Log("{0} adjusting speed to {1}. ", _ship.FullName, ShipSpeed.GetName());
                 }
@@ -880,7 +879,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         /// </summary>
         private void OnDestinationReached() {
             //_pilotJob.Kill(); // should be handled by the ship's state machine ordering a Disengage()
-            D.Log("{0} at {1} reached {2} at {3} (w/station offset). Actual proximity {4:0.00} units.",
+            D.Log("{0} at {1} reached {2} at {3} (w/station offset). Actual proximity {4:0.#} units.",
                 _ship.FullName, _ship.Data.Position, DestinationInfo.Target.FullName, DestinationInfo.Destination, DistanceToDestination);
             _ship.OnDestinationReached();
         }
@@ -933,7 +932,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             // frequency of course progress checks increases as fullSpeed and gameSpeed increase
             float courseProgressCheckFrequency = Mathf.Max(fullSpeed * _gameSpeedMultiplier, 1F);
             _courseProgressCheckPeriod = 1F / courseProgressCheckFrequency;
-            D.Log("{0} frequency of course progress checks adjusted to {1:0.##}/sec.", _ship.FullName, courseProgressCheckFrequency);
+            D.Log("{0} frequency of course progress checks adjusted to {1:0.#}/sec.", _ship.FullName, courseProgressCheckFrequency);
 
             float speedFactor = Mathf.Max(fullSpeed * _gameSpeedMultiplier, 1F);   // 1 - 8
             __separationTestToleranceDistanceSqrd = Mathf.Max(speedFactor * speedFactor, 9F);   // 9 - 64 
@@ -949,7 +948,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
                 _sqrdDistanceWhereContinuousCourseCorrectionChecksBegin /= 3F;  // 8 - 533 (2.8 - 22 units away)
             }
             float courseCorrectionCheckPeriod = _courseProgressCheckPeriod * _numberOfProgressChecksBetweenCourseCorrectionChecks;
-            D.Log("{0}: Normal course correction check every {1} seconds, \nContinuous course correction checks start {2} units from destination.",
+            D.Log("{0}: Normal course correction check every {1:0.#} seconds, \nContinuous course correction checks start {2:0.#} units from destination.",
                 _ship.FullName, courseCorrectionCheckPeriod, Mathf.Sqrt(_sqrdDistanceWhereContinuousCourseCorrectionChecksBegin));
 
             // heading change coroutine could be interrupted immediately after begun leaving isBearingConfirmed false, even while it is still actually true
@@ -1017,7 +1016,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             RaycastHit hitInfo;
             if (Physics.Raycast(ray, out hitInfo, rayLength, _keepoutOnlyLayerMask.value)) {
                 string obstacleName = hitInfo.transform.parent.name + "." + hitInfo.collider.name;
-                D.Log("{0} encountered obstacle {1} centered at {2} when checking approach to {3}. \nRay length = {4}, rayHitDistance = {5}.",
+                D.Log("{0} encountered obstacle {1} centered at {2} when checking approach to {3}. \nRay length = {4:0.#}, rayHitDistance = {5:0.#}.",
                     _ship.FullName, obstacleName, hitInfo.transform.position, location, rayLength, hitInfo.distance);
                 // there is a keepout zone obstacle in the way 
                 detour = GenerateDetourAroundObstacle(ray, hitInfo);
@@ -1050,7 +1049,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
                 D.Assert(hitInfo.collider.bounds.Contains(halfWayPointInsideKeepoutZone), "HalfwayPt = {0}, obstacleCenter = {1}.".Inject(halfWayPointInsideKeepoutZone, obstacleLocation));
                 float obstacleClearanceLeeway = StationaryLocation.CloseEnoughDistance;
                 detour = UnityUtility.FindClosestPointOnSphereSurfaceTo(halfWayPointInsideKeepoutZone, obstacleLocation, keepoutRadius + obstacleClearanceLeeway);
-                D.Log("{0} found detour at {1} to avoid obstacle {2} at {3}. \nDistance to detour = {4}. Obstacle keepout radius = {5}. Detour is {6} from obstacle center.",
+                D.Log("{0} found detour at {1} to avoid obstacle {2} at {3}. \nDistance to detour = {4:0.#}. Obstacle keepout radius = {5:0.##}. Detour is {6:0.#} from obstacle center.",
                     _ship.FullName, detour, obstacleName, obstacleLocation, Vector3.Magnitude(detour - _ship.Data.Position), keepoutRadius, (detour - obstacleLocation).magnitude);
             }
             else {
@@ -1067,7 +1066,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         /// <returns>true if the separation distance is increasing.</returns>
         private bool CheckSeparation(float distanceToCurrentDestinationSqrd, ref float previousDistanceSqrd) {
             if (distanceToCurrentDestinationSqrd > previousDistanceSqrd + __separationTestToleranceDistanceSqrd) {
-                D.Warn("{0} is separating from current destination. DistanceSqrd = {1}, previousSqrd = {2}, tolerance = {3}.", _ship.FullName,
+                D.Warn("{0} is separating from current destination. DistanceSqrd = {1:0.}, previousSqrd = {2:0.}, tolerance = {3:0.}.", _ship.FullName,
                     distanceToCurrentDestinationSqrd, previousDistanceSqrd, __separationTestToleranceDistanceSqrd);
                 return true;
             }
@@ -1198,7 +1197,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     }
 
     public void CommenceOperations() {
-        Data.Topography = Universe.GetSpaceTopography(Position);
+        Data.Topography = Universe.Instance.GetSpaceTopography(Position);
         Data.AssessFtlAvailability();
         CurrentState = ShipState.Idling;
     }
@@ -1247,7 +1246,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     private void OnCurrentOrderChanged() {
         // TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated
-        if (CurrentState == ShipState.Moving || CurrentState == ShipState.Repairing) {
+        if (CurrentState == ShipState.Moving || CurrentState == ShipState.Repairing || CurrentState == ShipState.AssumingOrbit) {
             Return();
             // IMPROVE Attacking is not here as it is not really a state so far. It has no duration so it could be replaced with a method
             // I'm deferring doing that right now as it is unclear how Attacking will evolve
@@ -1292,6 +1291,12 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(order));
             }
         }
+    }
+
+    protected override void OnDeath() {
+        base.OnDeath();
+        _helm.DisengageAutoPilot();
+        TryBreakOrbit();
     }
 
     #region Velocity Debugger
@@ -1421,12 +1426,56 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     #endregion
 
+    #region AssumingOrbit
+
+    /// <summary>
+    /// The current orbit slot this ship is in (or has been authorized to assume), if any. 
+    /// Will be null if the ship is not currently orbiting or authorized to assume orbit.
+    /// </summary>
+    private ShipOrbitSlot _currentOrIntendedOrbitSlot;
+
+    IEnumerator AssumingOrbit_EnterState() {
+        D.Log("{0}.AssumingOrbit_EnterState called.", FullName);
+        D.Assert(_currentOrIntendedOrbitSlot != null);
+        _helm.DisengageAutoPilot();
+        _helm.AllStop();
+        float distance;
+        if (!_currentOrIntendedOrbitSlot.CheckPositionForOrbit(this, out distance)) {
+            Vector3 targetDirection = (_currentOrIntendedOrbitSlot.OrbitedObject.Position - Position).normalized;
+            Vector3 orbitSlotDirection = distance > Constants.ZeroF ? targetDirection : -targetDirection;
+            _helm.ChangeHeading(orbitSlotDirection);
+            yield return null;  // allows heading coroutine to engage and change IsBearingConfirmed to false
+            D.Log("{0} is waiting to complete the turn needed to find the orbit slot.", FullName);
+            while (!IsBearingConfirmed) {
+                // wait until heading change completed
+                yield return null;
+            }
+            _helm.ChangeSpeed(Speed.Slow);
+        }
+
+        D.Log("{0} moving to find the orbit slot.", FullName);
+        while (!_currentOrIntendedOrbitSlot.CheckPositionForOrbit(this, out distance)) {
+            // wait until we are inside the orbit slot
+            yield return null;
+        }
+        _currentOrIntendedOrbitSlot.AssumeOrbit(this);
+        _currentOrIntendedOrbitSlot.onOrbitedObjectDeathOneShot += BreakOrbit;
+        Return();
+    }
+
+    void AssumingOrbit_ExitState() {
+        LogEvent();
+        _helm.AllStop();
+    }
+
+    #endregion
+
     #region ExecuteMoveOrder
 
     IEnumerator ExecuteMoveOrder_EnterState() { // cannot return void as code after Call() executes without waiting for a Return()
         D.Log("{0}.ExecuteMoveOrder_EnterState called.", FullName);
 
-        TryLeaveOrbit();
+        TryBreakOrbit();
 
         _moveTarget = CurrentOrder.Target;
         _moveSpeed = CurrentOrder.Speed;
@@ -1440,7 +1489,12 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             __HandleDestinationUnreachable();
             yield break;
         }
-        TryAssumeOrbit();
+
+        if (AssessWhetherToAssumeOrbit()) {
+            Call(ShipState.AssumingOrbit);
+            yield return null;  // required immediately after Call() to avoid FSM bug
+            // Return()s here
+        }
         CurrentState = ShipState.Idling;
     }
 
@@ -1480,7 +1534,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         LogEvent();
         var mortalMoveTarget = _moveTarget as IMortalTarget;
         if (mortalMoveTarget != null) {
-            mortalMoveTarget.onTargetDeath += OnTargetDeath;
+            mortalMoveTarget.onTargetDeathOneShot += OnTargetDeath;
         }
         _helm.PlotCourse(_moveTarget, _moveSpeed, _orderSource, _standoffDistance);
     }
@@ -1538,7 +1592,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         LogEvent();
         var mortalMoveTarget = _moveTarget as IMortalTarget;
         if (mortalMoveTarget != null) {
-            mortalMoveTarget.onTargetDeath -= OnTargetDeath;
+            mortalMoveTarget.onTargetDeathOneShot -= OnTargetDeath;
         }
         _moveTarget = null;
         _moveSpeed = Speed.None;
@@ -1567,7 +1621,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     IEnumerator ExecuteAttackOrder_EnterState() {
         D.Log("{0}.ExecuteAttackOrder_EnterState() called.", FullName);
 
-        TryLeaveOrbit();
+        TryBreakOrbit();
 
         _ordersTarget = CurrentOrder.Target as IMortalTarget;
         while (_ordersTarget.IsAlive) {
@@ -1653,7 +1707,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     void ExecuteJoinFleetOrder_EnterState() {
         LogEvent();
 
-        TryLeaveOrbit();
+        TryBreakOrbit();
 
         var fleetToJoin = CurrentOrder.Target as ICmdTarget;
         FleetCmdModel transferFleet = null;
@@ -1715,7 +1769,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
     IEnumerator ExecuteRepairOrder_EnterState() {
         D.Log("{0}.ExecuteRepairOrder_EnterState called.", FullName);
 
-        TryLeaveOrbit();
+        TryBreakOrbit();
 
         _moveSpeed = Speed.Full;
         _moveTarget = CurrentOrder.Target;
@@ -1729,8 +1783,13 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
             CurrentState = ShipState.Idling;
             yield break;
         }
-        TryAssumeOrbit();
-        //_helm.AllStop();
+
+        if (AssessWhetherToAssumeOrbit()) {
+            Call(ShipState.AssumingOrbit);
+            yield return null;  // required immediately after Call() to avoid FSM bug
+            // Return()s here
+        }
+
         Call(ShipState.Repairing);
         yield return null;  // required immediately after Call() to avoid FSM bug
         CurrentState = ShipState.Idling;
@@ -1820,50 +1879,53 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
 
     void Dead_OnShowCompletion() {
         LogEvent();
-        new Job(DelayedDestroy(3), toStart: true, onJobComplete: (wasKilled) => {
-            D.Log("{0} has been destroyed.", FullName);
-        });
+        DestroyMortalItem(3F);
     }
 
     #endregion
 
     #region StateMachine Support Methods
 
-    private IShipOrbitable _objectBeingOrbited;
-
-    private bool TryAssumeOrbit() {
-        bool isOrbitAssumed = false;
-        D.Assert(_objectBeingOrbited == null);
+    /// <summary>
+    /// Assesses whether this ship should attempt to assume orbit around the helm's current destination target.
+    /// The helm's autopilot should no longer be engaged as this method should only be called upon arrival.
+    /// </summary>
+    /// <returns><c>true</c> if the ship should initiate the process of assuming orbit.</returns>
+    private bool AssessWhetherToAssumeOrbit() {
+        D.Assert(_currentOrIntendedOrbitSlot == null, "{0} found {1}.".Inject(FullName, _currentOrIntendedOrbitSlot));
+        D.Assert(!_helm.IsAutoPilotEngaged, "{0}'s autopilot is still engaged.".Inject(FullName));
         var objectToOrbit = _helm.DestinationInfo.Target as IShipOrbitable;
         if (objectToOrbit != null) {
-            float distanceFromObjectToOrbit = Vector3.Distance(Position, objectToOrbit.Position);
-            if (objectToOrbit.ShipOrbitSlot.Contains(distanceFromObjectToOrbit)) {
-                objectToOrbit.AssumeOrbit(this);
-                _objectBeingOrbited = objectToOrbit;
-                D.Log("{0} has assumed orbit around {1}.", FullName, objectToOrbit.FullName);
-                isOrbitAssumed = true;
+            var baseCmdObjectToOrbit = objectToOrbit as IBaseCmdTarget;
+            if (baseCmdObjectToOrbit != null) {
+                if (Owner.IsEnemyOf(baseCmdObjectToOrbit.Owner)) {
+                    return false;
+                }
             }
-            else {
-                D.Warn("{0} cannot assume orbit around {1} as proposed orbit distance {2} is not within orbit slot {3}.",
-                    FullName, objectToOrbit.FullName, distanceFromObjectToOrbit, objectToOrbit.ShipOrbitSlot);
-            }
-            _helm.AllStop();
-        }
-        return isOrbitAssumed;
-    }
-
-    private bool TryLeaveOrbit() {
-        if (_objectBeingOrbited != null) {
-            _objectBeingOrbited.LeaveOrbit(this);
-            float orbitRadius = Vector3.Distance(Position, _objectBeingOrbited.Position);
-            if (!_objectBeingOrbited.ShipOrbitSlot.Contains(orbitRadius)) {
-                D.Warn("The radius {0} of {1}'s orbit is not within {2}'s orbit slot {3}.", orbitRadius, FullName, _objectBeingOrbited.FullName, _objectBeingOrbited.ShipOrbitSlot);
-            }
-            D.Log("{0} has left orbit of {1}.", FullName, _objectBeingOrbited.FullName);
-            _objectBeingOrbited = null;
+            _currentOrIntendedOrbitSlot = objectToOrbit.ShipOrbitSlot;
             return true;
         }
         return false;
+    }
+
+
+    /// <summary>
+    /// The ship determines whether it is in orbit, and if so, immediately leaves it.
+    /// </summary>
+    /// <returns></returns>
+    private void TryBreakOrbit() {
+        if (_currentOrIntendedOrbitSlot != null) {
+            _currentOrIntendedOrbitSlot.onOrbitedObjectDeathOneShot -= BreakOrbit;
+            BreakOrbit();
+        }
+    }
+
+    /// <summary>
+    /// Breaks the orbit. Must be in orbit to be called.
+    /// </summary>
+    private void BreakOrbit() {
+        _currentOrIntendedOrbitSlot.BreakOrbit(this);
+        _currentOrIntendedOrbitSlot = null;
     }
 
     private void __HandleDestinationUnreachable() {
@@ -1909,8 +1971,8 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         D.Assert(_ordersTarget != null && _ordersTarget.IsAlive, "{0}'s target from orders is null or dead.".Inject(Data.FullName));
         bool isTargetInRange = false;
         var uniqueEnemyTargetsInRange = Enumerable.Empty<IMortalTarget>();
-        foreach (var rangeTracker in _weaponRangeMonitorLookup.Values) {
-            uniqueEnemyTargetsInRange = uniqueEnemyTargetsInRange.Union<IMortalTarget>(rangeTracker.EnemyTargets);  // OPTIMIZE
+        foreach (var rangeMonitor in _weaponRangeMonitorLookup.Values) {
+            uniqueEnemyTargetsInRange = uniqueEnemyTargetsInRange.Union<IMortalTarget>(rangeMonitor.EnemyTargets);  // OPTIMIZE
         }
 
         ICmdTarget cmdTarget = _ordersTarget as ICmdTarget;
@@ -1935,6 +1997,7 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
                 }
             }
             else {
+                // the planetoid is an enemy and in range
                 isTargetInRange = true;
             }
             chosenTarget = _ordersTarget;
@@ -1957,16 +2020,10 @@ public class ShipModel : AUnitElementModel, IShipModel, IShipTarget {
         if (Data.Health < 0.30F) {
             if (CurrentOrder == null || CurrentOrder.Directive != ShipDirective.Repair) {
                 var repairLoc = Data.Position - _transform.forward * 10F;
-                var repairLocTopography = Universe.GetSpaceTopography(repairLoc);
-                IDestinationTarget repairDestination = new StationaryLocation(repairLoc, repairLocTopography);
+                IDestinationTarget repairDestination = new StationaryLocation(repairLoc);
                 OverrideCurrentOrder(ShipDirective.Repair, retainSuperiorsOrder: true, target: repairDestination);
             }
         }
-    }
-
-    protected override void OnDeath() {
-        base.OnDeath();
-        _helm.DisengageAutoPilot();
     }
 
     protected override bool ApplyDamage(float damage) {

@@ -14,19 +14,20 @@
 
 using System;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
 ///  Easy access to Universe folder in Scene.
 /// </summary>
-public class Universe : AFolderAccess<Universe> {
+public class Universe : AFolderAccess<Universe>, IUniverse {
 
     /// <summary>
     /// Gets the SpaceTopography value associated with this location in worldspace.
     /// </summary>
     /// <param name="worldLocation">The world location.</param>
     /// <returns></returns>
-    public static SpaceTopography GetSpaceTopography(Vector3 worldLocation) {
+    public SpaceTopography GetSpaceTopography(Vector3 worldLocation) {
         Index3D sectorIndex = SectorGrid.GetSectorIndex(worldLocation);
         SystemModel system;
         if (SystemCreator.TryGetSystem(sectorIndex, out system)) {

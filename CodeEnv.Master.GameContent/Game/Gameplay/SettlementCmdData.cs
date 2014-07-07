@@ -27,12 +27,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SettlementCmdData : ACommandData {
 
-        private OrbitalSlot _shipOrbitSlot;
-        public OrbitalSlot ShipOrbitSlot {
-            get { return _shipOrbitSlot; }
-            set { SetProperty<OrbitalSlot>(ref _shipOrbitSlot, value, "ShipOrbitSlot"); }
-        }
-
         private SettlementCategory _category;
         public SettlementCategory Category {
             get { return _category; }

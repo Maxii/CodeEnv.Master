@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IShipOrbitable.cs
-// Interface for objects that can be orbited by ships.
+// File: IUsefulTools.cs
+// Interface for easy access to UsefulTools.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,19 +19,11 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for objects that can be orbited by ships.
+    /// Interface for easy access to UsefulTools.
     /// </summary>
-    public interface IShipOrbitable {
+    public interface IUsefulTools {
 
-        ShipOrbitSlot ShipOrbitSlot { get; }
-
-        string FullName { get; }
-
-        Vector3 Position { get; }
-
-        Transform Transform { get; }
-
-        bool IsMobile { get; }
+        void DestroyGameObject(GameObject objectToDestroy);
 
     }
 }

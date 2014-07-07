@@ -265,7 +265,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void PrepareToBeginNewGame() {
-            D.Log("GameTime.PrepareToBeginNewGame() called.");
+            D.Log("{0}.PrepareToBeginNewGame() called.", GetType().Name);
             EnableClock(false);
             _cumTimeInPriorSessions = Constants.ZeroF;
             _timeGameBeganInCurrentSession = Constants.ZeroF;
@@ -288,10 +288,10 @@ namespace CodeEnv.Master.GameContent {
             _cumTimePaused += RealTime_Game - _timeCurrentPauseBegan; // cumTimePaused must be updated now so it is current when saved
             // _gameRealTimeAtLastSync is not important to save. It will be set to the current RealTime_Game when the clock is started again
             // currentDateTime is key! It should be accurate as it gets updated at every sync.            
-            D.Log("currentDateTime value being saved is {0:0.00}.", _currentDateTime);
+            D.Log("{0}.currentDateTime value being saved is {1:0.00}.", GetType().Name, _currentDateTime);
             _savedCurrentDateTime = _currentDateTime; // FIXME bug? currentDateTime does not get properly restored
             _cumTimeInPriorSessions = RealTime_Game; // cumTimeInPriorSessions must be updated (last so it doesn't affect other values here) so it is current when saved
-            D.Log("PrepareToSaveGame called. cumTimeInPriorSessions set to {0:0.00}.", _cumTimeInPriorSessions);
+            D.Log("{0}.PrepareToSaveGame called. cumTimeInPriorSessions set to {1:0.##}.", GetType().Name, _cumTimeInPriorSessions);
         }
 
         public void PrepareToResumeSavedGame() {
@@ -342,6 +342,10 @@ namespace CodeEnv.Master.GameContent {
             _gameSpeedMultiplier = GameSpeed.SpeedMultiplier();
         }
 
+
+        //private float timeAtLastSync;
+        //private float currentTime;
+        //private float accumulatedTime;
         /// <summary>
         /// Brings the game clock up to date. While the Date only needs to be synced when it is about to be used,
         /// this clock must keep track of accumulated pauses and game speed changes. It is not necessary to 
@@ -353,6 +357,10 @@ namespace CodeEnv.Master.GameContent {
                 D.Warn("SyncGameClock called while Paused!");   // it keeps adding to currentDateTime
                 return;
             }
+            //currentTime = Time.time;
+            //accumulatedTime += (currentTime - timeAtLastSync);
+            //timeAtLastSync = currentTime;
+            //D.Log("AccumulatedTime = {0}.", accumulatedTime);
             _currentDateTime += GameSpeed.SpeedMultiplier() * (RealTime_Game - _gameRealTimeAtLastSync);
             _gameRealTimeAtLastSync = RealTime_Game;
             D.Log("GameClock for Date synced to {0:0.00}.", _currentDateTime);

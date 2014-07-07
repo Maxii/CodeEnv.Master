@@ -50,7 +50,7 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
         float drag = 0.1F;
         var combatStance = Enums<ShipCombatStance>.GetRandom(excludeDefault: true);
         float maxTurnRate = UnityEngine.Random.Range(90F, 270F);
-        float fullStlThrust = mass * drag * UnityEngine.Random.Range(0.1F, 0.3F); // 2 - 6 units/day
+        float fullStlThrust = mass * drag * UnityEngine.Random.Range(0.2F, 0.3F); // planetoids move about 0.1 units per hour
         float fullFtlThrust = fullStlThrust * TempGameValues.__FtlMultiplier;
 
         return new ShipStat(elementName, mass, 50F, category, combatStance, maxTurnRate, drag, fullStlThrust, fullFtlThrust);
@@ -150,8 +150,8 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
 
     protected override void IssueFirstUnitCommand() {
         LogEvent();
-        //__GetFleetAttackUnderway();
-        __GetFleetUnderway();
+        __GetFleetAttackUnderway();
+        // __GetFleetUnderway();
     }
 
     private void __GetFleetUnderway() {

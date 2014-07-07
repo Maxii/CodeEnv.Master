@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public struct StarStat {
 
-        public string Name { get; private set; }
+        // a Star's name is assigned when its parent system becomes known
         public StarCategory Category { get; private set; }
         public int Capacity { get; private set; }
         public OpeYield Resources { get; private set; }
@@ -32,24 +32,21 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Initializes a new instance of the <see cref="StarStat" /> class.
         /// </summary>
-        /// <param name="name">The name.</param>
         /// <param name="category">The category of Star.</param>
         /// <param name="capacity">The capacity.</param>
         /// <param name="resources">The resources.</param>
-        public StarStat(string name, StarCategory category, int capacity, OpeYield resources)
-            : this(name, category, capacity, resources, new XYield()) { }
+        public StarStat(StarCategory category, int capacity, OpeYield resources)
+            : this(category, capacity, resources, new XYield()) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StarStat" /> class.
         /// </summary>
-        /// <param name="name">The name.</param>
         /// <param name="category">The category of Star.</param>
         /// <param name="capacity">The capacity.</param>
         /// <param name="resources">The resources.</param>
         /// <param name="specialResources">The special resources.</param>
-        public StarStat(string name, StarCategory category, int capacity, OpeYield resources, XYield specialResources)
+        public StarStat(StarCategory category, int capacity, OpeYield resources, XYield specialResources)
             : this() {
-            Name = name;
             Category = category;
             Capacity = capacity;
             Resources = resources;

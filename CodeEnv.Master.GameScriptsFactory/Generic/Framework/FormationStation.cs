@@ -165,7 +165,7 @@ public class FormationStation : AMonoBase, IFormationStation, IDestinationTarget
 
     public float Radius { get { return Constants.ZeroF; } }
 
-    public SpaceTopography Topography { get { return Universe.GetSpaceTopography(Position); } }
+    public SpaceTopography Topography { get { return Universe.Instance.GetSpaceTopography(Position); } }
 
     #endregion
 

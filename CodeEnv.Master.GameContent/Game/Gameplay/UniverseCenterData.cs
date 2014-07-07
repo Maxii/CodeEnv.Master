@@ -24,8 +24,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class UniverseCenterData : AItemData {
 
-        public OrbitalSlot ShipOrbitSlot { get; set; }
-
         public override SpaceTopography Topography {
             get { return base.Topography; }
             set { throw new NotImplementedException(); }

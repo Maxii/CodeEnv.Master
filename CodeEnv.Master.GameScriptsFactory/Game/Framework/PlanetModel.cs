@@ -16,8 +16,10 @@
 
 // default namespace
 
+using System;
 using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
@@ -37,9 +39,17 @@ public class PlanetModel : APlanetoidModel, IPlanetModel {
 
     protected override void Initialize() {
         base.Initialize();
-        //float orbitalRadius = Data.SystemOrbitSlot.MeanRadius;
         float orbitalRadius = _transform.localPosition.magnitude;
         Data.OrbitalSpeed = gameObject.GetSafeMonoBehaviourComponentInParents<Orbiter>().GetSpeedOfBodyInOrbit(orbitalRadius);
+    }
+
+    protected override void OnDeath() {
+        base.OnDeath();
+        var moons = _transform.GetComponentsInChildren<MoonModel>();
+        if (moons.Any()) {
+            // since the planet is on its way to destruction, the moons need to show their destruction too
+            moons.ForAll(moon => moon.OnPlanetDying());
+        }
     }
 
     public override string ToString() {

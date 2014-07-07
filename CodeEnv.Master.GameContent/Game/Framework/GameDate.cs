@@ -160,7 +160,7 @@ namespace CodeEnv.Master.GameContent {
             int elapsedHours = Mathf.FloorToInt(gameClock * GameTime.HoursPerSecond);
             int elapsedDays = elapsedHours / GameTime.HoursPerDay;
             int hoursPerYear = GameTime.DaysPerYear * GameTime.HoursPerDay;
-            Year = GameTime.GameStartYear + Mathf.FloorToInt(elapsedHours / hoursPerYear);
+            Year = GameTime.GameStartYear + elapsedHours / hoursPerYear;
             DayOfYear = elapsedDays % GameTime.DaysPerYear;
             HourOfDay = elapsedHours % GameTime.HoursPerDay;
         }

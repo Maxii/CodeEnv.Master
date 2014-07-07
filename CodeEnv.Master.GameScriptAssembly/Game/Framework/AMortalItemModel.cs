@@ -57,11 +57,13 @@ public abstract class AMortalItemModel : AOwnedItemModel, IMortalModel, IMortalT
     protected virtual void OnDeath() {
         enabled = false;
         IsAlive = false;
-        if (onTargetDeath != null) {
-            onTargetDeath(this);
+        if (onTargetDeathOneShot != null) {
+            onTargetDeathOneShot(this);
+            onTargetDeathOneShot = null;
         }
-        if (onDeath != null) {
-            onDeath(this);
+        if (onDeathOneShot != null) {
+            onDeathOneShot(this);
+            onDeathOneShot = null;
         }
         // OPTIMIZE not clear this event will ever be used
         GameEventManager.Instance.Raise<MortalItemDeathEvent>(new MortalItemDeathEvent(this, this));
@@ -110,8 +112,14 @@ public abstract class AMortalItemModel : AOwnedItemModel, IMortalModel, IMortalT
         return Data.Health > Constants.ZeroF;
     }
 
-    protected IEnumerator DelayedDestroy(float delayInSeconds) {
-        D.Log("{0}.DelayedDestroy({1}).", FullName, delayInSeconds);
+    protected void DestroyMortalItem(float delayInSeconds) {
+        new Job(DelayedDestroy(delayInSeconds), toStart: true, onJobComplete: (wasKilled) => {
+            D.Log("{0} has been destroyed.", FullName);
+        });
+    }
+
+    private IEnumerator DelayedDestroy(float delayInSeconds) {
+        D.Log("{0}.DelayedDestroy({1}) called.", FullName, delayInSeconds);
         yield return new WaitForSeconds(delayInSeconds);
         Destroy(gameObject);
     }
@@ -122,7 +130,7 @@ public abstract class AMortalItemModel : AOwnedItemModel, IMortalModel, IMortalT
 
     public Vector3 Position { get { return Data.Position; } }
 
-    public virtual bool IsMobile { get { return false; } }
+    //public virtual bool IsMobile { get { return false; } }
 
     public SpaceTopography Topography { get { return Data.Topography; } }
 
@@ -130,7 +138,7 @@ public abstract class AMortalItemModel : AOwnedItemModel, IMortalModel, IMortalT
 
     #region IMortalTarget Members
 
-    public event Action<IMortalTarget> onTargetDeath;
+    public event Action<IMortalTarget> onTargetDeathOneShot;
 
     public bool IsAlive { get; protected set; }
 
@@ -142,7 +150,7 @@ public abstract class AMortalItemModel : AOwnedItemModel, IMortalModel, IMortalT
 
     #region IMortalModel Members
 
-    public event Action<IMortalModel> onDeath;
+    public event Action<IMortalModel> onDeathOneShot;
 
     private bool _isOperational;
     public bool IsOperational {

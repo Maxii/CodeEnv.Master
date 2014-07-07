@@ -24,6 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// Structure that describes key characteristics of an orbit around an object. 
     /// Also can generate a random position within the slot for the orbiter to start orbiting.
     /// </summary>
+    [Obsolete]
     public struct OrbitalSlot : IEquatable<OrbitalSlot> {
 
         #region Equality Operators Override

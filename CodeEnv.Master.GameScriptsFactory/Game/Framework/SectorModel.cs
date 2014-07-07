@@ -55,7 +55,7 @@ public class SectorModel : AOwnedItemModel, ISectorModel, IDestinationTarget {
 
     public Vector3 Position { get { return Data.Position; } }
 
-    public virtual bool IsMobile { get { return false; } }
+    //public virtual bool IsMobile { get { return false; } }
 
     public SpaceTopography Topography { get { return Data.Topography; } }
 

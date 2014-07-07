@@ -50,6 +50,10 @@ namespace CodeEnv.Master.GameContent {
 
         public static IGeneralFactory GeneralFactory { get; set; }
 
+        public static IUsefulTools UsefulTools { get; set; }
+
+        public static IUniverse Universe { get; set; }
+
     }
 }
 

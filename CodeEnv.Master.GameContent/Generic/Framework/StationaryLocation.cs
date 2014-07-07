@@ -42,10 +42,10 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
 
-        public StationaryLocation(Vector3 position, SpaceTopography topography)
+        public StationaryLocation(Vector3 position)
             : this() {
             Position = position;
-            Topography = topography;
+            Topography = References.Universe.GetSpaceTopography(position);
         }
 
         #region Object.Equals and GetHashCode Override
@@ -87,7 +87,7 @@ namespace CodeEnv.Master.GameContent {
 
         public string FullName {
             get {
-                return string.Format("{0} {1}", this.GetType().Name, Position);
+                return string.Format("{0}[{1}]", this.GetType().Name, Position);
             }
         }
 

@@ -41,20 +41,24 @@ public class UniverseCenterModel : AItemModel, IUniverseCenterModel, IDestinatio
         Radius = meshRenderer.bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
         D.Assert(Mathfx.Approx(Radius, TempGameValues.UniverseCenterRadius, 1F));    // 50
         (collider as SphereCollider).radius = Radius;
+        InitializeShipOrbitSlot();
+        InitializeKeepoutZone();
+    }
+
+    private void InitializeShipOrbitSlot() {
+        float innerOrbitRadius = Radius * TempGameValues.KeepoutRadiusMultiplier;
+        float outerOrbitRadius = innerOrbitRadius + TempGameValues.DefaultShipOrbitSlotDepth;
+        ShipOrbitSlot = new ShipOrbitSlot(innerOrbitRadius, outerOrbitRadius, this);
+    }
+
+    private void InitializeKeepoutZone() {
+        SphereCollider keepoutZoneCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
+        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
+        keepoutZoneCollider.isTrigger = true;
+        keepoutZoneCollider.radius = ShipOrbitSlot.InnerRadius;
     }
 
     protected override void Initialize() { }
-
-    protected override void OnDataChanged() {
-        base.OnDataChanged();
-        SetKeepoutZoneRadius();
-    }
-
-    private void SetKeepoutZoneRadius() {
-        SphereCollider keepoutZoneCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
-        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
-        keepoutZoneCollider.radius = Data.ShipOrbitSlot.InnerRadius;
-    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
@@ -64,7 +68,7 @@ public class UniverseCenterModel : AItemModel, IUniverseCenterModel, IDestinatio
 
     public Vector3 Position { get { return Data.Position; } }
 
-    public virtual bool IsMobile { get { return false; } }
+    //public virtual bool IsMobile { get { return false; } }
 
     public SpaceTopography Topography { get { return Data.Topography; } }
 
@@ -72,28 +76,7 @@ public class UniverseCenterModel : AItemModel, IUniverseCenterModel, IDestinatio
 
     #region IShipOrbitable Members
 
-    public OrbitalSlot ShipOrbitSlot { get { return Data.ShipOrbitSlot; } }
-
-    public void AssumeOrbit(IShipModel ship) {
-        IOrbiterForShips orbiter;
-        var orbiterTransform = _transform.GetTransformWithInterfaceInChildren<IOrbiterForShips>(out orbiter);
-        if (orbiterTransform != null) {
-            References.UnitFactory.AttachShipToOrbiter(ship, ref orbiterTransform);
-        }
-        else {
-            References.UnitFactory.AttachShipToOrbiter(gameObject, ship, orbitedObjectIsMobile: false);
-        }
-    }
-
-    public void LeaveOrbit(IShipModel orbitingShip) {
-        IOrbiterForShips orbiter;
-        var orbiterTransform = _transform.GetTransformWithInterfaceInChildren<IOrbiterForShips>(out orbiter);
-        D.Assert(orbiterTransform != null, "{0}.{1} is not present.".Inject(FullName, typeof(IOrbiterForShips).Name));
-        var ship = orbiterTransform.gameObject.GetSafeInterfacesInChildren<IShipModel>().Single(s => s == orbitingShip);
-        var parentFleetTransform = ship.Command.Transform.parent;
-        ship.Transform.parent = parentFleetTransform;
-        // OPTIMIZE remove empty orbiters?
-    }
+    public ShipOrbitSlot ShipOrbitSlot { get; private set; }
 
     #endregion
 

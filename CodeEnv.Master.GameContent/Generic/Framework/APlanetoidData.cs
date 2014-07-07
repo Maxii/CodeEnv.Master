@@ -24,8 +24,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class APlanetoidData : AMortalItemData {
 
-        public OrbitalSlot ShipOrbitSlot { get; set; }
-
         public PlanetoidCategory Category { get; private set; }
 
         public override SpaceTopography Topography {
@@ -52,11 +50,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PlanetoidData"/> class.
+        /// Initializes a new instance of the <see cref="APlanetoidData"/> class.
         /// </summary>
         /// <param name="stat">The stat.</param>
         public APlanetoidData(PlanetoidStat stat)
-            : base(stat.Name, stat.Mass, stat.MaxHitPoints) {
+            : base(stat.Category.GetName(), stat.Mass, stat.MaxHitPoints) {
             Category = stat.Category;
             Capacity = stat.Capacity;
             Resources = stat.Resources;

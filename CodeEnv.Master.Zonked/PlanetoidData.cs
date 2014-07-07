@@ -24,14 +24,14 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PlanetoidData : AMortalItemData {
 
-        private OrbitalSlot _systemOrbitSlot;
-        /// <summary>
-        /// The OrbitSlot that this planet occupies in the system.
-        /// </summary>
-        public OrbitalSlot SystemOrbitSlot {
-            get { return _systemOrbitSlot; }
-            set { SetProperty<OrbitalSlot>(ref _systemOrbitSlot, value, "SystemOrbitSlot", OnSystemOrbitSlotChanged); }
-        }
+        //private OrbitalSlot _systemOrbitSlot;
+        ///// <summary>
+        ///// The OrbitSlot that this planet occupies in the system.
+        ///// </summary>
+        //public OrbitalSlot SystemOrbitSlot {
+        //    get { return _systemOrbitSlot; }
+        //    set { SetProperty<OrbitalSlot>(ref _systemOrbitSlot, value, "SystemOrbitSlot", OnSystemOrbitSlotChanged); }
+        //}
 
         public OrbitalSlot ShipOrbitSlot { get; set; }
 
@@ -73,9 +73,9 @@ namespace CodeEnv.Master.GameContent {
             base.Topography = SpaceTopography.System;
         }
 
-        private void OnSystemOrbitSlotChanged() {
-            Transform.localPosition = SystemOrbitSlot.GenerateRandomLocalPositionWithinSlot();
-        }
+        //private void OnSystemOrbitSlotChanged() {
+        //    Transform.localPosition = SystemOrbitSlot.GenerateRandomLocalPositionWithinSlot();
+        //}
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

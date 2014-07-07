@@ -25,6 +25,8 @@ namespace CodeEnv.Master.GameContent {
 
         AssumeStation,
 
+        //AssumeOrbit,
+
         MoveTo,
 
         Attack,

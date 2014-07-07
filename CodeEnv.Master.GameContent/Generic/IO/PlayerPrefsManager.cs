@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -186,8 +186,11 @@ namespace CodeEnv.Master.GameContent {
         /// having access to them.
         /// </remarks>
         public void Retrieve() {
+            D.Log("{0}.Retrieve() called.", GetType().Name);
             UniverseSize = PlayerPrefs.HasKey(_universeSizeKey) ? RetrieveEnumPref<UniverseSize>(_universeSizeKey) : UniverseSize.Normal;
+            //D.Log("GameSpeedOnLoad = {0} before retrieval.", GameSpeedOnLoad);
             GameSpeedOnLoad = PlayerPrefs.HasKey(_gameSpeedOnLoadKey) ? RetrieveEnumPref<GameClockSpeed>(_gameSpeedOnLoadKey) : GameClockSpeed.Normal;
+            //D.Log("GameSpeedOnLoad = {0} after retrieval.", GameSpeedOnLoad);
             PlayerRace = PlayerPrefs.HasKey(_playerRaceKey) ? RetrieveEnumPref<Species>(_playerRaceKey) : Species.Human;
             PlayerColor = PlayerPrefs.HasKey(_playerColorKey) ? RetrieveEnumPref<GameColor>(_playerColorKey) : GameColor.Blue;
 

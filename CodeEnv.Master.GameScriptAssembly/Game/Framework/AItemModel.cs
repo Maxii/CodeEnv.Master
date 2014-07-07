@@ -92,6 +92,8 @@ public abstract class AItemModel : AMonoBase, IModel, ITarget, IDisposable {
     /// </summary>
     protected virtual void OnNamingChanged() { }
 
+    public virtual bool IsMobile { get { return false; } }
+
     protected override void OnDestroy() {
         base.OnDestroy();
         Dispose();
@@ -134,6 +136,7 @@ public abstract class AItemModel : AMonoBase, IModel, ITarget, IDisposable {
             return _transform.name + "(from transform)";
         }
     }
+
 
     #endregion
 

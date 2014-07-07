@@ -45,7 +45,7 @@ public class Orbiter : AMonoBase, IOrbiter {
     /// <summary>
     /// The duration of one orbit of the object around the location.
     /// </summary>
-    private GameTimeDuration _orbitPeriod; // IMPROVE use custom editor to make setable from inspector
+    public GameTimeDuration OrbitPeriod { get; set; }
 
     /// <summary>
     /// The speed of the orbiting object around the orbited object in degrees per second.
@@ -62,15 +62,21 @@ public class Orbiter : AMonoBase, IOrbiter {
     protected override void Awake() {
         base.Awake();
         _gameStatus = GameStatus.Instance;
-        _orbitPeriod = GameTimeDuration.OneYear;
-        _orbitSpeedInDegreesPerSecond = relativeOrbitSpeed * Constants.DegreesPerOrbit * (GameTime.HoursPerSecond / (float)_orbitPeriod.TotalInHours);
         UpdateRate = FrameUpdateFrequency.Frequent;
         enabled = false;
+    }
+
+    protected override void Start() {
+        base.Start();
+        D.Assert(OrbitPeriod != default(GameTimeDuration), "{0}.{1}.OrbitPeriod has not been set.".Inject(_transform.name, GetType().Name));
+        _orbitSpeedInDegreesPerSecond = relativeOrbitSpeed * Constants.DegreesPerOrbit * (GameTime.HoursPerSecond / (float)OrbitPeriod.TotalInHours);
+        //D.Log("OrbitSpeedInDegreesPerSecond = {0}, OrbitPeriodInTotalHours = {1}.", _orbitSpeedInDegreesPerSecond, orbitPeriod.TotalInHours);
     }
 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
         float deltaTime = GameTime.DeltaTimeOrPausedWithGameSpeed * (int)UpdateRate;    // stops the orbit when paused
+        //D.Log("Time.DeltaTime = {0}, GameTime.DeltaTimeWithGameSpeed = {1}, UpdateRate = {2}.", Time.deltaTime, GameTime.DeltaTimeOrPausedWithGameSpeed, (int)UpdateRate);
         if (!_gameStatus.IsPaused) {
             UpdateOrbit(deltaTime);
         }
@@ -82,8 +88,19 @@ public class Orbiter : AMonoBase, IOrbiter {
     /// </summary>
     /// <param name="deltaTime">The delta time.</param>
     protected virtual void UpdateOrbit(float deltaTime) {
-        _transform.Rotate(axisOfOrbit * _orbitSpeedInDegreesPerSecond * deltaTime, relativeTo: Space.Self);
+        float desiredStepAngle = _orbitSpeedInDegreesPerSecond * deltaTime;
+        _transform.Rotate(axisOfOrbit, desiredStepAngle, relativeTo: Space.Self);
+        //_transform.Rotate(axisOfOrbit * _orbitSpeedInDegreesPerSecond * deltaTime, relativeTo: Space.Self);
+        //_transform.Rotate(0F, desiredStepAngle, 0F, relativeTo: Space.Self);
     }
+
+    public override string ToString() {
+        return new ObjectAnalyzer().ToString(this);
+    }
+
+    #region IOrbiter Members
+
+    public Transform Transform { get { return _transform; } }
 
     /// <summary>
     /// Acquires the speed at which the body located at <c>radius</c> units
@@ -93,14 +110,11 @@ public class Orbiter : AMonoBase, IOrbiter {
     /// <returns></returns>
     public float GetSpeedOfBodyInOrbit(float radius) {
         if (_orbitSpeedInUnitsPerHour == Constants.ZeroF) {
-            _orbitSpeedInUnitsPerHour = (2F * Mathf.PI * radius) / (_orbitPeriod.TotalInHours / relativeOrbitSpeed);
+            _orbitSpeedInUnitsPerHour = (2F * Mathf.PI * radius) / (OrbitPeriod.TotalInHours / relativeOrbitSpeed);
         }
         return _orbitSpeedInUnitsPerHour;
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
+    #endregion
 }
 

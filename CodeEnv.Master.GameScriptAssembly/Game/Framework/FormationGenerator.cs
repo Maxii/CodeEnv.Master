@@ -31,16 +31,9 @@ public class FormationGenerator {
 
     // NOTE: don't replace with ICommandModel as this will force addition of 2 little used methods to the interface
     private AUnitCommandModel _unitCmd;
-    private int _maxElementCount;
 
     public FormationGenerator(AUnitCommandModel unitCmd) {
         _unitCmd = unitCmd;
-        if (unitCmd is IFleetCmdModel) {
-            _maxElementCount = TempGameValues.MaxShipsPerFleet;
-        }
-        else {
-            _maxElementCount = TempGameValues.MaxFacilitiesPerBase;
-        }
     }
 
     /// <summary>
@@ -52,12 +45,15 @@ public class FormationGenerator {
     public void RegenerateFormation(float minimumSeparation = Constants.ZeroF) {
         D.Assert(_unitCmd.HQElement != null, "{0} does not have a HQ Element needed to generate a formation.".Inject(_unitCmd.FullName), true);
         D.Log("{0} is about to regenerate its formation to {1}.", _unitCmd.Data.ParentName, _unitCmd.Data.UnitFormation.GetName());
+
+        // IMPROVE radius
+        float radius = _unitCmd is IFleetCmdModel ? (float)Math.Pow(TempGameValues.MaxShipsPerFleet * 0.2F, 0.5F) : TempGameValues.BaseRadius;
         switch (_unitCmd.Data.UnitFormation) {
             case Formation.Circle:
-                PositionElementsEquidistantInCircle();
+                PositionElementsEquidistantInCircle(radius);
                 break;
             case Formation.Globe:
-                PositionElementsRandomlyInSphere();
+                PositionElementsRandomlyInSphere(radius);
                 break;
             case Formation.None:
             default:
@@ -69,14 +65,15 @@ public class FormationGenerator {
     /// <summary>
     /// Randomly positions the elements of the unit in a spherical globe around the HQ Element.
     /// </summary>
-    private void PositionElementsRandomlyInSphere() {
-        float globeRadius = (float)Math.Pow(_maxElementCount * 0.2F, 0.33F);  // ~ 1.7
+    /// <param name="radius">The radius.</param>
+    private void PositionElementsRandomlyInSphere(float radius) {
+        //float radius = (float)Math.Pow(_maxElementCount * 0.2F, 0.33F);  // ~ 1.7
 
         IElementModel hqElement = _unitCmd.HQElement;
         var elementsToPositionAroundHQ = _unitCmd.Elements.Except(hqElement).ToArray();
-        if (!TryPositionRandomWithinSphere(hqElement, globeRadius, elementsToPositionAroundHQ)) {
+        if (!TryPositionRandomWithinSphere(hqElement, radius, elementsToPositionAroundHQ)) {
             // try again with a larger radius
-            D.Assert(TryPositionRandomWithinSphere(_unitCmd.HQElement, globeRadius * 1.5F, elementsToPositionAroundHQ),
+            D.Assert(TryPositionRandomWithinSphere(_unitCmd.HQElement, radius * 1.5F, elementsToPositionAroundHQ),
                 "{0} Formation Positioning Error.".Inject(_unitCmd.Data.Name));
         }
     }
@@ -142,15 +139,16 @@ public class FormationGenerator {
     /// <summary>
     /// Positions the elements equidistant in a circle around the HQ Element.
     /// </summary>
-    protected void PositionElementsEquidistantInCircle() {
-        float circleRadius = (float)Math.Pow(_maxElementCount * 0.2F, 0.5F);  // ~ 2.2
+    /// <param name="radius">The radius.</param>
+    protected void PositionElementsEquidistantInCircle(float radius) {
+        //float radius = (float)Math.Pow(_maxElementCount * 0.2F, 0.5F);  // ~ 2.2
 
         IElementModel hqElement = _unitCmd.HQElement;
         _unitCmd.PositionElementInFormation(hqElement, Vector3.zero);
 
         var elementsToPositionInCircle = _unitCmd.Elements.Except(hqElement);
         D.Log("{0}.elementsCount = {1}.", GetType().Name, elementsToPositionInCircle.Count());
-        Stack<Vector3> formationStationOffsets = new Stack<Vector3>(Mathfx.UniformPointsOnCircle(circleRadius, elementsToPositionInCircle.Count()));
+        Stack<Vector3> formationStationOffsets = new Stack<Vector3>(Mathfx.UniformPointsOnCircle(radius, elementsToPositionInCircle.Count()));
         foreach (var element in elementsToPositionInCircle) {
             Vector3 stationOffset = formationStationOffsets.Pop();
             _unitCmd.PositionElementInFormation(element, stationOffset);

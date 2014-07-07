@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
         /// notification to others that have targeted this mortal target as the
         /// IMortalTarget interface provides only limited access to the model.
         /// </summary>
-        event Action<IMortalTarget> onTargetDeath;
+        event Action<IMortalTarget> onTargetDeathOneShot;
 
         /// <summary>
         /// Flag indicating whether the MortalItem is dead.

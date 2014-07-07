@@ -56,11 +56,6 @@ public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarge
         // Derived class should call Subscribe() after all used references have been established
     }
 
-    protected override void InitializeRadiiComponents() {
-        // the radius of a Command is the radius of its HQElement and is set from OnHQElementChanged()
-        // a Command's collider size is dynamiccally adjusted to the size of the CmdIcon. It has nothing to do with the radius of the Command
-    }
-
     // formations are now generated when an element is added and/or when a HQ element is assigned
 
     protected override void SubscribeToDataValueChanges() {
@@ -77,7 +72,7 @@ public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarge
         D.Assert(!element.IsHQElement, "{0} adding element {1} already designated as the HQ Element.".Inject(FullName, element.FullName));
         // elements should already be enabled when added to a Cmd as that is commonly their state when transferred during runtime
         D.Assert((element as MonoBehaviour).enabled, "{0} is not yet enabled.".Inject(element.FullName));
-        element.onDeath += OnSubordinateElementDeath;
+        element.onDeathOneShot += OnSubordinateElementDeath;
         Elements.Add(element);
         Data.AddElement(element.Data);
         Transform parentTransform = _transform.parent;
@@ -88,7 +83,7 @@ public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarge
     }
 
     public virtual void RemoveElement(IElementModel element) {
-        element.onDeath -= OnSubordinateElementDeath;
+        element.onDeathOneShot -= OnSubordinateElementDeath;
         bool isRemoved = Elements.Remove(element);
         isRemoved = isRemoved && Data.RemoveElement(element.Data);
         D.Assert(isRemoved, "{0} not found.".Inject(element.FullName));
@@ -109,22 +104,21 @@ public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarge
         }
     }
 
-    protected virtual void OnHQElementChanging(IElementModel newElement) {
-        Arguments.ValidateNotNull(newElement);
+    protected virtual void OnHQElementChanging(IElementModel newHQElement) {
+        Arguments.ValidateNotNull(newHQElement);
         if (HQElement != null) {
             HQElement.IsHQElement = false;
         }
-        if (!Elements.Contains(newElement)) {
+        if (!Elements.Contains(newHQElement)) {
             // the player will typically select/change the HQ element of a Unit from the elements already present in the unit
-            D.Warn("{0} assigned HQElement {1} that is not already present in Unit.", FullName, newElement.FullName);
-            AddElement(newElement);
+            D.Warn("{0} assigned HQElement {1} that is not already present in Unit.", FullName, newHQElement.FullName);
+            AddElement(newHQElement);
         }
     }
 
     protected virtual void OnHQElementChanged() {
         HQElement.IsHQElement = true;
         Data.HQElementData = HQElement.Data;
-        Radius = HQElement.Radius;
         D.Log("{0}'s HQElement is now {1}.", Data.ParentName, HQElement.Data.Name);
         _formationGenerator.RegenerateFormation();
     }
@@ -161,6 +155,9 @@ public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarge
 
     protected internal virtual void CleanupAfterFormationGeneration() { }
 
+    /// <summary>
+    /// Immediately sets the state of this Command to Dead.
+    /// </summary>
     protected abstract void KillCommand();
 
     protected override void Cleanup() {

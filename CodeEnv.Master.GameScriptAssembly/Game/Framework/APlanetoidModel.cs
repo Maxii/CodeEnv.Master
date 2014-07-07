@@ -28,49 +28,56 @@ using UnityEngine;
 /// </summary>
 public abstract class APlanetoidModel : AMortalItemModel, IShipOrbitable {
 
+    public PlanetoidCategory category;
+
     public new APlanetoidData Data {
         get { return base.Data as APlanetoidData; }
         set { base.Data = value; }
     }
 
+    protected SphereCollider _planetoidCollider;
+
     protected override void InitializeRadiiComponents() {
         var meshRenderers = gameObject.GetComponentsInImmediateChildren<Renderer>();    // some planetoids have an atmosphere
         Radius = meshRenderers.First().bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
-        (collider as SphereCollider).radius = Radius;
+        _planetoidCollider = collider as SphereCollider;
+        _planetoidCollider.radius = Radius;
+        _planetoidCollider.isTrigger = false;
+        InitializeShipOrbitSlot();
+        InitializeKeepoutZone();
+    }
+
+    private void InitializeShipOrbitSlot() {
+        float innerOrbitRadius = Radius * TempGameValues.KeepoutRadiusMultiplier;
+        float outerOrbitRadius = innerOrbitRadius + TempGameValues.DefaultShipOrbitSlotDepth;
+        ShipOrbitSlot = new ShipOrbitSlot(innerOrbitRadius, outerOrbitRadius, this);
+    }
+
+    private void InitializeKeepoutZone() {
+        SphereCollider keepoutZoneCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.isTrigger).Single();
+        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
+        keepoutZoneCollider.isTrigger = true;
+        keepoutZoneCollider.radius = ShipOrbitSlot.InnerRadius;
     }
 
     protected override void Initialize() {
         base.Initialize();
+        D.Assert(category == Data.Category);
         CurrentState = PlanetoidState.None;
-        //__CheckForOrbitingBodiesInsideOrbitDistance();
     }
 
     public void CommenceOperations() {
         CurrentState = PlanetoidState.Idling;
     }
 
-    //[System.Diagnostics.Conditional("DEBUG_LOG")]
-    //private void __CheckForOrbitingBodiesInsideOrbitDistance() {
-    //    var moons = gameObject.GetComponentsInChildren<PlanetoidModel>().Except(this);
-    //    if (!moons.IsNullOrEmpty()) {
-    //        var moonsInsideKeepoutZoneRadius = moons.Where(moon => moon.transform.localPosition.magnitude + moon.Radius <= MaximumShipOrbitDistance);
-    //        if (!moonsInsideKeepoutZoneRadius.IsNullOrEmpty()) {
-    //            moonsInsideKeepoutZoneRadius.ForAll(moon => {
-    //                D.Warn("{0} is inside {1}'s OrbitDistance of {2}.", moon.FullName, FullName, MaximumShipOrbitDistance);
-    //            });
-    //        }
-    //    }
-    //}
-
-    protected override void OnDataChanged() {
-        base.OnDataChanged();
-        SetKeepoutZoneRadius();
+    protected override void OnDeath() {
+        base.OnDeath();
+        //ShipOrbitSlot.OnOrbitedObjectDeath();
+        DisableParentOrbiter();
     }
 
-    private void SetKeepoutZoneRadius() {
-        SphereCollider keepoutZoneCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
-        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
-        keepoutZoneCollider.radius = Data.ShipOrbitSlot.InnerRadius;
+    private void DisableParentOrbiter() {
+        _transform.parent.GetInterface<IOrbiter>().enabled = false;
     }
 
     #region StateMachine - Simple Alternative
@@ -78,7 +85,7 @@ public abstract class APlanetoidModel : AMortalItemModel, IShipOrbitable {
     private PlanetoidState _currentState;
     public PlanetoidState CurrentState {
         get { return _currentState; }
-        private set { SetProperty<PlanetoidState>(ref _currentState, value, "CurrentState", OnCurrentStateChanged, OnCurrentStateChanging); }
+        protected set { SetProperty<PlanetoidState>(ref _currentState, value, "CurrentState", OnCurrentStateChanged, OnCurrentStateChanging); }
     }
 
     private void OnCurrentStateChanging(PlanetoidState newState) {
@@ -114,9 +121,7 @@ public abstract class APlanetoidModel : AMortalItemModel, IShipOrbitable {
     public override void OnShowCompletion() {
         switch (CurrentState) {
             case PlanetoidState.Dead:
-                new Job(DelayedDestroy(3), toStart: true, onJobComplete: (wasKilled) => {
-                    D.Log("{0} has been destroyed.", FullName);
-                });
+                DestroyMortalItem(3F);
                 break;
             case PlanetoidState.Idling:
                 // do nothing
@@ -158,28 +163,7 @@ public abstract class APlanetoidModel : AMortalItemModel, IShipOrbitable {
 
     #region IShipOrbitable Members
 
-    public OrbitalSlot ShipOrbitSlot { get { return Data.ShipOrbitSlot; } }
-
-    public void AssumeOrbit(IShipModel ship) {
-        IOrbiterForShips orbiter;
-        var orbiterTransform = _transform.GetTransformWithInterfaceInImmediateChildren<IOrbiterForShips>(out orbiter);
-        if (orbiterTransform != null) {
-            References.UnitFactory.AttachShipToOrbiter(ship, ref orbiterTransform);
-        }
-        else {
-            References.UnitFactory.AttachShipToOrbiter(gameObject, ship, orbitedObjectIsMobile: true);
-        }
-    }
-
-    public void LeaveOrbit(IShipModel orbitingShip) {
-        IOrbiterForShips orbiter;
-        var orbiterTransform = _transform.GetTransformWithInterfaceInImmediateChildren<IOrbiterForShips>(out orbiter);
-        D.Assert(orbiterTransform != null, "{0}.{1} is not present.".Inject(FullName, typeof(IOrbiterForShips).Name));
-        var ship = orbiterTransform.gameObject.GetSafeInterfacesInChildren<IShipModel>().Single(s => s == orbitingShip);
-        var parentFleetTransform = ship.Command.Transform.parent;
-        ship.Transform.parent = parentFleetTransform;
-        // OPTIMIZE disable or remove empty orbiters?
-    }
+    public ShipOrbitSlot ShipOrbitSlot { get; private set; }
 
     #endregion
 

@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IOrbiter.cs
-// Interface for easy access to Orbiter objects.
+// File: IUniverse.cs
+// Interface for easy access to the Universe folder.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,25 +16,20 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using CodeEnv.Master.Common;
     using UnityEngine;
 
     /// <summary>
-    /// Interface for easy access to Orbiter objects.
+    /// Interface for easy access to the Universe folder.
     /// </summary>
-    public interface IOrbiter {
-
-        GameTimeDuration OrbitPeriod { get; set; }
-
-        Transform Transform { get; }
+    public interface IUniverse {
 
         /// <summary>
-        /// Acquires the speed at which the body located at <c>radius</c> units from the orbit center is traveling.
+        /// Gets the SpaceTopography value associated with this location in worldspace.
         /// </summary>
-        /// <param name="radius">The distance from the center of the orbited body to the body that is orbiting.</param>
+        /// <param name="worldLocation">The world location.</param>
         /// <returns></returns>
-        float GetSpeedOfBodyInOrbit(float radius);
-
-        bool enabled { get; set; }
+        SpaceTopography GetSpaceTopography(Vector3 worldLocation);
 
     }
 }

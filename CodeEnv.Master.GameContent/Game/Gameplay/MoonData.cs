@@ -24,20 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class MoonData : APlanetoidData {
 
-        //private OrbitalSlot _planetOrbitSlot;
-        ///// <summary>
-        ///// The OrbitSlot that this moon occupies around its planet.
-        ///// </summary>
-        //public OrbitalSlot PlanetOrbitSlot {
-        //    get { return _planetOrbitSlot; }
-        //    set { SetProperty<OrbitalSlot>(ref _planetOrbitSlot, value, "PlanetOrbitSlot", OnPlanetOrbitSlotChanged); }
-        //}
-
         public MoonData(PlanetoidStat stat) : base(stat) { }
-
-        //private void OnPlanetOrbitSlotChanged() {
-        //    Transform.localPosition = PlanetOrbitSlot.GenerateRandomLocalPositionWithinSlot();
-        //}
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

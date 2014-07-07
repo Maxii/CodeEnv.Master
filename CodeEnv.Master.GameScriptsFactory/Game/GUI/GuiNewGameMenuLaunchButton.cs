@@ -29,7 +29,7 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
 
     private UniverseSize _universeSize;
     private Species _playerRace;
-    private GameColor _playerColor;
+    //private GameColor _playerColor;
 
     protected override void InitializeTooltip() {
         tooltip = "Launch New Game with these settings.";
@@ -54,7 +54,7 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
         }
         GameColor playerColor;
         if (Enums<GameColor>.TryParse(selectionName, true, out playerColor)) {
-            _playerColor = playerColor;
+            //_playerColor = playerColor;
         }
     }
 

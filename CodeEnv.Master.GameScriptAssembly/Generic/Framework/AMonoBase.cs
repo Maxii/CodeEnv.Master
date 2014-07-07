@@ -182,7 +182,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
         if (UpdateRate == FrameUpdateFrequency.Continuous) {
             return true;
         }
-        if (_updateCounter >= (int)UpdateRate) {    // >= in case UpdateRate gets changed after initialization
+        if (_updateCounter >= (int)UpdateRate - 1) {    // >= in case UpdateRate gets changed after initialization
             _updateCounter = Constants.Zero;
             return true;
         }

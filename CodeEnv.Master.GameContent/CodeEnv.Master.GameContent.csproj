@@ -155,7 +155,6 @@
     <Compile Include="Game\Graphics\GridWireframe.cs" />
     <Compile Include="Game\Graphics\GridWireframe_Alt.cs" />
     <Compile Include="Generic\Graphics\IViewable.cs" />
-    <Compile Include="Game\Gameplay\PlanetoidData.cs" />
     <Compile Include="Game\Gameplay\PlanetoidCategory.cs" />
     <Compile Include="Game\Gameplay\StarData.cs" />
     <Compile Include="Game\Gameplay\StarCategory.cs" />
@@ -222,7 +221,6 @@
     <Compile Include="Generic\Framework\IBaseCmdTarget.cs" />
     <Compile Include="Generic\Framework\ICombatTarget.cs" />
     <Compile Include="Generic\Framework\ITarget.cs" />
-    <Compile Include="Generic\Framework\OrbitalSlot.cs" />
     <Compile Include="Generic\Framework\IMoonModel.cs" />
     <Compile Include="Generic\Framework\IPlanetModel.cs" />
     <Compile Include="Game\Gameplay\MoonData.cs" />
@@ -240,6 +238,8 @@
     <Compile Include="Generic\Framework\IOrbiterForShips.cs" />
     <Compile Include="Generic\Framework\IGeneralFactory.cs" />
     <Compile Include="Game\Gameplay\CelestialOrbitSlot.cs" />
+    <Compile Include="Generic\Framework\IUniverse.cs" />
+    <Compile Include="Generic\Framework\IUsefulTools.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\ShipData.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />

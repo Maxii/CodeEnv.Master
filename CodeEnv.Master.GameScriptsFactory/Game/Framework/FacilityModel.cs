@@ -68,8 +68,8 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
     protected override void InitializeRadiiComponents() {
         var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
         Radius = meshRenderer.bounds.extents.magnitude;
-        // D.Log("Facility {0}.Radius = {1}.", FullName, Radius);
         // IMPROVE for now, a Facilities collider is a capsule with size values preset in its prefab 
+        // D.Log("Facility {0}.Radius = {1}.", FullName, Radius);
     }
 
     protected override void Initialize() {
@@ -165,7 +165,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
         _ordersTarget = CurrentOrder.Target;
 
         while (_ordersTarget.IsAlive) {
-            bool inRange = PickPrimaryTarget(out _primaryTarget);
+            // bool inRange = PickPrimaryTarget(out _primaryTarget);
             // if a primaryTarget is inRange, primary target is not null so OnWeaponReady will attack it
             // if not in range, then primary target will be null, so OnWeaponReady will attack other targets of opportunity, if any
             yield return null;
@@ -309,9 +309,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
 
     void Dead_OnShowCompletion() {
         LogEvent();
-        new Job(DelayedDestroy(3), toStart: true, onJobComplete: (wasKilled) => {
-            D.Log("{0} has been destroyed.", FullName);
-        });
+        DestroyMortalItem(3F);
     }
 
     #endregion

@@ -21,8 +21,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IOrbiterForShips : IOrbiter {
 
-        bool enabled { get; set; }
-
     }
 }
 

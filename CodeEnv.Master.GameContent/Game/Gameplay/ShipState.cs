@@ -45,6 +45,10 @@ namespace CodeEnv.Master.GameContent {
 
         ExecuteAssumeStationOrder,
 
+        //ExecuteAssumeOrbitOrder,
+
+        AssumingOrbit,
+
         Withdrawing,
 
         Disbanding,
