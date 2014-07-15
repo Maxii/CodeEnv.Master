@@ -26,11 +26,6 @@ namespace CodeEnv.Master.GameContent {
 
         public StarCategory Category { get; private set; }
 
-        public override SpaceTopography Topography {
-            get { return base.Topography; }
-            set { throw new NotImplementedException(); }
-        }
-
         private int _capacity;
         public int Capacity {
             get { return _capacity; }

@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IMoonModel.cs
-// Interface providing access to MoonModels.
+// File: ISettlementCmdModel.cs
+// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,11 +17,11 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface providing access to MoonModels.
+    /// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
     /// </summary>
-    public interface IMoonModel : IMortalModel {
+    public interface ISettlementCmdModel : ICmdModel {
 
-        //new MoonData Data { get; set; }
+        // new SettlementCmdData Data { get; set; }
 
     }
 }

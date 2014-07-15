@@ -63,6 +63,11 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        public new SpaceTopography Topography {
+            get { return base.Topography; }
+            set { base.Topography = value; }
+        }
+
         private bool _isFlapsDeployed;
         public bool IsFlapsDeployed {
             get { return _isFlapsDeployed; }
@@ -155,12 +160,11 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Readonly. The real-time, normalized heading of the ship in worldspace coordinates. Equivalent to transform.forward.
         /// </summary>
-        public Vector3 CurrentHeading {
-            get {
-                return Transform.forward;
-            }
-        }
+        public Vector3 CurrentHeading { get { return Transform.forward; } }
 
+        /// <summary>
+        /// Readonly. The maximum speed that the ship can currently achieve in units per hour.
+        /// </summary>
         public float FullSpeed { get { return IsFtlAvailableForUse ? FullFtlSpeed : FullStlSpeed; } }
 
         private float _fullFtlSpeed;

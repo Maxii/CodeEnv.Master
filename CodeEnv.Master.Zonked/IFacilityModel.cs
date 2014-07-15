@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ISettlementCmdModel.cs
-//  Interface for SettlementCmdModels.
+// File: IFacilityModel.cs
+//  Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,11 +17,14 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for SettlementCmdModels.
+    /// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
     /// </summary>
-    public interface ISettlementCmdModel : ICmdModel {
+    public interface IFacilityModel : IElementModel {
 
-        // new SettlementCmdData Data { get; set; }
+        //new FacilityData Data { get; set; }
+
+        //FacilityState CurrentState { get; }
+
 
     }
 }

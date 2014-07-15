@@ -24,7 +24,7 @@ using UnityEngine;
 /// The data-holding class for all Systems in the game.  
 /// WARNING: Donot change name to "System", a protected word. 
 /// </summary>
-public class SystemModel : AOwnedItemModel, ISystemModel, IDestinationTarget {
+public class SystemModel : AOwnedItemModel, IDestinationTarget {
 
     public new SystemData Data {
         get { return base.Data as SystemData; }
@@ -38,6 +38,7 @@ public class SystemModel : AOwnedItemModel, ISystemModel, IDestinationTarget {
 
     protected override void InitializeRadiiComponents() {
         Radius = TempGameValues.SystemRadius;
+        collider.isTrigger = true;
         // IMPROVE currently no need to set the radius of the System's orbital plane collider as it simply matches the mesh it is assigned too
     }
 
@@ -75,10 +76,6 @@ public class SystemModel : AOwnedItemModel, ISystemModel, IDestinationTarget {
     }
 
     #region IDestinationTarget Members
-
-    public Vector3 Position { get { return Data.Position; } }
-
-    //public virtual bool IsMobile { get { return false; } }
 
     public SpaceTopography Topography { get { return Data.Topography; } }
 

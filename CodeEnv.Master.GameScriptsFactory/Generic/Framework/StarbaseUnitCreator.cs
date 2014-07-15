@@ -105,12 +105,12 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
         LogEvent();
         var candidateHQElements = _command.Elements.Where(e => GetValidHQElementCategories().Contains((e as FacilityModel).Data.Category));
         D.Assert(!candidateHQElements.IsNullOrEmpty()); // bases must have a CentralHub, even if preset
-        _command.HQElement = RandomExtended<IElementModel>.Choice(candidateHQElements) as FacilityModel;
+        _command.HQElement = RandomExtended<AUnitElementModel>.Choice(candidateHQElements) as FacilityModel;
     }
 
     protected override void __InitializeCommandIntel() {
         LogEvent();
-        _command.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
+        _command.gameObject.GetSafeMonoBehaviourComponent<StarbaseCmdView>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
     }
 
     protected override void EnableOtherWhenRunning() {

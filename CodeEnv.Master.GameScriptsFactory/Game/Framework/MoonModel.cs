@@ -25,14 +25,14 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// The data-holding class for all moons in the game.  
 /// </summary>
-public class MoonModel : APlanetoidModel, IMoonModel {
+public class MoonModel : APlanetoidModel {
 
     public new MoonData Data {
         get { return base.Data as MoonData; }
         set { base.Data = value; }
     }
 
-    private bool _isPlanetDying;
+    private bool _isParentPlanetDying;
 
     protected override void Awake() {
         base.Awake();
@@ -45,14 +45,14 @@ public class MoonModel : APlanetoidModel, IMoonModel {
     /// GO destruction will destroy all.
     /// </summary>
     public void OnPlanetDying() {
-        _isPlanetDying = true;
+        _isParentPlanetDying = true;
         CurrentState = PlanetoidState.Dead;
     }
 
     public override void OnShowCompletion() {
         switch (CurrentState) {
             case PlanetoidState.Dead:
-                if (!_isPlanetDying) {  // if the planet dieing is the cause of this moons death, than let the planet destroy all the game objects
+                if (!_isParentPlanetDying) {  // if the planet dieing is the cause of this moons death, than let the planet destroy all the game objects
                     DestroyMortalItem(3F);
                 }
                 break;

@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: UniverseCenterModel.cs
-// The Item at the center of the universe.
+// File: AUnitBaseCmdModel.cs
+// Abstract base class for a UnitBaseCmdModel, an object that commands Facilities. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,26 +22,14 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// The Item at the center of the universe.
+/// Abstract base class for a UnitBaseCmdModel, an object that commands Facilities. 
 /// </summary>
-public class UniverseCenterModel : AItemModel, IDestinationTarget, IShipOrbitable {
-
-    //public new UniverseCenterData Data {                      // no current need for declaring this version of data
-    //    get { return base.Data as UniverseCenterData; }
-    //    set { base.Data = value; }
-    //}
-
-    protected override void Awake() {
-        base.Awake();
-        Subscribe();
-    }
+public abstract class AUnitBaseCmdModel : AUnitCommandModel, IShipOrbitable {
 
     protected override void InitializeRadiiComponents() {
-        var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
-        Radius = meshRenderer.bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
-        D.Assert(Mathfx.Approx(Radius, TempGameValues.UniverseCenterRadius, 1F));    // 50
-        collider.isTrigger = false;
-        (collider as SphereCollider).radius = Radius;
+        base.InitializeRadiiComponents();
+        // the radius of a BaseCommand is fixed to include all of its elements
+        Radius = TempGameValues.BaseRadius;
         InitializeShipOrbitSlot();
         InitializeKeepoutZone();
     }
@@ -53,23 +41,20 @@ public class UniverseCenterModel : AItemModel, IDestinationTarget, IShipOrbitabl
     }
 
     private void InitializeKeepoutZone() {
-        SphereCollider keepoutZoneCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
+        SphereCollider keepoutZoneCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.isTrigger).Single();
         D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
         keepoutZoneCollider.isTrigger = true;
         keepoutZoneCollider.radius = ShipOrbitSlot.InnerRadius;
     }
 
-    protected override void Initialize() { }
+    public override void AddElement(AUnitElementModel element) {
+        base.AddElement(element);
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        element.Command = this;
+        if (HQElement != null) {
+            _formationGenerator.RegenerateFormation();    // Bases simply regenerate the formation when adding an element
+        }
     }
-
-    #region IDestinationTarget Members
-
-    public SpaceTopography Topography { get { return Data.Topography; } }
-
-    #endregion
 
     #region IShipOrbitable Members
 

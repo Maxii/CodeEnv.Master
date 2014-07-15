@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface ICommandViewable : IMortalViewable {
 
-        Transform TrackingTarget { set; }
+        IGuiTrackable TrackingTarget { set; }
 
         void ChangeCmdIcon(IIcon icon);
 

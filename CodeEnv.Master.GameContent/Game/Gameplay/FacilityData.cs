@@ -27,11 +27,6 @@ namespace CodeEnv.Master.GameContent {
 
         public FacilityCategory Category { get; private set; }
 
-        public override SpaceTopography Topography {
-            get { return base.Topography; }
-            set { throw new NotImplementedException(); }
-        }
-
         /// <summary>
         /// Initializes a new instance of the <see cref="FacilityData" /> class.
         /// </summary>

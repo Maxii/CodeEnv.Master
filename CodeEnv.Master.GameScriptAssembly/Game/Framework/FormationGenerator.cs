@@ -37,8 +37,7 @@ public class FormationGenerator {
     }
 
     /// <summary>
-    /// Generates a new formation based on the formation selected and the
-    /// number of elements present in the Unit.
+    /// Generates a new formation based on the formation selected and the number of elements present in the Unit.
     /// </summary>
     /// <param name="minimumSeparation">The minimum separation between elements. TODO implement so ship formationStations do not overlap.</param>
     /// <exception cref="System.NotImplementedException"></exception>
@@ -47,7 +46,7 @@ public class FormationGenerator {
         D.Log("{0} is about to regenerate its formation to {1}.", _unitCmd.Data.ParentName, _unitCmd.Data.UnitFormation.GetName());
 
         // IMPROVE radius
-        float radius = _unitCmd is IFleetCmdModel ? (float)Math.Pow(TempGameValues.MaxShipsPerFleet * 0.2F, 0.5F) : TempGameValues.BaseRadius;
+        float radius = _unitCmd.Radius;
         switch (_unitCmd.Data.UnitFormation) {
             case Formation.Circle:
                 PositionElementsEquidistantInCircle(radius);
@@ -67,9 +66,7 @@ public class FormationGenerator {
     /// </summary>
     /// <param name="radius">The radius.</param>
     private void PositionElementsRandomlyInSphere(float radius) {
-        //float radius = (float)Math.Pow(_maxElementCount * 0.2F, 0.33F);  // ~ 1.7
-
-        IElementModel hqElement = _unitCmd.HQElement;
+        var hqElement = _unitCmd.HQElement;
         var elementsToPositionAroundHQ = _unitCmd.Elements.Except(hqElement).ToArray();
         if (!TryPositionRandomWithinSphere(hqElement, radius, elementsToPositionAroundHQ)) {
             // try again with a larger radius
@@ -88,7 +85,7 @@ public class FormationGenerator {
     /// <returns>
     ///   <c>true</c> if all elements were successfully positioned without overlap.
     /// </returns>
-    private bool TryPositionRandomWithinSphere(IElementModel hqElement, float radius, IElementModel[] elementsToPositionAroundHQ) {
+    private bool TryPositionRandomWithinSphere(AUnitElementModel hqElement, float radius, AUnitElementModel[] elementsToPositionAroundHQ) {
         IList<Bounds> allElementBounds = new List<Bounds>();
 
         Bounds hqElementBounds = new Bounds();
@@ -103,7 +100,7 @@ public class FormationGenerator {
             bool toEncapsulate = false;
             Vector3 candidateStationOffset = UnityEngine.Random.insideUnitSphere * radius;
             Bounds elementBounds = new Bounds();
-            IElementModel element = elementsToPositionAroundHQ[i];
+            AUnitElementModel element = elementsToPositionAroundHQ[i];
             if (UnityUtility.GetBoundWithChildren(element.Transform, ref elementBounds, ref toEncapsulate)) {
                 elementBounds.center = candidateStationOffset;
                 //D.Log("Bounds = {0}.", elementBounds.ToString());
@@ -127,7 +124,6 @@ public class FormationGenerator {
             }
         }
 
-
         _unitCmd.PositionElementInFormation(hqElement, Vector3.zero);
         for (int i = 0; i < elementsToPositionAroundHQ.Length; i++) {
             _unitCmd.PositionElementInFormation(elementsToPositionAroundHQ[i], formationStationOffsets[i]);
@@ -141,9 +137,7 @@ public class FormationGenerator {
     /// </summary>
     /// <param name="radius">The radius.</param>
     protected void PositionElementsEquidistantInCircle(float radius) {
-        //float radius = (float)Math.Pow(_maxElementCount * 0.2F, 0.5F);  // ~ 2.2
-
-        IElementModel hqElement = _unitCmd.HQElement;
+        AUnitElementModel hqElement = _unitCmd.HQElement;
         _unitCmd.PositionElementInFormation(hqElement, Vector3.zero);
 
         var elementsToPositionInCircle = _unitCmd.Elements.Except(hqElement);

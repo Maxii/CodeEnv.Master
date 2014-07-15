@@ -107,7 +107,6 @@ public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
         if (dying != null) {
             _audioSource.PlayOneShot(dying);
         }
-        _collider.enabled = false;
         //animation.Stop();
         //yield return UnityUtility.PlayAnimation(animation, "die");  // show debree particles for some period of time?
         yield return null;
@@ -169,12 +168,16 @@ public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
         }
     }
 
-    public override void AssessDiscernability() {
-        D.Assert(Presenter != null);
-        D.Assert(PlayerIntel != null);
-        D.Log("{0}.{1}.AssessDiscernability() called. InCameraLOS = {2}, IntelCoverage = {3}, IsAlive = {4}.",
-            Presenter.FullName, GetType().Name, InCameraLOS, PlayerIntel.CurrentCoverage.GetName(), Presenter.Model.IsAlive);
-        IsDiscernible = InCameraLOS && PlayerIntel.CurrentCoverage != IntelCoverage.None && Presenter.Model.IsAlive;
+    //public override void AssessDiscernability() {
+    //    D.Assert(Presenter != null);
+    //    D.Assert(PlayerIntel != null);
+    //    D.Log("{0}.{1}.AssessDiscernability() called. InCameraLOS = {2}, IntelCoverage = {3}, IsAlive = {4}.",
+    //        Presenter.FullName, GetType().Name, InCameraLOS, PlayerIntel.CurrentCoverage.GetName(), Presenter.Model.IsAlive);
+    //    IsDiscernible = InCameraLOS && PlayerIntel.CurrentCoverage != IntelCoverage.None && Presenter.Model.IsAlive;
+    //}
+
+    public void OnDeath() {
+        Collider.enabled = false;
     }
 
     #endregion

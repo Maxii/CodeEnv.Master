@@ -111,7 +111,7 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
         LogEvent();
         var candidateHQElements = _command.Elements.Where(e => GetValidHQElementCategories().Contains((e as FacilityModel).Data.Category));
         D.Assert(!candidateHQElements.IsNullOrEmpty()); // bases must have a CentralHub, even if preset
-        _command.HQElement = RandomExtended<IElementModel>.Choice(candidateHQElements) as FacilityModel;
+        _command.HQElement = RandomExtended<AUnitElementModel>.Choice(candidateHQElements) as FacilityModel;
     }
 
     protected override void __InitializeCommandIntel() {

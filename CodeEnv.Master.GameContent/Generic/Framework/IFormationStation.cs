@@ -37,6 +37,11 @@ namespace CodeEnv.Master.GameContent {
 
         IShipModel AssignedShip { get; set; }
 
+        /// <summary>
+        /// The vector from the currently assigned ship to the station.
+        /// </summary>
+        Vector3 VectorToStation { get; }
+
     }
 }
 

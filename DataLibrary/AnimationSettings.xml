@@ -11,19 +11,19 @@
   <Integer>
     <Setting>
       <PropertyName>ShipLayerCullingDistanceFactor</PropertyName>
-      <PropertyValue>25</PropertyValue>
-    </Setting>
-    <Setting>
-      <PropertyName>FacilityLayerCullingDistanceFactor</PropertyName>
-      <PropertyValue>150</PropertyValue>
-    </Setting>
-    <Setting>
-      <PropertyName>PlanetoidLayerCullingDistanceFactor</PropertyName>
       <PropertyValue>200</PropertyValue>
     </Setting>
     <Setting>
-      <PropertyName>StarLayerCullingDistanceFactor</PropertyName>
+      <PropertyName>FacilityLayerCullingDistanceFactor</PropertyName>
       <PropertyValue>300</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>PlanetoidLayerCullingDistanceFactor</PropertyName>
+      <PropertyValue>300</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>StarLayerCullingDistanceFactor</PropertyName>
+      <PropertyValue>400</PropertyValue>
     </Setting>
   </Integer>
 

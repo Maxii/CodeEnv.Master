@@ -33,6 +33,13 @@ public class StarView : AFocusableItemView {
         protected set { base.Presenter = value; }
     }
 
+    /// <summary>
+    /// The Collider encompassing the bounds of this star that intercepts input events for this view. 
+    /// This collider also detects collisions with other operating objects in the universe and therefore
+    /// should NOT be disabled when it is undiscernible.
+    /// </summary>
+    protected new SphereCollider Collider { get { return base.Collider as SphereCollider; } }
+
     private Light _starLight;
     private Billboard _billboard;
 

@@ -291,63 +291,6 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
         return UnityUtility.CalcVerticesOfInscribedBoxInsideSphere(sectorCenterWorldLoc, distance);
     }
 
-    ///// <summary>
-    /////  Calculates the location in world space of 8 vertices of a box surrounding the center of a sector.
-    ///// </summary>
-    ///// <param name="sectorCenterWorldLocation">The world location of the sector's center.</param>
-    ///// <param name="distance">The desired relative distance of each box vertex as measured from the center 
-    ///// to the corner of the sector where 0.0 is the sector center and 1.0 is the corner of the sector.</param>
-    ///// <returns>The 8 corner vertexes of the box surrounding the center of the sector and box.</returns>
-    //[Obsolete]
-    //public IList<Vector3> CalcBoxVerticesAroundCenter(Vector3 sectorCenterWorldLocation, float distance) {
-    //    Index3D index = GetSectorIndex(sectorCenterWorldLocation);
-    //    return CalcBoxVerticesAroundCenter(index, distance);
-    //}
-
-    ///// <summary>
-    ///// Calculates the location in world space of 8 vertices of a box surrounding the center of a sector.
-    ///// </summary>
-    ///// <param name="index">The sector index whose center is in the middle of the resulting box.</param>
-    ///// <param name="distance">The desired relative distance of each box vertex as measured from the center 
-    ///// to the corner of the sector where 0.0 is the sector center and 1.0 is the corner of the sector.</param>
-    ///// <returns></returns>
-    //[Obsolete]
-    //public IList<Vector3> CalcBoxVerticesAroundCenter(Index3D index, float distance) {
-    //    Arguments.ValidateForRange(distance, Constants.ZeroF, 1.0F);
-    //    IList<Vector3> vertices = new List<Vector3>(8);
-    //    Vector3 gridBoxLocation = GetGridBoxLocation(index);
-    //    var xPair = CalcGridLocationPair(gridBoxLocation.x, distance);
-    //    var yPair = CalcGridLocationPair(gridBoxLocation.y, distance);
-    //    var zPair = CalcGridLocationPair(gridBoxLocation.z, distance);
-    //    foreach (var x in xPair) {
-    //        foreach (var y in yPair) {
-    //            foreach (var z in zPair) {
-    //                Vector3 gridBoxVertex = new Vector3(x, y, z);
-    //                vertices.Add(_grid.GridToWorld(gridBoxVertex));
-    //            }
-    //        }
-    //    }
-    //    return vertices;
-    //}
-
-    ///// <summary>
-    ///// Generates a pair of locations in grid space around the gridAxisValue. One will be
-    ///// less than gridAxisValue by a factor of distance * 0.5 (half a box) and the other greater
-    ///// than by the same amount.
-    ///// </summary>
-    ///// <param name="gridAxisValue">The grid axis value between the pair.</param>
-    ///// <param name="distance">The relative distance between 0.0 and 1.0.</param>
-    ///// <returns></returns>
-    //[Obsolete]
-    //private float[] CalcGridLocationPair(float gridAxisValue, float distance) {
-    //    Arguments.ValidateForRange(distance, Constants.ZeroF, 1.0F);
-    //    float[] vertexPair = new float[2];
-    //    float distanceTowardCorner = 0.5F * distance;
-    //    vertexPair[0] = gridAxisValue - distanceTowardCorner;
-    //    vertexPair[1] = gridAxisValue + distanceTowardCorner;
-    //    return vertexPair;
-    //}
-
     /// <summary>
     /// Gets the round number (1.0, 1.0, 2.0) location (in the grid coordinate system)
     /// associated with this sector index. This will be the left, lower, back corner of the 

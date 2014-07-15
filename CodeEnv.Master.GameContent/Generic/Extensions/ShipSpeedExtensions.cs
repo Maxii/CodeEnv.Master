@@ -54,8 +54,11 @@ namespace CodeEnv.Master.GameContent {
             switch (speed) {
                 case Speed.AllStop:
                     return Constants.ZeroF;
+                case Speed.Thrusters:
+                    result = 0.02F * shipData.FullStlSpeed;
+                    break;
                 case Speed.Slow:
-                    result = 0.10F * shipFullSpeed;
+                    result = 0.10F * shipData.FullStlSpeed;
                     break;
                 case Speed.OneThird:
                     result = 0.25F * shipFullSpeed;
@@ -74,7 +77,7 @@ namespace CodeEnv.Master.GameContent {
                 //    break;
 
                 case Speed.FleetSlow:
-                    result = 0.10F * fleetFullSpeed;
+                    result = 0.10F * fleetData.FullStlSpeed;
                     break;
                 case Speed.FleetOneThird:
                     result = 0.25F * fleetFullSpeed;

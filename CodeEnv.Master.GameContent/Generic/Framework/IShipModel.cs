@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IShipModel.cs
-// Interface for ShipModels.
+// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,27 +21,19 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for ShipModels.
+    /// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
     /// </summary>
     public interface IShipModel : IElementModel {
 
         event Action onDestinationReached;
 
-        //new ShipData Data { get; set; }
-
         ShipOrder CurrentOrder { get; set; }
 
         ShipState CurrentState { get; }
 
-        new IFleetCmdModel Command { get; set; }
+        IFleetCmdModel UnitCommand { get; } //{ get; set; }
 
         bool IsBearingConfirmed { get; }
-
-        /// <summary>
-        /// Called by the ship's FormationStation when the ship arrives or leaves its station.
-        /// </summary>
-        /// <param name="isOnStation">if set to <c>true</c> [is on station].</param>
-        void OnShipOnStation(bool isOnStation);
 
         void OnTopographicBoundaryTransition(SpaceTopography newTopography);
 

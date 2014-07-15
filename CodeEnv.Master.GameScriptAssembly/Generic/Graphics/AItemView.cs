@@ -141,8 +141,6 @@ public abstract class AItemView : AMonoBase, IViewable, ICameraLOSChangedClient,
 
     #region IViewable Members
 
-    public abstract float Radius { get; }
-
     public IIntel PlayerIntel { get; private set; }
 
     public IGuiHudPublisher HudPublisher { get; set; }

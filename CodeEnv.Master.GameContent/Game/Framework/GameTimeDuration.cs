@@ -28,12 +28,6 @@ namespace CodeEnv.Master.GameContent {
 
         public static GameTimeDuration OneDay = new GameTimeDuration(days: 1, years: 0);
         public static GameTimeDuration OneYear = new GameTimeDuration(days: 0, years: 1);
-        //public static GameTimeDuration TwoYears = new GameTimeDuration(days: 0, years: 2);
-        //public static GameTimeDuration ThreeYears = new GameTimeDuration(days: 0, years: 3);
-        //public static GameTimeDuration FourYears = new GameTimeDuration(days: 0, years: 4);
-        //public static GameTimeDuration FiveYears = new GameTimeDuration(days: 0, years: 5);
-        //public static GameTimeDuration SixYears = new GameTimeDuration(days: 0, years: 6);
-        //public static GameTimeDuration SevenYears = new GameTimeDuration(days: 0, years: 7);
 
         // Bug: use of static constructor with struct causes intellisense for constructors to fail
 

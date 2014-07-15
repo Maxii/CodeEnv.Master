@@ -28,11 +28,6 @@ namespace CodeEnv.Master.GameContent {
 
         public Index3D SectorIndex { get; private set; }
 
-        public override SpaceTopography Topography {
-            get { return base.Topography; }
-            set { throw new NotImplementedException(); }
-        }
-
         /// <summary>
         ///  The orbit slot within this system that any current or future settlement can occupy. 
         /// </summary>

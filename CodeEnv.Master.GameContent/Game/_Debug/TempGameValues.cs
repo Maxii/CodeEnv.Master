@@ -46,6 +46,11 @@ namespace CodeEnv.Master.GameContent {
         public const float BaseRadius = 3F;
 
         public const int MaxShipsPerFleet = 25;
+        /// <summary>
+        /// The radius of a Fleet. May not include all of the fleet's ships.
+        /// TODO MaxShipsPerFleet and FleetRadius should be tied together.
+        /// </summary>
+        public const float FleetRadius = 4F;
 
         /// <summary>
         /// The length in world units of a sector side along any of the axis. As a sector

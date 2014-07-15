@@ -25,7 +25,7 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// The data-holding class for all planets in the game. 
 /// </summary>
-public class PlanetModel : APlanetoidModel, IPlanetModel {
+public class PlanetModel : APlanetoidModel {
 
     public new PlanetData Data {
         get { return base.Data as PlanetData; }

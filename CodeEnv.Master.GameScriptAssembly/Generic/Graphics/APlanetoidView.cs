@@ -25,6 +25,13 @@ using UnityEngine;
 /// </summary>
 public abstract class APlanetoidView : AMortalItemView, ICameraFollowable {
 
+    /// <summary>
+    /// The Collider encompassing the bounds of this planetoid that intercepts input events for this view. 
+    /// This collider also detects collisions with other operating objects in the universe and therefore
+    /// should NOT be disabled when it is undiscernible.
+    /// </summary>
+    protected new SphereCollider Collider { get { return base.Collider as SphereCollider; } }
+
     protected override IIntel InitializePlayerIntel() {
         return new ImprovingIntel();
     }

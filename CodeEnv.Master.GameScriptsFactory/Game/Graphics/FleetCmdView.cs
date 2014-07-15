@@ -49,7 +49,8 @@ public class FleetCmdView : AUnitCommandView, ICameraFollowable, IHighlightTrack
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
         if (_trackingLabel != null) {
-            _trackingLabel.gameObject.SetActive(IsDiscernible);
+            _trackingLabel.gameObject.SetActive(IsDiscernible); // IMPROVE control Active or enabled, but not both
+            _trackingLabel.enabled = IsDiscernible;
         }
         ShowVelocityRay(IsDiscernible);
     }
@@ -113,8 +114,8 @@ public class FleetCmdView : AUnitCommandView, ICameraFollowable, IHighlightTrack
 
     private void KeepViewOverTarget() {
         if (TrackingTarget != null) {
-            _transform.position = TrackingTarget.position;
-            _transform.rotation = TrackingTarget.rotation;
+            _transform.position = TrackingTarget.Transform.position;
+            _transform.rotation = TrackingTarget.Transform.rotation;
             PositionIcon();
         }
     }

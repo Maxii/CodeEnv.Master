@@ -178,8 +178,8 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
     }
 
     private void AddEnemyTarget(IMortalTarget enemyTarget) {
-        //D.Log("{0}.{1}({2:0.00}) added Enemy {3} at distance {4}.",
-        // ParentFullName, GetType().Name, Range, enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
+        D.Log("{0}.{1}({2:0.00}) now tracking Enemy {3} at distance {4}.",
+         ParentFullName, GetType().Name, Range, enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
         if (EnemyTargets.Count == 0) {
             OnEnemyInRange(true);   // there are now enemies in range
         }
@@ -189,7 +189,7 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
     private void Remove(IMortalTarget target) {
         bool isRemoved = AllTargets.Remove(target);
         if (isRemoved) {
-            D.Log("{0}.{1} no longer tracking target {2} at distance = {3}.", ParentFullName, GetType().Name, target.FullName, Vector3.Distance(target.Position, _transform.position));
+            //D.Log("{0}.{1} no longer tracking target {2} at distance = {3}.", ParentFullName, GetType().Name, target.FullName, Vector3.Distance(target.Position, _transform.position));
             target.onTargetDeathOneShot -= OnTargetDeath;
             target.onOwnerChanged -= OnTargetOwnerChanged;
         }
@@ -201,6 +201,7 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
 
     private void RemoveEnemyTarget(IMortalTarget enemyTarget) {
         if (EnemyTargets.Remove(enemyTarget)) {
+            D.Log("{0}.{1} no longer tracking Enemy {2} at distance = {3}.", ParentFullName, GetType().Name, enemyTarget.FullName, Vector3.Distance(enemyTarget.Position, _transform.position));
             if (EnemyTargets.Count == 0) {
                 OnEnemyInRange(false);  // no longer any Enemies in range
             }

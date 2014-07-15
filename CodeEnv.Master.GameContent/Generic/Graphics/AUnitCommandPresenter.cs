@@ -24,10 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitCommandPresenter : AMortalItemPresenter {
 
-        public new ICmdModel Model {
-            get { return base.Model as ICmdModel; }
-            protected set { base.Model = value; }
-        }
+        public new ICmdModel Model { get { return base.Model as ICmdModel; } }
 
         protected new ACommandData Data { get { return base.Data as ACommandData; } }
 
@@ -42,17 +39,8 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Subscribe() {
             base.Subscribe();
-            _subscribers.Add(Model.SubscribeToPropertyChanged<ICmdModel, IElementModel>(sb => sb.HQElement, OnHQElementChanged));
-            Model.onSubordinateElementDeath += OnSubordinateElementDeath;
+            Model.onHQElementChanged += OnHQElementChanged;
             Data.onCompositionChanged += OnCompositionChanged;
-            //Model.Data.onCompositionChanged += OnCompositionChanged;
-        }
-
-        private void OnSubordinateElementDeath(IElementModel element) {
-            if (element.Transform.GetSafeInterface<ICameraFocusable>().IsFocus) {
-                // our element that was just destroyed was the focus, so change the focus to the command
-                (View as ICameraFocusable).IsFocus = true;
-            }
         }
 
         protected override void CleanupOnDeath() {
@@ -63,7 +51,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void OnPlayerIntelCoverageChanged() {
-            Model.Elements.ForAll(e => e.Transform.GetSafeInterface<IViewable>().PlayerIntel.CurrentCoverage = View.PlayerIntel.CurrentCoverage);
+            Model.UnitElementModels.ForAll(e => e.Transform.GetSafeInterface<IElementViewable>().PlayerIntel.CurrentCoverage = View.PlayerIntel.CurrentCoverage);
             AssessCmdIcon();
         }
 
@@ -71,15 +59,15 @@ namespace CodeEnv.Master.GameContent {
             AssessCmdIcon();
         }
 
-        private void OnHQElementChanged() {
-            View.TrackingTarget = Model.HQElement.Transform;
+        private void OnHQElementChanged(IElementModel hqElementModel) {
+            View.TrackingTarget = hqElementModel.Transform.GetSafeInterface<IGuiTrackable>();
         }
 
         public virtual void OnIsSelectedChanged() {
             if ((View as ISelectable).IsSelected) {
                 SelectionManager.Instance.CurrentSelection = View as ISelectable;
             }
-            Model.Elements.ForAll(e => e.Transform.GetSafeInterface<IElementViewable>().AssessHighlighting());
+            Model.UnitElementModels.ForAll(e => e.Transform.GetSafeInterface<IElementViewable>().AssessHighlighting());
         }
 
         private void AssessCmdIcon() {

@@ -26,11 +26,6 @@ namespace CodeEnv.Master.GameContent {
 
         public Index3D SectorIndex { get; private set; }
 
-        public override SpaceTopography Topography {
-            get { return base.Topography; }
-            set { throw new NotImplementedException(); }    // TODO may need this public set capability if topography is determined after Sectors are made
-        }
-
         /// <summary>
         /// UNDONE
         /// The density of matter in space in this sector. Intended to be

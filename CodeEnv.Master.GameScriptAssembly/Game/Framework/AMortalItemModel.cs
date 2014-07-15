@@ -36,14 +36,14 @@ public abstract class AMortalItemModel : AOwnedItemModel, IMortalModel, IMortalT
         set { base.Data = value; }
     }
 
-    protected override void Initialize() {
-        IsAlive = true;
-    }
-
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
         _subscribers.Add(Data.SubscribeToPropertyChanged<AMortalItemData, float>(d => d.Health, OnHealthChanged));
         _subscribers.Add(Data.SubscribeToPropertyChanged<AMortalItemData, IPlayer>(d => d.Owner, OnOwnerChanged));
+    }
+
+    public virtual void CommenceOperations() {
+        IsAlive = true;
     }
 
     /// <summary>
@@ -55,7 +55,7 @@ public abstract class AMortalItemModel : AOwnedItemModel, IMortalModel, IMortalT
     protected virtual void OnHealthChanged() { }
 
     protected virtual void OnDeath() {
-        enabled = false;
+        //enabled = false;
         IsAlive = false;
         if (onTargetDeathOneShot != null) {
             onTargetDeathOneShot(this);
@@ -79,11 +79,6 @@ public abstract class AMortalItemModel : AOwnedItemModel, IMortalModel, IMortalT
         if (onStopAnimation != null) {
             onStopAnimation(animation);
         }
-    }
-
-    private void OnIsOperationalChanged() {
-        //D.Log("{0}.IsOperational and collider.enabled changed to {1}.", FullName, IsOperational);
-        collider.enabled = IsOperational;
     }
 
     public abstract void OnShowCompletion();
@@ -128,10 +123,6 @@ public abstract class AMortalItemModel : AOwnedItemModel, IMortalModel, IMortalT
 
     #region IDestinationTarget Members
 
-    public Vector3 Position { get { return Data.Position; } }
-
-    //public virtual bool IsMobile { get { return false; } }
-
     public SpaceTopography Topography { get { return Data.Topography; } }
 
     #endregion
@@ -140,23 +131,20 @@ public abstract class AMortalItemModel : AOwnedItemModel, IMortalModel, IMortalT
 
     public event Action<IMortalTarget> onTargetDeathOneShot;
 
+    /// <summary>
+    /// Flag indicating whether the MortalItem is alive and operational.
+    /// </summary>
     public bool IsAlive { get; protected set; }
 
-    public abstract void TakeHit(CombatStrength weaponStrength);
-
     public string ParentName { get { return Data.ParentName; } }
+
+    public abstract void TakeHit(CombatStrength weaponStrength);
 
     #endregion
 
     #region IMortalModel Members
 
     public event Action<IMortalModel> onDeathOneShot;
-
-    private bool _isOperational;
-    public bool IsOperational {
-        get { return _isOperational; }
-        set { SetProperty<bool>(ref _isOperational, value, "IsOperational", OnIsOperationalChanged); }
-    }
 
     #endregion
 

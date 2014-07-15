@@ -25,8 +25,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public struct StationaryLocation : IDestinationTarget, IEquatable<StationaryLocation> {
 
-        public static float CloseEnoughDistance { get { return 3F; } }
-
         #region Equality Operators Override
 
         // see C# 4.0 In a Nutshell, page 254
@@ -40,7 +38,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
-
 
         public StationaryLocation(Vector3 position)
             : this() {
@@ -85,11 +82,7 @@ namespace CodeEnv.Master.GameContent {
 
         #region IDestinationTarget Members
 
-        public string FullName {
-            get {
-                return string.Format("{0}[{1}]", this.GetType().Name, Position);
-            }
-        }
+        public string FullName { get { return string.Format("{0}[{1}]", this.GetType().Name, Position); } }
 
         // OPTIMIZE consider letting this be settable so navigator's don't have to create a new one every time
         public Vector3 Position { get; private set; }

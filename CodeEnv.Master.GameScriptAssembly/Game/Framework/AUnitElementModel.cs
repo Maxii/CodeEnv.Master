@@ -36,10 +36,10 @@ public abstract class AUnitElementModel : ACombatItemModel, IElementModel, IElem
         set { base.Data = value; }
     }
 
-    private ICmdModel _command;
-    public ICmdModel Command {
+    private AUnitCommandModel _command;
+    public AUnitCommandModel Command {
         get { return _command; }
-        set { SetProperty<ICmdModel>(ref _command, value, "Command", OnCommandChanged); }
+        set { SetProperty<AUnitCommandModel>(ref _command, value, "Command", OnCommandChanged); }
     }
 
     protected Rigidbody _rigidbody;
@@ -56,13 +56,16 @@ public abstract class AUnitElementModel : ACombatItemModel, IElementModel, IElem
         // derived classes should call Subscribe() after they have acquired needed references
     }
 
+    protected override void InitializeRadiiComponents() {
+        collider.isTrigger = false;
+    }
+
     protected override void Subscribe() {
         base.Subscribe();
         _subscribers.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
     }
 
     protected override void Initialize() {
-        base.Initialize();
         _rigidbody.mass = Data.Mass;
     }
 
@@ -84,6 +87,9 @@ public abstract class AUnitElementModel : ACombatItemModel, IElementModel, IElem
 
     private void OnCommandChanged() {
         // Changing the parentName of this element is handled by the new Command's Data
+        if (onCommandChanged != null) {
+            onCommandChanged(Command);
+        }
     }
 
     protected override void OnNamingChanged() {
@@ -226,6 +232,12 @@ public abstract class AUnitElementModel : ACombatItemModel, IElementModel, IElem
             return base.FullName;
         }
     }
+
+    #endregion
+
+    #region IElementModel Members
+
+    public event Action<ICmdModel> onCommandChanged;
 
     #endregion
 

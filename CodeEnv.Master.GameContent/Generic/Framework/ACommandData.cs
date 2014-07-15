@@ -30,10 +30,7 @@ namespace CodeEnv.Master.GameContent {
 
         public event Action onCompositionChanged;
 
-        public override SpaceTopography Topography {
-            get { return HQElementData.Topography; }
-            set { throw new NotImplementedException(); }
-        }
+        public new SpaceTopography Topography { get { return HQElementData.Topography; } }
 
         private Formation _unitFormation;
         public Formation UnitFormation {

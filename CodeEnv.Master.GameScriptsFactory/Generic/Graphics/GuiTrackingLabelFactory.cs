@@ -27,17 +27,11 @@ using UnityEngine;
 /// </summary>
 public class GuiTrackingLabelFactory : AGenericSingleton<GuiTrackingLabelFactory> {
 
-
     public enum LabelPlacement {
-
         None,
-
         AboveTarget,
-
         OverTarget,
-
         BelowTarget
-
     }
 
     private GuiTrackingLabelFactory() {
@@ -47,7 +41,7 @@ public class GuiTrackingLabelFactory : AGenericSingleton<GuiTrackingLabelFactory
     protected override void Initialize() { }
 
     /// <summary>
-    /// Creates a GUI tracking label centered over the target.
+    /// Creates a GUI tracking label placed as indicated relative to the target.
     /// </summary>
     /// <param name="target">The target to track.</param>
     /// <param name="placement">The placement of the label.</param>
@@ -56,13 +50,13 @@ public class GuiTrackingLabelFactory : AGenericSingleton<GuiTrackingLabelFactory
     /// <param name="text">Text to show on the label. If left blank, the name of the target will be used.</param>
     /// <returns></returns>
     /// <exception cref="System.NotImplementedException"></exception>
-    public GuiTrackingLabel CreateGuiTrackingLabel(Transform target, LabelPlacement placement, float minShowDistance = 0F, float maxShowDistance = Mathf.Infinity, string text = "") {
+    public GuiTrackingLabel CreateGuiTrackingLabel(IGuiTrackable target, LabelPlacement placement, float minShowDistance = 0F, float maxShowDistance = Mathf.Infinity, string text = "") {
         Vector3 pivotOffset;
         Vector3 viewportOffsetFromPivot;
 
         switch (placement) {
             case LabelPlacement.AboveTarget:
-                pivotOffset = new Vector3(0F, target.collider.bounds.extents.y, 0F);
+                pivotOffset = target.UpperExtent;
                 viewportOffsetFromPivot = new Vector3(0F, 0.05F, 0F);
                 break;
             case LabelPlacement.OverTarget:
@@ -70,14 +64,14 @@ public class GuiTrackingLabelFactory : AGenericSingleton<GuiTrackingLabelFactory
                 viewportOffsetFromPivot = Vector3.zero;
                 break;
             case LabelPlacement.BelowTarget:
-                pivotOffset = new Vector3(0F, -target.collider.bounds.extents.y, 0F);
+                pivotOffset = target.LowerExtent;
                 viewportOffsetFromPivot = new Vector3(0F, -0.05F, 0F);
                 break;
             case LabelPlacement.None:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(placement));
         }
-        return CreateGuiTrackingLabel(target, pivotOffset, viewportOffsetFromPivot, minShowDistance, maxShowDistance, text);
+        return CreateGuiTrackingLabel(target.Transform, pivotOffset, viewportOffsetFromPivot, minShowDistance, maxShowDistance, text);
     }
 
     /// <summary>

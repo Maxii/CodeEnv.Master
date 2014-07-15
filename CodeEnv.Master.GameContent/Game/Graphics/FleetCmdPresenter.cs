@@ -26,20 +26,13 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FleetCmdPresenter : AUnitCommandPresenter {
 
-        public new IFleetCmdModel Model {
-            get { return base.Model as IFleetCmdModel; }
-            protected set { base.Model = value; }
-        }
+        public new IFleetCmdModel Model { get { return base.Model as IFleetCmdModel; } }
 
         protected new FleetCmdData Data { get { return base.Data as FleetCmdData; } }
 
         public FleetCmdPresenter(ICommandViewable view)
             : base(view) {
             Subscribe();
-        }
-
-        protected override IModel AcquireModelReference() {
-            return _viewGameObject.GetSafeInterface<IFleetCmdModel>();
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {

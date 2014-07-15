@@ -169,7 +169,7 @@ public class SettlementView : AFollowableView, ISettlementViewable {
         if (dying != null) {
             _audioSource.PlayOneShot(dying);
         }
-        _collider.enabled = false;
+        Collider.enabled = false;
         //animation.Stop();
         //yield return UnityUtility.PlayAnimation(animation, "die");  // show debree particles for some period of time?
         yield return null;

@@ -24,11 +24,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class StarPresenter : AFocusableItemPresenter {
 
-        public new IStarModel Model {
-            get { return base.Model as IStarModel; }
-            protected set { base.Model = value; }
-        }
-
         protected new StarData Data { get { return base.Data as StarData; } }
 
         private IViewable _systemView;
@@ -36,10 +31,6 @@ namespace CodeEnv.Master.GameContent {
         public StarPresenter(IViewable view)
             : base(view) {
             _systemView = _viewGameObject.GetSafeInterfaceInParents<IViewable>(excludeSelf: true);
-        }
-
-        protected override IModel AcquireModelReference() {
-            return _viewGameObject.GetSafeInterface<IStarModel>();
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {

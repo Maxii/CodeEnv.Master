@@ -24,11 +24,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class UniverseCenterData : AItemData {
 
-        public override SpaceTopography Topography {
-            get { return base.Topography; }
-            set { throw new NotImplementedException(); }
-        }
-
         public UniverseCenterData(string name)
             : base(name) {
             base.Topography = SpaceTopography.OpenSpace;

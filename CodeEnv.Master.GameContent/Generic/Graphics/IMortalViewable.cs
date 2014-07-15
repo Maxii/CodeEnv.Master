@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
 
         void StopAnimation(MortalAnimations animation);
 
-        void AssessDiscernability();
+        void OnDeath();
 
     }
 }

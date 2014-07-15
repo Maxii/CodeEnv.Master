@@ -25,14 +25,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AMortalItemPresenter : AFocusableItemPresenter {
 
-        public new IMortalModel Model {
-            get { return base.Model as IMortalModel; }
-            protected set { base.Model = value; }
-        }
+        public new IMortalModel Model { get { return base.Model as IMortalModel; } }
 
-        protected new IMortalViewable View {
-            get { return base.View as IMortalViewable; }
-        }
+        protected new IMortalViewable View { get { return base.View as IMortalViewable; } }
 
         public AMortalItemPresenter(IMortalViewable view)
             : base(view) {
@@ -53,16 +48,15 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void CleanupOnDeath() {
-            View.AssessDiscernability();
-            CleanupFocusOnDeath();
+            View.OnDeath();
+            if ((View as ICameraFocusable).IsFocus) {
+                CleanupFocusOnDeath();
+            }
             // UNDONE other cleanup needed if recycled
         }
 
         protected virtual void CleanupFocusOnDeath() {
-            var focusableView = View as ICameraFocusable;
-            if (focusableView.IsFocus) {
-                _cameraControl.CurrentFocus = null;
-            }
+            _cameraControl.CurrentFocus = null;
         }
 
         public void __SimulateAttacked() {

@@ -25,12 +25,19 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for managing an Element's UI. 
 /// </summary>
-public abstract class AUnitElementView : AMortalItemView, IElementViewable, ICameraFollowable {
+public abstract class AUnitElementView : AMortalItemView, IElementViewable, ICameraFollowable, IGuiTrackable {
 
     public new AUnitElementPresenter Presenter {
         get { return base.Presenter as AUnitElementPresenter; }
         protected set { base.Presenter = value; }
     }
+
+    /// <summary>
+    /// The Collider encompassing the bounds of this element that intercepts input events for this view. 
+    /// This collider also detects collisions with other operating objects in the universe and therefore
+    /// should NOT be disabled when it is undiscernible.
+    /// </summary>
+    protected override Collider Collider { get { return base.Collider; } }
 
     public AudioClip cmdHit;
     public AudioClip attacking;
@@ -85,6 +92,14 @@ public abstract class AUnitElementView : AMortalItemView, IElementViewable, ICam
             _renderer.material.SetColor(UnityConstants.MaterialColor_Specular, _hiddenMeshColor);
             // TODO audio off goes here
         }
+    }
+
+    protected override float CalcOptimalCameraViewingDistance() {
+        return Radius * 2.4F;
+    }
+
+    protected override float CalcMinimumCameraViewingDistance() {
+        return Radius * 2.0F;
     }
 
     #region Animations
@@ -185,22 +200,26 @@ public abstract class AUnitElementView : AMortalItemView, IElementViewable, ICam
 
     #endregion
 
-    #region ICameraFocusable Members
+    #region IGuiTrackable Members
 
-    protected override float CalcOptimalCameraViewingDistance() {
-        return Radius * 2.4F;
+    public Vector3 LeftExtent {
+        get { return new Vector3(-Collider.bounds.extents.x, Constants.ZeroF, Constants.ZeroF); }
     }
 
-    #endregion
-
-    #region ICameraTargetable Members
-
-    protected override float CalcMinimumCameraViewingDistance() {
-        return Radius * 2.0F;
+    public Vector3 RightExtent {
+        get { return new Vector3(Collider.bounds.extents.x, Constants.ZeroF, Constants.ZeroF); }
     }
 
+    public Vector3 UpperExtent {
+        get { return new Vector3(Constants.ZeroF, Collider.bounds.extents.y, Constants.ZeroF); }
+    }
+
+    public Vector3 LowerExtent {
+        get { return new Vector3(Constants.ZeroF, -Collider.bounds.extents.y, Constants.ZeroF); }
+    }
+
+    public Transform Transform { get { return _transform; } }
+
     #endregion
-
-
 }
 

@@ -26,20 +26,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SettlementCmdPresenter : AUnitCommandPresenter {
 
-        public new ISettlementCmdModel Model {
-            get { return base.Model as ISettlementCmdModel; }
-            protected set { base.Model = value; }
-        }
-
         protected new SettlementCmdData Data { get { return base.Data as SettlementCmdData; } }
 
         public SettlementCmdPresenter(ICommandViewable view)
             : base(view) {
             Subscribe();
-        }
-
-        protected override IModel AcquireModelReference() {
-            return _viewGameObject.GetSafeInterface<ISettlementCmdModel>();
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {

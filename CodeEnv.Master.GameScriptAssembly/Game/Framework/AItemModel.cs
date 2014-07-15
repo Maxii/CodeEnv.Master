@@ -35,7 +35,8 @@ public abstract class AItemModel : AMonoBase, IModel, ITarget, IHasData, IDispos
     public AItemData Data {
         get { return _data; }
         set {
-            if (_data == value) { return; }
+            //if (_data == value) { return; }
+            D.Assert(_data == null, "{0}.{1} should only be set once.".Inject(FullName, GetType().Name));
             _data = value;
             OnDataChanged();
         }
@@ -92,8 +93,6 @@ public abstract class AItemModel : AMonoBase, IModel, ITarget, IHasData, IDispos
     /// </summary>
     protected virtual void OnNamingChanged() { }
 
-    public virtual bool IsMobile { get { return false; } }
-
     protected override void OnDestroy() {
         base.OnDestroy();
         Dispose();
@@ -115,6 +114,8 @@ public abstract class AItemModel : AMonoBase, IModel, ITarget, IHasData, IDispos
 
     public Transform Transform { get { return _transform; } }
 
+    public Vector3 Position { get { return Data.Position; } }
+
     private float _radius;
     public float Radius {
         get {
@@ -123,6 +124,8 @@ public abstract class AItemModel : AMonoBase, IModel, ITarget, IHasData, IDispos
         }
         protected set { _radius = value; }
     }
+
+    public virtual bool IsMobile { get { return false; } }
 
     #endregion
 
@@ -136,7 +139,6 @@ public abstract class AItemModel : AMonoBase, IModel, ITarget, IHasData, IDispos
             return _transform.name + "(from transform)";
         }
     }
-
 
     #endregion
 

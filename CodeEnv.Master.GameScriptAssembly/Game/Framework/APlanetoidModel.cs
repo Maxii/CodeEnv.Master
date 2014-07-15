@@ -35,14 +35,12 @@ public abstract class APlanetoidModel : AMortalItemModel, IShipOrbitable {
         set { base.Data = value; }
     }
 
-    protected SphereCollider _planetoidCollider;
-
     protected override void InitializeRadiiComponents() {
         var meshRenderers = gameObject.GetComponentsInImmediateChildren<Renderer>();    // some planetoids have an atmosphere
         Radius = meshRenderers.First().bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
-        _planetoidCollider = collider as SphereCollider;
-        _planetoidCollider.radius = Radius;
-        _planetoidCollider.isTrigger = false;
+        (collider as SphereCollider).radius = Radius;
+        collider.isTrigger = false;
+
         InitializeShipOrbitSlot();
         InitializeKeepoutZone();
     }
@@ -61,18 +59,17 @@ public abstract class APlanetoidModel : AMortalItemModel, IShipOrbitable {
     }
 
     protected override void Initialize() {
-        base.Initialize();
         D.Assert(category == Data.Category);
         CurrentState = PlanetoidState.None;
     }
 
-    public void CommenceOperations() {
+    public override void CommenceOperations() {
+        base.CommenceOperations();
         CurrentState = PlanetoidState.Idling;
     }
 
     protected override void OnDeath() {
         base.OnDeath();
-        //ShipOrbitSlot.OnOrbitedObjectDeath();
         DisableParentOrbiter();
     }
 
@@ -85,22 +82,7 @@ public abstract class APlanetoidModel : AMortalItemModel, IShipOrbitable {
     private PlanetoidState _currentState;
     public PlanetoidState CurrentState {
         get { return _currentState; }
-        protected set { SetProperty<PlanetoidState>(ref _currentState, value, "CurrentState", OnCurrentStateChanged, OnCurrentStateChanging); }
-    }
-
-    private void OnCurrentStateChanging(PlanetoidState newState) {
-        PlanetoidState previousState = CurrentState;
-        //D.Log("{0}.CurrentState changing from {1} to {2}.", Data.Name, previousState.GetName(), newState.GetName());
-        switch (previousState) {
-            case PlanetoidState.None:
-                IsOperational = true;
-                break;
-            case PlanetoidState.Idling:
-                break;
-            case PlanetoidState.Dead:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(previousState));
-        }
+        protected set { SetProperty<PlanetoidState>(ref _currentState, value, "CurrentState", OnCurrentStateChanged); }
     }
 
     private void OnCurrentStateChanged() {

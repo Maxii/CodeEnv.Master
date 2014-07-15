@@ -33,6 +33,13 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
         protected set { base.Presenter = value; }
     }
 
+    /// <summary>
+    /// The Collider encompassing the bounds of this Command's icon that intercepts input events for this view. 
+    /// This collider does NOT detect collisions with other operating objects in the universe and therefore
+    /// can be disabled when it is undiscernible.
+    /// </summary>
+    protected new BoxCollider Collider { get { return base.Collider as BoxCollider; } }     // IMPROVE 2D
+
     private Vector3 _cmdIconPivotOffset;
     private UISprite _cmdIconSprite;
     protected Transform _cmdIconTransform;
@@ -55,13 +62,13 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
 
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
-        _collider.enabled = IsDiscernible;
+        Collider.enabled = IsDiscernible;
         _billboard.enabled = IsDiscernible; // can't deactivate billboard gameobject as that would disable the Icon's CameraLOSChangedRelay
         ShowCommandIcon(IsDiscernible);
     }
 
     protected virtual void OnTrackingTargetChanged() {
-        _cmdIconPivotOffset = new Vector3(Constants.ZeroF, TrackingTarget.collider.bounds.extents.y, Constants.ZeroF);
+        _cmdIconPivotOffset = TrackingTarget.UpperExtent;
         PositionIcon();
         KeepColliderOverIcon();
     }
@@ -76,12 +83,12 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
     }
 
     private void KeepColliderOverIcon() {
-        (_collider as BoxCollider).size = Vector3.Scale(_cmdIconSize, _cmdIconScaler.Scale);
+        Collider.size = Vector3.Scale(_cmdIconSize, _cmdIconScaler.Scale);
 
         Vector3[] iconWorldCorners = _cmdIconSprite.worldCorners;
         Vector3 iconWorldCenter = iconWorldCorners[0] + (iconWorldCorners[2] - iconWorldCorners[0]) * 0.5F;
         // convert icon's world position to the equivalent local position on the command transform
-        (_collider as BoxCollider).center = _transform.InverseTransformPoint(iconWorldCenter);
+        Collider.center = _transform.InverseTransformPoint(iconWorldCenter);
     }
 
     public override void AssessHighlighting() {
@@ -210,14 +217,13 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
 
     #region ICommandViewable Members
 
-    private Transform _trackingTarget;
+    private IGuiTrackable _trackingTarget;
     /// <summary>
-    /// The target transform that this FleetView tracks in worldspace. This is
-    /// typically the flagship of the fleet.
+    /// The View that this UnitCommand tracks in worldspace. 
     /// </summary>
-    public Transform TrackingTarget {
+    public IGuiTrackable TrackingTarget {
         protected get { return _trackingTarget; }
-        set { SetProperty<Transform>(ref _trackingTarget, value, "TrackingTarget", OnTrackingTargetChanged); }
+        set { SetProperty<IGuiTrackable>(ref _trackingTarget, value, "TrackingTarget", OnTrackingTargetChanged); }
     }
 
     public void ChangeCmdIcon(IIcon icon) {

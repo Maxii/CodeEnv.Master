@@ -50,8 +50,10 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
         float drag = 0.1F;
         var combatStance = Enums<ShipCombatStance>.GetRandom(excludeDefault: true);
         float maxTurnRate = UnityEngine.Random.Range(90F, 270F);
-        float fullStlThrust = mass * drag * UnityEngine.Random.Range(0.2F, 0.3F); // planetoids move about 0.1 units per hour
-        float fullFtlThrust = fullStlThrust * TempGameValues.__FtlMultiplier;
+
+        float fullStlSpeed = UnityEngine.Random.Range(1.5F, 3.0F);  // planetoids ~ 0.1 units/hour, so Slow min = 0.15 units/hour
+        float fullStlThrust = mass * drag * fullStlSpeed;
+        float fullFtlThrust = fullStlThrust * TempGameValues.__FtlMultiplier;   // FullFtlSpeed ~ 15 - 30 units/hour
 
         return new ShipStat(elementName, mass, 50F, category, combatStance, maxTurnRate, drag, fullStlThrust, fullFtlThrust);
     }
@@ -107,13 +109,13 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
 
     protected override void AssignHQElement() {
         LogEvent();
-        var candidateHQElements = _command.Elements.Where(e => GetValidHQElementCategories().Contains((e as IShipModel).Data.Category));
+        var candidateHQElements = _command.Elements.Where(e => GetValidHQElementCategories().Contains((e as ShipModel).Data.Category));
         if (candidateHQElements.IsNullOrEmpty()) {
             // _command might not hold a valid HQ Element if preset
             D.Warn("No valid HQElements for {0} found.", UnitName);
             candidateHQElements = _command.Elements;
         }
-        _command.HQElement = RandomExtended<IElementModel>.Choice(candidateHQElements) as IShipModel;
+        _command.HQElement = RandomExtended<AUnitElementModel>.Choice(candidateHQElements) as ShipModel;
     }
 
     protected override bool DeployUnit() {
@@ -134,7 +136,7 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
 
     protected override void __InitializeCommandIntel() {
         LogEvent();
-        _command.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
+        _command.gameObject.GetSafeMonoBehaviourComponent<FleetCmdView>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
     }
 
     protected override void EnableOtherWhenRunning() {
@@ -157,19 +159,19 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
     private void __GetFleetUnderway() {
         LogEvent();
         IPlayer fleetOwner = _owner;
-        IEnumerable<IDestinationTarget> moveTgts = FindObjectsOfType<StarbaseCmdModel>().Where(sb => sb.IsOperational && fleetOwner.IsRelationship(sb.Owner, DiplomaticRelations.Ally)).Cast<IDestinationTarget>();
+        IEnumerable<IDestinationTarget> moveTgts = FindObjectsOfType<StarbaseCmdModel>().Where(sb => sb.IsAlive && fleetOwner.IsRelationship(sb.Owner, DiplomaticRelations.Ally)).Cast<IDestinationTarget>();
         if (!moveTgts.Any()) {
             // in case no starbases qualify
-            moveTgts = FindObjectsOfType<SettlementCmdModel>().Where(s => s.IsOperational && fleetOwner.IsRelationship(s.Owner, DiplomaticRelations.Ally)).Cast<IDestinationTarget>();
+            moveTgts = FindObjectsOfType<SettlementCmdModel>().Where(s => s.IsAlive && fleetOwner.IsRelationship(s.Owner, DiplomaticRelations.Ally)).Cast<IDestinationTarget>();
             if (!moveTgts.Any()) {
                 // in case no Settlements qualify
-                moveTgts = FindObjectsOfType<PlanetModel>().Where(p => p.IsOperational && p.Owner == TempGameValues.NoPlayer).Cast<IDestinationTarget>();
+                moveTgts = FindObjectsOfType<PlanetModel>().Where(p => p.IsAlive && p.Owner == TempGameValues.NoPlayer).Cast<IDestinationTarget>();
                 if (!moveTgts.Any()) {
                     // in case no Planets qualify
                     moveTgts = FindObjectsOfType<SystemModel>().Where(sys => sys.Owner == TempGameValues.NoPlayer).Cast<IDestinationTarget>();
                     if (!moveTgts.Any()) {
                         // in case no Systems qualify
-                        moveTgts = FindObjectsOfType<FleetCmdModel>().Where(f => f.IsOperational && fleetOwner.IsRelationship(f.Owner, DiplomaticRelations.Ally)).Cast<IDestinationTarget>();
+                        moveTgts = FindObjectsOfType<FleetCmdModel>().Where(f => f.IsAlive && fleetOwner.IsRelationship(f.Owner, DiplomaticRelations.Ally)).Cast<IDestinationTarget>();
                         if (!moveTgts.Any()) {
                             // in case no fleets qualify
                             moveTgts = FindObjectsOfType<SectorModel>().Where(s => s.Owner == TempGameValues.NoPlayer).Cast<IDestinationTarget>();
@@ -192,19 +194,19 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
     private void __GetFleetAttackUnderway() {
         LogEvent();
         IPlayer fleetOwner = _owner;
-        IEnumerable<IMortalTarget> attackTgts = FindObjectsOfType<StarbaseCmdModel>().Where(sb => sb.IsOperational && fleetOwner.IsEnemyOf(sb.Owner)).Cast<IMortalTarget>();
+        IEnumerable<IMortalTarget> attackTgts = FindObjectsOfType<StarbaseCmdModel>().Where(sb => sb.IsAlive && fleetOwner.IsEnemyOf(sb.Owner)).Cast<IMortalTarget>();
         if (attackTgts.IsNullOrEmpty()) {
             // in case no Starbases qualify
-            attackTgts = FindObjectsOfType<SettlementCmdModel>().Where(s => s.IsOperational && fleetOwner.IsEnemyOf(s.Owner)).Cast<IMortalTarget>();
+            attackTgts = FindObjectsOfType<SettlementCmdModel>().Where(s => s.IsAlive && fleetOwner.IsEnemyOf(s.Owner)).Cast<IMortalTarget>();
             if (attackTgts.IsNullOrEmpty()) {
                 // in case no Settlements qualify
-                attackTgts = FindObjectsOfType<FleetCmdModel>().Where(f => f.IsOperational && fleetOwner.IsEnemyOf(f.Owner)).Cast<IMortalTarget>();
+                attackTgts = FindObjectsOfType<FleetCmdModel>().Where(f => f.IsAlive && fleetOwner.IsEnemyOf(f.Owner)).Cast<IMortalTarget>();
                 if (attackTgts.IsNullOrEmpty()) {
                     // in case no Fleets qualify
-                    attackTgts = FindObjectsOfType<PlanetModel>().Where(p => p.IsOperational && fleetOwner.IsEnemyOf(p.Owner)).Cast<IMortalTarget>();
+                    attackTgts = FindObjectsOfType<PlanetModel>().Where(p => p.IsAlive && fleetOwner.IsEnemyOf(p.Owner)).Cast<IMortalTarget>();
                     if (attackTgts.IsNullOrEmpty()) {
                         // in case no enemy Planets qualify
-                        attackTgts = FindObjectsOfType<PlanetModel>().Where(p => p.IsOperational && p.Owner == TempGameValues.NoPlayer).Cast<IMortalTarget>();
+                        attackTgts = FindObjectsOfType<PlanetModel>().Where(p => p.IsAlive && p.Owner == TempGameValues.NoPlayer).Cast<IMortalTarget>();
                         if (attackTgts.Any()) {
                             D.Log("{0} can find no AttackTargets that meet the enemy selection criteria. Picking an unowned Planet.", UnitName);
                         }

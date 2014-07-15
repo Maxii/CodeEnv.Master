@@ -28,9 +28,9 @@ public class UniverseCenterView : AFocusableItemView {
     protected override void Awake() {
         base.Awake();
         circleScaleFactor = 5F;
-        (_collider as SphereCollider).radius = TempGameValues.UniverseCenterRadius;
+        (Collider as SphereCollider).radius = TempGameValues.UniverseCenterRadius;
         _keepoutCollider = gameObject.GetComponentsInChildren<SphereCollider>().Single(c => c.gameObject.layer == (int)Layers.CelestialObjectKeepout);
-        _keepoutCollider.radius = (_collider as SphereCollider).radius * TempGameValues.KeepoutRadiusMultiplier;
+        _keepoutCollider.radius = (Collider as SphereCollider).radius * TempGameValues.KeepoutRadiusMultiplier;
     }
 
     protected override void InitializePresenter() {

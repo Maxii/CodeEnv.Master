@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IStarModel.cs
-// Interface for a StarModel.
+// File: IMoonModel.cs
+// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,11 +17,11 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for a StarModel.
+    /// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
     /// </summary>
-    public interface IStarModel : IModel {
+    public interface IMoonModel : IMortalModel {
 
-        //new StarData Data { get; set; }
+        //new MoonData Data { get; set; }
 
     }
 }

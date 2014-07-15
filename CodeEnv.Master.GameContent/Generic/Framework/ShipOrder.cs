@@ -26,8 +26,6 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipOrder StandingOrder { get; set; }
 
-        public float StandoffDistance { get; private set; }
-
         public Speed Speed { get; private set; }
 
         public IDestinationTarget Target { get; private set; }
@@ -46,14 +44,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="source">The source of this order.</param>
         /// <param name="target">The target.</param>
         /// <param name="speed">The speed.</param>
-        /// <param name="standoffDistance">The standoff distance.</param>
-        public ShipOrder(ShipDirective directive, OrderSource source = OrderSource.ElementCaptain, IDestinationTarget target = null,
-            Speed speed = Speed.None, float standoffDistance = Constants.ZeroF) {
+        public ShipOrder(ShipDirective directive, OrderSource source = OrderSource.ElementCaptain, IDestinationTarget target = null, Speed speed = Speed.None) {
             Directive = directive;
             Source = source;
             Target = target;
             Speed = speed;
-            StandoffDistance = standoffDistance;
         }
 
         /// <summary>
@@ -63,8 +58,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="source">The source of this order.</param>
         /// <param name="destination">The destination location.</param>
         /// <param name="speed">The speed.</param>
-        //public ShipOrder(ShipDirective order, OrderSource source, Vector3 destination, Speed speed)
-        //    : this(order, source, new StationaryLocation(destination), speed) { }
+        public ShipOrder(ShipDirective order, OrderSource source, Vector3 destination, Speed speed)
+            : this(order, source, new StationaryLocation(destination), speed) { }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

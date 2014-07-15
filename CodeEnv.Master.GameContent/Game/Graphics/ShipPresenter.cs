@@ -23,20 +23,13 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipPresenter : AUnitElementPresenter {
 
-        public new IShipModel Model {
-            get { return base.Model as IShipModel; }
-            protected set { base.Model = value; }
-        }
+        public new IShipModel Model { get { return base.Model as IShipModel; } }
 
         protected new ShipData Data { get { return base.Data as ShipData; } }
 
         public ShipPresenter(IElementViewable view)
             : base(view) {
             Subscribe();
-        }
-
-        protected override IModel AcquireModelReference() {
-            return _viewGameObject.GetSafeInterface<IShipModel>();
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {

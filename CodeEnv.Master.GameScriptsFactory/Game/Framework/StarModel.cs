@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all Stars in the game.
 /// </summary>
-public class StarModel : AOwnedItemModel, IStarModel, IDestinationTarget, IShipOrbitable {
+public class StarModel : AOwnedItemModel, IDestinationTarget, IShipOrbitable {
 
     public StarCategory category;
 
@@ -32,8 +32,6 @@ public class StarModel : AOwnedItemModel, IStarModel, IDestinationTarget, IShipO
         get { return base.Data as StarData; }
         set { base.Data = value; }
     }
-
-    private SphereCollider _starCollider;
 
     protected override void Awake() {
         base.Awake();
@@ -43,9 +41,8 @@ public class StarModel : AOwnedItemModel, IStarModel, IDestinationTarget, IShipO
     protected override void InitializeRadiiComponents() {
         var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
         Radius = meshRenderer.bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
-        _starCollider = collider as SphereCollider;
-        _starCollider.radius = Radius;
-        _starCollider.isTrigger = false;
+        collider.isTrigger = false;
+        (collider as SphereCollider).radius = Radius;
         InitializeShipOrbitSlot();
         InitializeKeepoutZone();
         //D.Log("{0}.Radius set to {1}.", FullName, Radius);
@@ -73,10 +70,6 @@ public class StarModel : AOwnedItemModel, IStarModel, IDestinationTarget, IShipO
     }
 
     #region IDestinationTarget Members
-
-    public Vector3 Position { get { return Data.Position; } }
-
-    //public virtual bool IsMobile { get { return false; } }
 
     public SpaceTopography Topography { get { return Data.Topography; } }
 

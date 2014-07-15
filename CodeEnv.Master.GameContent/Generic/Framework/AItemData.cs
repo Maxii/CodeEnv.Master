@@ -46,16 +46,12 @@ namespace CodeEnv.Master.GameContent {
             get { return ParentName.IsNullOrEmpty() ? Name : ParentName + Constants.Underscore + Name; }
         }
 
-        public virtual SpaceTopography Topography { get; set; } // can't use OnPropertyChanged approach as default(SpaceTopography) = OpenSpace, aka 0 tag
+        public SpaceTopography Topography { get; protected set; }   // can't use OnPropertyChanged approach as default(SpaceTopography) = OpenSpace, aka 0 tag
 
         /// <summary>
         /// Readonly. Gets the position of the gameObject containing this data.
         /// </summary>
-        public Vector3 Position {
-            get {
-                return Transform.position;
-            }
-        }
+        public Vector3 Position { get { return Transform.position; } }
 
         private Transform _transform;
         public Transform Transform {

@@ -26,20 +26,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class StarbaseCmdPresenter : AUnitCommandPresenter {
 
-        public new IStarbaseCmdModel Model {
-            get { return base.Model as IStarbaseCmdModel; }
-            protected set { base.Model = value; }
-        }
-
         protected new StarbaseCmdData Data { get { return base.Data as StarbaseCmdData; } }
 
         public StarbaseCmdPresenter(ICommandViewable view)
             : base(view) {
             Subscribe();
-        }
-
-        protected override IModel AcquireModelReference() {
-            return _viewGameObject.GetSafeInterface<IStarbaseCmdModel>();
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {

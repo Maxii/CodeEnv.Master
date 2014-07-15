@@ -30,18 +30,27 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
 
     public AFocusableItemPresenter Presenter { get; protected set; }
 
+    public float circleScaleFactor = 3.0F;
+
+    /// <summary>
+    /// The radius in units of the conceptual 'globe' that encompasses this Item. Readonly.
+    /// </summary>
+    protected float Radius { get { return Presenter.Model.Radius; } }
+
     protected IGameInputHelper _inputHelper;
     protected IDynamicObjects _dynamicObjects;
-
-    public float circleScaleFactor = 3.0F;
     protected bool _isCirclesRadiusDynamic = true;
-    private HighlightCircle _circles;
 
-    protected Collider _collider;
+    /// <summary>
+    /// The Collider that intercepts input events for this view. 
+    /// </summary>
+    protected virtual Collider Collider { get; private set; }
+
+    private HighlightCircle _circles;
 
     protected override void Awake() {
         base.Awake();
-        _collider = UnityUtility.ValidateComponentPresence<Collider>(gameObject);
+        Collider = UnityUtility.ValidateComponentPresence<Collider>(gameObject);
     }
 
     protected override void Start() {
@@ -190,19 +199,9 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
         if (_circles != null) { _circles.Dispose(); }
     }
 
-    # region IViewable Members
-
-    public override float Radius {
-        get { return Presenter.Model.Radius; }
-    }
-
-    #endregion
-
     #region ICameraTargetable Members
 
-    public virtual bool IsEligible {
-        get { return true; }
-    }
+    public virtual bool IsEligible { get { return true; } }
 
     [SerializeField]
     protected float minimumCameraViewingDistanceMultiplier = 4.0F;

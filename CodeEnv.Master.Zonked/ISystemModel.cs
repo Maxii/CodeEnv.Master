@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ISystemModel.cs
-// Interface for easy access to a SystemModel.
+// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,11 +17,11 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for easy access to a SystemModel.
+    /// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
     /// </summary>
     public interface ISystemModel : IModel {
 
-        new SystemData Data { get; set; }
+        //new SystemData Data { get; set; }
     }
 }
 

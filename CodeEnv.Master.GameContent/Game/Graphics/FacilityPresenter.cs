@@ -26,20 +26,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FacilityPresenter : AUnitElementPresenter {
 
-        public new IFacilityModel Model {
-            get { return base.Model as IFacilityModel; }
-            protected set { base.Model = value; }
-        }
-
         protected new FacilityData Data { get { return base.Data as FacilityData; } }
 
         public FacilityPresenter(IElementViewable view)
             : base(view) {
             Subscribe();
-        }
-
-        protected override IModel AcquireModelReference() {
-            return _viewGameObject.GetSafeInterface<IFacilityModel>();
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {

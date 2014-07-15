@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
         event Action<IMortalTarget> onTargetDeathOneShot;
 
         /// <summary>
-        /// Flag indicating whether the MortalItem is dead.
+        /// Flag indicating whether the MortalItem is alive and operational.
         /// </summary>
         bool IsAlive { get; }
 

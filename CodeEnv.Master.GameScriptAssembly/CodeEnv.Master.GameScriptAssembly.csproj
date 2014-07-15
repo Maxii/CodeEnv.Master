@@ -53,6 +53,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Framework\AUnitBaseCmdModel.cs" />
     <Compile Include="Game\Framework\APlanetoidModel.cs" />
     <Compile Include="Generic\Graphics\APlanetoidView.cs" />
     <Compile Include="Game\Framework\ACombatItemModel.cs" />

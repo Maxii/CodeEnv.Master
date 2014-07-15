@@ -28,7 +28,7 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all Facilities in the game. Includes a state machine.
 /// </summary>
-public class FacilityModel : AUnitElementModel, IFacilityModel {
+public class FacilityModel : AUnitElementModel {
 
     public new FacilityData Data {
         get { return base.Data as FacilityData; }
@@ -66,6 +66,7 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
     }
 
     protected override void InitializeRadiiComponents() {
+        base.InitializeRadiiComponents();
         var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
         Radius = meshRenderer.bounds.extents.magnitude;
         // IMPROVE for now, a Facilities collider is a capsule with size values preset in its prefab 
@@ -78,7 +79,8 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
         //D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
     }
 
-    public void CommenceOperations() {
+    public override void CommenceOperations() {
+        base.CommenceOperations();
         CurrentState = FacilityState.Idling;
     }
 
@@ -122,7 +124,6 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
 
     void None_ExitState() {
         LogEvent();
-        IsOperational = true;
     }
 
     #endregion
@@ -342,13 +343,13 @@ public class FacilityModel : AUnitElementModel, IFacilityModel {
         D.Assert(_ordersTarget != null && _ordersTarget.IsAlive, "{0}'s target from orders is null or dead.".Inject(FullName));
         bool isTargetInRange = false;
         var uniqueEnemyTargetsInRange = Enumerable.Empty<IMortalTarget>();
-        foreach (var rt in _weaponRangeMonitorLookup.Values) {
-            uniqueEnemyTargetsInRange = uniqueEnemyTargetsInRange.Union<IMortalTarget>(rt.EnemyTargets);  // OPTIMIZE
+        foreach (var rMonitor in _weaponRangeMonitorLookup.Values) {
+            uniqueEnemyTargetsInRange = uniqueEnemyTargetsInRange.Union<IMortalTarget>(rMonitor.EnemyTargets);  // OPTIMIZE
         }
 
         ICmdTarget cmdTarget = _ordersTarget as ICmdTarget;
         if (cmdTarget != null) {
-            var primaryTargets = cmdTarget.ElementTargets.Cast<IMortalTarget>();
+            var primaryTargets = cmdTarget.UnitElementTargets.Cast<IMortalTarget>();
             var primaryTargetsInRange = primaryTargets.Intersect(uniqueEnemyTargetsInRange);
             if (!primaryTargetsInRange.IsNullOrEmpty()) {
                 chosenTarget = SelectHighestPriorityTarget(primaryTargetsInRange);

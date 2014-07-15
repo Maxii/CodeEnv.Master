@@ -33,10 +33,10 @@ public class StarView : AFocusableItemView {
 
     protected override void Awake() {
         base.Awake();
-        (_collider as SphereCollider).radius = TempGameValues.StarRadius;
+        (Collider as SphereCollider).radius = TempGameValues.StarRadius;
         circleScaleFactor = 1.0F;
         _keepoutCollider = gameObject.GetComponentsInChildren<SphereCollider>().Single(c => c.gameObject.layer == (int)Layers.CelestialObjectKeepout);
-        _keepoutCollider.radius = (_collider as SphereCollider).radius * TempGameValues.KeepoutRadiusMultiplier;
+        _keepoutCollider.radius = (Collider as SphereCollider).radius * TempGameValues.KeepoutRadiusMultiplier;
         _starLight = gameObject.GetComponentInChildren<Light>();
     }
 

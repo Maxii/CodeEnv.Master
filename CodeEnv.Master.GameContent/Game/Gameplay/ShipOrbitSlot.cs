@@ -67,7 +67,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Places the ship within this orbit.
+        /// Places the ship within this orbit and commences orbital movement if not already underway.
         /// </summary>
         /// <param name="ship">The ship.</param>
         public void AssumeOrbit(IShipModel ship) {
@@ -78,25 +78,27 @@ namespace CodeEnv.Master.GameContent {
             ship.Transform.parent = _orbiter.Transform;    // ship retains existing position, rotation, scale and layer
             _orbiter.enabled = true;
             D.Log("{0} has assumed orbit around {1}.", ship.FullName, OrbitedObject.FullName);
-            float shipOrbitRadius = Vector3.Distance(ship.Transform.position, OrbitedObject.Position);
+            float shipOrbitRadius = Vector3.Distance(ship.Position, OrbitedObject.Position);
             if (!Contains(shipOrbitRadius)) {
                 D.Warn("{0} has assumed orbit around {2} but not within {3}. Ship's current orbit radius is {1}.", ship.FullName, shipOrbitRadius, OrbitedObject.FullName, this);
             }
         }
 
         /// <summary>
-        /// Breaks the ship from this orbit.
+        /// Breaks the ship from this orbit. If this was the last ship in orbit, the orbital movement is disabled
+        /// until a ship again assumes orbit.
         /// </summary>
         /// <param name="orbitingShip">The orbiting ship.</param>
         public void BreakOrbit(IShipModel orbitingShip) {
             D.Assert(_orbiter != null);
+            //D.Log("{0} attempting to break orbit around {1}.", orbitingShip.FullName, OrbitedObject.FullName);
             var orbitingShips = _orbiter.Transform.gameObject.GetSafeInterfacesInChildren<IShipModel>();
             var ship = orbitingShips.Single(s => s == orbitingShip);
             var remainingShips = orbitingShips.Except(ship);
-            var parentFleetTransform = ship.Command.Transform.parent;
+            var parentFleetTransform = ship.UnitCommand.Transform.parent;
             ship.Transform.parent = parentFleetTransform;
             D.Log("{0} has left orbit around {1}.", ship.FullName, OrbitedObject.FullName);
-            float shipOrbitRadius = Vector3.Distance(ship.Transform.position, OrbitedObject.Position);
+            float shipOrbitRadius = Vector3.Distance(ship.Position, OrbitedObject.Position);
             if (!Contains(shipOrbitRadius)) {
                 D.Warn("{0} orbit radius of {1} is not contained within {2}'s {3}.", ship.FullName, shipOrbitRadius, OrbitedObject.FullName, this);
             }
@@ -116,7 +118,7 @@ namespace CodeEnv.Master.GameContent {
         /// ship is from the orbit's mean radius. A negative value indicates that the ship is inside the mean, positive outside.</param>
         /// <returns></returns>
         public bool CheckPositionForOrbit(IShipModel ship, out float distanceToOrbit) {
-            float shipDistance = Vector3.Distance(ship.Transform.position, OrbitedObject.Position);
+            float shipDistance = Vector3.Distance(ship.Position, OrbitedObject.Position);
             distanceToOrbit = shipDistance - MeanRadius;
             if (Contains(shipDistance)) {
                 return true;

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IMortalModel.cs
-// Interface for MortalModels.
+// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using System;
 
     /// <summary>
-    /// Interface for MortalModels.
+    /// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
     /// </summary>
     public interface IMortalModel : IModel {
 
@@ -33,13 +33,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         event Action<IMortalModel> onDeathOneShot;
 
-        //new AMortalItemData Data { get; set; }
-
         void OnShowCompletion();
-
-        bool IsAlive { get; }
-
-        bool IsOperational { get; }
 
         void __SimulateAttacked();
 

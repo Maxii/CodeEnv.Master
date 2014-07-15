@@ -30,8 +30,6 @@ using UnityEngine;
 /// </summary>
 public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarget {
 
-    public event Action<IElementModel> onSubordinateElementDeath;
-
     public string UnitName { get { return Data.ParentName; } }
 
     public new ACommandData Data {
@@ -45,7 +43,7 @@ public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarge
         set { SetProperty<AUnitElementModel>(ref _hqElement, value, "HQElement", OnHQElementChanged, OnHQElementChanging); }
     }
 
-    public IList<AUnitElementModel> Elements { get; set; }
+    public IList<AUnitElementModel> Elements { get; private set; }
 
     protected FormationGenerator _formationGenerator;
 
@@ -54,6 +52,11 @@ public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarge
         Elements = new List<AUnitElementModel>();
         _formationGenerator = new FormationGenerator(this);
         // Derived class should call Subscribe() after all used references have been established
+    }
+
+    protected override void InitializeRadiiComponents() {
+        collider.isTrigger = true;
+        // a Command's collider size is dynamically adjusted to the size of the CmdIcon. It has nothing to do with the radius of the Command
     }
 
     // formations are now generated when an element is added and/or when a HQ element is assigned
@@ -94,14 +97,10 @@ public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarge
     }
 
     private void OnSubordinateElementDeath(IMortalModel mortalItem) {
-        D.Assert(mortalItem is AUnitElementModel);
-        D.Log("{0} acknowledging {1} has been lost.", FullName, mortalItem.Data.Name);
         AUnitElementModel element = mortalItem as AUnitElementModel;
+        D.Assert(element != null);
+        D.Log("{0} acknowledging {1} has been lost.", FullName, element.FullName);
         RemoveElement(element);
-
-        if (onSubordinateElementDeath != null) {
-            onSubordinateElementDeath(element);
-        }
     }
 
     protected virtual void OnHQElementChanging(AUnitElementModel newHQElement) {
@@ -120,6 +119,9 @@ public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarge
         HQElement.IsHQElement = true;
         Data.HQElementData = HQElement.Data;
         D.Log("{0}'s HQElement is now {1}.", Data.ParentName, HQElement.Data.Name);
+        if (onHQElementChanged != null) {
+            onHQElementChanged(HQElement);
+        }
         _formationGenerator.RegenerateFormation();
     }
 
@@ -148,7 +150,7 @@ public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarge
     }
 
     protected internal virtual void PositionElementInFormation(AUnitElementModel element, Vector3 stationOffset) {
-        element.Transform.position = HQElement.Transform.position + stationOffset;
+        element.Transform.position = HQElement.Position + stationOffset;
         //D.Log("{0} positioned at {1}, offset by {2} from {3} at {4}.",
         //    element.FullName, element.Transform.position, stationOffset, HQElement.FullName, HQElement.Transform.position);
     }
@@ -204,11 +206,17 @@ public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarge
 
     #endregion
 
-    #region ICommandTarget Members
+    #region ICmdTarget Members
 
-    public IEnumerable<IElementTarget> ElementTargets {
-        get { return Elements.Cast<IElementTarget>(); }
-    }
+    public IEnumerable<IElementTarget> UnitElementTargets { get { return Elements.Cast<IElementTarget>(); } }
+
+    #endregion
+
+    #region ICmdModel Members
+
+    public event Action<IElementModel> onHQElementChanged;
+
+    public IEnumerable<IElementModel> UnitElementModels { get { return Elements.Cast<IElementModel>(); } }
 
     #endregion
 

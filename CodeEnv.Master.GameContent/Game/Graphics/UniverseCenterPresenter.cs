@@ -23,18 +23,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class UniverseCenterPresenter : AFocusableItemPresenter {
 
-        public new IUniverseCenterModel Model {
-            get { return base.Model as IUniverseCenterModel; }
-            protected set { base.Model = value; }
-        }
-
         protected new UniverseCenterData Data { get { return base.Data as UniverseCenterData; } }
 
         public UniverseCenterPresenter(IViewable view) : base(view) { }
-
-        protected override IModel AcquireModelReference() {
-            return _viewGameObject.GetSafeInterface<IUniverseCenterModel>();
-        }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
             return new GuiHudPublisher<UniverseCenterData>(Data);

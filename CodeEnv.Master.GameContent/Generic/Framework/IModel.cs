@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IModel.cs
-// Interface for an ItemModel.
+// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,11 +20,9 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for an ItemModel.
+    /// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
     /// </summary>
     public interface IModel : IChangeTracking, INotifyPropertyChanged, INotifyPropertyChanging {
-
-        //AItemData Data { get; set; }
 
         string FullName { get; }
 
@@ -34,6 +32,10 @@ namespace CodeEnv.Master.GameContent {
         float Radius { get; }
 
         Transform Transform { get; }
+
+        Vector3 Position { get; }
+
+        bool IsMobile { get; }
 
     }
 }

@@ -23,18 +23,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SystemPresenter : AFocusableItemPresenter {
 
-        public new ISystemModel Model {
-            get { return base.Model as ISystemModel; }
-            protected set { base.Model = value; }
-        }
-
         protected new SystemData Data { get { return base.Data as SystemData; } }
 
         public SystemPresenter(IViewable view) : base(view) { }
-
-        protected override IModel AcquireModelReference() {
-            return _viewGameObject.GetSafeInterface<ISystemModel>();
-        }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
             return new GuiHudPublisher<SystemData>(Data as SystemData);

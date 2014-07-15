@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IFacilityModel.cs
-//  Interface for FacilityModels.
+// File: IUniverseCenterModel.cs
+// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,14 +17,11 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for FacilityModels.
+    /// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
     /// </summary>
-    public interface IFacilityModel : IElementModel {
+    public interface IUniverseCenterModel : IModel {
 
-        //new FacilityData Data { get; set; }
-
-        FacilityState CurrentState { get; }
-
+        //new UniverseCenterData Data { get; set; }
 
     }
 }

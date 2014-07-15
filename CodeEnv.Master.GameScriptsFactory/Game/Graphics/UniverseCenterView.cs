@@ -26,6 +26,13 @@ using UnityEngine;
 /// </summary>
 public class UniverseCenterView : AFocusableItemView {
 
+    /// <summary>
+    /// The Collider encompassing the bounds of the UniverseCenter that intercepts input events for this view. 
+    /// This collider also detects collisions with other operating objects in the universe and therefore
+    /// should NOT be disabled when it is undiscernible.
+    /// </summary>
+    protected new SphereCollider Collider { get { return base.Collider as SphereCollider; } }
+
     protected override void Awake() {
         base.Awake();
         circleScaleFactor = 5F;

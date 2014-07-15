@@ -43,7 +43,7 @@ public class FormationStation : AMonoBase, IFormationStation, IDestinationTarget
             IShipModel arrivingShip = other.gameObject.GetInterface<IShipModel>();
             if (arrivingShip != null) {
                 if (arrivingShip == AssignedShip) {
-                    OnShipOnStation(true);
+                    IsOnStation = true;
                 }
             }
         }
@@ -56,7 +56,7 @@ public class FormationStation : AMonoBase, IFormationStation, IDestinationTarget
             IShipModel departingShip = other.gameObject.GetInterface<IShipModel>();
             if (departingShip != null) {
                 if (departingShip == AssignedShip) {
-                    OnShipOnStation(false);
+                    IsOnStation = false;
                 }
             }
         }
@@ -79,15 +79,12 @@ public class FormationStation : AMonoBase, IFormationStation, IDestinationTarget
             _collider.radius = StationRadius;
             // Note: OnTriggerEnter appears to detect ship is onStation once the collider is enabled even if already inside
             // Unfortunately, that detection has a small delay (collider init?) so this is needed to fill the gap
-            if (IsShipAlreadyOnStation) {
-                //D.Log("{0} is already OnStation.", AssignedShip.FullName);
-                OnShipOnStation(true);
-            }
+            IsOnStation = IsShipAlreadyOnStation;
             enabled = true;
         }
         else {
             enabled = false;
-            OnShipOnStation(false);
+            IsOnStation = false;
         }
     }
 
@@ -100,13 +97,6 @@ public class FormationStation : AMonoBase, IFormationStation, IDestinationTarget
         // UNCLEAR when an FST changes its offset (location), does OnTriggerEnter/Exit detect it?
     }
 
-    protected void OnShipOnStation(bool isOnStation) {
-        IsOnStation = isOnStation;
-        if (AssignedShip != null) {
-            AssignedShip.OnShipOnStation(isOnStation);
-        }
-    }
-
     /// <summary>
     /// Manually detects whether the ship is on station by seeing whether the ship's
     /// position is inside the collider bounds.
@@ -117,7 +107,7 @@ public class FormationStation : AMonoBase, IFormationStation, IDestinationTarget
     private bool IsShipAlreadyOnStation {
         get {
             //D.Log("FormationStation at {0} with Radius {1}, Assigned Ship {2} at {3}.", _transform.position, StationRadius, AssignedShip.FullName, AssignedShip.Data.Position);
-            return _collider.bounds.Contains(AssignedShip.Data.Position);
+            return _collider.bounds.Contains(AssignedShip.Position);
         }
     }
 
@@ -127,13 +117,13 @@ public class FormationStation : AMonoBase, IFormationStation, IDestinationTarget
 
     #region IFormationStation Members
 
-    public bool IsOnStation { get; private set; }
+    public bool IsOnStation { get; private set; }   // OPTIMIZE Eliminate collider and just test for distance to ship < stationRadius?
 
     public float StationRadius { get; private set; }
 
     private Vector3 _stationOffset;
     /// <summary>
-    /// The Vector3 offset of this station of the formation from the HQ Element.
+    /// The Vector3 offset of this formation station from the HQ Element.
     /// </summary>
     public Vector3 StationOffset {
         get { return _stationOffset; }
@@ -146,6 +136,11 @@ public class FormationStation : AMonoBase, IFormationStation, IDestinationTarget
         set { SetProperty<IShipModel>(ref _assignedShip, value, "AssignedShip", OnAssignedShipChanged); }
     }
 
+    /// <summary>
+    /// The vector from the currently assigned ship to the station.
+    /// </summary>
+    public Vector3 VectorToStation { get { return Position - AssignedShip.Position; } }
+
     #endregion
 
     #region IDestinationTarget Members
@@ -157,9 +152,7 @@ public class FormationStation : AMonoBase, IFormationStation, IDestinationTarget
         }
     }
 
-    public Vector3 Position {
-        get { return _transform.position; }
-    }
+    public Vector3 Position { get { return _transform.position; } }
 
     public bool IsMobile { get { return true; } }
 

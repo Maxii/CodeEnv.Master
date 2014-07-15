@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IElementModel.cs
-//  Interface for a UnitElementModel.
+// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,16 +16,16 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
+
     /// <summary>
-    /// Interface for a UnitElementModel.
+    /// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
     /// </summary>
     public interface IElementModel : IMortalModel {
 
-        //new AElementData Data { get; set; }
+        bool IsHQElement { get; }
 
-        bool IsHQElement { get; set; }
-
-        ICmdModel Command { get; set; }
+        event Action<ICmdModel> onCommandChanged;
 
     }
 }

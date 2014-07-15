@@ -24,14 +24,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitElementPresenter : AMortalItemPresenter {
 
-        public new IElementModel Model {
-            get { return base.Model as IElementModel; }
-            protected set { base.Model = value; }
-        }
+        public new IElementModel Model { get { return base.Model as IElementModel; } }
 
-        protected new IElementViewable View {
-            get { return base.View as IElementViewable; }
-        }
+        protected new IElementViewable View { get { return base.View as IElementViewable; } }
 
         protected ICommandViewable _commandView;
 
@@ -42,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Subscribe() {
             base.Subscribe();
-            _subscribers.Add(Model.SubscribeToPropertyChanged<IElementModel, ICmdModel>(e => e.Command, OnCommandChanged));
+            Model.onCommandChanged += OnCommandChanged;
         }
 
         public bool IsCommandSelected {
@@ -50,13 +45,14 @@ namespace CodeEnv.Master.GameContent {
             set { (_commandView as ISelectable).IsSelected = value; }
         }
 
-        private void OnCommandChanged() {
+        private void OnCommandChanged(ICmdModel cmdModel) {
             //D.Log("{0}.{1}.OnCommandChanged() called.", Model.FullName, GetType().Name);
-            _commandView = (Model.Command as Component).gameObject.GetSafeInterface<ICommandViewable>();
+            _commandView = cmdModel.Transform.gameObject.GetSafeInterface<ICommandViewable>();
         }
 
         protected override void CleanupFocusOnDeath() {
-            // do nothing. If this UnitElement is the focus, CurrentFocus will be assumed by its UnitCommand
+            // no need to execute base.CleanupFocusOnDeath() as making the command the focus here will notify the camera
+            (_commandView as ICameraFocusable).IsFocus = true;
         }
 
         // subscriptions contained completely within this gameobject (both subscriber

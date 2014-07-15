@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ISystemModel.cs
-// Interface for easy access to a SystemModel.
+// File: IStarbaseCmdModel.cs
+// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,11 +17,12 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for easy access to a SystemModel.
+    /// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
     /// </summary>
-    public interface ISystemModel : IModel {
+    public interface IStarbaseCmdModel : ICmdModel {
 
-        //new SystemData Data { get; set; }
+        //new StarbaseCmdData Data { get; set; }
+
     }
 }
 

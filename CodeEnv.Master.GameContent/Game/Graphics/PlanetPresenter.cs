@@ -23,20 +23,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PlanetPresenter : AMortalItemPresenter {
 
-        public new IPlanetModel Model {
-            get { return base.Model as IPlanetModel; }
-            protected set { base.Model = value; }
-        }
-
         protected new PlanetData Data { get { return base.Data as PlanetData; } }
 
         public PlanetPresenter(IMortalViewable view)
             : base(view) {
             Subscribe();
-        }
-
-        protected override IModel AcquireModelReference() {
-            return _viewGameObject.GetSafeInterface<IPlanetModel>();
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {

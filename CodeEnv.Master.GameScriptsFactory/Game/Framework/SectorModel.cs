@@ -24,7 +24,7 @@ using UnityEngine;
 /// A placeholder container class for TBD items that will be present in a Sector.
 /// eg. a nebula particle system.
 /// </summary>
-public class SectorModel : AOwnedItemModel, ISectorModel, IDestinationTarget {
+public class SectorModel : AOwnedItemModel, IDestinationTarget {
 
     public new SectorData Data {
         get { return base.Data as SectorData; }
@@ -52,10 +52,6 @@ public class SectorModel : AOwnedItemModel, ISectorModel, IDestinationTarget {
     }
 
     #region IDestinationTarget Members
-
-    public Vector3 Position { get { return Data.Position; } }
-
-    //public virtual bool IsMobile { get { return false; } }
 
     public SpaceTopography Topography { get { return Data.Topography; } }
 

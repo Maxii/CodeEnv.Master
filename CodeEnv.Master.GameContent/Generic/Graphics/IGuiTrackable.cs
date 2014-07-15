@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IUniverseCenterModel.cs
-// Interface for the UniverseCenterModel.
+// File: IGuiTrackable.cs
+// Interface for Views that are trackable by GUI constructs such as Icons and Labels.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,12 +16,23 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    /// <summary>
-    /// Interface for the UniverseCenterModel.
-    /// </summary>
-    public interface IUniverseCenterModel : IModel {
+    using UnityEngine;
 
-        //new UniverseCenterData Data { get; set; }
+    /// <summary>
+    /// Interface for Views that are trackable by GUI constructs
+    /// such as Icons and Labels.
+    /// </summary>
+    public interface IGuiTrackable {
+
+        Vector3 LeftExtent { get; }
+
+        Vector3 RightExtent { get; }
+
+        Vector3 UpperExtent { get; }
+
+        Vector3 LowerExtent { get; }
+
+        Transform Transform { get; }
 
     }
 }

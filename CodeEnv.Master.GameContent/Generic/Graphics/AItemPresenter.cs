@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
 
         public string FullName { get { return Model.FullName; } }
 
-        public IModel Model { get; protected set; }
+        public IModel Model { get; private set; }
 
         protected AItemData Data { get; private set; }
 
@@ -51,7 +51,7 @@ namespace CodeEnv.Master.GameContent {
             // derived Presenters should call Subscribe() if they have any subscriptions to make
         }
 
-        protected abstract IModel AcquireModelReference();
+        private IModel AcquireModelReference() { return _viewGameObject.GetSafeInterface<IModel>(); }
 
         protected abstract IGuiHudPublisher InitializeHudPublisher();
 

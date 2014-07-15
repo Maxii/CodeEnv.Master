@@ -67,10 +67,11 @@ public class SystemCreator : AMonoBase, IDisposable {
         PlanetoidCategory.Moon_001, PlanetoidCategory.Moon_002, PlanetoidCategory.Moon_003, PlanetoidCategory.Moon_004, PlanetoidCategory.Moon_005
     };
 
-    private static GameTimeDuration _minSystemOrbitPeriod = GameTimeDuration.OneYear;
-    private static GameTimeDuration _systemOrbitPeriodIncrement = new GameTimeDuration(hours: 0, days: GameTime.DaysPerYear / 2, years: 0);
-    private static GameTimeDuration _minMoonOrbitPeriod = new GameTimeDuration(hours: 0, days: 20, years: 0);
-    private static GameTimeDuration _moonOrbitPeriodIncrement = new GameTimeDuration(hours: 0, days: 10, years: 0);
+    // these must be set from Awake() 
+    private static GameTimeDuration _minSystemOrbitPeriod;
+    private static GameTimeDuration _systemOrbitPeriodIncrement; 
+    private static GameTimeDuration _minMoonOrbitPeriod; 
+    private static GameTimeDuration _moonOrbitPeriodIncrement; 
 
     public bool isCompositionPreset;
     public int maxRandomPlanets = 3;
@@ -101,7 +102,33 @@ public class SystemCreator : AMonoBase, IDisposable {
         _systemsFolder = _transform.parent;
         _factory = SystemFactory.Instance;
         D.Assert(isCompositionPreset == _transform.childCount > 0, "{0}.{1} Composition Preset flag is incorrect.".Inject(SystemName, GetType().Name));
+        SetStaticValues();
         Subscribe();
+    }
+
+    /// <summary>
+    /// Sets static values that cannot be set via a static initializer.
+    /// 
+    /// WARNING: Static initializers use the Loading Thread which runs AT EDITOR TIME.
+    /// GameTimeDuration needs to load values from XML (GeneralSettings) which won't
+    /// run until the Editor.Play button is pressed. Unity avoids this condition by requiring
+    /// that calls to Application.dataPath (via UnityConstants.DataLibraryDir, AValuesHelper
+    /// and GeneralSettings) come from the MainThread, not the LoadingThread.
+    /// If from the LoadingThread, an ArgumentException is raised.
+    /// </summary>
+    private void SetStaticValues() {
+        if (_minSystemOrbitPeriod == default(GameTimeDuration)) {
+            _minSystemOrbitPeriod = GameTimeDuration.OneYear;
+        }
+        if (_systemOrbitPeriodIncrement == default(GameTimeDuration)) {
+            _systemOrbitPeriodIncrement = new GameTimeDuration(hours: 0, days: GameTime.DaysPerYear / 2, years: 0);
+        }
+        if (_minMoonOrbitPeriod == default(GameTimeDuration)) {
+            _minMoonOrbitPeriod = new GameTimeDuration(hours: 0, days: 20, years: 0);
+        }
+        if (_moonOrbitPeriodIncrement == default(GameTimeDuration)) {
+            _moonOrbitPeriodIncrement = new GameTimeDuration(hours: 0, days: 10, years: 0);
+        }
     }
 
     private void Subscribe() {
@@ -424,7 +451,7 @@ public class SystemCreator : AMonoBase, IDisposable {
                         string name = planet.Data.Name + _moonLetters[slotIndex];
                         moon.Data.Name = name;
                         GameTimeDuration orbitPeriod = _minMoonOrbitPeriod + (slotIndex * _moonOrbitPeriodIncrement);
-                        var moonOrbitSlot = new CelestialOrbitSlot(startDepthForMoonOrbitSlot, endDepthForMoonOrbitSlot, true, planet.gameObject, orbitPeriod);
+                        var moonOrbitSlot = new CelestialOrbitSlot(startDepthForMoonOrbitSlot, endDepthForMoonOrbitSlot, planet, orbitPeriod);
                         string orbiterName = name + " Orbiter";
                         moonOrbitSlot.AssumeOrbit(moon.transform, orbiterName);
                         D.Log("{0} has assumed orbit slot {1} around Planet {2}.", moon.FullName, slotIndex, planet.FullName);
@@ -498,9 +525,14 @@ public class SystemCreator : AMonoBase, IDisposable {
     private void EnableOtherWhenRunning(Action onCompletion = null) {
         D.Assert(GameStatus.Instance.IsRunning);
         gameObject.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(relay => relay.enabled = true);
+
         // Enable planet and moon orbits. Leave any possible settlement that might already be present to the SettlementCreator
         _planets.ForAll(p => p.gameObject.GetComponentInParents<Orbiter>().enabled = true);   // planet orbits
-        _planets.ForAll(p => p.gameObject.GetComponentsInChildren<Orbiter>().ForAll(o => o.enabled = true));  // moon orbits
+
+        var allShipOrbiters = gameObject.GetComponentsInChildren<OrbiterForShips>();
+        _planets.ForAll(p => p.gameObject.GetComponentsInChildren<Orbiter>().Except(allShipOrbiters).ForAll(o => o.enabled = true));  // moon orbits
+
+        // OrbitersForShips are enabled and disabled by ShipOrbitSlot when ships assume and break orbit
 
         // Enable planet, moon and star revolves. Leave any possible settlement that might already be present to the SettlementCreator
         _planets.ForAll(p => p.gameObject.GetComponentsInChildren<Revolver>().ForAll(r => r.enabled = true));    // planets and moons
@@ -559,7 +591,7 @@ public class SystemCreator : AMonoBase, IDisposable {
             float outsideRadius = insideRadius + _systemOrbitSlotDepth;
             var orbitPeriod = _minSystemOrbitPeriod + (slotIndex * _systemOrbitPeriodIncrement);
             //D.Log("{0}'s orbit slot index {1} OrbitPeriod = {2}.", SystemName, slotIndex, orbitPeriod);
-            allOrbitSlots[slotIndex] = new CelestialOrbitSlot(insideRadius, outsideRadius, false, _system.gameObject, orbitPeriod);
+            allOrbitSlots[slotIndex] = new CelestialOrbitSlot(insideRadius, outsideRadius, _system, orbitPeriod);
         }
         return allOrbitSlots;
     }

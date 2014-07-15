@@ -272,7 +272,7 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IShipOrbitable 
         var shipOrbit = gameObject.GetComponentInImmediateChildren<ShipOrbit>();
         D.Assert(shipOrbit != null, "{0}.{1} is not present.".Inject(FullName, typeof(ShipOrbit).Name));
         var ship = shipOrbit.gameObject.GetSafeInterfacesInChildren<IShipModel>().Single(s => s == orbitingShip);
-        var parentFleetTransform = ship.Command.Transform.parent;
+        var parentFleetTransform = ship.UnitCommand.Transform.parent;
         ship.Transform.parent = parentFleetTransform;
     }
 

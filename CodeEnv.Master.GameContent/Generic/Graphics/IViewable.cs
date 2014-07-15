@@ -17,6 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using CodeEnv.Master.Common;
+    using UnityEngine;
 
     /// <summary>
     ///  Interface used by Presenters to communicate with their associated Views.
@@ -35,11 +36,6 @@ namespace CodeEnv.Master.GameContent {
         IGuiHudPublisher HudPublisher { get; set; }
 
         IIntel PlayerIntel { get; }
-
-        /// <summary>
-        /// The radius in units of the conceptual 'globe' that encompasses this Item. Readonly.
-        /// </summary>
-        float Radius { get; }
 
     }
 }

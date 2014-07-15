@@ -67,10 +67,10 @@ public class ShipHumanView : ShipView {
     /// Lookup table for available submenus, keyed by the Order the submenu is assigned too. These submenus
     /// are currently very generic and can be configured programmatically to show the submenu items desired.
     /// 
-    /// OPTIMIZE Using Dictionary is probably overkill as all I'm trying to accomplish is make sure that there is a
-    /// unique submenu available for each order. The 'unique' requirement here is because I expect (although don't
-    /// know for certain) that I need to construct the submenu for each order when I show the context menu, even 
-    /// if the player only accesses only one of the orders.
+    /// Note: Contextual 1.2.9 fixed the Unity Serialization Depth error msg (and performance loss), but now
+    /// requires that there be a dedicated CtxMenu submenu object for each item that has a submenu. [Prior to 1.2.9
+    /// a single CtxMenu object could act as the submenu object for all items because the unique submenu items were
+    /// held by item.submenuItems, not the submenu object itself.]
     /// </summary>
     private static IDictionary<ShipDirective, CtxMenu> _subMenuLookup;
 
@@ -82,10 +82,10 @@ public class ShipHumanView : ShipView {
     /// <summary>
     /// Lookup table for bases that this ship can disband or refit at, keyed by the selection item ID.
     /// </summary>
-    private static IDictionary<int, StarbaseCmdModel> _disbandRefitBaseLookup;  // TODO include Settlements
+    private static IDictionary<int, AUnitBaseCmdModel> _disbandRefitBaseLookup;
 
     /// <summary>
-    /// A lookup for finding the order associated with a range of submenu item IDs.
+    /// Lookup table for finding the order associated with a range of submenu item IDs.
     /// </summary>
     private static IDictionary<Range<int>, ShipDirective> _subMenuOrderLookup;
 
@@ -136,7 +136,7 @@ public class ShipHumanView : ShipView {
             _joinableFleetLookup = new Dictionary<int, FleetCmdModel>();
         }
         if (_disbandRefitBaseLookup == null) {
-            _disbandRefitBaseLookup = new Dictionary<int, StarbaseCmdModel>();
+            _disbandRefitBaseLookup = new Dictionary<int, AUnitBaseCmdModel>();
         }
 
         _ctxObject.contextMenu = _shipMenu;
@@ -169,7 +169,7 @@ public class ShipHumanView : ShipView {
             switch (order) {
                 case ShipDirective.JoinFleet:
                     //D.Log("JoinFleet order ID = {0}.", orderItemID);
-                    FleetCmdModel[] joinableFleets = FindObjectsOfType<FleetCmdModel>().Where(f => f.Owner.IsHuman).Except(Presenter.Model.Command as FleetCmdModel).ToArray();
+                    FleetCmdModel[] joinableFleets = FindObjectsOfType<FleetCmdModel>().Where(f => f.Owner.IsHuman).Except(Presenter.Model.UnitCommand as FleetCmdModel).ToArray();
                     var joinFleetSubmenuItemCount = joinableFleets.Length;
 
                     if (joinFleetSubmenuItemCount > Constants.Zero) {
@@ -186,7 +186,8 @@ public class ShipHumanView : ShipView {
                             _joinableFleetLookup.Add(subMenuItemId, joinableFleets[i]);
                             //D.Log("{0}.submenu ID {1} = {2}.", Presenter.FullName, joinFleetSubmenuItems[i].id, joinFleetSubmenuItems[i].text);
                         }
-                        joinFleetItem.submenuItems = joinFleetSubmenuItems;
+                        subMenu.items = joinFleetSubmenuItems;
+                        //joinFleetItem.submenuItems = joinFleetSubmenuItems;   // removed in Contextual1.2.9 to fix Unity Serialization Depth error msg
                         int lastUsedSubMenuID = _lowestUnusedItemId + joinFleetSubmenuItemCount - 1;
                         _subMenuOrderLookup.Add(new Range<int>(_lowestUnusedItemId, lastUsedSubMenuID), order);
                         _lowestUnusedItemId = lastUsedSubMenuID + 1;
@@ -196,8 +197,10 @@ public class ShipHumanView : ShipView {
                     }
                     break;
                 case ShipDirective.Disband:
+                // TODO
                 case ShipDirective.Refit:
                     // TODO
+                    D.Warn("{0} is not yet implemented.", order.GetName());
                     break;
                 case ShipDirective.None:
                 default:

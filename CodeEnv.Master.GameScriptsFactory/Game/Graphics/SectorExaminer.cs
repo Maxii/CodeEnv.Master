@@ -30,7 +30,7 @@ using UnityEngine;
 /// Singleton that displays the highlighted wireframe of a sector and provides a context menu for fleet commands
 /// relevant to the highlighted sector.
 /// </summary>
-public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
+public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, IGuiTrackable {
 
     public int distanceInSectorsFromCamera = 2;
 
@@ -47,7 +47,11 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
     private float _distanceToHighlightedSector;
     private SelectionManager _selectionMgr;
     private CubeWireframe _wireframe;
-    private BoxCollider _centerCollider;
+    /// <summary>
+    /// The Collider over the center of this Examiner (which is over the Sector) used for
+    /// actuation of the Context Menu.
+    /// </summary>
+    private BoxCollider _collider;
 
     private bool _isContextMenuShowing;
     private CtxObject _ctxObject;
@@ -69,10 +73,10 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
     }
 
     private void InitializeCenterCollider() {
-        _centerCollider = UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
+        _collider = UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
         float colliderSideLength = TempGameValues.SectorSideLength / 30F;
-        _centerCollider.size = new Vector3(colliderSideLength, colliderSideLength, colliderSideLength);   // 40x40x40 center collider
-        _centerCollider.enabled = false;
+        _collider.size = new Vector3(colliderSideLength, colliderSideLength, colliderSideLength);   // 40x40x40 center collider
+        _collider.enabled = false;
     }
 
     private void Subscribe() {
@@ -160,8 +164,6 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
         IFleetCmdModel selectedFleet = selectedFleetView.Presenter.Model;
         if (menuId == 4) {  // UNDONE
             SectorModel sector = SectorGrid.GetSector(CurrentSectorIndex);
-            //var sectorCenterLocation = new StationaryLocation(sector.Position, sector.Topography);
-            //selectedFleet.CurrentOrder = new FleetOrder(FleetDirective.MoveTo, sectorCenterLocation, Speed.FleetStandard);
             selectedFleet.CurrentOrder = new FleetOrder(FleetDirective.MoveTo, sector, Speed.FleetStandard);
         }
     }
@@ -174,7 +176,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
 
     private void UpdateSectorIDLabel() {
         if (_sectorIDLabel == null) {
-            _sectorIDLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(_transform, GuiTrackingLabelFactory.LabelPlacement.OverTarget);
+            _sectorIDLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(this, GuiTrackingLabelFactory.LabelPlacement.OverTarget);
             _sectorIDLabel.Color = UnityDebugConstants.SectorHighlightColor;
         }
         _sectorIDLabelText = "Sector {0}" + Constants.NewLine + "GridBox {1}.".Inject(CurrentSectorIndex, SectorGrid.GetGridBoxLocation(CurrentSectorIndex));
@@ -201,7 +203,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
                     });
                 }
                 _sectorViewJob.Start();
-                _centerCollider.enabled = true;
+                _collider.enabled = true;
                 break;
             case PlayerViewMode.NormalView:
                 // turn off wireframe, sectorID label, collider, contextMenu and Hud
@@ -210,7 +212,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
                     _sectorViewJob.Kill();
                     ShowSector(false);
                 }
-                _centerCollider.enabled = false;
+                _collider.enabled = false;
                 _ctxObject.HideMenu();
 
                 // OPTIMIZE cache sector and sectorView
@@ -338,6 +340,21 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable {
 
     //    // method content here
     //}
+    #endregion
+
+
+    #region IGuiTrackable Members
+
+    public Vector3 LeftExtent { get { return new Vector3(-_collider.bounds.extents.x, Constants.ZeroF, Constants.ZeroF); } }
+
+    public Vector3 RightExtent { get { return new Vector3(_collider.bounds.extents.x, Constants.ZeroF, Constants.ZeroF); } }
+
+    public Vector3 UpperExtent { get { return new Vector3(Constants.ZeroF, _collider.bounds.extents.y, Constants.ZeroF); } }
+
+    public Vector3 LowerExtent { get { return new Vector3(Constants.ZeroF, -_collider.bounds.extents.y, Constants.ZeroF); } }
+
+    public Transform Transform { get { return _transform; } }
+
     #endregion
 
 }

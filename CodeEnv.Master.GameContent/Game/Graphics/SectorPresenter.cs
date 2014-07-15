@@ -23,18 +23,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SectorPresenter : AItemPresenter {
 
-        public new ISectorModel Model {
-            get { return base.Model as ISectorModel; }
-            protected set { base.Model = value; }
-        }
-
         protected new SectorData Data { get { return base.Data as SectorData; } }
 
         public SectorPresenter(IViewable view) : base(view) { }
-
-        protected override IModel AcquireModelReference() {
-            return _viewGameObject.GetSafeInterface<ISectorModel>();
-        }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
             return new GuiHudPublisher<SectorData>(Data);

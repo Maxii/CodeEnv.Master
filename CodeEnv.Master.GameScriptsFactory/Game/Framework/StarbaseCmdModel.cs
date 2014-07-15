@@ -17,18 +17,20 @@
 // default namespace
 
 using System;
-using System.Linq;
 using System.Collections;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
-using UnityEngine;
-using System.Collections.Generic;
 
 /// <summary>
 /// The data-holding class for all Starbases in the game. Includes a state machine. 
 /// </summary>
-public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel, IBaseCmdTarget, IShipOrbitable {
+public class StarbaseCmdModel : AUnitBaseCmdModel {
+
+    //public new StarbaseCmdData Data {                 // no current need for this version of data
+    //    get { return base.Data as StarbaseCmdData; }
+    //    set { base.Data = value; }
+    //}
 
     private BaseOrder<StarbaseDirective> _currentOrder;
     public BaseOrder<StarbaseDirective> CurrentOrder {
@@ -36,58 +38,27 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel, IBaseCmdTa
         set { SetProperty<BaseOrder<StarbaseDirective>>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
     }
 
-    public new StarbaseCmdData Data {
-        get { return base.Data as StarbaseCmdData; }
-        set { base.Data = value; }
-    }
-
     protected override void Awake() {
         base.Awake();
         Subscribe();
     }
 
-    protected override void InitializeRadiiComponents() {
-        // the radius of a BaseCommand is fixed to include all of its elements
-        Radius = TempGameValues.BaseRadius;
-        // a Command's collider size is dynamically adjusted to the size of the CmdIcon. It has nothing to do with the radius of the Command
-        InitializeShipOrbitSlot();
-        InitializeKeepoutZone();
-    }
-
-    private void InitializeShipOrbitSlot() {
-        float innerOrbitRadius = Radius * TempGameValues.KeepoutRadiusMultiplier;
-        float outerOrbitRadius = innerOrbitRadius + TempGameValues.DefaultShipOrbitSlotDepth;
-        ShipOrbitSlot = new ShipOrbitSlot(innerOrbitRadius, outerOrbitRadius, this);
-    }
-
-    private void InitializeKeepoutZone() {
-        SphereCollider keepoutZoneCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.isTrigger).Single();
-        D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
-        keepoutZoneCollider.isTrigger = true;
-        keepoutZoneCollider.radius = ShipOrbitSlot.InnerRadius;
-    }
-
     protected override void Initialize() {
-        base.Initialize();
         CurrentState = StarbaseState.None;
         //D.Log("{0}.{1} Initialization complete.", FullName, GetType().Name);
     }
 
-    public void CommenceOperations() {
+    public override void CommenceOperations() {
+        base.CommenceOperations();
         CurrentState = StarbaseState.Idling;
     }
 
-    public override void AddElement(IElementModel element) {
+    public override void AddElement(AUnitElementModel element) {
         base.AddElement(element);
 
-        IFacilityModel facility = element as IFacilityModel;
         // A facility that is in Idle without being part of a unit might attempt something it is not yet prepared for
+        FacilityModel facility = element as FacilityModel;
         D.Assert(facility.CurrentState != FacilityState.Idling, "{0} is adding {1} while Idling.".Inject(FullName, facility.FullName));
-
-        facility.Command = this;
-        if (HQElement != null) {
-            _formationGenerator.RegenerateFormation();    // Bases simply regenerate the formation when adding an element
-        }
     }
 
     private void OnCurrentOrderChanged() {
@@ -120,11 +91,10 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel, IBaseCmdTa
         }
     }
 
-    //protected override void OnDeath() {
-    //    base.OnDeath();
-    //    ShipOrbitSlot.OnOrbitedObjectDeath();
-    //    // no parent orbiter object to disable
-    //}
+    protected override void OnDeath() {
+        base.OnDeath();
+        // unlike SettlementCmdModel, no parent orbiter object to disable
+    }
 
     protected override void KillCommand() {
         CurrentState = StarbaseState.Dead;
@@ -145,7 +115,6 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel, IBaseCmdTa
 
     void None_ExitState() {
         LogEvent();
-        IsOperational = true;
     }
 
     #endregion
@@ -261,12 +230,6 @@ public class StarbaseCmdModel : AUnitCommandModel, IStarbaseCmdModel, IBaseCmdTa
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region IShipOrbitable Members
-
-    public ShipOrbitSlot ShipOrbitSlot { get; private set; }
-
-    #endregion
 
 }
 

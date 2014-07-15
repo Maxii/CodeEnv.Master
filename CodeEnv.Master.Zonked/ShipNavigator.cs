@@ -270,7 +270,7 @@ namespace CodeEnv.Master.GameContent {
                 _ship.ChangeHeading(newHeading, isAutoPilot: true);
             }
 
-            while (_isFleetMove && !_ship.Command.IsBearingConfirmed) {
+            while (_isFleetMove && !_ship.UnitCommand.IsBearingConfirmed) {
                 // wait here until the fleet is ready for departure
                 //D.Log("{0}.CurrentHeading = {1}.", _ship.FullName, Data.CurrentHeading);
                 yield return new WaitForSeconds(_courseProgressCheckPeriod);

@@ -74,6 +74,25 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<float>(ref _fullSpeed, value, "FullSpeed"); }
         }
 
+        private float _fullStlSpeed;
+        /// <summary>
+        /// The maximum sustainable STL speed of the fleet in units per hour.
+        /// </summary>
+        public float FullStlSpeed {
+            get { return _fullStlSpeed; }
+            private set { SetProperty<float>(ref _fullStlSpeed, value, "FullStlSpeed"); }
+        }
+
+        private float _fullFtlSpeed;
+        /// <summary>
+        /// The maximum sustainable FTL speed of the fleet in units per hour.
+        /// </summary>
+        public float FullFtlSpeed {
+            get { return _fullFtlSpeed; }
+            private set { SetProperty<float>(ref _fullFtlSpeed, value, "FullFtlSpeed"); }
+        }
+
+
         private float _maxTurnRate;
         /// <summary>
         /// Gets the maximum turn rate of the fleet in radians per day.
@@ -126,6 +145,8 @@ namespace CodeEnv.Master.GameContent {
 
         private void UpdateFullSpeed() {
             if (ElementsData.Any()) {
+                FullStlSpeed = ElementsData.Min(eData => (eData as ShipData).FullStlSpeed);
+                FullFtlSpeed = ElementsData.Min(eData => (eData as ShipData).FullFtlSpeed);
                 FullSpeed = ElementsData.Min(eData => (eData as ShipData).FullSpeed);
             }
         }

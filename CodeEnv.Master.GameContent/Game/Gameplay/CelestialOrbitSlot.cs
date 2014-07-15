@@ -26,19 +26,18 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class CelestialOrbitSlot : AOrbitSlot {
 
-        public GameObject OrbitedObject { get; private set; }
+        private IModel _orbitedObject;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CelestialOrbitSlot" /> class.
         /// </summary>
         /// <param name="innerRadius">The closest distance to the body orbited.</param>
         /// <param name="outerRadius">The furthest distance from the body orbited.</param>
-        /// <param name="isOrbitedObjectMobile">if set to <c>true</c> [is object being orbited mobile].</param>
         /// <param name="orbitedObject">The object being orbited.</param>
         /// <param name="orbitPeriod">The orbit period.</param>
-        public CelestialOrbitSlot(float innerRadius, float outerRadius, bool isOrbitedObjectMobile, GameObject orbitedObject, GameTimeDuration orbitPeriod)
-            : base(innerRadius, outerRadius, isOrbitedObjectMobile, orbitPeriod) {
-            OrbitedObject = orbitedObject;
+        public CelestialOrbitSlot(float innerRadius, float outerRadius, IModel orbitedObject, GameTimeDuration orbitPeriod)
+            : base(innerRadius, outerRadius, orbitedObject.IsMobile, orbitPeriod) {
+            _orbitedObject = orbitedObject;
         }
 
         /// <summary>
@@ -51,7 +50,7 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         public IOrbiter AssumeOrbit(Transform orbitingObject, string orbiterName = "") {
             D.Assert(orbitingObject.GetInterface<IShipModel>() == null);
-            IOrbiter orbiter = References.GeneralFactory.MakeOrbiterInstance(OrbitedObject, _isOrbitedObjectMobile, false, _orbitPeriod, orbiterName: orbiterName);
+            IOrbiter orbiter = References.GeneralFactory.MakeOrbiterInstance(_orbitedObject.Transform.gameObject, _isOrbitedObjectMobile, false, _orbitPeriod, orbiterName: orbiterName);
             UnityUtility.AttachChildToParent(orbitingObject.gameObject, orbiter.Transform.gameObject);
             orbitingObject.localPosition = GenerateRandomLocalPositionWithinSlot();
             return orbiter;

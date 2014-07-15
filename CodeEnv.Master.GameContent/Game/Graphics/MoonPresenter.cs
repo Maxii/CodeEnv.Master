@@ -23,20 +23,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class MoonPresenter : AMortalItemPresenter {
 
-        public new IMoonModel Model {
-            get { return base.Model as IMoonModel; }
-            protected set { base.Model = value; }
-        }
-
         protected new MoonData Data { get { return base.Data as MoonData; } }
 
         public MoonPresenter(IMortalViewable view)
             : base(view) {
             Subscribe();
-        }
-
-        protected override IModel AcquireModelReference() {
-            return _viewGameObject.GetSafeInterface<IMoonModel>();
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {

@@ -28,7 +28,7 @@ using UnityEngine;
 /// A class for managing the elements of a system's UI, those, that are not already handled by 
 /// the UI classes for stars, planets and moons. 
 /// </summary>
-public class SystemView : AFocusableItemView, ISelectable, IZoomToFurthest, IHighlightTrackingLabel {
+public class SystemView : AFocusableItemView, ISelectable, IZoomToFurthest, IHighlightTrackingLabel, IGuiTrackable {
 
     private static string __highlightName = "SystemHighlightMesh";  // IMPROVE
 
@@ -36,6 +36,13 @@ public class SystemView : AFocusableItemView, ISelectable, IZoomToFurthest, IHig
         get { return base.Presenter as SystemPresenter; }
         protected set { base.Presenter = value; }
     }
+
+    /// <summary>
+    /// The Collider encompassing the bounds of the system's orbital plane that intercepts input events for this view. 
+    /// This collider does NOT detect collisions with other operating objects in the universe and therefore
+    /// can be disabled when it is undiscernible.
+    /// </summary>
+    protected override Collider Collider { get { return base.Collider; } }
 
     public bool enableTrackingLabel = true;
     private GuiTrackingLabel _trackingLabel;
@@ -65,9 +72,10 @@ public class SystemView : AFocusableItemView, ISelectable, IZoomToFurthest, IHig
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
         if (_trackingLabel != null) {
-            _trackingLabel.gameObject.SetActive(IsDiscernible);
+            _trackingLabel.gameObject.SetActive(IsDiscernible); // IMPROVE control Active or enabled, but not both
+            _trackingLabel.enabled = IsDiscernible;
         }
-        _collider.enabled = IsDiscernible;
+        Collider.enabled = IsDiscernible;
         // no reason to manage orbitalPlane LineRenderers as they don't render when not visible to the camera
         // other renderers are handled by their own Views
     }
@@ -159,7 +167,7 @@ public class SystemView : AFocusableItemView, ISelectable, IZoomToFurthest, IHig
     private void InitializeTrackingLabel() {
         if (enableTrackingLabel) {
             float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
-            _trackingLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(_transform, GuiTrackingLabelFactory.LabelPlacement.AboveTarget, minShowDistance);
+            _trackingLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(this, GuiTrackingLabelFactory.LabelPlacement.AboveTarget, minShowDistance);
         }
     }
 
@@ -256,6 +264,20 @@ public class SystemView : AFocusableItemView, ISelectable, IZoomToFurthest, IHig
         get { return _isSelected; }
         set { SetProperty<bool>(ref _isSelected, value, "IsSelected", OnIsSelectedChanged); }
     }
+
+    #endregion
+
+    #region IGuiTrackable Members
+
+    public Vector3 LeftExtent { get { return new Vector3(-Collider.bounds.extents.x, Constants.ZeroF, Constants.ZeroF); } }
+
+    public Vector3 RightExtent { get { return new Vector3(Collider.bounds.extents.x, Constants.ZeroF, Constants.ZeroF); } }
+
+    public Vector3 UpperExtent { get { return new Vector3(Constants.ZeroF, Collider.bounds.extents.y, Constants.ZeroF); } }
+
+    public Vector3 LowerExtent { get { return new Vector3(Constants.ZeroF, -Collider.bounds.extents.y, Constants.ZeroF); } }
+
+    public Transform Transform { get { return _transform; } }
 
     #endregion
 

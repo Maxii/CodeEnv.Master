@@ -24,11 +24,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ItemData : AItemData {
 
-        public override SpaceTopography Topography {
-            get { return base.Topography; }
-            set { throw new NotImplementedException(); }
-        }
-
         /// <summary>
         /// Initializes a new instance of the <see cref="ItemData" /> class.
         /// </summary>

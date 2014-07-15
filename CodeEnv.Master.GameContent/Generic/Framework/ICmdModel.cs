@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ICmdModel.cs
-//  Interface for UnitCommandModels.
+// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,26 +20,15 @@ namespace CodeEnv.Master.GameContent {
     using System.Collections.Generic;
 
     /// <summary>
-    /// Interface for UnitCommandModels.
+    /// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
     /// </summary>
     public interface ICmdModel : IMortalModel {
 
-        event Action<IElementModel> onSubordinateElementDeath;
-
-        //new ACommandData Data { get; set; }
-
         string UnitName { get; }
 
-        IElementModel HQElement { get; set; }
+        event Action<IElementModel> onHQElementChanged;
 
-        IList<IElementModel> Elements { get; set; }
-
-        /// Adds the Element to this Command including parenting if needed.
-        /// </summary>
-        /// <param name="element">The Element to add.</param>
-        void AddElement(IElementModel element);
-
-        void RemoveElement(IElementModel element);
+        IEnumerable<IElementModel> UnitElementModels { get; }
 
         bool __CheckForDamage(bool isHQElementAlive);
 

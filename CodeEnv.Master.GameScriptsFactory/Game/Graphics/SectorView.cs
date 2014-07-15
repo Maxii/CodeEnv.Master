@@ -30,6 +30,8 @@ public class SectorView : AItemView {
 
     public SectorPresenter Presenter { get; private set; }
 
+    // Sectors donot have colliders. Context menu actuation comes from SectorExaminer
+
     protected override void Awake() {
         base.Awake();
         Subscribe();
@@ -58,14 +60,6 @@ public class SectorView : AItemView {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region IViewable Members
-
-    public override float Radius {
-        get { return Presenter.Model.Radius; }
-    }
-
-    #endregion
 
 }
 

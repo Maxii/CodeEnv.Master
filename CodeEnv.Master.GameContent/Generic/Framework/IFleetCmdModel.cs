@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IFleetCmdModel.cs
-// Interface for FleetCommandModels.
+// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,13 +19,9 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for FleetCommandModels.
+    /// Interface family that supports non-MonoBehaviour class access to AItemModel-derived MonoBehaviour classes.
     /// </summary>
     public interface IFleetCmdModel : ICmdModel {
-
-        //new FleetCmdData Data { get; set; }
-
-        new IShipModel HQElement { get; set; }
 
         FleetOrder CurrentOrder { get; set; }
 

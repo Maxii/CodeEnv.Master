@@ -68,7 +68,7 @@ public class SystemView : AFocusableItemView, ISelectable, IZoomToFurthest, IHig
         if (_trackingLabel != null) {
             _trackingLabel.gameObject.SetActive(IsDiscernible);
         }
-        _collider.enabled = IsDiscernible;
+        Collider.enabled = IsDiscernible;
         // no reason to manage orbitalPlane LineRenderers as they don't render when not visible to the camera
         // other renderers are handled by their own Views
     }

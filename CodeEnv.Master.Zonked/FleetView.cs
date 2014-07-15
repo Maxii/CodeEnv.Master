@@ -185,13 +185,13 @@ public class FleetView : AFollowableView, IFleetViewable, ISelectable {
 
     // starts getting called upon IsRunning
     private void KeepColliderOverFleetIcon() {
-        (_collider as BoxCollider).size = Vector3.Scale(_iconSize, _fleetIconScaler.Scale);
+        (Collider as BoxCollider).size = Vector3.Scale(_iconSize, _fleetIconScaler.Scale);
         //D.Log("Fleet collider size now = {0}.", _collider.size);
 
         Vector3[] iconWorldCorners = _fleetIconSprite.worldCorners;
         Vector3 iconWorldCenter = iconWorldCorners[0] + (iconWorldCorners[2] - iconWorldCorners[0]) * 0.5F;
         // convert icon's world position to the equivalent local position on the fleetCmd transform
-        (_collider as BoxCollider).center = _transform.InverseTransformPoint(iconWorldCenter);
+        (Collider as BoxCollider).center = _transform.InverseTransformPoint(iconWorldCenter);
     }
 
     private void InitializeTrackingLabel() {
@@ -356,7 +356,7 @@ public class FleetView : AFollowableView, IFleetViewable, ISelectable {
         if (dying != null) {
             _audioSource.PlayOneShot(dying);
         }
-        _collider.enabled = false;
+        Collider.enabled = false;
         //animation.Stop();
         //yield return UnityUtility.PlayAnimation(animation, "die");  // show debree particles for some period of time?
         yield return null;
