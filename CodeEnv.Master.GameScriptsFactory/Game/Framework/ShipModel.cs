@@ -1522,44 +1522,6 @@ public class ShipModel : AUnitElementModel, IShipModel {
 
     #endregion
 
-    #region AssumingStation
-
-    IEnumerator AssumingStation_EnterState() {
-        D.Log("{0}.AssumingStation_EnterState called.", FullName);
-        D.Assert(!_helm.IsAutoPilotEngaged);    // called only from Idling
-        _helm.AllStop();
-        var msg = " is within ";
-        var station = Data.FormationStation;
-        if (!station.IsOnStation) {
-            Vector3 vectorToStation = station.VectorToStation;
-            Vector3 directionToStation = vectorToStation.normalized;
-            _helm.ChangeHeading(directionToStation);
-            yield return null;  // allows heading coroutine to engage and change IsBearingConfirmed to false
-            D.Log("{0} is waiting to complete the turn needed to find our formation station.", FullName);
-            while (!IsBearingConfirmed) {
-                // wait until heading change completed
-                yield return null;
-            }
-            _helm.ChangeSpeed(Speed.Slow);
-            msg = "moving to find";
-        }
-
-        D.Log("{0} {1} our formation station.", FullName, msg);
-        while (!station.IsOnStation) {
-            // wait until we are inside the station
-            D.Log("{0}'s distance to station is {1}.", FullName, station.VectorToStation.magnitude);
-            yield return null;
-        }
-        Return();
-    }
-
-    void AssumingStation_ExitState() {
-        LogEvent();
-        _helm.AllStop();
-    }
-
-    #endregion
-
     #region AssumingOrbit
 
     /// <summary>
