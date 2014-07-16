@@ -153,17 +153,45 @@ namespace CodeEnv.Master.GameContent {
 
         // Note: ColoredTextListBase, ColoredTextList<T> and ColoredTextList_String all in separate class files under Common
 
+        /// <summary>
+        /// 
+        /// </summary>
         public class ColoredTextList_Distance : ColoredTextListBase {
 
-            public ColoredTextList_Distance(Vector3 position, string format = Constants.FormatFloat_1DpMax) {
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ColoredTextList_Distance"/> class. This version
+            /// generates a ColoredTextList containing the distance from the camera's focal plane to the provided
+            /// point in world space.
+            /// </summary>
+            /// <param name="point">The point in world space..</param>
+            /// <param name="format">The format.</param>
+            public ColoredTextList_Distance(Vector3 point, string format = Constants.FormatFloat_1DpMax) {
                 // TODO calculate from Data.Position and <code>static GetSelected()<code>
                 //if(nothing selected) return empty
-                float distance = position.DistanceToCamera();
+                float distance = point.DistanceToCamera();
                 _list.Add(new ColoredText(format.Inject(distance)));
             }
 
-            public ColoredTextList_Distance(Vector3 targeterPosition, Vector3 targetedPosition, string format = Constants.FormatFloat_1DpMax) {
-                float distance = Vector3.Distance(targeterPosition, targetedPosition);
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ColoredTextList_Distance"/> class. This version
+            /// generates a ColoredTextList containing the distance from the camera's focal plane to the camera's 
+            /// current target point.
+            /// </summary>
+            /// <param name="format">The format.</param>
+            public ColoredTextList_Distance(string format = Constants.FormatFloat_1DpMax) {
+                float distance = References.CameraControl.DistanceToCamera;
+                _list.Add(new ColoredText(format.Inject(distance)));
+            }
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ColoredTextList_Distance"/> class. This version
+            /// generates a ColoredTextList containing the distance between 2 points in world space.
+            /// </summary>
+            /// <param name="pointA">The first point in world space.</param>
+            /// <param name="pointB">The second point in world space.</param>
+            /// <param name="format">The format.</param>
+            public ColoredTextList_Distance(Vector3 pointA, Vector3 pointB, string format = Constants.FormatFloat_1DpMax) {
+                float distance = Vector3.Distance(pointA, pointB);
                 _list.Add(new ColoredText(format.Inject(distance)));
             }
         }

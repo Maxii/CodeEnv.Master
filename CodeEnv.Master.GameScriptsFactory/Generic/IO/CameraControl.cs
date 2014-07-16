@@ -111,6 +111,11 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         private set { _transform.position = value; }
     }
 
+    /// <summary>
+    /// The distance from the camera's target point to the camera's focal plane.
+    /// </summary>
+    public float DistanceToCamera { get { return _targetPoint.DistanceToCamera(); } }
+
     private ICameraFocusable _currentFocus;
     /// <summary>
     /// The object the camera is currently focused on if it has one.
@@ -550,7 +555,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
 
     #endregion
 
-    #region CameraState Machine
+    #region Camera StateMachine
 
     #region Focusing
 

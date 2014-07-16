@@ -51,6 +51,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="isDown">if set to <c>true</c> [is down].</param>
         void ShowContextMenuOnPress(bool isDown);
 
+        /// <summary>
+        /// The distance from the camera's target point to the camera's focal plane.
+        /// </summary>
+        float DistanceToCamera { get; }
+
     }
 }
 

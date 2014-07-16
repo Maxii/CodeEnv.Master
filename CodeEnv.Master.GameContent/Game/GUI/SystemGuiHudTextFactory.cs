@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.SectorIndex:
                     return new ColoredTextList_String(data.SectorIndex.ToString());
                 case GuiHudLineKeys.CameraDistance:
-                    return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
+                    return new ColoredTextList_Distance();
                 case GuiHudLineKeys.IntelState:
                     return new ColoredTextList_Intel(intel);
                 case GuiHudLineKeys.Owner:
