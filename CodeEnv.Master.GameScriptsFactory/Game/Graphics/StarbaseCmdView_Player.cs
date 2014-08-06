@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FleetCmdHumanView.cs
-// A class for managing the UI of a FleetCmd owned by the Human player.  
+// File: StarbaseCmdView_Player.cs
+// A class for managing the UI of a StarbaseCmd owned by the Player.  
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,20 +22,13 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// A class for managing the UI of a FleetCmd owned by the Human player.  
+/// A class for managing the UI of a StarbaseCmd owned by the Player.   
 /// </summary>
-public class FleetCmdHumanView : FleetCmdView {
+public class StarbaseCmdView_Player : StarbaseCmdView {
 
-    private CtxObject _ctxObject;
-
-    public new FleetCmdHumanPresenter Presenter {
-        get { return base.Presenter as FleetCmdHumanPresenter; }
+    public new StarbaseCmdPresenter_Player Presenter {
+        get { return base.Presenter as StarbaseCmdPresenter_Player; }
         protected set { base.Presenter = value; }
-    }
-
-    protected override void InitializePresenter() {
-        LogEvent();
-        Presenter = new FleetCmdHumanPresenter(this);
     }
 
     protected override void Start() {
@@ -43,15 +36,23 @@ public class FleetCmdHumanView : FleetCmdView {
         __InitializeContextMenu();
     }
 
+    protected override void InitializePresenter() {
+        Presenter = new StarbaseCmdPresenter_Player(this);
+    }
+
     #region ContextMenu
 
+    private CtxObject _ctxObject;
+
     private void __InitializeContextMenu() {      // IMPROVE use of string
+        UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
         _ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
+        _ctxObject.offsetMenu = true;
+
         CtxMenu generalMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "GeneralMenu");
         _ctxObject.contextMenu = generalMenu;
-        D.Assert(_ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
-        UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
-        //D.Log("Initial Fleet collider size = {0}.", _collider.size);
+        D.Assert(_ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, Presenter.FullName));
+
         EventDelegate.Add(_ctxObject.onShow, OnContextMenuShow);
         EventDelegate.Add(_ctxObject.onSelection, OnContextMenuSelection);
         EventDelegate.Add(_ctxObject.onHide, OnContextMenuHide);

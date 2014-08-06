@@ -54,7 +54,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Game\Graphics\FleetCmdHumanView.cs" />
+    <Compile Include="Game\Graphics\FleetCmdView_AI.cs" />
+    <Compile Include="Game\Graphics\FleetCmdView_Player.cs" />
     <Compile Include="Game\_Debug\Fleets.cs" />
     <Compile Include="Generic\Framework\GeneralFactory.cs" />
     <Compile Include="Generic\Framework\TopographyMonitor.cs" />
@@ -132,9 +133,9 @@
     <Compile Include="Generic\Deferred\SensorRangeTracker.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Game\Graphics\ShipHumanView.cs" />
-    <Compile Include="Game\Graphics\SettlementCmdHumanView.cs" />
-    <Compile Include="Game\Graphics\StarbaseCmdHumanView.cs" />
+    <Compile Include="Game\Graphics\ShipView_Player.cs" />
+    <Compile Include="Game\Graphics\SettlementCmdView_Player.cs" />
+    <Compile Include="Game\Graphics\StarbaseCmdView_Player.cs" />
     <Compile Include="Generic\Framework\SystemFactory.cs" />
     <Compile Include="Game\Framework\MoonModel.cs" />
     <Compile Include="Game\Graphics\MoonView.cs" />
@@ -145,6 +146,8 @@
     <Compile Include="Game\Graphics\SystemView.cs" />
     <Compile Include="Generic\Graphics\MovingOrbiterForShips.cs" />
     <Compile Include="Generic\Graphics\OrbiterForShips.cs" />
+    <Compile Include="Game\Graphics\SettlementCmdView_AI.cs" />
+    <Compile Include="Game\Graphics\StarbaseCmdView_AI.cs" />
     <Compile Include="ThirdParty\MyAStarPointGraph.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Generic\Framework\Loader.cs" />

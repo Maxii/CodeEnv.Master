@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AVectrosityBase.cs
-// Base class for all Vectrosity Classes that generate VectorObjects .
+// Base class for all Vectrosity Classes that generate VectorObjects.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     using Vectrosity;
 
     /// <summary>
-    /// Base class for all Vectrosity Classes that generate VectorObjects .
+    /// Base class for all Vectrosity Classes that generate VectorObjects.
     /// </summary>
     public abstract class AVectrosityBase : APropertyChangeTracking, IDisposable {
 

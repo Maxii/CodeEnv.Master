@@ -160,7 +160,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
 
     private void OnContextMenuSelection() {
         int menuId = CtxObject.current.selectedItem;
-        FleetCmdHumanView selectedFleetView = _selectionMgr.CurrentSelection as FleetCmdHumanView;
+        FleetCmdView_Player selectedFleetView = _selectionMgr.CurrentSelection as FleetCmdView_Player;
         IFleetCmdModel selectedFleet = selectedFleetView.Presenter.Model;
         if (menuId == 4) {  // UNDONE
             SectorModel sector = SectorGrid.GetSector(CurrentSectorIndex);
@@ -256,8 +256,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
             return;
         }
         if (_wireframe == null) {
-            _wireframe = new CubeWireframe("SectorWireframe", _transform, TempGameValues.SectorSize, parent: DynamicObjects.Instance.Folder,
-                width: 2F, color: UnityDebugConstants.SectorHighlightColor);
+            _wireframe = new CubeWireframe("SectorWireframe", _transform, TempGameValues.SectorSize, width: 2F, color: UnityDebugConstants.SectorHighlightColor);
         }
         if (_sectorIDLabel == null) {
             UpdateSectorIDLabel();

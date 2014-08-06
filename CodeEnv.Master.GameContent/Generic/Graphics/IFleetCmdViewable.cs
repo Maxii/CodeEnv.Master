@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ICommandViewable.cs
-// Interface used by a CommandPresenter to communicate with their associated CommandView.
+// File: IFleetCmdViewable.cs
+// Interface used by a FleetCmdPresenter to communicate with their associated FleetCmdView.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,17 +16,19 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using CodeEnv.Master.Common;
+    using System.Collections.Generic;
     using UnityEngine;
 
     /// <summary>
-    /// Interface used by a CommandPresenter to communicate with their associated CommandView.
+    /// Interface used by a FleetCmdPresenter to communicate with their associated FleetCmdView.
     /// </summary>
-    public interface ICommandViewable : IMortalViewable {
+    public interface IFleetCmdViewable : ICommandViewable {
 
-        IGuiTrackable TrackingTarget { set; }
-
-        void ChangeCmdIcon(IIcon icon);
+        /// <summary>
+        /// Assesses whether the plotted course for this fleet should be shown.
+        /// </summary>
+        /// <param name="course">The course.</param>
+        void AssessShowPlottedPath(IList<Vector3> course);
 
     }
 }

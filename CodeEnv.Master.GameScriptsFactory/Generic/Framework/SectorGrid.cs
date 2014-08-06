@@ -394,7 +394,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
         if (_gridWireframe == null) {
             Vector3[] gridPoints;
             if (TryGenerateGridPoints(CameraControl.Instance.SectorIndex, out gridPoints)) {
-                _gridWireframe = new GridWireframe("GridWireframe", gridPoints, DynamicObjects.Instance.Folder);
+                _gridWireframe = new GridWireframe("GridWireframe", gridPoints);
             }
         }
 

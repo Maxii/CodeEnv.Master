@@ -18,6 +18,7 @@ namespace CodeEnv.Master.GameContent {
 
     using CodeEnv.Master.Common;
     using UnityEngine;
+    using Vectrosity;
 
     /// <summary>
     /// Generates an entire Grid of Sectors as a Wireframe.
@@ -28,12 +29,11 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="GridWireframe"/> class.
         /// </summary>
         /// <param name="name">The name.</param>
-        /// <param name="points">The points.</param>
-        /// <param name="parent">The parent to attach the VectorObject too.</param>
+        /// <param name="gridPoints">All the points in the grid.</param>
         /// <param name="width">The width.</param>
         /// <param name="color">The color.</param>
-        public GridWireframe(string name, Vector3[] points, Transform parent = null, float width = 1F, GameColor color = GameColor.Gray)
-            : base(name, points, null, parent, width, color) {
+        public GridWireframe(string name, Vector3[] gridPoints, float width = 1F, GameColor color = GameColor.Gray)
+            : base(name, gridPoints, null, References.DynamicObjects.Folder, LineType.Discrete, width, color) {
         }
 
         public override string ToString() {

@@ -18,6 +18,8 @@
 // default namespace
 
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -25,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// A class for managing the elements of a fleet's UI, those that are not already handled by the UI classes for ships.
 /// </summary>
-public class FleetCmdView : AUnitCommandView, ICameraFollowable, IHighlightTrackingLabel {
+public class FleetCmdView : AUnitCommandView, IFleetCmdViewable, ICameraFollowable, IHighlightTrackingLabel {
 
     public new FleetCmdPresenter Presenter {
         get { return base.Presenter as FleetCmdPresenter; }
@@ -36,6 +38,7 @@ public class FleetCmdView : AUnitCommandView, ICameraFollowable, IHighlightTrack
     private GuiTrackingLabel _trackingLabel;
 
     private VelocityRay _velocityRay;
+    private PathfindingLine _pathfindingLine;
 
     protected override void Awake() {
         base.Awake();
@@ -134,15 +137,33 @@ public class FleetCmdView : AUnitCommandView, ICameraFollowable, IHighlightTrack
     /// <param name="toShow">if set to <c>true</c> [automatic show].</param>
     private void ShowVelocityRay(bool toShow) {
         if (DebugSettings.Instance.EnableFleetVelocityRays) {
-            if (!toShow && _velocityRay == null) {
-                return;
-            }
             if (_velocityRay == null) {
+                if (!toShow) { return; }
                 Reference<float> fleetSpeed = Presenter.GetFleetSpeedReference();
-                _velocityRay = new VelocityRay("FleetVelocityRay", _transform, fleetSpeed, parent: _dynamicObjects.Folder,
-                    width: 2F, color: GameColor.Green);
+                _velocityRay = new VelocityRay("FleetVelocityRay", _transform, fleetSpeed, width: 2F, color: GameColor.Green);
             }
             _velocityRay.Show(toShow);
+        }
+    }
+
+    /// <summary>
+    /// Shows the plotted path of the fleet.
+    /// </summary>
+    /// <param name="toShow">if set to <c>true</c> [to show].</param>
+    /// <param name="course">The course.</param>
+    private void ShowPlottedPath(bool toShow, Vector3[] course) {
+        if (course.Any()) {
+            if (_pathfindingLine == null) {
+                _pathfindingLine = new PathfindingLine("FleetPath", course, Presenter.GetDestinationReference());
+            }
+            else {
+                _pathfindingLine.Points = course;
+                _pathfindingLine.Destination = Presenter.GetDestinationReference();
+            }
+        }
+
+        if (_pathfindingLine != null) {
+            _pathfindingLine.Show(toShow);
         }
     }
 
@@ -161,6 +182,15 @@ public class FleetCmdView : AUnitCommandView, ICameraFollowable, IHighlightTrack
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region IFleetCmdViewable Members
+
+    public void AssessShowPlottedPath(IList<Vector3> course) {
+        bool toShow = course.Count > Constants.Zero && IsSelected;  // OPTIMIZE include IsDiscernible criteria
+        ShowPlottedPath(toShow, course.ToArray());
+    }
+
+    #endregion
 
     #region ICameraFollowable Members
 

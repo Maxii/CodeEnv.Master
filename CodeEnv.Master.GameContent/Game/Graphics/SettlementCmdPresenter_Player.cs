@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FleetCmdHumanPresenter.cs
-// An MVPresenter associated with a FleetCmdHumanView.
+// File: SettlementCmdPresenter_Player.cs
+//  An MVPresenter associated with a SettlementCmdView_Player.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,11 +19,11 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// An MVPresenter associated with a FleetCmdHumanView.
+    ///  An MVPresenter associated with a SettlementCmdView_Player.
     /// </summary>
-    public class FleetCmdHumanPresenter : FleetCmdPresenter {
+    public class SettlementCmdPresenter_Player : SettlementCmdPresenter {
 
-        public FleetCmdHumanPresenter(ICommandViewable view)
+        public SettlementCmdPresenter_Player(ICommandViewable view)
             : base(view) { }
 
         public void RequestContextMenu(bool isDown) {

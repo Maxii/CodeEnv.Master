@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ShipHumanView.cs
-// A class for managing the UI of a ship owned by the Human player.
+// File: ShipView_Player.cs
+// A class for managing the UI of a ship owned by the Player.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -25,12 +25,12 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-///  A class for managing the UI of a ship owned by the Human player. 
+///  A class for managing the UI of a ship owned by the Player. 
 /// </summary>
-public class ShipHumanView : ShipView {
+public class ShipView_Player : ShipView {
 
-    public new ShipHumanPresenter Presenter {
-        get { return base.Presenter as ShipHumanPresenter; }
+    public new ShipPresenter_Player Presenter {
+        get { return base.Presenter as ShipPresenter_Player; }
         protected set { base.Presenter = value; }
     }
 
@@ -41,7 +41,7 @@ public class ShipHumanView : ShipView {
     }
 
     protected override void InitializePresenter() {
-        Presenter = new ShipHumanPresenter(this);
+        Presenter = new ShipPresenter_Player(this);
     }
 
     #region Mouse Events
@@ -60,7 +60,7 @@ public class ShipHumanView : ShipView {
     // NOTE: Can't move all this to Presenter as CtxMenu and CtxObject are loose scripts from Contextual in the default namespace
     // IMPROVE These fields can all be static as long as ships can't have different order options available from the context menu
 
-    private static ShipDirective[] shipMenuOrders = new ShipDirective[] { ShipDirective.JoinFleet, ShipDirective.Disband, ShipDirective.Refit };
+    private static ShipDirective[] _shipMenuOrders = new ShipDirective[] { ShipDirective.JoinFleet, ShipDirective.Disband, ShipDirective.Refit };
     private static CtxMenu _shipMenu;
 
     /// <summary>
@@ -108,10 +108,10 @@ public class ShipHumanView : ShipView {
             // NOTE: Cannot set CtxMenu.items from here as CtxMenu.Awake sets defaultItems = items (null) before I can set items programmatically.
             // Accordingly, the work around is to either use the editor to set the items, or have every CtxObject set their menuItems programmatically.
             // I've chosen to use the editor for now, and to verify my editor settings from here using ValidateShipMenuItems()
-            var desiredShipMenuItems = new CtxMenu.Item[shipMenuOrders.Length];
-            for (int i = 0; i < shipMenuOrders.Length; i++) {
+            var desiredShipMenuItems = new CtxMenu.Item[_shipMenuOrders.Length];
+            for (int i = 0; i < _shipMenuOrders.Length; i++) {
                 var item = new CtxMenu.Item();
-                item.text = shipMenuOrders[i].GetName();    // IMPROVE GetDescription would be better for the context menu display
+                item.text = _shipMenuOrders[i].GetName();    // IMPROVE GetDescription would be better for the context menu display
                 item.id = i;
                 desiredShipMenuItems[i] = item;
             }
@@ -121,12 +121,12 @@ public class ShipHumanView : ShipView {
             _lowestUnusedItemId = _shipMenu.items.Length;
         }
         if (_subMenuLookup == null) {
-            _subMenuLookup = new Dictionary<ShipDirective, CtxMenu>(shipMenuOrders.Length);
+            _subMenuLookup = new Dictionary<ShipDirective, CtxMenu>(_shipMenuOrders.Length);
             var availableSubMenus = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>()
                 .Where(menu => menu.gameObject.name.Equals("SubMenu")).ToArray();
-            D.Assert(shipMenuOrders.Length <= availableSubMenus.Length);
-            for (int i = 0; i < shipMenuOrders.Length; i++) {
-                _subMenuLookup.Add(shipMenuOrders[i], availableSubMenus[i]);
+            D.Assert(_shipMenuOrders.Length <= availableSubMenus.Length);
+            for (int i = 0; i < _shipMenuOrders.Length; i++) {
+                _subMenuLookup.Add(_shipMenuOrders[i], availableSubMenus[i]);
             }
         }
         if (_subMenuOrderLookup == null) {
@@ -163,8 +163,8 @@ public class ShipHumanView : ShipView {
 
     private void PopulateSubMenus() {
         //D.Log("ShipMenu.items length = {0}.", _shipMenu.items.Length);
-        foreach (var order in shipMenuOrders) {
-            int orderItemID = shipMenuOrders.IndexOf(order);
+        foreach (var order in _shipMenuOrders) {
+            int orderItemID = _shipMenuOrders.IndexOf(order);
             CtxMenu subMenu = _subMenuLookup[order];
             switch (order) {
                 case ShipDirective.JoinFleet:
@@ -237,7 +237,7 @@ public class ShipHumanView : ShipView {
         _disbandRefitBaseLookup.Clear();
         _subMenuOrderLookup.Clear();
         // no need to cleanup _subMenuLookup[order].items[] as a new items[] will be assigned when a submenu is used again
-        _lowestUnusedItemId = shipMenuOrders.Length;
+        _lowestUnusedItemId = _shipMenuOrders.Length;
     }
 
     #endregion

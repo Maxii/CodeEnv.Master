@@ -20,6 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using System.Collections.Generic;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
+    using UnityEngine;
 
     /// <summary>
     /// An MVPresenter associated with a FleetView.
@@ -30,9 +31,16 @@ namespace CodeEnv.Master.GameContent {
 
         protected new FleetCmdData Data { get { return base.Data as FleetCmdData; } }
 
-        public FleetCmdPresenter(ICommandViewable view)
+        protected new IFleetCmdViewable View { get { return base.View as IFleetCmdViewable; } }
+
+        public FleetCmdPresenter(IFleetCmdViewable view)
             : base(view) {
             Subscribe();
+        }
+
+        protected override void Subscribe() {
+            base.Subscribe();
+            Model.onCoursePlotChanged += OnCoursePlotChanged;
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
@@ -47,6 +55,23 @@ namespace CodeEnv.Master.GameContent {
 
         protected override IIcon MakeCmdIconInstance() {
             return FleetIconFactory.Instance.MakeInstance(Data, View.PlayerIntel);
+        }
+
+        public override void OnIsSelectedChanged() {
+            base.OnIsSelectedChanged();
+            View.AssessShowPlottedPath(Model.Course);
+        }
+
+        private void OnCoursePlotChanged() {
+            View.AssessShowPlottedPath(Model.Course);
+        }
+
+        /// <summary>
+        /// Gets the reference to the potentially changing location of the fleet's destination.
+        /// </summary>
+        /// <returns></returns>
+        public Reference<Vector3> GetDestinationReference() {
+            return Model.Destination;
         }
 
         public override string ToString() {

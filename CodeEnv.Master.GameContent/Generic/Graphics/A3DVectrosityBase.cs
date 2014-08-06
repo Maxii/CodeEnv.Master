@@ -45,6 +45,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected Transform _target;    // can be null as GridWireframe doesn t use a target Transform
+        private LineType _lineType;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="A3DVectrosityBase" /> class.
@@ -53,24 +54,26 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="points">The points.</param>
         /// <param name="target">The transform that this line follows in the scene.</param>
         /// <param name="parent">The parent to attach the VectorObject too.</param>
+        /// <param name="lineType">Type of the line.</param>
         /// <param name="width">The width.</param>
         /// <param name="color">The color.</param>
-        public A3DVectrosityBase(string name, Vector3[] points, Transform target, Transform parent = null, float width = 1F, GameColor color = GameColor.White)
+        public A3DVectrosityBase(string name, Vector3[] points, Transform target, Transform parent, LineType lineType = LineType.Discrete, float width = 1F, GameColor color = GameColor.White)
             : base(name, parent) {
             _points = points;
             _target = target;
+            _lineType = lineType;
             _lineWidth = width;
             _color = color;
         }
 
         protected override void Initialize() {
-            _line = new VectorLine(LineName, _points, Color.ToUnityColor(), material, LineWidth);
+            _line = new VectorLine(LineName, _points, Color.ToUnityColor(), material, LineWidth, _lineType);
             if (_target != null) { _line.drawTransform = _target; } // added as Vectrosity 3.0 removed Draw3D(Transform)
             if (Parent != null) { OnParentChanged(); }
         }
 
         /// <summary>
-        /// Shows or hides a line emanating from the target.
+        /// Shows or hides a VectorLine that moves with the provided <c>target</c> if not null.
         /// </summary>
         /// <param name="toShow">if set to <c>true</c> [automatic show].</param>
         public virtual void Show(bool toShow) {
@@ -102,12 +105,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected virtual void Draw3D() {
             _line.Draw3D();
-            //if (_target != null) {  
-            //    _line.Draw3D(_target); // _line.Draw3D(_target);  removed by Vectrosity 3.0
-            //}
-            //else {
-            //    _line.Draw3D();
-            //}
+            // _line.Draw3D(_target);  removed by Vectrosity 3.0
         }
 
         private void OnColorChanged() {

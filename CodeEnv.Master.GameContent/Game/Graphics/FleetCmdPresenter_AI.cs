@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ICommandViewable.cs
-// Interface used by a CommandPresenter to communicate with their associated CommandView.
+// File: FleetCmdPresenter_AI.cs
+// An MVPresenter associated with a FleetCmdView_AI.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,16 +17,22 @@
 namespace CodeEnv.Master.GameContent {
 
     using CodeEnv.Master.Common;
-    using UnityEngine;
 
     /// <summary>
-    /// Interface used by a CommandPresenter to communicate with their associated CommandView.
+    /// An MVPresenter associated with a FleetCmdView_AI.
     /// </summary>
-    public interface ICommandViewable : IMortalViewable {
+    public class FleetCmdPresenter_AI : FleetCmdPresenter {
 
-        IGuiTrackable TrackingTarget { set; }
+        public FleetCmdPresenter_AI(IFleetCmdViewable view)
+            : base(view) { }
 
-        void ChangeCmdIcon(IIcon icon);
+        public void RequestContextMenu(bool isDown) {
+            _cameraControl.ShowContextMenuOnPress(isDown);
+        }
+
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
+        }
 
     }
 }

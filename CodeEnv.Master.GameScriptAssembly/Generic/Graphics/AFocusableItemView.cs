@@ -177,8 +177,7 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
         if (_circles == null) {
             float normalizedRadius = calcNormalizedCircleRadius();
             string circlesTitle = "{0} Circle".Inject(gameObject.name);
-            _circles = new HighlightCircle(circlesTitle, transform, normalizedRadius, parent: _dynamicObjects.Folder,
-                isRadiusDynamic: _isCirclesRadiusDynamic, maxCircles: 3);
+            _circles = new HighlightCircle(circlesTitle, transform, normalizedRadius, _isCirclesRadiusDynamic, maxCircles: 3);
             _circles.Colors = new GameColor[3] { UnityDebugConstants.FocusedColor, UnityDebugConstants.SelectedColor, UnityDebugConstants.GeneralHighlightColor };
             _circles.Widths = new float[3] { 2F, 2F, 1F };
         }

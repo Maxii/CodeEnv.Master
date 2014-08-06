@@ -69,9 +69,9 @@ public class SystemCreator : AMonoBase, IDisposable {
 
     // these must be set from Awake() 
     private static GameTimeDuration _minSystemOrbitPeriod;
-    private static GameTimeDuration _systemOrbitPeriodIncrement; 
-    private static GameTimeDuration _minMoonOrbitPeriod; 
-    private static GameTimeDuration _moonOrbitPeriodIncrement; 
+    private static GameTimeDuration _systemOrbitPeriodIncrement;
+    private static GameTimeDuration _minMoonOrbitPeriod;
+    private static GameTimeDuration _moonOrbitPeriodIncrement;
 
     public bool isCompositionPreset;
     public int maxRandomPlanets = 3;
@@ -363,7 +363,7 @@ public class SystemCreator : AMonoBase, IDisposable {
                 orbitSlotForPlanet.AssumeOrbit(planet.transform, orbiterName);
                 // assign the planet's name using its orbital slot
                 planet.Data.Name = name;
-                D.Log("{0} has assumed orbit slot {1} in System {2}.", planet.FullName, slotIndex, SystemName);
+                //D.Log("{0} has assumed orbit slot {1} in System {2}.", planet.FullName, slotIndex, SystemName);
             }
             else {
                 if (planetsToDestroy == null) {
@@ -454,7 +454,7 @@ public class SystemCreator : AMonoBase, IDisposable {
                         var moonOrbitSlot = new CelestialOrbitSlot(startDepthForMoonOrbitSlot, endDepthForMoonOrbitSlot, planet, orbitPeriod);
                         string orbiterName = name + " Orbiter";
                         moonOrbitSlot.AssumeOrbit(moon.transform, orbiterName);
-                        D.Log("{0} has assumed orbit slot {1} around Planet {2}.", moon.FullName, slotIndex, planet.FullName);
+                        //D.Log("{0} has assumed orbit slot {1} around Planet {2}.", moon.FullName, slotIndex, planet.FullName);
 
                         startDepthForMoonOrbitSlot = endDepthForMoonOrbitSlot;
                         slotIndex++;

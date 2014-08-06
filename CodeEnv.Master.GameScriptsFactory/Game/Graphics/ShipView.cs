@@ -145,8 +145,7 @@ public class ShipView : AUnitElementView, ISelectable {
                 Reference<float> shipSpeed = Presenter.GetShipSpeedReference();
                 D.Assert(_dynamicObjects != null);
                 D.Assert(_dynamicObjects.Folder);
-                _velocityRay = new VelocityRay("ShipVelocity", _transform, shipSpeed, parent: _dynamicObjects.Folder,
-                    width: 1F, color: GameColor.Gray);
+                _velocityRay = new VelocityRay("ShipVelocity", _transform, shipSpeed, width: 1F, color: GameColor.Gray);
             }
             _velocityRay.Show(toShow);
         }

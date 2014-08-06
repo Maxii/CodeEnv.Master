@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ICommandViewable.cs
-// Interface used by a CommandPresenter to communicate with their associated CommandView.
+// File: SettlementCmdPresenter_AI.cs
+// An MVPresenter associated with a SettlementCmdView_AI.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,16 +17,23 @@
 namespace CodeEnv.Master.GameContent {
 
     using CodeEnv.Master.Common;
-    using UnityEngine;
 
     /// <summary>
-    /// Interface used by a CommandPresenter to communicate with their associated CommandView.
+    /// An MVPresenter associated with a SettlementCmdView_AI.
     /// </summary>
-    public interface ICommandViewable : IMortalViewable {
+    public class SettlementCmdPresenter_AI : SettlementCmdPresenter {
 
-        IGuiTrackable TrackingTarget { set; }
+        public SettlementCmdPresenter_AI(ICommandViewable view)
+            : base(view) { }
 
-        void ChangeCmdIcon(IIcon icon);
+        public void RequestContextMenu(bool isDown) {
+            _cameraControl.ShowContextMenuOnPress(isDown);
+        }
+
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
+        }
+
 
     }
 }

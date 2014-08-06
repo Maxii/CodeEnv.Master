@@ -53,14 +53,13 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="target">The target.</param>
-        /// <param name="boxSize">Size of the box.</param>
-        /// <param name="parent">The parent to attach the VectorObject too.</param>
+        /// <param name="cubeSize">Size of the cube.</param>
         /// <param name="width">The width.</param>
         /// <param name="color">The color.</param>
-        public CubeWireframe(string name, Transform target, Vector3 boxSize, Transform parent = null, float width = 1F, GameColor color = GameColor.White)
-            : base(name, new Vector3[24], target, parent, width, color) {
+        public CubeWireframe(string name, Transform target, Vector3 cubeSize, float width = 1F, GameColor color = GameColor.White)
+            : base(name, new Vector3[24], target, References.DynamicObjects.Folder, LineType.Discrete, width, color) {
             Arguments.ValidateNotNull(target);
-            _size = boxSize;
+            _size = cubeSize;
         }
 
         protected override void Initialize() {
@@ -78,12 +77,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Draw3D() {
             base.Draw3D();
-            //if (_target != null) {
-            //    _pointLine.Draw3D(_target);   // _line.Draw3D(_target);  removed by Vectrosity 3.0
-            //}
-            //else {
-            //    _pointLine.Draw3D();
-            //}
+            // _line.Draw3D(_target);  removed by Vectrosity 3.0
             _pointLine.Draw3D();
         }
 

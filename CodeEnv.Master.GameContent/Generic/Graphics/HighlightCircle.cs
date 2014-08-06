@@ -60,13 +60,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The name.</param>
         /// <param name="target">The target.</param>
         /// <param name="normalizedRadius">The normalized radius.</param>
-        /// <param name="parent">The parent to attach the VectorObject too.</param>
         /// <param name="isRadiusDynamic">if set to <c>true</c> [is radius dynamic].</param>
         /// <param name="maxCircles">The maximum circles.</param>
         /// <param name="width">The width.</param>
         /// <param name="color">The color.</param>
-        public HighlightCircle(string name, Transform target, float normalizedRadius, Transform parent = null, bool isRadiusDynamic = true, int maxCircles = 1, float width = 1F, GameColor color = GameColor.White)
-            : base(name, parent) {
+        public HighlightCircle(string name, Transform target, float normalizedRadius, bool isRadiusDynamic = true, int maxCircles = 1, float width = 1F, GameColor color = GameColor.White)
+            : base(name, References.DynamicObjects.Folder) {
             Target = target;
             NormalizedRadius = normalizedRadius;
             IsRadiusDynamic = isRadiusDynamic;

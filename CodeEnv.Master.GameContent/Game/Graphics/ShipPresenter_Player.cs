@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: StarbaseCmdHumanPresenter.cs
-//  An MVPresenter associated with a StarbaseCmdHumanView.
+// File: ShipPresenter_Player.cs
+// An MVPresenter associated with a ShipView_Player.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,11 +19,11 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    ///  An MVPresenter associated with a StarbaseCmdHumanView.
+    /// An MVPresenter associated with a ShipView_Player.
     /// </summary>
-    public class StarbaseCmdHumanPresenter : StarbaseCmdPresenter {
+    public class ShipPresenter_Player : ShipPresenter {
 
-        public StarbaseCmdHumanPresenter(ICommandViewable view)
+        public ShipPresenter_Player(IElementViewable view)
             : base(view) { }
 
         public void RequestContextMenu(bool isDown) {
@@ -33,7 +33,6 @@ namespace CodeEnv.Master.GameContent {
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
-
     }
 }
 

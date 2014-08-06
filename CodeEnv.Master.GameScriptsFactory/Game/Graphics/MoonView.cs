@@ -82,7 +82,7 @@ public class MoonView : APlanetoidView {
 
     private void OnContextMenuSelection() {
         int menuId = CtxObject.current.selectedItem;
-        FleetCmdHumanView selectedFleetView = _selectionMgr.CurrentSelection as FleetCmdHumanView;
+        FleetCmdView_Player selectedFleetView = _selectionMgr.CurrentSelection as FleetCmdView_Player;
         IFleetCmdModel selectedFleet = selectedFleetView.Presenter.Model;
         var thisPlanetoidTarget = Presenter.Model as IDestinationTarget;
         if (menuId == 0) {  // UNDONE

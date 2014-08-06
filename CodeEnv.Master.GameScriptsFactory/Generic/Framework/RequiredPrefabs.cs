@@ -39,17 +39,17 @@ public class RequiredPrefabs : AMonoBaseSingleton<RequiredPrefabs> {
     public OrbiterForShips orbiterForShips;
     public MovingOrbiterForShips movingOrbiterForShips;
 
-    public FleetCmdView aiFleetCmd;
+    public FleetCmdView_AI aiFleetCmd;
     public ShipView[] aiShips;
 
-    public FleetCmdHumanView humanFleetCmd;
-    public ShipHumanView[] humanShips;
+    public FleetCmdView_Player humanFleetCmd;
+    public ShipView_Player[] humanShips;
 
-    public SettlementCmdView aiSettlementCmd;
-    public SettlementCmdHumanView humanSettlementCmd;
+    public SettlementCmdView_AI aiSettlementCmd;
+    public SettlementCmdView_Player humanSettlementCmd;
 
-    public StarbaseCmdView aiStarbaseCmd;
-    public StarbaseCmdHumanView humanStarbaseCmd;
+    public StarbaseCmdView_AI aiStarbaseCmd;
+    public StarbaseCmdView_Player humanStarbaseCmd;
 
     public FacilityModel[] facilities;
 

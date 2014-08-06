@@ -873,7 +873,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
             int previousFrameCount = Time.frameCount - 1;   // FIXME makes initial framesSinceLastPass = 1
 
             float maxRadianTurnRatePerSecond = Mathf.Deg2Rad * _ship.Data.MaxTurnRate * GameTime.HoursPerSecond;
-            D.Log("{0} initiating turn to heading {1} at {2:0.} degrees/hour.", _ship.FullName, _ship.Data.RequestedHeading, _ship.Data.MaxTurnRate);
+            //D.Log("{0} initiating turn to heading {1} at {2:0.} degrees/hour.", _ship.FullName, _ship.Data.RequestedHeading, _ship.Data.MaxTurnRate);
             while (!_ship.Data.CurrentHeading.IsSameDirection(_ship.Data.RequestedHeading, 1F)) {
                 int framesSinceLastPass = Time.frameCount - previousFrameCount; // needed when using yield return WaitForSeconds()
                 previousFrameCount = Time.frameCount;
@@ -1463,7 +1463,9 @@ public class ShipModel : AUnitElementModel, IShipModel {
             }
         }
         else {
-            D.Log("{0} is already on station.", FullName);
+            if (!IsHQElement) {
+                D.Log("{0} is already on station.", FullName);
+            }
         }
         // TODO register as available
         yield return null;
@@ -2236,7 +2238,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
     }
 
     public void OnTopographicBoundaryTransition(SpaceTopography newTopography) {
-        D.Warn("{0}.OnTopographicBoundaryTransition({1}).", FullName, newTopography.GetName());
+        //D.Log("{0}.OnTopographicBoundaryTransition({1}).", FullName, newTopography.GetName());
         Data.Topography = newTopography;
         Data.AssessFtlAvailability();
     }

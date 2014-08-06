@@ -152,8 +152,8 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
 
     protected override void IssueFirstUnitCommand() {
         LogEvent();
-        __GetFleetAttackUnderway();
-        // __GetFleetUnderway();
+        //__GetFleetAttackUnderway();
+        __GetFleetUnderway();
     }
 
     private void __GetFleetUnderway() {

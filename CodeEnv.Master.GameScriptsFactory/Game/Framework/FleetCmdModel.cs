@@ -70,6 +70,12 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
             }
         }
 
+        private List<Vector3> _course = new List<Vector3>();    // IList<> does not support list.AddRange()
+        /// <summary>
+        /// The course this fleet will follow when the autopilot is engaged. Can be empty.
+        /// </summary>
+        internal List<Vector3> Course { get { return _course; } }   // IList<> does not support list.AddRange()
+
         /// <summary>
         /// The duration in seconds between course progress assessments. The default is
         /// every second at a speed of 1 unit per day and normal gamespeed.
@@ -82,7 +88,6 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         private bool _isCourseReplot;
         private Vector3 _destinationAtLastPlot;
         private float _targetMovementReplotThresholdDistanceSqrd = 10000;   // 100 units
-        private List<Vector3> _course = new List<Vector3>();
         private int _currentWaypointIndex;
         private Seeker _seeker;
         private FleetCmdModel _fleet;
@@ -128,12 +133,12 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         /// approach or following a waypoint course.
         /// </summary>
         public void EngageAutoPilot() {
-            D.Assert(_course != null, "{0} has not plotted a course. PlotCourse to a destination, then Engage.".Inject(_fleet.FullName));
+            D.Assert(Course.Count != Constants.Zero, "{0} has not plotted a course. PlotCourse to a destination, then Engage.".Inject(_fleet.FullName));
             DisengageAutoPilot();
 
             _fleet.HQElement.onDestinationReached += OnFlagshipReachedDestination;
 
-            if (_course.Count == 2) {
+            if (Course.Count == 2) {
                 // there is no intermediate waypoint
                 InitiateDirectCourseToTarget();
                 return;
@@ -174,18 +179,13 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         /// </summary>
         /// <returns></returns>
         private IEnumerator EngageWaypointCourse() {
-            if (_course == null) {
-                D.Error("{0}'s course to {1} is null. Exiting coroutine.", _fleet.FullName, Destination);
-                //D.Error("{0}'s course to {1} is null. Exiting coroutine.", _fleet.FullName, DestinationInfo.Destination);
-                yield break;    // exit immediately
-            }
-            D.Assert(_course.Count > 2);    // course is not just start and destination
+            D.Assert(Course.Count > 2, "{0}'s course to {1} has no waypoints.".Inject(_fleet.FullName, Destination));    // course is not just start and destination
 
             _currentWaypointIndex = 1;  // skip the starting position
-            Vector3 currentWaypointLocation = _course[_currentWaypointIndex];
+            Vector3 currentWaypointLocation = Course[_currentWaypointIndex];
             _fleet.__IssueShipMovementOrders(new StationaryLocation(currentWaypointLocation), FleetSpeed);
 
-            int targetDestinationIndex = _course.Count - 1;
+            int targetDestinationIndex = Course.Count - 1;
             while (_currentWaypointIndex < targetDestinationIndex) {
                 if (_hasFlagshipReachedDestination) {
                     _hasFlagshipReachedDestination = false;
@@ -196,15 +196,16 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
                         continue;
                     }
                     D.Log("{0} has reached Waypoint_{1} at {2}. Current destination is now Waypoint_{3} at {4}.", _fleet.FullName,
-                        _currentWaypointIndex - 1, currentWaypointLocation, _currentWaypointIndex, _course[_currentWaypointIndex]);
+                        _currentWaypointIndex - 1, currentWaypointLocation, _currentWaypointIndex, Course[_currentWaypointIndex]);
 
-                    currentWaypointLocation = _course[_currentWaypointIndex];
+                    currentWaypointLocation = Course[_currentWaypointIndex];
                     Vector3 detour;
                     if (CheckForObstacleEnrouteToWaypointAt(currentWaypointLocation, out detour)) {
                         // there is an obstacle enroute to the next waypoint, so use the detour provided instead
-                        _course.Insert(_currentWaypointIndex, detour);
+                        Course.Insert(_currentWaypointIndex, detour);
+                        OnCourseChanged();
                         currentWaypointLocation = detour;
-                        targetDestinationIndex = _course.Count - 1;
+                        targetDestinationIndex = Course.Count - 1;
                         // validate that the detour provided does not itself leave us with another obstacle to encounter
                         D.Assert(!CheckForObstacleEnrouteToWaypointAt(currentWaypointLocation, out detour));
                     }
@@ -239,37 +240,46 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
         #endregion
 
+        private void OnCourseChanged() {
+            if (_fleet.onCoursePlotChanged != null) {
+                _fleet.onCoursePlotChanged();
+            }
+        }
+
         private void OnFlagshipReachedDestination() {
             D.Log("{0} reporting that Flagship {1} has reached destination as instructed.", _fleet.FullName, _fleet.HQElement.FullName);
             _hasFlagshipReachedDestination = true;
         }
 
-        private void OnCoursePlotCompleted(Path course) {
-            if (course.error) {
+        private void OnCoursePlotCompleted(Path path) {
+            if (path.error) {
                 D.Error("{0} generated an error plotting a course to {1}.", _fleet.FullName, Target.FullName);
                 //D.Error("{0} generated an error plotting a course to {1}.", _fleet.FullName, DestinationInfo.Target.FullName);
                 OnCoursePlotFailure();
                 return;
             }
-            if (!course.vectorPath.Any()) {
+            if (!path.vectorPath.Any()) {
                 D.Error("{0}'s course contains no path to {1}.", _fleet.FullName, Target.FullName);
                 //D.Error("{0}'s course contains no path to {1}.", _fleet.FullName, DestinationInfo.Target.FullName);
                 OnCoursePlotFailure();
                 return;
             }
 
-            _course.Clear();
-            _course.AddRange(course.vectorPath);
-            D.Log("{0}'s waypoint course to {1} is: {2}.", _fleet.FullName, Target.FullName, _course.Concatenate());
-            //D.Log("{0}'s waypoint course to {1} is: {2}.", _fleet.FullName, DestinationInfo.Target.FullName, _course.Concatenate());
+            Course.Clear();
+            Course.AddRange(path.vectorPath);
+            OnCourseChanged();
+            D.Log("{0}'s waypoint course to {1} is: {2}.", _fleet.FullName, Target.FullName, Course.Concatenate());
+            //D.Log("{0}'s waypoint course to {1} is: {2}.", _fleet.FullName, DestinationInfo.Target.FullName, Course.Concatenate());
             //PrintNonOpenSpaceNodes(course);
 
             // Note: The assumption that the first location in course is our start location, and last is the destination appears to be true
             // Unfortunately, the test below only works when the fleet is not already moving - ie. the values change in the time it takes to plot the course
-            // D.Assert(_course[0].IsSame(_fleet.Data.Position) && _course[_course.Count - 1].IsSame(DestinationInfo.Destination),
-            //    "Course start = {0}, FleetPosition = {1}. Course end = {2}, Destination = {3}.".Inject(_course[0], _fleet.Data.Position, _course[_course.Count - 1], DestinationInfo.Destination));
+            // D.Assert(Course[0].IsSame(_fleet.Data.Position) && Course[Course.Count - 1].IsSame(DestinationInfo.Destination),
+            //    "Course start = {0}, FleetPosition = {1}. Course end = {2}, Destination = {3}.".Inject(Course[0], _fleet.Data.Position, Course[Course.Count - 1], DestinationInfo.Destination));
 
-            TryImproveCourseWithSystemAccessPoints();
+            if (TryImproveCourseWithSystemAccessPoints()) {
+                OnCourseChanged();
+            }
 
             if (_isCourseReplot) {
                 InitializeReplotValues();
@@ -315,13 +325,15 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
             //_pilotJob.Kill(); // handled by Fleet statemachine which should call Disengage
             D.Log("{0} at {1} reached Destination {2} at {3} (w/station offset). Actual proximity {4:0.0000} units.", _fleet.FullName, _fleet.Data.Position, Target.FullName, Destination, DistanceToDestination);
             _fleet.OnDestinationReached();
-            _course.Clear();
+            Course.Clear();
+            OnCourseChanged();
         }
 
         private void OnDestinationUnreachable() {
             //_pilotJob.Kill(); // handled by Fleet statemachine which should call Disengage
             _fleet.OnDestinationUnreachable();
-            _course.Clear();
+            Course.Clear();
+            OnCourseChanged();
         }
 
         /// <summary>
@@ -379,13 +391,13 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
             if (_fleetSystemExitPoint != Vector3.zero) {
                 // add a system exit point close to the fleet
                 D.Log("{0} is inserting System exitPoint {1} into course.", _fleet.FullName, _fleetSystemExitPoint);
-                _course.Insert(1, _fleetSystemExitPoint);   // IMPROVE might be another system waypoint already present following start
+                Course.Insert(1, _fleetSystemExitPoint);   // IMPROVE might be another system waypoint already present following start
                 result = true;
             }
             if (_targetSystemEntryPoint != Vector3.zero) {
                 // add a system entry point close to the target
                 D.Log("{0} is inserting System entryPoint {1} into course.", _fleet.FullName, _targetSystemEntryPoint);
-                _course.Insert(_course.Count - 1, _targetSystemEntryPoint); // IMPROVE might be another system waypoint already present just before target
+                Course.Insert(Course.Count - 1, _targetSystemEntryPoint); // IMPROVE might be another system waypoint already present just before target
                 result = true;
             }
             return result;
@@ -652,12 +664,6 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     }
 
-    private FleetOrder _currentOrder;
-    public FleetOrder CurrentOrder {
-        get { return _currentOrder; }
-        set { SetProperty<FleetOrder>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
-    }
-
     public new FleetCmdData Data {
         get { return base.Data as FleetCmdData; }
         set { base.Data = value; }
@@ -669,10 +675,6 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     }
 
     private FleetNavigator _navigator;
-
-    public bool IsBearingConfirmed {
-        get { return Elements.All(e => (e as ShipModel).IsBearingConfirmed); }
-    }
 
     /// <summary>
     /// The formation's stations.
@@ -865,12 +867,6 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
                 Destroy((fst as Component).gameObject);
             });
         }
-    }
-
-    public void __OnHQElementEmergency() {
-        CurrentState = FleetState.Idling;   // temp to cause Nav disengage if currently engaged
-        D.Warn("{0} needs to retreat!!!", FullName);
-        // TODO issue fleet order retreat
     }
 
     public void __RefreshShipSpeedValues() {
@@ -1194,6 +1190,32 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     #region IDestinationTarget Members
 
     public override bool IsMobile { get { return true; } }
+
+    #endregion
+
+    #region IFleetCmdModel Members
+
+    public event Action onCoursePlotChanged;
+
+    public IList<Vector3> Course { get { return _navigator.Course; } }
+
+    public Reference<Vector3> Destination { get { return new Reference<Vector3>(() => _navigator.Destination); } }
+
+    public void __OnHQElementEmergency() {
+        CurrentState = FleetState.Idling;   // temp to cause Nav disengage if currently engaged
+        D.Warn("{0} needs to retreat!!!", FullName);
+        // TODO issue fleet order retreat
+    }
+
+    private FleetOrder _currentOrder;
+    public FleetOrder CurrentOrder {
+        get { return _currentOrder; }
+        set { SetProperty<FleetOrder>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
+    }
+
+    public bool IsBearingConfirmed {
+        get { return Elements.All(e => (e as ShipModel).IsBearingConfirmed); }
+    }
 
     #endregion
 

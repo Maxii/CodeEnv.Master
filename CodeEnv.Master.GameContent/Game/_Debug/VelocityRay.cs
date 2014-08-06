@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: VelocityRay.cs
-// Produces a Ray eminating from Target that indicates the Target's forward direction and speed.
+// Produces a Ray emanating from Target that indicates the Target's forward direction and speed.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,9 +18,10 @@ namespace CodeEnv.Master.GameContent {
 
     using CodeEnv.Master.Common;
     using UnityEngine;
+    using Vectrosity;
 
     /// <summary>
-    /// Produces a Ray eminating from Target that indicates the Target's forward direction and speed.
+    /// Produces a Ray emanating from Target that indicates the Target's forward direction and speed.
     /// </summary>
     public class VelocityRay : A3DVectrosityBase {
 
@@ -30,13 +31,12 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="VelocityRay" /> class.
         /// </summary>
         /// <param name="name">The name.</param>
-        /// <param name="target">The transform that this VelocityRay is eminates from in the scene.</param>
-        /// <param name="speed">The speed.</param>
-        /// <param name="parent">The parent to attach the VectorObject too.</param>
+        /// <param name="target">The transform that this VelocityRay emanates from in the scene.</param>
+        /// <param name="speed">The potentially changing speed as a reference.</param>
         /// <param name="width">The width.</param>
         /// <param name="color">The color.</param>
-        public VelocityRay(string name, Transform target, Reference<float> speed, Transform parent = null, float width = 1F, GameColor color = GameColor.White)
-            : base(name, new Vector3[2], target, parent, width, color) {
+        public VelocityRay(string name, Transform target, Reference<float> speed, float width = 1F, GameColor color = GameColor.White)
+            : base(name, new Vector3[2], target, References.DynamicObjects.Folder, LineType.Discrete, width, color) {
             _speed = speed;
         }
 

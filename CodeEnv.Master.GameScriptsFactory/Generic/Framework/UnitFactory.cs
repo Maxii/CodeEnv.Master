@@ -55,7 +55,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory>, IUnitFactory {
     protected override void Initialize() {
         var reqdPrefabs = RequiredPrefabs.Instance;
         _aiShipPrefabs = reqdPrefabs.aiShips.Select<ShipView, GameObject>(v => v.gameObject).ToArray();
-        _humanShipPrefabs = reqdPrefabs.humanShips.Select<ShipHumanView, GameObject>(v => v.gameObject).ToArray();
+        _humanShipPrefabs = reqdPrefabs.humanShips.Select<ShipView_Player, GameObject>(v => v.gameObject).ToArray();
 
         facilityPrefabs = reqdPrefabs.facilities;
 
@@ -99,7 +99,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory>, IUnitFactory {
     /// <param name="model">The model.</param>
     /// <returns><c>false</c> if the model was not compatible and had to be replaced.</returns>
     public bool MakeFleetCmdInstance(FleetCmdStat cmdStat, IPlayer owner, ref FleetCmdModel model) {
-        if (owner.IsHuman == (model.gameObject.GetComponent<FleetCmdHumanView>() != null)) {
+        if (owner.IsHuman == (model.gameObject.GetComponent<FleetCmdView_Player>() != null)) {
             // the owner and model view are compatible
             D.Assert(!model.enabled, "{0} should not be enabled.".Inject(model.FullName));
             model.Data = new FleetCmdData(cmdStat) {
@@ -143,7 +143,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory>, IUnitFactory {
     /// <param name="element">The ship which is designated the HQ Element.</param>
     /// <param name="onCompletion">Delegate that returns the Fleet on completion.</param>
     public void MakeFleetInstance(FleetCmdStat cmdStat, IPlayer owner, ShipModel element, Action<FleetCmdModel> onCompletion) {
-        D.Assert(owner.IsHuman == (element.gameObject.GetComponent<ShipHumanView>() != null), "Owner {0} is not compatible with {1} view.".Inject(owner.LeaderName, element.FullName));
+        D.Assert(owner.IsHuman == (element.gameObject.GetComponent<ShipView_Player>() != null), "Owner {0} is not compatible with {1} view.".Inject(owner.LeaderName, element.FullName));
         FleetCmdModel cmd = MakeFleetCmdInstance(cmdStat, owner);
         GameObject unitGo = new GameObject(cmdStat.Name);
         UnityUtility.AttachChildToParent(unitGo, Fleets.Instance.Folder.gameObject);
@@ -203,7 +203,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory>, IUnitFactory {
     /// </returns>
     public bool MakeInstance(ShipStat shipStat, IEnumerable<WeaponStat> weapStats, IPlayer owner, ref ShipModel model) {
         D.Assert(!model.enabled, "{0} should not be enabled.".Inject(model.FullName));
-        if (owner.IsHuman == (model.gameObject.GetComponent<ShipHumanView>() != null)) {
+        if (owner.IsHuman == (model.gameObject.GetComponent<ShipView_Player>() != null)) {
             // owner and provided view are compatible
             GameObject shipGo = model.gameObject;
             ShipCategory categoryFromModel = GameUtility.DeriveEnumFromName<ShipCategory>(shipGo.name);
@@ -255,7 +255,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory>, IUnitFactory {
     ///   <c>false</c> if the model was not compatible and had to be replaced.
     /// </returns>
     public bool MakeStarbaseCmdInstance(StarbaseCmdStat cmdStat, IPlayer owner, ref StarbaseCmdModel model) {
-        if (owner.IsHuman == (model.gameObject.GetComponent<StarbaseCmdHumanView>() != null)) {
+        if (owner.IsHuman == (model.gameObject.GetComponent<StarbaseCmdView_Player>() != null)) {
             // owner and model view are compatible
             model.Data = new StarbaseCmdData(cmdStat) {
                 Owner = owner
@@ -298,7 +298,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory>, IUnitFactory {
     /// <param name="model">The model.</param>
     /// <returns><c>false</c> if the model was not compatible and had to be replaced.</returns>
     public bool MakeSettlementCmdInstance(SettlementCmdStat cmdStat, IPlayer owner, ref SettlementCmdModel model) {
-        if (owner.IsHuman == (model.gameObject.GetComponent<SettlementCmdHumanView>() != null)) {
+        if (owner.IsHuman == (model.gameObject.GetComponent<SettlementCmdView_Player>() != null)) {
             // the owner and model view are compatible
             model.Data = new SettlementCmdData(cmdStat) {
                 Owner = owner

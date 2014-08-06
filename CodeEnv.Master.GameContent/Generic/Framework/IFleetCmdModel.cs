@@ -16,6 +16,9 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
+    using System.Collections.Generic;
+    using CodeEnv.Master.Common;
     using UnityEngine;
 
     /// <summary>
@@ -33,6 +36,22 @@ namespace CodeEnv.Master.GameContent {
         bool IsBearingConfirmed { get; }
 
         void __OnHQElementEmergency();
+
+        /// <summary>
+        /// The fleet's current course as a list of points.
+        /// </summary>
+        IList<Vector3> Course { get; }
+
+        /// <summary>
+        /// Reference to the potentially moving destination of the fleet.
+        /// </summary>
+        Reference<Vector3> Destination { get; }
+
+        /// <summary>
+        /// Occurs when the fleet's course is changed, including when the
+        /// course is cleared.
+        /// </summary>
+        event Action onCoursePlotChanged;
 
     }
 }
