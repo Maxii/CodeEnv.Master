@@ -26,6 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// Singleton Game Input class that receives and records Mouse and special Key events not intended for the Gui.
     /// The mouse events come from the Ngui event system and the key events come from Unity's Input class.
     /// </summary>
+    [Obsolete]
     public class GameInput : AGenericSingleton<GameInput> {
 
         // WARNING: This class is referenced in CameraControl's Configuration classes which are initialized outside of Awake or Start. 

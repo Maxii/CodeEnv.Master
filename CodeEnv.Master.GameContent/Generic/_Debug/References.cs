@@ -54,6 +54,8 @@ namespace CodeEnv.Master.GameContent {
 
         public static IUniverse Universe { get; set; }
 
+        //public static IGameInput GameInput { get; set; }
+
     }
 }
 

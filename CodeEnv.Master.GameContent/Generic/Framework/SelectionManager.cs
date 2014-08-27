@@ -45,6 +45,7 @@ namespace CodeEnv.Master.GameContent {
         private void Subscribe() {
             _subscribers = new List<IDisposable>();
             GameInput.Instance.onUnconsumedClick += OnUnconsumedMouseButtonClick;
+            //References.GameInput.onUnconsumedClick += OnUnconsumedMouseButtonClick;
         }
 
         private void OnUnconsumedMouseButtonClick(NguiMouseButton button) {
@@ -68,6 +69,7 @@ namespace CodeEnv.Master.GameContent {
             _subscribers.ForAll(s => s.Dispose());
             _subscribers.Clear();
             GameInput.Instance.onUnconsumedClick -= OnUnconsumedMouseButtonClick;
+            //References.GameInput.onUnconsumedClick -= OnUnconsumedMouseButtonClick;
         }
 
         public override string ToString() {

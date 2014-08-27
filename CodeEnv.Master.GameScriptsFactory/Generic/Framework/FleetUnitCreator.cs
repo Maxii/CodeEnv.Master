@@ -36,6 +36,9 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
 
     private static UnitFactory _factory;    // IMPROVE move back to AUnitCreator using References.IUnitFactory?
 
+    public bool move;
+    public bool attack;
+
     protected override void Awake() {
         base.Awake();
         if (_factory == null) {
@@ -152,8 +155,16 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
 
     protected override void IssueFirstUnitCommand() {
         LogEvent();
+        if (move) {
+            if (attack) {
+                __GetFleetAttackUnderway();
+            }
+            else {
+                __GetFleetUnderway();
+            }
+        }
         //__GetFleetAttackUnderway();
-        __GetFleetUnderway();
+        //__GetFleetUnderway();
     }
 
     private void __GetFleetUnderway() {
