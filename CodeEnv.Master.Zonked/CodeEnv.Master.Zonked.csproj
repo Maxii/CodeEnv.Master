@@ -142,7 +142,6 @@
     <Compile Include="IFleetCommand.cs" />
     <Compile Include="IFleetViewable.cs" />
     <Compile Include="IGameDate.cs" />
-    <Compile Include="IGameInput.cs" />
     <Compile Include="IGuiHudPublisher.cs" />
     <Compile Include="IHasData.cs" />
     <Compile Include="IMoonModel.cs" />
@@ -178,6 +177,7 @@
     <Compile Include="MyCtxPickHandler.cs" />
     <Compile Include="MyNguiButtonPlayAnimation.cs" />
     <Compile Include="Navigator.cs" />
+    <Compile Include="NguiGenericEventHandler.cs" />
     <Compile Include="OpeYield.cs" />
     <Compile Include="OrbitalPlane.cs" />
     <Compile Include="OrbitalPlaneManager.cs" />

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: References.cs
-// Simple source of useful static references to important MonoBehaviour interfaces.
+// Simple source of useful static references to important Unity-compiled MonoBehaviour scripts.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,9 +19,9 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Simple source of useful static references to important MonoBehaviour interfaces.
+    /// Simple source of useful static references to important Unity-compiled MonoBehaviour scripts.
     /// Primary purpose is to allow the relocation of classes that need these references
-    /// out of loose scripts.
+    /// out of loose scripts and into pre-compiled assemblies.
     /// 
     /// WARNING: These references should not be accessed from the using class's Awake()
     /// (or equivalent) method as they can be null during Awake() when a new scene is 
@@ -54,7 +54,9 @@ namespace CodeEnv.Master.GameContent {
 
         public static IUniverse Universe { get; set; }
 
-        //public static IGameInput GameInput { get; set; }
+        public static IGameInput GameInput { get; set; }
+
+        public static ISphericalHighlight SphericalHighlight { get; set; }
 
     }
 }

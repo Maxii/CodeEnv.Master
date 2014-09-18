@@ -55,7 +55,8 @@ public abstract class AMonoBaseSingleton<T> : AMonoBase, IInstanceIdentity where
             if (_instance == null && !_isApplicationQuiting) {
                 // value is required for the first time, so look for it                        
                 Type thisType = typeof(T);
-                _instance = FindObjectOfType(thisType) as T;
+                _instance = FindObjectOfType(thisType) as T;    // WARNING: Does not find T if another Type is also present on same gameobject
+                // eg. T = DebugHud, but DebugHud gameobject also contains UILabel...
                 if (_instance == null) {
                     // an instance of this singleton doesn't yet exist so create a temporary one
                     System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(2);

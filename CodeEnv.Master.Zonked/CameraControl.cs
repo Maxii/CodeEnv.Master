@@ -1403,7 +1403,7 @@ public class CameraControl : AMonoBaseSingleton<CameraControl> {
         }
 
         public override bool IsActivated() {
-            return base.IsActivated() && _gameInput.isDragValueWaiting && GameInputHelper.IsMouseButtonDown(mouseButton)
+            return base.IsActivated() && _gameInput.IsDragValueWaiting && GameInputHelper.IsMouseButtonDown(mouseButton)
                 && !GameInputHelper.IsAnyMouseButtonDownBesides(mouseButton);
         }
     }
@@ -1420,7 +1420,7 @@ public class CameraControl : AMonoBaseSingleton<CameraControl> {
         }
 
         public override bool IsActivated() {
-            return base.IsActivated() && _gameInput.isDragValueWaiting && GameInputHelper.IsMouseButtonDown(firstMouseButton)
+            return base.IsActivated() && _gameInput.IsDragValueWaiting && GameInputHelper.IsMouseButtonDown(firstMouseButton)
                 && GameInputHelper.IsMouseButtonDown(secondMouseButton);
         }
     }

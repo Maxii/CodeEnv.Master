@@ -54,6 +54,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\_Debug\NguiEventLogger.cs" />
+    <Compile Include="Generic\IO\GameInput.cs" />
     <Compile Include="Game\Graphics\FleetCmdView_AI.cs" />
     <Compile Include="Game\Graphics\FleetCmdView_Player.cs" />
     <Compile Include="Game\_Debug\Fleets.cs" />
@@ -77,6 +79,7 @@
     <Compile Include="Generic\Graphics\AHud.cs" />
     <Compile Include="Generic\Graphics\GuiTooltip.cs" />
     <Compile Include="Generic\Graphics\ScaleRelativeToCamera.cs" />
+    <Compile Include="Generic\IO\PlayerViews.cs" />
     <Compile Include="Generic\_Debug\DebugHud.cs" />
     <Compile Include="Generic\Graphics\Billboard.cs" />
     <Compile Include="Generic\Graphics\GuiCursorHud.cs" />
@@ -112,7 +115,6 @@
     <Compile Include="Generic\Graphics\Orbiter.cs" />
     <Compile Include="Generic\Graphics\MovingOrbiter.cs" />
     <Compile Include="Generic\Graphics\GuiTrackingLabelFactory.cs" />
-    <Compile Include="Generic\IO\NguiGenericEventHandler.cs" />
     <Compile Include="Game\GUI\GuiGraphicsOptionMenuAcceptButton.cs" />
     <Compile Include="Game\GUI\GuiQualitySettingPopupList.cs" />
     <Compile Include="Game\GUI\GuiSelectedReadout.cs" />
@@ -148,6 +150,8 @@
     <Compile Include="Generic\Graphics\OrbiterForShips.cs" />
     <Compile Include="Game\Graphics\SettlementCmdView_AI.cs" />
     <Compile Include="Game\Graphics\StarbaseCmdView_AI.cs" />
+    <Compile Include="Game\Graphics\SphericalHighlight.cs" />
+    <Compile Include="ThirdParty\MyEnvelopContent.cs" />
     <Compile Include="ThirdParty\MyAStarPointGraph.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Generic\Framework\Loader.cs" />
@@ -161,8 +165,6 @@
     <Compile Include="Game\Graphics\ShipView.cs" />
     <Compile Include="Game\Graphics\StarView.cs" />
     <Compile Include="Game\Framework\SettlementCmdModel.cs" />
-    <Compile Include="ThirdParty\MyNguiButtonPlayAnimation.cs" />
-    <Compile Include="Generic\IO\PlayerViews.cs" />
     <Compile Include="Game\_Debug\Universe.cs" />
     <Compile Include="Game\Graphics\UniverseCenterView.cs" />
     <Compile Include="Game\Framework\UniverseCenterModel.cs" />
@@ -192,6 +194,10 @@
       <Project>{ac0f8b23-dd41-4bab-a967-aa2c33bb1d0b}</Project>
       <Name>Ngui</Name>
       <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Plugins\SpaceD\SpaceD.csproj">
+      <Project>{d1d9e6da-d2ac-4cdc-b8a8-3b749d41ca5e}</Project>
+      <Name>SpaceD</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Plugins\Vectrosity\Vectrosity.csproj">
       <Project>{742472e2-310c-430c-a59b-1b527d852181}</Project>

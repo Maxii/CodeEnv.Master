@@ -57,7 +57,7 @@ namespace CodeEnv.Master.GameContent {
 
         private StringBuilder _text = new StringBuilder();
 
-        private IDictionary<GuiHudLineKeys, IColoredTextList> _textLine;
+        private IDictionary<GuiHudLineKeys, IColoredTextList> _textLineLookup;
 
         public bool IsDirty { get; private set; }
         public IntelCoverage IntelCoverage { get; private set; }
@@ -99,40 +99,43 @@ namespace CodeEnv.Master.GameContent {
         public GuiHudText(IntelCoverage intelCoverage)
             : this(intelCoverage, new Dictionary<GuiHudLineKeys, IColoredTextList>()) { }
 
-        private GuiHudText(IntelCoverage intelCoverage, IDictionary<GuiHudLineKeys, IColoredTextList> textLine) {
+        private GuiHudText(IntelCoverage intelCoverage, IDictionary<GuiHudLineKeys, IColoredTextList> textLineLookup) {
             IntelCoverage = intelCoverage;
-            _textLine = textLine;
+            _textLineLookup = textLineLookup;
             IsDirty = true;
         }
 
         /// <summary>
-        /// Adds the specified key and text list to this GuiCursorHudText.
+        /// Adds or replaces any existing list of text elements for this lineKey with the provided list. 
+        /// If the existing list and the provided list are identical, this method does nothing.
         /// </summary>
         /// <param name="lineKey">The line key.</param>
-        /// <param name="textList">The text list.</param>
-        /// <exception cref="ArgumentException" >Attempting to add a line key that is already present.</exception>
+        /// <param name="textList">The list of text elements.</param>
         public void Add(GuiHudLineKeys lineKey, IColoredTextList textList) {
-            D.Log("Adding {0}.", lineKey.GetName());
-            _textLine.Add(lineKey, textList);
+            if (_textLineLookup.ContainsKey(lineKey)) {
+                IColoredTextList existingList = _textLineLookup[lineKey];
+                if (IsEqual(textList, existingList)) {
+                    //D.Warn("{0} key {1} has identical content [{2}].", GetType().Name, lineKey.GetName(), textList.List.Concatenate());
+                    return;
+                }
+                _textLineLookup.Remove(lineKey);
+                D.Log("Removing {0} HUD line [{1}].", lineKey.GetName(), existingList.List.Concatenate());
+            }
+            D.Log("Adding {0} HUD line [{1}].", lineKey.GetName(), textList.List.Concatenate());
+            _textLineLookup.Add(lineKey, textList);
             //_data[lineKey] = textList;
             IsDirty = true;
         }
 
-        /// <summary>
-        /// Replaces any existing list of text elements for this lineKey with the provided list. If no such list already
-        /// exists, the new textElements list is simply added.
-        /// </summary>
-        /// <param name="lineKey">The line key.</param>
-        /// <param name="textList">The text elements.</param>
-        public void Replace(GuiHudLineKeys lineKey, IColoredTextList textList) {
-            if (_textLine.ContainsKey(lineKey)) {
-                _textLine.Remove(lineKey);
+        private bool IsEqual(IColoredTextList textListA, IColoredTextList textListB) {
+            if (textListA.List.Except(textListB.List).Any()) {
+                return false;
             }
-            Add(lineKey, textList);
+            return true;
         }
 
         public void Clear() {
-            _textLine.Clear();
+            _textLineLookup.Clear();
             IsDirty = true;
         }
 
@@ -147,7 +150,7 @@ namespace CodeEnv.Master.GameContent {
             _text.Clear();
             foreach (var key in _displayLineOrder) {
                 IColoredTextList coloredTextList;
-                if (_textLine.TryGetValue(key, out coloredTextList)) {
+                if (_textLineLookup.TryGetValue(key, out coloredTextList)) {
                     if (coloredTextList.List.Count == 0) {
                         continue;
                     }
@@ -172,8 +175,8 @@ namespace CodeEnv.Master.GameContent {
 
             string baseText;
             if (_baseDisplayLineContent.TryGetValue(lineKey, out baseText)) {
-                D.Log("BaseText = {0}", baseText);
-                D.Log("Text Elements = {0}", textElements.Concatenate<string>(Constants.Comma));
+                //D.Log("BaseText = {0}", baseText);
+                //D.Log("Text Elements = {0}", textElements.Concatenate<string>(Constants.Comma));
                 string colorEmbeddedLineText = baseText.Inject(textElements.ToArray<string>());
                 return colorEmbeddedLineText;
             }

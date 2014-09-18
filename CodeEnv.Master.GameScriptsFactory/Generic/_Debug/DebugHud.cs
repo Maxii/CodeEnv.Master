@@ -33,6 +33,7 @@ public class DebugHud : AHud<DebugHud>, IDebugHud, IDisposable {
     protected override void Awake() {
         base.Awake();
         Subscribe();
+        SetLabelPivot(UIWidget.Pivot.TopLeft);
     }
 
     private void Subscribe() {

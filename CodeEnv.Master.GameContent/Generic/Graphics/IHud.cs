@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IHud.cs
-// Interface for GuiHuds so non-scripts can refer to it.
+// Interface for Huds so non-scripts can refer to it.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,21 +19,9 @@ namespace CodeEnv.Master.GameContent {
     using System.Text;
 
     /// <summary>
-    /// Interface for GuiHuds so non-scripts can refer to it.
+    /// Interface for Huds so non-scripts can refer to it.
     /// </summary>
     public interface IHud {
-
-        /// <summary>
-        /// Populate the HUD with text.
-        /// </summary>
-        /// <param name="text">The text to place in the HUD.</param>
-        void Set(string text);
-
-        /// <summary>
-        /// Populate the HUD with text from the StringBuilder.
-        /// </summary>
-        /// <param name="sb">The StringBuilder containing the text.</param>
-        void Set(StringBuilder sb);
 
         /// <summary>
         /// Clear the HUD.

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IGameManager.cs
-//  Interface for easy access to the GameManager.
+// Interface allowing access to the associated Unity-compiled script. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,8 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Interface for easy access to the GameManager.
+    /// Interface allowing access to the associated Unity-compiled script. 
+    /// Typically, a static reference to the script is established by GameManager in References.cs, providing access to the script from classes located in pre-compiled assemblies.
     /// </summary>
     public interface IGameManager {
 

@@ -18,6 +18,7 @@ namespace CodeEnv.Master.GameContent {
 
     using System.Collections;
     using CodeEnv.Master.Common;
+    using UnityEngine;
 
     /// <summary>
     /// Interface for the multiple GuiHudPublisher&lt;DataType&gt; types that
@@ -32,12 +33,13 @@ namespace CodeEnv.Master.GameContent {
         bool IsHudShowing { get; }
 
         /// <summary>
-        /// Shows or hides a current GuiCursorHudText 
-        /// instance containing the text to display at the cursor.
+        /// Shows or hides a current GuiCursorHudText instance containing the HUD text to display.
         /// </summary>
         /// <param name="toShow">if set to <c>true</c> shows the hud, otherwise hides it.</param>
         /// <param name="intel">The intel.</param>
-        void ShowHud(bool toShow, IIntel intel);
+        /// <param name="position">The position of the GameObject where this HUD should display.</param>
+        void ShowHud(bool toShow, IIntel intel, Vector3 position);
+
 
         /// <summary>
         /// Clients can optionally provide additional GuiCursorHudLineKeys they wish to routinely update whenever GetHudText is called.

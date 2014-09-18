@@ -138,7 +138,8 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
                 References.GeneralFactory = GeneralFactory.Instance;
                 References.UsefulTools = UsefulTools.Instance;
                 References.Universe = Universe.Instance;
-                //References.GameInput = GameInput.Instance;
+                References.GameInput = GameInput.Instance;
+                References.SphericalHighlight = SphericalHighlight.Instance;
                 // GuiHudPublisher factory reference settings moved to GuiCursorHud
                 break;
             default:
@@ -327,11 +328,18 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
     /// that the UICamera script is attached too and this eventReceiverMask. This means that the event 
     /// system will only 'see' layers that both the camera can see AND the layer mask is allowed to see. 
     /// </summary>
-    /// <param name="toEnable">if set to <c>true</c> all layers the camera can see will be visible to the event system.</param>
+    /// <param name="toEnable">if set to <c>false</c> all layers will be invisible to the event system.</param>
     private void EnableEvents(bool toEnable) {
         BetterList<UICamera> allEventDispatchersInScene = UICamera.list;
         foreach (var eventDispatcher in allEventDispatchersInScene) {
-            eventDispatcher.eventReceiverMask = toEnable ? -1 : 0;
+            if (eventDispatcher.eventType == UICamera.EventType.UI_2D) {
+                eventDispatcher.eventReceiverMask = toEnable ? CameraControl.Camera2DEventReceiverMask : CameraControl.DisableEventsMask;
+                continue;
+            }
+            if (eventDispatcher.eventType == UICamera.EventType.World_3D) {
+                eventDispatcher.eventReceiverMask = toEnable ? CameraControl.Camera3DTargetingMask : CameraControl.DisableEventsMask;
+                continue;
+            }
         }
     }
 

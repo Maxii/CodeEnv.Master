@@ -37,9 +37,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private GuiHudText _guiCursorHudText;
-
         private Job _job;
-
         private DataType _data;
         private GuiHudLineKeys[] _optionalKeys;
         private IList<IDisposable> _subscribers;
@@ -63,18 +61,12 @@ namespace CodeEnv.Master.GameContent {
             _hudRefreshRate *= speedChangeRatio;
         }
 
-        /// <summary>
-        /// Shows or hides a current GuiCursorHudText
-        /// instance containing the text to display at the cursor.
-        /// </summary>
-        /// <param name="toShow">if set to <c>true</c> shows the hud, otherwise hides it.</param>
-        /// <param name="intelLevel">The intel level.</param>
-        public void ShowHud(bool toShow, IIntel intel) {
-            D.Log("ShowHud({0} called. Intel = {1}.", toShow, intel.CurrentCoverage.GetName());
+        public void ShowHud(bool toShow, IIntel intel, Vector3 position) {
+            D.Log("ShowHud({0} called. Intel = {1}, Position = {2}.", toShow, intel.CurrentCoverage.GetName(), position);
             if (toShow) {
                 PrepareHudText(intel);
                 if (_job == null) {
-                    _job = new Job(DisplayHudAtCursor(intel), toStart: true, onJobComplete: delegate {
+                    _job = new Job(DisplayHudAtCursor(intel, position), toStart: true, onJobComplete: delegate {
                         // TODO
                     });
                 }
@@ -88,7 +80,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private IEnumerator DisplayHudAtCursor(IIntel intel) {
+        private IEnumerator DisplayHudAtCursor(IIntel intel, Vector3 position) {
             while (true) {
                 UpdateGuiCursorHudText(intel, GuiHudLineKeys.CameraDistance);
                 // always update IntelState as the Coverage can change even if data age does not need refreshing
@@ -97,7 +89,7 @@ namespace CodeEnv.Master.GameContent {
                 if (_optionalKeys != null) {
                     UpdateGuiCursorHudText(intel, _optionalKeys);
                 }
-                GuiCursorHud.Set(_guiCursorHudText);
+                GuiCursorHud.Set(_guiCursorHudText, position);
                 yield return new WaitForSeconds(_hudRefreshRate);
             }
         }
@@ -120,7 +112,7 @@ namespace CodeEnv.Master.GameContent {
             IColoredTextList coloredTextList;
             foreach (var key in keys) {
                 coloredTextList = TextFactory.MakeInstance(key, intel, _data);
-                _guiCursorHudText.Replace(key, coloredTextList);
+                _guiCursorHudText.Add(key, coloredTextList);
             }
         }
 

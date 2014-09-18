@@ -157,12 +157,29 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
 
     private string[] keyboardAxesNames = new string[] { UnityConstants.KeyboardAxisName_Horizontal, UnityConstants.KeyboardAxisName_Vertical };
 
+    /// <summary>
+    /// The layers the UI 2DCamera is allowed to detect when looking for a UI element under the mouse.
+    /// </summary>
+    public static LayerMask Camera2DEventReceiverMask { get { return _camera2DEventReceiverMask; } }
+    private static LayerMask _camera2DEventReceiverMask = LayerMaskExtensions.CreateInclusiveMask(Layers.UI);
+
+    /// <summary>
+    /// The layers the main 3DCamera is allowed to detect when looking for a target under the mouse.
+    /// </summary>
+    public static LayerMask Camera3DTargetingMask { get { return _camera3DTargetingMask; } }
+    private static LayerMask _camera3DTargetingMask = LayerMaskExtensions.CreateExclusiveMask(Layers.UniverseEdge,
+        Layers.DeepSpace, Layers.UI, Layers.Vectrosity2D, Layers.CelestialObjectKeepout, Layers.IgnoreRaycast);
+
+    public static LayerMask DisableEventsMask { get { return (LayerMask)Constants.Zero; } }
+
+    /// <summary>
+    /// The layers the main 3DCamera is allowed to render.
+    /// </summary>
+    private LayerMask _3DCameraCullingLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
+        Layers.DummyTarget, Layers.UniverseEdge, Layers.Ship, Layers.Facility, Layers.Planetoid, Layers.Star, Layers.SystemOrbitalPlane);
+
     private LayerMask _universeEdgeOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.UniverseEdge);
     private LayerMask _dummyTargetOnlyLayerMask = LayerMaskExtensions.CreateInclusiveMask(Layers.DummyTarget);
-    private LayerMask _cameraTargetsOnlyLayerMask = LayerMaskExtensions.CreateExclusiveMask(Layers.UniverseEdge,
-        Layers.DeepSpace, Layers.Gui2D, Layers.Vectrosity2D, Layers.CelestialObjectKeepout, Layers.IgnoreRaycast);
-    private LayerMask _layersVisibleToCamera = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
-        Layers.DummyTarget, Layers.UniverseEdge, Layers.Ship, Layers.Facility, Layers.Planetoid, Layers.Star);
 
     private Vector3 _screenCenter = new Vector3(Screen.width / 2, Screen.height / 2, 0F);
 
@@ -288,7 +305,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         _camera.nearClipPlane = 0.02F;
         _camera.fieldOfView = 50F;
 
-        _camera.cullingMask = _layersVisibleToCamera;
+        _camera.cullingMask = _3DCameraCullingLayerMask;
 
         _camera.farClipPlane = _universeRadius * 2F;
         //_camera.layerCullSpherical = true;
@@ -301,10 +318,18 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     }
 
     private void InitializeMainCameraEventDispatcher() {
-        _mainCameraEventDispatcher.eventType = UICamera.EventType.World_3D; //World;
+        /* Ngui 3.7.1 workaround that makes sure all UICamera event delegates are raised.
+               * Note: 3.7.1 introduced these event delegates, deprecating genericEventHandler. Unfortunately, the delegate
+               * is only fired if there is a gameObject underneath the cursor. My MainCamera (this) relies on GameInput detecting
+               * all events (currently onScroll, onClick, onDragStart, onDrag, onDragEnd). Setting the fallThrough field to any 
+               * gameObject makes sure all event delegates are raised, albeit using the fallThrough gameObject when not 
+               * over a gameObject. */
+        UICamera.fallThrough = gameObject;
+
+        _mainCameraEventDispatcher.eventType = UICamera.EventType.World_3D;
         _mainCameraEventDispatcher.useKeyboard = true;
         _mainCameraEventDispatcher.useMouse = true;
-        // enabling the event system moved to GameManager, now covering both 2D and 3D events
+        // Note: Enabling the event system moved to GameManager, now covering both 2D and 3D events
     }
 
     private void InitializeCameraPreferences() {
@@ -1200,7 +1225,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         Transform proposedZoomTarget;
         Vector3 proposedZoomPoint;
         Ray ray = _camera.ScreenPointToRay(screenPoint);
-        RaycastHit[] hits = Physics.RaycastAll(ray, Mathf.Infinity, _cameraTargetsOnlyLayerMask);
+        RaycastHit[] hits = Physics.RaycastAll(ray, Mathf.Infinity, Camera3DTargetingMask);
         //foreach (var hit in hits) {
         //    D.Log("ICameraTargetable RaycastHit {0}.", hit.transform.name);
         //}
@@ -1498,7 +1523,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         }
 
         public override bool IsActivated() {
-            return base.IsActivated() && _gameInput.isDragValueWaiting && GameInputHelper.IsMouseButtonDown(mouseButton)
+            return base.IsActivated() && _gameInput.IsDragValueWaiting && GameInputHelper.IsMouseButtonDown(mouseButton)
                 && !GameInputHelper.IsAnyMouseButtonDownBesides(mouseButton);
         }
     }
@@ -1515,7 +1540,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         }
 
         public override bool IsActivated() {
-            return base.IsActivated() && _gameInput.isDragValueWaiting && GameInputHelper.IsMouseButtonDown(firstMouseButton)
+            return base.IsActivated() && _gameInput.IsDragValueWaiting && GameInputHelper.IsMouseButtonDown(firstMouseButton)
                 && GameInputHelper.IsMouseButtonDown(secondMouseButton);
         }
     }

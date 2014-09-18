@@ -472,7 +472,7 @@ namespace CodeEnv.Master.Common {
         public static float OnScreenDiameter(this Collider col) {
             Vector3 colliderPosition = col.transform.position;
             D.Log("ColliderPosition = {0}.".Inject(colliderPosition));
-            if (!UnityUtility.IsVisibleAt(colliderPosition)) {
+            if (!UnityUtility.IsWithinCameraViewport(colliderPosition)) {
                 return Constants.ZeroF;
             }
             float colliderDiameter = col.bounds.extents.magnitude;
@@ -488,7 +488,7 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Determines whether this renderer is in the line of sight of (and therefore rendered by) the provided camera.
-        /// Does not take into account layer-specific farClipPlanes and my approach to a workaround is not reliable.
+        /// WARNING: Does not take into account layer-specific farClipPlanes and my approach to a workaround is not reliable.
         /// </summary>
         /// <param name="renderer">The renderer.</param>
         /// <param name="camera">The camera.</param>
@@ -509,6 +509,17 @@ namespace CodeEnv.Master.Common {
                 }
             }
             return inDefaultFrustrum;
+        }
+
+        /// <summary>
+        /// Sets the alpha value of the provided material.
+        /// </summary>
+        /// <param name="material">The material.</param>
+        /// <param name="value">The value.</param>
+        public static void SetAlpha(this Material material, float value) {
+            Color color = material.color;
+            color.a = value;
+            material.color = color;
         }
 
     }

@@ -106,7 +106,8 @@ public abstract class AItemView : AMonoBase, IViewable, ICameraLOSChangedClient,
             D.Warn("{0}.{1}.{2} HudPublisher is null.", parentName, _transform.name, GetType().Name);
             return;
         }
-        HudPublisher.ShowHud(toShow, PlayerIntel);
+        D.Log("HudPublisher.Show() called from {0}.", _transform.name);
+        HudPublisher.ShowHud(toShow, PlayerIntel, _transform.position);
     }
 
     #region Debug

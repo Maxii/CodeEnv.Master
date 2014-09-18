@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ICameraControl.cs
-//  Interface allowing access to CameraControl Properties.
+// Interface allowing access to the associated Unity-compiled script. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,10 +20,10 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface allowing access to CameraControl Properties.
+    /// Interface allowing access to the associated Unity-compiled script. 
+    /// Typically, a static reference to the script is established by GameManager in References.cs, providing access to the script from classes located in pre-compiled assemblies.
     /// </summary>
     public interface ICameraControl {
-
 
         /// <summary>
         /// Readonly. The location of the camera in sector space.

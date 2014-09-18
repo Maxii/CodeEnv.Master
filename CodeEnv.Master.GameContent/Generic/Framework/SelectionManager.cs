@@ -32,8 +32,6 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<ISelectable>(ref _currentSelection, value, "CurrentSelection", null, OnSelectionChanging); }
         }
 
-        private IList<IDisposable> _subscribers;
-
         private SelectionManager() {
             Initialize();
         }
@@ -43,9 +41,14 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Subscribe() {
-            _subscribers = new List<IDisposable>();
-            GameInput.Instance.onUnconsumedClick += OnUnconsumedMouseButtonClick;
-            //References.GameInput.onUnconsumedClick += OnUnconsumedMouseButtonClick;
+            GameStatus.Instance.onIsRunningOneShot += DeferredSubscribe;
+        }
+
+        /// <summary>
+        /// Defers accessing References until it is gauranteed to be initialized.
+        /// </summary>
+        private void DeferredSubscribe() {
+            References.GameInput.onUnconsumedClick += OnUnconsumedMouseButtonClick;
         }
 
         private void OnUnconsumedMouseButtonClick(NguiMouseButton button) {
@@ -66,10 +69,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Unsubscribe() {
-            _subscribers.ForAll(s => s.Dispose());
-            _subscribers.Clear();
-            GameInput.Instance.onUnconsumedClick -= OnUnconsumedMouseButtonClick;
-            //References.GameInput.onUnconsumedClick -= OnUnconsumedMouseButtonClick;
+            References.GameInput.onUnconsumedClick -= OnUnconsumedMouseButtonClick;
         }
 
         public override string ToString() {

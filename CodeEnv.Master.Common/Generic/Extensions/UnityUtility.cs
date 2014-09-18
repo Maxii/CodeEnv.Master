@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: UnityUtilities.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// File: UnityUtility.cs
+// Static class of utility methods that are specific to Unity.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,6 +23,9 @@ namespace CodeEnv.Master.Common {
     using UnityEngine;
     using System.Collections;
 
+    /// <summary>
+    /// Static class of utility methods that are specific to Unity.
+    /// </summary>
     public static class UnityUtility {
 
         private static Vector3EqualityComparer _vector3EqualityComparer;
@@ -36,14 +39,24 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Determines whether the world point provided is currently visible from the main camera.
+        /// Determines whether the world point provided is currently within the viewport of the main camera.
         /// </summary>
         /// <param name="worldPoint">The world point.</param>
         /// <returns>
-        ///   <c>true</c> if [is visible at] [the specified world point]; otherwise, <c>false</c>.
+        ///   <c>true</c> if the worldPoint is within the viewport of the main camera; otherwise, <c>false</c>.
         /// </returns>
-        public static bool IsVisibleAt(Vector3 worldPoint) {
-            Vector3 viewportPoint = Camera.main.WorldToViewportPoint(worldPoint);
+        public static bool IsWithinCameraViewport(Vector3 worldPoint) {
+            return IsWithinCameraViewport(worldPoint, Camera.main);
+        }
+
+        /// <summary>
+        /// Determines whether the world point provided is currently within the viewport of the provided camera.
+        /// </summary>
+        /// <param name="worldPoint">The world point.</param>
+        /// <param name="camera">The camera.</param>
+        /// <returns></returns>
+        public static bool IsWithinCameraViewport(Vector3 worldPoint, Camera camera) {
+            Vector3 viewportPoint = camera.WorldToViewportPoint(worldPoint);
             if (Utility.IsInRange(viewportPoint.x, 0F, 1F) && Utility.IsInRange(viewportPoint.y, 0F, 1F) && viewportPoint.z > 0) {
                 return true;
             }

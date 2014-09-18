@@ -33,6 +33,12 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
     public float circleScaleFactor = 3.0F;
 
     /// <summary>
+    /// Property that allows each derived class to establish the size of the sphericalHighlight
+    /// relative to the class's radius.
+    /// </summary>
+    protected virtual float SphericalHighlightScaleFactor { get { return 2F; } }
+
+    /// <summary>
     /// The radius in units of the conceptual 'globe' that encompasses this Item. Readonly.
     /// </summary>
     protected float Radius { get { return Presenter.Model.Radius; } }
@@ -78,12 +84,15 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
         D.Log("{0}.{1}.OnHover({2}) called. IsDiscernible = {3}.", Presenter.FullName, GetType().Name, isOver, IsDiscernible);
         if (IsDiscernible && isOver) {
             ShowHud(true);
+            ShowSphericalHighlight(true);
             return;
         }
         ShowHud(false);
+        ShowSphericalHighlight(false);
     }
 
-    void OnClick() {
+    protected virtual void OnClick() {
+        D.Log("{0}.OnClick() called.", GetType().Name);
         if (IsDiscernible) {
             if (_inputHelper.IsLeftMouseButton()) {
                 KeyCode notUsed;
@@ -97,8 +106,11 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
             else if (_inputHelper.IsMiddleMouseButton()) {
                 OnMiddleClick();
             }
-            else {
+            else if (_inputHelper.IsRightMouseButton()) {
                 OnRightClick();
+            }
+            else {
+                D.Error("{0}.OnClick() without a mouse button found.", GetType().Name);
             }
         }
     }
@@ -113,7 +125,7 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
 
     protected virtual void OnRightClick() { }
 
-    void OnDoubleClick() {
+    protected virtual void OnDoubleClick() {
         if (IsDiscernible && _inputHelper.IsLeftMouseButton()) {
             OnLeftDoubleClick();
         }
@@ -121,7 +133,7 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
 
     protected virtual void OnLeftDoubleClick() { }
 
-    void OnPress(bool isDown) {
+    protected virtual void OnPress(bool isDown) {
         if (IsDiscernible && _inputHelper.IsRightMouseButton()) {
             OnRightPress(isDown);
         }
@@ -185,6 +197,16 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
         //D.Log("{0} {1} circle {2}.", gameObject.name, showHide, highlight.GetName());
         _circles.Show(toShow, (int)highlight);
     }
+
+    private void ShowSphericalHighlight(bool toHighlight) {
+        var sphericalHighlight = References.SphericalHighlight;
+        if (toHighlight) {
+            sphericalHighlight.Position = _transform.position;
+            sphericalHighlight.Radius = Radius * SphericalHighlightScaleFactor;
+        }
+        sphericalHighlight.Show(toHighlight);
+    }
+
 
     protected virtual float calcNormalizedCircleRadius() {
         return Screen.height * circleScaleFactor * Radius;

@@ -29,7 +29,7 @@ namespace CodeEnv.Master.Common.Unity {
         public static float OnScreenDiameter(this Collider col) {
             Vector3 colliderPosition = col.transform.position;
             Debug.Log("ColliderPosition = {0}.".Inject(colliderPosition));
-            if (!UnityUtility.IsVisibleAt(colliderPosition)) {
+            if (!UnityUtility.IsWithinCameraViewport(colliderPosition)) {
                 return Constants.ZeroF;
             }
             float colliderDiameter = col.bounds.extents.magnitude;

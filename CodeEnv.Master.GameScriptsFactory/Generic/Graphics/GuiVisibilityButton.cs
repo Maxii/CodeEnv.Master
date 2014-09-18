@@ -17,6 +17,8 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using UnityEngine;
@@ -56,13 +58,15 @@ public class GuiVisibilityButton : AGuiButtonBase {
     /// <summary>
     /// The list of UIPanels that should be excepted from the GuiVisibilityCommand.
     /// </summary>
-    public UIPanel[] guiVisibilityExceptions;
+    public List<UIPanel> guiVisibilityExceptions;
 
     protected override void OnLeftClick() {
         switch (guiVisibilityCmd) {
             case GuiVisibilityCommand.HideVisibleGuiPanels:
-                if (guiVisibilityExceptions.IsNullOrEmpty<UIPanel>()) {
-                    D.Warn("{0} has no GuiVisibilityExceptions listed.", gameObject.name);
+                if (guiVisibilityExceptions.Count == Constants.Zero || guiVisibilityExceptions[0] == null) {
+                    D.Warn("{0} has no GuiVisibilityExceptions listed. \nAs a minimum, it should list the panel being shown.", gameObject.name);
+                    // NOTE: Even without the showing panel being listed, it will still be reactivated immediately after being deactivated
+                    // if MyNguiPlayAnimation.ifDisabledOnPlay = EnableThenPlay. 
                 }
                 break;
             case GuiVisibilityCommand.RestoreInvisibleGuiPanels:
@@ -71,7 +75,8 @@ public class GuiVisibilityButton : AGuiButtonBase {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(guiVisibilityCmd));
         }
-        _eventMgr.Raise<GuiVisibilityChangeEvent>(new GuiVisibilityChangeEvent(this, guiVisibilityCmd, guiVisibilityExceptions));
+        //_eventMgr.Raise<GuiVisibilityChangeEvent>(new GuiVisibilityChangeEvent(this, guiVisibilityCmd, guiVisibilityExceptions));
+        _eventMgr.Raise<GuiVisibilityChangeEvent>(new GuiVisibilityChangeEvent(this, guiVisibilityCmd, guiVisibilityExceptions.ToArray()));
     }
 
     public override string ToString() {

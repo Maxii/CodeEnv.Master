@@ -16,18 +16,36 @@
 
 // default namespace
 
+using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Manages the instantiation and setup of a prefab Gui menu system.
+/// Manages the instantiation and setup of a prefab Gui windowed menu system. This is primarily used when
+/// the same windowed menu system is used by more than one scene's Gui system, allowing the dev
+/// to maintain only the one prefab.
 /// </summary>
 public class GuiPrefabLinker : AMonoBase {
 
+    /// <summary>
+    /// A Window or WindowSystem prefab gameObject that has one or more embedded window
+    /// menus
+    /// </summary>
     public GameObject linkedPrefab;
-    public MyNguiButtonPlayAnimation launchButtonAnimation;
+    /// <summary>
+    /// The button (w/UIPlayAnimation script) that launches the topLevel WindowMenu embedded
+    /// in the linkedPrefab.
+    /// </summary>
+    public UIPlayAnimation topLevelLaunchButton;
+
+    /// <summary>
+    /// Any UIPanels that should not be hidden when a subMenu of the linkedPrefab is shown. 
+    /// Example: The DebugControls UIPanel should normally stay visible when the subMenus of the
+    /// OptionsMenu are shown.
+    /// </summary>
+    public List<UIPanel> optionalHidePanelExceptions;
 
     protected override void Awake() {
         base.Awake();
@@ -38,28 +56,59 @@ public class GuiPrefabLinker : AMonoBase {
     /// Instantiates a linked prefab, initializes and wires it for required animation behaviour.
     /// </summary>
     private void SetupLinkedPrefab() {
-        if (linkedPrefab == null || launchButtonAnimation == null) {
-            D.Error("One or more GuiPrefabLinker fields are not set on {0}. This is typically the lack of a Launch button instance.", gameObject.name);
+        if (linkedPrefab == null || topLevelLaunchButton == null) {
+            D.Error("One or more GuiPrefabLinker fields are not set on {0}. \nThis is typically the lack of a Launch button instance.", gameObject.name);
             return;
         }
         GameObject prefabClone = NGUITools.AddChild(gameObject, linkedPrefab);
+        prefabClone.name = linkedPrefab.name;
 
-        UIPanel prefabUIPanel = prefabClone.GetComponentInChildren<UIPanel>();
-        Animation prefabWindowBackAnimation = prefabClone.GetComponentInChildren<Animation>();
-        NGUITools.SetActive(prefabClone, true);
+        // some linkedPrefabs are headed by an empty gameObject containing multiple UIPanel fwdBackWindow children (eg. main menu and submenus)
+        var uiPanels = prefabClone.GetSafeMonoBehaviourComponentsInChildren<UIPanel>();
+        var uiPanelCount = uiPanels.Length;
+        UIPanel topLevelUIPanel = prefabClone.GetSafeMonoBehaviourComponentInChildren<UIPanel>();
+        if (uiPanelCount > 1) {
+            // D.Log("{0} contains {1} UIPanels: {2}. \nUsing {3}.", prefabClone.name, uiPanelCount, uiPanels.Concatenate(), topLevelUIPanel.name);
+            // GetComponentInChildren() should return the first UIPanel which should be the same as GetComponentsInChildren()[0] when there are other submenus
+            D.Assert(uiPanels[0] == topLevelUIPanel, "{0} and {1} are not the same.".Inject(uiPanels[0].name, topLevelUIPanel.name));
+        }
 
-        MyNguiButtonPlayAnimation[] allLaunchButtonAnimations = launchButtonAnimation.gameObject.GetSafeMonoBehaviourComponents<MyNguiButtonPlayAnimation>();
-        MyNguiButtonPlayAnimation launchButtonAnimationWithNullTarget = allLaunchButtonAnimations.Single<MyNguiButtonPlayAnimation>(c => c.target == null);
-        launchButtonAnimationWithNullTarget.target = prefabWindowBackAnimation;
+        Animation topLevelWindowAnimation = topLevelUIPanel.gameObject.GetComponent<Animation>();
 
-        GuiVisibilityButton launchButton = launchButtonAnimationWithNullTarget.gameObject.GetSafeMonoBehaviourComponent<GuiVisibilityButton>();
+        if (prefabClone != topLevelUIPanel.gameObject) {
+            // prefabClone is an empty GameObject holding multiple UIPanels so always make sure it is activated
+            NGUITools.SetActive(prefabClone, true);
+        }
+        // start all offscreen fwdBackWindows deactivated. MyNguiButtonPlayAnimation will activate onPlay
+        uiPanels.ForAll(p => NGUITools.SetActive(p.gameObject, false));
+
+        // get all instances of NguiButtonPlayAnimation on this button in case the button has more than 1 NguiButtonPlayAnimation
+        UIPlayAnimation[] animationsOnTopLevelLaunchButton = topLevelLaunchButton.gameObject.GetSafeMonoBehaviourComponents<UIPlayAnimation>();
+        UIPlayAnimation animationOnTopLevelLaunchButtonWithNoAssignedTarget = animationsOnTopLevelLaunchButton.Single<UIPlayAnimation>(c => c.target == null);
+        animationOnTopLevelLaunchButtonWithNoAssignedTarget.target = topLevelWindowAnimation;
+        // if there are any submenus in this linkedPrefab, they are already wired to the buttons in the topLevelMenu that launch them as prefabs can retain internal linkages
+
+        var launchButton = animationOnTopLevelLaunchButtonWithNoAssignedTarget.gameObject.GetSafeMonoBehaviourComponent<GuiVisibilityButton>();
         if (!Utility.CheckForContent<UIPanel>(launchButton.guiVisibilityExceptions)) {
-            launchButton.guiVisibilityExceptions = new UIPanel[1];
+            launchButton.guiVisibilityExceptions = new List<UIPanel>(1);
         }
         else {
-            D.Warn("GuiVisibilityExceptions already contains an exception! Now being replaced by {0}.".Inject(prefabUIPanel.name));
+            //D.Warn("GuiVisibilityExceptions already contains an exception! Now being replaced by {0}.".Inject(topLevelUIPanel.name));
         }
-        launchButton.guiVisibilityExceptions[0] = prefabUIPanel;
+        launchButton.guiVisibilityExceptions.Add(topLevelUIPanel);
+        // Note: any exception arrays from GuiVisibilityButtons that launch subMenus should already have the exception for the subMenu itself set in the editor
+
+        // Check for any exceptions that need to be added to subMenu launch buttons (if any)
+        if (Utility.CheckForContent<UIPanel>(optionalHidePanelExceptions)) {
+            // there are exceptions so check to see if there are also subMenu launch buttons that need them added to their exception list
+            var subMenuLaunchButtons = prefabClone.GetComponentsInChildren<GuiVisibilityButton>(includeInactive: true).Where(lb => lb.guiVisibilityCmd == GuiVisibilityCommand.HideVisibleGuiPanels);
+            if (subMenuLaunchButtons.IsNullOrEmpty()) {
+                D.WarnContext("{0}.{1} has panel exceptions listed, but no subMenu launchButtons to apply them too.".Inject(gameObject.name, GetType().Name), this);
+            }
+            else {
+                subMenuLaunchButtons.ForAll(lb => lb.guiVisibilityExceptions.AddRange(optionalHidePanelExceptions));
+            }
+        }
     }
 
     public override string ToString() {

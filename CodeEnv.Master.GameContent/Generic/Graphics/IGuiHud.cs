@@ -14,6 +14,7 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
+using UnityEngine;
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
@@ -25,7 +26,9 @@ namespace CodeEnv.Master.GameContent {
         /// Populate the HUD with text from the GuiCursorHudText.
         /// </summary>
         /// <param name="guiCursorHudText">The GUI cursor hud text.</param>
-        void Set(GuiHudText guiCursorHudText);
+        /// <param name="position">The position of the GameObject this HUD info represents.</param>
+        void Set(GuiHudText guiCursorHudText, Vector3 position);
+
 
     }
 }

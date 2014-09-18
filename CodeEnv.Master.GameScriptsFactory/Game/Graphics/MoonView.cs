@@ -33,7 +33,6 @@ public class MoonView : APlanetoidView {
 
     protected override void Awake() {
         base.Awake();
-        _selectionMgr = SelectionManager.Instance;
         Subscribe();
     }
 
@@ -48,19 +47,16 @@ public class MoonView : APlanetoidView {
 
     #region ContextMenu
 
-    private SelectionManager _selectionMgr;
     private CtxObject _ctxObject;
 
-    void OnPress(bool isDown) {
-        if (GameInputHelper.Instance.IsRightMouseButton() && !isDown) {
-            OnRightPressRelease();
-        }
-    }
-
-    private void OnRightPressRelease() {
-        FleetCmdView selectedFleetView = _selectionMgr.CurrentSelection as FleetCmdView;
-        if (selectedFleetView != null) {
-            _ctxObject.ShowMenu();
+    protected override void OnRightPress(bool isDown) {
+        base.OnRightPress(isDown);
+        if (!isDown) {
+            // right press release
+            FleetCmdView selectedFleetView = SelectionManager.Instance.CurrentSelection as FleetCmdView;
+            if (selectedFleetView != null) {
+                _ctxObject.ShowMenu();
+            }
         }
     }
 
@@ -82,7 +78,7 @@ public class MoonView : APlanetoidView {
 
     private void OnContextMenuSelection() {
         int menuId = CtxObject.current.selectedItem;
-        FleetCmdView_Player selectedFleetView = _selectionMgr.CurrentSelection as FleetCmdView_Player;
+        FleetCmdView_Player selectedFleetView = SelectionManager.Instance.CurrentSelection as FleetCmdView_Player;
         IFleetCmdModel selectedFleet = selectedFleetView.Presenter.Model;
         var thisPlanetoidTarget = Presenter.Model as IDestinationTarget;
         if (menuId == 0) {  // UNDONE

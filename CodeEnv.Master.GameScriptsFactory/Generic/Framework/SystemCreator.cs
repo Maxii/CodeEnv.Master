@@ -591,7 +591,9 @@ public class SystemCreator : AMonoBase, IDisposable {
             float outsideRadius = insideRadius + _systemOrbitSlotDepth;
             var orbitPeriod = _minSystemOrbitPeriod + (slotIndex * _systemOrbitPeriodIncrement);
             //D.Log("{0}'s orbit slot index {1} OrbitPeriod = {2}.", SystemName, slotIndex, orbitPeriod);
-            allOrbitSlots[slotIndex] = new CelestialOrbitSlot(insideRadius, outsideRadius, _system, orbitPeriod);
+            GameObject planetsFolder = _system.Transform.FindChild("Planets").gameObject;
+            // planetsFolder used in place of _system so orbiters don't inherit the layer of the system
+            allOrbitSlots[slotIndex] = new CelestialOrbitSlot(insideRadius, outsideRadius, planetsFolder, _system.IsMobile, orbitPeriod);
         }
         return allOrbitSlots;
     }

@@ -37,11 +37,10 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
 
     #region Debug
 
-    [System.Diagnostics.Conditional("DEBUG_LOG")]
     /// <summary>
     /// Logs the method name called. WARNING:  Coroutines showup as &lt;IEnumerator.MoveNext&gt; rather than the method name
     /// </summary>
-    public virtual void LogEvent() {
+    public virtual void LogEvent() { // WARNING: KeyDuplication compile error in Unity with LogEvent(object parameter = null)
         if (DebugSettings.Instance.EnableEventLogging) {
             System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackFrame(1);
             string name = _transform.name + "(from transform)";

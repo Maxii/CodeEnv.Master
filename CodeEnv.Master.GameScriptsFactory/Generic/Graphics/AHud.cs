@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -30,27 +30,39 @@ public abstract class AHud<T> : AMonoBaseSingleton<T>, IHud where T : AHud<T> {
     public Camera uiCamera;
 
     protected UILabel _label;
+    protected UISprite _labelBackground;    // can be null
     protected bool _isDisplayEnabled = true;
+
+    private Transform _labelTransform;
 
     protected override void Awake() {
         base.Awake();
         _label = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
+        _labelTransform = _label.transform;
         _label.depth = 100; // draw on top of other Gui Elements in the same Panel
+        _labelBackground = gameObject.GetComponentInChildren<UISprite>();
         NGUITools.SetActive(_label.gameObject, false);  //begin deactivated so label doesn't show
         if (uiCamera == null) {
             uiCamera = NGUITools.FindCameraForLayer(gameObject.layer);
         }
     }
 
-    protected virtual void UpdatePosition() { }
+    //[System.Obsolete]
+    //protected virtual void UpdateHudPosition() { }
 
-    public void SetPivot(UIWidget.Pivot pivot) {
+    protected void SetLabelPivot(UIWidget.Pivot pivot) {
         _label.pivot = pivot;
     }
 
-    #region IGuiHud Members
+    protected void SetLabelOffset(Vector2 offset) {
+        _labelTransform.localPosition = offset;
+    }
 
-    public void Set(string text) {
+    /// <summary>
+    /// Populate the HUD with text.
+    /// </summary>
+    /// <param name="text">The text to place in the HUD.</param>
+    protected void Set(string text) {
         if (Instance && _isDisplayEnabled) {
             if (Utility.CheckForContent(text)) {
                 if (!NGUITools.GetActive(_label.gameObject)) {
@@ -58,7 +70,7 @@ public abstract class AHud<T> : AMonoBaseSingleton<T>, IHud where T : AHud<T> {
                 }
                 _label.text = text;
                 _label.MakePixelPerfect();
-                UpdatePosition();
+                // UpdateHudPosition();
             }
             else {
                 _label.text = text;
@@ -69,9 +81,15 @@ public abstract class AHud<T> : AMonoBaseSingleton<T>, IHud where T : AHud<T> {
         }
     }
 
-    public void Set(StringBuilder sb) {
+    /// <summary>
+    /// Populate the HUD with text from the StringBuilder.
+    /// </summary>
+    /// <param name="sb">The StringBuilder containing the text.</param>
+    protected void Set(StringBuilder sb) {
         Set(sb.ToString());
     }
+
+    #region IHud Members
 
     public void Clear() {
         Set(string.Empty);

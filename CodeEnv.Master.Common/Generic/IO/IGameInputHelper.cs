@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IGameInputHelper.cs
-//  Interface for determining the state of Mouse controls using Ngui's default mouse input values. 
+// Interface allowing access to the associated Unity-compiled script. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,8 @@ namespace CodeEnv.Master.Common {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for determining the state of Mouse controls using Ngui's default mouse input values. 
+    /// Interface allowing access to the associated Unity-compiled script. 
+    /// Typically, a static reference to the script is established by GameManager in References.cs, providing access to the script from classes located in pre-compiled assemblies.
     /// </summary>
     public interface IGameInputHelper {
 

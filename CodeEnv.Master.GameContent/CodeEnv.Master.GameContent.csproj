@@ -140,7 +140,6 @@
     <Compile Include="Game\Framework\GameDate.cs" />
     <Compile Include="Generic\Graphics\IHud.cs" />
     <Compile Include="Generic\Graphics\ICameraLOSChangedClient.cs" />
-    <Compile Include="Generic\IO\GameInput.cs" />
     <Compile Include="Generic\IO\GeneralSettings.cs" />
     <Compile Include="Generic\IO\ICameraControl.cs" />
     <Compile Include="Generic\IO\PlayerPrefsManager.cs" />
@@ -233,6 +232,8 @@
     <Compile Include="Generic\Graphics\IGuiTrackable.cs" />
     <Compile Include="Generic\Graphics\IFleetCmdViewable.cs" />
     <Compile Include="Generic\Graphics\PathfindingLine.cs" />
+    <Compile Include="Generic\IO\IGameInput.cs" />
+    <Compile Include="Generic\Graphics\ISphericalHighlight.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\ShipData.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />

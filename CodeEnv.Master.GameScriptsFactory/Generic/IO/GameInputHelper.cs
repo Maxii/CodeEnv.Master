@@ -197,6 +197,26 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
         return false;
     }
 
+    static bool _isNotifying = false;
+
+    /// <summary>
+    /// Generic notification function. Used in place of SendMessage to shorten the code and allow for more than one receiver.
+    /// Derived from Ngui's UICamera.Notify().
+    /// </summary>
+    static public void Notify(GameObject go, string funcName, object obj) {
+        if (_isNotifying) {
+            D.Error("Notify called when not yet finished from previous call.");
+            return;
+        }
+        _isNotifying = true;
+
+        if (NGUITools.GetActive(go)) {
+            go.SendMessage(funcName, obj, SendMessageOptions.DontRequireReceiver);
+        }
+        _isNotifying = false;
+    }
+
+
 }
 
 

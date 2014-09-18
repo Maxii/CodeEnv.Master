@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IUsefulTools.cs
-// Interface for easy access to UsefulTools.
+// Interface allowing access to the associated Unity-compiled script. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,8 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for easy access to UsefulTools.
+    /// Interface allowing access to the associated Unity-compiled script. 
+    /// Typically, a static reference to the script is established by GameManager in References.cs, providing access to the script from classes located in pre-compiled assemblies.
     /// </summary>
     public interface IUsefulTools {
 

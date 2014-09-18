@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IGameInput.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// Interface allowing access to the associated Unity-compiled script. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,22 +17,13 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using UnityEngine;
 
     /// <summary>
-    /// 
+    /// Interface allowing access to the associated Unity-compiled script. 
+    /// Typically, a static reference to the script is established by GameManager in References.cs, providing access to the script from classes located in pre-compiled assemblies.
     /// </summary>
     public interface IGameInput {
-
-        float GetScrollWheelMovement();
-
-        bool IsDragging { get; set; }
-
-        Vector2 GetDragDelta();
 
         // used by SelectionManager to clear the Selection when an unconsumed click occurs
         event Action<NguiMouseButton> onUnconsumedClick;

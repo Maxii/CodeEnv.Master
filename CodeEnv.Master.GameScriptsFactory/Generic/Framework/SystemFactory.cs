@@ -78,10 +78,12 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// </summary>
     /// <param name="starStat">The star stat.</param>
     /// <param name="systemParent">The system parent.</param>
+    /// <param name="starLayer">The layer you want the star to assume. Default is Layers.Default.</param>
     /// <returns></returns>
-    public StarModel MakeInstance(StarStat starStat, SystemModel systemParent) {
+    public StarModel MakeInstance(StarStat starStat, SystemModel systemParent, Layers starLayer = Layers.Default) {
         GameObject starPrefab = _starPrefabs.First(sGo => sGo.name == starStat.Category.GetName());
         GameObject starGo = UnityUtility.AddChild(systemParent.gameObject, starPrefab);
+        starGo.layer = (int)starLayer;
         StarModel model = starGo.GetSafeMonoBehaviourComponent<StarModel>();
         MakeInstance(starStat, systemParent.Data.Name, ref model);
         return model;
@@ -89,7 +91,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
 
     /// <summary>
     /// Makes an instance of a Star from the stat and model provided. The Model (with its Data) and View will not be enabled.
-    /// The model's transform will have the same parent it arrived with.
+    /// The model's transform will have the same layer and same parent it arrived with.
     /// </summary>
     /// <param name="starStat">The star stat.</param>
     /// <param name="star">The star model.</param>

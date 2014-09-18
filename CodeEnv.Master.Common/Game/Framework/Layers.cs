@@ -29,10 +29,10 @@ namespace CodeEnv.Master.Common {
 
         [Obsolete]
         Water = 4,
+        UI = 5,     // Added by Unity 4.5 
 
 
-
-        Gui2D = 8,
+        //Gui2D = 8,    // Removed 8.29.14, replaced by new built-in layer UI introduced in Unity 4.5
         UniverseEdge = 9,
         DummyTarget = 10,
         SectorView = 11,  // Unused
@@ -42,6 +42,11 @@ namespace CodeEnv.Master.Common {
         Planetoid = 16,
         Star = 17,
 
+        /// <summary>
+        /// Layer unique to a SystemView whose collider matches the OrbitalPlane. Used to change the
+        /// UICamera.eventReceiverMask to test for occluded objects behind the collider.
+        /// </summary>
+        SystemOrbitalPlane = 19,
 
         DeepSpace = 20,
         CelestialObjectKeepout = 21,

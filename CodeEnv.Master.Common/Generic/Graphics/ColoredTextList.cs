@@ -16,8 +16,6 @@
 
 namespace CodeEnv.Master.Common {
 
-
-
     /// <summary>
     /// Generic version of class for strategy objects that provide lists of Colored Text for Huds.
     /// </summary>

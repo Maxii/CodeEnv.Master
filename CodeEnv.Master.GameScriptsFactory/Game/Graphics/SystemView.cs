@@ -37,6 +37,8 @@ public class SystemView : AFocusableItemView, ISelectable, IZoomToFurthest, IHig
         protected set { base.Presenter = value; }
     }
 
+    protected override float SphericalHighlightScaleFactor { get { return 1F; } }
+
     /// <summary>
     /// The Collider encompassing the bounds of the system's orbital plane that intercepts input events for this view. 
     /// This collider does NOT detect collisions with other operating objects in the universe and therefore
@@ -82,11 +84,25 @@ public class SystemView : AFocusableItemView, ISelectable, IZoomToFurthest, IHig
 
     #region Mouse Events
 
-    protected override void OnHover(bool isOver) {
-        base.OnHover(isOver);
-        if (IsDiscernible) {
-            HighlightTrackingLabel(isOver);
+    protected override void OnClick() {
+        if (CheckForOccludedObjectAndRerouteEvent("OnClick")) {
+            return;
         }
+        base.OnClick();
+    }
+
+    protected override void OnPress(bool isDown) {
+        if (CheckForOccludedObjectAndRerouteEvent("OnPress", isDown)) {
+            return;
+        }
+        base.OnPress(isDown);
+    }
+
+    protected override void OnDoubleClick() {
+        if (CheckForOccludedObjectAndRerouteEvent("OnDoubleClick")) {
+            return;
+        }
+        base.OnDoubleClick();
     }
 
     protected override void OnLeftClick() {
@@ -99,6 +115,83 @@ public class SystemView : AFocusableItemView, ISelectable, IZoomToFurthest, IHig
         if (IsSelected) {
             Presenter.RequestContextMenu(isDown);
         }
+    }
+
+    protected override void OnHover(bool isOver) {
+        EnableSpawningHoverEventsOnMouseMove(isOver);
+        if (CheckForOccludedObjectAndRerouteEvent("OnHover", isOver)) {
+            return;
+        }
+        base.OnHover(isOver);
+        if (IsDiscernible) {
+            HighlightTrackingLabel(isOver);
+            //HighlightSystem(isOver);
+        }
+    }
+
+    /// <summary>
+    /// Indicates whether OnHover(true) events are currently spawning. Used as a toggle
+    /// test to filter out extraneous onMouseMove subscriptions. Could also be called
+    /// _isHoveringOverSystemView.
+    /// </summary>
+    private bool _isSpawningHoverEvents;
+
+    /// <summary>
+    /// Initiates spawning of OnHover(true) events each time the mouse moves. Used to work around
+    /// the fact that UICamera only sends OnHover events when the object under the mouse changes.
+    /// This way, the check for an occluded object continues to occur even when the underlying
+    /// object (this SystemView collider) hasn't changed.
+    /// </summary>
+    /// <param name="toEnable">if set to <c>true</c> enable spawning. If false, disable spawning.</param>
+    private void EnableSpawningHoverEventsOnMouseMove(bool toEnable) {
+        if (_isSpawningHoverEvents == toEnable) { return; }
+        _isSpawningHoverEvents = toEnable;
+        if (toEnable) {
+            UICamera.onMouseMove += OnMouseMoveWhileHovered;
+        }
+        else {
+            UICamera.onMouseMove -= OnMouseMoveWhileHovered;
+        }
+    }
+
+    private void OnMouseMoveWhileHovered(Vector2 delta) {
+        if (delta == Vector2.zero) {
+            // D.Log("UICamera.onMouseMove raised with no movement.");
+            return;
+        }
+        OnHover(true);
+    }
+
+    /// <summary>
+    /// Checks to see if this SystemView collider is occluding another object behind it.
+    /// If so, the event is re-routed to that target and the method returns true. If no 
+    /// occluded object is found, the method returns false.
+    /// </summary>
+    /// <param name="eventName">Name of the event to re-route.</param>
+    /// <param name="parameter">Optional parameter for the event.</param>
+    /// <returns></returns>
+    private bool CheckForOccludedObjectAndRerouteEvent(string eventName, object parameter = null) {
+        Layers systemViewLayer = (Layers)gameObject.layer;
+        D.Assert(systemViewLayer == Layers.SystemOrbitalPlane, "{0} Layer {1} should be {2}.".Inject(GetType().Name, systemViewLayer.GetName(), Layers.SystemOrbitalPlane.GetName()));
+
+        UICamera eventDispatcher = UICamera.FindCameraForLayer((int)systemViewLayer);
+        var savedMask = eventDispatcher.eventReceiverMask;
+        eventDispatcher.eventReceiverMask = savedMask.RemoveFromMask(systemViewLayer);
+        bool isOccludedTargetFound = false;
+        if (UICamera.Raycast(Input.mousePosition)) {
+            D.Log("{0}.{1} found occluded target {2} for event {3}.", Presenter.FullName, GetType().Name, UICamera.hoveredObject.name, eventName);
+            isOccludedTargetFound = true;
+            GameInputHelper.Notify(UICamera.hoveredObject, eventName, parameter);
+        }
+        // Alternative way to Raycast
+        //var newMask = savedMask.RemoveFromMask(systemViewLayer);
+        //RaycastHit hit;
+        //if (Physics.Raycast(UICamera.currentRay, out hit, 500F, newMask)) {
+        //    GameInputHelper.Notify(hit.collider.gameObject, "OnClick", null);
+
+        //}
+        eventDispatcher.eventReceiverMask = savedMask;
+        return isOccludedTargetFound;
     }
 
     #endregion
@@ -114,6 +207,14 @@ public class SystemView : AFocusableItemView, ISelectable, IZoomToFurthest, IHig
         }
         AssessHighlighting();
     }
+
+    //private void HighlightSystem(bool toHighlight) {
+    //    var systemHighlighter = SphericalHighlight.Instance;
+    //    if (toHighlight) {
+    //        systemHighlighter.Position = _transform.position;
+    //    }
+    //    systemHighlighter.Show(toHighlight);
+    //}
 
     public override void AssessHighlighting() {
         if (!IsDiscernible) {
