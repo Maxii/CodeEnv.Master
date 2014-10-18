@@ -207,7 +207,8 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
                         currentWaypointLocation = detour;
                         targetDestinationIndex = Course.Count - 1;
                         // validate that the detour provided does not itself leave us with another obstacle to encounter
-                        D.Assert(!CheckForObstacleEnrouteToWaypointAt(currentWaypointLocation, out detour));
+                        // D.Assert(!CheckForObstacleEnrouteToWaypointAt(currentWaypointLocation, out detour));
+                        // IMPROVE what to do here?
                     }
                     _fleet.__IssueShipMovementOrders(new StationaryLocation(currentWaypointLocation), FleetSpeed);
                 }
@@ -689,8 +690,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     protected override void InitializeRadiiComponents() {
         base.InitializeRadiiComponents();
-        // the radius of a FleetCommand is fixed although it may not contain all of its ships
-        Radius = TempGameValues.FleetRadius;
+        // the radius of a FleetCommand is in flux, currently it reflects the distribution of ships around it
     }
 
     protected override void Initialize() {
@@ -874,8 +874,6 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     }
 
     public void __IssueShipMovementOrders(IDestinationTarget target, Speed speed) {
-        //public void __IssueShipMovementOrders(IDestinationTarget target, Speed speed, float standoffDistance = Constants.ZeroF) {
-        //var shipMoveToOrder = new ShipOrder(ShipDirective.MoveTo, OrderSource.UnitCommand, target, speed, standoffDistance);
         var shipMoveToOrder = new ShipOrder(ShipDirective.MoveTo, OrderSource.UnitCommand, target, speed);
         Elements.ForAll(e => (e as ShipModel).CurrentOrder = shipMoveToOrder);
     }
@@ -1215,6 +1213,21 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     public bool IsBearingConfirmed {
         get { return Elements.All(e => (e as ShipModel).IsBearingConfirmed); }
+    }
+
+    public override float Radius {
+        get {
+            var result = 1F;
+            if (Elements.Count >= 2) {
+                var meanDistanceToFleetShips = Position.FindMeanDistance(Elements.Except(HQElement).Select(e => e.Position));
+                result = meanDistanceToFleetShips > 1F ? meanDistanceToFleetShips : 1F;
+            }
+            //D.Log("{0}.Radius is {1}.", FullName, result);
+            return result;
+        }
+        protected set {
+            throw new NotImplementedException("Cannot set the value of {0}'s Radius.".Inject(FullName));
+        }
     }
 
     #endregion

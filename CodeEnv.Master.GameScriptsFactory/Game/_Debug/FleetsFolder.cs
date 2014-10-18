@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: Sectors.cs
-// Easy access to the Sectors folder.
+// File: FleetsFolder.cs
+// Easy access to Fleets folder in Scene. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,9 +19,9 @@
 using CodeEnv.Master.Common;
 
 /// <summary>
-/// Easy access to the Sectors folder.
+/// Easy access to Fleets folder in Scene. 
 /// </summary>
-public class Sectors : AFolderAccess<Sectors> {
+public class FleetsFolder : AFolderAccess<FleetsFolder> {
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

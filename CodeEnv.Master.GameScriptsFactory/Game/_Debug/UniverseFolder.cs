@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: Universe.cs
+// File: UniverseFolder.cs
 //  Easy access to Universe folder in Scene.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -20,7 +20,7 @@ using UnityEngine;
 /// <summary>
 ///  Easy access to Universe folder in Scene.
 /// </summary>
-public class Universe : AFolderAccess<Universe>, IUniverse {
+public class UniverseFolder : AFolderAccess<UniverseFolder>, IUniverseFolder {
 
     /// <summary>
     /// Gets the SpaceTopography value associated with this location in worldspace.

@@ -261,6 +261,36 @@ namespace CodeEnv.Master.Common {
             return go.transform.GetSafeInterfaceInParents<I>(excludeSelf);
         }
 
+        /// <summary>
+        /// Gets the first interface of Type I in this gameobject or any of its parents.
+        /// </summary>
+        /// <typeparam name="I"></typeparam>
+        /// <param name="go">The gameobject.</param>
+        /// <param name="excludeSelf">if set to <c>true</c> [exclude self].</param>
+        /// <returns></returns>
+        public static I GetInterfaceInParents<I>(this GameObject go, bool excludeSelf = false) where I : class {
+            return go.transform.GetInterfaceInParents<I>(excludeSelf);
+        }
+
+        /// <summary>
+        /// Gets the first interface of Type I in this transform's gameObject or any of its parents.
+        /// </summary>
+        /// <typeparam name="I"></typeparam>
+        /// <param name="t">The transform.</param>
+        /// <param name="excludeSelf">if set to <c>true</c> [exclude self].</param>
+        /// <returns></returns>
+        public static I GetInterfaceInParents<I>(this Transform t, bool excludeSelf = false) where I : class {
+            Transform parent = excludeSelf ? t.parent : t;
+            while (parent != null) {
+                I component = parent.GetComponent(typeof(I)) as I;
+                if (component != null) {
+                    return component;
+                }
+                parent = parent.parent;
+            }
+            return null;
+        }
+
 
         /// <summary>
         /// Gets the interface of type I found in the Transform's peer components.
@@ -367,6 +397,15 @@ namespace CodeEnv.Master.Common {
             return result;
         }
 
+        public static Transform GetTransformWithInterfaceInParents<I>(this Transform transform, out I i) where I : class {
+            Transform result = null;
+            i = transform.GetInterfaceInParents<I>();
+            if (i != null) {
+                result = (i as Component).transform;
+            }
+            return result;
+        }
+
         /// <summary>
         /// Gets the transform that contains an interface of Type I in this transform's immediate children.
         /// If more than 1 is found, an InvalidOperationException is thrown. If none are found, returns null.
@@ -421,6 +460,26 @@ namespace CodeEnv.Master.Common {
             }
             return interfaces;
         }
+
+        /// <summary>
+        /// Gets the single interface of Type I in  immediate children. Does not include interfaces
+        /// of type I in the gameobject itself. Issues a warning if the interface is not found and returns
+        /// null. Throws an exception if more than one exists.
+        /// </summary>
+        /// <typeparam name="I"></typeparam>
+        /// <param name="go">The source gameobject.</param>
+        /// <returns>
+        /// The interface of type I or null if none exists.
+        /// </returns>
+        public static I GetSafeInterfaceInImmediateChildren<I>(this GameObject go) where I : class {
+            I[] interfaces = go.GetInterfacesInImmediateChildren<I>();
+            if (interfaces.Length == Constants.Zero) {
+                D.Warn(ErrorMessages.ComponentNotFound, typeof(I).Name, go.name);
+                return null;
+            }
+            return interfaces.Single();
+        }
+
 
         /// <summary>
         /// Gets all transforms that contain the interface of Type I in its peer components or any of the gameObject's children.
@@ -520,6 +579,20 @@ namespace CodeEnv.Master.Common {
             Color color = material.color;
             color.a = value;
             material.color = color;
+        }
+
+        /// <summary>
+        /// Adds the designated component if it is missing. If one is already present, returns the existing component.
+        /// </summary>
+        /// <typeparam name="C"></typeparam>
+        /// <param name="go">The go.</param>
+        /// <returns></returns>
+        public static C AddMissingComponent<C>(this GameObject go) where C : Component {
+            var c = go.GetComponent<C>();
+            if (c == null) {
+                c = go.AddComponent<C>();
+            }
+            return c;
         }
 
     }

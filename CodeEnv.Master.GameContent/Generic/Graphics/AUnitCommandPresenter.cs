@@ -60,7 +60,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnHQElementChanged(IElementModel hqElementModel) {
-            View.TrackingTarget = hqElementModel.Transform.GetSafeInterface<IGuiTrackable>();
+            View.TrackingTarget = hqElementModel.Transform.GetSafeInterface<IWidgetTrackable>();
         }
 
         public virtual void OnIsSelectedChanged() {

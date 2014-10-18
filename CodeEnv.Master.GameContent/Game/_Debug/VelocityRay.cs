@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="width">The width.</param>
         /// <param name="color">The color.</param>
         public VelocityRay(string name, Transform target, Reference<float> speed, float width = 1F, GameColor color = GameColor.White)
-            : base(name, new Vector3[2], target, References.DynamicObjects.Folder, LineType.Discrete, width, color) {
+            : base(name, new Vector3[2], target, References.DynamicObjectsFolder.Folder, LineType.Discrete, width, color) {
             _speed = speed;
         }
 

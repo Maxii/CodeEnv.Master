@@ -132,14 +132,20 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
             case SceneLevel.GameScene:
                 References.GameManager = Instance;
                 References.InputHelper = GameInputHelper.Instance;
-                References.DynamicObjects = DynamicObjects.Instance;
+                References.DynamicObjectsFolder = DynamicObjectsFolder.Instance;
                 References.CameraControl = CameraControl.Instance;
                 References.UnitFactory = UnitFactory.Instance;
                 References.GeneralFactory = GeneralFactory.Instance;
                 References.UsefulTools = UsefulTools.Instance;
-                References.Universe = Universe.Instance;
+                References.UniverseFolder = UniverseFolder.Instance;
                 References.GameInput = GameInput.Instance;
-                References.SphericalHighlight = SphericalHighlight.Instance;
+                if (FindObjectOfType(typeof(SphericalHighlight)) == null) {
+                    D.Warn("{0} GameObject is deactivated.", typeof(SphericalHighlight).Name);
+                }
+                else {
+                    // workaround to allow deactivation of the SphericalHighlight gameObject
+                    References.SphericalHighlight = SphericalHighlight.Instance;
+                }
                 // GuiHudPublisher factory reference settings moved to GuiCursorHud
                 break;
             default:

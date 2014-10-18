@@ -38,8 +38,8 @@ public class SystemModel : AOwnedItemModel, IDestinationTarget {
 
     protected override void InitializeRadiiComponents() {
         Radius = TempGameValues.SystemRadius;
-        collider.isTrigger = true;
-        // IMPROVE currently no need to set the radius of the System's orbital plane collider as it simply matches the mesh it is assigned too
+        // there is no collider associated with a SystemModel implementation
+        // the collider used for SystemView interaction is located on the orbital plane and handled by SystemView
     }
 
     protected override void Initialize() { }
@@ -56,19 +56,12 @@ public class SystemModel : AOwnedItemModel, IDestinationTarget {
         D.Log("{0} is being deployed to {1}.", settlementCmd.Data.ParentName, FullName);
         Data.SettlementData = settlementCmd.Data;
 
-        AddSystemAsLOSChangedRelayTarget(settlementCmd);
-
         var systemIntelCoverage = gameObject.GetSafeInterface<IViewable>().PlayerIntel.CurrentCoverage;
         if (systemIntelCoverage == IntelCoverage.None) {
-            D.Warn("{0}.IntelCoverage set to None by its assigned System {1}.", settlementCmd.FullName, FullName);
+            D.Log("{0}.IntelCoverage set to None by its assigned System {1}.", settlementCmd.FullName, FullName);
         }
         // UNCLEAR should a new settlement being attached to a System take on the PlayerIntel state of the System??  See SystemPresenter.OnPlayerIntelCoverageChanged()
         settlementCmd.gameObject.GetSafeInterface<ICommandViewable>().PlayerIntel.CurrentCoverage = systemIntelCoverage;
-    }
-
-    private void AddSystemAsLOSChangedRelayTarget(SettlementCmdModel settlementCmd) {
-        settlementCmd.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().AddTarget(_transform);
-        settlementCmd.Elements.ForAll(element => element.Transform.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().AddTarget(_transform));
     }
 
     public override string ToString() {

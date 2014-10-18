@@ -117,7 +117,7 @@ public class GuiManager : AMonoBaseSingleton<GuiManager>, IDisposable {
     }
 
     private void ChangeVisibility(bool isVisible, IEnumerable<UIPanel> panels) {
-        string visibility = isVisible ? "now visible" : "no longer visible";
+        //string visibility = isVisible ? "now visible" : "no longer visible";
         panels.ForAll(p => {
             NGUITools.SetActive(p.gameObject, isVisible);
             // There is an alternative way using the Panel's alpha property to manage the panel's widget's visibility. 

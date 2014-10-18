@@ -194,7 +194,7 @@ public class ShipGraphics : AGraphics, IDisposable {
         }
         if (_circles == null) {
             float normalizedRadius = Screen.height * circleScaleFactor * _shipCaptain.Size;
-            _circles = new HighlightCircle("ShipCircles", _shipCaptain.transform, normalizedRadius, parent: DynamicObjects.Folder,
+            _circles = new HighlightCircle("ShipCircles", _shipCaptain.transform, normalizedRadius, parent: DynamicObjectsFolder.Folder,
                 isRadiusDynamic: true, maxCircles: 3);
             _circles.Colors = new GameColor[3] { UnityDebugConstants.FocusedColor, UnityDebugConstants.SelectedColor, UnityDebugConstants.GeneralHighlightColor };
             _circles.Widths = new float[3] { 2F, 2F, 1F };
@@ -223,7 +223,7 @@ public class ShipGraphics : AGraphics, IDisposable {
             }
             if (_velocityRay == null) {
                 var speedReference = new Reference<float>(() => _shipCaptain.Data.CurrentSpeed);
-                _velocityRay = new VelocityRay("ShipVelocityRay", _shipCaptain.transform, speedReference, parent: DynamicObjects.Folder,
+                _velocityRay = new VelocityRay("ShipVelocityRay", _shipCaptain.transform, speedReference, parent: DynamicObjectsFolder.Folder,
                     width: 1F, color: GameColor.Gray);
             }
             if (toShow) {

@@ -18,23 +18,32 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
 /// Abstract base class managing the UI View for its AItem. 
 /// </summary>
-public abstract class AItemView : AMonoBase, IViewable, ICameraLOSChangedClient, IDisposable {
+public abstract class AItemView : AMonoBase, IViewable, IDisposable {
 
-    private IList<Transform> _meshesInCameraLOS;    // OPTIMIZE can be simplified to simple incrementing/decrementing counter
+    private bool _inCameraLOS = true;
+    /// <summary>
+    /// Indicates whether this view is within a Camera's Line Of Sight.
+    /// Note: All items start out thinking they are in a camera's LOS. This is so IsDiscernible will properly operate
+    /// during the period when a view's visual members have not yet been initialized. If and when they are
+    /// initialized, the view will be notified by their CameraLosChangedListener of their actual InCameraLOS state.
+    /// </summary>
+    public bool InCameraLOS {
+        get { return _inCameraLOS; }
+        protected set { SetProperty<bool>(ref _inCameraLOS, value, "InCameraLOS", OnInCameraLOSChanged); }
+    }
+
     protected IList<IDisposable> _subscribers;
+    private bool _isVisualMembersInitialized;
 
     protected override void Awake() {
         base.Awake();
-        _meshesInCameraLOS = new List<Transform>();
         PlayerIntel = InitializePlayerIntel();
         enabled = false;
     }
@@ -45,9 +54,7 @@ public abstract class AItemView : AMonoBase, IViewable, ICameraLOSChangedClient,
         // Derived classes must call Subscribe after all references are available
     }
 
-    protected virtual IIntel InitializePlayerIntel() {
-        return new Intel();
-    }
+    protected virtual IIntel InitializePlayerIntel() { return new Intel(); }
 
     protected abstract void InitializePresenter();
 
@@ -63,7 +70,8 @@ public abstract class AItemView : AMonoBase, IViewable, ICameraLOSChangedClient,
     protected virtual void OnPlayerIntelCoverageChanged() {
         CustomLogEvent("Coverage = {0}".Inject(PlayerIntel.CurrentCoverage.GetName()));
         AssessDiscernability();
-        if (HudPublisher != null && HudPublisher.IsHudShowing) {
+        if (HudPublisher.IsHudShowing) {
+            // refresh the HUD as IntelCoverage has changed
             ShowHud(true);
         }
     }
@@ -75,24 +83,21 @@ public abstract class AItemView : AMonoBase, IViewable, ICameraLOSChangedClient,
 
     protected virtual void OnIsDiscernibleChanged() {
         CustomLogEvent("IsDiscernible = {0}".Inject(IsDiscernible));
-        if (!IsDiscernible) {
+        if (!IsDiscernible && HudPublisher.IsHudShowing) {
+            // lost ability to discern this object while showing the HUD so stop showing
             ShowHud(false);
+        }
+        if (!_isVisualMembersInitialized) {
+            D.Assert(IsDiscernible);    // first time change should always be to true
+            InitializeVisualMembers();
+            _isVisualMembersInitialized = true;
         }
     }
 
-    private void OnMeshNotifingCameraLOSChanged(Transform sender, bool inLOS) {
-        if (inLOS) {
-            // removed assertion tests and warnings as it will take a while to get the lists and state in sync
-            if (!_meshesInCameraLOS.Contains(sender)) {
-                _meshesInCameraLOS.Add(sender);
-            }
-        }
-        else {
-            _meshesInCameraLOS.Remove(sender);
-            // removed assertion tests and warnings as it will take a while to get the lists and state in sync
-        }
-        InCameraLOS = _meshesInCameraLOS.Count > Constants.Zero;
-    }
+    /// <summary>
+    /// Initializes the visual members of this view.
+    /// </summary>
+    protected abstract void InitializeVisualMembers();
 
     public virtual void AssessDiscernability() {
         CustomLogEvent();
@@ -100,12 +105,7 @@ public abstract class AItemView : AMonoBase, IViewable, ICameraLOSChangedClient,
     }
 
     public void ShowHud(bool toShow) {
-        if (!enabled) { return; }
-        if (HudPublisher == null) {
-            string parentName = _transform.parent != null ? _transform.parent.name : "(no parent)";
-            D.Warn("{0}.{1}.{2} HudPublisher is null.", parentName, _transform.name, GetType().Name);
-            return;
-        }
+        //if (!enabled) { return; }
         D.Log("HudPublisher.Show() called from {0}.", _transform.name);
         HudPublisher.ShowHud(toShow, PlayerIntel, _transform.position);
     }
@@ -150,20 +150,6 @@ public abstract class AItemView : AMonoBase, IViewable, ICameraLOSChangedClient,
     public bool IsDiscernible {
         get { return _isDiscernible; }
         protected set { SetProperty<bool>(ref _isDiscernible, value, "IsDiscernible", OnIsDiscernibleChanged); }
-    }
-
-    #endregion
-
-    #region ICameraLOSChangedClient Members
-
-    private bool _inCameraLOS;  // = true; // everyone starts out thinking they are visible as it controls the enabled/activated state of key components
-    public bool InCameraLOS {
-        get { return _inCameraLOS; }
-        private set { SetProperty<bool>(ref _inCameraLOS, value, "InCameraLOS", OnInCameraLOSChanged); }
-    }
-
-    public void NotifyCameraLOSChanged(Transform sender, bool inLOS) {
-        OnMeshNotifingCameraLOSChanged(sender, inLOS);
     }
 
     #endregion

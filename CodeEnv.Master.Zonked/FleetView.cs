@@ -202,7 +202,7 @@ public class FleetView : AFollowableView, IFleetViewable, ISelectable {
             }
             float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
             string fleetName = Presenter.Model.Data.Name;
-            _trackingLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(TrackingTarget, GuiTrackingLabelFactory.LabelPlacement.AboveTarget, minShowDistance, Mathf.Infinity, fleetName);
+            _trackingLabel = TrackingWidgetFactory.Instance.CreateGuiTrackingLabel(TrackingTarget, TrackingWidgetFactory.LabelPlacement.AboveTarget, minShowDistance, Mathf.Infinity, fleetName);
             disableComponentOnNotDiscernible = disableComponentOnNotDiscernible.Union(new Component[] { _trackingLabel });
         }
     }
@@ -285,7 +285,7 @@ public class FleetView : AFollowableView, IFleetViewable, ISelectable {
         }
     }
 
-    protected override float calcNormalizedCircleRadius() {
+    protected override float CalcNormalizedCircleRadius() {
         return Screen.height * circleScaleFactor;
     }
 

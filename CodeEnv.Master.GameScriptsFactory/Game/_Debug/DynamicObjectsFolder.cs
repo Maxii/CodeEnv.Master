@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2013 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: Settlements.cs
-//  Easy access to Settlements folder in Scene.  
+// File: DynamicObjectsFolder.cs
+// Easy access to DynamicObjects folder in Scene.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,15 +17,17 @@
 // default namespace
 
 using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
-///  Easy access to Settlements folder in Scene.  
+/// Easy access to DynamicObjects folder in Scene.
 /// </summary>
-public class Settlements : AFolderAccess<Settlements> {
+public class DynamicObjectsFolder : AFolderAccess<DynamicObjectsFolder>, IDynamicObjectsFolder {
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
 }
+
 

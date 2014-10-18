@@ -54,10 +54,40 @@ public class GameInput : AGenericSingleton<GameInput>, IGameInput {
         UICamera.onClick += OnClick;
     }
 
-    #region ScrollWheel
+    #region ArchivedScrollWheel
 
-    public bool isScrollValueWaiting;
-    private float _scrollWheelDelta;
+    //public bool isScrollValueWaiting;
+    //private float _scrollWheelDelta;
+
+    //private void OnScroll(GameObject go, float delta) {
+    //    if (UICamera.isOverUI) {
+    //        //D.Log("Scroll using GameObject {0} detected over UI.", go.name);
+    //        return;
+    //    }
+    //    WriteMessage(go.name + Constants.Space + delta);
+    //    RecordScrollWheelMovement(delta);
+    //}
+
+    //private void RecordScrollWheelMovement(float delta) {
+    //    _scrollWheelDelta = delta;
+    //    isScrollValueWaiting = true;
+    //}
+
+    //public float GetScrollWheelMovement() {
+    //    if (!isScrollValueWaiting) {
+    //        D.Warn("Mouse ScrollWheel inquiry made with no scroll value waiting.");
+    //    }
+    //    isScrollValueWaiting = false;
+    //    float delta = _scrollWheelDelta;
+    //    _scrollWheelDelta = Constants.ZeroF;
+    //    return delta;
+    //}
+
+    // Unlike ClearDrag, ClearScrollWheel not needed as all scroll wheel movement events recorded here will always be used
+
+    #endregion
+
+    #region ScrollWheel
 
     private void OnScroll(GameObject go, float delta) {
         if (UICamera.isOverUI) {
@@ -65,22 +95,39 @@ public class GameInput : AGenericSingleton<GameInput>, IGameInput {
             return;
         }
         WriteMessage(go.name + Constants.Space + delta);
-        RecordScrollWheelMovement(delta);
-    }
-
-    private void RecordScrollWheelMovement(float delta) {
-        _scrollWheelDelta = delta;
-        isScrollValueWaiting = true;
-    }
-
-    public float GetScrollWheelMovement() {
-        if (!isScrollValueWaiting) {
-            D.Warn("Mouse ScrollWheel inquiry made with no scroll value waiting.");
+        ICameraTargetable target = null;
+        Vector3 hitPoint = Vector3.zero;
+        if (go != UICamera.fallThrough) {
+            // scroll event hit something
+            target = go.GetInterfaceInParents<ICameraTargetable>(excludeSelf: false);
         }
-        isScrollValueWaiting = false;
-        float delta = _scrollWheelDelta;
-        _scrollWheelDelta = Constants.ZeroF;
-        return delta;
+
+        if (target != null) {
+            // scroll event target is an ICameraTargetable
+            if (!target.IsEligible) {
+                // the object's collider shouldn't be enabled when not eligible (aka not discernible)
+                D.Warn("InEligible {0} found while scrolling.", typeof(ICameraTargetable).Name);
+                return;
+            }
+            hitPoint = (target is IZoomToFurthest) ? UICamera.lastHit.point : target.Transform.position;
+        }
+        RecordScrollEvent(new ScrollEvent(target, delta, hitPoint));
+    }
+
+    private ScrollEvent _scrollEvent;
+
+    public bool IsScrollEventWaiting { get; private set; }
+
+    public void RecordScrollEvent(ScrollEvent scrollEvent) {
+        _scrollEvent = scrollEvent;
+        IsScrollEventWaiting = true;
+    }
+
+    public ScrollEvent GetScrollEvent() {
+        var scrollEvent = _scrollEvent;
+        _scrollEvent = default(ScrollEvent);
+        IsScrollEventWaiting = false;
+        return scrollEvent;
     }
 
     // Unlike ClearDrag, ClearScrollWheel not needed as all scroll wheel movement events recorded here will always be used
@@ -230,6 +277,76 @@ public class GameInput : AGenericSingleton<GameInput>, IGameInput {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region Nested classes
+
+    public struct ScrollEvent : IEquatable<ScrollEvent> {
+
+        #region Comparison Operators Override
+
+        // see C# 4.0 In a Nutshell, page 254
+
+        public static bool operator ==(ScrollEvent left, ScrollEvent right) {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(ScrollEvent left, ScrollEvent right) {
+            return !left.Equals(right);
+        }
+
+        #endregion
+
+        private static string _toStringFormat = "Target: {0}, Delta: {1}, HitPoint: {2}";
+
+        public readonly ICameraTargetable target;
+        public readonly float delta;
+        public readonly Vector3 hitPoint;
+
+        public ScrollEvent(ICameraTargetable target, float delta, Vector3 hitPoint) {
+            this.target = target;
+            this.delta = delta;
+            this.hitPoint = hitPoint;
+        }
+
+        #region Object.Equals and GetHashCode Override
+
+        public override bool Equals(object obj) {
+            if (!(obj is ScrollEvent)) { return false; }
+            return Equals((ScrollEvent)obj);
+        }
+
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// See "Page 254, C# 4.0 in a Nutshell."
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+        /// </returns>
+        public override int GetHashCode() {
+            int hash = 17;  // 17 = some prime number
+            hash = hash * 31 + target.GetHashCode(); // 31 = another prime number
+            hash = hash * 31 + delta.GetHashCode();
+            hash = hash * 31 + hitPoint.GetHashCode();
+            return hash;
+        }
+
+        #endregion
+
+        public override string ToString() {
+            return _toStringFormat.Inject(target, delta, hitPoint);
+        }
+
+        #region IEquatable<ScrollEvent> Members
+
+        public bool Equals(ScrollEvent other) {
+            return target == other.target && delta == other.delta && hitPoint == other.hitPoint;
+        }
+
+        #endregion
+
+    }
+
+    #endregion
 
 }
 

@@ -26,11 +26,6 @@ using UnityEngine;
 /// </summary>
 public class UniverseCenterModel : AItemModel, IDestinationTarget, IShipOrbitable {
 
-    //public new UniverseCenterData Data {                      // no current need for declaring this version of data
-    //    get { return base.Data as UniverseCenterData; }
-    //    set { base.Data = value; }
-    //}
-
     protected override void Awake() {
         base.Awake();
         Subscribe();

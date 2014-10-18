@@ -144,6 +144,9 @@
   <data name="Right" xml:space="preserve">
     <value>Right</value>
   </data>
+  <data name="Sprite" xml:space="preserve">
+    <value>Sprite</value>
+  </data>
   <data name="Star" xml:space="preserve">
     <value>Star</value>
   </data>

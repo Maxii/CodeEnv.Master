@@ -1,31 +1,31 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: DynamicTrackingLabels.cs
-// Easy access to the DynamicTrackingLabels folder in the Scene.
+// File: SettlementsFolder.cs
+//  Easy access to Settlements folder in Scene.  
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
 // default namespace
 
 using CodeEnv.Master.Common;
-using UnityEngine;
 
 /// <summary>
-/// Easy access to the DynamicTrackingLabels folder in the Scene.
+///  Easy access to Settlements folder in Scene.  
 /// </summary>
-public class DynamicTrackingLabels : AFolderAccess<DynamicTrackingLabels> {
+public class SettlementsFolder : AFolderAccess<SettlementsFolder> {
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
 }
 

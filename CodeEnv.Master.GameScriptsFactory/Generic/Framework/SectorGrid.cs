@@ -44,8 +44,6 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
 
     public float sectorVisibilityDepth = 2F;
 
-    private Vector3 gridSize; // = new Vector3(5F, 5F, 5F);
-
     private static GFRectGrid _grid;
     private static Vector3 _gridVertexToBoxOffset = new Vector3(0.5F, 0.5F, 0.5F);
 
@@ -69,9 +67,13 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     private void InitializeGrid() {
         _grid = UnityUtility.ValidateMonoBehaviourPresence<GFRectGrid>(gameObject);
         _grid.spacing = TempGameValues.SectorSize;
-        gridSize = _grid.size;        //_grid.size = gridSize;
         _grid.relativeSize = true;
         _grid.renderGrid = false;
+        int sectorCount = Mathf.RoundToInt(Mathf.Pow(2F, 3F) * _grid.size.x * _grid.size.y * _grid.size.z);
+        if (sectorCount > 64) {
+            D.Warn("Sector count is {0}. Currently, values over 64 can take a long time to scan.", sectorCount);
+            // 2x2x2 < 1 sec, 3x3x3 < 5 secs, 5x5x5 > 90 secs
+        }
     }
 
     private void Subscribe() {
@@ -134,13 +136,13 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
         float zCameraGridLoc = gridLocOfCamera.z;
 
         // construct from and to values, keeping them within the size of the intended grid
-        float xRenderFrom = Mathf.Clamp(xCameraGridLoc - sectorVisibilityDepth, -gridSize.x, gridSize.x);
-        float yRenderFrom = Mathf.Clamp(yCameraGridLoc - sectorVisibilityDepth, -gridSize.y, gridSize.y);
-        float zRenderFrom = Mathf.Clamp(zCameraGridLoc - sectorVisibilityDepth, -gridSize.z, gridSize.z);
+        float xRenderFrom = Mathf.Clamp(xCameraGridLoc - sectorVisibilityDepth, -_grid.size.x, _grid.size.x);
+        float yRenderFrom = Mathf.Clamp(yCameraGridLoc - sectorVisibilityDepth, -_grid.size.y, _grid.size.y);
+        float zRenderFrom = Mathf.Clamp(zCameraGridLoc - sectorVisibilityDepth, -_grid.size.z, _grid.size.z);
 
-        float xRenderTo = Mathf.Clamp(xCameraGridLoc + sectorVisibilityDepth, -gridSize.x, gridSize.x);
-        float yRenderTo = Mathf.Clamp(yCameraGridLoc + sectorVisibilityDepth, -gridSize.y, gridSize.y);
-        float zRenderTo = Mathf.Clamp(zCameraGridLoc + sectorVisibilityDepth, -gridSize.z, gridSize.z);
+        float xRenderTo = Mathf.Clamp(xCameraGridLoc + sectorVisibilityDepth, -_grid.size.x, _grid.size.x);
+        float yRenderTo = Mathf.Clamp(yCameraGridLoc + sectorVisibilityDepth, -_grid.size.y, _grid.size.y);
+        float zRenderTo = Mathf.Clamp(zCameraGridLoc + sectorVisibilityDepth, -_grid.size.z, _grid.size.z);
 
         // if any pair of axis values are equal, then only the first plane of vertexes will be showing, so expand it to one box showing
         ConfirmOneBoxDeep(ref xRenderFrom, ref xRenderTo);
@@ -232,20 +234,24 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
 
     private void __AddSector(Index3D index, Vector3 worldPosition) {
         SectorModel sectorPrefab = RequiredPrefabs.Instance.sector;
-        GameObject sectorGO = NGUITools.AddChild(Sectors.Instance.Folder.gameObject, sectorPrefab.gameObject);
+        GameObject sectorGO = NGUITools.AddChild(SectorsFolder.Instance.Folder.gameObject, sectorPrefab.gameObject);
         // sector.Awake() runs immediately here, then disables itself
         SectorModel sector = sectorGO.GetSafeMonoBehaviourComponent<SectorModel>();
 
-        SectorData data = new SectorData(index);
-        data.Density = 1F;
+        SectorData data = new SectorData(index) {
+            Density = 1F
+        };
         sector.Data = data;
         // IMPROVE use data values in place of sector values
 
         sectorGO.transform.position = worldPosition;
         SectorView view = sectorGO.GetSafeMonoBehaviourComponent<SectorView>();
-        view.PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
         sector.enabled = true;
         view.enabled = true;
+
+        UnityUtility.WaitOneToExecute(onWaitFinished: (wasKilled) => {
+            view.PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
+        });
 
         _sectors.Add(index, sector);
         //D.Log("Sector added at index {0}.", index);

@@ -290,7 +290,7 @@ public abstract class AMortalItemModelStateMachine : AMortalItemModel {
     /// instance that has the signature "CurrentState_CallingMethodName(param).
     /// Usage:
     /// void CallingMethodName(param)  {
-    /// SendStateMessage(param);
+    /// RelayToCurrentState(param);
     /// }
     /// IMPROVE // add Action&lt;float&gt; delegate
     /// </summary>

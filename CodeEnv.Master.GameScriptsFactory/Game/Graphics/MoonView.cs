@@ -31,6 +31,8 @@ public class MoonView : APlanetoidView {
         protected set { base.Presenter = value; }
     }
 
+    protected override float SphericalHighlightSizeMultiplier { get { return 3F; } }
+
     protected override void Awake() {
         base.Awake();
         Subscribe();

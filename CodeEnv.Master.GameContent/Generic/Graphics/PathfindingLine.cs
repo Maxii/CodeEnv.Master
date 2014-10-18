@@ -34,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="pathPoints">All the points along the path.</param>
         /// <param name="destination">The potentially moving destination reference.</param>
         public PathfindingLine(string name, Vector3[] pathPoints, Reference<Vector3> destination)
-            : base(name, pathPoints, null, References.DynamicObjects.Folder, LineType.Continuous, 1F, GameColor.Gray) {
+            : base(name, pathPoints, null, References.DynamicObjectsFolder.Folder, LineType.Continuous, 1F, GameColor.Gray) {
             Destination = destination;
         }
 

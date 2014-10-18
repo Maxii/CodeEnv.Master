@@ -26,44 +26,34 @@ using UnityEngine;
 /// <summary>
 /// Abstract class managing the UI View for a focusable object.
 /// </summary>
-public abstract class AFocusableItemView : AItemView, ICameraFocusable {
+public abstract class AFocusableItemView : AItemView, ICameraFocusable, IWidgetTrackable {
 
     public AFocusableItemPresenter Presenter { get; protected set; }
-
-    public float circleScaleFactor = 3.0F;
 
     /// <summary>
     /// Property that allows each derived class to establish the size of the sphericalHighlight
     /// relative to the class's radius.
     /// </summary>
-    protected virtual float SphericalHighlightScaleFactor { get { return 2F; } }
+    protected virtual float SphericalHighlightSizeMultiplier { get { return 2F; } }
 
     /// <summary>
     /// The radius in units of the conceptual 'globe' that encompasses this Item. Readonly.
     /// </summary>
     protected float Radius { get { return Presenter.Model.Radius; } }
 
+    public float circleScaleFactor = 3.0F;
+
     protected IGameInputHelper _inputHelper;
-    protected IDynamicObjects _dynamicObjects;
+    protected IDynamicObjectsFolder _dynamicObjects;
     protected bool _isCirclesRadiusDynamic = true;
 
-    /// <summary>
-    /// The Collider that intercepts input events for this view. 
-    /// </summary>
-    protected virtual Collider Collider { get; private set; }
-
     private HighlightCircle _circles;
-
-    protected override void Awake() {
-        base.Awake();
-        Collider = UnityUtility.ValidateComponentPresence<Collider>(gameObject);
-    }
 
     protected override void Start() {
         base.Start();
         // use of References cannot occur in Awake
         _inputHelper = References.InputHelper;
-        _dynamicObjects = References.DynamicObjects;
+        _dynamicObjects = References.DynamicObjectsFolder;
     }
 
     protected override void OnIsDiscernibleChanged() {
@@ -187,7 +177,7 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
             return;
         }
         if (_circles == null) {
-            float normalizedRadius = calcNormalizedCircleRadius();
+            float normalizedRadius = CalcNormalizedCircleRadius();
             string circlesTitle = "{0} Circle".Inject(gameObject.name);
             _circles = new HighlightCircle(circlesTitle, transform, normalizedRadius, _isCirclesRadiusDynamic, maxCircles: 3);
             _circles.Colors = new GameColor[3] { UnityDebugConstants.FocusedColor, UnityDebugConstants.SelectedColor, UnityDebugConstants.GeneralHighlightColor };
@@ -198,17 +188,16 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
         _circles.Show(toShow, (int)highlight);
     }
 
-    private void ShowSphericalHighlight(bool toHighlight) {
+    private void ShowSphericalHighlight(bool toShow) {
         var sphericalHighlight = References.SphericalHighlight;
-        if (toHighlight) {
-            sphericalHighlight.Position = _transform.position;
-            sphericalHighlight.Radius = Radius * SphericalHighlightScaleFactor;
+        if (sphericalHighlight == null) { return; } // workaround to allow deactivation of the SphericalHighlight gameObject
+        if (toShow) {
+            sphericalHighlight.SetTarget(this, Radius * SphericalHighlightSizeMultiplier);
         }
-        sphericalHighlight.Show(toHighlight);
+        sphericalHighlight.Show(toShow);
     }
 
-
-    protected virtual float calcNormalizedCircleRadius() {
+    protected virtual float CalcNormalizedCircleRadius() {
         return Screen.height * circleScaleFactor * Radius;
     }
 
@@ -224,51 +213,13 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
 
     public virtual bool IsEligible { get { return true; } }
 
-    [SerializeField]
-    protected float minimumCameraViewingDistanceMultiplier = 4.0F;
-
-    private float _minimumCameraViewingDistance;
-    public float MinimumCameraViewingDistance {
-        get {
-            if (_minimumCameraViewingDistance == Constants.ZeroF) {
-                _minimumCameraViewingDistance = CalcMinimumCameraViewingDistance();
-            }
-            return _minimumCameraViewingDistance;
-        }
-    }
-
-    /// <summary>
-    /// One time calculation of the minimum camera viewing distance.
-    /// </summary>
-    /// <returns></returns>
-    protected virtual float CalcMinimumCameraViewingDistance() {
-        return Radius * minimumCameraViewingDistanceMultiplier;
-    }
+    public abstract float MinimumCameraViewingDistance { get; }
 
     #endregion
 
     #region ICameraFocusable Members
 
-    [SerializeField]
-    protected float optimalCameraViewingDistanceMultiplier = 8F;
-
-    private float _optimalCameraViewingDistance;
-    public float OptimalCameraViewingDistance {
-        get {
-            if (_optimalCameraViewingDistance == Constants.ZeroF) {
-                _optimalCameraViewingDistance = CalcOptimalCameraViewingDistance();
-            }
-            return _optimalCameraViewingDistance;
-        }
-    }
-
-    /// <summary>
-    /// One time calculation of the optimal camera viewing distance.
-    /// </summary>
-    /// <returns></returns>
-    protected virtual float CalcOptimalCameraViewingDistance() {
-        return Radius * optimalCameraViewingDistanceMultiplier;
-    }
+    public abstract float OptimalCameraViewingDistance { get; }
 
     public virtual bool IsRetainedFocusEligible { get { return false; } }
 
@@ -277,6 +228,40 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
         get { return _isFocus; }
         set { SetProperty<bool>(ref _isFocus, value, "IsFocus", OnIsFocusChanged); }
     }
+
+    #endregion
+
+    #region IWidgetTrackable Members
+
+    public Vector3 GetOffset(WidgetPlacement placement) {
+
+        float circumRadius = Mathf.Sqrt(2) * Radius / 2F;   // distance to hypotenus of right triangle
+        switch (placement) {
+            case WidgetPlacement.Above:
+                return new Vector3(Constants.ZeroF, Radius, Constants.ZeroF);
+            case WidgetPlacement.AboveLeft:
+                return new Vector3(-circumRadius, circumRadius, Constants.ZeroF);
+            case WidgetPlacement.AboveRight:
+                return new Vector3(circumRadius, circumRadius, Constants.ZeroF);
+            case WidgetPlacement.Below:
+                return new Vector3(Constants.ZeroF, -Radius, Constants.ZeroF);
+            case WidgetPlacement.BelowLeft:
+                return new Vector3(-circumRadius, -circumRadius, Constants.ZeroF);
+            case WidgetPlacement.BelowRight:
+                return new Vector3(circumRadius, -circumRadius, Constants.ZeroF);
+            case WidgetPlacement.Left:
+                return new Vector3(-Radius, Constants.ZeroF, Constants.ZeroF);
+            case WidgetPlacement.Right:
+                return new Vector3(Radius, Constants.ZeroF, Constants.ZeroF);
+            case WidgetPlacement.Over:
+                return Vector3.zero;
+            case WidgetPlacement.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(placement));
+        }
+    }
+
+    public Transform Transform { get { return _transform; } }
 
     #endregion
 
@@ -306,6 +291,7 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable {
         FocusAndGeneral = 4
 
     }
+
 
 }
 

@@ -16,6 +16,8 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using UnityEngine;
+
     /// <summary>
     /// Interface containing values needed by a gameobject that is a target supporting camera movement.
     /// </summary>
@@ -31,6 +33,8 @@ namespace CodeEnv.Master.GameContent {
         /// Gets the minimum camera viewing distance allowed for this ICameraTargetable object.
         /// </summary>
         float MinimumCameraViewingDistance { get; }
+
+        Transform Transform { get; }
 
     }
 }

@@ -32,7 +32,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory>, IUnitFactory {
     private GameObject[] _aiShipPrefabs;
     private GameObject[] _humanShipPrefabs;
 
-    private FacilityModel[] facilityPrefabs;
+    private FacilityModel[] _facilityPrefabs;
     private GameObject _aiFleetCmdPrefab;
     private GameObject _humanFleetCmdPrefab;
 
@@ -57,7 +57,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory>, IUnitFactory {
         _aiShipPrefabs = reqdPrefabs.aiShips.Select<ShipView, GameObject>(v => v.gameObject).ToArray();
         _humanShipPrefabs = reqdPrefabs.humanShips.Select<ShipView_Player, GameObject>(v => v.gameObject).ToArray();
 
-        facilityPrefabs = reqdPrefabs.facilities;
+        _facilityPrefabs = reqdPrefabs.facilities;
 
         _aiFleetCmdPrefab = reqdPrefabs.aiFleetCmd.gameObject;
         _humanFleetCmdPrefab = reqdPrefabs.humanFleetCmd.gameObject;
@@ -105,7 +105,6 @@ public class UnitFactory : AGenericSingleton<UnitFactory>, IUnitFactory {
             model.Data = new FleetCmdData(cmdStat) {
                 Owner = owner
             };
-            model.gameObject.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(model.transform);
             return true;
         }
         else {
@@ -146,7 +145,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory>, IUnitFactory {
         D.Assert(owner.IsHuman == (element.gameObject.GetComponent<ShipView_Player>() != null), "Owner {0} is not compatible with {1} view.".Inject(owner.LeaderName, element.FullName));
         FleetCmdModel cmd = MakeFleetCmdInstance(cmdStat, owner);
         GameObject unitGo = new GameObject(cmdStat.Name);
-        UnityUtility.AttachChildToParent(unitGo, Fleets.Instance.Folder.gameObject);
+        UnityUtility.AttachChildToParent(unitGo, FleetsFolder.Instance.Folder.gameObject);
         UnityUtility.AttachChildToParent(cmd.gameObject, unitGo);
 
         if (!element.enabled) {
@@ -213,9 +212,6 @@ public class UnitFactory : AGenericSingleton<UnitFactory>, IUnitFactory {
             };
             model.Data = data;
             AttachWeapons(weapStats, model);
-
-            // this is not really necessary as ShipGo should already have Model as its Mesh's CameraLOSChangedRelay target
-            shipGo.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(shipGo.transform);
             return true;
         }
         else {
@@ -260,7 +256,6 @@ public class UnitFactory : AGenericSingleton<UnitFactory>, IUnitFactory {
             model.Data = new StarbaseCmdData(cmdStat) {
                 Owner = owner
             };
-            model.gameObject.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(model.transform);
             return true;
         }
         else {
@@ -303,7 +298,6 @@ public class UnitFactory : AGenericSingleton<UnitFactory>, IUnitFactory {
             model.Data = new SettlementCmdData(cmdStat) {
                 Owner = owner
             };
-            model.gameObject.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(model.transform);
             return true;
         }
         else {
@@ -318,7 +312,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory>, IUnitFactory {
     }
 
     /// <summary>
-    /// Makes an instance of a facility based on the FacilityStat provided. The facilityModel and View will not be enabled.
+    /// Makes an instance of a facility based on the stats provided. The facilityModel and View will not be enabled.
     /// As the Facility is not yet attached to a Command, the GameObject will have no parent and will not yet have
     /// a formation position assigned.
     /// </summary>
@@ -328,13 +322,22 @@ public class UnitFactory : AGenericSingleton<UnitFactory>, IUnitFactory {
     /// <param name="owner">The owner.</param>
     /// <returns></returns>
     public FacilityModel MakeInstance(FacilityStat facStat, SpaceTopography topography, IEnumerable<WeaponStat> weapStats, IPlayer owner) {
-        GameObject facilityPrefabGo = facilityPrefabs.Single(f => f.gameObject.name == facStat.Category.GetName()).gameObject;
+        GameObject facilityPrefabGo = _facilityPrefabs.Single(f => f.gameObject.name == facStat.Category.GetName()).gameObject;
         GameObject facilityGoClone = UnityUtility.AddChild(null, facilityPrefabGo);
         FacilityModel model = facilityGoClone.GetSafeMonoBehaviourComponent<FacilityModel>();
         MakeInstance(facStat, topography, weapStats, owner, ref model);
         return model;
     }
 
+    /// <summary>
+    /// Populates the provided model instance with data from the stat objects. The Model and View will not be enabled. 
+    /// The element has yet to be assigned to a Command.
+    /// </summary>
+    /// <param name="facStat">The fac stat.</param>
+    /// <param name="topography">The topography.</param>
+    /// <param name="weapStats">The weap stats.</param>
+    /// <param name="owner">The owner.</param>
+    /// <param name="model">The model.</param>
     public void MakeInstance(FacilityStat facStat, SpaceTopography topography, IEnumerable<WeaponStat> weapStats, IPlayer owner, ref FacilityModel model) {
         GameObject facilityGo = model.gameObject;
         FacilityCategory categoryFromModel = Enums<FacilityCategory>.Parse(facilityGo.name);
@@ -344,11 +347,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory>, IUnitFactory {
         };
         model.Data = data;
         AttachWeapons(weapStats, model);
-
-        // this is not really necessary as facilityGo should already have Model as its Mesh's CameraLOSChangedRelay target
-        facilityGo.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(facilityGo.transform);
     }
-
 
     public FormationStation MakeFormationStationInstance(Vector3 stationOffset, FleetCmdModel fleetCmd) {
         // make a folder for neatness if one doesn't yet exist

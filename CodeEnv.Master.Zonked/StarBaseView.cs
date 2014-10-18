@@ -101,7 +101,7 @@ public class StarBaseView : AFocusableItemView, IStarBaseViewable, ISelectable, 
     private void InitializeTrackingLabel() {
         if (enableTrackingLabel) {
             float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
-            _trackingLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(_transform, GuiTrackingLabelFactory.LabelPlacement.AboveTarget, minShowDistance);
+            _trackingLabel = TrackingWidgetFactory.Instance.CreateGuiTrackingLabel(_transform, TrackingWidgetFactory.LabelPlacement.AboveTarget, minShowDistance);
         }
     }
 
@@ -170,7 +170,7 @@ public class StarBaseView : AFocusableItemView, IStarBaseViewable, ISelectable, 
         }
     }
 
-    protected override float calcNormalizedCircleRadius() {
+    protected override float CalcNormalizedCircleRadius() {
         return Screen.height * circleScaleFactor;
     }
 

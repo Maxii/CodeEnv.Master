@@ -44,14 +44,14 @@ public class SystemGraphics : AGraphics, IDisposable {
 
     private GuiTrackingLabel _trackingLabel;
     private MeshRenderer _systemHighlightRenderer;
-    private GuiTrackingLabelFactory _trackingLabelFactory;
+    private TrackingWidgetFactory _trackingLabelFactory;
 
     protected override void Awake() {
         base.Awake();
         Target = _transform;
         _orbitalPlane = gameObject.GetSafeMonoBehaviourComponentInChildren<OrbitalPlane>();
         _systemManager = gameObject.GetSafeMonoBehaviourComponent<SystemCreator>();
-        _trackingLabelFactory = GuiTrackingLabelFactory.Instance;
+        _trackingLabelFactory = TrackingWidgetFactory.Instance;
         maxAnimateDistance = AnimationSettings.Instance.MaxSystemAnimateDistance;
         _systemHighlightRenderer = __FindSystemHighlight();
     }

@@ -49,13 +49,12 @@ public abstract class AMortalItemModel : AOwnedItemModel, IMortalModel, IMortalT
     /// <summary>
     /// Called when the item's health has changed. 
     /// NOTE: Donot use this to initiate the death of an item. That is handled in MortalItemModels as damage is taken which
-    /// makes the logic behind dieing more visible and understandable. In the cae of a UnitCommandModel, death occurs
+    /// makes the logic behind dieing more visible and understandable. In the case of a UnitCommandModel, death occurs
     /// when the last Element has been removed from the Unit.
     /// </summary>
     protected virtual void OnHealthChanged() { }
 
     protected virtual void OnDeath() {
-        //enabled = false;
         IsAlive = false;
         if (onTargetDeathOneShot != null) {
             onTargetDeathOneShot(this);

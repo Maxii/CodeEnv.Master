@@ -17,7 +17,6 @@
 // default namespace
 
 using System;
-using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
@@ -33,62 +32,51 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
         protected set { base.Presenter = value; }
     }
 
-    /// <summary>
-    /// The Collider encompassing the bounds of this Command's icon that intercepts input events for this view. 
-    /// This collider does NOT detect collisions with other operating objects in the universe and therefore
-    /// can be disabled when it is undiscernible.
-    /// </summary>
-    protected new BoxCollider Collider { get { return base.Collider as BoxCollider; } }     // IMPROVE 2D
+    protected override float SphericalHighlightSizeMultiplier { get { return 1F; } }
 
-    private Vector3 _cmdIconPivotOffset;
-    private UISprite _cmdIconSprite;
-    protected Transform _cmdIconTransform;
-    private ScaleRelativeToCamera _cmdIconScaler;
-    //private IIcon _cmdIcon;   // IMPROVE not really used for now
-    private Vector3 _cmdIconSize;
+    public float minCameraViewDistanceMultiplier = 0.9F;    // just inside Unit's highlight sphere
+    public float optimalCameraViewDistanceMultiplier = 2F;  // encompasses all elements of the Unit
 
-    private Billboard _billboard;
+    private CommandTrackingSprite _cmdIcon;
 
     protected override void Awake() {
         base.Awake();
-        _billboard = gameObject.GetSafeMonoBehaviourComponentInChildren<Billboard>();
         _isCirclesRadiusDynamic = false;
         circleScaleFactor = 0.03F;
-        minimumCameraViewingDistanceMultiplier = 0.8F;
-        optimalCameraViewingDistanceMultiplier = 1.2F;
-        InitializeCmdIcon();
         UpdateRate = FrameUpdateFrequency.Normal;
+    }
+
+    protected override void InitializeVisualMembers() {
+        _cmdIcon = TrackingWidgetFactory.Instance.CreateCmdTrackingSprite(this);
+        // CmdIcon enabled state controlled by CmdIcon.Show()
+
+        var cmdIconEventListener = _cmdIcon.EventListener;
+        cmdIconEventListener.onHover += (cmdGo, isOver) => OnHover(isOver);
+        cmdIconEventListener.onClick += (cmdGo) => OnClick();
+        cmdIconEventListener.onDoubleClick += (cmdGo) => OnDoubleClick();
+        cmdIconEventListener.onPress += (cmdGo, isDown) => OnPress(isDown);
+
+        var cmdIconCameraLosChgdListener = _cmdIcon.CameraLosChangedListener;
+        cmdIconCameraLosChgdListener.onCameraLosChanged += (cmdGo, inCameraLOS) => InCameraLOS = inCameraLOS;
+        cmdIconCameraLosChgdListener.enabled = true;
     }
 
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
-        Collider.enabled = IsDiscernible;
-        _billboard.enabled = IsDiscernible; // can't deactivate billboard gameobject as that would disable the Icon's CameraLOSChangedRelay
-        ShowCommandIcon(IsDiscernible);
+        ShowCmdIcon(IsDiscernible);
     }
 
     protected virtual void OnTrackingTargetChanged() {
-        _cmdIconPivotOffset = TrackingTarget.UpperExtent;
-        PositionIcon();
-        KeepColliderOverIcon();
+        PositionCmdOverTrackingTarget();
     }
 
     protected virtual void OnIsSelectedChanged() {
         AssessHighlighting();
     }
 
-    protected override void OccasionalUpdate() {
-        base.OccasionalUpdate();
-        KeepColliderOverIcon();
-    }
-
-    private void KeepColliderOverIcon() {
-        Collider.size = Vector3.Scale(_cmdIconSize, _cmdIconScaler.Scale);
-
-        Vector3[] iconWorldCorners = _cmdIconSprite.worldCorners;
-        Vector3 iconWorldCenter = iconWorldCorners[0] + (iconWorldCorners[2] - iconWorldCorners[0]) * 0.5F;
-        // convert icon's world position to the equivalent local position on the command transform
-        Collider.center = _transform.InverseTransformPoint(iconWorldCenter);
+    protected virtual void PositionCmdOverTrackingTarget() {
+        _transform.position = TrackingTarget.Transform.position;
+        _transform.rotation = TrackingTarget.Transform.rotation;
     }
 
     public override void AssessHighlighting() {
@@ -111,10 +99,9 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
         Highlight(Highlights.None);
     }
 
-    private void ShowCommandIcon(bool toShow) {
-        if (_cmdIconSprite != null) {
-            _cmdIconSprite.enabled = toShow;    // IMPROVE what is best way to stop UISprite from rendering?
-            // TODO audio on/off goes here
+    private void ShowCmdIcon(bool toShow) {
+        if (_cmdIcon != null) {
+            _cmdIcon.Show(toShow);
         }
     }
 
@@ -144,49 +131,11 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
     }
 
     protected override void ShowCircle(bool toShow, Highlights highlight) {
-        ShowCircle(toShow, highlight, _cmdIconTransform);
+        ShowCircle(toShow, highlight, _cmdIcon.WidgetTransform);
     }
 
-    protected override float calcNormalizedCircleRadius() {
+    protected override float CalcNormalizedCircleRadius() {
         return Screen.height * circleScaleFactor;
-    }
-
-    protected virtual void InitializeCmdIcon() {
-        _cmdIconSprite = gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>();
-        __DisableIcon();
-        _cmdIconTransform = _cmdIconSprite.transform;
-        _cmdIconScaler = _cmdIconSprite.gameObject.GetSafeMonoBehaviourComponent<ScaleRelativeToCamera>();
-        // I need the collider sitting over the CmdIcon to be 3D as it's rotation tracks the Cmd object, not the billboarded icon
-        Vector2 iconSize = _cmdIconSprite.localSize;
-        _cmdIconSize = new Vector3(iconSize.x, iconSize.y, iconSize.x);
-    }
-
-    /// <summary>
-    /// Disables the UISprite right after it is instantiated. Normally I would do this
-    /// in the UISprite.Awake() method, but since I don't control UISprite, I'll do it 
-    /// this way. UnitCreators will enable the icon once unit operations begin.
-    /// </summary>
-    private void __DisableIcon() {
-        if (_cmdIconSprite.enabled) {
-            _cmdIconSprite.enabled = false;
-        }
-        else {
-            // UISprite.Awake() has not yet run so wait, then disable
-            UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
-                D.Assert(_cmdIconSprite.enabled);
-                D.Warn("{0} had to wait to disable UISprite CmdIcon.", Presenter.FullName);
-                _cmdIconSprite.enabled = false;
-            });
-        }
-    }
-
-    protected void PositionIcon() {
-        // Notes: _cmdIconPivotOffset is a worldspace offset to the top of the TrackingTarget collider and doesn't change with scale, position or rotation
-        // The approach below will also work if we want a viewport offset that is a constant percentage of the viewport
-        //Vector3 viewportOffsetLocation = Camera.main.WorldToViewportPoint(TrackingTarget.position + _cmdIconPivotOffset);
-        //Vector3 worldOffsetLocation = Camera.main.ViewportToWorldPoint(viewportOffsetLocation + _cmdIconViewportOffset);
-        //_cmdIconTransform.localPosition = worldOffsetLocation - TrackingTarget.position;
-        _cmdIconTransform.localPosition = _cmdIconPivotOffset;
     }
 
     #region Intel Stealth Testing
@@ -205,6 +154,7 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
 
     protected override void OnLeftClick() {
         base.OnLeftClick();
+        //D.Log("{0}.OnLeftClick().", Presenter.FullName);
         IsSelected = true;
     }
 
@@ -217,31 +167,38 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
 
     #region ICommandViewable Members
 
-    private IGuiTrackable _trackingTarget;
+    private IWidgetTrackable _trackingTarget;
     /// <summary>
-    /// The View that this UnitCommand tracks in worldspace. 
+    /// The target that this UnitCommand tracks in worldspace. 
     /// </summary>
-    public IGuiTrackable TrackingTarget {
+    public IWidgetTrackable TrackingTarget {
         protected get { return _trackingTarget; }
-        set { SetProperty<IGuiTrackable>(ref _trackingTarget, value, "TrackingTarget", OnTrackingTargetChanged); }
+        set { SetProperty<IWidgetTrackable>(ref _trackingTarget, value, "TrackingTarget", OnTrackingTargetChanged); }
     }
 
     public void ChangeCmdIcon(IIcon icon) {
-        //_cmdIcon = icon;
-        _cmdIconSprite.spriteName = icon.Filename;
-        _cmdIconSprite.color = icon.Color.ToUnityColor();
-        //D.Log("{0} Icon color is {1}.", Presenter.FullName, icon.Color.GetName());
+        if (_cmdIcon != null) {
+            _cmdIcon.Set(icon.Filename);
+            _cmdIcon.Color = icon.Color;
+            //D.Log("{0} Icon color is {1}.", Presenter.FullName, icon.Color.GetName());
+            return;
+        }
+        //D.Warn("Attempting to change a null {0} to {1}.", typeof(CommandTrackingSprite).Name, icon.Filename);
     }
+
+    #endregion
+
+    #region ICameraTargetable Members
+
+    public override float MinimumCameraViewingDistance { get { return Radius * minCameraViewDistanceMultiplier; } }
 
     #endregion
 
     #region ICameraFocusable Members
 
-    public override bool IsRetainedFocusEligible {
-        get {
-            return PlayerIntel.CurrentCoverage != IntelCoverage.None;
-        }
-    }
+    public override bool IsRetainedFocusEligible { get { return PlayerIntel.CurrentCoverage != IntelCoverage.None; } }
+
+    public override float OptimalCameraViewingDistance { get { return Radius * optimalCameraViewDistanceMultiplier; } }
 
     #endregion
 
@@ -252,6 +209,23 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
         get { return _isSelected; }
         set { SetProperty<bool>(ref _isSelected, value, "IsSelected", OnIsSelectedChanged); }
     }
+
+    #endregion
+
+    #region IMortalViewable Members
+
+    public override void OnDeath() {
+        base.OnDeath();
+        ShowCmdIcon(false);
+    }
+
+    #endregion
+
+    #region IWidgetTrackable Members
+
+    // IMPROVE Consider overriding GetOffset from AFocusableItemView and use TrackingTarget's GetOffset values instead
+    // Currently, the Cmd's Radius is used to position the CmdIcon. As CmdRadius encompasses the whole cmd, the icon is 
+    // quite a ways above the HQElement
 
     #endregion
 

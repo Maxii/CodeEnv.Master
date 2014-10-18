@@ -300,6 +300,26 @@ namespace CodeEnv.Master.Common {
             return new Vector3(x / length, y / length, z / length);
         }
 
+        /// <summary>
+        /// Executes the provided Action on the gameObject associated with the Interface I, if I is not null or already destroyed.
+        /// This is necessary as interfaces in Unity (unlike MonoBehaviours) do not return null when slated for destruction.
+        /// </summary>
+        /// <typeparam name="I">The Interface type.</typeparam>
+        /// <param name="i">The Interface instance.</param>
+        /// <param name="action">The action to execute on i's GameObject.</param>
+        /// <exception cref="System.ArgumentException">if i is not a Component.</exception>
+        public static void ExecuteIfNotNullOrDestroyed<I>(I i, Action<GameObject> action) where I : class {
+            if (i != null) {
+                if (!(i is Component)) {
+                    throw new System.ArgumentException("i is of Type {0}, which is not a Component.".Inject(i.GetType().Name));
+                }
+                var c = i as Component;
+                if (c != null) {
+                    // i is not destroyed
+                    action(c.gameObject);
+                }
+            }
+        }
 
         /// <summary>
         /// Waits one frame, then executes the provided delegate.
@@ -332,6 +352,7 @@ namespace CodeEnv.Master.Common {
         /// signature is onWaitFinished(jobWasKilled).</param>
         /// <returns>A reference to the WaitJob so it can be killed before it finishes, if needed.</returns>
         public static WaitJob WaitForFrames(int framesToWait, Action<bool> onWaitFinished) {
+            Arguments.ValidateNotNegative(framesToWait);
             return new WaitJob(WaitForFrames(framesToWait), toStart: true, onJobComplete: onWaitFinished);
         }
 
@@ -345,10 +366,56 @@ namespace CodeEnv.Master.Common {
         /// <param name="framesToWait">The frames to wait.</param>
         /// <returns></returns>
         private static IEnumerator WaitForFrames(int framesToWait) {
-            D.Assert(framesToWait > Constants.Zero);
             int targetFrameCount = Time.frameCount + framesToWait;
             while (Time.frameCount < targetFrameCount) {
                 yield return null;
+            }
+        }
+
+        /// <summary>
+        /// Waits the initial designated number of frames, then executes the provided delegate. Then
+        /// continuously waits the repeating number of frames and executes the delegate. This continues
+        /// until the returned Job is killed.
+        /// Usage:
+        /// WaitForFrames(initialFramesToWait, repeatingFramesToWait, methodToExecute: () =&gt; {
+        /// Code to execute;
+        /// });
+        /// Warning: This method uses a coroutine Job. Accordingly, after being called it will
+        /// immediately return which means the code you have following it will execute
+        /// before the code assigned to the methodToExecute delegate.
+        /// </summary>
+        /// <param name="initialFramesToWait">The initial frames to wait.</param>
+        /// <param name="repeatingFramesToWait">The repeating frames to wait.</param>
+        /// <param name="methodToExecute">The method to execute.</param>
+        /// <returns>
+        /// A reference to the WaitJob so it can be killed when no longer needed.
+        /// </returns>
+        public static WaitJob WaitForFrames(int initialFramesToWait, int repeatingFramesToWait, Action methodToExecute) {
+            return new WaitJob(RepeatingWaitForFrames(initialFramesToWait, repeatingFramesToWait, methodToExecute), toStart: true, onJobComplete: null);
+        }
+
+        /// <summary>
+        /// Executes <c>methodToExecute</c> following a delay of <c>initialFramesToWait</c> frames, then 
+        /// continuously delays <c>repeatingFramesToWait</c> frames between executions of <c>methodToExecute</c> until killed.
+        /// WARNING: the code in this location will execute immediately after the Job starts.
+        /// </summary>
+        /// <param name="initialFramesToWait">The initial frames to wait.</param>
+        /// <param name="repeatingFramesToWait">The number of frames to wait between method execution.</param>
+        /// <param name="methodToExecute">The method to execute.</param>
+        /// <returns></returns>
+        private static IEnumerator RepeatingWaitForFrames(int initialFramesToWait, int repeatingFramesToWait, Action methodToExecute) {
+            int targetFrameCount = Time.frameCount + initialFramesToWait;
+            while (Time.frameCount < targetFrameCount) {
+                yield return null;
+            }
+            methodToExecute();
+
+            while (true) {
+                targetFrameCount = Time.frameCount + repeatingFramesToWait;
+                while (Time.frameCount < targetFrameCount) {
+                    yield return null;
+                }
+                methodToExecute();
             }
         }
 

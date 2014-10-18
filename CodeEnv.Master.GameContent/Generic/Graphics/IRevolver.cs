@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IDynamicObjects.cs
-// Interface allowing access to the associated Unity-compiled script. 
+// File: IRevolver.cs
+//  Interface for easy access to Revolvers.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,15 +16,12 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using UnityEngine;
-
     /// <summary>
-    /// Interface allowing access to the associated Unity-compiled script. 
-    /// Typically, a static reference to the script is established by GameManager in References.cs, providing access to the script from classes located in pre-compiled assemblies.
+    /// Interface for easy access to Revolvers.
     /// </summary>
-    public interface IDynamicObjects {
+    public interface IRevolver {
 
-        Transform Folder { get; }
+        bool enabled { get; set; }
 
     }
 }

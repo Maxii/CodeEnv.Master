@@ -48,7 +48,6 @@ public class SettlementCmdView_AI : SettlementCmdView {
     private CtxObject _ctxObject;
 
     private void __InitializeContextMenu() {      // IMPROVE use of string
-        UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
         _ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
         _ctxObject.offsetMenu = true;
 

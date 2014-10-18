@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Class that rotates an object around a designated axis.
 /// </summary>
-public class Revolver : AMonoBase {
+public class Revolver : AMonoBase, IRevolver {
 
     /// <summary>
     /// The axis of self rotation in local space.

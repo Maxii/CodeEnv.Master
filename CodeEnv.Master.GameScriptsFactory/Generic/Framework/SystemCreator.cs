@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
@@ -76,6 +77,7 @@ public class SystemCreator : AMonoBase, IDisposable {
     public bool isCompositionPreset;
     public int maxRandomPlanets = 3;
     public int maxRandomMoons = 3;
+    public bool cycleIntelLevel = false;
 
     public string SystemName { get { return _transform.name; } }    // the SystemCreator carries the name of the System
 
@@ -155,7 +157,6 @@ public class SystemCreator : AMonoBase, IDisposable {
             CreateStats();
             PrepareForOperations();
             EnableSystem(onCompletion: delegate {
-                __SetIntelLevel();
                 RegisterGameStateProgressionReadiness(isReady: true);
             });
             // System is now prepared to receive a Settlement when it deploys
@@ -165,6 +166,7 @@ public class SystemCreator : AMonoBase, IDisposable {
             EnableOtherWhenRunning();
             BeginSystemOperations(onCompletion: delegate {
                 // wait to allow any cellestial objects using the IEnumerator StateMachine to enter their starting state
+                __SetIntelLevel();
                 DestroyCreationObject(); // destruction deferred so __UniverseInitializer can complete its work
             });
         }
@@ -248,7 +250,6 @@ public class SystemCreator : AMonoBase, IDisposable {
         AssignPlanetOrbitSlotsToMoons();    // modifies moon names based on its assigned planetary orbit
         AddMembersToSystemData();         // adds star and planet data to the system's data component
         InitializeTopographyMonitor();
-        CompleteSystem();               // misc final touchup
     }
 
     private void MakeSystem() {
@@ -493,12 +494,6 @@ public class SystemCreator : AMonoBase, IDisposable {
         monitor.TopographyRadius = TempGameValues.SystemRadius;
     }
 
-    private void CompleteSystem() {
-        LogEvent();
-        // include the System as a target in any child with a CameraLOSChangedRelay
-        _system.gameObject.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(r => r.AddTarget(_system.transform));
-    }
-
     private void EnableSystem(Action onCompletion = null) {
         LogEvent();
         _planets.ForAll(p => p.enabled = true);
@@ -518,13 +513,13 @@ public class SystemCreator : AMonoBase, IDisposable {
     }
 
     /// <summary>
-    /// Enables selected children of the system, star, planets and moons. e.g. - cameraLOSRelays
-    /// Revolve and Orbits, etc. These scripts that are enabled should only be enabled on or after IsRunning.
+    /// Enables selected children of the system, star, planets and moons. e.g. - Orbits, etc. 
+    /// These scripts that are enabled should only be enabled on or after IsRunning.
     /// </summary>
     /// <param name="onCompletion">The on completion.</param>
     private void EnableOtherWhenRunning(Action onCompletion = null) {
         D.Assert(GameStatus.Instance.IsRunning);
-        gameObject.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(relay => relay.enabled = true);
+        // CameraLosChangedListeners are enabled by View's.InitializeVisualMembers()
 
         // Enable planet and moon orbits. Leave any possible settlement that might already be present to the SettlementCreator
         _planets.ForAll(p => p.gameObject.GetComponentInParents<Orbiter>().enabled = true);   // planet orbits
@@ -533,10 +528,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         _planets.ForAll(p => p.gameObject.GetComponentsInChildren<Orbiter>().Except(allShipOrbiters).ForAll(o => o.enabled = true));  // moon orbits
 
         // OrbitersForShips are enabled and disabled by ShipOrbitSlot when ships assume and break orbit
-
-        // Enable planet, moon and star revolves. Leave any possible settlement that might already be present to the SettlementCreator
-        _planets.ForAll(p => p.gameObject.GetComponentsInChildren<Revolver>().ForAll(r => r.enabled = true));    // planets and moons
-        _star.gameObject.GetComponentsInChildren<Revolver>().ForAll(r => r.enabled = true);
+        // Revolvers control their own enablement based on their visibility. Leave any possible settlement that might already be present to the SettlementCreator
 
         gameObject.GetSafeMonoBehaviourComponentInChildren<TopographyMonitor>().enabled = true;
         UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
@@ -550,10 +542,35 @@ public class SystemCreator : AMonoBase, IDisposable {
         LogEvent();
         // Stars use FixedIntel set to Comprehensive. It is not changeable
         // Systems simply use Intel like most other objects. It can be changed to any value
-        _system.gameObject.GetSafeInterface<IViewable>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
         // Planets and Moons use ImprovingIntel which means once a level is achieved it cannot be reduced
+
         _planets.ForAll(p => p.gameObject.GetSafeInterface<IViewable>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive);
         _moons.ForAll(m => m.gameObject.GetSafeInterface<IViewable>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive);
+
+        var systemIntel = _system.gameObject.GetSafeInterface<IViewable>().PlayerIntel;
+        if (cycleIntelLevel) {
+            new Job(__CycleSystemIntelCoverage(systemIntel), true);
+        }
+        else {
+            systemIntel.CurrentCoverage = IntelCoverage.Comprehensive;
+        }
+    }
+
+    private IntelCoverage __previousCoverage;
+    private IEnumerator __CycleSystemIntelCoverage(IIntel intel) {
+        intel.CurrentCoverage = IntelCoverage.None;
+        yield return new WaitForSeconds(4F);
+        intel.CurrentCoverage = IntelCoverage.Aware;
+        __previousCoverage = IntelCoverage.Aware;
+        while (true) {
+            yield return new WaitForSeconds(4F);
+            var proposedCoverage = Enums<IntelCoverage>.GetRandom(excludeDefault: true);
+            while (proposedCoverage == __previousCoverage) {
+                proposedCoverage = Enums<IntelCoverage>.GetRandom(excludeDefault: true);
+            }
+            intel.CurrentCoverage = proposedCoverage;
+            __previousCoverage = proposedCoverage;
+        }
     }
 
     private void BeginSystemOperations(Action onCompletion) {

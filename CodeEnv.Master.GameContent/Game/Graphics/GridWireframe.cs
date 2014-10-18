@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="width">The width.</param>
         /// <param name="color">The color.</param>
         public GridWireframe(string name, Vector3[] gridPoints, float width = 1F, GameColor color = GameColor.Gray)
-            : base(name, gridPoints, null, References.DynamicObjects.Folder, LineType.Discrete, width, color) {
+            : base(name, gridPoints, null, References.DynamicObjectsFolder.Folder, LineType.Discrete, width, color) {
         }
 
         public override string ToString() {

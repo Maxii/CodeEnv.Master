@@ -43,10 +43,10 @@ public class GuiTooltip : AMonoBase {
     void OnTooltip(bool toShow) {
         if (_tooltipHasContent) {
             if (toShow) {
-                UITooltip.ShowText(tooltip);
+                UITooltip.Show(tooltip);
             }
             else {
-                UITooltip.ShowText(null);
+                UITooltip.Show(null);
             }
         }
     }

@@ -115,11 +115,11 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
 
     protected override void EnableOtherWhenRunning() {
         D.Assert(GameStatus.Instance.IsRunning);
-        gameObject.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(relay => relay.enabled = true);
+        // CameraLosChangedListener enabled state handled in View.InitializeVisualMembers()
         gameObject.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeMonitor>().ForAll(wrt => wrt.enabled = true);
-        gameObject.GetSafeMonoBehaviourComponentsInChildren<Revolver>().ForAll(rev => rev.enabled = true);
-        //gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>().enabled = true;
-        // no orbits present,  // other possibles: Billboard, ScaleRelativeToCamera
+        // Revolvers handle their own enabled state
+        // Cmd sprites enabled when shown
+        // no orbits present
         // TODO SensorRangeTracker
     }
 

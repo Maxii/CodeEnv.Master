@@ -39,6 +39,11 @@ public class SettlementCmdView : AUnitCommandView, ICameraFollowable {
         Presenter = new SettlementCmdPresenter(this);
     }
 
+    protected override void InitializeVisualMembers() {
+        base.InitializeVisualMembers();
+        // Revolvers control their own enabled state
+    }
+
     protected override void OnPlayerIntelCoverageChanged() {
         base.OnPlayerIntelCoverageChanged();
         Presenter.OnPlayerIntelCoverageChanged();

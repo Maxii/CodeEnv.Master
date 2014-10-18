@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: DynamicObjects.cs
-// Easy access to DynamicObjects folder in Scene.
+// File: StarbasesFolder.cs
+//  Easy access to Starbases folder in Scene. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,17 +17,15 @@
 // default namespace
 
 using CodeEnv.Master.Common;
-using CodeEnv.Master.GameContent;
-using UnityEngine;
 
 /// <summary>
-/// Easy access to DynamicObjects folder in Scene.
+///  Easy access to Starbases folder in Scene.  
 /// </summary>
-public class DynamicObjects : AFolderAccess<DynamicObjects>, IDynamicObjects {
+public class StarbasesFolder : AFolderAccess<StarbasesFolder> {
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-}
 
+}
 

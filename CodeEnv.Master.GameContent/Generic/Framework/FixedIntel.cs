@@ -27,16 +27,16 @@ namespace CodeEnv.Master.GameContent {
         public override bool HasDatedCoverage { get { return false; } }
 
         public override IntelCoverage DatedCoverage {
-            get { throw new InvalidOperationException("{0} does not support DatedCoverage.".Inject(GetType().Name)); }
+            get { throw new NotSupportedException("{0} does not support DatedCoverage.".Inject(GetType().Name)); }
         }
 
         public override GameDate DateStamp {
-            get { throw new InvalidOperationException("{0} does not support DateStamp.".Inject(GetType().Name)); }
+            get { throw new NotSupportedException("{0} does not support DateStamp.".Inject(GetType().Name)); }
         }
 
         public override IntelCoverage CurrentCoverage {
             get { return base.CurrentCoverage; }
-            set { throw new InvalidOperationException("{0} does not support setting CurrentCoverage. Use FixedIntel(fixedCoverage) instead.".Inject(GetType().Name)); }
+            set { throw new NotSupportedException("{0} does not support setting CurrentCoverage. Use FixedIntel(fixedCoverage) instead.".Inject(GetType().Name)); }
         }
 
         public FixedIntel(IntelCoverage fixedCoverage) : base(fixedCoverage) { }

@@ -125,6 +125,8 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         set { SetProperty<ICameraFocusable>(ref _currentFocus, value, "CurrentFocus", OnCurrentFocusChanged, OnCurrentFocusChanging); }
     }
 
+    public UICamera MainCameraEventDispatcher { get; private set; }
+
     public Settings settings = new Settings {
         activeScreenEdge = 5F, smallMovementThreshold = 2F,
         focusingPositionDampener = 2.0F, focusingRotationDampener = 1.0F, focusedPositionDampener = 4.0F,
@@ -144,7 +146,6 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     private Camera _camera;
     private GameInput _gameInput;
     private GameStatus _gameStatus;
-    private UICamera _mainCameraEventDispatcher;
 
     private IList<IDisposable> _subscribers;
 
@@ -257,7 +258,6 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         _playerPrefsMgr = PlayerPrefsManager.Instance;
         _gameInput = GameInput.Instance;
         _gameStatus = GameStatus.Instance;
-        _mainCameraEventDispatcher = gameObject.GetSafeMonoBehaviourComponent<UICamera>();
         Subscribe();
         ValidateActiveConfigurations();
         // need to raise this event in Awake as Start can be too late, since the true version of this event is called
@@ -326,9 +326,11 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
                * over a gameObject. */
         UICamera.fallThrough = gameObject;
 
-        _mainCameraEventDispatcher.eventType = UICamera.EventType.World_3D;
-        _mainCameraEventDispatcher.useKeyboard = true;
-        _mainCameraEventDispatcher.useMouse = true;
+        MainCameraEventDispatcher = gameObject.GetSafeMonoBehaviourComponent<UICamera>();
+        MainCameraEventDispatcher.eventType = UICamera.EventType.World_3D;
+        MainCameraEventDispatcher.useKeyboard = true;
+        MainCameraEventDispatcher.useMouse = true;
+        MainCameraEventDispatcher.eventsGoToColliders = true;
         // Note: Enabling the event system moved to GameManager, now covering both 2D and 3D events
     }
 
@@ -371,10 +373,10 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
             universeEdge = new GameObject(universeEdgeName);
             universeEdge.AddComponent<SphereCollider>();
             universeEdge.isStatic = true;
-            UnityUtility.AttachChildToParent(universeEdge, Universe.Instance.Folder.gameObject);
+            UnityUtility.AttachChildToParent(universeEdge, UniverseFolder.Instance.Folder.gameObject);
         }
         else {
-            universeEdge = NGUITools.AddChild(Universe.Instance.Folder.gameObject, universeEdgePrefab.gameObject);
+            universeEdge = NGUITools.AddChild(UniverseFolder.Instance.Folder.gameObject, universeEdgePrefab.gameObject);
         }
         (universeEdge.collider as SphereCollider).radius = _universeRadius;
         universeEdge.layer = (int)Layers.UniverseEdge;
@@ -391,7 +393,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
             dummyTarget.AddComponent<DummyTargetManager>();
         }
         else {
-            dummyTarget = NGUITools.AddChild(DynamicObjects.Instance.Folder.gameObject, dummyTargetPrefab.gameObject);
+            dummyTarget = NGUITools.AddChild(DynamicObjectsFolder.Instance.Folder.gameObject, dummyTargetPrefab.gameObject);
         }
         dummyTarget.layer = (int)Layers.DummyTarget;
         _dummyTarget = dummyTarget.transform;
@@ -714,9 +716,10 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
             _zAxisRotation += inputValue * dragFocusRoll.sensitivity * timeSinceLastUpdate;
         }
         if (scrollFocusZoom.IsActivated()) {
-            inputValue = _gameInput.GetScrollWheelMovement();
+            var scrollEvent = _gameInput.GetScrollEvent();
+            inputValue = scrollEvent.delta;
             if (inputValue > 0 || (inputValue < 0 && _isZoomOutOnCursorEnabled)) {
-                if (TrySetTargetAtScreenPoint(Input.mousePosition)) {
+                if (TrySetScrollZoomTarget(scrollEvent, Input.mousePosition)) {
                     // there is a new Target so it can't be the old focus Target
                     CurrentState = CameraState.Freeform;
                     return;
@@ -725,6 +728,22 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
             distanceChange = inputValue * scrollFocusZoom.InputTypeNormalizer * scrollFocusZoom.sensitivity * distanceChgAllowedPerUnitInput;
             _requestedDistanceFromTarget -= distanceChange;
         }
+
+        #region Archived ScrollFocusZoom
+        //if (scrollFocusZoom.IsActivated()) {
+        //    inputValue = _gameInput.GetScrollWheelMovement();
+        //    if (inputValue > 0 || (inputValue < 0 && _isZoomOutOnCursorEnabled)) {
+        //        if (TrySetTargetAtScreenPoint(Input.mousePosition)) {
+        //            // there is a new Target so it can't be the old focus Target
+        //            CurrentState = CameraState.Freeform;
+        //            return;
+        //        }
+        //    }
+        //    distanceChange = inputValue * scrollFocusZoom.InputTypeNormalizer * scrollFocusZoom.sensitivity * distanceChgAllowedPerUnitInput;
+        //    _requestedDistanceFromTarget -= distanceChange;
+        //}
+        #endregion
+
         if (edgeFocusZoom.IsActivated()) {
             inputValue = 1F;
             float yMousePosition = Input.mousePosition.y;
@@ -857,10 +876,11 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
             _xAxisRotation += inputValue * dragFreePanTilt.sensitivity * timeSinceLastUpdate;
         }
         if (scrollFreeZoom.IsActivated()) {
-            inputValue = _gameInput.GetScrollWheelMovement();
+            var scrollEvent = _gameInput.GetScrollEvent();
+            inputValue = scrollEvent.delta;
             if (inputValue > 0) {
                 // Scroll ZoomIN command
-                if (TrySetTargetAtScreenPoint(Input.mousePosition)) {
+                if (TrySetScrollZoomTarget(scrollEvent, Input.mousePosition)) {
                     // Target was changed 
                     _requestedDistanceFromTarget = _distanceFromTarget;
                 }
@@ -868,13 +888,13 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
             if (inputValue < 0) {
                 // Scroll ZoomOUT command
                 if (_isZoomOutOnCursorEnabled) {
-                    if (TrySetTargetAtScreenPoint(Input.mousePosition)) {
+                    if (TrySetScrollZoomTarget(scrollEvent, Input.mousePosition)) {
                         // Target was changed
                         _requestedDistanceFromTarget = _distanceFromTarget;
                     }
                 }
                 else {
-                    if (TrySetTargetAtScreenPoint(_screenCenter)) {
+                    if (TrySetScrollZoomTarget(scrollEvent, _screenCenter)) {
                         // Target was changed
                         _requestedDistanceFromTarget = _distanceFromTarget;
                     }
@@ -883,12 +903,43 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
             distanceChange = inputValue * scrollFreeZoom.InputTypeNormalizer * scrollFreeZoom.sensitivity * distanceChgAllowedPerUnitInput;
             _requestedDistanceFromTarget -= distanceChange;
         }
+
+        #region Archived ScrollFreeZoom
+        //if (scrollFreeZoom.IsActivated()) {
+        //    inputValue = _gameInput.GetScrollWheelMovement();
+        //    if (inputValue > 0) {
+        //        // Scroll ZoomIN command
+        //        if (TrySetTargetAtScreenPoint(Input.mousePosition)) {
+        //            // Target was changed 
+        //            _requestedDistanceFromTarget = _distanceFromTarget;
+        //        }
+        //    }
+        //    if (inputValue < 0) {
+        //        // Scroll ZoomOUT command
+        //        if (_isZoomOutOnCursorEnabled) {
+        //            if (TrySetTargetAtScreenPoint(Input.mousePosition)) {
+        //                // Target was changed
+        //                _requestedDistanceFromTarget = _distanceFromTarget;
+        //            }
+        //        }
+        //        else {
+        //            if (TrySetTargetAtScreenPoint(_screenCenter)) {
+        //                // Target was changed
+        //                _requestedDistanceFromTarget = _distanceFromTarget;
+        //            }
+        //        }
+        //    }
+        //    distanceChange = inputValue * scrollFreeZoom.InputTypeNormalizer * scrollFreeZoom.sensitivity * distanceChgAllowedPerUnitInput;
+        //    _requestedDistanceFromTarget -= distanceChange;
+        //}
+        #endregion
+
         if (edgeFreeZoom.IsActivated()) {
             inputValue = 1F;
             float yMousePosition = Input.mousePosition.y;
             if (yMousePosition <= settings.activeScreenEdge) {
                 // Edge ZoomOUT
-                if (TrySetTargetAtScreenPoint(_screenCenter)) {
+                if (TrySetZoomTargetAt(_screenCenter)) {
                     // Target was changed
                     _requestedDistanceFromTarget = _distanceFromTarget;
                 }
@@ -897,7 +948,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
             }
             else if (yMousePosition >= Screen.height - settings.activeScreenEdge) {
                 // Edge ZoomIN
-                if (TrySetTargetAtScreenPoint(_screenCenter)) {
+                if (TrySetZoomTargetAt(_screenCenter)) {
                     // Target was changed
                     _requestedDistanceFromTarget = _distanceFromTarget;
                 }
@@ -907,7 +958,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         }
         if (dragFreeZoom.IsActivated()) {
             inputValue = _gameInput.GetDragDelta().y;
-            if (TrySetTargetAtScreenPoint(_screenCenter)) {
+            if (TrySetZoomTargetAt(_screenCenter)) {
                 _requestedDistanceFromTarget = _distanceFromTarget;
             }
             distanceChange = inputValue * dragFreeZoom.InputTypeNormalizer * dragFreeZoom.sensitivity * distanceChgAllowedPerUnitInput;
@@ -917,7 +968,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         // Freeform Arrow Keyboard Configurations. Only Arrow Keys are used as IsActivated() must be governed by 
         // whether the appropriate key is down to keep the configurations from interfering with each other. 
         if (keyFreeZoom.IsActivated()) {
-            if (TrySetTargetAtScreenPoint(_screenCenter)) {
+            if (TrySetZoomTargetAt(_screenCenter)) {
                 _requestedDistanceFromTarget = _distanceFromTarget;
             }
             inputValue = Input.GetAxis(keyboardAxesNames[(int)keyFreeZoom.keyboardAxis]);
@@ -1103,7 +1154,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
             // no reason to know whether the Target is followable or not for these values for now
         }
         else {
-            D.Error("New Target {0} is not an ICameraTargetable.".Inject(newTarget.name));
+            D.ErrorContext("New Target {0} is not {1}.".Inject(newTarget.name, typeof(ICameraTargetable).Name), this);
             return;
         }
 
@@ -1212,6 +1263,37 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     }
 
     /// <summary>
+    /// Evaluates the scroll event to see if the target it contains should be the new target. If the event target is an IZoomToFurthest,
+    /// then what is behind it (if anything) is evaluated and target set using TrySetZoomTargetAt(screenPoint).
+    /// </summary>
+    /// <param name="scrollEvent">The scroll event.</param>
+    /// <param name="screenPoint">The screen point.</param>
+    /// <returns>
+    /// <c>true</c> if the Target is changed, or if the dummyTarget has its location changed.
+    /// <c>false</c> if the Target remains the same (or if the dummyTarget, its location remains the same).
+    /// </returns>
+    private bool TrySetScrollZoomTarget(GameInput.ScrollEvent scrollEvent, Vector3 screenPoint) {
+        if (scrollEvent.target != null) {
+            var proposedZoomTarget = scrollEvent.target.Transform;
+            var proposedZoomPoint = scrollEvent.hitPoint;
+            if (proposedZoomTarget == _dummyTarget) {
+                // the stationary, existing DummyTarget
+                return false;
+            }
+
+            if (scrollEvent.target is IZoomToFurthest) {
+                // this is a IZoomToFurthest, aka SystemView so we have to select the target based on what is behind it
+                return TrySetZoomTargetAt(screenPoint);
+            }
+            // scrollEvent.target is not IZoomToFurthest so it is the zoom target
+            return TryChangeTarget(proposedZoomTarget, proposedZoomPoint);
+        }
+
+        // scroll event with a null target so position the dummyTarget
+        return PlaceDummyTargetAtUniverseEdgeInDirection(_camera.ScreenPointToRay(screenPoint).direction);
+    }
+
+    /// <summary>
     /// Attempts to assign an eligible object implementing ICameraTargetable, found under the provided screenPoint as the new camera target. 
     /// If more than one object is found, then the closest object that doesn't implement IZoomFurthest becomes the Target. If all objects
     /// found implement IZoomFurthest, then the furthest object is used. If the DummyTarget is the only object found, or no 
@@ -1221,41 +1303,57 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     /// <returns> <c>true</c> if the Target is changed, or if the dummyTarget has its location changed. 
     /// <c>false</c> if the Target remains the same (or if the dummyTarget, its location remains the same).
     /// </returns>
-    private bool TrySetTargetAtScreenPoint(Vector3 screenPoint) {
-        Transform proposedZoomTarget;
-        Vector3 proposedZoomPoint;
+    private bool TrySetZoomTargetAt(Vector3 screenPoint) {
         Ray ray = _camera.ScreenPointToRay(screenPoint);
         RaycastHit[] hits = Physics.RaycastAll(ray, Mathf.Infinity, Camera3DTargetingMask);
-        //foreach (var hit in hits) {
-        //    D.Log("ICameraTargetable RaycastHit {0}.", hit.transform.name);
-        //}
-        hits = (from h in hits
-                let ict = h.transform.GetInterface<ICameraTargetable>()
-                where ict != null && ict.IsEligible
-                select h).ToArray<RaycastHit>();
-        if (!hits.IsNullOrEmpty<RaycastHit>()) {
-            // one or more object under cursor encountered
-            if (hits.Length == 1) {
-                // the object encountered is likely to be the dummyTarget
-                proposedZoomTarget = hits[0].transform;
+
+        var eligibleIctHits = ConvertToEligibleICameraTargetableHits(hits);
+        // Example of from and let use
+        //var eligibleIctHits = (from h in hits
+        //                       // allows collider to be present in child of ICameraTargetable parent
+        //                       let ict = h.transform.GetInterfaceInParents<ICameraTargetable>(excludeSelf: false)
+        //                       where ict != null && ict.IsEligible
+        //                       select h);
+
+        //D.Log("Eligible {0} RaycastHits on Zoom: {1}.", typeof(ICameraTargetable).Name, eligibleIctHits.Select(h => h.transform.name).Concatenate());
+        if (eligibleIctHits.Any()) {
+            // one or more ICameraTargetable objects under cursor encountered
+            Transform proposedZoomTarget;
+            Vector3 proposedZoomPoint;
+            if (eligibleIctHits.Count() == 1) {
+                // only one eligibleIct object encountered is likely to be the dummyTarget
+                var hit = eligibleIctHits.First();
+                proposedZoomTarget = hit.transform;
                 if (proposedZoomTarget == _dummyTarget) {
                     // the stationary, existing DummyTarget
                     return false;
                 }
+
+                // there is only one hit so determine the proposedZoomPoint and done
+                if (proposedZoomTarget.GetInterface<IZoomToFurthest>() == null) {
+                    proposedZoomPoint = proposedZoomTarget.position;
+                }
+                else {
+                    proposedZoomPoint = hit.point;
+                }
+                return TryChangeTarget(proposedZoomTarget, proposedZoomPoint);
             }
 
             // NOTE: As Rigidbodies consume child collider events, a hit on a child collider when there is a rigidbody parent 
-            // involved will return the transform of the parent, not the child. By not including inspection of the children for this interface,
-            // I am requiring that the interface be present with the Rigidbody.
+            // involved will return the transform of the parent, not the child. 
 
-            var zoomToFurthestHits = from h in hits where h.transform.GetInterface<IZoomToFurthest>() != null select h;
-            var remainingHits = hits.Except(zoomToFurthestHits.ToArray());
-            if (!remainingHits.IsNullOrEmpty()) {
+            // there are multiple eligibleIctHits
+            var zoomToFurthestHits = from h in eligibleIctHits where h.transform.GetInterface<IZoomToFurthest>() != null select h;
+            var remainingHits = eligibleIctHits.Except(zoomToFurthestHits);
+            if (remainingHits.Any()) {
                 // there is a hit that isn't a IZoomToFurthest, so pick the closest and done
                 var closestHit = remainingHits.OrderBy(h => (h.transform.position - Position).sqrMagnitude).First();
                 proposedZoomTarget = closestHit.transform;
                 proposedZoomPoint = proposedZoomTarget.position;
-                return TryChangeTarget(proposedZoomTarget, proposedZoomPoint);
+                if (proposedZoomTarget != _dummyTarget) {
+                    // rare case where the dummyTarget is hit along with a IZoomToFurthest so not filtered out at top
+                    return TryChangeTarget(proposedZoomTarget, proposedZoomPoint);
+                }
             }
             // otherwise, all hits are IZoomToFurthest, so pick the furthest and done
             var furthestHit = zoomToFurthestHits.OrderBy(h => (h.transform.position - Position).sqrMagnitude).Last();
@@ -1265,8 +1363,41 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
             return TryChangeTarget(proposedZoomTarget, proposedZoomPoint);
         }
 
-        // no game object encountered under cursor so move the dummy to the edge of the universe and designate it as the Target
+        // no eligibleIctHits encountered under cursor so move the dummy to the edge of the universe and designate it as the Target
         return PlaceDummyTargetAtUniverseEdgeInDirection(ray.direction);
+    }
+
+    /// <summary>
+    /// Converts RaycastHit[] to a collection of eligible hits that implement the ICameraTargetable interface. 
+    /// Hits that don't implement ICameraTargetable (eg. OrbitalPlane, Icons, etc.) have their parents searched 
+    /// for the interface. If found, that transform is substituted as the transform that was hit.
+    /// </summary>
+    /// <param name="hits">The hits.</param>
+    /// <returns></returns>
+    private IEnumerable<SimpleRaycastHit> ConvertToEligibleICameraTargetableHits(RaycastHit[] hits) {
+        var eligibleIctHits = new List<SimpleRaycastHit>();
+        foreach (var hit in hits) {
+            SimpleRaycastHit eligibleIctHit = default(SimpleRaycastHit);
+            ICameraTargetable ict = hit.transform.GetInterface<ICameraTargetable>();
+            if (ict != null) {
+                if (ict.IsEligible) {
+                    eligibleIctHit = new SimpleRaycastHit(hit.transform, hit.point);
+                }
+            }
+            else {
+                Transform t = hit.transform.GetTransformWithInterfaceInParents<ICameraTargetable>(out ict);
+                if (t != null) {
+                    if (ict.IsEligible) {
+                        eligibleIctHit = new SimpleRaycastHit(t, hit.point);
+                    }
+                }
+            }
+
+            if (eligibleIctHit != default(SimpleRaycastHit)) {
+                eligibleIctHits.Add(eligibleIctHit);
+            }
+        }
+        return eligibleIctHits;
     }
 
     /// <summary>
@@ -1465,6 +1596,73 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
 
     #region Nested Classes
 
+    /// <summary>
+    /// Substitute for RaycastHit struct whose constructors are not accessible to me.
+    /// </summary>
+    private struct SimpleRaycastHit : IEquatable<SimpleRaycastHit> {
+
+        #region Comparison Operators Override
+
+        // see C# 4.0 In a Nutshell, page 254
+
+        public static bool operator ==(SimpleRaycastHit left, SimpleRaycastHit right) {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(SimpleRaycastHit left, SimpleRaycastHit right) {
+            return !left.Equals(right);
+        }
+
+        #endregion
+
+        private static string _toStringFormat = "TransformHit: {0}, HitPoint: {1}";
+
+        public readonly Transform transform;
+        public readonly Vector3 point;
+
+        public SimpleRaycastHit(Transform transform, Vector3 point) {
+            this.transform = transform;
+            this.point = point;
+        }
+
+        #region Object.Equals and GetHashCode Override
+
+        public override bool Equals(object obj) {
+            if (!(obj is SimpleRaycastHit)) { return false; }
+            return Equals((SimpleRaycastHit)obj);
+        }
+
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// See "Page 254, C# 4.0 in a Nutshell."
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+        /// </returns>
+        public override int GetHashCode() {
+            int hash = 17;  // 17 = some prime number
+            hash = hash * 31 + transform.GetHashCode(); // 31 = another prime number
+            hash = hash * 31 + point.GetHashCode();
+            return hash;
+        }
+
+        #endregion
+
+        public override string ToString() {
+            return _toStringFormat.Inject(transform.name, point);
+        }
+
+        #region IEquatable<IctHit> Members
+
+        public bool Equals(SimpleRaycastHit other) {
+            return transform == other.transform && point == other.point;
+        }
+
+        #endregion
+
+    }
+
+
     // State
     public enum CameraState {
         None = 0,
@@ -1565,9 +1763,14 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
             get { return 10F; }
         }
 
+        //public override bool IsActivated() {
+        //    return base.IsActivated() && _gameInput.isScrollValueWaiting && !GameInputHelper.IsAnyMouseButtonDown();
+        //}
+
         public override bool IsActivated() {
-            return base.IsActivated() && _gameInput.isScrollValueWaiting && !GameInputHelper.IsAnyMouseButtonDown();
+            return base.IsActivated() && _gameInput.IsScrollEventWaiting && !GameInputHelper.IsAnyMouseButtonDown();
         }
+
     }
 
     [Serializable]

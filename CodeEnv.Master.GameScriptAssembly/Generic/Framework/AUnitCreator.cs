@@ -212,12 +212,12 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     private void BeginUnitOperations() {
         LogEvent();
-        __InitializeCommandIntel();
         BeginElementsOperations();
         BeginCommandOperations();
         UnityUtility.WaitOneToExecute((wasKilled) => {
             // delay 1 frame to allow Element and Command Idling_EnterState to execute
             EnableOtherWhenRunning();
+            __InitializeCommandIntel();
             IssueFirstUnitCommand();
             RemoveCreatorScript();
         });
@@ -397,7 +397,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     }
 
     /// <summary>
-    /// Enables selected children of the command and its elements. e.g. - cameraLOSRelays, WeaponTrackers,
+    /// Enables selected children of the command and its elements. e.g. - cameraLosChangedListeners, WeaponTrackers,
     /// Revolve and Orbits, etc. These scripts that are enabled should only be enabled on or after IsRunning.
     /// </summary>
     protected abstract void EnableOtherWhenRunning();

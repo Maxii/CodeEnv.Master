@@ -281,7 +281,7 @@ public class CameraControl : AMonoBaseSingleton<CameraControl> {
             universeEdge = Instantiate<SphereCollider>(universeEdgePrefab);
         }
         universeEdge.radius = universeRadius;
-        universeEdge.transform.parent = DynamicObjects.Folder;
+        universeEdge.transform.parent = DynamicObjectsFolder.Folder;
     }
 
     private void CreateAndPositionDummyTarget() {
@@ -300,7 +300,7 @@ public class CameraControl : AMonoBaseSingleton<CameraControl> {
         _dummyTarget.collider.enabled = false;
         // the collider is disabled so the placement algorithm doesn't accidently find it already in front of the camera
         TryPlaceDummyTargetAtUniverseEdgeInDirection(_transform.forward);
-        _dummyTarget.parent = DynamicObjects.Folder;
+        _dummyTarget.parent = DynamicObjectsFolder.Folder;
         _dummyTarget.collider.enabled = true;
     }
 

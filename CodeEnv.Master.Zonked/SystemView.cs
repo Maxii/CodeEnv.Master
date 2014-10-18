@@ -160,7 +160,7 @@ public class SystemView : AFocusableItemView, ISelectable, IZoomToFurthest, IHig
     private void InitializeTrackingLabel() {
         if (enableTrackingLabel) {
             float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
-            _trackingLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(_transform, GuiTrackingLabelFactory.LabelPlacement.AboveTarget, minShowDistance);
+            _trackingLabel = TrackingWidgetFactory.Instance.CreateGuiTrackingLabel(_transform, TrackingWidgetFactory.LabelPlacement.AboveTarget, minShowDistance);
         }
     }
 
@@ -230,7 +230,7 @@ public class SystemView : AFocusableItemView, ISelectable, IZoomToFurthest, IHig
     /// plane collider.
     /// </summary>
     protected override float CalcMinimumCameraViewingDistance() {
-        return minPlaneZoomDistance;
+        return minCameraViewDistance;
     }
 
     #endregion

@@ -168,17 +168,7 @@ public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
         }
     }
 
-    //public override void AssessDiscernability() {
-    //    D.Assert(Presenter != null);
-    //    D.Assert(PlayerIntel != null);
-    //    D.Log("{0}.{1}.AssessDiscernability() called. InCameraLOS = {2}, IntelCoverage = {3}, IsAlive = {4}.",
-    //        Presenter.FullName, GetType().Name, InCameraLOS, PlayerIntel.CurrentCoverage.GetName(), Presenter.Model.IsAlive);
-    //    IsDiscernible = InCameraLOS && PlayerIntel.CurrentCoverage != IntelCoverage.None && Presenter.Model.IsAlive;
-    //}
-
-    public void OnDeath() {
-        Collider.enabled = false;
-    }
+    public virtual void OnDeath() { }
 
     #endregion
 

@@ -34,6 +34,7 @@ public class Billboard : AMonoBase {
     protected override void Awake() {
         base.Awake();
         UpdateRate = FrameUpdateFrequency.Normal;
+        enabled = false;
     }
 
     protected override void Start() {

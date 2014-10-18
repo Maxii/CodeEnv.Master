@@ -120,9 +120,12 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// </summary>
     [Serializable]
     public enum FrameUpdateFrequency {
+        /// <summary>
+        /// Default.
+        /// </summary>
         Never = 0,
         /// <summary>
-        /// Default. Every frame.
+        ///Every frame.
         /// </summary>
         Continuous = 1,
         /// <summary>
@@ -158,7 +161,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// <value>
     ///  The rate at which ToUpdate() returns true, calling OccasionalUpdate(). Default is Never.
     /// </value>
-    private FrameUpdateFrequency _updateRate;  // = FrameUpdateFrequency.Continuous;
+    private FrameUpdateFrequency _updateRate;
     protected FrameUpdateFrequency UpdateRate {
         get { return _updateRate; }
         set {
@@ -174,7 +177,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// If using inside Update(), consider using the convenience method OccasionalUpdate().
     /// </summary>
     /// <returns>true on a pace set by the UpdateRate property</returns>
-    protected bool ToUpdate() {
+    private bool ToUpdate() {
         if (UpdateRate == FrameUpdateFrequency.Never) {
             return false;
         }

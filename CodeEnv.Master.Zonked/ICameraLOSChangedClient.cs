@@ -17,6 +17,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using UnityEngine;
 
     /// <summary>
@@ -24,6 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// another object's mesh is in/out of the Line Of Sight of the main camera.
     /// <remarks>Commonly used on a parent GameObject that is separated from its mesh and renderer.</remarks>
     /// </summary>
+    [Obsolete]
     public interface ICameraLOSChangedClient {
 
         void NotifyCameraLOSChanged(Transform sender, bool inLOS);

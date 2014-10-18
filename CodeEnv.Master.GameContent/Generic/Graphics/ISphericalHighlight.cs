@@ -17,6 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using UnityEngine;
+    using CodeEnv.Master.Common;
 
     /// <summary>
     /// Interface allowing access to the associated Unity-compiled script. 
@@ -24,12 +25,25 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface ISphericalHighlight {
 
-        Vector3 Position { set; }
+        /// <summary>
+        /// Sets the target to highlight.
+        /// </summary>
+        /// <param name="target">The target.</param>
+        /// <param name="sphereRadius">The sphere radius.</param>
+        /// <param name="labelPlacement">The label placement.</param>
+        void SetTarget(IWidgetTrackable target, float sphereRadius, WidgetPlacement labelPlacement = WidgetPlacement.Below);
 
-        float Radius { set; }
+        /// <summary>
+        /// Sets the radius of the highlighting sphere.
+        /// </summary>
+        /// <param name="sphereRadius">The sphere radius.</param>
+        void SetRadius(float sphereRadius);
 
+        /// <summary>
+        /// Shows or hides the sphere highlight.
+        /// </summary>
+        /// <param name="toShow">if set to <c>true</c> [to show].</param>
         void Show(bool toShow);
-
 
     }
 }

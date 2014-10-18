@@ -75,6 +75,7 @@
     <Compile Include="AView.cs" />
     <Compile Include="CameraControl.cs" />
     <Compile Include="CameraControl_1.cs" />
+    <Compile Include="CameraLOSChangedRelay.cs" />
     <Compile Include="ColliderExtensions.cs" />
     <Compile Include="ColliderRelay.cs" />
     <Compile Include="CoroutineManager.cs" />
@@ -116,6 +117,7 @@
     <Compile Include="GameTimePeriod.cs" />
     <Compile Include="GuiHudPublisher.cs" />
     <Compile Include="GuiHudTextFactory.cs" />
+    <Compile Include="GuiTrackingLabel.cs" />
     <Compile Include="GuiVisibilityChangeEvent.cs" />
     <Compile Include="CameraFacing.cs" />
     <Compile Include="GlobeManager.cs" />
@@ -134,6 +136,8 @@
     <Compile Include="Helm.cs" />
     <Compile Include="HudPublisher.cs" />
     <Compile Include="IBaseCmdTarget.cs" />
+    <Compile Include="ICameraLOSChangedClient.cs" />
+    <Compile Include="ICameraLOSChangedRelay.cs" />
     <Compile Include="IColliderRelayTarget.cs" />
     <Compile Include="IData.cs" />
     <Compile Include="IFacilityModel.cs" />
@@ -143,7 +147,9 @@
     <Compile Include="IFleetViewable.cs" />
     <Compile Include="IGameDate.cs" />
     <Compile Include="IGuiHudPublisher.cs" />
+    <Compile Include="IGuiTrackable.cs" />
     <Compile Include="IHasData.cs" />
+    <Compile Include="IHighlightTrackingLabel.cs" />
     <Compile Include="IMoonModel.cs" />
     <Compile Include="Intel.cs" />
     <Compile Include="IntelFreshness.cs" />

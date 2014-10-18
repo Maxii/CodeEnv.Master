@@ -36,6 +36,10 @@ public class FleetCreatorEditor : AUnitCreatorEditor<FleetUnitCreator> {
             fleetCreator.attack = GUILayout.Toggle(fleetCreator.attack, "Attack Targets");
             EditorGUI.indentLevel--;
         }
+
+        if (GUI.changed) {
+            EditorUtility.SetDirty(target);
+        }
     }
 
     protected override int GetMaxElements() {

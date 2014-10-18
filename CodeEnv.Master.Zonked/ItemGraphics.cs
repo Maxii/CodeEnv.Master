@@ -95,7 +95,7 @@ public class ItemGraphics : AGraphics, IDisposable {
         }
         if (_circles == null) {
             float normalizedRadius = Screen.height * circleScaleFactor * _item.Size;
-            _circles = new HighlightCircle("ItemCircle", Target, normalizedRadius, parent: DynamicObjects.Folder, isRadiusDynamic: true, maxCircles: 1, width: 3F, color: UnityDebugConstants.FocusedColor);
+            _circles = new HighlightCircle("ItemCircle", Target, normalizedRadius, parent: DynamicObjectsFolder.Folder, isRadiusDynamic: true, maxCircles: 1, width: 3F, color: UnityDebugConstants.FocusedColor);
         }
         if (toShow) {
             //D.Log("Item attempting to show circle {0}.", highlight.GetName());

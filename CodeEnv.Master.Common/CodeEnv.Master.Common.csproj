@@ -55,6 +55,7 @@
     <Compile Include="Generic\IO\IGameInputHelper.cs" />
     <Compile Include="Generic\Math\ResponseCurve.cs" />
     <Compile Include="Game\Framework\SpaceTopography.cs" />
+    <Compile Include="Generic\Graphics\WidgetPlacement.cs" />
     <Compile Include="ThirdParty\AStateMachine.cs" />
     <Compile Include="ThirdParty\ABackgroundTask.cs" />
     <Compile Include="ThirdParty\ATask.cs" />

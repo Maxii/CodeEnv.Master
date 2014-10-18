@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IGuiTrackable.cs
-// Interface for Views that are trackable by GUI constructs such as Icons and Labels.
+// Interface for GameObjects that are trackable by GUI constructs such as Icons and Labels.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for Views that are trackable by GUI constructs
+    /// Interface for GameObjects that are trackable by GUI constructs
     /// such as Icons and Labels.
     /// </summary>
     public interface IGuiTrackable {
@@ -32,7 +32,13 @@ namespace CodeEnv.Master.GameContent {
 
         Vector3 LowerExtent { get; }
 
+        Vector3 FrontExtent { get; }
+
+        Vector3 BackExtent { get; }
+
         Transform Transform { get; }
+
+        bool IsMobile { get; }
 
     }
 }

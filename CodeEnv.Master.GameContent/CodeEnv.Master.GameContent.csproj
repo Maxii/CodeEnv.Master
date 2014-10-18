@@ -57,6 +57,7 @@
     <Compile Include="Generic\Framework\APlanetoidData.cs" />
     <Compile Include="Generic\Framework\ACombatItemData.cs" />
     <Compile Include="Generic\Framework\AOwnedItemData.cs" />
+    <Compile Include="Generic\Graphics\ITrackingWidget.cs" />
     <Compile Include="Generic\IO\FacilityStat.cs" />
     <Compile Include="Generic\IO\FleetCmdStat.cs" />
     <Compile Include="Generic\Framework\CombatStrength.cs" />
@@ -139,7 +140,6 @@
     <Compile Include="Game\Framework\GameTime.cs" />
     <Compile Include="Game\Framework\GameDate.cs" />
     <Compile Include="Generic\Graphics\IHud.cs" />
-    <Compile Include="Generic\Graphics\ICameraLOSChangedClient.cs" />
     <Compile Include="Generic\IO\GeneralSettings.cs" />
     <Compile Include="Generic\IO\ICameraControl.cs" />
     <Compile Include="Generic\IO\PlayerPrefsManager.cs" />
@@ -169,7 +169,6 @@
     <Compile Include="Game\Gameplay\StarbaseDirective.cs" />
     <Compile Include="Game\Gameplay\SettlementDirective.cs" />
     <Compile Include="Game\Gameplay\SettlementState.cs" />
-    <Compile Include="Generic\Graphics\IHighlightTrackingLabel.cs" />
     <Compile Include="Game\Gameplay\StarbaseCategory.cs" />
     <Compile Include="Game\Framework\BaseComposition.cs" />
     <Compile Include="Game\Gameplay\StarbaseCmdData.cs" />
@@ -183,10 +182,9 @@
     <Compile Include="Generic\Framework\ImprovingIntel.cs" />
     <Compile Include="Game\Gameplay\PlanetoidState.cs" />
     <Compile Include="Generic\Graphics\IMortalViewable.cs" />
-    <Compile Include="Generic\_Debug\IDynamicObjects.cs" />
+    <Compile Include="Generic\_Debug\IDynamicObjectsFolder.cs" />
     <Compile Include="Generic\Framework\IGameManager.cs" />
     <Compile Include="Generic\_Debug\References.cs" />
-    <Compile Include="Generic\Graphics\ICameraLOSChangedRelay.cs" />
     <Compile Include="Generic\Framework\ICmdTarget.cs" />
     <Compile Include="Generic\Framework\IDestinationTarget.cs" />
     <Compile Include="Generic\Extensions\ShipSpeedExtensions.cs" />
@@ -229,11 +227,13 @@
     <Compile Include="Generic\Framework\IUniverse.cs" />
     <Compile Include="Generic\Framework\IUsefulTools.cs" />
     <Compile Include="Generic\Framework\IHasData.cs" />
-    <Compile Include="Generic\Graphics\IGuiTrackable.cs" />
     <Compile Include="Generic\Graphics\IFleetCmdViewable.cs" />
     <Compile Include="Generic\Graphics\PathfindingLine.cs" />
     <Compile Include="Generic\IO\IGameInput.cs" />
     <Compile Include="Generic\Graphics\ISphericalHighlight.cs" />
+    <Compile Include="Generic\Graphics\ICameraLosChangedListener.cs" />
+    <Compile Include="Generic\Graphics\IWidgetTrackable.cs" />
+    <Compile Include="Generic\Graphics\IRevolver.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\ShipData.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />

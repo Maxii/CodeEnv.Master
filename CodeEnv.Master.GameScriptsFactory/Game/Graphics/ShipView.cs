@@ -17,13 +17,9 @@
 // default namespace
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
-using UnityEngine;
 
 /// <summary>
 /// A class for managing the UI of a ship.

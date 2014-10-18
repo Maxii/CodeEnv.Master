@@ -23,7 +23,7 @@ using UnityEngine;
 /// <summary>
 /// Simple container class placed on the programatically-created DummyTarget holding ICameraTargetable interface values.
 /// </summary>
-public class DummyTargetManager : MonoBehaviour, ICameraTargetable {
+public class DummyTargetManager : AMonoBase, ICameraTargetable {
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
@@ -31,13 +31,11 @@ public class DummyTargetManager : MonoBehaviour, ICameraTargetable {
 
     #region ICameraTargetable Members
 
-    public bool IsEligible {
-        get { return true; }
-    }
+    public bool IsEligible { get { return true; } }
 
-    public float MinimumCameraViewingDistance {
-        get { return 50F; }
-    }
+    public float MinimumCameraViewingDistance { get { return 50F; } }
+
+    public Transform Transform { get { return _transform; } }
 
     #endregion
 }

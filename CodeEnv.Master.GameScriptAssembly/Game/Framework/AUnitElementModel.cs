@@ -57,6 +57,7 @@ public abstract class AUnitElementModel : ACombatItemModel, IElementModel, IElem
     }
 
     protected override void InitializeRadiiComponents() {
+        // Note: Radius is set in derived classes due to the difference in meshes
         collider.isTrigger = false;
     }
 
@@ -191,6 +192,7 @@ public abstract class AUnitElementModel : ACombatItemModel, IElementModel, IElem
 
     protected override void OnDeath() {
         base.OnDeath();
+        collider.enabled = false;
         _weaponRangeMonitorLookup.Values.ForAll(rt => rt.onEnemyInRange -= OnEnemyInRange);
         if (_weaponReloadJobs.Count != Constants.Zero) {
             _weaponReloadJobs.ForAll<KeyValuePair<Guid, Job>>(kvp => kvp.Value.Kill());

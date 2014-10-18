@@ -1294,7 +1294,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        Data.Topography = Universe.Instance.GetSpaceTopography(Position);
+        Data.Topography = UniverseFolder.Instance.GetSpaceTopography(Position);
         Data.AssessFtlAvailability();
         CurrentState = ShipState.Idling;
     }
@@ -1443,7 +1443,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
     #region Idling
 
     IEnumerator Idling_EnterState() {
-        D.Log("{0}.Idling_EnterState called.", FullName);
+        //D.Log("{0}.Idling_EnterState called.", FullName);
         Data.Target = null; // temp to remove target from data after order has been completed or failed
 
         if (CurrentOrder != null) {
@@ -1824,7 +1824,8 @@ public class ShipModel : AUnitElementModel, IShipModel {
         var transferFleetView = transferFleet.Transform.GetSafeMonoBehaviourComponent<FleetCmdView>();
         transferFleetView.PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
         // TODO PlayerIntelCoverage should be set through sensor detection
-        transferFleet.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().enabled = true;
+
+        //CameraLosChangedListener enabled state handled by View.InitializeVisualMembers()
 
         // issue a JoinFleet order to our transferFleet
         var fleetToJoin = CurrentOrder.Target as ICmdTarget;

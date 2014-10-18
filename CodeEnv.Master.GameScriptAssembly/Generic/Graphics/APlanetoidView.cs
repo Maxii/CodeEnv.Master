@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -25,20 +26,51 @@ using UnityEngine;
 /// </summary>
 public abstract class APlanetoidView : AMortalItemView, ICameraFollowable {
 
-    /// <summary>
-    /// The Collider encompassing the bounds of this planetoid that intercepts input events for this view. 
-    /// This collider also detects collisions with other operating objects in the universe and therefore
-    /// should NOT be disabled when it is undiscernible.
-    /// </summary>
-    protected new SphereCollider Collider { get { return base.Collider as SphereCollider; } }
+    public float minCameraViewDistanceMultiplier = 2F;
+    public float optimalCameraViewDistanceMultiplier = 8F;
 
-    protected override IIntel InitializePlayerIntel() {
-        return new ImprovingIntel();
+    protected override void InitializeVisualMembers() {
+        // Once the player initially discerns the planet, he will always be able to discern it
+        var meshRenderers = gameObject.GetComponentsInImmediateChildren<MeshRenderer>();
+        meshRenderers.ForAll(mr => {
+            mr.castShadows = true;
+            mr.receiveShadows = true;
+            mr.enabled = true;
+        });
+
+        var animations = gameObject.GetComponentsInImmediateChildren<Animation>();
+        animations.ForAll(a => {
+            a.cullingType = AnimationCullingType.BasedOnRenderers; // aka, disabled when not visible
+            a.enabled = true;
+        });
+        // TODO animation settings and distance controls
+
+        var revolver = gameObject.GetSafeInterfaceInChildren<IRevolver>();
+        revolver.enabled = true;
+        // TODO Revolver settings and distance controls, Revolvers control their own enabled state based on visibility
+
+        var cameraLosChgdListener = gameObject.GetSafeInterfaceInImmediateChildren<ICameraLosChangedListener>();
+        cameraLosChgdListener.onCameraLosChanged += (go, inCameraLOS) => InCameraLOS = inCameraLOS;
+        cameraLosChgdListener.enabled = true;
     }
+
+    protected override IIntel InitializePlayerIntel() { return new ImprovingIntel(); }
 
     protected override void SubscribeToPlayerIntelCoverageChanged() {
         _subscribers.Add((PlayerIntel as ImprovingIntel).SubscribeToPropertyChanged<ImprovingIntel, IntelCoverage>(pi => pi.CurrentCoverage, OnPlayerIntelCoverageChanged));
     }
+
+    #region ICameraTargetable Members
+
+    public override float MinimumCameraViewingDistance { get { return Radius * minCameraViewDistanceMultiplier; } }
+
+    #endregion
+
+    #region ICameraFocusable Members
+
+    public override float OptimalCameraViewingDistance { get { return Radius * optimalCameraViewDistanceMultiplier; } }
+
+    #endregion
 
     #region ICameraFollowable Members
 

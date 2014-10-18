@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GuiTrackingLabel.cs
-// Handles the content, screen location, scale and visibility of a GuiTrackingLabel Element attached to a 3D game object.
+// Label on the UI layer that tracks world objects. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,8 +21,8 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Handles the content, screen location, scale and visibility of a GuiTrackingLabel that tracks a 3D game object. Handles
-/// both moving and fixed 3D objects.
+/// Label on the UI layer that tracks world objects.  The user perceives the label as maintaining a constant size on the screen
+/// independant of the distance from the tracked world object to the main camera.
 /// </summary>
 public class GuiTrackingLabel : AMonoBase {
 
@@ -102,7 +102,9 @@ public class GuiTrackingLabel : AMonoBase {
 
     protected override void Awake() {
         base.Awake();
-        _uiCamera = NGUITools.FindCameraForLayer(gameObject.layer);
+        Layers guiTrackingLabelLayer = (Layers)gameObject.layer;
+        D.Assert(guiTrackingLabelLayer == Layers.UI, "{0} Layer is {1}, should be {2}.".Inject(GetType().Name, guiTrackingLabelLayer.GetName(), Layers.UI.GetName()));
+        _uiCamera = NGUITools.FindCameraForLayer((int)guiTrackingLabelLayer);
         _label = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
         _label.depth = -100; // draw below other Gui Elements in the same Panel
         _label.color = Color.ToUnityColor();

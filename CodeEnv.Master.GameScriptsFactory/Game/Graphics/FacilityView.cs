@@ -32,18 +32,27 @@ public class FacilityView : AUnitElementView {
         protected set { base.Presenter = value; }
     }
 
+    private Revolver _revolver;
+
     protected override void Awake() {
         base.Awake();
         Subscribe();
     }
 
-    protected override void Start() {
-        base.Start();
-        //D.Log("{0}.{1} Initialization complete.", Presenter.Model.FullName, GetType().Name);
-    }
-
     protected override void InitializePresenter() {
         Presenter = new FacilityPresenter(this);
+    }
+
+    protected override void InitializeVisualMembers() {
+        base.InitializeVisualMembers();
+        _revolver = gameObject.GetComponentInChildren<Revolver>();
+        _revolver.enabled = true;
+        // TODO Revolver settings and distance controls, Revolvers control their own enabled state based on visibility
+    }
+
+    protected override void OnIsDiscernibleChanged() {
+        base.OnIsDiscernibleChanged();
+        _revolver.enabled = IsDiscernible;  // Revolvers disable when invisible, but I also want to disable if IntelCoverage disappears
     }
 
     public override void AssessHighlighting() {

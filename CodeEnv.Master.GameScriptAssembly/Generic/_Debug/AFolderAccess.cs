@@ -34,7 +34,8 @@ public abstract class AFolderAccess<T> : AMonoBaseSingleton<T> where T : AMonoBa
             if (gameObject.name != _folderName) {
                 D.Error("Expecting folder {0} but got {1}.", _folderName, gameObject.name);
             }
-            return _transform;
+            // As this is a singleton, it can be called using Instance.Folder before Awake() is run
+            return _transform ?? transform;
         }
 
     }

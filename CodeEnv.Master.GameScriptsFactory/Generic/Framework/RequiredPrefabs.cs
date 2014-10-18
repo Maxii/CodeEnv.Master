@@ -29,9 +29,30 @@ using UnityEngine;
 /// </remarks>
 public class RequiredPrefabs : AMonoBaseSingleton<RequiredPrefabs> {
 
+    /// <summary>
+    /// A generic prefab for labels that track the world object they are parented too.
+    /// They need to have specific scripts added after instantiation to function.
+    /// </summary>
+    public GameObject worldTrackingLabel;
+    /// <summary>
+    /// A generic prefab for sprites that track the world object they are parented too.
+    /// They need to have specific scripts added after instantiation to function.
+    /// </summary>
+    public GameObject worldTrackingSprite;
+
+    /// <summary>
+    /// A specific prefab for labels that track world objects from the UI layer.
+    /// Includes all scripts.
+    /// </summary>
+    public UITrackingLabel uiTrackingLabel;
+    /// <summary>
+    /// A specific prefab for sprites that track world objects from the UI layer.
+    /// Includes all scripts.
+    /// </summary>
+    public UITrackingSprite uiTrackingSprite;
+
     public SphereCollider universeEdge;
     public Transform cameraDummyTarget;
-    public GuiTrackingLabel guiTrackingLabel;
     public SectorModel sector;
 
     public Orbiter orbiter;

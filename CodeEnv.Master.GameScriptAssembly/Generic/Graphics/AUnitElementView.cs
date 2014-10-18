@@ -25,19 +25,15 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for managing an Element's UI. 
 /// </summary>
-public abstract class AUnitElementView : AMortalItemView, IElementViewable, ICameraFollowable, IGuiTrackable {
+public abstract class AUnitElementView : AMortalItemView, IElementViewable, ICameraFollowable {
 
     public new AUnitElementPresenter Presenter {
         get { return base.Presenter as AUnitElementPresenter; }
         protected set { base.Presenter = value; }
     }
 
-    /// <summary>
-    /// The Collider encompassing the bounds of this element that intercepts input events for this view. 
-    /// This collider also detects collisions with other operating objects in the universe and therefore
-    /// should NOT be disabled when it is undiscernible.
-    /// </summary>
-    protected override Collider Collider { get { return base.Collider; } }
+    public float minCameraViewDistanceMultiplier = 2.0F;
+    public float optimalCameraViewDistanceMultiplier = 2.4F;
 
     public AudioClip cmdHit;
     public AudioClip attacking;
@@ -47,18 +43,36 @@ public abstract class AUnitElementView : AMortalItemView, IElementViewable, ICam
 
     private Color _originalMeshColor_Main;
     private Color _originalMeshColor_Specular;
-    private Color _hiddenMeshColor;
-    private Renderer _renderer;
+    private Color _hiddenMeshColor = GameColor.Clear.ToUnityColor();
+    private Renderer _meshRenderer;
+    private Animation _animation;
 
     protected override void Awake() {
         base.Awake();
         circleScaleFactor = 1.0F;
-        InitializeMesh();
+    }
+
+    protected override void InitializeVisualMembers() {
+        _meshRenderer = gameObject.GetComponentInChildren<Renderer>();
+        _meshRenderer.castShadows = true;
+        _meshRenderer.receiveShadows = true;
+        _originalMeshColor_Main = _meshRenderer.material.GetColor(UnityConstants.MaterialColor_Main);
+        _originalMeshColor_Specular = _meshRenderer.material.GetColor(UnityConstants.MaterialColor_Specular);
+        _meshRenderer.enabled = true;
+
+        _animation = _meshRenderer.gameObject.GetComponent<Animation>();
+        _animation.cullingType = AnimationCullingType.BasedOnRenderers; // aka, disabled when not visible
+        _animation.enabled = true;
+
+        var meshCameraLosChgdListener = _meshRenderer.gameObject.GetSafeInterface<ICameraLosChangedListener>();
+        meshCameraLosChgdListener.onCameraLosChanged += (go, inCameraLOS) => InCameraLOS = inCameraLOS;
+        meshCameraLosChgdListener.enabled = true;
     }
 
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
         ShowMesh(IsDiscernible);
+        _animation.enabled = IsDiscernible;
     }
 
     #region Mouse Events
@@ -74,33 +88,48 @@ public abstract class AUnitElementView : AMortalItemView, IElementViewable, ICam
         Presenter.IsCommandSelected = true;
     }
 
-    private void InitializeMesh() {
-        _renderer = gameObject.GetComponentInChildren<Renderer>();
-        _originalMeshColor_Main = _renderer.material.GetColor(UnityConstants.MaterialColor_Main);
-        _originalMeshColor_Specular = _renderer.material.GetColor(UnityConstants.MaterialColor_Specular);
-        _hiddenMeshColor = GameColor.Clear.ToUnityColor();
-    }
-
     private void ShowMesh(bool toShow) {
         if (toShow) {
-            _renderer.material.SetColor(UnityConstants.MaterialColor_Main, _originalMeshColor_Main);
-            _renderer.material.SetColor(UnityConstants.MaterialColor_Specular, _originalMeshColor_Specular);
+            _meshRenderer.material.SetColor(UnityConstants.MaterialColor_Main, _originalMeshColor_Main);
+            _meshRenderer.material.SetColor(UnityConstants.MaterialColor_Specular, _originalMeshColor_Specular);
             // TODO audio on goes here
         }
         else {
-            _renderer.material.SetColor(UnityConstants.MaterialColor_Main, _hiddenMeshColor);
-            _renderer.material.SetColor(UnityConstants.MaterialColor_Specular, _hiddenMeshColor);
+            _meshRenderer.material.SetColor(UnityConstants.MaterialColor_Main, _hiddenMeshColor);
+            _meshRenderer.material.SetColor(UnityConstants.MaterialColor_Specular, _hiddenMeshColor);
             // TODO audio off goes here
         }
     }
 
-    protected override float CalcOptimalCameraViewingDistance() {
-        return Radius * 2.4F;
+    #region ICameraTargetable Members
+
+    public override float MinimumCameraViewingDistance { get { return Radius * minCameraViewDistanceMultiplier; } }
+
+    #endregion
+
+    #region ICameraFocusable Members
+
+    public override float OptimalCameraViewingDistance { get { return Radius * optimalCameraViewDistanceMultiplier; } }
+
+    #endregion
+
+    #region ICameraFollowable Members
+
+    // TODO Settlement Facilities should be followable as they orbit, but Starbase Facilities?
+
+    [SerializeField]
+    private float cameraFollowDistanceDampener = 3.0F;
+    public virtual float CameraFollowDistanceDampener {
+        get { return cameraFollowDistanceDampener; }
     }
 
-    protected override float CalcMinimumCameraViewingDistance() {
-        return Radius * 2.0F;
+    [SerializeField]
+    private float cameraFollowRotationDampener = 1.0F;
+    public virtual float CameraFollowRotationDampener {
+        get { return cameraFollowRotationDampener; }
     }
+
+    #endregion
 
     #region Animations
 
@@ -182,44 +211,5 @@ public abstract class AUnitElementView : AMortalItemView, IElementViewable, ICam
 
     #endregion
 
-    #region ICameraFollowable Members
-
-    // TODO Settlement Facilities should be followable as they orbit, but Starbase Facilities?
-
-    [SerializeField]
-    private float cameraFollowDistanceDampener = 3.0F;
-    public virtual float CameraFollowDistanceDampener {
-        get { return cameraFollowDistanceDampener; }
-    }
-
-    [SerializeField]
-    private float cameraFollowRotationDampener = 1.0F;
-    public virtual float CameraFollowRotationDampener {
-        get { return cameraFollowRotationDampener; }
-    }
-
-    #endregion
-
-    #region IGuiTrackable Members
-
-    public Vector3 LeftExtent {
-        get { return new Vector3(-Collider.bounds.extents.x, Constants.ZeroF, Constants.ZeroF); }
-    }
-
-    public Vector3 RightExtent {
-        get { return new Vector3(Collider.bounds.extents.x, Constants.ZeroF, Constants.ZeroF); }
-    }
-
-    public Vector3 UpperExtent {
-        get { return new Vector3(Constants.ZeroF, Collider.bounds.extents.y, Constants.ZeroF); }
-    }
-
-    public Vector3 LowerExtent {
-        get { return new Vector3(Constants.ZeroF, -Collider.bounds.extents.y, Constants.ZeroF); }
-    }
-
-    public Transform Transform { get { return _transform; } }
-
-    #endregion
 }
 

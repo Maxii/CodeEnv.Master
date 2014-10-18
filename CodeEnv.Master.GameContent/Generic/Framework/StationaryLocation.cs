@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
         public StationaryLocation(Vector3 position)
             : this() {
             Position = position;
-            Topography = References.Universe.GetSpaceTopography(position);
+            Topography = References.UniverseFolder.GetSpaceTopography(position);
         }
 
         #region Object.Equals and GetHashCode Override

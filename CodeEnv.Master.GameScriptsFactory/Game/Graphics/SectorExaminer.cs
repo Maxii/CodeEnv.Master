@@ -30,7 +30,7 @@ using UnityEngine;
 /// Singleton that displays the highlighted wireframe of a sector and provides a context menu for fleet commands
 /// relevant to the highlighted sector.
 /// </summary>
-public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, IGuiTrackable {
+public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, IWidgetTrackable {
 
     public int distanceInSectorsFromCamera = 2;
 
@@ -56,8 +56,8 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
     private bool _isContextMenuShowing;
     private CtxObject _ctxObject;
 
-    private string _sectorIDLabelText;
-    private GuiTrackingLabel _sectorIDLabel;
+    private string _sectorIDLabelText = "Sector {0}" + Constants.NewLine + "GridBox {1}.";
+    private ITrackingWidget _sectorIDLabel;
 
     private PlayerViewMode _viewMode;
     private Job _sectorViewJob;
@@ -176,11 +176,15 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
 
     private void UpdateSectorIDLabel() {
         if (_sectorIDLabel == null) {
-            _sectorIDLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(this, GuiTrackingLabelFactory.LabelPlacement.OverTarget);
-            _sectorIDLabel.Color = UnityDebugConstants.SectorHighlightColor;
+            _sectorIDLabel = InitializeSectorIDLabel();
         }
-        _sectorIDLabelText = "Sector {0}" + Constants.NewLine + "GridBox {1}.".Inject(CurrentSectorIndex, SectorGrid.GetGridBoxLocation(CurrentSectorIndex));
-        _sectorIDLabel.Set(_sectorIDLabelText);
+        _sectorIDLabel.Set(_sectorIDLabelText.Inject(CurrentSectorIndex, SectorGrid.GetGridBoxLocation(CurrentSectorIndex)));
+    }
+
+    private ITrackingWidget InitializeSectorIDLabel() {
+        var sectorIDLabel = TrackingWidgetFactory.Instance.CreateUITrackingLabel(this, WidgetPlacement.Over);
+        sectorIDLabel.Color = UnityDebugConstants.SectorHighlightColor;
+        return sectorIDLabel;
     }
 
     private void OnCurrentSectorIndexChanged() {
@@ -262,12 +266,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
             UpdateSectorIDLabel();
         }
         _wireframe.Show(toShow);
-        if (toShow) {
-            _sectorIDLabel.Show();
-        }
-        else {
-            _sectorIDLabel.Hide();
-        }
+        _sectorIDLabel.Show(toShow);
     }
 
     protected override void OnDestroy() {
@@ -276,16 +275,9 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
     }
 
     private void Cleanup() {
-        if (_wireframe != null) {
-            _wireframe.Dispose();
-        }
-        if (_sectorIDLabel != null) {
-            Destroy(_sectorIDLabel.gameObject);
-            _sectorIDLabel = null;
-        }
-        if (_sectorViewJob != null) {
-            _sectorViewJob.Kill();
-        }
+        if (_wireframe != null) { _wireframe.Dispose(); }
+        UnityUtility.ExecuteIfNotNullOrDestroyed(_sectorIDLabel, Destroy);
+        if (_sectorViewJob != null) { _sectorViewJob.Kill(); }
         Unsubscribe();
     }
 
@@ -299,6 +291,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
     }
 
     #region IDisposable
+
     [DoNotSerialize]
     private bool alreadyDisposed = false;
 
@@ -341,16 +334,34 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
     //}
     #endregion
 
+    #region IWidgetTrackable Members
 
-    #region IGuiTrackable Members
+    public Vector3 GetOffset(WidgetPlacement placement) {
 
-    public Vector3 LeftExtent { get { return new Vector3(-_collider.bounds.extents.x, Constants.ZeroF, Constants.ZeroF); } }
-
-    public Vector3 RightExtent { get { return new Vector3(_collider.bounds.extents.x, Constants.ZeroF, Constants.ZeroF); } }
-
-    public Vector3 UpperExtent { get { return new Vector3(Constants.ZeroF, _collider.bounds.extents.y, Constants.ZeroF); } }
-
-    public Vector3 LowerExtent { get { return new Vector3(Constants.ZeroF, -_collider.bounds.extents.y, Constants.ZeroF); } }
+        switch (placement) {
+            case WidgetPlacement.Above:
+                return new Vector3(Constants.ZeroF, _collider.bounds.extents.y, Constants.ZeroF);
+            case WidgetPlacement.AboveLeft:
+                return new Vector3(-_collider.bounds.extents.x, _collider.bounds.extents.y, Constants.ZeroF);
+            case WidgetPlacement.AboveRight:
+                return new Vector3(_collider.bounds.extents.x, _collider.bounds.extents.y, Constants.ZeroF);
+            case WidgetPlacement.Below:
+                return new Vector3(Constants.ZeroF, -_collider.bounds.extents.y, Constants.ZeroF);
+            case WidgetPlacement.BelowLeft:
+                return new Vector3(-_collider.bounds.extents.x, -_collider.bounds.extents.y, Constants.ZeroF);
+            case WidgetPlacement.BelowRight:
+                return new Vector3(_collider.bounds.extents.x, -_collider.bounds.extents.y, Constants.ZeroF);
+            case WidgetPlacement.Left:
+                return new Vector3(-_collider.bounds.extents.x, Constants.ZeroF, Constants.ZeroF);
+            case WidgetPlacement.Right:
+                return new Vector3(_collider.bounds.extents.x, Constants.ZeroF, Constants.ZeroF);
+            case WidgetPlacement.Over:
+                return Vector3.zero;
+            case WidgetPlacement.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(placement));
+        }
+    }
 
     public Transform Transform { get { return _transform; } }
 

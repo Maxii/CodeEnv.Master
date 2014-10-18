@@ -123,12 +123,12 @@ public class SettlementUnitCreator : AUnitCreator<FacilityModel, FacilityCategor
         D.Assert(GameStatus.Instance.IsRunning);
         // the entire settlementUnit gameobject has already been detached from this creator at this point
         GameObject settlementUnitGo = _command.transform.parent.gameObject;
-        settlementUnitGo.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(relay => relay.enabled = true);
+        // CameraLosChangedListener enabled state handled by View.InitializeVisualMembers()
         settlementUnitGo.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeMonitor>().ForAll(wrt => wrt.enabled = true);
-        settlementUnitGo.GetSafeMonoBehaviourComponentsInChildren<Revolver>().ForAll(rev => rev.enabled = true);
+        // Revolvers handle their own enabled state
         // settlementUnitGo.GetSafeMonoBehaviourComponentInParents<Orbit>().enabled = true;    // currently keeping Settlements in a fixed location
-        // settlementUnitGo.GetSafeMonoBehaviourComponentInChildren<UISprite>().enabled = true;
-        // no other orbits present,  // other possibles: Billboard, ScaleRelativeToCamera
+        // Cmd sprites enabled when shown
+        // no other orbits present,
         // TODO SensorRangeTracker
     }
 

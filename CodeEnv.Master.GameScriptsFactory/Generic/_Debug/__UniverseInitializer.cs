@@ -73,8 +73,7 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
     private void EnableOtherWhenRunning() {
         D.Assert(GameStatus.Instance.IsRunning);
         if (_universeCenter != null) {
-            _universeCenter.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().enabled = true;
-            //_universeCenter.gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>().enabled = true;    // doesn't appear to be needed
+            // CameraLosChangedListener is enabled in View.InitializeVisualMembers()
         }
     }
 

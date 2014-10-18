@@ -41,12 +41,14 @@ public class SectorView : AItemView {
         return new ImprovingIntel();
     }
 
+    protected override void InitializeVisualMembers() {
+        // TODO meshes and animations need to be added to sectors
+        // UNCLEAR include a separate CullingLayer for Sector meshes and animations?   
+    }
+
     protected override void SubscribeToPlayerIntelCoverageChanged() {
         _subscribers.Add((PlayerIntel as ImprovingIntel).SubscribeToPropertyChanged<ImprovingIntel, IntelCoverage>(pi => pi.CurrentCoverage, OnPlayerIntelCoverageChanged));
     }
-
-    // TODO meshes and animations need to be added to sectors
-    // UNCLEAR include a separate CullingLayer for Sector meshes and animations?
 
     protected override void InitializePresenter() {
         Presenter = new SectorPresenter(this);

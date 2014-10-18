@@ -54,11 +54,19 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Deferred\AItemModelView.cs" />
+    <Compile Include="Generic\Graphics\CameraLosChangedListener.cs" />
+    <Compile Include="Generic\Graphics\AWorldTrackingWidget.cs" />
+    <Compile Include="Generic\Graphics\AWorldTrackingWidget_ConstantSize.cs" />
+    <Compile Include="Game\Graphics\CommandTrackingSprite.cs" />
+    <Compile Include="Generic\Graphics\ATrackingWidget.cs" />
+    <Compile Include="Generic\Graphics\AWorldTrackingWidget_VariableSize.cs" />
+    <Compile Include="Generic\Graphics\AUITrackingWidget.cs" />
     <Compile Include="Generic\_Debug\NguiEventLogger.cs" />
     <Compile Include="Generic\IO\GameInput.cs" />
     <Compile Include="Game\Graphics\FleetCmdView_AI.cs" />
     <Compile Include="Game\Graphics\FleetCmdView_Player.cs" />
-    <Compile Include="Game\_Debug\Fleets.cs" />
+    <Compile Include="Game\_Debug\FleetsFolder.cs" />
     <Compile Include="Generic\Framework\GeneralFactory.cs" />
     <Compile Include="Generic\Framework\TopographyMonitor.cs" />
     <Compile Include="Generic\Framework\UnitFactory.cs" />
@@ -72,9 +80,9 @@
     <Compile Include="Generic\IO\CameraControl.cs" />
     <Compile Include="Generic\Framework\GameManager.cs" />
     <Compile Include="Game\Graphics\FleetCmdView.cs" />
-    <Compile Include="Game\_Debug\DynamicObjects.cs" />
-    <Compile Include="Game\_Debug\DynamicTrackingLabels.cs" />
-    <Compile Include="Game\_Debug\Sectors.cs" />
+    <Compile Include="Game\_Debug\DynamicObjectsFolder.cs" />
+    <Compile Include="Game\_Debug\DynamicWidgetsFolder.cs" />
+    <Compile Include="Game\_Debug\SectorsFolder.cs" />
     <Compile Include="Generic\Graphics\AGuiButtonBase.cs" />
     <Compile Include="Generic\Graphics\AHud.cs" />
     <Compile Include="Generic\Graphics\GuiTooltip.cs" />
@@ -109,12 +117,11 @@
     <Compile Include="Game\GUI\GuiSavedGamesPopupList.cs" />
     <Compile Include="Game\GUI\GuiSaveMenuAcceptButton.cs" />
     <Compile Include="Generic\Graphics\AGuiPopupListBase.cs" />
-    <Compile Include="Generic\Graphics\GuiTrackingLabel.cs" />
     <Compile Include="Game\GUI\GuiPlayerColorPopupList.cs" />
     <Compile Include="Game\GUI\GuiPlayerRacePopupList.cs" />
     <Compile Include="Generic\Graphics\Orbiter.cs" />
     <Compile Include="Generic\Graphics\MovingOrbiter.cs" />
-    <Compile Include="Generic\Graphics\GuiTrackingLabelFactory.cs" />
+    <Compile Include="Generic\Graphics\TrackingWidgetFactory.cs" />
     <Compile Include="Game\GUI\GuiGraphicsOptionMenuAcceptButton.cs" />
     <Compile Include="Game\GUI\GuiQualitySettingPopupList.cs" />
     <Compile Include="Game\GUI\GuiSelectedReadout.cs" />
@@ -129,8 +136,8 @@
     <Compile Include="Game\Framework\StarbaseCmdModel.cs" />
     <Compile Include="Game\Graphics\StarbaseCmdView.cs" />
     <Compile Include="Generic\Framework\SettlementUnitCreator.cs" />
-    <Compile Include="Game\_Debug\Settlements.cs" />
-    <Compile Include="Game\_Debug\Starbases.cs" />
+    <Compile Include="Game\_Debug\SettlementsFolder.cs" />
+    <Compile Include="Game\_Debug\StarbasesFolder.cs" />
     <Compile Include="Generic\Framework\FormationStation.cs" />
     <Compile Include="Generic\Deferred\SensorRangeTracker.cs">
       <SubType>Code</SubType>
@@ -157,7 +164,6 @@
     <Compile Include="Generic\Framework\Loader.cs" />
     <Compile Include="Generic\Framework\RequiredPrefabs.cs" />
     <Compile Include="Generic\Framework\UsefulTools.cs" />
-    <Compile Include="Generic\Graphics\CameraLOSChangedRelay.cs" />
     <Compile Include="Generic\_Debug\__UniverseInitializer.cs" />
     <Compile Include="Generic\Graphics\StarFlare.cs" />
     <Compile Include="Game\Framework\SectorModel.cs" />
@@ -165,10 +171,16 @@
     <Compile Include="Game\Graphics\ShipView.cs" />
     <Compile Include="Game\Graphics\StarView.cs" />
     <Compile Include="Game\Framework\SettlementCmdModel.cs" />
-    <Compile Include="Game\_Debug\Universe.cs" />
+    <Compile Include="Game\_Debug\UniverseFolder.cs" />
     <Compile Include="Game\Graphics\UniverseCenterView.cs" />
     <Compile Include="Game\Framework\UniverseCenterModel.cs" />
     <Compile Include="Generic\Framework\WeaponRangeMonitor.cs" />
+    <Compile Include="Generic\Graphics\UITrackingLabel.cs" />
+    <Compile Include="Generic\Graphics\UITrackingSprite.cs" />
+    <Compile Include="Generic\Graphics\VariableSizeTrackingLabel.cs" />
+    <Compile Include="Generic\Graphics\VariableSizeTrackingSprite.cs" />
+    <Compile Include="Generic\Graphics\ConstantSizeTrackingLabel.cs" />
+    <Compile Include="Generic\Graphics\ConstantSizeTrackingSprite.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">

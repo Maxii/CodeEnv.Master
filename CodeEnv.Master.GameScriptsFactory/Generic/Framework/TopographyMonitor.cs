@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: TopographyMonitor.cs
-// Notifies ships of the SpaceTopography they are entering/exiting.
+// Monitor attached to regions of space that notifies ships of the SpaceTopography they are entering/exiting.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,7 +21,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Notifies ships of the SpaceTopography they are entering/exiting.
+/// Monitor attached to regions of space that notifies ships of the SpaceTopography they are entering/exiting.
 /// </summary>
 public class TopographyMonitor : AMonoBase {
 

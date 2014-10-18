@@ -88,7 +88,7 @@ public class Sector : AMonoBase, IHasContextMenu {
         }
         if (_sectorWireframe == null) {
             _sectorWireframe = new CubeWireframe("SectorWireframe", _transform, _size);
-            _sectorWireframe.Parent = DynamicObjects.Folder;
+            _sectorWireframe.Parent = DynamicObjectsFolder.Folder;
             _normalViewModeWireframeColor = _sectorWireframe.Color;
         }
         _sectorWireframe.Show(toShow);

@@ -26,17 +26,32 @@ using UnityEngine;
 /// </summary>
 public class UniverseCenterView : AFocusableItemView {
 
-    /// <summary>
-    /// The Collider encompassing the bounds of the UniverseCenter that intercepts input events for this view. 
-    /// This collider also detects collisions with other operating objects in the universe and therefore
-    /// should NOT be disabled when it is undiscernible.
-    /// </summary>
-    protected new SphereCollider Collider { get { return base.Collider as SphereCollider; } }
+    public float minCameraViewDistanceMultiplier = 2F;
 
     protected override void Awake() {
         base.Awake();
         circleScaleFactor = 5F;
         Subscribe();    // no real need to subscribe at all if only subscription is PlayerIntelCoverage changes which these don't have
+    }
+
+    protected override void Start() {
+        base.Start();
+        AssessDiscernability(); // needed as FixedIntel gets set early and never changes
+    }
+
+    protected override void InitializeVisualMembers() {
+        var meshRenderer = gameObject.GetComponentInChildren<MeshRenderer>();
+        meshRenderer.castShadows = false;
+        meshRenderer.receiveShadows = false;
+        meshRenderer.enabled = true;
+
+        var animation = meshRenderer.gameObject.GetComponent<Animation>();
+        animation.cullingType = AnimationCullingType.BasedOnRenderers; // aka, disabled when not visible
+        animation.enabled = true;
+
+        var cameraLosChgdListener = gameObject.GetSafeInterfaceInChildren<ICameraLosChangedListener>();
+        cameraLosChgdListener.onCameraLosChanged += (go, inCameraLOS) => InCameraLOS = inCameraLOS;
+        cameraLosChgdListener.enabled = true;
     }
 
     protected override IIntel InitializePlayerIntel() {
@@ -55,15 +70,17 @@ public class UniverseCenterView : AFocusableItemView {
         return new ObjectAnalyzer().ToString(this);
     }
 
+    #region ICameraTargetable Members
+
+    public override float MinimumCameraViewingDistance { get { return Radius * minCameraViewDistanceMultiplier; } }
+
+    #endregion
+
     #region ICameraFocusable Members
 
-    public override bool IsRetainedFocusEligible {
-        get { return true; }
-    }
+    public override bool IsRetainedFocusEligible { get { return true; } }
 
-    protected override float CalcOptimalCameraViewingDistance() {
-        return GameManager.Settings.UniverseSize.Radius() * 0.9F;   // IMPROVE
-    }
+    public override float OptimalCameraViewingDistance { get { return gameObject.DistanceToCamera(); } }
 
     #endregion
 

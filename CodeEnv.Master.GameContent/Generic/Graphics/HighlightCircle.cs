@@ -65,7 +65,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="width">The width.</param>
         /// <param name="color">The color.</param>
         public HighlightCircle(string name, Transform target, float normalizedRadius, bool isRadiusDynamic = true, int maxCircles = 1, float width = 1F, GameColor color = GameColor.White)
-            : base(name, References.DynamicObjects.Folder) {
+            : base(name, References.DynamicObjectsFolder.Folder) {
             Target = target;
             NormalizedRadius = normalizedRadius;
             IsRadiusDynamic = isRadiusDynamic;

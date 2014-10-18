@@ -37,12 +37,10 @@ namespace CodeEnv.Master.GameContent {
             return new GuiHudPublisher<StarData>(Data);
         }
 
-        public void OnHover(bool isOver) {
-            (_systemView as IHighlightTrackingLabel).HighlightTrackingLabel(isOver);
-        }
-
         public void OnLeftClick() {
-            (_systemView as ISelectable).IsSelected = true;
+            if (_systemView.IsDiscernible) {
+                (_systemView as ISelectable).IsSelected = true;
+            }
         }
 
         public override string ToString() {

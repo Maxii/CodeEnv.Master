@@ -58,16 +58,20 @@ public abstract class AMonoBaseSingleton<T> : AMonoBase, IInstanceIdentity where
                 _instance = FindObjectOfType(thisType) as T;    // WARNING: Does not find T if another Type is also present on same gameobject
                 // eg. T = DebugHud, but DebugHud gameobject also contains UILabel...
                 if (_instance == null) {
-                    // an instance of this singleton doesn't yet exist so create a temporary one
                     System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(2);
-                    string callerIdMessage = " Called by {0}.{1}().".Inject(stackFrame.GetFileName(), stackFrame.GetMethod().Name);
-                    D.Warn("No instance of {0} found, so a temporary one has been created. Called by {1}.", thisType.Name, callerIdMessage);
+                    string callerIdMessage = "{0}.{1}().".Inject(stackFrame.GetFileName(), stackFrame.GetMethod().Name);
+                    D.Error("No instance of {0} found. Is it deactivated? Called by {1}.".Inject(thisType.Name, callerIdMessage));
 
-                    GameObject tempGO = new GameObject(thisType.Name, thisType);
-                    _instance = tempGO.GetComponent<T>();
-                    if (_instance == null) {
-                        D.Error("Problem during the creation of {0}.", thisType.Name);
-                    }
+                    // an instance of this singleton doesn't yet exist so create a temporary one
+                    //System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(2);
+                    //string callerIdMessage = "{0}.{1}().".Inject(stackFrame.GetFileName(), stackFrame.GetMethod().Name);
+                    //D.Warn("No instance of {0} found, so a temporary one has been created. Called by {1}.", thisType.Name, callerIdMessage);
+
+                    //GameObject tempGO = new GameObject(thisType.Name, thisType);
+                    //_instance = tempGO.GetComponent<T>();
+                    //if (_instance == null) {
+                    //    D.Error("Problem during the creation of {0}.", thisType.Name);
+                    //}
                 }
                 //D.Log("{0}.Instance found.", typeof(T).Name);
             }

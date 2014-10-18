@@ -29,7 +29,7 @@ using UnityEngine;
 /// <summary>
 ///  Abstract Base class for MonoBehaviour State Machines to inherit from.
 ///  WARNING: This version does not support subscribing to State Changes 
-///  as Call() and Return() make changes without going through SetProperty.
+///  as Call() and Return() make changes without going through CurrentState.set.
 /// </summary>
 /// <typeparam name="E">Th State Type being used, typically an enum type.</typeparam>
 public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
@@ -233,7 +233,7 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
     /// instance that has the signature "CurrentState_CallingMethodName(param). 
     /// Usage:
     ///     void CallingMethodName(param)  { 
-    ///         SendStateMessage(param);
+    ///         RelayToCurrentState(param);
     ///     }
     /// </summary>
     /// <param name='param'>

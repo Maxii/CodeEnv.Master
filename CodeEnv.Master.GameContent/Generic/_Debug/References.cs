@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
 
         public static ICameraControl CameraControl { get; set; }
 
-        public static IDynamicObjects DynamicObjects { get; set; }
+        public static IDynamicObjectsFolder DynamicObjectsFolder { get; set; }
 
         public static IGameInputHelper InputHelper { get; set; }
 
@@ -52,7 +52,7 @@ namespace CodeEnv.Master.GameContent {
 
         public static IUsefulTools UsefulTools { get; set; }
 
-        public static IUniverse Universe { get; set; }
+        public static IUniverseFolder UniverseFolder { get; set; }
 
         public static IGameInput GameInput { get; set; }
 

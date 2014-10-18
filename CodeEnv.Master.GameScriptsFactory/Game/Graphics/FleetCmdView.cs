@@ -21,13 +21,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
 /// A class for managing the elements of a fleet's UI, those that are not already handled by the UI classes for ships.
 /// </summary>
-public class FleetCmdView : AUnitCommandView, IFleetCmdViewable, ICameraFollowable, IHighlightTrackingLabel {
+public class FleetCmdView : AUnitCommandView, IFleetCmdViewable, ICameraFollowable {
 
     public new FleetCmdPresenter Presenter {
         get { return base.Presenter as FleetCmdPresenter; }
@@ -35,7 +36,7 @@ public class FleetCmdView : AUnitCommandView, IFleetCmdViewable, ICameraFollowab
     }
 
     public bool enableTrackingLabel = false;
-    private GuiTrackingLabel _trackingLabel;
+    private ITrackingWidget _trackingLabel;
 
     private VelocityRay _velocityRay;
     private PathfindingLine _pathfindingLine;
@@ -52,19 +53,16 @@ public class FleetCmdView : AUnitCommandView, IFleetCmdViewable, ICameraFollowab
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
         if (_trackingLabel != null) {
-            _trackingLabel.gameObject.SetActive(IsDiscernible); // IMPROVE control Active or enabled, but not both
-            _trackingLabel.enabled = IsDiscernible;
+            _trackingLabel.Show(IsDiscernible);
         }
         ShowVelocityRay(IsDiscernible);
     }
 
     protected override void OnTrackingTargetChanged() {
         base.OnTrackingTargetChanged();
-        //must position FleetCmd immediately over tracking target as formationStations are children of FleetCmd
-        // if we wait for update, then some ships won't show up as onStation during initialization
-        KeepViewOverTarget();
-        //D.Log("{0}.TrackingTarget is now {1}. View is positioned over it.", Presenter.Model.FullName, TrackingTarget.name);
-        InitializeTrackingLabel();
+        if (enableTrackingLabel && _trackingLabel == null) {
+            _trackingLabel = InitializeTrackingLabel();
+        }
     }
 
     protected override void OnPlayerIntelCoverageChanged() {
@@ -112,23 +110,18 @@ public class FleetCmdView : AUnitCommandView, IFleetCmdViewable, ICameraFollowab
 
     protected override void Update() {
         base.Update();
-        KeepViewOverTarget();
-    }
-
-    private void KeepViewOverTarget() {
         if (TrackingTarget != null) {
-            _transform.position = TrackingTarget.Transform.position;
-            _transform.rotation = TrackingTarget.Transform.rotation;
-            PositionIcon();
+            PositionCmdOverTrackingTarget();
         }
     }
 
-    private void InitializeTrackingLabel() {
-        if (enableTrackingLabel) {
-            float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
-            string fleetName = Presenter.Model.UnitName;
-            _trackingLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(TrackingTarget, GuiTrackingLabelFactory.LabelPlacement.AboveTarget, minShowDistance, Mathf.Infinity, fleetName);
-        }
+    private ITrackingWidget InitializeTrackingLabel() {
+        float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
+        string fleetName = Presenter.Model.UnitName;
+        var trackingLabel = TrackingWidgetFactory.Instance.CreateUITrackingLabel(TrackingTarget, WidgetPlacement.AboveRight, minShowDistance);
+        trackingLabel.Name = fleetName + CommonTerms.Label;
+        trackingLabel.Set(fleetName);
+        return trackingLabel;
     }
 
     /// <summary>
@@ -173,10 +166,7 @@ public class FleetCmdView : AUnitCommandView, IFleetCmdViewable, ICameraFollowab
             _velocityRay.Dispose();
             _velocityRay = null;
         }
-        if (_trackingLabel != null) {
-            Destroy(_trackingLabel.gameObject);
-            _trackingLabel = null;
-        }
+        UnityUtility.ExecuteIfNotNullOrDestroyed(_trackingLabel, Destroy);
     }
 
     public override string ToString() {
@@ -204,16 +194,6 @@ public class FleetCmdView : AUnitCommandView, IFleetCmdViewable, ICameraFollowab
     private float cameraFollowRotationDampener = 1.0F;
     public virtual float CameraFollowRotationDampener {
         get { return cameraFollowRotationDampener; }
-    }
-
-    #endregion
-
-    #region IHighlightTrackingLabel Members
-
-    public void HighlightTrackingLabel(bool toHighlight) {
-        if (_trackingLabel != null) {   // can be gap between checking enableTrackingLabel and instantiating it
-            _trackingLabel.IsHighlighted = toHighlight;
-        }
     }
 
     #endregion

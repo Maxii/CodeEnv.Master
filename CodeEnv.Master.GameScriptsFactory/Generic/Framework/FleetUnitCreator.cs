@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
@@ -29,6 +30,7 @@ using UnityEngine;
 /// deployed will simply be initialized if already present in the scene. If it is not present, then
 /// it will be built and then initialized.
 /// </summary>
+[SerializeAll]
 public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, ShipStat, FleetCmdModel> {
 
     private static IList<FleetCmdModel> _allFleets = new List<FleetCmdModel>();
@@ -137,20 +139,24 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
         _command.CommenceOperations();
     }
 
-    protected override void __InitializeCommandIntel() {
-        LogEvent();
-        _command.gameObject.GetSafeMonoBehaviourComponent<FleetCmdView>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
+    private IEnumerator ImproveCoverage(FleetCmdView cmdView) {
+        yield return new WaitForSeconds(5F);
+        cmdView.PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
     }
 
     protected override void EnableOtherWhenRunning() {
         D.Assert(GameStatus.Instance.IsRunning);
-        gameObject.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(relay => relay.enabled = true);
+        // CameraLosChangedListeners enabled in View.InitializeVisualMembers
         gameObject.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeMonitor>().ForAll(monitor => monitor.enabled = true);
-        //gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>().enabled = true;    // doesn't appear to be needed
-
+        // CmdSprites enabled when shown
         // formation stations control enabled themselves when the assigned ship changes
-        // no orbits or revolves present  // other possibles: Billboard, ScaleRelativeToCamera
+        // no orbits or revolves present 
         // TODO SensorRangeTracker
+    }
+
+    protected override void __InitializeCommandIntel() {
+        LogEvent();
+        _command.gameObject.GetSafeMonoBehaviourComponent<FleetCmdView>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
     }
 
     protected override void IssueFirstUnitCommand() {
@@ -163,8 +169,6 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
                 __GetFleetUnderway();
             }
         }
-        //__GetFleetAttackUnderway();
-        //__GetFleetUnderway();
     }
 
     private void __GetFleetUnderway() {
@@ -196,8 +200,8 @@ public class FleetUnitCreator : AUnitCreator<ShipModel, ShipCategory, ShipData, 
                 }
             }
         }
-        //IDestinationTarget destination = moveTgts.MaxBy(mt => Vector3.SqrMagnitude(mt.Position - _transform.position));
-        IDestinationTarget destination = moveTgts.MinBy(mt => Vector3.SqrMagnitude(mt.Position - _transform.position));
+        IDestinationTarget destination = moveTgts.MaxBy(mt => Vector3.SqrMagnitude(mt.Position - _transform.position));
+        //IDestinationTarget destination = moveTgts.MinBy(mt => Vector3.SqrMagnitude(mt.Position - _transform.position));
 
         _command.CurrentOrder = new FleetOrder(FleetDirective.MoveTo, destination, Speed.FleetStandard);
     }

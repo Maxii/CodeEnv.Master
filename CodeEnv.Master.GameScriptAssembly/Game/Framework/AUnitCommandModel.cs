@@ -55,8 +55,8 @@ public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarge
     }
 
     protected override void InitializeRadiiComponents() {
-        collider.isTrigger = true;
-        // a Command's collider size is dynamically adjusted to the size of the CmdIcon. It has nothing to do with the radius of the Command
+        // there is no collider that is part of a UnitCommandModel implementation
+        // the only collider is for player interaction with the view's CmdIcon
     }
 
     // formations are now generated when an element is added and/or when a HQ element is assigned

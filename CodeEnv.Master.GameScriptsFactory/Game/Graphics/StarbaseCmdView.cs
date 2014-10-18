@@ -17,21 +17,23 @@
 // default namespace
 
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
 /// A class for managing the elements of a Starbase's UI, those that are not already handled by the UI classes for Facilities. 
 /// </summary>
-public class StarbaseCmdView : AUnitCommandView, IHighlightTrackingLabel {
+public class StarbaseCmdView : AUnitCommandView {
+
+    public bool enableTrackingLabel = false;
 
     public new StarbaseCmdPresenter Presenter {
         get { return base.Presenter as StarbaseCmdPresenter; }
         protected set { base.Presenter = value; }
     }
 
-    public bool enableTrackingLabel = false;
-    private GuiTrackingLabel _trackingLabel;
+    private ITrackingWidget _trackingLabel;
 
     protected override void Awake() {
         base.Awake();
@@ -42,16 +44,23 @@ public class StarbaseCmdView : AUnitCommandView, IHighlightTrackingLabel {
         Presenter = new StarbaseCmdPresenter(this);
     }
 
+    protected override void InitializeVisualMembers() {
+        base.InitializeVisualMembers();
+        // Revolvers control their own enabled state
+    }
+
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
         if (_trackingLabel != null) {
-            _trackingLabel.gameObject.SetActive(IsDiscernible);
+            _trackingLabel.Show(IsDiscernible);
         }
     }
 
     protected override void OnTrackingTargetChanged() {
         base.OnTrackingTargetChanged();
-        InitializeTrackingLabel();
+        if (enableTrackingLabel && _trackingLabel == null) {
+            _trackingLabel = InitializeTrackingLabel();
+        }
     }
 
     protected override void OnPlayerIntelCoverageChanged() {
@@ -64,35 +73,23 @@ public class StarbaseCmdView : AUnitCommandView, IHighlightTrackingLabel {
         Presenter.OnIsSelectedChanged();
     }
 
-    private void InitializeTrackingLabel() {
-        if (enableTrackingLabel) {
-            float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
-            string fleetName = Presenter.Model.UnitName;
-            _trackingLabel = GuiTrackingLabelFactory.Instance.CreateGuiTrackingLabel(TrackingTarget, GuiTrackingLabelFactory.LabelPlacement.AboveTarget, minShowDistance, Mathf.Infinity, fleetName);
-        }
+    private ITrackingWidget InitializeTrackingLabel() {
+        float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
+        string starbaseName = Presenter.Model.UnitName;
+        var trackingLabel = TrackingWidgetFactory.Instance.CreateUITrackingLabel(TrackingTarget, WidgetPlacement.AboveRight, minShowDistance);
+        trackingLabel.Name = starbaseName + CommonTerms.Label;
+        trackingLabel.Set(starbaseName);
+        return trackingLabel;
     }
 
     protected override void Cleanup() {
         base.Cleanup();
-        if (_trackingLabel != null) {
-            Destroy(_trackingLabel.gameObject);
-            _trackingLabel = null;
-        }
+        UnityUtility.ExecuteIfNotNullOrDestroyed(_trackingLabel, Destroy);
     }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region IHighlightTrackingLabel Members
-
-    public void HighlightTrackingLabel(bool toHighlight) {
-        if (_trackingLabel != null) {   // can be gap between checking enableTrackingLabel and instantiating it
-            _trackingLabel.IsHighlighted = toHighlight;
-        }
-    }
-
-    #endregion
 
 }
 

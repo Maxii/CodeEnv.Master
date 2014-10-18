@@ -70,6 +70,7 @@ public abstract class APlanetoidModel : AMortalItemModel, IShipOrbitable {
 
     protected override void OnDeath() {
         base.OnDeath();
+        collider.enabled = false;
         DisableParentOrbiter();
     }
 

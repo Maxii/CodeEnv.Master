@@ -50,7 +50,6 @@ public class FleetCmdView_Player : FleetCmdView {
     private CtxObject _ctxObject;
 
     private void __InitializeContextMenu() {      // IMPROVE use of string
-        UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
         _ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
         _ctxObject.offsetMenu = true;
 

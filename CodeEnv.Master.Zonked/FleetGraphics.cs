@@ -43,7 +43,7 @@ public class FleetGraphics : AGraphics, IDisposable {
     public int minTrackingLabelShowDistance = TempGameValues.MinTrackingLabelShowDistance;
     public int maxTrackingLabelShowDistance = TempGameValues.MaxTrackingLabelShowDistance;
     private GuiTrackingLabel _trackingLabel;
-    private GuiTrackingLabelFactory _trackingLabelFactory;
+    private TrackingWidgetFactory _trackingLabelFactory;
 
     public float circleScaleFactor = .03F;
     private HighlightCircle _circles;
@@ -58,7 +58,7 @@ public class FleetGraphics : AGraphics, IDisposable {
         base.Awake();
         _fleetMgr = gameObject.GetSafeMonoBehaviourComponent<FleetUnitCreator>();
         _fleetCmd = gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>();
-        _trackingLabelFactory = GuiTrackingLabelFactory.Instance;
+        _trackingLabelFactory = TrackingWidgetFactory.Instance;
         Target = _fleetCmd.transform;
         InitializeHighlighting();
         maxAnimateDistance = 1; // FIXME maxAnimateDistance not used, this is a dummy value to avoid the warning in AGraphics
@@ -178,7 +178,7 @@ public class FleetGraphics : AGraphics, IDisposable {
         }
         if (_circles == null) {
             float normalizedRadius = Screen.height * circleScaleFactor;
-            _circles = new HighlightCircle("FleetCircles", _fleetCmd.transform, normalizedRadius, parent: DynamicObjects.Folder,
+            _circles = new HighlightCircle("FleetCircles", _fleetCmd.transform, normalizedRadius, parent: DynamicObjectsFolder.Folder,
                 isRadiusDynamic: false, maxCircles: 2);
             _circles.Colors = new GameColor[2] { UnityDebugConstants.FocusedColor, UnityDebugConstants.SelectedColor };
             _circles.Widths = new float[2] { 2F, 2F };
@@ -204,7 +204,7 @@ public class FleetGraphics : AGraphics, IDisposable {
             }
             if (_velocityRay == null) {
                 Reference<float> speedReference = new Reference<float>(() => _fleetCmd.Data.CurrentSpeed);
-                _velocityRay = new VelocityRay("FleetVelocityRay", _fleetCmd.transform, speedReference, parent: DynamicObjects.Folder,
+                _velocityRay = new VelocityRay("FleetVelocityRay", _fleetCmd.transform, speedReference, parent: DynamicObjectsFolder.Folder,
                     width: 2F, color: GameColor.Green);
             }
             if (toShow) {

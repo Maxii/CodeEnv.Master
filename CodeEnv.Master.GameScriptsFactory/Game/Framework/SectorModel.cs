@@ -42,7 +42,7 @@ public class SectorModel : AOwnedItemModel, IDestinationTarget {
 
     protected override void InitializeRadiiComponents() {
         Radius = TempGameValues.SectorSideLength / 2F;  // the radius of the sphere inscribed inside a sector box
-        // there is no dedicated collider associated with a Sector. The collider used for context menu activation is part of the SectorExaminer
+        // there is no collider associated with a SectorModel. The collider used for context menu activation is part of the SectorExaminer
     }
 
     protected override void Initialize() { }

@@ -314,10 +314,10 @@ public class CameraControl : AMonoBaseSingleton<CameraControl> {
             universeEdge = new GameObject(universeEdgeName);
             universeEdge.AddComponent<SphereCollider>();
             universeEdge.isStatic = true;
-            UnityUtility.AttachChildToParent(universeEdge, Universe.Folder.gameObject);
+            UnityUtility.AttachChildToParent(universeEdge, UniverseFolder.Folder.gameObject);
         }
         else {
-            universeEdge = NGUITools.AddChild(Universe.Folder.gameObject, universeEdgePrefab.gameObject);
+            universeEdge = NGUITools.AddChild(UniverseFolder.Folder.gameObject, universeEdgePrefab.gameObject);
         }
         (universeEdge.collider as SphereCollider).radius = universeRadius;
         universeEdge.layer = (int)Layers.UniverseEdge;
@@ -334,7 +334,7 @@ public class CameraControl : AMonoBaseSingleton<CameraControl> {
             dummyTarget.AddComponent<DummyTargetManager>();
         }
         else {
-            dummyTarget = NGUITools.AddChild(DynamicObjects.Folder.gameObject, dummyTargetPrefab.gameObject);
+            dummyTarget = NGUITools.AddChild(DynamicObjectsFolder.Folder.gameObject, dummyTargetPrefab.gameObject);
         }
         dummyTarget.layer = (int)Layers.DummyTarget;
         _dummyTarget = dummyTarget.transform;

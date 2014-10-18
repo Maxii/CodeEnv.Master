@@ -106,9 +106,6 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
             ParentName = systemName
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
         };
-
-        // this is not really necessary as the provided model should already have its transform as its Mesh's CameraLOSChangedRelay target
-        star.gameObject.GetSafeInterfaceInChildren<ICameraLOSChangedRelay>().AddTarget(star.transform);
     }
 
     /// <summary>
@@ -145,10 +142,6 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
             // CombatStrength is default(CombatStrength), aka all values zero'd out
         };
-
-        // this is not really necessary as the provided model should already have its transform as its Mesh's CameraLOSChangedRelay target
-        var modelTransform = planet.transform;   // reqd as ref parameters can't be used in lambda expressions
-        planet.gameObject.GetInterfacesInChildren<ICameraLOSChangedRelay>().ForAll(iRelay => iRelay.AddTarget(modelTransform));
     }
 
     /// <summary>
@@ -185,10 +178,6 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
             // CombatStrength is default(CombatStrength), aka all values zero'd out
         };
-
-        // this is not really necessary as the provided model should already have its transform as its Mesh's CameraLOSChangedRelay target
-        var modelTransform = moon.transform;   // reqd as ref parameters can't be used in lambda expressions
-        moon.gameObject.GetInterfacesInChildren<ICameraLOSChangedRelay>().ForAll(iRelay => iRelay.AddTarget(modelTransform));
     }
 
     /// <summary>
@@ -224,9 +213,6 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
         };
         system.Data = data;
-        // this is not really necessary as the provided model should already have its transform as its Mesh's CameraLOSChangedRelay target
-        var modelTransform = system.transform;   // reqd as ref parameters can't be used in lambda expressions
-        system.gameObject.GetInterfacesInChildren<ICameraLOSChangedRelay>().ForAll(iRelay => iRelay.AddTarget(modelTransform));
     }
 
 }

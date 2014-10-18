@@ -53,18 +53,38 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Finds the normalized average direction toward the provided locations.
+        /// Finds the average vector between myLoc and all otherLocations.
         /// </summary>
-        /// <param name="myLoc">My location.</param>
-        /// <param name="otherLocations">The provided locations.</param>
+        /// <param name="myLoc">My loc.</param>
+        /// <param name="otherLocations">The other locations.</param>
         /// <returns></returns>
-        public static Vector3 FindMeanDirection(this Vector3 myLoc, IEnumerable<Vector3> otherLocations) {
+        public static Vector3 FindMean(this Vector3 myLoc, IEnumerable<Vector3> otherLocations) {
             int length = otherLocations.Count();
             var vectorsToOtherLocations = new List<Vector3>(length);
             foreach (var loc in otherLocations) {
                 vectorsToOtherLocations.Add(loc - myLoc);
             }
-            return UnityUtility.Mean(vectorsToOtherLocations).normalized;
+            return UnityUtility.Mean(vectorsToOtherLocations);
+        }
+
+        /// <summary>
+        /// Finds the normalized average direction from myLoc toward the otherLocations.
+        /// </summary>
+        /// <param name="myLoc">My location.</param>
+        /// <param name="otherLocations">The provided locations.</param>
+        /// <returns></returns>
+        public static Vector3 FindMeanDirection(this Vector3 myLoc, IEnumerable<Vector3> otherLocations) {
+            return myLoc.FindMean(otherLocations).normalized;
+        }
+
+        /// <summary>
+        /// Finds the mean distance between myLoc and all otherLocations.
+        /// </summary>
+        /// <param name="myLoc">My loc.</param>
+        /// <param name="otherLocations">The other locations.</param>
+        /// <returns></returns>
+        public static float FindMeanDistance(this Vector3 myLoc, IEnumerable<Vector3> otherLocations) {
+            return myLoc.FindMean(otherLocations).magnitude;
         }
 
         public static Color ToUnityColor(this GameColor color) {
@@ -110,6 +130,19 @@ namespace CodeEnv.Master.Common {
             Vector3 newPosition = new Vector3(t.position.x, t.position.y, z);
             t.position = newPosition;
         }
+
+        public static Vector3 SetX(this Vector3 v, float x) {
+            return new Vector3(x, v.y, v.z);
+        }
+
+        public static Vector3 SetY(this Vector3 v, float y) {
+            return new Vector3(v.x, y, v.z);
+        }
+
+        public static Vector3 SetZ(this Vector3 v, float z) {
+            return new Vector3(v.x, v.y, z);
+        }
+
     }
 }
 

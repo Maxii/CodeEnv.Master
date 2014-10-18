@@ -53,7 +53,7 @@ public abstract class AItemModel : AMonoBase, IModel, ITarget, IHasData, IDispos
 
     /// <summary>
     /// Called from Awake(), this method initializes the Radius value of this Item along with the
-    /// radius of any dedicated collider.
+    /// radius/size of any colliders that are part of the model.
     /// </summary>
     protected abstract void InitializeRadiiComponents();
 
@@ -117,7 +117,7 @@ public abstract class AItemModel : AMonoBase, IModel, ITarget, IHasData, IDispos
     public Vector3 Position { get { return Data.Position; } }
 
     private float _radius;
-    public float Radius {
+    public virtual float Radius {
         get {
             D.Assert(_radius != Constants.ZeroF);
             return _radius;

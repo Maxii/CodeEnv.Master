@@ -184,7 +184,7 @@ namespace Pathfinding {
             });
             openSpaceWaypoints = openSpaceWaypoints.Union(interiorSectorPoints);
 
-            var universeCenter = Universe.Instance.Folder.GetComponentInChildren<UniverseCenterModel>();
+            var universeCenter = UniverseFolder.Instance.Folder.GetComponentInChildren<UniverseCenterModel>();
             if (universeCenter != null) {
                 var pointsAroundUniverseCenter = UnityUtility.CalcVerticesOfInscribedBoxInsideSphere(universeCenter.Position, universeCenter.ShipOrbitSlot.OuterRadius);
                 openSpaceWaypoints = openSpaceWaypoints.Except(new List<Vector3>() { universeCenter.Position }, UnityUtility.Vector3EqualityComparer);

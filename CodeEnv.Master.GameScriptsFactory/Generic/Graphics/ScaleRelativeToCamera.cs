@@ -20,7 +20,7 @@ using UnityEngine;
 
 /// <summary>
 /// Scales an object relative to the distance to the camera. Gives the appearance of the object size being the same
-/// while the camera moves. Useful for GUI objects attached to game objects. Often useful when combined with CameraFacing.
+/// while the camera moves. Useful for GUI objects attached to game objects. Often useful when combined with Billboard.
 /// 
 ///Usage: Place this script on the gameobject you wish to keep a constant size. Measures the distance from the Camera cameraPlane, 
 ///rather than the camera itself, and uses the initial scale as a basis. Use the public scaleFactor variable to adjust the object size on the screen.
@@ -30,7 +30,7 @@ public class ScaleRelativeToCamera : AMonoBase {
     public Vector3 Scale { get; private set; }
 
     public FrameUpdateFrequency updateRate = FrameUpdateFrequency.Continuous;
-    public float scaleFactor = 1.0f;
+    public float scaleFactor = .001F;
 
     private Vector3 _initialScale;
 
