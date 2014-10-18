@@ -545,7 +545,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
     private void OnCurrentFocusChanged() {
         if (CurrentFocus != null) {
             Transform newFocus = (CurrentFocus as Component).transform;
-            D.Log("New Focus is now {0}.".Inject(newFocus.gameObject.GetSafeMonoBehaviourComponent<AItemModel>().FullName));
+            D.Log("New Focus is now {0}.", newFocus.name);
             SetFocus(newFocus);
         }
         else if (CurrentState != CameraState.Freeform) {

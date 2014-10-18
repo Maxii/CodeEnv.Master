@@ -67,6 +67,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     protected override void Initialize() {
         var reqdPrefabs = RequiredPrefabs.Instance;
         _starPrefabs = reqdPrefabs.stars.Select(s => s.gameObject).ToArray();
+        //_starPrefabs = reqdPrefabs.testStars.Select(s => s.gameObject).ToArray();
         _planetPrefabs = reqdPrefabs.planets;
         _systemPrefab = reqdPrefabs.system;
         _moonPrefabs = reqdPrefabs.moons;
@@ -107,6 +108,20 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
         };
     }
+
+    //public void MakeInstance(StarStat starStat, string systemName, ref StarModelView star) {
+    //    D.Assert(!star.enabled, "{0} should not be enabled.".Inject(star.FullName));
+    //    D.Assert(star.transform.parent != null, "{0} should already have a parent.".Inject(star.FullName));
+    //    D.Assert(starStat.Category == star.category, "{0} {1} should = {2}.".Inject(typeof(StarCategory).Name, starStat.Category.GetName(), star.category.GetName()));
+
+    //    string starName = systemName + Constants.Space + CommonTerms.Star;
+    //    star.Data = new StarData(starStat) {
+    //        Name = starName,
+    //        ParentName = systemName
+    //        // Owners are all initialized to TempGameValues.NoPlayer by AItemData
+    //    };
+    //}
+
 
     /// <summary>
     /// Makes an instance of a Planet based on the stat provided. The returned 

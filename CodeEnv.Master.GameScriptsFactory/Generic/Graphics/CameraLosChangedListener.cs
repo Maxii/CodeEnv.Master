@@ -127,18 +127,18 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
         }
 
         _widget = UnityUtility.ValidateMonoBehaviourPresence<UIWidget>(gameObject);
-        _widget.onChange = CheckInvisibleMesh;
-        CheckInvisibleMesh();
+        _widget.onChange += CheckInvisibleMeshSize;
+        CheckInvisibleMeshSize();
     }
 
     /// <summary>
-    /// Checks to see if a different mesh is needed and if so, provides it. 
+    /// Checks to see if a different mesh is needed to match Widget.size and if so, provides it. 
     /// This is typically called when the Widget's dimensions change.
     /// </summary>
-    private void CheckInvisibleMesh() {
+    private void CheckInvisibleMeshSize() {
         var widgetDimensions = _widget.localSize;
         if (__previousWidgetDimensions == widgetDimensions) {
-            // dimensions haven't changed
+            //D.Log("{0} invisible mesh size {1} check without a widget dimension change.", GetType().Name, widgetDimensions);
             return;
         }
         __previousWidgetDimensions = widgetDimensions;

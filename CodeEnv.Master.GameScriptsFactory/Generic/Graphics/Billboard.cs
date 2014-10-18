@@ -34,7 +34,15 @@ public class Billboard : AMonoBase {
     protected override void Awake() {
         base.Awake();
         UpdateRate = FrameUpdateFrequency.Normal;
+        CheckForUIPanelPresenceInParents();
         enabled = false;
+    }
+
+    private void CheckForUIPanelPresenceInParents() {
+        if (gameObject.GetComponentInParents<UIPanel>() != null) {
+            // changing anything about a widget beneath a UIPanel causes Widget.onChange to be called
+            D.WarnContext("{0} is located beneath a UIPanel.\nConsider locating it above to improve performance.".Inject(GetType().Name), this);
+        }
     }
 
     protected override void Start() {

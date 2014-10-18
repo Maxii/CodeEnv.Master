@@ -158,6 +158,7 @@
     <Compile Include="Game\Graphics\SettlementCmdView_AI.cs" />
     <Compile Include="Game\Graphics\StarbaseCmdView_AI.cs" />
     <Compile Include="Game\Graphics\SphericalHighlight.cs" />
+    <Compile Include="Generic\Deferred\StarModelView.cs" />
     <Compile Include="ThirdParty\MyEnvelopContent.cs" />
     <Compile Include="ThirdParty\MyAStarPointGraph.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

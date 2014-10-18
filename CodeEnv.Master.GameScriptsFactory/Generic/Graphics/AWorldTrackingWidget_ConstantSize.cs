@@ -28,7 +28,8 @@ public abstract class AWorldTrackingWidget_ConstantSize : AWorldTrackingWidget {
 
     protected override void Awake() {
         base.Awake();
-        Widget.gameObject.AddComponent<ScaleRelativeToCamera>();
+        // placing this scaler above the UIPanel keeps Widget.onChange from firing every time the scale changes
+        _billboard.gameObject.AddComponent<ScaleRelativeToCamera>();
     }
 
     protected override float CalcMaxShowDistance(float max) {
