@@ -54,7 +54,9 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Generic\Deferred\AItem.cs" />
+    <Compile Include="Game\Framework\FormationGenerator.cs" />
+    <Compile Include="Generic\Framework\AUnitCommandItem.cs" />
+    <Compile Include="Generic\Framework\AUnitElementItem.cs" />
     <Compile Include="Generic\Graphics\CameraLosChangedListener.cs" />
     <Compile Include="Generic\Graphics\AWorldTrackingWidget.cs" />
     <Compile Include="Generic\Graphics\AWorldTrackingWidget_ConstantSize.cs" />
@@ -158,7 +160,7 @@
     <Compile Include="Game\Graphics\SettlementCmdView_AI.cs" />
     <Compile Include="Game\Graphics\StarbaseCmdView_AI.cs" />
     <Compile Include="Game\Graphics\SphericalHighlight.cs" />
-    <Compile Include="Generic\Deferred\StarItem.cs" />
+    <Compile Include="Game\Framework\StarItem.cs" />
     <Compile Include="ThirdParty\MyEnvelopContent.cs" />
     <Compile Include="ThirdParty\MyAStarPointGraph.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

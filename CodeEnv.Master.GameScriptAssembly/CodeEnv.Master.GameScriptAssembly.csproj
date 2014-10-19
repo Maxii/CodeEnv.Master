@@ -53,13 +53,15 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Framework\APlanetoidItem.cs" />
+    <Compile Include="Game\Framework\AMortalItem.cs" />
+    <Compile Include="Game\Framework\AItem.cs" />
     <Compile Include="Game\Framework\AUnitBaseCmdModel.cs" />
     <Compile Include="Game\Framework\APlanetoidModel.cs" />
     <Compile Include="Generic\Graphics\APlanetoidView.cs" />
     <Compile Include="Game\Framework\ACombatItemModel.cs" />
     <Compile Include="Game\Framework\AOwnedItemModel.cs" />
     <Compile Include="Generic\Framework\ACreator.cs" />
-    <Compile Include="Game\Framework\FormationGenerator.cs" />
     <Compile Include="Generic\Graphics\AFocusableItemView.cs" />
     <Compile Include="Generic\Framework\AUnitCreator.cs" />
     <Compile Include="Generic\Graphics\AMortalItemView.cs" />

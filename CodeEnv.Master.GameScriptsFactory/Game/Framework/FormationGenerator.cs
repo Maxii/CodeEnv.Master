@@ -30,9 +30,9 @@ using UnityEngine;
 public class FormationGenerator {
 
     // NOTE: don't replace with ICommandModel as this will force addition of 2 little used methods to the interface
-    private AUnitCommandModel _unitCmd;
+    private AUnitCommandItem _unitCmd;
 
-    public FormationGenerator(AUnitCommandModel unitCmd) {
+    public FormationGenerator(AUnitCommandItem unitCmd) {
         _unitCmd = unitCmd;
     }
 
@@ -85,7 +85,7 @@ public class FormationGenerator {
     /// <returns>
     ///   <c>true</c> if all elements were successfully positioned without overlap.
     /// </returns>
-    private bool TryPositionRandomWithinSphere(AUnitElementModel hqElement, float radius, AUnitElementModel[] elementsToPositionAroundHQ) {
+    private bool TryPositionRandomWithinSphere(AUnitElementItem hqElement, float radius, AUnitElementItem[] elementsToPositionAroundHQ) {
         IList<Bounds> allElementBounds = new List<Bounds>();
 
         Bounds hqElementBounds = new Bounds();
@@ -100,7 +100,7 @@ public class FormationGenerator {
             bool toEncapsulate = false;
             Vector3 candidateStationOffset = UnityEngine.Random.insideUnitSphere * radius;
             Bounds elementBounds = new Bounds();
-            AUnitElementModel element = elementsToPositionAroundHQ[i];
+            AUnitElementItem element = elementsToPositionAroundHQ[i];
             if (UnityUtility.GetBoundWithChildren(element.Transform, ref elementBounds, ref toEncapsulate)) {
                 elementBounds.center = candidateStationOffset;
                 //D.Log("Bounds = {0}.", elementBounds.ToString());
@@ -137,7 +137,7 @@ public class FormationGenerator {
     /// </summary>
     /// <param name="radius">The radius.</param>
     protected void PositionElementsEquidistantInCircle(float radius) {
-        AUnitElementModel hqElement = _unitCmd.HQElement;
+        AUnitElementItem hqElement = _unitCmd.HQElement;
         _unitCmd.PositionElementInFormation(hqElement, Vector3.zero);
 
         var elementsToPositionInCircle = _unitCmd.Elements.Except(hqElement);

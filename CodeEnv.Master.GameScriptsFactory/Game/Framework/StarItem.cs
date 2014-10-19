@@ -45,23 +45,18 @@ public class StarItem : AItem, IDestinationTarget, IShipOrbitable {
     private Billboard _billboard;
     private IViewable _systemView;
 
+    #region Initialization
 
-    protected override void Awake() {
-        base.Awake();
+    protected override void InitializeLocalReferencesAndValues() {
+        base.InitializeLocalReferencesAndValues();
         circleScaleFactor = 1.0F;
-
-        Subscribe();
     }
 
-    protected override void Start() {
-        base.Start();
-        _systemView = gameObject.GetSafeInterfaceInParents<IViewable>(excludeSelf: true);
-
-        AssessDiscernability(); // needed as FixedIntel gets set early and never changes
+    protected override IIntel InitializePlayerIntel() {
+        return new FixedIntel(IntelCoverage.Comprehensive);
     }
 
-
-    protected override void InitializeRadiiComponents() {
+    protected override void InitializeModelMembers() {
         var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
         Radius = meshRenderer.bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
         collider.isTrigger = false;
@@ -69,6 +64,7 @@ public class StarItem : AItem, IDestinationTarget, IShipOrbitable {
         InitializeShipOrbitSlot();
         InitializeKeepoutZone();
         //D.Log("{0}.Radius set to {1}.", FullName, Radius);
+        D.Assert(category == Data.Category);
     }
 
     private void InitializeShipOrbitSlot() {
@@ -84,11 +80,17 @@ public class StarItem : AItem, IDestinationTarget, IShipOrbitable {
         keepoutZoneCollider.radius = ShipOrbitSlot.InnerRadius;
     }
 
+    protected override void InitializeViewMembers() {
+        base.InitializeViewMembers();
+        _systemView = gameObject.GetSafeInterfaceInParents<IViewable>(excludeSelf: true);
+        AssessDiscernability(); // needed as FixedIntel gets set early and never changes
+    }
+
     protected override IGuiHudPublisher InitializeHudPublisher() {
         return new GuiHudPublisher<StarData>(Data);
     }
 
-    protected override void InitializeVisualMembers() {
+    protected override void InitializeViewMembersOnDiscernible() {
         var meshRenderer = gameObject.GetComponentInImmediateChildren<MeshRenderer>();
         meshRenderer.castShadows = false;
         meshRenderer.receiveShadows = false;
@@ -124,14 +126,8 @@ public class StarItem : AItem, IDestinationTarget, IShipOrbitable {
         cameraLosChgdListener.enabled = true;
     }
 
-    protected override IIntel InitializePlayerIntel() {
-        return new FixedIntel(IntelCoverage.Comprehensive);
-    }
 
-
-    protected override void Initialize() {
-        D.Assert(category == Data.Category);
-    }
+    #endregion
 
     #region Mouse Events
 
@@ -145,6 +141,8 @@ public class StarItem : AItem, IDestinationTarget, IShipOrbitable {
 
     #endregion
 
+    #region View Methods
+
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
         _billboard.enabled = IsDiscernible;
@@ -153,6 +151,9 @@ public class StarItem : AItem, IDestinationTarget, IShipOrbitable {
     protected override void SubscribeToPlayerIntelCoverageChanged() {
         // no reason to subscribe as Coverage does not change
     }
+
+    #endregion
+
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

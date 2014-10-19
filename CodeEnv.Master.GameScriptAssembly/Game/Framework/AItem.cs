@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AItem.cs
-// COMMENT - one line to give a brief idea of what this file does.
+// Abstract base class for all Items.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,14 +18,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// COMMENT 
+/// Abstract base class for all Items.
 /// </summary>
 public abstract class AItem : AMonoBase, IModel, IOwnedTarget, IViewable, ICameraFocusable, IWidgetTrackable, IDisposable {
 
@@ -33,7 +32,7 @@ public abstract class AItem : AMonoBase, IModel, IOwnedTarget, IViewable, ICamer
     public AOwnedItemData Data {
         get { return _data; }
         set {
-            D.Assert(_data == null, "{0}.{1} should only be set once.".Inject(FullName, GetType().Name));
+            if (_data != null) { throw new MethodAccessException("{0}.{1} can only be set once.".Inject(FullName, GetType().Name)); }
             _data = value;
             OnDataChanged();
         }
@@ -61,46 +60,31 @@ public abstract class AItem : AMonoBase, IModel, IOwnedTarget, IViewable, ICamer
     public float circleScaleFactor = 3.0F;
 
     protected IList<IDisposable> _subscribers;
-    protected IGameInputHelper _inputHelper;
-    protected IDynamicObjectsFolder _dynamicObjects;
-    protected ICameraControl _cameraControl;
+    //protected IGameInputHelper _inputHelper;
+    //protected IDynamicObjectsFolder _dynamicObjects;
+    //protected ICameraControl _cameraControl;
     protected bool _isCirclesRadiusDynamic = true;
 
     private HighlightCircle _circles;
-    private bool _isVisualMembersInitialized;
+    private bool _isViewMembersOnDiscernibleInitialized;
 
+
+    #region Initialization
 
     protected override void Awake() {
         base.Awake();
-        InitializeRadiiComponents();
-        PlayerIntel = InitializePlayerIntel();
+
+        InitializeLocalReferencesAndValues();
+        Subscribe();
+        //InitializeRadiiComponents();
+        //PlayerIntel = InitializePlayerIntel();
         enabled = false;
         // Derived classes should call Subscribe() from Awake() after any required references are established
     }
 
-    protected override void Start() {
-        base.Start();
-        Initialize();
-        HudPublisher = InitializeHudPublisher();
-        // use of References cannot occur in Awake
-        _inputHelper = References.InputHelper;
-        _dynamicObjects = References.DynamicObjectsFolder;
-        _cameraControl = References.CameraControl;
+    protected virtual void InitializeLocalReferencesAndValues() {
+        PlayerIntel = InitializePlayerIntel();
     }
-
-    /// <summary>
-    /// Called from Start() within 1 frame of when this Model is enabled. A model's
-    /// Data must be set before being enabled.
-    /// </summary>
-    protected abstract void Initialize();
-
-    protected abstract IGuiHudPublisher InitializeHudPublisher();
-
-    /// <summary>
-    /// Called from Awake(), this method initializes the Radius value of this Item along with the
-    /// radius/size of any colliders that are part of the model.
-    /// </summary>
-    protected abstract void InitializeRadiiComponents();
 
     protected virtual IIntel InitializePlayerIntel() { return new Intel(); }
 
@@ -110,134 +94,48 @@ public abstract class AItem : AMonoBase, IModel, IOwnedTarget, IViewable, ICamer
         // Subscriptions to data value changes should be done with SubscribeToDataValueChanges()
     }
 
-    /// <summary>
-    /// Initializes the visual members of this view.
-    /// </summary>
-    protected abstract void InitializeVisualMembers();
-
-    #region Mouse Events
-
-    protected virtual void OnHover(bool isOver) {
-        if (IsDiscernible && isOver) {
-            ShowHud(true);
-            ShowSphericalHighlight(true);
-            return;
-        }
-        ShowHud(false);
-        ShowSphericalHighlight(false);
-    }
-
-    protected virtual void OnClick() {
-        D.Log("{0}.OnClick() called.", GetType().Name);
-        if (IsDiscernible) {
-            if (_inputHelper.IsLeftMouseButton()) {
-                KeyCode notUsed;
-                if (_inputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftAlt, KeyCode.RightAlt)) {
-                    OnAltLeftClick();
-                }
-                else {
-                    OnLeftClick();
-                }
-            }
-            else if (_inputHelper.IsMiddleMouseButton()) {
-                OnMiddleClick();
-            }
-            else if (_inputHelper.IsRightMouseButton()) {
-                OnRightClick();
-            }
-            else {
-                D.Error("{0}.OnClick() without a mouse button found.", GetType().Name);
-            }
-        }
-    }
-
-    protected virtual void OnLeftClick() { }
-
-    protected virtual void OnAltLeftClick() { }
-
-    protected virtual void OnMiddleClick() {
-        IsFocus = true;
-    }
-
-    protected virtual void OnRightClick() { }
-
-    protected virtual void OnDoubleClick() {
-        if (IsDiscernible && _inputHelper.IsLeftMouseButton()) {
-            OnLeftDoubleClick();
-        }
-    }
-
-    protected virtual void OnLeftDoubleClick() { }
-
-    protected virtual void OnPress(bool isDown) {
-        if (IsDiscernible && _inputHelper.IsRightMouseButton()) {
-            OnRightPress(isDown);
-        }
-    }
-
-    protected virtual void OnRightPress(bool isDown) { }
-
-    #endregion
-
-
-
-
-    protected virtual void OnDataChanged() {
-        Data.Transform = _transform;
-        SubscribeToDataValueChanges();
-    }
-
-    /// <summary>
-    /// Called when either the Item name or parentName is changed.
-    /// </summary>
-    protected virtual void OnNamingChanged() { }
-
-    protected virtual void OnPlayerIntelCoverageChanged() {
-        CustomLogEvent("Coverage = {0}".Inject(PlayerIntel.CurrentCoverage.GetName()));
-        AssessDiscernability();
-        if (HudPublisher.IsHudShowing) {
-            // refresh the HUD as IntelCoverage has changed
-            ShowHud(true);
-        }
-    }
-
-    protected virtual void OnOwnerChanged() {
-        if (onOwnerChanged != null) {
-            onOwnerChanged(this);
-        }
-    }
-
-    protected virtual void OnIsFocusChanged() {
-        if (IsFocus) {
-            _cameraControl.CurrentFocus = this;
-        }
-        AssessHighlighting();
-    }
-
-
-    protected virtual void OnInCameraLOSChanged() {
-        CustomLogEvent("InCameraLOS = {0}".Inject(InCameraLOS));
-        AssessDiscernability();
-    }
-
-    protected virtual void OnIsDiscernibleChanged() {
-        CustomLogEvent("IsDiscernible = {0}".Inject(IsDiscernible));
-        if (!IsDiscernible && HudPublisher.IsHudShowing) {
-            // lost ability to discern this object while showing the HUD so stop showing
-            ShowHud(false);
-        }
-        if (!_isVisualMembersInitialized) {
-            D.Assert(IsDiscernible);    // first time change should always be to true
-            InitializeVisualMembers();
-            _isVisualMembersInitialized = true;
-        }
-        AssessHighlighting();
-    }
-
     protected virtual void SubscribeToPlayerIntelCoverageChanged() {
         _subscribers.Add((PlayerIntel as Intel).SubscribeToPropertyChanged<Intel, IntelCoverage>(pi => pi.CurrentCoverage, OnPlayerIntelCoverageChanged));
     }
 
+    protected override void Start() {
+        base.Start();
+        InitializeModelMembers();
+        InitializeViewMembers();
+        //Initialize();
+        //HudPublisher = InitializeHudPublisher();
+        // use of References cannot occur in Awake
+        //_inputHelper = References.InputHelper;
+        //_dynamicObjects = References.DynamicObjectsFolder;
+        //_cameraControl = References.CameraControl;
+    }
+
+    protected abstract void InitializeModelMembers();
+
+    protected virtual void InitializeViewMembers() {
+        HudPublisher = InitializeHudPublisher();
+    }
+
+    /// <summary>
+    /// Called from Start() within 1 frame of when this Model is enabled. A model's
+    /// Data must be set before being enabled.
+    /// </summary>
+    //protected abstract void Initialize();
+
+    protected abstract IGuiHudPublisher InitializeHudPublisher();
+
+    /// <summary>
+    /// Called from Awake(), this method initializes the Radius value of this Item along with the
+    /// radius/size of any colliders that are part of the model.
+    /// </summary>
+    //protected abstract void InitializeRadiiComponents();
+
+
+
+    /// <summary>
+    /// Initializes the visual members of this view.
+    /// </summary>
+    protected abstract void InitializeViewMembersOnDiscernible();
 
     /// <summary>
     /// Subscribes to changes to values contained in Data. 
@@ -249,15 +147,69 @@ public abstract class AItem : AMonoBase, IModel, IOwnedTarget, IViewable, ICamer
         _subscribers.Add(Data.SubscribeToPropertyChanged<AOwnedItemData, IPlayer>(d => d.Owner, OnOwnerChanged));
     }
 
+    #endregion
 
+
+    #region Model Methods
+
+    protected virtual void OnDataChanged() {
+        Data.Transform = _transform;
+        SubscribeToDataValueChanges();
+    }
+
+    /// <summary>
+    /// Called when either the Item name or parentName is changed.
+    /// </summary>
+    protected virtual void OnNamingChanged() { }
+
+    protected virtual void OnOwnerChanged() {
+        if (onOwnerChanged != null) {
+            onOwnerChanged(this);
+        }
+    }
+
+    #endregion
+
+    #region View Methods
+
+    protected virtual void OnPlayerIntelCoverageChanged() {
+        AssessDiscernability();
+        if (HudPublisher.IsHudShowing) {
+            // refresh the HUD as IntelCoverage has changed
+            ShowHud(true);
+        }
+    }
+
+    protected virtual void OnIsFocusChanged() {
+        if (IsFocus) {
+            References.CameraControl.CurrentFocus = this;
+        }
+        AssessHighlighting();
+    }
+
+
+    protected virtual void OnInCameraLOSChanged() {
+        AssessDiscernability();
+    }
+
+    protected virtual void OnIsDiscernibleChanged() {
+        if (!IsDiscernible && HudPublisher.IsHudShowing) {
+            // lost ability to discern this object while showing the HUD so stop showing
+            ShowHud(false);
+        }
+        if (!_isViewMembersOnDiscernibleInitialized) {
+            D.Assert(IsDiscernible);    // first time change should always be to true
+            InitializeViewMembersOnDiscernible();
+            _isViewMembersOnDiscernibleInitialized = true;
+        }
+        AssessHighlighting();
+    }
 
     public virtual void AssessDiscernability() {
-        CustomLogEvent();
         IsDiscernible = InCameraLOS && PlayerIntel.CurrentCoverage != IntelCoverage.None;
     }
 
     public void ShowHud(bool toShow) {
-        //if (!enabled) { return; }
         D.Log("HudPublisher.Show() called from {0}.", _transform.name);
         HudPublisher.ShowHud(toShow, PlayerIntel, _transform.position);
     }
@@ -330,20 +282,75 @@ public abstract class AItem : AMonoBase, IModel, IOwnedTarget, IViewable, ICamer
         return Screen.height * circleScaleFactor * Radius;
     }
 
+    #endregion
 
+    #region Mouse Events
 
-
-
-    #region Debug
-
-    [System.Diagnostics.Conditional("DEBUG_LOG")]
-    private void CustomLogEvent(string arg = "") { // custom for this base method as parents don't always exist
-        System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
-        string parentName = _transform.parent != null ? _transform.parent.name : "(no parent)";
-        D.Log("{0}.{1}.{2}.{3}() called. {4}.".Inject(parentName, _transform.name, GetType().Name, stackFrame.GetMethod().Name, arg));
+    protected virtual void OnHover(bool isOver) {
+        if (IsDiscernible && isOver) {
+            ShowHud(true);
+            ShowSphericalHighlight(true);
+            return;
+        }
+        ShowHud(false);
+        ShowSphericalHighlight(false);
     }
 
+    protected virtual void OnClick() {
+        D.Log("{0}.OnClick() called.", GetType().Name);
+        if (IsDiscernible) {
+            var inputHelper = References.InputHelper;
+            if (inputHelper.IsLeftMouseButton()) {
+                KeyCode notUsed;
+                if (inputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftAlt, KeyCode.RightAlt)) {
+                    OnAltLeftClick();
+                }
+                else {
+                    OnLeftClick();
+                }
+            }
+            else if (inputHelper.IsMiddleMouseButton()) {
+                OnMiddleClick();
+            }
+            else if (inputHelper.IsRightMouseButton()) {
+                OnRightClick();
+            }
+            else {
+                D.Error("{0}.OnClick() without a mouse button found.", GetType().Name);
+            }
+        }
+    }
+
+    protected virtual void OnLeftClick() { }
+
+    protected virtual void OnAltLeftClick() { }
+
+    protected virtual void OnMiddleClick() {
+        IsFocus = true;
+    }
+
+    protected virtual void OnRightClick() { }
+
+    protected virtual void OnDoubleClick() {
+        if (IsDiscernible && References.InputHelper.IsLeftMouseButton()) {
+            OnLeftDoubleClick();
+        }
+    }
+
+    protected virtual void OnLeftDoubleClick() { }
+
+    protected virtual void OnPress(bool isDown) {
+        if (IsDiscernible && References.InputHelper.IsRightMouseButton()) {
+            OnRightPress(isDown);
+        }
+    }
+
+    protected virtual void OnRightPress(bool isDown) { }
+
     #endregion
+
+
+    #region Cleanup
 
     protected override void OnDestroy() {
         base.OnDestroy();
@@ -366,11 +373,11 @@ public abstract class AItem : AMonoBase, IModel, IOwnedTarget, IViewable, ICamer
         }
     }
 
-
+    #endregion
 
     #region ICameraTargetable Members
 
-    public virtual bool IsEligible { get { return true; } }
+    public virtual bool IsEligible { get { return PlayerIntel.CurrentCoverage != IntelCoverage.None; } }
 
     public abstract float MinimumCameraViewingDistance { get; }
 
