@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AItemModelView.cs
+// File: AItem.cs
 // COMMENT - one line to give a brief idea of what this file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// COMMENT 
 /// </summary>
-public abstract class AItemModelView : AMonoBase, IModel, IOwnedTarget, IViewable, ICameraFocusable, IWidgetTrackable, IDisposable {
+public abstract class AItem : AMonoBase, IModel, IOwnedTarget, IViewable, ICameraFocusable, IWidgetTrackable, IDisposable {
 
     private AOwnedItemData _data;
     public AOwnedItemData Data {

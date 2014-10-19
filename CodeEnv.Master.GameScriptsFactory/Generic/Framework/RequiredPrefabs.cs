@@ -75,8 +75,7 @@ public class RequiredPrefabs : AMonoBaseSingleton<RequiredPrefabs> {
     public FacilityModel[] facilities;
 
     public SystemModel system;   // without the star and settlement
-    public StarModel[] stars;
-    //public StarModelView[] testStars;
+    public StarItem[] stars;
     public PlanetModel[] planets;   // no bundled moons or orbiters
     public MoonModel[] moons;       // no orbiters
 

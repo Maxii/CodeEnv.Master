@@ -88,8 +88,7 @@ public class SystemCreator : AMonoBase, IDisposable {
     private IList<PlanetoidStat> _moonStats;
 
     private SystemModel _system;
-    private StarModel _star;
-    //private StarModelView _star;
+    private StarItem _star;
     private IList<PlanetModel> _planets;
     private IList<MoonModel> _moons;
 
@@ -181,29 +180,29 @@ public class SystemCreator : AMonoBase, IDisposable {
         _moonStats = CreateMoonStats();
     }
 
-    private StarStat CreateStarStat() {
-        LogEvent();
-        StarCategory category;
-        if (isCompositionPreset) {
-            category = gameObject.GetSafeMonoBehaviourComponentInChildren<StarModel>().category;
-        }
-        else {
-            category = Enums<StarCategory>.GetRandom(excludeDefault: true);
-        }
-        return new StarStat(category, 100, new OpeYield(0F, 0F, 100F), new XYield(XResource.Special_3, 0.3F));
-    }
-
     //private StarStat CreateStarStat() {
     //    LogEvent();
     //    StarCategory category;
     //    if (isCompositionPreset) {
-    //        category = gameObject.GetSafeMonoBehaviourComponentInChildren<StarModelView>().category;
+    //        category = gameObject.GetSafeMonoBehaviourComponentInChildren<StarModel>().category;
     //    }
     //    else {
     //        category = Enums<StarCategory>.GetRandom(excludeDefault: true);
     //    }
     //    return new StarStat(category, 100, new OpeYield(0F, 0F, 100F), new XYield(XResource.Special_3, 0.3F));
     //}
+
+    private StarStat CreateStarStat() {
+        LogEvent();
+        StarCategory category;
+        if (isCompositionPreset) {
+            category = gameObject.GetSafeMonoBehaviourComponentInChildren<StarItem>().category;
+        }
+        else {
+            category = Enums<StarCategory>.GetRandom(excludeDefault: true);
+        }
+        return new StarStat(category, 100, new OpeYield(0F, 0F, 100F), new XYield(XResource.Special_3, 0.3F));
+    }
 
 
     private IList<PlanetoidStat> CreatePlanetStats() {
@@ -281,25 +280,13 @@ public class SystemCreator : AMonoBase, IDisposable {
     private void MakeStar() {
         LogEvent();
         if (isCompositionPreset) {
-            _star = gameObject.GetSafeMonoBehaviourComponentInChildren<StarModel>();
+            _star = gameObject.GetSafeMonoBehaviourComponentInChildren<StarItem>();
             _factory.MakeInstance(_starStat, SystemName, ref _star);
         }
         else {
             _star = _factory.MakeInstance(_starStat, _system);
         }
     }
-
-    //private void MakeStar() {
-    //    LogEvent();
-    //    if (isCompositionPreset) {
-    //        _star = gameObject.GetSafeMonoBehaviourComponentInChildren<StarModelView>();
-    //        _factory.MakeInstance(_starStat, SystemName, ref _star);
-    //    }
-    //    //else {
-    //    //    _star = _factory.MakeInstance(_starStat, _system);
-    //    //}
-    //}
-
 
     /// <summary>
     /// Makes the planets including assigning their Data component derived from the appropriate stat.
@@ -530,31 +517,12 @@ public class SystemCreator : AMonoBase, IDisposable {
         _planets.ForAll(p => p.gameObject.GetSafeMonoBehaviourComponent<AItemView>().enabled = true);
         _moons.ForAll(m => m.gameObject.GetSafeMonoBehaviourComponent<AItemView>().enabled = true);
         _system.gameObject.GetSafeMonoBehaviourComponent<AItemView>().enabled = true;
-        _star.gameObject.GetSafeMonoBehaviourComponent<AItemView>().enabled = true;
         UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
             if (onCompletion != null) {
                 onCompletion();
             }
         });
     }
-
-    //private void EnableSystem(Action onCompletion = null) {
-    //    LogEvent();
-    //    _planets.ForAll(p => p.enabled = true);
-    //    _moons.ForAll(m => m.enabled = true);
-    //    _system.enabled = true;
-    //    _star.enabled = true;
-    //    // Enable the Views of the Models 
-    //    _planets.ForAll(p => p.gameObject.GetSafeMonoBehaviourComponent<AItemView>().enabled = true);
-    //    _moons.ForAll(m => m.gameObject.GetSafeMonoBehaviourComponent<AItemView>().enabled = true);
-    //    _system.gameObject.GetSafeMonoBehaviourComponent<AItemView>().enabled = true;
-    //    //_star.gameObject.GetSafeMonoBehaviourComponent<AItemView>().enabled = true;
-    //    UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
-    //        if (onCompletion != null) {
-    //            onCompletion();
-    //        }
-    //    });
-    //}
 
 
     /// <summary>

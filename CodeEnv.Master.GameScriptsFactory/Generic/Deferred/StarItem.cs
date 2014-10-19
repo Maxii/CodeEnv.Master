@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: StarModelView.cs
+// File: StarItem.cs
 // COMMENT - one line to give a brief idea of what this file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// COMMENT 
 /// </summary>
-public class StarModelView : AItemModelView, IDestinationTarget, IShipOrbitable {
+public class StarItem : AItem, IDestinationTarget, IShipOrbitable {
 
 
     private static LayerMask _starLightCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
