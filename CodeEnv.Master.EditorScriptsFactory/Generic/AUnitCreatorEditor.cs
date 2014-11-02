@@ -54,6 +54,8 @@ public abstract class AUnitCreatorEditor<T> : Editor where T : ACreator {
 
         creator.weaponsPerElement = EditorGUILayout.IntSlider("Number of Weapons per element", creator.weaponsPerElement, 1, 5);
 
+        creator.toCycleIntelCoverage = GUILayout.Toggle(creator.toCycleIntelCoverage, "Cycle Intel Coverage");
+
         if (GUI.changed) {
             EditorUtility.SetDirty(target);
         }

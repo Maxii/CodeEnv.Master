@@ -41,11 +41,19 @@ public class GuiFocusedReadout : AGuiLabelReadoutBase {
     }
 
     private void Subscribe() {
-        if (_subscribers == null) {
-            _subscribers = new List<IDisposable>();
-        }
+        _subscribers = new List<IDisposable>();
+        _subscribers.Add(CameraControl.Instance.SubscribeToPropertyChanging<CameraControl, ICameraFocusable>(cc => cc.CurrentFocus, OnFocusChanging));
         _subscribers.Add(CameraControl.Instance.SubscribeToPropertyChanged<CameraControl, ICameraFocusable>(cc => cc.CurrentFocus, OnFocusChanged));
-        _eventMgr.AddListener<MortalItemDeathEvent>(this, OnMortalItemDeath);
+    }
+
+    private void OnFocusChanging(ICameraFocusable newFocus) {
+        var previousFocus = CameraControl.Instance.CurrentFocus;
+        if (previousFocus != null && previousFocus.IsRetainedFocusEligible) {
+            var previousMortalFocus = previousFocus as IMortalItem;
+            if (previousMortalFocus != null) {
+                previousMortalFocus.onDeathOneShot -= OnRetainedFocusDeath;
+            }
+        }
     }
 
     private void OnFocusChanged() {
@@ -56,27 +64,18 @@ public class GuiFocusedReadout : AGuiLabelReadoutBase {
     private void TryRetainingFocus(ICameraFocusable focus) {
         if (focus != null && focus.IsRetainedFocusEligible) {
             _retainedFocus = focus;
-            AItemModel itemWithData = (focus as Component).gameObject.GetSafeMonoBehaviourComponent<AItemModel>();
-            string focusName = "No Data";
-            if (itemWithData != null) {
-                focusName = itemWithData.Data.Name;
+            var mortalFocus = focus as IMortalItem;
+            if (mortalFocus != null) {
+                mortalFocus.onDeathOneShot += OnRetainedFocusDeath;
             }
-            RefreshReadout(focusName);
+            RefreshReadout(focus.Transform.name);
         }
     }
 
-    private void OnMortalItemDeath(MortalItemDeathEvent e) {
-        ICameraFocusable focusable = e.Source as ICameraFocusable;
-        CheckForRetainedFocusDeath(focusable);
-    }
-
-    private void CheckForRetainedFocusDeath(ICameraFocusable focusable) {
-        if (focusable != null && focusable.IsRetainedFocusEligible) {
-            if (focusable == _retainedFocus) {
-                RefreshReadout(string.Empty);
-                _retainedFocus = null;
-            }
-        }
+    private void OnRetainedFocusDeath(IMortalItem mortalItem) {
+        D.Assert(mortalItem as ICameraFocusable == _retainedFocus);
+        RefreshReadout(string.Empty);
+        _retainedFocus = null;
     }
 
     void OnClick() {
@@ -91,15 +90,24 @@ public class GuiFocusedReadout : AGuiLabelReadoutBase {
         }
     }
 
-    private void Unsubscribe() {
-        _subscribers.ForAll(s => s.Dispose());
-        _subscribers.Clear();
-        _eventMgr.RemoveListener<MortalItemDeathEvent>(this, OnMortalItemDeath);
-    }
-
     protected override void OnDestroy() {
         base.OnDestroy();
         Dispose();
+    }
+
+    private void Cleanup() {
+        Unsubscribe();
+    }
+
+    private void Unsubscribe() {
+        _subscribers.ForAll(s => s.Dispose());
+        _subscribers.Clear();
+        if (_retainedFocus != null) {
+            var mortalRetainedFocus = _retainedFocus as IMortalItem;
+            if (mortalRetainedFocus != null) {
+                mortalRetainedFocus.onDeathOneShot -= OnRetainedFocusDeath;
+            }
+        }
     }
 
     public override string ToString() {
@@ -131,7 +139,7 @@ public class GuiFocusedReadout : AGuiLabelReadoutBase {
 
         if (isDisposing) {
             // free managed resources here including unhooking events
-            Unsubscribe();
+            Cleanup();
         }
         // free unmanaged resources here
 
@@ -148,8 +156,6 @@ public class GuiFocusedReadout : AGuiLabelReadoutBase {
     //    // method content here
     //}
     #endregion
-
-
 
 }
 

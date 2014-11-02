@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: BaseOrder.cs
-// Generic order for a Base - Settlement or Starbase.
+// Order for a Base - Settlement or Starbase.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,15 +19,15 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Generic order for a Base - Settlement or Starbase.
+    /// Order for a Base - Settlement or Starbase.
     /// </summary>
-    public class BaseOrder<T> where T : struct {
+    public class BaseOrder {
 
-        public IMortalTarget Target { get; private set; }
+        public IUnitTarget Target { get; private set; }
 
-        public T Directive { get; private set; }
+        public BaseDirective Directive { get; private set; }
 
-        public BaseOrder(T directive, IMortalTarget target) {
+        public BaseOrder(BaseDirective directive, IUnitTarget target = null) {
             Directive = directive;
             Target = target;
         }

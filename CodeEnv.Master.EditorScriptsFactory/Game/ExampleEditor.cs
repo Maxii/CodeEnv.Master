@@ -17,6 +17,6 @@ using UnityEditor;
 /// <summary>
 /// Example Custom Editor using EditorBase class.
 /// </summary>
-[CustomEditor(typeof(UniverseCenterModel))]
-public class ExampleEditor : AEditorBase<UniverseCenterModel> { }
+[CustomEditor(typeof(UniverseCenterItem))]
+public class ExampleEditor : AEditorBase<UniverseCenterItem> { }
 

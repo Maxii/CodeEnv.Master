@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsActive { get; set; }
 
-        bool IsHuman { get; }
+        bool IsPlayer { get; }
 
         IQ IQ { get; }
 
@@ -39,7 +39,15 @@ namespace CodeEnv.Master.GameContent {
 
         void SetRelations(IPlayer player, DiplomaticRelations relation);
 
-        bool IsRelationship(IPlayer player, DiplomaticRelations relation);
+        //bool IsRelationship(IPlayer player, DiplomaticRelations relation);
+
+        /// <summary>
+        /// Determines whether the relationship between the two players is any of <c>relations</c>.
+        /// </summary>
+        /// <param name="player">The player.</param>
+        /// <param name="relations">The relations.</param>
+        /// <returns></returns>
+        bool IsRelationship(IPlayer player, params DiplomaticRelations[] relations);
 
         /// <summary>
         /// Indicates whether the designated player is the enemy of this player.

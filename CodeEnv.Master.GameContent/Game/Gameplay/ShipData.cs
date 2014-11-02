@@ -85,10 +85,7 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipCategory Category { get; private set; }
 
-        /// <summary>
-        /// The station in the formation this ship is currently assigned too.
-        /// </summary>
-        public IFormationStation FormationStation { get; set; }
+        // FormationStation moved to ShipItem as it had no apparent value residing in data
 
         public ShipCombatStance CombatStance { get; set; }  // TODO not currently used
 

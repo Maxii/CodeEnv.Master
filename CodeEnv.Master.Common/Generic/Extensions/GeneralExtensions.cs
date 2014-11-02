@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GenericExtensions.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// General purpose Extensions. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -25,7 +25,7 @@ namespace CodeEnv.Master.Common {
     using System.Text;
 
     /// <summary>
-    /// COMMENT 
+    /// General purpose Extensions. 
     /// </summary>
     public static class GeneralExtensions {
 
@@ -38,9 +38,13 @@ namespace CodeEnv.Master.Common {
         /// <param name="source">The source calling the Extension method.</param>
         /// <param name="itemsToCompare">The array of items to compare to the source.</param>
         /// <returns></returns>
+        /// <exception cref="System.ArgumentException">Source argument cannot be IEnumerable.</exception>
         /// <exception cref="System.ArgumentNullException">source</exception>
         public static bool EqualsAnyOf<T>(this T source, params T[] itemsToCompare) {
             //  'this' source can never be null without the CLR throwing a Null reference exception
+            if (source is IEnumerable<T>) {
+                throw new ArgumentException("Source argument cannot be IEnumerable.");
+            }
             Arguments.ValidateNotNullOrEmpty(itemsToCompare);
             return itemsToCompare.Contains<T>(source);
         }
@@ -222,6 +226,32 @@ namespace CodeEnv.Master.Common {
             for (int i = 0; i < array.Length; i++) {
                 array[i] = value;
             }
+        }
+
+        /// <summary>
+        /// Returns the next item in the list that follows <c>item</c>. If <c>item</c> is not 
+        /// present or the last item in the list, the first item in the list is returned. Warns if the
+        /// result is the default value of T, aka null, 0, 0.0, etc.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="list">The list.</param>
+        /// <param name="item">The item.</param>
+        /// <returns></returns>
+        public static T Next<T>(this IList<T> list, T item) {
+            Arguments.ValidateNotNullOrEmpty<T>(list);
+            T result = default(T);
+            var nextIndex = list.IndexOf(item) + 1;
+            if (nextIndex == list.Count) {
+                result = list[0];
+            }
+            else {
+                result = list[nextIndex];
+            }
+            if (result.Equals(default(T))) {
+                string msg = result == null ? "null" : result.ToString();
+                D.Warn("Next result {0} is default of {1}.", msg, typeof(T).Name);
+            }
+            return result;
         }
 
         #region Generic INotifyPropertyChanged, INotifyPropertyChanging Extensions

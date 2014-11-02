@@ -114,7 +114,7 @@ public class SphericalHighlight : AMonoBaseSingleton<SphericalHighlight>, ISpher
 
     private void Cleanup() {
         // other cleanup here including any tracking Gui2D elements
-        UnityUtility.ExecuteIfNotNullOrDestroyed(_trackingLabel, Destroy);
+        UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
     }
 
     public override string ToString() {

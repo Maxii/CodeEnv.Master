@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: WeaponRangeMonitor.cs
-// Maintains a list of all IMortalTargets within a specified range of this trigger collider object and generates
+// Maintains a list of all MortalItems within a specified range of this monitor and generates
 //  an event when the first or last enemy target enters/exits the range.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -24,11 +24,11 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-///  Maintains a list of all IMortalTargets within a specified range of this trigger collider object and generates
+///  Maintains a list of all MortalItems within a specified range of this monitor and generates
 ///  an event when the first or last enemy target enters/exits the range.
 /// TODO Account for a diploRelations change with an owner
 /// </summary>
-public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
+public class WeaponRangeMonitor : AMonoBase {
 
     public Guid ID { get; private set; }
 
@@ -50,8 +50,8 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
 
     public string ParentFullName { get; set; }
 
-    public IList<IMortalTarget> EnemyTargets { get; private set; }
-    public IList<IMortalTarget> AllTargets { get; private set; }
+    public IList<AMortalItem> EnemyTargets { get; private set; }
+    public IList<AMortalItem> AllTargets { get; private set; }
 
     private static HashSet<Collider> _collidersToIgnore = new HashSet<Collider>();
 
@@ -63,8 +63,8 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
         _collider.isTrigger = true;
         _collider.radius = Constants.ZeroF;  // initialize to same value as Range
 
-        AllTargets = new List<IMortalTarget>();
-        EnemyTargets = new List<IMortalTarget>();
+        AllTargets = new List<AMortalItem>();
+        EnemyTargets = new List<AMortalItem>();
         ID = Guid.NewGuid();
         RangeSpan = new Range<float>(Constants.ZeroF, Constants.ZeroF);
         enabled = false;
@@ -81,13 +81,13 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
             return;
         }
 
-        IMortalTarget target = other.gameObject.GetInterface<IMortalTarget>();
+        var target = other.gameObject.GetInterface<IElementTarget>();
         if (target == null) {
             _collidersToIgnore.Add(other);
             //D.Log("{0}.{1} now ignoring Collider {2}.", ParentFullName, GetType().Name, other.name);
             return;
         }
-        Add(target);
+        Add(target as AMortalItem);
     }
 
     void OnTriggerExit(Collider other) {
@@ -101,14 +101,14 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
             return;
         }
 
-        IMortalTarget target = other.gameObject.GetInterface<IMortalTarget>();
+        var target = other.gameObject.GetInterface<IElementTarget>();
         if (target != null) {
-            Remove(target);
+            Remove(target as AMortalItem);
         }
     }
 
-    private void OnTargetOwnerChanged(IOwnedTarget target) {
-        var _target = target as IMortalTarget;
+    private void OnTargetOwnerChanged(IItem target) {
+        var _target = target as AMortalItem;
         if (Owner.IsEnemyOf(_target.Owner)) {
             if (!EnemyTargets.Contains(_target)) {
                 AddEnemyTarget(_target);
@@ -152,15 +152,15 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
         }
     }
 
-    private void OnTargetDeath(IMortalTarget target) {
-        Remove(target);
+    private void OnTargetDeath(IMortalItem target) {
+        Remove(target as AMortalItem);
     }
 
-    private void Add(IMortalTarget target) {
+    private void Add(AMortalItem target) {
         if (!AllTargets.Contains(target)) {
             if (target.IsAlive) {
                 //D.Log("{0}.{1} now tracking target {2}.", ParentFullName, GetType().Name, target.FullName);
-                target.onTargetDeathOneShot += OnTargetDeath;
+                target.onDeathOneShot += OnTargetDeath;
                 target.onOwnerChanged += OnTargetOwnerChanged;
                 AllTargets.Add(target);
             }
@@ -177,7 +177,7 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
         }
     }
 
-    private void AddEnemyTarget(IMortalTarget enemyTarget) {
+    private void AddEnemyTarget(AMortalItem enemyTarget) {
         D.Log("{0}.{1}({2:0.00}) now tracking Enemy {3} at distance {4}.",
          ParentFullName, GetType().Name, Range, enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
         if (EnemyTargets.Count == 0) {
@@ -186,11 +186,11 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
         EnemyTargets.Add(enemyTarget);
     }
 
-    private void Remove(IMortalTarget target) {
+    private void Remove(AMortalItem target) {
         bool isRemoved = AllTargets.Remove(target);
         if (isRemoved) {
             //D.Log("{0}.{1} no longer tracking target {2} at distance = {3}.", ParentFullName, GetType().Name, target.FullName, Vector3.Distance(target.Position, _transform.position));
-            target.onTargetDeathOneShot -= OnTargetDeath;
+            target.onDeathOneShot -= OnTargetDeath;
             target.onOwnerChanged -= OnTargetOwnerChanged;
         }
         else {
@@ -199,7 +199,7 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
         RemoveEnemyTarget(target);
     }
 
-    private void RemoveEnemyTarget(IMortalTarget enemyTarget) {
+    private void RemoveEnemyTarget(AMortalItem enemyTarget) {
         if (EnemyTargets.Remove(enemyTarget)) {
             D.Log("{0}.{1} no longer tracking Enemy {2} at distance = {3}.", ParentFullName, GetType().Name, enemyTarget.FullName, Vector3.Distance(enemyTarget.Position, _transform.position));
             if (EnemyTargets.Count == 0) {
@@ -222,12 +222,12 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
         }
     }
 
-    public bool __TryGetRandomEnemyTarget(out IMortalTarget enemyTarget) {
+    public bool __TryGetRandomEnemyTarget(out IElementTarget enemyTarget) {
         bool result = false;
         enemyTarget = null;
         if (EnemyTargets.Count > 0) {
             result = true;
-            enemyTarget = RandomExtended<IMortalTarget>.Choice(EnemyTargets);
+            enemyTarget = RandomExtended<AMortalItem>.Choice(EnemyTargets) as IElementTarget;
         }
         return result;
     }

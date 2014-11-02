@@ -77,8 +77,8 @@ namespace CodeEnv.Master.GameContent {
 
         #region Max Radius values for setting culling distances
 
-        // Note on MaxRadius values. Use of a static dynamically generated MaxRadius on each Model type works, but it only gets populated 
-        // when a model is built. Some models like ships and facilities may not be built until runtime so the max value is zero. As CameraControl 
+        // Note on MaxRadius values. Use of a static dynamically generated MaxRadius on each Item type works, but it only gets populated 
+        // when a item is built. Some items like ships and facilities may not be built until runtime so the max value is zero. As CameraControl 
         // needs these values during startup to set the layer culling distances, I had to return to these values for now.
 
         public const float StarMaxRadius = 10F;    // 10 x 300(factor) = 3000(cullingDistance)

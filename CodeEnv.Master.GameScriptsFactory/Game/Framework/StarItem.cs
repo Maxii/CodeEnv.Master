@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: StarItem.cs
-// COMMENT - one line to give a brief idea of what this file does.
+// Item class for Stars.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,18 +17,14 @@
 // default namespace
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// COMMENT 
+/// Item class for Stars.
 /// </summary>
 public class StarItem : AItem, IDestinationTarget, IShipOrbitable {
-
 
     private static LayerMask _starLightCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
     Layers.Ship, Layers.Facility, Layers.Planetoid, Layers.Star);
@@ -43,20 +39,14 @@ public class StarItem : AItem, IDestinationTarget, IShipOrbitable {
     public float optimalCameraViewDistanceMultiplier = 8F;
 
     private Billboard _billboard;
-    private IViewable _systemView;
+    private SystemItem _system;
+    private StarCtxControl _ctxControl;
 
     #region Initialization
 
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
         circleScaleFactor = 1.0F;
-    }
-
-    protected override IIntel InitializePlayerIntel() {
-        return new FixedIntel(IntelCoverage.Comprehensive);
-    }
-
-    protected override void InitializeModelMembers() {
         var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
         Radius = meshRenderer.bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
         collider.isTrigger = false;
@@ -64,7 +54,10 @@ public class StarItem : AItem, IDestinationTarget, IShipOrbitable {
         InitializeShipOrbitSlot();
         InitializeKeepoutZone();
         //D.Log("{0}.Radius set to {1}.", FullName, Radius);
-        D.Assert(category == Data.Category);
+    }
+
+    protected override IIntel InitializePlayerIntel() {
+        return new FixedIntel(IntelCoverage.Comprehensive);
     }
 
     private void InitializeShipOrbitSlot() {
@@ -80,9 +73,13 @@ public class StarItem : AItem, IDestinationTarget, IShipOrbitable {
         keepoutZoneCollider.radius = ShipOrbitSlot.InnerRadius;
     }
 
+    protected override void InitializeModelMembers() {
+        D.Assert(category == Data.Category);
+    }
+
     protected override void InitializeViewMembers() {
         base.InitializeViewMembers();
-        _systemView = gameObject.GetSafeInterfaceInParents<IViewable>(excludeSelf: true);
+        _system = gameObject.GetSafeMonoBehaviourComponentInParents<SystemItem>();
         AssessDiscernability(); // needed as FixedIntel gets set early and never changes
     }
 
@@ -91,6 +88,8 @@ public class StarItem : AItem, IDestinationTarget, IShipOrbitable {
     }
 
     protected override void InitializeViewMembersOnDiscernible() {
+        InitializeContextMenu(Owner);
+
         var meshRenderer = gameObject.GetComponentInImmediateChildren<MeshRenderer>();
         meshRenderer.castShadows = false;
         meshRenderer.receiveShadows = false;
@@ -117,8 +116,8 @@ public class StarItem : AItem, IDestinationTarget, IShipOrbitable {
         animation.enabled = true;
         // TODO animation settings and distance controls
 
-        var revolvers = gameObject.GetSafeMonoBehaviourComponentsInChildren<Revolver>();
-        revolvers.ForAll(r => r.enabled = true);
+        // var revolvers = gameObject.GetSafeMonoBehaviourComponentsInChildren<Revolver>();
+        // revolvers.ForAll(r => r.axisOfRotation = new Vector3(Constants.Zero, Constants.One, Constants.Zero));
         // TODO Revolver settings and distance controls, Revolvers control their own enabled state based on visibility
 
         var cameraLosChgdListener = gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLosChangedListener>();
@@ -126,17 +125,17 @@ public class StarItem : AItem, IDestinationTarget, IShipOrbitable {
         cameraLosChgdListener.enabled = true;
     }
 
+    private void InitializeContextMenu(IPlayer owner) {
+        _ctxControl = new StarCtxControl(this);
+    }
 
     #endregion
 
-    #region Mouse Events
+    #region Model Methods
 
-    protected override void OnLeftClick() {
-        base.OnLeftClick();
-        if (_systemView.IsDiscernible) {
-            (_systemView as ISelectable).IsSelected = true;
-        }
-
+    protected override void OnOwnerChanging(IPlayer newOwner) {
+        base.OnOwnerChanging(newOwner);
+        // there is only 1 type of ContextMenu for Stars so no need to generate a new one
     }
 
     #endregion
@@ -154,6 +153,24 @@ public class StarItem : AItem, IDestinationTarget, IShipOrbitable {
 
     #endregion
 
+    #region Mouse Events
+
+    protected override void OnLeftClick() {
+        base.OnLeftClick();
+        if (_system.IsDiscernible) {
+            _system.IsSelected = true;
+        }
+    }
+
+    protected override void OnRightPress(bool isDown) {
+        base.OnRightPress(isDown);
+        if (_ctxControl != null && !isDown && !GameInput.Instance.IsDragging) {
+            // right press release while not dragging means both press and release were over this object
+            _ctxControl.OnRightPressRelease();
+        }
+    }
+
+    #endregion
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
@@ -161,7 +178,7 @@ public class StarItem : AItem, IDestinationTarget, IShipOrbitable {
 
     #region IDestinationTarget Members
 
-    public SpaceTopography Topography { get { return Data.Topography; } }
+    public override bool IsMobile { get { return false; } }
 
     #endregion
 

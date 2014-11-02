@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// All the data associated with a particular system.
     /// </summary>
-    public class SystemData : AOwnedItemData, IDisposable {
+    public class SystemData : AItemData, IDisposable {
 
         public Index3D SectorIndex { get; private set; }
 

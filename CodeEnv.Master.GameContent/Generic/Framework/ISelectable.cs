@@ -26,6 +26,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         bool IsSelected { get; set; }
 
+        string FullName { get; }
+
     }
 }
 

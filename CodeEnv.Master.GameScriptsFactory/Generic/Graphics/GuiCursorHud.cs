@@ -28,7 +28,6 @@ using UnityEngine;
 /// </summary>
 public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud, IDisposable {
 
-
     /// <summary>
     /// The location in ViewPort space (0-1.0, 0-1.0) of the transform of this Hud.
     /// </summary>

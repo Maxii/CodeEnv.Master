@@ -17,6 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using CodeEnv.Master.Common;
+    using UnityEngine;
 
     /// <summary>
     ///  Interface used by Presenters to communicate with their associated Views.
@@ -24,18 +25,17 @@ namespace CodeEnv.Master.GameContent {
     public interface IViewable {
 
         /// <summary>
+        /// Readonly. Indicates whether this view is discernible by the human player.
+        /// </summary>
+        bool IsDiscernible { get; }
+
+        /// <summary>
         /// Provides the ability to update the text for the GuiCursorHud. Can be null if there
         /// is no data for the GuiCursorHud to show for this item.
         /// </summary>
         IGuiHudPublisher HudPublisher { get; set; }
 
-        IntelLevel PlayerIntelLevel { get; set; }
-
-        /// <summary>
-        /// The radius in units of the conceptual 'globe' that
-        /// encompasses this gameObject.
-        /// </summary>
-        float Radius { get; }
+        IIntel PlayerIntel { get; }
 
     }
 }

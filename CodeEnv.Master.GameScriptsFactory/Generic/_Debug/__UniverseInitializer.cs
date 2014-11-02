@@ -18,18 +18,15 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
-using UnityEngine;
 
 /// <summary>
 /// Initializes Data for all items in the universe.
 /// </summary>
 public class __UniverseInitializer : AMonoBase, IDisposable {
 
-    private UniverseCenterModel _universeCenter;
+    private UniverseCenterItem _universeCenter;
 
     private GameManager _gameMgr;
     private IList<IDisposable> _subscribers;
@@ -58,12 +55,11 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
     }
 
     private void InitializeUniverseCenter() {
-        _universeCenter = gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterModel>();
+        _universeCenter = gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterItem>();
         if (_universeCenter != null) {
             UniverseCenterData data = new UniverseCenterData("UniverseCenter");
             _universeCenter.Data = data;
             _universeCenter.enabled = true;
-            _universeCenter.gameObject.GetSafeMonoBehaviourComponent<UniverseCenterView>().enabled = true;
         }
         UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
             RegisterReadinessForGameStateProgression(GameState.BuildAndDeploySystems, isReady: true);
@@ -73,7 +69,7 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
     private void EnableOtherWhenRunning() {
         D.Assert(GameStatus.Instance.IsRunning);
         if (_universeCenter != null) {
-            // CameraLosChangedListener is enabled in View.InitializeVisualMembers()
+            // CameraLosChangedListener is enabled in Item.InitializeViewMembersOnDiscernible
         }
     }
 

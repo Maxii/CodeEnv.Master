@@ -184,7 +184,7 @@ namespace Pathfinding {
             });
             openSpaceWaypoints = openSpaceWaypoints.Union(interiorSectorPoints);
 
-            var universeCenter = UniverseFolder.Instance.Folder.GetComponentInChildren<UniverseCenterModel>();
+            var universeCenter = UniverseFolder.Instance.Folder.GetComponentInChildren<UniverseCenterItem>();
             if (universeCenter != null) {
                 var pointsAroundUniverseCenter = UnityUtility.CalcVerticesOfInscribedBoxInsideSphere(universeCenter.Position, universeCenter.ShipOrbitSlot.OuterRadius);
                 openSpaceWaypoints = openSpaceWaypoints.Except(new List<Vector3>() { universeCenter.Position }, UnityUtility.Vector3EqualityComparer);
@@ -279,8 +279,8 @@ namespace Pathfinding {
         /// The method determines which based on whether the starbase has previously been recorded.
         /// </summary>
         /// <param name="baseCmd">The Starbase command.</param>
-        public void UpdateGraph(StarbaseCmdModel baseCmd) {
-            throw new System.NotImplementedException("{0}.UpdateGraph(StarbaseCmdModel) is awaiting upgrade to AstarPath.Pro.".Inject(GetType().Name));
+        public void UpdateGraph(StarbaseCommandItem baseCmd) {
+            throw new System.NotImplementedException("{0}.UpdateGraph(StarbaseCommandItem) is awaiting upgrade to AstarPath.Pro.".Inject(GetType().Name));
             // *****************************************************************************
             // TODO Aren: "PointGraphs implement GraphUpdateObject.Apply() only in Pro"
             // GraphUpdateObject.RevertFromBackup() implementation was forgotten by devs

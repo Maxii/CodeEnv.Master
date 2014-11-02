@@ -38,7 +38,7 @@ public class SystemCreatorEditor : Editor {
                 Constants.Zero, 2 * creator.maxRandomPlanets);
         }
 
-        creator.cycleIntelLevel = GUILayout.Toggle(creator.cycleIntelLevel, "Cycle System Intel Coverage");
+        creator.toCycleIntelCoverage = GUILayout.Toggle(creator.toCycleIntelCoverage, "Cycle Intel Coverage");
 
         // Note: The owner of a System (and Star, Planets and Moons) is automatically set to the owner of the Settlement located in the System, if any.
 

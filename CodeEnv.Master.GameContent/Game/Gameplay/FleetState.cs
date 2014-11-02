@@ -25,6 +25,8 @@ namespace CodeEnv.Master.GameContent {
 
         Idling,
 
+        Exploring,
+
         /// <summary>
         /// State that executes the FleetOrder MoveTo. Upon move completion
         /// the state reverts to Idling.
@@ -64,6 +66,8 @@ namespace CodeEnv.Master.GameContent {
 
         GoDisband,
         Disbanding,
+
+        SelfDestructing,
 
         Dead
 

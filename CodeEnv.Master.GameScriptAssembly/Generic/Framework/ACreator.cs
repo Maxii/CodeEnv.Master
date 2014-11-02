@@ -44,5 +44,7 @@ public abstract class ACreator : AMonoBase {
 
     public int weaponsPerElement = 2;
 
+    public bool toCycleIntelCoverage = false;
+
 }
 

@@ -16,14 +16,23 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
     /// <summary>
     /// Interface for a target that can be a movement destination.
     /// </summary>
-    public interface IDestinationTarget : ITarget {
+    public interface IDestinationTarget {
+
+        /// <summary>
+        /// The name to use for displaying in the UI.
+        /// </summary>
+        string DisplayName { get; }
+
+        /// <summary>
+        /// The name to use for debugging.
+        /// </summary>
+        string FullName { get; }
 
         Vector3 Position { get; }
 

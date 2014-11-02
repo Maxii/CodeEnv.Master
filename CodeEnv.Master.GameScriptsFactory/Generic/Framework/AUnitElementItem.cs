@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AUnitElementItem.cs
-// COMMENT - one line to give a brief idea of what this file does.
+// Abstract base class for UnitElement Items.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -26,9 +26,9 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// COMMENT 
+///  Abstract base class for UnitElement Items.
 /// </summary>
-public abstract class AUnitElementItem : AMortalItem, IElementModel, IElementTarget, IElementViewable, ICameraFollowable {
+public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, ICameraFollowable, IElementTarget {
 
     public virtual bool IsHQElement { get; set; }
 
@@ -37,11 +37,7 @@ public abstract class AUnitElementItem : AMortalItem, IElementModel, IElementTar
         set { base.Data = value; }
     }
 
-    private AUnitCommandItem _command;
-    public AUnitCommandItem Command {
-        get { return _command; }
-        set { SetProperty<AUnitCommandItem>(ref _command, value, "Command"); }
-    }
+    public AUnitCommandItem Command { get; set; }
 
     public float minCameraViewDistanceMultiplier = 2.0F;
     public float optimalCameraViewDistanceMultiplier = 2.4F;
@@ -55,7 +51,7 @@ public abstract class AUnitElementItem : AMortalItem, IElementModel, IElementTar
     /// <summary>
     /// Weapon Range Monitor lookup table keyed by the Monitor's Guid ID.
     /// </summary>
-    protected IDictionary<Guid, IWeaponRangeMonitor> _weaponRangeMonitorLookup;
+    protected IDictionary<Guid, WeaponRangeMonitor> _weaponRangeMonitorLookup;
     protected float _gameSpeedMultiplier;
     protected Rigidbody __rigidbody;
 
@@ -71,15 +67,14 @@ public abstract class AUnitElementItem : AMortalItem, IElementModel, IElementTar
         base.InitializeLocalReferencesAndValues();
         _gameSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();
         circleScaleFactor = 1.0F;
+        // Note: Radius is set in derived classes due to the difference in meshes
+        collider.isTrigger = false;
     }
 
     protected override void InitializeModelMembers() {
-        // Note: Radius is set in derived classes due to the difference in meshes
-        collider.isTrigger = false;
         __rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
         __rigidbody.mass = Data.Mass;
     }
-
 
     protected override void Subscribe() {
         base.Subscribe();
@@ -95,6 +90,15 @@ public abstract class AUnitElementItem : AMortalItem, IElementModel, IElementTar
 
     #region Model Methods
 
+    /// <summary>
+    /// Parents this element to the provided container that holds the entire Unit.
+    /// Local position, rotation and scale auto adjust to keep element unchanged in worldspace.
+    /// </summary>
+    /// <param name="unitContainer">The unit container.</param>
+    protected internal virtual void AttachElementAsChildOfUnitContainer(Transform unitContainer) {
+        _transform.parent = unitContainer;
+    }
+
     private void OnGameSpeedChanged() {
         _gameSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();
     }
@@ -105,13 +109,6 @@ public abstract class AUnitElementItem : AMortalItem, IElementModel, IElementTar
             _weaponRangeMonitorLookup.Values.ForAll(rt => rt.Owner = Data.Owner);
         }
     }
-
-    //private void OnCommandChanged() {
-    //    // Changing the parentName of this element is handled by the new Command's Data
-    //    if (onCommandChanged != null) {
-    //        onCommandChanged(Command);
-    //    }
-    //}
 
     protected override void OnNamingChanged() {
         base.OnNamingChanged();
@@ -126,9 +123,9 @@ public abstract class AUnitElementItem : AMortalItem, IElementModel, IElementTar
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     /// <param name="rangeMonitor">The range monitor to pair with this weapon.</param>
-    public void AddWeapon(Weapon weapon, IWeaponRangeMonitor rangeMonitor) {
+    public void AddWeapon(Weapon weapon, WeaponRangeMonitor rangeMonitor) {
         if (_weaponRangeMonitorLookup == null) {
-            _weaponRangeMonitorLookup = new Dictionary<Guid, IWeaponRangeMonitor>();
+            _weaponRangeMonitorLookup = new Dictionary<Guid, WeaponRangeMonitor>();
         }
         if (!_weaponRangeMonitorLookup.ContainsKey(rangeMonitor.ID)) {
             // only need to record and setup range trackers once. The same rangeTracker can have more than 1 weapon
@@ -152,14 +149,14 @@ public abstract class AUnitElementItem : AMortalItem, IElementModel, IElementTar
     public void RemoveWeapon(Weapon weapon) {
         bool isRangeTrackerStillInUse = Data.RemoveWeapon(weapon);
         if (!isRangeTrackerStillInUse) {
-            IWeaponRangeMonitor rangeTracker;
+            WeaponRangeMonitor rangeTracker;
             if (_weaponRangeMonitorLookup.TryGetValue(weapon.TrackerID, out rangeTracker)) {
                 _weaponRangeMonitorLookup.Remove(weapon.TrackerID);
-                D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(IWeaponRangeMonitor).Name, weapon.Name);
-                GameObject.Destroy((rangeTracker as Component).gameObject);
+                D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
+                GameObject.Destroy(rangeTracker.gameObject);
                 return;
             }
-            D.Error("{0} could not find {1} for {2}.", FullName, typeof(IWeaponRangeMonitor).Name, weapon.Name);
+            D.Error("{0} could not find {1} for {2}.", FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
         }
     }
 
@@ -222,7 +219,6 @@ public abstract class AUnitElementItem : AMortalItem, IElementModel, IElementTar
         var meshCameraLosChgdListener = _meshRenderer.gameObject.GetSafeInterface<ICameraLosChangedListener>();
         meshCameraLosChgdListener.onCameraLosChanged += (go, inCameraLOS) => InCameraLOS = inCameraLOS;
         meshCameraLosChgdListener.enabled = true;
-
     }
 
     protected override void OnIsDiscernibleChanged() {
@@ -246,29 +242,45 @@ public abstract class AUnitElementItem : AMortalItem, IElementModel, IElementTar
 
     #region Animations
 
+    // these run until finished with no requirement to call OnShowCompletion
     protected override void ShowCmdHit() {
         base.ShowCmdHit();
+        if (_showingJob != null && _showingJob.IsRunning) {
+            _showingJob.Kill();
+        }
         _showingJob = new Job(ShowingCmdHit(), toStart: true);
     }
 
     protected override void ShowAttacking() {
         base.ShowAttacking();
+        if (_showingJob != null && _showingJob.IsRunning) {
+            _showingJob.Kill();
+        }
         _showingJob = new Job(ShowingAttacking(), toStart: true);
     }
 
     // these run continuously until they are stopped via StopAnimation() 
     protected override void ShowRepairing() {
         base.ShowRepairing();
+        if (_showingJob != null && _showingJob.IsRunning) {
+            _showingJob.Kill();
+        }
         _showingJob = new Job(ShowingRepairing(), toStart: true);
     }
 
     protected override void ShowRefitting() {
         base.ShowRefitting();
+        if (_showingJob != null && _showingJob.IsRunning) {
+            _showingJob.Kill();
+        }
         _showingJob = new Job(ShowingRefitting(), toStart: true);
     }
 
     protected override void ShowDisbanding() {
         base.ShowDisbanding();
+        if (_showingJob != null && _showingJob.IsRunning) {
+            _showingJob.Kill();
+        }
         _showingJob = new Job(ShowingDisbanding(), toStart: true);
     }
 
@@ -279,7 +291,7 @@ public abstract class AUnitElementItem : AMortalItem, IElementModel, IElementTar
         //animation.Stop();
         //yield return UnityUtility.PlayAnimation(animation, "hit");  
         yield return null;
-        // does not use onShowCompletion
+        // does not use OnShowCompletion
     }
 
     private IEnumerator ShowingAttacking() {
@@ -289,7 +301,7 @@ public abstract class AUnitElementItem : AMortalItem, IElementModel, IElementTar
         //animation.Stop();
         //yield return UnityUtility.PlayAnimation(animation, "hit");  
         yield return null;
-        // does not use onShowCompletion
+        // does not use OnShowCompletion
     }
 
     private IEnumerator ShowingRefitting() {
@@ -299,7 +311,7 @@ public abstract class AUnitElementItem : AMortalItem, IElementModel, IElementTar
         //animation.Stop();
         //yield return UnityUtility.PlayAnimation(animation, "hit");  
         yield return null;
-        // does not use onShowCompletion
+        // does not useOnShowCompletion
     }
 
     private IEnumerator ShowingDisbanding() {
@@ -309,7 +321,7 @@ public abstract class AUnitElementItem : AMortalItem, IElementModel, IElementTar
         //animation.Stop();
         //yield return UnityUtility.PlayAnimation(animation, "hit");  
         yield return null;
-        // does not use onShowCompletion
+        // does not use OnShowCompletion
     }
 
     private IEnumerator ShowingRepairing() {
@@ -319,7 +331,7 @@ public abstract class AUnitElementItem : AMortalItem, IElementModel, IElementTar
         //animation.Stop();
         //yield return UnityUtility.PlayAnimation(animation, "hit");  
         yield return null;
-        // does not use onShowCompletion
+        // does not use OnShowCompletion
     }
 
     #endregion
@@ -350,13 +362,14 @@ public abstract class AUnitElementItem : AMortalItem, IElementModel, IElementTar
         if (_weaponReloadJobs.Count != Constants.Zero) {
             _weaponReloadJobs.ForAll<KeyValuePair<Guid, Job>>(kvp => kvp.Value.Kill());
         }
+        Command.OnSubordinateElementDeath(this);
     }
 
     #endregion
 
     # region StateMachine Callbacks
 
-    public override void OnShowCompletion() {
+    protected override void OnShowCompletion() {
         RelayToCurrentState();
     }
 
@@ -377,25 +390,11 @@ public abstract class AUnitElementItem : AMortalItem, IElementModel, IElementTar
     // subscriptions contained completely within this gameobject (both subscriber
     // and subscribee) donot have to be cleaned up as all instances are destroyed
 
-    #region IModel Members
+    #region IItem Members
 
     public override string FullName { get { return IsHQElement ? "[HQ]" + base.FullName : base.FullName; } }
 
     #endregion
-
-    //#region IElementModel Members
-
-    //public event Action<ICmdModel> onCommandChanged;
-
-    //#endregion
-
-    #region IElementTarget Members
-
-    public float MaxWeaponsRange { get { return Data.MaxWeaponsRange; } }
-
-    #endregion
-
-
 
     #region ICameraTargetable Members
 
@@ -410,8 +409,6 @@ public abstract class AUnitElementItem : AMortalItem, IElementModel, IElementTar
     #endregion
 
     #region ICameraFollowable Members
-
-    // TODO Settlement Facilities should be followable as they orbit, but Starbase Facilities?
 
     [SerializeField]
     private float cameraFollowDistanceDampener = 3.0F;

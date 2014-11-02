@@ -14,47 +14,38 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-// default namespace
+namespace CodeEnv.Master.GameContent {
 
-using CodeEnv.Master.Common;
-using CodeEnv.Master.GameContent;
-using UnityEngine;
+    using CodeEnv.Master.Common;
+    using UnityEngine;
 
-/// <summary>
-/// An MVPresenter associated with a StarView.
-/// </summary>
-public class StarPresenter : AFocusableItemPresenter {
+    /// <summary>
+    /// An MVPresenter associated with a StarView.
+    /// </summary>
+    public class StarPresenter : AFocusableItemPresenter {
 
-    public new StarModel Item {
-        get { return base.Model as StarModel; }
-        protected set { base.Model = value; }
-    }
+        protected new StarData Data { get { return base.Data as StarData; } }
 
-    private ISystemViewable _systemView;
+        private IViewable _systemView;
 
-    public StarPresenter(IViewable view)
-        : base(view) {
-        _systemView = _viewGameObject.GetSafeInterfaceInParents<ISystemViewable>();
-    }
+        public StarPresenter(IViewable view)
+            : base(view) {
+            _systemView = _viewGameObject.GetSafeInterfaceInParents<IViewable>(excludeSelf: true);
+        }
 
-    protected override AItemModel AcquireModelReference() {
-        return UnityUtility.ValidateMonoBehaviourPresence<StarModel>(_viewGameObject);
-    }
+        protected override IGuiHudPublisher InitializeHudPublisher() {
+            return new GuiHudPublisher<StarData>(Data);
+        }
 
-    protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<StarData>(Model.Data);
-    }
+        public void OnLeftClick() {
+            if (_systemView.IsDiscernible) {
+                (_systemView as ISelectable).IsSelected = true;
+            }
+        }
 
-    public void OnHover(bool isOver) {
-        _systemView.HighlightTrackingLabel(isOver);
-    }
-
-    public void OnLeftClick() {
-        (_systemView as ISelectable).IsSelected = true;
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
+        }
     }
 }
 

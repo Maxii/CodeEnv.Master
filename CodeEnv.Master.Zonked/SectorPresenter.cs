@@ -14,35 +14,27 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-// default namespace
+namespace CodeEnv.Master.GameContent {
 
-using CodeEnv.Master.Common;
-using CodeEnv.Master.GameContent;
+    using CodeEnv.Master.Common;
 
-/// <summary>
-/// MVPresenter associated with a SectorView.
-/// </summary>
-public class SectorPresenter : AItemPresenter {
+    /// <summary>
+    /// MVPresenter associated with a SectorView.
+    /// </summary>
+    public class SectorPresenter : AItemPresenter {
 
-    public new SectorModel Item {
-        get { return base.Model as SectorModel; }
-        protected set { base.Model = value; }
+        protected new SectorData Data { get { return base.Data as SectorData; } }
+
+        public SectorPresenter(IViewable view) : base(view) { }
+
+        protected override IGuiHudPublisher InitializeHudPublisher() {
+            return new GuiHudPublisher<SectorData>(Data);
+        }
+
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
+        }
     }
-
-    public SectorPresenter(IViewable view) : base(view) { }
-
-    protected override AItemModel AcquireModelReference() {
-        return UnityUtility.ValidateMonoBehaviourPresence<SectorModel>(_viewGameObject);
-    }
-
-    protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<SectorData>(Model.Data);
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
 }
 
 

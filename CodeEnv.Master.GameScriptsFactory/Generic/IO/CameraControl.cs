@@ -133,7 +133,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         focusedRotationDampener = 2.0F, freeformPositionDampener = 3.0F, freeformRotationDampener = 2.0F
     };
 
-    private CtxPickHandler _contextMenuPickHandler;
+    private CtxPickHandler _contextMenuPickHandler; // not currently used
 
     private bool _isResetOnFocusEnabled;
     private bool _isZoomOutOnCursorEnabled;    // ScrollWheel always zooms IN on cursor, zooming OUT with the ScrollWheel is directly backwards by default
@@ -421,7 +421,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         _zAxisRotation = startingEulerRotation.z;
     }
 
-    private void InitializeContextMenuSettings() {
+    private void InitializeContextMenuSettings() {  // not currently used
         _contextMenuPickHandler = gameObject.GetSafeMonoBehaviourComponent<CtxPickHandler>();
         _contextMenuPickHandler.dontUseFallThrough = true;
         //_contextMenuPickHandler.pickLayers = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.SectorView);
@@ -544,7 +544,7 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
 
     private void OnCurrentFocusChanged() {
         if (CurrentFocus != null) {
-            Transform newFocus = (CurrentFocus as Component).transform;
+            Transform newFocus = CurrentFocus.Transform;
             D.Log("New Focus is now {0}.", newFocus.name);
             SetFocus(newFocus);
         }
@@ -1018,7 +1018,8 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
         LogEvent();
         // some values are continuously recalculated in update as the target moves so they don't need to be here too
 
-        D.Log("Follow Target is now {0}.", _target.gameObject.GetSafeMonoBehaviourComponent<AItemModel>().FullName);
+        //D.Log("Follow Target is now {0}.", _target.gameObject.GetSafeMonoBehaviourComponent<AItemModel>().FullName);
+        D.Log("Follow Target is now {0}.", _target.gameObject.GetSafeMonoBehaviourComponent<AItem>().FullName);
         ICameraFollowable icfTarget = _target.GetInterface<ICameraFollowable>();
         _cameraRotationDampener = icfTarget.CameraFollowRotationDampener;
         _cameraPositionDampener = icfTarget.CameraFollowDistanceDampener;
@@ -1762,10 +1763,6 @@ public class CameraControl : AMonoStateMachineSingleton<CameraControl, CameraCon
             // typ scroll tick value is 0.1F per frame
             get { return 10F; }
         }
-
-        //public override bool IsActivated() {
-        //    return base.IsActivated() && _gameInput.isScrollValueWaiting && !GameInputHelper.IsAnyMouseButtonDown();
-        //}
 
         public override bool IsActivated() {
             return base.IsActivated() && _gameInput.IsScrollEventWaiting && !GameInputHelper.IsAnyMouseButtonDown();

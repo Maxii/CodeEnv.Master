@@ -29,7 +29,7 @@ public class UniverseFolder : AFolderAccess<UniverseFolder>, IUniverseFolder {
     /// <returns></returns>
     public SpaceTopography GetSpaceTopography(Vector3 worldLocation) {
         Index3D sectorIndex = SectorGrid.GetSectorIndex(worldLocation);
-        SystemModel system;
+        SystemItem system;
         if (SystemCreator.TryGetSystem(sectorIndex, out system)) {
             // the sector containing worldLocation has a system
             if (Vector3.SqrMagnitude(worldLocation - system.Position) < system.Radius * system.Radius) {

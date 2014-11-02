@@ -57,7 +57,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<bool>(ref _isActive, value, "IsActive"); }
         }
 
-        public virtual bool IsHuman { get { return false; } }
+        public virtual bool IsPlayer { get { return false; } }
 
         public IQ IQ { get; private set; }
 
@@ -86,8 +86,12 @@ namespace CodeEnv.Master.GameContent {
             // TODO send DiploRelationsChange event
         }
 
-        public bool IsRelationship(IPlayer player, DiplomaticRelations relation) {
-            return GetRelations(player) == relation;
+        //public bool IsRelationship(IPlayer player, DiplomaticRelations relation) {
+        //    return GetRelations(player) == relation;
+        //}
+
+        public bool IsRelationship(IPlayer player, params DiplomaticRelations[] relations) {
+            return GetRelations(player).EqualsAnyOf(relations);
         }
 
         public bool IsEnemyOf(IPlayer player) {

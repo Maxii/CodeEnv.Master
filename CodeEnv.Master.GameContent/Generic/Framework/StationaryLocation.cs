@@ -82,6 +82,8 @@ namespace CodeEnv.Master.GameContent {
 
         #region IDestinationTarget Members
 
+        public string DisplayName { get { return FullName; } }
+
         public string FullName { get { return string.Format("{0}[{1}]", this.GetType().Name, Position); } }
 
         // OPTIMIZE consider letting this be settable so navigator's don't have to create a new one every time

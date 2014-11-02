@@ -53,26 +53,12 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Game\Framework\APlanetoidItem.cs" />
+    <Compile Include="Generic\Extensions\GameSpecificExtensions.cs" />
+    <Compile Include="Generic\Framework\AMortalItemStateMachine.cs" />
     <Compile Include="Game\Framework\AMortalItem.cs" />
     <Compile Include="Game\Framework\AItem.cs" />
-    <Compile Include="Game\Framework\AUnitBaseCmdModel.cs" />
-    <Compile Include="Game\Framework\APlanetoidModel.cs" />
-    <Compile Include="Generic\Graphics\APlanetoidView.cs" />
-    <Compile Include="Game\Framework\ACombatItemModel.cs" />
-    <Compile Include="Game\Framework\AOwnedItemModel.cs" />
     <Compile Include="Generic\Framework\ACreator.cs" />
-    <Compile Include="Generic\Graphics\AFocusableItemView.cs" />
-    <Compile Include="Generic\Framework\AUnitCreator.cs" />
-    <Compile Include="Generic\Graphics\AMortalItemView.cs" />
-    <Compile Include="Generic\Graphics\AUnitElementView.cs" />
     <Compile Include="ThirdParty\AMonoStateMachine_NoCall.cs" />
-    <Compile Include="Game\Framework\AItemModel.cs" />
-    <Compile Include="Game\Framework\AMortalItemModel.cs" />
-    <Compile Include="Generic\Framework\AMortalItemModelStateMachine.cs" />
-    <Compile Include="Game\Framework\AUnitCommandModel.cs" />
-    <Compile Include="Game\Framework\AUnitElementModel.cs" />
-    <Compile Include="Generic\Graphics\AItemView.cs" />
     <Compile Include="ThirdParty\TaskManager.cs" />
     <Compile Include="ThirdParty\CoroutineManager.cs" />
     <Compile Include="ThirdParty\AMonoStateMachineSingleton.cs" />
@@ -104,7 +90,7 @@
     <Folder Include="Game\Graphics\" />
     <Folder Include="Game\GUI\" />
     <Folder Include="Game\_Debug\" />
-    <Folder Include="Generic\Extensions\" />
+    <Folder Include="Generic\Graphics\" />
     <Folder Include="Generic\IO\" />
     <Folder Include="Generic\Math\" />
   </ItemGroup>

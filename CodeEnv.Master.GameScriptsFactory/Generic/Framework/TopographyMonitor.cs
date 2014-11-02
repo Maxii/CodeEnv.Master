@@ -50,7 +50,7 @@ public class TopographyMonitor : AMonoBase {
             if (other.isTrigger) { return; }
             //D.Log("{0}.OnTriggerEnter() tripped by Collider {1}. Distance from Monitor = {2}.",
             //GetType().Name, other.name, Vector3.Magnitude(other.transform.position - _transform.position));
-            IShipModel enteringShip = other.gameObject.GetInterface<IShipModel>();
+            var enteringShip = other.gameObject.GetComponent<ShipItem>();
             if (enteringShip != null) {
                 enteringShip.OnTopographicBoundaryTransition(Topography);
             }
@@ -62,7 +62,7 @@ public class TopographyMonitor : AMonoBase {
             if (other.isTrigger) { return; }
             //D.Log("{0}.OnTriggerExit() tripped by Collider {1}. Distance from Monitor = {2}.",
             //GetType().Name, other.name, Vector3.Magnitude(other.transform.position - _transform.position));
-            IShipModel exitingShip = other.gameObject.GetInterface<IShipModel>();
+            var exitingShip = other.gameObject.GetComponent<ShipItem>();
             if (exitingShip != null) {
                 exitingShip.OnTopographicBoundaryTransition(SurroundingTopography);
             }

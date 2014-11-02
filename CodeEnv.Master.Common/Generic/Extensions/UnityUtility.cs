@@ -301,22 +301,21 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Executes the provided Action on the gameObject associated with the Interface I, if I is not null or already destroyed.
+        /// Destroys the gameObject associated with the Interface i, if i is not null or already destroyed.
         /// This is necessary as interfaces in Unity (unlike MonoBehaviours) do not return null when slated for destruction.
         /// </summary>
         /// <typeparam name="I">The Interface type.</typeparam>
         /// <param name="i">The Interface instance.</param>
-        /// <param name="action">The action to execute on i's GameObject.</param>
         /// <exception cref="System.ArgumentException">if i is not a Component.</exception>
-        public static void ExecuteIfNotNullOrDestroyed<I>(I i, Action<GameObject> action) where I : class {
+        public static void DestroyIfNotNullOrAlreadyDestroyed<I>(I i) {
             if (i != null) {
                 if (!(i is Component)) {
-                    throw new System.ArgumentException("i is of Type {0}, which is not a Component.".Inject(i.GetType().Name));
+                    throw new System.ArgumentException("i is of Type {0}, which is not a Component.".Inject(typeof(I).Name));
                 }
                 var c = i as Component;
                 if (c != null) {
                     // i is not destroyed
-                    action(c.gameObject);
+                    GameObject.Destroy(c.gameObject);
                 }
             }
         }

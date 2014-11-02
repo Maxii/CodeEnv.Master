@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<string>(ref _name, value, "Name", OnNameChanged, OnNameChanging); }
         }
 
-        private string _parentName;
+        private string _parentName = string.Empty;
         /// <summary>
         /// Gets or sets the name of the Parent of this item. Optional.
         /// </summary>
@@ -44,6 +44,12 @@ namespace CodeEnv.Master.GameContent {
 
         public string FullName {
             get { return ParentName.IsNullOrEmpty() ? Name : ParentName + Constants.Underscore + Name; }
+        }
+
+        private IPlayer _owner = TempGameValues.NoPlayer;
+        public IPlayer Owner {
+            get { return _owner; }
+            set { SetProperty<IPlayer>(ref _owner, value, "Owner", OnOwnerChanged); }
         }
 
         public SpaceTopography Topography { get; protected set; }   // can't use OnPropertyChanged approach as default(SpaceTopography) = OpenSpace, aka 0 tag
@@ -65,6 +71,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The name.</param>
         public AItemData(string name) {
             Name = name;
+        }
+
+        protected virtual void OnOwnerChanged() {
+            D.Log("{0} Owner has changed to {1}.", FullName, Owner.LeaderName);
         }
 
         private void OnTransformChanging(Transform newTransform) {

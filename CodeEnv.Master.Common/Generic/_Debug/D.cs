@@ -129,6 +129,8 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// Tests the specified condition and logs the provided message as an Error if it fails. Does not pause
         /// on failure.
+        /// WARNING: The assertString must be valid (no potential NREs) whether or not the condition passes. Invalid
+        /// strings typically manifest themselves when using string.Inject() as Inject() is called whether or not the condition passes.
         /// </summary>
         /// <param name="condition">if set to <c>true</c> [condition].</param>
         /// <param name="assertString">The message to log as an Error on failure.</param>
@@ -140,6 +142,8 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// Tests the specified condition and logs the provided message as an Error if it fails, with an option for
         /// the Editor to pause on failure.
+        /// WARNING: The assertString must be valid (no potential NREs) whether or not the condition passes. Invalid
+        /// strings typically manifest themselves when using string.Inject() as Inject() is called whether or not the condition passes.
         /// </summary>
         /// <param name="condition">if set to <c>true</c> [condition].</param>
         /// <param name="assertString">The message to log as an Error on failure.</param>

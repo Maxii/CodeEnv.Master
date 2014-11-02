@@ -40,9 +40,6 @@ namespace CodeEnv.Master.GameContent {
             StandoffDistance = standoffDistance;
         }
 
-        //public FleetOrder(FleetDirective order, Vector3 destination, Speed speed) :
-        //    this(order, new StationaryLocation(destination), speed) { }
-
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }

@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Abstract base class that holds data for Items that are elements of a command.
     /// </summary>
-    public abstract class AElementData : ACombatItemData {
+    public abstract class AElementData : AMortalItemData {
 
         /// <summary>
         /// Dictionary for finding the list of weapons associated with a particular rangeTracker.
@@ -78,7 +78,7 @@ namespace CodeEnv.Master.GameContent {
             if (trackerWeapons.Count == Constants.Zero) {
                 _weaponRangeTrackerLookup.Remove(trackerID);
                 isRangeTrackerStillInUse = false;
-                D.Warn("{0} has removed weapon {1}, leaving an unused {2}.", Name, weapon.Name, typeof(IWeaponRangeMonitor).Name);
+                D.Warn("{0} has removed weapon {1}, leaving an unused WeaponRangeMonitor.", Name, weapon.Name);
             }
             RecalcMaxWeaponsRange();
             RecalcCombatStrength();

@@ -60,9 +60,9 @@ namespace CodeEnv.Master.GameContent {
         public ShipOrbitSlot(float innerRadius, float outerRadius, IShipOrbitable orbitedObject, GameTimeDuration orbitPeriod)
             : base(innerRadius, outerRadius, orbitedObject.IsMobile, orbitPeriod) {
             OrbitedObject = orbitedObject;
-            var mortalOrbitedObject = orbitedObject as IMortalTarget;
+            var mortalOrbitedObject = orbitedObject as IMortalItem;
             if (mortalOrbitedObject != null) {
-                mortalOrbitedObject.onTargetDeathOneShot += OnOrbitedObjectDeath;
+                mortalOrbitedObject.onDeathOneShot += OnOrbitedObjectDeath;
             }
         }
 
@@ -70,12 +70,12 @@ namespace CodeEnv.Master.GameContent {
         /// Places the ship within this orbit and commences orbital movement if not already underway.
         /// </summary>
         /// <param name="ship">The ship.</param>
-        public void AssumeOrbit(IShipModel ship) {
+        public void AssumeOrbit(IShipItem ship) {
             if (_orbiter == null) {
                 GameObject orbitedObjectGo = OrbitedObject.Transform.gameObject;
                 _orbiter = References.GeneralFactory.MakeOrbiterInstance(orbitedObjectGo, _isOrbitedObjectMobile, true, _orbitPeriod, "ShipOrbiter") as IOrbiterForShips;
             }
-            ship.Transform.parent = _orbiter.Transform;    // ship retains existing position, rotation, scale and layer
+            AttachShipToOrbit(ship);
             _orbiter.enabled = true;
             D.Log("{0} has assumed orbit around {1}.", ship.FullName, OrbitedObject.FullName);
             float shipOrbitRadius = Vector3.Distance(ship.Position, OrbitedObject.Position);
@@ -84,19 +84,22 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        private void AttachShipToOrbit(IShipItem ship) {
+            ship.Transform.parent = _orbiter.Transform; // ship retains existing position, rotation, scale and layer
+        }
+
         /// <summary>
         /// Breaks the ship from this orbit. If this was the last ship in orbit, the orbital movement is disabled
         /// until a ship again assumes orbit.
         /// </summary>
         /// <param name="orbitingShip">The orbiting ship.</param>
-        public void BreakOrbit(IShipModel orbitingShip) {
+        public void BreakOrbit(IShipItem orbitingShip) {
             D.Assert(_orbiter != null);
             //D.Log("{0} attempting to break orbit around {1}.", orbitingShip.FullName, OrbitedObject.FullName);
-            var orbitingShips = _orbiter.Transform.gameObject.GetSafeInterfacesInChildren<IShipModel>();
+            var orbitingShips = _orbiter.Transform.gameObject.GetSafeInterfacesInChildren<IShipItem>();
             var ship = orbitingShips.Single(s => s == orbitingShip);
             var remainingShips = orbitingShips.Except(ship);
-            var parentFleetTransform = ship.UnitCommand.Transform.parent;
-            ship.Transform.parent = parentFleetTransform;
+            ship.ReattachToParentFleetContainer();
             D.Log("{0} has left orbit around {1}.", ship.FullName, OrbitedObject.FullName);
             float shipOrbitRadius = Vector3.Distance(ship.Position, OrbitedObject.Position);
             if (!Contains(shipOrbitRadius)) {
@@ -117,7 +120,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="distanceToOrbit">A signed value indicating how far away the
         /// ship is from the orbit's mean radius. A negative value indicates that the ship is inside the mean, positive outside.</param>
         /// <returns></returns>
-        public bool CheckPositionForOrbit(IShipModel ship, out float distanceToOrbit) {
+        public bool CheckPositionForOrbit(IShipItem ship, out float distanceToOrbit) {
             float shipDistance = Vector3.Distance(ship.Position, OrbitedObject.Position);
             distanceToOrbit = shipDistance - MeanRadius;
             if (Contains(shipDistance)) {
@@ -127,7 +130,7 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
-        private void OnOrbitedObjectDeath(IMortalTarget orbitedObject) {
+        private void OnOrbitedObjectDeath(IMortalItem orbitedObject) {
             if (onOrbitedObjectDeathOneShot != null) {
                 onOrbitedObjectDeathOneShot();
                 onOrbitedObjectDeathOneShot = null;

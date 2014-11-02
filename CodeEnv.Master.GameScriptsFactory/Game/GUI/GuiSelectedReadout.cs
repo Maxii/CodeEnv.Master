@@ -51,7 +51,7 @@ public class GuiSelectedReadout : AGuiLabelReadoutBase, IDisposable {
         string selectionName = string.Empty;
         ISelectable newSelection = _selectionMgr.CurrentSelection;
         if (newSelection != null) {
-            selectionName = (newSelection as Component).gameObject.GetSafeMonoBehaviourComponent<AItemModel>().Data.Name;
+            selectionName = newSelection.FullName;
         }
         RefreshReadout(selectionName);
     }

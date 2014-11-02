@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
 
         public FacilityOrder StandingOrder { get; set; }
 
-        public IMortalTarget Target { get; private set; }
+        public IUnitTarget Target { get; private set; }
 
         /// <summary>
         /// Flag indicating the source of this order. 
@@ -40,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="directive">The order.</param>
         /// <param name="source">The source of this order.</param>
         /// <param name="target">The target.</param>
-        public FacilityOrder(FacilityDirective directive, OrderSource source = OrderSource.ElementCaptain, IMortalTarget target = null) {
+        public FacilityOrder(FacilityDirective directive, OrderSource source = OrderSource.ElementCaptain, IUnitTarget target = null) {
             Directive = directive;
             Source = source;
             Target = target;

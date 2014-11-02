@@ -1,6 +1,6 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
@@ -16,35 +16,25 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
-    using UnityEngine;
 
     /// <summary>
     /// An MVPresenter associated with a SystemView.
     /// </summary>
     public class SystemPresenter : AFocusableItemPresenter {
 
-        public new ISystemModel Model {
-            get { return base.Model as ISystemModel; }
-            protected set { base.Model = value; }
-        }
+        protected new SystemData Data { get { return base.Data as SystemData; } }
 
         public SystemPresenter(IViewable view) : base(view) { }
 
-        protected override IModel AcquireModelReference() {
-            return _viewGameObject.GetSafeInterface<ISystemModel>();
-        }
-
         protected override IGuiHudPublisher InitializeHudPublisher() {
-            return new GuiHudPublisher<SystemData>(Model.Data);
+            return new GuiHudPublisher<SystemData>(Data as SystemData);
         }
 
         public void RequestContextMenu(bool isDown) {
-            SettlementCmdData settlementData = Model.Data.SettlementData;
+            SettlementCmdData settlementData = Data.SettlementData;
             //D.Log("Settlement null = {0}, isHumanOwner = {1}.", settlement == null, settlement.Owner.IsHuman);
-            if (settlementData != null && (DebugSettings.Instance.AllowEnemyOrders || settlementData.Owner.IsHuman)) {
+            if (settlementData != null && (DebugSettings.Instance.AllowEnemyOrders || settlementData.Owner.IsPlayer)) {
                 _cameraControl.ShowContextMenuOnPress(isDown);
             }
         }

@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
 
         #region IPlayer Members
 
-        public override bool IsHuman { get { return true; } }
+        public override bool IsPlayer { get { return true; } }
 
         private string _leaderName;
         public override string LeaderName {

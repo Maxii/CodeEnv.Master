@@ -53,34 +53,29 @@ public class RequiredPrefabs : AMonoBaseSingleton<RequiredPrefabs> {
 
     public SphereCollider universeEdge;
     public Transform cameraDummyTarget;
-    public SectorModel sector;
+    public SectorItem sector;
 
     public Orbiter orbiter;
     public MovingOrbiter movingOrbiter;
     public OrbiterForShips orbiterForShips;
     public MovingOrbiterForShips movingOrbiterForShips;
 
-    public FleetCmdView_AI aiFleetCmd;
-    public ShipView[] aiShips;
+    public FleetCommandItem fleetCmd;
+    public ShipItem[] ships;
 
-    public FleetCmdView_Player humanFleetCmd;
-    public ShipView_Player[] humanShips;
+    public SettlementCommandItem settlementCmd;
 
-    public SettlementCmdView_AI aiSettlementCmd;
-    public SettlementCmdView_Player humanSettlementCmd;
+    public StarbaseCommandItem starbaseCmd;
 
-    public StarbaseCmdView_AI aiStarbaseCmd;
-    public StarbaseCmdView_Player humanStarbaseCmd;
+    public FacilityItem[] facilities;
 
-    public FacilityModel[] facilities;
-
-    public SystemModel system;   // without the star and settlement
+    public SystemItem system;   // without the star and settlement
     public StarItem[] stars;
-    public PlanetModel[] planets;   // no bundled moons or orbiters
-    public MoonModel[] moons;       // no orbiters
+    public PlanetItem[] planets;   // no bundled moons or orbiters
+    public MoonItem[] moons;       // no orbiters
 
     public WeaponRangeMonitor weaponRangeMonitor;
-    public FormationStation formationStation;
+    public FormationStationMonitor formationStation;
 
     protected override void Awake() {
         base.Awake();

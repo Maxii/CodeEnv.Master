@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
 
         //AssumeOrbit,
 
-        MoveTo,
+        Move,
 
         Attack,
 
@@ -37,13 +37,15 @@ namespace CodeEnv.Master.GameContent {
 
         Entrench,
 
-        // Refit, Disband and JoinFleet can also be issued by the Player
+        // Refit, Disband,  Join and SelfDestruct can also be issued by the Player
 
         Refit,
 
         Disband,
 
-        JoinFleet
+        Join,
+
+        SelfDestruct
 
     }
 }

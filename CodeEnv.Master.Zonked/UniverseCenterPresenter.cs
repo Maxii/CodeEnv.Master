@@ -14,34 +14,26 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-// default namespace
+namespace CodeEnv.Master.GameContent {
 
-using CodeEnv.Master.Common;
-using CodeEnv.Master.GameContent;
+    using CodeEnv.Master.Common;
 
-/// <summary>
-/// An MVPresenter associated with a UniverseCenter View.
-/// </summary>
-public class UniverseCenterPresenter : AFocusableItemPresenter {
+    /// <summary>
+    /// An MVPresenter associated with a UniverseCenter View.
+    /// </summary>
+    public class UniverseCenterPresenter : AFocusableItemPresenter {
 
-    public new UniverseCenterModel Item {
-        get { return base.Model as UniverseCenterModel; }
-        protected set { base.Model = value; }
+        protected new UniverseCenterData Data { get { return base.Data as UniverseCenterData; } }
+
+        public UniverseCenterPresenter(IViewable view) : base(view) { }
+
+        protected override IGuiHudPublisher InitializeHudPublisher() {
+            return new GuiHudPublisher<UniverseCenterData>(Data);
+        }
+
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
+        }
     }
-
-    public UniverseCenterPresenter(IViewable view) : base(view) { }
-
-    protected override AItemModel AcquireModelReference() {
-        return UnityUtility.ValidateMonoBehaviourPresence<UniverseCenterModel>(_viewGameObject);
-    }
-
-    protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<ItemData>(Model.Data);
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
 }
 

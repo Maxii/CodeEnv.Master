@@ -10,10 +10,13 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
+
 // default namespace
 
 using System.Linq;
-
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -23,36 +26,63 @@ using UnityEngine;
 /// </summary>
 public class UniverseCenterView : AFocusableItemView {
 
-    private SphereCollider _keepoutCollider;
+    public float minCameraViewDistanceMultiplier = 2F;
 
     protected override void Awake() {
         base.Awake();
         circleScaleFactor = 5F;
-        (Collider as SphereCollider).radius = TempGameValues.UniverseCenterRadius;
-        _keepoutCollider = gameObject.GetComponentsInChildren<SphereCollider>().Single(c => c.gameObject.layer == (int)Layers.CelestialObjectKeepout);
-        _keepoutCollider.radius = (Collider as SphereCollider).radius * TempGameValues.KeepoutRadiusMultiplier;
+        Subscribe();    // no real need to subscribe at all if only subscription is PlayerIntelCoverage changes which these don't have
+    }
+
+    protected override void Start() {
+        base.Start();
+        AssessDiscernability(); // needed as FixedIntel gets set early and never changes
+    }
+
+    protected override void InitializeVisualMembers() {
+        var meshRenderer = gameObject.GetComponentInChildren<MeshRenderer>();
+        meshRenderer.castShadows = false;
+        meshRenderer.receiveShadows = false;
+        meshRenderer.enabled = true;
+
+        var animation = meshRenderer.gameObject.GetComponent<Animation>();
+        animation.cullingType = AnimationCullingType.BasedOnRenderers; // aka, disabled when not visible
+        animation.enabled = true;
+
+        var cameraLosChgdListener = gameObject.GetSafeInterfaceInChildren<ICameraLosChangedListener>();
+        cameraLosChgdListener.onCameraLosChanged += (go, inCameraLOS) => InCameraLOS = inCameraLOS;
+        cameraLosChgdListener.enabled = true;
+    }
+
+    protected override IIntel InitializePlayerIntel() {
+        return new FixedIntel(IntelCoverage.Comprehensive);
     }
 
     protected override void InitializePresenter() {
         Presenter = new UniverseCenterPresenter(this);
     }
 
+    protected override void SubscribeToPlayerIntelCoverageChanged() {
+        // no reason to subscribe as Coverage does not change
+    }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region ICameraFocusable Members
+    #region ICameraTargetable Members
 
-    public override bool IsRetainedFocusEligible {
-        get { return true; }
-    }
-
-    protected override float CalcOptimalCameraViewingDistance() {
-        return GameManager.Settings.UniverseSize.Radius() * 0.9F;   // IMPROVE
-    }
+    public override float MinimumCameraViewingDistance { get { return Radius * minCameraViewDistanceMultiplier; } }
 
     #endregion
 
+    #region ICameraFocusable Members
+
+    public override bool IsRetainedFocusEligible { get { return true; } }
+
+    public override float OptimalCameraViewingDistance { get { return gameObject.DistanceToCamera(); } }
+
+    #endregion
 
 }
 

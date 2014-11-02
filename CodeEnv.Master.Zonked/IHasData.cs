@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2014 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
 // File: IHasData.cs
-// Interface indicating Data can be obtained from this object.
+// Interface providing access to a Model's ItemData.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,12 +17,11 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface indicating Data can be obtained from this object.
+    /// Interface providing access to a Model's ItemData.
     /// </summary>
-    [System.Obsolete]
     public interface IHasData {
 
-        AMortalItemData GetData();
+        AItemData Data { get; }
 
     }
 }

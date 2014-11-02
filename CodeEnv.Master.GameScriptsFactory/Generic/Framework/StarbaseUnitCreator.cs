@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Initialization class that deploys a Starbase at the location of this StarbaseCreator. 
 /// </summary>
-public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory, FacilityData, FacilityStat, StarbaseCmdModel> {
+public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityCategory, FacilityData, FacilityStat, StarbaseCommandItem> {
 
     private static UnitFactory _factory;   // IMPROVE move back to AUnitCreator using References.IUnitFactory?
 
@@ -43,17 +43,20 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
         return new FacilityStat(elementName, 10000F, 50F, category);
     }
 
-    protected override FacilityModel MakeElement(FacilityStat stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner) {
-        return _factory.MakeInstance(stat, SpaceTopography.OpenSpace, weaponStats, owner);
+    protected override FacilityItem MakeElement(FacilityStat stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner) {
+        return _factory.MakeFacilityInstance(stat, SpaceTopography.OpenSpace, weaponStats, owner);
     }
 
-    protected override bool MakeElement(FacilityStat stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner, ref FacilityModel element) {
-        _factory.MakeInstance(stat, SpaceTopography.OpenSpace, weaponStats, owner, ref element);
-        return true;    // IMPROVE dummy return for facilities to match signature of abstract MakeElement - facilties currently don't have a HumanView 
+    protected override void MakeElement(FacilityStat stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner, ref FacilityItem element) {
+        _factory.MakeFacilityInstance(stat, SpaceTopography.OpenSpace, weaponStats, owner, ref element);
     }
 
     protected override FacilityCategory GetCategory(FacilityStat stat) {
         return stat.Category;
+    }
+
+    protected override FacilityCategory GetCategory(FacilityItem element) {
+        return element.category;
     }
 
     protected override FacilityCategory[] GetValidElementCategories() {
@@ -64,25 +67,22 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
         return new FacilityCategory[] { FacilityCategory.CentralHub };
     }
 
-    protected override StarbaseCmdModel MakeCommand(IPlayer owner) {
+    protected override StarbaseCommandItem MakeCommand(IPlayer owner) {
         LogEvent();
         StarbaseCmdStat cmdStat = new StarbaseCmdStat(UnitName, 10F, 100, Formation.Circle, new CombatStrength(0F, 5F, 0F, 5F, 0F, 5F));
 
-        StarbaseCmdModel cmd;
+        StarbaseCommandItem cmd;
         if (isCompositionPreset) {
-            cmd = gameObject.GetSafeMonoBehaviourComponentInChildren<StarbaseCmdModel>();
-            var existingCmdReference = cmd;
-            bool isCmdCompatibleWithOwner = _factory.MakeStarbaseCmdInstance(cmdStat, owner, ref cmd);
-            if (!isCmdCompatibleWithOwner) {
-                Destroy(existingCmdReference.gameObject);
-            }
+            cmd = gameObject.GetSafeMonoBehaviourComponentInChildren<StarbaseCommandItem>();
+            _factory.MakeInstance(cmdStat, owner, ref cmd);
         }
         else {
-            cmd = _factory.MakeStarbaseCmdInstance(cmdStat, owner);
+            cmd = _factory.MakeInstance(cmdStat, owner);
             UnityUtility.AttachChildToParent(cmd.gameObject, gameObject);
         }
         return cmd;
     }
+
 
     protected override bool DeployUnit() {
         LogEvent();
@@ -103,20 +103,15 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityModel, FacilityCategory,
 
     protected override void AssignHQElement() {
         LogEvent();
-        var candidateHQElements = _command.Elements.Where(e => GetValidHQElementCategories().Contains((e as FacilityModel).Data.Category));
+        var candidateHQElements = _command.Elements.Where(e => GetValidHQElementCategories().Contains((e as FacilityItem).Data.Category));
         D.Assert(!candidateHQElements.IsNullOrEmpty()); // bases must have a CentralHub, even if preset
-        _command.HQElement = RandomExtended<AUnitElementModel>.Choice(candidateHQElements) as FacilityModel;
-    }
-
-    protected override void __InitializeCommandIntel() {
-        LogEvent();
-        _command.gameObject.GetSafeMonoBehaviourComponent<StarbaseCmdView>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
+        _command.HQElement = RandomExtended<AUnitElementItem>.Choice(candidateHQElements) as FacilityItem;
     }
 
     protected override void EnableOtherWhenRunning() {
         D.Assert(GameStatus.Instance.IsRunning);
-        // CameraLosChangedListener enabled state handled in View.InitializeVisualMembers()
         gameObject.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeMonitor>().ForAll(wrt => wrt.enabled = true);
+        // CameraLosChangedListener enabled state handled in Item.InitializeViewMembersOnDiscernible
         // Revolvers handle their own enabled state
         // Cmd sprites enabled when shown
         // no orbits present

@@ -40,7 +40,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     /// </summary>
     public IList<Vector3> SectorCorners { get { return _worldVertexLocations; } }
 
-    public IList<SectorModel> AllSectors { get { return _sectors.Values.ToList(); } }
+    public IList<SectorItem> AllSectors { get { return _sectors.Values.ToList(); } }
 
     public float sectorVisibilityDepth = 2F;
 
@@ -52,7 +52,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     private IDictionary<Vector3, Index3D> _gridBoxToSectorIndexLookup;
     private IDictionary<Index3D, Vector3> _sectorIndexToGridBoxLookup;
     private IList<Vector3> _worldBoxLocations;
-    private static IDictionary<Index3D, SectorModel> _sectors;
+    private static IDictionary<Index3D, SectorItem> _sectors;
 
     private GridWireframe _gridWireframe;
     private IList<IDisposable> _subscribers;
@@ -184,7 +184,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
         _gridBoxToSectorIndexLookup = new Dictionary<Vector3, Index3D>();
         _sectorIndexToGridBoxLookup = new Dictionary<Index3D, Vector3>();
         _worldBoxLocations = new List<Vector3>();
-        _sectors = new Dictionary<Index3D, SectorModel>();
+        _sectors = new Dictionary<Index3D, SectorItem>();
 
         float xSize = _grid.size.x;
         float ySize = _grid.size.y;
@@ -233,10 +233,10 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     }
 
     private void __AddSector(Index3D index, Vector3 worldPosition) {
-        SectorModel sectorPrefab = RequiredPrefabs.Instance.sector;
+        SectorItem sectorPrefab = RequiredPrefabs.Instance.sector;
         GameObject sectorGO = NGUITools.AddChild(SectorsFolder.Instance.Folder.gameObject, sectorPrefab.gameObject);
         // sector.Awake() runs immediately here, then disables itself
-        SectorModel sector = sectorGO.GetSafeMonoBehaviourComponent<SectorModel>();
+        SectorItem sector = sectorGO.GetSafeMonoBehaviourComponent<SectorItem>();
 
         SectorData data = new SectorData(index) {
             Density = 1F
@@ -245,12 +245,10 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
         // IMPROVE use data values in place of sector values
 
         sectorGO.transform.position = worldPosition;
-        SectorView view = sectorGO.GetSafeMonoBehaviourComponent<SectorView>();
         sector.enabled = true;
-        view.enabled = true;
 
         UnityUtility.WaitOneToExecute(onWaitFinished: (wasKilled) => {
-            view.PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
+            sector.PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
         });
 
         _sectors.Add(index, sector);
@@ -320,12 +318,19 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
         return index;
     }
 
-    public static bool TryGetSector(Index3D index, out SectorModel sector) {
+    public static bool TryGetSector(Index3D index, out SectorItem sector) {
         return _sectors.TryGetValue(index, out sector);
     }
 
-    public static SectorModel GetSector(Index3D index) {
-        SectorModel sector;
+    /// <summary>
+    /// Gets the sector associated with this index. 
+    /// Warning: Can be null while debugging as only a limited number of sectors are 'built'
+    /// to reduce the time needed to construct valid paths for pathfinding.
+    /// </summary>
+    /// <param name="index">The index.</param>
+    /// <returns></returns>
+    public static SectorItem GetSector(Index3D index) {
+        SectorItem sector;
         if (!TryGetSector(index, out sector)) {
             D.Warn("No SectorModel at {0}, returning null.", index);
         }
@@ -347,7 +352,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
         foreach (var x in xValuePair) {
             foreach (var y in yValuePair) {
                 foreach (var z in zValuePair) {
-                    SectorModel unused;
+                    SectorItem unused;
                     Index3D index = new Index3D(x, y, z);
                     if (TryGetSector(index, out unused)) {
                         neighbors.Add(index);
@@ -373,8 +378,8 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     /// </summary>
     /// <param name="center">The center.</param>
     /// <returns></returns>
-    public static IList<SectorModel> GetSectorNeighbors(Index3D center) {
-        IList<SectorModel> neighborSectors = new List<SectorModel>();
+    public static IList<SectorItem> GetSectorNeighbors(Index3D center) {
+        IList<SectorItem> neighborSectors = new List<SectorItem>();
         foreach (var index in GetNeighbors(center)) {
             neighborSectors.Add(GetSector(index));
         }

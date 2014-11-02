@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Abstract base class that holds data for Items that are a unit command.
     /// </summary>
-    public abstract class ACommandData : ACombatItemData, IDisposable {
+    public abstract class ACommandData : AMortalItemData, IDisposable {
 
         public event Action onCompositionChanged;
 
@@ -85,7 +85,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The maximum range of all the element's weapons that are part of this unit.
         /// </summary>
-        public override float MaxWeaponsRange {
+        public override float MaxWeaponsRange { // UNCLEAR as this overrides SetProperty<> in base, can changes be subscribed too?
             get { return base.MaxWeaponsRange; }
             set { base.MaxWeaponsRange = value; }
         }
@@ -142,7 +142,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        // NOTE: Using new to overwrite a list of base types does not work!!
         protected IList<AElementData> ElementsData { get; private set; }
         protected IDictionary<AElementData, IList<IDisposable>> _subscribers;
 

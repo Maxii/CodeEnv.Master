@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Abstract base class that holds data for Items that can take damage and die.
     /// </summary>
-    public abstract class AMortalItemData : AOwnedItemData {
+    public abstract class AMortalItemData : AItemData {
 
         private float _maxHitPoints;
         public float MaxHitPoints {
@@ -66,6 +66,15 @@ namespace CodeEnv.Master.GameContent {
             set {
                 SetProperty<CombatStrength>(ref _strength, value, "Strength");
             }
+        }
+
+        private float _maxWeaponsRange;
+        /// <summary>
+        /// The maximum range of this item's weapons.
+        /// </summary>
+        public virtual float MaxWeaponsRange {
+            get { return _maxWeaponsRange; }
+            set { SetProperty<float>(ref _maxWeaponsRange, value, "MaxWeaponsRange"); }
         }
 
         /// <summary>

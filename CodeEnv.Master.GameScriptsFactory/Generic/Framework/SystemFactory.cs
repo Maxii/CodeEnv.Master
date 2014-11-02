@@ -16,7 +16,6 @@
 
 // default namespace
 
-using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -34,7 +33,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
 
     /// <summary>
     /// The prefab used to make stars. This top level gameobject's name is the same as the StarCategory
-    /// of the star. StarModel and StarView are components of this gameobject. Children include
+    /// of the star. StarItem and StarView are components of this gameobject. Children include
     /// 1) a billboard with lights and corona textures, 2) the star mesh and 3) a keepoutzone collider.
     /// </summary>
     private GameObject[] _starPrefabs;
@@ -45,20 +44,20 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// Note: previous versions contained one or more moons and the orbiters to go with them. Containing all of
     /// this was a top level empty gameobject whose name was the same as the PlanetoidCategory of the planet. 
     /// </summary>
-    private PlanetModel[] _planetPrefabs;
+    private PlanetItem[] _planetPrefabs;
 
     /// <summary>
-    /// The prefab used to make a system. This top level gameobject's components include the System Model and
+    /// The prefab used to make a system. This top level gameobject's components include the System Item and
     /// VIew. It's child is an empty orbital plane object whose children include a plane mesh and highlight mesh. There 
     /// are other children and grandchildren but they are only transitional.
     /// </summary>
-    private SystemModel _systemPrefab;
+    private SystemItem _systemPrefab;
 
     /// <summary>
     /// The prefab used to make a moon. Children of the moon include 1)  the planet mesh  and 2) a keepoutzone collider.
     /// Note: previously all moons were embedded in the planet prefab.
     /// </summary>
-    private MoonModel[] _moonPrefabs;
+    private MoonItem[] _moonPrefabs;
 
     private SystemFactory() {
         Initialize();
@@ -73,28 +72,28 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     }
 
     /// <summary>
-    /// Makes an instance of a Star based on the stat provided. The returned Model (with its Data) and View
+    /// Makes an instance of a Star based on the stat provided. The returned Item (with its Data) 
     /// will not be enabled but their gameObject will be parented to the provided parent.
     /// </summary>
     /// <param name="starStat">The star stat.</param>
     /// <param name="systemParent">The system parent.</param>
     /// <param name="starLayer">The layer you want the star to assume. Default is Layers.Default.</param>
     /// <returns></returns>
-    public StarItem MakeInstance(StarStat starStat, SystemModel systemParent, Layers starLayer = Layers.Default) {
+    public StarItem MakeInstance(StarStat starStat, SystemItem systemParent, Layers starLayer = Layers.Default) {
         GameObject starPrefab = _starPrefabs.First(sGo => sGo.name == starStat.Category.GetName());
         GameObject starGo = UnityUtility.AddChild(systemParent.gameObject, starPrefab);
         starGo.layer = (int)starLayer;
-        StarItem model = starGo.GetSafeMonoBehaviourComponent<StarItem>();
-        MakeInstance(starStat, systemParent.Data.Name, ref model);
-        return model;
+        StarItem item = starGo.GetSafeMonoBehaviourComponent<StarItem>();
+        MakeInstance(starStat, systemParent.Data.Name, ref item);
+        return item;
     }
 
     /// <summary>
-    /// Makes an instance of a Star from the stat and model provided. The Model (with its Data) and View will not be enabled.
-    /// The model's transform will have the same layer and same parent it arrived with.
+    /// Makes an instance of a Star from the stat and item provided. The Item (with its Data)  will not be enabled.
+    /// The item's transform will have the same layer and same parent it arrived with.
     /// </summary>
     /// <param name="starStat">The star stat.</param>
-    /// <param name="star">The star model.</param>
+    /// <param name="star">The star item.</param>
     public void MakeInstance(StarStat starStat, string systemName, ref StarItem star) {
         D.Assert(!star.enabled, "{0} should not be enabled.".Inject(star.FullName));
         D.Assert(star.transform.parent != null, "{0} should already have a parent.".Inject(star.FullName));
@@ -108,31 +107,30 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         };
     }
 
-
     /// <summary>
     /// Makes an instance of a Planet based on the stat provided. The returned 
-    /// Model (with its Data) and View will not be enabled but their gameObject will be parented to the provided parent.
+    /// Item (with its Data)  will not be enabled but their gameObject will be parented to the provided parent.
     /// </summary>
     /// <param name="planetStat">The planet stat.</param>
     /// <param name="parentSystem">The parent system.</param>
     /// <returns></returns>
-    public PlanetModel MakeInstance(PlanetoidStat planetStat, SystemModel parentSystem) {
-        GameObject planetPrefab = _planetPrefabs.First(p => p.category == planetStat.Category).gameObject;
+    public PlanetItem MakeInstance(PlanetoidStat planetStat, SystemItem parentSystem) {
+        GameObject planetPrefab = _planetPrefabs.Single(p => p.category == planetStat.Category).gameObject;
         GameObject planetGo = UnityUtility.AddChild(parentSystem.gameObject, planetPrefab);
 
-        PlanetModel planetModel = planetGo.GetSafeMonoBehaviourComponent<PlanetModel>();
-        MakeInstance(planetStat, parentSystem.Data.Name, ref planetModel);
-        return planetModel;
+        var planetItem = planetGo.GetSafeMonoBehaviourComponent<PlanetItem>();
+        MakeInstance(planetStat, parentSystem.Data.Name, ref planetItem);
+        return planetItem;
     }
 
     /// <summary>
-    /// Makes an instance of a Planet from the stat and model provided. 
-    /// The Model (with its Data) and View will not be enabled. The model's transform will have the same parent it arrived with.
+    /// Makes an instance of a Planet from the stat and item provided. 
+    /// The Item (with its Data)  will not be enabled. The item's transform will have the same parent it arrived with.
     /// </summary>
     /// <param name="planetStat">The planet stat.</param>
     /// <param name="parentSystemName">Name of the parent system.</param>
-    /// <param name="planet">The planet model.</param>
-    public void MakeInstance(PlanetoidStat planetStat, string parentSystemName, ref PlanetModel planet) {
+    /// <param name="planet">The planet item.</param>
+    public void MakeInstance(PlanetoidStat planetStat, string parentSystemName, ref PlanetItem planet) {
         D.Assert(!planet.enabled, "{0} should not be enabled.".Inject(planet.FullName));
         D.Assert(planet.transform.parent != null, "{0} should already have a parent.".Inject(planet.FullName));
         D.Assert(planetStat.Category == planet.category,
@@ -147,28 +145,28 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
 
     /// <summary>
     /// Makes an instance of a Moon based on the stat provided. The returned
-    /// Model (with its Data) and View will not be enabled but their gameObject will be parented to the provided parent.
+    /// Item (with its Data)  will not be enabled but their gameObject will be parented to the provided parent.
     /// </summary>
     /// <param name="moonStat">The moon stat.</param>
     /// <param name="parentPlanet">The parent planet.</param>
     /// <returns></returns>
-    public MoonModel MakeInstance(PlanetoidStat moonStat, PlanetModel parentPlanet) {
-        GameObject moonPrefab = _moonPrefabs.First(m => m.category == moonStat.Category).gameObject;
+    public MoonItem MakeInstance(PlanetoidStat moonStat, PlanetItem parentPlanet) {
+        GameObject moonPrefab = _moonPrefabs.Single(m => m.category == moonStat.Category).gameObject;
         GameObject moonGo = UnityUtility.AddChild(parentPlanet.gameObject, moonPrefab);
 
-        MoonModel moonModel = moonGo.GetSafeMonoBehaviourComponent<MoonModel>();
-        MakeInstance(moonStat, parentPlanet.Data.Name, ref moonModel);
-        return moonModel;
+        var moonItem = moonGo.GetSafeMonoBehaviourComponent<MoonItem>();
+        MakeInstance(moonStat, parentPlanet.Data.Name, ref moonItem);
+        return moonItem;
     }
 
     /// <summary>
-    /// Makes an instance of a Moon from the stat and model provided. 
-    /// The Model (with its Data) and View will not be enabled. The model's transform will have the same parent it arrived with.
+    /// Makes an instance of a Moon from the stat and item provided. 
+    /// The Item (with its Data)  will not be enabled. The item's transform will have the same parent it arrived with.
     /// </summary>
     /// <param name="moonStat">The planet stat.</param>
     /// <param name="parentPlanetName">Name of the parent planet.</param>
-    /// <param name="moon">The model.</param>
-    public void MakeInstance(PlanetoidStat moonStat, string parentPlanetName, ref MoonModel moon) {
+    /// <param name="moon">The item.</param>
+    public void MakeInstance(PlanetoidStat moonStat, string parentPlanetName, ref MoonItem moon) {
         D.Assert(!moon.enabled, "{0} should not be enabled.".Inject(moon.FullName));
         D.Assert(moon.transform.parent != null, "{0} should already have a parent.".Inject(moon.FullName));
         D.Assert(moonStat.Category == moon.category,
@@ -182,7 +180,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     }
 
     /// <summary>
-    /// Makes an instance of a System from the name provided. The returned Model (with its Data) and View
+    /// Makes an instance of a System from the name provided. The returned Item (with its Data) 
     /// will not be enabled but their gameObject will be parented to the provided parent. Their are
     /// no subordinate planets or stars attached yet.
     /// </summary>
@@ -190,25 +188,25 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="topography">The topography.</param>
     /// <param name="creatorParent">The creator parent.</param>
     /// <returns></returns>
-    public SystemModel MakeSystemInstance(Index3D sectorIndex, SpaceTopography topography, SystemCreator creatorParent) {
+    public SystemItem MakeSystemInstance(Index3D sectorIndex, SpaceTopography topography, SystemCreator creatorParent) {
         GameObject systemPrefab = _systemPrefab.gameObject;
         GameObject systemGo = UnityUtility.AddChild(creatorParent.gameObject, systemPrefab);
         string systemName = creatorParent.SystemName;
         systemGo.name = systemName;
-        SystemModel model = systemGo.GetSafeMonoBehaviourComponent<SystemModel>();
-        MakeSystemInstance(systemName, sectorIndex, topography, ref model);
-        return model;
+        SystemItem item = systemGo.GetSafeMonoBehaviourComponent<SystemItem>();
+        MakeSystemInstance(systemName, sectorIndex, topography, ref item);
+        return item;
     }
 
     /// <summary>
-    /// Makes an instance of a System from the name and model provided. The Model (with its Data) and View
-    /// will not be enabled. The model's transform will have the same parent and children it arrived with.
+    /// Makes an instance of a System from the name and item provided. The Item (with its Data) 
+    /// will not be enabled. The item's transform will have the same parent and children it arrived with.
     /// </summary>
     /// <param name="systemName">Name of the system.</param>
     /// <param name="sectorIndex">Index of the sector.</param>
     /// <param name="topography">The topography.</param>
-    /// <param name="system">The system model.</param>
-    public void MakeSystemInstance(string systemName, Index3D sectorIndex, SpaceTopography topography, ref SystemModel system) {
+    /// <param name="system">The system item.</param>
+    public void MakeSystemInstance(string systemName, Index3D sectorIndex, SpaceTopography topography, ref SystemItem system) {
         D.Assert(system.transform.parent != null, "{0} should already have a parent.".Inject(system.FullName));
         SystemData data = new SystemData(systemName, sectorIndex, topography) {
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData

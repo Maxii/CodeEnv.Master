@@ -43,7 +43,7 @@ using UnityEngine;
 [SerializeAll]
 public class SystemCreator : AMonoBase, IDisposable {
 
-    public static IList<SystemModel> AllSystems { get { return _systemLookupBySectorIndex.Values.ToList(); } }
+    public static IList<SystemItem> AllSystems { get { return _systemLookupBySectorIndex.Values.ToList(); } }
 
     /// <summary>
     /// Returns true if the sector indicated by sectorIndex contains a System.
@@ -51,11 +51,11 @@ public class SystemCreator : AMonoBase, IDisposable {
     /// <param name="sectorIndex">Index of the sector.</param>
     /// <param name="system">The system if present in the sector.</param>
     /// <returns></returns>
-    public static bool TryGetSystem(Index3D sectorIndex, out SystemModel system) {
+    public static bool TryGetSystem(Index3D sectorIndex, out SystemItem system) {
         return _systemLookupBySectorIndex.TryGetValue(sectorIndex, out system);
     }
 
-    private static IDictionary<Index3D, SystemModel> _systemLookupBySectorIndex = new Dictionary<Index3D, SystemModel>();
+    private static IDictionary<Index3D, SystemItem> _systemLookupBySectorIndex = new Dictionary<Index3D, SystemItem>();
 
     private static int[] _planetNumbers = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     private static string[] _moonLetters = new string[] { "a", "b", "c", "d", "e" };
@@ -77,7 +77,7 @@ public class SystemCreator : AMonoBase, IDisposable {
     public bool isCompositionPreset;
     public int maxRandomPlanets = 3;
     public int maxRandomMoons = 3;
-    public bool cycleIntelLevel = false;
+    public bool toCycleIntelCoverage = false;
 
     public string SystemName { get { return _transform.name; } }    // the SystemCreator carries the name of the System
 
@@ -87,10 +87,10 @@ public class SystemCreator : AMonoBase, IDisposable {
     private IList<PlanetoidStat> _planetStats;
     private IList<PlanetoidStat> _moonStats;
 
-    private SystemModel _system;
+    private SystemItem _system;
     private StarItem _star;
-    private IList<PlanetModel> _planets;
-    private IList<MoonModel> _moons;
+    private IList<PlanetItem> _planets;
+    private IList<MoonItem> _moons;
 
     private Transform _systemsFolder;
 
@@ -166,7 +166,7 @@ public class SystemCreator : AMonoBase, IDisposable {
             EnableOtherWhenRunning();
             BeginSystemOperations(onCompletion: delegate {
                 // wait to allow any cellestial objects using the IEnumerator StateMachine to enter their starting state
-                __SetIntelLevel();
+                __SetIntelCoverage();
                 DestroyCreationObject(); // destruction deferred so __UniverseInitializer can complete its work
             });
         }
@@ -179,18 +179,6 @@ public class SystemCreator : AMonoBase, IDisposable {
         _planetStats = CreatePlanetStats();
         _moonStats = CreateMoonStats();
     }
-
-    //private StarStat CreateStarStat() {
-    //    LogEvent();
-    //    StarCategory category;
-    //    if (isCompositionPreset) {
-    //        category = gameObject.GetSafeMonoBehaviourComponentInChildren<StarModel>().category;
-    //    }
-    //    else {
-    //        category = Enums<StarCategory>.GetRandom(excludeDefault: true);
-    //    }
-    //    return new StarStat(category, 100, new OpeYield(0F, 0F, 100F), new XYield(XResource.Special_3, 0.3F));
-    //}
 
     private StarStat CreateStarStat() {
         LogEvent();
@@ -209,7 +197,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         LogEvent();
         var planetStats = new List<PlanetoidStat>();
         if (isCompositionPreset) {
-            var planets = gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetModel>();
+            var planets = gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetItem>();
             foreach (var planet in planets) {
                 PlanetoidCategory pCategory = planet.category;
                 PlanetoidStat stat = new PlanetoidStat(1000000F, 100F, pCategory, 25, new OpeYield(3.1F, 2F, 4.8F), new XYield(XResource.Special_1, 0.3F));
@@ -218,7 +206,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         }
         else {
             int planetCount = maxRandomPlanets;
-            D.Log("{0} random planet count = {1}.", SystemName, planetCount);
+            //D.Log("{0} random planet count = {1}.", SystemName, planetCount);
             for (int i = 0; i < planetCount; i++) {
                 PlanetoidCategory pCategory = RandomExtended<PlanetoidCategory>.Choice(_acceptablePlanetCategories);
                 PlanetoidStat stat = new PlanetoidStat(1000000F, 100F, pCategory, 25, new OpeYield(3.1F, 2F, 4.8F), new XYield(XResource.Special_1, 0.3F));
@@ -232,7 +220,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         LogEvent();
         var moonStats = new List<PlanetoidStat>();
         if (isCompositionPreset) {
-            var moons = gameObject.GetComponentsInChildren<MoonModel>();
+            var moons = gameObject.GetComponentsInChildren<MoonItem>();
             foreach (var moon in moons) {
                 var mCategory = moon.category;
                 PlanetoidStat stat = new PlanetoidStat(10000F, 10F, mCategory, 5, new OpeYield(0.1F, 1F, 0.8F));
@@ -241,7 +229,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         }
         else {
             int moonCount = maxRandomMoons;
-            D.Log("{0} random moon count = {1}.", SystemName, moonCount);
+            //D.Log("{0} random moon count = {1}.", SystemName, moonCount);
             for (int i = 0; i < moonCount; i++) {
                 PlanetoidCategory mCategory = RandomExtended<PlanetoidCategory>.Choice(_acceptableMoonCategories);
                 PlanetoidStat stat = new PlanetoidStat(10000F, 10F, mCategory, 5, new OpeYield(0.1F, 1F, 0.8F));
@@ -269,7 +257,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         LogEvent();
         Index3D sectorIndex = SectorGrid.GetSectorIndex(_transform.position);
         if (isCompositionPreset) {
-            _system = gameObject.GetSafeMonoBehaviourComponentInChildren<SystemModel>();
+            _system = gameObject.GetSafeMonoBehaviourComponentInChildren<SystemItem>();
             _factory.MakeSystemInstance(SystemName, sectorIndex, SpaceTopography.OpenSpace, ref _system);
         }
         else {
@@ -294,9 +282,9 @@ public class SystemCreator : AMonoBase, IDisposable {
     private void MakePlanets() {
         LogEvent();
         if (isCompositionPreset) {
-            _planets = gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetModel>().ToList();
+            _planets = gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetItem>().ToList();
             if (_planets.Any()) {
-                var planetsAlreadyUsed = new List<PlanetModel>();
+                var planetsAlreadyUsed = new List<PlanetItem>();
                 foreach (var planetStat in _planetStats) {  // there is a custom stat for each planet
                     // find a preExisting planet of the right category first to provide to Make
                     var planetsOfStatCategory = _planets.Where(p => p.category == planetStat.Category);
@@ -310,7 +298,7 @@ public class SystemCreator : AMonoBase, IDisposable {
             }
         }
         else {
-            _planets = new List<PlanetModel>(maxRandomPlanets);
+            _planets = new List<PlanetItem>(maxRandomPlanets);
             foreach (var planetStat in _planetStats) {
                 var planet = _factory.MakeInstance(planetStat, _system);
                 _planets.Add(planet);
@@ -342,7 +330,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         _system.Data.SettlementOrbitSlot = allSystemOrbitSlots[settlementOrbitSlotIndex];
 
         // now divy up the remaining slots among the planets
-        IList<PlanetModel> planetsToDestroy = null;
+        IList<PlanetItem> planetsToDestroy = null;
         Stack<int>[] slots;
         foreach (var planet in _planets) {
             var planetCategory = planet.Data.Category;
@@ -381,7 +369,7 @@ public class SystemCreator : AMonoBase, IDisposable {
             }
             else {
                 if (planetsToDestroy == null) {
-                    planetsToDestroy = new List<PlanetModel>();
+                    planetsToDestroy = new List<PlanetItem>();
                 }
                 planetsToDestroy.Add(planet);
             }
@@ -412,11 +400,11 @@ public class SystemCreator : AMonoBase, IDisposable {
     private void MakeMoons() {
         LogEvent();
         if (isCompositionPreset) {
-            _moons = gameObject.GetComponentsInChildren<MoonModel>().ToList();
+            _moons = gameObject.GetComponentsInChildren<MoonItem>().ToList();
             if (_moons.Any()) {
-                var moonsAlreadyUsed = new List<MoonModel>();
+                var moonsAlreadyUsed = new List<MoonItem>();
                 foreach (var planet in _planets) {
-                    var moons = planet.gameObject.GetComponentsInChildren<MoonModel>();
+                    var moons = planet.gameObject.GetComponentsInChildren<MoonItem>();
                     if (moons.Any()) {
                         foreach (var moonStat in _moonStats) {  // there is a custom stat for each moon
                             // find a preExisting moon of the right category first to provide to Make
@@ -433,9 +421,9 @@ public class SystemCreator : AMonoBase, IDisposable {
             }
         }
         else {
-            _moons = new List<MoonModel>(maxRandomMoons);
+            _moons = new List<MoonItem>(maxRandomMoons);
             foreach (var moonStat in _moonStats) {
-                var chosenPlanet = RandomExtended<PlanetModel>.Choice(_planets);
+                var chosenPlanet = RandomExtended<PlanetItem>.Choice(_planets);
                 var moon = _factory.MakeInstance(moonStat, chosenPlanet);
                 _moons.Add(moon);
             }
@@ -450,12 +438,12 @@ public class SystemCreator : AMonoBase, IDisposable {
     /// </summary>
     private void AssignPlanetOrbitSlotsToMoons() {
         LogEvent();
-        IList<MoonModel> moonsToDestroy = null;
+        IList<MoonItem> moonsToDestroy = null;
         foreach (var planet in _planets) {
             float depthAvailForMoonOrbitsAroundPlanet = _systemOrbitSlotDepth;
 
             float startDepthForMoonOrbitSlot = planet.ShipOrbitSlot.OuterRadius;
-            IEnumerable<MoonModel> moons = planet.gameObject.GetComponentsInChildren<MoonModel>();
+            var moons = planet.gameObject.GetComponentsInChildren<MoonItem>();
             if (moons.Any()) {
                 int slotIndex = Constants.Zero;
                 foreach (var moon in moons) {
@@ -465,7 +453,7 @@ public class SystemCreator : AMonoBase, IDisposable {
                         string name = planet.Data.Name + _moonLetters[slotIndex];
                         moon.Data.Name = name;
                         GameTimeDuration orbitPeriod = _minMoonOrbitPeriod + (slotIndex * _moonOrbitPeriodIncrement);
-                        var moonOrbitSlot = new CelestialOrbitSlot(startDepthForMoonOrbitSlot, endDepthForMoonOrbitSlot, planet, orbitPeriod);
+                        var moonOrbitSlot = new CelestialOrbitSlot(startDepthForMoonOrbitSlot, endDepthForMoonOrbitSlot, planet.gameObject, true, orbitPeriod);
                         string orbiterName = name + " Orbiter";
                         moonOrbitSlot.AssumeOrbit(moon.transform, orbiterName);
                         //D.Log("{0} has assumed orbit slot {1} around Planet {2}.", moon.FullName, slotIndex, planet.FullName);
@@ -475,10 +463,10 @@ public class SystemCreator : AMonoBase, IDisposable {
                     }
                     else {
                         if (moonsToDestroy == null) {
-                            moonsToDestroy = new List<MoonModel>();
+                            moonsToDestroy = new List<MoonItem>();
                         }
-                        D.Log("{0} scheduled for destruction. OrbitSlot outer depth {1} > available depth {2}.",
-                            moon.FullName, endDepthForMoonOrbitSlot, depthAvailForMoonOrbitsAroundPlanet);
+                        //D.Log("{0} scheduled for destruction. OrbitSlot outer depth {1} > available depth {2}.",
+                        //    moon.FullName, endDepthForMoonOrbitSlot, depthAvailForMoonOrbitsAroundPlanet);
                         moonsToDestroy.Add(moon);
                     }
                 }
@@ -513,10 +501,6 @@ public class SystemCreator : AMonoBase, IDisposable {
         _moons.ForAll(m => m.enabled = true);
         _system.enabled = true;
         _star.enabled = true;
-        // Enable the Views of the Models 
-        _planets.ForAll(p => p.gameObject.GetSafeMonoBehaviourComponent<AItemView>().enabled = true);
-        _moons.ForAll(m => m.gameObject.GetSafeMonoBehaviourComponent<AItemView>().enabled = true);
-        _system.gameObject.GetSafeMonoBehaviourComponent<AItemView>().enabled = true;
         UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
             if (onCompletion != null) {
                 onCompletion();
@@ -532,14 +516,9 @@ public class SystemCreator : AMonoBase, IDisposable {
     /// <param name="onCompletion">The on completion.</param>
     private void EnableOtherWhenRunning(Action onCompletion = null) {
         D.Assert(GameStatus.Instance.IsRunning);
-        // CameraLosChangedListeners are enabled by View's.InitializeVisualMembers()
-
-        // Enable planet and moon orbits. Leave any possible settlement that might already be present to the SettlementCreator
-        _planets.ForAll(p => p.gameObject.GetComponentInParents<Orbiter>().enabled = true);   // planet orbits
-
-        var allShipOrbiters = gameObject.GetComponentsInChildren<OrbiterForShips>();
-        _planets.ForAll(p => p.gameObject.GetComponentsInChildren<Orbiter>().Except(allShipOrbiters).ForAll(o => o.enabled = true));  // moon orbits
-
+        // CameraLosChangedListeners are enabled by Items
+        // Leave any possible settlement that might already be present to the SettlementCreator
+        // Planet and moons control their own orbiter enablement state
         // OrbitersForShips are enabled and disabled by ShipOrbitSlot when ships assume and break orbit
         // Revolvers control their own enablement based on their visibility. Leave any possible settlement that might already be present to the SettlementCreator
 
@@ -551,18 +530,18 @@ public class SystemCreator : AMonoBase, IDisposable {
         });
     }
 
-    private void __SetIntelLevel() {    // UNCLEAR how should system, star, planet and moon intel coverage levels relate to each other?
+    private void __SetIntelCoverage() {    // UNCLEAR how should system, star, planet and moon intel coverage levels relate to each other?
         LogEvent();
         // Stars use FixedIntel set to Comprehensive. It is not changeable
         // Systems simply use Intel like most other objects. It can be changed to any value
         // Planets and Moons use ImprovingIntel which means once a level is achieved it cannot be reduced
 
-        _planets.ForAll(p => p.gameObject.GetSafeInterface<IViewable>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive);
-        _moons.ForAll(m => m.gameObject.GetSafeInterface<IViewable>().PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive);
+        _planets.ForAll(p => p.PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive);
+        _moons.ForAll(m => m.PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive);
 
-        var systemIntel = _system.gameObject.GetSafeInterface<IViewable>().PlayerIntel;
-        if (cycleIntelLevel) {
-            new Job(__CycleSystemIntelCoverage(systemIntel), true);
+        var systemIntel = _system.PlayerIntel;
+        if (toCycleIntelCoverage) {
+            new Job(__CycleIntelCoverage(systemIntel), true);
         }
         else {
             systemIntel.CurrentCoverage = IntelCoverage.Comprehensive;
@@ -570,7 +549,7 @@ public class SystemCreator : AMonoBase, IDisposable {
     }
 
     private IntelCoverage __previousCoverage;
-    private IEnumerator __CycleSystemIntelCoverage(IIntel intel) {
+    private IEnumerator __CycleIntelCoverage(IIntel intel) {
         intel.CurrentCoverage = IntelCoverage.None;
         yield return new WaitForSeconds(4F);
         intel.CurrentCoverage = IntelCoverage.Aware;

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SectorExaminer.cs
-//  Singleton that displays the highlighted wireframe of a sector and provides a context menu for fleet commands
+// Singleton that displays the highlighted wireframe of a sector and provides a context menu for fleet commands
 // relevant to the highlighted sector.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -52,9 +52,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
     /// actuation of the Context Menu.
     /// </summary>
     private BoxCollider _collider;
-
-    private bool _isContextMenuShowing;
-    private CtxObject _ctxObject;
+    private ICtxControl _ctxControl;
 
     private string _sectorIDLabelText = "Sector {0}" + Constants.NewLine + "GridBox {1}.";
     private ITrackingWidget _sectorIDLabel;
@@ -102,74 +100,30 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
         InitializeContextMenu();
     }
 
+    private void InitializeContextMenu() {
+        _ctxControl = new SectorCtxControl(this);
+    }
+
+    #region Mouse Events
+
     void OnHover(bool isOver) {
         if (_viewMode == PlayerViewMode.SectorView) {
             //D.Log("SectorExaminer calling Sector {0}.ShowHud({1}).", CurrentSectorIndex, isOver);
-            SectorGrid.GetSector(CurrentSectorIndex).gameObject.GetSafeMonoBehaviourComponent<SectorView>().ShowHud(isOver);
+            SectorGrid.GetSector(CurrentSectorIndex).ShowHud(isOver);
         }
     }
-
-    #region ContextMenu
 
     void OnPress(bool isDown) {
-        if (GameInputHelper.Instance.IsRightMouseButton() && !isDown) {
-            OnRightPressRelease();
+        if (GameInputHelper.Instance.IsRightMouseButton()) {
+            OnRightPress(isDown);
         }
     }
 
-    private void OnRightPressRelease() {
-        if (_viewMode == PlayerViewMode.SectorView) {
-            FleetCmdView selectedFleetView = _selectionMgr.CurrentSelection as FleetCmdView;
-            if (selectedFleetView != null) {
-                _ctxObject.ShowMenu();
-            }
+    private void OnRightPress(bool isDown) {
+        if (!isDown && !GameInput.Instance.IsDragging) {
+            // right press release while not dragging means both press and release were over this object
+            _ctxControl.OnRightPressRelease();
         }
-    }
-
-    // The Wireframe Hotspot approach alternative to using a small collider
-    ///// <summary>
-    ///// Called when a mouse button is pressed and is not consumed by another object. This implementation
-    ///// is a custom context menu picker for the SectorViewer.
-    ///// </summary>
-    ///// <param name="button">The Ngui mousebutton.</param>
-    ///// <param name="isDown">if set to <c>true</c> [is down].</param>
-    //private void OnUnconsumedPress(NguiMouseButton button, bool isDown) {
-    //    if (_viewMode == PlayerViewMode.SectorView && button == NguiMouseButton.Right && !isDown) {
-    //        FleetView selectedFleetView = _selectionMgr.CurrentSelection as FleetView;
-    //        if (selectedFleetView != null && _wireframe.IsMouseOverHotSpot) {
-    //            _ctxObject.ShowMenu();
-    //        }
-    //    }
-    //}
-
-    private void InitializeContextMenu() {    // IMPROVE string use
-        _ctxObject = UnityUtility.ValidateMonoBehaviourPresence<CtxObject>(gameObject);
-        CtxMenu sectorMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "SectorMenu");
-        _ctxObject.contextMenu = sectorMenu;
-        D.Assert(_ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
-        UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
-
-        EventDelegate.Add(_ctxObject.onShow, OnContextMenuShow);
-        EventDelegate.Add(_ctxObject.onSelection, OnContextMenuSelection);
-        EventDelegate.Add(_ctxObject.onHide, OnContextMenuHide);
-    }
-
-    private void OnContextMenuShow() {
-        _isContextMenuShowing = true;
-    }
-
-    private void OnContextMenuSelection() {
-        int menuId = CtxObject.current.selectedItem;
-        FleetCmdView_Player selectedFleetView = _selectionMgr.CurrentSelection as FleetCmdView_Player;
-        IFleetCmdModel selectedFleet = selectedFleetView.Presenter.Model;
-        if (menuId == 4) {  // UNDONE
-            SectorModel sector = SectorGrid.GetSector(CurrentSectorIndex);
-            selectedFleet.CurrentOrder = new FleetOrder(FleetDirective.MoveTo, sector, Speed.FleetStandard);
-        }
-    }
-
-    private void OnContextMenuHide() {
-        _isContextMenuShowing = false;
     }
 
     #endregion
@@ -202,7 +156,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
             case PlayerViewMode.SectorView:
                 DynamicallySubscribe(true);
                 if (_sectorViewJob == null) {
-                    _sectorViewJob = new Job(ShowSectorUnderMouse(), toStart: false, onJobComplete: delegate {
+                    _sectorViewJob = new Job(ShowSectorUnderMouse(), toStart: false, onJobComplete: (wasKilled) => {
                         // TODO
                     });
                 }
@@ -217,14 +171,14 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
                     ShowSector(false);
                 }
                 _collider.enabled = false;
-                _ctxObject.HideMenu();
+                //_ctxObject.HideMenu();
+                if (_ctxControl.IsShowing) { _ctxControl.Show(false); }
 
                 // OPTIMIZE cache sector and sectorView
-                SectorModel sectorModel = SectorGrid.GetSector(CurrentSectorIndex);
-                if (sectorModel != null) {  // can be null if camera is located where no sector object was created
-                    SectorView sectorView = sectorModel.gameObject.GetSafeMonoBehaviourComponent<SectorView>();
-                    if (sectorView.HudPublisher.IsHudShowing) {
-                        sectorView.ShowHud(false);
+                var sector = SectorGrid.GetSector(CurrentSectorIndex);
+                if (sector != null) {  // can be null if camera is located where no sector object was created
+                    if (sector.HudPublisher.IsHudShowing) {
+                        sector.ShowHud(false);
                     }
                 }
                 break;
@@ -236,13 +190,15 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
 
     private IEnumerator ShowSectorUnderMouse() {
         while (true) {
-            if (!_isContextMenuShowing) {   // don't change highlighted sector while context menu is showing
+            if (!_ctxControl.IsShowing) {   // don't change highlighted sector while context menu is showing
+
+                //if (!_isContextMenuShowing) {   // don't change highlighted sector while context menu is showing
                 Vector3 mousePosition = Input.mousePosition;
                 mousePosition.z = _distanceToHighlightedSector;
                 Vector3 mouseWorldPoint = Camera.main.ScreenToWorldPoint(mousePosition);
                 Index3D sectorIndexUnderMouse = SectorGrid.GetSectorIndex(mouseWorldPoint);
                 bool toShow;
-                SectorModel notUsed;
+                SectorItem notUsed;
                 if (toShow = SectorGrid.TryGetSector(sectorIndexUnderMouse, out notUsed)) {
                     if (!CurrentSectorIndex.Equals(sectorIndexUnderMouse)) {
                         CurrentSectorIndex = sectorIndexUnderMouse; // avoid the SetProperty equivalent warnings
@@ -276,7 +232,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
 
     private void Cleanup() {
         if (_wireframe != null) { _wireframe.Dispose(); }
-        UnityUtility.ExecuteIfNotNullOrDestroyed(_sectorIDLabel, Destroy);
+        UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(_sectorIDLabel);
         if (_sectorViewJob != null) { _sectorViewJob.Kill(); }
         Unsubscribe();
     }
@@ -367,5 +323,24 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
 
     #endregion
 
+    #region Archive
+
+    // The Wireframe Hotspot approach alternative to using a small collider
+    ///// <summary>
+    ///// Called when a mouse button is pressed and is not consumed by another object. This implementation
+    ///// is a custom context menu picker for the SectorViewer.
+    ///// </summary>
+    ///// <param name="button">The Ngui mousebutton.</param>
+    ///// <param name="isDown">if set to <c>true</c> [is down].</param>
+    //private void OnUnconsumedPress(NguiMouseButton button, bool isDown) {
+    //    if (_viewMode == PlayerViewMode.SectorView && button == NguiMouseButton.Right && !isDown) {
+    //        FleetView selectedFleetView = _selectionMgr.CurrentSelection as FleetView;
+    //        if (selectedFleetView != null && _wireframe.IsMouseOverHotSpot) {
+    //            _ctxObject.ShowMenu();
+    //        }
+    //    }
+    //}
+
+    #endregion
 }
 

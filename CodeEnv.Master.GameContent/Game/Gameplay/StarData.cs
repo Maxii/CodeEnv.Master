@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// All the data associated with a particular star.
     /// </summary>
-    public class StarData : AOwnedItemData {
+    public class StarData : AItemData {
 
         public StarCategory Category { get; private set; }
 

@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The name.</param>
         /// <returns></returns>
         public static E DeriveEnumFromName<E>(string name) where E : struct {
-            D.Assert(typeof(E).IsEnum, "E must be an enumerated type.");
+            D.Assert(typeof(E).IsEnum, "{0} must be an enumerated type.".Inject(typeof(E).Name));
             Arguments.ValidateForContent(name);
             return Enums<E>.GetValues().Single(e => name.Trim().ToLower().Contains(e.ToString().ToLower()));
         }

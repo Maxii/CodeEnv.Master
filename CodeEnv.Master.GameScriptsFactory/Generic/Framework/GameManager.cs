@@ -134,7 +134,7 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
                 References.InputHelper = GameInputHelper.Instance;
                 References.DynamicObjectsFolder = DynamicObjectsFolder.Instance;
                 References.CameraControl = CameraControl.Instance;
-                References.UnitFactory = UnitFactory.Instance;
+                //References.UnitFactory = UnitFactory.Instance;
                 References.GeneralFactory = GeneralFactory.Instance;
                 References.UsefulTools = UsefulTools.Instance;
                 References.UniverseFolder = UniverseFolder.Instance;

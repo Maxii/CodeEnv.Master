@@ -19,6 +19,8 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using UnityEngine;
+
     /// <summary>
     ///  Interface designating the game object it is attached too as an
     /// object that can be selected as the camera's focus, thereby causing the 

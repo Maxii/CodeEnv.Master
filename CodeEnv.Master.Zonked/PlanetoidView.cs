@@ -97,7 +97,7 @@ public class PlanetoidView : AMortalItemView, ICameraFollowable {
         var planetTarget = Presenter.Model as IDestinationTarget;
         if (menuId == 0) {  // UNDONE
             // MoveTo
-            selectedFleet.CurrentOrder = new FleetOrder(FleetDirective.MoveTo, planetTarget, Speed.FleetStandard);
+            selectedFleet.CurrentOrder = new FleetOrder(FleetDirective.Move, planetTarget, Speed.FleetStandard);
         }
         else if (menuId == 1) {
             // Attack

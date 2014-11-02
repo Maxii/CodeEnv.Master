@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AUnitCommandItem.cs
-// COMMENT - one line to give a brief idea of what this file does.
+// Abstract base class for Unit Command items. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,18 +18,20 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// COMMENT 
+/// Abstract base class for Unit Command items. 
 /// </summary>
-public abstract class AUnitCommandItem : AMortalItem, ICmdModel, ICmdTarget, ICommandViewable, ISelectable {
+public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, IUnitTarget {
 
-    public string UnitName { get { return Data.ParentName; } }
+    /// <summary>
+    /// The transform that normally contains all elements and commands assigned to the Unit.
+    /// </summary>
+    public Transform UnitContainer { get; private set; }
 
     public new ACommandData Data {
         get { return base.Data as ACommandData; }
@@ -40,6 +42,15 @@ public abstract class AUnitCommandItem : AMortalItem, ICmdModel, ICmdTarget, ICo
     public AUnitElementItem HQElement {
         get { return _hqElement; }
         set { SetProperty<AUnitElementItem>(ref _hqElement, value, "HQElement", OnHQElementChanged, OnHQElementChanging); }
+    }
+
+    private IWidgetTrackable _trackingTarget;
+    /// <summary>
+    /// The target that this UnitCommand tracks in worldspace. 
+    /// </summary>
+    public IWidgetTrackable TrackingTarget {
+        protected get { return _trackingTarget; }
+        set { SetProperty<IWidgetTrackable>(ref _trackingTarget, value, "TrackingTarget", OnTrackingTargetChanged); }
     }
 
     public IList<AUnitElementItem> Elements { get; private set; }
@@ -65,8 +76,8 @@ public abstract class AUnitCommandItem : AMortalItem, ICmdModel, ICmdTarget, ICo
     }
 
     protected override void InitializeModelMembers() {
-        // there is no collider that is part of a UnitCommandModel implementation
-        // the only collider is for player interaction with the view's CmdIcon
+        // the only collider is for player interaction with the item's CmdIcon
+        UnitContainer = _transform.parent;
     }
 
     // formations are now generated when an element is added and/or when a HQ element is assigned
@@ -76,12 +87,6 @@ public abstract class AUnitCommandItem : AMortalItem, ICmdModel, ICmdTarget, ICo
         _subscribers.Add(Data.SubscribeToPropertyChanged<ACommandData, Formation>(d => d.UnitFormation, OnFormationChanged));
 
         Data.onCompositionChanged += OnCompositionChanged;
-    }
-
-
-
-    protected override void InitializeViewMembers() {
-        base.InitializeViewMembers();
     }
 
     protected override void InitializeViewMembersOnDiscernible() {
@@ -101,7 +106,6 @@ public abstract class AUnitCommandItem : AMortalItem, ICmdModel, ICmdTarget, ICo
 
     #endregion
 
-
     #region Model Methods
 
     /// <summary>
@@ -113,18 +117,13 @@ public abstract class AUnitCommandItem : AMortalItem, ICmdModel, ICmdTarget, ICo
         D.Assert(!element.IsHQElement, "{0} adding element {1} already designated as the HQ Element.".Inject(FullName, element.FullName));
         // elements should already be enabled when added to a Cmd as that is commonly their state when transferred during runtime
         D.Assert((element as MonoBehaviour).enabled, "{0} is not yet enabled.".Inject(element.FullName));
-        element.onDeathOneShot += OnSubordinateElementDeath;
         Elements.Add(element);
         Data.AddElement(element.Data);
-        Transform parentTransform = _transform.parent;
-        if (element.Transform.parent != parentTransform) {
-            element.Transform.parent = parentTransform;   // local position, rotation and scale are auto adjusted to keep ship unchanged in worldspace
-        }
+        element.AttachElementAsChildOfUnitContainer(UnitContainer);
         // TODO consider changing HQElement
     }
 
     public virtual void RemoveElement(AUnitElementItem element) {
-        element.onDeathOneShot -= OnSubordinateElementDeath;
         bool isRemoved = Elements.Remove(element);
         isRemoved = isRemoved && Data.RemoveElement(element.Data);
         D.Assert(isRemoved, "{0} not found.".Inject(element.FullName));
@@ -134,13 +133,11 @@ public abstract class AUnitCommandItem : AMortalItem, ICmdModel, ICmdTarget, ICo
         }
     }
 
-    private void OnSubordinateElementDeath(IMortalModel mortalItem) {
-        AUnitElementItem element = mortalItem as AUnitElementItem;
-        D.Assert(element != null);
-        D.Log("{0} acknowledging {1} has been lost.", FullName, element.FullName);
-        RemoveElement(element);
+    public void OnSubordinateElementDeath(AUnitElementItem deadElement) {
+        D.Assert(deadElement != null);
+        D.Log("{0} acknowledging {1} has been lost.", FullName, deadElement.FullName);
+        RemoveElement(deadElement);
     }
-
 
     protected virtual void OnHQElementChanging(AUnitElementItem newHQElement) {
         Arguments.ValidateNotNull(newHQElement);
@@ -157,13 +154,8 @@ public abstract class AUnitCommandItem : AMortalItem, ICmdModel, ICmdTarget, ICo
     protected virtual void OnHQElementChanged() {
         HQElement.IsHQElement = true;
         Data.HQElementData = HQElement.Data;
-        D.Log("{0}'s HQElement is now {1}.", Data.ParentName, HQElement.Data.Name);
-
-        //if (onHQElementChanged != null) {
-        //    onHQElementChanged(HQElement);
-        //}
+        //D.Log("{0}'s HQElement is now {1}.", Data.ParentName, HQElement.Data.Name);
         TrackingTarget = HQElement as IWidgetTrackable;
-
         _formationGenerator.RegenerateFormation();
     }
 
@@ -171,9 +163,16 @@ public abstract class AUnitCommandItem : AMortalItem, ICmdModel, ICmdTarget, ICo
         AssessCmdIcon();
     }
 
-
     private void OnFormationChanged() {
         _formationGenerator.RegenerateFormation();
+    }
+
+    protected override void OnDeath() {
+        base.OnDeath();
+        ShowCmdIcon(false);
+        if (IsSelected) {
+            SelectionManager.Instance.CurrentSelection = null;
+        }
     }
 
     public override void __SimulateAttacked() {
@@ -188,7 +187,7 @@ public abstract class AUnitCommandItem : AMortalItem, ICmdModel, ICmdTarget, ICo
     public bool __CheckForDamage(bool isHQElementAlive) {   // HACK needs work. Cmds should be hardened to defend against weapons, so pass along attackerWeaponStrength?
         bool isHit = (isHQElementAlive) ? RandomExtended<bool>.SplitChance() : true;
         if (isHit) {
-            TakeHit(new CombatStrength(RandomExtended<ArmamentCategory>.Choice(offensiveArmamentCategories), UnityEngine.Random.Range(1F, Data.MaxHitPoints)));
+            TakeHit(new CombatStrength(RandomExtended<ArmamentCategory>.Choice(__offensiveArmamentCategories), UnityEngine.Random.Range(1F, Data.MaxHitPoints)));
         }
         else {
             D.Log("{0} avoided a hit.", FullName);
@@ -204,8 +203,14 @@ public abstract class AUnitCommandItem : AMortalItem, ICmdModel, ICmdTarget, ICo
 
     protected internal virtual void CleanupAfterFormationGeneration() { }
 
+    public override void TakeHit(CombatStrength attackerWeaponStrength) {
+        float damage = Data.Strength - attackerWeaponStrength;
+        bool isCmdAlive = ApplyDamage(damage);
+        D.Assert(isCmdAlive, "{0} should never die as a result of being hit.".Inject(Data.Name));
+    }
+
     /// <summary>
-    /// Immediately sets the state of this Command to Dead.
+    /// Kills this Command by setting its state to Dead.
     /// </summary>
     protected abstract void KillCommand();
 
@@ -224,12 +229,8 @@ public abstract class AUnitCommandItem : AMortalItem, ICmdModel, ICmdTarget, ICo
 
     protected virtual void OnIsSelectedChanged() {
         AssessHighlighting();
-
-        UnitElementModels.ForAll(e => e.Transform.GetSafeInterface<IElementViewable>().AssessHighlighting());
-        if (IsSelected) {
-            SelectionManager.Instance.CurrentSelection = this;
-        }
-
+        Elements.ForAll(e => e.AssessHighlighting());
+        if (IsSelected) { SelectionManager.Instance.CurrentSelection = this; }
     }
 
     protected virtual void PositionCmdOverTrackingTarget() {
@@ -239,8 +240,7 @@ public abstract class AUnitCommandItem : AMortalItem, ICmdModel, ICmdTarget, ICo
 
     protected override void OnPlayerIntelCoverageChanged() {
         base.OnPlayerIntelCoverageChanged();
-        // IMPROVE
-        UnitElementModels.ForAll(e => e.Transform.GetSafeInterface<IElementViewable>().PlayerIntel.CurrentCoverage = PlayerIntel.CurrentCoverage);
+        Elements.ForAll(e => e.PlayerIntel.CurrentCoverage = PlayerIntel.CurrentCoverage);  // IMPROVE
         AssessCmdIcon();
     }
 
@@ -251,6 +251,21 @@ public abstract class AUnitCommandItem : AMortalItem, ICmdModel, ICmdTarget, ICo
 
     protected abstract IIcon MakeCmdIconInstance();
 
+    private void ChangeCmdIcon(IIcon icon) {
+        if (_cmdIcon != null) {
+            _cmdIcon.Set(icon.Filename);
+            _cmdIcon.Color = icon.Color;
+            //D.Log("{0} Icon color is {1}.", Presenter.FullName, icon.Color.GetName());
+            return;
+        }
+        //D.Warn("Attempting to change a null {0} to {1}.", typeof(CommandTrackingSprite).Name, icon.Filename);
+    }
+
+    private void ShowCmdIcon(bool toShow) {
+        if (_cmdIcon != null) {
+            _cmdIcon.Show(toShow);
+        }
+    }
 
     public override void AssessHighlighting() {
         if (!IsDiscernible) {
@@ -270,12 +285,6 @@ public abstract class AUnitCommandItem : AMortalItem, ICmdModel, ICmdTarget, ICo
             return;
         }
         Highlight(Highlights.None);
-    }
-
-    private void ShowCmdIcon(bool toShow) {
-        if (_cmdIcon != null) {
-            _cmdIcon.Show(toShow);
-        }
     }
 
     protected override void Highlight(Highlights highlight) {
@@ -311,36 +320,16 @@ public abstract class AUnitCommandItem : AMortalItem, ICmdModel, ICmdTarget, ICo
         return Screen.height * circleScaleFactor;
     }
 
-
     #endregion
 
     #region Mouse Events
 
     protected override void OnLeftClick() {
         base.OnLeftClick();
-        //D.Log("{0}.OnLeftClick().", Presenter.FullName);
         IsSelected = true;
     }
 
-    protected override void OnLeftDoubleClick() {
-        base.OnLeftDoubleClick();
-        __ToggleStealthSimulation();
-    }
-
     #endregion
-
-    #region Intel Stealth Testing
-
-    private IntelCoverage __normalIntelCoverage;
-    private void __ToggleStealthSimulation() {
-        if (__normalIntelCoverage == IntelCoverage.None) {
-            __normalIntelCoverage = PlayerIntel.CurrentCoverage;
-        }
-        PlayerIntel.CurrentCoverage = PlayerIntel.CurrentCoverage == __normalIntelCoverage ? IntelCoverage.Aware : __normalIntelCoverage;
-    }
-
-    #endregion
-
 
     #region Cleanup
 
@@ -359,16 +348,22 @@ public abstract class AUnitCommandItem : AMortalItem, ICmdModel, ICmdTarget, ICo
         D.Error("{0}.Dead_ExitState should not occur.", Data.Name);
     }
 
+    protected void DestroyUnitContainer() {
+        UnityUtility.WaitOneToExecute((jobWasKilled) => {
+            Destroy(UnitContainer.gameObject);
+            D.Log("{0}.UnitContainer has been destroyed.", FullName);
+        });
+    }
+
     #endregion
 
     # region StateMachine Callbacks
 
-    public override void OnShowCompletion() {
+    protected override void OnShowCompletion() {
         RelayToCurrentState();
     }
 
-    protected void OnTargetDeath(IMortalTarget deadTarget) {
-        //LogEvent();
+    protected void OnTargetDeath(IMortalItem deadTarget) {
         RelayToCurrentState(deadTarget);
     }
 
@@ -383,58 +378,11 @@ public abstract class AUnitCommandItem : AMortalItem, ICmdModel, ICmdTarget, ICo
 
     #region IDestinationTarget Members
 
-    // override reqd as AMortalItemModel base version accesses AItemData, not ACommandData
+    public override string DisplayName { get { return Data.ParentName; } }
+
+    // override reqd as AMortalItem base version accesses AItemData, not ACommandData
     // since ACommandData.Topography must use new rather than override
     public override SpaceTopography Topography { get { return Data.Topography; } }
-
-    #endregion
-
-    #region IMortalTarget Members
-
-    public override void TakeHit(CombatStrength attackerWeaponStrength) {
-        float damage = Data.Strength - attackerWeaponStrength;
-        bool isCmdAlive = ApplyDamage(damage);
-        D.Assert(isCmdAlive, "{0} should never die as a result of being hit.".Inject(Data.Name));
-    }
-
-    #endregion
-
-    #region ICmdTarget Members
-
-    public float MaxWeaponsRange { get { return Data.MaxWeaponsRange; } }
-
-    public IEnumerable<IElementTarget> UnitElementTargets { get { return Elements.Cast<IElementTarget>(); } }
-
-    #endregion
-
-    #region ICmdModel Members
-
-    public event Action<IElementModel> onHQElementChanged;  // not used
-
-    public IEnumerable<IElementModel> UnitElementModels { get { return Elements.Cast<IElementModel>(); } }
-
-    #endregion
-
-    #region ICommandViewable Members
-
-    private IWidgetTrackable _trackingTarget;
-    /// <summary>
-    /// The target that this UnitCommand tracks in worldspace. 
-    /// </summary>
-    public IWidgetTrackable TrackingTarget {
-        protected get { return _trackingTarget; }
-        set { SetProperty<IWidgetTrackable>(ref _trackingTarget, value, "TrackingTarget", OnTrackingTargetChanged); }
-    }
-
-    public void ChangeCmdIcon(IIcon icon) {
-        if (_cmdIcon != null) {
-            _cmdIcon.Set(icon.Filename);
-            _cmdIcon.Color = icon.Color;
-            //D.Log("{0} Icon color is {1}.", Presenter.FullName, icon.Color.GetName());
-            return;
-        }
-        //D.Warn("Attempting to change a null {0} to {1}.", typeof(CommandTrackingSprite).Name, icon.Filename);
-    }
 
     #endregion
 
@@ -458,19 +406,6 @@ public abstract class AUnitCommandItem : AMortalItem, ICmdModel, ICmdTarget, ICo
     public bool IsSelected {
         get { return _isSelected; }
         set { SetProperty<bool>(ref _isSelected, value, "IsSelected", OnIsSelectedChanged); }
-    }
-
-    #endregion
-
-    #region IMortalViewable Members
-
-    public override void OnDeath() {
-        base.OnDeath();
-        ShowCmdIcon(false);
-        if (IsSelected) {
-            SelectionManager.Instance.CurrentSelection = null;
-        }
-
     }
 
     #endregion

@@ -27,30 +27,34 @@ namespace CodeEnv.Master.GameContent {
 
         Disband,
 
-        DisbandAt,
+        //DisbandAt,
 
         Guard,
 
-        JoinFleet,
+        Join,
 
         /// <summary>
         /// Move to an IDestinationTarget.
         /// </summary>
-        MoveTo,
+        Move,
 
         Patrol,
 
-        RefitAt,
+        Refit,
 
         Repair,
 
-        RepairAt,
+        //RepairAt,
 
         Retreat,
 
-        RetreatTo,
+        //RetreatTo,
 
-        StopAttack
+        StopAttack,
+
+        Explore,
+
+        SelfDestruct
 
     }
 }

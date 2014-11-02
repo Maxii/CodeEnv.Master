@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IElementTarget.cs
-//  Interface for a target that is an element of a command.
+//  Interface for items that can be targeted by unit elements.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,10 +16,19 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    /// <summary>
-    ///  Interface for a target that is an element of a command.
-    /// </summary>
-    public interface IElementTarget : ICombatTarget { }
+    using System;
 
+    /// <summary>
+    ///  Interface for items that can be targeted by unit elements.
+    /// </summary>
+    public interface IElementTarget : IDestinationTarget {
+
+        event Action<IMortalItem> onDeathOneShot;
+
+        bool IsAlive { get; }
+
+        void TakeHit(CombatStrength attackerWeaponStrength);
+
+    }
 }
 

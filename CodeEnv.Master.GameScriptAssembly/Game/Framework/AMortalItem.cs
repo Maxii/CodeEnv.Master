@@ -6,11 +6,11 @@
 // </copyright> 
 // <summary> 
 // File: AMortalItem.cs
-// COMMENT - one line to give a brief idea of what this file does.
+// Abstract base class for all items that can die.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -26,17 +26,19 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// COMMENT 
+/// Abstract base class for all items that can die.
 /// </summary>
-public abstract class AMortalItem : AItem, IMortalModel, IMortalTarget /*, IMortalViewable*/ {
-
-    public event Action<MortalAnimations> onShowAnimation;  // not used
-    public event Action<MortalAnimations> onStopAnimation;  // not used
+public abstract class AMortalItem : AItem, IMortalItem {
 
     public new AMortalItemData Data {
         get { return base.Data as AMortalItemData; }
         set { base.Data = value; }
     }
+
+    /// <summary>
+    /// Flag indicating whether this MortalItem is alive and operating.
+    /// </summary>
+    public bool IsAlive { get; private set; }
 
     public AudioClip dying;
     public AudioClip hit;
@@ -53,7 +55,6 @@ public abstract class AMortalItem : AItem, IMortalModel, IMortalTarget /*, IMort
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
         _subscribers.Add(Data.SubscribeToPropertyChanged<AMortalItemData, float>(d => d.Health, OnHealthChanged));
-        //_subscribers.Add(Data.SubscribeToPropertyChanged<AMortalItemData, IPlayer>(d => d.Owner, OnOwnerChanged));
     }
 
     #endregion
@@ -74,17 +75,10 @@ public abstract class AMortalItem : AItem, IMortalModel, IMortalTarget /*, IMort
 
     protected virtual void OnDeath() {
         IsAlive = false;
-        if (onTargetDeathOneShot != null) {
-            onTargetDeathOneShot(this);
-            onTargetDeathOneShot = null;
-        }
         if (onDeathOneShot != null) {
             onDeathOneShot(this);
             onDeathOneShot = null;
         }
-        // OPTIMIZE not clear this event will ever be used
-        GameEventManager.Instance.Raise<MortalItemDeathEvent>(new MortalItemDeathEvent(this, this));
-
         if (IsFocus) { References.CameraControl.CurrentFocus = null; }
     }
 
@@ -92,19 +86,27 @@ public abstract class AMortalItem : AItem, IMortalModel, IMortalTarget /*, IMort
 
     #region View Methods
 
-    public abstract void OnShowCompletion();
+    protected abstract void OnShowCompletion();
 
     #region Animations
 
-    // these must return onShowCompletion when finished
+    // these must call OnShowCompletion when finished
     private void ShowDying() {
         LogEvent();
-        _showingJob = new Job(ShowingDying(), toStart: true);
+        if (_showingJob != null && _showingJob.IsRunning) {
+            _showingJob.Kill();
+        }
+        _showingJob = new Job(ShowingDying(), toStart: true, onJobComplete: (wasKilled) => {
+            OnShowCompletion();
+        });
     }
 
-    // these run until finished with no requirement to return onShowCompletion
+    // these run until finished with no requirement to call OnShowCompletion
     private void ShowHit() {
         LogEvent();
+        if (_showingJob != null && _showingJob.IsRunning) {
+            _showingJob.Kill();
+        }
         _showingJob = new Job(ShowingHit(), toStart: true);
     }
 
@@ -136,10 +138,9 @@ public abstract class AMortalItem : AItem, IMortalModel, IMortalTarget /*, IMort
         //animation.Stop();
         //yield return UnityUtility.PlayAnimation(animation, "die");  // show debree particles for some period of time?
         yield return null;
-        OnShowCompletion();
     }
 
-    protected void ShowAnimation(MortalAnimations animation) {
+    public void ShowAnimation(MortalAnimations animation) {
         switch (animation) {
             case MortalAnimations.Dying:
                 ShowDying();
@@ -168,19 +169,13 @@ public abstract class AMortalItem : AItem, IMortalModel, IMortalTarget /*, IMort
         }
     }
 
-    protected void StopAnimation(MortalAnimations animation) {
+    public void StopAnimation(MortalAnimations animation) {
         if (_showingJob != null && _showingJob.IsRunning) {
             _showingJob.Kill();
             return;
         }
         //D.Warn("No Animation named {0} to stop.", animation.GetName());   // Commented out as most show Jobs not yet implemented
     }
-
-    //protected void OnShowCompletion() {
-    //    if (onShowCompletion != null) {
-    //        onShowCompletion();
-    //    }
-    //}
 
     #endregion
 
@@ -195,29 +190,20 @@ public abstract class AMortalItem : AItem, IMortalModel, IMortalTarget /*, IMort
 
     #endregion
 
-
-    //protected void OnShowAnimation(MortalAnimations animation) {
-    //    if (onShowAnimation != null) {
-    //        onShowAnimation(animation);
-    //    }
-    //}
-
-    //protected void OnStopAnimation(MortalAnimations animation) {
-    //    if (onStopAnimation != null) {
-    //        onStopAnimation(animation);
-    //    }
-    //}
-
-
     #region Attack Simulation
 
-    public static ArmamentCategory[] offensiveArmamentCategories = new ArmamentCategory[3] {    ArmamentCategory.BeamOffense, 
-                                                                                                ArmamentCategory.MissileOffense, 
-                                                                                                ArmamentCategory.ParticleOffense };
+    public static ArmamentCategory[] __offensiveArmamentCategories = new ArmamentCategory[3] { 
+        ArmamentCategory.MissileOffense,
+        ArmamentCategory.BeamOffense, 
+        ArmamentCategory.ParticleOffense 
+    };
+
     public virtual void __SimulateAttacked() {
-        TakeHit(new CombatStrength(RandomExtended<ArmamentCategory>.Choice(offensiveArmamentCategories),
+        TakeHit(new CombatStrength(RandomExtended<ArmamentCategory>.Choice(__offensiveArmamentCategories),
             UnityEngine.Random.Range(Constants.ZeroF, Data.MaxHitPoints + 1F)));
     }
+
+    public abstract void TakeHit(CombatStrength weaponStrength);
 
     #endregion
 
@@ -233,65 +219,36 @@ public abstract class AMortalItem : AItem, IMortalModel, IMortalTarget /*, IMort
         return Data.Health > Constants.ZeroF;
     }
 
-    protected void DestroyMortalItem(float delayInSeconds) {
+    protected void DestroyMortalItem(float delayInSeconds, Action onCompletion = null) {
+        D.Log("{0}.{1}.DestroyMortalItem({2}) called.", FullName, GetType().Name, delayInSeconds);
+        //Destroy(gameObject, delayInSeconds);
         new Job(DelayedDestroy(delayInSeconds), toStart: true, onJobComplete: (wasKilled) => {
             D.Log("{0} has been destroyed.", FullName);
+            if (onCompletion != null) {
+                onCompletion();
+            }
         });
     }
 
     private IEnumerator DelayedDestroy(float delayInSeconds) {
         D.Log("{0}.DelayedDestroy({1}) called.", FullName, delayInSeconds);
         yield return new WaitForSeconds(delayInSeconds);
+        if (gameObject == null) {
+            D.Warn("Trying to destroy a GameObject that has already been destroyed.");
+            yield break;
+        }
         Destroy(gameObject);
     }
 
-    #endregion
 
-
-
-    #region IDestinationTarget Members
-
-    public virtual SpaceTopography Topography { get { return Data.Topography; } }
 
     #endregion
 
-    #region IMortalTarget Members
+    #region IMortalItem Members
 
-    public event Action<IMortalTarget> onTargetDeathOneShot;
-
-    /// <summary>
-    /// Flag indicating whether the MortalItem is alive and operational.
-    /// </summary>
-    public bool IsAlive { get; protected set; }
-
-    public string ParentName { get { return Data.ParentName; } }
-
-    public abstract void TakeHit(CombatStrength weaponStrength);
+    public event Action<IMortalItem> onDeathOneShot;
 
     #endregion
-
-    #region IMortalModel Members
-
-    public event Action<IMortalModel> onDeathOneShot;
-
-    #endregion
-
-    //#region ICameraTargetable Members
-
-    //public override bool IsEligible {
-    //    get { return PlayerIntel.CurrentCoverage != IntelCoverage.None; }
-    //}
-
-    //#endregion
-
-    //#region IMortalViewable Members
-
-    //public event Action onShowCompletion;
-
-
-    //public virtual void OnDeath() { }
-
-    //#endregion
 
     #region Debug
 
