@@ -185,7 +185,7 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
 
     #endregion
 
-    #region IAttackTarget_Tactical Members
+    #region IElementTarget Members
 
     public override void TakeHit(CombatStrength attackerWeaponStrength) {
         if (CurrentState == PlanetoidState.Dead) {

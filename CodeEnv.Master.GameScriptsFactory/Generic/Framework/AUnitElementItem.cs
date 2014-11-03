@@ -347,7 +347,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
 
     #endregion
 
-
     # region StateMachine Support Methods
 
     protected void Dead_ExitState() {

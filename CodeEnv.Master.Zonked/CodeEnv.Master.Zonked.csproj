@@ -273,6 +273,7 @@
     <Compile Include="ShipAttackTask.cs" />
     <Compile Include="ShipCaptain.cs" />
     <Compile Include="ShipCtxControl_AI.cs" />
+    <Compile Include="ShipFSM.cs" />
     <Compile Include="ShipGraphics.cs" />
     <Compile Include="ShipIdleTask.cs" />
     <Compile Include="ShipItem.cs" />

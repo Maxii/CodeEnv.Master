@@ -6,8 +6,8 @@
 // </copyright> 
 // <summary> 
 // File: AMonoStateMachine.cs
-//  Abstract Base class for MonoBehaviour State Machines to inherit from.This version does not
-//  support subscribing to State Changes.
+//  Abstract Base class for MonoBehaviour State Machines to inherit from.
+// This version does not support subscribing to State Changes.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 

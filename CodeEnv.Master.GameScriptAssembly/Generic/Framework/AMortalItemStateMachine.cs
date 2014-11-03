@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AMortalItemStateMachine.cs
-// COMMENT - one line to give a brief idea of what this file does.
+// Abstract Base class for MortalItem State Machines to inherit from.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,31 +22,31 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
-using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// COMMENT 
+///  Abstract Base class for MortalItem State Machines to inherit from.
+///  WARNING: This version does not support subscribing to State Changes 
+///  as Call() and Return() make changes without going through CurrentState.set.
 /// </summary>
 public abstract class AMortalItemStateMachine : AMortalItem {
 
-    #region My State Change Events
+    #region My State Change Event Archive
 
-    /// <summary>
-    /// Occurs AFTER the previous state's ExitState() method has run
-    /// but BEFORE the new state's EnterState() method has run. Accessing
-    /// the CurrentState will give you the new state, but no processing 
-    /// reflecting that new state will have yet occurred.
-    /// </summary>
-    public event Action onStateChanged;
+    ///// <summary>
+    ///// Occurs AFTER the previous state's ExitState() method has run
+    ///// but BEFORE the new state's EnterState() method has run. Accessing
+    ///// the CurrentState will give you the new state, but no processing 
+    ///// reflecting that new state will have yet occurred.
+    ///// </summary>
+    //public event Action onStateChanged;
 
-    private void OnStateChanged() {
-        //D.Log("{0}.State changed to {1}.", Data.Name, CurrentState.ToString());
-        if (onStateChanged != null) {
-            onStateChanged();
-        }
-    }
+    //private void OnStateChanged() {
+    //    //D.Log("{0}.State changed to {1}.", Data.Name, CurrentState.ToString());
+    //    if (onStateChanged != null) {
+    //        onStateChanged();
+    //    }
+    //}
 
     #endregion
 
@@ -543,7 +543,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     private void ConfigureCurrentStateForCall() {
         //D.Log("{0}.ConfigureCurrentStateForCall() called.", FullName);
         GetStateMethods();
-        OnStateChanged();
+        //OnStateChanged();
         if (state.enterState != null) {
             //D.Log("{0} setting up {1}_EnterState() to execute a Call().", FullName, state.currentState.ToString());
             state.enterStateEnumerator = state.enterState();
@@ -565,7 +565,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         //D.Log("On Return, Stack count = {0}.", _stack.Count);
         if (_stack.Count > 0) {
             state = _stack.Pop();
-            OnStateChanged();
+            //OnStateChanged();
             //D.Log("{0} setting up resumption of {1}_EnterState() in Return().", FullName, state.currentState.ToString());
             enterStateCoroutine.Run(state.enterStateEnumerator, state.enterStack);
             //WireEvents();
@@ -590,7 +590,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
 
         if (_stack.Count > 0) {
             state = _stack.Pop();
-            OnStateChanged();
+            //OnStateChanged();
             enterStateCoroutine.Run(state.enterStateEnumerator, state.enterStack);
         }
         else {
@@ -623,7 +623,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         }
 
         GetStateMethods();
-        OnStateChanged();
+        //OnStateChanged();
 
         if (state.enterState != null) {
             //D.Log("{0} setting up {1}_EnterState() to run. Time = {2}.", FullName, state.currentState.ToString(), Time.time);
