@@ -72,7 +72,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<int>(ref _qualitySetting, value, "QualitySetting"); }
         }
 
-        private GameEventManager _eventMgr;
+        private IGameManager _gameMgr;
         private GeneralSettings _generalSettings;
 
         #region SingletonPattern
@@ -106,27 +106,24 @@ namespace CodeEnv.Master.GameContent {
         private void Initialize() {
             IncrementInstanceCounter();
             _generalSettings = GeneralSettings.Instance;
-            _eventMgr = GameEventManager.Instance;
+            _gameMgr = References.GameManager;
             Retrieve();
             Subscribe();
         }
 
         private void Subscribe() {
-            _eventMgr.AddListener<GamePlayOptionsAcceptedEvent>(this, OnGamePlayOptionsAccepted);
-            _eventMgr.AddListener<BuildNewGameEvent>(this, OnBuildNewGame);
-            _eventMgr.AddListener<GraphicsOptionsAcceptedEvent>(this, OnGraphicsOptionsAccepted);
+            _gameMgr.onNewGameBuilding += OnNewGameBuilding;
         }
 
-        private void OnBuildNewGame(BuildNewGameEvent e) {
-            GameSettings settings = e.Settings;
+        private void OnNewGameBuilding() {
+            var settings = _gameMgr.GameSettings;
             UniverseSize = settings.UniverseSize;
             PlayerRace = settings.PlayerRace.Species;
             PlayerColor = settings.PlayerRace.Color;
             ValidateState();
         }
 
-        private void OnGamePlayOptionsAccepted(GamePlayOptionsAcceptedEvent e) {
-            GamePlayOptionSettings settings = e.Settings;
+        public void RecordGamePlayOptions(GamePlayOptionSettings settings) {
             GameSpeedOnLoad = settings.GameSpeedOnLoad;
             IsZoomOutOnCursorEnabled = settings.IsZoomOutOnCursorEnabled;
             //D.Log("At OptionChangeEvent, PlayerPrefsMgr.IsZoomOutOnCursorEnabled = " + IsZoomOutOnCursorEnabled);
@@ -136,8 +133,7 @@ namespace CodeEnv.Master.GameContent {
             ValidateState();
         }
 
-        private void OnGraphicsOptionsAccepted(GraphicsOptionsAcceptedEvent e) {
-            GraphicsOptionSettings settings = e.Settings;
+        public void RecordGraphicsOptions(GraphicsOptionSettings settings) {
             QualitySetting = settings.QualitySetting;
         }
 
@@ -222,9 +218,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Unsubscribe() {
-            _eventMgr.RemoveListener<GamePlayOptionsAcceptedEvent>(this, OnGamePlayOptionsAccepted);
-            _eventMgr.RemoveListener<BuildNewGameEvent>(this, OnBuildNewGame);
-            _eventMgr.RemoveListener<GraphicsOptionsAcceptedEvent>(this, OnGraphicsOptionsAccepted);
+            _gameMgr.onNewGameBuilding -= OnNewGameBuilding;
         }
 
         public override string ToString() {

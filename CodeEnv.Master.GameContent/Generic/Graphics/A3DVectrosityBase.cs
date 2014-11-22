@@ -80,18 +80,15 @@ namespace CodeEnv.Master.GameContent {
             if (_line == null) {
                 Initialize();
             }
-            if (toShow) {
-                if (_job == null) {
-                    _job = new Job(DrawLine(), toStart: true, onJobComplete: delegate {
-                        // TODO
-                    });
-                }
-                else if (!_job.IsRunning) {
-                    _job.Start();
-                }
-            }
-            else if (_job != null && _job.IsRunning) {
+            if (_job != null && _job.IsRunning) {
                 _job.Kill();
+                _job = null;
+            }
+
+            if (toShow) {
+                _job = new Job(DrawLine(), toStart: true, onJobComplete: delegate {
+                    // TODO
+                });
             }
             _line.active = toShow;
         }

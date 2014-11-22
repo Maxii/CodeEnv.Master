@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GuiGraphicsOptionMenuAcceptButton.cs
-// Accept button script for the GraphicsOptionsMenu.
+// Accept button for the GraphicsOptionsMenu.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,15 +20,15 @@ using CodeEnv.Master.Common;
 using UnityEngine;
 
 /// <summary>
-/// Accept button script for the GraphicsOptionsMenu.
+/// Accept button for the GraphicsOptionsMenu.
 /// </summary>
 public class GuiGraphicsOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
 
-    private int _qualitySetting;
-
-    protected override void InitializeTooltip() {
-        tooltip = "Click to implement Option changes.";
+    protected override string TooltipContent {
+        get { return "Click to implement Option changes."; }
     }
+
+    private int _qualitySetting;
 
     protected override void CaptureInitializedState() {
         base.CaptureInitializedState();
@@ -39,7 +39,7 @@ public class GuiGraphicsOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
         base.RecordPopupListState(popupListName, selectionName);
         //D.Log("SelectionName = {0}.", selectionName);
         _qualitySetting = QualitySettings.names.IndexOf<string>(selectionName);
-        // more popupLists here
+        // TODO more popupLists here
     }
 
     protected override void OnPopupListSelectionChange() {
@@ -49,15 +49,18 @@ public class GuiGraphicsOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
 
     protected override void OnLeftClick() {
         ValidateState();
-        GraphicsOptionSettings settings = new GraphicsOptionSettings();
-        settings.QualitySetting = _qualitySetting;
-        _eventMgr.Raise<GraphicsOptionsAcceptedEvent>(new GraphicsOptionsAcceptedEvent(this, settings));
+        GraphicsOptionSettings settings = new GraphicsOptionSettings() {
+            QualitySetting = _qualitySetting
+        };
+        _playerPrefsMgr.RecordGraphicsOptions(settings);
     }
 
     [System.Diagnostics.Conditional("UNITY_EDITOR")]
     private void ValidateState() {
         D.Assert(Utility.IsInRange(_qualitySetting, Constants.Zero, QualitySettings.names.Length - 1), "QualitySetting = {0}.".Inject(_qualitySetting));
     }
+
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

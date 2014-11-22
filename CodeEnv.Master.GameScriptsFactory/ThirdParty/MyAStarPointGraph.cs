@@ -29,10 +29,10 @@ namespace Pathfinding {
     /// </summary>
     public class MyAStarPointGraph : PointGraph {
 
-        public static int openSpaceTagMask = 1 << (int)SpaceTopography.OpenSpace;   // x0001
-        public static int nebulaTagMask = 1 << (int)SpaceTopography.Nebula;         // x0010
-        public static int deepNebulaTagMask = 1 << (int)SpaceTopography.DeepNebula; // x0100
-        public static int systemTagMask = 1 << (int)SpaceTopography.System;         // x1000
+        public static int openSpaceTagMask = 1 << (int)Topography.OpenSpace;   // x0001
+        public static int nebulaTagMask = 1 << (int)Topography.Nebula;         // x0010
+        public static int deepNebulaTagMask = 1 << (int)Topography.DeepNebula; // x0100
+        public static int systemTagMask = 1 << (int)Topography.System;         // x1000
 
         #region Archived
 
@@ -120,7 +120,7 @@ namespace Pathfinding {
             // ********************************************************************
             // NOTE: removed all code that derived nodes from GameObjects and Tags
             // ********************************************************************
-            IDictionary<SpaceTopography, IList<Vector3>> graphWaypointsLookupByTag = ConstructGraphWaypoints();
+            IDictionary<Topography, IList<Vector3>> graphWaypointsLookupByTag = ConstructGraphWaypoints();
             PopulateNodes(graphWaypointsLookupByTag);
             // ********************************************************************
             D.Log("{0} Pathfinding nodes.", nodeCount);
@@ -169,8 +169,8 @@ namespace Pathfinding {
         /// Pre-runtime construction of waypoints for the point graph.
         /// </summary>
         /// <returns></returns>
-        private IDictionary<SpaceTopography, IList<Vector3>> ConstructGraphWaypoints() {
-            var sectors = SectorGrid.Instance.AllSectors;
+        private IDictionary<Topography, IList<Vector3>> ConstructGraphWaypoints() {
+            var sectors = SectorGrid.AllSectors;
             var sectorCenters = SectorGrid.Instance.SectorCenters;
             D.Assert(sectorCenters != null, "{0} not yet initialized.".Inject(typeof(SectorGrid).Name));  // AstarPath has an option to automatically call Scan() on Awake which can be too early
             IEnumerable<Vector3> openSpaceWaypoints = new List<Vector3>(sectorCenters);
@@ -180,7 +180,7 @@ namespace Pathfinding {
             // This avoids the weighting ambiguity that exists when navigational waypoints are equidistant between sectors, aka shared between sectors
             IEnumerable<Vector3> interiorSectorPoints = Enumerable.Empty<Vector3>();
             sectors.ForAll(s => {
-                interiorSectorPoints = interiorSectorPoints.Union(SectorGrid.GenerateVerticesOfBoxAroundCenter(s.SectorIndex, s.Radius));
+                interiorSectorPoints = interiorSectorPoints.Union(SectorGrid.Instance.GenerateVerticesOfBoxAroundCenter(s.SectorIndex, s.Radius));
             });
             openSpaceWaypoints = openSpaceWaypoints.Union(interiorSectorPoints);
 
@@ -218,11 +218,11 @@ namespace Pathfinding {
             //    openSpaceWaypoints = openSpaceWaypoints.Except(starbaseLocations, UnityUtility.Vector3EqualityComparer);
             //}
 
-            return new Dictionary<SpaceTopography, IList<Vector3>>() {
-                { SpaceTopography.OpenSpace, openSpaceWaypoints.ToList() },
-                { SpaceTopography.Nebula, new List<Vector3>() },        // TODO
-                { SpaceTopography.DeepNebula, new List<Vector3>() },    // TODO
-                { SpaceTopography.System, allWaypointsInsideSystems.ToList() }
+            return new Dictionary<Topography, IList<Vector3>>() {
+                { Topography.OpenSpace, openSpaceWaypoints.ToList() },
+                { Topography.Nebula, new List<Vector3>() },        // TODO
+                { Topography.DeepNebula, new List<Vector3>() },    // TODO
+                { Topography.System, allWaypointsInsideSystems.ToList() }
                 };
         }
 
@@ -231,7 +231,7 @@ namespace Pathfinding {
         /// Creates a PointNode array populated with waypoint positions, walkability and penalty tags.
         /// </summary>
         /// <param name="graphWaypointsLookupByTag">The graph waypoints lookup by tag.</param>
-        private void PopulateNodes(IDictionary<SpaceTopography, IList<Vector3>> graphWaypointsLookupByTag) {
+        private void PopulateNodes(IDictionary<Topography, IList<Vector3>> graphWaypointsLookupByTag) {
             int waypointCount = graphWaypointsLookupByTag.Values.Sum(list => list.Count);
 
             // WARNING: The approach used below to populate nodes is the only one that worked. I tried making
@@ -246,7 +246,7 @@ namespace Pathfinding {
             }
 
             // initialize nodes that will be tagged OpenSpace
-            var waypoints = graphWaypointsLookupByTag[SpaceTopography.OpenSpace];
+            var waypoints = graphWaypointsLookupByTag[Topography.OpenSpace];
             //D.Log("Creating {0} pathfinding nodes with tag {1}.", waypoints.Count, SpaceTopography.OpenSpace.GetName());
             //D.Log("{0} tag mask = {1}.", SpaceTopography.OpenSpace.GetName(), StringExtensions.GetBinaryString(openSpaceTagMask));
             for (int i = 0; i < waypoints.Count; i++) {
@@ -257,7 +257,7 @@ namespace Pathfinding {
             int nextNodeIndex = waypoints.Count;
 
             // initialize nodes that will be tagged System
-            waypoints = graphWaypointsLookupByTag[SpaceTopography.System];
+            waypoints = graphWaypointsLookupByTag[Topography.System];
             //D.Log("Creating {0} pathfinding nodes with tag {1}.", waypoints.Count, SpaceTopography.System.GetName());
             //D.Log("{0} tag mask = {1}.", SpaceTopography.System.GetName(), StringExtensions.GetBinaryString(systemTagMask));
             for (int i = nextNodeIndex; i < nextNodeIndex + waypoints.Count; i++) {

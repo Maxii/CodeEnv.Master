@@ -38,7 +38,7 @@ public class SystemManager : AMonoBase, ISelectable, IHasData {
     }
 
     private SystemGraphics _systemGraphics;
-    private OrbitalPlane _orbitalPlane;
+    private OrbitalPlaneInputEventRouter _orbitalPlane;
     private Star _star;
     private FollowableItem[] _planetsAndMoons;
     private GameEventManager _eventMgr;
@@ -46,7 +46,7 @@ public class SystemManager : AMonoBase, ISelectable, IHasData {
 
     protected override void Awake() {
         base.Awake();
-        _orbitalPlane = gameObject.GetSafeMonoBehaviourComponentInChildren<OrbitalPlane>();
+        _orbitalPlane = gameObject.GetSafeMonoBehaviourComponentInChildren<OrbitalPlaneInputEventRouter>();
         _systemGraphics = gameObject.GetSafeMonoBehaviourComponent<SystemGraphics>();
         _star = gameObject.GetSafeMonoBehaviourComponentInChildren<Star>();
         _planetsAndMoons = gameObject.GetSafeMonoBehaviourComponentsInChildren<FollowableItem>();

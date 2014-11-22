@@ -33,11 +33,11 @@ namespace CodeEnv.Master.GameContent {
         public static IGuiHudTextFactory<DataType> TextFactory { private get; set; }
 
         public bool IsHudShowing {
-            get { return _job != null && _job.IsRunning; }
+            get { return _displayHudJob != null && _displayHudJob.IsRunning; }
         }
 
         private GuiHudText _guiCursorHudText;
-        private Job _job;
+        private Job _displayHudJob;
         private DataType _data;
         private GuiHudLineKeys[] _optionalKeys;
         private IList<IDisposable> _subscribers;
@@ -55,27 +55,27 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnGameSpeedChanging(GameClockSpeed newSpeed) { // OPTIMIZE static?
-            D.Log("{0}.OnGameSpeedChanging() called. OldSpeed = {1}, NewSpeed = {2}.", GetType().Name, GameTime.Instance.GameSpeed.GetName(), newSpeed.GetName());
+            //D.Log("{0}.OnGameSpeedChanging() called. OldSpeed = {1}, NewSpeed = {2}.", GetType().Name, GameTime.Instance.GameSpeed.GetName(), newSpeed.GetName());
             float currentSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();
             float speedChangeRatio = newSpeed.SpeedMultiplier() / currentSpeedMultiplier;
             _hudRefreshRate *= speedChangeRatio;
         }
 
         public void ShowHud(bool toShow, IIntel intel, Vector3 position) {
-            D.Log("ShowHud({0} called. Intel = {1}, Position = {2}.", toShow, intel.CurrentCoverage.GetName(), position);
+            D.Log("{0}<{1}>.ShowHud({2} called. Intel = {3}, Position = {4}.", GetType().Name, typeof(DataType).Name, toShow, intel.CurrentCoverage.GetName(), position);
+
+            if (_displayHudJob != null && _displayHudJob.IsRunning) {
+                _displayHudJob.Kill();
+                _displayHudJob = null;
+            }
+
             if (toShow) {
                 PrepareHudText(intel);
-                if (_job == null) {
-                    _job = new Job(DisplayHudAtCursor(intel, position), toStart: true, onJobComplete: delegate {
-                        // TODO
-                    });
-                }
-                else if (!_job.IsRunning) {
-                    _job.Start();
-                }
+                _displayHudJob = new Job(DisplayHudAtCursor(intel, position), toStart: true, onJobComplete: (wasKilled) => {
+                    D.Log("{0}<{1}> DisplayHUD Job {2}.", GetType().Name, typeof(DataType).Name, wasKilled ? "was killed" : "has completed.");
+                });
             }
-            else if (_job != null && _job.IsRunning) {
-                _job.Kill();
+            else {
                 GuiCursorHud.Clear();
             }
         }
@@ -122,8 +122,8 @@ namespace CodeEnv.Master.GameContent {
 
         private void Cleanup() {
             GuiCursorHud.Clear();
-            if (_job != null) {
-                _job.Kill();
+            if (_displayHudJob != null) {
+                _displayHudJob.Dispose();
             }
             Unsubscribe();
         }

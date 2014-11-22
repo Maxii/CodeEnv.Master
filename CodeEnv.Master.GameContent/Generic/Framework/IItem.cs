@@ -30,19 +30,19 @@ namespace CodeEnv.Master.GameContent {
         string Name { get; }
 
         /// <summary>
-        /// The name to use for displaying in the UI.
+        /// The name to use for display in the UI.
         /// </summary>
         string DisplayName { get; }
 
         /// <summary>
-        /// The name to use for debugging.
+        /// The name to use for debugging. Includes parent name.
         /// </summary>
         string FullName { get; }
 
         float Radius { get; }
 
-        IPlayer Owner { get; }
         event Action<IItem> onOwnerChanged;
+        IPlayer Owner { get; }
 
         Vector3 Position { get; }
         Transform Transform { get; }

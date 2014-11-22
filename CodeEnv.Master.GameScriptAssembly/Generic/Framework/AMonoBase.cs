@@ -32,7 +32,8 @@ using UnityEngine;
 /// </summary>
 public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropertyChanged, INotifyPropertyChanging {
 
-    protected static bool _isApplicationQuiting;
+    public static bool IsApplicationQuiting { get; private set; }
+
     protected Transform _transform;
 
     #region Debug
@@ -42,7 +43,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// </summary>
     public virtual void LogEvent() { // WARNING: KeyDuplication compile error in Unity with LogEvent(object parameter = null)
         if (DebugSettings.Instance.EnableEventLogging) {
-            System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackFrame(1);
+            var stackFrame = new System.Diagnostics.StackFrame(1);
             string name = _transform.name + "(from transform)";
             Debug.Log("{0}.{1}.{2}() called.".Inject(name, GetType().Name, stackFrame.GetMethod().Name));
         }
@@ -84,16 +85,19 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// </summary>
     protected virtual void OnApplicationQuit() {
         //LogEvent();
-        _isApplicationQuiting = true;
+        IsApplicationQuiting = true;
     }
 
     /// <summary>
     /// Called as a result of Destroy(gameobject) and following OnDisable() which follows
-    /// OnApplicationQuit().
+    /// OnApplicationQuit(). Clients except AAdvancedMonSingleton should not override this method.
     /// </summary>
     protected virtual void OnDestroy() {
         //LogEvent();
+        Cleanup();
     }
+
+    protected abstract void Cleanup();
 
     #endregion
 

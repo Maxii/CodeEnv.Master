@@ -80,6 +80,8 @@ public class UITrackingLabel : AUITrackingWidget {
         Widget.MakePixelPerfect();
     }
 
+    protected override void Cleanup() { }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

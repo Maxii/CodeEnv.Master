@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: RequiredPrefabs.cs
-// Singleton container that holds prefabs that are gauranteed to be used in the GameScene.
+// Singleton container that holds prefabs that are guaranteed to be used in the GameScene.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,13 +21,15 @@ using CodeEnv.Master.Common;
 using UnityEngine;
 
 /// <summary>
-/// Singleton container that holds prefabs that are gauranteed to be used in the GameScene.
+/// Singleton container that holds prefabs that are guaranteed to be used in the GameScene.
 /// </summary>
 /// <remarks>
 /// I think these are a real reference to the prefab in the Project view, not a separate instance
 /// clone of the Prefab in the startScene. As such, they must be Instantiated before use.
 /// </remarks>
-public class RequiredPrefabs : AMonoBaseSingleton<RequiredPrefabs> {
+public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
+
+    #region Prefabs
 
     /// <summary>
     /// A generic prefab for labels that track the world object they are parented too.
@@ -77,31 +79,11 @@ public class RequiredPrefabs : AMonoBaseSingleton<RequiredPrefabs> {
     public WeaponRangeMonitor weaponRangeMonitor;
     public FormationStationMonitor formationStation;
 
-    protected override void Awake() {
-        base.Awake();
-        if (TryDestroyExtraCopies()) {
-            return;
-        }
-    }
+    #endregion
 
-    /// <summary>
-    /// Ensures that no matter how many scenes this Object is
-    /// in (having one dedicated to each sscene may be useful for testing) there's only ever one copy
-    /// in memory if you make a scene transition.
-    /// </summary>
-    /// <returns><c>true</c> if this instance is going to be destroyed, <c>false</c> if not.</returns>
-    private bool TryDestroyExtraCopies() {
-        if (_instance && _instance != this) {
-            D.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceID));
-            Destroy(gameObject);
-            return true;
-        }
-        else {
-            DontDestroyOnLoad(gameObject);
-            _instance = this;
-            return false;
-        }
-    }
+    protected override bool IsPersistentAcrossScenes { get { return true; } }
+
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

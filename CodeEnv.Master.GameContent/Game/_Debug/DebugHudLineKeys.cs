@@ -26,7 +26,8 @@ namespace CodeEnv.Master.GameContent {
         PlayerViewMode,
         SectorIndex,
         PauseState,
-        GraphicsQuality
+        GraphicsQuality,
+        InputMode
     }
 }
 

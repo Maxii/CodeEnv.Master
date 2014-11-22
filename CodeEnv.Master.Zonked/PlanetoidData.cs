@@ -37,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
 
         public PlanetoidCategory Category { get; private set; }
 
-        public override SpaceTopography Topography {
+        public override Topography Topography {
             get { return base.Topography; }
             set { throw new NotImplementedException(); }
         }
@@ -70,7 +70,7 @@ namespace CodeEnv.Master.GameContent {
             Capacity = stat.Capacity;
             Resources = stat.Resources;
             SpecialResources = stat.SpecialResources;
-            base.Topography = SpaceTopography.System;
+            base.Topography = Topography.System;
         }
 
         //private void OnSystemOrbitSlotChanged() {

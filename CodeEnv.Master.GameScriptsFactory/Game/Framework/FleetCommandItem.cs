@@ -49,6 +49,21 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
 
     public bool IsBearingConfirmed { get { return Elements.All(e => (e as ShipItem).IsBearingConfirmed); } }
 
+    public override float UnitRadius {
+        get {
+            var result = 1F;
+            if (Elements.Count >= 2) {
+                var meanDistanceToFleetShips = Position.FindMeanDistance(Elements.Except(HQElement).Select(e => e.Position));
+                result = meanDistanceToFleetShips > 1F ? meanDistanceToFleetShips : 1F;
+            }
+            //D.Log("{0}.UnitRadius is {1}.", FullName, result);
+            return result;
+        }
+        protected set {
+            throw new NotImplementedException("Cannot set the value of {0}'s Radius.".Inject(FullName));
+        }
+    }
+
     public bool enableTrackingLabel = false;
     private ITrackingWidget _trackingLabel;
 
@@ -87,7 +102,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
 
     private ITrackingWidget InitializeTrackingLabel() {
         float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
-        var trackingLabel = TrackingWidgetFactory.Instance.CreateUITrackingLabel(TrackingTarget, WidgetPlacement.AboveRight, minShowDistance);
+        var trackingLabel = TrackingWidgetFactory.Instance.CreateUITrackingLabel(HQElement, WidgetPlacement.AboveRight, minShowDistance);
         trackingLabel.Name = DisplayName + CommonTerms.Label;
         trackingLabel.Set(DisplayName);
         return trackingLabel;
@@ -104,7 +119,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
             (_ctxControl as IDisposable).Dispose();
         }
         _ctxControl = Owner.IsPlayer ? new FleetCtxControl_Player(this) as ICtxControl : new FleetCtxControl_AI(this);
-        D.Log("{0} initializing {1}.", FullName, _ctxControl.GetType().Name);
+        //D.Log("{0} initializing {1}.", FullName, _ctxControl.GetType().Name);
     }
 
     #endregion
@@ -157,7 +172,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         shipFst.AssignedShip = null;
         ship.FormationStation = null;
 
-        if (!this.IsAlive) {
+        if (!IsAlive) {
             // fleetCmd has died
             return;
         }
@@ -185,6 +200,14 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
     protected override void OnHQElementChanging(AUnitElementItem newHQElement) {
         base.OnHQElementChanging(newHQElement);
         _navigator.OnHQElementChanging(HQElement, newHQElement as ShipItem);
+    }
+
+    protected override void OnHQElementChanged() {
+        base.OnHQElementChanged();
+        if (enableTrackingLabel) {
+            _trackingLabel = _trackingLabel ?? InitializeTrackingLabel();
+            _trackingLabel.Target = HQElement;
+        }
     }
 
     private void OnCurrentOrderChanged() {
@@ -302,20 +325,18 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         Elements.ForAll(e => (e as ShipItem).CurrentOrder = shipMoveToOrder);
     }
 
-    protected override void KillCommand() {
+    protected override void InitiateDeath() {
+        base.InitiateDeath();
         CurrentState = FleetState.Dead;
     }
 
     /// <summary>
     /// Kills all remaining elements of the Unit along with this Command. All Elements are ordered 
-    /// to SelfDestruct (assume Dead state) which results in the Command assuming its own Dead state.
+    /// to SelfDestruct (execute Die()) which results in the Command also executing Die() when the last element has died.
     /// </summary>
     private void KillUnit() {
         var elementSelfDestructOrder = new ShipOrder(ShipDirective.SelfDestruct, OrderSource.UnitCommand);
         Elements.ForAll(e => (e as ShipItem).CurrentOrder = elementSelfDestructOrder);
-        //UnityUtility.WaitOneToExecute(delegate {
-        //KillCommand();
-        //});
     }
 
     public void __OnHQElementEmergency() {
@@ -341,37 +362,15 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         ShowVelocityRay(IsDiscernible);
     }
 
-    protected override void OnTrackingTargetChanged() {
-        base.OnTrackingTargetChanged();
-        if (enableTrackingLabel && _trackingLabel == null) {
-            _trackingLabel = InitializeTrackingLabel();
-        }
-    }
-
     protected override void OnIsSelectedChanged() {
         base.OnIsSelectedChanged();
         AssessShowPlottedPath(_navigator.Course);
     }
 
-    //private void OnContextMenuShow() {
-    //    // UNDONE
-    //}
-
-    //private void OnContextMenuSelection() {
-    //    // int itemId = CtxObject.current.selectedItem;
-    //    // D.Log("{0} selected context menu item {1}.", _transform.name, itemId);
-    //    // UNDONE
-    //}
-
-    //private void OnContextMenuHide() {
-    //    //D.Log("{0}.OnContextMenuHide() called.", Presenter.FullName);
-    //    _lowestUnusedItemId = __playerFleetMenuOrders.Length;
-    //}
-
     protected override void Update() {
         base.Update();
-        if (TrackingTarget != null) {
-            PositionCmdOverTrackingTarget();
+        if (HQElement != null) {    // IMPROVE Item is enabled before HQElement is assigned
+            PositionCmdOverHQElement();
         }
     }
 
@@ -420,24 +419,15 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
 
     #region MouseEvents
 
-    //protected override void OnRightPress(bool isDown) {
-    //    base.OnRightPress(isDown);
-    //    if (IsSelected) {
-    //        CameraControl.Instance.ShowContextMenuOnPress(isDown);
-    //    }
-    //}
-
     protected override void OnRightPress(bool isDown) {
         base.OnRightPress(isDown);
-        if (!isDown && !GameInput.Instance.IsDragging) {
+        if (!isDown && !_inputMgr.IsDragging) {
             // right press release while not dragging means both press and release were over this object
             _ctxControl.OnRightPressRelease();
         }
     }
 
-
     #endregion
-
 
     #region StateMachine
 
@@ -478,7 +468,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
     #region ExecuteMoveOrder
 
     IEnumerator ExecuteMoveOrder_EnterState() {
-        D.Log("{0}.ExecuteMoveOrder_EnterState called.", FullName);
+        //D.Log("{0}.ExecuteMoveOrder_EnterState called.", FullName);
         _moveTarget = CurrentOrder.Target;
         _moveSpeed = CurrentOrder.Speed;
         Call(FleetState.Moving);
@@ -598,7 +588,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
     #region ExecuteAttackOrder
 
     IEnumerator ExecuteAttackOrder_EnterState() {
-        D.Log("{0}.ExecuteAttackOrder_EnterState called. Target = {1}.", FullName, CurrentOrder.Target.FullName);
+        //D.Log("{0}.ExecuteAttackOrder_EnterState called. Target = {1}.", FullName, CurrentOrder.Target.FullName);
         _moveTarget = CurrentOrder.Target;
         _moveSpeed = Speed.FleetFull;
         Call(FleetState.Moving);
@@ -725,17 +715,12 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
 
     void Dead_OnShowCompletion() {
         LogEvent();
-        DestroyMortalItem(3F, onCompletion: DestroyUnitContainer);
+        __DestroyMe(3F, onCompletion: DestroyUnitContainer);
     }
 
     #endregion
 
     #region StateMachine Support Methods
-
-
-    #endregion
-
-    # region StateMachine Callbacks
 
     void OnCoursePlotFailure() { RelayToCurrentState(); }
 
@@ -747,8 +732,6 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         // the final waypoint is not close enough and we can't directly approach the Destination
         RelayToCurrentState();
     }
-
-    // eliminated OnFlagshipTrackingError() as an overcomplication for now
 
     #endregion
 
@@ -763,6 +746,9 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
             _velocityRay = null;
         }
         UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
+        if (_ctxControl != null) {
+            (_ctxControl as IDisposable).Dispose();
+        }
     }
 
     #endregion
@@ -771,37 +757,22 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region IItem Members
-
-    public override float Radius {
-        get {
-            var result = 1F;
-            if (Elements.Count >= 2) {
-                var meanDistanceToFleetShips = Position.FindMeanDistance(Elements.Except(HQElement).Select(e => e.Position));
-                result = meanDistanceToFleetShips > 1F ? meanDistanceToFleetShips : 1F;
-            }
-            //D.Log("{0}.Radius is {1}.", FullName, result);
-            return result;
-        }
-        protected set {
-            throw new NotImplementedException("Cannot set the value of {0}'s Radius.".Inject(FullName));
-        }
-    }
-
-    #endregion
-
     #region ICameraFollowable Members
 
     [SerializeField]
-    private float cameraFollowDistanceDampener = 3.0F;
-    public virtual float CameraFollowDistanceDampener {
-        get { return cameraFollowDistanceDampener; }
+    [Range(1.0F, 10F)]
+    [Tooltip("Dampens Camera Follow Distance Behaviour")]
+    private float _followDistanceDampener = 3.0F;
+    public virtual float FollowDistanceDampener {
+        get { return _followDistanceDampener; }
     }
 
     [SerializeField]
-    private float cameraFollowRotationDampener = 1.0F;
-    public virtual float CameraFollowRotationDampener {
-        get { return cameraFollowRotationDampener; }
+    [Range(0.5F, 3.0F)]
+    [Tooltip("Dampens Camera Follow Rotation Behaviour")]
+    private float _followRotationDampener = 1.0F;
+    public virtual float FollowRotationDampener {
+        get { return _followRotationDampener; }
     }
 
     #endregion
@@ -929,14 +900,14 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         /// </summary>
         public void DisengageAutoPilot() {
             if (IsAutoPilotEngaged) {
-                D.Log("{0} Navigator disengaging.", _fleet.FullName);
+                //D.Log("{0} Navigator disengaging.", _fleet.FullName);
                 _pilotJob.Kill();
                 _fleet.HQElement.onDestinationReached -= OnFlagshipReachedDestination;
             }
         }
 
         private void InitiateDirectCourseToTarget() {
-            D.Log("{0} initiating direct course to target {1} at {2}. Distance: {3}.", _fleet.FullName, Target.FullName, Destination, DistanceToDestination);
+            //D.Log("{0} initiating direct course to target {1} at {2}. Distance: {3}.", _fleet.FullName, Target.FullName, Destination, DistanceToDestination);
             if (_pilotJob != null && _pilotJob.IsRunning) {
                 _pilotJob.Kill();
             }
@@ -945,7 +916,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
 
         private void InitiateWaypointCourseToTarget() {
             D.Assert(!IsAutoPilotEngaged);
-            D.Log("{0} initiating waypoint course to target {1}. Distance: {2}.", _fleet.FullName, Target.FullName, DistanceToDestination);
+            //D.Log("{0} initiating waypoint course to target {1}. Distance: {2}.", _fleet.FullName, Target.FullName, DistanceToDestination);
             _pilotJob = new Job(EngageWaypointCourse(), true);
         }
 
@@ -969,7 +940,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
                     _currentWaypointIndex++;
                     if (_currentWaypointIndex == targetDestinationIndex) {
                         // next waypoint is target destination so conclude coroutine
-                        D.Log("{0} has reached final waypoint {1} at {2}.", _fleet.FullName, _currentWaypointIndex - 1, currentWaypointLocation);
+                        //D.Log("{0} has reached final waypoint {1} at {2}.", _fleet.FullName, _currentWaypointIndex - 1, currentWaypointLocation);
                         continue;
                     }
                     D.Log("{0} has reached Waypoint_{1} at {2}. Current destination is now Waypoint_{3} at {4}.", _fleet.FullName,
@@ -1026,7 +997,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         }
 
         private void OnFlagshipReachedDestination() {
-            D.Log("{0} reporting that Flagship {1} has reached destination as instructed.", _fleet.FullName, _fleet.HQElement.FullName);
+            //D.Log("{0} reporting that Flagship {1} has reached destination as instructed.", _fleet.FullName, _fleet.HQElement.FullName);
             _hasFlagshipReachedDestination = true;
         }
 
@@ -1047,9 +1018,9 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
             Course.Clear();
             Course.AddRange(path.vectorPath);
             OnCourseChanged();
-            D.Log("{0}'s waypoint course to {1} is: {2}.", _fleet.FullName, Target.FullName, Course.Concatenate());
+            //D.Log("{0}'s waypoint course to {1} is: {2}.", _fleet.FullName, Target.FullName, Course.Concatenate());
             //D.Log("{0}'s waypoint course to {1} is: {2}.", _fleet.FullName, DestinationInfo.Target.FullName, Course.Concatenate());
-            //PrintNonOpenSpaceNodes(course);
+            //PrintNonOpenSpaceNodes(path);
 
             // Note: The assumption that the first location in course is our start location, and last is the destination appears to be true
             // Unfortunately, the test below only works when the fleet is not already moving - ie. the values change in the time it takes to plot the course
@@ -1102,7 +1073,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
 
         private void OnDestinationReached() {
             //_pilotJob.Kill(); // handled by Fleet statemachine which should call Disengage
-            D.Log("{0} at {1} reached Destination {2} at {3} (w/station offset). Actual proximity {4:0.0000} units.", _fleet.FullName, _fleet.Data.Position, Target.FullName, Destination, DistanceToDestination);
+            //D.Log("{0} at {1} reached Destination {2} at {3} (w/station offset). Actual proximity {4:0.0000} units.", _fleet.FullName, _fleet.Data.Position, Target.FullName, Destination, DistanceToDestination);
             _fleet.OnDestinationReached();
             Course.Clear();
             OnCourseChanged();
@@ -1132,26 +1103,26 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
             SystemItem targetSystem = null;
 
             //D.Log("{0}.Topography = {1}.", _fleet.FullName, _fleet.Topography);
-            if (_fleet.Topography == SpaceTopography.System) {
-                var fleetSectorIndex = SectorGrid.GetSectorIndex(_fleet.Position);
+            if (_fleet.Topography == Topography.System) {
+                var fleetSectorIndex = SectorGrid.Instance.GetSectorIndex(_fleet.Position);
                 D.Assert(SystemCreator.TryGetSystem(fleetSectorIndex, out fleetSystem));  // error if a system isn't found
                 D.Assert(Vector3.SqrMagnitude(fleetSystem.Position - _fleet.Position) <= fleetSystem.Radius * fleetSystem.Radius);
-                D.Log("{0} is plotting a course from within System {1}.", _fleet.FullName, fleetSystem.FullName);
+                //D.Log("{0} is plotting a course from within System {1}.", _fleet.FullName, fleetSystem.FullName);
             }
 
             //D.Log("{0}.Topography = {1}.", target.FullName, target.Topography);
-            if (target.Topography == SpaceTopography.System) {
-                var targetSectorIndex = SectorGrid.GetSectorIndex(target.Position);
+            if (target.Topography == Topography.System) {
+                var targetSectorIndex = SectorGrid.Instance.GetSectorIndex(target.Position);
                 D.Assert(SystemCreator.TryGetSystem(targetSectorIndex, out targetSystem));  // error if a system isn't found
                 D.Assert(Vector3.SqrMagnitude(targetSystem.Position - target.Position) <= targetSystem.Radius * targetSystem.Radius);
-                D.Log("{0}'s target {1} is contained within System {2}.", _fleet.FullName, target.FullName, targetSystem.FullName);
+                //D.Log("{0}'s target {1} is contained within System {2}.", _fleet.FullName, target.FullName, targetSystem.FullName);
             }
 
             var result = false;
             if (fleetSystem != null) {
                 if (fleetSystem == targetSystem) {
                     // the target and fleet are in the same system so exit and entry points aren't needed
-                    D.Log("{0} start and destination {1} is contained within System {2}.", _fleet.FullName, target.FullName, fleetSystem.FullName);
+                    //D.Log("{0} start and destination {1} is contained within System {2}.", _fleet.FullName, target.FullName, fleetSystem.FullName);
                     return result;
                 }
                 fleetSystemExitPt = UnityUtility.FindClosestPointOnSphereSurfaceTo(_fleet.Position, fleetSystem.Position, fleetSystem.Radius);
@@ -1169,13 +1140,13 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
             bool result = false;
             if (_fleetSystemExitPoint != Vector3.zero) {
                 // add a system exit point close to the fleet
-                D.Log("{0} is inserting System exitPoint {1} into course.", _fleet.FullName, _fleetSystemExitPoint);
+                //D.Log("{0} is inserting System exitPoint {1} into course.", _fleet.FullName, _fleetSystemExitPoint);
                 Course.Insert(1, _fleetSystemExitPoint);   // IMPROVE might be another system waypoint already present following start
                 result = true;
             }
             if (_targetSystemEntryPoint != Vector3.zero) {
                 // add a system entry point close to the target
-                D.Log("{0} is inserting System entryPoint {1} into course.", _fleet.FullName, _targetSystemEntryPoint);
+                //D.Log("{0} is inserting System entryPoint {1} into course.", _fleet.FullName, _targetSystemEntryPoint);
                 Course.Insert(Course.Count - 1, _targetSystemEntryPoint); // IMPROVE might be another system waypoint already present just before target
                 result = true;
             }
@@ -1203,10 +1174,10 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
             if (Physics.Raycast(ray, out hitInfo, rayLength, _keepoutOnlyLayerMask.value)) {
                 string obstacleName = hitInfo.transform.parent.name + "." + hitInfo.collider.name;
                 Vector3 obstacleLocation = hitInfo.transform.position;
-                D.Log("{0} encountered obstacle {1} at {2} when checking approach to waypoint at {3}. \nRay length = {4}, rayHitDistance = {5}.",
-                    _fleet.FullName, obstacleName, obstacleLocation, waypoint, rayLength, hitInfo.distance);
+                //D.Log("{0} encountered obstacle {1} at {2} when checking approach to waypoint at {3}. \nRay length = {4}, rayHitDistance = {5}.",
+                //    _fleet.FullName, obstacleName, obstacleLocation, waypoint, rayLength, hitInfo.distance);
                 // there is a keepout zone obstacle in the way 
-                detour = GenerateDetourAroundObstacle(ray, hitInfo);
+                detour = __GenerateDetourAroundObstacle(ray, hitInfo);
                 return true;
             }
             detour = Vector3.zero;
@@ -1219,7 +1190,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         /// <param name="ray">The ray.</param>
         /// <param name="hitInfo">The hit information.</param>
         /// <returns></returns>
-        private Vector3 GenerateDetourAroundObstacle(Ray ray, RaycastHit hitInfo) {
+        private Vector3 __GenerateDetourAroundObstacle(Ray ray, RaycastHit hitInfo) {
             Vector3 detour = Vector3.zero;
             string obstacleName = hitInfo.transform.parent.name + "." + hitInfo.collider.name;
             Vector3 rayEntryPoint = hitInfo.point;
@@ -1230,11 +1201,16 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
                 Vector3 rayExitPoint = hitInfo.point;
                 Vector3 halfWayPointInsideKeepoutZone = rayEntryPoint + (rayExitPoint - rayEntryPoint) / 2F;
                 Vector3 obstacleLocation = hitInfo.transform.position;
-                float obstacleClearanceLeeway = 1F;
-                detour = UnityUtility.FindClosestPointOnSphereSurfaceTo(halfWayPointInsideKeepoutZone, obstacleLocation, keepoutRadius + obstacleClearanceLeeway);
-                float detourDistanceFromObstacleCenter = (detour - obstacleLocation).magnitude;
-                D.Log("{0}'s detour to avoid obstacle {1} at {2} is at {3}. Distance to detour is {4}. \nObstacle keepout radius = {5}. Detour is {6} from obstacle center.",
-                    _fleet.FullName, obstacleName, obstacleLocation, detour, Vector3.Magnitude(detour - _fleet.Data.Position), keepoutRadius, detourDistanceFromObstacleCenter);
+                if (halfWayPointInsideKeepoutZone != obstacleLocation) {
+                    float obstacleClearanceLeeway = 1F;
+                    detour = UnityUtility.FindClosestPointOnSphereSurfaceTo(halfWayPointInsideKeepoutZone, obstacleLocation, keepoutRadius + obstacleClearanceLeeway);
+                    //float detourDistanceFromObstacleCenter = (detour - obstacleLocation).magnitude;
+                    //D.Log("{0}'s detour to avoid obstacle {1} at {2} is at {3}. Distance to detour is {4}. \nObstacle keepout radius = {5}. Detour is {6} from obstacle center.",
+                    //    _fleet.FullName, obstacleName, obstacleLocation, detour, Vector3.Magnitude(detour - _fleet.Data.Position), keepoutRadius, detourDistanceFromObstacleCenter);
+                }
+                else {  // HACK halfWayPoint can be the same as obstacleLocation if headed directly into center of the obstacle
+                    detour = _fleet._transform.forward + _fleet._transform.right;
+                }
             }
             else {
                 D.Error("{0} did not find a ray exit point when casting through {1}.", _fleet.FullName, obstacleName);
@@ -1244,8 +1220,8 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
 
         private void GenerateCourse() {
             Vector3 start = _fleet.Data.Position;
-            string replot = _isCourseReplot ? "replotting" : "plotting";
-            D.Log("{0} is {1} course to {2}. Start = {3}, Destination = {4}.", _fleet.FullName, replot, Target.FullName, start, Destination);
+            //string replot = _isCourseReplot ? "replotting" : "plotting";
+            //D.Log("{0} is {1} course to {2}. Start = {3}, Destination = {4}.", _fleet.FullName, replot, Target.FullName, start, Destination);
             //Debug.DrawLine(start, Destination, Color.yellow, 20F, false);
             //Path path = new Path(startPosition, targetPosition, null);    // Path is now abstract
             //Path path = PathPool<ABPath>.GetPath();   // don't know how to assign start and target points
@@ -1273,10 +1249,10 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
 
             // these penalties are applied dynamically to the cost when the tag is encountered in a node. The penalty on the node itself is always 0
             var tagPenalties = new int[32];
-            tagPenalties[(int)SpaceTopography.OpenSpace] = 0;
-            tagPenalties[(int)SpaceTopography.Nebula] = 400000;
-            tagPenalties[(int)SpaceTopography.DeepNebula] = 800000;
-            tagPenalties[(int)SpaceTopography.System] = 5000000;
+            tagPenalties[(int)Topography.OpenSpace] = 0;
+            tagPenalties[(int)Topography.Nebula] = 400000;
+            tagPenalties[(int)Topography.DeepNebula] = 800000;
+            tagPenalties[(int)Topography.System] = 5000000;
             _seeker.tagPenalties = tagPenalties;
 
             _seeker.StartPath(path);
@@ -1312,7 +1288,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
             if (nonOpenSpaceNodes.Any()) {
                 nonOpenSpaceNodes.ForAll(node => {
                     D.Assert(Mathf.IsPowerOfTwo((int)node.Tag));    // confirms that tags contains only 1 SpaceTopography value
-                    SpaceTopography tag = (SpaceTopography)Mathf.Log((int)node.Tag, 2F);
+                    Topography tag = (Topography)Mathf.Log((int)node.Tag, 2F);
                     D.Warn("Node at {0} has tag {1}, penalty = {2}.", (Vector3)node.position, tag.GetName(), _seeker.tagPenalties[(int)tag]);
                 });
             }
@@ -1320,8 +1296,8 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
 
         private void Cleanup() {
             Unsubscribe();
-            if (_pilotJob != null && _pilotJob.IsRunning) {
-                _pilotJob.Kill();
+            if (_pilotJob != null) {
+                _pilotJob.Dispose();
             }
         }
 

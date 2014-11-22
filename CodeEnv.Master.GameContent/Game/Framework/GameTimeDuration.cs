@@ -175,7 +175,7 @@ namespace CodeEnv.Master.GameContent {
         /// starting now and ending on endDate.
         /// </summary>
         /// <param name="endDate">The end date.</param>
-        public GameTimeDuration(GameDate endDate) : this(GameTime.CurrentDate, endDate) { }
+        public GameTimeDuration(GameDate endDate) : this(GameTime.Instance.CurrentDate, endDate) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GameTimeDuration"/> class.

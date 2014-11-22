@@ -34,19 +34,26 @@ public class StarItem : AItem, IDestinationTarget, IShipOrbitable {
         set { base.Data = value; }
     }
 
+    protected override float ItemTypeCircleScale { get { return 1.5F; } }
+
     public StarCategory category;
-    public float minCameraViewDistanceMultiplier = 2F;
-    public float optimalCameraViewDistanceMultiplier = 8F;
+
+    [Range(0.5F, 3.0F)]
+    [Tooltip("Minimum Camera View Distance Multiplier")]
+    public float minViewDistanceFactor = 2F;
+
+    [Range(3.0F, 15.0F)]
+    [Tooltip("Optimal Camera View Distance Multiplier")]
+    public float optViewDistanceFactor = 8F;
 
     private Billboard _billboard;
     private SystemItem _system;
-    private StarCtxControl _ctxControl;
+    private ICtxControl _ctxControl;
 
     #region Initialization
 
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
-        circleScaleFactor = 1.0F;
         var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
         Radius = meshRenderer.bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
         collider.isTrigger = false;
@@ -103,7 +110,7 @@ public class StarItem : AItem, IDestinationTarget, IShipOrbitable {
         });
 
         var starLight = gameObject.GetComponentInChildren<Light>();
-        starLight.range = GameManager.Settings.UniverseSize.Radius();
+        starLight.range = GameManager.Instance.GameSettings.UniverseSize.Radius();
         starLight.intensity = 0.5F;
         starLight.cullingMask = _starLightCullingMask;
         starLight.enabled = true;
@@ -164,9 +171,20 @@ public class StarItem : AItem, IDestinationTarget, IShipOrbitable {
 
     protected override void OnRightPress(bool isDown) {
         base.OnRightPress(isDown);
-        if (_ctxControl != null && !isDown && !GameInput.Instance.IsDragging) {
+        if (!isDown && !_inputMgr.IsDragging) {
             // right press release while not dragging means both press and release were over this object
             _ctxControl.OnRightPressRelease();
+        }
+    }
+
+    #endregion
+
+    #region Cleanup
+
+    protected override void Cleanup() {
+        base.Cleanup();
+        if (_ctxControl != null) {
+            (_ctxControl as IDisposable).Dispose();
         }
     }
 
@@ -190,13 +208,13 @@ public class StarItem : AItem, IDestinationTarget, IShipOrbitable {
 
     #region ICameraTargetable Members
 
-    public override float MinimumCameraViewingDistance { get { return Radius * minCameraViewDistanceMultiplier; } }
+    public override float MinimumCameraViewingDistance { get { return Radius * minViewDistanceFactor; } }
 
     #endregion
 
     #region ICameraFocusable Members
 
-    public override float OptimalCameraViewingDistance { get { return Radius * optimalCameraViewDistanceMultiplier; } }
+    public override float OptimalCameraViewingDistance { get { return Radius * optViewDistanceFactor; } }
 
     #endregion
 

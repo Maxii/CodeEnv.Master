@@ -206,10 +206,10 @@ public class SystemCreator : AMonoBase, IDisposable {
         Index3D sectorIndex = SectorGrid.GetSectorIndex(_transform.position);
         if (isCompositionPreset) {
             _system = gameObject.GetSafeMonoBehaviourComponentInChildren<SystemModel>();
-            _factory.MakeSystemInstance(SystemName, sectorIndex, SpaceTopography.OpenSpace, ref _system);
+            _factory.MakeSystemInstance(SystemName, sectorIndex, Topography.OpenSpace, ref _system);
         }
         else {
-            _system = _factory.MakeSystemInstance(SystemName, sectorIndex, SpaceTopography.OpenSpace, gameObject);
+            _system = _factory.MakeSystemInstance(SystemName, sectorIndex, Topography.OpenSpace, gameObject);
         }
     }
 
@@ -370,8 +370,8 @@ public class SystemCreator : AMonoBase, IDisposable {
 
     private void InitializeTopographyMonitor() {
         var monitor = gameObject.GetSafeMonoBehaviourComponentInChildren<TopographyMonitor>();
-        monitor.Topography = SpaceTopography.System;
-        monitor.SurroundingTopography = SpaceTopography.OpenSpace;
+        monitor.Topography = Topography.System;
+        monitor.SurroundingTopography = Topography.OpenSpace;
         monitor.TopographyRadius = TempGameValues.SystemRadius;
     }
 

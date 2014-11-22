@@ -85,6 +85,8 @@ public class StarFlare : AMonoBase {
         _flareLight.intensity = _originalIntensity * flareIntensityFactor;
     }
 
+    protected override void Cleanup() { }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

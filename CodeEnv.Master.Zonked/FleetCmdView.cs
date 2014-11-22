@@ -186,13 +186,13 @@ public class FleetCmdView : AUnitCommandView, IFleetCmdViewable, ICameraFollowab
 
     [SerializeField]
     private float cameraFollowDistanceDampener = 3.0F;
-    public virtual float CameraFollowDistanceDampener {
+    public virtual float FollowDistanceDampener {
         get { return cameraFollowDistanceDampener; }
     }
 
     [SerializeField]
     private float cameraFollowRotationDampener = 1.0F;
-    public virtual float CameraFollowRotationDampener {
+    public virtual float FollowRotationDampener {
         get { return cameraFollowRotationDampener; }
     }
 

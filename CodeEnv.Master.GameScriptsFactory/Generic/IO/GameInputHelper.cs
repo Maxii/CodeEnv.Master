@@ -17,7 +17,9 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -32,7 +34,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     }
 
     protected override void Initialize() {
-        // TODO do any initialization here
+        References.InputHelper = this;
     }
 
     /// <summary>
@@ -40,10 +42,12 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     /// Valid only within an Ngui UICamera-generated event.
     /// </summary>
     /// <returns></returns>
-    public NguiMouseButton GetMouseButton() {
-        int currentMouseButton = UICamera.currentTouchID;
-        ValidateCurrentTouchID(currentMouseButton);
-        return (NguiMouseButton)currentMouseButton;
+    public NguiMouseButton CurrentMouseButton {
+        get {
+            int currentMouseButton = UICamera.currentTouchID;
+            ValidateCurrentTouchID(currentMouseButton);
+            return (NguiMouseButton)currentMouseButton;
+        }
     }
 
     /// <summary>
@@ -54,9 +58,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     /// <returns>
     ///   <c>true</c> if the mouseButton is the one that was used to generate the current event; otherwise, <c>false</c>.
     /// </returns>
-    public bool IsMouseButton(NguiMouseButton mouseButton) {
-        return mouseButton == GetMouseButton();
-    }
+    public bool IsMouseButton(NguiMouseButton mouseButton) { return mouseButton == CurrentMouseButton; }
 
     [System.Diagnostics.Conditional("DEBUG")]
     private void ValidateCurrentTouchID(int currentTouchID) {
@@ -70,9 +72,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     /// <returns>
     ///   <c>true</c> if the left mouseButton is the one that was used to generate the current event; otherwise, <c>false</c>.
     /// </returns>
-    public bool IsLeftMouseButton() {
-        return IsMouseButton(NguiMouseButton.Left);
-    }
+    public bool IsLeftMouseButton { get { return IsMouseButton(NguiMouseButton.Left); } }
 
     /// <summary>
     /// Tests whether the right mouse button is the current button that is being
@@ -81,9 +81,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     /// <returns>
     ///   <c>true</c> if the right mouseButton is the one that was used to generate the current event; otherwise, <c>false</c>.
     /// </returns>
-    public bool IsRightMouseButton() {
-        return IsMouseButton(NguiMouseButton.Right);
-    }
+    public bool IsRightMouseButton { get { return IsMouseButton(NguiMouseButton.Right); } }
 
     /// <summary>
     /// Tests whether the middle mouse button is the current button that is being
@@ -92,9 +90,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     /// <returns>
     ///   <c>true</c> if the middle mouseButton is the one that was used to generate the current event; otherwise, <c>false</c>.
     /// </returns>
-    public bool IsMiddleMouseButton() {
-        return IsMouseButton(NguiMouseButton.Middle);
-    }
+    public bool IsMiddleMouseButton { get { return IsMouseButton(NguiMouseButton.Middle); } }
 
     /// <summary>
     /// Detects whether a mouse button is being held down across multiple frames.
@@ -103,7 +99,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     /// <returns>
     ///   <c>true</c> if the mouse button is being held down; otherwise, <c>false</c>.
     /// </returns>
-    public static bool IsMouseButtonDown(NguiMouseButton mouseButton) {
+    public bool IsMouseButtonDown(NguiMouseButton mouseButton) {
         return Input.GetMouseButton(mouseButton.ToUnityMouseButton());
     }
 
@@ -113,8 +109,12 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     /// <returns>
     ///   <c>true</c> if any mouse button is being held down; otherwise, <c>false</c>.
     /// </returns>
-    public static bool IsAnyMouseButtonDown() {
-        return IsMouseButtonDown(NguiMouseButton.Left) || IsMouseButtonDown(NguiMouseButton.Right) || IsMouseButtonDown(NguiMouseButton.Middle);
+    public bool IsAnyMouseButtonDown {
+        get {
+            return IsMouseButtonDown(NguiMouseButton.Left) ||
+                    IsMouseButtonDown(NguiMouseButton.Right) ||
+                    IsMouseButtonDown(NguiMouseButton.Middle);
+        }
     }
 
     /// <summary>
@@ -123,7 +123,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     /// <returns>
     ///   <c>true</c> if any other mouse button is being held down; otherwise, <c>false</c>.
     /// </returns>
-    public static bool IsAnyMouseButtonDownBesides(NguiMouseButton mouseButton) {
+    public bool IsAnyMouseButtonDownBesides(NguiMouseButton mouseButton) {
         foreach (NguiMouseButton button in Enums<NguiMouseButton>.GetValues().Except(NguiMouseButton.None)) {
             if (button != mouseButton) {
                 if (IsMouseButtonDown(button)) {
@@ -134,25 +134,21 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
         return false;
     }
 
-    public bool IsAnyKeyOrMouseButtonDown() {
-        return Input.anyKey;
-    }
+    public bool IsAnyKeyOrMouseButtonDown { get { return Input.anyKey; } }
 
-    public static bool IsHorizontalMouseMovement(out float value) {
+    public bool IsHorizontalMouseMovement(out float value) {
         value = Input.GetAxis(UnityConstants.MouseAxisName_Horizontal);
-        D.Log("Mouse Horizontal Movement value = {0:0.0000}.", value);
+        //D.Log("Mouse Horizontal Movement value = {0:0.0000}.", value);
         return value != 0F; // No floating point equality issues as value is smoothed by Unity
     }
 
-    public static bool IsVerticalMouseMovement(out float value) {
+    public bool IsVerticalMouseMovement(out float value) {
         value = Input.GetAxis(UnityConstants.MouseAxisName_Vertical);
-        D.Log("Mouse Vertical Movement value = {0:0.0000}.", value);
+        //D.Log("Mouse Vertical Movement value = {0:0.0000}.", value);
         return value != 0F; // No floating point equality issues as value is smoothed by Unity
     }
 
-    public static bool IsKeyHeldDown(KeyCode key) {
-        return Input.GetKey(key);
-    }
+    public bool IsKeyHeldDown(KeyCode key) { return Input.GetKey(key); }
 
     /// <summary>
     /// Determines whether any of the specified keys are being held down.
@@ -176,9 +172,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     /// </summary>
     /// <param name="key">The key.</param>
     /// <returns></returns>
-    public static bool IsKeyDown(KeyCode key) {
-        return Input.GetKeyDown(key);
-    }
+    public bool IsKeyDown(KeyCode key) { return Input.GetKeyDown(key); }
 
     /// <summary>
     /// Determines whether any of the specified keys were pressed down this frame.
@@ -197,7 +191,8 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
         return false;
     }
 
-    static bool _isNotifying = false;
+    private bool _isNotifying;
+    private GameObject __previousGo;
 
     /// <summary>
     /// Generic notification function. Used in place of SendMessage to shorten the code and allow for more than one receiver.
@@ -206,19 +201,23 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     /// <param name="go">The GameObject to notify.</param>
     /// <param name="methodName">Name of the method to call.</param>
     /// <param name="obj">Optional parameter associated with the method.</param>
-    static public void Notify(GameObject go, string methodName, object obj = null) {
+    public void Notify(GameObject go, string methodName, object obj = null) {
         if (_isNotifying) {
-            D.Error("Notify called when not yet finished from previous call.");
+            D.Warn("Notify called when not yet finished from previous call. \nPreviousGO = {0}, NewGO = {1}.", __previousGo.name, go.name);
             return;
         }
         _isNotifying = true;
 
         if (NGUITools.GetActive(go)) {
+            __previousGo = go;
             go.SendMessage(methodName, obj, SendMessageOptions.DontRequireReceiver);
         }
         _isNotifying = false;
     }
 
+    public override string ToString() {
+        return new ObjectAnalyzer().ToString(this);
+    }
 
 }
 

@@ -42,6 +42,7 @@ public abstract class AMortalItem : AItem, IMortalItem {
 
     public AudioClip dying;
     public AudioClip hit;
+
     protected AudioSource _audioSource;
     protected Job _showingJob;
 
@@ -73,13 +74,25 @@ public abstract class AMortalItem : AItem, IMortalItem {
     /// </summary>
     protected virtual void OnHealthChanged() { }
 
-    protected virtual void OnDeath() {
+    /// <summary>
+    /// Initiates the death sequence of this MortalItem. This is the primary method
+    /// to call to initiate death. Donot use OnDeath or set IsAlive or set a state of Dead.
+    /// Note: the primary reason is to make sure IsAlive immediately reflects the death
+    /// and can be used right away to check for it. Use of a state of Dead for the filter 
+    /// can also work as it is changed immediately too. However, the previous implementation
+    /// had IsAlive being set when the Dead EnterState ran, which can be a whole frame later,
+    /// given the way the state machine works. This approach keeps isAlive and Dead in sync.
+    /// </summary>
+    protected virtual void InitiateDeath() {
         IsAlive = false;
+    }
+
+    protected virtual void OnDeath() {
         if (onDeathOneShot != null) {
             onDeathOneShot(this);
             onDeathOneShot = null;
         }
-        if (IsFocus) { References.CameraControl.CurrentFocus = null; }
+        if (IsFocus) { References.MainCameraControl.CurrentFocus = null; }
     }
 
     #endregion
@@ -101,6 +114,7 @@ public abstract class AMortalItem : AItem, IMortalItem {
         });
     }
 
+
     // these run until finished with no requirement to call OnShowCompletion
     private void ShowHit() {
         LogEvent();
@@ -109,6 +123,7 @@ public abstract class AMortalItem : AItem, IMortalItem {
         }
         _showingJob = new Job(ShowingHit(), toStart: true);
     }
+
 
     protected virtual void ShowCmdHit() { LogEvent(); }
 
@@ -192,10 +207,9 @@ public abstract class AMortalItem : AItem, IMortalItem {
 
     #region Attack Simulation
 
-    public static ArmamentCategory[] __offensiveArmamentCategories = new ArmamentCategory[3] { 
-        ArmamentCategory.MissileOffense,
-        ArmamentCategory.BeamOffense, 
-        ArmamentCategory.ParticleOffense 
+    public static ArmamentCategory[] __offensiveArmamentCategories = new ArmamentCategory[3] {  ArmamentCategory.MissileOffense,
+                                                                                                ArmamentCategory.BeamOffense, 
+                                                                                                ArmamentCategory.ParticleOffense 
     };
 
     public virtual void __SimulateAttacked() {
@@ -207,7 +221,7 @@ public abstract class AMortalItem : AItem, IMortalItem {
 
     #endregion
 
-    #region StateMachine Support Methods
+    #region Combat Support Methods
 
     /// <summary>
     /// Applies the damage to the Item. Returns true 
@@ -216,31 +230,23 @@ public abstract class AMortalItem : AItem, IMortalItem {
     /// <returns><c>true</c> if the Item survived.</returns>
     protected virtual bool ApplyDamage(float damage) {
         Data.CurrentHitPoints -= damage;
-        return Data.Health > Constants.ZeroF;
+        return Data.Health > Constants.ZeroPercent;
     }
 
-    protected void DestroyMortalItem(float delayInSeconds, Action onCompletion = null) {
-        D.Log("{0}.{1}.DestroyMortalItem({2}) called.", FullName, GetType().Name, delayInSeconds);
-        //Destroy(gameObject, delayInSeconds);
-        new Job(DelayedDestroy(delayInSeconds), toStart: true, onJobComplete: (wasKilled) => {
-            D.Log("{0} has been destroyed.", FullName);
-            if (onCompletion != null) {
-                onCompletion();
-            }
-        });
+    #endregion
+
+    protected void __DestroyMe(float delay, Action onCompletion = null) {
+        UnityUtility.Destroy(gameObject, delay, onCompletion);
     }
 
-    private IEnumerator DelayedDestroy(float delayInSeconds) {
-        D.Log("{0}.DelayedDestroy({1}) called.", FullName, delayInSeconds);
-        yield return new WaitForSeconds(delayInSeconds);
-        if (gameObject == null) {
-            D.Warn("Trying to destroy a GameObject that has already been destroyed.");
-            yield break;
+    #region Cleanup
+
+    protected override void Cleanup() {
+        base.Cleanup();
+        if (_showingJob != null) {
+            _showingJob.Dispose();
         }
-        Destroy(gameObject);
     }
-
-
 
     #endregion
 
@@ -257,7 +263,7 @@ public abstract class AMortalItem : AItem, IMortalItem {
     /// </summary>
     public override void LogEvent() {
         if (DebugSettings.Instance.EnableEventLogging) {
-            System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackFrame(1);
+            var stackFrame = new System.Diagnostics.StackFrame(1);
             Debug.Log("{0}.{1}.{2}() called.".Inject(FullName, GetType().Name, stackFrame.GetMethod().Name));
         }
     }

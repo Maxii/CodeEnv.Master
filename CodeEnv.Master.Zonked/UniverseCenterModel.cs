@@ -62,7 +62,7 @@ public class UniverseCenterModel : AItemModel, IDestinationTarget, IShipOrbitabl
 
     #region IDestinationTarget Members
 
-    public SpaceTopography Topography { get { return Data.Topography; } }
+    public Topography Topography { get { return Data.Topography; } }
 
     #endregion
 

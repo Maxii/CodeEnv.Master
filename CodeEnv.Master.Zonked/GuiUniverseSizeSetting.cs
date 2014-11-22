@@ -30,7 +30,7 @@ public class GuiUniverseSizeSetting : AGuiPopupListBase {
 
     protected override void Initialize() {
         base.Initialize();
-        popupList.selection = playerPrefsMgr.SizeOfUniverse.GetName();
+        _popupList.selection = playerPrefsMgr.SizeOfUniverse.GetName();
         tooltip = "Choose the size of the Universe for your game.";
     }
 

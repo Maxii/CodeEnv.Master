@@ -88,28 +88,30 @@ public class GuiPrefabLinker : AMonoBase {
         animationOnTopLevelLaunchButtonWithNoAssignedTarget.target = topLevelWindowAnimation;
         // if there are any submenus in this linkedPrefab, they are already wired to the buttons in the topLevelMenu that launch them as prefabs can retain internal linkages
 
-        var launchButton = animationOnTopLevelLaunchButtonWithNoAssignedTarget.gameObject.GetSafeMonoBehaviourComponent<GuiVisibilityButton>();
-        if (!Utility.CheckForContent<UIPanel>(launchButton.guiVisibilityExceptions)) {
-            launchButton.guiVisibilityExceptions = new List<UIPanel>(1);
+        var launchButton = animationOnTopLevelLaunchButtonWithNoAssignedTarget.gameObject.GetSafeMonoBehaviourComponent<GuiVisibilityModeControlButton>();
+        if (!Utility.CheckForContent<UIPanel>(launchButton.exceptions)) {
+            launchButton.exceptions = new List<UIPanel>(1);
         }
         else {
             //D.Warn("GuiVisibilityExceptions already contains an exception! Now being replaced by {0}.".Inject(topLevelUIPanel.name));
         }
-        launchButton.guiVisibilityExceptions.Add(topLevelUIPanel);
+        launchButton.exceptions.Add(topLevelUIPanel);
         // Note: any exception arrays from GuiVisibilityButtons that launch subMenus should already have the exception for the subMenu itself set in the editor
 
         // Check for any exceptions that need to be added to subMenu launch buttons (if any)
         if (Utility.CheckForContent<UIPanel>(optionalHidePanelExceptions)) {
             // there are exceptions so check to see if there are also subMenu launch buttons that need them added to their exception list
-            var subMenuLaunchButtons = prefabClone.GetComponentsInChildren<GuiVisibilityButton>(includeInactive: true).Where(lb => lb.guiVisibilityCmd == GuiVisibilityCommand.HideVisibleGuiPanels);
+            var subMenuLaunchButtons = prefabClone.GetComponentsInChildren<GuiVisibilityModeControlButton>(includeInactive: true).Where(lb => lb.visibilityModeOnClick == GuiVisibilityMode.Hidden);
             if (subMenuLaunchButtons.IsNullOrEmpty()) {
                 D.WarnContext("{0}.{1} has panel exceptions listed, but no subMenu launchButtons to apply them too.".Inject(gameObject.name, GetType().Name), this);
             }
             else {
-                subMenuLaunchButtons.ForAll(lb => lb.guiVisibilityExceptions.AddRange(optionalHidePanelExceptions));
+                subMenuLaunchButtons.ForAll(lb => lb.exceptions.AddRange(optionalHidePanelExceptions));
             }
         }
     }
+
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

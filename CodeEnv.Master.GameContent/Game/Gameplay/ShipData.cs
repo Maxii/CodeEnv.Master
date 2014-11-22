@@ -63,7 +63,7 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        public new SpaceTopography Topography {
+        public new Topography Topography {
             get { return base.Topography; }
             set { base.Topography = value; }
         }
@@ -93,7 +93,7 @@ namespace CodeEnv.Master.GameContent {
         /// Readonly. Gets the current speed of the ship in Units per hour, normalized for game speed.
         /// </summary>
         public float CurrentSpeed {
-            get { return (_gameStatus.IsPaused) ? _currentSpeedOnPause : (_rigidbody.velocity.magnitude / GeneralSettings.Instance.HoursPerSecond) / _gameSpeedMultiplier; }
+            get { return (_gameMgr.IsPaused) ? _currentSpeedOnPause : (_rigidbody.velocity.magnitude / GeneralSettings.Instance.HoursPerSecond) / _gameSpeedMultiplier; }
         }
 
         private float _requestedSpeed;
@@ -196,9 +196,9 @@ namespace CodeEnv.Master.GameContent {
         private float _currentSpeedOnPause;
         private Rigidbody _rigidbody;
         private IList<IDisposable> _subscribers;
-        private GameStatus _gameStatus;
         private GameTime _gameTime;
         private float _gameSpeedMultiplier;
+        private IGameManager _gameMgr;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ShipData"/> class.
@@ -216,15 +216,15 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Initialize() {
-            _gameStatus = GameStatus.Instance;
             _gameTime = GameTime.Instance;
+            _gameMgr = References.GameManager;
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();
             Subscribe();
         }
 
         private void Subscribe() {
             _subscribers = new List<IDisposable>();
-            _subscribers.Add(_gameStatus.SubscribeToPropertyChanging<GameStatus, bool>(gs => gs.IsPaused, OnIsPausedChanging));
+            _subscribers.Add(_gameMgr.SubscribeToPropertyChanging<IGameManager, bool>(gs => gs.IsPaused, OnIsPausedChanging));
             _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
         }
 
@@ -236,7 +236,7 @@ namespace CodeEnv.Master.GameContent {
         /// is OpenSpace rather than None. Can't use None = 0, as OpenSpace = 0 is used to generate a Pathfinding bitmask tag used to assign penalty values.
         /// </summary>
         public void AssessFtlAvailability() {
-            IsFtlAvailableForUse = Topography == SpaceTopography.OpenSpace && !IsFtlDamaged && !IsFtlDampedByField;
+            IsFtlAvailableForUse = Topography == Topography.OpenSpace && !IsFtlDamaged && !IsFtlDampedByField;
         }
 
         protected override void OnTransformChanged() {

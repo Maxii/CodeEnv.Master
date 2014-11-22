@@ -25,9 +25,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface ICameraFollowable : ICameraFocusable {
 
-        float CameraFollowDistanceDampener { get; }
+        float FollowDistanceDampener { get; }
 
-        float CameraFollowRotationDampener { get; }
+        float FollowRotationDampener { get; }
 
     }
 }

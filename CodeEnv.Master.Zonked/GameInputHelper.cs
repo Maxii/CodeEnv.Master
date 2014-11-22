@@ -50,7 +50,7 @@ public static class GameInputHelper {
     ///   <c>true</c> if the mouseButton is the one that was used to generate the current event; otherwise, <c>false</c>.
     /// </returns>
     public static bool IsMouseButton(NguiMouseButton mouseButton) {
-        return mouseButton == GetMouseButton();
+        return mouseButton == CurrentMouseButton();
     }
 
     [System.Diagnostics.Conditional("DEBUG")]

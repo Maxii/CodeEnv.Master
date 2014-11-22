@@ -337,7 +337,7 @@ namespace CodeEnv.Master.Common {
             }
             if (propertyInfo.DeclaringType != typeof(TSource) && !typeof(TSource).IsSubclassOf(propertyInfo.DeclaringType)) {
                 // my modification that allows a base class to hold the Property rather than just the derived class
-                D.Error("TSource Type [{0}] not equal to or derived from  Property DeclaringType {1}.", typeof(TSource).Name, propertyInfo.DeclaringType.Name);
+                throw new ArgumentException("TSource Type [{0}] not derived from Property DeclaringType {1}.".Inject(typeof(TSource).Name, propertyInfo.DeclaringType.Name));
             }
             return propertyInfo.Name;
         }

@@ -30,7 +30,7 @@ public class GuiGameSpeedOnLoadOption : AGuiPopupListBase {
 
     protected override void Initialize() {
         base.Initialize();
-        popupList.selection = playerPrefsMgr.GameSpeedOnLoad.GetName();
+        _popupList.selection = playerPrefsMgr.GameSpeedOnLoad.GetName();
         tooltip = "Set the game speed you wish to begin with after the game loads.";
     }
 

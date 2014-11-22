@@ -21,20 +21,25 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public enum PauseState {
 
+        /// <summary>
+        /// For error checking.
+        /// </summary>
         None,
 
         /// <summary>
-        /// The Game is not paused.
+        /// The game is not paused.
         /// </summary>
         NotPaused,
 
         /// <summary>
-        /// The game is temporarily paused due to a Gui Element being displayed.
+        /// The game was automatically paused.
+        /// Typically this is caused by a Gui Menu, Screen or Popup opening.
         /// </summary>
-        GuiAutoPaused,
+        AutoPaused,
 
         /// <summary>
-        /// The game is paused either by the user or by the game.
+        /// The game was paused by the player.
+        /// Typically, this is caused by the player using the Pause button or key.
         /// </summary>
         Paused
 

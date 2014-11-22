@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="weapon">The weapon.</param>
         /// <param name="trackerID">The range tracker identifier.</param>
         public void AddWeapon(Weapon weapon, Guid trackerID) {
-            weapon.TrackerID = trackerID;
+            weapon.MonitorID = trackerID;
             if (!_weaponRangeTrackerLookup.ContainsKey(trackerID)) {
                 _weaponRangeTrackerLookup.Add(trackerID, new List<Weapon>());
             }
@@ -69,7 +69,7 @@ namespace CodeEnv.Master.GameContent {
         /// </returns>
         /// <exception cref="KeyNotFoundException">{0} has no weapon to remove named {1}..Inject(FullName, weapon.Name)</exception>
         public bool RemoveWeapon(Weapon weapon) {
-            var trackerID = weapon.TrackerID;
+            var trackerID = weapon.MonitorID;
             var trackerWeapons = _weaponRangeTrackerLookup[trackerID];  // throws KeyNotFoundException 
             if (!trackerWeapons.Remove(weapon)) {
                 throw new KeyNotFoundException("{0} has no weapon to remove named {1}.".Inject(FullName, weapon.Name));

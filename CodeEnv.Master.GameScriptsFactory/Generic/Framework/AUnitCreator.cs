@@ -33,12 +33,15 @@ using UnityEngine;
 /// <typeparam name="ElementDataType">The Type of the Element's Data.</typeparam>
 /// <typeparam name="ElementStatType">The Type of the Element stat.</typeparam>
 /// <typeparam name="CommandType">The Type of the Command.</typeparam>
-public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementDataType, ElementStatType, CommandType> : ACreator, IDisposable
+public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementDataType, ElementStatType, CommandType> : ACreator
     where ElementType : AUnitElementItem
     where ElementCategoryType : struct
     where ElementDataType : AElementData
     where ElementStatType : struct
     where CommandType : AUnitCommandItem {
+
+    private static IList<CommandType> _allUnitCommands = new List<CommandType>();
+    public static IList<CommandType> AllUnitCommands { get { return _allUnitCommands; } }
 
     /// <summary>
     /// The name of the top level Unit, aka the Settlement, Starbase or Fleet name.
@@ -53,7 +56,6 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     protected IPlayer _owner;
     private bool _isUnitDeployed;
 
-    private IList<IDisposable> _subscribers;
     private IGameManager _gameMgr;
 
     protected override void Awake() {
@@ -70,8 +72,23 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     }
 
     private void Subscribe() {
-        _subscribers = new List<IDisposable>();
         _gameMgr.onCurrentStateChanged += OnGameStateChanged;
+        SubscribeStaticallyOnce();
+    }
+
+    /// <summary>
+    /// Allows a one time static subscription to event publishers from this class.
+    /// </summary>
+    private static bool _isStaticallySubscribed;
+    /// <summary>
+    /// Subscribes this class using static event handler(s) to instance events exactly one time.
+    /// </summary>
+    private void SubscribeStaticallyOnce() {
+        if (!_isStaticallySubscribed) {
+            //D.Log("{0} is subscribing statically to {1}.", GetType().Name, _gameMgr.GetType().Name);
+            _gameMgr.onSceneLoaded += CleanupStaticMembers;
+            _isStaticallySubscribed = true;
+        }
     }
 
     private void OnGameStateChanged() {
@@ -91,17 +108,17 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     private void BuildDeployAndBeginUnitOperationsDuringStartup(GameState gameState) {
         D.Assert(!toDelayOperations);  // toDelayBuild can be true from previous editor setting
         if (gameState == GameState.PrepareUnitsForDeployment) {
-            RegisterReadinessForGameStateProgression(GameState.PrepareUnitsForDeployment, isReady: false);
+            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.PrepareUnitsForDeployment, isReady: false);
             CreateElementStats();
             PrepareUnitForOperations(onCompleted: delegate {
-                RegisterReadinessForGameStateProgression(GameState.PrepareUnitsForDeployment, isReady: true);
+                _gameMgr.RecordGameStateProgressionReadiness(this, GameState.PrepareUnitsForDeployment, isReady: true);
             });
         }
 
         if (gameState == GameState.DeployingUnits) {
-            RegisterReadinessForGameStateProgression(GameState.DeployingUnits, isReady: false);
+            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.DeployingUnits, isReady: false);
             _isUnitDeployed = DeployUnit();
-            RegisterReadinessForGameStateProgression(GameState.DeployingUnits, isReady: true);
+            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.DeployingUnits, isReady: true);
             if (!_isUnitDeployed) {
                 Destroy(gameObject);
             }
@@ -119,17 +136,17 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     private void BuildDeployDuringStartupAndDelayBeginUnitOperations(GameState gameState) {
         D.Assert(toDelayOperations && !toDelayBuild);
         if (gameState == GameState.PrepareUnitsForDeployment) {
-            RegisterReadinessForGameStateProgression(GameState.PrepareUnitsForDeployment, isReady: false);
+            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.PrepareUnitsForDeployment, isReady: false);
             CreateElementStats();
             PrepareUnitForOperations(onCompleted: delegate {
-                RegisterReadinessForGameStateProgression(GameState.PrepareUnitsForDeployment, isReady: true);
+                _gameMgr.RecordGameStateProgressionReadiness(this, GameState.PrepareUnitsForDeployment, isReady: true);
             });
         }
 
         if (gameState == GameState.DeployingUnits) {
-            RegisterReadinessForGameStateProgression(GameState.DeployingUnits, isReady: false);
+            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.DeployingUnits, isReady: false);
             _isUnitDeployed = DeployUnit();
-            RegisterReadinessForGameStateProgression(GameState.DeployingUnits, isReady: true);
+            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.DeployingUnits, isReady: true);
             if (!_isUnitDeployed) {
                 Destroy(gameObject);
             }
@@ -217,8 +234,9 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         UnityUtility.WaitOneToExecute((wasKilled) => {
             // delay 1 frame to allow Element and Command Idling_EnterState to execute
             EnableOtherWhenRunning();
+            RecordInStaticCollections();
             __SetIntelCoverage();
-            IssueFirstUnitCommand();
+            __IssueFirstUnitCommand();
             RemoveCreatorScript();
         });
     }
@@ -413,6 +431,18 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     /// </summary>
     protected abstract void BeginCommandOperations();
 
+    /// <summary>
+    /// Records the Command in its static collection holding all instances.
+    /// Note: The Assert tests are here to make sure instances from a prior scene are not still present, as the collections
+    /// these items are stored in are static and persist across scenes.
+    /// </summary>
+    private void RecordInStaticCollections() {
+        _command.onDeathOneShot += OnUnitDeath;
+        var cmdNamesStored = _allUnitCommands.Select(cmd => cmd.DisplayName);
+        // Can't use a Contains(item) test as the new item instance will never equal the old instance from the previous scene, even with the same name
+        D.Assert(!cmdNamesStored.Contains(_command.DisplayName), "{0}.{1} reports {2} already present.".Inject(UnitName, GetType().Name, _command.DisplayName));
+        _allUnitCommands.Add(_command);
+    }
 
     protected virtual void __SetIntelCoverage() {
         LogEvent();
@@ -443,7 +473,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         }
     }
 
-    protected abstract void IssueFirstUnitCommand();
+    protected abstract void __IssueFirstUnitCommand();
 
 
     private IPlayer ValidateAndInitializeOwner() {
@@ -479,69 +509,47 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         Destroy(this);
     }
 
-    private void RegisterReadinessForGameStateProgression(GameState stateToNotProgressBeyondUntilReady, bool isReady) {
-        GameEventManager.Instance.Raise(new ElementReadyEvent(this, stateToNotProgressBeyondUntilReady, isReady));
+    /// <summary>
+    /// Removes the command from the AllUnitCommands static collection
+    /// when the command dies.
+    /// </summary>
+    /// <param name="mortalItem">The mortal item.</param>
+    private static void OnUnitDeath(IMortalItem mortalItem) {
+        AllUnitCommands.Remove(mortalItem as CommandType);
     }
 
-    protected override void OnDestroy() {
-        base.OnDestroy();
-        Dispose();
-    }
-
-    private void Cleanup() {
+    protected override void Cleanup() {
         Unsubscribe();
+        if (IsApplicationQuiting) {
+            CleanupStaticMembers();
+            UnsubscribeStaticallyOnceOnQuit();
+        }
     }
 
-    private void Unsubscribe() {
-        if (_subscribers != null) {
-            _subscribers.ForAll(d => d.Dispose());
-            _subscribers.Clear();
-        }
+    protected virtual void Unsubscribe() {
         _gameMgr.onCurrentStateChanged -= OnGameStateChanged;
     }
 
-    #region IDisposable
-    [DoNotSerialize]
-    private bool alreadyDisposed = false;
-
     /// <summary>
-    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// Cleans up static members of this class whose value should not persist across scenes or after quiting.
+    /// UNCLEAR This is called whether the scene loaded is from a saved game or a new game. 
+    /// Should static values be reset on a scene change from a saved game? 1) do the static members
+    /// retain their value after deserialization, and/or 2) can static members even be serialized? 
     /// </summary>
-    public void Dispose() {
-        Dispose(true);
-        GC.SuppressFinalize(this);
+    private static void CleanupStaticMembers() {
+        _allUnitCommands.ForAll(cmd => cmd.onDeathOneShot -= OnUnitDeath);
+        _allUnitCommands.Clear();
     }
 
     /// <summary>
-    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
+    /// Unsubscribes this class from all events that use a static event handler on Quit.
     /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool isDisposing) {
-        // Allows Dispose(isDisposing) to be called more than once
-        if (alreadyDisposed) {
-            return;
+    private void UnsubscribeStaticallyOnceOnQuit() {
+        if (_isStaticallySubscribed) {
+            _gameMgr.onSceneLoaded -= CleanupStaticMembers;
+            _isStaticallySubscribed = false;
         }
-
-        if (isDisposing) {
-            // free managed resources here including unhooking events
-            Cleanup();
-        }
-        // free unmanaged resources here
-
-        alreadyDisposed = true;
     }
-
-    // Example method showing check for whether the object has been disposed
-    //public void ExampleMethod() {
-    //    // throw Exception if called on object that is already disposed
-    //    if(alreadyDisposed) {
-    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-    //    }
-
-    //    // method content here
-    //}
-    #endregion
 
 }
 

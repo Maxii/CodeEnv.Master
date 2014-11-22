@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
 
         public Guid ID { get; private set; }
 
-        public Guid TrackerID { get; set; }
+        public Guid MonitorID { get; set; }
 
         public bool IsOperational { get; set; }
 

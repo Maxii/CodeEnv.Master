@@ -23,34 +23,31 @@ using CodeEnv.Master.Common;
 /// </summary>
 public class GuiSavedGamesPopupList : AGuiPopupListBase {
 
+    private static string[] __dummySavedGameNames = new string[] { "DummySave1", "DummySave2", "DummySave3" };
+
     protected override void InitializeListValues() {
-        popupList.items.Clear();
-        PopulateList();
+        _popupList.items.Clear();
+        //PopulateList();
+        __PopulateDummyList();
+    }
+
+    private void __PopulateDummyList() {
+        __dummySavedGameNames.ForAll(dsg => _popupList.items.Add(dsg));
     }
 
     private void PopulateList() {
         var savedGames = LevelSerializer.SavedGames[LevelSerializer.PlayerName];
         if (savedGames.Count > 0) {
-            popupList.gameObject.SetActive(true);
-            popupList.items.Clear();
-            popupList.value = "Saved Games";
-            foreach (var game in savedGames) {
-                popupList.items.Add(game.Caption);
-            }
+            _popupList.items.Clear();
+            savedGames.ForAll(sg => _popupList.items.Add(sg.Caption));
         }
         else {
-            popupList.value = "No Saved Games";
-            popupList.gameObject.SetActive(false);
+            _popupList.value = "No Saved Games to Load";
         }
     }
 
     protected override void InitializeSelection() {
-        popupList.value = "Saved Games";
-    }
-
-    protected override void OnEnable() {
-        base.OnEnable();
-        PopulateList();
+        _popupList.value = _popupList.items[0];
     }
 
     protected override void OnPopupListSelectionChange() { }
@@ -58,6 +55,8 @@ public class GuiSavedGamesPopupList : AGuiPopupListBase {
     // IDisposable Note: No reason to remove Ngui event currentListeners OnDestroy() as the EventListener or
     // Delegate to be removed is attached to this same GameObject that is being destroyed. In addition,
     // execution is problematic as the gameObject may have already been destroyed.
+
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

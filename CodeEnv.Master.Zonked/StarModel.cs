@@ -71,7 +71,7 @@ public class StarModel : AOwnedItemModel, IDestinationTarget, IShipOrbitable {
 
     #region IDestinationTarget Members
 
-    public SpaceTopography Topography { get { return Data.Topography; } }
+    public Topography Topography { get { return Data.Topography; } }
 
     #endregion
 

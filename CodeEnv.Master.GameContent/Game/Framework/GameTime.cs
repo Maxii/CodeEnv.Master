@@ -27,7 +27,8 @@ namespace CodeEnv.Master.GameContent {
     /// The primary class that keeps track of game time.
     /// </summary>
     [SerializeAll]
-    public class GameTime : APropertyChangeTracking, IDisposable {
+    //public class GameTime : APropertyChangeTracking, IDisposable {
+    public class GameTime : AGenericSingleton<GameTime>, IDisposable {
 
         #region Static Constants
 
@@ -52,10 +53,10 @@ namespace CodeEnv.Master.GameContent {
         /// was rendered or zero if the game is paused or not running. Useful for animations
         /// or other work that should stop while paused. GameClockSpeed IS factored in.
         /// </summary>
-        public static float DeltaTimeOrPausedWithGameSpeed {
+        public float DeltaTimeOrPausedWithGameSpeed {
             get {
-                D.Assert(Instance._isClockEnabled, "{0} clock is not enabled.".Inject(typeof(GameTime).Name));
-                if (GameStatus.Instance.IsPaused) {
+                D.Assert(_isClockEnabled, "{0} clock is not enabled.".Inject(typeof(GameTime).Name));
+                if (_gameMgr.IsPaused) {
                     return Constants.ZeroF;
                 }
                 return DeltaTimeWithGameSpeed;
@@ -67,10 +68,10 @@ namespace CodeEnv.Master.GameContent {
         /// was rendered or zero if the game is paused or not running. Useful for animations
         /// or other work that should stop while paused.
         /// </summary>
-        public static float DeltaTimeOrPaused {
+        public float DeltaTimeOrPaused {
             get {
-                D.Assert(Instance._isClockEnabled);
-                if (GameStatus.Instance.IsPaused) {
+                D.Assert(_isClockEnabled);
+                if (_gameMgr.IsPaused) {
                     return Constants.ZeroF;
                 }
                 return DeltaTime;
@@ -83,8 +84,8 @@ namespace CodeEnv.Master.GameContent {
         /// animations or other work I want to continue even while the game is paused.
         /// GameClockSpeed IS factored in.
         /// </summary>
-        public static float DeltaTimeWithGameSpeed {
-            get { return DeltaTime * Instance._gameSpeedMultiplier; }
+        public float DeltaTimeWithGameSpeed {
+            get { return DeltaTime * _gameSpeedMultiplier; }
         }
 
 
@@ -94,7 +95,7 @@ namespace CodeEnv.Master.GameContent {
         /// animations or other work I want to continue even while the game is paused.
         /// GameClockSpeed has no effect.
         /// </summary>
-        public static float DeltaTime {
+        public float DeltaTime {
             get { return UnityEngine.Time.deltaTime; }
         }
 
@@ -103,7 +104,7 @@ namespace CodeEnv.Master.GameContent {
         /// player, this is the time since the player was started. In the editor, this is the 
         /// time since the Editor Play button was pushed. GameClockSpeed has no effect.
         /// </summary>
-        public static float TimeInCurrentSession {
+        public float TimeInCurrentSession {
             get {
                 float result = Time.time;
                 //D.Log("TimeInCurrentSession = {0:0.00}.", result);
@@ -115,10 +116,10 @@ namespace CodeEnv.Master.GameContent {
         /// The real time in seconds since a game instance was originally begun. Any time spent paused 
         /// during the game is included in this value. GameClockSpeed has no effect.
         /// </summary>
-        public static float RealTime_Game {
+        public float RealTime_Game {
             get {
-                D.Assert(Instance._isClockEnabled);
-                float result = Instance._cumTimeInPriorSessions + TimeInCurrentSession - Instance._timeGameBeganInCurrentSession;
+                D.Assert(_isClockEnabled);
+                float result = _cumTimeInPriorSessions + TimeInCurrentSession - _timeGameBeganInCurrentSession;
                 //D.Log("RealTime_Game = {0:0.00}.", result);
                 return result;
             }
@@ -128,33 +129,34 @@ namespace CodeEnv.Master.GameContent {
         /// The real time in seconds since a new or saved game was begun.
         /// Time on hold (paused or not running) is not counted. GameClockSpeed has no effect.
         /// </summary>
-        public static float RealTime_GamePlay {
+        public float RealTime_GamePlay {
             get {
-                D.Assert(Instance._isClockEnabled);
+                D.Assert(_isClockEnabled);
                 float timeInCurrentPause = Constants.ZeroF;
-                if (GameStatus.Instance.IsPaused) {
-                    timeInCurrentPause = RealTime_Game - Instance._timeCurrentPauseBegan;
+                if (_gameMgr.IsPaused) {
+                    timeInCurrentPause = RealTime_Game - _timeCurrentPauseBegan;
                 }
-                return RealTime_Game - Instance._cumTimePaused - timeInCurrentPause;
+                return RealTime_Game - _cumTimePaused - timeInCurrentPause;
             }
         }
 
-        private static GameDate _currentDate;
+        private GameDate _currentDate;
         /// <summary>
         /// The current GameDate in the game. This value takes into account when the game was begun,
         /// game speed changes and pauses.
         /// </summary>
-        public static GameDate CurrentDate {
+        public GameDate CurrentDate {
             get {
-                D.Assert(Instance._isClockEnabled);
-                Instance.CheckForDateChange();
+                D.Assert(_isClockEnabled);
+                CheckForDateChange();
                 return _currentDate;
             }
             private set { _currentDate = value; }
         }
 
+
         public void CheckForDateChange() {
-            if (!_isClockEnabled || _gameStatus.IsPaused) { return; }
+            if (!_isClockEnabled || _gameMgr.IsPaused) { return; }
             SyncGameClock();
             var updatedDate = new GameDate(_currentDateTime);
             //D.Log("GameDate {0} generated for CurrentDate changed check.", updatedDate);
@@ -195,51 +197,27 @@ namespace CodeEnv.Master.GameContent {
 
         private bool _isClockEnabled;
 
-        private GameEventManager _eventMgr;
         private PlayerPrefsManager _playerPrefsMgr;
-        private GameStatus _gameStatus;
+        private IGameManager _gameMgr;
 
-        #region SingletonPattern
-
-        private static readonly GameTime _instance;
-
-        /// <summary>
-        /// Explicit static constructor that enables lazy instantiation by telling C# compiler
-        /// not to mark type as beforefieldinit.
-        /// </summary>
-        static GameTime() {
-            // try, catch and resolve any possible exceptions here
-            _instance = new GameTime();
-        }
-
-        /// <summary>
-        /// Private constructor that prevents the creation of another externally requested instance of <see cref="GameTime"/>.
-        /// </summary>
         private GameTime() {
             Initialize();
         }
 
-        /// <summary>Returns the singleton instance of this class.</summary>
-        public static GameTime Instance {
-            get { return _instance; }
-        }
-        #endregion
-
         ///<summary>
         /// Called once from the constructor, this does all required initialization
         /// </summary>
-        private void Initialize() {
+        protected override void Initialize() {
             //D.Log("{0}.Initialize() called.", GetType().Name);
-            _gameStatus = GameStatus.Instance;
-            _eventMgr = GameEventManager.Instance;
             UnityEngine.Time.timeScale = Constants.OneF;
+            _gameMgr = References.GameManager;
             _playerPrefsMgr = PlayerPrefsManager.Instance;
             PrepareToBeginNewGame();
             _subscribers = new List<IDisposable>(); // placed here because GameTime exists in IntroScene. _subscribers is null when disposing there
         }
 
         private void Subscribe() {
-            _subscribers.Add(_gameStatus.SubscribeToPropertyChanging<GameStatus, bool>(gs => gs.IsPaused, OnIsPausedChanging));
+            _subscribers.Add(_gameMgr.SubscribeToPropertyChanging<IGameManager, bool>(gm => gm.IsPaused, OnIsPausedChanging));
         }
 
         private void OnIsPausedChanging(bool isPausing) {
@@ -314,7 +292,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void EnableClock(bool toEnable) {
-            D.Assert(!_gameStatus.IsPaused);    // my practice - enable clock, then pause it
+            D.Assert(!_gameMgr.IsPaused);    // my practice - enable clock, then pause it
             if (_isClockEnabled != toEnable) {
                 _isClockEnabled = toEnable;
                 if (toEnable) {
@@ -353,7 +331,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private void SyncGameClock() {
             D.Assert(_isClockEnabled);
-            if (_gameStatus.IsPaused) {
+            if (_gameMgr.IsPaused) {
                 D.Warn("SyncGameClock called while Paused!");   // it keeps adding to currentDateTime
                 return;
             }

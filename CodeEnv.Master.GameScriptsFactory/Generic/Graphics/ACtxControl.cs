@@ -38,17 +38,17 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// a single CtxMenu object could act as the submenu object for all items because the unique submenu items were
     /// held by item.submenuItems, not the submenu object itself.]
     /// </summary>
-    protected static IList<CtxMenu> _availableSubMenus;
+    protected static List<CtxMenu> _availableSubMenus = new List<CtxMenu>();
 
     /// <summary>
     /// Lookup table for IUnitTargets for this item, keyed by the ID of the item selected.
     /// </summary>
-    protected static IDictionary<int, IUnitTarget> _unitTargetLookup;
+    protected static IDictionary<int, IUnitTarget> _unitTargetLookup = new Dictionary<int, IUnitTarget>();
 
     /// <summary>
     /// Lookup table for the directive associated with the menu item selected, keyed by the ID of the menu item selected.
     /// </summary>
-    protected static IDictionary<int, ValueType> _directiveLookup;
+    protected static IDictionary<int, ValueType> _directiveLookup = new Dictionary<int, ValueType>();
 
     private static CtxMenu _generalCtxMenu;
 
@@ -94,6 +94,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     protected AItem _remotePlayerOwnedSelectedItem;
     protected CtxObject _ctxObject;
     private CtxAccessSource _accessSource;
+    private GameManager _gameMgr;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ACtxControl"/> class.
@@ -101,6 +102,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// <param name="ctxObjectGO">The gameObject where the desired CtxObject is located.</param>
     public ACtxControl(GameObject ctxObjectGO) {
         //D.Log("Creating {0} for {1}.", GetType().Name, ctxObjectGO.name);
+        _gameMgr = GameManager.Instance;
         InitializeContextMenu(ctxObjectGO);
         Subscribe();
     }
@@ -113,16 +115,10 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         // Accordingly, the work around is 1) to either use the editor to set the items using a CtxMenu dedicated to ships, or 2) have this already dedicated 
         // CtxObject hold the .menuItems that are set programmatically when Show is called. 
 
-        if (_availableSubMenus == null) {
-            _availableSubMenus = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>()
-                .Where(menu => menu.gameObject.name.Equals("SubMenu")).ToList();
+        if (_availableSubMenus.Count == Constants.Zero) {
+            _availableSubMenus.AddRange(GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>()
+                .Where(menu => menu.gameObject.name.Equals("SubMenu")));
             D.Assert(UniqueSubmenuCountReqd <= _availableSubMenus.Count);
-        }
-        if (_directiveLookup == null) {
-            _directiveLookup = new Dictionary<int, ValueType>();
-        }
-        if (_unitTargetLookup == null) {
-            _unitTargetLookup = new Dictionary<int, IUnitTarget>();
         }
         if (_generalCtxMenu == null) {
             _generalCtxMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>()
@@ -143,6 +139,22 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         EventDelegate.Add(_ctxObject.onShow, OnShowMenu);
         EventDelegate.Add(_ctxObject.onSelection, OnMenuSelection);
         EventDelegate.Add(_ctxObject.onHide, OnHideMenu);
+        SubscribeStaticallyOnce();
+    }
+
+    /// <summary>
+    /// Allows a one time static subscription to event publishers from this class.
+    /// </summary>
+    private static bool _isStaticallySubscribed;
+    /// <summary>
+    /// Subscribes this class using static event handler(s) to instance events exactly one time.
+    /// </summary>
+    private void SubscribeStaticallyOnce() {
+        if (!_isStaticallySubscribed) {
+            //D.Log("{0} is subscribing statically to {1}.", GetType().Name, _gameMgr.GetType().Name);
+            _gameMgr.onSceneLoaded += CleanupStaticMembers;
+            _isStaticallySubscribed = true;
+        }
     }
 
     public void Show(bool toShow) {
@@ -262,6 +274,8 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_accessSource));
         }
         IsShowing = true;
+        InputManager.Instance.InputMode = GameInputMode.PartialScreenPopup;
+        _gameMgr.RequestPauseStateChange(toPause: true);
     }
 
     protected virtual void PopulateMenu_SelectedItemAccess() { }
@@ -354,6 +368,9 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
 
     private void OnHideMenu() {
         IsShowing = false;
+        _gameMgr.RequestPauseStateChange(toPause: false);
+        InputManager.Instance.InputMode = GameInputMode.Normal;
+
         _unitTargetLookup.Clear();
         _directiveLookup.Clear();
 
@@ -372,14 +389,42 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
 
     private void Cleanup() {
         Unsubscribe();
-        CleanupMenuArrays();
         _ctxObject.contextMenu = null;
+        if (AMonoBase.IsApplicationQuiting) {
+            CleanupStaticMembers();
+            UnsubscribeStaticallyOnceOnQuit();
+        }
     }
 
     private void Unsubscribe() {
         EventDelegate.Remove(_ctxObject.onShow, OnShowMenu);
         EventDelegate.Remove(_ctxObject.onSelection, OnMenuSelection);
         EventDelegate.Remove(_ctxObject.onHide, OnHideMenu);
+    }
+
+    /// <summary>
+    /// Cleans up static members of this class whose value should not persist across scenes or after quiting.
+    /// UNCLEAR This is called whether the scene loaded is from a saved game or a new game. 
+    /// Should static values be reset on a scene change from a saved game? 1) do the static members
+    /// retain their value after deserialization, and/or 2) can static members even be serialized? 
+    /// </summary>
+    private static void CleanupStaticMembers() {
+        if (_isStaticallySubscribed) {
+            //D.Log("{0}'s static CleanupStaticMembers() called.", typeof(ACtxControl).Name);
+            _availableSubMenus.Clear();
+            _generalCtxMenu = null;
+        }
+    }
+
+    /// <summary>
+    /// Unsubscribes this class from all events that use a static event handler on Quit.
+    /// </summary>
+    private void UnsubscribeStaticallyOnceOnQuit() {
+        if (_isStaticallySubscribed) {
+            //D.Log("{0} is unsubscribing statically to {1}.", GetType().Name, _gameMgr.GetType().Name);
+            _gameMgr.onSceneLoaded -= CleanupStaticMembers;
+            _isStaticallySubscribed = false;
+        }
     }
 
     public override string ToString() {

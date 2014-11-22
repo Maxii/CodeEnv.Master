@@ -198,7 +198,7 @@ public class SystemView : AFocusableItemView, ISelectable, IZoomToFurthest {
         Layers orbitalPlaneLayer = (Layers)_orbitalPlaneCollider.gameObject.layer;
         D.Assert(orbitalPlaneLayer == Layers.SystemOrbitalPlane, "{0} Layer {1} should be {2}.".Inject(GetType().Name, orbitalPlaneLayer.GetName(), Layers.SystemOrbitalPlane.GetName()));
 
-        UICamera eventDispatcher = CameraControl.Instance.MainCameraEventDispatcher;
+        UICamera eventDispatcher = MainCameraControl.Instance.MainCameraEventDispatcher;
         var savedMask = eventDispatcher.eventReceiverMask;
         eventDispatcher.eventReceiverMask = savedMask.RemoveFromMask(orbitalPlaneLayer);
         bool isObjectOccluded = false;

@@ -43,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
         public SectorData(Index3D index)
             : base("Sector {0}".Inject(index)) {
             SectorIndex = index;
-            base.Topography = SpaceTopography.OpenSpace;
+            base.Topography = Topography.OpenSpace;
         }
 
         public override string ToString() {

@@ -35,6 +35,8 @@ namespace CodeEnv.Master.GameContent {
 
         float OptimalCameraViewingDistance { get; }
 
+        string DisplayName { get; }
+
     }
 }
 

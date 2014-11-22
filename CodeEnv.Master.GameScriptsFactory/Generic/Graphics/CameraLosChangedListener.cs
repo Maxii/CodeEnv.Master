@@ -30,12 +30,6 @@ using UnityEngine;
 public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
 
     /// <summary>
-    /// Occurs when Camera Line Of Sight state has changed on this GameObject. The flag
-    /// indicates whether the object is now in or out of the camera's LOS.
-    /// </summary>
-    public event Action<GameObject, bool> onCameraLosChanged;
-
-    /// <summary>
     /// Get or add an event listener to the specified game object.
     /// </summary>
     public static CameraLosChangedListener Get(GameObject go) {
@@ -43,6 +37,12 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
         if (listener == null) listener = go.AddComponent<CameraLosChangedListener>();
         return listener;
     }
+
+    /// <summary>
+    /// Occurs when Camera Line Of Sight state has changed on this GameObject. The flag
+    /// indicates whether the object is now in or out of the camera's LOS.
+    /// </summary>
+    public event Action<GameObject, bool> onCameraLosChanged;
 
     protected override void Awake() {
         base.Awake();
@@ -83,7 +83,7 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
     }
 
     void OnBecameInvisible() {
-        if (_isApplicationQuiting) { return; }  // OnBecameInvisible called if already visible when application is quiting
+        if (IsApplicationQuiting || Application.isLoadingLevel) { return; }  // OnBecameInvisible called if already visible when application is quiting
         if (enabled) {
             //D.LogContext("{0}.{1} has received OnBecameInvisible().".Inject(_transform.name, GetType().Name), this);
             if (onCameraLosChanged != null) {
@@ -101,7 +101,7 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
 
     #region Invisible Mesh System supporting OnBecameVisible/Invisible
 
-    private static IDictionary<string, Mesh> _meshCache;
+    private static IDictionary<string, Mesh> _meshCache = new Dictionary<string, Mesh>();
 
     /// <summary>
     /// Temporary workaround used to filter out all UIWidget.onChange events that aren't caused by a change in Widget Dimensions.
@@ -122,10 +122,6 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
         meshRenderer.receiveShadows = false;
         meshRenderer.enabled = true;    // renderers do not deliver OnBecameVisible() events if not enabled!!!!!!!!
 
-        if (_meshCache == null) {
-            _meshCache = new Dictionary<string, Mesh>();
-        }
-
         _widget = UnityUtility.ValidateMonoBehaviourPresence<UIWidget>(gameObject);
         _widget.onChange += CheckInvisibleMeshSize;
         CheckInvisibleMeshSize();
@@ -138,7 +134,7 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
     private void CheckInvisibleMeshSize() {
         var widgetDimensions = _widget.localSize;
         if (__previousWidgetDimensions == widgetDimensions) {
-            //D.Log("{0} invisible mesh size {1} check without a widget dimension change.", GetType().Name, widgetDimensions);
+            //D.Warn("{0} invisible mesh size {1} check without a widget dimension change.", GetType().Name, widgetDimensions);
             return;
         }
         __previousWidgetDimensions = widgetDimensions;
@@ -174,6 +170,8 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
     }
 
     #endregion
+
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

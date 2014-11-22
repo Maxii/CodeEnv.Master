@@ -86,24 +86,19 @@ namespace CodeEnv.Master.GameContent {
             if (_line == null) { Initialize(); }
 
             if (toShow) {
-                if (_job == null) {
-                    _job = new Job(DrawCircles(), toStart: true, onJobComplete: delegate {
-                        D.Log("{0} coroutine finished.", LineName);
-                        // TODO
-                    });
-                }
-                else if (!_job.IsRunning) {
-                    _job.Start();
-                }
+                _job = _job ?? new Job(DrawCircles(), toStart: true, onJobComplete: delegate {
+                    D.Log("{0}.Job(DrawCircles()) completed.", LineName);
+                    // TODO
+                });
                 AddCircle(index);
                 _line.active = true;
             }
-            else
+            else {
                 if (_job != null && _job.IsRunning) {
                     RemoveCircle(index);
                 }
+            }
         }
-
 
         /// <summary>
         /// Coroutine method that draws one or more circles around Target.
@@ -150,6 +145,7 @@ namespace CodeEnv.Master.GameContent {
                 if (_circlesToShow.Where(cShowing => cShowing == true).IsNullOrEmpty()) {
                     D.Log("Line {0} no longer active.", LineName);
                     _job.Kill();
+                    _job = null;
                     _line.active = false;
                 }
             }
@@ -159,46 +155,9 @@ namespace CodeEnv.Master.GameContent {
             _line.ZeroPoints();
             _circlesToShow.ForAll(c => c = false);
             _job.Kill();
+            _job = null;
             _line.active = false;
         }
-
-        ///// <summary>
-        ///// Coroutine method that shows a circle around Target.
-        ///// </summary>
-        ///// <param name="index">The index of the circle.</param>
-        ///// <returns></returns>
-        //public IEnumerator ShowCircles(int index) {
-        //    Arguments.ValidateForRange(index, Constants.Zero, MaxCircles - 1);
-        //    if (_line == null) { Initialize(); }
-
-        //    _circlesToShow[index] = true;
-        //    // D.Log("Circle {0} added to {1}.", index, LineName);
-
-        //    if (!_line.active) {
-        //        _line.active = true;
-        //        D.Log("{0} coroutine started.", LineName);
-        //        while (_line.active) {
-        //            Vector2 screenPoint = Camera.main.WorldToScreenPoint(Target.position);
-        //            float distanceToCamera = IsRadiusDynamic ? Target.DistanceToCamera() : 1F;
-        //            //float distanceToCamera = Camera.main.transform.InverseTransformPoint(Target.position).z;
-        //            for (int circleIndex = 0; circleIndex < MaxCircles; circleIndex++) {
-        //                if (_circlesToShow[circleIndex]) {
-        //                    //float radius = NormalizedRadius + (circleIndex * _circleSeparation) / distanceToCamera;
-        //                    float radius = (NormalizedRadius / distanceToCamera) + (circleIndex * _circleSeparation);
-
-        //                    int startpointIndex = _segmentsPerCircle * circleIndex * 2;
-        //                    _line.MakeCircle(screenPoint, radius, _segmentsPerCircle, startpointIndex);
-        //                }
-        //            }
-        //            _line.Draw();
-        //            yield return null;
-        //        }
-        //        D.Log("{0} coroutine finished.", LineName);
-        //    }
-        //    else {
-        //        D.Warn("{0} coroutine is already running. To add this circle, use AddCircle({1}).", LineName, index);
-        //    }
-        //}
 
         protected override void Initialize() {
             int points = MaxCircles * _segmentsPerCircle * 2;   // 2 points per segment for a discrete line

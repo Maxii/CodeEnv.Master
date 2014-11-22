@@ -76,5 +76,7 @@ public class Billboard : AMonoBase {
         _transform.LookAt(targetPos, targetOrientation);
     }
 
+    protected override void Cleanup() { }
+
 }
 

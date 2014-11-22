@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -30,7 +31,9 @@ public class UniverseCenterItem : AItem, IShipOrbitable {
         set { base.Data = value; }
     }
 
-    public float minCameraViewDistanceMultiplier = 2F;
+    [Range(0.5F, 3.0F)]
+    [Tooltip("Minimum Camera View Distance Multiplier")]
+    public float minViewDistanceFactor = 2F;
 
     private ICtxControl _ctxControl;
 
@@ -45,7 +48,6 @@ public class UniverseCenterItem : AItem, IShipOrbitable {
         (collider as SphereCollider).radius = Radius;
         InitializeShipOrbitSlot();
         InitializeKeepoutZone();
-        circleScaleFactor = 5F;
     }
 
     protected override IIntel InitializePlayerIntel() {
@@ -118,9 +120,20 @@ public class UniverseCenterItem : AItem, IShipOrbitable {
 
     protected override void OnRightPress(bool isDown) {
         base.OnRightPress(isDown);
-        if (_ctxControl != null && !isDown && !GameInput.Instance.IsDragging) {
+        if (!isDown && !_inputMgr.IsDragging) {
             // right press release while not dragging means both press and release were over this object
             _ctxControl.OnRightPressRelease();
+        }
+    }
+
+    #endregion
+
+    #region Cleanup
+
+    protected override void Cleanup() {
+        base.Cleanup();
+        if (_ctxControl != null) {
+            (_ctxControl as IDisposable).Dispose();
         }
     }
 
@@ -144,7 +157,7 @@ public class UniverseCenterItem : AItem, IShipOrbitable {
 
     #region ICameraTargetable Members
 
-    public override float MinimumCameraViewingDistance { get { return Radius * minCameraViewDistanceMultiplier; } }
+    public override float MinimumCameraViewingDistance { get { return Radius * minViewDistanceFactor; } }
 
     #endregion
 

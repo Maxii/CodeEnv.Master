@@ -89,6 +89,8 @@ public class VariableSizeTrackingLabel : AWorldTrackingWidget_VariableSize {
         Widget.MakePixelPerfect();
     }
 
+    protected override void Cleanup() { }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

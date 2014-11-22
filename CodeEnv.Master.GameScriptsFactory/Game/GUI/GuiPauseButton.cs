@@ -24,68 +24,44 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Custom Gui button control for the main User Paused Button.
+/// Custom Gui button control for the main Player Pause/Resume Button.
 /// </summary>
-public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
+public class GuiPauseButton : AGuiButtonBase {
 
-#pragma warning disable
-    [SerializeField]
-    private string Warning = "Do not change PauseRequest public variable.";
-#pragma warning restore
+    protected override string TooltipContent {  // called by AGuiTooltip before _pauseButtonLabel reference is established
+        get { return _pauseButtonLabel != null ? "{0} the game.".Inject(_pauseButtonLabel.text) : "I'm not empty."; }
+    }
 
     private UILabel _pauseButtonLabel;
     private IList<IDisposable> _subscribers;
 
     protected override void Awake() {
         base.Awake();
+        _pauseButtonLabel = _button.GetComponentInChildren<UILabel>();
+        UpdateButtonLabel();
         Subscribe();
     }
 
-    protected override void InitializeTooltip() {
-        tooltip = "Error. I haven't been initialized.";
-    }
-
     private void Subscribe() {
-        if (_subscribers == null) {
-            _subscribers = new List<IDisposable>();
-        }
-        _subscribers.Add(GameStatus.Instance.SubscribeToPropertyChanged<GameStatus, bool>(gs => gs.IsPaused, OnIsPausedChanged));
+        _subscribers = new List<IDisposable>();
+        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, OnIsPausedChanged));
     }
 
-    // real game pause and resumption events, not just gui pause events which may or may not result in a pause or resumption
     private void OnIsPausedChanged() {
-        pauseCommand = GameStatus.Instance.IsPaused ? PauseRequest.PriorityPause : PauseRequest.PriorityResume;
-        UpdateButtonLabel();
-    }
-
-    protected override void Start() {
-        base.Start();
-        _pauseButtonLabel = _button.GetComponentInChildren<UILabel>();
         UpdateButtonLabel();
     }
 
     protected override void OnLeftClick() {
-        // toggle the pauseCommand so the base class sends the correct PauseRequest in the GuiPauseRequestEvent
-        pauseCommand = (pauseCommand == PauseRequest.PriorityPause) ? PauseRequest.PriorityResume : PauseRequest.PriorityPause;
-        base.OnLeftClick();
+        bool toPause = !_gameMgr.IsPaused;
+        _gameMgr.RequestPauseStateChange(toPause, toOverride: true);
     }
 
     private void UpdateButtonLabel() {
-        if (_pauseButtonLabel != null) {
-            // can be null if GameStatus.IsPaused changes during new game start up before Start() is called. It's OK though
-            // as the label will be updated based on the recorded pauseCommand once Start() is called
-            string stateOnNextClick = (pauseCommand == PauseRequest.PriorityPause) ? UIMessages.ResumeButtonLabel : UIMessages.PauseButtonLabel;
-            _pauseButtonLabel.text = stateOnNextClick;
-            tooltip = "{0} the game.".Inject(stateOnNextClick);
-        }
+        string labelContent = _gameMgr.IsPaused ? UIMessages.ResumeButtonLabel : UIMessages.PauseButtonLabel;
+        _pauseButtonLabel.text = labelContent;
     }
 
-    protected override void OnDestroy() {
-        base.OnDestroy();
-        Dispose();
-    }
-
-    private void Cleanup() {
+    protected override void Cleanup() {
         Unsubscribe();
     }
 
@@ -97,50 +73,6 @@ public class GuiPauseButton : GuiPauseResumeOnClick, IDisposable {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region IDisposable
-    [NonSerialized]
-    private bool alreadyDisposed = false;
-
-    /// <summary>
-    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-    /// </summary>
-    public void Dispose() {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
-    /// </summary>
-    /// <arg name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</arg>
-    protected virtual void Dispose(bool isDisposing) {
-        // Allows Dispose(isDisposing) to be called more than once
-        if (alreadyDisposed) {
-            return;
-        }
-
-        if (isDisposing) {
-            // free managed resources here including unhooking events
-            Cleanup();
-        }
-        // free unmanaged resources here
-
-        alreadyDisposed = true;
-    }
-
-
-    // Example method showing check for whether the object has been disposed
-    //public void ExampleMethod() {
-    //    // throw Exception if called on object that is already disposed
-    //    if(alreadyDisposed) {
-    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-    //    }
-
-    //    // method content here
-    //}
-    #endregion
 
 }
 

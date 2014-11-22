@@ -53,7 +53,7 @@ public class SectorModel : AOwnedItemModel, IDestinationTarget {
 
     #region IDestinationTarget Members
 
-    public SpaceTopography Topography { get { return Data.Topography; } }
+    public Topography Topography { get { return Data.Topography; } }
 
     #endregion
 

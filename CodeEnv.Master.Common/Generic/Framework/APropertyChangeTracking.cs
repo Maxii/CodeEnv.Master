@@ -129,6 +129,7 @@ namespace CodeEnv.Master.Common {
         public event PropertyChangingEventHandler PropertyChanging;
 
         #endregion
+
     }
 }
 

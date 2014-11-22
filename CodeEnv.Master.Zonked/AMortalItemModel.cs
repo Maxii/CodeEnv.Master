@@ -122,7 +122,7 @@ public abstract class AMortalItemModel : AOwnedItemModel, IMortalModel, IMortalT
 
     #region IDestinationTarget Members
 
-    public virtual SpaceTopography Topography { get { return Data.Topography; } }
+    public virtual Topography Topography { get { return Data.Topography; } }
 
     #endregion
 

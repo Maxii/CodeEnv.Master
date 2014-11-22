@@ -2058,7 +2058,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     private void TryFireOnAnyTarget(Weapon weapon) {
-        if (_weaponRangeMonitorLookup[weapon.TrackerID].__TryGetRandomEnemyTarget(out _attackTarget)) {
+        if (_weaponRangeMonitorLookup[weapon.MonitorID].__TryGetRandomEnemyTarget(out _attackTarget)) {
             D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
             _attackStrength = weapon.Strength;
             Call(ShipState.Attacking);
@@ -2238,7 +2238,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
         }
     }
 
-    public void OnTopographicBoundaryTransition(SpaceTopography newTopography) {
+    public void OnTopographicBoundaryTransition(Topography newTopography) {
         //D.Log("{0}.OnTopographicBoundaryTransition({1}).", FullName, newTopography.GetName());
         Data.Topography = newTopography;
         Data.AssessFtlAvailability();

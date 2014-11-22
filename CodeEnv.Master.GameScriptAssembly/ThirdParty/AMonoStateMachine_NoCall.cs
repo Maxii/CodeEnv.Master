@@ -32,7 +32,8 @@ using UnityEngine;
 ///  used as they make state changes without going through SetProperty.
 /// </summary>
 /// <typeparam name="E">Th State Type being used, typically an enum type.</typeparam>
-public class AMonoStateMachine_NoCall<E> : AMonoStateMachine<E> where E : struct {
+[Obsolete]  // still current, just not used
+public abstract class AMonoStateMachine_NoCall<E> : AMonoStateMachine<E> where E : struct {
 
     public event Action onCurrentStateChanged;
     public event Action<E> onCurrentStateChanging;

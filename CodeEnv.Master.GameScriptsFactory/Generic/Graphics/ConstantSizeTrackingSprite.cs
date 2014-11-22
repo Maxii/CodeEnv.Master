@@ -56,6 +56,8 @@ public class ConstantSizeTrackingSprite : AWorldTrackingWidget_ConstantSize {
         Widget.SetDimensions(spriteWidth, spriteHeight);
     }
 
+    protected override void Cleanup() { }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

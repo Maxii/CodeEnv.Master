@@ -33,7 +33,7 @@ public class UniverseCenter : StationaryItem {
     }
 
     protected override float CalcOptimalCameraViewingDistance() {
-        return GameManager.Settings.UniverseSize.Radius() * 0.9F;   // IMPROVE
+        return GameManager.GameSettings.UniverseSize.Radius() * 0.9F;   // IMPROVE
     }
 
     #endregion

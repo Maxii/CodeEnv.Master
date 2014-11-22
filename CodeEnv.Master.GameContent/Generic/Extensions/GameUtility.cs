@@ -82,8 +82,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="futureDate">The date.</param>
         /// <returns></returns>
         private static IEnumerator WaitForDate(GameDate futureDate) {
-            D.Assert(futureDate > GameTime.CurrentDate);
-            while (futureDate > GameTime.CurrentDate) {
+            D.Assert(futureDate > GameTime.Instance.CurrentDate);
+            while (futureDate > GameTime.Instance.CurrentDate) {
                 yield return null;
             }
         }

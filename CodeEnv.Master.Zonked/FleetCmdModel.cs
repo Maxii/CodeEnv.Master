@@ -354,7 +354,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
             SystemModel targetSystem = null;
 
             //D.Log("{0}.Topography = {1}.", _fleet.FullName, _fleet.Topography);
-            if (_fleet.Topography == SpaceTopography.System) {
+            if (_fleet.Topography == Topography.System) {
                 var fleetSectorIndex = SectorGrid.GetSectorIndex(_fleet.Position);
                 D.Assert(SystemCreator.TryGetSystem(fleetSectorIndex, out fleetSystem));  // error if a system isn't found
                 D.Assert(Vector3.SqrMagnitude(fleetSystem.Position - _fleet.Position) <= fleetSystem.Radius * fleetSystem.Radius);
@@ -362,7 +362,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
             }
 
             //D.Log("{0}.Topography = {1}.", target.FullName, target.Topography);
-            if (target.Topography == SpaceTopography.System) {
+            if (target.Topography == Topography.System) {
                 var targetSectorIndex = SectorGrid.GetSectorIndex(target.Position);
                 D.Assert(SystemCreator.TryGetSystem(targetSectorIndex, out targetSystem));  // error if a system isn't found
                 D.Assert(Vector3.SqrMagnitude(targetSystem.Position - target.Position) <= targetSystem.Radius * targetSystem.Radius);
@@ -495,10 +495,10 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
             // these penalties are applied dynamically to the cost when the tag is encountered in a node. The penalty on the node itself is always 0
             var tagPenalties = new int[32];
-            tagPenalties[(int)SpaceTopography.OpenSpace] = 0;
-            tagPenalties[(int)SpaceTopography.Nebula] = 400000;
-            tagPenalties[(int)SpaceTopography.DeepNebula] = 800000;
-            tagPenalties[(int)SpaceTopography.System] = 5000000;
+            tagPenalties[(int)Topography.OpenSpace] = 0;
+            tagPenalties[(int)Topography.Nebula] = 400000;
+            tagPenalties[(int)Topography.DeepNebula] = 800000;
+            tagPenalties[(int)Topography.System] = 5000000;
             _seeker.tagPenalties = tagPenalties;
 
             _seeker.StartPath(path);
@@ -534,7 +534,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
             if (nonOpenSpaceNodes.Any()) {
                 nonOpenSpaceNodes.ForAll(node => {
                     D.Assert(Mathf.IsPowerOfTwo((int)node.Tag));    // confirms that tags contains only 1 SpaceTopography value
-                    SpaceTopography tag = (SpaceTopography)Mathf.Log((int)node.Tag, 2F);
+                    Topography tag = (Topography)Mathf.Log((int)node.Tag, 2F);
                     D.Warn("Node at {0} has tag {1}, penalty = {2}.", (Vector3)node.position, tag.GetName(), _seeker.tagPenalties[(int)tag]);
                 });
             }

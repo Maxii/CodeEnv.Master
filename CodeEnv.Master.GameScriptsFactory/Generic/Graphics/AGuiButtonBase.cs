@@ -23,25 +23,21 @@ using UnityEngine;
 /// <summary>
 /// Base class for GUI Buttons built with NGUI.
 /// </summary>
-public abstract class AGuiButtonBase : GuiTooltip {
+public abstract class AGuiButtonBase : AGuiTooltip {
 
-    protected GameEventManager _eventMgr;
     protected PlayerPrefsManager _playerPrefsMgr;
+    protected GameManager _gameMgr;
     protected UIButton _button;
 
     protected override void Awake() {
         base.Awake();
         _playerPrefsMgr = PlayerPrefsManager.Instance;
-        _eventMgr = GameEventManager.Instance;
-    }
-
-    protected override void Start() {
-        base.Start();
+        _gameMgr = GameManager.Instance;
         _button = gameObject.GetSafeMonoBehaviourComponent<UIButton>();
     }
 
     void OnClick() {
-        if (GameInputHelper.Instance.IsLeftMouseButton()) {
+        if (GameInputHelper.Instance.IsLeftMouseButton) {
             OnLeftClick();
         }
     }

@@ -83,7 +83,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="systemName">Name of the system.</param>
         /// <param name="sectorIndex">Index of the sector.</param>
         /// <param name="topography">The topography.</param>
-        public SystemData(string systemName, Index3D sectorIndex, SpaceTopography topography)
+        public SystemData(string systemName, Index3D sectorIndex, Topography topography)
             : base(systemName) {
             SectorIndex = sectorIndex;
             base.Topography = topography;

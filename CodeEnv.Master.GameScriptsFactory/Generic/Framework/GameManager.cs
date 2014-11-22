@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -31,9 +32,18 @@ using UnityEngine;
 /// Singleton. The main manager for the game, implemented as a mono state machine.
 /// </summary>
 [SerializeAll]
-public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, IGameManager, IDisposable {
+public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameManager {
 
-    public static GameSettings Settings { get; private set; }
+    public SceneLevel CurrentScene { get; private set; }
+
+    private bool _isRunning;
+    /// <summary>
+    /// Indicates whether the game is in GameState.Running or not.
+    /// </summary>
+    public bool IsRunning {
+        get { return _isRunning; }
+        private set { SetProperty<bool>(ref _isRunning, value, "IsRunning", OnIsRunningChanged); }
+    }
 
     private PauseState _pauseState;
     /// <summary>
@@ -47,58 +57,24 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
         }
     }
 
-    private GameEventManager _eventMgr;
+    protected override bool IsPersistentAcrossScenes { get { return true; } }
+
+    private IDictionary<GameState, IList<MonoBehaviour>> _gameStateProgressionReadinessLookup;
     private GameTime _gameTime;
     private PlayerPrefsManager _playerPrefsMgr;
-    private GameStatus _gameStatus;
 
-    protected override void Awake() {
-        base.Awake();
-        if (TryDestroyExtraCopies()) {
-            return;
-        }
+    protected override void InitializeOnInstance() {
+        base.InitializeOnInstance();
+        InitializeStaticReference();
+    }
 
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
+        InitializeValuesAndReferences();
+        InitializeGameStateProgressionReadinessSystem();
         // TODO add choose language GUI
         //string language = "fr-FR";
         // ChangeLanguage(language);
-        _eventMgr = GameEventManager.Instance;
-        _playerPrefsMgr = PlayerPrefsManager.Instance;
-
-        _gameStatus = GameStatus.Instance;
-        _gameTime = GameTime.Instance;
-        UpdateRate = FrameUpdateFrequency.Infrequent;
-        // initialize values without initiating change events
-        _pauseState = PauseState.NotPaused;
-
-        SceneLevel startScene = (SceneLevel)Application.loadedLevel;
-        InitializeStaticReferences(startScene);
-        Subscribe();
-    }
-
-    protected override void Start() {
-        base.Start();
-        SceneLevel startScene = (SceneLevel)Application.loadedLevel;
-        SimulateStartup(startScene);
-        // WARNING: enabled is used to determine if an extra GameMgr instance is being destroyed. Donot manipulate it for other purposes
-    }
-
-    /// <summary>
-    /// Ensures that no matter how many scenes this Object is
-    /// in (having one dedicated to each scene may be useful for testing) there's only ever one copy
-    /// in memory if you make a scene transition.
-    /// </summary>
-    /// <returns><c>true</c> if this instance is going to be destroyed, <c>false</c> if not.</returns>
-    private bool TryDestroyExtraCopies() {
-        if (_instance && _instance != this) {
-            D.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceID));
-            Destroy(gameObject);
-            return true;
-        }
-        else {
-            DontDestroyOnLoad(gameObject);
-            _instance = this;
-            return false;
-        }
     }
 
     #region Language
@@ -113,108 +89,226 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
 
     #endregion
 
-    private void Subscribe() {
-        _eventMgr.AddListener<BuildNewGameEvent>(Instance, OnBuildNewGame);
-        _eventMgr.AddListener<LoadSavedGameEvent>(Instance, OnLoadSavedGame);
-        _eventMgr.AddListener<ExitGameEvent>(Instance, OnExitGame);
-        _eventMgr.AddListener<GuiPauseRequestEvent>(Instance, OnGuiPauseChangeRequest);
-        _eventMgr.AddListener<SaveGameEvent>(Instance, OnSaveGame);
+    private void InitializeStaticReference() {
+        References.GameManager = Instance;
+
+        // force initialization so they populate References
+#pragma warning disable 0168
+        var dummy1 = GameInputHelper.Instance;
+        var dummy2 = GeneralFactory.Instance;
+        var dummy3 = InputManager.Instance;
+#pragma warning restore 0168
     }
 
-    private void InitializeStaticReferences(SceneLevel sceneLevel) {
-        if (sceneLevel == SceneLevel.GameScene) {
-            D.Log("Initializing Static References for {0}.", sceneLevel.GetName());
-        }
-        switch (sceneLevel) {
-            case SceneLevel.IntroScene:
-                // No use for References currently in IntroScene
-                break;
-            case SceneLevel.GameScene:
-                References.GameManager = Instance;
-                References.InputHelper = GameInputHelper.Instance;
-                References.DynamicObjectsFolder = DynamicObjectsFolder.Instance;
-                References.CameraControl = CameraControl.Instance;
-                //References.UnitFactory = UnitFactory.Instance;
-                References.GeneralFactory = GeneralFactory.Instance;
-                References.UsefulTools = UsefulTools.Instance;
-                References.UniverseFolder = UniverseFolder.Instance;
-                References.GameInput = GameInput.Instance;
-                if (FindObjectOfType(typeof(SphericalHighlight)) == null) {
-                    D.Warn("{0} GameObject is deactivated.", typeof(SphericalHighlight).Name);
-                }
-                else {
-                    // workaround to allow deactivation of the SphericalHighlight gameObject
-                    References.SphericalHighlight = SphericalHighlight.Instance;
-                }
-                // GuiHudPublisher factory reference settings moved to GuiCursorHud
-                break;
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(sceneLevel));
-        }
+    private void InitializeValuesAndReferences() {
+        _playerPrefsMgr = PlayerPrefsManager.Instance;
+        _gameTime = GameTime.Instance;
+        UpdateRate = FrameUpdateFrequency.Infrequent;
+        _pauseState = PauseState.NotPaused; // initializes value without initiating change event
+        CurrentScene = (SceneLevel)Application.loadedLevel;
+    }
+
+    protected override void Start() {
+        base.Start();
+        SimulateStartup();
     }
 
     #region Startup Simulation
 
-    private void SimulateStartup(SceneLevel scene) {
-        switch (scene) {
-            case SceneLevel.IntroScene:
+    private void SimulateStartup() {
+        switch (CurrentScene) {
+            case SceneLevel.LobbyScene:
                 CurrentState = GameState.Lobby;
                 break;
             case SceneLevel.GameScene:
                 CurrentState = GameState.Lobby;  // avoids the Illegal state transition Error
-                CurrentState = GameState.Building;
-                GameSettings settings = new GameSettings {
+
+                CurrentState = GameState.Loading;
+
+                // reqd for Building as used for populating the new game scene
+                GameSettings = new GameSettings {
                     IsNewGame = true,
                     UniverseSize = _playerPrefsMgr.UniverseSize,
                     PlayerRace = TempGameValues.HumanPlayersRace
                 };
-                Settings = settings;
-                HumanPlayer = CreateHumanPlayer(settings);
-                CurrentState = GameState.Loading;
+                HumanPlayer = CreateHumanPlayer(GameSettings);
+                CurrentState = GameState.Building;
+
                 // GameState.Restoring only applies to loading saved games
                 CurrentState = GameState.Waiting;
                 break;
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(scene));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(CurrentScene));
         }
     }
 
     #endregion
 
-    #region New Game
+    #region GameState Progression Readiness System
 
-    private void OnBuildNewGame(BuildNewGameEvent e) {
-        D.Log("BuildNewGameEvent received.");
-        new Job(WaitForGuiManager(), toStart: true, onJobComplete: delegate {
-            BuildAndLoadNewGame(e.Settings);
-        });
-        //the above is the anonymous method approach that allows you to ignore parameters if not used
-        //the lambda equivalent: (jobWasKilled) => { BuildAndLoadNewGame(e.Settings); }
+    private Job __progressCheckJob;
+
+    private void InitializeGameStateProgressionReadinessSystem() {
+        _gameStateProgressionReadinessLookup = new Dictionary<GameState, IList<MonoBehaviour>>();
+        _gameStateProgressionReadinessLookup.Add(GameState.Building, new List<MonoBehaviour>());
+        _gameStateProgressionReadinessLookup.Add(GameState.Waiting, new List<MonoBehaviour>());
+        _gameStateProgressionReadinessLookup.Add(GameState.BuildAndDeploySystems, new List<MonoBehaviour>());
+        _gameStateProgressionReadinessLookup.Add(GameState.GeneratingPathGraphs, new List<MonoBehaviour>());
+        _gameStateProgressionReadinessLookup.Add(GameState.PrepareUnitsForDeployment, new List<MonoBehaviour>());
+        _gameStateProgressionReadinessLookup.Add(GameState.DeployingUnits, new List<MonoBehaviour>());
+        _gameStateProgressionReadinessLookup.Add(GameState.RunningCountdown_1, new List<MonoBehaviour>());
     }
 
-    private IEnumerator WaitForGuiManager() {
-        while (!GuiManager.Instance.ReadyForSceneChange) {
+    private void StartGameStateProgressionReadinessChecks() {
+        D.Log("{0}_{1} is starting GameState Progression System Readiness Checks.", GetType().Name, InstanceID);
+        __ValidateGameStateProgressionReadinessSystemState();
+        __progressCheckJob = new Job(AssessReadinessToProgressGameState(), toStart: true, onJobComplete: (wasJobKilled) => {
+            if (wasJobKilled) {
+                D.Error("{0}'s GameState Progression Readiness System has timed out.", GetType().Name);
+            }
+            else {
+                D.Assert(CurrentState == GameState.Running, "{0}_{1}.{2} = {3}.".Inject(GetType().Name, InstanceID, typeof(GameState).Name, CurrentState.GetName()), true);
+                D.Log("{0}'s GameState Progression Readiness System has successfully completed.", GetType().Name);
+            }
+        });
+    }
+
+    private void __ValidateGameStateProgressionReadinessSystemState() {
+        var keys = _gameStateProgressionReadinessLookup.Keys;
+        keys.ForAll(k => D.Assert(_gameStateProgressionReadinessLookup[k].Count == Constants.Zero));
+    }
+
+    private IEnumerator AssessReadinessToProgressGameState() {
+        //D.Log("Entering AssessReadinessToProgressGameState.");
+        float startTime = Time.time;
+        while (CurrentState != GameState.Running) {
+            D.Assert(CurrentState != GameState.Lobby);
+            D.Assert(_gameStateProgressionReadinessLookup.ContainsKey(CurrentState), "{0} key not found.".Inject(CurrentState), pauseOnFail: true);
+            // this will tell me what state failed, whereas failing while accessing the dictionary won't
+            IList<MonoBehaviour> unreadyElements = _gameStateProgressionReadinessLookup[CurrentState];
+            //D.Log("{0}_{1}.AssessReadinessToProgressGameState() called. GameState = {2}, UnreadyElements count = {3}.", GetType().Name, InstanceID, CurrentState.GetName(), unreadyElements.Count);
+            if (unreadyElements != null && unreadyElements.Count == Constants.Zero) {
+                //D.Log("State prior to ProgressState = {0}.", CurrentState.GetName());
+                ProgressState();
+                //D.Log("State after ProgressState = {0}.", CurrentState.GetName());
+            }
+            __CheckTime(startTime);
             yield return null;
+        }
+        //D.Log("Exiting AssessReadinessToProgressGameState.");
+    }
+
+    // FYI - does not catch delay caused by PathfindingMgr's scan, probably because AstarPath sets Time.timeScale = 0 while scanning
+    private void __CheckTime(float startTime) {
+        //D.Log("{0}.GameStateProgressionSystem time waiting = {1}.", GetType().Name, Time.time - startTime);
+        if (Time.time - startTime > 5F) {
+            __progressCheckJob.Kill();
+            __progressCheckJob = null;
         }
     }
 
-    private void BuildAndLoadNewGame(GameSettings settings) {
-        D.Log("BuildAndLoadNewGame() called.");
-        CurrentState = GameState.Building;
-        // building the level begins here when implemented
-        Settings = settings;
+    // RecordGameStateProgressionReadiness() located under IGameManager Members
+
+    #endregion
+
+    #region New Game
+
+    public void BuildNewGame(GameSettings newGameSettings) {
+        //GuiManager.Instance.OnChangeGame();
+        //new Job(WaitForGuiManager(), toStart: true, onJobComplete: delegate {
+        //BuildAndLoadNewGame(newGameSettings);
+        //});
+        LoadAndBuildNewGame(newGameSettings);
+    }
+
+    //private void OnBuildNewGame(BuildNewGameEvent e) {
+    //    D.Log("BuildNewGameEvent received.");
+    //    new Job(WaitForGuiManager(), toStart: true, onJobComplete: delegate {
+    //        BuildAndLoadNewGame(e.Settings);
+    //    });
+    //    //the above is the anonymous method approach that allows you to ignore parameters if not used
+    //    //the lambda equivalent: (jobWasKilled) => { BuildAndLoadNewGame(e.Settings); }
+    //}
+
+    //private IEnumerator WaitForGuiManager() {
+    //    while (!GuiManager.Instance.ReadyForSceneChange) {
+    //        yield return null;
+    //    }
+    //}
+
+    private void LoadAndBuildNewGame(GameSettings settings) {
+        D.Log("LoadAndBuildNewGame() called.");
+
+        GameSettings = settings;
         HumanPlayer = CreateHumanPlayer(settings);
 
         CurrentState = GameState.Loading;
         // tell ManagementObjects to drop its children (including SaveGameManager!) before the scene gets reloaded
-        _eventMgr.Raise<SceneChangingEvent>(new SceneChangingEvent(this, SceneLevel.GameScene));
+        if (onSceneLoading != null) {
+            onSceneLoading(SceneLevel.GameScene);
+        }
         D.Log("Application.LoadLevel({0}) being called.", SceneLevel.GameScene.GetName());
         Application.LoadLevel((int)SceneLevel.GameScene);
+
+
+
+        //CurrentState = GameState.Building;
+
     }
 
+
+    //private void BuildAndLoadNewGame(GameSettings settings) {
+    //    D.Log("BuildAndLoadNewGame() called.");
+    //    GameSettings = settings;
+    //    HumanPlayer = CreateHumanPlayer(settings);
+
+    //    CurrentState = GameState.Building;
+    //    // building the level begins here when implemented
+
+    //    CurrentState = GameState.Loading;
+    //    // tell ManagementObjects to drop its children (including SaveGameManager!) before the scene gets reloaded
+    //    if (onSceneTransitioning != null) {
+    //        onSceneTransitioning(SceneLevel.GameScene);
+    //    }
+    //    D.Log("Application.LoadLevel({0}) being called.", SceneLevel.GameScene.GetName());
+    //    Application.LoadLevel((int)SceneLevel.GameScene);
+    //}
+
+
+    //private void BuildAndLoadNewGame(GameSettings settings) {
+    //    D.Log("BuildAndLoadNewGame() called.");
+    //    CurrentState = GameState.Building;
+    //    // building the level begins here when implemented
+    //    Settings = settings;
+    //    HumanPlayer = CreateHumanPlayer(settings);
+
+    //    CurrentState = GameState.Loading;
+    //    // tell ManagementObjects to drop its children (including SaveGameManager!) before the scene gets reloaded
+    //    //_eventMgr.Raise<SceneChangingEvent>(new SceneChangingEvent(this, SceneLevel.GameScene));
+    //    if (onSceneTransitioning != null) {
+    //        onSceneTransitioning(SceneLevel.GameScene);
+    //    }
+    //    D.Log("Application.LoadLevel({0}) being called.", SceneLevel.GameScene.GetName());
+    //    Application.LoadLevel((int)SceneLevel.GameScene);
+    //}
+
+
+    //private void BuildAndLoadNewGame(GameSettings settings) {
+    //    D.Log("BuildAndLoadNewGame() called.");
+    //    CurrentState = GameState.Building;
+    //    // building the level begins here when implemented
+    //    Settings = settings;
+    //    HumanPlayer = CreateHumanPlayer(settings);
+
+    //    CurrentState = GameState.Loading;
+    //    // tell ManagementObjects to drop its children (including SaveGameManager!) before the scene gets reloaded
+    //    _eventMgr.Raise<SceneChangingEvent>(new SceneChangingEvent(this, SceneLevel.GameScene));
+    //    D.Log("Application.LoadLevel({0}) being called.", SceneLevel.GameScene.GetName());
+    //    Application.LoadLevel((int)SceneLevel.GameScene);
+    //}
+
     private HumanPlayer CreateHumanPlayer(GameSettings gameSettings) {
-        HumanPlayer humanPlayer = new HumanPlayer(gameSettings.PlayerRace);
-        return humanPlayer;
+        return new HumanPlayer(gameSettings.PlayerRace);
     }
 
     #endregion
@@ -227,26 +321,35 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
     /// </summary>
     /// <param name="level">The scene level.</param>
     void OnLevelWasLoaded(int level) {
-        D.Log("{0}_{1}.OnLevelWasLoaded({2}) called.", this.name, InstanceID, ((SceneLevel)level).GetName());
-        if (enabled) {
-            // The earliest thing that happens after Destroy(gameObject) is component disablement so this is a good filter for gameObjects 
-            // in the process of being destroyed. GameObject deactivation happens later, but before OnDestroy()
-            D.Log("{0}_{1}.OnLevelWasLoaded({2}) initializing.", this.name, InstanceID, ((SceneLevel)level).GetName());
-            SceneLevel newScene = (SceneLevel)level;
-            if (newScene != SceneLevel.GameScene) {
-                D.Error("A Scene change to {0} is currently not implemented.", newScene.GetName());
-                return;
-            }
+        //D.Log("{0}_{1}.OnLevelWasLoaded({2}) called.", this.name, InstanceID, ((SceneLevel)level).GetName());
+        if (_isExtraCopy) { return; }
 
-            _eventMgr.Raise<SceneChangedEvent>(new SceneChangedEvent(this, newScene));
-            if (LevelSerializer.IsDeserializing || !Settings.IsNewGame) {
-                CurrentState = GameState.Restoring;
-            }
-            else {
-                InitializeStaticReferences(newScene);
-                ResetConditionsForGameStartup();
-                _gameTime.PrepareToBeginNewGame();
-                CurrentState = GameState.Waiting;
+        //D.Log("{0}_{1}.OnLevelWasLoaded({2}) received.", GetType().Name, InstanceID, ((SceneLevel)level).GetName());
+        CurrentScene = (SceneLevel)level;
+        D.Assert(CurrentScene == SceneLevel.GameScene, "Scene transition to {0} not implemented.".Inject(CurrentScene.GetName()));
+
+        if (onSceneLoaded != null) {
+            //D.Log("{0}.onSceneLoaded event dispatched.", GetType().Name);
+            onSceneLoaded();
+        }
+
+        if (LevelSerializer.IsDeserializing || !GameSettings.IsNewGame) {
+            CurrentState = GameState.Restoring;
+        }
+        else {
+            CurrentState = GameState.Building;
+            ResetConditionsForGameStartup();
+            _gameTime.PrepareToBeginNewGame();
+            CurrentState = GameState.Waiting;
+        }
+    }
+
+    private void OnIsRunningChanged() {
+        D.Log("{0}.IsRunning changed to {1}.", GetType().Name, IsRunning);
+        if (IsRunning) {
+            if (onIsRunningOneShot != null) {
+                onIsRunningOneShot();
+                onIsRunningOneShot = null;
             }
         }
     }
@@ -260,28 +363,21 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
 
     #region Saving and Restoring
 
-    private void OnSaveGame(SaveGameEvent e) {
-        SaveGame(e.GameName);
-    }
-
-    private void SaveGame(string gameName) {
-        Settings.IsNewGame = false;
+    public void SaveGame(string gameName) {
+        GameSettings.IsNewGame = false;
         _gameTime.PrepareToSaveGame();
         LevelSerializer.SaveGame(gameName);
     }
 
-    private void OnLoadSavedGame(LoadSavedGameEvent e) {
-        D.Log("LoadSavedGameEvent received.");
-        new Job(WaitForGuiManager(), toStart: true, onJobComplete: delegate {
-            LoadAndRestoreSavedGame(e.GameID);
-        });
+    public void LoadSavedGame(string gameID) {
+        LoadAndRestoreSavedGame(gameID);
     }
 
     private void LoadAndRestoreSavedGame(string gameID) {
         var savedGames = LevelSerializer.SavedGames[LevelSerializer.PlayerName];
         var gamesWithID = from g in savedGames where g.Caption == gameID select g;
         if (gamesWithID.IsNullOrEmpty<LevelSerializer.SaveEntry>()) {
-            D.Error("No saved game matches selected game caption {0}.", gameID);
+            D.Warn("No saved game matches selected game caption {0}. \nLoad Saved Game not currently implemented.", gameID);
             return;
         }
 
@@ -295,17 +391,18 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
             selectedGame = gamesWithID.Single<LevelSerializer.SaveEntry>();
         }
 
-        CurrentState = GameState.Building;
         CurrentState = GameState.Loading;
         // tell ManagementObjects to drop its children (including SaveGameManager!) before the scene gets reloaded
-        _eventMgr.Raise<SceneChangingEvent>(new SceneChangingEvent(this, SceneLevel.GameScene));
+        if (onSceneLoading != null) {
+            onSceneLoading(SceneLevel.GameScene);
+        }
         selectedGame.Load();
     }
 
     // Assumes GameTime.PrepareToResumeSavedGame() can only be called AFTER OnLevelWasLoaded
     protected override void OnDeserialized() {
         D.Log("GameManager.OnDeserialized() called.");
-        // TODO InitializeStaticReferences(scene)?
+        D.Assert(CurrentState == GameState.Restoring);
         ResetConditionsForGameStartup();
         _gameTime.PrepareToResumeSavedGame();
         CurrentState = GameState.Waiting;
@@ -320,88 +417,36 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
     /// of a game instance.
     /// </summary>
     private void ResetConditionsForGameStartup() {
-        if (_gameStatus.IsPaused) {
-            ProcessPauseRequest(PauseRequest.PriorityResume);
-        }
-    }
-
-    /// <summary>
-    /// Enables the Ngui Event System in all UICamera's in the scene. 
-    /// 
-    /// Setting the eventReceiverMask to -1 means Everything (all layers) are visible to the event system. 
-    /// 0 means Nothing - no layers are visible to the event system. The actual mask used in UICamera 
-    /// to determine which layers the event system will actually 'see' is the AND of the Camera culling mask 
-    /// that the UICamera script is attached too and this eventReceiverMask. This means that the event 
-    /// system will only 'see' layers that both the camera can see AND the layer mask is allowed to see. 
-    /// </summary>
-    /// <param name="toEnable">if set to <c>false</c> all layers will be invisible to the event system.</param>
-    private void EnableEvents(bool toEnable) {
-        BetterList<UICamera> allEventDispatchersInScene = UICamera.list;
-        foreach (var eventDispatcher in allEventDispatchersInScene) {
-            if (eventDispatcher.eventType == UICamera.EventType.UI_2D) {
-                eventDispatcher.eventReceiverMask = toEnable ? CameraControl.Camera2DEventReceiverMask : CameraControl.DisableEventsMask;
-                continue;
-            }
-            if (eventDispatcher.eventType == UICamera.EventType.World_3D) {
-                eventDispatcher.eventReceiverMask = toEnable ? CameraControl.Camera3DTargetingMask : CameraControl.DisableEventsMask;
-                continue;
-            }
+        if (IsPaused) {
+            RequestPauseStateChange(toPause: false, toOverride: true);
         }
     }
 
     #region Pausing System
 
-    private void OnGuiPauseChangeRequest(GuiPauseRequestEvent e) {
-        D.Assert(CurrentState == GameState.Running);
-        ProcessPauseRequest(e.NewValue);
-    }
-
-    private void ProcessPauseRequest(PauseRequest request) {
-        switch (request) {
-            case PauseRequest.GuiAutoPause:
-                if (PauseState == PauseState.Paused) { return; }
-                if (PauseState == PauseState.GuiAutoPaused) {
-                    D.Warn("Attempt to GuiAutoPause when already paused.");
-                    return;
-                }
-                PauseState = PauseState.GuiAutoPaused;
-                break;
-            case PauseRequest.GuiAutoResume:
-                if (PauseState == PauseState.Paused) { return; }
-                if (PauseState == PauseState.NotPaused) {
-                    D.Warn("Attempt to GuiAutoResume when not paused.");
-                    return;
-                }
-                PauseState = PauseState.NotPaused;
-                break;
-            case PauseRequest.PriorityPause:
-                if (PauseState == PauseState.Paused) {
-                    D.Warn("Attempt to PriorityPause when already paused.");
-                    return;
-                }
-                PauseState = PauseState.Paused;
-                break;
-            case PauseRequest.PriorityResume:
-                if (PauseState == PauseState.NotPaused) {
-                    D.Warn("Atttempt to PriorityResume when not paused.");
-                    return;
-                }
-                PauseState = PauseState.NotPaused;
-                break;
-            case PauseRequest.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(request));
+    /// <summary>
+    /// Requests a pause state change. A request to resume [!toPause] from a pause without 
+    /// overriding may not be accommodated if the current pause was set without overriding.
+    /// </summary>
+    /// <param name="toPause">if set to <c>true</c> [to pause].</param>
+    /// <param name="toOverride">if set to <c>true</c> [to override].</param>
+    public void RequestPauseStateChange(bool toPause, bool toOverride = false) {
+        if (toOverride) {
+            PauseState = toPause ? PauseState.Paused : PauseState.NotPaused;
+        }
+        else if (PauseState != PauseState.Paused) {
+            PauseState = toPause ? PauseState.AutoPaused : PauseState.NotPaused;
         }
     }
 
     private void OnPauseStateChanged() {
         switch (PauseState) {
             case PauseState.NotPaused:
-                _gameStatus.IsPaused = false;
+                IsPaused = false;
                 break;
-            case PauseState.GuiAutoPaused:
+            case PauseState.AutoPaused:
             case PauseState.Paused:
-                _gameStatus.IsPaused = true;
+                IsPaused = true;
                 break;
             case PauseState.None:
             default:
@@ -415,7 +460,7 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
 
     protected override void OnCurrentStateChanging(GameState incomingState) {
         base.OnCurrentStateChanging(incomingState);
-        D.Log("{0} changing from {1} to {2}.", typeof(GameState).Name, CurrentState.GetName(), incomingState.GetName());
+        //D.Log("{0} changing from {1} to {2}.", typeof(GameState).Name, CurrentState.GetName(), incomingState.GetName());
     }
 
     protected override void OnCurrentStateChanged() {
@@ -441,21 +486,12 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
     #region Lobby
 
     void Lobby_EnterState() {
-        LogEvent();
-        EnableEvents(true);
+        //LogEvent();
     }
 
     void Lobby_ExitState() {
-        LogEvent();
-        D.Assert(CurrentState == GameState.Building);
-        EnableEvents(false);
-    }
-
-    #endregion
-
-    #region Building
-
-    void Building_ExitState() {
+        //LogEvent();
+        // Transitioning to Loading (the level) whether a new or saved game
         D.Assert(CurrentState == GameState.Loading);
     }
 
@@ -464,7 +500,28 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
     #region Loading
 
     void Loading_ExitState() {
-        D.Assert(CurrentState == GameState.Waiting || CurrentState == GameState.Restoring);
+        // Transitioning to Building if new game, or Restoring if saved game
+        D.Assert(CurrentState == GameState.Building || CurrentState == GameState.Restoring);
+
+        StartGameStateProgressionReadinessChecks();
+    }
+
+    #endregion
+
+    #region Building
+
+    void Building_EnterState() {
+        //LogEvent();
+        // Building is only for new games
+        D.Assert(GameSettings.IsNewGame);
+        if (onNewGameBuilding != null) {
+            onNewGameBuilding();
+        }
+    }
+
+    void Building_ExitState() {
+        // Building is only for new games, so next state is Waiting
+        D.Assert(CurrentState == GameState.Waiting);
     }
 
     #endregion
@@ -480,7 +537,7 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
     #region Waiting
 
     void Waiting_EnterState() {
-        LogEvent();
+        //LogEvent();
     }
 
     void Waiting_ProgressState() {
@@ -488,7 +545,7 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
     }
 
     void Waiting_ExitState() {
-        LogEvent();
+        //LogEvent();
         D.Assert(CurrentState == GameState.BuildAndDeploySystems);
     }
 
@@ -501,7 +558,7 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
     }
 
     void BuildAndDeploySystems_ProgressState() {
-        LogEvent();
+        //LogEvent();
         CurrentState = GameState.GeneratingPathGraphs;
     }
 
@@ -519,7 +576,7 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
     }
 
     void GeneratingPathGraphs_ProgressState() {
-        LogEvent();
+        //LogEvent();
         CurrentState = GameState.PrepareUnitsForDeployment;
     }
 
@@ -590,59 +647,40 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
         LogEvent();
         _gameTime.EnableClock(true);
         if (_playerPrefsMgr.IsPauseOnLoadEnabled) {
-            ProcessPauseRequest(PauseRequest.PriorityPause);
+            RequestPauseStateChange(toPause: true, toOverride: true);
         }
-        EnableEvents(true);
-        _gameStatus.IsRunning = true;
+        IsRunning = true;
     }
 
     void Running_ExitState() {
         LogEvent();
-        D.Assert(CurrentState == GameState.Lobby || CurrentState == GameState.Building);
-        _gameStatus.IsRunning = false;
-        EnableEvents(false);
+        D.Assert(CurrentState == GameState.Lobby || CurrentState == GameState.Loading);
+        IsRunning = false;
     }
 
     #endregion
 
-    #region Callbacks
+    #region State Machine Support Methods
 
-    public void ProgressState() {
-        RelayToCurrentState();
-    }
+    private void ProgressState() { RelayToCurrentState(); }
 
     #endregion
 
     #endregion
 
-    private void OnExitGame(ExitGameEvent e) {
-        Shutdown();
-    }
+    public void ExitGame() { Shutdown(); }  // TODO Confirmation Dialog
 
     private void Shutdown() {
         _playerPrefsMgr.Store();
         Application.Quit(); // ignored inside Editor or WebPlayer
     }
 
-    protected override void OnDestroy() {
-        base.OnDestroy();
-        Dispose();
-    }
-
-    private void Cleanup() {
-        if (enabled) { // The earliest thing that happens after Destroy(gameObject) is component disablement. GameObject deactivation happens later, but before OnDestroy()
-            Unsubscribe();
-            _gameTime.Dispose();
-            // other cleanup here including any tracking Gui2D elements
+    protected override void Cleanup() {
+        References.GameManager = null;
+        _gameTime.Dispose();
+        if (__progressCheckJob != null) {
+            __progressCheckJob.Dispose();
         }
-    }
-
-    private void Unsubscribe() {
-        _eventMgr.RemoveListener<BuildNewGameEvent>(Instance, OnBuildNewGame);
-        _eventMgr.RemoveListener<LoadSavedGameEvent>(Instance, OnLoadSavedGame);
-        _eventMgr.RemoveListener<ExitGameEvent>(Instance, OnExitGame);
-        _eventMgr.RemoveListener<GuiPauseRequestEvent>(Instance, OnGuiPauseChangeRequest);
-        _eventMgr.RemoveListener<SaveGameEvent>(Instance, OnSaveGame);
     }
 
     public override string ToString() {
@@ -651,53 +689,58 @@ public class GameManager : AMonoStateMachineSingleton<GameManager, GameState>, I
 
     #region IGameManager Members
 
+    /// <summary>
+    /// Fires when GameState changes to Running, then clears all subscribers.
+    /// WARNING: This event will fire each time the GameState changes to Running, 
+    /// but as it clears its subscribers each time, clients will need to resubscribe if
+    /// they want to receive the event again. Clients which persist across scene changes
+    /// should pay particular attention as they won't automatically resubscribe since Awake
+    /// (or a Constructor) is only called once in the life of the client.
+    /// </summary>
+    /// <remarks>
+    /// Current clients SelectionManager, AGuiEnumSliderBase and DebugHud have been checked.
+    /// </remarks>
+    public event Action onIsRunningOneShot;
+
+    /// <summary>
+    /// Occurs just before a scene starts loading.
+    /// Note: Event is not fired when the first scene is about to start loading as a result of the Application starting.
+    /// </summary>
+    public event Action<SceneLevel> onSceneLoading;
+
+    /// <summary>
+    /// Occurs just after a scene finishes loading, aka immediately after OnLevelWasLoaded is received.
+    /// Note: Event is not fired when the first scene is loaded as a result of the Application starting.
+    /// </summary>
+    public event Action onSceneLoaded;
+
+    public event Action onNewGameBuilding;
+
+    public GameSettings GameSettings { get; private set; }
+
+    private bool _isPaused;
+    public bool IsPaused {
+        get { return _isPaused; }
+        set { SetProperty<bool>(ref _isPaused, value, "IsPaused"); }
+    }
+
     public HumanPlayer HumanPlayer { get; private set; }
 
-    #endregion
-
-    #region IDisposable
-    [DoNotSerialize]
-    private bool alreadyDisposed = false;
-
-    /// <summary>
-    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-    /// </summary>
-    public void Dispose() {
-        Dispose(true);
-        GC.SuppressFinalize(this);
+    public void RecordGameStateProgressionReadiness(MonoBehaviour source, GameState maxGameStateUntilReady, bool isReady) {
+        IList<MonoBehaviour> unreadyElements = _gameStateProgressionReadinessLookup[maxGameStateUntilReady];
+        if (!isReady) {
+            D.Assert(!unreadyElements.Contains(source), "UnreadyElements for {0} already has {1} registered!".Inject(maxGameStateUntilReady.GetName(), source.name));
+            unreadyElements.Add(source);
+            D.Log("{0} has registered as unready to progress beyond {1}.", source.name, maxGameStateUntilReady.GetName());
+        }
+        else {
+            D.Assert(unreadyElements.Contains(source), "UnreadyElements for {0} has no record of {1}!".Inject(maxGameStateUntilReady.GetName(), source.name));
+            unreadyElements.Remove(source);
+            D.Log("{0} is now ready to progress beyond {1}. Remaining unready elements: {2}.", source.name, maxGameStateUntilReady.GetName(), unreadyElements.Select(m => m.gameObject.name).Concatenate());
+        }
     }
 
-    /// <summary>
-    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
-    /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool isDisposing) {
-        // Allows Dispose(isDisposing) to be called more than once
-        if (alreadyDisposed) {
-            return;
-        }
-
-        if (isDisposing) {
-            // free managed resources here including unhooking events
-            Cleanup();
-        }
-        // free unmanaged resources here
-
-        alreadyDisposed = true;
-    }
-
-    // Example method showing check for whether the object has been disposed
-    //public void ExampleMethod() {
-    //    // throw Exception if called on object that is already disposed
-    //    if(alreadyDisposed) {
-    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-    //    }
-
-    //    // method content here
-    //}
     #endregion
-
 
 }
 

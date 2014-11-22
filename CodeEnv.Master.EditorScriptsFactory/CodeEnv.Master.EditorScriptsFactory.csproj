@@ -58,6 +58,7 @@
     <Compile Include="Game\SettlementCreatorEditor.cs" />
     <Compile Include="Game\StarbaseCreatorEditor.cs" />
     <Compile Include="Game\SystemCreatorEditor.cs" />
+    <Compile Include="Game\GuiVisibilityModeControlButtonEditor.cs" />
     <Compile Include="ThirdParty\AEditorBase.cs" />
     <Compile Include="Generic\DrawBoundsGizmoEditor.cs" />
     <Compile Include="Generic\DebugSettingsWindow.cs" />

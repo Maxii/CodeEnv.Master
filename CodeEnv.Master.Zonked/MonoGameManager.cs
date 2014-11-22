@@ -83,7 +83,7 @@ public class MonoGameManager : AMonoBehaviourBaseSingletonInstanceIdentity<MonoG
     private void __AwakeBasedOnStartScene() {
         SceneLevel startScene = (SceneLevel)Application.loadedLevel;
         switch (startScene) {
-            case SceneLevel.IntroScene:
+            case SceneLevel.LobbyScene:
                 break;
             case SceneLevel.GameScene:
                 break;
@@ -96,7 +96,7 @@ public class MonoGameManager : AMonoBehaviourBaseSingletonInstanceIdentity<MonoG
     private void __StartBasedOnStartScene() {
         SceneLevel startScene = (SceneLevel)Application.loadedLevel;
         switch (startScene) {
-            case SceneLevel.IntroScene:
+            case SceneLevel.LobbyScene:
                 break;
             case SceneLevel.GameScene:
                 break;

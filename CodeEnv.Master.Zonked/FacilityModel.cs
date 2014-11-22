@@ -322,7 +322,7 @@ public class FacilityModel : AUnitElementModel {
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     private void TryFireOnAnyTarget(Weapon weapon) {
-        if (_weaponRangeMonitorLookup[weapon.TrackerID].__TryGetRandomEnemyTarget(out _attackTarget)) {
+        if (_weaponRangeMonitorLookup[weapon.MonitorID].__TryGetRandomEnemyTarget(out _attackTarget)) {
             D.Log("{0}.{1} firing at {2} from State {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
             //_attackDamage = weapon.Damage;
             _attackStrength = weapon.Strength;

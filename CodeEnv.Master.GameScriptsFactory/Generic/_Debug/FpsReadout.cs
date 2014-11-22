@@ -26,6 +26,10 @@ public class FpsReadout : AGuiLabelReadoutBase {
 
     public float secondsBetweenDisplayRefresh = 0.5F;
 
+    protected override string TooltipContent {
+        get { return "Current Frames per Second displayed."; }
+    }
+
     private float _accumulatedFpsOverInterval;
     private int _framesDrawnInInterval;
     private float _timeRemainingInInterval;
@@ -33,10 +37,6 @@ public class FpsReadout : AGuiLabelReadoutBase {
     protected override void Awake() {
         base.Awake();
         _timeRemainingInInterval = secondsBetweenDisplayRefresh;
-    }
-
-    protected override void InitializeTooltip() {
-        tooltip = "Current Frames per Second displayed.";
     }
 
     protected override void Update() {
@@ -71,6 +71,8 @@ public class FpsReadout : AGuiLabelReadoutBase {
 
         RefreshReadout(formattedFpsValue, color);
     }
+
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

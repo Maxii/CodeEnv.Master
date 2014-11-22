@@ -20,11 +20,11 @@ using CodeEnv.Master.GameContent;
 /// Singleton. Coroutine Manager, a MonoBehaviour-based platform for launching Coroutines.
 /// Derived from P31 Job Manager.
 /// </summary>
-public class CoroutineManager : AMonoBaseSingleton<CoroutineManager>, ICoroutineManager {
+public class CoroutineManager : AMonoBaseSingleton<JobRunner>, IJobRunner {
 
     protected override void Awake() {
         base.Awake();
-        Job.coroutineManager = Instance;
+        Job.jobRunner = Instance;
     }
 
     public override string ToString() {

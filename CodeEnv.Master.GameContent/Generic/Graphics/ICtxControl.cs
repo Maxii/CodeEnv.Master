@@ -21,6 +21,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface ICtxControl {
 
+        /// <summary>
+        /// Flag indicating whether this context menu is currently showing.
+        /// </summary>
         bool IsShowing { get; }
 
         void OnRightPressRelease();

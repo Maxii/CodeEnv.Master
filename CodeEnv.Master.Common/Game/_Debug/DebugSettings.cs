@@ -183,9 +183,6 @@ namespace CodeEnv.Master.Common {
             private set { _allowEnemyOrders = value; }
         }
 
-
-
-
         private DebugSettings() {
             Initialize();
         }

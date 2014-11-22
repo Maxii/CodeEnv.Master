@@ -59,7 +59,7 @@ public class StationaryItem : AItemModel, ICameraFocusable {
 
     protected virtual void OnIsFocusChanged() {
         if (IsFocus) {
-            CameraControl.Instance.CurrentFocus = this;
+            MainCameraControl.Instance.CurrentFocus = this;
         }
     }
 

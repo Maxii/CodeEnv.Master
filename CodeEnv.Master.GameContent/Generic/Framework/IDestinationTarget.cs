@@ -43,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         float Radius { get; }
 
-        SpaceTopography Topography { get; }
+        Topography Topography { get; }
 
     }
 }

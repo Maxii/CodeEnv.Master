@@ -133,8 +133,8 @@ public abstract class AUnitElementModel : ACombatItemModel, IElementModel, IElem
         bool isRangeTrackerStillInUse = Data.RemoveWeapon(weapon);
         if (!isRangeTrackerStillInUse) {
             IWeaponRangeMonitor rangeTracker;
-            if (_weaponRangeMonitorLookup.TryGetValue(weapon.TrackerID, out rangeTracker)) {
-                _weaponRangeMonitorLookup.Remove(weapon.TrackerID);
+            if (_weaponRangeMonitorLookup.TryGetValue(weapon.MonitorID, out rangeTracker)) {
+                _weaponRangeMonitorLookup.Remove(weapon.MonitorID);
                 D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(IWeaponRangeMonitor).Name, weapon.Name);
                 GameObject.Destroy((rangeTracker as Component).gameObject);
                 return;

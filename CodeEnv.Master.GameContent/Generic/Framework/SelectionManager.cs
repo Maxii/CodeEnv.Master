@@ -37,21 +37,14 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override void Initialize() {
-            Subscribe();
+            References.GameManager.onIsRunningOneShot += Subscribe;
         }
 
         private void Subscribe() {
-            GameStatus.Instance.onIsRunningOneShot += DeferredSubscribe;
+            References.InputManager.onUnconsumedPressDown += OnUnconsumedPressDown;
         }
 
-        /// <summary>
-        /// Defers accessing References until it is gauranteed to be initialized.
-        /// </summary>
-        private void DeferredSubscribe() {
-            References.GameInput.onUnconsumedClick += OnUnconsumedMouseButtonClick;
-        }
-
-        private void OnUnconsumedMouseButtonClick(NguiMouseButton button) {
+        private void OnUnconsumedPressDown(NguiMouseButton button) {
             if (button == NguiMouseButton.Left) {
                 CurrentSelection = null;
             }
@@ -65,11 +58,11 @@ namespace CodeEnv.Master.GameContent {
 
         private void Cleanup() {
             Unsubscribe();
-            // other cleanup here including any tracking Gui2D elements
+            OnDispose();
         }
 
         private void Unsubscribe() {
-            References.GameInput.onUnconsumedClick -= OnUnconsumedMouseButtonClick;
+            References.InputManager.onUnconsumedPressDown -= OnUnconsumedPressDown;
         }
 
         public override string ToString() {
@@ -118,7 +111,6 @@ namespace CodeEnv.Master.GameContent {
         //    // method content here
         //}
         #endregion
-
 
     }
 }

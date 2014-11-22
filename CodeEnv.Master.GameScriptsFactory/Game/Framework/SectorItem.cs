@@ -78,13 +78,13 @@ public class SectorItem : AItem {
 
     #region ICameraTargetable Members
 
-    public override float MinimumCameraViewingDistance { get { throw new System.NotImplementedException("{0}".Inject(GetType().Name)); } }
+    public override float MinimumCameraViewingDistance { get { return Radius; } }   // IMPROVE
 
     #endregion
 
     #region ICameraFocusable Members
 
-    public override float OptimalCameraViewingDistance { get { throw new System.NotImplementedException("{0}".Inject(GetType().Name)); } }
+    public override float OptimalCameraViewingDistance { get { return Radius * 2F; } }  // IMPROVE
 
     #endregion
 

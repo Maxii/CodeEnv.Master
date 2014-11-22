@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GuiSaveMenuAcceptButton.cs
-//  Accept button script for the SaveGameMenu.
+//  Accept button for the SaveGameMenu.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,17 +20,19 @@ using CodeEnv.Master.Common;
 using UnityEngine;
 
 /// <summary>
-/// Accept button script for the SaveGameMenu.
+/// Accept button for the SaveGameMenu.
 /// </summary>
 public class GuiSaveMenuAcceptButton : AGuiMenuAcceptButtonBase {
 
-    protected override void InitializeTooltip() {
-        tooltip = "Click to save to PlayerPrefs.";
+    protected override string TooltipContent {
+        get { return "Click to save game."; }
     }
 
     protected override void OnLeftClick() {
-        _eventMgr.Raise<SaveGameEvent>(new SaveGameEvent(this, "Game"));
+        _gameMgr.SaveGame("Game");
     }
+
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

@@ -107,7 +107,7 @@ namespace CodeEnv.Master.GameContent {
             // Therefore this constructed GameDate can never be matched to a date delivered by onCurrentDateChanged
             D.Assert(timeFromCurrentDate != default(GameTimeDuration));
 
-            GameDate currentDate = GameTime.CurrentDate;
+            GameDate currentDate = GameTime.Instance.CurrentDate;
             int futureYear = currentDate.Year + timeFromCurrentDate.Years;
             int futureDay = currentDate.DayOfYear + timeFromCurrentDate.Days;
             if (futureDay >= GameTime.DaysPerYear) {

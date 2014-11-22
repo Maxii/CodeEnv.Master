@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GuiUniverseSizePopupList.cs
-// COMMENT - one line to give a brief idea of what this file does.
+// The Gui UniverseSize PopupList.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,11 +19,13 @@
 using CodeEnv.Master.Common;
 
 /// <summary>
-/// COMMENT 
+/// The Gui UniverseSize PopupList.
 /// </summary>
 public class GuiUniverseSizePopupList : AGuiEnumPopupListBase<UniverseSize> {
 
     protected override void OnPopupListSelectionChange() { }
+
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

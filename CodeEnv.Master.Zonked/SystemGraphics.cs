@@ -31,7 +31,7 @@ public class SystemGraphics : AGraphics, IDisposable {
 
     private static string __highlightName = "SystemHighlightMesh";  // IMPROVE
 
-    private OrbitalPlane _orbitalPlane;
+    private OrbitalPlaneInputEventRouter _orbitalPlane;
     private SystemCreator _systemManager;
 
     /// <summary>
@@ -49,7 +49,7 @@ public class SystemGraphics : AGraphics, IDisposable {
     protected override void Awake() {
         base.Awake();
         Target = _transform;
-        _orbitalPlane = gameObject.GetSafeMonoBehaviourComponentInChildren<OrbitalPlane>();
+        _orbitalPlane = gameObject.GetSafeMonoBehaviourComponentInChildren<OrbitalPlaneInputEventRouter>();
         _systemManager = gameObject.GetSafeMonoBehaviourComponent<SystemCreator>();
         _trackingLabelFactory = TrackingWidgetFactory.Instance;
         maxAnimateDistance = AnimationSettings.Instance.MaxSystemAnimateDistance;
@@ -66,7 +66,7 @@ public class SystemGraphics : AGraphics, IDisposable {
     protected override void RegisterComponentsToDisable() {
         disableGameObjectOnNotDiscernible = new GameObject[1] { _systemHighlightRenderer.gameObject };
 
-        Component[] orbitalPlaneCollider = new Component[1] { gameObject.GetSafeMonoBehaviourComponentInChildren<OrbitalPlane>().collider };
+        Component[] orbitalPlaneCollider = new Component[1] { gameObject.GetSafeMonoBehaviourComponentInChildren<OrbitalPlaneInputEventRouter>().collider };
         Renderer[] renderersWithoutVisibilityRelays = gameObject.GetComponentsInChildren<Renderer>()
             .Where<Renderer>(r => r.gameObject.GetComponent<CameraLOSChangedRelay>() == null).ToArray<Renderer>();
         if (disableComponentOnNotDiscernible.IsNullOrEmpty()) {
@@ -145,7 +145,7 @@ public class SystemGraphics : AGraphics, IDisposable {
     }
 
     private void __SetTrackingLabelShowDistance() {
-        maxTrackingLabelShowDistance = Mathf.RoundToInt(GameManager.Settings.UniverseSize.Radius() * 2);     // TODO so it shows for now
+        maxTrackingLabelShowDistance = Mathf.RoundToInt(GameManager.GameSettings.UniverseSize.Radius() * 2);     // TODO so it shows for now
     }
 
     public void HighlightTrackingLabel(bool toHighlight) {

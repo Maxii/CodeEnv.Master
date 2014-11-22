@@ -44,11 +44,11 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityCategory, 
     }
 
     protected override FacilityItem MakeElement(FacilityStat stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner) {
-        return _factory.MakeFacilityInstance(stat, SpaceTopography.OpenSpace, weaponStats, owner);
+        return _factory.MakeFacilityInstance(stat, Topography.OpenSpace, weaponStats, owner);
     }
 
     protected override void MakeElement(FacilityStat stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner, ref FacilityItem element) {
-        _factory.MakeFacilityInstance(stat, SpaceTopography.OpenSpace, weaponStats, owner, ref element);
+        _factory.MakeFacilityInstance(stat, Topography.OpenSpace, weaponStats, owner, ref element);
     }
 
     protected override FacilityCategory GetCategory(FacilityStat stat) {
@@ -109,7 +109,6 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityCategory, 
     }
 
     protected override void EnableOtherWhenRunning() {
-        D.Assert(GameStatus.Instance.IsRunning);
         gameObject.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeMonitor>().ForAll(wrt => wrt.enabled = true);
         // CameraLosChangedListener enabled state handled in Item.InitializeViewMembersOnDiscernible
         // Revolvers handle their own enabled state
@@ -118,7 +117,7 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityCategory, 
         // TODO SensorRangeTracker
     }
 
-    protected override void IssueFirstUnitCommand() {
+    protected override void __IssueFirstUnitCommand() {
         LogEvent();
     }
 

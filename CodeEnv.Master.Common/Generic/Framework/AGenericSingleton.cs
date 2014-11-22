@@ -52,6 +52,12 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         protected abstract void Initialize();
 
+        /// <summary>
+        /// Clients should call this if and when they Dispose of T.
+        /// </summary>
+        protected void OnDispose() {
+            _instance = null;
+        }
     }
 
 }

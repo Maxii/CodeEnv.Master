@@ -200,7 +200,7 @@ public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarge
 
     // override reqd as AMortalItemModel base version accesses AItemData, not ACommandData
     // since ACommandData.Topography must use new rather than override
-    public override SpaceTopography Topography { get { return Data.Topography; } }
+    public override Topography Topography { get { return Data.Topography; } }
 
     #endregion
 

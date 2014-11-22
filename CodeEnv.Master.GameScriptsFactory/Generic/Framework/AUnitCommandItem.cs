@@ -33,6 +33,12 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, I
     /// </summary>
     public Transform UnitContainer { get; private set; }
 
+    /// <summary>
+    /// The radius of the entire Unit. 
+    /// This is not the radius of the Command which is the radius of the HQElement.
+    /// </summary>
+    public virtual float UnitRadius { get; protected set; }
+
     public new ACommandData Data {
         get { return base.Data as ACommandData; }
         set { base.Data = value; }
@@ -44,21 +50,24 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, I
         set { SetProperty<AUnitElementItem>(ref _hqElement, value, "HQElement", OnHQElementChanged, OnHQElementChanging); }
     }
 
-    private IWidgetTrackable _trackingTarget;
-    /// <summary>
-    /// The target that this UnitCommand tracks in worldspace. 
-    /// </summary>
-    public IWidgetTrackable TrackingTarget {
-        protected get { return _trackingTarget; }
-        set { SetProperty<IWidgetTrackable>(ref _trackingTarget, value, "TrackingTarget", OnTrackingTargetChanged); }
-    }
-
     public IList<AUnitElementItem> Elements { get; private set; }
 
-    public float minCameraViewDistanceMultiplier = 0.9F;    // just inside Unit's highlight sphere
-    public float optimalCameraViewDistanceMultiplier = 2F;  // encompasses all elements of the Unit
+    protected override float SphericalHighlightRadius { get { return UnitRadius; } }
 
-    protected override float SphericalHighlightSizeMultiplier { get { return 1F; } }
+    protected override float ItemTypeCircleScale { get { return 0.03F; } }
+
+    protected override float RadiusOfHighlightCircle {
+        // this override eliminates the Radius of the Item in the calculation as Cmd radius changes with HQ Element
+        get { return Screen.height * ItemTypeCircleScale; }
+    }
+
+    [Range(0.5F, 3.0F)]
+    [Tooltip("Minimum Camera View Distance Multiplier")]
+    public float minViewDistanceFactor = 0.9F;    // just inside Unit's highlight sphere
+
+    [Range(1.5F, 5.0F)]
+    [Tooltip("Optimal Camera View Distance Multiplier")]
+    public float optViewDistanceFactor = 2F;  // encompasses all elements of the Unit
 
     protected FormationGenerator _formationGenerator;
 
@@ -71,7 +80,6 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, I
         Elements = new List<AUnitElementItem>();
         _formationGenerator = new FormationGenerator(this);
         _isCirclesRadiusDynamic = false;
-        circleScaleFactor = 0.03F;
         UpdateRate = FrameUpdateFrequency.Normal;
     }
 
@@ -94,13 +102,13 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, I
         // CmdIcon enabled state controlled by CmdIcon.Show()
 
         var cmdIconEventListener = _cmdIcon.EventListener;
-        cmdIconEventListener.onHover += (cmdGo, isOver) => OnHover(isOver);
-        cmdIconEventListener.onClick += (cmdGo) => OnClick();
-        cmdIconEventListener.onDoubleClick += (cmdGo) => OnDoubleClick();
-        cmdIconEventListener.onPress += (cmdGo, isDown) => OnPress(isDown);
+        cmdIconEventListener.onHover += (cmdIconGo, isOver) => OnHover(isOver);
+        cmdIconEventListener.onClick += (cmdIconGo) => OnClick();
+        cmdIconEventListener.onDoubleClick += (cmdIconGo) => OnDoubleClick();
+        cmdIconEventListener.onPress += (cmdIconGo, isDown) => OnPress(isDown);
 
         var cmdIconCameraLosChgdListener = _cmdIcon.CameraLosChangedListener;
-        cmdIconCameraLosChgdListener.onCameraLosChanged += (cmdGo, inCameraLOS) => InCameraLOS = inCameraLOS;
+        cmdIconCameraLosChgdListener.onCameraLosChanged += (cmdIconGo, inCameraLOS) => InCameraLOS = inCameraLOS;
         cmdIconCameraLosChgdListener.enabled = true;
     }
 
@@ -129,7 +137,7 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, I
         D.Assert(isRemoved, "{0} not found.".Inject(element.FullName));
         if (Elements.Count == Constants.Zero) {
             D.Assert(Data.UnitHealth <= Constants.ZeroF, "{0} UnitHealth error.".Inject(FullName));
-            KillCommand();
+            InitiateDeath();
         }
     }
 
@@ -155,7 +163,8 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, I
         HQElement.IsHQElement = true;
         Data.HQElementData = HQElement.Data;
         //D.Log("{0}'s HQElement is now {1}.", Data.ParentName, HQElement.Data.Name);
-        TrackingTarget = HQElement as IWidgetTrackable;
+        Radius = HQElement.Radius;
+        PositionCmdOverHQElement();
         _formationGenerator.RegenerateFormation();
     }
 
@@ -179,22 +188,6 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, I
         Elements.ForAll(e => e.__SimulateAttacked());
     }
 
-    /// <summary>
-    /// Checks for damage to this Command when its HQElement takes a hit.
-    /// </summary>
-    /// <param name="isHQElementAlive">if set to <c>true</c> [is hq element alive].</param>
-    /// <returns><c>true</c> if the Command has taken damage.</returns>
-    public bool __CheckForDamage(bool isHQElementAlive) {   // HACK needs work. Cmds should be hardened to defend against weapons, so pass along attackerWeaponStrength?
-        bool isHit = (isHQElementAlive) ? RandomExtended<bool>.SplitChance() : true;
-        if (isHit) {
-            TakeHit(new CombatStrength(RandomExtended<ArmamentCategory>.Choice(__offensiveArmamentCategories), UnityEngine.Random.Range(1F, Data.MaxHitPoints)));
-        }
-        else {
-            D.Log("{0} avoided a hit.", FullName);
-        }
-        return isHit;
-    }
-
     protected internal virtual void PositionElementInFormation(AUnitElementItem element, Vector3 stationOffset) {
         element.Transform.position = HQElement.Position + stationOffset;
         //D.Log("{0} positioned at {1}, offset by {2} from {3} at {4}.",
@@ -202,17 +195,6 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, I
     }
 
     protected internal virtual void CleanupAfterFormationGeneration() { }
-
-    public override void TakeHit(CombatStrength attackerWeaponStrength) {
-        float damage = Data.Strength - attackerWeaponStrength;
-        bool isCmdAlive = ApplyDamage(damage);
-        D.Assert(isCmdAlive, "{0} should never die as a result of being hit.".Inject(Data.Name));
-    }
-
-    /// <summary>
-    /// Kills this Command by setting its state to Dead.
-    /// </summary>
-    protected abstract void KillCommand();
 
     #endregion
 
@@ -223,19 +205,15 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, I
         ShowCmdIcon(IsDiscernible);
     }
 
-    protected virtual void OnTrackingTargetChanged() {
-        PositionCmdOverTrackingTarget();
-    }
-
     protected virtual void OnIsSelectedChanged() {
         AssessHighlighting();
         Elements.ForAll(e => e.AssessHighlighting());
         if (IsSelected) { SelectionManager.Instance.CurrentSelection = this; }
     }
 
-    protected virtual void PositionCmdOverTrackingTarget() {
-        _transform.position = TrackingTarget.Transform.position;
-        _transform.rotation = TrackingTarget.Transform.rotation;
+    protected virtual void PositionCmdOverHQElement() {
+        _transform.position = HQElement.Position;
+        _transform.rotation = HQElement.Transform.rotation;
     }
 
     protected override void OnPlayerIntelCoverageChanged() {
@@ -316,10 +294,6 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, I
         ShowCircle(toShow, highlight, _cmdIcon.WidgetTransform);
     }
 
-    protected override float CalcNormalizedCircleRadius() {
-        return Screen.height * circleScaleFactor;
-    }
-
     #endregion
 
     #region Mouse Events
@@ -340,35 +314,47 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, I
 
     #endregion
 
-
     # region StateMachine Support Methods
 
     protected void Dead_ExitState() {
-        LogEvent();
         D.Error("{0}.Dead_ExitState should not occur.", Data.Name);
     }
 
-    protected void DestroyUnitContainer() {
-        UnityUtility.WaitOneToExecute((jobWasKilled) => {
-            Destroy(UnitContainer.gameObject);
-            D.Log("{0}.UnitContainer has been destroyed.", FullName);
-        });
-    }
+    protected override void OnShowCompletion() { RelayToCurrentState(); }
+
+    protected void OnTargetDeath(IMortalItem deadTarget) { RelayToCurrentState(deadTarget); }
+
+    void OnDetectedEnemy() { RelayToCurrentState(); }   // TODO connect to sensors when I get them
 
     #endregion
 
-    # region StateMachine Callbacks
+    # region Combat Support Methods
 
-    protected override void OnShowCompletion() {
-        RelayToCurrentState();
+    public override void TakeHit(CombatStrength attackerWeaponStrength) {
+        float damage = Data.Strength - attackerWeaponStrength;
+        bool isCmdAlive = ApplyDamage(damage);
+        D.Assert(isCmdAlive, "{0} should never die as a result of being hit.".Inject(Data.Name));
     }
 
-    protected void OnTargetDeath(IMortalItem deadTarget) {
-        RelayToCurrentState(deadTarget);
+    /// <summary>
+    /// Checks for damage to this Command when its HQElement takes a hit.
+    /// </summary>
+    /// <param name="isHQElementAlive">if set to <c>true</c> [is hq element alive].</param>
+    /// <returns><c>true</c> if the Command has taken damage.</returns>
+    public bool __CheckForDamage(bool isHQElementAlive) {   // HACK needs work. Cmds should be hardened to defend against weapons, so pass along attackerWeaponStrength?
+        bool isHit = (isHQElementAlive) ? RandomExtended<bool>.SplitChance() : true;
+        if (isHit) {
+            TakeHit(new CombatStrength(RandomExtended<ArmamentCategory>.Choice(__offensiveArmamentCategories), UnityEngine.Random.Range(1F, Data.MaxHitPoints)));
+        }
+        else {
+            D.Log("{0} avoided a hit.", FullName);
+        }
+        return isHit;
     }
 
-    void OnDetectedEnemy() {  // TODO connect to sensors when I get them
-        RelayToCurrentState();
+    protected void DestroyUnitContainer() {
+        Destroy(UnitContainer.gameObject);
+        D.Log("{0}.UnitContainer has been destroyed.", DisplayName);
     }
 
     #endregion
@@ -382,13 +368,13 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, I
 
     // override reqd as AMortalItem base version accesses AItemData, not ACommandData
     // since ACommandData.Topography must use new rather than override
-    public override SpaceTopography Topography { get { return Data.Topography; } }
+    public override Topography Topography { get { return Data.Topography; } }
 
     #endregion
 
     #region ICameraTargetable Members
 
-    public override float MinimumCameraViewingDistance { get { return Radius * minCameraViewDistanceMultiplier; } }
+    public override float MinimumCameraViewingDistance { get { return Radius * minViewDistanceFactor; } }
 
     #endregion
 
@@ -396,7 +382,7 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, I
 
     public override bool IsRetainedFocusEligible { get { return PlayerIntel.CurrentCoverage != IntelCoverage.None; } }
 
-    public override float OptimalCameraViewingDistance { get { return Radius * optimalCameraViewDistanceMultiplier; } }
+    public override float OptimalCameraViewingDistance { get { return UnitRadius * optViewDistanceFactor; } }
 
     #endregion
 
@@ -407,14 +393,6 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, I
         get { return _isSelected; }
         set { SetProperty<bool>(ref _isSelected, value, "IsSelected", OnIsSelectedChanged); }
     }
-
-    #endregion
-
-    #region IWidgetTrackable Members
-
-    // IMPROVE Consider overriding GetOffset from AFocusableItemView and use TrackingTarget's GetOffset values instead
-    // Currently, the Cmd's Radius is used to position the CmdIcon. As CmdRadius encompasses the whole cmd, the icon is 
-    // quite a ways above the HQElement
 
     #endregion
 

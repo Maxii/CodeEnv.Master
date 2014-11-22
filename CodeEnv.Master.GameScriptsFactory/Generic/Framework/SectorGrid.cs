@@ -28,7 +28,9 @@ using UnityEngine;
 /// <summary>
 /// Grid of Sectors. 
 /// </summary>
-public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
+public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
+
+    public static IList<SectorItem> AllSectors { get { return _instance._sectors.Values.ToList(); } }
 
     /// <summary>
     /// Readonly. The location of the center of all sectors in world space.
@@ -40,25 +42,28 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     /// </summary>
     public IList<Vector3> SectorCorners { get { return _worldVertexLocations; } }
 
-    public IList<SectorItem> AllSectors { get { return _sectors.Values.ToList(); } }
-
     public float sectorVisibilityDepth = 2F;
 
-    private static GFRectGrid _grid;
-    private static Vector3 _gridVertexToBoxOffset = new Vector3(0.5F, 0.5F, 0.5F);
+    private GFRectGrid _grid;
+    private Vector3 _gridVertexToBoxOffset = new Vector3(0.5F, 0.5F, 0.5F);
 
     private IList<Vector3> _gridVertexLocations;
     private IList<Vector3> _worldVertexLocations;
     private IDictionary<Vector3, Index3D> _gridBoxToSectorIndexLookup;
     private IDictionary<Index3D, Vector3> _sectorIndexToGridBoxLookup;
     private IList<Vector3> _worldBoxLocations;
-    private static IDictionary<Index3D, SectorItem> _sectors;
+    private IDictionary<Index3D, SectorItem> _sectors;
 
     private GridWireframe _gridWireframe;
     private IList<IDisposable> _subscribers;
 
-    protected override void Awake() {
-        base.Awake();
+    protected override void InitializeOnInstance() {
+        base.InitializeOnInstance();
+        References.SectorGrid = Instance;
+    }
+
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
         InitializeGrid();
         ConstructSectors();
         Subscribe();
@@ -77,18 +82,16 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     }
 
     private void Subscribe() {
-        if (_subscribers == null) {
-            _subscribers = new List<IDisposable>();
-        }
+        _subscribers = new List<IDisposable>();
         _subscribers.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, OnPlayerViewModeChanged));
     }
 
     private void DynamicallySubscribe(bool toSubscribe) {
         if (toSubscribe) {
-            _subscribers.Add(CameraControl.Instance.SubscribeToPropertyChanged<CameraControl, Index3D>(cc => cc.SectorIndex, OnCameraSectorIndexChanged));
+            _subscribers.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, Index3D>(cc => cc.SectorIndex, OnCameraSectorIndexChanged));
         }
         else {
-            IDisposable d = _subscribers.Single(s => s as DisposePropertyChangedSubscription<CameraControl> != null);
+            IDisposable d = _subscribers.Single(s => s as DisposePropertyChangedSubscription<MainCameraControl> != null);
             _subscribers.Remove(d);
             d.Dispose();
         }
@@ -115,7 +118,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
         // Note: not subscribed unless in SectorViewMode so no need to test for it
         if (_gridWireframe != null) {
             Vector3[] gridPoints;
-            if (TryGenerateGridPoints(CameraControl.Instance.SectorIndex, out gridPoints)) {
+            if (TryGenerateGridPoints(MainCameraControl.Instance.SectorIndex, out gridPoints)) {
                 _gridWireframe.Points = gridPoints;
             }
         }
@@ -129,7 +132,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
         // per GridFramework: grid needs to be at origin for rendering to align properly with the grid ANY TIME vectrosity points are generated
         Vector3 tempPosition = _transform.position;
         _transform.position = Vector3.zero;
-        Vector3 gridLocOfCamera = SectorGrid.GetGridVertexLocation(cameraSectorIndex);
+        Vector3 gridLocOfCamera = GetGridVertexLocation(cameraSectorIndex);
 
         float xCameraGridLoc = gridLocOfCamera.x;
         float yCameraGridLoc = gridLocOfCamera.y;
@@ -261,7 +264,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     /// </summary>
     /// <param name="index">The sector index.</param>
     /// <returns></returns>
-    public static Vector3 GetGridBoxLocation(Index3D index) {
+    public Vector3 GetGridBoxLocation(Index3D index) {
         Vector3 gridBoxLocation;
         if (!Instance._sectorIndexToGridBoxLookup.TryGetValue(index, out gridBoxLocation)) {
             gridBoxLocation = Instance.CalculateGridBoxLocationFromSectorIndex(index);
@@ -288,7 +291,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     /// <param name="index">The index.</param>
     /// <param name="distance">The distance from any vertex to the sector's center in units.</param>
     /// <returns></returns>
-    public static IList<Vector3> GenerateVerticesOfBoxAroundCenter(Index3D index, float distance) {
+    public IList<Vector3> GenerateVerticesOfBoxAroundCenter(Index3D index, float distance) {
         Arguments.ValidateNotNegative(distance);
         var sectorGridBoxLoc = GetGridBoxLocation(index);
         Vector3 sectorCenterWorldLoc = _grid.GridToWorld(sectorGridBoxLoc);
@@ -302,11 +305,11 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     /// </summary>
     /// <param name="index">The sector index.</param>
     /// <returns></returns>
-    public static Vector3 GetGridVertexLocation(Index3D index) {
+    public Vector3 GetGridVertexLocation(Index3D index) {
         return GetGridBoxLocation(index) - _gridVertexToBoxOffset;
     }
 
-    public static Index3D GetSectorIndex(Vector3 worldPoint) {
+    public Index3D GetSectorIndex(Vector3 worldPoint) {
         Index3D index;
         Vector3 gridClosestBoxLocation = _grid.NearestBoxG(worldPoint);
         if (!Instance._gridBoxToSectorIndexLookup.TryGetValue(gridClosestBoxLocation, out index)) {
@@ -318,7 +321,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
         return index;
     }
 
-    public static bool TryGetSector(Index3D index, out SectorItem sector) {
+    public bool TryGetSector(Index3D index, out SectorItem sector) {
         return _sectors.TryGetValue(index, out sector);
     }
 
@@ -329,7 +332,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     /// </summary>
     /// <param name="index">The index.</param>
     /// <returns></returns>
-    public static SectorItem GetSector(Index3D index) {
+    public SectorItem GetSector(Index3D index) {
         SectorItem sector;
         if (!TryGetSector(index, out sector)) {
             D.Warn("No SectorModel at {0}, returning null.", index);
@@ -338,13 +341,32 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     }
 
     /// <summary>
+    /// Gets the SpaceTopography value associated with this location in worldspace.
+    /// </summary>
+    /// <param name="worldLocation">The world location.</param>
+    /// <returns></returns>
+    public Topography GetSpaceTopography(Vector3 worldLocation) {
+        Index3D sectorIndex = GetSectorIndex(worldLocation);
+        SystemItem system;
+        if (SystemCreator.TryGetSystem(sectorIndex, out system)) {
+            // the sector containing worldLocation has a system
+            if (Vector3.SqrMagnitude(worldLocation - system.Position) < system.Radius * system.Radius) {
+                return Topography.System;
+            }
+        }
+        // TODO add Nebula and DeepNebula
+        return Topography.OpenSpace;
+    }
+
+
+    /// <summary>
     /// Gets the indexes of the neighbors to this sector index. A sector must
     /// occupy the index location to be included. The sector at center is
     /// not included.
     /// </summary>
     /// <param name="center">The center.</param>
     /// <returns></returns>
-    public static IList<Index3D> GetNeighbors(Index3D center) {
+    public IList<Index3D> GetNeighbors(Index3D center) {
         IList<Index3D> neighbors = new List<Index3D>();
         int[] xValuePair = CalcNeighborPair(center.x);
         int[] yValuePair = CalcNeighborPair(center.y);
@@ -363,7 +385,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
         return neighbors;
     }
 
-    private static int[] CalcNeighborPair(int center) {
+    private int[] CalcNeighborPair(int center) {
         int[] valuePair = new int[2];
         // no 0 value in my sector indices
         valuePair[0] = center - 1 == 0 ? center - 2 : center - 1;
@@ -378,7 +400,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     /// </summary>
     /// <param name="center">The center.</param>
     /// <returns></returns>
-    public static IList<SectorItem> GetSectorNeighbors(Index3D center) {
+    public IList<SectorItem> GetSectorNeighbors(Index3D center) {
         IList<SectorItem> neighborSectors = new List<SectorItem>();
         foreach (var index in GetNeighbors(center)) {
             neighborSectors.Add(GetSector(index));
@@ -395,7 +417,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     /// <param name="first">The first.</param>
     /// <param name="second">The second.</param>
     /// <returns></returns>
-    public static float GetDistanceInSectors(Index3D first, Index3D second) {
+    public float GetDistanceInSectors(Index3D first, Index3D second) {
         Vector3 firstGridBoxLoc = GetGridBoxLocation(first);
         Vector3 secondGridBoxLoc = GetGridBoxLocation(second);
         return Vector3.Distance(firstGridBoxLoc, secondGridBoxLoc);
@@ -404,7 +426,7 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
     public void ShowSectorGrid(bool toShow) {
         if (_gridWireframe == null) {
             Vector3[] gridPoints;
-            if (TryGenerateGridPoints(CameraControl.Instance.SectorIndex, out gridPoints)) {
+            if (TryGenerateGridPoints(MainCameraControl.Instance.SectorIndex, out gridPoints)) {
                 _gridWireframe = new GridWireframe("GridWireframe", gridPoints);
             }
         }
@@ -414,69 +436,22 @@ public class SectorGrid : AMonoBaseSingleton<SectorGrid>, IDisposable {
         }
     }
 
-    private void Unsubscribe() {
-        _subscribers.ForAll(s => s.Dispose());
-        _subscribers.Clear();
-    }
-
-    protected override void OnDestroy() {
-        base.OnDestroy();
-        Dispose();
-    }
-
-    private void Cleanup() {
+    protected override void Cleanup() {
+        References.SectorGrid = null;
         if (_gridWireframe != null) {
             _gridWireframe.Dispose();
         }
         Unsubscribe();
     }
 
+    private void Unsubscribe() {
+        _subscribers.ForAll(s => s.Dispose());
+        _subscribers.Clear();
+    }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region IDisposable
-    [DoNotSerialize]
-    private bool alreadyDisposed = false;
-
-    /// <summary>
-    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-    /// </summary>
-    public void Dispose() {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
-    /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool isDisposing) {
-        // Allows Dispose(isDisposing) to be called more than once
-        if (alreadyDisposed) {
-            return;
-        }
-
-        if (isDisposing) {
-            // free managed resources here including unhooking events
-            Cleanup();
-        }
-        // free unmanaged resources here
-
-        alreadyDisposed = true;
-    }
-
-    // Example method showing check for whether the object has been disposed
-    //public void ExampleMethod() {
-    //    // throw Exception if called on object that is already disposed
-    //    if(alreadyDisposed) {
-    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-    //    }
-
-    //    // method content here
-    //}
-    #endregion
 
 }
 

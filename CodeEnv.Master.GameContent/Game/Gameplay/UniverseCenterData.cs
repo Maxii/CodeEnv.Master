@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
 
         public UniverseCenterData(string name)
             : base(name) {
-            base.Topography = SpaceTopography.OpenSpace;
+            base.Topography = Topography.OpenSpace;
         }
 
         public override string ToString() {

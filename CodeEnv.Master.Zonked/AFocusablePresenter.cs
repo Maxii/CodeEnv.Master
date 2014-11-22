@@ -29,7 +29,7 @@ public abstract class AFocusablePresenter : AItemPresenter {
     }
 
     public void OnIsFocus() {
-        CameraControl.Instance.CurrentFocus = View as ICameraFocusable;
+        MainCameraControl.Instance.CurrentFocus = View as ICameraFocusable;
     }
 
     public override string ToString() {

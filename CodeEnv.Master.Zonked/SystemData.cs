@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
 
         public Index3D SectorIndex { get; private set; }
 
-        public override SpaceTopography Topography {
+        public override Topography Topography {
             get { return base.Topography; }
             set { throw new NotImplementedException(); }
         }
@@ -92,7 +92,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="systemName">Name of the system.</param>
         /// <param name="sectorIndex">Index of the sector.</param>
         /// <param name="topography">The topography.</param>
-        public SystemData(string systemName, Index3D sectorIndex, SpaceTopography topography)
+        public SystemData(string systemName, Index3D sectorIndex, Topography topography)
             : base(systemName) {
             SectorIndex = sectorIndex;
             base.Topography = topography;

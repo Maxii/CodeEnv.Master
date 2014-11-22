@@ -30,19 +30,22 @@ namespace CodeEnv.Master.Common {
         Lobby,
 
         /// <summary>
-        /// Primary focus is on use of new game settings to do any preparation
-        /// needed before initiating a Load of the game.
-        /// </summary>
-        Building,
-
-        /// <summary>
         /// Primary focus is to allow Unity to load the level for either a new or previously
-        /// saved game. Completion is indicated by OnLevelWasLoaded().
+        /// saved game. If the level is for a new game, the new game scene is loaded which 
+        /// will be populated during Building. If the level is from a previously saved game, 
+        /// the level loaded is the level that was saved which will be populated during Restoring.
+        /// Completion is indicated by OnLevelWasLoaded(). 
         /// </summary>
         Loading,
 
         /// <summary>
-        /// Primary focus is to allow deserialization of saved games to take place so that objects in the
+        /// Primary focus is on use of new game settings to add the elements of the
+        /// new game to the newly loaded new game scene.
+        /// </summary>
+        Building,
+
+        /// <summary>
+        /// Primary focus is to allow deserialization of saved games so that objects in the
         /// level that has just been loaded can have their saved state restored. Completion 
         /// is indicated by OnDeserialized().
         /// </summary>

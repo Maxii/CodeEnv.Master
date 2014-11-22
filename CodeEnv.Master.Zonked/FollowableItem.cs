@@ -30,13 +30,13 @@ public class FollowableItem : StationaryItem, ICameraFollowable {
 
     [SerializeField]
     private float cameraFollowDistanceDampener = 2.0F;
-    public virtual float CameraFollowDistanceDampener {
+    public virtual float FollowDistanceDampener {
         get { return cameraFollowDistanceDampener; }
     }
 
     [SerializeField]
     private float cameraFollowRotationDampener = 1.0F;
-    public virtual float CameraFollowRotationDampener {
+    public virtual float FollowRotationDampener {
         get { return cameraFollowRotationDampener; }
     }
 

@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AFocusableItemPresenter : AItemPresenter {
 
-        protected ICameraControl _cameraControl = References.CameraControl;
+        protected ICameraControl _cameraControl = References.MainCameraControl;
 
         public AFocusableItemPresenter(IViewable view)
             : base(view) {

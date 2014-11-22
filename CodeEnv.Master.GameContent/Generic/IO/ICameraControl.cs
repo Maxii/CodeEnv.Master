@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
         /// passing it on to show the context menu.
         /// </summary>
         /// <param name="isDown">if set to <c>true</c> [is down].</param>
-        void ShowContextMenuOnPress(bool isDown);
+        //void ShowContextMenuOnPress(bool isDown);
 
         /// <summary>
         /// The distance from the camera's target point to the camera's focal plane.

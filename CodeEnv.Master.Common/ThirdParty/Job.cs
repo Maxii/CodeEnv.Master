@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: Job.cs
-// Interruptable Coroutine container that is run from Coroutine Manager.
+// Interruptable Coroutine container that is run from JobRunner.
 // Derived from P31JobManager.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -22,11 +22,12 @@ namespace CodeEnv.Master.Common {
     using System.Collections.Generic;
 
     /// <summary>
-    /// Interruptable Coroutine container that is run from Coroutine Manager.
+    /// Interruptable Coroutine container that is run from JobRunner.
+    /// WARNING: Jobs should not be reused after having been started. Instead, create a new Job.
     /// </summary>
     public class Job : IDisposable {
 
-        public static ICoroutineManager coroutineManager;
+        public static IJobRunner jobRunner;
 
         /// <summary>
         /// Action delegate executed when the job is completed. Contains a
@@ -41,6 +42,16 @@ namespace CodeEnv.Master.Common {
         private IEnumerator _coroutine;
         private bool _jobWasKilled;
         private Stack<Job> _childJobStack;
+        /// <summary>
+        /// Note: A Job that naturally runs to completion or is ended with yield break; (_coroutine.MoveNext() returns false) or is
+        /// killed after running part way through (_coroutine.MoveNext() returns true, but the element that _coroutine.Current
+        /// points at is not the first element) cannot be reused as there is no way to reset the iterator back to the first element 
+        /// (IEnumerator.Reset() is not supported). Theoretically, to reuse a Job instance the _coroutine must use while(true)
+        /// so it doesn't end itself, you manually kill it, and it should have no state (ie. it doesn't make any difference which 
+        /// element of the coroutine is used when restarting. As this is way too complicated to govern, I've added a test in Start
+        /// that will not allow reuse. Instead, create a new Job for each use.
+        /// </summary>
+        private bool _hasBeenPreviouslyRun;
 
         public Job(IEnumerator coroutine, bool toStart = false, Action<bool> onJobComplete = null) {
             _coroutine = coroutine;
@@ -67,15 +78,17 @@ namespace CodeEnv.Master.Common {
                             Job childJob = _childJobStack.Pop();
                             _coroutine = childJob._coroutine;
                         }
-                        else
+                        else {
                             IsRunning = false;
+                        }
                     }
                 }
             }
 
             // fire off a complete event
-            if (onJobComplete != null)
+            if (onJobComplete != null) {
                 onJobComplete(_jobWasKilled);
+            }
         }
 
         #region public API
@@ -110,14 +123,17 @@ namespace CodeEnv.Master.Common {
         }
 
         public void Start() {
+            //D.Log("{0}.Start called.", _coroutine.GetType().Name);
+            D.Assert(!_hasBeenPreviouslyRun, "Attempting to reuse {0} which has already run to completion. {1}Either create a new Job for each use or use while(true) and manually kill it.".Inject(_coroutine.GetType().Name, Constants.NewLine));
             IsRunning = true;
-            coroutineManager.StartCoroutine(Run());
+            jobRunner.StartCoroutine(Run());
+            _hasBeenPreviouslyRun = true;
         }
 
-        public IEnumerator StartAsCoroutine() {
-            IsRunning = true;
-            yield return coroutineManager.StartCoroutine(Run());
-        }
+        //public IEnumerator StartAsCoroutine() {   // UNDONE not clear how to use, and how to integrate with _hasRunToCompletion
+        //    IsRunning = true;
+        //    yield return jobRunner.StartCoroutine(Run());
+        //}
 
         public virtual void Pause() {
             IsPaused = true;
@@ -131,8 +147,10 @@ namespace CodeEnv.Master.Common {
         /// Stops this Job if running, along with all child jobs waiting.
         /// </summary>
         public void Kill() {
-            _jobWasKilled = true;
-            IsRunning = false;
+            if (IsRunning) {
+                _jobWasKilled = true;
+                IsRunning = false;
+            }
             IsPaused = false;
         }
 

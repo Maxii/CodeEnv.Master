@@ -24,14 +24,15 @@ using UnityEngine;
 /// </summary>
 public class GuiExitButton : AGuiButtonBase {
 
-    protected override void InitializeTooltip() {
-        tooltip = "Exit the Game.";
+    protected override string TooltipContent {
+        get { return "Exit the Game."; }
     }
 
     protected override void OnLeftClick() {
-        // UNDONE confirmation popup
-        _eventMgr.Raise<ExitGameEvent>(new ExitGameEvent(this));
+        _gameMgr.ExitGame();
     }
+
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

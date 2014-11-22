@@ -110,7 +110,7 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasData, IDisposable {
         // let fleetCmd determine whether we are the lead ship first as if so,
         // they will transfer the focus to the fleet, thereby removing our focus
         if (IsFocus) {
-            CameraControl.Instance.CurrentFocus = null;
+            MainCameraControl.Instance.CurrentFocus = null;
         }
         _eventMgr.Raise<MortalItemDeathEvent>(new MortalItemDeathEvent(this));
         Destroy(gameObject);
@@ -136,7 +136,7 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasData, IDisposable {
     void OnPress(bool isDown) {
         if (IsSelected) {
             //D.Log("{0}.OnPress({1}) called.", this.GetType().Name, isPressed);
-            CameraControl.Instance.ShowContextMenuOnPress(isDown);
+            MainCameraControl.Instance.ShowContextMenuOnPress(isDown);
         }
     }
 

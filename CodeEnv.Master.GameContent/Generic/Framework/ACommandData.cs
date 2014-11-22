@@ -30,7 +30,7 @@ namespace CodeEnv.Master.GameContent {
 
         public event Action onCompositionChanged;
 
-        public new SpaceTopography Topography { get { return HQElementData.Topography; } }
+        public new Topography Topography { get { return HQElementData.Topography; } }
 
         private Formation _unitFormation;
         public Formation UnitFormation {

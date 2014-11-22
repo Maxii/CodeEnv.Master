@@ -119,7 +119,7 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
     private void __AwakeBasedOnStartScene() {
         SceneLevel startScene = (SceneLevel)Application.loadedLevel;
         switch (startScene) {
-            case SceneLevel.IntroScene:
+            case SceneLevel.LobbyScene:
                 GameState = GameState.Lobby;
                 break;
             case SceneLevel.GameScene:
@@ -133,7 +133,7 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
     private void __StartBasedOnStartScene() {
         SceneLevel startScene = (SceneLevel)Application.loadedLevel;
         switch (startScene) {
-            case SceneLevel.IntroScene:
+            case SceneLevel.LobbyScene:
                 break;
             case SceneLevel.GameScene:
                 __SimulateBuildGameFromLobby_Step2();
@@ -155,7 +155,7 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
             UniverseSize = _playerPrefsMgr.UniverseSize,
             PlayerRace = new Race(new RaceStat(_playerPrefsMgr.PlayerRace, "Maxii", new StringBuilder("Maxii description"), _playerPrefsMgr.PlayerColor))
         };
-        Settings = settings;
+        GameSettings = settings;
         HumanPlayer = CreateHumanPlayer(settings);
         GameState = GameState.Loading;
     }
@@ -184,7 +184,7 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
     private void BuildAndLoadNewGame(GameSettings settings) {
         GameState = GameState.Building;
         // building the level begins here when implemented
-        Settings = settings;
+        GameSettings = settings;
         HumanPlayer = CreateHumanPlayer(settings);
 
         GameState = GameState.Loading;
@@ -220,7 +220,7 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
     }
 
     private void SaveGame(string gameName) {
-        Settings.IsNewGame = false;
+        GameSettings.IsNewGame = false;
         _gameTime.PrepareToSaveGame();
         LevelSerializer.SaveGame(gameName);
     }
@@ -265,7 +265,7 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
                 return;
             }
             _eventMgr.Raise<SceneChangedEvent>(new SceneChangedEvent(this, newScene));
-            if (LevelSerializer.IsDeserializing || !Settings.IsNewGame) {
+            if (LevelSerializer.IsDeserializing || !GameSettings.IsNewGame) {
                 GameState = GameState.Restoring;
             }
             else {
@@ -293,17 +293,17 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
         ProcessPauseRequest(e.NewValue);
     }
 
-    private void ProcessPauseRequest(PauseRequest request) {
+    private void ProcessPauseRequest(PauseCommand request) {
         switch (request) {
-            case PauseRequest.GuiAutoPause:
+            case PauseCommand.AutoPause:
                 if (PauseState == PauseState.Paused) { return; }
-                if (PauseState == PauseState.GuiAutoPaused) {
+                if (PauseState == PauseState.AutoPaused) {
                     D.Warn("Attempt to GuiAutoPause when already paused.");
                     return;
                 }
-                PauseState = PauseState.GuiAutoPaused;
+                PauseState = PauseState.AutoPaused;
                 break;
-            case PauseRequest.GuiAutoResume:
+            case PauseCommand.AutoResume:
                 if (PauseState == PauseState.Paused) { return; }
                 if (PauseState == PauseState.NotPaused) {
                     D.Warn("Attempt to GuiAutoResume when not paused.");
@@ -311,21 +311,21 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
                 }
                 PauseState = PauseState.NotPaused;
                 break;
-            case PauseRequest.PriorityPause:
+            case PauseCommand.ManualPause:
                 if (PauseState == PauseState.Paused) {
                     D.Warn("Attempt to PriorityPause when already paused.");
                     return;
                 }
                 PauseState = PauseState.Paused;
                 break;
-            case PauseRequest.PriorityResume:
+            case PauseCommand.ManualResume:
                 if (PauseState == PauseState.NotPaused) {
                     D.Warn("Atttempt to PriorityResume when not paused.");
                     return;
                 }
                 PauseState = PauseState.NotPaused;
                 break;
-            case PauseRequest.None:
+            case PauseCommand.None:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(request));
         }
@@ -336,7 +336,7 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
             case PauseState.NotPaused:
                 _gameStatus.IsPaused = false;
                 break;
-            case PauseState.GuiAutoPaused:
+            case PauseState.AutoPaused:
             case PauseState.Paused:
                 _gameStatus.IsPaused = true;
                 break;
@@ -453,7 +453,7 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
                 _gameStatus.IsRunning = true;
                 _gameTime.EnableClock(true);
                 if (_playerPrefsMgr.IsPauseOnLoadEnabled) {
-                    ProcessPauseRequest(PauseRequest.PriorityPause);
+                    ProcessPauseRequest(PauseCommand.ManualPause);
                 }
                 break;
             case GameState.None:
@@ -473,7 +473,7 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
     /// </summary>
     private void ResetConditionsForGameStartup() {
         if (_gameStatus.IsPaused) {
-            ProcessPauseRequest(PauseRequest.PriorityResume);
+            ProcessPauseRequest(PauseCommand.ManualResume);
         }
     }
 

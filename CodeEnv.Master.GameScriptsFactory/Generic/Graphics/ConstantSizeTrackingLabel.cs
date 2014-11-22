@@ -85,6 +85,8 @@ public class ConstantSizeTrackingLabel : AWorldTrackingWidget_ConstantSize {
         Widget.MakePixelPerfect();
     }
 
+    protected override void Cleanup() { }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

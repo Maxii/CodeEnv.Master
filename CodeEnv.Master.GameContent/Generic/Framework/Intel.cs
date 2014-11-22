@@ -68,8 +68,8 @@ namespace CodeEnv.Master.GameContent {
             if (newCoverage < CurrentCoverage) {
                 // we have less data than before so record the level we had and stamp the date
                 DatedCoverage = CurrentCoverage;
-                if (DateStamp != GameTime.CurrentDate) {    // avoids PropertyChangeTracking equals warning
-                    DateStamp = GameTime.CurrentDate;
+                if (DateStamp != GameTime.Instance.CurrentDate) {    // avoids PropertyChangeTracking equals warning
+                    DateStamp = GameTime.Instance.CurrentDate;
                 }
             }
             if (newCoverage > CurrentCoverage && newCoverage >= DatedCoverage) {

@@ -59,7 +59,7 @@ public class OrbitalPlane : StationaryItem, IZoomToFurthest {
     public void OnPress(bool isDown) {
         if (_systemManager.IsSelected) {
             //D.Log("{0}.OnPress({1}) called.", this.GetType().Name, isPressed);
-            CameraControl.Instance.ShowContextMenuOnPress(isDown);
+            MainCameraControl.Instance.ShowContextMenuOnPress(isDown);
         }
     }
 

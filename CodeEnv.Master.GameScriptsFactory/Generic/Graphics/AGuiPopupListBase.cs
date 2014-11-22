@@ -22,18 +22,18 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// An abstract base class for popup lists used in the Gui, pre-wired with Tooltip functionality.
 /// </summary>
-public abstract class AGuiPopupListBase : GuiTooltip {
+public abstract class AGuiPopupListBase : AGuiTooltip {
 
-    protected UIPopupList popupList;
+    protected UIPopupList _popupList;
 
     protected override void Awake() {
         base.Awake();
-        popupList = gameObject.GetSafeMonoBehaviourComponent<UIPopupList>();
+        _popupList = gameObject.GetSafeMonoBehaviourComponent<UIPopupList>();
         ConfigurePopupList();
         InitializeListValues();
         InitializeSelection();
         // don't receive events until initializing is complete
-        EventDelegate.Add(popupList.onChange, OnPopupListSelectionChange);
+        EventDelegate.Add(_popupList.onChange, OnPopupListSelectionChange);
     }
 
     /// <summary>
@@ -42,7 +42,7 @@ public abstract class AGuiPopupListBase : GuiTooltip {
     /// </summary>
     protected virtual void ConfigurePopupList() {
         UILabel label = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
-        EventDelegate.Add(popupList.onChange, label.SetCurrentSelection);
+        EventDelegate.Add(_popupList.onChange, label.SetCurrentSelection);
     }
 
     /// <summary>
@@ -51,7 +51,7 @@ public abstract class AGuiPopupListBase : GuiTooltip {
     protected abstract void InitializeListValues();
 
     /// <summary>
-    /// Abstract method for initialiings the PopupList selectionName.
+    /// Abstract method for initializing the PopupList selectionName.
     /// </summary>
     /// <remarks>Called in the Awake sequence as UIPopupList will make
     /// a selectionName change to item[0] in Start() if not already set.

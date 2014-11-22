@@ -39,8 +39,15 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
 
     public AUnitCommandItem Command { get; set; }
 
-    public float minCameraViewDistanceMultiplier = 2.0F;
-    public float optimalCameraViewDistanceMultiplier = 2.4F;
+    protected override float ItemTypeCircleScale { get { return 1.0F; } }
+
+    [Range(1.0F, 3.0F)]
+    [Tooltip("Minimum Camera View Distance Multiplier")]
+    public float minViewDistanceFactor = 2.0F;
+
+    [Range(1.5F, 5.0F)]
+    [Tooltip("Optimal Camera View Distance Multiplier")]
+    public float optViewDistanceFactor = 2.4F;
 
     public AudioClip cmdHit;
     public AudioClip attacking;
@@ -66,7 +73,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
         _gameSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();
-        circleScaleFactor = 1.0F;
         // Note: Radius is set in derived classes due to the difference in meshes
         collider.isTrigger = false;
     }
@@ -106,13 +112,26 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     protected override void OnOwnerChanged() {
         base.OnOwnerChanged();
         if (enabled) {  // acts just like an isInitialized test as enabled results in Start() which calls Initialize 
-            _weaponRangeMonitorLookup.Values.ForAll(rt => rt.Owner = Data.Owner);
+            _weaponRangeMonitorLookup.Values.ForAll(rt => rt.Owner = Owner);
         }
     }
 
     protected override void OnNamingChanged() {
         base.OnNamingChanged();
-        _weaponRangeMonitorLookup.Values.ForAll(rt => rt.ParentFullName = Data.FullName);
+        _weaponRangeMonitorLookup.Values.ForAll(rt => rt.ParentFullName = FullName);
+    }
+
+    protected override void OnDeath() {
+        base.OnDeath();
+        collider.enabled = false;
+        _weaponRangeMonitorLookup.Values.ForAll(wrm => {
+            wrm.onAnyEnemyInRangeChanged -= OnAnyEnemyInRangeChanged;
+            wrm.enabled = false;
+        });
+        if (_weaponReloadJobs.Count != Constants.Zero) {
+            _weaponReloadJobs.ForAll<KeyValuePair<Guid, Job>>(kvp => kvp.Value.Kill());
+        }
+        Command.OnSubordinateElementDeath(this);
     }
 
     #region Weapons
@@ -133,7 +152,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
             rangeMonitor.ParentFullName = FullName;
             rangeMonitor.Range = weapon.Range;
             rangeMonitor.Owner = Data.Owner;
-            rangeMonitor.onEnemyInRange += OnEnemyInRange;
+            rangeMonitor.onAnyEnemyInRangeChanged += OnAnyEnemyInRangeChanged;
         }
         // rangeMonitors enable themselves
 
@@ -147,13 +166,13 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     public void RemoveWeapon(Weapon weapon) {
-        bool isRangeTrackerStillInUse = Data.RemoveWeapon(weapon);
-        if (!isRangeTrackerStillInUse) {
-            WeaponRangeMonitor rangeTracker;
-            if (_weaponRangeMonitorLookup.TryGetValue(weapon.TrackerID, out rangeTracker)) {
-                _weaponRangeMonitorLookup.Remove(weapon.TrackerID);
+        bool isRangeMonitorStillInUse = Data.RemoveWeapon(weapon);
+        if (!isRangeMonitorStillInUse) {
+            WeaponRangeMonitor monitor;
+            if (_weaponRangeMonitorLookup.TryGetValue(weapon.MonitorID, out monitor)) {
+                _weaponRangeMonitorLookup.Remove(weapon.MonitorID);
                 D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
-                GameObject.Destroy(rangeTracker.gameObject);
+                GameObject.Destroy(monitor.gameObject);
                 return;
             }
             D.Error("{0} could not find {1} for {2}.", FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
@@ -164,27 +183,24 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
 
     private IDictionary<Guid, Job> _weaponReloadJobs = new Dictionary<Guid, Job>();
 
-    private void OnEnemyInRange(bool isInRange, Guid monitorID) {
-        D.Log("{0}.OnEnemyInRange(isInRange: {1}, monitorID: {2}).", FullName, isInRange, monitorID);
-        var weapons = Data.GetWeapons(monitorID);
+    private void OnAnyEnemyInRangeChanged(bool isAnyEnemyInRange, Guid rangeMonitorID) {
+        // D.Log("{0}.OnAnyEnemyInRangeChanged(isAnyEnemyInRange: {1}, rangeMonitorID: {2}).", FullName, isAnyEnemyInRange, rangeMonitorID);
+        var weapons = Data.GetWeapons(rangeMonitorID);
         foreach (var weapon in weapons) {
             var weaponID = weapon.ID;
             Job weaponReloadJob;
-            if (isInRange) {
-                if (!_weaponReloadJobs.TryGetValue(weaponID, out weaponReloadJob)) {
-                    D.Log("{0} creating new weaponReloadJob for {1}.", FullName, weapon.Name);
-                    weaponReloadJob = new Job(ReloadWeapon(weapon));
-                    _weaponReloadJobs.Add(weaponID, weaponReloadJob);
-                }
-                D.Assert(!weaponReloadJob.IsRunning, "{0}.{1}.WeaponReloadJob should not be running.".Inject(FullName, weapon.Name));
-                weaponReloadJob.Start();
+            if (isAnyEnemyInRange) {
+                // as we never want to restart a Job, there should never be any weaponReloadJobs already stored when the first enemy comes into range
+                D.Assert(!_weaponReloadJobs.ContainsKey(weaponID), "{0} found a weaponReloadJob stored for {1}.".Inject(FullName, weapon.Name));
+                //D.Log("{0} creating new weaponReloadJob for {1}.", FullName, weapon.Name);
+                weaponReloadJob = new Job(ReloadWeapon(weapon), toStart: true);
+                _weaponReloadJobs.Add(weaponID, weaponReloadJob);
             }
             else {
                 weaponReloadJob = _weaponReloadJobs[weaponID];
-                if (!weaponReloadJob.IsRunning) {
-                    D.Warn("{0}.{1}.WeaponReloadJob should be running.".Inject(FullName, weapon.Name));
-                }
+                D.Assert(weaponReloadJob.IsRunning, "{0}.{1}.WeaponReloadJob should be running.".Inject(FullName, weapon.Name));
                 weaponReloadJob.Kill();
+                _weaponReloadJobs.Remove(weaponID); // as we never want to restart a Job, never store a Job for reuse later
             }
         }
     }
@@ -354,34 +370,23 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
         D.Error("{0}.Dead_ExitState should not occur.", Data.Name);
     }
 
-    protected override void OnDeath() {
-        base.OnDeath();
-        collider.enabled = false;
-        _weaponRangeMonitorLookup.Values.ForAll(rt => rt.onEnemyInRange -= OnEnemyInRange);
-        if (_weaponReloadJobs.Count != Constants.Zero) {
-            _weaponReloadJobs.ForAll<KeyValuePair<Guid, Job>>(kvp => kvp.Value.Kill());
-        }
-        Command.OnSubordinateElementDeath(this);
-    }
+    protected override void OnShowCompletion() { RelayToCurrentState(); }
 
-    #endregion
-
-    # region StateMachine Callbacks
-
-    protected override void OnShowCompletion() {
-        RelayToCurrentState();
-    }
-
-    void OnDetectedEnemy() {  // TODO connect to sensors when I get them
-        RelayToCurrentState();
-    }
+    void OnDetectedEnemy() { RelayToCurrentState(); }   // TODO connect to sensors when I get them
 
     /// <summary>
     /// Called when this weapon is ready to fire on a target in range.
     /// </summary>
     /// <param name="weapon">The weapon.</param>
-    void OnWeaponReady(Weapon weapon) {
-        RelayToCurrentState(weapon);
+    void OnWeaponReady(Weapon weapon) { RelayToCurrentState(weapon); }
+
+    #endregion
+
+    #region Cleanup
+
+    protected override void Cleanup() {
+        base.Cleanup();
+        _weaponReloadJobs.Values.ForAll(job => job.Dispose());
     }
 
     #endregion
@@ -397,28 +402,32 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
 
     #region ICameraTargetable Members
 
-    public override float MinimumCameraViewingDistance { get { return Radius * minCameraViewDistanceMultiplier; } }
+    public override float MinimumCameraViewingDistance { get { return Radius * minViewDistanceFactor; } }
 
     #endregion
 
     #region ICameraFocusable Members
 
-    public override float OptimalCameraViewingDistance { get { return Radius * optimalCameraViewDistanceMultiplier; } }
+    public override float OptimalCameraViewingDistance { get { return Radius * optViewDistanceFactor; } }
 
     #endregion
 
     #region ICameraFollowable Members
 
     [SerializeField]
-    private float cameraFollowDistanceDampener = 3.0F;
-    public virtual float CameraFollowDistanceDampener {
-        get { return cameraFollowDistanceDampener; }
+    [Range(1.0F, 10F)]
+    [Tooltip("Dampens Camera Follow Distance Behaviour")]
+    private float _followDistanceDampener = 3.0F;
+    public virtual float FollowDistanceDampener {
+        get { return _followDistanceDampener; }
     }
 
     [SerializeField]
-    private float cameraFollowRotationDampener = 1.0F;
-    public virtual float CameraFollowRotationDampener {
-        get { return cameraFollowRotationDampener; }
+    [Range(0.5F, 3.0F)]
+    [Tooltip("Dampens Camera Follow Rotation Behaviour")]
+    private float _followRotationDampener = 1.0F;
+    public virtual float FollowRotationDampener {
+        get { return _followRotationDampener; }
     }
 
     #endregion

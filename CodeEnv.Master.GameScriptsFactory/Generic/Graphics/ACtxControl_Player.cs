@@ -49,21 +49,24 @@ public abstract class ACtxControl_Player<T> : ACtxControl where T : struct {
         _unusedSubMenus = new Stack<CtxMenu>(_availableSubMenus);
         var topLevelMenuItems = new List<CtxMenu.Item>();
         foreach (T directive in SelectedItemDirectives) {
-            int topLevelItemID = _nextAvailableItemId;
             var topLevelItem = new CtxMenu.Item() {
-                text = Enums<T>.GetName(directive),
-                id = topLevelItemID
+                text = Enums<T>.GetName(directive)
+                // setting the ID value is deferred until we know whether it is a submenu (in which case it is set to -1)
             };
-            topLevelMenuItems.Add(topLevelItem);
-            _directiveLookup.Add(topLevelItemID, directive);
-            _nextAvailableItemId++;
 
             topLevelItem.isDisabled = IsSelectedItemMenuItemDisabled(directive);
-            //D.Log("{0}.{1} disabled state is {2}.", GetType().Name, topLevelItem.text, topLevelItem.isDisabled);
             if (!topLevelItem.isDisabled) {
                 topLevelItem.isDisabled = TryPopulateItemSubMenu_SelectedItemAccess(topLevelItem, directive);
             }
             //D.Log("{0}.{1} disabled state is {2}.", GetType().Name, topLevelItem.text, topLevelItem.isDisabled);
+            if (!topLevelItem.isSubmenu) {
+                D.Assert(topLevelItem.id != -1);
+                topLevelItem.id = _nextAvailableItemId;
+                _directiveLookup.Add(topLevelItem.id, directive);
+                _nextAvailableItemId++;
+            }
+            topLevelMenuItems.Add(topLevelItem);
+            //D.Log("{0}.{1}.ItemID = {2}.", GetType().Name, topLevelItem.text, topLevelItem.id);
         }
         _ctxObject.menuItems = topLevelMenuItems.ToArray();
     }
@@ -88,6 +91,7 @@ public abstract class ACtxControl_Player<T> : ACtxControl where T : struct {
     private bool TryPopulateItemSubMenu_SelectedItemAccess(CtxMenu.Item topLevelItem, T directive) {
         IEnumerable<IUnitTarget> targets;
         if (TryGetSubMenuUnitTargets_SelectedItemAccess(directive, out targets)) {
+            // directive requires a submenu, although targets maybe empty
             var targetsStack = new Stack<IUnitTarget>(targets);
             int submenuItemCount = targetsStack.Count;
 
@@ -106,13 +110,16 @@ public abstract class ACtxControl_Player<T> : ACtxControl where T : struct {
                     _directiveLookup.Add(subMenuItemId, directive);
                 }
                 topLevelItem.isSubmenu = true;
+                topLevelItem.id = -1;  // needed to get item spacing right
                 topLevelItem.submenu = subMenu;
                 _nextAvailableItemId += submenuItemCount;
-                return false;
+                return false;   // targets are present in the submenu so don't disable
             }
-            return true;
+            topLevelItem.isSubmenu = true;
+            topLevelItem.id = -1;   // needed to get item spacing right
+            return true;    // targets are NOT present in the submenu so disable
         }
-        return false;
+        return false;   // directive doesn't use a submenu so don't disable
     }
 
     /// <summary>
@@ -125,10 +132,6 @@ public abstract class ACtxControl_Player<T> : ACtxControl where T : struct {
     protected virtual bool TryGetSubMenuUnitTargets_SelectedItemAccess(T directive, out IEnumerable<IUnitTarget> targets) {
         targets = Enumerable.Empty<IUnitTarget>();
         return false;
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
     }
 
 }

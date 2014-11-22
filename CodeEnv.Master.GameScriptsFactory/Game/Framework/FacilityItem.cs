@@ -134,7 +134,8 @@ public class FacilityItem : AUnitElementItem {
                     CurrentState = FacilityState.Disbanding;
                     break;
                 case FacilityDirective.SelfDestruct:
-                    CurrentState = FacilityState.Dead;
+                    InitiateDeath();
+                    //CurrentState = FacilityState.Dead;
                     break;
                 case FacilityDirective.None:
                 default:
@@ -166,6 +167,11 @@ public class FacilityItem : AUnitElementItem {
             StandingOrder = standingOrder
         };
         CurrentOrder = newOrder;
+    }
+
+    protected override void InitiateDeath() {
+        base.InitiateDeath();
+        CurrentState = FacilityState.Dead;
     }
 
     #endregion
@@ -425,7 +431,7 @@ public class FacilityItem : AUnitElementItem {
 
     void Dead_OnShowCompletion() {
         LogEvent();
-        DestroyMortalItem(3F);
+        __DestroyMe(3F);
     }
 
     #endregion
@@ -437,9 +443,8 @@ public class FacilityItem : AUnitElementItem {
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     private void TryFireOnAnyTarget(Weapon weapon) {
-        if (_weaponRangeMonitorLookup[weapon.TrackerID].__TryGetRandomEnemyTarget(out _attackTarget)) {
+        if (_weaponRangeMonitorLookup[weapon.MonitorID].__TryGetRandomEnemyTarget(out _attackTarget)) {
             D.Log("{0}.{1} firing at {2} from State {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
-            //_attackDamage = weapon.Damage;
             _attackStrength = weapon.Strength;
             Call(FacilityState.Attacking);
         }
@@ -448,13 +453,11 @@ public class FacilityItem : AUnitElementItem {
         }
     }
 
-    private void AssessNeedForRepair() {
-        if (Data.Health < 0.30F) {
-            if (CurrentOrder == null || CurrentOrder.Directive != FacilityDirective.Repair) {
-                OverrideCurrentOrder(FacilityDirective.Repair, retainSuperiorsOrder: true);
-            }
-        }
-    }
+    #endregion
+
+    #endregion
+
+    #region Combat Support Methods
 
     /// <summary>
     /// Distributes the damage this element has just received evenly across all
@@ -463,9 +466,7 @@ public class FacilityItem : AUnitElementItem {
     /// <param name="damage">The damage.</param>
     private void DistributeDamage(float damage) {
         // if facility being attacked is already dead, no damage can be taken by the Unit
-        if (CurrentState == FacilityState.Dead) {
-            return;
-        }
+        if (!IsAlive) { return; }
 
         var elements = Command.Elements.Cast<FacilityItem>().ToList();  // copy to avoid enumeration modified while enumerating exception
         // damage either all goes to HQ Element or is spread among all except the HQ Element
@@ -493,7 +494,7 @@ public class FacilityItem : AUnitElementItem {
     /// <param name="damage">The damage to apply to this facility.</param>
     /// <param name="isDirectlyAttacked">if set to <c>true</c> this facility is the one being directly attacked.</param>
     private void TakeDistributedDamage(float damage, bool isDirectlyAttacked) {
-        D.Assert(CurrentState != FacilityState.Dead, "{0} should not already be dead!".Inject(Data.Name));
+        D.Assert(IsAlive, "{0} should not already be dead!".Inject(FullName));
 
         bool isElementAlive = ApplyDamage(damage);
 
@@ -502,7 +503,7 @@ public class FacilityItem : AUnitElementItem {
             isCmdHit = Command.__CheckForDamage(isElementAlive);
         }
         if (!isElementAlive) {
-            CurrentState = FacilityState.Dead;
+            InitiateDeath();
             return;
         }
 
@@ -514,10 +515,13 @@ public class FacilityItem : AUnitElementItem {
         AssessNeedForRepair();
     }
 
-    #endregion
-
-    # region Callbacks
-    #endregion
+    private void AssessNeedForRepair() {
+        if (Data.Health < 0.30F) {
+            if (CurrentOrder == null || CurrentOrder.Directive != FacilityDirective.Repair) {
+                OverrideCurrentOrder(FacilityDirective.Repair, retainSuperiorsOrder: true);
+            }
+        }
+    }
 
     #endregion
 

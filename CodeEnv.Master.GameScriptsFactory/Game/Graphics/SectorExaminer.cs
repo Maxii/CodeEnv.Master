@@ -30,7 +30,7 @@ using UnityEngine;
 /// Singleton that displays the highlighted wireframe of a sector and provides a context menu for fleet commands
 /// relevant to the highlighted sector.
 /// </summary>
-public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, IWidgetTrackable {
+public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
     public int distanceInSectorsFromCamera = 2;
 
@@ -45,7 +45,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
     }
 
     private float _distanceToHighlightedSector;
-    private SelectionManager _selectionMgr;
+    private SectorGrid _sectorGrid;
     private CubeWireframe _wireframe;
     /// <summary>
     /// The Collider over the center of this Examiner (which is over the Sector) used for
@@ -62,9 +62,9 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
 
     private IList<IDisposable> _subscribers;
 
-    protected override void Awake() {
-        base.Awake();
-        _selectionMgr = SelectionManager.Instance;
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
+        _sectorGrid = SectorGrid.Instance;
         _distanceToHighlightedSector = distanceInSectorsFromCamera * TempGameValues.SectorSideLength;
         InitializeCenterCollider();
         Subscribe();
@@ -84,11 +84,11 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
 
     private void DynamicallySubscribe(bool toSubscribe) {
         if (toSubscribe) {
-            _subscribers.Add(CameraControl.Instance.SubscribeToPropertyChanged<CameraControl, Index3D>(cc => cc.SectorIndex, OnCameraSectorIndexChanged));
+            _subscribers.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, Index3D>(cc => cc.SectorIndex, OnCameraSectorIndexChanged));
             //GameInput.Instance.onUnconsumedPress += OnUnconsumedPress;
         }
         else {
-            IDisposable d = _subscribers.Single(s => s as DisposePropertyChangedSubscription<CameraControl> != null);
+            IDisposable d = _subscribers.Single(s => s as DisposePropertyChangedSubscription<MainCameraControl> != null);
             _subscribers.Remove(d);
             d.Dispose();
             //GameInput.Instance.onUnconsumedPress -= OnUnconsumedPress;
@@ -109,18 +109,18 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
     void OnHover(bool isOver) {
         if (_viewMode == PlayerViewMode.SectorView) {
             //D.Log("SectorExaminer calling Sector {0}.ShowHud({1}).", CurrentSectorIndex, isOver);
-            SectorGrid.GetSector(CurrentSectorIndex).ShowHud(isOver);
+            _sectorGrid.GetSector(CurrentSectorIndex).ShowHud(isOver);
         }
     }
 
     void OnPress(bool isDown) {
-        if (GameInputHelper.Instance.IsRightMouseButton()) {
+        if (GameInputHelper.Instance.IsRightMouseButton) {
             OnRightPress(isDown);
         }
     }
 
     private void OnRightPress(bool isDown) {
-        if (!isDown && !GameInput.Instance.IsDragging) {
+        if (!isDown && !InputManager.Instance.IsDragging) {
             // right press release while not dragging means both press and release were over this object
             _ctxControl.OnRightPressRelease();
         }
@@ -132,7 +132,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
         if (_sectorIDLabel == null) {
             _sectorIDLabel = InitializeSectorIDLabel();
         }
-        _sectorIDLabel.Set(_sectorIDLabelText.Inject(CurrentSectorIndex, SectorGrid.GetGridBoxLocation(CurrentSectorIndex)));
+        _sectorIDLabel.Set(_sectorIDLabelText.Inject(CurrentSectorIndex, _sectorGrid.GetGridBoxLocation(CurrentSectorIndex)));
     }
 
     private ITrackingWidget InitializeSectorIDLabel() {
@@ -142,7 +142,7 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
     }
 
     private void OnCurrentSectorIndexChanged() {
-        _transform.position = SectorGrid.GetSector(CurrentSectorIndex).Position;
+        _transform.position = _sectorGrid.GetSector(CurrentSectorIndex).Position;
         UpdateSectorIDLabel();
     }
 
@@ -155,12 +155,9 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
         switch (_viewMode) {
             case PlayerViewMode.SectorView:
                 DynamicallySubscribe(true);
-                if (_sectorViewJob == null) {
-                    _sectorViewJob = new Job(ShowSectorUnderMouse(), toStart: false, onJobComplete: (wasKilled) => {
-                        // TODO
-                    });
-                }
-                _sectorViewJob.Start();
+                _sectorViewJob = new Job(ShowSectorUnderMouse(), toStart: true, onJobComplete: (wasKilled) => {
+                    // TODO
+                });
                 _collider.enabled = true;
                 break;
             case PlayerViewMode.NormalView:
@@ -168,14 +165,14 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
                 DynamicallySubscribe(false);
                 if (_sectorViewJob != null && _sectorViewJob.IsRunning) {
                     _sectorViewJob.Kill();
+                    _sectorViewJob = null;
                     ShowSector(false);
                 }
                 _collider.enabled = false;
-                //_ctxObject.HideMenu();
                 if (_ctxControl.IsShowing) { _ctxControl.Show(false); }
 
                 // OPTIMIZE cache sector and sectorView
-                var sector = SectorGrid.GetSector(CurrentSectorIndex);
+                var sector = _sectorGrid.GetSector(CurrentSectorIndex);
                 if (sector != null) {  // can be null if camera is located where no sector object was created
                     if (sector.HudPublisher.IsHudShowing) {
                         sector.ShowHud(false);
@@ -188,18 +185,18 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
         }
     }
 
+
     private IEnumerator ShowSectorUnderMouse() {
         while (true) {
             if (!_ctxControl.IsShowing) {   // don't change highlighted sector while context menu is showing
 
-                //if (!_isContextMenuShowing) {   // don't change highlighted sector while context menu is showing
                 Vector3 mousePosition = Input.mousePosition;
                 mousePosition.z = _distanceToHighlightedSector;
                 Vector3 mouseWorldPoint = Camera.main.ScreenToWorldPoint(mousePosition);
-                Index3D sectorIndexUnderMouse = SectorGrid.GetSectorIndex(mouseWorldPoint);
+                Index3D sectorIndexUnderMouse = _sectorGrid.GetSectorIndex(mouseWorldPoint);
                 bool toShow;
                 SectorItem notUsed;
-                if (toShow = SectorGrid.TryGetSector(sectorIndexUnderMouse, out notUsed)) {
+                if (toShow = _sectorGrid.TryGetSector(sectorIndexUnderMouse, out notUsed)) {
                     if (!CurrentSectorIndex.Equals(sectorIndexUnderMouse)) {
                         CurrentSectorIndex = sectorIndexUnderMouse; // avoid the SetProperty equivalent warnings
                     }
@@ -225,15 +222,13 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
         _sectorIDLabel.Show(toShow);
     }
 
-    protected override void OnDestroy() {
-        base.OnDestroy();
-        Dispose();
-    }
-
-    private void Cleanup() {
+    protected override void Cleanup() {
         if (_wireframe != null) { _wireframe.Dispose(); }
         UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(_sectorIDLabel);
-        if (_sectorViewJob != null) { _sectorViewJob.Kill(); }
+        if (_sectorViewJob != null) { _sectorViewJob.Dispose(); }
+        if (_ctxControl != null) {
+            (_ctxControl as IDisposable).Dispose();
+        }
         Unsubscribe();
     }
 
@@ -245,50 +240,6 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region IDisposable
-
-    [DoNotSerialize]
-    private bool alreadyDisposed = false;
-
-    /// <summary>
-    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-    /// </summary>
-    public void Dispose() {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
-    /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool isDisposing) {
-        // Allows Dispose(isDisposing) to be called more than once
-        if (alreadyDisposed) {
-            return;
-        }
-
-        if (isDisposing) {
-            // free managed resources here including unhooking events
-            Cleanup();
-        }
-        // free unmanaged resources here
-
-        alreadyDisposed = true;
-    }
-
-    // Example method showing check for whether the object has been disposed
-    //public void ExampleMethod() {
-    //    // throw Exception if called on object that is already disposed
-    //    if(alreadyDisposed) {
-    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-    //    }
-
-    //    // method content here
-    //}
-    #endregion
 
     #region IWidgetTrackable Members
 
@@ -342,5 +293,6 @@ public class SectorExaminer : AMonoBaseSingleton<SectorExaminer>, IDisposable, I
     //}
 
     #endregion
+
 }
 

@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
         public StationaryLocation(Vector3 position)
             : this() {
             Position = position;
-            Topography = References.UniverseFolder.GetSpaceTopography(position);
+            Topography = References.SectorGrid.GetSpaceTopography(position);
         }
 
         #region Object.Equals and GetHashCode Override
@@ -93,7 +93,7 @@ namespace CodeEnv.Master.GameContent {
 
         public float Radius { get { return Constants.ZeroF; } }
 
-        public SpaceTopography Topography { get; private set; }
+        public Topography Topography { get; private set; }
 
         #endregion
     }

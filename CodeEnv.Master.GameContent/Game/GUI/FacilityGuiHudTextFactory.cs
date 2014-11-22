@@ -70,6 +70,7 @@ namespace CodeEnv.Master.GameContent {
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(key));
             }
         }
+
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }

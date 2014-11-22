@@ -32,6 +32,7 @@ using UnityEngine;
 ///  as Call() and Return() make changes without going through CurrentState.set.
 /// </summary>
 /// <typeparam name="E">Th State Type being used, typically an enum type.</typeparam>
+[Obsolete]  // still current, just not used
 public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
 
     /// <summary>
@@ -242,13 +243,14 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
     protected void RelayToCurrentState(params object[] param) {
         if (CurrentState.Equals(default(E))) { return; }
         var message = CurrentState.ToString() + Constants.Underscore + new StackFrame(1).GetMethod().Name;
+        //D.Log("{0}.RelayToCurrentState content: {1}.", GetType().Name, message);
         SendMessageEx(message, param);
     }
 
     //Holds a cache of whether a message is available on a type
-    private static Dictionary<Type, Dictionary<string, MethodInfo>> _messages = new Dictionary<Type, Dictionary<string, MethodInfo>>();
+    private static IDictionary<Type, IDictionary<string, MethodInfo>> _messages = new Dictionary<Type, IDictionary<string, MethodInfo>>();
     //Holds a local cache of Action delegates where the method is an action
-    private Dictionary<string, Action> _actions = new Dictionary<string, Action>();
+    private IDictionary<string, Action> _actions = new Dictionary<string, Action>();
 
     /// <summary>
     /// Optimized SendMessage replacement.
@@ -273,7 +275,7 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
 
         //Otherwise try to get the method for the name
         MethodInfo mtd = null;
-        Dictionary<string, MethodInfo> lookup = null;
+        IDictionary<string, MethodInfo> lookup = null;
         //See if we have scanned this type already
         if (!_messages.TryGetValue(GetType(), out lookup)) {
             //If we haven't then create a lookup for it, this will cache message names to their method info
@@ -442,7 +444,6 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
             ConfigureCurrentState();
         }
     }
-
 
     [HideInInspector]
     /// <summary>
@@ -683,7 +684,7 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
 
     #endregion
 
-    #region Event Wiring
+    #region Event Wiring Archive
 
     // System that hooks declared events to state-specific event handlers automatically via a naming convention. 
     //
@@ -705,126 +706,126 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
     // an array of GameObjects that you returned always - those that you had set in the Inspector perhaps - or you could process the SELECTOR 
     // yourself using any format you like.  This makes it pretty flexible.
 
-    public class EventDef {
-        public string eventName;
-        public string selector;
-        public MethodInfo method;
-    }
+    //public class EventDef {
+    //    public string eventName;
+    //    public string selector;
+    //    public MethodInfo method;
+    //}
 
-    private class WiredEvent {
-        public System.Reflection.EventInfo evt;
-        public Delegate dlg;
-        public object source;
-    }
+    //private class WiredEvent {
+    //    public System.Reflection.EventInfo evt;
+    //    public Delegate dlg;
+    //    public object source;
+    //}
 
-    private List<WiredEvent> _wiredEvents = new List<WiredEvent>();
+    //private List<WiredEvent> _wiredEvents = new List<WiredEvent>();
 
-    private static Dictionary<Type, Dictionary<string, EventDef[]>> _cachedEvents = new Dictionary<Type, Dictionary<string, EventDef[]>>();
+    //private static Dictionary<Type, Dictionary<string, EventDef[]>> _cachedEvents = new Dictionary<Type, Dictionary<string, EventDef[]>>();
 
-    /// <summary>
-    /// Automatically finds (thru reflection) and caches any event handlers present on this state machine type for the specific state we are in. The event
-    /// handlers will be of the form STATENAME_OnEVENTNAME_SELECTOR where SELECTOR is typically the NAME of the gameObject containing the state
-    /// machine. Child gameObjects and GameObjects with Tags can also be designated for the search. 
-    /// </summary>
-    private void WireEvents() {
-        var cs = CurrentState.ToString();
-        var type = GetType();
-        EventDef[] events;
-        Dictionary<string, EventDef[]> lookup;
+    ///// <summary>
+    ///// Automatically finds (thru reflection) and caches any event handlers present on this state machine type for the specific state we are in. The event
+    ///// handlers will be of the form STATENAME_OnEVENTNAME_SELECTOR where SELECTOR is typically the NAME of the gameObject containing the state
+    ///// machine. Child gameObjects and GameObjects with Tags can also be designated for the search. 
+    ///// </summary>
+    //private void WireEvents() {
+    //    var cs = CurrentState.ToString();
+    //    var type = GetType();
+    //    EventDef[] events;
+    //    Dictionary<string, EventDef[]> lookup;
 
-        if (!_cachedEvents.TryGetValue(type, out lookup)) {
-            lookup = new Dictionary<string, EventDef[]>();
-            _cachedEvents[type] = lookup;
-        }
-        if (!lookup.TryGetValue(cs, out events)) {
-            var len = CurrentState.ToString().Length + 3;
-            events = type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.InvokeMethod)
-                .Where(m => m.Name.StartsWith(CurrentState.ToString() + "_On"))
-                .Select(m => new { name = m.Name.Substring(len), method = m })
-                .Where(n => n.name.IndexOf("_") > 1)
-                .Select(n => new EventDef {
-                    eventName = n.name.Substring(0, n.name.IndexOf("_")),
-                    selector = n.name.Substring(n.name.IndexOf("_") + 1),
-                    method = n.method
-                })
-                .ToArray();
-            lookup[cs] = events;
-        }
+    //    if (!_cachedEvents.TryGetValue(type, out lookup)) {
+    //        lookup = new Dictionary<string, EventDef[]>();
+    //        _cachedEvents[type] = lookup;
+    //    }
+    //    if (!lookup.TryGetValue(cs, out events)) {
+    //        var len = CurrentState.ToString().Length + 3;
+    //        events = type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.InvokeMethod)
+    //            .Where(m => m.Name.StartsWith(CurrentState.ToString() + "_On"))
+    //            .Select(m => new { name = m.Name.Substring(len), method = m })
+    //            .Where(n => n.name.IndexOf("_") > 1)
+    //            .Select(n => new EventDef {
+    //                eventName = n.name.Substring(0, n.name.IndexOf("_")),
+    //                selector = n.name.Substring(n.name.IndexOf("_") + 1),
+    //                method = n.method
+    //            })
+    //            .ToArray();
+    //        lookup[cs] = events;
+    //    }
 
-        foreach (var evt in events) {
-            var list = OnWire(evt);
-            list.AddRange(list.ToList().Where(l => l is Component).SelectMany(l => ((Component)l).GetComponents<MonoBehaviour>()).Cast<object>());
-            list.AddRange(list.ToList().Where(l => l is GameObject).SelectMany(l => ((GameObject)l).GetComponents<MonoBehaviour>()).Cast<object>());
-            var sources =
-                list.Select(l => new { @event = l.GetType().GetEvent(evt.eventName), source = l })
-                    .Where(e => e.@event != null);  // to qualify as a source, you must have declared an event called eventName
-            foreach (var source in sources) {
-                var dlg = Delegate.CreateDelegate(source.@event.EventHandlerType, this, evt.method);
-                if (dlg != null) {
-                    source.@event.AddEventHandler(source.source, dlg);
-                    var we = new WiredEvent { dlg = dlg, evt = source.@event, source = source.source };
-                    D.Log("Event wired for {0}: name = {1}, selector = {2}, sourceType = {3}.", cs, evt.eventName, evt.selector, we.source.GetType().Name);
-                    D.Log("EventHandler name = {0}.", dlg.Method.Name);
-                    _wiredEvents.Add(we);
-                }
-            }
-        }
-    }
+    //    foreach (var evt in events) {
+    //        var list = OnWire(evt);
+    //        list.AddRange(list.ToList().Where(l => l is Component).SelectMany(l => ((Component)l).GetComponents<MonoBehaviour>()).Cast<object>());
+    //        list.AddRange(list.ToList().Where(l => l is GameObject).SelectMany(l => ((GameObject)l).GetComponents<MonoBehaviour>()).Cast<object>());
+    //        var sources =
+    //            list.Select(l => new { @event = l.GetType().GetEvent(evt.eventName), source = l })
+    //                .Where(e => e.@event != null);  // to qualify as a source, you must have declared an event called eventName
+    //        foreach (var source in sources) {
+    //            var dlg = Delegate.CreateDelegate(source.@event.EventHandlerType, this, evt.method);
+    //            if (dlg != null) {
+    //                source.@event.AddEventHandler(source.source, dlg);
+    //                var we = new WiredEvent { dlg = dlg, evt = source.@event, source = source.source };
+    //                D.Log("Event wired for {0}: name = {1}, selector = {2}, sourceType = {3}.", cs, evt.eventName, evt.selector, we.source.GetType().Name);
+    //                D.Log("EventHandler name = {0}.", dlg.Method.Name);
+    //                _wiredEvents.Add(we);
+    //            }
+    //        }
+    //    }
+    //}
 
-    public void RefreshEvents() {
-        UnwireEvents();
-        WireEvents();
-    }
+    //public void RefreshEvents() {
+    //    UnwireEvents();
+    //    WireEvents();
+    //}
 
-    private void UnwireEvents() {
-        foreach (var evt in _wiredEvents) {
-            evt.evt.RemoveEventHandler(evt.source, evt.dlg);
-        }
-    }
+    //private void UnwireEvents() {
+    //    foreach (var evt in _wiredEvents) {
+    //        evt.evt.RemoveEventHandler(evt.source, evt.dlg);
+    //    }
+    //}
 
-    /// <summary>
-    ///Returns a list of Components and GameObjects that have handlers compatible with the event defined by eventInfo.
-    /// </summary>
-    /// <param name="eventInfo">The event information.</param>
-    /// <returns></returns>
-    private List<object> OnWire(EventDef eventInfo) {
-        List<object> objects = new List<object>();
-        var extra = OnWireEvent(eventInfo);
-        if (extra != null) {
-            objects.AddRange(extra);
-            if (objects.Count > 0) {
-                D.Log("Fast OnWireEvent was the source of target gameobjects for search.");
-                return objects;
-            }
-        }
-        if (eventInfo.selector.StartsWith("Child_")) {
-            var cs = eventInfo.selector.Substring(6).Replace("_", "/");
-            objects.Add(transform.Find(cs));
-            return objects;
-        }
-        if (eventInfo.selector.StartsWith("Tag_")) {
-            objects.AddRange(GameObject.FindGameObjectsWithTag(eventInfo.selector.Substring(4)));
-            return objects;
-        }
+    ///// <summary>
+    /////Returns a list of Components and GameObjects that have handlers compatible with the event defined by eventInfo.
+    ///// </summary>
+    ///// <param name="eventInfo">The event information.</param>
+    ///// <returns></returns>
+    //private List<object> OnWire(EventDef eventInfo) {
+    //    List<object> objects = new List<object>();
+    //    var extra = OnWireEvent(eventInfo);
+    //    if (extra != null) {
+    //        objects.AddRange(extra);
+    //        if (objects.Count > 0) {
+    //            D.Log("Fast OnWireEvent was the source of target gameobjects for search.");
+    //            return objects;
+    //        }
+    //    }
+    //    if (eventInfo.selector.StartsWith("Child_")) {
+    //        var cs = eventInfo.selector.Substring(6).Replace("_", "/");
+    //        objects.Add(transform.Find(cs));
+    //        return objects;
+    //    }
+    //    if (eventInfo.selector.StartsWith("Tag_")) {
+    //        objects.AddRange(GameObject.FindGameObjectsWithTag(eventInfo.selector.Substring(4)));
+    //        return objects;
+    //    }
 
-        objects.Add(GameObject.Find(eventInfo.selector));
-        if (objects.Count > 0) {
-            D.Log("Slow GameObject.Find(Selector) was used to find target gameobject for search.");
-        }
-        return objects;
-    }
+    //    objects.Add(GameObject.Find(eventInfo.selector));
+    //    if (objects.Count > 0) {
+    //        D.Log("Slow GameObject.Find(Selector) was used to find target gameobject for search.");
+    //    }
+    //    return objects;
+    //}
 
-    /// <summary>
-    /// Hook for supplying your list of components and game objects holding MonoBehaviours 
-    /// containing event handlers for this event. If utilized, there will be no other search 
-    /// process pursued as it is presumed you have provided all the gameobjects that
-    /// have the appropriate handlers.
-    /// </summary>
-    /// <param name="eventInfo">The event definition.</param>
-    /// <returns></returns>
-    protected virtual IEnumerable<object> OnWireEvent(EventDef eventInfo) {
-        return null;
-    }
+    ///// <summary>
+    ///// Hook for supplying your list of components and game objects holding MonoBehaviours 
+    ///// containing event handlers for this event. If utilized, there will be no other search 
+    ///// process pursued as it is presumed you have provided all the gameobjects that
+    ///// have the appropriate handlers.
+    ///// </summary>
+    ///// <param name="eventInfo">The event definition.</param>
+    ///// <returns></returns>
+    //protected virtual IEnumerable<object> OnWireEvent(EventDef eventInfo) {
+    //    return null;
+    //}
 
     #endregion
 

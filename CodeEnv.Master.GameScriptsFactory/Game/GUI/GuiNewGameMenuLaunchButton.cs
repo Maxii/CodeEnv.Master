@@ -27,13 +27,13 @@ using UnityEngine;
 /// </summary>
 public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
 
+    protected override string TooltipContent {
+        get { return "Launch New Game with these settings."; }
+    }
+
     private UniverseSize _universeSize;
     private Species _playerRace;
     //private GameColor _playerColor;
-
-    protected override void InitializeTooltip() {
-        tooltip = "Launch New Game with these settings.";
-    }
 
     protected override void CaptureInitializedState() {
         base.CaptureInitializedState();
@@ -59,11 +59,12 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
     }
 
     protected override void OnLeftClick() {
-        GameSettings gameSettings = new GameSettings();
-        gameSettings.IsNewGame = true;
-        gameSettings.UniverseSize = _universeSize;
-        gameSettings.PlayerRace = TempGameValues.HumanPlayersRace;
-        _eventMgr.Raise<BuildNewGameEvent>(new BuildNewGameEvent(this, gameSettings));
+        GameSettings settings = new GameSettings() {
+            IsNewGame = true,
+            UniverseSize = _universeSize,
+            PlayerRace = TempGameValues.HumanPlayersRace
+        };
+        _gameMgr.BuildNewGame(settings);
     }
 
     [Conditional("UNITY_EDITOR")]
@@ -71,6 +72,8 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
         D.Assert(_universeSize != UniverseSize.None, "UniverseSize!");
         D.Assert(_playerRace != Species.None, "PlayerRace!");
     }
+
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

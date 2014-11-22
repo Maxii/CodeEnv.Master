@@ -27,7 +27,7 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 [Serializable]
 //public class CameraControl : AGameInputConfiguration<CameraControl>, IDisposable {
-public class CameraControl : AMonoBaseSingleton<CameraControl> {
+public class CameraControl : AMonoBaseSingleton<MainCameraControl> {
 
     #region Camera Control Configurations
 
@@ -260,7 +260,7 @@ public class CameraControl : AMonoBaseSingleton<CameraControl> {
     }
 
     private void InitializeFields() {
-        universeRadius = GameManager.Settings.UniverseSize.Radius();
+        universeRadius = GameManager.GameSettings.UniverseSize.Radius();
         UpdateRate = FrameUpdateFrequency.Continuous;
     }
 
@@ -404,7 +404,7 @@ public class CameraControl : AMonoBaseSingleton<CameraControl> {
                 break;
             case GameState.Waiting:
                 if (_restoredGameFlag) {
-                    // for a restored game, Waiting state is gauranteed to occur after OnDeserialized so we must be ready to proceed
+                    // for a restored game, Waiting state is guaranteed to occur after OnDeserialized so we must be ready to proceed
                     _restoredGameFlag = false;
                 }
                 else {
@@ -646,8 +646,8 @@ public class CameraControl : AMonoBaseSingleton<CameraControl> {
 
                 D.Log("Target is {0}.", _target.name);
                 ICameraFollowable icfTarget = _target.GetInterface<ICameraFollowable>();
-                _cameraRotationDampener = icfTarget.CameraFollowRotationDampener;
-                _cameraPositionDampener = icfTarget.CameraFollowDistanceDampener;
+                _cameraRotationDampener = icfTarget.FollowRotationDampener;
+                _cameraPositionDampener = icfTarget.FollowDistanceDampener;
                 break;
             case CameraState.None:
             default:
@@ -1010,8 +1010,8 @@ public class CameraControl : AMonoBaseSingleton<CameraControl> {
 
                     // OPTIMIZE lets me change the values on the fly in the inspector
                     ICameraFollowable icfTarget = _target.GetInterface<ICameraFollowable>();
-                    _cameraRotationDampener = icfTarget.CameraFollowRotationDampener;
-                    _cameraPositionDampener = icfTarget.CameraFollowDistanceDampener;
+                    _cameraRotationDampener = icfTarget.FollowRotationDampener;
+                    _cameraPositionDampener = icfTarget.FollowDistanceDampener;
                     break;
                 case CameraState.None:
                 default:

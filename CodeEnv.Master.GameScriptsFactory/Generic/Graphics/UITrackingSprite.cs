@@ -57,6 +57,8 @@ public class UITrackingSprite : AUITrackingWidget {
         Widget.SetDimensions(spriteWidth, spriteHeight);
     }
 
+    protected override void Cleanup() { }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

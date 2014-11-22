@@ -44,8 +44,7 @@ public class FormationGenerator {
         D.Assert(_unitCmd.HQElement != null, "{0} does not have a HQ Element needed to generate a formation.".Inject(_unitCmd.FullName), true);
         //D.Log("{0} is about to regenerate its formation to {1}.", _unitCmd.Data.ParentName, _unitCmd.Data.UnitFormation.GetName());
 
-        // IMPROVE radius
-        float radius = _unitCmd.Radius;
+        float radius = _unitCmd.UnitRadius;
         switch (_unitCmd.Data.UnitFormation) {
             case Formation.Circle:
                 PositionElementsEquidistantInCircle(radius);

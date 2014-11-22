@@ -178,7 +178,7 @@ public class Sector : AMonoBase, IHasContextMenu {
         //string fleetName = fleetMgr != null ? fleetMgr.name : "null";
         //D.Log("Sector.OnPress({0}), fleetMgr is {1}.", isDown, fleetName);
         if (selectedFleetMgr != null) {
-            CameraControl.Instance.ShowContextMenuOnPress(isDown);
+            MainCameraControl.Instance.ShowContextMenuOnPress(isDown);
             _ignoreNextOnHoverFalseEvent = !isDown;
             string toIgnore = _ignoreNextOnHoverFalseEvent ? "ignored." : "not ignored.";
             D.Log("NextOnHover(false) event is {0}.", toIgnore);

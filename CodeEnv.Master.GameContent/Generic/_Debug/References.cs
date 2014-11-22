@@ -40,21 +40,19 @@ namespace CodeEnv.Master.GameContent {
 
         public static IGameManager GameManager { get; set; }
 
-        public static ICameraControl CameraControl { get; set; }
+        public static ICameraControl MainCameraControl { get; set; }
 
         public static IDynamicObjectsFolder DynamicObjectsFolder { get; set; }
 
         public static IGameInputHelper InputHelper { get; set; }
 
-        //public static IUnitFactory UnitFactory { get; set; }
-
         public static IGeneralFactory GeneralFactory { get; set; }
 
         public static IUsefulTools UsefulTools { get; set; }
 
-        public static IUniverseFolder UniverseFolder { get; set; }
+        public static ISectorGrid SectorGrid { get; set; }
 
-        public static IGameInput GameInput { get; set; }
+        public static IInputManager InputManager { get; set; }
 
         public static ISphericalHighlight SphericalHighlight { get; set; }
 

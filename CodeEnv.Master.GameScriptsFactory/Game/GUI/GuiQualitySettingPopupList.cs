@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GuiQualitySettingPopupList.cs
-// Manager for the QualitySetting option popupList.
+// The QualitySetting option popupList.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,7 +21,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Manager for the QualitySetting option popupList.
+/// The QualitySetting option popupList.
 /// </summary>
 public class GuiQualitySettingPopupList : AGuiPopupListBase {
 
@@ -33,17 +33,19 @@ public class GuiQualitySettingPopupList : AGuiPopupListBase {
     }
 
     protected override void InitializeListValues() {
-        popupList.items.Clear();
-        foreach (var name in _qualityNames) {
-            //D.Log("Adding QualitySetting name {0}.", name);
-            popupList.items.Add(name);
-        }
+        _popupList.items.Clear();
+        _qualityNames.ForAll(qName => {
+            //D.Log("Adding QualitySetting name {0}.", qName);
+            _popupList.items.Add(qName);
+        });
     }
 
     protected override void InitializeSelection() {
         int qualitySettingPreference = PlayerPrefsManager.Instance.QualitySetting;
-        popupList.value = popupList.items[qualitySettingPreference];
+        _popupList.value = _popupList.items[qualitySettingPreference];
     }
+
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

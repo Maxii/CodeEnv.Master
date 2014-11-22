@@ -22,14 +22,12 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// Base class for Dynamic Gui Labels (used as readouts) built with NGUI. Supports Tooltips.
 /// </summary>
-public abstract class AGuiLabelReadoutBase : GuiTooltip {
+public abstract class AGuiLabelReadoutBase : AGuiTooltip {
 
-    protected GameEventManager _eventMgr;
     protected UILabel _readoutLabel;
 
     protected override void Awake() {
         base.Awake();
-        _eventMgr = GameEventManager.Instance;
         _readoutLabel = gameObject.GetSafeMonoBehaviourComponent<UILabel>();
     }
 

@@ -24,7 +24,7 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// Initializes Data for all items in the universe.
 /// </summary>
-public class __UniverseInitializer : AMonoBase, IDisposable {
+public class __UniverseInitializer : AMonoBase {
 
     private UniverseCenterItem _universeCenter;
 
@@ -45,7 +45,7 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
     private void OnGameStateChanged() {
         GameState gameState = _gameMgr.CurrentState;
         if (gameState == GameState.BuildAndDeploySystems) {
-            RegisterReadinessForGameStateProgression(GameState.BuildAndDeploySystems, isReady: false);
+            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.BuildAndDeploySystems, isReady: false);
             InitializeUniverseCenter();
             // SystemCreators build, initialize and deploy their system during this state, then they allow the state to progress
         }
@@ -62,27 +62,17 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
             _universeCenter.enabled = true;
         }
         UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
-            RegisterReadinessForGameStateProgression(GameState.BuildAndDeploySystems, isReady: true);
+            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.BuildAndDeploySystems, isReady: true);
         });
     }
 
     private void EnableOtherWhenRunning() {
-        D.Assert(GameStatus.Instance.IsRunning);
         if (_universeCenter != null) {
             // CameraLosChangedListener is enabled in Item.InitializeViewMembersOnDiscernible
         }
     }
 
-    private void RegisterReadinessForGameStateProgression(GameState stateToNotProgressBeyondUntilReady, bool isReady) {
-        GameEventManager.Instance.Raise(new ElementReadyEvent(this, stateToNotProgressBeyondUntilReady, isReady));
-    }
-
-    protected override void OnDestroy() {
-        base.OnDestroy();
-        Dispose();
-    }
-
-    private void Cleanup() {
+    protected override void Cleanup() {
         Unsubscribe();
     }
 
@@ -94,49 +84,6 @@ public class __UniverseInitializer : AMonoBase, IDisposable {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region IDisposable
-    [DoNotSerialize]
-    private bool alreadyDisposed = false;
-
-    /// <summary>
-    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-    /// </summary>
-    public void Dispose() {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
-    /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool isDisposing) {
-        // Allows Dispose(isDisposing) to be called more than once
-        if (alreadyDisposed) {
-            return;
-        }
-
-        if (isDisposing) {
-            // free managed resources here including unhooking events
-            Cleanup();
-        }
-        // free unmanaged resources here
-
-        alreadyDisposed = true;
-    }
-
-    // Example method showing check for whether the object has been disposed
-    //public void ExampleMethod() {
-    //    // throw Exception if called on object that is already disposed
-    //    if(alreadyDisposed) {
-    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-    //    }
-
-    //    // method content here
-    //}
-    #endregion
 
 }
 

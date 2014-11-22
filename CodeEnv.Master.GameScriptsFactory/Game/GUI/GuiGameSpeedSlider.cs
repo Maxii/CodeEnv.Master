@@ -26,14 +26,16 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class GuiGameSpeedSlider : AGuiEnumSliderBase<GameClockSpeed> {
 
-    protected override void InitializeTooltip() {
-        tooltip = "Controls how fast time in the Game progresses.";
+    protected override string TooltipContent {
+        get { return "Slide to adjust game speed."; }
     }
 
-    protected override void OnSliderTValueChange(GameClockSpeed value) {
+    protected override void OnSliderEnumValueChange(GameClockSpeed value) {
         //D.Log("{0}.OnSliderTValueChange({1}.{2}) called.", GetType().Name, typeof(GameClockSpeed).Name, value.GetName());
         GameTime.Instance.GameSpeed = value;
     }
+
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

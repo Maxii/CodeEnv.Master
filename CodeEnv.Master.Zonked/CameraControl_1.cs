@@ -29,7 +29,7 @@ using UnityEngine;
 ///The nested classes are serializable so that their settings are isTargetVisibleThisFrame in the inspector. Otherwise, they also don't need to be serializable.
 /// </summary>
 [SerializeAll]
-public class CameraControl : AMonoBaseSingleton<CameraControl> {
+public class CameraControl : AMonoBaseSingleton<MainCameraControl> {
 
     #region Camera Control Configurations
 
@@ -236,7 +236,7 @@ public class CameraControl : AMonoBaseSingleton<CameraControl> {
     }
 
     private void SetCameraSettings() {
-        universeRadius = GameManager.Settings.UniverseSize.Radius();
+        universeRadius = GameManager.GameSettings.UniverseSize.Radius();
         Camera.main.farClipPlane = universeRadius * 2;
 
         // This camera will see all layers except for the GUI and DeepSpace layers. If I want to add exclusions, I can still do it from the outside
@@ -365,7 +365,7 @@ public class CameraControl : AMonoBaseSingleton<CameraControl> {
                 break;
             case GameState.Waiting:
                 if (_restoredGameFlag) {
-                    // for a restored game, Waiting state is gauranteed to occur after OnDeserialized so we must be ready to proceed
+                    // for a restored game, Waiting state is guaranteed to occur after OnDeserialized so we must be ready to proceed
                     _restoredGameFlag = false;
                 }
                 else {

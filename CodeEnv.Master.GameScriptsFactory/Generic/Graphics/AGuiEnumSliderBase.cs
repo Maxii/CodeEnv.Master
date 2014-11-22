@@ -25,28 +25,29 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// Generic base class for Gui Sliders that select enum values built with NGUI.
 /// </summary>
-/// <typeparam name="T">The enum type.</typeparam>
-public abstract class AGuiEnumSliderBase<T> : GuiTooltip where T : struct {
+/// <typeparam name="E">The enum type.</typeparam>
+public abstract class AGuiEnumSliderBase<E> : AGuiTooltip where E : struct {
 
-    protected GameEventManager _eventMgr;
     private UISlider _slider;
     private float[] _orderedSliderStepValues;
-    private T[] _orderedTValues;
+    private E[] _orderedEnumValues;
 
     protected override void Awake() {
         base.Awake();
-        _eventMgr = GameEventManager.Instance;
         _slider = gameObject.GetSafeMonoBehaviourComponent<UISlider>();
         InitializeSlider();
         InitializeSliderValue();
-        GameStatus.Instance.onIsRunningOneShot += OnIsRunning;
+        GameManager.Instance.onIsRunningOneShot += delegate {
+            // Note: UIProgressBar automatically sends a value change event on Start() if the delegate isn't null
+            EventDelegate.Add(_slider.onChange, OnSliderValueChange);
+        };
     }
 
     private void InitializeSlider() {
-        T[] tValues = Enums<T>.GetValues().Except<T>(default(T)).ToArray<T>();
-        int numberOfSliderSteps = tValues.Length;
+        var enumValues = Enums<E>.GetValues().Except(default(E)).ToArray();
+        int numberOfSliderSteps = enumValues.Length;
         _slider.numberOfSteps = numberOfSliderSteps;
-        _orderedTValues = tValues.OrderBy(tv => tv).ToArray<T>();    // assumes T has assigned values in ascending order
+        _orderedEnumValues = enumValues.OrderBy(e => e).ToArray();    // assumes E has assigned values in ascending order
         //D.Log("T is {0}. OrderedTValues = {1}.", typeof(T).Name, _orderedTValues.Concatenate());
         _orderedSliderStepValues = MyNguiUtilities.GenerateOrderedSliderStepValues(numberOfSliderSteps);
         //D.Log("OrderedSliderSteps = {0}.", _orderedSliderStepValues.Concatenate());
@@ -54,25 +55,19 @@ public abstract class AGuiEnumSliderBase<T> : GuiTooltip where T : struct {
 
     private void InitializeSliderValue() {
         PropertyInfo[] propertyInfos = typeof(PlayerPrefsManager).GetProperties();
-        PropertyInfo propertyInfo = propertyInfos.SingleOrDefault<PropertyInfo>(p => p.PropertyType == typeof(T));
+        PropertyInfo propertyInfo = propertyInfos.SingleOrDefault<PropertyInfo>(p => p.PropertyType == typeof(E));
         if (propertyInfo != null) {
-            Func<T> propertyGet = (Func<T>)Delegate.CreateDelegate(typeof(Func<T>), PlayerPrefsManager.Instance, propertyInfo.GetGetMethod());
-            T tPrefsValue = propertyGet();
-            int tPrefsValueIndex = _orderedTValues.FindIndex<T>(tValue => (tValue.Equals(tPrefsValue)));
-            float sliderValueAtTPrefsValueIndex = _orderedSliderStepValues[tPrefsValueIndex];
-            _slider.value = sliderValueAtTPrefsValueIndex;
+            Func<E> propertyGet = (Func<E>)Delegate.CreateDelegate(typeof(Func<E>), PlayerPrefsManager.Instance, propertyInfo.GetGetMethod());
+            E enumPrefsValue = propertyGet();
+            int enumPrefsValueIndex = _orderedEnumValues.FindIndex<E>(enumValue => (enumValue.Equals(enumPrefsValue)));
+            float sliderValueAtEnumPrefsValueIndex = _orderedSliderStepValues[enumPrefsValueIndex];
+            _slider.value = sliderValueAtEnumPrefsValueIndex;
             //D.Log("{0}.sliderValue initialized to {1}.", GetType().Name, _slider.value);
         }
         else {
             _slider.value = _orderedSliderStepValues[_orderedSliderStepValues.Length - 1];
-            D.Warn("No PlayerPrefsManager property found for {0}, so initializing slider to : {1}.".Inject(typeof(T), _slider.value));
+            D.Warn("No PlayerPrefsManager property found for {0}, so initializing slider to : {1}.".Inject(typeof(E), _slider.value));
         }
-    }
-
-    private void OnIsRunning() {
-        // defer connecting slider value change events until running
-        // Note: UIProgressBar automatically sends a value change event on Start() if the delegate isn't null
-        EventDelegate.Add(_slider.onChange, OnSliderValueChange);
     }
 
     private void OnSliderValueChange() {
@@ -80,12 +75,12 @@ public abstract class AGuiEnumSliderBase<T> : GuiTooltip where T : struct {
         float sliderValue = UISlider.current.value;
         int index = _orderedSliderStepValues.FindIndex<float>(v => Mathfx.Approx(sliderValue, v, tolerance));
         Arguments.ValidateNotNegative(index);
-        T tValue = _orderedTValues[index];
+        E enumValue = _orderedEnumValues[index];
         //D.Log("{0}.index = {1}, TValue = {2}.", GetType().Name, index, tValue);
-        OnSliderTValueChange(tValue);
+        OnSliderEnumValueChange(enumValue);
     }
 
-    protected abstract void OnSliderTValueChange(T value);
+    protected abstract void OnSliderEnumValueChange(E value);
 
     // IDisposable Note: No reason to remove Ngui event currentListeners OnDestroy() as the EventListener or
     // Delegate to be removed is attached to this same GameObject that is being destroyed. In addition,

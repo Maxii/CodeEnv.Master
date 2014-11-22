@@ -60,7 +60,7 @@ namespace CodeEnv.Master.GameContent {
             Capacity = stat.Capacity;
             Resources = stat.Resources;
             SpecialResources = stat.SpecialResources;
-            base.Topography = SpaceTopography.System;
+            base.Topography = Topography.System;
         }
 
         public override string ToString() {

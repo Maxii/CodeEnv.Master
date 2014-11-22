@@ -27,6 +27,8 @@ public class GuiPlayerRacePopupList : AGuiEnumPopupListBase<Species> {
     // no need for taking an action OnPopupListSelectionChange as changes aren't recorded 
     // from this popup list until the NewGameLaunchAcceptButton is pushed
 
+    protected override void Cleanup() { }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

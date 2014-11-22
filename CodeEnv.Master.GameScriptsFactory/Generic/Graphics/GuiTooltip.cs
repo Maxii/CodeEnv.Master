@@ -21,34 +21,22 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Standalone and extensible class for all Gui scripts containing Tooltip infrastructure. Can be
-/// instantiated for just Tooltip functionality but requires a Collider.
+/// Standalone and extensible class for all Gui scripts containing Tooltip infrastructure. 
+/// Can be instantiated for just Tooltip functionality but requires a Collider.
 /// </summary>
-public class GuiTooltip : AMonoBase {
+public class GuiTooltip : AGuiTooltip {
 
     public string tooltip = string.Empty;
 
-    private bool _tooltipHasContent;
-
-    protected override void Awake() {
-        base.Awake();
-        InitializeTooltip();
-        if (_tooltipHasContent = Utility.CheckForContent(tooltip)) {
-            UnityUtility.ValidateComponentPresence<Collider2D>(gameObject);
-        }
+    protected override string TooltipContent {
+        get { return tooltip; }
     }
 
-    protected virtual void InitializeTooltip() { }
+    protected override void Cleanup() { }
 
-    void OnTooltip(bool toShow) {
-        if (_tooltipHasContent) {
-            if (toShow) {
-                UITooltip.Show(tooltip);
-            }
-            else {
-                UITooltip.Show(null);
-            }
-        }
+    public override string ToString() {
+        return new ObjectAnalyzer().ToString(this);
     }
+
 }
 

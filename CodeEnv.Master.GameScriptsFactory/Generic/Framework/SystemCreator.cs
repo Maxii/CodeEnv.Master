@@ -41,7 +41,7 @@ using UnityEngine;
 ///  </remarks>
 /// </summary>
 [SerializeAll]
-public class SystemCreator : AMonoBase, IDisposable {
+public class SystemCreator : AMonoBase {
 
     public static IList<SystemItem> AllSystems { get { return _systemLookupBySectorIndex.Values.ToList(); } }
 
@@ -55,7 +55,13 @@ public class SystemCreator : AMonoBase, IDisposable {
         return _systemLookupBySectorIndex.TryGetValue(sectorIndex, out system);
     }
 
+    public static IList<APlanetoidItem> AllPlanetoids { get { return _allPlanetoids; } }
+
+    public static IList<StarItem> AllStars { get { return _allStars; } }
+
     private static IDictionary<Index3D, SystemItem> _systemLookupBySectorIndex = new Dictionary<Index3D, SystemItem>();
+    private static IList<APlanetoidItem> _allPlanetoids = new List<APlanetoidItem>();
+    private static IList<StarItem> _allStars = new List<StarItem>();
 
     private static int[] _planetNumbers = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     private static string[] _moonLetters = new string[] { "a", "b", "c", "d", "e" };
@@ -136,13 +142,21 @@ public class SystemCreator : AMonoBase, IDisposable {
     private void Subscribe() {
         _subscribers = new List<IDisposable>();
         _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
-        _subscribers.Add(_gameMgr.SubscribeToPropertyChanging<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanging));
+        SubscribeStaticallyOnce();
     }
 
-    private void OnGameStateChanging(GameState newGameState) {
-        GameState previousGameState = _gameMgr.CurrentState;
-        if (previousGameState == GameState.BuildAndDeploySystems) {
-            _systemLookupBySectorIndex.Add(_system.Data.SectorIndex, _system);
+    /// <summary>
+    /// Allows a one time static subscription to event publishers from this class.
+    /// </summary>
+    private static bool _isStaticallySubscribed;
+    /// <summary>
+    /// Subscribes this class using static event handler(s) to instance events exactly one time.
+    /// </summary>
+    private void SubscribeStaticallyOnce() {
+        if (!_isStaticallySubscribed) {
+            //D.Log("{0} is subscribing statically to {1}.", GetType().Name, _gameMgr.GetType().Name);
+            _gameMgr.onSceneLoaded += CleanupStaticMembers;
+            _isStaticallySubscribed = true;
         }
     }
 
@@ -153,17 +167,18 @@ public class SystemCreator : AMonoBase, IDisposable {
 
     private void BuildDeployAndBeginSystemOperationsDuringStartup(GameState gameState) {
         if (gameState == GameState.BuildAndDeploySystems) {
-            RegisterGameStateProgressionReadiness(isReady: false);
+            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.BuildAndDeploySystems, isReady: false);
             CreateStats();
             PrepareForOperations();
             EnableSystem(onCompletion: delegate {
-                RegisterGameStateProgressionReadiness(isReady: true);
+                _gameMgr.RecordGameStateProgressionReadiness(this, GameState.BuildAndDeploySystems, isReady: true);
             });
             // System is now prepared to receive a Settlement when it deploys
         }
 
         if (gameState == GameState.Running) {
-            EnableOtherWhenRunning();
+            //EnableOtherWhenRunning();
+            InitializeTopographyMonitor();
             BeginSystemOperations(onCompletion: delegate {
                 // wait to allow any cellestial objects using the IEnumerator StateMachine to enter their starting state
                 __SetIntelCoverage();
@@ -241,6 +256,8 @@ public class SystemCreator : AMonoBase, IDisposable {
 
     #endregion
 
+    #region PrepareForOperations
+
     private void PrepareForOperations() {
         LogEvent();
         MakeSystem();   // stars and planets need a system parent when built
@@ -250,18 +267,19 @@ public class SystemCreator : AMonoBase, IDisposable {
         MakeMoons();    // makes each moon a child of a planet
         AssignPlanetOrbitSlotsToMoons();    // modifies moon names based on its assigned planetary orbit
         AddMembersToSystemData();         // adds star and planet data to the system's data component
-        InitializeTopographyMonitor();
+        //InitializeTopographyMonitor();
+        RecordInStaticCollections();
     }
 
     private void MakeSystem() {
         LogEvent();
-        Index3D sectorIndex = SectorGrid.GetSectorIndex(_transform.position);
+        Index3D sectorIndex = SectorGrid.Instance.GetSectorIndex(_transform.position);
         if (isCompositionPreset) {
             _system = gameObject.GetSafeMonoBehaviourComponentInChildren<SystemItem>();
-            _factory.MakeSystemInstance(SystemName, sectorIndex, SpaceTopography.OpenSpace, ref _system);
+            _factory.MakeSystemInstance(SystemName, sectorIndex, Topography.OpenSpace, ref _system);
         }
         else {
-            _system = _factory.MakeSystemInstance(sectorIndex, SpaceTopography.OpenSpace, this);
+            _system = _factory.MakeSystemInstance(sectorIndex, Topography.OpenSpace, this);
         }
     }
 
@@ -490,10 +508,44 @@ public class SystemCreator : AMonoBase, IDisposable {
 
     private void InitializeTopographyMonitor() {
         var monitor = gameObject.GetSafeMonoBehaviourComponentInChildren<TopographyMonitor>();
-        monitor.Topography = SpaceTopography.System;
-        monitor.SurroundingTopography = SpaceTopography.OpenSpace;
-        monitor.TopographyRadius = TempGameValues.SystemRadius;
+        monitor.ItemMonitored = _system;
+        //monitor.Topography = Topography.System;
+        monitor.SurroundingTopography = Topography.OpenSpace;   // TODO Items monitored should know about their surrounding space
+        //monitor.TopographyRadius = TempGameValues.SystemRadius;
     }
+
+    /// <summary>
+    /// Records the System, Star and Planetoids in the appropriate static collection holding all instances.
+    /// Note: The Assert tests are here to make sure instances from a prior scene are not still present, as the collections
+    /// these items are stored in are static and persist across scenes.
+    /// </summary>
+    private void RecordInStaticCollections() {
+        var key = _system.Data.SectorIndex;
+        D.Assert(!_systemLookupBySectorIndex.ContainsKey(key), "{0}.{1} reports Key {2} already present.".Inject(SystemName, GetType().Name, key));
+        _systemLookupBySectorIndex.Add(key, _system);
+
+        // Can't use a Contains(item) test as the new item instance will never equal the old instance from the previous scene, even with the same name
+        var starNamesStored = _allStars.Select(s => s.Name);
+        D.Assert(!starNamesStored.Contains(_star.Name), "{0}.{1} reports {2} already present.".Inject(SystemName, GetType().Name, _star.Name));
+        _allStars.Add(_star);
+
+        // Can't use a Contains(item) test as the new item instance will never equal the old instance from the previous scene, even with the same name
+        var planetoidNamesStored = _allPlanetoids.Select(p => p.Name);
+        _planets.ForAll(planet => {
+            D.Assert(!planetoidNamesStored.Contains(planet.Name), "{0}.{1} reports {2} already present.".Inject(SystemName, GetType().Name, planet.Name));
+            planet.onDeathOneShot += OnPlanetoidDeath;
+            _allPlanetoids.Add(planet);
+        });
+
+        // Can't use a Contains(item) test as the new item instance will never equal the old instance from the previous scene, even with the same name
+        _moons.ForAll(moon => {
+            D.Assert(!planetoidNamesStored.Contains(moon.Name), "{0}.{1} reports {2} already present.".Inject(SystemName, GetType().Name, moon.Name));
+            moon.onDeathOneShot += OnPlanetoidDeath;
+            _allPlanetoids.Add(moon);
+        });
+    }
+
+    #endregion
 
     private void EnableSystem(Action onCompletion = null) {
         LogEvent();
@@ -508,27 +560,25 @@ public class SystemCreator : AMonoBase, IDisposable {
         });
     }
 
-
     /// <summary>
     /// Enables selected children of the system, star, planets and moons. e.g. - Orbits, etc. 
     /// These scripts that are enabled should only be enabled on or after IsRunning.
     /// </summary>
     /// <param name="onCompletion">The on completion.</param>
-    private void EnableOtherWhenRunning(Action onCompletion = null) {
-        D.Assert(GameStatus.Instance.IsRunning);
-        // CameraLosChangedListeners are enabled by Items
-        // Leave any possible settlement that might already be present to the SettlementCreator
-        // Planet and moons control their own orbiter enablement state
-        // OrbitersForShips are enabled and disabled by ShipOrbitSlot when ships assume and break orbit
-        // Revolvers control their own enablement based on their visibility. Leave any possible settlement that might already be present to the SettlementCreator
+    //private void EnableOtherWhenRunning(Action onCompletion = null) {
+    //    // CameraLosChangedListeners are enabled by Items
+    //    // Leave any possible settlement that might already be present to the SettlementCreator
+    //    // Planet and moons control their own orbiter enablement state
+    //    // OrbitersForShips are enabled and disabled by ShipOrbitSlot when ships assume and break orbit
+    //    // Revolvers control their own enablement based on their visibility. Leave any possible settlement that might already be present to the SettlementCreator
 
-        gameObject.GetSafeMonoBehaviourComponentInChildren<TopographyMonitor>().enabled = true;
-        UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
-            if (onCompletion != null) {
-                onCompletion();
-            }
-        });
-    }
+    //    gameObject.GetSafeMonoBehaviourComponentInChildren<TopographyMonitor>().enabled = true;
+    //    UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
+    //        if (onCompletion != null) {
+    //            onCompletion();
+    //        }
+    //    });
+    //}
 
     private void __SetIntelCoverage() {    // UNCLEAR how should system, star, planet and moon intel coverage levels relate to each other?
         LogEvent();
@@ -607,18 +657,21 @@ public class SystemCreator : AMonoBase, IDisposable {
         return allOrbitSlots;
     }
 
-    private void RegisterGameStateProgressionReadiness(bool isReady) {
-        GameEventManager.Instance.Raise(new ElementReadyEvent(this, GameState.BuildAndDeploySystems, isReady));
+    /// <summary>
+    /// Removes the planetoid from the AllPlanetoids static collection
+    /// when the planetoid dies.
+    /// </summary>
+    /// <param name="mortalItem">The mortal item.</param>
+    private static void OnPlanetoidDeath(IMortalItem mortalItem) {
+        _allPlanetoids.Remove(mortalItem as APlanetoidItem);
     }
 
-    protected override void OnDestroy() {
-        base.OnDestroy();
-        Dispose();
-    }
-
-    private void Cleanup() {
+    protected override void Cleanup() {
         Unsubscribe();
-        // other cleanup here including any tracking Gui2D elements
+        if (IsApplicationQuiting) {
+            CleanupStaticMembers();
+            UnsubscribeStaticallyOnceOnQuit();
+        }
     }
 
     private void Unsubscribe() {
@@ -626,52 +679,32 @@ public class SystemCreator : AMonoBase, IDisposable {
         _subscribers.Clear();
     }
 
+    /// <summary>
+    /// Cleans up static members of this class whose value should not persist across scenes or after quiting.
+    /// UNCLEAR This is called whether the scene loaded is from a saved game or a new game. 
+    /// Should static values be reset on a scene change from a saved game? 1) do the static members
+    /// retain their value after deserialization, and/or 2) can static members even be serialized? 
+    /// </summary>
+    private static void CleanupStaticMembers() {
+        _systemLookupBySectorIndex.Clear();
+        _allStars.Clear();
+        _allPlanetoids.ForAll(p => p.onDeathOneShot -= OnPlanetoidDeath);
+        _allPlanetoids.Clear();
+    }
+
+    /// <summary>
+    /// Unsubscribes this class from all events that use a static event handler on Quit.
+    /// </summary>
+    private void UnsubscribeStaticallyOnceOnQuit() {
+        if (_isStaticallySubscribed) {
+            _gameMgr.onSceneLoaded -= CleanupStaticMembers;
+            _isStaticallySubscribed = false;
+        }
+    }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region IDisposable
-    [DoNotSerialize]
-    private bool alreadyDisposed = false;
-
-    /// <summary>
-    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-    /// </summary>
-    public void Dispose() {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
-    /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool isDisposing) {
-        // Allows Dispose(isDisposing) to be called more than once
-        if (alreadyDisposed) {
-            return;
-        }
-
-        if (isDisposing) {
-            // free managed resources here including unhooking events
-            Cleanup();
-        }
-        // free unmanaged resources here
-
-        alreadyDisposed = true;
-    }
-
-    // Example method showing check for whether the object has been disposed
-    //public void ExampleMethod() {
-    //    // throw Exception if called on object that is already disposed
-    //    if(alreadyDisposed) {
-    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-    //    }
-
-    //    // method content here
-    //}
-    #endregion
 
 }
 

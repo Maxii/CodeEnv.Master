@@ -25,6 +25,8 @@ using UnityEngine;
 /// </summary>
 public class DummyTargetManager : AMonoBase, ICameraTargetable {
 
+    protected override void Cleanup() { }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

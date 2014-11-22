@@ -34,8 +34,14 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
     }
 
     public PlanetoidCategory category;
-    public float minCameraViewDistanceMultiplier = 2F;
-    public float optimalCameraViewDistanceMultiplier = 8F;
+
+    [Range(0.5F, 3.0F)]
+    [Tooltip("Minimum Camera View Distance Multiplier")]
+    public float minViewDistanceFactor = 2F;
+
+    [Range(3.0F, 15.0F)]
+    [Tooltip("Optimal Camera View Distance Multiplier")]
+    public float optViewDistanceFactor = 8F;
 
     private ICtxControl _ctxControl;
 
@@ -114,6 +120,11 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         CurrentState = PlanetoidState.Idling;
     }
 
+    protected override void InitiateDeath() {
+        base.InitiateDeath();
+        CurrentState = PlanetoidState.Dead;
+    }
+
     protected override void OnDeath() {
         base.OnDeath();
         collider.enabled = false;
@@ -138,7 +149,7 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
 
     protected override void OnRightPress(bool isDown) {
         base.OnRightPress(isDown);
-        if (!isDown && !GameInput.Instance.IsDragging) {
+        if (!isDown && !_inputMgr.IsDragging) {
             // right press release while not dragging means both press and release were over this object
             _ctxControl.OnRightPressRelease();
         }
@@ -172,7 +183,7 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
     protected override void OnShowCompletion() {
         switch (CurrentState) {
             case PlanetoidState.Dead:
-                DestroyMortalItem(3F);
+                __DestroyMe(3F);
                 break;
             case PlanetoidState.Idling:
                 // do nothing
@@ -185,10 +196,21 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
 
     #endregion
 
+    #region Cleanup
+
+    protected override void Cleanup() {
+        base.Cleanup();
+        if (_ctxControl != null) {
+            (_ctxControl as IDisposable).Dispose();
+        }
+    }
+
+    #endregion
+
     #region IElementTarget Members
 
     public override void TakeHit(CombatStrength attackerWeaponStrength) {
-        if (CurrentState == PlanetoidState.Dead) {
+        if (!IsAlive) {
             return;
         }
         LogEvent();
@@ -198,7 +220,7 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         }
         bool isAlive = ApplyDamage(damage);
         if (!isAlive) {
-            CurrentState = PlanetoidState.Dead;
+            InitiateDeath();
             return;
         }
         ShowAnimation(MortalAnimations.Hit);
@@ -214,13 +236,13 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
 
     #region ICameraTargetable Members
 
-    public override float MinimumCameraViewingDistance { get { return Radius * minCameraViewDistanceMultiplier; } }
+    public override float MinimumCameraViewingDistance { get { return Radius * minViewDistanceFactor; } }
 
     #endregion
 
     #region ICameraFocusable Members
 
-    public override float OptimalCameraViewingDistance { get { return Radius * optimalCameraViewDistanceMultiplier; } }
+    public override float OptimalCameraViewingDistance { get { return Radius * optViewDistanceFactor; } }
 
     #endregion
 
@@ -228,13 +250,13 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
 
     [SerializeField]
     private float cameraFollowDistanceDampener = 3.0F;
-    public virtual float CameraFollowDistanceDampener {
+    public virtual float FollowDistanceDampener {
         get { return cameraFollowDistanceDampener; }
     }
 
     [SerializeField]
     private float cameraFollowRotationDampener = 1.0F;
-    public virtual float CameraFollowRotationDampener {
+    public virtual float FollowRotationDampener {
         get { return cameraFollowRotationDampener; }
     }
 

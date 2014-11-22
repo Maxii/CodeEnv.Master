@@ -65,7 +65,7 @@ namespace CodeEnv.Master.GameContent {
                 case Common.PauseState.NotPaused:
                     IsPaused = false;
                     break;
-                case Common.PauseState.GuiAutoPaused:
+                case Common.PauseState.AutoPaused:
                 case Common.PauseState.Paused:
                     IsPaused = true;
                     break;
@@ -137,7 +137,7 @@ namespace CodeEnv.Master.GameContent {
         #region Startup Simulation
         public void __AwakeBasedOnStartScene(SceneLevel startScene) {
             switch (startScene) {
-                case SceneLevel.IntroScene:
+                case SceneLevel.LobbyScene:
                     GameState = GameState.Lobby;
                     break;
                 case SceneLevel.GameScene:
@@ -167,7 +167,7 @@ namespace CodeEnv.Master.GameContent {
 
         public void StartBasedOnStartScene(SceneLevel startScene) {
             switch (startScene) {
-                case SceneLevel.IntroScene:
+                case SceneLevel.LobbyScene:
                     break;
                 case SceneLevel.GameScene:
                     __SimulateBuildGameFromLobby_Step2();
@@ -273,17 +273,17 @@ namespace CodeEnv.Master.GameContent {
             ProcessPauseRequest(e.NewValue);
         }
 
-        private void ProcessPauseRequest(PauseRequest request) {
+        private void ProcessPauseRequest(PauseCommand request) {
             switch (request) {
-                case PauseRequest.GuiAutoPause:
+                case PauseCommand.AutoPause:
                     if (PauseState == PauseState.Paused) { return; }
-                    if (PauseState == PauseState.GuiAutoPaused) {
+                    if (PauseState == PauseState.AutoPaused) {
                         D.Warn("Attempt to GuiAutoPause when already paused.");
                         return;
                     }
-                    PauseState = PauseState.GuiAutoPaused;
+                    PauseState = PauseState.AutoPaused;
                     break;
-                case PauseRequest.GuiAutoResume:
+                case PauseCommand.AutoResume:
                     if (PauseState == PauseState.Paused) { return; }
                     if (PauseState == PauseState.NotPaused) {
                         D.Warn("Attempt to GuiAutoResume when not paused.");
@@ -291,21 +291,21 @@ namespace CodeEnv.Master.GameContent {
                     }
                     PauseState = Common.PauseState.NotPaused;
                     break;
-                case PauseRequest.PriorityPause:
+                case PauseCommand.ManualPause:
                     if (PauseState == PauseState.Paused) {
                         D.Warn("Attempt to PriorityPause when already paused.");
                         return;
                     }
                     PauseState = PauseState.Paused;
                     break;
-                case PauseRequest.PriorityResume:
+                case PauseCommand.ManualResume:
                     if (PauseState == PauseState.NotPaused) {
                         D.Warn("Atttempt to PriorityResume when not paused.");
                         return;
                     }
                     PauseState = PauseState.NotPaused;
                     break;
-                case PauseRequest.None:
+                case PauseCommand.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(request));
             }
@@ -415,7 +415,7 @@ namespace CodeEnv.Master.GameContent {
                     IsGameRunning = true;
                     _gameTime.EnableClock(true);
                     if (_playerPrefsMgr.IsPauseOnLoadEnabled) {
-                        ProcessPauseRequest(PauseRequest.PriorityPause);
+                        ProcessPauseRequest(PauseCommand.ManualPause);
                     }
                     break;
                 case GameState.None:
@@ -433,7 +433,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private void ResetConditionsForGameStartup() {
             if (IsPaused) {
-                ProcessPauseRequest(PauseRequest.PriorityResume);
+                ProcessPauseRequest(PauseCommand.ManualResume);
             }
         }
 

@@ -52,7 +52,6 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     protected override void Initialize() {
         var reqdPrefabs = RequiredPrefabs.Instance;
 
-        //_shipPrefabs = reqdPrefabs.ships.Select<ShipItem, GameObject>(ship => ship.gameObject).ToArray();
         _shipPrefabs = reqdPrefabs.ships;
         _facilityPrefabs = reqdPrefabs.facilities;
         _fleetCmdPrefab = reqdPrefabs.fleetCmd.gameObject;
@@ -233,7 +232,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="weapStats">The weapon stats.</param>
     /// <param name="owner">The owner.</param>
     /// <returns></returns>
-    public FacilityItem MakeFacilityInstance(FacilityStat facStat, SpaceTopography topography, IEnumerable<WeaponStat> weapStats, IPlayer owner) {
+    public FacilityItem MakeFacilityInstance(FacilityStat facStat, Topography topography, IEnumerable<WeaponStat> weapStats, IPlayer owner) {
         GameObject facilityPrefabGo = _facilityPrefabs.Single(f => f.category == facStat.Category).gameObject;
         GameObject facilityGoClone = UnityUtility.AddChild(null, facilityPrefabGo);
         FacilityItem item = facilityGoClone.GetSafeMonoBehaviourComponent<FacilityItem>();
@@ -250,7 +249,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="weapStats">The weap stats.</param>
     /// <param name="owner">The owner.</param>
     /// <param name="item">The item.</param>
-    public void MakeFacilityInstance(FacilityStat facStat, SpaceTopography topography, IEnumerable<WeaponStat> weapStats, IPlayer owner, ref FacilityItem item) {
+    public void MakeFacilityInstance(FacilityStat facStat, Topography topography, IEnumerable<WeaponStat> weapStats, IPlayer owner, ref FacilityItem item) {
         var categoryFromItem = item.category;
         D.Assert(facStat.Category == categoryFromItem, "{0} should be same as {1}.".Inject(facStat.Category.GetName(), categoryFromItem.GetName()));
         FacilityData data = new FacilityData(facStat, topography) {
@@ -339,6 +338,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         AttachShipToOrbiter(ship, ref orbiterTransform);
     }
 
+    public override string ToString() {
+        return new ObjectAnalyzer().ToString(this);
+    }
 
 }
 

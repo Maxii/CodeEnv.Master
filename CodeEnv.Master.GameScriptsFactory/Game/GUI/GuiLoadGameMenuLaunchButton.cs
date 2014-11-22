@@ -25,11 +25,11 @@ using UnityEngine;
 /// </summary>
 public class GuiLoadGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
 
-    private string selectedGameCaption = string.Empty;
-
-    protected override void InitializeTooltip() {
-        tooltip = "Load and launch the selected Saved Game.";
+    protected override string TooltipContent {
+        get { return "Launch the selected Saved Game."; }
     }
+
+    private string _selectedGameCaption = string.Empty;
 
     protected override void CaptureInitializedState() {
         base.CaptureInitializedState();
@@ -38,7 +38,8 @@ public class GuiLoadGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
 
     protected override void RecordPopupListState(string popupListName, string selectionName) {
         base.RecordPopupListState(popupListName, selectionName);
-        selectedGameCaption = selectionName;
+        _selectedGameCaption = selectionName;
+        //D.Log("{0} has recorded PopupList [{1}]'s current selection: {2}.", GetType().Name, popupListName, selectionName);
     }
 
     protected override void OnPopupListSelectionChange() {
@@ -47,19 +48,30 @@ public class GuiLoadGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
     }
 
     protected override void OnLeftClick() {
+        //LoadSavedGame();
+        __LoadDummySavedGame();
+    }
+
+    private void __LoadDummySavedGame() {
+        _gameMgr.LoadSavedGame(_selectedGameCaption);
+    }
+
+    private void LoadSavedGame() {
         if (LevelSerializer.SavedGames.Count > 0) {
-            Arguments.ValidateForContent(selectedGameCaption);
-            _eventMgr.Raise<LoadSavedGameEvent>(new LoadSavedGameEvent(this, selectedGameCaption));
+            Arguments.ValidateForContent(_selectedGameCaption);
+            _gameMgr.LoadSavedGame(_selectedGameCaption);
         }
     }
 
     [Conditional("UNITY_EDITOR")]
     private void ValidateState() {
         // selectedGameCaption can be empty if there are no saved games
-        if (selectedGameCaption == string.Empty) {
+        if (_selectedGameCaption == string.Empty) {
             D.Warn("Selected Game Caption to Load is empty.");
         }
     }
+
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

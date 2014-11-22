@@ -674,7 +674,7 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     private void TryFireOnAnyTarget(Weapon weapon) {
-        if (_ship._weaponRangeMonitorLookup[weapon.TrackerID].__TryGetRandomEnemyTarget(out _attackTarget)) {
+        if (_ship._weaponRangeMonitorLookup[weapon.MonitorID].__TryGetRandomEnemyTarget(out _attackTarget)) {
             //D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
             _attackStrength = weapon.Strength;
             Call(ShipState.Attacking);

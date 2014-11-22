@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GuiGameSpeedOnLoadPopupList.cs
-// Manager for the GameSpeedOnLoad option popupList.
+// The GameSpeedOnLoad option popupList.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,11 +19,13 @@
 using CodeEnv.Master.Common;
 
 /// <summary>
-/// Manager for the GameSpeedOnLoad option popupList.
+/// The GameSpeedOnLoad option popupList.
 /// </summary>
 public class GuiGameSpeedOnLoadPopupList : AGuiEnumPopupListBase<GameClockSpeed> {
 
     protected override void OnPopupListSelectionChange() { }
+
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

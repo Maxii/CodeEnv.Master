@@ -21,10 +21,10 @@ using CodeEnv.Master.Common;
 /// </summary>
 public class GuiVisibilityChangeEvent : AGameEvent {
 
-    public GuiVisibilityCommand GuiVisibilityCmd { get; private set; }
+    public GuiVisibilityMode GuiVisibilityCmd { get; private set; }
     public UIPanel[] Exceptions { get; private set; }
 
-    public GuiVisibilityChangeEvent(object source, GuiVisibilityCommand guiVisibilityCmd, params UIPanel[] exceptions)
+    public GuiVisibilityChangeEvent(object source, GuiVisibilityMode guiVisibilityCmd, params UIPanel[] exceptions)
         : base(source) {
         GuiVisibilityCmd = guiVisibilityCmd;
         Exceptions = exceptions;

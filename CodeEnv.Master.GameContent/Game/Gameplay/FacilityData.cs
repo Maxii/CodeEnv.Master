@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="stat">The stat.</param>
         /// <param name="topography">The topography.</param>
-        public FacilityData(FacilityStat stat, SpaceTopography topography)
+        public FacilityData(FacilityStat stat, Topography topography)
             : base(stat.Name, stat.Mass, stat.MaxHitPoints) {
             Category = stat.Category;
             base.Topography = topography;

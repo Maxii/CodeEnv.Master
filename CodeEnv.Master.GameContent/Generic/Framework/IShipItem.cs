@@ -16,6 +16,8 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using CodeEnv.Master.Common;
+
     /// <summary>
     ///  Interface for all items that are ships.
     /// </summary>
@@ -25,6 +27,8 @@ namespace CodeEnv.Master.GameContent {
         /// Reattaches the ship's transform to the fleet container it came from.
         /// </summary>
         void ReattachToParentFleetContainer();
+
+        void OnTopographicBoundaryTransition(Topography newTopography);
 
     }
 }

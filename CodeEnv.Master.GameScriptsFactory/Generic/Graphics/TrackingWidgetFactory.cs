@@ -95,7 +95,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         Layers layer = CheckLayers(cmdTarget, prefab);
         NGUITools.SetLayer(clone, (int)layer);
 
-        var trackingWidget = clone.AddComponent<CommandTrackingSprite>();
+        var trackingWidget = clone.AddComponent<CommandTrackingSprite>();   // AddComponent() runs Awake before returning
         trackingWidget.Target = cmdTarget;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
@@ -118,7 +118,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         Layers layer = CheckLayers(target, prefab);
         NGUITools.SetLayer(clone, (int)layer);
 
-        var trackingWidget = clone.AddComponent<VariableSizeTrackingLabel>();
+        var trackingWidget = clone.AddComponent<VariableSizeTrackingLabel>();   // AddComponent() runs Awake before returning
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min);
@@ -141,7 +141,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         Layers layer = CheckLayers(target, prefab);
         NGUITools.SetLayer(clone, (int)layer);
 
-        var trackingWidget = clone.AddComponent<VariableSizeTrackingSprite>();
+        var trackingWidget = clone.AddComponent<VariableSizeTrackingSprite>();  // AddComponent() runs Awake before returning
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min);
@@ -165,7 +165,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         Layers layer = CheckLayers(target, prefab);
         NGUITools.SetLayer(clone, (int)layer);
 
-        var trackingWidget = clone.AddComponent<ConstantSizeTrackingSprite>();
+        var trackingWidget = clone.AddComponent<ConstantSizeTrackingSprite>();  // AddComponent() runs Awake before returning
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
@@ -188,7 +188,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         Layers layer = CheckLayers(target, prefab);
         NGUITools.SetLayer(clone, (int)layer);
 
-        var trackingWidget = clone.AddComponent<ConstantSizeTrackingLabel>();
+        var trackingWidget = clone.AddComponent<ConstantSizeTrackingLabel>();   // AddComponent() runs Awake before returning
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);

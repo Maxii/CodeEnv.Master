@@ -53,20 +53,40 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Framework\FormationStationMonitor.cs" />
+    <Compile Include="Game\Framework\MovingOrbiter.cs" />
+    <Compile Include="Game\Framework\MovingOrbiterForShips.cs" />
+    <Compile Include="Game\Framework\Orbiter.cs" />
+    <Compile Include="Game\Framework\OrbiterForShips.cs" />
+    <Compile Include="Game\Framework\TopographyMonitor.cs" />
+    <Compile Include="Game\Framework\WeaponRangeMonitor.cs" />
+    <Compile Include="Game\_Debug\DynamicObjectsFolder.cs" />
+    <Compile Include="Game\_Debug\DynamicWidgetsFolder.cs" />
+    <Compile Include="Game\_Debug\FleetsFolder.cs" />
+    <Compile Include="Game\_Debug\ManagementObjects.cs" />
+    <Compile Include="Game\_Debug\SectorsFolder.cs" />
+    <Compile Include="Game\_Debug\SettlementsFolder.cs" />
+    <Compile Include="Game\_Debug\StarbasesFolder.cs" />
+    <Compile Include="Game\_Debug\UniverseFolder.cs" />
+    <Compile Include="Generic\Framework\AFSMSingleton.cs" />
+    <Compile Include="Generic\Framework\AFSMSingleton_NoCall.cs" />
     <Compile Include="Generic\Extensions\GameSpecificExtensions.cs" />
     <Compile Include="Generic\Framework\AMortalItemStateMachine.cs" />
     <Compile Include="Game\Framework\AMortalItem.cs" />
     <Compile Include="Game\Framework\AItem.cs" />
     <Compile Include="Generic\Framework\ACreator.cs" />
+    <Compile Include="Generic\Framework\AMonoSingleton.cs" />
+    <Compile Include="Generic\Graphics\Revolver.cs" />
+    <Compile Include="Generic\IO\GuiCameraControl.cs" />
+    <Compile Include="Generic\_Debug\Logger.cs" />
+    <Compile Include="Generic\_Debug\NguiEventLogger.cs" />
     <Compile Include="ThirdParty\AMonoStateMachine_NoCall.cs" />
     <Compile Include="ThirdParty\TaskManager.cs" />
-    <Compile Include="ThirdParty\CoroutineManager.cs" />
-    <Compile Include="ThirdParty\AMonoStateMachineSingleton.cs" />
+    <Compile Include="ThirdParty\JobRunner.cs" />
     <Compile Include="Generic\_Debug\AFolderAccess.cs" />
     <Compile Include="Game\Framework\DummyTargetManager.cs" />
     <Compile Include="Generic\_Debug\DrawBoundsGizmo.cs" />
     <Compile Include="Generic\Framework\AMonoBase.cs" />
-    <Compile Include="Generic\Framework\AMonoBaseSingleton.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ThirdParty\Note.cs" />
     <Compile Include="ThirdParty\AMonoStateMachine.cs" />
@@ -89,9 +109,6 @@
     <Folder Include="Game\Gameplay\" />
     <Folder Include="Game\Graphics\" />
     <Folder Include="Game\GUI\" />
-    <Folder Include="Game\_Debug\" />
-    <Folder Include="Generic\Graphics\" />
-    <Folder Include="Generic\IO\" />
     <Folder Include="Generic\Math\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

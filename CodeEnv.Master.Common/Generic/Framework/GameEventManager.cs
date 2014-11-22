@@ -24,6 +24,7 @@ namespace CodeEnv.Master.Common {
     /// Singleton Event Manager.
     /// </summary>
     [SerializeAll]
+    [Obsolete]
     public sealed class GameEventManager {
 
         #region SingletonPattern

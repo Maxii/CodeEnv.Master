@@ -29,39 +29,32 @@ using UnityEngine;
 public abstract class AGuiMenuAcceptButtonBase : AGuiButtonBase {
 
     // Can be empty
-    protected UIToggle[] checkboxes;
-    protected UIPopupList[] popupLists;
-    protected UISlider[] sliders;
-
-    protected override void Awake() {
-        base.Awake();
-    }
+    protected UIToggle[] _checkboxes;
+    protected UIPopupList[] _popupLists;
+    protected UISlider[] _sliders;
 
     protected override void Start() {
         base.Start();
         GameObject buttonParent = gameObject.transform.parent.gameObject;
 
         // acquire all the menu elements here
-        checkboxes = buttonParent.GetComponentsInChildren<UIToggle>(includeInactive: true);
-        popupLists = buttonParent.GetComponentsInChildren<UIPopupList>(includeInactive: true);
-        sliders = buttonParent.GetComponentsInChildren<UISlider>(includeInactive: true);
+        _checkboxes = buttonParent.GetComponentsInChildren<UIToggle>(includeInactive: true);
+        _popupLists = buttonParent.GetComponentsInChildren<UIPopupList>(includeInactive: true);
+        _sliders = buttonParent.GetComponentsInChildren<UISlider>(includeInactive: true);
 
         CaptureInitializedState();
         AddMenuElementListeners();
     }
 
     private void AddMenuElementListeners() {
-        if (Utility.CheckForContent<UIToggle>(checkboxes)) {
-            checkboxes.ForAll<UIToggle>(checkbox => EventDelegate.Add(checkbox.onChange, OnCheckboxStateChange));
-            //checkboxes.ForAll<UIToggle>(checkbox => checkbox.onStateChange += OnCheckboxStateChange);
+        if (Utility.CheckForContent<UIToggle>(_checkboxes)) {
+            _checkboxes.ForAll<UIToggle>(checkbox => EventDelegate.Add(checkbox.onChange, OnCheckboxStateChange));
         }
-        if (Utility.CheckForContent<UIPopupList>(popupLists)) {
-            popupLists.ForAll<UIPopupList>(popupList => EventDelegate.Add(popupList.onChange, OnPopupListSelectionChange));
-            //popupLists.ForAll<UIPopupList>(popupList => popupList.onSelectionChange += OnPopupListSelectionChange);
+        if (Utility.CheckForContent<UIPopupList>(_popupLists)) {
+            _popupLists.ForAll<UIPopupList>(popupList => EventDelegate.Add(popupList.onChange, OnPopupListSelectionChange));
         }
-        if (Utility.CheckForContent<UISlider>(sliders)) {   // this won't work for sliders built for enums
-            sliders.ForAll<UISlider>(slider => EventDelegate.Add(slider.onChange, OnSliderValueChange));
-            //sliders.ForAll<UISlider>(slider => slider.onValueChange += OnSliderValueChange);
+        if (Utility.CheckForContent<UISlider>(_sliders)) {   // this won't work for sliders built for enums
+            _sliders.ForAll<UISlider>(slider => EventDelegate.Add(slider.onChange, OnSliderValueChange));
         }
     }
 
@@ -70,41 +63,35 @@ public abstract class AGuiMenuAcceptButtonBase : AGuiButtonBase {
     /// derived classes implementation of the abstract RecordXXXState methods.
     /// </summary>
     protected virtual void CaptureInitializedState() {
-        foreach (UIToggle checkbox in checkboxes) {
+        foreach (UIToggle checkbox in _checkboxes) {
             bool checkedState = checkbox.value;
-            //bool checkedState = checkbox.isChecked;
             RecordCheckboxState(checkbox.name.ToLower(), checkedState);
         }
-        foreach (UIPopupList popupList in popupLists) {
+        foreach (UIPopupList popupList in _popupLists) {
             string selection = popupList.value;
-            //string selection = popupList.selection;
             RecordPopupListState(popupList.name.ToLower(), selection);
         }
-        foreach (UISlider slider in sliders) {
+        foreach (UISlider slider in _sliders) {
             float sliderValue = slider.value;
-            //float sliderValue = slider.sliderValue;
             RecordSliderState(slider.name.ToLower(), sliderValue);
         }
-    }
-
-    protected virtual void OnCheckboxStateChange() {
-        string checkboxName = UIToggle.current.name.ToLower();
-        bool state = UIToggle.current.value;
-        //D.Log("Checkbox Named {0} had a state change to {1}.", checkboxName, state);
-        RecordCheckboxState(checkboxName, state);
     }
 
     /// <summary>
     /// Called on a checkbox state change, this base class implementation records
     /// the change via the RecordXXXState methods implemented by the derived class.
     /// </summary>
-    /// <arg name="state">if set to <c>true</c> [state].</arg>
-    //protected virtual void OnCheckboxStateChange(bool state) {
-    //    string checkboxName = UIToggle.current.name.ToLower();
-    //    //D.Log("Checkbox Named {0} had a state change to {1}.", checkboxName, state);
-    //    RecordCheckboxState(checkboxName, state);
-    //}
+    protected virtual void OnCheckboxStateChange() {
+        string checkboxName = UIToggle.current.name.ToLower();
+        bool isChecked = UIToggle.current.value;
+        //D.Log("Checkbox Named {0} had a state change to {1}.", checkboxName, isChecked);
+        RecordCheckboxState(checkboxName, isChecked);
+    }
 
+    /// <summary>
+    /// Called on a popupList state change, this base class implementation records
+    /// the change via the RecordXXXState methods implemented by the derived class.
+    /// </summary>
     protected virtual void OnPopupListSelectionChange() {
         string selectionName = UIPopupList.current.value;
         string popupListName = UIPopupList.current.name.ToLower();
@@ -112,46 +99,31 @@ public abstract class AGuiMenuAcceptButtonBase : AGuiButtonBase {
     }
 
     /// <summary>
-    /// Called on a popupList state change, this base class implementation records
+    /// Called on a slider state change, this base class implementation records
     /// the change via the RecordXXXState methods implemented by the derived class.
     /// </summary>
-    /// <arg name="selectionName">Name of the selection.</arg>
-    //protected virtual void OnPopupListSelectionChange(string selectionName) {
-    //    string popupListName = UIPopupList.current.name.ToLower();
-    //    RecordPopupListState(popupListName, selectionName);
-    //}
-
     protected virtual void OnSliderValueChange() {
         float value = UISlider.current.value;
         string sliderName = UISlider.current.name.ToLower();
         RecordSliderState(sliderName, value);
     }
-    /// <summary>
-    /// Called on a slider state change, this base class implementation records
-    /// the change via the RecordXXXState methods implemented by the derived class.
-    /// </summary>
-    /// <param name="value">The value.</param>
-    //protected virtual void OnSliderValueChange(float value) {
-    //    string sliderName = UISlider.current.name.ToLower();
-    //    RecordSliderState(sliderName, value);
-    //}
 
     /// <summary>
-    /// Derived classes implement this abstract method, recording the state of the checkbox that has the provided name.
+    /// Derived classes implement this abstract method, recording the state of the checkbox named <c>checkboxName_lc</c>.
     /// </summary>
     /// <param name="checkboxName_lc">Name of the checkbox, lowercase.</param>
     /// <param name="checkedState">if set to <c>true</c> [checked state].</param>
     protected virtual void RecordCheckboxState(string checkboxName_lc, bool checkedState) { }
 
     /// <summary>
-    /// Derived classes implement this abstract method, recording the state of the popup list that uses the provided selectionName.
+    /// Derived classes implement this abstract method, recording the state of the popup list named <c>popupListName_lc</c>.
     /// </summary>
     /// <param name="popupListName_lc">Name of the popup list, lowercase.</param>
     /// <param name="selectionName">Name of the selection.</param>
     protected virtual void RecordPopupListState(string popupListName_lc, string selectionName) { }
 
     /// <summary>
-    /// Derived classes implement this abstract method, recording the state of the slider.
+    /// Derived classes implement this abstract method, recording the state of the slider named <c>sliderName_lc</c>.
     /// UNDONE sliderValue insufficient to select which slider
     /// </summary>
     /// <param name="sliderName_lc">Name of the slider, lowercase.</param>
@@ -161,10 +133,6 @@ public abstract class AGuiMenuAcceptButtonBase : AGuiButtonBase {
     // IDisposable Note: No reason to remove Ngui event currentListeners OnDestroy() as the EventListener or
     // Delegate to be removed is attached to a GameObject that is also being destroyed. In addition,
     // execution is problematic as the gameObject may have already been destroyed.
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

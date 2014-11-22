@@ -55,6 +55,8 @@ public class ScaleRelativeToCamera : AMonoBase {
         _transform.localScale = Scale;
     }
 
+    protected override void Cleanup() { }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }

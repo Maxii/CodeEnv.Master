@@ -17,7 +17,7 @@ namespace CodeEnv.Master.Common {
         // in build settings. When built into a player, None becomes the initial scene
         // which doesn't work of course
 
-        IntroScene = 0,
+        LobbyScene = 0,
         GameScene = 1
 
     }

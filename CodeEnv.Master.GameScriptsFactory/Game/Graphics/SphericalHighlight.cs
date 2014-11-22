@@ -25,10 +25,9 @@ using UnityEngine;
 /// <summary>
 /// Singleton spherical highlight control and label that tracks the designated IWidgetTrackable target.
 /// </summary>
-public class SphericalHighlight : AMonoBaseSingleton<SphericalHighlight>, ISphericalHighlight, IDisposable {
+public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISphericalHighlight {
 
     public bool enableTrackingLabel = false;
-
     public float alphaValueWhenShowing = 0.5F;
 
     private IWidgetTrackable _target;
@@ -36,19 +35,26 @@ public class SphericalHighlight : AMonoBaseSingleton<SphericalHighlight>, ISpher
     private Transform _meshTransform;
     private float _radius;
     private float _baseSphereRadius;
-
     private ITrackingWidget _trackingLabel;
-
     private string _radiusLabelText = "Highlight\nRadius: {0:0.#}";
 
-    protected override void Awake() {
-        base.Awake();
+    protected override void InitializeOnInstance() {
+        base.InitializeOnInstance();
+        References.SphericalHighlight = Instance;
+    }
+
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
+        InitializeValuesAndReferences();
+        Show(false);
+    }
+
+    private void InitializeValuesAndReferences() {
         _renderer = gameObject.GetComponentInChildren<Renderer>();
         _meshTransform = _renderer.transform;
         _baseSphereRadius = _renderer.bounds.size.x / 2F;
         //D.Log("{0} base sphere radius = {1}.", GetType().Name, _baseSphereRadius);
         UpdateRate = FrameUpdateFrequency.Normal;
-        Show(false);
     }
 
     public void SetTarget(IWidgetTrackable target, float sphereRadius, WidgetPlacement labelPlacement = WidgetPlacement.Below) {
@@ -107,65 +113,14 @@ public class SphericalHighlight : AMonoBaseSingleton<SphericalHighlight>, ISpher
         _transform.position = _target.Transform.position;
     }
 
-    protected override void OnDestroy() {
-        base.OnDestroy();
-        Dispose();
-    }
-
-    private void Cleanup() {
-        // other cleanup here including any tracking Gui2D elements
+    protected override void Cleanup() {
+        References.SphericalHighlight = null;
         UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
     }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region IDisposable
-
-    [DoNotSerialize]
-    private bool _alreadyDisposed = false;
-    protected bool _isDisposing = false;
-
-    /// <summary>
-    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-    /// </summary>
-    public void Dispose() {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
-    /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool isDisposing) {
-        // Allows Dispose(isDisposing) to be called more than once
-        if (_alreadyDisposed) {
-            return;
-        }
-
-        _isDisposing = true;
-        if (isDisposing) {
-            // free managed resources here including unhooking events
-            Cleanup();
-        }
-        // free unmanaged resources here
-
-        _alreadyDisposed = true;
-    }
-
-    // Example method showing check for whether the object has been disposed
-    //public void ExampleMethod() {
-    //    // throw Exception if called on object that is already disposed
-    //    if(alreadyDisposed) {
-    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-    //    }
-
-    //    // method content here
-    //}
-    #endregion
 
 }
 

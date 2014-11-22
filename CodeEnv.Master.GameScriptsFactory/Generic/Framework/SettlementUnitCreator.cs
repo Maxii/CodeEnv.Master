@@ -47,11 +47,11 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory
     }
 
     protected override FacilityItem MakeElement(FacilityStat stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner) {
-        return _factory.MakeFacilityInstance(stat, SpaceTopography.System, weaponStats, owner);
+        return _factory.MakeFacilityInstance(stat, Topography.System, weaponStats, owner);
     }
 
     protected override void MakeElement(FacilityStat stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner, ref FacilityItem element) {
-        _factory.MakeFacilityInstance(stat, SpaceTopography.System, weaponStats, owner, ref element);
+        _factory.MakeFacilityInstance(stat, Topography.System, weaponStats, owner, ref element);
     }
 
     protected override FacilityCategory GetCategory(FacilityStat stat) {
@@ -121,7 +121,6 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory
     }
 
     protected override void EnableOtherWhenRunning() {
-        D.Assert(GameStatus.Instance.IsRunning);
         // the entire settlementUnit gameobject has already been detached from this creator at this point
         GameObject settlementUnitGo = _command.transform.parent.gameObject;
         settlementUnitGo.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeMonitor>().ForAll(wrt => wrt.enabled = true);
@@ -133,7 +132,7 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory
         // TODO SensorRangeTracker
     }
 
-    protected override void IssueFirstUnitCommand() {
+    protected override void __IssueFirstUnitCommand() {
         LogEvent();
     }
 

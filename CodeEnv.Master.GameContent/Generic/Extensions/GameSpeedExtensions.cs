@@ -122,7 +122,6 @@ namespace CodeEnv.Master.GameContent {
             }
 
         }
-
     }
 }
 

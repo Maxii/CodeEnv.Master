@@ -28,16 +28,16 @@ using UnityEngine;
 /// </summary>
 public class GuiMenuCancelButton : AGuiButtonBase {
 
+    protected override string TooltipContent {
+        get { return "Click to cancel changes."; }
+    }
+
     private UIToggle[] _checkboxes;
     private bool[] _openingCheckboxesState;
 
     private UIPopupList[] _popupLists;
     private string[] _openingPopupListsSelection;
     private bool _isInitialized;
-
-    protected override void InitializeTooltip() {
-        tooltip = "Click to cancel changes.";
-    }
 
     protected override void Start() {
         base.Start();
@@ -63,11 +63,9 @@ public class GuiMenuCancelButton : AGuiButtonBase {
     private void CaptureOpeningState() {
         for (int i = 0; i < _checkboxes.Length; i++) {
             _openingCheckboxesState[i] = _checkboxes[i].value;
-            //_openingCheckboxesState[i] = _checkboxes[i].isChecked;
         }
         for (int i = 0; i < _popupLists.Length; i++) {
             _openingPopupListsSelection[i] = _popupLists[i].value;
-            //_openingPopupListsSelection[i] = _popupLists[i].selection;
         }
         _isInitialized = true;
     }
@@ -79,13 +77,13 @@ public class GuiMenuCancelButton : AGuiButtonBase {
     private void RestoreOpeningState() {
         for (int i = 0; i < _checkboxes.Length; i++) {
             _checkboxes[i].value = _openingCheckboxesState[i];
-            //_checkboxes[i].isChecked = _openingCheckboxesState[i];
         }
         for (int i = 0; i < _popupLists.Length; i++) {
             _popupLists[i].value = _openingPopupListsSelection[i];
-            //_popupLists[i].selection = _openingPopupListsSelection[i];
         }
     }
+
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

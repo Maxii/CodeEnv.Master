@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GuiCursorHud.cs
-// HUD that follows the Cursor on the screen.
+// Singleton HUD that displays Item data where instructed, typically next to the cursor.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,14 +19,14 @@
 using System;
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// HUD that follows the Cursor on the screen.
+/// Singleton HUD that displays Item data where instructed, typically
+/// next to the cursor.
 /// </summary>
-public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud, IDisposable {
+public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud {
 
     /// <summary>
     /// The location in ViewPort space (0-1.0, 0-1.0) of the transform of this Hud.
@@ -34,14 +34,9 @@ public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud, IDisposable {
     private Vector2 _viewPortLocation;
     private Vector2 _labelOffset = new Vector2(15F, 0f);    // Transform.localPosition is in pixels when Ngui.UIRoot is in PixelPerfect mode
 
-    private IList<IDisposable> _subscribers;
-    private GameManager _gameMgr;
-
-    protected override void Awake() {
-        base.Awake();
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
         InitializeHudPublishers();
-        _gameMgr = GameManager.Instance;
-        Subscribe();
         UpdateRate = FrameUpdateFrequency.Frequent;
     }
 
@@ -61,64 +56,18 @@ public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud, IDisposable {
         //GuiHudPublisher<ItemData>.TextFactory = GuiHudTextFactory.Instance;
     }
 
-    private void Subscribe() {
-        _subscribers = new List<IDisposable>();
-        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, PauseState>(gm => gm.PauseState, OnPauseStateChanged));
-    }
-
-    private void OnPauseStateChanged() {
-        switch (_gameMgr.PauseState) {
-            case PauseState.Paused:
-            case PauseState.NotPaused:
-                EnableDisplay(true);
-                break;
-            case PauseState.GuiAutoPaused:
-                EnableDisplay(false);
-                break;
-            case PauseState.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_gameMgr.PauseState));
-        }
-    }
-
-    private void EnableDisplay(bool toEnable) {
-        if (!toEnable) {
-            Clear();
-            NGUITools.SetActive(_label.gameObject, false);
-        }
-        _isDisplayEnabled = toEnable;
-    }
-
-    // No reason to track cursor movement as UpdateHudPosition() is called anytime the text changes
-    //protected override void OccasionalUpdate() {
-    //    base.OccasionalUpdate();
-    //    UpdateHudPosition();
-    //}
-
     /// <summary>
-    /// Move the HUD to track the cursor.
+    /// Position the HUD on the screen at this world <c>position</c>.
+    /// IMPROVE Currently called indirectly by HudPublisher whenever the text changes.
+    /// Is this sufficient, or does it need to be refreshed on Update?
     /// </summary>
-    //[System.Obsolete]
-    //protected override void UpdateHudPosition() {
-    //    if (NGUITools.GetActive(_label.gameObject)) {
-    //        Vector3 cursorPosition = Input.mousePosition;
-
-    //        if (uiCamera != null) {
-    //            // Since the screen can be of different than expected size, we want to convert
-    //            // mouse coordinates to view space, then convert that to world position.
-    //            cursorPosition.x = Mathf.Clamp01(cursorPosition.x / Screen.width);
-    //            cursorPosition.y = Mathf.Clamp01(cursorPosition.y / Screen.height);
-    //            _transform.position = uiCamera.ViewportToWorldPoint(cursorPosition);
-    //            _viewPortLocation = cursorPosition;
-    //        }
-    //        // Not needed as uiCamera, if not set in Editor, is found in AHud<>
-    //        //else {
-    //        //    // Simple calculation that assumes that the camera is of fixed size
-    //        //    cursorPosition.x -= Screen.width * 0.5f;
-    //        //    cursorPosition.y -= Screen.height * 0.5f;
-    //        //}
-    //    }
-    //}
+    /// <param name="position">The position.</param>
+    private void PositionHud(Vector3 position) {
+        _viewPortLocation = Camera.main.WorldToViewportPoint(position);
+        Vector3 hudPosition = uiCamera.ViewportToWorldPoint(_viewPortLocation);
+        hudPosition.z = 0F;
+        _transform.position = hudPosition;
+    }
 
     /// <summary>
     /// Positions the label so its text is always on the screen. Derived from UITooltip.
@@ -183,19 +132,7 @@ public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud, IDisposable {
         SetLabelOffset(labelOffset);
     }
 
-    protected override void OnDestroy() {
-        base.OnDestroy();
-        Dispose();
-    }
-
-    private void Cleanup() {
-        Unsubscribe();
-    }
-
-    private void Unsubscribe() {
-        _subscribers.ForAll<IDisposable>(s => s.Dispose());
-        _subscribers.Clear();
-    }
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
@@ -210,59 +147,13 @@ public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud, IDisposable {
             return;
         }
 
-        _viewPortLocation = Camera.main.WorldToViewportPoint(position);
-        Vector3 hudPosition = uiCamera.ViewportToWorldPoint(_viewPortLocation);
-        hudPosition.z = 0F;
-        _transform.position = hudPosition;
+        PositionHud(position);
 
         string text = guiCursorHudText.GetText().ToString();
         Set(text);
         PositionLabel();
     }
 
-    #endregion
-
-    #region IDisposable
-    [DoNotSerialize]
-    private bool alreadyDisposed = false;
-
-    /// <summary>
-    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-    /// </summary>
-    public void Dispose() {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
-    /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool isDisposing) {
-        // Allows Dispose(isDisposing) to be called more than once
-        if (alreadyDisposed) {
-            return;
-        }
-
-        if (isDisposing) {
-            // free managed resources here including unhooking events
-            Cleanup();
-        }
-        // free unmanaged resources here
-
-        alreadyDisposed = true;
-    }
-
-    // Example method showing check for whether the object has been disposed
-    //public void ExampleMethod() {
-    //    // throw Exception if called on object that is already disposed
-    //    if(alreadyDisposed) {
-    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-    //    }
-
-    //    // method content here
-    //}
     #endregion
 
 }

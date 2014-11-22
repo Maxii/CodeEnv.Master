@@ -26,16 +26,16 @@ using UnityEngine;
 /// </summary>
 public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
 
+    protected override string TooltipContent {
+        get { return "Accept Option changes."; }
+    }
+
     private bool _isCameraRollEnabled;
     private bool _isZoomOutOnCursorEnabled;
     private bool _isResetOnFocusEnabled;
     private bool _isPauseOnLoadEnabled;
 
     private GameClockSpeed _gameSpeedOnLoad;
-
-    protected override void InitializeTooltip() {
-        tooltip = "Click to implement Option changes.";
-    }
 
     protected override void CaptureInitializedState() {
         base.CaptureInitializedState();
@@ -58,16 +58,15 @@ public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
         else {
             D.Error("Name of Checkbox {0} not found.", checkboxName);
         }
-        // more checkboxes here
+        // TODO more checkboxes here
     }
 
     protected override void RecordPopupListState(string popupListName, string selectionName) {
         GameClockSpeed gameSpeedOnLoad;
         if (Enums<GameClockSpeed>.TryParse(selectionName, true, out gameSpeedOnLoad)) {
-            //UnityEngine.D.Log("GameClockSpeedOnLoad recorded as {0}.".Inject(selectionName));
             _gameSpeedOnLoad = gameSpeedOnLoad;
         }
-        // more popupLists here
+        // TODO more popupLists here
     }
 
     protected override void OnPopupListSelectionChange() {
@@ -75,26 +74,24 @@ public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
         ValidateState();
     }
 
-    //protected override void OnPopupListSelectionChange(string item) {
-    //    base.OnPopupListSelectionChange(item);
-    //    ValidateState();
-    //}
-
     protected override void OnLeftClick() {
-        GamePlayOptionSettings settings = new GamePlayOptionSettings();
-        settings.IsCameraRollEnabled = _isCameraRollEnabled;
-        settings.IsPauseOnLoadEnabled = _isPauseOnLoadEnabled;
-        settings.IsResetOnFocusEnabled = _isResetOnFocusEnabled;
-        settings.IsZoomOutOnCursorEnabled = _isZoomOutOnCursorEnabled;
-        settings.GameSpeedOnLoad = _gameSpeedOnLoad;
+        GamePlayOptionSettings settings = new GamePlayOptionSettings() {
+            IsCameraRollEnabled = _isCameraRollEnabled,
+            IsPauseOnLoadEnabled = _isPauseOnLoadEnabled,
+            IsResetOnFocusEnabled = _isResetOnFocusEnabled,
+            IsZoomOutOnCursorEnabled = _isZoomOutOnCursorEnabled,
+            GameSpeedOnLoad = _gameSpeedOnLoad
+        };
         ValidateState();
-        _eventMgr.Raise<GamePlayOptionsAcceptedEvent>(new GamePlayOptionsAcceptedEvent(this, settings));
+        _playerPrefsMgr.RecordGamePlayOptions(settings);
     }
 
     [Conditional("UNITY_EDITOR")]
     private void ValidateState() {
         D.Assert(_gameSpeedOnLoad != GameClockSpeed.None);
     }
+
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

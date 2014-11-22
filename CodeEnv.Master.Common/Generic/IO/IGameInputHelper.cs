@@ -29,7 +29,7 @@ namespace CodeEnv.Master.Common {
         /// Valid only within an Ngui UICamera-generated event.
         /// </summary>
         /// <returns></returns>
-        NguiMouseButton GetMouseButton();
+        NguiMouseButton CurrentMouseButton { get; }
 
         /// <summary>
         /// Tests whether the left mouse button is the current button that is being
@@ -38,7 +38,7 @@ namespace CodeEnv.Master.Common {
         /// <returns>
         ///   <c>true</c> if the left mouseButton is the one that was used to generate the current event; otherwise, <c>false</c>.
         /// </returns>
-        bool IsLeftMouseButton();
+        bool IsLeftMouseButton { get; }
 
         /// <summary>
         /// Tests whether the right mouse button is the current button that is being
@@ -47,7 +47,7 @@ namespace CodeEnv.Master.Common {
         /// <returns>
         ///   <c>true</c> if the right mouseButton is the one that was used to generate the current event; otherwise, <c>false</c>.
         /// </returns>
-        bool IsRightMouseButton();
+        bool IsRightMouseButton { get; }
 
         /// <summary>
         /// Tests whether the middle mouse button is the current button that is being
@@ -56,9 +56,9 @@ namespace CodeEnv.Master.Common {
         /// <returns>
         ///   <c>true</c> if the middle mouseButton is the one that was used to generate the current event; otherwise, <c>false</c>.
         /// </returns>
-        bool IsMiddleMouseButton();
+        bool IsMiddleMouseButton { get; }
 
-        bool IsAnyKeyOrMouseButtonDown();
+        bool IsAnyKeyOrMouseButtonDown { get; }
 
         /// <summary>
         /// Determines whether any of the specified keys are being held down.
@@ -75,6 +75,15 @@ namespace CodeEnv.Master.Common {
         /// <param name="keys">The keys.</param>
         /// <returns></returns>
         bool TryIsKeyDown(out KeyCode keyDown, params KeyCode[] keys);
+
+        /// <summary>
+        /// Generic notification function. Used in place of SendMessage to shorten the code and allow for more than one receiver.
+        /// Derived from Ngui's UICamera.Notify() as sometimes UICamera.Notify was busy sending a previous message.
+        /// </summary>
+        /// <param name="go">The GameObject to notify.</param>
+        /// <param name="methodName">Name of the method to call.</param>
+        /// <param name="obj">Optional parameter associated with the method.</param>
+        void Notify(GameObject go, string methodName, object obj = null);
 
     }
 }

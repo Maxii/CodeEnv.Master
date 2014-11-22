@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -35,6 +36,7 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
     }
 
     protected override void Initialize() {
+        References.GeneralFactory = this;
         _orbiterPrefab = RequiredPrefabs.Instance.orbiter;
         _movingOrbiterPrefab = RequiredPrefabs.Instance.movingOrbiter;
         _orbiterForShipsPrefab = RequiredPrefabs.Instance.orbiterForShips;
@@ -66,6 +68,9 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
         return orbiter;
     }
 
+    public override string ToString() {
+        return new ObjectAnalyzer().ToString(this);
+    }
 
 }
 

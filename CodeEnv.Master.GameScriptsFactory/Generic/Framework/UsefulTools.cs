@@ -28,7 +28,8 @@ using UnityEngine;
 /// clone of the Prefab in the startScene. As such, they must be Instantiated before use.
 /// </remarks>
 /// </summary>
-public class UsefulTools : AMonoBaseSingleton<UsefulTools>, IUsefulTools {
+//public class UsefulTools : AMonoBaseSingleton<UsefulTools>, IUsefulTools {
+public class UsefulTools : AMonoSingleton<UsefulTools>, IUsefulTools {
 
     //*******************************************************************
     // Prefabs you want to keep between scenes t here and
@@ -36,36 +37,20 @@ public class UsefulTools : AMonoBaseSingleton<UsefulTools>, IUsefulTools {
     //*******************************************************************
     public Light flareLight;
 
-    protected override void Awake() {
-        base.Awake();
-        if (TryDestroyExtraCopies()) {
-            return;
-        }
-        // TODO other initialization here   
-    }
+    protected override bool IsPersistentAcrossScenes { get { return true; } }
 
-    /// <summary>
-    /// Ensures that no matter how many scenes this Object is
-    /// in (having one dedicated to each sscene may be useful for testing) there's only ever one copy
-    /// in memory if you make a scene transition.
-    /// </summary>
-    /// <returns><c>true</c> if this instance is going to be destroyed, <c>false</c> if not.</returns>
-    private bool TryDestroyExtraCopies() {
-        if (_instance && _instance != this) {
-            D.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceID));
-            Destroy(gameObject);
-            return true;
-        }
-        else {
-            DontDestroyOnLoad(gameObject);
-            _instance = this;
-            return false;
-        }
+    protected override void InitializeOnInstance() {
+        base.InitializeOnInstance();
+        References.UsefulTools = Instance;
     }
 
     public void DestroyGameObject(GameObject objectToDestroy) {
         D.Log("Destroying {0}.", objectToDestroy.name);
         Destroy(objectToDestroy);
+    }
+
+    protected override void Cleanup() {
+        References.UsefulTools = null;
     }
 
     public override string ToString() {

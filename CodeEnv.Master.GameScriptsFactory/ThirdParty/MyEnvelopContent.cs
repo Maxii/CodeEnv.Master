@@ -46,7 +46,6 @@ public class MyEnvelopContent : AMonoBase {
 
     private void Subscribe() {
         UICamera.onScreenResize += Execute;
-        //GameStatus.Instance.onIsRunningOneShot += Execute;
     }
 
     protected override void OnEnable() {
@@ -72,6 +71,14 @@ public class MyEnvelopContent : AMonoBase {
             w.SetRect(x0, y0, x1 - x0, y1 - y0);
             BroadcastMessage("UpdateAnchors", SendMessageOptions.DontRequireReceiver);
         }
+    }
+
+    protected override void Cleanup() {
+        Unsubscribe();
+    }
+
+    private void Unsubscribe() {
+        UICamera.onScreenResize -= Execute;
     }
 
     public override string ToString() {

@@ -99,12 +99,9 @@ namespace CodeEnv.Master.GameContent {
        }}
     };
 
-
         protected static IColoredTextList _emptyColoredTextList = new ColoredTextListBase();
 
-        protected override void Initialize() {
-            // TODO do any initialization here
-        }
+        protected override void Initialize() { }
 
         public GuiHudText MakeInstance(IIntel intel, DataType data) {
             Arguments.ValidateNotNull(data);
@@ -123,7 +120,6 @@ namespace CodeEnv.Master.GameContent {
             D.Error("{0} {1} Key is not present in Lookup.", typeof(IntelCoverage), intel.CurrentCoverage.GetName());
             return null;
         }
-
 
         public IColoredTextList MakeInstance(GuiHudLineKeys key, IIntel intel, DataType data) {
             if (!ValidateKeyAgainstIntelLevel(key, intel)) {
@@ -147,7 +143,6 @@ namespace CodeEnv.Master.GameContent {
         private static bool ValidateKeyAgainstIntelLevel(GuiHudLineKeys key, IIntel intel) {
             return _hudLineKeyLookup[intel.CurrentCoverage].Contains<GuiHudLineKeys>(key);
         }
-
 
         #region IColoredTextList Strategy Classes
 
@@ -179,7 +174,7 @@ namespace CodeEnv.Master.GameContent {
             /// </summary>
             /// <param name="format">The format.</param>
             public ColoredTextList_Distance(string format = Constants.FormatFloat_1DpMax) {
-                float distance = References.CameraControl.DistanceToCamera;
+                float distance = References.MainCameraControl.DistanceToCamera;
                 _list.Add(new ColoredText(format.Inject(distance)));
             }
 
@@ -252,7 +247,7 @@ namespace CodeEnv.Master.GameContent {
                 string addendum = ". Intel is current.";
                 if (intel.HasDatedCoverage) {
                     //D.Log("DateStamp = {0}, CurrentDate = {1}.", intel.DateStamp, GameTime.CurrentDate);
-                    GameTimeDuration intelAge = new GameTimeDuration(intel.DateStamp, GameTime.CurrentDate);
+                    GameTimeDuration intelAge = new GameTimeDuration(intel.DateStamp, GameTime.Instance.CurrentDate);
                     addendum = String.Format(". Intel age {0}.", intelAge.ToString());
                 }
                 intelMsg = intelMsg + addendum;

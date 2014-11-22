@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="topography">The topography.</param>
-        public ItemData(string name, SpaceTopography topography)
+        public ItemData(string name, Topography topography)
             : base(name) {
             base.Topography = topography;
         }

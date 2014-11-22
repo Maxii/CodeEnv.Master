@@ -33,7 +33,7 @@ public class MoonItem : APlanetoidItem {
         set { base.Data = value; }
     }
 
-    protected override float SphericalHighlightSizeMultiplier { get { return 3F; } }
+    protected override float SphericalHighlightRadius { get { return Radius * 3F; } }
 
     private bool _isParentPlanetDying;
 
@@ -61,14 +61,14 @@ public class MoonItem : APlanetoidItem {
     /// </summary>
     public void OnPlanetDying() {
         _isParentPlanetDying = true;
-        CurrentState = PlanetoidState.Dead;
+        InitiateDeath();
     }
 
     protected override void OnShowCompletion() {
         switch (CurrentState) {
             case PlanetoidState.Dead:
                 if (!_isParentPlanetDying) {  // if the planet dieing is the cause of this moons death, than let the planet destroy all the game objects
-                    DestroyMortalItem(3F);
+                    __DestroyMe(3F);
                 }
                 break;
             case PlanetoidState.Idling:

@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for all Items.
 /// </summary>
-public abstract class AItem : AMonoBase, IItem, IDestinationTarget, ICameraFocusable, IWidgetTrackable, IDisposable {
+public abstract class AItem : AMonoBase, IItem, IDestinationTarget, ICameraFocusable, IWidgetTrackable {
 
     private AItemData _data;
     public AItemData Data {
@@ -62,18 +62,29 @@ public abstract class AItem : AMonoBase, IItem, IDestinationTarget, ICameraFocus
     }
 
     /// <summary>
-    /// Property that allows each derived class to establish the size of the sphericalHighlight
-    /// relative to the class's radius.
+    /// Property that allows each derived class to establish the radius of the sphericalHighlight.
+    /// Default is twice the radius of the item.
     /// </summary>
-    protected virtual float SphericalHighlightSizeMultiplier { get { return 2F; } }
+    protected virtual float SphericalHighlightRadius { get { return Radius * 2F; } }
 
-    public float circleScaleFactor = 3.0F;
+    /// <summary>
+    /// The radius of the smallest highlighting circle used by this Item.
+    /// </summary>
+    protected virtual float RadiusOfHighlightCircle { get { return Screen.height * Radius * ItemTypeCircleScale; } }
+
+    /// <summary>
+    /// Circle scale factor specific to the derived type of the Item.
+    /// e.g. ShipItem, CommandItem, StarItem, etc.
+    /// </summary>
+    protected virtual float ItemTypeCircleScale { get { return 3.0F; } }
 
     protected IList<IDisposable> _subscribers;
     protected bool _isCirclesRadiusDynamic = true;
+    protected IGameInputHelper _inputHelper;
+    protected IInputManager _inputMgr;
+    protected bool _isViewMembersOnDiscernibleInitialized;
 
     private HighlightCircle _circles;
-    protected bool _isViewMembersOnDiscernibleInitialized;
 
     #region Initialization
 
@@ -88,6 +99,8 @@ public abstract class AItem : AMonoBase, IItem, IDestinationTarget, ICameraFocus
     /// Called from Awake, initializes local references and values including Radius-related components.
     /// </summary>
     protected virtual void InitializeLocalReferencesAndValues() {
+        _inputHelper = References.InputHelper;
+        _inputMgr = References.InputManager;
         PlayerIntel = InitializePlayerIntel();
     }
 
@@ -99,6 +112,7 @@ public abstract class AItem : AMonoBase, IItem, IDestinationTarget, ICameraFocus
 
     protected virtual void Subscribe() {
         _subscribers = new List<IDisposable>();
+        _subscribers.Add(_inputMgr.SubscribeToPropertyChanged<IInputManager, GameInputMode>(inputMgr => inputMgr.InputMode, OnInputModeChanged));
         SubscribeToPlayerIntelCoverageChanged();
         // Subscriptions to data value changes should be done with SubscribeToDataValueChanges()
     }
@@ -144,7 +158,6 @@ public abstract class AItem : AMonoBase, IItem, IDestinationTarget, ICameraFocus
         _subscribers.Add(Data.SubscribeToPropertyChanged<AItemData, IPlayer>(d => d.Owner, OnOwnerChanged));
     }
 
-
     #endregion
 
     #region Model Methods
@@ -166,6 +179,29 @@ public abstract class AItem : AMonoBase, IItem, IDestinationTarget, ICameraFocus
 
     #region View Methods
 
+    private void OnInputModeChanged() {
+        OnInputModeChanged(_inputMgr.InputMode);
+    }
+
+    protected virtual void OnInputModeChanged(GameInputMode inputMode) {
+        if (HudPublisher != null && HudPublisher.IsHudShowing) {
+            switch (inputMode) {
+                case GameInputMode.NoInput:
+                case GameInputMode.PartialScreenPopup:
+                case GameInputMode.FullScreenPopup:
+                    D.Log("InputMode changed to {0}. {1} is no longer showing HUD.", inputMode.GetName(), FullName);
+                    ShowHud(false);
+                    break;
+                case GameInputMode.Normal:
+                    // do nothing
+                    break;
+                case GameInputMode.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(inputMode));
+            }
+        }
+    }
+
     protected virtual void OnPlayerIntelCoverageChanged() {
         AssessDiscernability();
         if (HudPublisher.IsHudShowing) {
@@ -176,7 +212,7 @@ public abstract class AItem : AMonoBase, IItem, IDestinationTarget, ICameraFocus
 
     protected virtual void OnIsFocusChanged() {
         if (IsFocus) {
-            References.CameraControl.CurrentFocus = this;
+            References.MainCameraControl.CurrentFocus = this;
         }
         AssessHighlighting();
     }
@@ -259,9 +295,8 @@ public abstract class AItem : AMonoBase, IItem, IDestinationTarget, ICameraFocus
             return;
         }
         if (_circles == null) {
-            float normalizedRadius = CalcNormalizedCircleRadius();
             string circlesTitle = "{0} Circle".Inject(gameObject.name);
-            _circles = new HighlightCircle(circlesTitle, transform, normalizedRadius, _isCirclesRadiusDynamic, maxCircles: 3);
+            _circles = new HighlightCircle(circlesTitle, transform, RadiusOfHighlightCircle, _isCirclesRadiusDynamic, maxCircles: 3);
             _circles.Colors = new GameColor[3] { UnityDebugConstants.FocusedColor, UnityDebugConstants.SelectedColor, UnityDebugConstants.GeneralHighlightColor };
             _circles.Widths = new float[3] { 2F, 2F, 1F };
         }
@@ -274,14 +309,10 @@ public abstract class AItem : AMonoBase, IItem, IDestinationTarget, ICameraFocus
         var sphericalHighlight = References.SphericalHighlight;
         if (sphericalHighlight != null) {  // allows deactivation of the SphericalHighlight gameObject
             if (toShow) {
-                sphericalHighlight.SetTarget(this, Radius * SphericalHighlightSizeMultiplier);
+                sphericalHighlight.SetTarget(this, SphericalHighlightRadius);
             }
             sphericalHighlight.Show(toShow);
         }
-    }
-
-    protected virtual float CalcNormalizedCircleRadius() {
-        return Screen.height * circleScaleFactor * Radius;
     }
 
     #endregion
@@ -302,20 +333,19 @@ public abstract class AItem : AMonoBase, IItem, IDestinationTarget, ICameraFocus
     protected virtual void OnClick() {
         D.Log("{0}.OnClick() called.", FullName);
         if (IsDiscernible) {
-            var inputHelper = References.InputHelper;
-            if (inputHelper.IsLeftMouseButton()) {
+            if (_inputHelper.IsLeftMouseButton) {
                 KeyCode notUsed;
-                if (inputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftAlt, KeyCode.RightAlt)) {
+                if (_inputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftAlt, KeyCode.RightAlt)) {
                     OnAltLeftClick();
                 }
                 else {
                     OnLeftClick();
                 }
             }
-            else if (inputHelper.IsMiddleMouseButton()) {
+            else if (_inputHelper.IsMiddleMouseButton) {
                 OnMiddleClick();
             }
-            else if (inputHelper.IsRightMouseButton()) {
+            else if (_inputHelper.IsRightMouseButton) {
                 OnRightClick();
             }
             else {
@@ -333,7 +363,7 @@ public abstract class AItem : AMonoBase, IItem, IDestinationTarget, ICameraFocus
     protected virtual void OnRightClick() { }
 
     protected virtual void OnDoubleClick() {
-        if (IsDiscernible && References.InputHelper.IsLeftMouseButton()) {
+        if (IsDiscernible && _inputHelper.IsLeftMouseButton) {
             OnLeftDoubleClick();
         }
     }
@@ -341,7 +371,7 @@ public abstract class AItem : AMonoBase, IItem, IDestinationTarget, ICameraFocus
     protected virtual void OnLeftDoubleClick() { }
 
     protected virtual void OnPress(bool isDown) {
-        if (IsDiscernible && References.InputHelper.IsRightMouseButton()) {
+        if (IsDiscernible && _inputHelper.IsRightMouseButton) {
             OnRightPress(isDown);
         }
     }
@@ -350,29 +380,25 @@ public abstract class AItem : AMonoBase, IItem, IDestinationTarget, ICameraFocus
 
     #endregion
 
-
     #region Cleanup
 
-    protected override void OnDestroy() {
+    protected sealed override void OnDestroy() {
         base.OnDestroy();
-        Dispose();
     }
 
     /// <summary>
     /// Cleans up this instance.
     /// Note: all members should be tested for null before disposing as Items can be destroyed in Creators before completely initialized
     /// </summary>
-    protected virtual void Cleanup() {
+    protected override void Cleanup() {
         if (HudPublisher != null) { (HudPublisher as IDisposable).Dispose(); }
         if (_circles != null) { _circles.Dispose(); }
         Unsubscribe();
     }
 
     protected virtual void Unsubscribe() {
-        //if (_subscribers != null) {
         _subscribers.ForAll(s => s.Dispose());
         _subscribers.Clear();
-        //}
     }
 
     #endregion
@@ -454,7 +480,7 @@ public abstract class AItem : AMonoBase, IItem, IDestinationTarget, ICameraFocus
 
     private float _radius;
     /// <summary>
-    /// The radius in units of the conceptual 'globe' that encompasses this Item.
+    /// The radius of the conceptual 'globe' that encompasses this Item.
     /// </summary>
     public virtual float Radius {
         get {
@@ -470,54 +496,10 @@ public abstract class AItem : AMonoBase, IItem, IDestinationTarget, ICameraFocus
 
     #region IDestinationTarget Members
 
-    public virtual SpaceTopography Topography { get { return Data.Topography; } }
+    public virtual Topography Topography { get { return Data.Topography; } }
 
     public virtual bool IsMobile { get { return true; } }
 
-    #endregion
-
-    #region IDisposable
-
-    [DoNotSerialize]
-    private bool alreadyDisposed = false;
-
-    /// <summary>
-    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-    /// </summary>
-    public void Dispose() {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
-    /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool isDisposing) {
-        // Allows Dispose(isDisposing) to be called more than once
-        if (alreadyDisposed) {
-            return;
-        }
-
-        if (isDisposing) {
-            // free managed resources here including unhooking events
-            Cleanup();
-        }
-        // free unmanaged resources here
-
-        alreadyDisposed = true;
-    }
-
-    // Example method showing check for whether the object has been disposed
-    //public void ExampleMethod() {
-    //    // throw Exception if called on object that is already disposed
-    //    if(alreadyDisposed) {
-    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-    //    }
-
-    //    // method content here
-    //}
     #endregion
 
     #region Nested Classes
@@ -550,5 +532,6 @@ public abstract class AItem : AMonoBase, IItem, IDestinationTarget, ICameraFocus
     }
 
     #endregion
+
 }
 

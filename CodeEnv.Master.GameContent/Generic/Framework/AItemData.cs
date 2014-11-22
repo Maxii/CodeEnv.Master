@@ -52,7 +52,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<IPlayer>(ref _owner, value, "Owner", OnOwnerChanged); }
         }
 
-        public SpaceTopography Topography { get; protected set; }   // can't use OnPropertyChanged approach as default(SpaceTopography) = OpenSpace, aka 0 tag
+        public Topography Topography { get; protected set; }   // can't use OnPropertyChanged approach as default(SpaceTopography) = OpenSpace, aka 0 tag
 
         /// <summary>
         /// Readonly. Gets the position of the gameObject containing this data.

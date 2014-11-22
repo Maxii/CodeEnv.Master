@@ -59,7 +59,7 @@ public class StarView : AFocusableItemView {
         });
 
         var starLight = gameObject.GetComponentInChildren<Light>();
-        starLight.range = GameManager.Settings.UniverseSize.Radius();
+        starLight.range = GameManager.GameSettings.UniverseSize.Radius();
         starLight.intensity = 0.5F;
         starLight.cullingMask = _starLightCullingMask;
         starLight.enabled = true;

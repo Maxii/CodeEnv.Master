@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -188,7 +189,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="topography">The topography.</param>
     /// <param name="creatorParent">The creator parent.</param>
     /// <returns></returns>
-    public SystemItem MakeSystemInstance(Index3D sectorIndex, SpaceTopography topography, SystemCreator creatorParent) {
+    public SystemItem MakeSystemInstance(Index3D sectorIndex, Topography topography, SystemCreator creatorParent) {
         GameObject systemPrefab = _systemPrefab.gameObject;
         GameObject systemGo = UnityUtility.AddChild(creatorParent.gameObject, systemPrefab);
         string systemName = creatorParent.SystemName;
@@ -206,12 +207,16 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="sectorIndex">Index of the sector.</param>
     /// <param name="topography">The topography.</param>
     /// <param name="system">The system item.</param>
-    public void MakeSystemInstance(string systemName, Index3D sectorIndex, SpaceTopography topography, ref SystemItem system) {
+    public void MakeSystemInstance(string systemName, Index3D sectorIndex, Topography topography, ref SystemItem system) {
         D.Assert(system.transform.parent != null, "{0} should already have a parent.".Inject(system.FullName));
         SystemData data = new SystemData(systemName, sectorIndex, topography) {
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
         };
         system.Data = data;
+    }
+
+    public override string ToString() {
+        return new ObjectAnalyzer().ToString(this);
     }
 
 }

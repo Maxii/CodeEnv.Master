@@ -25,7 +25,11 @@ using UnityEngine;
 /// <summary>
 /// Selection readout class for the Gui, based on Ngui UILabel.
 /// </summary>
-public class GuiSelectedReadout : AGuiLabelReadoutBase, IDisposable {
+public class GuiSelectedReadout : AGuiLabelReadoutBase {
+
+    protected override string TooltipContent {
+        get { return "The currently selected game object."; }
+    }
 
     private IList<IDisposable> _subscribers;
     private SelectionManager _selectionMgr;
@@ -36,14 +40,8 @@ public class GuiSelectedReadout : AGuiLabelReadoutBase, IDisposable {
         Subscribe();
     }
 
-    protected override void InitializeTooltip() {
-        tooltip = "The currently selected game object.";
-    }
-
     private void Subscribe() {
-        if (_subscribers == null) {
-            _subscribers = new List<IDisposable>();
-        }
+        _subscribers = new List<IDisposable>();
         _subscribers.Add(_selectionMgr.SubscribeToPropertyChanged<SelectionManager, ISelectable>(sm => sm.CurrentSelection, OnCurrentSelectionChanged));
     }
 
@@ -51,17 +49,28 @@ public class GuiSelectedReadout : AGuiLabelReadoutBase, IDisposable {
         string selectionName = string.Empty;
         ISelectable newSelection = _selectionMgr.CurrentSelection;
         if (newSelection != null) {
-            selectionName = newSelection.FullName;
+            selectionName = newSelection.DisplayName;
         }
         RefreshReadout(selectionName);
     }
 
-    protected override void OnDestroy() {
-        base.OnDestroy();
-        Dispose();
+    void OnClick() {
+        if (GameInputHelper.Instance.IsMiddleMouseButton) {
+            OnMiddleClick();
+        }
     }
 
-    private void Cleanup() {
+    private void OnMiddleClick() {
+        var selection = _selectionMgr.CurrentSelection;
+        if (selection != null) {
+            var focusable = selection as ICameraFocusable;
+            if (focusable != null) {
+                focusable.IsFocus = true;
+            }
+        }
+    }
+
+    protected override void Cleanup() {
         Unsubscribe();
     }
 
@@ -73,49 +82,6 @@ public class GuiSelectedReadout : AGuiLabelReadoutBase, IDisposable {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region IDisposable
-    [DoNotSerialize]
-    private bool alreadyDisposed = false;
-
-    /// <summary>
-    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-    /// </summary>
-    public void Dispose() {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
-    /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool isDisposing) {
-        // Allows Dispose(isDisposing) to be called more than once
-        if (alreadyDisposed) {
-            return;
-        }
-
-        if (isDisposing) {
-            // free managed resources here including unhooking events
-            Cleanup();
-        }
-        // free unmanaged resources here
-
-        alreadyDisposed = true;
-    }
-
-    // Example method showing check for whether the object has been disposed
-    //public void ExampleMethod() {
-    //    // throw Exception if called on object that is already disposed
-    //    if(alreadyDisposed) {
-    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-    //    }
-
-    //    // method content here
-    //}
-    #endregion
 
 }
 

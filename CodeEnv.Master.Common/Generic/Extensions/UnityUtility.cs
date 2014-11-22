@@ -320,6 +320,28 @@ namespace CodeEnv.Master.Common {
             }
         }
 
+        public static void Destroy(GameObject gameObject, float delayInSeconds, Action onCompletion = null) {
+            //GameObject.Destroy(gameObject, delayInSeconds);
+            new Job(DelayedDestroy(gameObject, delayInSeconds), toStart: true, onJobComplete: (wasKilled) => {
+                D.Log("{0} has been destroyed.", gameObject.name);
+                if (onCompletion != null) {
+                    onCompletion();
+                }
+            });
+        }
+
+        private static IEnumerator DelayedDestroy(GameObject gameObject, float delayInSeconds) {
+            yield return new WaitForSeconds(delayInSeconds);
+            if (gameObject == null) {
+                D.Warn("Trying to destroy a GameObject that has already been destroyed.");
+                yield break;
+            }
+            GameObject.Destroy(gameObject);
+        }
+
+
+        #region WaitFor Coroutines
+
         /// <summary>
         /// Waits one frame, then executes the provided delegate.
         /// Usage:
@@ -387,7 +409,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="repeatingFramesToWait">The repeating frames to wait.</param>
         /// <param name="methodToExecute">The method to execute.</param>
         /// <returns>
-        /// A reference to the WaitJob so it can be killed when no longer needed.
+        /// A reference to the WaitJob as it must be killed to stop it.
         /// </returns>
         public static WaitJob WaitForFrames(int initialFramesToWait, int repeatingFramesToWait, Action methodToExecute) {
             return new WaitJob(RepeatingWaitForFrames(initialFramesToWait, repeatingFramesToWait, methodToExecute), toStart: true, onJobComplete: null);
@@ -417,6 +439,8 @@ namespace CodeEnv.Master.Common {
                 methodToExecute();
             }
         }
+
+        #endregion
 
         #region Common Animation Coroutines
 

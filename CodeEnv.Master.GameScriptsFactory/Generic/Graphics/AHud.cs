@@ -24,9 +24,11 @@ using UnityEngine;
 /// <summary>
 /// Abstract Singleton Base class for HUDs drawn by the Gui Camera.
 /// </summary>
-public abstract class AHud<T> : AMonoBaseSingleton<T>, IHud where T : AHud<T> {
+public abstract class AHud<T> : AMonoSingleton<T>, IHud where T : AHud<T> {
 
-    // Camera used to draw this HUD
+    /// <summary>
+    /// Camera used to draw this HUD on the UI layer.
+    /// </summary>
     public Camera uiCamera;
 
     protected UILabel _label;
@@ -35,8 +37,8 @@ public abstract class AHud<T> : AMonoBaseSingleton<T>, IHud where T : AHud<T> {
 
     private Transform _labelTransform;
 
-    protected override void Awake() {
-        base.Awake();
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
         _label = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
         _labelTransform = _label.transform;
         _label.depth = 100; // draw on top of other Gui Elements in the same Panel
@@ -46,9 +48,6 @@ public abstract class AHud<T> : AMonoBaseSingleton<T>, IHud where T : AHud<T> {
             uiCamera = NGUITools.FindCameraForLayer(gameObject.layer);
         }
     }
-
-    //[System.Obsolete]
-    //protected virtual void UpdateHudPosition() { }
 
     protected void SetLabelPivot(UIWidget.Pivot pivot) {
         _label.pivot = pivot;
@@ -63,7 +62,7 @@ public abstract class AHud<T> : AMonoBaseSingleton<T>, IHud where T : AHud<T> {
     /// </summary>
     /// <param name="text">The text to place in the HUD.</param>
     protected void Set(string text) {
-        if (Instance && _isDisplayEnabled) {
+        if (_instance && _isDisplayEnabled) {
             if (Utility.CheckForContent(text)) {
                 if (!NGUITools.GetActive(_label.gameObject)) {
                     NGUITools.SetActive(_label.gameObject, true);
@@ -96,5 +95,7 @@ public abstract class AHud<T> : AMonoBaseSingleton<T>, IHud where T : AHud<T> {
     }
 
     #endregion
+
 }
+
 

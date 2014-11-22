@@ -69,7 +69,7 @@ public class FleetCommand : FollowableItem, IFleetCommand {
     void OnPress(bool isDown) {
         if (_fleetMgr.IsSelected) {
             //D.Log("{0}.OnPress({1}) called.", this.GetType().Name, isPressed);
-            CameraControl.Instance.ShowContextMenuOnPress(isDown);
+            MainCameraControl.Instance.ShowContextMenuOnPress(isDown);
         }
     }
 
@@ -107,7 +107,7 @@ public class FleetCommand : FollowableItem, IFleetCommand {
     private void Die() {
         D.Log("{0} has Died!", Data.Name);
         if (IsFocus) {
-            CameraControl.Instance.CurrentFocus = null;
+            MainCameraControl.Instance.CurrentFocus = null;
         }
         _eventMgr.Raise<MortalItemDeathEvent>(new MortalItemDeathEvent(this));
         Destroy(gameObject);

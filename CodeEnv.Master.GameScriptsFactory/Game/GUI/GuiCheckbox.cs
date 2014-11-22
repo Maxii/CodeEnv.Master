@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GuiCheckbox.cs
-// Standalone but extendable GuiCheckbox class.
+// Standalone but extensible GuiCheckbox class.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,17 +23,18 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Standalone but extendable GuiCheckbox class that implements PlayerPrefsManager property initialization and Tooltip
+/// Standalone but extensible GuiCheckbox class that implements PlayerPrefsManager property initialization and Tooltip
 /// functionality.
 /// </summary>
 public class GuiCheckbox : GuiTooltip {
 
     /// <summary>
-    /// The name of the PlayerPrefsManager property for this checkbox. Warning: If clients inherit from this 
-    /// class and wish to set this value programatically, it must be set in InitializeOnAwake()
-    /// BEFORE base.InitializeOnAwake() is called.
+    /// The name of the PlayerPrefsManager property for this checkbox. 
+    /// WARNING: If clients inherit from this class and wish to set this value programatically, 
+    /// it must be set in Awake() BEFORE base.Awake() is called.
     /// </summary>
     public string propertyName = string.Empty;
+
     protected UIToggle checkbox;
 
     /// <summary>
@@ -46,7 +47,6 @@ public class GuiCheckbox : GuiTooltip {
         InitializeCheckbox();
         // don't receive events until initializing is complete
         EventDelegate.Add(checkbox.onChange, OnCheckboxStateChange);
-        //checkbox.onStateChange += OnCheckboxStateChange;
     }
 
     /// <summary>
@@ -62,18 +62,15 @@ public class GuiCheckbox : GuiTooltip {
                 return;
             }
             Func<bool> propertyGet = (Func<bool>)Delegate.CreateDelegate(typeof(Func<bool>), PlayerPrefsManager.Instance, propertyInfo.GetGetMethod());
-            checkbox.startsActive = propertyGet(); // startsChecked used as UIToggle Start() uses it to initialize the checkbox
-            //checkbox.startsChecked = propertyGet(); // startsChecked used as UIToggle Start() uses it to initialize the checkbox
+            checkbox.startsActive = propertyGet(); // startsActive (aka checked) used as UIToggle Start() uses it to initialize the checkbox
         }
         else {
             D.Warn("No PlayerPrefsManager Property named for {0} so setting false.".Inject(gameObject.name));
             checkbox.startsActive = false;
-            //checkbox.startsChecked = false;
         }
     }
 
     protected virtual void OnCheckboxStateChange() { }
-    //protected virtual void OnCheckboxStateChange(bool state) { }
 
     // IDisposable Note: No reason to remove Ngui event currentListeners OnDestroy() as the EventListener or
     // Delegate to be removed is attached to this same GameObject that is being destroyed. In addition,

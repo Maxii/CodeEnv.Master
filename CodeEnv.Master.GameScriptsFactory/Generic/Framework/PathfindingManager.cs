@@ -28,30 +28,26 @@ using UnityEngine;
 /// <summary>
 /// The singleton manager for the AStar Pathfinding system. 
 /// </summary>
-public class PathfindingManager : AMonoBaseSingleton<PathfindingManager>, IDisposable {
-    //public class PathfindingManager : AMonoBase, IDisposable {
+public class PathfindingManager : AMonoSingleton<PathfindingManager> {
 
     public MyAStarPointGraph Graph { get; private set; }
 
     private IList<IDisposable> _subscribers;
     private AstarPath _astarPath;
+    private GameManager _gameMgr;
 
-    protected override void Awake() {
-        base.Awake();
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
+        _gameMgr = GameManager.Instance;
         InitializeAstarPath();
-        RegisterGameStateProgressionReadiness(isReady: false);
         Subscribe();
     }
 
     private void Subscribe() {
         _subscribers = new List<IDisposable>();
-        _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
+        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
         AstarPath.OnLatePostScan += OnGraphScansCompleted;
         AstarPath.OnGraphsUpdated += OnGraphRuntimeUpdateCompleted;
-    }
-
-    private void RegisterGameStateProgressionReadiness(bool isReady) {
-        GameEventManager.Instance.Raise(new ElementReadyEvent(this, GameState.GeneratingPathGraphs, isReady));
     }
 
     private void InitializeAstarPath() {
@@ -70,16 +66,16 @@ public class PathfindingManager : AMonoBaseSingleton<PathfindingManager>, IDispo
 
     private void OnGameStateChanged() {
         if (GameManager.Instance.CurrentState == GameState.GeneratingPathGraphs) {
+            _gameMgr.RecordGameStateProgressionReadiness(this, GameState.GeneratingPathGraphs, isReady: false);
             AstarPath.active.Scan();
         }
     }
 
     private void OnGraphScansCompleted(AstarPath astarPath) {
         Graph = astarPath.graphs[0] as MyAStarPointGraph;
-        RegisterGameStateProgressionReadiness(isReady: true);
-        // WARNING: I must not directly cause the game state to change as the other subscribers to 
-        // GameStateChanged may not have been called yet. This GraphScansCompletedEvent occurs 
-        // while we are still processing OnGameStateChanged
+        _gameMgr.RecordGameStateProgressionReadiness(this, GameState.GeneratingPathGraphs, isReady: true);
+        // WARNING: I must not directly cause the game state to change as the other subscribers to GameStateChanged may not have been called yet. 
+        // This GraphScansCompletedEvent occurs while we are still processing OnGameStateChanged.
     }
 
     private void OnGraphRuntimeUpdateCompleted(AstarPath script) {
@@ -94,14 +90,8 @@ public class PathfindingManager : AMonoBaseSingleton<PathfindingManager>, IDispo
         });
     }
 
-    protected override void OnDestroy() {
-        base.OnDestroy();
-        Dispose();
-    }
-
-    private void Cleanup() {
+    protected override void Cleanup() {
         Unsubscribe();
-        // other cleanup here including any tracking Gui2D elements
     }
 
     private void Unsubscribe() {
@@ -114,49 +104,6 @@ public class PathfindingManager : AMonoBaseSingleton<PathfindingManager>, IDispo
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region IDisposable
-    [DoNotSerialize]
-    private bool alreadyDisposed = false;
-
-    /// <summary>
-    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-    /// </summary>
-    public void Dispose() {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
-    /// </summary>
-    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool isDisposing) {
-        // Allows Dispose(isDisposing) to be called more than once
-        if (alreadyDisposed) {
-            return;
-        }
-
-        if (isDisposing) {
-            // free managed resources here including unhooking events
-            Cleanup();
-        }
-        // free unmanaged resources here
-
-        alreadyDisposed = true;
-    }
-
-    // Example method showing check for whether the object has been disposed
-    //public void ExampleMethod() {
-    //    // throw Exception if called on object that is already disposed
-    //    if(alreadyDisposed) {
-    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-    //    }
-
-    //    // method content here
-    //}
-    #endregion
 
 }
 
