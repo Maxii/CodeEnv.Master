@@ -108,14 +108,14 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityCategory, 
         _command.HQElement = RandomExtended<AUnitElementItem>.Choice(candidateHQElements) as FacilityItem;
     }
 
-    protected override void EnableOtherWhenRunning() {
-        gameObject.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeMonitor>().ForAll(wrt => wrt.enabled = true);
-        // CameraLosChangedListener enabled state handled in Item.InitializeViewMembersOnDiscernible
-        // Revolvers handle their own enabled state
-        // Cmd sprites enabled when shown
-        // no orbits present
-        // TODO SensorRangeTracker
-    }
+    //protected override void EnableOtherWhenRunning() {
+    //    gameObject.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeMonitor>().ForAll(wrt => wrt.enabled = true);
+    //    // CameraLosChangedListener enabled state handled in Item.InitializeViewMembersOnDiscernible
+    //    // Revolvers handle their own enabled state
+    //    // Cmd sprites enabled when shown
+    //    // no orbits present
+    //    // TODO SensorRangeTracker
+    //}
 
     protected override void __IssueFirstUnitCommand() {
         LogEvent();

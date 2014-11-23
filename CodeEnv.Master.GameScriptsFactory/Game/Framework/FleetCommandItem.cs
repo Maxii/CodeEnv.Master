@@ -990,9 +990,6 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         #endregion
 
         private void OnCourseChanged() {
-            //if (_fleet.onCoursePlotChanged != null) {
-            //    _fleet.onCoursePlotChanged();
-            //}
             _fleet.AssessShowPlottedPath(_course);
         }
 
@@ -1172,8 +1169,8 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
 
             RaycastHit hitInfo;
             if (Physics.Raycast(ray, out hitInfo, rayLength, _keepoutOnlyLayerMask.value)) {
-                string obstacleName = hitInfo.transform.parent.name + "." + hitInfo.collider.name;
-                Vector3 obstacleLocation = hitInfo.transform.position;
+                //string obstacleName = hitInfo.transform.parent.name + "." + hitInfo.collider.name;
+                //Vector3 obstacleLocation = hitInfo.transform.position;
                 //D.Log("{0} encountered obstacle {1} at {2} when checking approach to waypoint at {3}. \nRay length = {4}, rayHitDistance = {5}.",
                 //    _fleet.FullName, obstacleName, obstacleLocation, waypoint, rayLength, hitInfo.distance);
                 // there is a keepout zone obstacle in the way 

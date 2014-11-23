@@ -291,11 +291,10 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     private void MakeAndAddWeapon(WeaponStat weapStat, AUnitElementItem elementItem) {
         var weapon = new Weapon(weapStat);
         var allWeaponMonitors = elementItem.gameObject.GetComponentsInChildren<WeaponRangeMonitor>();
-        var weaponMonitorsInUse = allWeaponMonitors.Where(m => m.Range != Constants.ZeroF);
-        var wRange = weapon.Range;
+        var weaponMonitorsInUse = allWeaponMonitors.Where(m => m.Range > Constants.ZeroF);
 
         // check monitors for range fit, if find it, assign ID, if not assign or create a monitor and assign its ID to the weapon
-        var monitor = weaponMonitorsInUse.FirstOrDefault(m => m.RangeSpan.ContainsValue(wRange));
+        var monitor = weaponMonitorsInUse.FirstOrDefault(m => m.RangeSpan.ContainsValue(weapon.Range));
         if (monitor == null) {
             var unusedWeaponMonitors = allWeaponMonitors.Except(weaponMonitorsInUse);
             if (!unusedWeaponMonitors.IsNullOrEmpty()) {
@@ -306,8 +305,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 monitorGo.layer = (int)Layers.IgnoreRaycast; // AddChild resets prefab layer to elementGo's layer
                 monitor = monitorGo.GetSafeMonoBehaviourComponentInChildren<WeaponRangeMonitor>();
             }
-            //D.Log("{0}'s {1} with Range {2} assigned new Range {3}.", elementItem.FullName, typeof(IWeaponRangeTracker).Name, rTracker.Range, wRange);
-            monitor.Range = wRange;
+            D.Log("{0} has had a {1} chosen for {2}.", elementItem.FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
         }
         elementItem.AddWeapon(weapon, monitor);
         // IMPROVE how to keep track ranges from overlapping

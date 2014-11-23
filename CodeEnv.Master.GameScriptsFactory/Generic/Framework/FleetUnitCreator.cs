@@ -135,14 +135,14 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
         _command.CommenceOperations();
     }
 
-    protected override void EnableOtherWhenRunning() {
-        gameObject.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeMonitor>().ForAll(monitor => monitor.enabled = true);
-        // CameraLosChangedListeners enabled in Item.InitializeViewMembersOnDiscernible
-        // CmdSprites enabled when shown
-        // formation stations control enabled themselves when the assigned ship changes
-        // no orbits or revolves present 
-        // TODO SensorRangeTracker
-    }
+    //protected override void EnableOtherWhenRunning() {
+    //    gameObject.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeMonitor>().ForAll(monitor => monitor.enabled = true);
+    //    // CameraLosChangedListeners enabled in Item.InitializeViewMembersOnDiscernible
+    //    // CmdSprites enabled when shown
+    //    // formation stations control enabled themselves when the assigned ship changes
+    //    // no orbits or revolves present 
+    //    // TODO SensorRangeTracker
+    //}
 
     protected override void __IssueFirstUnitCommand() {
         LogEvent();

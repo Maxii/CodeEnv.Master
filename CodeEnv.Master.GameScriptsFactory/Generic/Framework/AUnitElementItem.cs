@@ -59,6 +59,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     /// Weapon Range Monitor lookup table keyed by the Monitor's Guid ID.
     /// </summary>
     protected IDictionary<Guid, WeaponRangeMonitor> _weaponRangeMonitorLookup;
+
+
     protected float _gameSpeedMultiplier;
     protected Rigidbody __rigidbody;
 
@@ -96,6 +98,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
 
     #region Model Methods
 
+    public override void CommenceOperations() {
+        base.CommenceOperations();
+        Data.Weapons.ForAll(w => w.IsOperational = true);
+    }
+
     /// <summary>
     /// Parents this element to the provided container that holds the entire Unit.
     /// Local position, rotation and scale auto adjust to keep element unchanged in worldspace.
@@ -118,7 +125,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
 
     protected override void OnNamingChanged() {
         base.OnNamingChanged();
-        _weaponRangeMonitorLookup.Values.ForAll(rt => rt.ParentFullName = FullName);
+        _weaponRangeMonitorLookup.Values.ForAll(rt => rt.__ParentFullName = FullName);
     }
 
     protected override void OnDeath() {
@@ -126,7 +133,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
         collider.enabled = false;
         _weaponRangeMonitorLookup.Values.ForAll(wrm => {
             wrm.onAnyEnemyInRangeChanged -= OnAnyEnemyInRangeChanged;
-            wrm.enabled = false;
+            //wrm.enabled = false;
         });
         if (_weaponReloadJobs.Count != Constants.Zero) {
             _weaponReloadJobs.ForAll<KeyValuePair<Guid, Job>>(kvp => kvp.Value.Kill());
@@ -149,34 +156,36 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
         if (!_weaponRangeMonitorLookup.ContainsKey(rangeMonitor.ID)) {
             // only need to record and setup range trackers once. The same rangeTracker can have more than 1 weapon
             _weaponRangeMonitorLookup.Add(rangeMonitor.ID, rangeMonitor);
-            rangeMonitor.ParentFullName = FullName;
+            rangeMonitor.__ParentFullName = FullName;
             rangeMonitor.Range = weapon.Range;
             rangeMonitor.Owner = Data.Owner;
             rangeMonitor.onAnyEnemyInRangeChanged += OnAnyEnemyInRangeChanged;
         }
-        // rangeMonitors enable themselves
-
-        Data.AddWeapon(weapon, rangeMonitor.ID);
+        rangeMonitor.Add(weapon);   // rangeMonitors enable themselves when they contain operational weapons
+        Data.AddWeapon(weapon);
         // IMPROVE how to keep track ranges from overlapping
+
+        //weapon.onReadyToFire += OnWeaponReady;
     }
 
     /// <summary>
-    /// Removes the weapon from this element, destroying any associated range tracker
-    /// if it is no longer in use.
+    /// Removes the weapon from this element, destroying any associated 
+    /// range monitor no longer in use.
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     public void RemoveWeapon(Weapon weapon) {
-        bool isRangeMonitorStillInUse = Data.RemoveWeapon(weapon);
+        var monitorID = weapon.MonitorID;
+        var _monitor = _weaponRangeMonitorLookup[monitorID];
+        bool isRangeMonitorStillInUse = _monitor.Remove(weapon);
+
         if (!isRangeMonitorStillInUse) {
-            WeaponRangeMonitor monitor;
-            if (_weaponRangeMonitorLookup.TryGetValue(weapon.MonitorID, out monitor)) {
-                _weaponRangeMonitorLookup.Remove(weapon.MonitorID);
-                D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
-                GameObject.Destroy(monitor.gameObject);
-                return;
-            }
-            D.Error("{0} could not find {1} for {2}.", FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
+            _weaponRangeMonitorLookup.Remove(monitorID);
+            D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
+            GameObject.Destroy(_monitor.gameObject);
         }
+        Data.RemoveWeapon(weapon);
+
+        //weapon.onReadyToFire -= OnWeaponReady;
     }
 
     #region Weapon Reload System
@@ -184,15 +193,16 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     private IDictionary<Guid, Job> _weaponReloadJobs = new Dictionary<Guid, Job>();
 
     private void OnAnyEnemyInRangeChanged(bool isAnyEnemyInRange, Guid rangeMonitorID) {
-        // D.Log("{0}.OnAnyEnemyInRangeChanged(isAnyEnemyInRange: {1}, rangeMonitorID: {2}).", FullName, isAnyEnemyInRange, rangeMonitorID);
-        var weapons = Data.GetWeapons(rangeMonitorID);
-        foreach (var weapon in weapons) {
+        D.Log("{0}.OnAnyEnemyInRangeChanged(isAnyEnemyInRange: {1}, rangeMonitorID: {2}).", FullName, isAnyEnemyInRange, rangeMonitorID);
+        var monitor = _weaponRangeMonitorLookup[rangeMonitorID];
+        var operationalWeapons = monitor.OperationalWeapons;
+        operationalWeapons.ForAll(weapon => {
             var weaponID = weapon.ID;
             Job weaponReloadJob;
             if (isAnyEnemyInRange) {
                 // as we never want to restart a Job, there should never be any weaponReloadJobs already stored when the first enemy comes into range
                 D.Assert(!_weaponReloadJobs.ContainsKey(weaponID), "{0} found a weaponReloadJob stored for {1}.".Inject(FullName, weapon.Name));
-                //D.Log("{0} creating new weaponReloadJob for {1}.", FullName, weapon.Name);
+                D.Log("{0} creating new weaponReloadJob for {1}.", FullName, weapon.Name);
                 weaponReloadJob = new Job(ReloadWeapon(weapon), toStart: true);
                 _weaponReloadJobs.Add(weaponID, weaponReloadJob);
             }
@@ -202,7 +212,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
                 weaponReloadJob.Kill();
                 _weaponReloadJobs.Remove(weaponID); // as we never want to restart a Job, never store a Job for reuse later
             }
-        }
+        });
     }
 
     private IEnumerator ReloadWeapon(Weapon weapon) {

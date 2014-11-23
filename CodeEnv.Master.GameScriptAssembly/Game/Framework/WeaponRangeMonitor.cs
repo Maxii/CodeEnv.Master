@@ -32,15 +32,19 @@ public class WeaponRangeMonitor : AMonoBase {
 
     private static HashSet<Collider> _collidersToIgnore = new HashSet<Collider>();
 
-    public Guid ID { get; private set; }
-
-    public Range<float> RangeSpan { get; private set; }
-
     /// <summary>
     /// Occurs when the first enemy comes within this Monitor's range envelope
     /// or the last enemy within range leaves.
     /// </summary>
     public event Action<bool, Guid> onAnyEnemyInRangeChanged;
+
+    public Guid ID { get; private set; }
+
+    public Range<float> RangeSpan { get; private set; }
+
+    public IList<Weapon> Weapons { get; private set; }
+
+    public IList<Weapon> OperationalWeapons { get; private set; }
 
     private float _range;
     public float Range {
@@ -54,7 +58,7 @@ public class WeaponRangeMonitor : AMonoBase {
         set { SetProperty<IPlayer>(ref _owner, value, "Owner", OnOwnerChanged); }
     }
 
-    public string ParentFullName { get; set; }
+    public string __ParentFullName { get; set; }
 
     public IList<AMortalItem> EnemyTargets { get; private set; }
     public IList<AMortalItem> AllTargets { get; private set; }
@@ -69,15 +73,63 @@ public class WeaponRangeMonitor : AMonoBase {
 
         AllTargets = new List<AMortalItem>();
         EnemyTargets = new List<AMortalItem>();
+
+        Weapons = new List<Weapon>();
+        OperationalWeapons = new List<Weapon>();
+
         ID = Guid.NewGuid();
         RangeSpan = new Range<float>(Constants.ZeroF, Constants.ZeroF);
-        enabled = false;
+        _collider.enabled = false;
+    }
+
+    public void Add(Weapon weapon) {
+        D.Assert(!Weapons.Contains(weapon));
+        D.Assert(RangeSpan.ContainsValue(weapon.Range));
+        D.Assert(weapon.MonitorID == default(Guid));
+        weapon.MonitorID = ID;
+        Weapons.Add(weapon);
+        if (weapon.IsOperational) {
+            AddOperationalWeapon(weapon);
+        }
+        weapon.onIsOperationalChanged += OnWeaponIsOperationalChanged;
+    }
+
+    private void AddOperationalWeapon(Weapon weapon) {
+        D.Assert(!OperationalWeapons.Contains(weapon));
+        OperationalWeapons.Add(weapon);
+        _collider.enabled = true;
+    }
+
+
+    /// <summary>
+    /// Removes the specified weapon. Returns <c>true</c> if this monitor
+    /// is still in use (has weapons remaining even if not operational), <c>false</c> otherwise.
+    /// </summary>
+    /// <param name="weapon">The weapon.</param>
+    /// <returns></returns>
+    public bool Remove(Weapon weapon) {
+        D.Assert(Weapons.Contains(weapon));
+        weapon.MonitorID = default(Guid);
+        Weapons.Remove(weapon);
+        if (weapon.IsOperational) {
+            RemoveOperationalWeapon(weapon);
+        }
+        weapon.onIsOperationalChanged -= OnWeaponIsOperationalChanged;
+        return Weapons.Count > Constants.Zero;
+    }
+
+    private void RemoveOperationalWeapon(Weapon weapon) {
+        D.Assert(OperationalWeapons.Contains(weapon));
+        OperationalWeapons.Remove(weapon);
+        if (OperationalWeapons.Count == Constants.Zero) {
+            _collider.enabled = false;
+        }
     }
 
     void OnTriggerEnter(Collider other) {
-        //D.Log("{0}.{1}.OnTriggerEnter({2}) called.", ParentFullName, GetType().Name, other.name);
+        D.Log("{0}.{1}.OnTriggerEnter() tripped by {2}.", __ParentFullName, GetType().Name, other.name);
         if (other.isTrigger) {
-            //D.Log("{0}.{1}.OnTriggerEnter ignored Trigger Collider {2}.", ParentFullName, GetType().Name, other.name);
+            D.Log("{0}.{1}.OnTriggerEnter ignored {2}.", __ParentFullName, GetType().Name, other.name);
             return;
         }
 
@@ -88,16 +140,16 @@ public class WeaponRangeMonitor : AMonoBase {
         var target = other.gameObject.GetInterface<IElementTarget>();
         if (target == null) {
             _collidersToIgnore.Add(other);
-            //D.Log("{0}.{1} now ignoring Collider {2}.", ParentFullName, GetType().Name, other.name);
+            D.Log("{0}.{1} now ignoring {2}.", __ParentFullName, GetType().Name, other.name);
             return;
         }
         Add(target as AMortalItem);
     }
 
     void OnTriggerExit(Collider other) {
-        //D.Log("{0}.{1}.OnTriggerExit() called by Collider {2}.", ParentFullName, GetType().Name, other.name);
+        D.Log("{0}.{1}.OnTriggerExit() tripped by {2}.", __ParentFullName, GetType().Name, other.name);
         if (other.isTrigger) {
-            //D.Log("{0}.{1}.OnTriggerExit ignored Trigger Collider {2}.", ParentFullName, GetType().Name, other.name);
+            D.Log("{0}.{1}.OnTriggerExit ignored {2}.", __ParentFullName, GetType().Name, other.name);
             return;
         }
 
@@ -123,31 +175,18 @@ public class WeaponRangeMonitor : AMonoBase {
         }
     }
 
-    protected override void OnEnable() {
-        base.OnEnable();
-        _collider.enabled = true;
-    }
-
-    protected override void OnDisable() {
-        base.OnDisable();
-        _collider.enabled = false;
-    }
-
     private void OnOwnerChanged() {
-        if (enabled) {
-            RefreshEnemyTargets();
-        }
+        RefreshEnemyTargets();
     }
 
     private void OnRangeChanged() {
+        D.Log("{0}.{1}.Range changed to {2:0.00}.", __ParentFullName, GetType().Name, Range);
+        bool savedEnabledState = _collider.enabled;
+        _collider.enabled = false;
         _collider.radius = Range;
         RangeSpan = new Range<float>(0.9F * Range, 1.10F * Range);
-        if (enabled) {
-            D.Log("{0}.{1}.Range changed to {2:0.00}.", ParentFullName, GetType().Name, Range);
-            _collider.enabled = false;
-            AllTargets.ForAll(t => Remove(t));  // clears both AllTargets and EnemyTargets
-            _collider.enabled = true;    //  TODO unconfirmed - this should repopulate the Targets when re-enabled with new radius
-        }
+        AllTargets.ForAll(t => Remove(t));  // clears both AllTargets and EnemyTargets
+        _collider.enabled = savedEnabledState;    //  TODO unconfirmed - this should repopulate the Targets when re-enabled with new radius
     }
 
     private void OnAnyEnemyInRangeChanged(bool isEnemyInRange) {
@@ -163,17 +202,17 @@ public class WeaponRangeMonitor : AMonoBase {
     private void Add(AMortalItem target) {
         if (!AllTargets.Contains(target)) {
             if (target.IsAlive) {
-                D.Log("{0}.{1} now tracking target {2}.", ParentFullName, GetType().Name, target.FullName);
+                D.Log("{0}.{1} now tracking target {2}.", __ParentFullName, GetType().Name, target.FullName);
                 target.onDeathOneShot += OnTargetDeath;
                 target.onOwnerChanged += OnTargetOwnerChanged;
                 AllTargets.Add(target);
             }
             else {
-                D.Log("{0}.{1} avoided adding target {2} that is already dead but not yet destroyed.", ParentFullName, GetType().Name, target.FullName);
+                D.Log("{0}.{1} avoided adding target {2} that is already dead but not yet destroyed.", __ParentFullName, GetType().Name, target.FullName);
             }
         }
         else {
-            D.Warn("{0}.{1} attempted to add duplicate Target {2}.", ParentFullName, GetType().Name, target.FullName);
+            D.Warn("{0}.{1} attempted to add duplicate Target {2}.", __ParentFullName, GetType().Name, target.FullName);
         }
 
         if (Owner.IsEnemyOf(target.Owner) && target.IsAlive && !EnemyTargets.Contains(target)) {
@@ -183,34 +222,39 @@ public class WeaponRangeMonitor : AMonoBase {
 
     private void AddEnemyTarget(AMortalItem enemyTarget) {
         D.Log("{0}.{1}({2:0.00}) now tracking Enemy {3} at distance {4}.",
-         ParentFullName, GetType().Name, Range, enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
-        if (EnemyTargets.Count == 0) {
+         __ParentFullName, GetType().Name, Range, enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
+        EnemyTargets.Add(enemyTarget);
+        if (EnemyTargets.Count == Constants.One) {
             OnAnyEnemyInRangeChanged(true);   // there are now enemies in range
         }
-        EnemyTargets.Add(enemyTarget);
     }
 
     private void Remove(AMortalItem target) {
         bool isRemoved = AllTargets.Remove(target);
         if (isRemoved) {
-            //D.Log("{0}.{1} no longer tracking target {2} at distance = {3}.", ParentFullName, GetType().Name, target.FullName, Vector3.Distance(target.Position, _transform.position));
+            if (target.IsAlive) {
+                D.Log("{0}.{1} no longer tracking {2} at distance = {3}.", __ParentFullName, GetType().Name, target.FullName, Vector3.Distance(target.Position, _transform.position));
+            }
+            else {
+                // if target is being destroyed, its position can no longer be
+                D.Log("{0}.{1} no longer tracking dead target {2}.", __ParentFullName, GetType().Name, target.FullName);
+            }
             target.onDeathOneShot -= OnTargetDeath;
             target.onOwnerChanged -= OnTargetOwnerChanged;
         }
         else {
-            D.Warn("{0}.{1} target {2} not present to be removed.", ParentFullName, GetType().Name, target.FullName);
+            D.Warn("{0}.{1} target {2} not present to be removed.", __ParentFullName, GetType().Name, target.FullName);
         }
         RemoveEnemyTarget(target);
     }
 
     private void RemoveEnemyTarget(AMortalItem enemyTarget) {
         if (EnemyTargets.Remove(enemyTarget)) {
-            D.Log("{0}.{1} no longer tracking Enemy {2} at distance = {3}.", ParentFullName, GetType().Name, enemyTarget.FullName, Vector3.Distance(enemyTarget.Position, _transform.position));
             if (EnemyTargets.Count == 0) {
                 OnAnyEnemyInRangeChanged(false);  // no longer any Enemies in range
             }
-            //D.Log("{0}.{1}({2:0.00}) removed Enemy Target {3} at distance {4}.",
-            //ParentFullName, GetType().Name, Range, enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
+            D.Log("{0}.{1} w/Range {2:0.00} removed Enemy Target {3} at distance {4}.",
+            __ParentFullName, GetType().Name, Range, enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
         }
     }
 
@@ -226,6 +270,16 @@ public class WeaponRangeMonitor : AMonoBase {
         }
     }
 
+    private void OnWeaponIsOperationalChanged(Weapon weapon) {
+        if (weapon.IsOperational) {
+            AddOperationalWeapon(weapon);
+        }
+        else {
+            RemoveOperationalWeapon(weapon);
+        }
+    }
+
+
     public bool __TryGetRandomEnemyTarget(out IElementTarget enemyTarget) {
         bool result = false;
         enemyTarget = null;
@@ -236,7 +290,9 @@ public class WeaponRangeMonitor : AMonoBase {
         return result;
     }
 
-    protected override void Cleanup() { }
+    protected override void Cleanup() {
+        Weapons.ForAll(w => w.onIsOperationalChanged -= OnWeaponIsOperationalChanged);
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

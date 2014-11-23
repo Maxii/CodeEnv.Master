@@ -62,7 +62,7 @@ public class FormationStationMonitor : AMonoBase, IDestinationTarget {
 
     void OnTriggerEnter(Collider other) {
         if (other.isTrigger) { return; }
-        D.Log("{0} OnTriggerEnter() called by Collider {1}.", FullName, other.name);
+        D.Log("{0}.{1} OnTriggerEnter() tripped by Collider {2}.", FullName, GetType().Name, other.name);
         var arrivingShip = other.gameObject.GetInterface<IShipItem>();
         if (arrivingShip != null) {
             if (arrivingShip == AssignedShip) {
@@ -73,7 +73,7 @@ public class FormationStationMonitor : AMonoBase, IDestinationTarget {
 
     void OnTriggerExit(Collider other) {
         if (other.isTrigger) { return; }
-        D.Log("{0} OnTriggerExit() called by Collider {1}.", FullName, other.name);
+        D.Log("{0}.{1} OnTriggerExit() tripped by Collider {2}.", FullName, GetType().Name, other.name);
         var departingShip = other.gameObject.GetInterface<IShipItem>();
         if (departingShip != null) {
             if (departingShip == AssignedShip) {
@@ -85,7 +85,7 @@ public class FormationStationMonitor : AMonoBase, IDestinationTarget {
     private void OnAssignedShipChanged() {
         if (AssignedShip != null) {
             StationRadius = AssignedShip.Radius * 5F;
-            D.Log("{0}.StationRadius set to {1:0.0000}.", AssignedShip.FullName, StationRadius);
+            D.Log("Radius of {0} assigned to {1} set to {2:0.0000}.", GetType().Name, AssignedShip.FullName, StationRadius);
             _collider.radius = StationRadius;
             // Note: OnTriggerEnter appears to detect ship is onStation once the collider is enabled even if already inside
             // Unfortunately, that detection has a small delay (collider init?) so this is needed to fill the gap
@@ -116,7 +116,6 @@ public class FormationStationMonitor : AMonoBase, IDestinationTarget {
     /// </value>
     private bool IsShipAlreadyOnStation {
         get {
-            D.Log("FormationStation at {0} with Radius {1}, Assigned Ship {2} at {3}.", _transform.position, StationRadius, AssignedShip.FullName, AssignedShip.Data.Position);
             return _collider.bounds.Contains(AssignedShip.Position);
         }
     }

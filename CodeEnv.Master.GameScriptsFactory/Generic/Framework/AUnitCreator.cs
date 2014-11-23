@@ -233,7 +233,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         BeginCommandOperations();
         UnityUtility.WaitOneToExecute((wasKilled) => {
             // delay 1 frame to allow Element and Command Idling_EnterState to execute
-            EnableOtherWhenRunning();
+            //EnableOtherWhenRunning();
             RecordInStaticCollections();
             __SetIntelCoverage();
             __IssueFirstUnitCommand();
@@ -402,7 +402,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     /// Enables selected children of the command and its elements. e.g. - cameraLosChangedListeners, WeaponTrackers,
     /// Revolve and Orbits, etc. These scripts that are enabled should only be enabled on or after IsRunning.
     /// </summary>
-    protected abstract void EnableOtherWhenRunning();
+    //protected abstract void EnableOtherWhenRunning();
 
     #endregion
 
@@ -527,7 +527,9 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     }
 
     protected virtual void Unsubscribe() {
-        _gameMgr.onCurrentStateChanged -= OnGameStateChanged;
+        if (_gameMgr != null) {
+            _gameMgr.onCurrentStateChanged -= OnGameStateChanged;
+        }
     }
 
     /// <summary>
@@ -546,7 +548,9 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     /// </summary>
     private void UnsubscribeStaticallyOnceOnQuit() {
         if (_isStaticallySubscribed) {
-            _gameMgr.onSceneLoaded -= CleanupStaticMembers;
+            if (_gameMgr != null) {
+                _gameMgr.onSceneLoaded -= CleanupStaticMembers;
+            }
             _isStaticallySubscribed = false;
         }
     }

@@ -322,6 +322,7 @@ namespace CodeEnv.Master.Common {
 
         public static void Destroy(GameObject gameObject, float delayInSeconds, Action onCompletion = null) {
             //GameObject.Destroy(gameObject, delayInSeconds);
+            D.Log("Initiating destruction of {0} with delay of {1}.", gameObject.name, delayInSeconds);
             new Job(DelayedDestroy(gameObject, delayInSeconds), toStart: true, onJobComplete: (wasKilled) => {
                 D.Log("{0} has been destroyed.", gameObject.name);
                 if (onCompletion != null) {

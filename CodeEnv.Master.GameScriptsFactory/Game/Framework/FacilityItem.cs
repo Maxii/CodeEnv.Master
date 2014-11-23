@@ -295,6 +295,21 @@ public class FacilityItem : AUnitElementItem {
         CurrentState = FacilityState.Idling;
     }
 
+    //void ExecuteAttackOrder_OnWeaponReady(Weapon weapon) {
+    //    LogEvent();
+    //    if (_primaryTarget != null) {
+    //        _attackTarget = _primaryTarget;
+    //        //_attackStrength = weapon.Strength;
+    //        _attackingWeapon = weapon;
+    //        D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
+    //        Call(FacilityState.Attacking);
+    //    }
+    //    else {
+    //        TryFireOnAnyTarget(weapon);    // Valid in this state as the state can exist for quite a while if the orderTarget is staying out of range
+    //    }
+    //}
+
+
     void ExecuteAttackOrder_OnWeaponReady(Weapon weapon) {
         LogEvent();
         if (_primaryTarget != null) {
@@ -320,6 +335,7 @@ public class FacilityItem : AUnitElementItem {
 
     private IElementTarget _attackTarget;
     private CombatStrength _attackStrength;
+    //private Weapon _attackingWeapon;
 
     void Attacking_EnterState() {
         LogEvent();
@@ -329,6 +345,7 @@ public class FacilityItem : AUnitElementItem {
             return;
         }
         ShowAnimation(MortalAnimations.Attacking);
+        //_attackingWeapon.Fire(_attackTarget);
         _attackTarget.TakeHit(_attackStrength);
         Return();
     }
@@ -337,6 +354,7 @@ public class FacilityItem : AUnitElementItem {
         LogEvent();
         _attackTarget = null;
         _attackStrength = TempGameValues.NoCombatStrength;
+        //_attackingWeapon = null;
     }
 
     #endregion
@@ -446,6 +464,7 @@ public class FacilityItem : AUnitElementItem {
         if (_weaponRangeMonitorLookup[weapon.MonitorID].__TryGetRandomEnemyTarget(out _attackTarget)) {
             D.Log("{0}.{1} firing at {2} from State {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
             _attackStrength = weapon.Strength;
+            //_attackingWeapon = weapon;
             Call(FacilityState.Attacking);
         }
         else {

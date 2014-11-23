@@ -696,6 +696,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         if (_primaryTarget != null) {   // OnWeaponReady can occur before _primaryTarget is picked
             _attackTarget = _primaryTarget;
             _attackStrength = weapon.Strength;
+            //_attackingWeapon = weapon;
             D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
             Call(ShipState.Attacking);
         }
@@ -715,11 +716,13 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     private IElementTarget _attackTarget;
     private CombatStrength _attackStrength;
+    //private Weapon _attackingWeapon;
 
     void Attacking_EnterState() {
         LogEvent();
         ShowAnimation(MortalAnimations.Attacking);
         _attackTarget.TakeHit(_attackStrength);
+        //_attackingWeapon.Fire(_attackTarget);
         Return();
     }
 
@@ -731,6 +734,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         LogEvent();
         _attackTarget = null;
         _attackStrength = TempGameValues.NoCombatStrength;
+        //_attackingWeapon = null;
     }
 
     #endregion
@@ -1009,6 +1013,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         if (_weaponRangeMonitorLookup[weapon.MonitorID].__TryGetRandomEnemyTarget(out _attackTarget)) {
             D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
             _attackStrength = weapon.Strength;
+            //_attackingWeapon = weapon;
             Call(ShipState.Attacking);
         }
         else {
@@ -1466,7 +1471,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
                 yield return new WaitForSeconds(_courseProgressCheckPeriod);
             }
-            D.Log("{0} has arrived at {1}.", _ship.FullName, targetName);
+            //D.Log("{0} has arrived at {1}.", _ship.FullName, targetName);
         }
 
 
@@ -1479,8 +1484,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         /// <param name="obstacleDetour">The FIXED location to move too.</param>
         /// <returns></returns>
         private IEnumerator EngageDirectCourseTo(Vector3 obstacleDetour) {
-            D.Log("{0} beginning prep for direct course to {1}. Distance: {2}.",
-                _ship.FullName, obstacleDetour, Vector3.Magnitude(obstacleDetour - _ship.Data.Position));   // TODO slow ship before waiting for bearing?
+            //D.Log("{0} beginning prep for direct course to {1}. Distance: {2}.",
+            //_ship.FullName, obstacleDetour, Vector3.Magnitude(obstacleDetour - _ship.Data.Position));   // TODO slow ship before waiting for bearing?
             Vector3 newHeading = (obstacleDetour - _ship.Data.Position).normalized;
             if (!newHeading.IsSameDirection(_ship.Data.RequestedHeading, 0.1F)) {
                 ChangeHeading(newHeading);
@@ -1496,8 +1501,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
             // progress checks should occur at same frequency as checks for StationaryLocation Targets
             float detourProgressCheckPeriod = 1F / (GameTime.HoursPerSecond * _gameSpeedMultiplier);
 
-            D.Log("Fleet has matched bearing. {0} powering up. Distance to {1}: {2}.",
-                _ship.FullName, obstacleDetour, Vector3.Magnitude(obstacleDetour - _ship.Data.Position));
+            //D.Log("Fleet has matched bearing. {0} powering up. Distance to {1}: {2}.",
+            //_ship.FullName, obstacleDetour, Vector3.Magnitude(obstacleDetour - _ship.Data.Position));
 
             int courseCorrectionCheckCountdown = _numberOfProgressChecksBetweenCourseCorrectionChecks;
             bool isSpeedChecked = false;
@@ -1514,8 +1519,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 }
                 Vector3 correctedHeading;
                 if (CheckForCourseCorrection(obstacleDetour, distanceToLocationSqrd, out correctedHeading, ref courseCorrectionCheckCountdown)) {
-                    D.Log("{0} is making a midcourse correction of {1:0.00} degrees.", _ship.FullName, Vector3.Angle(correctedHeading, _ship.Data.RequestedHeading));
-                    D.Log("{0} distance to {1} = {2}. CloseEnough = {3}.", _ship.FullName, obstacleDetour, Vector3.Distance(obstacleDetour, _ship.Data.Position), closeEnoughDistance);
+                    //D.Log("{0} is making a midcourse correction of {1:0.00} degrees.", _ship.FullName, Vector3.Angle(correctedHeading, _ship.Data.RequestedHeading));
+                    //D.Log("{0} distance to {1} = {2}. CloseEnough = {3}.", _ship.FullName, obstacleDetour, Vector3.Distance(obstacleDetour, _ship.Data.Position), closeEnoughDistance);
                     AdjustHeadingAndSpeedForTurn(correctedHeading);
                     isSpeedChecked = false;
                 }
@@ -1537,7 +1542,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 closeEnoughDistanceSqrd = closeEnoughDistance * closeEnoughDistance;
                 yield return new WaitForSeconds(detourProgressCheckPeriod);
             }
-            D.Log("{0} has arrived at {1}.", _ship.FullName, obstacleDetour);
+            //D.Log("{0} has arrived at {1}.", _ship.FullName, obstacleDetour);
         }
 
         #endregion
@@ -1561,7 +1566,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 return false;
             }
             //D.Log("{0} received a turn order to {1}.", _ship.FullName, newHeading);
-            Vector3 killedJobRequestedHeading = _ship.Data.RequestedHeading;
+            //Vector3 killedJobRequestedHeading = _ship.Data.RequestedHeading;
             if (_headingJob != null && _headingJob.IsRunning) {
                 _headingJob.Kill(); // onJobComplete will run next frame
             }
@@ -1758,7 +1763,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 _numberOfProgressChecksBetweenCourseCorrectionChecks *= 3;    // more progress checks skipped
                 _sqrdDistanceWhereContinuousCourseCorrectionChecksBegin /= 3F;  // continuous checks start further away
             }
-            float courseCorrectionCheckPeriod = _courseProgressCheckPeriod * _numberOfProgressChecksBetweenCourseCorrectionChecks;
+            //float courseCorrectionCheckPeriod = _courseProgressCheckPeriod * _numberOfProgressChecksBetweenCourseCorrectionChecks;
             //D.Log("{0}: Normal course correction check every {1:0.##} seconds, \nContinuous course correction checks start {2:0.##} units from destination.",
             // _ship.FullName, courseCorrectionCheckPeriod, Mathf.Sqrt(_sqrdDistanceWhereContinuousCourseCorrectionChecksBegin));
 
@@ -1826,7 +1831,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
             RaycastHit hitInfo;
             if (Physics.Raycast(ray, out hitInfo, rayLength, _keepoutOnlyLayerMask.value)) {
-                string obstacleName = hitInfo.transform.parent.name + "." + hitInfo.collider.name;
+                //string obstacleName = hitInfo.transform.parent.name + "." + hitInfo.collider.name;
                 //D.Log("{0} encountered obstacle {1} centered at {2} when checking approach to {3}. \nRay length = {4:0.#}, rayHitDistance = {5:0.#}.",
                 // _ship.FullName, obstacleName, hitInfo.transform.position, location, rayLength, hitInfo.distance);
                 // there is a keepout zone obstacle in the way 
