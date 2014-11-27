@@ -65,7 +65,6 @@ public class Loader : AMonoSingleton<Loader> {
 
     // GameStateProgressionSystem moved to GameManager
 
-    //[System.Diagnostics.Conditional("UNITY_EDITOR")]
     private void CheckDebugSettings(int qualitySetting) {
         if (DebugSettings.Instance.ForceFpsToTarget) {
             QualitySettings.vSyncCount = 0;
@@ -76,6 +75,7 @@ public class Loader : AMonoSingleton<Loader> {
     private void OnQualitySettingChanged() {
         int newQualitySetting = _playerPrefsMgr.QualitySetting;
         if (newQualitySetting != QualitySettings.GetQualityLevel()) {
+            // EDITOR Quality Level Changes will not be saved while in Editor play mode
             QualitySettings.SetQualityLevel(newQualitySetting, applyExpensiveChanges: true);
         }
         CheckDebugSettings(newQualitySetting);

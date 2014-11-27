@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// The Item at the center of the universe.
 /// </summary>
-public class UniverseCenterModel : AItemModel, IDestinationTarget, IShipOrbitable {
+public class UniverseCenterModel : AItemModel, INavigableTarget, IShipOrbitable {
 
     protected override void Awake() {
         base.Awake();

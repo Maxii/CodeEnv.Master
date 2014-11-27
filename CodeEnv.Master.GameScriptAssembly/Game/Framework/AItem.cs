@@ -26,7 +26,9 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for all Items.
 /// </summary>
-public abstract class AItem : AMonoBase, IItem, IDestinationTarget, ICameraFocusable, IWidgetTrackable {
+public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusable, IWidgetTrackable {
+
+    public event Action<IItem> onOwnerChanged;
 
     private AItemData _data;
     public AItemData Data {
@@ -60,6 +62,41 @@ public abstract class AItem : AMonoBase, IItem, IDestinationTarget, ICameraFocus
         get { return _isDiscernible; }
         protected set { SetProperty<bool>(ref _isDiscernible, value, "IsDiscernible", OnIsDiscernibleChanged); }
     }
+
+    /// <summary>
+    /// The name to use for display in the UI.
+    /// </summary>
+    public virtual string DisplayName { get { return Name; } }
+
+    public virtual string FullName {
+        get {
+            if (Data != null) {
+                return Data.FullName;
+            }
+            return _transform.name + "(from transform)";
+        }
+    }
+
+    /// <summary>
+    /// The name of this individual Item.
+    /// </summary>
+    public string Name { get { return Data.Name; } }
+
+    public Vector3 Position { get { return Data.Position; } }
+
+    private float _radius;
+    /// <summary>
+    /// The radius of the conceptual 'globe' that encompasses this Item.
+    /// </summary>
+    public virtual float Radius {
+        get {
+            D.Assert(_radius != Constants.ZeroF, "{0}.Radius has not yet been set.".Inject(FullName));
+            return _radius;
+        }
+        protected set { _radius = value; }
+    }
+
+    public IPlayer Owner { get { return Data.Owner; } }
 
     /// <summary>
     /// Property that allows each derived class to establish the radius of the sphericalHighlight.
@@ -459,42 +496,7 @@ public abstract class AItem : AMonoBase, IItem, IDestinationTarget, ICameraFocus
 
     #endregion
 
-    #region IItem Members
-
-    public event Action<IItem> onOwnerChanged;
-
-    public virtual string DisplayName { get { return Name; } }
-
-    public string Name { get { return Data.Name; } }
-
-    public virtual string FullName {
-        get {
-            if (Data != null) {
-                return Data.FullName;
-            }
-            return _transform.name + "(from transform)";
-        }
-    }
-
-    public Vector3 Position { get { return Data.Position; } }
-
-    private float _radius;
-    /// <summary>
-    /// The radius of the conceptual 'globe' that encompasses this Item.
-    /// </summary>
-    public virtual float Radius {
-        get {
-            D.Assert(_radius != Constants.ZeroF, "{0}.Radius has not yet been set.".Inject(FullName));
-            return _radius;
-        }
-        protected set { _radius = value; }
-    }
-
-    public IPlayer Owner { get { return Data.Owner; } }
-
-    #endregion
-
-    #region IDestinationTarget Members
+    #region INavigableTarget Members
 
     public virtual Topography Topography { get { return Data.Topography; } }
 

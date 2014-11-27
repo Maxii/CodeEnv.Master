@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// Interface for a IDestinationTarget that is a Star.
     /// </summary>
     [Obsolete]
-    public interface IStarTarget : /*IOwnedTarget*/ IDestinationTarget {
+    public interface IStarTarget : /*IOwnedTarget*/ INavigableTarget {
 
     }
 }

@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for an Element, an object that is under the command of a CommandItem.
 /// </summary>
-public abstract class AUnitElementModel : ACombatItemModel, IElementModel, IElementTarget {
+public abstract class AUnitElementModel : ACombatItemModel, IElementModel, IElementAttackableTarget {
 
     public virtual bool IsHQElement { get; set; }
 

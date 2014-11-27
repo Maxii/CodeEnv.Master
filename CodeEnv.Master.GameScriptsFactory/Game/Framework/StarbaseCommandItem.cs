@@ -100,7 +100,7 @@ public class StarbaseCommandItem : AUnitBaseCommandItem {
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region IDestinationTarget Members
+    #region INavigableTarget Members
 
     public override bool IsMobile { get { return false; } }
 

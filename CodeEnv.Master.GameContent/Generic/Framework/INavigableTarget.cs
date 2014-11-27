@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IDestinationTarget.cs
-//  Interface for a target that can be a movement destination.
+// File: INavigableTarget.cs
+// Interface for a target that one can navigate (move) to.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,9 +20,9 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for a target that can be a movement destination.
+    /// Interface for a target that one can navigate (move) to.
     /// </summary>
-    public interface IDestinationTarget {
+    public interface INavigableTarget {
 
         /// <summary>
         /// The name to use for displaying in the UI.

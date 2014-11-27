@@ -89,10 +89,10 @@ public abstract class ACtxControl_Player<T> : ACtxControl where T : struct {
     /// <param name="directive">The directive.</param>
     /// <returns></returns>
     private bool TryPopulateItemSubMenu_SelectedItemAccess(CtxMenu.Item topLevelItem, T directive) {
-        IEnumerable<IUnitTarget> targets;
+        IEnumerable<IUnitAttackableTarget> targets;
         if (TryGetSubMenuUnitTargets_SelectedItemAccess(directive, out targets)) {
             // directive requires a submenu, although targets maybe empty
-            var targetsStack = new Stack<IUnitTarget>(targets);
+            var targetsStack = new Stack<IUnitAttackableTarget>(targets);
             int submenuItemCount = targetsStack.Count;
 
             if (submenuItemCount > Constants.Zero) {
@@ -129,8 +129,8 @@ public abstract class ACtxControl_Player<T> : ACtxControl where T : struct {
     /// <param name="directive">The directive.</param>
     /// <param name="targets">The targets.</param>
     /// <returns></returns>
-    protected virtual bool TryGetSubMenuUnitTargets_SelectedItemAccess(T directive, out IEnumerable<IUnitTarget> targets) {
-        targets = Enumerable.Empty<IUnitTarget>();
+    protected virtual bool TryGetSubMenuUnitTargets_SelectedItemAccess(T directive, out IEnumerable<IUnitAttackableTarget> targets) {
+        targets = Enumerable.Empty<IUnitAttackableTarget>();
         return false;
     }
 

@@ -70,6 +70,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     /// </summary>
     public FormationStationMonitor FormationStation { get; set; }
 
+    [Tooltip("The type of ship")]
     public ShipCategory category;
 
     private ICtxControl _ctxControl;
@@ -150,7 +151,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     /// <param name="retainSuperiorsOrder">if set to <c>true</c> [retain superiors order].</param>
     /// <param name="target">The target.</param>
     /// <param name="speed">The speed.</param>
-    private void OverrideCurrentOrder(ShipDirective order, bool retainSuperiorsOrder, IDestinationTarget target = null, Speed speed = Speed.None) {
+    private void OverrideCurrentOrder(ShipDirective order, bool retainSuperiorsOrder, INavigableTarget target = null, Speed speed = Speed.None) {
         // if the captain says to, and the current existing order is from his superior, then record it as a standing order
         ShipOrder standingOrder = null;
         if (retainSuperiorsOrder && CurrentOrder != null) {
@@ -417,7 +418,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     void Idling_OnWeaponReady(Weapon weapon) {
         LogEvent();
-        TryFireOnAnyTarget(weapon);
+        //TryFireOnAnyTarget(weapon);
+        Fire(weapon);
     }
 
     void Idling_OnCollisionEnter(Collision collision) {
@@ -444,7 +446,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     IEnumerator ExecuteAssumeStationOrder_EnterState() {    // cannot return void as code after Call() executes without waiting for a Return()
         D.Log("{0}.ExecuteAssumeStationOrder_EnterState called.", FullName);
         _moveSpeed = CurrentOrder.Speed;
-        _moveTarget = FormationStation as IDestinationTarget;
+        _moveTarget = FormationStation as INavigableTarget;
         _orderSource = CurrentOrder.Source;
         Call(ShipState.Moving);
         yield return null;  // required immediately after Call() to avoid FSM bug
@@ -547,7 +549,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     void ExecuteMoveOrder_OnWeaponReady(Weapon weapon) {
         LogEvent();
-        TryFireOnAnyTarget(weapon);
+        //TryFireOnAnyTarget(weapon);
+        Fire(weapon);
     }
 
     void ExecuteMoveOrder_ExitState() {
@@ -573,7 +576,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     /// this value is set by that Order execution state.
     /// </summary>
     private Speed _moveSpeed;
-    private IDestinationTarget _moveTarget;
+    private INavigableTarget _moveTarget;
     /// <summary>
     /// The source of this instruction to move. Used by Helm to determine
     /// whether the ship should wait for other members of the fleet before moving.
@@ -615,7 +618,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     void Moving_OnWeaponReady(Weapon weapon) {
         LogEvent();
-        TryFireOnAnyTarget(weapon);
+        //TryFireOnAnyTarget(weapon);
+        Fire(weapon);
     }
 
     void Moving_OnDestinationReached() {
@@ -653,20 +657,20 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     /// The attack target acquired from the order. Can be a
     /// Command or a Planetoid.
     /// </summary>
-    private IUnitTarget _ordersTarget;
+    private IUnitAttackableTarget _ordersTarget;
 
     /// <summary>
     /// The specific attack target picked by this ship. Can be an
     /// Element of _ordersTarget if a Command, or a Planetoid.
     /// </summary>
-    private IElementTarget _primaryTarget;
+    private IElementAttackableTarget _primaryTarget;
 
     IEnumerator ExecuteAttackOrder_EnterState() {
         D.Log("{0}.ExecuteAttackOrder_EnterState() called.", FullName);
 
         TryBreakOrbit();
 
-        _ordersTarget = CurrentOrder.Target as IUnitTarget;
+        _ordersTarget = CurrentOrder.Target as IUnitAttackableTarget;
         while (_ordersTarget.IsAlive) {
             // once picked, _primaryTarget cannot be null when _ordersTarget is alive
             bool inRange = PickPrimaryTarget(out _primaryTarget);
@@ -693,14 +697,14 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     void ExecuteAttackOrder_OnWeaponReady(Weapon weapon) {
         LogEvent();
-        if (_primaryTarget != null) {   // OnWeaponReady can occur before _primaryTarget is picked
-            _attackTarget = _primaryTarget;
-            _attackStrength = weapon.Strength;
-            //_attackingWeapon = weapon;
-            D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
-            Call(ShipState.Attacking);
+        //if (_primaryTarget != null) {   // OnWeaponReady can occur before _primaryTarget is picked
+        D.Log("{0}'s primary target is {1}.", FullName, _primaryTarget.FullName);
+        bool primaryTargetFiredOn = Fire(weapon, _primaryTarget);
+        if (!primaryTargetFiredOn) {
+            // primaryTarget was out of range
+            Fire(weapon);
         }
-        // No potshots at random enemies as the ship is either Moving or the primary target is in range
+        //}
     }
 
     void ExecuteAttackOrder_ExitState() {
@@ -708,33 +712,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         _ordersTarget = null;
         _primaryTarget = null;
         _isDestinationUnreachable = false;
-    }
-
-    #endregion
-
-    #region Attacking
-
-    private IElementTarget _attackTarget;
-    private CombatStrength _attackStrength;
-    //private Weapon _attackingWeapon;
-
-    void Attacking_EnterState() {
-        LogEvent();
-        ShowAnimation(MortalAnimations.Attacking);
-        _attackTarget.TakeHit(_attackStrength);
-        //_attackingWeapon.Fire(_attackTarget);
-        Return();
-    }
-
-    void Attacking_OnTargetDeath(IMortalItem deadTarget) {
-        // this can occur as a result of TakeHit but since we currently Return() right after TakeHit we shouldn't double up
-    }
-
-    void Attacking_ExitState() {
-        LogEvent();
-        _attackTarget = null;
-        _attackStrength = TempGameValues.NoCombatStrength;
-        //_attackingWeapon = null;
     }
 
     #endregion
@@ -840,7 +817,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     void ExecuteRepairOrder_OnWeaponReady(Weapon weapon) {
         LogEvent();
-        TryFireOnAnyTarget(weapon);
+        //TryFireOnAnyTarget(weapon);
+        Fire(weapon);
     }
 
     void ExecuteRepairOrder_ExitState() {
@@ -868,7 +846,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     void Repairing_OnWeaponReady(Weapon weapon) {
         LogEvent();
-        TryFireOnAnyTarget(weapon);
+        // TryFireOnAnyTarget(weapon);
+        Fire(weapon);
     }
 
     void Repairing_ExitState() {
@@ -1006,38 +985,21 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     }
 
     /// <summary>
-    /// Attempts to fire the provided weapon at a target within range.
-    /// </summary>
-    /// <param name="weapon">The weapon.</param>
-    private void TryFireOnAnyTarget(Weapon weapon) {
-        if (_weaponRangeMonitorLookup[weapon.MonitorID].__TryGetRandomEnemyTarget(out _attackTarget)) {
-            D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
-            _attackStrength = weapon.Strength;
-            //_attackingWeapon = weapon;
-            Call(ShipState.Attacking);
-        }
-        else {
-            D.Warn("{0}.{1} could not lockon to a target from State {2}.", FullName, weapon.Name, CurrentState.GetName());
-        }
-    }
-
-    /// <summary>
     /// Picks the highest priority target from orders. First selection criteria is inRange.
     /// </summary>
     /// <param name="chosenTarget">The chosen target from orders or null if no targets remain alive.</param>
     /// <returns> <c>true</c> if the target is in range, <c>false</c> otherwise.</returns>
-    private bool PickPrimaryTarget(out IElementTarget chosenTarget) {
+    private bool PickPrimaryTarget(out IElementAttackableTarget chosenTarget) {
         D.Assert(_ordersTarget != null && _ordersTarget.IsAlive, "{0}'s target from orders is null or dead.".Inject(Data.FullName));
         bool isTargetInRange = false;
-        var uniqueEnemyTargetsInRange = Enumerable.Empty<AMortalItem>();
-        foreach (var rangeMonitor in _weaponRangeMonitorLookup.Values) {
-            uniqueEnemyTargetsInRange = uniqueEnemyTargetsInRange.Union<AMortalItem>(rangeMonitor.EnemyTargets);  // OPTIMIZE
+        var uniqueEnemyTargetsInRange = Enumerable.Empty<IElementAttackableTarget>();
+        foreach (var rangeMonitor in _weaponRangeMonitors) {
+            uniqueEnemyTargetsInRange = uniqueEnemyTargetsInRange.Union<IElementAttackableTarget>(rangeMonitor.EnemyTargets);  // OPTIMIZE
         }
 
         var cmdTarget = _ordersTarget as AUnitCommandItem;
         if (cmdTarget != null) {
-            //var primaryTargets = cmdTarget.UnitElementTargets.Cast<IMortalTarget>();
-            var primaryTargets = cmdTarget.Elements.Cast<AMortalItem>();
+            var primaryTargets = cmdTarget.Elements.Cast<IElementAttackableTarget>();
             var primaryTargetsInRange = primaryTargets.Intersect(uniqueEnemyTargetsInRange);
             if (primaryTargetsInRange.Any()) {
                 chosenTarget = __SelectHighestPriorityTarget(primaryTargetsInRange);
@@ -1050,8 +1012,9 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         }
         else {            // Planetoid
             D.Assert(_ordersTarget is APlanetoidItem);
-            if (!uniqueEnemyTargetsInRange.Contains(_ordersTarget as AMortalItem)) {
-                if (_weaponRangeMonitorLookup.Values.Any(rangeTracker => rangeTracker.AllTargets.Contains(_ordersTarget as AMortalItem))) {
+            var planetoidTarget = _ordersTarget as APlanetoidItem;
+            if (!uniqueEnemyTargetsInRange.Contains(planetoidTarget)) {
+                if (_weaponRangeMonitors.Any(rangeMonitor => rangeMonitor.AllTargets.Contains(planetoidTarget))) {
                     // the planetoid is not an enemy, but it is in range and therefore fair game
                     isTargetInRange = true;
                 }
@@ -1060,7 +1023,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 // the planetoid is an enemy and in range
                 isTargetInRange = true;
             }
-            chosenTarget = _ordersTarget as IElementTarget;
+            chosenTarget = planetoidTarget;
         }
         if (chosenTarget != null) {
             // no need for knowing about death event as primaryTarget is continuously checked while under orders to attack
@@ -1072,8 +1035,9 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         return isTargetInRange;
     }
 
-    private IElementTarget __SelectHighestPriorityTarget(IEnumerable<AMortalItem> selectedTargetsInRange) {
-        return RandomExtended<AMortalItem>.Choice(selectedTargetsInRange) as IElementTarget;
+
+    private IElementAttackableTarget __SelectHighestPriorityTarget(IEnumerable<IElementAttackableTarget> selectedTargetsInRange) {
+        return RandomExtended<IElementAttackableTarget>.Choice(selectedTargetsInRange);
     }
 
     void OnTargetDeath(IMortalItem deadTarget) { RelayToCurrentState(deadTarget); }
@@ -1124,7 +1088,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         if (Data.Health < 0.30F) {
             if (CurrentOrder == null || CurrentOrder.Directive != ShipDirective.Repair) {
                 var repairLoc = Data.Position - _transform.forward * 10F;
-                IDestinationTarget repairDestination = new StationaryLocation(repairLoc);
+                INavigableTarget repairDestination = new StationaryLocation(repairLoc);
                 OverrideCurrentOrder(ShipDirective.Repair, retainSuperiorsOrder: true, target: repairDestination);
             }
         }
@@ -1150,7 +1114,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region IElementTarget Members
+    #region IElementAttackableTarget Members
 
     public override void TakeHit(CombatStrength attackerWeaponStrength) {
         if (!IsAlive) { return; }
@@ -1173,7 +1137,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
         var hitAnimation = isCmdHit ? MortalAnimations.CmdHit : MortalAnimations.Hit;
         ShowAnimation(hitAnimation);
-
         AssessNeedForRepair();
     }
 
@@ -1282,7 +1245,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         /// <param name="target">The target.</param>
         /// <param name="speed">The speed.</param>
         /// <param name="orderSource">The source of this move order.</param>
-        public void PlotCourse(IDestinationTarget target, Speed speed, OrderSource orderSource) {
+        public void PlotCourse(INavigableTarget target, Speed speed, OrderSource orderSource) {
             D.Assert(speed != default(Speed) && speed != Speed.AllStop, "{0} speed of {1} is illegal.".Inject(_ship.FullName, speed.GetName()));
 
             // NOTE: I know of no way to check whether a target is unreachable at this stage since many targets move, 
@@ -1976,7 +1939,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
             /// The target this ship is trying to reach. Can be a FormationStation, 
             /// StationaryLocation, UnitCommand, UnitElement or other MortalItem.
             /// </summary>
-            public IDestinationTarget Target { get; private set; }
+            public INavigableTarget Target { get; private set; }
 
             /// <summary>
             /// The actual worldspace location this ship is trying to reach, derived
@@ -2020,7 +1983,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
             private Vector3 _fstOffset;
 
             public ShipDestinationInfo(FormationStationMonitor fst) {
-                Target = fst as IDestinationTarget;
+                Target = fst as INavigableTarget;
                 _fstOffset = Vector3.zero;
                 _closeEnoughDistance = fst.StationRadius;
                 _progressCheckDistance = fst.StationRadius;

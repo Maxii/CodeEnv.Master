@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// Interface for a target that can take damage and die.
     /// </summary>
     [Obsolete]
-    public interface IMortalTarget : IOwnedTarget, IDestinationTarget {
+    public interface IMortalTarget : IOwnedTarget, INavigableTarget {
 
         /// <summary>
         /// Occurs when this mortal target has died. Intended for external

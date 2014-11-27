@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for Unit Command items. 
 /// </summary>
-public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, IUnitTarget {
+public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, IUnitAttackableTarget {
 
     /// <summary>
     /// The transform that normally contains all elements and commands assigned to the Unit.

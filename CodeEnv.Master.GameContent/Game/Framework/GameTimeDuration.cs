@@ -26,8 +26,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public struct GameTimeDuration : IEquatable<GameTimeDuration> {
 
-        public static GameTimeDuration OneDay = new GameTimeDuration(days: 1, years: 0);
-        public static GameTimeDuration OneYear = new GameTimeDuration(days: 0, years: 1);
+        public static GameTimeDuration OneDay = new GameTimeDuration(hours: 0, days: 1, years: 0);
+        public static GameTimeDuration OneYear = new GameTimeDuration(hours: 0, days: 0, years: 1);
 
         // Bug: use of static constructor with struct causes intellisense for constructors to fail
 
@@ -147,18 +147,40 @@ namespace CodeEnv.Master.GameContent {
         public int TotalInHours { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="GameTimeDuration" /> class representing the values provided. 
+        /// Initializes a new instance of the <see cref="GameTimeDuration" /> class representing the hours provided.
         /// </summary>
-        /// <param name="days">The days.</param>
-        /// <param name="years">The years.</param>
-        public GameTimeDuration(int days, int years) : this(Constants.Zero, days, years) { }
+        /// <param name="hours">The hours. Number of hours is unlimited.</param>
+        public GameTimeDuration(int hours)
+            : this() {
+            Arguments.ValidateNotNegative(hours);
+            Hours = hours % GameTime.HoursPerDay;
+            int days = hours / GameTime.HoursPerDay;
+            Days = days % GameTime.DaysPerYear;
+            Years = days / GameTime.DaysPerYear;
+            TotalInHours = hours;
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GameTimeDuration" /> class representing the values provided.
         /// </summary>
-        /// <param name="hours">The hours.</param>
-        /// <param name="days">The days.</param>
-        /// <param name="years">The years.</param>
+        /// <param name="hours">The hours. Must be less than the number of hours in a day.</param>
+        /// <param name="days">The days. Number of days is unlimited.</param>
+        public GameTimeDuration(int hours, int days)
+            : this() {
+            Arguments.ValidateForRange(hours, Constants.Zero, GameTime.HoursPerDay - 1);
+            Arguments.ValidateNotNegative(days);
+            Hours = hours;
+            Days = days % GameTime.DaysPerYear;
+            Years = days / GameTime.DaysPerYear;
+            TotalInHours = (days * GameTime.HoursPerDay) + hours;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GameTimeDuration" /> class representing the values provided.
+        /// </summary>
+        /// <param name="hours">The hours. Must be less than the number of hours in a day.</param>
+        /// <param name="days">The days. Must be less than the number of days in a year.</param>
+        /// <param name="years">The years. Unlimited.</param>
         public GameTimeDuration(int hours, int days, int years)
             : this() {
             Arguments.ValidateForRange(hours, Constants.Zero, GameTime.HoursPerDay - 1);

@@ -120,18 +120,6 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory
         // Settlements assume the intel coverage of their assigned system
     }
 
-    //protected override void EnableOtherWhenRunning() {
-    //    // the entire settlementUnit gameobject has already been detached from this creator at this point
-    //    GameObject settlementUnitGo = _command.transform.parent.gameObject;
-    //    settlementUnitGo.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeMonitor>().ForAll(wrt => wrt.enabled = true);
-    //    // CameraLosChangedListener enabled state handled by Item.InitializeViewMembersOnDiscernible
-    //    // Revolvers handle their own enabled state
-    //    // Cmd sprites enabled when shown
-    //    // settlementUnitGo.GetSafeMonoBehaviourComponentInParents<Orbit>().enabled = true;    // currently keeping Settlements in a fixed location
-    //    // no other orbits present,
-    //    // TODO SensorRangeTracker
-    //}
-
     protected override void __IssueFirstUnitCommand() {
         LogEvent();
     }

@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// Monitors whether the assigned ship is within the radius of it's Station in the Formation.
 /// </summary>
-public class FormationStationMonitor : AMonoBase, IDestinationTarget {
+public class FormationStationMonitor : AMonoBase, INavigableTarget {
 
     public bool IsOnStation { get; private set; }   // OPTIMIZE Eliminate collider and just test for distance to ship < stationRadius?
 
@@ -115,9 +115,7 @@ public class FormationStationMonitor : AMonoBase, IDestinationTarget {
     /// <c>true</c> if this ship is already on station; otherwise, <c>false</c>.
     /// </value>
     private bool IsShipAlreadyOnStation {
-        get {
-            return _collider.bounds.Contains(AssignedShip.Position);
-        }
+        get { return _collider.bounds.Contains(AssignedShip.Position); }
     }
 
     protected override void Cleanup() { }
@@ -126,7 +124,7 @@ public class FormationStationMonitor : AMonoBase, IDestinationTarget {
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region IDestinationTarget Members
+    #region INavigableTarget Members
 
     public string DisplayName { get { return FullName; } }
 

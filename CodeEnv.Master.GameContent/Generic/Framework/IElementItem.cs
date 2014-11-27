@@ -16,10 +16,14 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
+
     /// <summary>
     /// Interface for items that are unit elements.
     /// </summary>
     public interface IElementItem : IMortalItem {
+
+        event Action<IItem> onOwnerChanged;
 
     }
 }

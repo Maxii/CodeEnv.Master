@@ -94,7 +94,7 @@ public class PlanetoidView : AMortalItemView, ICameraFollowable {
         int menuId = CtxObject.current.selectedItem;
         FleetCmdView_Player selectedFleetView = _selectionMgr.CurrentSelection as FleetCmdView_Player;
         IFleetCmdModel selectedFleet = selectedFleetView.Presenter.Model;
-        var planetTarget = Presenter.Model as IDestinationTarget;
+        var planetTarget = Presenter.Model as INavigableTarget;
         if (menuId == 0) {  // UNDONE
             // MoveTo
             selectedFleet.CurrentOrder = new FleetOrder(FleetDirective.Move, planetTarget, Speed.FleetStandard);

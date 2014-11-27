@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// A dummy IDestinationTarget wrapping a stationary location.
     /// </summary>
-    public struct StationaryLocation : IDestinationTarget, IEquatable<StationaryLocation> {
+    public struct StationaryLocation : INavigableTarget, IEquatable<StationaryLocation> {
 
         #region Equality Operators Override
 

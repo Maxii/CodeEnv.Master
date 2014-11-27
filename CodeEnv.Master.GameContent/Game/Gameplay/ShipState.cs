@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
 
         ExecuteAttackOrder,
 
-        Attacking,
+        //Attacking,
 
         Entrenching,
 

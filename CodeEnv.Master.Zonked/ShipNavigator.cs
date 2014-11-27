@@ -128,7 +128,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="standoffDistance">The distance to standoff from the target. When appropriate, this is added to the radius of the target to
         /// determine how close the ship is allowed to approach.</param>
         /// <param name="isFleetMove">if set to <c>true</c> the ship will only move when the fleet is ready.</param>
-        public void PlotCourse(IDestinationTarget target, Speed speed, float standoffDistance, bool isFleetMove) {
+        public void PlotCourse(INavigableTarget target, Speed speed, float standoffDistance, bool isFleetMove) {
             if (target is IFormationStation) {
                 PlotCourse(target as IFormationStation, speed);
             }
@@ -138,8 +138,8 @@ namespace CodeEnv.Master.GameContent {
             else if (target is ICmdTarget) {
                 PlotCourse(target as ICmdTarget, speed, standoffDistance);
             }
-            else if (target is IElementTarget) {
-                PlotCourse(target as IElementTarget, speed, standoffDistance);
+            else if (target is IElementAttackableTarget) {
+                PlotCourse(target as IElementAttackableTarget, speed, standoffDistance);
             }
             else if (target is IMortalTarget) {
                 D.Assert(target is IPlanetoidModel);
@@ -202,7 +202,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="speed">The speed.</param>
         /// <param name="standoffDistance">The distance to standoff from the target. This is added to the radius of the target to
         /// determine how close the ship is allowed to approach the target.</param>
-        private void PlotCourse(IElementTarget element, Speed speed, float standoffDistance) {
+        private void PlotCourse(IElementAttackableTarget element, Speed speed, float standoffDistance) {
             _targetInfo = new TargetInfo(element, standoffDistance);
             Speed = speed;
             _isFleetMove = false;
@@ -504,7 +504,7 @@ namespace CodeEnv.Master.GameContent {
             /// The target this navigator is trying to reach. Can be a FormationStationTracker, 
             /// StationaryLocation, UnitCommand or UnitElement.
             /// </summary>
-            public IDestinationTarget Target { get; private set; }
+            public INavigableTarget Target { get; private set; }
 
             /// <summary>
             /// The actual worldspace location this navigator is trying to reach, derived
@@ -531,7 +531,7 @@ namespace CodeEnv.Master.GameContent {
             public float CloseEnoughDistanceSqrd { get; private set; }
 
             public TargetInfo(IFormationStation fst) {
-                Target = fst as IDestinationTarget;
+                Target = fst as INavigableTarget;
                 Destination = Target.Position;
                 CloseEnoughDistance = Constants.ZeroF;
                 CloseEnoughDistanceSqrd = CloseEnoughDistance * CloseEnoughDistance;
@@ -551,7 +551,7 @@ namespace CodeEnv.Master.GameContent {
                 CloseEnoughDistanceSqrd = CloseEnoughDistance * CloseEnoughDistance;
             }
 
-            public TargetInfo(IElementTarget element, float standoffDistance) {
+            public TargetInfo(IElementAttackableTarget element, float standoffDistance) {
                 Target = element;
                 Destination = element.Position;
                 CloseEnoughDistance = element.Radius + standoffDistance;

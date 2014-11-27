@@ -22,6 +22,7 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Extension class providing values acquired externally from Xml for the Speed enum.
+    /// TODO Externalize values in XML.
     /// </summary>
     public static class ShipSpeedExtensions {
 

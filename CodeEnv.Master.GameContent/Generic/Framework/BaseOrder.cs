@@ -23,11 +23,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class BaseOrder {
 
-        public IUnitTarget Target { get; private set; }
+        public IUnitAttackableTarget Target { get; private set; }
 
         public BaseDirective Directive { get; private set; }
 
-        public BaseOrder(BaseDirective directive, IUnitTarget target = null) {
+        public BaseOrder(BaseDirective directive, IUnitAttackableTarget target = null) {
             Directive = directive;
             Target = target;
         }

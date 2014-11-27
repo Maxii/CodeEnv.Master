@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IUnitTarget.cs
-//  Interface for items that can be targeted by unit commands.
+// File: IUnitAttackableTarget.cs
+// Interface for targets that can be attacked by unit commands.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,14 +19,13 @@ namespace CodeEnv.Master.GameContent {
     using System;
 
     /// <summary>
-    /// Interface for items that can be targeted by unit commands.
+    /// Interface for targets that can be attacked by unit commands.
     /// </summary>
-    public interface IUnitTarget : IDestinationTarget {
+    public interface IUnitAttackableTarget : INavigableTarget {
 
         event Action<IMortalItem> onDeathOneShot;
 
         bool IsAlive { get; }
-
 
     }
 }

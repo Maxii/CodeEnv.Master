@@ -46,8 +46,7 @@ namespace CodeEnv.Master.GameContent {
             if (left.Year == right.Year) {
                 if (left.DayOfYear < right.DayOfYear) { return true; }
                 if (left.DayOfYear == right.DayOfYear) {
-                    if (left.HourOfDay < right.HourOfDay) { return true; }
-                    if (left.HourOfDay == right.HourOfDay) { return true; }
+                    if (left.HourOfDay <= right.HourOfDay) { return true; }
                 }
             }
             return false;
@@ -69,8 +68,7 @@ namespace CodeEnv.Master.GameContent {
             if (left.Year == right.Year) {
                 if (left.DayOfYear > right.DayOfYear) { return true; }
                 if (left.DayOfYear == right.DayOfYear) {
-                    if (left.HourOfDay > right.HourOfDay) { return true; }
-                    if (left.HourOfDay == right.HourOfDay) { return true; }
+                    if (left.HourOfDay >= right.HourOfDay) { return true; }
                 }
             }
             return false;

@@ -33,7 +33,7 @@ public static class GameSpecificExtensions {
     /// <param name="item">The item to measure from.</param>
     /// <param name="unitTargets">The unitTargets to search.</param>
     /// <returns></returns>
-    public static IUnitTarget FindClosest<T>(this T item, IEnumerable<IUnitTarget> unitTargets)
+    public static IUnitAttackableTarget FindClosest<T>(this T item, IEnumerable<IUnitAttackableTarget> unitTargets)
         where T : AItem {
         return unitTargets.MinBy(t => Vector3.SqrMagnitude(t.Position - item.Position));
     }
@@ -46,7 +46,7 @@ public static class GameSpecificExtensions {
     /// <param name="item">The item to measure from.</param>
     /// <param name="unitTargets">The unitTargets to search.</param>
     /// <returns></returns>
-    public static IUnitTarget FindFurthest<T>(this T item, IEnumerable<IUnitTarget> unitTargets)
+    public static IUnitAttackableTarget FindFurthest<T>(this T item, IEnumerable<IUnitAttackableTarget> unitTargets)
         where T : AItem {
         return unitTargets.MaxBy(t => Vector3.SqrMagnitude(t.Position - item.Position));
     }

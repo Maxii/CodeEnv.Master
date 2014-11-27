@@ -40,7 +40,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         /// The target this fleet is trying to reach. Can be the UniverseCenter, a Sector, System, Star, Planetoid or Command.
         /// Cannot be a StationaryLocation or an element of a command.
         /// </summary>
-        public IDestinationTarget Target { get; private set; }
+        public INavigableTarget Target { get; private set; }
 
         /// <summary>
         /// The real-time worldspace location of the target.
@@ -116,7 +116,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         /// </summary>
         /// <param name="target">The target.</param>
         /// <param name="speed">The speed.</param>
-        public void PlotCourse(IDestinationTarget target, Speed speed) {
+        public void PlotCourse(INavigableTarget target, Speed speed) {
             D.Assert(speed != default(Speed) && speed != Speed.AllStop, "{0} speed of {1} is illegal.".Inject(_fleet.FullName, speed.GetName()));
 
             TryCheckForSystemAccessPoints(target, out _fleetSystemExitPoint, out _targetSystemEntryPoint);
@@ -346,7 +346,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         /// <param name="fleetSystemExitPt">The fleet system exit pt.</param>
         /// <param name="targetSystemEntryPt">The target system entry pt.</param>
         /// <returns></returns>
-        private bool TryCheckForSystemAccessPoints(IDestinationTarget target, out Vector3 fleetSystemExitPt, out Vector3 targetSystemEntryPt) {
+        private bool TryCheckForSystemAccessPoints(INavigableTarget target, out Vector3 fleetSystemExitPt, out Vector3 targetSystemEntryPt) {
             targetSystemEntryPt = Vector3.zero;
             fleetSystemExitPt = Vector3.zero;
 
@@ -873,7 +873,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         Elements.ForAll(e => (e as ShipModel).RefreshSpeedValues());
     }
 
-    public void __IssueShipMovementOrders(IDestinationTarget target, Speed speed) {
+    public void __IssueShipMovementOrders(INavigableTarget target, Speed speed) {
         var shipMoveToOrder = new ShipOrder(ShipDirective.Move, OrderSource.UnitCommand, target, speed);
         Elements.ForAll(e => (e as ShipModel).CurrentOrder = shipMoveToOrder);
     }
@@ -950,7 +950,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     /// this value is set by that Order execution state.
     /// </summary>
     private Speed _moveSpeed;
-    private IDestinationTarget _moveTarget;
+    private INavigableTarget _moveTarget;
     private bool _isDestinationUnreachable;
 
     void Moving_EnterState() {

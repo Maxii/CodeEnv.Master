@@ -80,7 +80,7 @@ public class PlanetView : APlanetoidView {
         int menuId = CtxObject.current.selectedItem;
         FleetCmdView_Player selectedFleetView = SelectionManager.Instance.CurrentSelection as FleetCmdView_Player;
         IFleetCmdModel selectedFleet = selectedFleetView.Presenter.Model;
-        var thisPlanetoidTarget = Presenter.Model as IDestinationTarget;
+        var thisPlanetoidTarget = Presenter.Model as INavigableTarget;
         if (menuId == 0) {  // UNDONE
             // MoveTo
             selectedFleet.CurrentOrder = new FleetOrder(FleetDirective.Move, thisPlanetoidTarget, Speed.FleetStandard);

@@ -25,11 +25,11 @@ namespace CodeEnv.Master.GameContent {
     [Obsolete]
     public class BaseOrder<T> where T : struct {
 
-        public IUnitTarget Target { get; private set; }
+        public IUnitAttackableTarget Target { get; private set; }
 
         public T Directive { get; private set; }
 
-        public BaseOrder(T directive, IUnitTarget target = null) {
+        public BaseOrder(T directive, IUnitAttackableTarget target = null) {
             Directive = directive;
             Target = target;
         }

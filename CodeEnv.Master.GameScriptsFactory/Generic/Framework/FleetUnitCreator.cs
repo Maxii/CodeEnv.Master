@@ -135,15 +135,6 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
         _command.CommenceOperations();
     }
 
-    //protected override void EnableOtherWhenRunning() {
-    //    gameObject.GetSafeMonoBehaviourComponentsInChildren<WeaponRangeMonitor>().ForAll(monitor => monitor.enabled = true);
-    //    // CameraLosChangedListeners enabled in Item.InitializeViewMembersOnDiscernible
-    //    // CmdSprites enabled when shown
-    //    // formation stations control enabled themselves when the assigned ship changes
-    //    // no orbits or revolves present 
-    //    // TODO SensorRangeTracker
-    //}
-
     protected override void __IssueFirstUnitCommand() {
         LogEvent();
         if (move) {
@@ -159,22 +150,22 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
     private void __GetFleetUnderway() {
         LogEvent();
         IPlayer fleetOwner = _owner;
-        IEnumerable<IDestinationTarget> moveTgts = StarbaseUnitCreator.AllUnitCommands.Where(sb => sb.IsAlive && fleetOwner.IsRelationship(sb.Owner, DiplomaticRelations.Ally)).Cast<IDestinationTarget>();
+        IEnumerable<INavigableTarget> moveTgts = StarbaseUnitCreator.AllUnitCommands.Where(sb => sb.IsAlive && fleetOwner.IsRelationship(sb.Owner, DiplomaticRelations.Ally)).Cast<INavigableTarget>();
         if (!moveTgts.Any()) {
             // in case no starbases qualify
-            moveTgts = SettlementUnitCreator.AllUnitCommands.Where(s => s.IsAlive && fleetOwner.IsRelationship(s.Owner, DiplomaticRelations.Ally)).Cast<IDestinationTarget>();
+            moveTgts = SettlementUnitCreator.AllUnitCommands.Where(s => s.IsAlive && fleetOwner.IsRelationship(s.Owner, DiplomaticRelations.Ally)).Cast<INavigableTarget>();
             if (!moveTgts.Any()) {
                 // in case no Settlements qualify
-                moveTgts = SystemCreator.AllPlanetoids.Where(p => p is PlanetItem && p.IsAlive && p.Owner == TempGameValues.NoPlayer).Cast<IDestinationTarget>();
+                moveTgts = SystemCreator.AllPlanetoids.Where(p => p is PlanetItem && p.IsAlive && p.Owner == TempGameValues.NoPlayer).Cast<INavigableTarget>();
                 if (!moveTgts.Any()) {
                     // in case no Planets qualify
-                    moveTgts = SystemCreator.AllSystems.Where(sys => sys.Owner == TempGameValues.NoPlayer).Cast<IDestinationTarget>();
+                    moveTgts = SystemCreator.AllSystems.Where(sys => sys.Owner == TempGameValues.NoPlayer).Cast<INavigableTarget>();
                     if (!moveTgts.Any()) {
                         // in case no Systems qualify
-                        moveTgts = FleetUnitCreator.AllUnitCommands.Where(f => f.IsAlive && fleetOwner.IsRelationship(f.Owner, DiplomaticRelations.Ally)).Cast<IDestinationTarget>();
+                        moveTgts = FleetUnitCreator.AllUnitCommands.Where(f => f.IsAlive && fleetOwner.IsRelationship(f.Owner, DiplomaticRelations.Ally)).Cast<INavigableTarget>();
                         if (!moveTgts.Any()) {
                             // in case no fleets qualify
-                            moveTgts = SectorGrid.AllSectors.Where(s => s.Owner == TempGameValues.NoPlayer).Cast<IDestinationTarget>();
+                            moveTgts = SectorGrid.AllSectors.Where(s => s.Owner == TempGameValues.NoPlayer).Cast<INavigableTarget>();
                             if (!moveTgts.Any()) {
                                 D.Warn("{0} can find no MoveTargets of any sort. MoveOrder has been cancelled.", UnitName);
                                 return;
@@ -185,7 +176,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
                 }
             }
         }
-        IDestinationTarget destination = moveTgts.MaxBy(mt => Vector3.SqrMagnitude(mt.Position - _transform.position));
+        INavigableTarget destination = moveTgts.MaxBy(mt => Vector3.SqrMagnitude(mt.Position - _transform.position));
         //IDestinationTarget destination = moveTgts.MinBy(mt => Vector3.SqrMagnitude(mt.Position - _transform.position));
         D.Log("{0} destination is {1}.", UnitName, destination.FullName);
         _command.CurrentOrder = new FleetOrder(FleetDirective.Move, destination, Speed.FleetStandard);
@@ -194,19 +185,19 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
     private void __GetFleetAttackUnderway() {
         LogEvent();
         IPlayer fleetOwner = _owner;
-        IEnumerable<IUnitTarget> attackTgts = StarbaseUnitCreator.AllUnitCommands.Where(sb => sb.IsAlive && fleetOwner.IsEnemyOf(sb.Owner)).Cast<IUnitTarget>();
+        IEnumerable<IUnitAttackableTarget> attackTgts = StarbaseUnitCreator.AllUnitCommands.Where(sb => sb.IsAlive && fleetOwner.IsEnemyOf(sb.Owner)).Cast<IUnitAttackableTarget>();
         if (attackTgts.IsNullOrEmpty()) {
             // in case no Starbases qualify
-            attackTgts = SettlementUnitCreator.AllUnitCommands.Where(s => s.IsAlive && fleetOwner.IsEnemyOf(s.Owner)).Cast<IUnitTarget>();
+            attackTgts = SettlementUnitCreator.AllUnitCommands.Where(s => s.IsAlive && fleetOwner.IsEnemyOf(s.Owner)).Cast<IUnitAttackableTarget>();
             if (attackTgts.IsNullOrEmpty()) {
                 // in case no Settlements qualify
-                attackTgts = FleetUnitCreator.AllUnitCommands.Where(f => f.IsAlive && fleetOwner.IsEnemyOf(f.Owner)).Cast<IUnitTarget>();
+                attackTgts = FleetUnitCreator.AllUnitCommands.Where(f => f.IsAlive && fleetOwner.IsEnemyOf(f.Owner)).Cast<IUnitAttackableTarget>();
                 if (attackTgts.IsNullOrEmpty()) {
                     // in case no Fleets qualify
-                    attackTgts = SystemCreator.AllPlanetoids.Where(p => p is PlanetItem && p.IsAlive && fleetOwner.IsEnemyOf(p.Owner)).Cast<IUnitTarget>();
+                    attackTgts = SystemCreator.AllPlanetoids.Where(p => p is PlanetItem && p.IsAlive && fleetOwner.IsEnemyOf(p.Owner)).Cast<IUnitAttackableTarget>();
                     if (attackTgts.IsNullOrEmpty()) {
                         // in case no enemy Planets qualify
-                        attackTgts = SystemCreator.AllPlanetoids.Where(p => p is PlanetItem && p.IsAlive && p.Owner == TempGameValues.NoPlayer).Cast<IUnitTarget>();
+                        attackTgts = SystemCreator.AllPlanetoids.Where(p => p is PlanetItem && p.IsAlive && p.Owner == TempGameValues.NoPlayer).Cast<IUnitAttackableTarget>();
                         if (attackTgts.Any()) {
                             D.Log("{0} can find no AttackTargets that meet the enemy selection criteria. Picking an unowned Planet.", UnitName);
                         }
@@ -219,7 +210,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
                 }
             }
         }
-        IUnitTarget attackTgt = attackTgts.MinBy(t => Vector3.SqrMagnitude(t.Position - _transform.position));
+        IUnitAttackableTarget attackTgt = attackTgts.MinBy(t => Vector3.SqrMagnitude(t.Position - _transform.position));
         //IAttackTarget_Strategic attackTgt = attackTgts.MaxBy(t => Vector3.SqrMagnitude(t.Position - _transform.position));
         D.Log("{0} attack target is {1}.", UnitName, attackTgt.FullName);
         _command.CurrentOrder = new FleetOrder(FleetDirective.Attack, attackTgt);

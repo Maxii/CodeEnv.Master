@@ -280,35 +280,40 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     private void AttachWeapons(IEnumerable<WeaponStat> weapStats, AUnitElementItem elementItem) {
-        weapStats.ForAll(weapStat => MakeAndAddWeapon(weapStat, elementItem)); // separate method as can't use a ref variable in a lambda expression
+        weapStats.ForAll(wStat => elementItem.AddWeapon(wStat)); // separate method as can't use a ref variable in a lambda expression
     }
 
     /// <summary>
-    /// Primary method to use when making and adding a weapon to an Element. 
+    /// Makes a weapon from the provided weapon stats, finds or makes a WeaponRangeMonitor to work with it, returning
+    /// both the Monitor and the Weapon.
     /// </summary>
-    /// <param name="weapStat">The weapon stat specifying the weapon to make.</param>
-    /// <param name="elementItem">The element to attach the weapon too.</param>
-    private void MakeAndAddWeapon(WeaponStat weapStat, AUnitElementItem elementItem) {
-        var weapon = new Weapon(weapStat);
-        var allWeaponMonitors = elementItem.gameObject.GetComponentsInChildren<WeaponRangeMonitor>();
+    /// <param name="weapStat">The weapon stat specifying the weapon to make and attach.</param>
+    /// <param name="element">The element acquiring the weapon.</param>
+    /// <param name="weapon">The weapon created.</param>
+    /// <returns></returns>
+    public IWeaponRangeMonitor MakeWeaponInstance(WeaponStat weapStat, AUnitElementItem element, out Weapon weapon) {
+        weapon = new Weapon(weapStat, element.Owner);
+        var allWeaponMonitors = element.gameObject.GetComponentsInChildren<WeaponRangeMonitor>();
         var weaponMonitorsInUse = allWeaponMonitors.Where(m => m.Range > Constants.ZeroF);
 
-        // check monitors for range fit, if find it, assign ID, if not assign or create a monitor and assign its ID to the weapon
-        var monitor = weaponMonitorsInUse.FirstOrDefault(m => m.RangeSpan.ContainsValue(weapon.Range));
+        // check monitors for range fit, if find it, assign monitor, if not assign unused or create a new monitor and assign it to the weapon
+        var wRange = weapon.Range;  // can't use out parameter inside lambda expression
+        var monitor = weaponMonitorsInUse.FirstOrDefault(m => Mathfx.Approx(m.Range, wRange, .01F));
         if (monitor == null) {
             var unusedWeaponMonitors = allWeaponMonitors.Except(weaponMonitorsInUse);
-            if (!unusedWeaponMonitors.IsNullOrEmpty()) {
+            if (unusedWeaponMonitors.Any()) {
                 monitor = unusedWeaponMonitors.First();
             }
             else {
-                GameObject monitorGo = UnityUtility.AddChild(elementItem.gameObject, _weaponRangeMonitorPrefab);
+                GameObject monitorGo = UnityUtility.AddChild(element.gameObject, _weaponRangeMonitorPrefab);
                 monitorGo.layer = (int)Layers.IgnoreRaycast; // AddChild resets prefab layer to elementGo's layer
                 monitor = monitorGo.GetSafeMonoBehaviourComponentInChildren<WeaponRangeMonitor>();
             }
-            D.Log("{0} has had a {1} chosen for {2}.", elementItem.FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
+            monitor.ParentElement = element;
+            D.Log("{0} has had a {1} chosen for {2}.", element.FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
         }
-        elementItem.AddWeapon(weapon, monitor);
-        // IMPROVE how to keep track ranges from overlapping
+        monitor.Add(weapon);
+        return monitor;
     }
 
     /// <summary>

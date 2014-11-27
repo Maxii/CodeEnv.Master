@@ -54,6 +54,25 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        /// Waits the designated number of hours, then executes the provided delegate.
+        /// Usage:
+        /// WaitForHours(hours, onWaitFinished: (jobWasKilled) =&gt; {
+        /// Code to execute after the wait;
+        /// });
+        /// Warning: This method uses a coroutine Job. Accordingly, after being called it will
+        /// immediately return which means the code you have following it will execute
+        /// before the code assigned to the onWaitFinished delegate.
+        /// </summary>
+        /// <param name="hours">The hours to wait. A minimum of 1 but max is unlimited.</param>
+        /// <param name="onWaitFinished">The delegate to execute once the wait is finished. The
+        /// signature is onWaitFinished(jobWasKilled).</param>
+        /// <returns>A reference to the WaitJob so it can be killed before it finishes, if needed.</returns>
+        public static WaitJob WaitForHours(int hours, Action<bool> onWaitFinished) {
+            D.Assert(hours >= Constants.One);
+            GameDate futureDate = new GameDate(new GameTimeDuration(hours));
+            return WaitForDate(futureDate, onWaitFinished);
+        }
+
         /// <summary>
         /// Waits for the designated GameDate, then executes the provided delegate.
         /// Usage:
@@ -82,11 +101,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="futureDate">The date.</param>
         /// <returns></returns>
         private static IEnumerator WaitForDate(GameDate futureDate) {
-            D.Assert(futureDate > GameTime.Instance.CurrentDate);
+            D.Assert(futureDate >= GameTime.Instance.CurrentDate);
             while (futureDate > GameTime.Instance.CurrentDate) {
                 yield return null;
             }
         }
+
 
     }
 }

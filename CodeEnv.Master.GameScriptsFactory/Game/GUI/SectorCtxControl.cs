@@ -80,7 +80,7 @@ public class SectorCtxControl : ACtxControl {
         base.OnMenuSelection_RemoteFleetAccess(itemID);
 
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        IDestinationTarget target = _sector;
+        INavigableTarget target = _sector;
         var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCommandItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }

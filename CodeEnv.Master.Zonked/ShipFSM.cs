@@ -117,7 +117,7 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
     IEnumerator ExecuteAssumeStationOrder_EnterState() {    // cannot return void as code after Call() executes without waiting for a Return()
         //D.Log("{0}.ExecuteAssumeStationOrder_EnterState called.", FullName);
         _moveSpeed = _ship.CurrentOrder.Speed;
-        _moveTarget = _ship.FormationStation as IDestinationTarget;
+        _moveTarget = _ship.FormationStation as INavigableTarget;
         _orderSource = _ship.CurrentOrder.Source;
         Call(ShipState.Moving);
         yield return null;  // required immediately after Call() to avoid FSM bug
@@ -241,7 +241,7 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
     /// this value is set by that Order execution state.
     /// </summary>
     private Speed _moveSpeed;
-    private IDestinationTarget _moveTarget;
+    private INavigableTarget _moveTarget;
     /// <summary>
     /// The source of this instruction to move. Used by Helm to determine
     /// whether the ship should wait for other members of the fleet before moving.
@@ -321,20 +321,20 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
     /// The attack target acquired from the order. Can be a
     /// Command or a Planetoid.
     /// </summary>
-    private IUnitTarget _ordersTarget;
+    private IUnitAttackableTarget _ordersTarget;
 
     /// <summary>
     /// The specific attack target picked by this ship. Can be an
     /// Element of _ordersTarget if a Command, or a Planetoid.
     /// </summary>
-    private IElementTarget _primaryTarget;
+    private IElementAttackableTarget _primaryTarget;
 
     IEnumerator ExecuteAttackOrder_EnterState() {
         //D.Log("{0}.ExecuteAttackOrder_EnterState() called.", FullName);
 
         TryBreakOrbit();
 
-        _ordersTarget = _ship.CurrentOrder.Target as IUnitTarget;
+        _ordersTarget = _ship.CurrentOrder.Target as IUnitAttackableTarget;
         while (_ordersTarget.IsAlive) {
             // once picked, _primaryTarget cannot be null when _ordersTarget is alive
             bool inRange = PickPrimaryTarget(out _primaryTarget);
@@ -381,7 +381,7 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
 
     #region Attacking
 
-    private IElementTarget _attackTarget;
+    private IElementAttackableTarget _attackTarget;
     private CombatStrength _attackStrength;
 
     void Attacking_EnterState() {
@@ -689,7 +689,7 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
     /// </summary>
     /// <param name="chosenTarget">The chosen target from orders or null if no targets remain alive.</param>
     /// <returns> <c>true</c> if the target is in range, <c>false</c> otherwise.</returns>
-    private bool PickPrimaryTarget(out IElementTarget chosenTarget) {
+    private bool PickPrimaryTarget(out IElementAttackableTarget chosenTarget) {
         D.Assert(_ordersTarget != null && _ordersTarget.IsAlive, "{0}'s target from orders is null or dead.".Inject(Data.FullName));
         bool isTargetInRange = false;
         var uniqueEnemyTargetsInRange = Enumerable.Empty<AMortalItem>();
@@ -723,7 +723,7 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
                 // the planetoid is an enemy and in range
                 isTargetInRange = true;
             }
-            chosenTarget = _ordersTarget as IElementTarget;
+            chosenTarget = _ordersTarget as IElementAttackableTarget;
         }
         if (chosenTarget != null) {
             // no need for knowing about death event as primaryTarget is continuously checked while under orders to attack
@@ -735,15 +735,15 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
         return isTargetInRange;
     }
 
-    private IElementTarget __SelectHighestPriorityTarget(IEnumerable<AMortalItem> selectedTargetsInRange) {
-        return RandomExtended<AMortalItem>.Choice(selectedTargetsInRange) as IElementTarget;
+    private IElementAttackableTarget __SelectHighestPriorityTarget(IEnumerable<AMortalItem> selectedTargetsInRange) {
+        return RandomExtended<AMortalItem>.Choice(selectedTargetsInRange) as IElementAttackableTarget;
     }
 
     private void AssessNeedForRepair() {
         if (Data.Health < 0.30F) {
             if (_ship.CurrentOrder == null || _ship.CurrentOrder.Directive != ShipDirective.Repair) {
                 var repairLoc = Data.Position - _transform.forward * 10F;
-                IDestinationTarget repairDestination = new StationaryLocation(repairLoc);
+                INavigableTarget repairDestination = new StationaryLocation(repairLoc);
                 _ship.OverrideCurrentOrder(ShipDirective.Repair, retainSuperiorsOrder: true, target: repairDestination);
             }
         }

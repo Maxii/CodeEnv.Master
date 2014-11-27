@@ -24,7 +24,7 @@ using UnityEngine;
 /// A placeholder container class for TBD items that will be present in a Sector.
 /// eg. a nebula particle system.
 /// </summary>
-public class SectorModel : AOwnedItemModel, IDestinationTarget {
+public class SectorModel : AOwnedItemModel, INavigableTarget {
 
     public new SectorData Data {
         get { return base.Data as SectorData; }

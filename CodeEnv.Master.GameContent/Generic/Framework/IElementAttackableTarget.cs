@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IElementTarget.cs
-//  Interface for items that can be targeted by unit elements.
+// File: IElementAttackableTarget.cs
+// Interface for targets that can be attacked by unit elements.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,11 +19,15 @@ namespace CodeEnv.Master.GameContent {
     using System;
 
     /// <summary>
-    ///  Interface for items that can be targeted by unit elements.
+    /// Interface for targets that can be attacked by unit elements.
     /// </summary>
-    public interface IElementTarget : IDestinationTarget {
+    public interface IElementAttackableTarget : INavigableTarget {
 
         event Action<IMortalItem> onDeathOneShot;
+
+        event Action<IItem> onOwnerChanged;
+
+        IPlayer Owner { get; }
 
         bool IsAlive { get; }
 

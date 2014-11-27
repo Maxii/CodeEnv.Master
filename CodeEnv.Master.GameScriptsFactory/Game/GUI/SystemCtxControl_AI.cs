@@ -71,7 +71,7 @@ public class SystemCtxControl_AI : ACtxControl {
         base.OnMenuSelection_RemoteFleetAccess(itemID);
 
         var directive = (FleetDirective)_directiveLookup[itemID];
-        IDestinationTarget target = directive == FleetDirective.Attack ? _settlement as IDestinationTarget : _systemMenuOperator;
+        INavigableTarget target = directive == FleetDirective.Attack ? _settlement as INavigableTarget : _systemMenuOperator;
         var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCommandItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }

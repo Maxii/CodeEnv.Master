@@ -320,7 +320,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         Elements.ForAll(e => (e as ShipItem).RefreshSpeedValues());
     }
 
-    public void __IssueShipMovementOrders(IDestinationTarget target, Speed speed) {
+    public void __IssueShipMovementOrders(INavigableTarget target, Speed speed) {
         var shipMoveToOrder = new ShipOrder(ShipDirective.Move, OrderSource.UnitCommand, target, speed);
         Elements.ForAll(e => (e as ShipItem).CurrentOrder = shipMoveToOrder);
     }
@@ -497,7 +497,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
     /// this value is set by that Order execution state.
     /// </summary>
     private Speed _moveSpeed;
-    private IDestinationTarget _moveTarget;
+    private INavigableTarget _moveTarget;
     private bool _isDestinationUnreachable;
 
     void Moving_EnterState() {
@@ -597,7 +597,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
             CurrentState = FleetState.Idling;
             yield break;
         }
-        if (!(CurrentOrder.Target as IUnitTarget).IsAlive) {
+        if (!(CurrentOrder.Target as IUnitAttackableTarget).IsAlive) {
             // Moving Return()s if the target dies
             CurrentState = FleetState.Idling;
             yield break;
@@ -617,11 +617,11 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
 
     #region Attacking
 
-    IUnitTarget _attackTarget;
+    IUnitAttackableTarget _attackTarget;
 
     void Attacking_EnterState() {
         LogEvent();
-        _attackTarget = CurrentOrder.Target as IUnitTarget;
+        _attackTarget = CurrentOrder.Target as IUnitAttackableTarget;
         _attackTarget.onDeathOneShot += OnTargetDeath;
         var shipAttackOrder = new ShipOrder(ShipDirective.Attack, OrderSource.UnitCommand, _attackTarget);
         Elements.ForAll(e => (e as ShipItem).CurrentOrder = shipAttackOrder);
@@ -788,7 +788,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         /// The target this fleet is trying to reach. Can be the UniverseCenter, a Sector, System, Star, Planetoid or Command.
         /// Cannot be a StationaryLocation or an element of a command.
         /// </summary>
-        public IDestinationTarget Target { get; private set; }
+        public INavigableTarget Target { get; private set; }
 
         /// <summary>
         /// The real-time worldspace location of the target.
@@ -864,7 +864,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         /// </summary>
         /// <param name="target">The target.</param>
         /// <param name="speed">The speed.</param>
-        public void PlotCourse(IDestinationTarget target, Speed speed) {
+        public void PlotCourse(INavigableTarget target, Speed speed) {
             D.Assert(speed != default(Speed) && speed != Speed.AllStop, "{0} speed of {1} is illegal.".Inject(_fleet.FullName, speed.GetName()));
 
             TryCheckForSystemAccessPoints(target, out _fleetSystemExitPoint, out _targetSystemEntryPoint);
@@ -1092,7 +1092,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         /// <param name="fleetSystemExitPt">The fleet system exit pt.</param>
         /// <param name="targetSystemEntryPt">The target system entry pt.</param>
         /// <returns></returns>
-        private bool TryCheckForSystemAccessPoints(IDestinationTarget target, out Vector3 fleetSystemExitPt, out Vector3 targetSystemEntryPt) {
+        private bool TryCheckForSystemAccessPoints(INavigableTarget target, out Vector3 fleetSystemExitPt, out Vector3 targetSystemEntryPt) {
             targetSystemEntryPt = Vector3.zero;
             fleetSystemExitPt = Vector3.zero;
 

@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
 
         public Speed Speed { get; private set; }
 
-        public IDestinationTarget Target { get; private set; }
+        public INavigableTarget Target { get; private set; }
 
         /// <summary>
         /// Flag indicating the source of this order. 
@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="source">The source of this order.</param>
         /// <param name="target">The target.</param>
         /// <param name="speed">The speed.</param>
-        public ShipOrder(ShipDirective directive, OrderSource source = OrderSource.ElementCaptain, IDestinationTarget target = null, Speed speed = Speed.None) {
+        public ShipOrder(ShipDirective directive, OrderSource source = OrderSource.ElementCaptain, INavigableTarget target = null, Speed speed = Speed.None) {
             Directive = directive;
             Source = source;
             Target = target;

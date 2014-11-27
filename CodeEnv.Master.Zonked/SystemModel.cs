@@ -24,7 +24,7 @@ using UnityEngine;
 /// The data-holding class for all Systems in the game.  
 /// WARNING: Donot change name to "System", a protected word. 
 /// </summary>
-public class SystemModel : AOwnedItemModel, IDestinationTarget {
+public class SystemModel : AOwnedItemModel, INavigableTarget {
 
     public new SystemData Data {
         get { return base.Data as SystemData; }

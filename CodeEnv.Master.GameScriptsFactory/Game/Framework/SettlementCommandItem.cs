@@ -79,7 +79,7 @@ public class SettlementCommandItem : AUnitBaseCommandItem /*, ICameraFollowable 
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region IDestinationTarget Members
+    #region INavigableTarget Members
 
     public override bool IsMobile { get { return __OrbiterMoves; } }
 

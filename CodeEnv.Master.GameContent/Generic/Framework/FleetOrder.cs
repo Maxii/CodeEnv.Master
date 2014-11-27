@@ -28,11 +28,11 @@ namespace CodeEnv.Master.GameContent {
 
         public Speed Speed { get; private set; }
 
-        public IDestinationTarget Target { get; private set; }
+        public INavigableTarget Target { get; private set; }
 
         public FleetDirective Directive { get; private set; }
 
-        public FleetOrder(FleetDirective directive, IDestinationTarget target = null, Speed speed = Speed.None, float standoffDistance = Constants.ZeroF) {
+        public FleetOrder(FleetDirective directive, INavigableTarget target = null, Speed speed = Speed.None, float standoffDistance = Constants.ZeroF) {
             D.Assert(target == null || !(target is StationaryLocation));    // Fleet targets should never be a StationaryLocation
             Directive = directive;
             Target = target;

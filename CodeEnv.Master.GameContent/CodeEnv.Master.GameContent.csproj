@@ -158,7 +158,7 @@
     <Compile Include="Generic\_Debug\IDynamicObjectsFolder.cs" />
     <Compile Include="Generic\Framework\IGameManager.cs" />
     <Compile Include="Generic\_Debug\References.cs" />
-    <Compile Include="Generic\Framework\IDestinationTarget.cs" />
+    <Compile Include="Generic\Framework\INavigableTarget.cs" />
     <Compile Include="Generic\Extensions\ShipSpeedExtensions.cs" />
     <Compile Include="Generic\Framework\Speed.cs" />
     <Compile Include="Generic\Framework\OrderSource.cs" />
@@ -185,16 +185,17 @@
     <Compile Include="Generic\Graphics\ICameraLosChangedListener.cs" />
     <Compile Include="Generic\Graphics\IWidgetTrackable.cs" />
     <Compile Include="Generic\Graphics\IRevolver.cs" />
-    <Compile Include="Generic\Framework\IElementTarget.cs" />
+    <Compile Include="Generic\Framework\IElementAttackableTarget.cs" />
     <Compile Include="Generic\Framework\IElementItem.cs" />
     <Compile Include="Generic\Framework\IItem.cs" />
     <Compile Include="Generic\Framework\IMortalItem.cs" />
     <Compile Include="Generic\Framework\IShipItem.cs" />
-    <Compile Include="Generic\Framework\IUnitTarget.cs" />
+    <Compile Include="Generic\Framework\IUnitAttackableTarget.cs" />
     <Compile Include="Generic\Graphics\ICtxControl.cs" />
     <Compile Include="Generic\IO\GameInputMode.cs" />
     <Compile Include="Generic\Framework\ISectorGrid.cs" />
     <Compile Include="Generic\Framework\ITopographyMonitorable.cs" />
+    <Compile Include="Generic\Framework\IWeaponRangeMonitor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\ShipData.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
@@ -212,6 +213,9 @@
     <Compile Include="Game\Gameplay\UniverseCenterData.cs" />
     <Compile Include="Game\GUI\UniverseCenterGuiHudTextFactory.cs" />
     <Compile Include="Game\Gameplay\ShipOrbitSlot.cs" />
+    <Compile Include="Generic\Extensions\SpeciesExtensions.cs" />
+    <Compile Include="Generic\Framework\WeaponRange.cs" />
+    <Compile Include="Generic\Extensions\WeaponRangeExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Generic\Math\" />

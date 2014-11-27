@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// Interface for an IDestinationTarget that is a System.
     /// </summary>
     [Obsolete]
-    public interface ISystemTarget : /*IOwnedTarget */ IDestinationTarget {
+    public interface ISystemTarget : /*IOwnedTarget */ INavigableTarget {
 
     }
 }

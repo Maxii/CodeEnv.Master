@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// The data-holding class for all Stars in the game.
 /// </summary>
-public class StarModel : AOwnedItemModel, IDestinationTarget, IShipOrbitable {
+public class StarModel : AOwnedItemModel, INavigableTarget, IShipOrbitable {
 
     public StarCategory category;
 

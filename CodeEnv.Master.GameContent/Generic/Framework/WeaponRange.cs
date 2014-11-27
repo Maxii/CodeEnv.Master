@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ISectorTarget.cs
-// Interface for an IDestinationTarget that is a Sector.
+// File: WeaponRange.cs
+// Enum delineating different ranges for weapons.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,13 +16,18 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-
     /// <summary>
-    /// Interface for an IDestinationTarget that is a Sector.
+    /// Enum delineating different ranges for weapons.
     /// </summary>
-    [Obsolete]
-    public interface ISectorTarget : /*IOwnedTarget*/ INavigableTarget {
+    public enum WeaponRange {
+
+        None,
+
+        Short,
+
+        Medium,
+
+        Long
 
     }
 }

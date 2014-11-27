@@ -177,7 +177,6 @@ public class SystemCreator : AMonoBase {
         }
 
         if (gameState == GameState.Running) {
-            //EnableOtherWhenRunning();
             InitializeTopographyMonitor();
             BeginSystemOperations(onCompletion: delegate {
                 // wait to allow any cellestial objects using the IEnumerator StateMachine to enter their starting state
@@ -267,7 +266,6 @@ public class SystemCreator : AMonoBase {
         MakeMoons();    // makes each moon a child of a planet
         AssignPlanetOrbitSlotsToMoons();    // modifies moon names based on its assigned planetary orbit
         AddMembersToSystemData();         // adds star and planet data to the system's data component
-        //InitializeTopographyMonitor();
         RecordInStaticCollections();
     }
 
@@ -509,9 +507,7 @@ public class SystemCreator : AMonoBase {
     private void InitializeTopographyMonitor() {
         var monitor = gameObject.GetSafeMonoBehaviourComponentInChildren<TopographyMonitor>();
         monitor.ItemMonitored = _system;
-        //monitor.Topography = Topography.System;
         monitor.SurroundingTopography = Topography.OpenSpace;   // TODO Items monitored should know about their surrounding space
-        //monitor.TopographyRadius = TempGameValues.SystemRadius;
     }
 
     /// <summary>
@@ -559,26 +555,6 @@ public class SystemCreator : AMonoBase {
             }
         });
     }
-
-    /// <summary>
-    /// Enables selected children of the system, star, planets and moons. e.g. - Orbits, etc. 
-    /// These scripts that are enabled should only be enabled on or after IsRunning.
-    /// </summary>
-    /// <param name="onCompletion">The on completion.</param>
-    //private void EnableOtherWhenRunning(Action onCompletion = null) {
-    //    // CameraLosChangedListeners are enabled by Items
-    //    // Leave any possible settlement that might already be present to the SettlementCreator
-    //    // Planet and moons control their own orbiter enablement state
-    //    // OrbitersForShips are enabled and disabled by ShipOrbitSlot when ships assume and break orbit
-    //    // Revolvers control their own enablement based on their visibility. Leave any possible settlement that might already be present to the SettlementCreator
-
-    //    gameObject.GetSafeMonoBehaviourComponentInChildren<TopographyMonitor>().enabled = true;
-    //    UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
-    //        if (onCompletion != null) {
-    //            onCompletion();
-    //        }
-    //    });
-    //}
 
     private void __SetIntelCoverage() {    // UNCLEAR how should system, star, planet and moon intel coverage levels relate to each other?
         LogEvent();

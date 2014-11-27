@@ -216,7 +216,7 @@ public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarge
 
     #region ICmdTarget Members
 
-    public IEnumerable<IElementTarget> UnitElementTargets { get { return Elements.Cast<IElementTarget>(); } }
+    public IEnumerable<IElementAttackableTarget> UnitElementTargets { get { return Elements.Cast<IElementAttackableTarget>(); } }
 
     #endregion
 

@@ -64,6 +64,7 @@ public class FacilityItem : AUnitElementItem {
         set { SetProperty<FacilityOrder>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
     }
 
+    [Tooltip("The type of facility")]
     public FacilityCategory category;
 
     private Revolver _revolver;
@@ -150,7 +151,7 @@ public class FacilityItem : AUnitElementItem {
     /// <param name="order">The order.</param>
     /// <param name="retainSuperiorsOrder">if set to <c>true</c> [retain superiors order].</param>
     /// <param name="target">The target.</param>
-    private void OverrideCurrentOrder(FacilityDirective order, bool retainSuperiorsOrder, IUnitTarget target = null) {
+    private void OverrideCurrentOrder(FacilityDirective order, bool retainSuperiorsOrder, IUnitAttackableTarget target = null) {
         // if the captain says to, and the current existing order is from his superior, then record it as a standing order
         FacilityOrder standingOrder = null;
         if (retainSuperiorsOrder && CurrentOrder != null) {
@@ -267,7 +268,8 @@ public class FacilityItem : AUnitElementItem {
 
     void Idling_OnWeaponReady(Weapon weapon) {
         LogEvent();
-        TryFireOnAnyTarget(weapon);
+        //TryFireOnAnyTarget(weapon);
+        Fire(weapon);
     }
 
     void Idling_ExitState() {
@@ -279,8 +281,8 @@ public class FacilityItem : AUnitElementItem {
 
     #region ExecuteAttackOrder
 
-    private IUnitTarget _ordersTarget;
-    private IElementTarget _primaryTarget; // IMPROVE  take this previous target into account when PickPrimaryTarget()
+    private IUnitAttackableTarget _ordersTarget;
+    private IElementAttackableTarget _primaryTarget; // IMPROVE  take this previous target into account when PickPrimaryTarget()
 
     IEnumerator ExecuteAttackOrder_EnterState() {
         D.Log("{0}.ExecuteAttackOrder_EnterState() called.", FullName);
@@ -295,31 +297,14 @@ public class FacilityItem : AUnitElementItem {
         CurrentState = FacilityState.Idling;
     }
 
-    //void ExecuteAttackOrder_OnWeaponReady(Weapon weapon) {
-    //    LogEvent();
-    //    if (_primaryTarget != null) {
-    //        _attackTarget = _primaryTarget;
-    //        //_attackStrength = weapon.Strength;
-    //        _attackingWeapon = weapon;
-    //        D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
-    //        Call(FacilityState.Attacking);
-    //    }
-    //    else {
-    //        TryFireOnAnyTarget(weapon);    // Valid in this state as the state can exist for quite a while if the orderTarget is staying out of range
-    //    }
-    //}
-
-
     void ExecuteAttackOrder_OnWeaponReady(Weapon weapon) {
         LogEvent();
         if (_primaryTarget != null) {
-            _attackTarget = _primaryTarget;
-            _attackStrength = weapon.Strength;
-            D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
-            Call(FacilityState.Attacking);
+            //D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
+            Fire(weapon, _primaryTarget);
         }
         else {
-            TryFireOnAnyTarget(weapon);    // Valid in this state as the state can exist for quite a while if the orderTarget is staying out of range
+            Fire(weapon);
         }
     }
 
@@ -327,34 +312,6 @@ public class FacilityItem : AUnitElementItem {
         LogEvent();
         _primaryTarget = null;
         _ordersTarget = null;
-    }
-
-    #endregion
-
-    #region Attacking
-
-    private IElementTarget _attackTarget;
-    private CombatStrength _attackStrength;
-    //private Weapon _attackingWeapon;
-
-    void Attacking_EnterState() {
-        LogEvent();
-        if (_attackTarget == null) {
-            D.Error("{0} attackTarget is null. Return()ing.", Data.Name);
-            Return();
-            return;
-        }
-        ShowAnimation(MortalAnimations.Attacking);
-        //_attackingWeapon.Fire(_attackTarget);
-        _attackTarget.TakeHit(_attackStrength);
-        Return();
-    }
-
-    void Attacking_ExitState() {
-        LogEvent();
-        _attackTarget = null;
-        _attackStrength = TempGameValues.NoCombatStrength;
-        //_attackingWeapon = null;
     }
 
     #endregion
@@ -369,7 +326,8 @@ public class FacilityItem : AUnitElementItem {
 
     void ExecuteRepairOrder_OnWeaponReady(Weapon weapon) {
         LogEvent();
-        TryFireOnAnyTarget(weapon);
+        //TryFireOnAnyTarget(weapon);
+        Fire(weapon);
     }
 
     void ExecuteRepairOrder_ExitState() {
@@ -395,7 +353,8 @@ public class FacilityItem : AUnitElementItem {
 
     void Repairing_OnWeaponReady(Weapon weapon) {
         LogEvent();
-        TryFireOnAnyTarget(weapon);
+        //TryFireOnAnyTarget(weapon);
+        Fire(weapon);
     }
 
     void Repairing_ExitState() {
@@ -460,17 +419,17 @@ public class FacilityItem : AUnitElementItem {
     /// Attempts to fire the provided weapon at a target within range.
     /// </summary>
     /// <param name="weapon">The weapon.</param>
-    private void TryFireOnAnyTarget(Weapon weapon) {
-        if (_weaponRangeMonitorLookup[weapon.MonitorID].__TryGetRandomEnemyTarget(out _attackTarget)) {
-            D.Log("{0}.{1} firing at {2} from State {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
-            _attackStrength = weapon.Strength;
-            //_attackingWeapon = weapon;
-            Call(FacilityState.Attacking);
-        }
-        else {
-            D.Warn("{0}.{1} could not lockon to a target from State {2}.", FullName, weapon.Name, CurrentState.GetName());
-        }
-    }
+    //private void TryFireOnAnyTarget(Weapon weapon) {
+    //    if (_weaponRangeMonitorLookup[weapon.MonitorID].__TryGetRandomEnemyTarget(out _attackTarget)) {
+    //        D.Log("{0}.{1} firing at {2} from State {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
+    //        //_attackStrength = weapon.Strength;
+    //        _attackingWeapon = weapon;
+    //        Call(FacilityState.Attacking);
+    //    }
+    //    else {
+    //        D.Warn("{0}.{1} could not lockon to a target from State {2}.", FullName, weapon.Name, CurrentState.GetName());
+    //    }
+    //}
 
     #endregion
 
@@ -548,7 +507,7 @@ public class FacilityItem : AUnitElementItem {
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region IElementTarget Members
+    #region IElementAttackableTarget Members
 
     public override void TakeHit(CombatStrength attackerWeaponStrength) {
         float damage = Data.Strength - attackerWeaponStrength;
@@ -562,7 +521,7 @@ public class FacilityItem : AUnitElementItem {
 
     #endregion
 
-    #region IDestinationTarget Members
+    #region INavigableTarget Members
 
     public override bool IsMobile { get { return false; } }
 

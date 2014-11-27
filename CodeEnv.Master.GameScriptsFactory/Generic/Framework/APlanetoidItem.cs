@@ -26,13 +26,14 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for Planetoid (Planet and Moon) Items.
 /// </summary>
-public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbitable, IUnitTarget, IElementTarget {
+public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbitable, IUnitAttackableTarget, IElementAttackableTarget {
 
     public new APlanetoidData Data {
         get { return base.Data as APlanetoidData; }
         set { base.Data = value; }
     }
 
+    [Tooltip("The type of planetoid")]
     public PlanetoidCategory category;
 
     [Range(0.5F, 3.0F)]
@@ -207,7 +208,7 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
 
     #endregion
 
-    #region IElementTarget Members
+    #region IElementAttackableTarget Members
 
     public override void TakeHit(CombatStrength attackerWeaponStrength) {
         if (!IsAlive) {

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ITopographyMonitorable.cs
-// Interface associated with Items that contain Topography Monitors.
+// Interface associated with Items that monitor their Topography boundaries.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,16 +16,10 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
-    using UnityEngine;
 
     /// <summary>
-    /// Interface associated with Items that contain Topography Monitors.
+    /// Interface associated with Items that monitor their Topography boundries.
     /// </summary>
     public interface ITopographyMonitorable {
 

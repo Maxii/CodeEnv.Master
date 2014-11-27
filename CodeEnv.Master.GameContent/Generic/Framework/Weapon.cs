@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Data container class holding the characteristics of an Element's Weapon.
     /// </summary>
-    public class Weapon : APropertyChangeTracking {
+    public class Weapon : APropertyChangeTracking, IDisposable {
 
         static private string _toStringFormat = "{0}: Name[{1}], Operational[{2}], Strength[{3:0.#}], Range[{4:0.#}], ReloadPeriod[{5:0.#}], Size[{6:0.#}], Power[{7:0.#}]";
 
@@ -33,9 +33,21 @@ namespace CodeEnv.Master.GameContent {
 
         public event Action<Weapon> onIsOperationalChanged;
 
-        public Guid ID { get; private set; }
+        public event Action<Weapon> onReadyToFireOnEnemyChanged;
 
-        public Guid MonitorID { get; set; }
+        private bool _isReadyToFireOnEnemy;
+        public bool IsReadyToFireOnEnemy {
+            get { return _isReadyToFireOnEnemy; }
+            set { SetProperty<bool>(ref _isReadyToFireOnEnemy, value, "IsReadyToFireOnEnemy", OnIsReadyToFireOnEnemyChanged); }
+        }
+
+        private bool _isAnyEnemyInRange;
+        public bool IsAnyEnemyInRange {
+            get { return _isAnyEnemyInRange; }
+            set { SetProperty<bool>(ref _isAnyEnemyInRange, value, "IsAnyEnemyInRange", OnIsAnyEnemyInRangeChanged); }
+        }
+
+        public IWeaponRangeMonitor RangeMonitor { get; set; }
 
         private bool _isOperational;
         public bool IsOperational {
@@ -43,82 +55,178 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<bool>(ref _isOperational, value, "IsOperational", OnIsOperationalChanged); }
         }
 
+        public float Range { get; private set; }
 
-        public string Name { get { return _nameFormat.Inject(_stat.BaseName, _stat.Strength.Combined); } }
+        public string Name { get { return _nameFormat.Inject(_stat.RootName, _stat.Strength.Combined); } }
+
+        public int ReloadPeriod { get { return _stat.ReloadPeriod; } }
 
         public CombatStrength Strength { get { return _stat.Strength; } }
 
-        public float Range { get { return _stat.Range; } }
-
-        public float ReloadPeriod { get { return _stat.ReloadPeriod; } }
-
-        public float PhysicalSize { get { return _stat.ReloadPeriod; } }
+        public float PhysicalSize { get { return _stat.PhysicalSize; } }
 
         public float PowerRequirement { get { return _stat.PowerRequirement; } }
 
+        private IPlayer _owner;
+        public IPlayer Owner {
+            get { return _owner; }
+            set { SetProperty<IPlayer>(ref _owner, value, "Owner", OnOwnerChanged); }
+        }
+
+        private bool _isLoaded;
         private WeaponStat _stat;
+        private WaitJob _reloadJob;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Weapon"/> class.
+        /// Initializes a new instance of the <see cref="Weapon" /> class.
         /// </summary>
         /// <param name="stat">The stat.</param>
-        public Weapon(WeaponStat stat) {
+        /// <param name="owner">The owner.</param>
+        public Weapon(WeaponStat stat, IPlayer owner) {
             _stat = stat;
-            ID = Guid.NewGuid();
+            Owner = owner;
+        }
+
+        public bool Fire(IElementAttackableTarget target) {
+            D.Assert(IsReadyToFireOnEnemy);
+            if (target == null) {
+                return FireOnTargetOfOpportunity();
+            }
+
+            var targetDistance = Vector3.Distance(target.Position, RangeMonitor.ParentElement.Position) - target.Radius;
+            if (Range < targetDistance) {
+                D.Warn("Target {0} is out of range of {1}'s {2}. {3}WeaponRange: {4}, TargetDistance: {5}.",
+                    target.FullName, RangeMonitor.ParentElement.FullName, Name, Constants.NewLine, Range, targetDistance);
+                return false;
+            }
+
+            D.Log("{0}.{1} is firing on {2}.", RangeMonitor.ParentElement.FullName, Name, target.FullName);
+            target.TakeHit(Strength);
+            _isLoaded = false;
+            AssessReadinessToFireOnEnemy();
+            UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
+                // give time for _reloadJob to exit before starting another
+                InitiateReloadCycle();
+            });
+            return true;
+        }
+
+        private void OnOwnerChanged() {
+            Range = _stat.Range.GetValue(Owner.Race.Species);
         }
 
         private void OnIsOperationalChanged() {
-            //if (IsOperational) {
-            //    // just became operational again so reload
-            //    InitiateReloadCycle();
-            //}
-            //else {
-            //    // just lost operational status so kill any reload in process
-            //    if (_reloadJob != null && _reloadJob.IsRunning) {
-            //        _reloadJob.Kill();
-            //    }
-            //    IsReadyToFire = false;
-            //}
+            if (IsOperational) {
+                // just became operational so if not already loaded, reload
+                if (!_isLoaded) {
+                    InitiateReloadCycle();
+                }
+            }
+            else {
+                // just lost operational status so kill any reload in process
+                if (_reloadJob != null && _reloadJob.IsRunning) {
+                    _reloadJob.Kill();
+                }
+            }
+            AssessReadinessToFireOnEnemy();
             if (onIsOperationalChanged != null) {
                 onIsOperationalChanged(this);
             }
         }
 
-        //public bool IsReadyToFire { get; private set; }
+        private void OnIsAnyEnemyInRangeChanged() {
+            AssessReadinessToFireOnEnemy();
+        }
 
-        //public event Action<Weapon> onReadyToFire;
+        private void OnIsReadyToFireOnEnemyChanged() {
+            if (onReadyToFireOnEnemyChanged != null) {
+                onReadyToFireOnEnemyChanged(this);
+            }
+        }
 
-        //private Job _reloadJob;
+        private void InitiateReloadCycle() {
+            if (_reloadJob != null && _reloadJob.IsRunning) {
+                D.Warn("{0}.{1}.InitiateReloadCycle() called while already Running.", RangeMonitor.ParentElement.FullName, Name);  // UNCLEAR can this happen?
+                return;
+            }
+            _reloadJob = GameUtility.WaitForHours(ReloadPeriod, onWaitFinished: (jobWasKilled) => {
+                OnReloaded();
+            });
+        }
 
-        //private void InitiateReloadCycle() {
-        //    _reloadJob = new Job(Reload(), toStart: true);
-        //}
+        private void OnReloaded() {
+            D.Log("{0}.{1} completed reload on {2}.", RangeMonitor.ParentElement.FullName, Name, GameTime.Instance.CurrentDate);
+            _isLoaded = true;
+            AssessReadinessToFireOnEnemy();
+        }
 
-        //private IEnumerator Reload() {
-        //    yield return new WaitForSeconds(ReloadPeriod);
-        //    OnReloaded();
-        //}
+        private void AssessReadinessToFireOnEnemy() {
+            IsReadyToFireOnEnemy = IsAnyEnemyInRange && _isLoaded && IsOperational;
+        }
 
-        //private void OnReloaded() {
-        //    IsReadyToFire = true;
-        //    if (onReadyToFire != null) {
-        //        onReadyToFire(this);
-        //    }
-        //}
+        private bool FireOnTargetOfOpportunity() {
+            IElementAttackableTarget enemyTarget;
+            if (RangeMonitor.TryGetRandomEnemyTarget(out enemyTarget)) {
+                Fire(enemyTarget);
+                return true;
+            }
+            D.Warn("{0}.{1} has no target of opportunity to fire on.", RangeMonitor.ParentElement.FullName, Name);
+            return false;
+        }
 
-        //public void Fire(IElementTarget target) {
-        //    D.Assert(IsOperational);
-        //    D.Assert(IsReadyToFire);
-
-        //    target.TakeHit(Strength);
-        //    IsReadyToFire = false;
-        //    InitiateReloadCycle();
-        //}
-
+        private void Cleanup() {
+            _reloadJob.Dispose();
+            // other cleanup here including any tracking Gui2D elements
+        }
 
         public override string ToString() {
             return _toStringFormat.Inject(GetType().Name, Name, IsOperational, Strength.Combined, Range, ReloadPeriod, PhysicalSize, PowerRequirement);
         }
+
+        #region IDisposable
+        [DoNotSerialize]
+        private bool _alreadyDisposed = false;
+        protected bool _isDisposing = false;
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose() {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
+        /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
+        /// </summary>
+        /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool isDisposing) {
+            // Allows Dispose(isDisposing) to be called more than once
+            if (_alreadyDisposed) {
+                return;
+            }
+
+            _isDisposing = true;
+            if (isDisposing) {
+                // free managed resources here including unhooking events
+                Cleanup();
+            }
+            // free unmanaged resources here
+
+            _alreadyDisposed = true;
+        }
+
+        // Example method showing check for whether the object has been disposed
+        //public void ExampleMethod() {
+        //    // throw Exception if called on object that is already disposed
+        //    if(alreadyDisposed) {
+        //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
+        //    }
+
+        //    // method content here
+        //}
+        #endregion
 
     }
 }

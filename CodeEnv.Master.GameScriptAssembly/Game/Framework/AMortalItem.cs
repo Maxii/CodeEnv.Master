@@ -18,8 +18,6 @@
 
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
@@ -29,6 +27,8 @@ using UnityEngine;
 /// Abstract base class for all items that can die.
 /// </summary>
 public abstract class AMortalItem : AItem, IMortalItem {
+
+    public event Action<IMortalItem> onDeathOneShot;
 
     public new AMortalItemData Data {
         get { return base.Data as AMortalItemData; }
@@ -114,7 +114,6 @@ public abstract class AMortalItem : AItem, IMortalItem {
         });
     }
 
-
     // these run until finished with no requirement to call OnShowCompletion
     private void ShowHit() {
         LogEvent();
@@ -123,7 +122,6 @@ public abstract class AMortalItem : AItem, IMortalItem {
         }
         _showingJob = new Job(ShowingHit(), toStart: true);
     }
-
 
     protected virtual void ShowCmdHit() { LogEvent(); }
 
@@ -247,12 +245,6 @@ public abstract class AMortalItem : AItem, IMortalItem {
             _showingJob.Dispose();
         }
     }
-
-    #endregion
-
-    #region IMortalItem Members
-
-    public event Action<IMortalItem> onDeathOneShot;
 
     #endregion
 

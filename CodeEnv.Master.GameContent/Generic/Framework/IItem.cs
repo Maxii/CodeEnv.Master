@@ -25,26 +25,16 @@ namespace CodeEnv.Master.GameContent {
     public interface IItem {
 
         /// <summary>
-        /// The name of this individual Item.
-        /// </summary>
-        string Name { get; }
-
-        /// <summary>
-        /// The name to use for display in the UI.
-        /// </summary>
-        string DisplayName { get; }
-
-        /// <summary>
         /// The name to use for debugging. Includes parent name.
         /// </summary>
         string FullName { get; }
 
         float Radius { get; }
 
-        event Action<IItem> onOwnerChanged;
         IPlayer Owner { get; }
 
         Vector3 Position { get; }
+
         Transform Transform { get; }
 
     }

@@ -76,17 +76,17 @@ public class ShipCtxControl_Player : ACtxControl_Player<ShipDirective> {
     /// <param name="directive">The directive.</param>
     /// <param name="targets">The targets.</param>
     /// <returns></returns>
-    protected override bool TryGetSubMenuUnitTargets_SelectedItemAccess(ShipDirective directive, out IEnumerable<IUnitTarget> targets) {
+    protected override bool TryGetSubMenuUnitTargets_SelectedItemAccess(ShipDirective directive, out IEnumerable<IUnitAttackableTarget> targets) {
         switch (directive) {
             case ShipDirective.Join:
-                targets = GameObject.FindObjectsOfType<FleetCommandItem>().Where(f => f.Owner.IsPlayer).Except(_shipMenuOperator.Command).Cast<IUnitTarget>();
+                targets = GameObject.FindObjectsOfType<FleetCommandItem>().Where(f => f.Owner.IsPlayer).Except(_shipMenuOperator.Command).Cast<IUnitAttackableTarget>();
                 return true;
             case ShipDirective.Refit:
             case ShipDirective.Disband:
-                targets = GameObject.FindObjectsOfType<AUnitBaseCommandItem>().Where(b => b.Owner.IsPlayer).Cast<IUnitTarget>();
+                targets = GameObject.FindObjectsOfType<AUnitBaseCommandItem>().Where(b => b.Owner.IsPlayer).Cast<IUnitAttackableTarget>();
                 return true;
             case ShipDirective.SelfDestruct:
-                targets = Enumerable.Empty<IUnitTarget>();
+                targets = Enumerable.Empty<IUnitAttackableTarget>();
                 return false;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -97,7 +97,7 @@ public class ShipCtxControl_Player : ACtxControl_Player<ShipDirective> {
         base.OnMenuSelection_SelectedItemAccess(itemID);
 
         ShipDirective directive = (ShipDirective)_directiveLookup[itemID];
-        IUnitTarget target;
+        IUnitAttackableTarget target;
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string msg = isTarget ? target.FullName : "[none]";
         D.Log("{0} selected directive {1} and target {2} from context menu.", _shipMenuOperator.FullName, directive.GetName(), msg);

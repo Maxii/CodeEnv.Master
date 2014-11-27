@@ -16,19 +16,16 @@
 
 // default namespace
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
 ///  Abstract base class for UnitElement Items.
 /// </summary>
-public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, ICameraFollowable, IElementTarget {
+public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, ICameraFollowable, IElementAttackableTarget {
 
     public virtual bool IsHQElement { get; set; }
 
@@ -36,6 +33,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
         get { return base.Data as AElementData; }
         set { base.Data = value; }
     }
+
+    public override string FullName { get { return IsHQElement ? "[HQ]" + base.FullName : base.FullName; } }
 
     public AUnitCommandItem Command { get; set; }
 
@@ -55,12 +54,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     public AudioClip refitting;
     public AudioClip disbanding;
 
-    /// <summary>
-    /// Weapon Range Monitor lookup table keyed by the Monitor's Guid ID.
-    /// </summary>
-    protected IDictionary<Guid, WeaponRangeMonitor> _weaponRangeMonitorLookup;
-
-
+    protected IList<IWeaponRangeMonitor> _weaponRangeMonitors = new List<IWeaponRangeMonitor>();
     protected float _gameSpeedMultiplier;
     protected Rigidbody __rigidbody;
 
@@ -116,56 +110,30 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
         _gameSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();
     }
 
-    protected override void OnOwnerChanged() {
-        base.OnOwnerChanged();
-        if (enabled) {  // acts just like an isInitialized test as enabled results in Start() which calls Initialize 
-            _weaponRangeMonitorLookup.Values.ForAll(rt => rt.Owner = Owner);
-        }
-    }
-
-    protected override void OnNamingChanged() {
-        base.OnNamingChanged();
-        _weaponRangeMonitorLookup.Values.ForAll(rt => rt.__ParentFullName = FullName);
-    }
-
     protected override void OnDeath() {
         base.OnDeath();
         collider.enabled = false;
-        _weaponRangeMonitorLookup.Values.ForAll(wrm => {
-            wrm.onAnyEnemyInRangeChanged -= OnAnyEnemyInRangeChanged;
-            //wrm.enabled = false;
+        Data.Weapons.ForAll(w => {
+            w.onReadyToFireOnEnemyChanged -= OnWeaponReadyToFireOnEnemyChanged;
         });
-        if (_weaponReloadJobs.Count != Constants.Zero) {
-            _weaponReloadJobs.ForAll<KeyValuePair<Guid, Job>>(kvp => kvp.Value.Kill());
-        }
         Command.OnSubordinateElementDeath(this);
     }
 
     #region Weapons
 
     /// <summary>
-    /// Adds the weapon to this element, paired with the provided range monitor. Clients wishing to add
-    /// a weapon to this element should use UnitFactory.AddWeapon(weapon, element).
+    /// Adds a weapon based on the WeaponStat provided to this element.
     /// </summary>
     /// <param name="weapon">The weapon.</param>
-    /// <param name="rangeMonitor">The range monitor to pair with this weapon.</param>
-    public void AddWeapon(Weapon weapon, WeaponRangeMonitor rangeMonitor) {
-        if (_weaponRangeMonitorLookup == null) {
-            _weaponRangeMonitorLookup = new Dictionary<Guid, WeaponRangeMonitor>();
+    public void AddWeapon(WeaponStat weaponStat) {
+        Weapon weapon;
+        var monitor = UnitFactory.Instance.MakeWeaponInstance(weaponStat, this, out weapon);
+        if (!_weaponRangeMonitors.Contains(monitor)) {
+            // only need to record and setup range monitors once. The same monitor can have more than 1 weapon
+            _weaponRangeMonitors.Add(monitor);
         }
-        if (!_weaponRangeMonitorLookup.ContainsKey(rangeMonitor.ID)) {
-            // only need to record and setup range trackers once. The same rangeTracker can have more than 1 weapon
-            _weaponRangeMonitorLookup.Add(rangeMonitor.ID, rangeMonitor);
-            rangeMonitor.__ParentFullName = FullName;
-            rangeMonitor.Range = weapon.Range;
-            rangeMonitor.Owner = Data.Owner;
-            rangeMonitor.onAnyEnemyInRangeChanged += OnAnyEnemyInRangeChanged;
-        }
-        rangeMonitor.Add(weapon);   // rangeMonitors enable themselves when they contain operational weapons
         Data.AddWeapon(weapon);
-        // IMPROVE how to keep track ranges from overlapping
-
-        //weapon.onReadyToFire += OnWeaponReady;
+        weapon.onReadyToFireOnEnemyChanged += OnWeaponReadyToFireOnEnemyChanged;
     }
 
     /// <summary>
@@ -174,55 +142,17 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     public void RemoveWeapon(Weapon weapon) {
-        var monitorID = weapon.MonitorID;
-        var _monitor = _weaponRangeMonitorLookup[monitorID];
-        bool isRangeMonitorStillInUse = _monitor.Remove(weapon);
+        var monitor = weapon.RangeMonitor;
+        bool isRangeMonitorStillInUse = monitor.Remove(weapon);
 
         if (!isRangeMonitorStillInUse) {
-            _weaponRangeMonitorLookup.Remove(monitorID);
+            _weaponRangeMonitors.Remove(monitor);
             D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
-            GameObject.Destroy(_monitor.gameObject);
+            UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(monitor);
         }
         Data.RemoveWeapon(weapon);
-
-        //weapon.onReadyToFire -= OnWeaponReady;
+        weapon.onReadyToFireOnEnemyChanged -= OnWeaponReadyToFireOnEnemyChanged;
     }
-
-    #region Weapon Reload System
-
-    private IDictionary<Guid, Job> _weaponReloadJobs = new Dictionary<Guid, Job>();
-
-    private void OnAnyEnemyInRangeChanged(bool isAnyEnemyInRange, Guid rangeMonitorID) {
-        D.Log("{0}.OnAnyEnemyInRangeChanged(isAnyEnemyInRange: {1}, rangeMonitorID: {2}).", FullName, isAnyEnemyInRange, rangeMonitorID);
-        var monitor = _weaponRangeMonitorLookup[rangeMonitorID];
-        var operationalWeapons = monitor.OperationalWeapons;
-        operationalWeapons.ForAll(weapon => {
-            var weaponID = weapon.ID;
-            Job weaponReloadJob;
-            if (isAnyEnemyInRange) {
-                // as we never want to restart a Job, there should never be any weaponReloadJobs already stored when the first enemy comes into range
-                D.Assert(!_weaponReloadJobs.ContainsKey(weaponID), "{0} found a weaponReloadJob stored for {1}.".Inject(FullName, weapon.Name));
-                D.Log("{0} creating new weaponReloadJob for {1}.", FullName, weapon.Name);
-                weaponReloadJob = new Job(ReloadWeapon(weapon), toStart: true);
-                _weaponReloadJobs.Add(weaponID, weaponReloadJob);
-            }
-            else {
-                weaponReloadJob = _weaponReloadJobs[weaponID];
-                D.Assert(weaponReloadJob.IsRunning, "{0}.{1}.WeaponReloadJob should be running.".Inject(FullName, weapon.Name));
-                weaponReloadJob.Kill();
-                _weaponReloadJobs.Remove(weaponID); // as we never want to restart a Job, never store a Job for reuse later
-            }
-        });
-    }
-
-    private IEnumerator ReloadWeapon(Weapon weapon) {
-        while (true) {
-            OnWeaponReady(weapon);
-            yield return new WaitForSeconds(weapon.ReloadPeriod);
-        }
-    }
-
-    #endregion
 
     #endregion
 
@@ -384,31 +314,31 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
 
     void OnDetectedEnemy() { RelayToCurrentState(); }   // TODO connect to sensors when I get them
 
+    void OnWeaponReadyToFireOnEnemyChanged(Weapon weapon) {
+        if (weapon.IsReadyToFireOnEnemy) {
+            OnWeaponReady(weapon);
+        }
+    }
+
     /// <summary>
     /// Called when this weapon is ready to fire on a target in range.
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     void OnWeaponReady(Weapon weapon) { RelayToCurrentState(weapon); }
 
-    #endregion
-
-    #region Cleanup
-
-    protected override void Cleanup() {
-        base.Cleanup();
-        _weaponReloadJobs.Values.ForAll(job => job.Dispose());
+    protected bool Fire(Weapon weapon, IElementAttackableTarget target = null) {
+        if (weapon.Fire(target)) {
+            ShowAnimation(MortalAnimations.Attacking);
+            return true;
+        }
+        D.Log("{0}.{1} did not fire.", FullName, weapon.Name);
+        return false;
     }
 
     #endregion
 
     // subscriptions contained completely within this gameobject (both subscriber
     // and subscribee) donot have to be cleaned up as all instances are destroyed
-
-    #region IItem Members
-
-    public override string FullName { get { return IsHQElement ? "[HQ]" + base.FullName : base.FullName; } }
-
-    #endregion
 
     #region ICameraTargetable Members
 
@@ -441,7 +371,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     }
 
     #endregion
-
 
 }
 

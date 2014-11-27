@@ -85,7 +85,7 @@ public class FleetCtxControl_AI : ACtxControl {
         base.OnMenuSelection_RemoteFleetAccess(itemID);
 
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        IDestinationTarget target = _fleetMenuOperator;
+        INavigableTarget target = _fleetMenuOperator;
         var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCommandItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }
@@ -94,7 +94,7 @@ public class FleetCtxControl_AI : ACtxControl {
         base.OnMenuSelection_RemoteBaseAccess(itemID);
 
         BaseDirective directive = (BaseDirective)_directiveLookup[itemID];
-        IUnitTarget target = _fleetMenuOperator;
+        IUnitAttackableTarget target = _fleetMenuOperator;
         var remoteBase = _remotePlayerOwnedSelectedItem as AUnitBaseCommandItem;
         remoteBase.CurrentOrder = new BaseOrder(directive, target);
     }

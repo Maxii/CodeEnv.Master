@@ -74,12 +74,12 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<bool>(ref _isFlapsDeployed, value, "IsFlapsDeployed", OnIsFlapsDeployedChanged); }
         }
 
-        private IDestinationTarget _target;
-        public IDestinationTarget Target {
+        private INavigableTarget _target;
+        public INavigableTarget Target {
             get { return _target; }
             set {
                 if (_target == value) { return; }   // eliminates equality warning when targets are the same
-                SetProperty<IDestinationTarget>(ref _target, value, "Target");
+                SetProperty<INavigableTarget>(ref _target, value, "Target");
             }
         }
 

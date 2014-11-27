@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for a target that is a Ship.
     /// </summary>
-    public interface IShipTarget : IElementTarget { }
+    public interface IShipTarget : IElementAttackableTarget { }
 
 }
 

@@ -25,18 +25,16 @@ namespace CodeEnv.Master.GameContent {
 
         static private string _toStringFormat = "{0}: Name[{1}], Strength[{2}], Range[{3}], ReloadPeriod[{4}], Size[{5}], Power[{6}].";
 
-        private string _baseName;   // initializes to null
-        public string BaseName {
-            get {
-                return _baseName.IsNullOrEmpty() ? string.Empty : _baseName;
-            }
+        private string _rootName;   // = string.Empty cannot use initializers in a struct
+        public string RootName {
+            get { return _rootName.IsNullOrEmpty() ? string.Empty : _rootName; }
         }
 
         public CombatStrength Strength { get; private set; }
 
-        public float Range { get; private set; }
+        public WeaponRange Range { get; private set; }
 
-        public float ReloadPeriod { get; private set; }
+        public int ReloadPeriod { get; private set; }
 
         public float PhysicalSize { get; private set; }
 
@@ -45,15 +43,15 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Initializes a new instance of the <see cref="WeaponStat"/> struct.
         /// </summary>
-        /// <param name="baseName">Name of the base.</param>
-        /// <param name="strength">The strength.</param>
-        /// <param name="range">The range.</param>
-        /// <param name="reloadPeriod">The reload period.</param>
-        /// <param name="size">The size.</param>
-        /// <param name="pwrRqmt">The PWR RQMT.</param>
-        public WeaponStat(string baseName, CombatStrength strength, float range, float reloadPeriod, float size, float pwrRqmt)
+        /// <param name="rootName">The root name to use for this weapon before adding supplemental attributes like strength.</param>
+        /// <param name="strength">The combat strength of the weapon.</param>
+        /// <param name="range">The range of the weapon.</param>
+        /// <param name="reloadPeriod">The time it takes to reload the weapon in hours.</param>
+        /// <param name="size">The physical size of the weapon.</param>
+        /// <param name="pwrRqmt">The power required to operate the weapon.</param>
+        public WeaponStat(string rootName, CombatStrength strength, WeaponRange range, int reloadPeriod, float size, float pwrRqmt)
             : this() {
-            _baseName = baseName;
+            _rootName = rootName;
             Strength = strength;
             Range = range;
             ReloadPeriod = reloadPeriod;
@@ -62,7 +60,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            return _toStringFormat.Inject(GetType().Name, BaseName, Strength.Combined, Range, ReloadPeriod, PhysicalSize, PowerRequirement);
+            return _toStringFormat.Inject(GetType().Name, RootName, Strength.Combined, Range.GetName(), ReloadPeriod, PhysicalSize, PowerRequirement);
         }
 
     }

@@ -228,11 +228,11 @@ public abstract class AUnitBaseCommandItem : AUnitCommandItem, IShipOrbitable {
 
     #region Attacking
 
-    IUnitTarget _attackTarget;
+    IUnitAttackableTarget _attackTarget;
 
     void Attacking_EnterState() {
         LogEvent();
-        _attackTarget = CurrentOrder.Target as IUnitTarget;
+        _attackTarget = CurrentOrder.Target as IUnitAttackableTarget;
         _attackTarget.onDeathOneShot += OnTargetDeath;
         var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, OrderSource.UnitCommand, _attackTarget);
         Elements.ForAll(e => (e as FacilityItem).CurrentOrder = elementAttackOrder);

@@ -43,7 +43,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// <summary>
     /// Lookup table for IUnitTargets for this item, keyed by the ID of the item selected.
     /// </summary>
-    protected static IDictionary<int, IUnitTarget> _unitTargetLookup = new Dictionary<int, IUnitTarget>();
+    protected static IDictionary<int, IUnitAttackableTarget> _unitTargetLookup = new Dictionary<int, IUnitAttackableTarget>();
 
     /// <summary>
     /// Lookup table for the directive associated with the menu item selected, keyed by the ID of the menu item selected.

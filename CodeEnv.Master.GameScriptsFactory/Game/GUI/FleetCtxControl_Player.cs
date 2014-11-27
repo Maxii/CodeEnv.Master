@@ -102,18 +102,18 @@ public class FleetCtxControl_Player : ACtxControl_Player<FleetDirective> {
     /// <param name="directive">The directive.</param>
     /// <param name="targets">The targets.</param>
     /// <returns></returns>
-    protected override bool TryGetSubMenuUnitTargets_SelectedItemAccess(FleetDirective directive, out IEnumerable<IUnitTarget> targets) {
+    protected override bool TryGetSubMenuUnitTargets_SelectedItemAccess(FleetDirective directive, out IEnumerable<IUnitAttackableTarget> targets) {
         switch (directive) {
             case FleetDirective.Join:
-                targets = GameObject.FindObjectsOfType<FleetCommandItem>().Where(b => b.Owner.IsPlayer).Except(_fleetMenuOperator).Cast<IUnitTarget>();
+                targets = GameObject.FindObjectsOfType<FleetCommandItem>().Where(b => b.Owner.IsPlayer).Except(_fleetMenuOperator).Cast<IUnitAttackableTarget>();
                 return true;
             case FleetDirective.Repair:
             case FleetDirective.Refit:
             case FleetDirective.Disband:
-                targets = GameObject.FindObjectsOfType<AUnitBaseCommandItem>().Where(b => b.Owner.IsPlayer).Cast<IUnitTarget>();
+                targets = GameObject.FindObjectsOfType<AUnitBaseCommandItem>().Where(b => b.Owner.IsPlayer).Cast<IUnitAttackableTarget>();
                 return true;
             case FleetDirective.SelfDestruct:
-                targets = Enumerable.Empty<IUnitTarget>();
+                targets = Enumerable.Empty<IUnitAttackableTarget>();
                 return false;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -144,7 +144,7 @@ public class FleetCtxControl_Player : ACtxControl_Player<FleetDirective> {
         base.OnMenuSelection_SelectedItemAccess(itemID);
 
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        IUnitTarget target;
+        IUnitAttackableTarget target;
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string msg = isTarget ? target.FullName : "[none]";
         D.Log("{0} selected directive {1} and target {2} from context menu.", _fleetMenuOperator.FullName, directive.GetName(), msg);
@@ -155,7 +155,7 @@ public class FleetCtxControl_Player : ACtxControl_Player<FleetDirective> {
         base.OnMenuSelection_RemoteFleetAccess(itemID);
 
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        IDestinationTarget target = _fleetMenuOperator;
+        INavigableTarget target = _fleetMenuOperator;
         var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCommandItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }
@@ -164,7 +164,7 @@ public class FleetCtxControl_Player : ACtxControl_Player<FleetDirective> {
         base.OnMenuSelection_RemoteShipAccess(itemID);
 
         var directive = (ShipDirective)_directiveLookup[itemID];
-        IDestinationTarget target = _fleetMenuOperator;
+        INavigableTarget target = _fleetMenuOperator;
         var remoteShip = _remotePlayerOwnedSelectedItem as ShipItem;
         remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.Player, target);
     }

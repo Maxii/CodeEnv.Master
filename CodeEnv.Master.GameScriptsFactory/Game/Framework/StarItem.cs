@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// Item class for Stars.
 /// </summary>
-public class StarItem : AItem, IDestinationTarget, IShipOrbitable {
+public class StarItem : AItem, INavigableTarget, IShipOrbitable {
 
     private static LayerMask _starLightCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
     Layers.Ship, Layers.Facility, Layers.Planetoid, Layers.Star);

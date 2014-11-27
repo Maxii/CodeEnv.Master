@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// Interface for a IDestinationTarget that is the UniverseCenter.
     /// </summary>
     [Obsolete]
-    public interface IUniverseCenterTarget : IDestinationTarget {
+    public interface IUniverseCenterTarget : INavigableTarget {
 
     }
 }

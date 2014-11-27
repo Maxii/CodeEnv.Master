@@ -233,7 +233,6 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         BeginCommandOperations();
         UnityUtility.WaitOneToExecute((wasKilled) => {
             // delay 1 frame to allow Element and Command Idling_EnterState to execute
-            //EnableOtherWhenRunning();
             RecordInStaticCollections();
             __SetIntelCoverage();
             __IssueFirstUnitCommand();
@@ -260,27 +259,27 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     private IList<WeaponStat> __CreateAvailableWeaponsStats(int weaponCount) {
         IList<WeaponStat> statsList = new List<WeaponStat>(weaponCount);
         for (int i = 0; i < weaponCount; i++) {
-            float range = UnityEngine.Random.Range(3F, 5F);
-            float reloadPeriod = UnityEngine.Random.Range(1F, 2F);
-            string name = string.Empty;
+            WeaponRange range;
+            int reloadPeriod;
+            string name;
             float strengthValue;
             ArmamentCategory offensiveArmsCategory = RandomExtended<ArmamentCategory>.Choice(_offensiveArmsCategories);
             switch (offensiveArmsCategory) {
                 case ArmamentCategory.BeamOffense:
-                    range = UnityEngine.Random.Range(5F, 7F);   // planet orbit to surface distance currently varies from 0.4 - 6.0
-                    reloadPeriod = UnityEngine.Random.Range(1F, 2F);
+                    range = WeaponRange.Short;
+                    reloadPeriod = UnityEngine.Random.Range(1, 2);
                     name = "Phaser";
                     strengthValue = UnityEngine.Random.Range(3F, 4F);
                     break;
                 case ArmamentCategory.MissileOffense:
-                    range = UnityEngine.Random.Range(9F, 11F);
-                    reloadPeriod = UnityEngine.Random.Range(3F, 4F);
+                    range = WeaponRange.Long;
+                    reloadPeriod = UnityEngine.Random.Range(4, 6);
                     name = "Torpedo";
                     strengthValue = UnityEngine.Random.Range(5F, 6F);
                     break;
                 case ArmamentCategory.ParticleOffense:
-                    range = UnityEngine.Random.Range(7F, 9F);
-                    reloadPeriod = UnityEngine.Random.Range(2F, 3F);
+                    range = WeaponRange.Medium;
+                    reloadPeriod = UnityEngine.Random.Range(2, 4);
                     name = "Disruptor";
                     strengthValue = UnityEngine.Random.Range(4F, 5F);
                     break;
@@ -334,7 +333,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
                 elementCategoriesUsedCount[category]++;
             }
             int elementInstanceIndex = elementCategoriesUsedCount[category];
-            string elementInstanceName = (i == 0) ? category.ToString() : category.ToString() + Constants.Underscore + elementInstanceIndex;
+            string elementInstanceName = category.ToString() + Constants.Underscore + elementInstanceIndex;
             elementStats.Add(CreateElementStat(category, elementInstanceName));
         }
         return elementStats;
@@ -397,12 +396,6 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             }
         });
     }
-
-    /// <summary>
-    /// Enables selected children of the command and its elements. e.g. - cameraLosChangedListeners, WeaponTrackers,
-    /// Revolve and Orbits, etc. These scripts that are enabled should only be enabled on or after IsRunning.
-    /// </summary>
-    //protected abstract void EnableOtherWhenRunning();
 
     #endregion
 
@@ -474,7 +467,6 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     }
 
     protected abstract void __IssueFirstUnitCommand();
-
 
     private IPlayer ValidateAndInitializeOwner() {
         IPlayer humanPlayer = _gameMgr.HumanPlayer;

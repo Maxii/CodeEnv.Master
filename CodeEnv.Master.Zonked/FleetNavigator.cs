@@ -51,7 +51,7 @@ public class FleetNavigator : IDisposable {
     /// The IDestinationTarget this navigator is trying to reach. Can simply be a 
     /// StationaryLocation or even null if the ship or fleet has not attempted to move.
     /// </summary>
-    public IDestinationTarget Target { get; private set; }
+    public INavigableTarget Target { get; private set; }
 
     /// <summary>
     /// The speed to travel at.
@@ -151,7 +151,7 @@ public class FleetNavigator : IDisposable {
     /// </summary>
     /// <param name="target">The target.</param>
     /// <param name="speed">The speed.</param>
-    public void PlotCourse(IDestinationTarget target, Speed speed) {
+    public void PlotCourse(INavigableTarget target, Speed speed) {
         Target = target;
         Speed = speed;
         D.Assert(speed != Speed.AllStop, "{0} designated speed to new target {1} is 0!".Inject(_fleet.FullName, target.FullName));

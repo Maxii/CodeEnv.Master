@@ -41,7 +41,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
             /// The target this ship is trying to reach. Can be a FormationStation, 
             /// StationaryLocation, UnitCommand, UnitElement or other MortalItem.
             /// </summary>
-            public IDestinationTarget Target { get; private set; }
+            public INavigableTarget Target { get; private set; }
 
             /// <summary>
             /// The actual worldspace location this ship is trying to reach, derived
@@ -85,7 +85,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
             private Vector3 _fstOffset;
 
             public ShipDestinationInfo(IFormationStation fst) {
-                Target = fst as IDestinationTarget;
+                Target = fst as INavigableTarget;
                 _fstOffset = Vector3.zero;
                 _closeEnoughDistance = fst.StationRadius;
                 _progressCheckDistance = fst.StationRadius;
@@ -554,7 +554,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
         /// <param name="target">The target.</param>
         /// <param name="speed">The speed.</param>
         /// <param name="orderSource">The source of this move order.</param>
-        public void PlotCourse(IDestinationTarget target, Speed speed, OrderSource orderSource) {
+        public void PlotCourse(INavigableTarget target, Speed speed, OrderSource orderSource) {
             D.Assert(speed != default(Speed) && speed != Speed.AllStop, "{0} speed of {1} is illegal.".Inject(_ship.FullName, speed.GetName()));
 
             // NOTE: I know of no way to check whether a target is unreachable at this stage since many targets move, 
@@ -1316,7 +1316,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
     /// <param name="retainSuperiorsOrder">if set to <c>true</c> [retain superiors order].</param>
     /// <param name="target">The target.</param>
     /// <param name="speed">The speed.</param>
-    private void OverrideCurrentOrder(ShipDirective order, bool retainSuperiorsOrder, IDestinationTarget target = null, Speed speed = Speed.None) {
+    private void OverrideCurrentOrder(ShipDirective order, bool retainSuperiorsOrder, INavigableTarget target = null, Speed speed = Speed.None) {
         // if the captain says to, and the current existing order is from his superior, then record it as a standing order
         ShipOrder standingOrder = null;
         if (retainSuperiorsOrder && CurrentOrder != null) {
@@ -1500,7 +1500,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
     IEnumerator ExecuteAssumeStationOrder_EnterState() {    // cannot return void as code after Call() executes without waiting for a Return()
         D.Log("{0}.ExecuteAssumeStationOrder_EnterState called.", FullName);
         _moveSpeed = CurrentOrder.Speed;
-        _moveTarget = Data.FormationStation as IDestinationTarget;
+        _moveTarget = Data.FormationStation as INavigableTarget;
         _orderSource = CurrentOrder.Source;
         Call(ShipState.Moving);
         yield return null;  // required immediately after Call() to avoid FSM bug
@@ -1624,7 +1624,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
     /// this value is set by that Order execution state.
     /// </summary>
     private Speed _moveSpeed;
-    private IDestinationTarget _moveTarget;
+    private INavigableTarget _moveTarget;
     /// <summary>
     /// The source of this instruction to move. Used by Helm to determine
     /// whether the ship should wait for other members of the fleet before moving.
@@ -2126,7 +2126,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
         if (Data.Health < 0.30F) {
             if (CurrentOrder == null || CurrentOrder.Directive != ShipDirective.Repair) {
                 var repairLoc = Data.Position - _transform.forward * 10F;
-                IDestinationTarget repairDestination = new StationaryLocation(repairLoc);
+                INavigableTarget repairDestination = new StationaryLocation(repairLoc);
                 OverrideCurrentOrder(ShipDirective.Repair, retainSuperiorsOrder: true, target: repairDestination);
             }
         }

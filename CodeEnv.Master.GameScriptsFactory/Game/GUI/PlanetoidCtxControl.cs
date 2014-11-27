@@ -69,7 +69,7 @@ public class PlanetoidCtxControl : ACtxControl {
         base.OnMenuSelection_RemoteFleetAccess(itemID);
 
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        IDestinationTarget target = _planetoidMenuOperator;
+        INavigableTarget target = _planetoidMenuOperator;
         var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCommandItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }
