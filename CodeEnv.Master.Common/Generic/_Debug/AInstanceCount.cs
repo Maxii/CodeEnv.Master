@@ -5,26 +5,31 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AInstanceIdentity.cs
-// Abstract class in support of IInstanceIdentity identifying the unique instance of a class.
+// File: AInstanceCount.cs
+// Abstract class in support of IInstanceCount counting the unique instances of a class.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
 namespace CodeEnv.Master.Common {
 
     /// <summary>
-    /// Abstract class in support of IInstanceIdentity identifying the unique instance of a class.
-    /// Derived client classes wanting to ID the instance in debug logs should implement the IInstanceIdentity interface and call
+    /// Abstract class in support of IInstanceCount counting the unique instances of a class.
+    /// Derived client classes wanting to know the instance count in debug logs should implement the IInstanceCount interface and call
     /// IncrementInstanceCounter() in this base class. 
     /// </summary>
-    public abstract class AInstanceIdentity : IInstanceIdentity {
+    public abstract class AInstanceCount : IInstanceCount {
 
         private static int _instanceCounter = 0;
-        public int InstanceID { get; private set; }
 
         protected void IncrementInstanceCounter() {
-            InstanceID = System.Threading.Interlocked.Increment(ref _instanceCounter);
+            InstanceCount = System.Threading.Interlocked.Increment(ref _instanceCounter);
         }
+
+        #region IInstanceCount Members
+
+        public int InstanceCount { get; private set; }
+
+        #endregion
 
     }
 }

@@ -28,6 +28,34 @@ namespace CodeEnv.Master.GameContent {
     public abstract class AElementData : AMortalItemData {
 
         public IList<Weapon> Weapons { get; private set; }
+        public IList<Sensor> Sensors { get; private set; }
+
+        private CombatStrength _offensiveStrength;
+        public CombatStrength OffensiveStrength {
+            get { return _offensiveStrength; }
+            private set { SetProperty<CombatStrength>(ref _offensiveStrength, value, "OffensiveStrength"); }
+        }
+
+        private float _maxWeaponsRange;
+        /// <summary>
+        /// The maximum range of this item's weapons.
+        /// </summary>
+        public float MaxWeaponsRange {
+            get { return _maxWeaponsRange; }
+            private set { SetProperty<float>(ref _maxWeaponsRange, value, "MaxWeaponsRange"); }
+        }
+
+        private float _maxSensorRange;
+        /// <summary>
+        /// The maximum range of this item's sensors.
+        /// </summary>
+        /// <value>
+        /// The maximum sensor range.
+        /// </value>
+        public float MaxSensorRange {
+            get { return _maxSensorRange; }
+            set { SetProperty<float>(ref _maxSensorRange, value, "MaxSensorRange"); }
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AElementData" /> class.
@@ -38,6 +66,7 @@ namespace CodeEnv.Master.GameContent {
         public AElementData(string name, float mass, float maxHitPoints)
             : base(name, mass, maxHitPoints) {
             Weapons = new List<Weapon>();
+            Sensors = new List<Sensor>();
         }
 
         /// <summary>
@@ -46,11 +75,19 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="weapon">The weapon.</param>
         public void AddWeapon(Weapon weapon) {
             D.Assert(weapon.RangeMonitor != null);
+            D.Assert(!weapon.IsOperational);
             D.Assert(!Weapons.Contains(weapon));
             Weapons.Add(weapon);
+            weapon.onIsOperationalChanged += OnWeaponIsOperationalChanged;
+            // no need to Recalc max weapon-related values as this occurs when IsOperational changes
+        }
 
-            RecalcMaxWeaponsRange();
-            RecalcCombatStrength();
+        public void AddSensor(Sensor sensor) {
+            D.Assert(sensor.RangeMonitor == null);
+            D.Assert(!sensor.IsOperational);
+            D.Assert(!Sensors.Contains(sensor));
+            Sensors.Add(sensor);
+            sensor.onIsOperationalChanged += OnSensorIsOperationalChanged;
         }
 
         /// <summary>
@@ -59,18 +96,44 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="weapon">The weapon.</param>
         public void RemoveWeapon(Weapon weapon) {
             D.Assert(Weapons.Contains(weapon));
+            D.Assert(!weapon.IsOperational);
             Weapons.Remove(weapon);
+            weapon.onIsOperationalChanged -= OnWeaponIsOperationalChanged;
+            // no need to Recalc max weapon-related values as this occurs when IsOperational changes
+        }
+
+        public void RemoveSensor(Sensor sensor) {
+            D.Assert(Sensors.Contains(sensor));
+            D.Assert(!sensor.IsOperational);
+            Sensors.Remove(sensor);
+            sensor.onIsOperationalChanged -= OnSensorIsOperationalChanged;
+        }
+
+        private void OnSensorIsOperationalChanged(Sensor sensor) {
+            RecalcMaxSensorRange();
+        }
+
+        private void OnWeaponIsOperationalChanged(Weapon weapon) {
             RecalcMaxWeaponsRange();
-            RecalcCombatStrength();
+            RecalcOffensiveStrength();
+        }
+
+        private void RecalcMaxSensorRange() {
+            MaxSensorRange = Sensors.Where(s => s.IsOperational).Max(s => s.Range.GetSensorRange(Owner));
         }
 
         private void RecalcMaxWeaponsRange() {
-            MaxWeaponsRange = Weapons.Max(weap => weap.Range);
+            MaxWeaponsRange = Weapons.Where(weap => weap.IsOperational).Max(weap => weap.Range.GetWeaponRange(Owner));
         }
 
-        private void RecalcCombatStrength() {
+        private void RecalcOffensiveStrength() {
             var defaultValueIfEmpty = default(CombatStrength);
-            Strength = Weapons.Select(weap => weap.Strength).Aggregate(defaultValueIfEmpty, (accum, wStrength) => accum + wStrength);
+            OffensiveStrength = Weapons.Where(weap => weap.IsOperational).Select(weap => weap.Strength).Aggregate(defaultValueIfEmpty, (accum, wStrength) => accum + wStrength);
+        }
+
+        protected override void Unsubscribe() {
+            base.Unsubscribe();
+            Weapons.ForAll(w => w.onIsOperationalChanged -= OnWeaponIsOperationalChanged);
         }
 
     }

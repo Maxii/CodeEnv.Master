@@ -418,7 +418,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     void Idling_OnWeaponReady(Weapon weapon) {
         LogEvent();
-        //TryFireOnAnyTarget(weapon);
         Fire(weapon);
     }
 
@@ -671,7 +670,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         TryBreakOrbit();
 
         _ordersTarget = CurrentOrder.Target as IUnitAttackableTarget;
-        while (_ordersTarget.IsAlive) {
+        while (_ordersTarget.IsAliveAndOperating) {
             // once picked, _primaryTarget cannot be null when _ordersTarget is alive
             bool inRange = PickPrimaryTarget(out _primaryTarget);
             if (inRange) {
@@ -839,6 +838,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         D.Log("{0}'s repair is 50% complete.", FullName);
         yield return new WaitForSeconds(3);
         Data.CurrentHitPoints = Data.MaxHitPoints;
+        Data.Countermeasures.ForAll(cm => cm.IsOperational = true);
         D.Log("{0}'s repair is 100% complete.", FullName);
         StopAnimation(MortalAnimations.Repairing);
         Return();
@@ -990,7 +990,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     /// <param name="chosenTarget">The chosen target from orders or null if no targets remain alive.</param>
     /// <returns> <c>true</c> if the target is in range, <c>false</c> otherwise.</returns>
     private bool PickPrimaryTarget(out IElementAttackableTarget chosenTarget) {
-        D.Assert(_ordersTarget != null && _ordersTarget.IsAlive, "{0}'s target from orders is null or dead.".Inject(Data.FullName));
+        D.Assert(_ordersTarget != null && _ordersTarget.IsAliveAndOperating, "{0}'s target from orders is null or dead.".Inject(Data.FullName));
         bool isTargetInRange = false;
         var uniqueEnemyTargetsInRange = Enumerable.Empty<IElementAttackableTarget>();
         foreach (var rangeMonitor in _weaponRangeMonitors) {
@@ -1101,7 +1101,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     protected override void Cleanup() {
         base.Cleanup();
         if (_helm != null) { _helm.Dispose(); }
-        if (Data != null) { Data.Dispose(); }
         if (_velocityRay != null) { _velocityRay.Dispose(); }
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
@@ -1117,16 +1116,16 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     #region IElementAttackableTarget Members
 
     public override void TakeHit(CombatStrength attackerWeaponStrength) {
-        if (!IsAlive) { return; }
+        if (!IsAliveAndOperating) { return; }
 
-        float damage = Data.Strength - attackerWeaponStrength;
-        if (damage == Constants.ZeroF) {
+        CombatStrength damage = attackerWeaponStrength - Data.DefensiveStrength;
+        if (damage.Combined == Constants.ZeroF) {
             D.Log("{0} has been hit but incurred no damage.", FullName);
             return;
         }
-        D.Log("{0} has been hit. Taking {1} damage.", FullName, damage);
+        D.Log("{0} has been hit. Taking {1} damage.", FullName, damage.Combined);
         bool isCmdHit = false;
-        bool isElementAlive = ApplyDamage(damage);
+        bool isElementAlive = ApplyDamage(damage.Combined);
         if (IsHQElement) {
             isCmdHit = Command.__CheckForDamage(isElementAlive);
         }
@@ -1907,6 +1906,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         protected virtual void Dispose(bool isDisposing) {
             // Allows Dispose(isDisposing) to be called more than once
             if (_alreadyDisposed) {
+                D.Warn("{0} has already been disposed.", GetType().Name);
                 return;
             }
 
@@ -2007,7 +2007,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 Target = cmd;
                 _fstOffset = fstOffset;
                 if (isEnemy) {
-                    _closeEnoughDistanceRef = new Reference<float>(() => cmd.Radius + 5F + cmd.Data.MaxWeaponsRange);
+                    _closeEnoughDistanceRef = new Reference<float>(() => cmd.Radius + 5F + cmd.Data.UnitMaxWeaponsRange);
+                    //_closeEnoughDistanceRef = new Reference<float>(() => cmd.Radius + 5F + cmd.Data.MaxWeaponsRange);
                 }
                 else {
                     _closeEnoughDistance = cmd.Radius + 5F;
@@ -2020,7 +2021,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 _fstOffset = fstOffset;
                 var shipOrbitSlot = cmd.ShipOrbitSlot;
                 if (isEnemy) {
-                    _closeEnoughDistanceRef = new Reference<float>(() => shipOrbitSlot.OuterRadius + cmd.Data.MaxWeaponsRange);
+                    _closeEnoughDistanceRef = new Reference<float>(() => shipOrbitSlot.OuterRadius + cmd.Data.UnitMaxWeaponsRange);
+                    //_closeEnoughDistanceRef = new Reference<float>(() => shipOrbitSlot.OuterRadius + cmd.Data.MaxWeaponsRange);
                 }
                 else {
                     _closeEnoughDistance = shipOrbitSlot.OuterRadius;
@@ -2090,14 +2092,14 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         /// </summary>
         private class EngineRoom : IDisposable {
 
-            private static Range<float> SpeedTargetRange = new Range<float>(0.99F, 1.01F);
+            private static ValueRange<float> SpeedTargetRange = new ValueRange<float>(0.99F, 1.01F);
 
-            private static Range<float> _speedWayAboveTarget = new Range<float>(1.10F, float.PositiveInfinity);
+            private static ValueRange<float> _speedWayAboveTarget = new ValueRange<float>(1.10F, float.PositiveInfinity);
             //private static Range<float> _speedModeratelyAboveTarget = new Range<float>(1.10F, 1.25F);
-            private static Range<float> _speedSlightlyAboveTarget = new Range<float>(1.01F, 1.10F);
-            private static Range<float> _speedSlightlyBelowTarget = new Range<float>(0.90F, 0.99F);
+            private static ValueRange<float> _speedSlightlyAboveTarget = new ValueRange<float>(1.01F, 1.10F);
+            private static ValueRange<float> _speedSlightlyBelowTarget = new ValueRange<float>(0.90F, 0.99F);
             //private static Range<float> _speedModeratelyBelowTarget = new Range<float>(0.75F, 0.90F);
-            private static Range<float> _speedWayBelowTarget = new Range<float>(Constants.ZeroF, 0.90F);
+            private static ValueRange<float> _speedWayBelowTarget = new ValueRange<float>(Constants.ZeroF, 0.90F);
 
             //private float _targetThrustMinusMinus;
             private float _targetThrustMinus;
@@ -2336,6 +2338,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
             protected virtual void Dispose(bool isDisposing) {
                 // Allows Dispose(isDisposing) to be called more than once
                 if (_alreadyDisposed) {
+                    D.Warn("{0} has already been disposed.", GetType().Name);
                     return;
                 }
 

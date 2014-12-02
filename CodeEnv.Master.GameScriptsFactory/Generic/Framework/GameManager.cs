@@ -160,14 +160,14 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     }
 
     private void StartGameStateProgressionReadinessChecks() {
-        D.Log("{0}_{1} is starting GameState Progression System Readiness Checks.", GetType().Name, InstanceID);
+        D.Log("{0}_{1} is starting GameState Progression System Readiness Checks.", GetType().Name, InstanceCount);
         __ValidateGameStateProgressionReadinessSystemState();
         __progressCheckJob = new Job(AssessReadinessToProgressGameState(), toStart: true, onJobComplete: (wasJobKilled) => {
             if (wasJobKilled) {
                 D.Error("{0}'s GameState Progression Readiness System has timed out.", GetType().Name);
             }
             else {
-                D.Assert(CurrentState == GameState.Running, "{0}_{1}.{2} = {3}.".Inject(GetType().Name, InstanceID, typeof(GameState).Name, CurrentState.GetName()), true);
+                D.Assert(CurrentState == GameState.Running, "{0}_{1}.{2} = {3}.".Inject(GetType().Name, InstanceCount, typeof(GameState).Name, CurrentState.GetName()), true);
                 D.Log("{0}'s GameState Progression Readiness System has successfully completed.", GetType().Name);
             }
         });
@@ -736,7 +736,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         else {
             D.Assert(unreadyElements.Contains(source), "UnreadyElements for {0} has no record of {1}!".Inject(maxGameStateUntilReady.GetName(), source.name));
             unreadyElements.Remove(source);
-            D.Log("{0} is now ready to progress beyond {1}. Remaining unready elements: {2}.", source.name, maxGameStateUntilReady.GetName(), unreadyElements.Select(m => m.gameObject.name).Concatenate());
+            D.Log("{0} is now ready to progress beyond {1}. Remaining unready elements: {2}.",
+                source.name, maxGameStateUntilReady.GetName(), unreadyElements.Any() ? unreadyElements.Select(m => m.gameObject.name).Concatenate() : "None");
         }
     }
 

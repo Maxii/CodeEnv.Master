@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -26,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for Unit Command items. 
 /// </summary>
-public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, IUnitAttackableTarget {
+public abstract class AUnitCommandItem : AMortalItemStateMachine, ICommandItem, ISelectable, IUnitAttackableTarget {
 
     /// <summary>
     /// The transform that normally contains all elements and commands assigned to the Unit.
@@ -69,6 +70,7 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, I
     [Tooltip("Optimal Camera View Distance Multiplier")]
     public float optViewDistanceFactor = 2F;  // encompasses all elements of the Unit
 
+    protected IList<ISensorRangeMonitor> _sensorRangeMonitors = new List<ISensorRangeMonitor>();
     protected FormationGenerator _formationGenerator;
 
     private CommandTrackingSprite _cmdIcon;
@@ -129,12 +131,60 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, I
         Data.AddElement(element.Data);
         element.AttachElementAsChildOfUnitContainer(UnitContainer);
         // TODO consider changing HQElement
+        var unattachedSensors = element.Data.Sensors.Where(sensor => sensor.RangeMonitor == null);
+        if (unattachedSensors.Any()) {
+            D.Log("{0} is attaching {1}'s sensors: {2}.", FullName, element.FullName, unattachedSensors.Select(s => s.Name).Concatenate());
+            var unattachedSensorsArray = unattachedSensors.ToArray();
+            AttachSensorsToMonitors(unattachedSensorsArray);
+            // WARNING: Donot use the IEnumerable unattachedSensors here as it will no longer point to any unattached sensors, since they are all attached now
+            // This is the IEnumerable<T> lazy evaluation GOTCHA
+        }
+    }
+
+    /// <summary>
+    /// Attaches one or more sensors to this command's SensorRangeMonitors.
+    /// Note: Sensors are part of a Unit's elements but the monitors they attach to
+    /// are children of the Command. Thus sensor range is always measured from
+    /// the Command, not from the element.
+    /// </summary>
+    /// <param name="sensors">The sensors.</param>
+    public void AttachSensorsToMonitors(params Sensor[] sensors) {
+        sensors.ForAll(sensor => {
+            var monitor = UnitFactory.Instance.MakeMonitorInstance(sensor, this);
+            if (!_sensorRangeMonitors.Contains(monitor)) {
+                // only need to record and setup range monitors once. The same monitor can have more than 1 sensor
+                _sensorRangeMonitors.Add(monitor);
+            }
+        });
+    }
+
+    /// <summary>
+    /// Detaches one or more sensors from this command's SensorRangeMonitors.
+    /// Note: Sensors are part of a Unit's elements but the monitors they attach to
+    /// are children of the Command. Thus sensor range is always measured from
+    /// the Command, not from the element.
+    /// </summary>
+    /// <param name="sensors">The sensors.</param>
+    public void DetachSensorsFromMonitors(params Sensor[] sensors) {
+        sensors.ForAll(sensor => {
+            var monitor = sensor.RangeMonitor;
+            bool isRangeMonitorStillInUse = monitor.Remove(sensor);
+
+            if (!isRangeMonitorStillInUse) {
+                _sensorRangeMonitors.Remove(monitor);
+                D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(SensorRangeMonitor).Name, sensor.Name);
+                UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(monitor);
+            }
+        });
     }
 
     public virtual void RemoveElement(AUnitElementItem element) {
         bool isRemoved = Elements.Remove(element);
         isRemoved = isRemoved && Data.RemoveElement(element.Data);
         D.Assert(isRemoved, "{0} not found.".Inject(element.FullName));
+
+        DetachSensorsFromMonitors(element.Data.Sensors.ToArray());
+
         if (Elements.Count == Constants.Zero) {
             D.Assert(Data.UnitHealth <= Constants.ZeroF, "{0} UnitHealth error.".Inject(FullName));
             InitiateDeath();
@@ -305,15 +355,6 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, I
 
     #endregion
 
-    #region Cleanup
-
-    protected override void Cleanup() {
-        base.Cleanup();
-        if (Data != null) { Data.Dispose(); }
-    }
-
-    #endregion
-
     # region StateMachine Support Methods
 
     protected void Dead_ExitState() {
@@ -331,8 +372,8 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, I
     # region Combat Support Methods
 
     public override void TakeHit(CombatStrength attackerWeaponStrength) {
-        float damage = Data.Strength - attackerWeaponStrength;
-        bool isCmdAlive = ApplyDamage(damage);
+        CombatStrength damage = attackerWeaponStrength - Data.DefensiveStrength;
+        bool isCmdAlive = ApplyDamage(damage.Combined);
         D.Assert(isCmdAlive, "{0} should never die as a result of being hit.".Inject(Data.Name));
     }
 
@@ -344,7 +385,7 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ISelectable, I
     public bool __CheckForDamage(bool isHQElementAlive) {   // HACK needs work. Cmds should be hardened to defend against weapons, so pass along attackerWeaponStrength?
         bool isHit = (isHQElementAlive) ? RandomExtended<bool>.SplitChance() : true;
         if (isHit) {
-            TakeHit(new CombatStrength(RandomExtended<ArmamentCategory>.Choice(__offensiveArmamentCategories), UnityEngine.Random.Range(1F, Data.MaxHitPoints)));
+            TakeHit(new CombatStrength(Enums<ArmamentCategory>.GetRandom(excludeDefault: true), UnityEngine.Random.Range(1F, Data.MaxHitPoints)));
         }
         else {
             D.Log("{0} avoided a hit.", FullName);

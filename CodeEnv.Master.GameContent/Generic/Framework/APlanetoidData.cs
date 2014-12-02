@@ -54,7 +54,7 @@ namespace CodeEnv.Master.GameContent {
             Capacity = stat.Capacity;
             Resources = stat.Resources;
             SpecialResources = stat.SpecialResources;
-            base.Topography = Topography.System;
+            Topography = Topography.System;
         }
 
     }

@@ -6,24 +6,25 @@
 // </copyright> 
 // <summary> 
 // File: Weapon.cs
-// Data container class holding the characteristics of an Element's Weapon.
+// An Element's offensive Weapon.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Linq;
     using System.Collections;
     using System.Collections.Generic;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
     /// <summary>
-    /// Data container class holding the characteristics of an Element's Weapon.
+    /// An Element's offensive Weapon.
     /// </summary>
     public class Weapon : APropertyChangeTracking, IDisposable {
 
@@ -55,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<bool>(ref _isOperational, value, "IsOperational", OnIsOperationalChanged); }
         }
 
-        public float Range { get; private set; }
+        public DistanceRange Range { get { return _stat.Range; } }
 
         public string Name { get { return _nameFormat.Inject(_stat.RootName, _stat.Strength.Combined); } }
 
@@ -67,12 +68,6 @@ namespace CodeEnv.Master.GameContent {
 
         public float PowerRequirement { get { return _stat.PowerRequirement; } }
 
-        private IPlayer _owner;
-        public IPlayer Owner {
-            get { return _owner; }
-            set { SetProperty<IPlayer>(ref _owner, value, "Owner", OnOwnerChanged); }
-        }
-
         private bool _isLoaded;
         private WeaponStat _stat;
         private WaitJob _reloadJob;
@@ -81,10 +76,8 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="Weapon" /> class.
         /// </summary>
         /// <param name="stat">The stat.</param>
-        /// <param name="owner">The owner.</param>
-        public Weapon(WeaponStat stat, IPlayer owner) {
+        public Weapon(WeaponStat stat) {
             _stat = stat;
-            Owner = owner;
         }
 
         public bool Fire(IElementAttackableTarget target) {
@@ -93,10 +86,9 @@ namespace CodeEnv.Master.GameContent {
                 return FireOnTargetOfOpportunity();
             }
 
-            var targetDistance = Vector3.Distance(target.Position, RangeMonitor.ParentElement.Position) - target.Radius;
-            if (Range < targetDistance) {
-                D.Warn("Target {0} is out of range of {1}'s {2}. {3}WeaponRange: {4}, TargetDistance: {5}.",
-                    target.FullName, RangeMonitor.ParentElement.FullName, Name, Constants.NewLine, Range, targetDistance);
+            if (!RangeMonitor.EnemyTargets.Contains(target)) {
+                D.Warn("Target {0} is not present among tracked enemy targets: {1}{2}.",
+                    target.FullName, Constants.NewLine, RangeMonitor.EnemyTargets.Select(et => et.FullName).Concatenate());
                 return false;
             }
 
@@ -109,10 +101,6 @@ namespace CodeEnv.Master.GameContent {
                 InitiateReloadCycle();
             });
             return true;
-        }
-
-        private void OnOwnerChanged() {
-            Range = _stat.Range.GetValue(Owner.Race.Species);
         }
 
         private void OnIsOperationalChanged() {
@@ -155,7 +143,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnReloaded() {
-            D.Log("{0}.{1} completed reload on {2}.", RangeMonitor.ParentElement.FullName, Name, GameTime.Instance.CurrentDate);
+            //D.Log("{0}.{1} completed reload on {2}.", RangeMonitor.ParentElement.FullName, Name, GameTime.Instance.CurrentDate);
             _isLoaded = true;
             AssessReadinessToFireOnEnemy();
         }
@@ -180,7 +168,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            return _toStringFormat.Inject(GetType().Name, Name, IsOperational, Strength.Combined, Range, ReloadPeriod, PhysicalSize, PowerRequirement);
+            return _toStringFormat.Inject(GetType().Name, Name, IsOperational, Strength.Combined, Range.GetName(), ReloadPeriod, PhysicalSize, PowerRequirement);
         }
 
         #region IDisposable
@@ -204,6 +192,7 @@ namespace CodeEnv.Master.GameContent {
         protected virtual void Dispose(bool isDisposing) {
             // Allows Dispose(isDisposing) to be called more than once
             if (_alreadyDisposed) {
+                D.Warn("{0} has already been disposed.", GetType().Name);
                 return;
             }
 

@@ -30,11 +30,11 @@ public abstract class ACreator : AMonoBase {
         Enemy
     }
 
-    public bool isOwnerHuman;
+    public bool isOwnerPlayer;
     public DiploStateWithHuman ownerRelationshipWithHuman;
 
     public bool isCompositionPreset;
-    public int maxRandomElements = 8;
+    public int maxElementsInRandomUnit = 8;
 
     public bool toDelayOperations;
     public bool toDelayBuild;
@@ -43,6 +43,9 @@ public abstract class ACreator : AMonoBase {
     public int yearDelay = 0;
 
     public int weaponsPerElement = 2;
+    public int countermeasuresPerElement = 2;
+    public int sensorsPerElement = 2;
+    public int countermeasuresPerCmd = 2;
 
     public bool toCycleIntelCoverage = false;
 

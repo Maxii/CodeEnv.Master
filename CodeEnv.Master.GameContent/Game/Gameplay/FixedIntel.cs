@@ -22,17 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Intel with a CurrentCoverage value that doesn't change once instantiated.
     /// </summary>
-    public class FixedIntel : Intel {
-
-        public override bool HasDatedCoverage { get { return false; } }
-
-        public override IntelCoverage DatedCoverage {
-            get { throw new NotSupportedException("{0} does not support DatedCoverage.".Inject(GetType().Name)); }
-        }
-
-        public override GameDate DateStamp {
-            get { throw new NotSupportedException("{0} does not support DateStamp.".Inject(GetType().Name)); }
-        }
+    public class FixedIntel : AIntel {
 
         public override IntelCoverage CurrentCoverage {
             get { return base.CurrentCoverage; }
@@ -40,10 +30,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public FixedIntel(IntelCoverage fixedCoverage) : base(fixedCoverage) { }
-
-        protected override void PreProcessChange(IntelCoverage newCurrentCoverage) {
-            // does nothing as DatedCoverage and DateStamp aren't supported
-        }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

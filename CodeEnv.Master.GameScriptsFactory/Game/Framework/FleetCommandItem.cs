@@ -172,7 +172,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         shipFst.AssignedShip = null;
         ship.FormationStation = null;
 
-        if (!IsAlive) {
+        if (!IsAliveAndOperating) {
             // fleetCmd has died
             return;
         }
@@ -597,7 +597,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
             CurrentState = FleetState.Idling;
             yield break;
         }
-        if (!(CurrentOrder.Target as IUnitAttackableTarget).IsAlive) {
+        if (!(CurrentOrder.Target as IUnitAttackableTarget).IsAliveAndOperating) {
             // Moving Return()s if the target dies
             CurrentState = FleetState.Idling;
             yield break;
@@ -1330,6 +1330,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         protected virtual void Dispose(bool isDisposing) {
             // Allows Dispose(isDisposing) to be called more than once
             if (_alreadyDisposed) {
+                D.Warn("{0} has already been disposed.", GetType().Name);
                 return;
             }
 

@@ -53,7 +53,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
         set { SetProperty<bool>(ref _inCameraLOS, value, "InCameraLOS", OnInCameraLOSChanged); }
     }
 
-    public IIntel PlayerIntel { get; private set; }
+    public AIntel PlayerIntel { get; private set; }
 
     public IGuiHudPublisher HudPublisher { get; private set; }
 
@@ -145,17 +145,13 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
     /// Derived classes should override this if they have a different type of IIntel than <see cref="Intel"/>.
     /// </summary>
     /// <returns></returns>
-    protected virtual IIntel InitializePlayerIntel() { return new Intel(); }
+    protected virtual AIntel InitializePlayerIntel() { return new Intel(); }
 
     protected virtual void Subscribe() {
         _subscribers = new List<IDisposable>();
         _subscribers.Add(_inputMgr.SubscribeToPropertyChanged<IInputManager, GameInputMode>(inputMgr => inputMgr.InputMode, OnInputModeChanged));
-        SubscribeToPlayerIntelCoverageChanged();
+        _subscribers.Add(PlayerIntel.SubscribeToPropertyChanged<AIntel, IntelCoverage>(pi => pi.CurrentCoverage, OnPlayerIntelCoverageChanged));
         // Subscriptions to data value changes should be done with SubscribeToDataValueChanges()
-    }
-
-    protected virtual void SubscribeToPlayerIntelCoverageChanged() {
-        _subscribers.Add((PlayerIntel as Intel).SubscribeToPropertyChanged<Intel, IntelCoverage>(pi => pi.CurrentCoverage, OnPlayerIntelCoverageChanged));
     }
 
     protected override void Start() {

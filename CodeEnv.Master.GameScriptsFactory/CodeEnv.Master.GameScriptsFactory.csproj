@@ -127,9 +127,6 @@
     <Compile Include="Generic\Framework\SectorGrid.cs" />
     <Compile Include="Generic\Framework\StarbaseUnitCreator.cs" />
     <Compile Include="Generic\Framework\SettlementUnitCreator.cs" />
-    <Compile Include="Generic\Deferred\SensorRangeTracker.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="Generic\Framework\SystemFactory.cs" />
     <Compile Include="Generic\Framework\SystemCreator.cs" />
     <Compile Include="Game\Graphics\SphericalHighlight.cs" />
@@ -151,6 +148,7 @@
     <Compile Include="Generic\Graphics\GuiInputModeControlButton.cs" />
     <Compile Include="Generic\IO\InputManager.cs" />
     <Compile Include="Generic\IO\OrbitalPlaneInputEventRouter.cs" />
+    <Compile Include="Generic\Framework\SectorFactory.cs" />
     <Compile Include="ThirdParty\MyEnvelopContent.cs" />
     <Compile Include="ThirdParty\MyAStarPointGraph.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -218,6 +216,7 @@
   <ItemGroup>
     <Folder Include="Game\Gameplay\" />
     <Folder Include="Game\_Debug\" />
+    <Folder Include="Generic\Deferred\" />
     <Folder Include="Generic\Math\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

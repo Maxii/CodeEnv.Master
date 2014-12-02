@@ -29,16 +29,7 @@ using UnityEngine;
 /// </summary>
 public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory, FacilityData, FacilityStat, SettlementCommandItem> {
 
-    private static UnitFactory _factory;   // IMPROVE move back to AUnitCreator using References.IUnitFactory?
-
     public bool orbitMoves;
-
-    protected override void Awake() {
-        base.Awake();
-        if (_factory == null) {
-            _factory = UnitFactory.Instance;
-        }
-    }
 
     // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
 
@@ -46,12 +37,12 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory
         return new FacilityStat(elementName, 10000F, 50F, category);
     }
 
-    protected override FacilityItem MakeElement(FacilityStat stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner) {
-        return _factory.MakeFacilityInstance(stat, Topography.System, weaponStats, owner);
+    protected override FacilityItem MakeElement(FacilityStat stat, IEnumerable<WeaponStat> wStats, IEnumerable<CountermeasureStat> cmStats, IEnumerable<SensorStat> sensorStats) {
+        return _factory.MakeInstance(stat, Topography.System, wStats, cmStats, sensorStats, _owner);
     }
 
-    protected override void MakeElement(FacilityStat stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner, ref FacilityItem element) {
-        _factory.MakeFacilityInstance(stat, Topography.System, weaponStats, owner, ref element);
+    protected override void PopulateElement(FacilityStat stat, IEnumerable<WeaponStat> wStats, IEnumerable<CountermeasureStat> cmStats, IEnumerable<SensorStat> sensorStats, ref FacilityItem element) {
+        _factory.PopulateInstance(stat, Topography.System, wStats, cmStats, sensorStats, _owner, ref element);
     }
 
     protected override FacilityCategory GetCategory(FacilityStat stat) {
@@ -62,25 +53,26 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory
         return element.category;
     }
 
-    protected override FacilityCategory[] GetValidElementCategories() {
-        return new FacilityCategory[] { FacilityCategory.Construction, FacilityCategory.Defense, FacilityCategory.Economic, FacilityCategory.Science };
+    protected override FacilityCategory[] ElementCategories {
+        get { return new FacilityCategory[] { FacilityCategory.Construction, FacilityCategory.Defense, FacilityCategory.Economic, FacilityCategory.Science }; }
     }
 
-    protected override FacilityCategory[] GetValidHQElementCategories() {
-        return new FacilityCategory[] { FacilityCategory.CentralHub };
+    protected override FacilityCategory[] HQElementCategories {
+        get { return new FacilityCategory[] { FacilityCategory.CentralHub }; }
     }
 
     protected override SettlementCommandItem MakeCommand(IPlayer owner) {
         LogEvent();
-        SettlementCmdStat cmdStat = new SettlementCmdStat(UnitName, 10F, 100, Formation.Circle, new CombatStrength(0F, 5F, 0F, 5F, 0F, 5F), 100);
+        var countermeasures = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerCmd);
+        SettlementCmdStat cmdStat = new SettlementCmdStat(UnitName, 10F, 100, Formation.Circle, 100);
 
         SettlementCommandItem cmd;
         if (isCompositionPreset) {
             cmd = gameObject.GetSafeMonoBehaviourComponentInChildren<SettlementCommandItem>();
-            _factory.MakeInstance(cmdStat, owner, ref cmd);
+            _factory.PopulateInstance(cmdStat, countermeasures, owner, ref cmd);
         }
         else {
-            cmd = _factory.MakeInstance(cmdStat, owner);
+            cmd = _factory.MakeInstance(cmdStat, countermeasures, owner);
             UnityUtility.AttachChildToParent(cmd.gameObject, gameObject);
         }
         cmd.__OrbiterMoves = orbitMoves;
@@ -99,19 +91,9 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory
         return false;
     }
 
-    protected override void BeginElementsOperations() {
-        LogEvent();
-        _elements.ForAll(e => e.CommenceOperations());
-    }
-
-    protected override void BeginCommandOperations() {
-        LogEvent();
-        _command.CommenceOperations();
-    }
-
     protected override void AssignHQElement() {
         LogEvent();
-        var candidateHQElements = _command.Elements.Where(e => GetValidHQElementCategories().Contains((e as FacilityItem).Data.Category));
+        var candidateHQElements = _command.Elements.Where(e => HQElementCategories.Contains((e as FacilityItem).Data.Category));
         D.Assert(!candidateHQElements.IsNullOrEmpty()); // bases must have a CentralHub, even if preset
         _command.HQElement = RandomExtended<AUnitElementItem>.Choice(candidateHQElements) as FacilityItem;
     }

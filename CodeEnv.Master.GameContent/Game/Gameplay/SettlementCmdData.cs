@@ -81,7 +81,6 @@ namespace CodeEnv.Master.GameContent {
             MaxCmdEffectiveness = stat.MaxCmdEffectiveness;
             Population = stat.Population;
             UnitFormation = stat.UnitFormation;
-            Strength = stat.Strength;
         }
 
         protected override void InitializeComposition() {

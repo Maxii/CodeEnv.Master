@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
 
         float Range { get; set; }
 
-        Range<float> RangeSpan { get; }
+        ValueRange<float> RangeSpan { get; }
 
         IPlayer Owner { get; set; }
 

@@ -54,6 +54,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     private IList<Vector3> _worldBoxLocations;
     private IDictionary<Index3D, SectorItem> _sectors;
 
+    private SectorFactory _sectorFactory;
     private GridWireframe _gridWireframe;
     private IList<IDisposable> _subscribers;
 
@@ -182,6 +183,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     }
 
     private void ConstructSectors() {
+        _sectorFactory = SectorFactory.Instance;
         _gridVertexLocations = new List<Vector3>();
         _worldVertexLocations = new List<Vector3>();
         _gridBoxToSectorIndexLookup = new Dictionary<Vector3, Index3D>();
@@ -236,19 +238,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     }
 
     private void __AddSector(Index3D index, Vector3 worldPosition) {
-        SectorItem sectorPrefab = RequiredPrefabs.Instance.sector;
-        GameObject sectorGO = NGUITools.AddChild(SectorsFolder.Instance.Folder.gameObject, sectorPrefab.gameObject);
-        // sector.Awake() runs immediately here, then disables itself
-        SectorItem sector = sectorGO.GetSafeMonoBehaviourComponent<SectorItem>();
-
-        SectorData data = new SectorData(index) {
-            Density = 1F
-        };
-        sector.Data = data;
-        // IMPROVE use data values in place of sector values
-
-        sectorGO.transform.position = worldPosition;
-        sector.enabled = true;
+        var sector = _sectorFactory.MakeInstance(index, worldPosition);
 
         UnityUtility.WaitOneToExecute(onWaitFinished: (wasKilled) => {
             sector.PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;

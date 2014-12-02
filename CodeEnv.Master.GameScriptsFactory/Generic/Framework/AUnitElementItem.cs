@@ -95,6 +95,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     public override void CommenceOperations() {
         base.CommenceOperations();
         Data.Weapons.ForAll(w => w.IsOperational = true);
+        Data.Sensors.ForAll(s => s.IsOperational = true);
     }
 
     /// <summary>
@@ -119,21 +120,49 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
         Command.OnSubordinateElementDeath(this);
     }
 
-    #region Weapons
+    #region Weapons and Sensors
 
     /// <summary>
     /// Adds a weapon based on the WeaponStat provided to this element.
     /// </summary>
-    /// <param name="weapon">The weapon.</param>
+    /// <param name="weaponStat">The weapon stat.</param>
     public void AddWeapon(WeaponStat weaponStat) {
-        Weapon weapon;
-        var monitor = UnitFactory.Instance.MakeWeaponInstance(weaponStat, this, out weapon);
+        // D.Log("{0}.AddWeapon() called. WeaponStat name = {1}.", FullName, weaponStat.RootName);
+        Weapon weapon = new Weapon(weaponStat);
+        var monitor = UnitFactory.Instance.MakeMonitorInstance(weapon, this);
         if (!_weaponRangeMonitors.Contains(monitor)) {
             // only need to record and setup range monitors once. The same monitor can have more than 1 weapon
             _weaponRangeMonitors.Add(monitor);
         }
         Data.AddWeapon(weapon);
         weapon.onReadyToFireOnEnemyChanged += OnWeaponReadyToFireOnEnemyChanged;
+        if (IsAliveAndOperating) {
+            // we have already commenced operations so start the new weapon
+            // weapons added before operations have commenced are started when operations commence
+            weapon.IsOperational = true;
+        }
+    }
+
+    public void AddSensor(SensorStat sensorStat) {
+        Sensor sensor = new Sensor(sensorStat);
+        if (Command != null) {
+            // Command exists so the new sensor can be attached to the Command's SensorRangeMonitor now
+            Command.AttachSensorsToMonitors(sensor);
+        }
+        Data.AddSensor(sensor);
+        if (IsAliveAndOperating) {
+            // we have already commenced operations so start the new sensor
+            // sensors added before operations have commenced are started when operations commence
+            sensor.IsOperational = true;
+        }
+    }
+
+    public void RemoveSensor(Sensor sensor) {
+        D.Assert(Command != null);
+        D.Assert(IsAliveAndOperating);
+        Command.DetachSensorsFromMonitors(sensor);
+        sensor.IsOperational = false;
+        Data.RemoveSensor(sensor);
     }
 
     /// <summary>
@@ -142,6 +171,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     public void RemoveWeapon(Weapon weapon) {
+        D.Assert(IsAliveAndOperating);
         var monitor = weapon.RangeMonitor;
         bool isRangeMonitorStillInUse = monitor.Remove(weapon);
 
@@ -150,6 +180,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
             D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
             UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(monitor);
         }
+        weapon.IsOperational = false;
         Data.RemoveWeapon(weapon);
         weapon.onReadyToFireOnEnemyChanged -= OnWeaponReadyToFireOnEnemyChanged;
     }

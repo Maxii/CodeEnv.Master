@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Abstract base class that holds data for Items that are a unit command.
     /// </summary>
-    public abstract class ACommandData : AMortalItemData, IDisposable {
+    public abstract class ACommandData : AMortalItemData {
 
         public event Action onCompositionChanged;
 
@@ -82,29 +82,40 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<int>(ref _maxCmdEffectiveness, value, "MaxCmdEffectiveness", OnMaxCmdEffectivenessChanged); }
         }
 
+        private float _unitMaxWeaponsRange;
         /// <summary>
         /// The maximum range of all the element's weapons that are part of this unit.
         /// </summary>
-        public override float MaxWeaponsRange { // UNCLEAR as this overrides SetProperty<> in base, can changes be subscribed too?
-            get { return base.MaxWeaponsRange; }
-            set { base.MaxWeaponsRange = value; }
+        public float UnitMaxWeaponsRange {
+            get { return _unitMaxWeaponsRange; }
+            private set { SetProperty<float>(ref _unitMaxWeaponsRange, value, "UnitMaxWeaponsRange"); }
         }
 
-        private CombatStrength _unitStrength;
+        private float _unitMaxSensorRange;
+        public float UnitMaxSensorRange {
+            get { return _unitMaxSensorRange; }
+            set { SetProperty<float>(ref _unitMaxSensorRange, value, "UnitMaxSensorRange"); }
+        }
+
+
+        private CombatStrength _unitOffensiveStrength;
         /// <summary>
-        /// Readonly. The combat strength of the entire Unit, aka the sum of all
-        /// of this Unit's Elements combat strength.
+        /// Readonly. The offensive combat strength of the entire Unit, aka the sum of all
+        /// of this Unit's Elements offensive combat strength.
         /// </summary>
-        /// <value>
-        /// The unit strength.
-        /// </value>
-        public CombatStrength UnitStrength {
-            get {
-                return _unitStrength;
-            }
-            private set {
-                SetProperty<CombatStrength>(ref _unitStrength, value, "UnitStrength");
-            }
+        public CombatStrength UnitOffensiveStrength {
+            get { return _unitOffensiveStrength; }
+            private set { SetProperty<CombatStrength>(ref _unitOffensiveStrength, value, "UnitOffensiveStrength"); }
+        }
+
+        private CombatStrength _unitDefensiveStrength;
+        /// <summary>
+        /// Readonly. The defensive combat strength of the entire Unit, aka the sum of all
+        /// of this Unit's Elements defensive combat strength.
+        /// </summary>
+        public CombatStrength UnitDefensiveStrength {
+            get { return _unitDefensiveStrength; }
+            private set { SetProperty<CombatStrength>(ref _unitDefensiveStrength, value, "UnitDefensiveStrength"); }
         }
 
         private float _unitMaxHitPoints;
@@ -277,15 +288,22 @@ namespace CodeEnv.Master.GameContent {
         /// Recalculates any Command properties that are dependant upon the total element population.
         /// </summary>
         protected virtual void RecalcPropertiesDerivedFromCombinedElements() {
-            RecalcUnitStrength();
+            RecalcUnitDefensiveStrength();
+            RecalcUnitOffensiveStrength();
             RecalcUnitMaxHitPoints();   // must preceed current as current uses max as a clamp
             RecalcUnitCurrentHitPoints();
             RecalcUnitMaxWeaponsRange();
+            RecalcUnitMaxSensorRange();
         }
 
-        private void RecalcUnitStrength() {
+        private void RecalcUnitOffensiveStrength() {
             var defaultValueIfEmpty = default(CombatStrength);
-            UnitStrength = ElementsData.Select(ed => ed.Strength).Aggregate(defaultValueIfEmpty, (accum, strength) => accum + strength);
+            UnitOffensiveStrength = ElementsData.Select(ed => ed.OffensiveStrength).Aggregate(defaultValueIfEmpty, (accum, strength) => accum + strength);
+        }
+
+        private void RecalcUnitDefensiveStrength() {
+            var defaultValueIfEmpty = default(CombatStrength);
+            UnitDefensiveStrength = ElementsData.Select(ed => ed.DefensiveStrength).Aggregate(defaultValueIfEmpty, (accum, strength) => accum + strength);
         }
 
         private void RecalcUnitMaxHitPoints() {
@@ -297,7 +315,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void RecalcUnitMaxWeaponsRange() {
-            MaxWeaponsRange = ElementsData.Count == 0 ? Constants.ZeroF : ElementsData.Max<AElementData>(ed => ed.MaxWeaponsRange);
+            UnitMaxWeaponsRange = ElementsData.Count == Constants.Zero ? Constants.ZeroF : ElementsData.Max(ed => ed.MaxWeaponsRange);
+        }
+
+        private void RecalcUnitMaxSensorRange() {
+            UnitMaxSensorRange = ElementsData.Count == Constants.Zero ? Constants.ZeroF : ElementsData.Max(ed => ed.MaxSensorRange);
         }
 
         #region ElementData PropertyChanged Subscription and Methods
@@ -307,12 +329,18 @@ namespace CodeEnv.Master.GameContent {
             IList<IDisposable> anElementsSubscriptions = _subscribers[elementData];
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AElementData, float>(ed => ed.CurrentHitPoints, OnElementCurrentHitPointsChanged));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AElementData, float>(ed => ed.MaxHitPoints, OnElementMaxHitPointsChanged));
-            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AElementData, CombatStrength>(ed => ed.Strength, OnElementStrengthChanged));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AElementData, CombatStrength>(ed => ed.DefensiveStrength, OnElementDefensiveStrengthChanged));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AElementData, CombatStrength>(ed => ed.OffensiveStrength, OnElementOffensiveStrengthChanged));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AElementData, float>(ed => ed.MaxWeaponsRange, OnElementMaxWeaponsRangeChanged));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AElementData, float>(ed => ed.MaxSensorRange, OnElementMaxSensorRangeChanged));
         }
 
-        private void OnElementStrengthChanged() {
-            RecalcUnitStrength();
+        private void OnElementOffensiveStrengthChanged() {
+            RecalcUnitOffensiveStrength();
+        }
+
+        private void OnElementDefensiveStrengthChanged() {
+            RecalcUnitDefensiveStrength();
         }
 
         private void OnElementCurrentHitPointsChanged() {
@@ -327,18 +355,19 @@ namespace CodeEnv.Master.GameContent {
             RecalcUnitMaxWeaponsRange();
         }
 
+        private void OnElementMaxSensorRangeChanged() {
+            RecalcUnitMaxSensorRange();
+        }
+
         private void Unsubscribe(AElementData elementData) {
-            _subscribers[elementData].ForAll<IDisposable>(d => d.Dispose());
+            _subscribers[elementData].ForAll(d => d.Dispose());
             _subscribers.Remove(elementData);
         }
 
         #endregion
 
-        private void Cleanup() {
-            Unsubscribe();
-        }
-
-        private void Unsubscribe() {
+        protected override void Unsubscribe() {
+            base.Unsubscribe();
             IList<AElementData> subscriberKeys = new List<AElementData>(_subscribers.Keys);
             // copy of key list as you can't remove keys from a list while you are iterating over the list
             foreach (AElementData eData in subscriberKeys) {
@@ -346,49 +375,6 @@ namespace CodeEnv.Master.GameContent {
             }
             _subscribers.Clear();
         }
-
-        #region IDisposable
-        [DoNotSerialize]
-        private bool alreadyDisposed = false;
-
-        /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-        /// </summary>
-        public void Dispose() {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        /// <summary>
-        /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-        /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
-        /// </summary>
-        /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-        protected virtual void Dispose(bool isDisposing) {
-            // Allows Dispose(isDisposing) to be called more than once
-            if (alreadyDisposed) {
-                return;
-            }
-
-            if (isDisposing) {
-                // free managed resources here including unhooking events
-                Cleanup();
-            }
-            // free unmanaged resources here
-
-            alreadyDisposed = true;
-        }
-
-        // Example method showing check for whether the object has been disposed
-        //public void ExampleMethod() {
-        //    // throw Exception if called on object that is already disposed
-        //    if(alreadyDisposed) {
-        //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-        //    }
-
-        //    // method content here
-        //}
-        #endregion
 
     }
 }

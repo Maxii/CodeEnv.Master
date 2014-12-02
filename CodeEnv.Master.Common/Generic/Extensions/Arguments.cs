@@ -13,6 +13,7 @@
 namespace CodeEnv.Master.Common {
 
     using System;
+    using System.Linq;
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -84,39 +85,33 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Validates the provided number is not negative.
+        /// Validates the provided number(s) are not negative.
         /// </summary>
-        /// <param name="number">The number.</param>
+        /// <param name="numbers">The numbers to validate.</param>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public static void ValidateNotNegative(int number) {
-            if (number < Constants.Zero) {
-                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
-                throw new ArgumentOutOfRangeException(ErrorMessages.NegativeValue.Inject(number, callingMethodName));
-            }
+        public static void ValidateNotNegative(params int[] numbers) {
+            numbers.ForAll(n => {
+                if (n < Constants.Zero) {
+                    string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                    throw new ArgumentOutOfRangeException(ErrorMessages.NegativeValue.Inject(n, callingMethodName));
+
+                }
+            });
         }
 
         /// <summary>
-        /// Validates the provided number is not negative.
+        /// Validates the provided number(s) are not negative.
         /// </summary>
-        /// <param name="number">The number.</param>
+        /// <param name="numbers">The numbers to validate.</param>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public static void ValidateNotNegative(long number) {
-            if (number < Constants.ZeroL) {
-                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
-                throw new ArgumentOutOfRangeException(ErrorMessages.NegativeValue.Inject(number, callingMethodName));
-            }
-        }
+        public static void ValidateNotNegative(params float[] numbers) {
+            numbers.ForAll(n => {
+                if (n < Constants.ZeroF) {
+                    string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
+                    throw new ArgumentOutOfRangeException(ErrorMessages.NegativeValue.Inject(n, callingMethodName));
 
-        /// <summary>
-        /// Validates the provided number is not negative.
-        /// </summary>
-        /// <param name="number">The number.</param>
-        /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public static void ValidateNotNegative(float number) {
-            if (number < Constants.ZeroF) {
-                string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
-                throw new ArgumentOutOfRangeException(ErrorMessages.NegativeValue.Inject(number, callingMethodName));
-            }
+                }
+            });
         }
 
         /// <summary>

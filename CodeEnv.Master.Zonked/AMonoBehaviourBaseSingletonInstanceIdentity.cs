@@ -24,7 +24,7 @@ using CodeEnv.Master.Common;
 /// IInstanceIdentity functionality have no obligations except to inherit from this. 
 /// </summary>
 [Obsolete]
-public abstract class AMonoBehaviourBaseSingletonInstanceIdentity<T> : AMonoBaseSingleton<T>, IInstanceIdentity where T : AMonoBase {
+public abstract class AMonoBehaviourBaseSingletonInstanceIdentity<T> : AMonoBaseSingleton<T>, IInstanceCount where T : AMonoBase {
 
     private string _instanceID;
 
@@ -37,7 +37,7 @@ public abstract class AMonoBehaviourBaseSingletonInstanceIdentity<T> : AMonoBase
 
     protected override void Awake() {
         IncrementInstanceCounter();
-        _instanceID = Constants.Underscore + InstanceID;
+        _instanceID = Constants.Underscore + InstanceCount;
         //D.Log("{0}._instanceID string now set to {1}, InstanceID value used was {2}.", typeof(T).Name, _instanceID, InstanceID);
         base.Awake();
     }
@@ -47,11 +47,11 @@ public abstract class AMonoBehaviourBaseSingletonInstanceIdentity<T> : AMonoBase
     #region IInstanceIdentity Members
 
     private static int _instanceCounter = 0;
-    public int InstanceID { get; private set; }
+    public int InstanceCount { get; private set; }
 
     private void IncrementInstanceCounter() {
-        InstanceID = System.Threading.Interlocked.Increment(ref _instanceCounter);
-        D.Log("{0}.InstanceID now set to {1}, static counter now {2}.", typeof(T).Name, InstanceID, _instanceCounter);
+        InstanceCount = System.Threading.Interlocked.Increment(ref _instanceCounter);
+        D.Log("{0}.InstanceID now set to {1}, static counter now {2}.", typeof(T).Name, InstanceCount, _instanceCounter);
     }
 
     #endregion

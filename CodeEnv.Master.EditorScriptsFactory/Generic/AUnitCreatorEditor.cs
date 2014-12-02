@@ -29,9 +29,9 @@ public abstract class AUnitCreatorEditor<T> : Editor where T : ACreator {
 
         creator.toDelayOperations = GUILayout.Toggle(creator.toDelayOperations, "Delay Operations");
         if (creator.toDelayOperations) {
-            creator.hourDelay = EditorGUILayout.IntSlider("Hours to delay", creator.hourDelay, 0, 19);
-            creator.dayDelay = EditorGUILayout.IntSlider("Days to delay", creator.dayDelay, 0, 99);
-            creator.yearDelay = EditorGUILayout.IntSlider("Years to delay", creator.yearDelay, 0, 10);
+            creator.hourDelay = EditorGUILayout.IntSlider("Delay hours", creator.hourDelay, 0, 19);
+            creator.dayDelay = EditorGUILayout.IntSlider("Delay days", creator.dayDelay, 0, 99);
+            creator.yearDelay = EditorGUILayout.IntSlider("Delay years", creator.yearDelay, 0, 10);
             EditorGUI.indentLevel++;
             creator.toDelayBuild = GUILayout.Toggle(creator.toDelayBuild, "Delay Build");
             EditorGUI.indentLevel--;
@@ -40,19 +40,22 @@ public abstract class AUnitCreatorEditor<T> : Editor where T : ACreator {
         creator.isCompositionPreset = GUILayout.Toggle(creator.isCompositionPreset, "Composition is preset");
         if (!creator.isCompositionPreset) {
             EditorGUI.indentLevel++;
-            creator.maxRandomElements = EditorGUILayout.IntSlider("Max Random Elements", creator.maxRandomElements, 1, GetMaxElements());
+            creator.maxElementsInRandomUnit = EditorGUILayout.IntSlider("Max Unit Elements", creator.maxElementsInRandomUnit, 1, GetMaxElements());
             EditorGUI.indentLevel--;
         }
 
-        creator.isOwnerHuman = GUILayout.Toggle(creator.isOwnerHuman, "Owner is Human Player");
-        if (!creator.isOwnerHuman) {
+        creator.isOwnerPlayer = GUILayout.Toggle(creator.isOwnerPlayer, "Owner is Player");
+        if (!creator.isOwnerPlayer) {
             EditorGUI.indentLevel++;
             creator.ownerRelationshipWithHuman = (ACreator.DiploStateWithHuman)
-                EditorGUILayout.EnumPopup("Diplomacy with Human Player", creator.ownerRelationshipWithHuman);
+                EditorGUILayout.EnumPopup("Diplomacy with Player", creator.ownerRelationshipWithHuman);
             EditorGUI.indentLevel--;
         }
 
-        creator.weaponsPerElement = EditorGUILayout.IntSlider("Number of Weapons per element", creator.weaponsPerElement, 1, 5);
+        creator.weaponsPerElement = EditorGUILayout.IntSlider("Weapons/Element", creator.weaponsPerElement, 0, 5);
+        creator.countermeasuresPerElement = EditorGUILayout.IntSlider("Countermeasures/Element", creator.countermeasuresPerElement, 0, 5);
+        creator.sensorsPerElement = EditorGUILayout.IntSlider("Sensors/Element", creator.sensorsPerElement, 0, 5);
+        creator.countermeasuresPerCmd = EditorGUILayout.IntSlider("Countermeasures/Cmd", creator.countermeasuresPerCmd, 0, 3);
 
         creator.toCycleIntelCoverage = GUILayout.Toggle(creator.toCycleIntelCoverage, "Cycle Intel Coverage");
 

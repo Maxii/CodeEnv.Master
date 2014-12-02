@@ -32,11 +32,13 @@ public class SystemCreatorEditor : Editor {
 
         creator.isCompositionPreset = GUILayout.Toggle(creator.isCompositionPreset, "Composition is preset");
         if (!creator.isCompositionPreset) {
-            creator.maxRandomPlanets = EditorGUILayout.IntSlider("Max Random Planets", creator.maxRandomPlanets,
+            creator.maxPlanetsInRandomSystem = EditorGUILayout.IntSlider("Max System Planets", creator.maxPlanetsInRandomSystem,
                 Constants.Zero, TempGameValues.TotalOrbitSlotsPerSystem - 1);   // SystemOrbitSlot reserved for a Settlement
-            creator.maxRandomMoons = EditorGUILayout.IntSlider("Max Random Moons", creator.maxRandomMoons,
-                Constants.Zero, 2 * creator.maxRandomPlanets);
+            creator.maxMoonsInRandomSystem = EditorGUILayout.IntSlider("Max System Moons", creator.maxMoonsInRandomSystem,
+                Constants.Zero, 2 * creator.maxPlanetsInRandomSystem);  // up to an AVERAGE of 2 moons per planet
         }
+
+        creator.countermeasuresPerPlanetoid = EditorGUILayout.IntSlider("Countermeasures/Planetoid", creator.countermeasuresPerPlanetoid, 0, 2);
 
         creator.toCycleIntelCoverage = GUILayout.Toggle(creator.toCycleIntelCoverage, "Cycle Intel Coverage");
 

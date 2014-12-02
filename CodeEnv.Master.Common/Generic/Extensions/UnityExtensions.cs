@@ -39,15 +39,11 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         public static T GetSafeMonoBehaviourComponentInParents<T>(this GameObject go, bool excludeSelf = false) where T : MonoBehaviour {
             Transform parent = excludeSelf ? go.transform.parent : go.transform;
-            while (parent != null) {
-                T component = parent.gameObject.GetComponent<T>();
-                if (component != null) {
-                    return component;
-                }
-                parent = parent.parent;
+            T component = parent.gameObject.GetComponentInParent<T>();
+            if (component == null) {
+                D.Warn(ErrorMessages.ComponentNotFound, typeof(T).Name, go.name);
             }
-            D.Warn(ErrorMessages.ComponentNotFound, typeof(T).Name, go.name);
-            return null;
+            return component;
         }
 
         /// <summary>
@@ -59,14 +55,7 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         public static T GetComponentInParents<T>(this GameObject go, bool excludeSelf = false) where T : Component {
             Transform parent = excludeSelf ? go.transform.parent : go.transform;
-            while (parent != null) {
-                T component = parent.gameObject.GetComponent<T>();
-                if (component != null) {
-                    return component;
-                }
-                parent = parent.parent;
-            }
-            return null;
+            return parent.gameObject.GetComponentInParent<T>();
         }
 
         /// <summary>
@@ -111,7 +100,6 @@ namespace CodeEnv.Master.Common {
             }
             return component;
         }
-
 
         /// <summary>
         /// Defensive GameObject.GetComponent&lt;&gt;() alternative for acquiring MonoBehaviours. 
@@ -169,7 +157,6 @@ namespace CodeEnv.Master.Common {
             return t.gameObject.GetSafeMonoBehaviourComponentInChildren<T>();
         }
 
-
         /// <summary>
         /// Returns all MonoBehaviours of Type T in the GameObject or any of its children.
         /// Logs a warning if a component cannot be found.
@@ -217,12 +204,9 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         public static Transform GetSafeTransformWithInterfaceInParents<I>(this Transform t, bool excludeSelf = false) where I : class {
             Transform parent = excludeSelf ? t.parent : t;
-            while (parent != null) {
-                I component = parent.gameObject.GetComponent(typeof(I)) as I;
-                if (component != null) {
-                    return parent;
-                }
-                parent = parent.parent;
+            I i = parent.gameObject.GetComponentInParent(typeof(I)) as I;
+            if (i != null) {
+                return parent;
             }
             D.Warn(ErrorMessages.ComponentNotFound, typeof(I).Name, t.name);
             return null;
@@ -238,15 +222,11 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         public static I GetSafeInterfaceInParents<I>(this Transform t, bool excludeSelf = false) where I : class {
             Transform parent = excludeSelf ? t.parent : t;
-            while (parent != null) {
-                I component = parent.GetComponent(typeof(I)) as I;
-                if (component != null) {
-                    return component;
-                }
-                parent = parent.parent;
+            I i = parent.GetComponentInParent(typeof(I)) as I;
+            if (i == null) {
+                D.Warn(ErrorMessages.ComponentNotFound, typeof(I).Name, t.name);
             }
-            D.Warn(ErrorMessages.ComponentNotFound, typeof(I).Name, t.name);
-            return null;
+            return i;
         }
 
         /// <summary>
@@ -281,16 +261,9 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         public static I GetInterfaceInParents<I>(this Transform t, bool excludeSelf = false) where I : class {
             Transform parent = excludeSelf ? t.parent : t;
-            while (parent != null) {
-                I component = parent.GetComponent(typeof(I)) as I;
-                if (component != null) {
-                    return component;
-                }
-                parent = parent.parent;
-            }
-            return null;
+            I i = parent.GetComponentInParent(typeof(I)) as I;
+            return i;
         }
-
 
         /// <summary>
         /// Gets the interface of type I found in the Transform's peer components.
@@ -299,7 +272,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="t">The Transform</param>
         /// <returns>The class of type I found, if any. Can be null.</returns>
         public static I GetInterface<I>(this Transform t) where I : class {
-            return t.GetComponent(typeof(I)) as I;
+            return t.gameObject.GetInterface<I>();
         }
 
         /// <summary>
@@ -311,7 +284,6 @@ namespace CodeEnv.Master.Common {
         public static I GetInterface<I>(this GameObject go) where I : class {
             return go.GetComponent(typeof(I)) as I;
         }
-
 
         /// <summary>
         ///  Gets the interface of type I found in the gameObject's components.
@@ -336,11 +308,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="t">The transform.</param>
         /// <returns></returns>
         public static I GetSafeInterface<I>(this Transform t) where I : class {
-            I i = t.GetInterface<I>();
-            if (i == null) {
-                D.Warn(ErrorMessages.ComponentNotFound, typeof(I).Name, t.name);
-            }
-            return i;
+            return t.gameObject.GetSafeInterface<I>();
         }
 
         /// <summary>
@@ -365,7 +333,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="t">The Transform.</param>
         /// <returns>The class of type I found, if any. Can be null.</returns>
         public static I GetInterfaceInChildren<I>(this Transform t) where I : class {
-            return t.GetComponentInChildren(typeof(I)) as I;
+            return t.gameObject.GetInterfaceInChildren<I>();
         }
 
         /// <summary>

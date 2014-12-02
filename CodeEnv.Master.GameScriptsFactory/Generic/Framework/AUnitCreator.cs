@@ -43,31 +43,40 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     private static IList<CommandType> _allUnitCommands = new List<CommandType>();
     public static IList<CommandType> AllUnitCommands { get { return _allUnitCommands; } }
 
+    protected static UnitFactory _factory;
+
     /// <summary>
     /// The name of the top level Unit, aka the Settlement, Starbase or Fleet name.
     /// A Unit contains a Command and one or more Elements.
     /// </summary>
     public string UnitName { get { return _transform.name; } }
 
-    protected IList<WeaponStat> _availableWeaponsStats;
-    protected IList<ElementStatType> _elementStats;
-    protected IList<ElementType> _elements;
+    protected IList<CountermeasureStat> _availableCountermeasureStats;
     protected CommandType _command;
     protected IPlayer _owner;
-    private bool _isUnitDeployed;
 
+    private IList<ElementStatType> _elementStats;
+    private IList<ElementType> _elements;
+    private IList<SensorStat> _availableSensorStats;
+    private IList<WeaponStat> _availableWeaponStats;
+    private bool _isUnitDeployed;
     private IGameManager _gameMgr;
 
     protected override void Awake() {
         base.Awake();
         D.Assert(isCompositionPreset == _transform.childCount > 0, "{0}.{1} Composition Preset flag is incorrect.".Inject(UnitName, GetType().Name));
+        if (_factory == null) {
+            _factory = UnitFactory.Instance;
+        }
     }
 
     protected override void Start() {
         base.Start();
         _gameMgr = References.GameManager;
         _owner = ValidateAndInitializeOwner();
-        _availableWeaponsStats = __CreateAvailableWeaponsStats(9);
+        _availableWeaponStats = __CreateAvailableWeaponsStats(9);
+        _availableCountermeasureStats = __CreateAvailableCountermeasureStats(9);
+        _availableSensorStats = __CreateAvailableSensorStats(9);
         Subscribe();
     }
 
@@ -203,10 +212,6 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     #endregion
 
-    private void CreateElementStats() {
-        _elementStats = isCompositionPreset ? CreateElementStatsFromChildren() : CreateRandomElementStats();
-    }
-
     private void PrepareUnitForOperations(Action onCompleted = null) {
         LogEvent();
         _elements = MakeElements();
@@ -252,48 +257,100 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         });
     }
 
-    #region Alternative Weapon Stats to choose from
+    #region Create Stats
 
-    private static ArmamentCategory[] _offensiveArmsCategories = new ArmamentCategory[] { ArmamentCategory.BeamOffense, ArmamentCategory.MissileOffense, ArmamentCategory.ParticleOffense };
-
-    private IList<WeaponStat> __CreateAvailableWeaponsStats(int weaponCount) {
-        IList<WeaponStat> statsList = new List<WeaponStat>(weaponCount);
-        for (int i = 0; i < weaponCount; i++) {
-            WeaponRange range;
+    private IList<WeaponStat> __CreateAvailableWeaponsStats(int quantity) {
+        IList<WeaponStat> statsList = new List<WeaponStat>(quantity);
+        for (int i = 0; i < quantity; i++) {
+            DistanceRange range;
             int reloadPeriod;
             string name;
             float strengthValue;
-            ArmamentCategory offensiveArmsCategory = RandomExtended<ArmamentCategory>.Choice(_offensiveArmsCategories);
-            switch (offensiveArmsCategory) {
-                case ArmamentCategory.BeamOffense:
-                    range = WeaponRange.Short;
+            ArmamentCategory armament = Enums<ArmamentCategory>.GetRandom(excludeDefault: true);
+            switch (armament) {
+                case ArmamentCategory.Beam:
+                    range = DistanceRange.Short;
                     reloadPeriod = UnityEngine.Random.Range(1, 2);
                     name = "Phaser";
                     strengthValue = UnityEngine.Random.Range(3F, 4F);
                     break;
-                case ArmamentCategory.MissileOffense:
-                    range = WeaponRange.Long;
+                case ArmamentCategory.Missile:
+                    range = DistanceRange.Long;
                     reloadPeriod = UnityEngine.Random.Range(4, 6);
                     name = "Torpedo";
                     strengthValue = UnityEngine.Random.Range(5F, 6F);
                     break;
-                case ArmamentCategory.ParticleOffense:
-                    range = WeaponRange.Medium;
+                case ArmamentCategory.Particle:
+                    range = DistanceRange.Medium;
                     reloadPeriod = UnityEngine.Random.Range(2, 4);
                     name = "Disruptor";
                     strengthValue = UnityEngine.Random.Range(4F, 5F);
                     break;
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(offensiveArmsCategory));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(armament));
             }
-            CombatStrength strength = new CombatStrength(offensiveArmsCategory, strengthValue);
-            WeaponStat weapStat = new WeaponStat(name, strength, range, reloadPeriod, 0F, 0F);
+            CombatStrength strength = new CombatStrength(armament, strengthValue);
+            WeaponStat weapStat = new WeaponStat(strength, range, reloadPeriod, 0F, 0F, name);
             statsList.Add(weapStat);
         }
         return statsList;
     }
 
-    #endregion
+    private IList<CountermeasureStat> __CreateAvailableCountermeasureStats(int quantity) {
+        IList<CountermeasureStat> statsList = new List<CountermeasureStat>(quantity);
+        for (int i = 0; i < quantity; i++) {
+            string name = string.Empty;
+            float strengthValue;
+            ArmamentCategory armament = Enums<ArmamentCategory>.GetRandom(excludeDefault: true);
+            switch (armament) {
+                case ArmamentCategory.Beam:
+                    name = "Shields";
+                    strengthValue = UnityEngine.Random.Range(1F, 5F);
+                    break;
+                case ArmamentCategory.Missile:
+                    strengthValue = UnityEngine.Random.Range(3F, 8F);
+                    break;
+                case ArmamentCategory.Particle:
+                    name = "Armor";
+                    strengthValue = UnityEngine.Random.Range(2F, 3F);
+                    break;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(armament));
+            }
+            CombatStrength strength = new CombatStrength(armament, strengthValue);
+            CountermeasureStat countermeasuresStat = new CountermeasureStat(strength, 0F, 0F, name);
+            statsList.Add(countermeasuresStat);
+        }
+        return statsList;
+    }
+
+    private IList<SensorStat> __CreateAvailableSensorStats(int quantity) {
+        IList<SensorStat> statsList = new List<SensorStat>(quantity);
+        for (int i = 0; i < quantity; i++) {
+            string name = string.Empty;
+            DistanceRange range = Enums<DistanceRange>.GetRandom(excludeDefault: true);
+            switch (range) {
+                case DistanceRange.Short:
+                    name = "ProximitySensor";
+                    break;
+                case DistanceRange.Medium:
+                    break;
+                case DistanceRange.Long:
+                    name = "FarAwaySensor";
+                    break;
+                case DistanceRange.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(range));
+            }
+            var sensorStat = new SensorStat(range, 0F, 0F, name);
+            statsList.Add(sensorStat);
+        }
+        return statsList;
+    }
+
+    private void CreateElementStats() {
+        _elementStats = isCompositionPreset ? CreateElementStatsFromChildren() : CreateRandomElementStats();
+    }
 
     private IList<ElementStatType> CreateElementStatsFromChildren() {
         LogEvent();
@@ -317,15 +374,13 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     private IList<ElementStatType> CreateRandomElementStats() {
         LogEvent();
-        ElementCategoryType[] validHQCategories = GetValidHQElementCategories();
-        ElementCategoryType[] validCategories = GetValidElementCategories();
 
         var elementCategoriesUsedCount = new Dictionary<ElementCategoryType, int>();
-        int elementCount = RandomExtended<int>.Range(1, maxRandomElements);
+        int elementCount = RandomExtended<int>.Range(1, maxElementsInRandomUnit);
         //D.Log("{0} Element count is {1}.", UnitName, elementCount);
         var elementStats = new List<ElementStatType>(elementCount);
         for (int i = 0; i < elementCount; i++) {
-            ElementCategoryType category = (i == 0) ? RandomExtended<ElementCategoryType>.Choice(validHQCategories) : RandomExtended<ElementCategoryType>.Choice(validCategories);
+            ElementCategoryType category = (i == 0) ? RandomExtended<ElementCategoryType>.Choice(HQElementCategories) : RandomExtended<ElementCategoryType>.Choice(ElementCategories);
             if (!elementCategoriesUsedCount.ContainsKey(category)) {
                 elementCategoriesUsedCount.Add(category, Constants.One);
             }
@@ -339,17 +394,21 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         return elementStats;
     }
 
-    protected abstract ElementCategoryType[] GetValidHQElementCategories();
-
-    protected abstract ElementCategoryType[] GetValidElementCategories();
-
     protected abstract ElementStatType CreateElementStat(ElementCategoryType category, string elementName);
+
+    #endregion
+
+    protected abstract ElementCategoryType[] HQElementCategories { get; }
+
+    protected abstract ElementCategoryType[] ElementCategories { get; }
 
     private IList<ElementType> MakeElements() {
         LogEvent();
         var elements = new List<ElementType>();
         foreach (var elementStat in _elementStats) {
-            var weaponStats = _availableWeaponsStats.Shuffle().Take(weaponsPerElement);
+            var weaponStats = _availableWeaponStats.Shuffle().Take(weaponsPerElement);
+            var cmStats = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerElement);
+            var sensorStats = _availableSensorStats.Shuffle().Take(sensorsPerElement);
             ElementType element = null;
             if (isCompositionPreset) {
                 // find a preExisting element of the right category first to provide to Make
@@ -357,10 +416,10 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
                     .Where(e => GetCategory(e).Equals(GetCategory(elementStat)));
                 var categoryElementsStillAvailable = categoryElements.Except(elements);
                 element = categoryElementsStillAvailable.First();
-                MakeElement(elementStat, weaponStats, _owner, ref element);
+                PopulateElement(elementStat, weaponStats, cmStats, sensorStats, ref element);
             }
             else {
-                element = MakeElement(elementStat, weaponStats, _owner);
+                element = MakeElement(elementStat, weaponStats, cmStats, sensorStats);
             }
             // Note: Need to tell each element where this creator is located. This assures that whichever element is picked as the HQElement
             // will start with this position. However, the elements here are all placed on top of each other. When the physics engine starts
@@ -378,9 +437,25 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     protected abstract ElementCategoryType GetCategory(ElementType element);
 
-    protected abstract void MakeElement(ElementStatType stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner, ref ElementType element);
+    /// <summary>
+    /// Populates the provided element instance with data, weapons, countermeasures and sensors.
+    /// </summary>
+    /// <param name="stat">The stat.</param>
+    /// <param name="wStats">The weapon stats.</param>
+    /// <param name="cmStats">The countermeasure stats.</param>
+    /// <param name="sensorStats">The sensor stats.</param>
+    /// <param name="element">The element.</param>
+    protected abstract void PopulateElement(ElementStatType stat, IEnumerable<WeaponStat> wStats, IEnumerable<CountermeasureStat> cmStats, IEnumerable<SensorStat> sensorStats, ref ElementType element);
 
-    protected abstract ElementType MakeElement(ElementStatType stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner);
+    /// <summary>
+    /// Makes an element instance and populates it with data, weapons, countermeasures and sensors.
+    /// </summary>
+    /// <param name="stat">The stat.</param>
+    /// <param name="wStats">The weapon stats.</param>
+    /// <param name="cmStats">The countermeasure stats.</param>
+    /// <param name="sensorStats">The sensor stats.</param>
+    /// <param name="element">The element.</param>
+    protected abstract ElementType MakeElement(ElementStatType stat, IEnumerable<WeaponStat> wStats, IEnumerable<CountermeasureStat> countermeasuresStats, IEnumerable<SensorStat> sensorStats);
 
     protected abstract CommandType MakeCommand(IPlayer owner);
 
@@ -417,12 +492,18 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     /// <summary>
     /// Starts the state machine of each element in this Unit.
     /// </summary>
-    protected abstract void BeginElementsOperations();
+    private void BeginElementsOperations() {
+        LogEvent();
+        _elements.ForAll(e => e.CommenceOperations());
+    }
 
     /// <summary>
     /// Starts the state machine of this Unit's Command.
     /// </summary>
-    protected abstract void BeginCommandOperations();
+    private void BeginCommandOperations() {
+        LogEvent();
+        _command.CommenceOperations();
+    }
 
     /// <summary>
     /// Records the Command in its static collection holding all instances.
@@ -450,7 +531,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     }
 
     private IntelCoverage __previousCoverage;
-    private IEnumerator __CycleIntelCoverage(IIntel intel) {
+    private IEnumerator __CycleIntelCoverage(AIntel intel) {
         intel.CurrentCoverage = IntelCoverage.None;
         yield return new WaitForSeconds(4F);
         intel.CurrentCoverage = IntelCoverage.Aware;
@@ -470,7 +551,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     private IPlayer ValidateAndInitializeOwner() {
         IPlayer humanPlayer = _gameMgr.HumanPlayer;
-        if (isOwnerHuman) {
+        if (isOwnerPlayer) {
             return humanPlayer;
         }
         IPlayer aiOwner = new Player();

@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, StarbaseCmdData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, AIntel intel, StarbaseCmdData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.ParentName);   // the name of the Starbase is the parentName of the Command
@@ -42,9 +42,9 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Health:
                     return new ColoredTextList_Health(data.UnitHealth, data.UnitMaxHitPoints);
                 case GuiHudLineKeys.CombatStrength:
-                    return new ColoredTextList<float>(Constants.FormatFloat_0Dp, data.UnitStrength.Combined);
+                    return new ColoredTextList<float>(Constants.FormatFloat_0Dp, data.UnitOffensiveStrength.Combined + data.UnitDefensiveStrength.Combined);
                 case GuiHudLineKeys.CombatStrengthDetails:
-                    return new ColoredTextList_Combat(data.UnitStrength);
+                    return new ColoredTextList_Combat(data.UnitOffensiveStrength, data.UnitDefensiveStrength);
                 case GuiHudLineKeys.Category:
                     return new ColoredTextList_String(data.Category.GetName(), data.Category.GetDescription());
 
@@ -66,7 +66,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.ShipDetails:
                 case GuiHudLineKeys.TargetName:
                 case GuiHudLineKeys.TargetDistance:
-                    return _emptyColoredTextList;
+                    return _emptyTextList;
 
                 case GuiHudLineKeys.None:
                 default:

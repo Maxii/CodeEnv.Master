@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SensorRangeCategory.cs
-//  The type of sensor, distinguished by range.
+// File: IIntel.cs
+// Interface for accessing Intel meta data.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,18 +16,21 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using CodeEnv.Master.Common;
+
     /// <summary>
-    /// The type of sensor, distinguished by range.
+    /// Interface for accessing Intel meta data.
     /// </summary>
-    public enum SensorRangeCategory {
+    [System.Obsolete]
+    public interface IIntel {
 
-        None,
+        bool HasDatedCoverage { get; }
 
-        ShortRange,
+        IntelCoverage DatedCoverage { get; }
 
-        MediumRange,
+        GameDate DateStamp { get; }
 
-        LongRange
+        IntelCoverage CurrentCoverage { get; set; }
 
     }
 }

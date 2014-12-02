@@ -39,13 +39,7 @@ public class SectorItem : AItem {
         // there is no collider associated with a SectorItem. The collider used for context menu activation is part of the SectorExaminer
     }
 
-    protected override IIntel InitializePlayerIntel() {
-        return new ImprovingIntel();
-    }
-
-    protected override void SubscribeToPlayerIntelCoverageChanged() {
-        _subscribers.Add((PlayerIntel as ImprovingIntel).SubscribeToPropertyChanged<ImprovingIntel, IntelCoverage>(pi => pi.CurrentCoverage, OnPlayerIntelCoverageChanged));
-    }
+    protected override AIntel InitializePlayerIntel() { return new ImprovingIntel(); }
 
     protected override void InitializeModelMembers() { }
 

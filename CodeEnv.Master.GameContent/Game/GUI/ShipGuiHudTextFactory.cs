@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, ShipData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, AIntel intel, ShipData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.Name);
@@ -46,17 +46,17 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Health:
                     return new ColoredTextList_Health(data.Health, data.MaxHitPoints);
                 case GuiHudLineKeys.CombatStrength:
-                    return new ColoredTextList<float>(Constants.FormatFloat_0Dp, data.Strength.Combined);
+                    return new ColoredTextList<float>(Constants.FormatFloat_0Dp, data.OffensiveStrength.Combined + data.DefensiveStrength.Combined);
                 case GuiHudLineKeys.CombatStrengthDetails:
-                    return new ColoredTextList_Combat(data.Strength);
+                    return new ColoredTextList_Combat(data.OffensiveStrength, data.DefensiveStrength);
                 case GuiHudLineKeys.Category:
                     return new ColoredTextList_String(data.Category.GetName(), data.Category.GetDescription());
                 case GuiHudLineKeys.ShipDetails:
                     return new ColoredTextList_Ship(data);
                 case GuiHudLineKeys.TargetName:
-                    return data.Target != null ? new ColoredTextList_String(data.Target.FullName) : _emptyColoredTextList;
+                    return data.Target != null ? new ColoredTextList_String(data.Target.FullName) : _emptyTextList;
                 case GuiHudLineKeys.TargetDistance:
-                    return data.Target != null ? new ColoredTextList_Distance(data.Position, data.Target.Position) : _emptyColoredTextList;
+                    return data.Target != null ? new ColoredTextList_Distance(data.Position, data.Target.Position) : _emptyTextList;
 
                 // The following is a fall through catcher for line keys that aren't processed. An empty ColoredTextList will be returned which will be ignored by GuiCursorHudText
                 case GuiHudLineKeys.Capacity:
@@ -67,7 +67,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.SectorIndex:
                 case GuiHudLineKeys.Density:
                 case GuiHudLineKeys.SettlementDetails:
-                    return _emptyColoredTextList;
+                    return _emptyTextList;
 
                 case GuiHudLineKeys.None:
                 default:

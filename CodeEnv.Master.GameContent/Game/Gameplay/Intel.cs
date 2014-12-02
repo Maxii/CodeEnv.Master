@@ -24,9 +24,12 @@ namespace CodeEnv.Master.GameContent {
     /// along with the date it was obtained (DateStamp), so that we remember how much was known at a
     /// particular point in history, even if our CurrentCoverage is no longer that high.
     /// </summary>
-    public class Intel : APropertyChangeTracking, IIntel {
+    public class Intel : AIntel {
 
-        public virtual bool HasDatedCoverage { get { return DatedCoverage != default(IntelCoverage) && DateStamp != default(GameDate); } }
+        /// <summary>
+        /// The DatedCoverage and DateStamp values spend much of their time reset to their default value.
+        /// </summary>
+        public bool IsDatedCoverageValid { get { return DatedCoverage != default(IntelCoverage) && DateStamp != default(GameDate); } }
 
         private IntelCoverage _datedCoverage;
         /// <summary>
@@ -43,28 +46,16 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public virtual GameDate DateStamp { get; private set; }
 
-        private IntelCoverage _currentCoverage;
-        /// <summary>
-        /// The current level of data coverage achieved on this object.
-        /// </summary>
-        public virtual IntelCoverage CurrentCoverage {
-            get { return _currentCoverage; }
-            set { SetProperty<IntelCoverage>(ref _currentCoverage, value, "CurrentCoverage", null, OnCurrentCoverageChanging); }
-        }
+        public Intel() : base() { }
 
-        public Intel() : this(IntelCoverage.None) { }
-
-        public Intel(IntelCoverage currentCoverage) {
-            PreProcessChange(currentCoverage);
-            _currentCoverage = currentCoverage;
-        }
+        public Intel(IntelCoverage coverage) : base(coverage) { }
 
         /// <summary>
         /// Processes the change to a new level of coverage BEFORE the new level of coverage
         /// is applied.
         /// </summary>
         /// <param name="newCoverage">The new coverage.</param>
-        protected virtual void PreProcessChange(IntelCoverage newCoverage) {
+        protected override void PreProcessChange(IntelCoverage newCoverage) {
             if (newCoverage < CurrentCoverage) {
                 // we have less data than before so record the level we had and stamp the date
                 DatedCoverage = CurrentCoverage;
@@ -81,10 +72,6 @@ namespace CodeEnv.Master.GameContent {
             // if we have more data than before, but we still haven't reached our record, then nothing to change
 
             // CurrentCoverage is set to newCoverage after PreProcessChange(newCoverage) finishes
-        }
-
-        private void OnCurrentCoverageChanging(IntelCoverage newCurrentCoverage) {
-            PreProcessChange(newCurrentCoverage);
         }
 
         private void OnDatedCoverageChanging(IntelCoverage newDatedCoverage) {

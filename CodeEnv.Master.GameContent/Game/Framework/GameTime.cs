@@ -27,7 +27,6 @@ namespace CodeEnv.Master.GameContent {
     /// The primary class that keeps track of game time.
     /// </summary>
     [SerializeAll]
-    //public class GameTime : APropertyChangeTracking, IDisposable {
     public class GameTime : AGenericSingleton<GameTime>, IDisposable {
 
         #region Static Constants

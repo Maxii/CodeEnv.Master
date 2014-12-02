@@ -65,6 +65,16 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        /// Returns either true or false with the chance of a false return provided.
+        /// </summary>
+        /// <param name="falsePercentage">The false percentage.</param>
+        /// <returns></returns>
+        public static bool Chance(float falsePercentage) {
+            Arguments.ValidateForRange(falsePercentage, Constants.ZeroF, Constants.OneF);
+            return falsePercentage < UnityEngine.Random.Range(Constants.ZeroF, Constants.OneF);
+        }
+
+        /// <summary>
         /// This method returns a random element chosen from an IEnumerable of elements.
         /// Cannot be empty.
         /// </summary>

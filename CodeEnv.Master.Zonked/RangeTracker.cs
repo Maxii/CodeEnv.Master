@@ -32,7 +32,7 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
 
     public Guid ID { get; private set; }
 
-    public Range<float> RangeSpan { get; private set; }
+    public ValueRange<float> RangeSpan { get; private set; }
 
     public event Action<bool, Guid> onEnemyInRange;
 
@@ -58,7 +58,7 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
         base.Awake();
         EnemyTargets = new List<IMortalTarget>();
         ID = Guid.NewGuid();
-        RangeSpan = new Range<float>(Constants.ZeroF, Constants.ZeroF);
+        RangeSpan = new ValueRange<float>(Constants.ZeroF, Constants.ZeroF);
         Collider.radius = Constants.ZeroF;  // initialize to same value as Range
     }
 
@@ -127,7 +127,7 @@ public class RangeTracker : TriggerTracker, IRangeTracker {
 
     private void OnRangeChanged() {
         Collider.radius = Range;
-        RangeSpan = new Range<float>(0.9F * Range, 1.10F * Range);
+        RangeSpan = new ValueRange<float>(0.9F * Range, 1.10F * Range);
         if (enabled) {
             D.Log("{0}.{1}.Range changed to {2:0.00}.", ParentFullName, _transform.name, Range);
             Collider.enabled = false;

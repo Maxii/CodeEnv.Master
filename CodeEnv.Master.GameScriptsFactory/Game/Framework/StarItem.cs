@@ -63,9 +63,7 @@ public class StarItem : AItem, INavigableTarget, IShipOrbitable {
         //D.Log("{0}.Radius set to {1}.", FullName, Radius);
     }
 
-    protected override IIntel InitializePlayerIntel() {
-        return new FixedIntel(IntelCoverage.Comprehensive);
-    }
+    protected override AIntel InitializePlayerIntel() { return new FixedIntel(IntelCoverage.Comprehensive); }
 
     private void InitializeShipOrbitSlot() {
         float innerOrbitRadius = Radius * TempGameValues.KeepoutRadiusMultiplier;
@@ -152,10 +150,6 @@ public class StarItem : AItem, INavigableTarget, IShipOrbitable {
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
         _billboard.enabled = IsDiscernible;
-    }
-
-    protected override void SubscribeToPlayerIntelCoverageChanged() {
-        // no reason to subscribe as Coverage does not change
     }
 
     #endregion

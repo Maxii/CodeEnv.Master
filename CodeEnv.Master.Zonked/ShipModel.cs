@@ -192,14 +192,14 @@ public class ShipModel : AUnitElementModel, IShipModel {
         /// </summary>
         private class EngineRoom : IDisposable {
 
-            private static Range<float> SpeedTargetRange = new Range<float>(0.99F, 1.01F);
+            private static ValueRange<float> SpeedTargetRange = new ValueRange<float>(0.99F, 1.01F);
 
-            private static Range<float> _speedWayAboveTarget = new Range<float>(1.10F, float.PositiveInfinity);
+            private static ValueRange<float> _speedWayAboveTarget = new ValueRange<float>(1.10F, float.PositiveInfinity);
             //private static Range<float> _speedModeratelyAboveTarget = new Range<float>(1.10F, 1.25F);
-            private static Range<float> _speedSlightlyAboveTarget = new Range<float>(1.01F, 1.10F);
-            private static Range<float> _speedSlightlyBelowTarget = new Range<float>(0.90F, 0.99F);
+            private static ValueRange<float> _speedSlightlyAboveTarget = new ValueRange<float>(1.01F, 1.10F);
+            private static ValueRange<float> _speedSlightlyBelowTarget = new ValueRange<float>(0.90F, 0.99F);
             //private static Range<float> _speedModeratelyBelowTarget = new Range<float>(0.75F, 0.90F);
-            private static Range<float> _speedWayBelowTarget = new Range<float>(Constants.ZeroF, 0.90F);
+            private static ValueRange<float> _speedWayBelowTarget = new ValueRange<float>(Constants.ZeroF, 0.90F);
 
             //private float _targetThrustMinusMinus;
             private float _targetThrustMinus;

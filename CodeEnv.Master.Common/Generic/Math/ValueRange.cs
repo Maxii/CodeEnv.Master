@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: Range.cs
-// Immutable helper class that holds a range in the form of a min and max and 
+// File: ValueRange.cs
+// Immutable helper class that holds a range of values in the form of a min and max value and 
 // provides a simple method to determine whether a value is within that range, inclusive.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -20,13 +20,13 @@ namespace CodeEnv.Master.Common {
     using System;
 
     /// <summary>
-    /// Immutable helper class that holds a range in the form of a min and max and 
-    /// provides a simple method to determine whether a value is within
-    /// that range, inclusive. WARNING: While immutable, this is a class not a struct
+    /// Immutable helper class that holds a range of values in the form of a min and max value and 
+    /// provides a simple method to determine whether a value is within that range, inclusive. 
+    /// WARNING: While immutable, this is a class not a struct
     /// and as such, all equality comparisons use Reference semantics not Value semantics.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class Range<T> where T : IComparable {
+    public class ValueRange<T> where T : IComparable {
 
         private static string _toStringFormat = "[{0}-{1}]";
 
@@ -34,7 +34,7 @@ namespace CodeEnv.Master.Common {
 
         public T Maximum { get; private set; }
 
-        public Range(T min, T max) {
+        public ValueRange(T min, T max) {
             Arguments.Validate(IsValid(min, max));
             Minimum = min;
             Maximum = max;
@@ -64,7 +64,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="range">The parent range to test on</param>
         /// <returns>True if range is inclusive, else false</returns>
-        public bool IsInsideRange(Range<T> range) {
+        public bool IsInsideRange(ValueRange<T> range) {
             return range.ContainsValue(Minimum) && range.ContainsValue(Maximum);
         }
 
@@ -73,7 +73,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="range">The child range to test</param>
         /// <returns>True if range is inside, else false</returns>
-        public bool ContainsRange(Range<T> range) {
+        public bool ContainsRange(ValueRange<T> range) {
             return ContainsValue(range.Minimum) && ContainsValue(range.Maximum);
         }
 

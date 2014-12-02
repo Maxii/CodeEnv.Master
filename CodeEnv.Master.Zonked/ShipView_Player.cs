@@ -87,7 +87,7 @@ public class ShipView_Player : ShipView {
     /// <summary>
     /// Lookup table for finding the order associated with a range of submenu item IDs.
     /// </summary>
-    private static IDictionary<Range<int>, ShipDirective> _subMenuOrderLookup;
+    private static IDictionary<ValueRange<int>, ShipDirective> _subMenuOrderLookup;
 
     /// <summary>
     /// The _lowest unused item ID available for use by submenus.
@@ -130,7 +130,7 @@ public class ShipView_Player : ShipView {
             }
         }
         if (_subMenuOrderLookup == null) {
-            _subMenuOrderLookup = new Dictionary<Range<int>, ShipDirective>();
+            _subMenuOrderLookup = new Dictionary<ValueRange<int>, ShipDirective>();
         }
         if (_joinableFleetLookup == null) {
             _joinableFleetLookup = new Dictionary<int, FleetCmdModel>();
@@ -189,7 +189,7 @@ public class ShipView_Player : ShipView {
                         subMenu.items = joinFleetSubmenuItems;
                         //joinFleetItem.submenuItems = joinFleetSubmenuItems;   // removed in Contextual1.2.9 to fix Unity Serialization Depth error msg
                         int lastUsedSubMenuID = _lowestUnusedItemId + joinFleetSubmenuItemCount - 1;
-                        _subMenuOrderLookup.Add(new Range<int>(_lowestUnusedItemId, lastUsedSubMenuID), order);
+                        _subMenuOrderLookup.Add(new ValueRange<int>(_lowestUnusedItemId, lastUsedSubMenuID), order);
                         _lowestUnusedItemId = lastUsedSubMenuID + 1;
                     }
                     else {
@@ -211,7 +211,7 @@ public class ShipView_Player : ShipView {
 
     private void OnContextMenuSelection() {
         int subMenuItemId = _ctxObject.selectedItem; // IMPROVE assumes all menu items have submenus
-        Range<int> orderKey = _subMenuOrderLookup.Keys.Single<Range<int>>(subMenuItemIdRange => subMenuItemIdRange.ContainsValue(subMenuItemId));
+        ValueRange<int> orderKey = _subMenuOrderLookup.Keys.Single<ValueRange<int>>(subMenuItemIdRange => subMenuItemIdRange.ContainsValue(subMenuItemId));
         ShipDirective orderSelected = _subMenuOrderLookup[orderKey];
         IMortalTarget targetSelected = GetTargetSelected(orderSelected, subMenuItemId);
         D.Log("{0} selected order {1} and submenu item {2} from context menu.", Presenter.FullName, orderSelected.GetName(), targetSelected.FullName);

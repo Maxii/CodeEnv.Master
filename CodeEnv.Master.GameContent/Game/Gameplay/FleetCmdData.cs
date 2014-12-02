@@ -92,7 +92,6 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<float>(ref _fullFtlSpeed, value, "FullFtlSpeed"); }
         }
 
-
         private float _maxTurnRate;
         /// <summary>
         /// Gets the maximum turn rate of the fleet in radians per day.
@@ -116,7 +115,6 @@ namespace CodeEnv.Master.GameContent {
             : base(stat.Name, stat.MaxHitPoints) {
             MaxCmdEffectiveness = stat.MaxCmdEffectiveness;
             UnitFormation = stat.UnitFormation;
-            Strength = stat.Strength;
         }
 
         protected override void InitializeComposition() {

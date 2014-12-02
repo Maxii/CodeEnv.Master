@@ -288,7 +288,7 @@ public class FacilityItem : AUnitElementItem {
         D.Log("{0}.ExecuteAttackOrder_EnterState() called.", FullName);
         _ordersTarget = CurrentOrder.Target;
 
-        while (_ordersTarget.IsAlive) {
+        while (_ordersTarget.IsAliveAndOperating) {
             // TODO Primary target needs to be picked
             // if a primaryTarget is inRange, primary target is not null so OnWeaponReady will attack it
             // if not in range, then primary target will be null, so OnWeaponReady will attack other targets of opportunity, if any
@@ -326,7 +326,6 @@ public class FacilityItem : AUnitElementItem {
 
     void ExecuteRepairOrder_OnWeaponReady(Weapon weapon) {
         LogEvent();
-        //TryFireOnAnyTarget(weapon);
         Fire(weapon);
     }
 
@@ -346,6 +345,7 @@ public class FacilityItem : AUnitElementItem {
         D.Log("{0}'s repair is 50% complete.", FullName);
         yield return new WaitForSeconds(3);
         Data.CurrentHitPoints = Data.MaxHitPoints;
+        Data.Countermeasures.ForAll(cm => cm.IsOperational = true);
         D.Log("{0}'s repair is 100% complete.", FullName);
         StopAnimation(MortalAnimations.Repairing);
         Return();
@@ -442,15 +442,15 @@ public class FacilityItem : AUnitElementItem {
     /// other non-HQ facilities.
     /// </summary>
     /// <param name="damage">The damage.</param>
-    private void DistributeDamage(float damage) {
+    private void DistributeDamage(CombatStrength damage) {
         // if facility being attacked is already dead, no damage can be taken by the Unit
-        if (!IsAlive) { return; }
+        if (!IsAliveAndOperating) { return; }
 
         var elements = Command.Elements.Cast<FacilityItem>().ToList();  // copy to avoid enumeration modified while enumerating exception
         // damage either all goes to HQ Element or is spread among all except the HQ Element
         int elementCount = elements.Count();
         float numElementsShareDamage = elementCount == 1 ? 1F : (float)(elementCount - 1);
-        float elementDamage = damage / numElementsShareDamage;
+        float elementDamage = damage.Combined / numElementsShareDamage;
 
         foreach (var element in elements) {
             float damageToTake = elementDamage;
@@ -472,7 +472,7 @@ public class FacilityItem : AUnitElementItem {
     /// <param name="damage">The damage to apply to this facility.</param>
     /// <param name="isDirectlyAttacked">if set to <c>true</c> this facility is the one being directly attacked.</param>
     private void TakeDistributedDamage(float damage, bool isDirectlyAttacked) {
-        D.Assert(IsAlive, "{0} should not already be dead!".Inject(FullName));
+        D.Assert(IsAliveAndOperating, "{0} should not already be dead!".Inject(FullName));
 
         bool isElementAlive = ApplyDamage(damage);
 
@@ -510,12 +510,12 @@ public class FacilityItem : AUnitElementItem {
     #region IElementAttackableTarget Members
 
     public override void TakeHit(CombatStrength attackerWeaponStrength) {
-        float damage = Data.Strength - attackerWeaponStrength;
-        if (damage == Constants.ZeroF) {
+        CombatStrength damage = attackerWeaponStrength - Data.DefensiveStrength;
+        if (damage.Combined == Constants.ZeroF) {
             D.Log("{0} has been hit but incurred no damage.", FullName);
             return;
         }
-        D.Log("{0} has been hit. Distributing {1} damage.", FullName, damage);
+        D.Log("{0} has been hit. Distributing {1} damage.", FullName, damage.Combined);
         DistributeDamage(damage);
     }
 

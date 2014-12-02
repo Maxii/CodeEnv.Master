@@ -52,6 +52,9 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\Countermeasure.cs" />
+    <Compile Include="Generic\IO\CountermeasureStat.cs" />
+    <Compile Include="Generic\Framework\AIntel.cs" />
     <Compile Include="Game\Gameplay\BaseState.cs" />
     <Compile Include="Game\Gameplay\BaseDirective.cs" />
     <Compile Include="Game\Graphics\PlayerViews.cs" />
@@ -67,7 +70,7 @@
     <Compile Include="Generic\Framework\FleetOrder.cs" />
     <Compile Include="Game\Gameplay\Formation.cs" />
     <Compile Include="Game\Gameplay\FacilityDirective.cs" />
-    <Compile Include="Generic\Framework\FixedIntel.cs" />
+    <Compile Include="Game\Gameplay\FixedIntel.cs" />
     <Compile Include="Game\Gameplay\FleetCategory.cs" />
     <Compile Include="Generic\Framework\ACommandData.cs" />
     <Compile Include="Generic\Framework\AElementData.cs" />
@@ -151,9 +154,8 @@
     <Compile Include="Game\GUI\StarbaseGuiHudTextFactory.cs" />
     <Compile Include="Game\GUI\SettlementIconFactory.cs" />
     <Compile Include="Game\GUI\StarbaseIconFactory.cs" />
-    <Compile Include="Generic\Framework\Intel.cs" />
-    <Compile Include="Generic\Framework\IIntel.cs" />
-    <Compile Include="Generic\Framework\ImprovingIntel.cs" />
+    <Compile Include="Game\Gameplay\Intel.cs" />
+    <Compile Include="Game\Gameplay\ImprovingIntel.cs" />
     <Compile Include="Game\Gameplay\PlanetoidState.cs" />
     <Compile Include="Generic\_Debug\IDynamicObjectsFolder.cs" />
     <Compile Include="Generic\Framework\IGameManager.cs" />
@@ -162,7 +164,6 @@
     <Compile Include="Generic\Extensions\ShipSpeedExtensions.cs" />
     <Compile Include="Generic\Framework\Speed.cs" />
     <Compile Include="Generic\Framework\OrderSource.cs" />
-    <Compile Include="Generic\Deferred\SensorRangeCategory.cs" />
     <Compile Include="Generic\Deferred\ShipCombatStance.cs" />
     <Compile Include="Generic\Framework\NoPlayer.cs" />
     <Compile Include="Game\Gameplay\OpeYield.cs" />
@@ -196,6 +197,8 @@
     <Compile Include="Generic\Framework\ISectorGrid.cs" />
     <Compile Include="Generic\Framework\ITopographyMonitorable.cs" />
     <Compile Include="Generic\Framework\IWeaponRangeMonitor.cs" />
+    <Compile Include="Generic\Framework\ICommandItem.cs" />
+    <Compile Include="Generic\Framework\ISensorRangeMonitor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\ShipData.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
@@ -214,8 +217,10 @@
     <Compile Include="Game\GUI\UniverseCenterGuiHudTextFactory.cs" />
     <Compile Include="Game\Gameplay\ShipOrbitSlot.cs" />
     <Compile Include="Generic\Extensions\SpeciesExtensions.cs" />
-    <Compile Include="Generic\Framework\WeaponRange.cs" />
-    <Compile Include="Generic\Extensions\WeaponRangeExtensions.cs" />
+    <Compile Include="Generic\Framework\DistanceRange.cs" />
+    <Compile Include="Generic\Extensions\DistanceRangeExtensions.cs" />
+    <Compile Include="Generic\IO\SensorStat.cs" />
+    <Compile Include="Generic\Framework\Sensor.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Generic\Math\" />

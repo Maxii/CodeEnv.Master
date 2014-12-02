@@ -30,12 +30,12 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, ItemData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, AIntel intel, ItemData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.Name);
                 case GuiHudLineKeys.ParentName:
-                    return data.ParentName != string.Empty ? new ColoredTextList_String(data.ParentName) : _emptyColoredTextList;
+                    return data.ParentName != string.Empty ? new ColoredTextList_String(data.ParentName) : _emptyTextList;
                 case GuiHudLineKeys.CameraDistance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
@@ -59,7 +59,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Speed:
                 case GuiHudLineKeys.TargetName:
                 case GuiHudLineKeys.TargetDistance:
-                    return _emptyColoredTextList;
+                    return _emptyTextList;
 
                 case GuiHudLineKeys.None:
                 default:

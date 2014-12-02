@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// Windows Web players: %APPDATA%\Unity\WebPlayerPrefs
     /// </summary>
     [SerializeAll]
-    public class PlayerPrefsManager : APropertyChangeTracking, IInstanceIdentity {
+    public class PlayerPrefsManager : APropertyChangeTracking, IInstanceCount {
 
         private string _universeSizeKey = "Universe Size Preference";
         private string _playerRaceKey = "Player Race Preference";
@@ -284,10 +284,10 @@ namespace CodeEnv.Master.GameContent {
         #region IInstanceIdentity Members
 
         private static int _instanceCounter = 0;
-        public int InstanceID { get; private set; }
+        public int InstanceCount { get; private set; }
 
         private void IncrementInstanceCounter() {
-            InstanceID = System.Threading.Interlocked.Increment(ref _instanceCounter);
+            InstanceCount = System.Threading.Interlocked.Increment(ref _instanceCounter);
         }
 
         #endregion

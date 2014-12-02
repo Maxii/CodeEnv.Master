@@ -46,7 +46,7 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="PlanetoidStat"/> struct.
         /// </summary>
         /// <param name="mass">The mass.</param>
-        /// <param name="maxHitPts">The maximum hit PTS.</param>
+        /// <param name="maxHitPts">The maximum hit points.</param>
         /// <param name="category">The category.</param>
         /// <param name="capacity">The capacity.</param>
         /// <param name="resources">The resources.</param>

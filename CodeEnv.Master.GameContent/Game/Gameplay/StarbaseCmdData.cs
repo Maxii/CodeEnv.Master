@@ -47,7 +47,6 @@ namespace CodeEnv.Master.GameContent {
             : base(stat.Name, stat.MaxHitPoints) {
             MaxCmdEffectiveness = stat.MaxCmdEffectiveness;
             UnitFormation = stat.UnitFormation;
-            Strength = stat.Strength;
         }
 
         protected override void InitializeComposition() {

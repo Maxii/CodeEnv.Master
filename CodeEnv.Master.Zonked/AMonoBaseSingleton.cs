@@ -28,7 +28,7 @@ using UnityEngine;
 /// there is a higher derived class in the chain. Unity only calls the method (if implemented) of the highest derived class.
 /// </summary>
 [Obsolete]
-public abstract class AMonoBaseSingleton<T> : AMonoBase, IInstanceIdentity where T : AMonoBase {
+public abstract class AMonoBaseSingleton<T> : AMonoBase, IInstanceCount where T : AMonoBase {
 
     #region Singleton Pattern
     // NOTE: Acquiring a reference to T.Instance this way DOES NOT cause Awake() to be called when acquired. Awake() is called on its own schedule.
@@ -73,7 +73,7 @@ public abstract class AMonoBaseSingleton<T> : AMonoBase, IInstanceIdentity where
 
     protected override void Awake() {
         IncrementInstanceCounter();
-        _instanceID = Constants.Underscore + InstanceID;
+        _instanceID = Constants.Underscore + InstanceCount;
         //D.Log("{0}._instanceID string now set to {1}, InstanceID value used was {2}.", typeof(T).Name, _instanceID, InstanceID);
         base.Awake();
     }
@@ -90,7 +90,7 @@ public abstract class AMonoBaseSingleton<T> : AMonoBase, IInstanceIdentity where
 
     #region IInstanceIdentity Members
 
-    public int InstanceID { get; private set; }
+    public int InstanceCount { get; private set; }
 
     #endregion
 
@@ -99,7 +99,7 @@ public abstract class AMonoBaseSingleton<T> : AMonoBase, IInstanceIdentity where
     private static int _instanceCounter = 0;
 
     private void IncrementInstanceCounter() {
-        InstanceID = System.Threading.Interlocked.Increment(ref _instanceCounter);
+        InstanceCount = System.Threading.Interlocked.Increment(ref _instanceCounter);
         //D.Log("{0}.InstanceID now set to {1}, static counter now {2}.", typeof(T).Name, InstanceID, _instanceCounter);
     }
 

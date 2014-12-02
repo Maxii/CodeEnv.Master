@@ -41,13 +41,13 @@ namespace CodeEnv.Master.GameContent {
             _iconCache = new Dictionary<IconSection, IDictionary<IEnumerable<IconSelectionCriteria>, IIcon>>();
         }
 
-        public IIcon MakeInstance(DataType data, IIntel playerIntel) {
+        public IIcon MakeInstance(DataType data, AIntel playerIntel) {
             IconSection section = GetIconSection();
             IconSelectionCriteria[] criteria = GetSelectionCriteria(data, playerIntel);
             return MakeInstance(section, data.Owner.Color, criteria);
         }
 
-        private IconSelectionCriteria[] GetSelectionCriteria(DataType data, IIntel playerIntel) {
+        private IconSelectionCriteria[] GetSelectionCriteria(DataType data, AIntel playerIntel) {
             IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
             switch (playerIntel.CurrentCoverage) {
                 case IntelCoverage.None:

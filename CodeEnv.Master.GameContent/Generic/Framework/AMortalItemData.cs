@@ -16,13 +16,18 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System.Linq;
+    using System.Collections.Generic;
     using CodeEnv.Master.Common;
     using UnityEngine;
+    using System;
 
     /// <summary>
     /// Abstract base class that holds data for Items that can take damage and die.
     /// </summary>
-    public abstract class AMortalItemData : AItemData {
+    public abstract class AMortalItemData : AItemData, IDisposable {
+
+        public IList<Countermeasure> Countermeasures { get; private set; }
 
         private float _maxHitPoints;
         public float MaxHitPoints {
@@ -60,21 +65,10 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private CombatStrength _strength;
-        public CombatStrength Strength {
-            get { return _strength; }
-            set {
-                SetProperty<CombatStrength>(ref _strength, value, "Strength");
-            }
-        }
-
-        private float _maxWeaponsRange;
-        /// <summary>
-        /// The maximum range of this item's weapons.
-        /// </summary>
-        public virtual float MaxWeaponsRange {
-            get { return _maxWeaponsRange; }
-            set { SetProperty<float>(ref _maxWeaponsRange, value, "MaxWeaponsRange"); }
+        private CombatStrength _defensiveStrength;
+        public CombatStrength DefensiveStrength {
+            get { return _defensiveStrength; }
+            private set { SetProperty<CombatStrength>(ref _defensiveStrength, value, "DefensiveStrength"); }
         }
 
         /// <summary>
@@ -84,9 +78,44 @@ namespace CodeEnv.Master.GameContent {
 
         public AMortalItemData(string name, float mass, float maxHitPts)
             : base(name) {
+            Countermeasures = new List<Countermeasure>();
             Mass = mass;
             MaxHitPoints = maxHitPts;
             CurrentHitPoints = maxHitPts;
+        }
+
+        /// <summary>
+        /// Adds the Countermeasure to this item's data.
+        /// </summary>
+        /// <param name="cm">The Countermeasure.</param>
+        public void AddCountermeasure(Countermeasure cm) {
+            D.Assert(!Countermeasures.Contains(cm));
+            D.Assert(!cm.IsOperational);
+            Countermeasures.Add(cm);
+            cm.onIsOperationalChanged += OnCountermeasureIsOperationalChanged;
+            // no need to Recalc max countermeasure-related values as this occurs when IsOperational changes
+        }
+
+        /// <summary>
+        /// Removes the Countermeasure from the item's data.
+        /// </summary>
+        /// <param name="cm">The Countermeasure.</param>
+        public void RemoveCountermeasure(Countermeasure cm) {
+            D.Assert(Countermeasures.Contains(cm));
+            D.Assert(!cm.IsOperational);
+            Countermeasures.Remove(cm);
+            cm.onIsOperationalChanged -= OnCountermeasureIsOperationalChanged;
+            // no need to Recalc max countermeasure-related values as this occurs when IsOperational changes
+        }
+
+        private void RecalcDefensiveStrength() {
+            var defaultValueIfEmpty = default(CombatStrength);
+            DefensiveStrength = Countermeasures.Where(cm => cm.IsOperational).Select(cm => cm.Strength).Aggregate(defaultValueIfEmpty, (accum, cmStrength) => accum + cmStrength);
+        }
+
+        private void OnCountermeasureIsOperationalChanged(Countermeasure cm) {
+            D.Warn("{0}'s {1}.IsOperational is now {2}.", FullName, cm.Name, cm.IsOperational);
+            RecalcDefensiveStrength();
         }
 
         private void OnMaxHitPointsChanging(float newMaxHitPoints) {
@@ -106,6 +135,60 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void OnHealthChanged() { }
+
+        protected virtual void Cleanup() {
+            Unsubscribe();
+        }
+
+        protected virtual void Unsubscribe() {
+            Countermeasures.ForAll(cm => cm.onIsOperationalChanged -= OnCountermeasureIsOperationalChanged);
+        }
+
+        #region IDisposable
+        [DoNotSerialize]
+        private bool _alreadyDisposed = false;
+        protected bool _isDisposing = false;
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose() {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
+        /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
+        /// </summary>
+        /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool isDisposing) {
+            // Allows Dispose(isDisposing) to be called more than once
+            if (_alreadyDisposed) {
+                D.Warn("{0} has already been disposed.", GetType().Name);
+                return;
+            }
+
+            _isDisposing = true;
+            if (isDisposing) {
+                // free managed resources here including unhooking events
+                Cleanup();
+            }
+            // free unmanaged resources here
+
+            _alreadyDisposed = true;
+        }
+
+        // Example method showing check for whether the object has been disposed
+        //public void ExampleMethod() {
+        //    // throw Exception if called on object that is already disposed
+        //    if(alreadyDisposed) {
+        //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
+        //    }
+
+        //    // method content here
+        //}
+        #endregion
 
     }
 }

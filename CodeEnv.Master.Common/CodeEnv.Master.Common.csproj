@@ -98,7 +98,7 @@
     <Compile Include="Game\Framework\AGameEvent.cs" />
     <Compile Include="Generic\Math\Mathfx.cs" />
     <Compile Include="Generic\Math\RandomExtended.cs" />
-    <Compile Include="Generic\_Debug\AInstanceIdentity.cs" />
+    <Compile Include="Generic\_Debug\AInstanceCount.cs" />
     <Compile Include="Game\Framework\GameState.cs" />
     <Compile Include="Game\_Debug\DebugSettings.cs" />
     <Compile Include="Game\Framework\GameClockSpeed.cs" />
@@ -108,9 +108,9 @@
     <Compile Include="Game\GUI\GuiVisibilityMode.cs" />
     <Compile Include="Game\Framework\SceneLevel.cs" />
     <Compile Include="Generic\_Debug\D.cs" />
-    <Compile Include="Generic\_Debug\IInstanceIdentity.cs" />
+    <Compile Include="Generic\_Debug\IInstanceCount.cs" />
     <Compile Include="Generic\Graphics\AStringBuilderTextEvent.cs" />
-    <Compile Include="Generic\Math\Range.cs" />
+    <Compile Include="Generic\Math\ValueRange.cs" />
     <Compile Include="Game\Gameplay\IQ.cs" />
     <Compile Include="Generic\Framework\PauseState.cs" />
     <Compile Include="Generic\Framework\PropertyChangingValueEventArgs.cs" />

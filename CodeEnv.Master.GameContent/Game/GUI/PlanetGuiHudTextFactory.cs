@@ -29,12 +29,12 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, PlanetData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, AIntel intel, PlanetData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.Name);
                 case GuiHudLineKeys.ParentName:
-                    return data.ParentName != string.Empty ? new ColoredTextList_String(data.ParentName) : _emptyColoredTextList;
+                    return data.ParentName != string.Empty ? new ColoredTextList_String(data.ParentName) : _emptyTextList;
                 case GuiHudLineKeys.CameraDistance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
@@ -49,9 +49,9 @@ namespace CodeEnv.Master.GameContent {
                     return new ColoredTextList_Resources(data.Resources);
                 case GuiHudLineKeys.Specials:
                     return (data.SpecialResources != TempGameValues.NoSpecialResources) ? new ColoredTextList_Specials(data.SpecialResources)
-                        : _emptyColoredTextList;
+                        : _emptyTextList;
                 case GuiHudLineKeys.Owner:
-                    return data.Owner != TempGameValues.NoPlayer ? new ColoredTextList_Owner(data.Owner) : _emptyColoredTextList;
+                    return data.Owner != TempGameValues.NoPlayer ? new ColoredTextList_Owner(data.Owner) : _emptyTextList;
                 case GuiHudLineKeys.Speed:
                     return new ColoredTextList_Speed(data.OrbitalSpeed);
 
@@ -66,7 +66,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Density:
                 case GuiHudLineKeys.TargetName:
                 case GuiHudLineKeys.TargetDistance:
-                    return _emptyColoredTextList;
+                    return _emptyTextList;
 
                 case GuiHudLineKeys.None:
                 default:

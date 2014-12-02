@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IWeaponRangeMonitor.cs
+// File: ISensorRangeMonitor.cs
 // Interface allowing access to the associated Unity-compiled script. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -22,24 +22,24 @@ namespace CodeEnv.Master.GameContent {
     /// Interface allowing access to the associated Unity-compiled script. 
     /// Typically, a static reference to the script is established by GameManager in References.cs, providing access to the script from classes located in pre-compiled assemblies.
     /// </summary>
-    public interface IWeaponRangeMonitor {
+    public interface ISensorRangeMonitor {
 
         DistanceRange Range { get; }
 
-        IElementItem ParentElement { get; set; }
+        ICommandItem ParentCommand { get; set; }
 
         IList<IElementAttackableTarget> EnemyTargets { get; }
         IList<IElementAttackableTarget> AllTargets { get; }
 
-        void Add(Weapon weapon);
+        void Add(Sensor sensor);
 
         /// <summary>
-        /// Removes the specified weapon. Returns <c>true</c> if this monitor
-        /// is still in use (has weapons remaining even if not operational), <c>false</c> otherwise.
+        /// Removes the specified sensor. Returns <c>true</c> if this monitor
+        /// is still in use (has sensors remaining even if not operational), <c>false</c> otherwise.
         /// </summary>
-        /// <param name="weapon">The weapon.</param>
+        /// <param name="sensor">The sensor.</param>
         /// <returns></returns>
-        bool Remove(Weapon weapon);
+        bool Remove(Sensor sensor);
 
         bool TryGetRandomEnemyTarget(out IElementAttackableTarget enemyTarget);
 

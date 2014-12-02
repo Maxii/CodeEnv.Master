@@ -27,25 +27,22 @@ namespace CodeEnv.Master.GameContent {
         public float MaxHitPoints { get; private set; }
         public int MaxCmdEffectiveness { get; private set; }
         public Formation UnitFormation { get; private set; }
-        public CombatStrength Strength { get; private set; }
         public int Population { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SettlementCmdStat"/> struct.
+        /// Initializes a new instance of the <see cref="SettlementCmdStat" /> struct.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="maxHitPts">The maximum hit PTS.</param>
         /// <param name="maxCmdEffect">The maximum command effect.</param>
         /// <param name="formation">The formation.</param>
-        /// <param name="strength">The strength.</param>
         /// <param name="population">The population.</param>
-        public SettlementCmdStat(string name, float maxHitPts, int maxCmdEffect, Formation formation, CombatStrength strength, int population)
+        public SettlementCmdStat(string name, float maxHitPts, int maxCmdEffect, Formation formation, int population)
             : this() {
             Name = name;
             MaxHitPoints = maxHitPts;
             MaxCmdEffectiveness = maxCmdEffect;
             UnitFormation = formation;
-            Strength = strength;
             Population = population;
         }
 

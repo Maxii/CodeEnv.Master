@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="toShow">if set to <c>true</c> shows the hud, otherwise hides it.</param>
         /// <param name="intel">The intel.</param>
         /// <param name="position">The position of the GameObject where this HUD should display.</param>
-        void ShowHud(bool toShow, IIntel intel, Vector3 position);
+        void ShowHud(bool toShow, AIntel intel, Vector3 position);
 
 
         /// <summary>

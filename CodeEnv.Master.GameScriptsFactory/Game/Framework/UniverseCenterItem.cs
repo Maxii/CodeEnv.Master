@@ -50,9 +50,7 @@ public class UniverseCenterItem : AItem, IShipOrbitable {
         InitializeKeepoutZone();
     }
 
-    protected override IIntel InitializePlayerIntel() {
-        return new FixedIntel(IntelCoverage.Comprehensive);
-    }
+    protected override AIntel InitializePlayerIntel() { return new FixedIntel(IntelCoverage.Comprehensive); }
 
     private void InitializeShipOrbitSlot() {
         float innerOrbitRadius = Radius * TempGameValues.KeepoutRadiusMultiplier;
@@ -65,10 +63,6 @@ public class UniverseCenterItem : AItem, IShipOrbitable {
         D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
         keepoutZoneCollider.isTrigger = true;
         keepoutZoneCollider.radius = ShipOrbitSlot.InnerRadius;
-    }
-
-    protected override void SubscribeToPlayerIntelCoverageChanged() {
-        // no reason to subscribe as Coverage does not change
     }
 
     protected override void InitializeModelMembers() { }

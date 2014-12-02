@@ -36,13 +36,13 @@ namespace CodeEnv.Master.GameContent {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     // ships donot show name if IntelScope is simply just Aware
-                    return intel.CurrentCoverage != IntelCoverage.Aware ? new ColoredTextList_String(data.Name) : _emptyColoredTextList;
+                    return intel.CurrentCoverage != IntelCoverage.Aware ? new ColoredTextList_String(data.Name) : _emptyTextList;
                 case GuiHudLineKeys.ParentName:
-                    return data.ParentName != string.Empty ? new ColoredTextList_String(data.ParentName) : _emptyColoredTextList;
+                    return data.ParentName != string.Empty ? new ColoredTextList_String(data.ParentName) : _emptyTextList;
                 case GuiHudLineKeys.CameraDistance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
-                    return (intel.DateStamp != null) ? new ColoredTextList_Intel(intel) : _emptyColoredTextList;
+                    return (intel.DateStamp != null) ? new ColoredTextList_Intel(intel) : _emptyTextList;
                 case GuiHudLineKeys.Category:
                     return new ColoredTextList_String(data.Size.GetDescription());
                 case GuiHudLineKeys.Health:
@@ -66,7 +66,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.SectorIndex:
                 case GuiHudLineKeys.Density:
                 case GuiHudLineKeys.Speed:
-                    return _emptyColoredTextList;
+                    return _emptyTextList;
 
                 case GuiHudLineKeys.None:
                 default:

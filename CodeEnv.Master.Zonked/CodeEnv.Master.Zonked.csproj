@@ -202,6 +202,7 @@
     <Compile Include="IGuiTrackable.cs" />
     <Compile Include="IHasData.cs" />
     <Compile Include="IHighlightTrackingLabel.cs" />
+    <Compile Include="IIntel.cs" />
     <Compile Include="IModel.cs" />
     <Compile Include="IMoonModel.cs" />
     <Compile Include="IMortalModel.cs" />

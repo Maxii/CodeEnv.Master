@@ -453,6 +453,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     protected virtual void Dispose(bool isDisposing) {
         // Allows Dispose(isDisposing) to be called more than once
         if (_alreadyDisposed) {
+            D.Warn("{0} has already been disposed.", GetType().Name);
             return;
         }
 

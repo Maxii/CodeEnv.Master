@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: WeaponCategory.cs
-// Enum delineating the different types of damage or protection provided by Armaments.
+// Enum delineating the different types of Armaments available.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,18 +17,18 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Enum delineating the different types of damage or protection provided by Armaments.
+    /// Enum delineating the different types of Armaments available.
     /// </summary>
     public enum ArmamentCategory {
 
         None,
 
-        BeamOffense,
-        BeamDefense,
-        MissileOffense,
-        MissileDefense,
-        ParticleOffense,
-        ParticleDefense
+        Beam,
+
+        Missile,
+
+        Particle
+
     }
 }
 

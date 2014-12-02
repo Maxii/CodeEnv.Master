@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -109,29 +110,31 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     }
 
     /// <summary>
-    /// Makes an instance of a Planet based on the stat provided. The returned 
+    /// Makes an instance of a Planet based on the stat provided. The returned
     /// Item (with its Data)  will not be enabled but their gameObject will be parented to the provided parent.
     /// </summary>
     /// <param name="planetStat">The planet stat.</param>
+    /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="parentSystem">The parent system.</param>
     /// <returns></returns>
-    public PlanetItem MakeInstance(PlanetoidStat planetStat, SystemItem parentSystem) {
+    public PlanetItem MakeInstance(PlanetoidStat planetStat, IEnumerable<CountermeasureStat> cmStats, SystemItem parentSystem) {
         GameObject planetPrefab = _planetPrefabs.Single(p => p.category == planetStat.Category).gameObject;
         GameObject planetGo = UnityUtility.AddChild(parentSystem.gameObject, planetPrefab);
 
         var planetItem = planetGo.GetSafeMonoBehaviourComponent<PlanetItem>();
-        MakeInstance(planetStat, parentSystem.Data.Name, ref planetItem);
+        MakeInstance(planetStat, cmStats, parentSystem.Data.Name, ref planetItem);
         return planetItem;
     }
 
     /// <summary>
-    /// Makes an instance of a Planet from the stat and item provided. 
+    /// Makes an instance of a Planet from the stat and item provided.
     /// The Item (with its Data)  will not be enabled. The item's transform will have the same parent it arrived with.
     /// </summary>
     /// <param name="planetStat">The planet stat.</param>
+    /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="parentSystemName">Name of the parent system.</param>
     /// <param name="planet">The planet item.</param>
-    public void MakeInstance(PlanetoidStat planetStat, string parentSystemName, ref PlanetItem planet) {
+    public void MakeInstance(PlanetoidStat planetStat, IEnumerable<CountermeasureStat> cmStats, string parentSystemName, ref PlanetItem planet) {
         D.Assert(!planet.enabled, "{0} should not be enabled.".Inject(planet.FullName));
         D.Assert(planet.transform.parent != null, "{0} should already have a parent.".Inject(planet.FullName));
         D.Assert(planetStat.Category == planet.category,
@@ -142,6 +145,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
             // CombatStrength is default(CombatStrength), aka all values zero'd out
         };
+        AttachCountermeasures(cmStats, planet);
     }
 
     /// <summary>
@@ -149,25 +153,27 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// Item (with its Data)  will not be enabled but their gameObject will be parented to the provided parent.
     /// </summary>
     /// <param name="moonStat">The moon stat.</param>
+    /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="parentPlanet">The parent planet.</param>
     /// <returns></returns>
-    public MoonItem MakeInstance(PlanetoidStat moonStat, PlanetItem parentPlanet) {
+    public MoonItem MakeInstance(PlanetoidStat moonStat, IEnumerable<CountermeasureStat> cmStats, PlanetItem parentPlanet) {
         GameObject moonPrefab = _moonPrefabs.Single(m => m.category == moonStat.Category).gameObject;
         GameObject moonGo = UnityUtility.AddChild(parentPlanet.gameObject, moonPrefab);
 
         var moonItem = moonGo.GetSafeMonoBehaviourComponent<MoonItem>();
-        MakeInstance(moonStat, parentPlanet.Data.Name, ref moonItem);
+        MakeInstance(moonStat, cmStats, parentPlanet.Data.Name, ref moonItem);
         return moonItem;
     }
 
     /// <summary>
-    /// Makes an instance of a Moon from the stat and item provided. 
+    /// Makes an instance of a Moon from the stat and item provided.
     /// The Item (with its Data)  will not be enabled. The item's transform will have the same parent it arrived with.
     /// </summary>
     /// <param name="moonStat">The planet stat.</param>
+    /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="parentPlanetName">Name of the parent planet.</param>
     /// <param name="moon">The item.</param>
-    public void MakeInstance(PlanetoidStat moonStat, string parentPlanetName, ref MoonItem moon) {
+    public void MakeInstance(PlanetoidStat moonStat, IEnumerable<CountermeasureStat> cmStats, string parentPlanetName, ref MoonItem moon) {
         D.Assert(!moon.enabled, "{0} should not be enabled.".Inject(moon.FullName));
         D.Assert(moon.transform.parent != null, "{0} should already have a parent.".Inject(moon.FullName));
         D.Assert(moonStat.Category == moon.category,
@@ -178,6 +184,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
             // CombatStrength is default(CombatStrength), aka all values zero'd out
         };
+        AttachCountermeasures(cmStats, moon);
     }
 
     /// <summary>
@@ -213,6 +220,10 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
         };
         system.Data = data;
+    }
+
+    private void AttachCountermeasures(IEnumerable<CountermeasureStat> cmStats, AMortalItem mortalItem) {
+        cmStats.ForAll(cmStat => mortalItem.AddCountermeasure(cmStat));
     }
 
     public override string ToString() {

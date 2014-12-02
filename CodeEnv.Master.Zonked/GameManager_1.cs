@@ -30,7 +30,7 @@ namespace CodeEnv.Master.GameContent {
     /// SingletonPattern. Primary Game Manager 'God' class for the game.
     /// </summary>
     [SerializeAll]
-    public class GameManager : APropertyChangeTracking, IInstanceIdentity, IDisposable {
+    public class GameManager : APropertyChangeTracking, IInstanceCount, IDisposable {
 
         public HumanPlayer HumanPlayer { get; private set; }
 
@@ -506,10 +506,10 @@ namespace CodeEnv.Master.GameContent {
         #region IInstanceIdentity Members
 
         private static int instanceCounter = 0;
-        public int InstanceID { get; private set; }
+        public int InstanceCount { get; private set; }
 
         protected void IncrementInstanceCounter() {
-            InstanceID = System.Threading.Interlocked.Increment(ref instanceCounter);
+            InstanceCount = System.Threading.Interlocked.Increment(ref instanceCounter);
         }
 
         #endregion

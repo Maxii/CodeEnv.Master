@@ -190,6 +190,7 @@ namespace CodeEnv.Master.Common {
                 }
                 else {
                     sb.Append(delimiter);
+                    sb.Append(Constants.NewLine);
                 }
                 sb.Append(t);
             }

@@ -25,7 +25,7 @@ using UnityEngine;
 /// Also has responsibility for destroying extra copies of instances which implement DontDestroyOnLoad.
 /// </summary>
 /// <typeparam name="T">The Type of the derived class.</typeparam>
-public abstract class AMonoSingleton<T> : AMonoBase, IInstanceIdentity where T : AMonoSingleton<T> {
+public abstract class AMonoSingleton<T> : AMonoBase, IInstanceCount where T : AMonoSingleton<T> {
 
     /// <summary>
     /// Determines whether this singleton is persistent across scenes. If not persistent, it
@@ -66,8 +66,8 @@ public abstract class AMonoSingleton<T> : AMonoBase, IInstanceIdentity where T :
         // If no other MonoBehaviour has requested Instance in an Awake() call executing
         // before this one, then we are it. There is no reason to search for an object
         if (_instance == null) {
-            var tempInstanceID = _instanceCounter + 1;  // HACK as InitializeOnInstance doesn't get called for extra copies so can't increment there
-            D.Log("{0}_{1} is initializing Instance from Awake().", GetType().Name, tempInstanceID);
+            var tempInstanceCount = _instanceCounter + 1;  // HACK as InitializeOnInstance doesn't get called for extra copies so can't increment there
+            D.Log("{0}_{1} is initializing Instance from Awake().", GetType().Name, tempInstanceCount);
             _instance = this as T;
             InitializeOnInstance();
         }
@@ -118,10 +118,10 @@ public abstract class AMonoSingleton<T> : AMonoBase, IInstanceIdentity where T :
     /// <returns><c>true</c> if this instance is going to be destroyed, <c>false</c> if not.</returns>
     private bool TryDestroyExtraCopies() {
         if (_instance && _instance != this) {
-            D.Log("{0}_{1} is extra. Initiating destruction sequence.".Inject(gameObject.name, InstanceID));
+            D.Log("{0}_{1} is extra. Initiating destruction sequence.".Inject(gameObject.name, InstanceCount));
             _isExtraCopy = true;
             ExecutePriorToDestroy();
-            D.Log("Destroying {0}_{1}.", gameObject.name, InstanceID);
+            D.Log("Destroying {0}_{1}.", gameObject.name, InstanceCount);
             Destroy(gameObject);
         }
         else {
@@ -162,7 +162,7 @@ public abstract class AMonoSingleton<T> : AMonoBase, IInstanceIdentity where T :
     private static int _instanceCounter = 0;
 
     private void IncrementInstanceCounter() {
-        InstanceID = System.Threading.Interlocked.Increment(ref _instanceCounter);
+        InstanceCount = System.Threading.Interlocked.Increment(ref _instanceCounter);
         //D.Log("{0}.InstanceID now set to {1}, static counter now {2}.", typeof(T).Name, InstanceID, _instanceCounter);
     }
 
@@ -173,15 +173,15 @@ public abstract class AMonoSingleton<T> : AMonoBase, IInstanceIdentity where T :
         if (DebugSettings.Instance.EnableEventLogging) {
             var stackFrame = new System.Diagnostics.StackFrame(1);
             string name = _transform.name + "(from transform)";
-            Debug.Log("{0}.{1}_{2}.{3}() called.".Inject(name, GetType().Name, InstanceID, stackFrame.GetMethod().Name));
+            Debug.Log("{0}.{1}_{2}.{3}() called.".Inject(name, GetType().Name, InstanceCount, stackFrame.GetMethod().Name));
         }
     }
 
     #endregion
 
-    #region IInstanceIdentity Members
+    #region IInstanceCount Members
 
-    public int InstanceID { get; private set; }
+    public int InstanceCount { get; private set; }
 
     #endregion
 

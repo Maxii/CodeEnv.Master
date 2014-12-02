@@ -22,17 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Intel with a CurrentCoverage value that can only improve once instantiated. It never regresses to a lower value.
     /// </summary>
-    public class ImprovingIntel : Intel {
-
-        public override bool HasDatedCoverage { get { return false; } }
-
-        public override IntelCoverage DatedCoverage {
-            get { throw new InvalidOperationException("{0} does not support DateStamp.".Inject(GetType().Name)); }
-        }
-
-        public override GameDate DateStamp {
-            get { throw new InvalidOperationException("{0} does not support DateStamp.".Inject(GetType().Name)); }
-        }
+    public class ImprovingIntel : AIntel {
 
         /// <summary>
         /// The current level of data coverage achieved on this object.
@@ -47,13 +37,9 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public ImprovingIntel() : this(IntelCoverage.None) { }
+        public ImprovingIntel() : base() { }
 
         public ImprovingIntel(IntelCoverage currentCoverage) : base(currentCoverage) { }
-
-        protected override void PreProcessChange(IntelCoverage newCurrentCoverage) {
-            // does nothing as DatedCoverage and DateStamp aren't supported
-        }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

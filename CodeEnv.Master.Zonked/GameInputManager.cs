@@ -170,7 +170,7 @@ public class GameInputManager : AInputManager<GameInputManager>, IInputManager {
     /// </summary>
     /// <exception cref="System.NotImplementedException"></exception>
     protected override void OnInputModeChanged() {
-        D.Log("{0}_{1}.{2} is now {3}.", GetType().Name, InstanceID, typeof(GameInputMode).Name, InputMode.GetName());
+        D.Log("{0}_{1}.{2} is now {3}.", GetType().Name, InstanceCount, typeof(GameInputMode).Name, InputMode.GetName());
         __ValidateEventDispatchersNotDestroyed();
 
         switch (InputMode) {

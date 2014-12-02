@@ -82,7 +82,7 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
     /// <returns><c>true</c> if this instance is going to be destroyed, <c>false</c> if not.</returns>
     private bool TryDestroyExtraCopies() {
         if (_instance && _instance != this) {
-            D.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceID));
+            D.Log("{0}_{1} found as extra. Initiating destruction sequence.".Inject(this.name, InstanceCount));
             Destroy(gameObject);
             return true;
         }
@@ -258,7 +258,7 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
         if (enabled) {
             // OnLevelWasLoaded is called on all active components and at any time. The earliest thing that happens after Destroy(gameObject)
             // is component disablement. GameObject deactivation happens later, but before OnDestroy()
-            D.Log("{0}_{1}.OnLevelWasLoaded(level = {2}) called.".Inject(this.name, InstanceID, ((SceneLevel)level).GetName()));
+            D.Log("{0}_{1}.OnLevelWasLoaded(level = {2}) called.".Inject(this.name, InstanceCount, ((SceneLevel)level).GetName()));
             SceneLevel newScene = (SceneLevel)level;
             if (newScene != SceneLevel.GameScene) {
                 D.Error("A Scene change to {0} is currently not implemented.", newScene.GetName());

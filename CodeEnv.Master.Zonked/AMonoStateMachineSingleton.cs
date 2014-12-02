@@ -30,7 +30,7 @@ using UnityEngine;
 /// <typeparam name="T">The final derived AMonoBase Type</typeparam>
 /// <typeparam name="E">Th State Type being used, typically an enum type.</typeparam>
 [Obsolete]
-public abstract class AMonoStateMachineSingleton<T, E> : AMonoStateMachine_NoCall<E>, IInstanceIdentity
+public abstract class AMonoStateMachineSingleton<T, E> : AMonoStateMachine_NoCall<E>, IInstanceCount
     where T : AMonoBase
     where E : struct {
 
@@ -74,7 +74,7 @@ public abstract class AMonoStateMachineSingleton<T, E> : AMonoStateMachine_NoCal
 
     protected override void Awake() {
         IncrementInstanceCounter();
-        _instanceID = Constants.Underscore + InstanceID;
+        _instanceID = Constants.Underscore + InstanceCount;
         //D.Log("{0}._instanceID string now set to {1}, InstanceID value used was {2}.", typeof(T).Name, _instanceID, InstanceID);
         base.Awake();
     }
@@ -82,7 +82,7 @@ public abstract class AMonoStateMachineSingleton<T, E> : AMonoStateMachine_NoCal
     #endregion
 
     private void IncrementInstanceCounter() {
-        InstanceID = System.Threading.Interlocked.Increment(ref _instanceCounter);
+        InstanceCount = System.Threading.Interlocked.Increment(ref _instanceCounter);
         //D.Log("{0}.InstanceID now set to {1}, static counter now {2}.", typeof(T).Name, InstanceID, _instanceCounter);
     }
 
@@ -106,7 +106,7 @@ public abstract class AMonoStateMachineSingleton<T, E> : AMonoStateMachine_NoCal
 
     #region IInstanceIdentity Members
 
-    public int InstanceID { get; private set; }
+    public int InstanceCount { get; private set; }
 
     #endregion
 

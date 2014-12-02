@@ -52,12 +52,12 @@ public class ManagementObjects : AFolderAccess<ManagementObjects> {
     /// </summary>
     private void TransferChildren() {
         D.Log("{0}_{1} has {2} children being reparented to {3}_{4}.",
-            this.name, this.InstanceID, this._transform.childCount, Instance.name, Instance.InstanceID);
+            this.name, this.InstanceCount, this._transform.childCount, Instance.name, Instance.InstanceCount);
         var children = this.gameObject.GetComponentsInChildren<Transform>(includeInactive: true).Except(this._transform);
         children.ForAll(child => {
             UnityUtility.AttachChildToParent(child.gameObject, Instance.gameObject);
             D.Log("Before being destroyed, {0}_{1} is attaching its child {2} \nto new parent {3}_{4}. The child may not survive.",
-                this.name, InstanceID, child.name, Instance.name, Instance.InstanceID);
+                this.name, InstanceCount, child.name, Instance.name, Instance.InstanceCount);
         });
     }
 
@@ -89,7 +89,7 @@ public class ManagementObjects : AFolderAccess<ManagementObjects> {
         var persistentChildren = _formerChildren.Where(t => t != null);
         persistentChildren.ForAll(persistentChild => {
             UnityUtility.AttachChildToParent(persistentChild.gameObject, Instance.gameObject);
-            D.Log("{0}_{1} is reattaching its persistent child {2}.", Instance.name, InstanceID, persistentChild.name);
+            D.Log("{0}_{1} is reattaching its persistent child {2}.", Instance.name, InstanceCount, persistentChild.name);
         });
     }
 

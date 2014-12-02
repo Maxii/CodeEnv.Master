@@ -91,13 +91,13 @@ namespace CodeEnv.Master.Common {
                 StringBuilder sb = new StringBuilder();
                 sb.AppendFormat("EventListener for {0} ", typeof(T).Name);
                 sb.AppendFormat("{0} by {1} ", action, source.GetType().Name);
-                if (source is IInstanceIdentity) { sb.Append((source as IInstanceIdentity).InstanceID.ToString()); }
+                if (source is IInstanceCount) { sb.Append((source as IInstanceCount).InstanceCount.ToString()); }
                 sb.Append(", Current Listeners now include:");
                 sb.AppendLine();
                 if (currentListeners != null) {
                     foreach (var d in currentListeners.GetInvocationList()) {
                         sb.AppendFormat("{0} ", d.Target.GetType().Name);
-                        if (d.Target is IInstanceIdentity) { sb.Append((d.Target as IInstanceIdentity).InstanceID.ToString()); }
+                        if (d.Target is IInstanceCount) { sb.Append((d.Target as IInstanceCount).InstanceCount.ToString()); }
                         sb.Append(", ");
                     }
                 }
@@ -185,12 +185,12 @@ namespace CodeEnv.Master.Common {
                 sb.Append(gameEvent.GetType().Name);
                 object source = gameEvent.Source;
                 sb.AppendFormat(" Raised from {0} ", source.GetType().Name);
-                if (source is IInstanceIdentity) { sb.Append((source as IInstanceIdentity).InstanceID.ToString()); }
+                if (source is IInstanceCount) { sb.Append((source as IInstanceCount).InstanceCount.ToString()); }
                 sb.Append(", Targets include:");
                 sb.AppendLine();
                 foreach (var d in callback.GetInvocationList()) {
                     sb.AppendFormat("{0} ", d.Target.GetType().Name);
-                    if (d.Target is IInstanceIdentity) { sb.Append((d.Target as IInstanceIdentity).InstanceID.ToString()); }
+                    if (d.Target is IInstanceCount) { sb.Append((d.Target as IInstanceCount).InstanceCount.ToString()); }
                     sb.Append(", ");
                 }
                 sb.AppendLine();

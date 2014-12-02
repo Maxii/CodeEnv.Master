@@ -27,12 +27,12 @@ namespace CodeEnv.Master.GameContent {
 
         private string _rootName;   // = string.Empty cannot use initializers in a struct
         public string RootName {
-            get { return _rootName.IsNullOrEmpty() ? string.Empty : _rootName; }
+            get { return _rootName.IsNullOrEmpty() ? "Weapon {0}".Inject(Strength) : _rootName; }
         }
 
         public CombatStrength Strength { get; private set; }
 
-        public WeaponRange Range { get; private set; }
+        public DistanceRange Range { get; private set; }
 
         public int ReloadPeriod { get; private set; }
 
@@ -43,20 +43,20 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Initializes a new instance of the <see cref="WeaponStat"/> struct.
         /// </summary>
-        /// <param name="rootName">The root name to use for this weapon before adding supplemental attributes like strength.</param>
         /// <param name="strength">The combat strength of the weapon.</param>
         /// <param name="range">The range of the weapon.</param>
         /// <param name="reloadPeriod">The time it takes to reload the weapon in hours.</param>
         /// <param name="size">The physical size of the weapon.</param>
         /// <param name="pwrRqmt">The power required to operate the weapon.</param>
-        public WeaponStat(string rootName, CombatStrength strength, WeaponRange range, int reloadPeriod, float size, float pwrRqmt)
+        /// <param name="rootName">The root name to use for this weapon before adding supplemental attributes.</param>
+        public WeaponStat(CombatStrength strength, DistanceRange range, int reloadPeriod, float size, float pwrRqmt, string rootName = Constants.Empty)
             : this() {
-            _rootName = rootName;
             Strength = strength;
             Range = range;
             ReloadPeriod = reloadPeriod;
             PhysicalSize = size;
             PowerRequirement = pwrRqmt;
+            _rootName = rootName;
         }
 
         public override string ToString() {

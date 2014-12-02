@@ -80,6 +80,7 @@
     <Compile Include="Generic\IO\GuiCameraControl.cs" />
     <Compile Include="Generic\_Debug\Logger.cs" />
     <Compile Include="Generic\_Debug\NguiEventLogger.cs" />
+    <Compile Include="Game\Framework\SensorRangeMonitor.cs" />
     <Compile Include="ThirdParty\AMonoStateMachine_NoCall.cs" />
     <Compile Include="ThirdParty\TaskManager.cs" />
     <Compile Include="ThirdParty\JobRunner.cs" />

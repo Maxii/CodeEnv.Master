@@ -99,11 +99,11 @@ namespace CodeEnv.Master.GameContent {
        }}
     };
 
-        protected static IColoredTextList _emptyColoredTextList = new ColoredTextListBase();
+        protected static IColoredTextList _emptyTextList = new ColoredTextListBase();
 
         protected override void Initialize() { }
 
-        public GuiHudText MakeInstance(IIntel intel, DataType data) {
+        public GuiHudText MakeInstance(AIntel intel, DataType data) {
             Arguments.ValidateNotNull(data);
             IList<GuiHudLineKeys> keys;
             if (_hudLineKeyLookup.TryGetValue(intel.CurrentCoverage, out keys)) {
@@ -121,14 +121,14 @@ namespace CodeEnv.Master.GameContent {
             return null;
         }
 
-        public IColoredTextList MakeInstance(GuiHudLineKeys key, IIntel intel, DataType data) {
+        public IColoredTextList MakeInstance(GuiHudLineKeys key, AIntel intel, DataType data) {
             if (!ValidateKeyAgainstIntelLevel(key, intel)) {
-                return _emptyColoredTextList;
+                return _emptyTextList;
             }
             return MakeTextInstance(key, intel, data);
         }
 
-        protected abstract IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, DataType data);
+        protected abstract IColoredTextList MakeTextInstance(GuiHudLineKeys key, AIntel intel, DataType data);
 
         /// <summary>
         /// Validates the key against intel, warning and returning false if the key provided is not a key
@@ -140,7 +140,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="key">The key.</param>
         /// <param name="intel">The intel.</param>
         /// <returns></returns>
-        private static bool ValidateKeyAgainstIntelLevel(GuiHudLineKeys key, IIntel intel) {
+        private static bool ValidateKeyAgainstIntelLevel(GuiHudLineKeys key, AIntel intel) {
             return _hudLineKeyLookup[intel.CurrentCoverage].Contains<GuiHudLineKeys>(key);
         }
 
@@ -148,9 +148,6 @@ namespace CodeEnv.Master.GameContent {
 
         // Note: ColoredTextListBase, ColoredTextList<T> and ColoredTextList_String all in separate class files under Common
 
-        /// <summary>
-        /// 
-        /// </summary>
         public class ColoredTextList_Distance : ColoredTextListBase {
 
             /// <summary>
@@ -224,30 +221,31 @@ namespace CodeEnv.Master.GameContent {
 
         public class ColoredTextList_Combat : ColoredTextListBase {
 
-            public ColoredTextList_Combat(CombatStrength cs, string format = Constants.FormatFloat_0Dp) {
-                _list.Add(new ColoredText(format.Inject(cs.Combined)));
-                _list.Add(new ColoredText(format.Inject(cs.BeamOffense)));
-                _list.Add(new ColoredText(format.Inject(cs.BeamDefense)));
-                _list.Add(new ColoredText(format.Inject(cs.ParticleOffense)));
-                _list.Add(new ColoredText(format.Inject(cs.ParticleDefense)));
-                _list.Add(new ColoredText(format.Inject(cs.MissileOffense)));
-                _list.Add(new ColoredText(format.Inject(cs.MissileDefense)));
+            public ColoredTextList_Combat(CombatStrength offense, CombatStrength defense, string format = Constants.FormatFloat_0Dp) {
+                _list.Add(new ColoredText(format.Inject(offense.Combined + defense.Combined)));
+                _list.Add(new ColoredText(format.Inject(offense.GetValue(ArmamentCategory.Beam))));
+                _list.Add(new ColoredText(format.Inject(defense.GetValue(ArmamentCategory.Beam))));
+                _list.Add(new ColoredText(format.Inject(offense.GetValue(ArmamentCategory.Missile))));
+                _list.Add(new ColoredText(format.Inject(defense.GetValue(ArmamentCategory.Missile))));
+                _list.Add(new ColoredText(format.Inject(offense.GetValue(ArmamentCategory.Particle))));
+                _list.Add(new ColoredText(format.Inject(defense.GetValue(ArmamentCategory.Particle))));
             }
         }
 
         public class ColoredTextList_Intel : ColoredTextListBase {
 
-            public ColoredTextList_Intel(IIntel intel) {
+            public ColoredTextList_Intel(AIntel intel) {
                 string intelText_formatted = ConstructIntelText(intel);
                 _list.Add(new ColoredText(intelText_formatted));
             }
 
-            private string ConstructIntelText(IIntel intel) {
+            private string ConstructIntelText(AIntel intel) {
                 string intelMsg = intel.CurrentCoverage.GetName();
                 string addendum = ". Intel is current.";
-                if (intel.HasDatedCoverage) {
-                    //D.Log("DateStamp = {0}, CurrentDate = {1}.", intel.DateStamp, GameTime.CurrentDate);
-                    GameTimeDuration intelAge = new GameTimeDuration(intel.DateStamp, GameTime.Instance.CurrentDate);
+                var intelWithDatedCoverage = intel as Intel;
+                if (intelWithDatedCoverage != null && intelWithDatedCoverage.IsDatedCoverageValid) {
+                    //D.Log("DateStamp = {0}, CurrentDate = {1}.", intelWithDatedCoverage.DateStamp, GameTime.Instance.CurrentDate);
+                    GameTimeDuration intelAge = new GameTimeDuration(intelWithDatedCoverage.DateStamp, GameTime.Instance.CurrentDate);
                     addendum = String.Format(". Intel age {0}.", intelAge.ToString());
                 }
                 intelMsg = intelMsg + addendum;

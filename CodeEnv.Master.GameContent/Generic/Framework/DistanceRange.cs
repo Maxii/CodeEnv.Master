@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IIntel.cs
-// Interface for accessing Intel meta data.
+// File: Range.cs
+// Enum delineating different distance ranges.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,20 +16,21 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using CodeEnv.Master.Common;
-
     /// <summary>
-    /// Interface for accessing Intel meta data.
+    /// Enum delineating different distance ranges.
     /// </summary>
-    public interface IIntel {
+    public enum DistanceRange {
 
-        bool HasDatedCoverage { get; }
+        /// <summary>
+        /// Distance of zero.
+        /// </summary>
+        None,
 
-        IntelCoverage DatedCoverage { get; }
+        Short,
 
-        GameDate DateStamp { get; }
+        Medium,
 
-        IntelCoverage CurrentCoverage { get; set; }
+        Long
 
     }
 }

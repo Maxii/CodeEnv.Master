@@ -81,8 +81,9 @@ public class SystemCreator : AMonoBase {
     private static GameTimeDuration _moonOrbitPeriodIncrement;
 
     public bool isCompositionPreset;
-    public int maxRandomPlanets = 3;
-    public int maxRandomMoons = 3;
+    public int maxPlanetsInRandomSystem = 3;
+    public int maxMoonsInRandomSystem = 3;
+    public int countermeasuresPerPlanetoid = 1;
     public bool toCycleIntelCoverage = false;
 
     public string SystemName { get { return _transform.name; } }    // the SystemCreator carries the name of the System
@@ -92,6 +93,7 @@ public class SystemCreator : AMonoBase {
     private StarStat _starStat;
     private IList<PlanetoidStat> _planetStats;
     private IList<PlanetoidStat> _moonStats;
+    private IList<CountermeasureStat> _availableCountermeasureStats;
 
     private SystemItem _system;
     private StarItem _star;
@@ -189,68 +191,107 @@ public class SystemCreator : AMonoBase {
     #region Create Stats
 
     private void CreateStats() {
-        _starStat = CreateStarStat();
-        _planetStats = CreatePlanetStats();
-        _moonStats = CreateMoonStats();
-    }
-
-    private StarStat CreateStarStat() {
-        LogEvent();
-        StarCategory category;
         if (isCompositionPreset) {
-            category = gameObject.GetSafeMonoBehaviourComponentInChildren<StarItem>().category;
+            _starStat = CreateStarStatFromChildren();
+            _planetStats = CreatePlanetStatsFromChildren();
+            _moonStats = CreateMoonStatsFromChildren();
         }
         else {
-            category = Enums<StarCategory>.GetRandom(excludeDefault: true);
+            _starStat = CreateRandomStarStat();
+            _planetStats = CreateRandomPlanetStats();
+            _moonStats = CreateRandomMoonStats();
         }
+        _availableCountermeasureStats = __CreateAvailableCountermeasureStats(9);
+    }
+
+    private StarStat CreateStarStatFromChildren() {
+        D.Assert(isCompositionPreset);
+        StarCategory category = gameObject.GetSafeMonoBehaviourComponentInChildren<StarItem>().category;
         return new StarStat(category, 100, new OpeYield(0F, 0F, 100F), new XYield(XResource.Special_3, 0.3F));
     }
 
+    private StarStat CreateRandomStarStat() {
+        D.Assert(!isCompositionPreset);
+        StarCategory category = Enums<StarCategory>.GetRandom(excludeDefault: true);
+        return new StarStat(category, 100, new OpeYield(0F, 0F, 100F), new XYield(XResource.Special_3, 0.3F));
+    }
 
-    private IList<PlanetoidStat> CreatePlanetStats() {
-        LogEvent();
+    private IList<PlanetoidStat> CreatePlanetStatsFromChildren() {
+        D.Assert(isCompositionPreset);
         var planetStats = new List<PlanetoidStat>();
-        if (isCompositionPreset) {
-            var planets = gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetItem>();
-            foreach (var planet in planets) {
-                PlanetoidCategory pCategory = planet.category;
-                PlanetoidStat stat = new PlanetoidStat(1000000F, 100F, pCategory, 25, new OpeYield(3.1F, 2F, 4.8F), new XYield(XResource.Special_1, 0.3F));
-                planetStats.Add(stat);
-            }
-        }
-        else {
-            int planetCount = maxRandomPlanets;
-            //D.Log("{0} random planet count = {1}.", SystemName, planetCount);
-            for (int i = 0; i < planetCount; i++) {
-                PlanetoidCategory pCategory = RandomExtended<PlanetoidCategory>.Choice(_acceptablePlanetCategories);
-                PlanetoidStat stat = new PlanetoidStat(1000000F, 100F, pCategory, 25, new OpeYield(3.1F, 2F, 4.8F), new XYield(XResource.Special_1, 0.3F));
-                planetStats.Add(stat);
-            }
+        var planets = gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetItem>();
+        foreach (var planet in planets) {
+            PlanetoidCategory pCategory = planet.category;
+            PlanetoidStat stat = new PlanetoidStat(1000000F, 100F, pCategory, 25, new OpeYield(3.1F, 2F, 4.8F), new XYield(XResource.Special_1, 0.3F));
+            planetStats.Add(stat);
         }
         return planetStats;
     }
 
-    private IList<PlanetoidStat> CreateMoonStats() {
-        LogEvent();
-        var moonStats = new List<PlanetoidStat>();
-        if (isCompositionPreset) {
-            var moons = gameObject.GetComponentsInChildren<MoonItem>();
-            foreach (var moon in moons) {
-                var mCategory = moon.category;
-                PlanetoidStat stat = new PlanetoidStat(10000F, 10F, mCategory, 5, new OpeYield(0.1F, 1F, 0.8F));
-                moonStats.Add(stat);
-            }
+    private IList<PlanetoidStat> CreateRandomPlanetStats() {
+        D.Assert(!isCompositionPreset);
+        var planetStats = new List<PlanetoidStat>();
+        int planetCount = maxPlanetsInRandomSystem;
+        //D.Log("{0} random planet count = {1}.", SystemName, planetCount);
+        for (int i = 0; i < planetCount; i++) {
+            PlanetoidCategory pCategory = RandomExtended<PlanetoidCategory>.Choice(_acceptablePlanetCategories);
+            PlanetoidStat stat = new PlanetoidStat(1000000F, 100F, pCategory, 25, new OpeYield(3.1F, 2F, 4.8F), new XYield(XResource.Special_1, 0.3F));
+            planetStats.Add(stat);
         }
-        else {
-            int moonCount = maxRandomMoons;
-            //D.Log("{0} random moon count = {1}.", SystemName, moonCount);
-            for (int i = 0; i < moonCount; i++) {
-                PlanetoidCategory mCategory = RandomExtended<PlanetoidCategory>.Choice(_acceptableMoonCategories);
-                PlanetoidStat stat = new PlanetoidStat(10000F, 10F, mCategory, 5, new OpeYield(0.1F, 1F, 0.8F));
-                moonStats.Add(stat);
-            }
+        return planetStats;
+    }
+
+    private IList<PlanetoidStat> CreateMoonStatsFromChildren() {
+        D.Assert(isCompositionPreset);
+        var moonStats = new List<PlanetoidStat>();
+        var moons = gameObject.GetComponentsInChildren<MoonItem>();
+        foreach (var moon in moons) {
+            var mCategory = moon.category;
+            PlanetoidStat stat = new PlanetoidStat(10000F, 10F, mCategory, 5, new OpeYield(0.1F, 1F, 0.8F));
+            moonStats.Add(stat);
         }
         return moonStats;
+    }
+
+    private IList<PlanetoidStat> CreateRandomMoonStats() {
+        D.Assert(!isCompositionPreset);
+        var moonStats = new List<PlanetoidStat>();
+        int moonCount = maxMoonsInRandomSystem;
+        //D.Log("{0} random moon count = {1}.", SystemName, moonCount);
+        for (int i = 0; i < moonCount; i++) {
+            PlanetoidCategory mCategory = RandomExtended<PlanetoidCategory>.Choice(_acceptableMoonCategories);
+            PlanetoidStat stat = new PlanetoidStat(10000F, 10F, mCategory, 5, new OpeYield(0.1F, 1F, 0.8F));
+            moonStats.Add(stat);
+        }
+        return moonStats;
+    }
+
+    private IList<CountermeasureStat> __CreateAvailableCountermeasureStats(int quantity) {
+        IList<CountermeasureStat> statsList = new List<CountermeasureStat>(quantity);
+        for (int i = 0; i < quantity; i++) {
+            string name = string.Empty;
+            float strengthValue;
+            ArmamentCategory armament = Enums<ArmamentCategory>.GetRandom(excludeDefault: true);
+            switch (armament) {
+                case ArmamentCategory.Beam:
+                    name = "Shields";
+                    strengthValue = UnityEngine.Random.Range(1F, 5F);
+                    break;
+                case ArmamentCategory.Missile:
+                    strengthValue = UnityEngine.Random.Range(3F, 8F);
+                    break;
+                case ArmamentCategory.Particle:
+                    name = "Armor";
+                    strengthValue = UnityEngine.Random.Range(2F, 3F);
+                    break;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(armament));
+            }
+            CombatStrength strength = new CombatStrength(armament, strengthValue);
+            CountermeasureStat countermeasuresStat = new CountermeasureStat(strength, 0F, 0F, name);
+            statsList.Add(countermeasuresStat);
+        }
+        return statsList;
     }
 
     #endregion
@@ -307,16 +348,18 @@ public class SystemCreator : AMonoBase {
                     var planetsOfStatCategoryStillAvailable = planetsOfStatCategory.Except(planetsAlreadyUsed);
                     if (planetsOfStatCategoryStillAvailable.Any()) {    // IEnumerable.First() does not like empty IEnumerables
                         var planet = planetsOfStatCategoryStillAvailable.First();
+                        var countermeasureStats = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerPlanetoid);
                         planetsAlreadyUsed.Add(planet);
-                        _factory.MakeInstance(planetStat, SystemName, ref planet);
+                        _factory.MakeInstance(planetStat, countermeasureStats, SystemName, ref planet);
                     }
                 }
             }
         }
         else {
-            _planets = new List<PlanetItem>(maxRandomPlanets);
+            _planets = new List<PlanetItem>(maxPlanetsInRandomSystem);
             foreach (var planetStat in _planetStats) {
-                var planet = _factory.MakeInstance(planetStat, _system);
+                var countermeasureStats = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerPlanetoid);
+                var planet = _factory.MakeInstance(planetStat, countermeasureStats, _system);
                 _planets.Add(planet);
             }
         }
@@ -429,7 +472,8 @@ public class SystemCreator : AMonoBase {
                             if (moonsOfStatCategoryStillAvailable.Any()) {  // IEnumerable.First doesn't like empty IEnumerables
                                 var moon = moonsOfStatCategoryStillAvailable.First();
                                 moonsAlreadyUsed.Add(moon);
-                                _factory.MakeInstance(moonStat, planet.Data.Name, ref moon);
+                                var countermeasureStats = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerPlanetoid);
+                                _factory.MakeInstance(moonStat, countermeasureStats, planet.Data.Name, ref moon);
                             }
                         }
                     }
@@ -437,10 +481,11 @@ public class SystemCreator : AMonoBase {
             }
         }
         else {
-            _moons = new List<MoonItem>(maxRandomMoons);
+            _moons = new List<MoonItem>(maxMoonsInRandomSystem);
             foreach (var moonStat in _moonStats) {
                 var chosenPlanet = RandomExtended<PlanetItem>.Choice(_planets);
-                var moon = _factory.MakeInstance(moonStat, chosenPlanet);
+                var countermeasureStats = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerPlanetoid);
+                var moon = _factory.MakeInstance(moonStat, countermeasureStats, chosenPlanet);
                 _moons.Add(moon);
             }
         }
@@ -575,7 +620,7 @@ public class SystemCreator : AMonoBase {
     }
 
     private IntelCoverage __previousCoverage;
-    private IEnumerator __CycleIntelCoverage(IIntel intel) {
+    private IEnumerator __CycleIntelCoverage(AIntel intel) {
         intel.CurrentCoverage = IntelCoverage.None;
         yield return new WaitForSeconds(4F);
         intel.CurrentCoverage = IntelCoverage.Aware;

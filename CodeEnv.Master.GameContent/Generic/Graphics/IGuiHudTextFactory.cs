@@ -30,7 +30,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="intel">The intel.</param>
         /// <param name="data">The _data.</param>
         /// <returns></returns>
-        GuiHudText MakeInstance(IIntel intel, DataType data);
+        GuiHudText MakeInstance(AIntel intel, DataType data);
 
         /// <summary>
         /// Makes an instance of IColoredTextList for display by the IGuiHud.
@@ -39,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="intel">The intel.</param>
         /// <param name="data">The data.</param>
         /// <returns></returns>
-        IColoredTextList MakeInstance(GuiHudLineKeys key, IIntel intel, DataType data);
+        IColoredTextList MakeInstance(GuiHudLineKeys key, AIntel intel, DataType data);
 
     }
 }

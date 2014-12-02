@@ -77,11 +77,7 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         CurrentState = PlanetoidState.None;
     }
 
-    protected override IIntel InitializePlayerIntel() { return new ImprovingIntel(); }
-
-    protected override void SubscribeToPlayerIntelCoverageChanged() {
-        _subscribers.Add((PlayerIntel as ImprovingIntel).SubscribeToPropertyChanged<ImprovingIntel, IntelCoverage>(pi => pi.CurrentCoverage, OnPlayerIntelCoverageChanged));
-    }
+    protected override AIntel InitializePlayerIntel() { return new ImprovingIntel(); }
 
     protected override void InitializeViewMembersOnDiscernible() {
         InitializeContextMenu(Owner);
@@ -211,15 +207,15 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
     #region IElementAttackableTarget Members
 
     public override void TakeHit(CombatStrength attackerWeaponStrength) {
-        if (!IsAlive) {
+        if (!IsAliveAndOperating) {
             return;
         }
         LogEvent();
-        float damage = Data.Strength - attackerWeaponStrength;
-        if (damage == Constants.ZeroF) {
+        CombatStrength damage = attackerWeaponStrength - Data.DefensiveStrength;
+        if (damage.Combined == Constants.ZeroF) {
             return;
         }
-        bool isAlive = ApplyDamage(damage);
+        bool isAlive = ApplyDamage(damage.Combined);
         if (!isAlive) {
             InitiateDeath();
             return;

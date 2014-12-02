@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Linq;
 using System.Collections;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -38,7 +39,7 @@ public abstract class AMortalItem : AItem, IMortalItem {
     /// <summary>
     /// Flag indicating whether this MortalItem is alive and operating.
     /// </summary>
-    public bool IsAlive { get; private set; }
+    public bool IsAliveAndOperating { get; private set; }
 
     public AudioClip dying;
     public AudioClip hit;
@@ -63,7 +64,24 @@ public abstract class AMortalItem : AItem, IMortalItem {
     #region Model Methods
 
     public virtual void CommenceOperations() {
-        IsAlive = true;
+        Data.Countermeasures.ForAll(cm => cm.IsOperational = true);
+        IsAliveAndOperating = true;
+    }
+
+    public void AddCountermeasure(CountermeasureStat cmStat) {
+        Countermeasure countermeasure = new Countermeasure(cmStat);
+        Data.AddCountermeasure(countermeasure);
+        if (IsAliveAndOperating) {
+            // we have already commenced operations so start the new countermeasure
+            // countermeasures added before operations have commenced are started when operations commence
+            countermeasure.IsOperational = true;
+        }
+    }
+
+    public void RemoveCountermeasure(Countermeasure countermeasure) {
+        D.Assert(IsAliveAndOperating);
+        countermeasure.IsOperational = false;
+        Data.RemoveCountermeasure(countermeasure);
     }
 
     /// <summary>
@@ -84,7 +102,7 @@ public abstract class AMortalItem : AItem, IMortalItem {
     /// given the way the state machine works. This approach keeps isAlive and Dead in sync.
     /// </summary>
     protected virtual void InitiateDeath() {
-        IsAlive = false;
+        IsAliveAndOperating = false;
     }
 
     protected virtual void OnDeath() {
@@ -205,21 +223,16 @@ public abstract class AMortalItem : AItem, IMortalItem {
 
     #region Attack Simulation
 
-    public static ArmamentCategory[] __offensiveArmamentCategories = new ArmamentCategory[3] {  ArmamentCategory.MissileOffense,
-                                                                                                ArmamentCategory.BeamOffense, 
-                                                                                                ArmamentCategory.ParticleOffense 
-    };
-
     public virtual void __SimulateAttacked() {
-        TakeHit(new CombatStrength(RandomExtended<ArmamentCategory>.Choice(__offensiveArmamentCategories),
+        TakeHit(new CombatStrength(Enums<ArmamentCategory>.GetRandom(excludeDefault: true),
             UnityEngine.Random.Range(Constants.ZeroF, Data.MaxHitPoints + 1F)));
     }
-
-    public abstract void TakeHit(CombatStrength weaponStrength);
 
     #endregion
 
     #region Combat Support Methods
+
+    public abstract void TakeHit(CombatStrength weaponStrength);
 
     /// <summary>
     /// Applies the damage to the Item. Returns true 
@@ -227,6 +240,9 @@ public abstract class AMortalItem : AItem, IMortalItem {
     /// </summary>
     /// <returns><c>true</c> if the Item survived.</returns>
     protected virtual bool ApplyDamage(float damage) {
+        var damageSeverity = Mathf.Clamp01(damage / Data.CurrentHitPoints);
+        var operationalCountermeasures = Data.Countermeasures.Where(cm => cm.IsOperational);
+        operationalCountermeasures.ForAll(cm => cm.IsOperational = RandomExtended<bool>.Chance(damageSeverity));
         Data.CurrentHitPoints -= damage;
         return Data.Health > Constants.ZeroPercent;
     }
@@ -244,6 +260,7 @@ public abstract class AMortalItem : AItem, IMortalItem {
         if (_showingJob != null) {
             _showingJob.Dispose();
         }
+        Data.Dispose();
     }
 
     #endregion

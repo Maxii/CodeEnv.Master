@@ -48,6 +48,29 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        public static float GetSensorRangeModifier(this Species species) {
+            switch (species) {
+                case Species.Human:
+                    return 1.0F;
+                case Species.BorgLike:
+                    return 1.0F;
+                case Species.DominionLike:
+                    return 1.0F;
+                case Species.FrerengiLike:
+                    return 1.0F;
+                case Species.GodLike:
+                    return 1.0F;
+                case Species.KlingonLike:
+                    return 1.0F;
+                case Species.RomulanLike:
+                    return 1.0F;
+                case Species.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(species));
+            }
+        }
+
+
         public static float GetWeaponReloadTimeModifier(this Species species) {
             // TODO
             return Constants.OneF;

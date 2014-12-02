@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: WeaponRange.cs
-// Enum delineating different ranges for weapons.
+// File: ICommandItem.cs
+// Interface for items that are unit commands.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,18 +16,14 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
+
     /// <summary>
-    /// Enum delineating different ranges for weapons.
+    /// Interface for items that are unit commands.
     /// </summary>
-    public enum WeaponRange {
+    public interface ICommandItem : IMortalItem {
 
-        None,
-
-        Short,
-
-        Medium,
-
-        Long
+        event Action<IItem> onOwnerChanged;
 
     }
 }

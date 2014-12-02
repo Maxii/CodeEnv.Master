@@ -31,17 +31,8 @@ using UnityEngine;
 [SerializeAll]
 public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, ShipStat, FleetCommandItem> {
 
-    private static UnitFactory _factory;    // IMPROVE move back to AUnitCreator using References.IUnitFactory?
-
     public bool move;
     public bool attack;
-
-    protected override void Awake() {
-        base.Awake();
-        if (_factory == null) {
-            _factory = UnitFactory.Instance;
-        }
-    }
 
     // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
 
@@ -60,35 +51,26 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
 
     protected override FleetCommandItem MakeCommand(IPlayer owner) {
         LogEvent();
-        FleetCmdStat cmdStat = new FleetCmdStat(UnitName, 10F, 100, Formation.Globe, new CombatStrength(0F, 5F, 0F, 5F, 0F, 5F));
+        var countermeasures = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerCmd);
+        FleetCmdStat cmdStat = new FleetCmdStat(UnitName, 10F, 100, Formation.Globe);
         FleetCommandItem cmd;
         if (isCompositionPreset) {
             cmd = gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommandItem>();
-            _factory.MakeInstance(cmdStat, owner, ref cmd);
+            _factory.MakeInstance(cmdStat, countermeasures, owner, ref cmd);
         }
         else {
-            cmd = _factory.MakeInstance(cmdStat, owner);
+            cmd = _factory.MakeInstance(cmdStat, countermeasures, owner);
             UnityUtility.AttachChildToParent(cmd.gameObject, gameObject);
         }
         return cmd;
     }
 
-    protected override ShipItem MakeElement(ShipStat shipStat, IEnumerable<WeaponStat> weaponStats, IPlayer owner) {
-        return _factory.MakeShipInstance(shipStat, weaponStats, owner);
+    protected override ShipItem MakeElement(ShipStat shipStat, IEnumerable<WeaponStat> wStats, IEnumerable<CountermeasureStat> cmStats, IEnumerable<SensorStat> sensorStats) {
+        return _factory.MakeInstance(shipStat, wStats, cmStats, sensorStats, _owner);
     }
 
-    /// <summary>
-    /// Makes an element based off of the provided element. Returns true if the provided element is compatible
-    /// with the provided owner, false if it is not and had to be replaced. If an element is replaced, then clients
-    /// are responsible for destroying the original provided element.
-    /// </summary>
-    /// <param name="stat">The stat.</param>
-    /// <param name="weaponStats">The weapon stats.</param>
-    /// <param name="owner">The owner.</param>
-    /// <param name="element">The element.</param>
-    /// <returns></returns>
-    protected override void MakeElement(ShipStat stat, IEnumerable<WeaponStat> weaponStats, IPlayer owner, ref ShipItem element) { // OPTIMIZE
-        _factory.MakeShipInstance(stat, weaponStats, owner, ref element);
+    protected override void PopulateElement(ShipStat stat, IEnumerable<WeaponStat> wStats, IEnumerable<CountermeasureStat> cmStats, IEnumerable<SensorStat> sensorStats, ref ShipItem element) { // OPTIMIZE
+        _factory.PopulateInstance(stat, wStats, cmStats, sensorStats, _owner, ref element);
     }
 
     protected override ShipCategory GetCategory(ShipStat stat) {
@@ -99,17 +81,17 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
         return element.category;
     }
 
-    protected override ShipCategory[] GetValidElementCategories() {
-        return new ShipCategory[] { ShipCategory.Frigate, ShipCategory.Destroyer, ShipCategory.Cruiser, ShipCategory.Carrier, ShipCategory.Dreadnaught };
+    protected override ShipCategory[] ElementCategories {
+        get { return new ShipCategory[] { ShipCategory.Frigate, ShipCategory.Destroyer, ShipCategory.Cruiser, ShipCategory.Carrier, ShipCategory.Dreadnaught }; }
     }
 
-    protected override ShipCategory[] GetValidHQElementCategories() {
-        return new ShipCategory[] { ShipCategory.Cruiser, ShipCategory.Carrier, ShipCategory.Dreadnaught };
+    protected override ShipCategory[] HQElementCategories {
+        get { return new ShipCategory[] { ShipCategory.Cruiser, ShipCategory.Carrier, ShipCategory.Dreadnaught }; }
     }
 
     protected override void AssignHQElement() {
         LogEvent();
-        var candidateHQElements = _command.Elements.Where(e => GetValidHQElementCategories().Contains((e as ShipItem).Data.Category));
+        var candidateHQElements = _command.Elements.Where(e => HQElementCategories.Contains((e as ShipItem).Data.Category));
         if (candidateHQElements.IsNullOrEmpty()) {
             // _command might not hold a valid HQ Element if preset
             D.Warn("No valid HQElements for {0} found.", UnitName);
@@ -123,16 +105,6 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
         LogEvent();
         // Fleets don't need to be deployed. They are already on location.
         return true;
-    }
-
-    protected override void BeginElementsOperations() {
-        LogEvent();
-        _elements.ForAll(e => e.CommenceOperations());
-    }
-
-    protected override void BeginCommandOperations() {
-        LogEvent();
-        _command.CommenceOperations();
     }
 
     protected override void __IssueFirstUnitCommand() {
@@ -150,19 +122,19 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
     private void __GetFleetUnderway() {
         LogEvent();
         IPlayer fleetOwner = _owner;
-        IEnumerable<INavigableTarget> moveTgts = StarbaseUnitCreator.AllUnitCommands.Where(sb => sb.IsAlive && fleetOwner.IsRelationship(sb.Owner, DiplomaticRelations.Ally)).Cast<INavigableTarget>();
+        IEnumerable<INavigableTarget> moveTgts = StarbaseUnitCreator.AllUnitCommands.Where(sb => sb.IsAliveAndOperating && fleetOwner.IsRelationship(sb.Owner, DiplomaticRelations.Ally)).Cast<INavigableTarget>();
         if (!moveTgts.Any()) {
             // in case no starbases qualify
-            moveTgts = SettlementUnitCreator.AllUnitCommands.Where(s => s.IsAlive && fleetOwner.IsRelationship(s.Owner, DiplomaticRelations.Ally)).Cast<INavigableTarget>();
+            moveTgts = SettlementUnitCreator.AllUnitCommands.Where(s => s.IsAliveAndOperating && fleetOwner.IsRelationship(s.Owner, DiplomaticRelations.Ally)).Cast<INavigableTarget>();
             if (!moveTgts.Any()) {
                 // in case no Settlements qualify
-                moveTgts = SystemCreator.AllPlanetoids.Where(p => p is PlanetItem && p.IsAlive && p.Owner == TempGameValues.NoPlayer).Cast<INavigableTarget>();
+                moveTgts = SystemCreator.AllPlanetoids.Where(p => p is PlanetItem && p.IsAliveAndOperating && p.Owner == TempGameValues.NoPlayer).Cast<INavigableTarget>();
                 if (!moveTgts.Any()) {
                     // in case no Planets qualify
                     moveTgts = SystemCreator.AllSystems.Where(sys => sys.Owner == TempGameValues.NoPlayer).Cast<INavigableTarget>();
                     if (!moveTgts.Any()) {
                         // in case no Systems qualify
-                        moveTgts = FleetUnitCreator.AllUnitCommands.Where(f => f.IsAlive && fleetOwner.IsRelationship(f.Owner, DiplomaticRelations.Ally)).Cast<INavigableTarget>();
+                        moveTgts = FleetUnitCreator.AllUnitCommands.Where(f => f.IsAliveAndOperating && fleetOwner.IsRelationship(f.Owner, DiplomaticRelations.Ally)).Cast<INavigableTarget>();
                         if (!moveTgts.Any()) {
                             // in case no fleets qualify
                             moveTgts = SectorGrid.AllSectors.Where(s => s.Owner == TempGameValues.NoPlayer).Cast<INavigableTarget>();
@@ -185,19 +157,19 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
     private void __GetFleetAttackUnderway() {
         LogEvent();
         IPlayer fleetOwner = _owner;
-        IEnumerable<IUnitAttackableTarget> attackTgts = StarbaseUnitCreator.AllUnitCommands.Where(sb => sb.IsAlive && fleetOwner.IsEnemyOf(sb.Owner)).Cast<IUnitAttackableTarget>();
+        IEnumerable<IUnitAttackableTarget> attackTgts = StarbaseUnitCreator.AllUnitCommands.Where(sb => sb.IsAliveAndOperating && fleetOwner.IsEnemyOf(sb.Owner)).Cast<IUnitAttackableTarget>();
         if (attackTgts.IsNullOrEmpty()) {
             // in case no Starbases qualify
-            attackTgts = SettlementUnitCreator.AllUnitCommands.Where(s => s.IsAlive && fleetOwner.IsEnemyOf(s.Owner)).Cast<IUnitAttackableTarget>();
+            attackTgts = SettlementUnitCreator.AllUnitCommands.Where(s => s.IsAliveAndOperating && fleetOwner.IsEnemyOf(s.Owner)).Cast<IUnitAttackableTarget>();
             if (attackTgts.IsNullOrEmpty()) {
                 // in case no Settlements qualify
-                attackTgts = FleetUnitCreator.AllUnitCommands.Where(f => f.IsAlive && fleetOwner.IsEnemyOf(f.Owner)).Cast<IUnitAttackableTarget>();
+                attackTgts = FleetUnitCreator.AllUnitCommands.Where(f => f.IsAliveAndOperating && fleetOwner.IsEnemyOf(f.Owner)).Cast<IUnitAttackableTarget>();
                 if (attackTgts.IsNullOrEmpty()) {
                     // in case no Fleets qualify
-                    attackTgts = SystemCreator.AllPlanetoids.Where(p => p is PlanetItem && p.IsAlive && fleetOwner.IsEnemyOf(p.Owner)).Cast<IUnitAttackableTarget>();
+                    attackTgts = SystemCreator.AllPlanetoids.Where(p => p is PlanetItem && p.IsAliveAndOperating && fleetOwner.IsEnemyOf(p.Owner)).Cast<IUnitAttackableTarget>();
                     if (attackTgts.IsNullOrEmpty()) {
                         // in case no enemy Planets qualify
-                        attackTgts = SystemCreator.AllPlanetoids.Where(p => p is PlanetItem && p.IsAlive && p.Owner == TempGameValues.NoPlayer).Cast<IUnitAttackableTarget>();
+                        attackTgts = SystemCreator.AllPlanetoids.Where(p => p is PlanetItem && p.IsAliveAndOperating && p.Owner == TempGameValues.NoPlayer).Cast<IUnitAttackableTarget>();
                         if (attackTgts.Any()) {
                             D.Log("{0} can find no AttackTargets that meet the enemy selection criteria. Picking an unowned Planet.", UnitName);
                         }

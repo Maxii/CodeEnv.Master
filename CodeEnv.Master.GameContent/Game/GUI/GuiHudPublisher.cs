@@ -61,7 +61,7 @@ namespace CodeEnv.Master.GameContent {
             _hudRefreshRate *= speedChangeRatio;
         }
 
-        public void ShowHud(bool toShow, IIntel intel, Vector3 position) {
+        public void ShowHud(bool toShow, AIntel intel, Vector3 position) {
             D.Log("{0}<{1}>.ShowHud({2} called. Intel = {3}, Position = {4}.", GetType().Name, typeof(DataType).Name, toShow, intel.CurrentCoverage.GetName(), position);
 
             if (_displayHudJob != null && _displayHudJob.IsRunning) {
@@ -80,7 +80,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private IEnumerator DisplayHudAtCursor(IIntel intel, Vector3 position) {
+        private IEnumerator DisplayHudAtCursor(AIntel intel, Vector3 position) {
             while (true) {
                 UpdateGuiCursorHudText(intel, GuiHudLineKeys.CameraDistance);
                 // always update IntelState as the Coverage can change even if data age does not need refreshing
@@ -95,7 +95,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         // NOTE: The HUD will update the value of a _dataProperty IFF the property is implemented with APropertyChangeTracking, aka _data.IsChanged will know
-        private void PrepareHudText(IIntel intel) {
+        private void PrepareHudText(AIntel intel) {
             if (_guiCursorHudText == null || _guiCursorHudText.IntelCoverage != intel.CurrentCoverage || _data.IsChanged) {
                 // don't have the right version of GuiCursorHudText so make one
                 _guiCursorHudText = TextFactory.MakeInstance(intel, _data);
@@ -108,7 +108,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="intelLevel">The intel level.</param>
         /// <param name="keys">The line keys.</param>
-        private void UpdateGuiCursorHudText(IIntel intel, params GuiHudLineKeys[] keys) {
+        private void UpdateGuiCursorHudText(AIntel intel, params GuiHudLineKeys[] keys) {
             IColoredTextList coloredTextList;
             foreach (var key in keys) {
                 coloredTextList = TextFactory.MakeInstance(key, intel, _data);

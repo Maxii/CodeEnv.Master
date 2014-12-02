@@ -335,7 +335,7 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
         TryBreakOrbit();
 
         _ordersTarget = _ship.CurrentOrder.Target as IUnitAttackableTarget;
-        while (_ordersTarget.IsAlive) {
+        while (_ordersTarget.IsAliveAndOperating) {
             // once picked, _primaryTarget cannot be null when _ordersTarget is alive
             bool inRange = PickPrimaryTarget(out _primaryTarget);
             if (inRange) {
@@ -690,7 +690,7 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
     /// <param name="chosenTarget">The chosen target from orders or null if no targets remain alive.</param>
     /// <returns> <c>true</c> if the target is in range, <c>false</c> otherwise.</returns>
     private bool PickPrimaryTarget(out IElementAttackableTarget chosenTarget) {
-        D.Assert(_ordersTarget != null && _ordersTarget.IsAlive, "{0}'s target from orders is null or dead.".Inject(Data.FullName));
+        D.Assert(_ordersTarget != null && _ordersTarget.IsAliveAndOperating, "{0}'s target from orders is null or dead.".Inject(Data.FullName));
         bool isTargetInRange = false;
         var uniqueEnemyTargetsInRange = Enumerable.Empty<AMortalItem>();
         foreach (var rangeMonitor in _ship._weaponRangeMonitorLookup.Values) {

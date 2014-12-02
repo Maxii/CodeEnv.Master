@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, UniverseCenterData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, AIntel intel, UniverseCenterData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.Name);
@@ -57,7 +57,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Speed:
                 case GuiHudLineKeys.TargetName:
                 case GuiHudLineKeys.TargetDistance:
-                    return _emptyColoredTextList;
+                    return _emptyTextList;
 
                 case GuiHudLineKeys.None:
                 default:

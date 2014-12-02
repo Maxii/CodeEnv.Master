@@ -77,6 +77,7 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
     public MoonItem[] moons;       // no orbiters
 
     public WeaponRangeMonitor weaponRangeMonitor;
+    public SensorRangeMonitor sensorRangeMonitor;
     public FormationStationMonitor formationStation;
 
     #endregion

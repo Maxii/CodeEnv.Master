@@ -175,7 +175,7 @@ public class SystemCreator : AMonoBase, IDisposable {
             }
         }
         else {
-            int planetCount = maxRandomPlanets;
+            int planetCount = maxPlanetsInRandomSystem;
             D.Log("{0} random planet count = {1}.", SystemName, planetCount);
             for (int i = 0; i < planetCount; i++) {
                 PlanetoidCategory pCategory = RandomExtended<PlanetoidCategory>.Choice(_acceptablePlanetCategories);
