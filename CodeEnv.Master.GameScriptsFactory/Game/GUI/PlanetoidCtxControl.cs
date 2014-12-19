@@ -54,7 +54,7 @@ public class PlanetoidCtxControl : ACtxControl {
     protected override bool IsRemoteFleetMenuItemDisabled(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return _remotePlayerOwnedSelectedItem.Owner.IsRelationship(_planetoidMenuOperator.Owner, DiplomaticRelations.Self, DiplomaticRelations.Ally);
+                return !_remotePlayerOwnedSelectedItem.Owner.IsEnemyOf(_planetoidMenuOperator.Owner);
             case FleetDirective.Explore:
                 return _planetoidMenuOperator.PlayerIntel.CurrentCoverage == IntelCoverage.Comprehensive;
             case FleetDirective.Move:

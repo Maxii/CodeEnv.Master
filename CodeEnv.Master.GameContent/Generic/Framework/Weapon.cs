@@ -30,7 +30,7 @@ namespace CodeEnv.Master.GameContent {
 
         static private string _toStringFormat = "{0}: Name[{1}], Operational[{2}], Strength[{3:0.#}], Range[{4:0.#}], ReloadPeriod[{5:0.#}], Size[{6:0.#}], Power[{7:0.#}]";
 
-        private static string _nameFormat = "{0}_{1:0.#}";
+        private static string _nameFormat = "{0}_Range({1:0.#})";
 
         public event Action<Weapon> onIsOperationalChanged;
 
@@ -58,7 +58,12 @@ namespace CodeEnv.Master.GameContent {
 
         public DistanceRange Range { get { return _stat.Range; } }
 
-        public string Name { get { return _nameFormat.Inject(_stat.RootName, _stat.Strength.Combined); } }
+        public string Name {
+            get {
+                var owner = RangeMonitor != null ? RangeMonitor.ParentElement.Owner : TempGameValues.NoPlayer;
+                return _nameFormat.Inject(_stat.RootName, _stat.Range.GetWeaponRange(owner));
+            }
+        }
 
         public int ReloadPeriod { get { return _stat.ReloadPeriod; } }
 
@@ -80,20 +85,26 @@ namespace CodeEnv.Master.GameContent {
             _stat = stat;
         }
 
-        public bool Fire(IElementAttackableTarget target) {
+        /// <summary>
+        /// Fires on the specified enemy target. If the target is null, then attempts to fire on
+        /// an enemy target of opportunity. Returns <c>true </c> if an enemy target was fired on.
+        /// </summary>
+        /// <param name="enemyTarget">The enemy target.</param>
+        /// <returns></returns>
+        public bool FireOnEnemyTarget(IElementAttackableTarget enemyTarget) {
             D.Assert(IsReadyToFireOnEnemy);
-            if (target == null) {
-                return FireOnTargetOfOpportunity();
+            if (enemyTarget == null) {
+                return FireOnEnemyTargetOfOpportunity();
             }
 
-            if (!RangeMonitor.EnemyTargets.Contains(target)) {
+            if (!RangeMonitor.EnemyTargets.Contains(enemyTarget)) {
                 D.Warn("Target {0} is not present among tracked enemy targets: {1}{2}.",
-                    target.FullName, Constants.NewLine, RangeMonitor.EnemyTargets.Select(et => et.FullName).Concatenate());
+                    enemyTarget.FullName, Constants.NewLine, RangeMonitor.EnemyTargets.Select(et => et.FullName).Concatenate());
                 return false;
             }
 
-            D.Log("{0}.{1} is firing on {2}.", RangeMonitor.ParentElement.FullName, Name, target.FullName);
-            target.TakeHit(Strength);
+            D.Log("{0}.{1} is firing on enemy {2}.", RangeMonitor.ParentElement.FullName, Name, enemyTarget.FullName);
+            enemyTarget.TakeHit(Strength);
             _isLoaded = false;
             AssessReadinessToFireOnEnemy();
             UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
@@ -149,16 +160,22 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void AssessReadinessToFireOnEnemy() {
+            //D.Log("{0}.AssessReadinessToFireOnEnemy() called. IsAnyEnemyInRange = {1}, _isLoaded = {2}, IsOperational = {3}.", Name, IsAnyEnemyInRange, _isLoaded, IsOperational);
             IsReadyToFireOnEnemy = IsAnyEnemyInRange && _isLoaded && IsOperational;
         }
 
-        private bool FireOnTargetOfOpportunity() {
+        /// <summary>
+        /// Fires on any enemy target in range, returning <c>true</c> if 
+        /// an enemy target was fired on.
+        /// </summary>
+        /// <returns></returns>
+        private bool FireOnEnemyTargetOfOpportunity() {
             IElementAttackableTarget enemyTarget;
             if (RangeMonitor.TryGetRandomEnemyTarget(out enemyTarget)) {
-                Fire(enemyTarget);
+                FireOnEnemyTarget(enemyTarget);
                 return true;
             }
-            D.Warn("{0}.{1} has no target of opportunity to fire on.", RangeMonitor.ParentElement.FullName, Name);
+            D.Warn("{0}.{1} has no enemy target of opportunity to fire on.", RangeMonitor.ParentElement.FullName, Name);
             return false;
         }
 

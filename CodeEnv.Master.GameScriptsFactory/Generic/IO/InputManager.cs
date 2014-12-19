@@ -114,7 +114,10 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 
     private void InitializeUIEventDispatcher() {
         UIEventDispatcher = UIRoot.list.Single().gameObject.GetSafeMonoBehaviourComponentInChildren<UICamera>();
-        UIEventDispatcher.eventType = UICamera.EventType.UI_2D;
+
+        //UIEventDispatcher.eventType = UICamera.EventType.UI_2D;
+        UIEventDispatcher.eventType = UICamera.EventType.UI_3D;
+
         UIEventDispatcher.useKeyboard = true;
         UIEventDispatcher.useMouse = true;
         UIEventDispatcher.eventsGoToColliders = true;
@@ -209,7 +212,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     /// </summary>
     /// <exception cref="System.NotImplementedException"></exception>
     private void OnInputModeChanged() {
-        D.Log("{0}_{1}.{2} is now {3}.", GetType().Name, InstanceCount, typeof(GameInputMode).Name, InputMode.GetName());
+        //D.Log("{0}_{1}.{2} is now {3}.", GetType().Name, InstanceCount, typeof(GameInputMode).Name, InputMode.GetName());
         __ValidateEventDispatchersNotDestroyed();
 
         switch (InputMode) {

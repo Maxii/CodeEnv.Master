@@ -2145,7 +2145,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
             // hurting
             if (damage > 0.20F * Data.CurrentHitPoints) {
                 // big hit relative to what is left
-                Data.IsFtlDamaged = RandomExtended<bool>.Chance(probabilityFactor: 1, probabilitySpace: 9); // 10% chance
+                Data.IsFtlOperational = RandomExtended<bool>.Chance(probabilityFactor: 1, probabilitySpace: 9); // 10% chance
             }
         }
     }

@@ -709,7 +709,6 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
 
     void Dead_EnterState() {
         LogEvent();
-        OnDeath();
         ShowAnimation(MortalAnimations.Dying);
     }
 

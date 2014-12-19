@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: TrackingWidgetFactory.cs
-// Singleton Factory that creates preconfigured ATrackingWidgets.
+// Singleton Factory that creates preconfigured ITrackingWidgets.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,9 +23,10 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Singleton Factory that creates preconfigured ATrackingWidgets.
+/// Singleton Factory that creates preconfigured ITrackingWidgets.
 /// </summary>
 public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
+    // Note: no reason to dispose of _instance during scene transition as all its references persist across scenes
 
     private TrackingWidgetFactory() {
         Initialize();
@@ -96,6 +97,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         NGUITools.SetLayer(clone, (int)layer);
 
         var trackingWidget = clone.AddComponent<CommandTrackingSprite>();   // AddComponent() runs Awake before returning
+        trackingWidget.__SetDimensions(24, 24);   // HACK
         trackingWidget.Target = cmdTarget;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
@@ -153,11 +155,12 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
     /// Creates a sprite whose size stays constant, independent of the size of the target, parented to and tracking the <c>target</c>.
     /// </summary>
     /// <param name="target">The target.</param>
+    /// <param name="__dimensions">The desired dimensions of the sprite in pixels.</param>
     /// <param name="placement">The placement.</param>
     /// <param name="min">The minimum show distance.</param>
     /// <param name="max">The maximum show distance.</param>
     /// <returns></returns>
-    public ITrackingWidget CreateConstantSizeTrackingSprite(IWidgetTrackable target, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity) {
+    public ITrackingWidget CreateConstantSizeTrackingSprite(IWidgetTrackable target, Vector2 __dimensions, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity) {
         // IMPROVE add ability to designate the type of atlas - eg. for fleets, starbases, etc. Use switch statement to select the desired prefab from ReqdPrefabs
         GameObject prefab = RequiredPrefabs.Instance.worldTrackingSprite;
         var clone = NGUITools.AddChild(target.Transform.gameObject, prefab);
@@ -166,6 +169,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         NGUITools.SetLayer(clone, (int)layer);
 
         var trackingWidget = clone.AddComponent<ConstantSizeTrackingSprite>();  // AddComponent() runs Awake before returning
+        trackingWidget.__SetDimensions(Mathf.RoundToInt(__dimensions.x), Mathf.RoundToInt(__dimensions.y));
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);

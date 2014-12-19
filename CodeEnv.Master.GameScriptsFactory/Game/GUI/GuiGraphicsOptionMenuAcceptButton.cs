@@ -29,6 +29,7 @@ public class GuiGraphicsOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
     }
 
     private int _qualitySetting;
+    private bool _isElementIconsEnabled;
 
     protected override void CaptureInitializedState() {
         base.CaptureInitializedState();
@@ -42,6 +43,15 @@ public class GuiGraphicsOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
         // TODO more popupLists here
     }
 
+    protected override void RecordCheckboxState(string checkboxName, bool checkedState) {
+        if (checkboxName.Contains("element")) {
+            _isElementIconsEnabled = checkedState;
+        }
+        else {
+            D.Error("Name of Checkbox {0} not found.", checkboxName);
+        }
+    }
+
     protected override void OnPopupListSelectionChange() {
         base.OnPopupListSelectionChange();
         ValidateState();
@@ -50,7 +60,8 @@ public class GuiGraphicsOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
     protected override void OnLeftClick() {
         ValidateState();
         GraphicsOptionSettings settings = new GraphicsOptionSettings() {
-            QualitySetting = _qualitySetting
+            QualitySetting = _qualitySetting,
+            IsElementIconsEnabled = _isElementIconsEnabled
         };
         _playerPrefsMgr.RecordGraphicsOptions(settings);
     }

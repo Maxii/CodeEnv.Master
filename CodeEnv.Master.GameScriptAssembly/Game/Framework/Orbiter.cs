@@ -31,6 +31,17 @@ using UnityEngine;
 /// </summary>
 public class Orbiter : AMonoBase, IOrbiter {
 
+    private bool _isOrbiterInMotion;
+    public bool IsOrbiterInMotion {
+        get { return _isOrbiterInMotion; }
+        set { SetProperty<bool>(ref _isOrbiterInMotion, value, "IsOrbiterInMotion", OnIsOrbiterInMotionChanged); }
+    }
+
+    /// <summary>
+    /// The duration of one orbit of the object around the location.
+    /// </summary>
+    public GameTimeDuration OrbitPeriod { get; set; }
+
     /// <summary>
     /// The axis of orbit in local space.
     /// </summary>
@@ -41,11 +52,6 @@ public class Orbiter : AMonoBase, IOrbiter {
     /// an orbit will take one Year.
     /// </summary>
     public float relativeOrbitSpeed = 1.0F;
-
-    /// <summary>
-    /// The duration of one orbit of the object around the location.
-    /// </summary>
-    public GameTimeDuration OrbitPeriod { get; set; }
 
     /// <summary>
     /// The speed of the orbiting object around the orbited object in degrees per second.
@@ -98,8 +104,16 @@ public class Orbiter : AMonoBase, IOrbiter {
         //_transform.Rotate(0F, desiredStepAngle, 0F, relativeTo: Space.Self);
     }
 
+    private void OnIsOrbiterInMotionChanged() {
+        AssessOrbiterInMotion();
+    }
+
     private void OnIsPausedChanged() {
-        enabled = !_gameMgr.IsPaused;
+        AssessOrbiterInMotion();
+    }
+
+    private void AssessOrbiterInMotion() {
+        enabled = IsOrbiterInMotion && !_gameMgr.IsPaused;
     }
 
     protected override void Cleanup() {

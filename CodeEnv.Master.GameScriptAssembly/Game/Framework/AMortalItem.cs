@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -102,7 +102,9 @@ public abstract class AMortalItem : AItem, IMortalItem {
     /// given the way the state machine works. This approach keeps isAlive and Dead in sync.
     /// </summary>
     protected virtual void InitiateDeath() {
+        D.Log("{0}.InitiateDeath() called.", FullName);
         IsAliveAndOperating = false;
+        OnDeath();
     }
 
     protected virtual void OnDeath() {
@@ -232,19 +234,35 @@ public abstract class AMortalItem : AItem, IMortalItem {
 
     #region Combat Support Methods
 
-    public abstract void TakeHit(CombatStrength weaponStrength);
+    public abstract void TakeHit(CombatStrength attackerWeaponStrength);
 
     /// <summary>
-    /// Applies the damage to the Item. Returns true 
-    /// if the Item survived the hit.
+    /// Applies the damage to the Item and returns true if the Item survived the hit.
     /// </summary>
-    /// <returns><c>true</c> if the Item survived.</returns>
-    protected virtual bool ApplyDamage(float damage) {
-        var damageSeverity = Mathf.Clamp01(damage / Data.CurrentHitPoints);
+    /// <param name="damageSustained">The damage sustained.</param>
+    /// <param name="damageSeverity">The damage severity.</param>
+    /// <returns>
+    ///   <c>true</c> if the Item survived.
+    /// </returns>
+    protected virtual bool ApplyDamage(CombatStrength damageSustained, out float damageSeverity) {
+        var __combinedDamage = damageSustained.Combined;
+        damageSeverity = Mathf.Clamp01(__combinedDamage / Data.CurrentHitPoints);
+        Data.CurrentHitPoints -= __combinedDamage;
+        if (Data.Health > Constants.ZeroPercent) {
+            AssessCripplingDamageToEquipment(damageSeverity);
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Assesses and applies any crippling damage to the item's equipment as a result of the hit.
+    /// </summary>
+    /// <param name="damageSeverity">The severity of the damage as a percentage of the item's hit points when hit.</param>
+    protected virtual void AssessCripplingDamageToEquipment(float damageSeverity) {
+        Arguments.ValidateForRange(damageSeverity, Constants.ZeroF, Constants.OneF);
         var operationalCountermeasures = Data.Countermeasures.Where(cm => cm.IsOperational);
         operationalCountermeasures.ForAll(cm => cm.IsOperational = RandomExtended<bool>.Chance(damageSeverity));
-        Data.CurrentHitPoints -= damage;
-        return Data.Health > Constants.ZeroPercent;
     }
 
     #endregion
@@ -278,7 +296,6 @@ public abstract class AMortalItem : AItem, IMortalItem {
     }
 
     #endregion
-
 
 }
 

@@ -64,7 +64,7 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
             UniverseSize = _universeSize,
             PlayerRace = TempGameValues.HumanPlayersRace
         };
-        _gameMgr.BuildNewGame(settings);
+        _gameMgr.InitiateNewGame(settings);
     }
 
     [Conditional("UNITY_EDITOR")]

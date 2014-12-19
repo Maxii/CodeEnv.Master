@@ -76,7 +76,7 @@ namespace CodeEnv.Master.GameContent {
                 _orbiter = References.GeneralFactory.MakeOrbiterInstance(orbitedObjectGo, _isOrbitedObjectMobile, true, _orbitPeriod, "ShipOrbiter") as IOrbiterForShips;
             }
             AttachShipToOrbit(ship);
-            _orbiter.enabled = true;
+            _orbiter.IsOrbiterInMotion = true;
             D.Log("{0} has assumed orbit around {1}.", ship.FullName, OrbitedObject.FullName);
             float shipOrbitRadius = Vector3.Distance(ship.Position, OrbitedObject.Position);
             if (!Contains(shipOrbitRadius)) {
@@ -106,7 +106,7 @@ namespace CodeEnv.Master.GameContent {
                 D.Warn("{0} orbit radius of {1} is not contained within {2}'s {3}.", ship.FullName, shipOrbitRadius, OrbitedObject.FullName, this);
             }
             if (!remainingShips.Any()) {
-                _orbiter.enabled = false; // leave the orbiter object for future visitors
+                _orbiter.IsOrbiterInMotion = false; // leave the orbiter object for future visitors
             }
         }
 

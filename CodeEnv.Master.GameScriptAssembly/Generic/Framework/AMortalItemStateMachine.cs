@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -226,46 +226,45 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     [HideInInspector]
     private State state = new State();
 
-    /// <summary>
-    /// Gets or sets the current State.
-    /// 
-    /// NOTE: The sequencing when a change of state is initiated by setting CurrentState = newState
-    /// 1. the state we are changing from is recorded as lastState
-    /// 2. the event OnCurrentStateChanging(newState) is sent to subscribers
-    /// 3. the value of the CurrentState enum is changed to newState
-    /// 4. the lastState_ExitState() method is called 
-    ///          - while in this method, realize that the CurrentState enum has already changed to newState
-    /// 5. the CurrentState's delegates are updated 
-    ///          - meaning the EnterState delegate is changed from lastState_EnterState to newState_EnterState
-    /// 6. the newState_EnterState() method is called
-    ///          - FIXME: as the event in 7 has not yet been called, you CANNOT set CurrentState = nextState within newState_EnterState()
-    ///              - this would initiate the whole cycle above again, BEFORE the event in 7 is called
-    ///              - you also can't just use a coroutine to wait then change it as the event is still held up
-    ///          - instead, change it in newState_Update() which allows the event in 7 to complete before this change occurs again
-    /// 7. the event OnCurrentStateChanged() is sent to subscribers
-    ///          - when this event is received, a get_CurrentState property inquiry will properly return newState
-    ///          
-    /// WARNING: IEnumerator State_EnterState methods are executed when the frame's Coroutine's are run, 
-    /// not when the state itself is changed. The order in which those state execution coroutines 
-    /// are run has nothing to do with the order in which the item's state is changed, aka if item1's state
-    /// is changed before item2's state, that DOES NOT mean item1's enterState will be called before item2's enterState.
-    /// </summary>
+    // ************************************************************************************************************
+    // NOTE: The sequencing when a change of state is initiated by setting CurrentState = newState
+    //
+    // 1. the state we are changing from is recorded as lastState
+    // 2. the 2 events indicating a state is about to change are sent to subscribers
+    // 3. the value of the CurrentState enum is changed to newState
+    // 4. the lastState_ExitState() method is called 
+    //          - while in this method, realize that the CurrentState enum has already changed to newState
+    // 5. the CurrentState's delegates are updated 
+    //          - meaning the EnterState delegate is changed from lastState_EnterState to newState_EnterState
+    // 6. the newState_EnterState() method is called
+    //          - as the event in 7 has not yet been called, you CANNOT set CurrentState = nextState within newState_EnterState()
+    //              - this would initiate the whole cycle above again, BEFORE the event in 7 is called
+    //              - you also can't just use a coroutine to wait then change it as the event is still held up
+    //          - instead, change it a frame later after the EnterState method has completed, and the events have been fired
+    // 7. the 2 events indicating a state has just changed are sent to subscribers
+    //          - when this event is received, a get_CurrentState property inquiry will properly return newState
+    // *************************************************************************************************************
+
+    // ***********************************************************************************************************
+    // WARNING: IEnumerator State_EnterState methods are executed when the frame's Coroutine's are run, 
+    // not when the state itself is changed. The order in which those state execution coroutines 
+    // are run has nothing to do with the order in which the item's state is changed, aka if item1's state
+    // is changed before item2's state, that DOES NOT mean item1's enterState will be called before item2's enterState.
+    // ***********************************************************************************************************
+
     public object CurrentState {
         get { return state.currentState; }
         protected set {
-            if (state.Equals(value)) {
-                D.Error("This should never occur.");
-                return;
-            }
-            //if (state.currentState != null && state.currentState.Equals(value)) {
-            //    // This is not illegal, eg. initiating another ExecuteMoveOrder while already in ExecuteMoveOrder
-            //    D.Warn("{0} trying to set CurrentState to same value. Value = {1}.", Data.Name, value.ToString());
-            //    return;
-            //}
+            D.Assert(!state.Equals(value)); // a state object and a state's currentState should never be equal
+            __ValidateNoNewStateSetDuringEnterState(value);
             ChangingState();
+            if (state.currentState != null && state.currentState.Equals(value)) {
+                D.Warn("{0} duplicate state {1} set attempt.", GetType().Name, value);
+            }
             //D.Log("{0} setting CurrentState to {1}.", FullName, value.ToString());
             state.currentState = value;
             ConfigureCurrentState();
+            __ResetStateChangeValidationTest();
         }
     }
 
@@ -300,7 +299,6 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     private void ConfigureCurrentStateForCall() {
         //D.Log("{0}.ConfigureCurrentStateForCall() called.", FullName);
         GetStateMethods();
-        //OnStateChanged();
         if (state.enterState != null) {
             //D.Log("{0} setting up {1}_EnterState() to execute a Call().", FullName, state.currentState.ToString());
             state.enterStateEnumerator = state.enterState();
@@ -318,14 +316,11 @@ public abstract class AMortalItemStateMachine : AMortalItem {
             state.exitStateEnumerator = state.exitState();
             exitStateCoroutine.Run(state.exitStateEnumerator);
         }
-        //UnwireEvents();
         //D.Log("On Return, Stack count = {0}.", _stack.Count);
         if (_stack.Count > 0) {
             state = _stack.Pop();
-            //OnStateChanged();
             //D.Log("{0} setting up resumption of {1}_EnterState() in Return().", FullName, state.currentState.ToString());
             enterStateCoroutine.Run(state.enterStateEnumerator, state.enterStack);
-            //WireEvents();
             _timeEnteredState = Time.time - state.time;
         }
     }
@@ -339,7 +334,6 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     /// </param>
     protected void Return(object baseState) {
         //D.Log("{0}.Return({1}) called.", FullName, baseState.ToString());
-        //UnwireEvents();
         if (state.exitState != null) {
             state.exitStateEnumerator = state.exitState();
             exitStateCoroutine.Run(state.exitStateEnumerator);
@@ -347,13 +341,11 @@ public abstract class AMortalItemStateMachine : AMortalItem {
 
         if (_stack.Count > 0) {
             state = _stack.Pop();
-            //OnStateChanged();
             enterStateCoroutine.Run(state.enterStateEnumerator, state.enterStack);
         }
         else {
             CurrentState = baseState;
         }
-        //WireEvents();
         _timeEnteredState = Time.time - state.time;
     }
 
@@ -380,13 +372,11 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         }
 
         GetStateMethods();
-        //OnStateChanged();
 
         if (state.enterState != null) {
             //D.Log("{0} setting up {1}_EnterState() to run. Time = {2}.", FullName, state.currentState.ToString(), Time.time);
-            // void enterState() methods execute immediately when assigned here rather than wait until the enterCoroutine makes its next pass
             //D.Log("{0} EnterState method name = {1}.", FullName, state.enterState.Method.Name);
-            state.enterStateEnumerator = state.enterState();
+            state.enterStateEnumerator = state.enterState();    // a void enterState() method executes immediately here rather than wait until the enterCoroutine makes its next pass
             // void enterStates are set to return null by ConfigureDelegate when executed. Accordingly, Run(null) below does nothing
             enterStateCoroutine.Run(state.enterStateEnumerator);
         }
@@ -395,7 +385,6 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     //Retrieves all of the methods for the current state
     private void GetStateMethods() {
         //D.Log("{0}.GetStateMethods() called.", FullName);
-        //UnwireEvents();
         //Now we need to configure all of the methods
         state.DoUpdate = ConfigureDelegate<Action>("Update", DoNothing);
         state.DoOccasionalUpdate = ConfigureDelegate<Action>("OccasionalUpdate", DoNothing);
@@ -415,8 +404,6 @@ public abstract class AMortalItemStateMachine : AMortalItem {
 
         state.enterState = ConfigureDelegate<Func<IEnumerator>>("EnterState", DoNothingCoroutine);
         state.exitState = ConfigureDelegate<Func<IEnumerator>>("ExitState", DoNothingCoroutine);
-
-        //WireEvents();
     }
 
     /// <summary>
@@ -532,6 +519,32 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     #endregion
 
     #region Debug
+
+    // Note: This StateChange validation system is not really necessary for Items as AMortalItemStateMachine does not support event change notifications.
+    // However, making a state change inside a void EnterState() method is a bad idea as EnterState code execution gets out of sync if the EnterState() method 
+    // containing the state change assignment has any additional code following the assignment. This is because code that follows the assignment executes 
+    // immediately after the ExitState() method executes, but before the newly assigned state's EnterState() executes. Nothing good can happen from this.
+
+    private bool __isOnCurrentStateChangingProcessed;
+
+    /// <summary>
+    /// Validates that a void State_EnterState() method (called in ConfigureCurrentState()) does not attempt to set a new state.
+    /// Note: State_EnterState() methods that return IEnumerator that set a new state value should not fail this test as 
+    /// the coroutine is not immediately run, allowing the CurrentState's OnChanging and OnChanged notification events to complete
+    /// processing before the state change is made.
+    /// </summary>
+    private void __ValidateNoNewStateSetDuringEnterState(object incomingState) {
+        //D.Log("{0}.__ValidateNoNewStateSetDuringEnterState() called. CurrentState = {1}, IncomingState = {2}.", GetType().Name, CurrentState, incomingState);
+        if (__isOnCurrentStateChangingProcessed) {
+            D.Warn("{0} should avoid changing state to {1} while executing {2}_EnterState().", GetType().Name, incomingState, CurrentState);
+        }
+        __isOnCurrentStateChangingProcessed = true;
+    }
+
+    private void __ResetStateChangeValidationTest() {
+        //D.Log("{0}.__ResetStateChangeValidationTest() called. CurrentState = {1}.", GetType().Name, CurrentState);
+        __isOnCurrentStateChangingProcessed = false;
+    }
 
     /// <summary>
     /// Logs the method name called. WARNING:  Coroutines showup as &lt;IEnumerator.MoveNext&gt; rather than the method name
@@ -900,25 +913,6 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     ///// <returns></returns>
     //protected virtual IEnumerable<object> OnWireEvent(EventDef eventInfo) {
     //    return null;
-    //}
-
-    #endregion
-
-    #region My State Change Event Archive
-
-    ///// <summary>
-    ///// Occurs AFTER the previous state's ExitState() method has run
-    ///// but BEFORE the new state's EnterState() method has run. Accessing
-    ///// the CurrentState will give you the new state, but no processing 
-    ///// reflecting that new state will have yet occurred.
-    ///// </summary>
-    //public event Action onStateChanged;
-
-    //private void OnStateChanged() {
-    //    //D.Log("{0}.State changed to {1}.", Data.Name, CurrentState.ToString());
-    //    if (onStateChanged != null) {
-    //        onStateChanged();
-    //    }
     //}
 
     #endregion

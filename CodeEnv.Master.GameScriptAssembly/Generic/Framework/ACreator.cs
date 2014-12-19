@@ -16,6 +16,8 @@
 
 // default namespace
 
+using CodeEnv.Master.Common;
+
 /// <summary>
 /// Abstract base class for Unit Creators. Primarily used as
 /// a non-generic constraint for CreatorEditors.
@@ -23,15 +25,16 @@
 [SerializeAll]
 public abstract class ACreator : AMonoBase {
 
-    public enum DiploStateWithHuman {
+    public enum __DiploStateWithPlayer {    // avoids offering None or Self
         Ally,
         Friend,
         Neutral,
-        Enemy
+        ColdWar,
+        War
     }
 
     public bool isOwnerPlayer;
-    public DiploStateWithHuman ownerRelationshipWithHuman;
+    public __DiploStateWithPlayer ownerRelationshipWithPlayer;
 
     public bool isCompositionPreset;
     public int maxElementsInRandomUnit = 8;

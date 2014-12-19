@@ -47,8 +47,8 @@ public abstract class AUnitCreatorEditor<T> : Editor where T : ACreator {
         creator.isOwnerPlayer = GUILayout.Toggle(creator.isOwnerPlayer, "Owner is Player");
         if (!creator.isOwnerPlayer) {
             EditorGUI.indentLevel++;
-            creator.ownerRelationshipWithHuman = (ACreator.DiploStateWithHuman)
-                EditorGUILayout.EnumPopup("Diplomacy with Player", creator.ownerRelationshipWithHuman);
+            creator.ownerRelationshipWithPlayer = (ACreator.__DiploStateWithPlayer)
+                EditorGUILayout.EnumPopup("Diplomatic State w/Player", creator.ownerRelationshipWithPlayer);
             EditorGUI.indentLevel--;
         }
 

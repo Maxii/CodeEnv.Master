@@ -26,10 +26,22 @@ using UnityEngine;
 /// </summary>
 public abstract class AWorldTrackingWidget_ConstantSize : AWorldTrackingWidget {
 
+    private ScaleRelativeToCamera _scaler;
+
     protected override void Awake() {
         base.Awake();
         // placing this scaler above the UIPanel keeps Widget.onChange from firing every time the scale changes
-        _billboard.gameObject.AddComponent<ScaleRelativeToCamera>();
+        _scaler = _billboard.gameObject.AddComponent<ScaleRelativeToCamera>();
+    }
+
+    protected override void Show() {
+        base.Show();
+        _scaler.enabled = true;
+    }
+
+    protected override void Hide() {
+        base.Hide();
+        _scaler.enabled = false;
     }
 
     protected override float CalcMaxShowDistance(float max) {

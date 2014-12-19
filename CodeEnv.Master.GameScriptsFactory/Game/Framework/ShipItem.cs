@@ -119,7 +119,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     public override void CommenceOperations() {
         base.CommenceOperations();
         Data.Topography = SectorGrid.Instance.GetSpaceTopography(Position);
-        Data.AssessFtlAvailability();
+        Data.IsFtlOperational = true;   // will trigger Data.AssessFtlAvailability()
         CurrentState = ShipState.Idling;
     }
 
@@ -422,15 +422,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     }
 
     void Idling_OnCollisionEnter(Collision collision) {
-        D.Warn("While {0}, {1} collided with {2} at a relative velocity of {3}. \nResulting velocity = {4} units/sec, angular velocity = {5} radians/sec.",
-            CurrentState.GetName(), FullName, collision.transform.name, collision.relativeVelocity.magnitude, __rigidbody.velocity, __rigidbody.angularVelocity);
-        D.Log("Distance between objects = {0}, {1} collider size = {2}.", (Position - collision.transform.position).magnitude, collision.transform.name, collision.collider.bounds.size);
-
-        D.Assert(!__rigidbody.isKinematic && !collision.rigidbody.isKinematic, "{0}.isKinematic = {1}, {2}.isKinematic = {3}."
-            .Inject(FullName, rigidbody.isKinematic, collision.transform.name, collision.rigidbody.isKinematic));
-        //foreach (ContactPoint contact in collision.contacts) {
-        //    Debug.DrawRay(contact.point, contact.normal, Color.white);
-        //}
+        __ReportCollision(collision);
     }
 
     void Idling_ExitState() {
@@ -443,7 +435,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     #region ExecuteAssumeStationOrder
 
     IEnumerator ExecuteAssumeStationOrder_EnterState() {    // cannot return void as code after Call() executes without waiting for a Return()
-        D.Log("{0}.ExecuteAssumeStationOrder_EnterState called.", FullName);
+        //D.Log("{0}.ExecuteAssumeStationOrder_EnterState called.", FullName);
         _moveSpeed = CurrentOrder.Speed;
         _moveTarget = FormationStation as INavigableTarget;
         _orderSource = CurrentOrder.Source;
@@ -464,7 +456,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     }
 
     void ExecuteAssumeStationOrder_ExitState() {
-        //LogEvent();
+        LogEvent();
     }
 
     #endregion
@@ -480,16 +472,16 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     private bool _isInOrbit;
 
     IEnumerator AssumingOrbit_EnterState() {
-        D.Log("{0}.AssumingOrbit_EnterState called.", FullName);
+        //D.Log("{0}.AssumingOrbit_EnterState called.", FullName);
         D.Assert(_currentOrIntendedOrbitSlot != null);
         D.Assert(!_isInOrbit);
         _helm.DisengageAutoPilot();
         _helm.AllStop();
         string msg = "is within";
-        float distance;
-        if (!_currentOrIntendedOrbitSlot.CheckPositionForOrbit(this, out distance)) {
+        float distanceToMeanOrbit;
+        if (!_currentOrIntendedOrbitSlot.CheckPositionForOrbit(this, out distanceToMeanOrbit)) {
             Vector3 targetDirection = (_currentOrIntendedOrbitSlot.OrbitedObject.Position - Position).normalized;
-            Vector3 orbitSlotDirection = distance > Constants.ZeroF ? targetDirection : -targetDirection;
+            Vector3 orbitSlotDirection = distanceToMeanOrbit > Constants.ZeroF ? targetDirection : -targetDirection;
             _helm.ChangeHeading(orbitSlotDirection);
             yield return null;  // allows heading coroutine to engage and change IsBearingConfirmed to false
             D.Log("{0} is waiting to complete the turn needed to find the orbit slot.", FullName);
@@ -502,7 +494,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         }
 
         D.Log("{0} {1} the orbit slot.", FullName, msg);
-        while (!_currentOrIntendedOrbitSlot.CheckPositionForOrbit(this, out distance)) {
+        while (!_currentOrIntendedOrbitSlot.CheckPositionForOrbit(this, out distanceToMeanOrbit)) {
             // wait until we are inside the orbit slot
             yield return null;
         }
@@ -514,7 +506,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     void AssumingOrbit_ExitState() {
         LogEvent();
-        _helm.AllStop();
+        _helm.AllStop(instantStop: true);
     }
 
     #endregion
@@ -548,7 +540,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     void ExecuteMoveOrder_OnWeaponReady(Weapon weapon) {
         LogEvent();
-        //TryFireOnAnyTarget(weapon);
         Fire(weapon);
     }
 
@@ -617,22 +608,17 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     void Moving_OnWeaponReady(Weapon weapon) {
         LogEvent();
-        //TryFireOnAnyTarget(weapon);
         Fire(weapon);
     }
 
     void Moving_OnDestinationReached() {
         LogEvent();
+        D.Log("{0} has reached destination {1}.", FullName, _moveTarget.FullName);
         Return();
     }
 
     void Moving_OnCollisionEnter(Collision collision) {
-        D.Warn("While {0}, {1} collided with {2} at a relative velocity of {3}. \nResulting velocity = {4} units/sec, angular velocity = {5} radians/sec.",
-            CurrentState.GetName(), FullName, collision.transform.name, collision.relativeVelocity.magnitude, __rigidbody.velocity, __rigidbody.angularVelocity);
-        D.Log("Distance between objects = {0}, {1} collider size = {2}.", (Position - collision.transform.position).magnitude, collision.transform.name, collision.collider.bounds.size);
-        //foreach (ContactPoint contact in collision.contacts) {
-        //    Debug.DrawRay(contact.point, contact.normal, Color.white);
-        //}
+        __ReportCollision(collision);
     }
 
     void Moving_ExitState() {
@@ -665,11 +651,11 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     private IElementAttackableTarget _primaryTarget;
 
     IEnumerator ExecuteAttackOrder_EnterState() {
-        D.Log("{0}.ExecuteAttackOrder_EnterState() called.", FullName);
-
-        TryBreakOrbit();
+        //D.Log("{0}.ExecuteAttackOrder_EnterState() called.", FullName);
 
         _ordersTarget = CurrentOrder.Target as IUnitAttackableTarget;
+        TryBreakOrbit();
+
         while (_ordersTarget.IsAliveAndOperating) {
             // once picked, _primaryTarget cannot be null when _ordersTarget is alive
             bool inRange = PickPrimaryTarget(out _primaryTarget);
@@ -691,19 +677,25 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
             }
             yield return null;
         }
+        if (_isInOrbit) {
+            D.Warn("{0} is in orbit around {1} after killing {2}.", FullName, _currentOrIntendedOrbitSlot.OrbitedObject.FullName, _ordersTarget.FullName);
+        }
         CurrentState = ShipState.Idling;
     }
 
     void ExecuteAttackOrder_OnWeaponReady(Weapon weapon) {
         LogEvent();
-        //if (_primaryTarget != null) {   // OnWeaponReady can occur before _primaryTarget is picked
-        D.Log("{0}'s primary target is {1}.", FullName, _primaryTarget.FullName);
-        bool primaryTargetFiredOn = Fire(weapon, _primaryTarget);
-        if (!primaryTargetFiredOn) {
-            // primaryTarget was out of range
+        if (_primaryTarget != null) {   // OnWeaponReady can occur before _primaryTarget is picked
+            D.Log("{0}'s primary target is {1}.", FullName, _primaryTarget.FullName);
+            bool primaryTargetFiredOn = Fire(weapon, _primaryTarget);
+            if (!primaryTargetFiredOn) {
+                // primaryTarget was out of range
+                Fire(weapon);
+            }
+        }
+        else {
             Fire(weapon);
         }
-        //}
     }
 
     void ExecuteAttackOrder_ExitState() {
@@ -838,7 +830,12 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         D.Log("{0}'s repair is 50% complete.", FullName);
         yield return new WaitForSeconds(3);
         Data.CurrentHitPoints = Data.MaxHitPoints;
+
         Data.Countermeasures.ForAll(cm => cm.IsOperational = true);
+        Data.Weapons.ForAll(w => w.IsOperational = true);
+        Data.Sensors.ForAll(s => s.IsOperational = true);
+        Data.IsFtlOperational = true;
+
         D.Log("{0}'s repair is 100% complete.", FullName);
         StopAnimation(MortalAnimations.Repairing);
         Return();
@@ -897,7 +894,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     void Dead_EnterState() {
         LogEvent();
-        OnDeath();
         ShowAnimation(MortalAnimations.Dying);
     }
 
@@ -928,27 +924,53 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 }
             }
             _currentOrIntendedOrbitSlot = objectToOrbit.ShipOrbitSlot;
-            D.Log("{0} should begin to assume orbit around {1}.", FullName, objectToOrbit.FullName);
+            //D.Log("{0} should begin to assume orbit around {1}.", FullName, objectToOrbit.FullName);
             return true;
         }
         return false;
     }
 
     /// <summary>
-    /// The ship determines whether it is in orbit, and if so, immediately leaves it.
+    /// If the ship is in orbit and determines it should break orbit, it immediately does.
     /// </summary>
-    /// <returns></returns>
     private void TryBreakOrbit() {
         if (_isInOrbit) {
-            _currentOrIntendedOrbitSlot.onOrbitedObjectDeathOneShot -= BreakOrbit;
-            BreakOrbit();
+            if (AssessWhetherToBreakOrbit()) {
+                _currentOrIntendedOrbitSlot.onOrbitedObjectDeathOneShot -= BreakOrbit;
+                BreakOrbit();
+            }
         }
+    }
+
+    /// <summary>
+    /// Assesses whether this ship should break orbit around the item it is orbiting. 
+    /// Currently, the only time the ship will stay in orbit is if it has been ordered to attack the planetoid it is currently orbiting.
+    /// </summary>
+    /// <returns><c>true</c> if the ship should break orbit.</returns>
+    private bool AssessWhetherToBreakOrbit() {
+        //D.Log("{0}.AssessWhetherToBreakOrbit() called.", FullName);
+        D.Assert(_isInOrbit);
+        // currently, the only condition where the ship wouldn't leave orbit is if it is attacking the planetoid it is orbiting
+        if (CurrentState == ShipState.ExecuteAttackOrder) {
+            // in orbit and just received an Attack order
+            var orbitedPlanetoid = _currentOrIntendedOrbitSlot.OrbitedObject as APlanetoidItem;
+            if (orbitedPlanetoid != null) {
+                // orbiting a planetoid
+                if (orbitedPlanetoid == _ordersTarget as APlanetoidItem) {
+                    // ordered to attack the planetoid we are orbiting so stay in orbit
+                    D.Log("{0} will be attacking {1} while staying in orbit.", FullName, orbitedPlanetoid.FullName);
+                    return false;
+                }
+            };
+        }
+        return true;
     }
 
     /// <summary>
     /// Breaks the orbit. Must be in orbit to be called.
     /// </summary>
     private void BreakOrbit() {
+        D.Assert(_isInOrbit);
         _currentOrIntendedOrbitSlot.BreakOrbit(this);
         _currentOrIntendedOrbitSlot = null;
         _isInOrbit = false;
@@ -964,7 +986,11 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     private bool AssessWhetherToReturnToStation(out Speed speed) {
         speed = Speed.None;
-        D.Assert(!IsHQElement, "Flagship {0} is not onStation!".Inject(FullName)); // HQElement should never be OffStation
+        if (IsHQElement) {
+            D.Warn("Flagship {0} at {1} is not OnStation! Station: Location = {2}, Radius = {3}.", FullName, Position, FormationStation.Position, FormationStation.Radius);
+            return false;
+        }
+        //D.Assert(!IsHQElement, "Flagship {0} is not onStation!".Inject(FullName)); // HQElement should never be OffStation
         D.Assert(!FormationStation.IsOnStation, "{0} is already onStation!".Inject(FullName));
         if (Command.HQElement._helm.IsAutoPilotEngaged) {
             // Flagship still has a destination so don't bother
@@ -1010,31 +1036,26 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 chosenTarget = __SelectHighestPriorityTarget(primaryTargets);
             }
         }
-        else {            // Planetoid
-            D.Assert(_ordersTarget is APlanetoidItem);
+        else {
+            // Planetoid
             var planetoidTarget = _ordersTarget as APlanetoidItem;
-            if (!uniqueEnemyTargetsInRange.Contains(planetoidTarget)) {
-                if (_weaponRangeMonitors.Any(rangeMonitor => rangeMonitor.AllTargets.Contains(planetoidTarget))) {
-                    // the planetoid is not an enemy, but it is in range and therefore fair game
-                    isTargetInRange = true;
-                }
-            }
-            else {
-                // the planetoid is an enemy and in range
+            D.Assert(planetoidTarget != null);
+
+            if (uniqueEnemyTargetsInRange.Contains(planetoidTarget)) {
                 isTargetInRange = true;
             }
             chosenTarget = planetoidTarget;
         }
         if (chosenTarget != null) {
             // no need for knowing about death event as primaryTarget is continuously checked while under orders to attack
-            //D.Log("{0}'s has selected {1} as it's primary target. InRange = {2}.", Data.Name, chosenTarget.Name, isTargetInRange);
+            //var targetRange = Vector3.Distance(Position, chosenTarget.Position);
+            //D.Log("{0} has selected {1} as it's primary target. InRange = {2}, Range = {3}.", Data.Name, chosenTarget.FullName, isTargetInRange, targetRange);
         }
         else {
             D.Warn("{0}'s primary target returned as null. InRange = {1}.", Data.Name, isTargetInRange);
         }
         return isTargetInRange;
     }
-
 
     private IElementAttackableTarget __SelectHighestPriorityTarget(IEnumerable<IElementAttackableTarget> selectedTargetsInRange) {
         return RandomExtended<IElementAttackableTarget>.Choice(selectedTargetsInRange);
@@ -1066,25 +1087,12 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     #region Combat Support Methods
 
-    protected override bool ApplyDamage(float damage) {
-        bool isAlive = base.ApplyDamage(damage);
-        if (isAlive) {
-            __AssessCriticalHits(damage);
-        }
-        return isAlive;
+    protected override void AssessCripplingDamageToEquipment(float damageSeverity) {
+        base.AssessCripplingDamageToEquipment(damageSeverity);
+        Data.IsFtlOperational = RandomExtended<bool>.Chance(damageSeverity);
     }
 
-    private void __AssessCriticalHits(float damage) {
-        if (Data.Health < 0.50F) {
-            // hurting
-            if (damage > 0.20F * Data.CurrentHitPoints) {
-                // big hit relative to what is left
-                Data.IsFtlDamaged = RandomExtended<bool>.Chance(probabilityFactor: 1, probabilitySpace: 9); // 10% chance
-            }
-        }
-    }
-
-    private void AssessNeedForRepair() {
+    protected override void AssessNeedForRepair() {
         if (Data.Health < 0.30F) {
             if (CurrentOrder == null || CurrentOrder.Directive != ShipDirective.Repair) {
                 var repairLoc = Data.Position - _transform.forward * 10F;
@@ -1112,34 +1120,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region IElementAttackableTarget Members
-
-    public override void TakeHit(CombatStrength attackerWeaponStrength) {
-        if (!IsAliveAndOperating) { return; }
-
-        CombatStrength damage = attackerWeaponStrength - Data.DefensiveStrength;
-        if (damage.Combined == Constants.ZeroF) {
-            D.Log("{0} has been hit but incurred no damage.", FullName);
-            return;
-        }
-        D.Log("{0} has been hit. Taking {1} damage.", FullName, damage.Combined);
-        bool isCmdHit = false;
-        bool isElementAlive = ApplyDamage(damage.Combined);
-        if (IsHQElement) {
-            isCmdHit = Command.__CheckForDamage(isElementAlive);
-        }
-        if (!isElementAlive) {
-            InitiateDeath();
-            return;
-        }
-
-        var hitAnimation = isCmdHit ? MortalAnimations.CmdHit : MortalAnimations.Hit;
-        ShowAnimation(hitAnimation);
-        AssessNeedForRepair();
-    }
-
-    #endregion
 
     #region ISelectable Members
 
@@ -1583,9 +1563,14 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         /// machine after a Return() from the Moving state. Otherwise, the ship keeps
         /// moving in the direction and at the speed it had when it exited Moving.
         /// </summary>
-        public void AllStop() {
+        /// <param name="instantStop">if set to <c>true</c> [instant stop].</param>
+        public void AllStop(bool instantStop = false) {
             if (ChangeSpeed(Speed.AllStop)) {
                 //D.Log("{0}.AllStop() called.", _ship.FullName);
+            }
+            if (instantStop) {
+                _ship.__rigidbody.velocity = Vector3.zero;
+                _ship.__rigidbody.angularVelocity = Vector3.zero;
             }
             if (IsAutoPilotEngaged) {
                 D.Warn("{0}.AutoPilot remains engaged.", _ship.FullName);
@@ -2006,9 +1991,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
             public ShipDestinationInfo(FleetCommandItem cmd, Vector3 fstOffset, bool isEnemy) {
                 Target = cmd;
                 _fstOffset = fstOffset;
-                if (isEnemy) {
+                if (isEnemy) {  // HACK
                     _closeEnoughDistanceRef = new Reference<float>(() => cmd.Radius + 5F + cmd.Data.UnitMaxWeaponsRange);
-                    //_closeEnoughDistanceRef = new Reference<float>(() => cmd.Radius + 5F + cmd.Data.MaxWeaponsRange);
                 }
                 else {
                     _closeEnoughDistance = cmd.Radius + 5F;
@@ -2020,9 +2004,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 Target = cmd;
                 _fstOffset = fstOffset;
                 var shipOrbitSlot = cmd.ShipOrbitSlot;
-                if (isEnemy) {
-                    _closeEnoughDistanceRef = new Reference<float>(() => shipOrbitSlot.OuterRadius + cmd.Data.UnitMaxWeaponsRange);
-                    //_closeEnoughDistanceRef = new Reference<float>(() => shipOrbitSlot.OuterRadius + cmd.Data.MaxWeaponsRange);
+                if (isEnemy) {  // HACK
+                    _closeEnoughDistanceRef = new Reference<float>(() => shipOrbitSlot.OuterRadius + 0.5F * cmd.Data.UnitMaxWeaponsRange);
                 }
                 else {
                     _closeEnoughDistance = shipOrbitSlot.OuterRadius;
@@ -2034,8 +2017,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 Target = facility;
                 _fstOffset = Vector3.zero;
                 var shipOrbitSlot = (facility.Command as IShipOrbitable).ShipOrbitSlot;
-                if (isEnemy) {
-                    _closeEnoughDistanceRef = new Reference<float>(() => shipOrbitSlot.OuterRadius + facility.Data.MaxWeaponsRange);
+                if (isEnemy) {  // HACK
+                    _closeEnoughDistanceRef = new Reference<float>(() => shipOrbitSlot.OuterRadius + 0.5F * facility.Data.MaxWeaponsRange);
                 }
                 else {
                     _closeEnoughDistance = shipOrbitSlot.OuterRadius;
@@ -2046,7 +2029,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
             public ShipDestinationInfo(ShipItem ship, bool isEnemy) {
                 Target = ship;
                 _fstOffset = Vector3.zero;
-                if (isEnemy) {
+                if (isEnemy) {  // HACK
                     _closeEnoughDistanceRef = new Reference<float>(() => ship.Radius + 5F + ship.Data.MaxWeaponsRange);
                 }
                 else {
@@ -2394,6 +2377,15 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         float calcVelocity = distanceTraveled / elapsedTime;
         D.Log("{0}.Rigidbody.velocity = {1} units/sec, ShipData.currentSpeed = {2} units/hour, Calculated Velocity = {3} units/sec.",
             FullName, rigidbody.velocity.magnitude, Data.CurrentSpeed, calcVelocity);
+    }
+
+    private void __ReportCollision(Collision collision) {
+        D.Warn("While {0}, {1} collided with {2} at a relative velocity of {3}. {4}Resulting velocity = {5} units/sec, angular velocity = {6} radians/sec. {4}Distance between objects = {7}, {8} collider size = {9}.",
+            CurrentState.GetName(), FullName, collision.transform.name, collision.relativeVelocity.magnitude, Constants.NewLine, __rigidbody.velocity, __rigidbody.angularVelocity, (Position - collision.transform.position).magnitude, collision.transform.name, collision.collider.bounds.size);
+
+        //foreach (ContactPoint contact in collision.contacts) {
+        //    Debug.DrawRay(contact.point, contact.normal, Color.white);
+        //}
     }
 
     #endregion

@@ -345,7 +345,11 @@ public class FacilityItem : AUnitElementItem {
         D.Log("{0}'s repair is 50% complete.", FullName);
         yield return new WaitForSeconds(3);
         Data.CurrentHitPoints = Data.MaxHitPoints;
+
         Data.Countermeasures.ForAll(cm => cm.IsOperational = true);
+        Data.Weapons.ForAll(w => w.IsOperational = true);
+        Data.Sensors.ForAll(s => s.IsOperational = true);
+
         D.Log("{0}'s repair is 100% complete.", FullName);
         StopAnimation(MortalAnimations.Repairing);
         Return();
@@ -402,7 +406,6 @@ public class FacilityItem : AUnitElementItem {
 
     void Dead_EnterState() {
         LogEvent();
-        OnDeath();
         ShowAnimation(MortalAnimations.Dying);
     }
 
@@ -437,63 +440,7 @@ public class FacilityItem : AUnitElementItem {
 
     #region Combat Support Methods
 
-    /// <summary>
-    /// Distributes the damage this element has just received evenly across all
-    /// other non-HQ facilities.
-    /// </summary>
-    /// <param name="damage">The damage.</param>
-    private void DistributeDamage(CombatStrength damage) {
-        // if facility being attacked is already dead, no damage can be taken by the Unit
-        if (!IsAliveAndOperating) { return; }
-
-        var elements = Command.Elements.Cast<FacilityItem>().ToList();  // copy to avoid enumeration modified while enumerating exception
-        // damage either all goes to HQ Element or is spread among all except the HQ Element
-        int elementCount = elements.Count();
-        float numElementsShareDamage = elementCount == 1 ? 1F : (float)(elementCount - 1);
-        float elementDamage = damage.Combined / numElementsShareDamage;
-
-        foreach (var element in elements) {
-            float damageToTake = elementDamage;
-            bool isElementDirectlyAttacked = false;
-            if (element == this) {
-                isElementDirectlyAttacked = true;
-            }
-            if (element.IsHQElement && elementCount > 1) {
-                // HQElements take 0 damage until they are the only facility left
-                damageToTake = Constants.ZeroF;
-            }
-            element.TakeDistributedDamage(damageToTake, isElementDirectlyAttacked);
-        }
-    }
-
-    /// <summary>
-    /// The method Facilities use to actually incur individual damage.
-    /// </summary>
-    /// <param name="damage">The damage to apply to this facility.</param>
-    /// <param name="isDirectlyAttacked">if set to <c>true</c> this facility is the one being directly attacked.</param>
-    private void TakeDistributedDamage(float damage, bool isDirectlyAttacked) {
-        D.Assert(IsAliveAndOperating, "{0} should not already be dead!".Inject(FullName));
-
-        bool isElementAlive = ApplyDamage(damage);
-
-        bool isCmdHit = false;
-        if (IsHQElement && isDirectlyAttacked) {
-            isCmdHit = Command.__CheckForDamage(isElementAlive);
-        }
-        if (!isElementAlive) {
-            InitiateDeath();
-            return;
-        }
-
-        if (isDirectlyAttacked) {
-            // only show being hit if this facility is the one being directly attacked
-            var hitAnimation = isCmdHit ? MortalAnimations.CmdHit : MortalAnimations.Hit;
-            ShowAnimation(hitAnimation);
-        }
-        AssessNeedForRepair();
-    }
-
-    private void AssessNeedForRepair() {
+    protected override void AssessNeedForRepair() {
         if (Data.Health < 0.30F) {
             if (CurrentOrder == null || CurrentOrder.Directive != FacilityDirective.Repair) {
                 OverrideCurrentOrder(FacilityDirective.Repair, retainSuperiorsOrder: true);
@@ -507,23 +454,79 @@ public class FacilityItem : AUnitElementItem {
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region IElementAttackableTarget Members
-
-    public override void TakeHit(CombatStrength attackerWeaponStrength) {
-        CombatStrength damage = attackerWeaponStrength - Data.DefensiveStrength;
-        if (damage.Combined == Constants.ZeroF) {
-            D.Log("{0} has been hit but incurred no damage.", FullName);
-            return;
-        }
-        D.Log("{0} has been hit. Distributing {1} damage.", FullName, damage.Combined);
-        DistributeDamage(damage);
-    }
-
-    #endregion
-
     #region INavigableTarget Members
 
     public override bool IsMobile { get { return false; } }
+
+    #endregion
+
+    #region Distributed Damage Archive
+
+    //public override void TakeHit(CombatStrength attackerWeaponStrength) {
+    //    CombatStrength damage = attackerWeaponStrength - Data.DefensiveStrength;
+    //    if (damage.Combined == Constants.ZeroF) {
+    //        D.Log("{0} has been hit but incurred no damage.", FullName);
+    //        return;
+    //    }
+    //    D.Log("{0} has been hit. Distributing {1} damage.", FullName, damage.Combined);
+    //    DistributeDamage(damage);
+    //}
+
+    /// <summary>
+    /// Distributes the damage this element has just received evenly across all
+    /// other non-HQ facilities.
+    /// </summary>
+    /// <param name="damage">The damage.</param>
+    //private void DistributeDamage(CombatStrength damage) {
+    //    // if facility being attacked is already dead, no damage can be taken by the Unit
+    //    if (!IsAliveAndOperating) { return; }
+
+    //    var elements = Command.Elements.Cast<FacilityItem>().ToList();  // copy to avoid enumeration modified while enumerating exception
+    //    // damage either all goes to HQ Element or is spread among all except the HQ Element
+    //    int elementCount = elements.Count();
+    //    float numElementsShareDamage = elementCount == 1 ? 1F : (float)(elementCount - 1);
+    //    float elementDamage = damage.Combined / numElementsShareDamage;
+
+    //    foreach (var element in elements) {
+    //        float damageToTake = elementDamage;
+    //        bool isElementDirectlyAttacked = false;
+    //        if (element == this) {
+    //            isElementDirectlyAttacked = true;
+    //        }
+    //        if (element.IsHQElement && elementCount > 1) {
+    //            // HQElements take 0 damage until they are the only facility left
+    //            damageToTake = Constants.ZeroF;
+    //        }
+    //        element.TakeDistributedDamage(damageToTake, isElementDirectlyAttacked);
+    //    }
+    //}
+
+    ///// <summary>
+    ///// The method Facilities use to actually incur individual damage.
+    ///// </summary>
+    ///// <param name="damage">The damage to apply to this facility.</param>
+    ///// <param name="isDirectlyAttacked">if set to <c>true</c> this facility is the one being directly attacked.</param>
+    //private void TakeDistributedDamage(float damage, bool isDirectlyAttacked) {
+    //    D.Assert(IsAliveAndOperating, "{0} should not already be dead!".Inject(FullName));
+
+    //    bool isElementAlive = ApplyDamage(damage);
+
+    //    bool isCmdHit = false;
+    //    if (IsHQElement && isDirectlyAttacked) {
+    //        isCmdHit = Command.__CheckForDamage(isElementAlive);
+    //    }
+    //    if (!isElementAlive) {
+    //        InitiateDeath();
+    //        return;
+    //    }
+
+    //    if (isDirectlyAttacked) {
+    //        // only show being hit if this facility is the one being directly attacked
+    //        var hitAnimation = isCmdHit ? MortalAnimations.CmdHit : MortalAnimations.Hit;
+    //        ShowAnimation(hitAnimation);
+    //    }
+    //    AssessNeedForRepair();
+    //}
 
     #endregion
 

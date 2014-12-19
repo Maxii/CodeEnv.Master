@@ -48,27 +48,10 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        /// <summary>
-        /// Gets or sets the current hit points of this UnitCommand.
-        /// NOTE: Like Health, this value will only reach 0 when the Unit's Health reaches 0.
-        /// </summary>
-        public override float CurrentHitPoints {
-            get {
-                return base.CurrentHitPoints;
-            }
-            set {
-                value = Mathf.Clamp(value, MaxHitPoints * 0.5F, MaxHitPoints);  // TODO externalize 0.5?
-                base.CurrentHitPoints = value;
-            }
-        }
+        // AItemData.Health, CurrentHitPts and MaxHitPts are all for this CommandData, not for the Unit as a whole.
+        // This CurrentHitPts value is managed by the AUnitCommandItem.ApplyDamage() override which currently 
+        // doesn't let it drop below 50% of MaxHitPts. Health is directly derived from changes in CurrentHitPts.
 
-        /// <summary>
-        /// Readonly. Indicates the health of this Unit's Command, a value between 0 and 1.
-        /// NOTE: Like CurrentHitPoints, this value will only reach 0 when the Unit's overall UnitHealth reaches 0.
-        /// </summary>
-        public override float Health {
-            get { return base.Health; }
-        }
 
         private int _currentCmdEffectiveness;
         public int CurrentCmdEffectiveness {  // TODO make use of this
@@ -144,7 +127,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float UnitHealth {
             get {
-                //D.Log("Health {0}, CurrentHitPoints {1}, MaxHitPoints {2}.", _health, _currentHitPoints, _maxHitPoints);
                 return _unitHealth;
             }
             private set {
@@ -162,7 +144,6 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="unitName">Name of this Unit, eg. the FleetName for a FleetCommand.</param>
         /// <param name="cmdMaxHitPoints">The maximum hit points of this Command staff.</param>
         public ACommandData(string unitName, float cmdMaxHitPoints)
-            //: base(CommonTerms.Command, cmdMaxHitPoints, mass: 0.1F, optionalParentName: unitName) {
             : base(CommonTerms.Command, mass: 0.1F, maxHitPts: cmdMaxHitPoints) {
             ParentName = unitName;
             // A command's UnitMaxHitPoints are constructed from the sum of the elements
@@ -196,21 +177,19 @@ namespace CodeEnv.Master.GameContent {
 
         private void OnUnitCurrentHitPointsChanged() {
             var unitHealth = UnitMaxHitPoints > Constants.ZeroF ? UnitCurrentHitPoints / UnitMaxHitPoints : Constants.ZeroF;
-            //D.Log("{0} attempting to set UnitHealth to {1}. UnitCurrentHitPoints = {2}, UnitMaxHitPoints = {3}.", Name, unitHealth, UnitCurrentHitPoints, UnitMaxHitPoints);
             UnitHealth = unitHealth;
         }
 
         /// <summary>
         /// Called when the Unit's health changes.
-        /// NOTE: This is a workaround that sets the UnitCommand's CurrentHitPoints 
-        /// and Health to 0 when UnitHealth reaches 0.. It does so by changing the UnitCommand's CurrentHitPoints by directly
-        /// changing the base value, bypassing the override that holds the value to a predetermined minimum. This is not
-        /// used to determine the UnitCommand's death. It is done to keep the values of a UnitCommand's CurrentHitPoints 
+        /// NOTE: This sets the UnitCommand's CurrentHitPoints (and Health) to 0 when UnitHealth reaches 0. 
+        /// This is not done to initiate the UnitCommand's death, but to keep the values of a UnitCommand's CurrentHitPoints 
         /// and Health consistent with the way other Item's values are treated for any future subscribers to health changes.
         /// </summary>
         private void OnUnitHealthChanged() {
+            //D.Log("{0}: UnitHealth {1}, UnitCurrentHitPoints {2}, UnitMaxHitPoints {3}.", FullName, _unitHealth, UnitCurrentHitPoints, UnitMaxHitPoints);
             if (UnitHealth <= Constants.ZeroF) {
-                base.CurrentHitPoints -= MaxHitPoints;  // initiate destruction of Cmd item too
+                CurrentHitPoints -= MaxHitPoints;
             }
         }
 

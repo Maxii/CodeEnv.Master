@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -24,21 +25,20 @@ using UnityEngine;
 /// Singleton factory that makes instances of Sectors.
 /// </summary>
 public class SectorFactory : AGenericSingleton<SectorFactory> {
+    // Note: no reason to dispose of _instance during scene transition as all its references persist across scenes
 
     private GameObject _sectorPrefab;
-    private GameObject _sectorFolder;
 
     private SectorFactory() {
         Initialize();
     }
 
     protected override void Initialize() {
-        _sectorFolder = SectorsFolder.Instance.gameObject;
         _sectorPrefab = RequiredPrefabs.Instance.sector.gameObject;
     }
 
     public SectorItem MakeInstance(Index3D sectorIndex, Vector3 worldLocation) {
-        GameObject sectorGO = NGUITools.AddChild(_sectorFolder, _sectorPrefab);
+        GameObject sectorGO = UnityUtility.AddChild(SectorsFolder.Instance.Folder.gameObject, _sectorPrefab);
         // sector.Awake() runs immediately here, then disables itself
         SectorItem sector = sectorGO.GetSafeMonoBehaviourComponent<SectorItem>();
 

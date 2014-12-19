@@ -25,6 +25,7 @@ using UnityEngine;
 /// Singleton factory that makes miscellaneous instances that aren't made by either UnitFactory or SystemFactory.
 /// </summary>
 public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory {
+    // Note: no reason to dispose of _instance during scene transition as all its references persist across scenes
 
     private Orbiter _orbiterPrefab;
     private MovingOrbiter _movingOrbiterPrefab;

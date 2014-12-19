@@ -53,11 +53,13 @@ namespace CodeEnv.Master.Common {
         protected abstract void Initialize();
 
         /// <summary>
-        /// Clients should call this if and when they Dispose of T.
+        /// Clients should call this if and when they Dispose of T. 
+        /// WARNING: T should be disposed of when it holds any reference to an object that does not persist across scenes
         /// </summary>
         protected void OnDispose() {
             _instance = null;
         }
+
     }
 
 }

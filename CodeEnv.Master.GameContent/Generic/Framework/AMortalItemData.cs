@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -55,10 +55,7 @@ namespace CodeEnv.Master.GameContent {
         /// Readonly. Indicates the health of the item, a value between 0 and 1.
         /// </summary>
         public virtual float Health {
-            get {
-                //D.Log("Health {0}, CurrentHitPoints {1}, MaxHitPoints {2}.", _health, _currentHitPoints, _maxHitPoints);
-                return _health;
-            }
+            get { return _health; }
             private set {
                 value = Mathf.Clamp01(value);
                 SetProperty<float>(ref _health, value, "Health", OnHealthChanged);
@@ -114,7 +111,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnCountermeasureIsOperationalChanged(Countermeasure cm) {
-            D.Warn("{0}'s {1}.IsOperational is now {2}.", FullName, cm.Name, cm.IsOperational);
+            D.Log("{0}'s {1}.IsOperational is now {2}.", FullName, cm.Name, cm.IsOperational);
             RecalcDefensiveStrength();
         }
 
@@ -134,7 +131,9 @@ namespace CodeEnv.Master.GameContent {
             Health = MaxHitPoints > Constants.ZeroF ? CurrentHitPoints / MaxHitPoints : Constants.ZeroF;
         }
 
-        protected virtual void OnHealthChanged() { }
+        protected virtual void OnHealthChanged() {
+            D.Log("{0}: Health {1}, CurrentHitPoints {2}, MaxHitPoints {3}.", FullName, _health, CurrentHitPoints, MaxHitPoints);
+        }
 
         protected virtual void Cleanup() {
             Unsubscribe();

@@ -101,7 +101,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="futureDate">The date.</param>
         /// <returns></returns>
         private static IEnumerator WaitForDate(GameDate futureDate) {
-            D.Assert(futureDate >= GameTime.Instance.CurrentDate);
+            if (futureDate <= GameTime.Instance.CurrentDate) {
+                // IMPROVE current date can exceed a future date of hours when game speed high?
+                D.Warn("Future date {0} should be > Current date {1}.", futureDate, GameTime.Instance.CurrentDate);
+            }
             while (futureDate > GameTime.Instance.CurrentDate) {
                 yield return null;
             }

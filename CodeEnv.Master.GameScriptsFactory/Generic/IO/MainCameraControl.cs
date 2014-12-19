@@ -245,9 +245,9 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private void Subscribe() {
         _subscribers = new List<IDisposable>();
         _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
-        _subscribers.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(pm => pm.IsCameraRollEnabled, OnCameraRollEnabledChanged));
-        _subscribers.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(pm => pm.IsResetOnFocusEnabled, OnResetOnFocusEnabledChanged));
-        _subscribers.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(pm => pm.IsZoomOutOnCursorEnabled, OnZoomOutOnCursorEnabledChanged));
+        _subscribers.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsCameraRollEnabled, OnCameraRollEnabledChanged));
+        _subscribers.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsResetOnFocusEnabled, OnResetOnFocusEnabledChanged));
+        _subscribers.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsZoomOutOnCursorEnabled, OnZoomOutOnCursorEnabledChanged));
         _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsRunning, OnIsRunningChanged));
         //_subscribers.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, OnViewModeChanged));
     }
@@ -348,6 +348,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             dummyTarget = new GameObject(dummyTargetName);
             dummyTarget.AddComponent<SphereCollider>();
             dummyTarget.AddComponent<DummyTargetManager>();
+            UnityUtility.AttachChildToParent(dummyTarget, DynamicObjectsFolder.Instance.Folder.gameObject);
         }
         else {
             dummyTarget = NGUITools.AddChild(DynamicObjectsFolder.Instance.Folder.gameObject, dummyTargetPrefab.gameObject);
@@ -398,6 +399,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private bool _restoredGameFlag = false;
     private void OnGameStateChanged() {
         GameState state = _gameMgr.CurrentState;
+        //D.Log("{0}{1} received GameState changed to {2}.", GetType().Name, InstanceCount, state.GetName());
         switch (state) {
             case GameState.Restoring:
                 // only saved games that are being restored enter Restoring state
@@ -1410,10 +1412,12 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// <param name="direction">The direction.</param>
     /// <returns>true if the DummyTarget was placed in a new location. False if it was not moved since it was already there.</returns>
     private bool PlaceDummyTargetAtUniverseEdgeInDirection(Vector3 direction) {
+        //D.Log("{0}{1}.PlaceDummyTargetAtUniverseEdgeInDirection({2}) called.", GetType().Name, InstanceCount, direction);
         direction.ValidateNormalized();
         Ray ray = new Ray(Position, direction);
         RaycastHit targetHit;
         if (Physics.Raycast(ray, out targetHit, Mathf.Infinity, _dummyTargetOnlyMask.value)) {
+            D.Assert(_dummyTarget != null);
             if (_dummyTarget != targetHit.transform) {
                 D.Error("Camera should find DummyTarget, but it is: " + targetHit.transform.name);
                 return false;

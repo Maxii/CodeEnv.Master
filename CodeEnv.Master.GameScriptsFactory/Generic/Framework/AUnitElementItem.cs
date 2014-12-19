@@ -16,6 +16,8 @@
 
 // default namespace
 
+using System;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
@@ -63,6 +65,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     private Color _hiddenMeshColor = GameColor.Clear.ToUnityColor();
     private Renderer _meshRenderer;
     private Animation _animation;
+    private ITrackingWidget _icon;
 
     #region Initialization
 
@@ -81,11 +84,42 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     protected override void Subscribe() {
         base.Subscribe();
         _subscribers.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
+        _subscribers.Add(PlayerPrefsManager.Instance.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsElementIconsEnabled, OnElementIconsEnabledChanged));
     }
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
         //TODO: Weapon values don't change but weapons do so I need to know when that happens
+    }
+
+    protected override void InitializeViewMembersOnDiscernible() {
+        _meshRenderer = gameObject.GetComponentInChildren<Renderer>();
+        _meshRenderer.castShadows = true;
+        _meshRenderer.receiveShadows = true;
+        _originalMeshColor_Main = _meshRenderer.material.GetColor(UnityConstants.MaterialColor_Main);
+        _originalMeshColor_Specular = _meshRenderer.material.GetColor(UnityConstants.MaterialColor_Specular);
+        _meshRenderer.enabled = true;
+
+        _animation = _meshRenderer.gameObject.GetComponent<Animation>();
+        _animation.cullingType = AnimationCullingType.BasedOnRenderers; // aka, disabled when not visible
+        _animation.enabled = true;
+
+        var meshCameraLosChgdListener = _meshRenderer.gameObject.GetSafeInterface<ICameraLosChangedListener>();
+        meshCameraLosChgdListener.onCameraLosChanged += (go, inCameraLOS) => InCameraLOS = inCameraLOS;
+        meshCameraLosChgdListener.enabled = true;
+
+        if (PlayerPrefsManager.Instance.IsElementIconsEnabled) {
+            InitializeIcon();
+        }
+    }
+
+    private void InitializeIcon() {
+        D.Assert(PlayerPrefsManager.Instance.IsElementIconsEnabled);
+        _icon = TrackingWidgetFactory.Instance.CreateConstantSizeTrackingSprite(this, new Vector2(12, 12), WidgetPlacement.Below);
+        _icon.Set("FleetIcon_Unknown");  // HACK 
+        ChangeIconColor(Owner.Color);
+        //D.Log("{0} initialized its Icon.", FullName);
+        // icon enabled state controlled by _icon.Show()
     }
 
     #endregion
@@ -105,6 +139,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     /// <param name="unitContainer">The unit container.</param>
     protected internal virtual void AttachElementAsChildOfUnitContainer(Transform unitContainer) {
         _transform.parent = unitContainer;
+    }
+
+    protected override void OnOwnerChanged() {
+        base.OnOwnerChanged();
+        ChangeIconColor(Owner.Color);
     }
 
     private void OnGameSpeedChanged() {
@@ -191,27 +230,24 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
 
     #region View Methods
 
-    protected override void InitializeViewMembersOnDiscernible() {
-        _meshRenderer = gameObject.GetComponentInChildren<Renderer>();
-        _meshRenderer.castShadows = true;
-        _meshRenderer.receiveShadows = true;
-        _originalMeshColor_Main = _meshRenderer.material.GetColor(UnityConstants.MaterialColor_Main);
-        _originalMeshColor_Specular = _meshRenderer.material.GetColor(UnityConstants.MaterialColor_Specular);
-        _meshRenderer.enabled = true;
-
-        _animation = _meshRenderer.gameObject.GetComponent<Animation>();
-        _animation.cullingType = AnimationCullingType.BasedOnRenderers; // aka, disabled when not visible
-        _animation.enabled = true;
-
-        var meshCameraLosChgdListener = _meshRenderer.gameObject.GetSafeInterface<ICameraLosChangedListener>();
-        meshCameraLosChgdListener.onCameraLosChanged += (go, inCameraLOS) => InCameraLOS = inCameraLOS;
-        meshCameraLosChgdListener.enabled = true;
-    }
-
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
         ShowMesh(IsDiscernible);
         _animation.enabled = IsDiscernible;
+        ShowIcon(IsDiscernible);
+    }
+
+    private void OnElementIconsEnabledChanged() {
+        if (_icon != null) {
+            ShowIcon(false); // accessing destroy gameObject error if we are showing it while destroying it
+            UnityUtility.DestroyIfNotNullOrAlreadyDestroyed<ITrackingWidget>(_icon);
+            _icon = null;
+        }
+
+        if (PlayerPrefsManager.Instance.IsElementIconsEnabled && _isViewMembersOnDiscernibleInitialized) {
+            InitializeIcon();
+            ShowIcon(IsDiscernible);
+        }
     }
 
     private void ShowMesh(bool toShow) {
@@ -224,6 +260,19 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
             _meshRenderer.material.SetColor(UnityConstants.MaterialColor_Main, _hiddenMeshColor);
             _meshRenderer.material.SetColor(UnityConstants.MaterialColor_Specular, _hiddenMeshColor);
             // TODO audio off goes here
+        }
+    }
+
+    private void ChangeIconColor(GameColor color) {
+        if (_icon != null) {
+            _icon.Color = color;
+        }
+    }
+
+    private void ShowIcon(bool toShow) {
+        if (_icon != null) {
+            //D.Log("{0}.ShowIcon({1}) called.", FullName, toShow);
+            _icon.Show(toShow);
         }
     }
 
@@ -351,14 +400,30 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
         }
     }
 
+    protected override void AssessCripplingDamageToEquipment(float damageSeverity) {
+        base.AssessCripplingDamageToEquipment(damageSeverity);
+        var operationalWeapons = Data.Weapons.Where(w => w.IsOperational);
+        operationalWeapons.ForAll(w => w.IsOperational = RandomExtended<bool>.Chance(damageSeverity));
+        var operationalSensors = Data.Sensors.Where(s => s.IsOperational);
+        operationalSensors.ForAll(s => s.IsOperational = RandomExtended<bool>.Chance(damageSeverity));
+    }
+
     /// <summary>
-    /// Called when this weapon is ready to fire on a target in range.
+    /// Called when this weapon is ready to fire on an enemy target in range.
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     void OnWeaponReady(Weapon weapon) { RelayToCurrentState(weapon); }
 
+    /// <summary>
+    /// Fires the provided weapon at an enemy target, returning <c>true</c> if the weapon
+    /// was fired. If a target is provided, then that target is fired on if in range, returning 
+    /// <c>false</c> if not.
+    /// </summary>
+    /// <param name="weapon">The weapon.</param>
+    /// <param name="target">An optional designated target.</param>
+    /// <returns></returns>
     protected bool Fire(Weapon weapon, IElementAttackableTarget target = null) {
-        if (weapon.Fire(target)) {
+        if (weapon.FireOnEnemyTarget(target)) {
             ShowAnimation(MortalAnimations.Attacking);
             return true;
         }
@@ -366,10 +431,48 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
         return false;
     }
 
+    protected abstract void AssessNeedForRepair();
+
+    #endregion
+
+    #region Cleanup
+
+    // no need to destroy _icon as it is a child of this element
+
     #endregion
 
     // subscriptions contained completely within this gameobject (both subscriber
     // and subscribee) donot have to be cleaned up as all instances are destroyed
+
+    #region IElementAttackableTarget Members
+
+    public override void TakeHit(CombatStrength attackerWeaponStrength) {
+        if (!IsAliveAndOperating) { return; }
+
+        CombatStrength damageSustained = attackerWeaponStrength - Data.DefensiveStrength;
+        if (damageSustained.Combined == Constants.ZeroF) {
+            D.Log("{0} has been hit but incurred no damage.", FullName);
+            return;
+        }
+        D.Log("{0} has been hit. Taking {1:0.#} damage.", FullName, damageSustained.Combined);
+        bool isCmdHit = false;
+        float damageSeverity;
+        bool isElementAlive = ApplyDamage(damageSustained, out damageSeverity);
+        if (!isElementAlive) {
+            InitiateDeath();    // should immediately propogate thru to Cmd's alive status
+        }
+        if (IsHQElement && Command.IsAliveAndOperating) {
+            isCmdHit = Command.__CheckForDamage(isElementAlive, damageSustained, damageSeverity);
+        }
+
+        if (isElementAlive) {
+            var hitAnimation = isCmdHit ? MortalAnimations.CmdHit : MortalAnimations.Hit;
+            ShowAnimation(hitAnimation);
+            AssessNeedForRepair();
+        }
+    }
+
+    #endregion
 
     #region ICameraTargetable Members
 

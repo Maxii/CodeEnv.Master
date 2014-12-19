@@ -65,13 +65,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     private WidgetPlacement _placement = WidgetPlacement.Above;
     public WidgetPlacement Placement {
         get { return _placement; }
-        set {
-            //if (Placement == value) {
-            //    D.WarnContext("{0} is attempting to change Placement to same value {1}.".Inject(GetType().Name, Placement.GetName()), this);
-            //    return;
-            //}
-            SetProperty<WidgetPlacement>(ref _placement, value, "Placement", OnPlacementChanged);
-        }
+        set { SetProperty<WidgetPlacement>(ref _placement, value, "Placement", OnPlacementChanged); }
     }
 
     public Transform WidgetTransform { get { return Widget.transform; } }
@@ -212,7 +206,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     private void AlignWidgetPivotTo(WidgetPlacement placement) {
         var pivot = UIWidget.Pivot.Center;
 
-        switch (_placement) {
+        switch (placement) {
             case WidgetPlacement.Above:
                 pivot = UIWidget.Pivot.Bottom;
                 break;
@@ -241,7 +235,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
                 break;
             case WidgetPlacement.None:
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_placement));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(placement));
         }
         Widget.rawPivot = pivot;
     }
@@ -272,7 +266,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     }
 
     private void OnPlacementChanged() {
-        D.Log("Placement changed to {0}.", Placement.GetName());
+        //D.Log("Placement changed to {0}.", Placement.GetName());
         RefreshWidgetValues();
     }
 

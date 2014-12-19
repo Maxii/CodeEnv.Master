@@ -35,9 +35,9 @@ namespace CodeEnv.Master.GameContent {
 
         GameColor Color { get; }
 
-        DiplomaticRelations GetRelations(IPlayer player);
+        DiplomaticRelationship GetRelations(IPlayer player);
 
-        void SetRelations(IPlayer player, DiplomaticRelations relation);
+        void SetRelations(IPlayer player, DiplomaticRelationship relation);
 
         //bool IsRelationship(IPlayer player, DiplomaticRelations relation);
 
@@ -47,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="player">The player.</param>
         /// <param name="relations">The relations.</param>
         /// <returns></returns>
-        bool IsRelationship(IPlayer player, params DiplomaticRelations[] relations);
+        bool IsRelationship(IPlayer player, params DiplomaticRelationship[] relations);
 
         /// <summary>
         /// Indicates whether the designated player is the enemy of this player.

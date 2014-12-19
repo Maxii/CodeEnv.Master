@@ -23,6 +23,8 @@ namespace CodeEnv.Master.Common {
 
         public int QualitySetting { get; set; }
 
+        public bool IsElementIconsEnabled { get; set; }
+
         public GraphicsOptionSettings() { }
 
         public override string ToString() {

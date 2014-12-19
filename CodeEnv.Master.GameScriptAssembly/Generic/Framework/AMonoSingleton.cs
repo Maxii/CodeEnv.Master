@@ -139,7 +139,6 @@ public abstract class AMonoSingleton<T> : AMonoBase, IInstanceCount where T : AM
 
     #endregion
 
-
     #region Cleanup
 
     protected sealed override void OnDestroy() {
@@ -148,6 +147,10 @@ public abstract class AMonoSingleton<T> : AMonoBase, IInstanceCount where T : AM
             return;
         }
         Cleanup();
+        if (!IsPersistentAcrossScenes) {
+            // Warning: nulling the static _instance of Singletons that persist across scenes will affect both copies of the singleton
+            _instance = null;
+        }
     }
 
     protected override void OnApplicationQuit() {

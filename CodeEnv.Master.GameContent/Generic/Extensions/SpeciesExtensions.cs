@@ -43,6 +43,7 @@ namespace CodeEnv.Master.GameContent {
                 case Species.RomulanLike:
                     return 1.0F;
                 case Species.None:
+                    return 1.0F;    // allows proper return for items with no owner
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(species));
             }
@@ -65,6 +66,7 @@ namespace CodeEnv.Master.GameContent {
                 case Species.RomulanLike:
                     return 1.0F;
                 case Species.None:
+                    return 1.0F;    // allows proper return for items with no owner
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(species));
             }

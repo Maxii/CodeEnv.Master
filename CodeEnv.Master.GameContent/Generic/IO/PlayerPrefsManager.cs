@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// Windows Web players: %APPDATA%\Unity\WebPlayerPrefs
     /// </summary>
     [SerializeAll]
-    public class PlayerPrefsManager : APropertyChangeTracking, IInstanceCount {
+    public class PlayerPrefsManager : AGenericSingleton<PlayerPrefsManager>, IInstanceCount {
 
         private string _universeSizeKey = "Universe Size Preference";
         private string _playerRaceKey = "Player Race Preference";
@@ -37,8 +37,8 @@ namespace CodeEnv.Master.GameContent {
         private string _isCameraRollEnabledKey = "Camera Roll Option";
         private string _isResetOnFocusEnabledKey = "Reset On Focus Option";
         private string _isPauseAfterLoadEnabledKey = "Paused On Load Option";
+        private string _isElementIconsEnabledKey = "Element Icons Option";
         private string _qualitySettingKey = "Quality Setting Option";
-
 
         // notifications not needed as no change will be allowed to affect an existing game instance    // TODO
         public UniverseSize UniverseSize { get; private set; }
@@ -66,6 +66,12 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<bool>(ref _isResetOnFocusEnabled, value, "IsResetOnFocusEnabled"); }
         }
 
+        private bool _isElementIconsEnabled;
+        public bool IsElementIconsEnabled {
+            get { return _isElementIconsEnabled; }
+            set { SetProperty<bool>(ref _isElementIconsEnabled, value, "IsElementIconsEnabled"); }
+        }
+
         private int _qualitySetting;
         public int QualitySetting {
             get { return _qualitySetting; }
@@ -75,18 +81,6 @@ namespace CodeEnv.Master.GameContent {
         private IGameManager _gameMgr;
         private GeneralSettings _generalSettings;
 
-        #region SingletonPattern
-        private static readonly PlayerPrefsManager instance;
-
-        /// <summary>
-        /// Explicit static constructor that enables lazy instantiation by telling C# compiler
-        /// not to mark type as beforefieldinit.
-        /// </summary>
-        static PlayerPrefsManager() {
-            // try, catch and resolve any possible exceptions here
-            instance = new PlayerPrefsManager();
-        }
-
         /// <summary>
         /// Private constructor that prevents the creation of another externally requested instance of <see cref="PlayerPrefsManager"/>.
         /// </summary>
@@ -94,16 +88,10 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        /// <summary>Returns the singleton instance of this class.</summary>
-        public static PlayerPrefsManager Instance {
-            get { return instance; }
-        }
-        #endregion
-
         ///<summary>
         /// Called once from the constructor, this does all required initialization
         /// </summary>
-        private void Initialize() {
+        protected override void Initialize() {
             IncrementInstanceCounter();
             _generalSettings = GeneralSettings.Instance;
             _gameMgr = References.GameManager;
@@ -135,6 +123,7 @@ namespace CodeEnv.Master.GameContent {
 
         public void RecordGraphicsOptions(GraphicsOptionSettings settings) {
             QualitySetting = settings.QualitySetting;
+            IsElementIconsEnabled = settings.IsElementIconsEnabled;
         }
 
         /// <summary>
@@ -159,11 +148,12 @@ namespace CodeEnv.Master.GameContent {
                 encryptedStringValue = Encrypt(PlayerColor.GetName());
                 PlayerPrefs.SetString(_playerColorKey, encryptedStringValue);
             }
-            //D.Log("At Store, PlayerPrefsMgr.IsZoomOutOnCursorEnabled = " + IsZoomOutOnCursorEnabled);
             PlayerPrefs.SetString(_isZoomOutOnCursorEnabledKey, Encrypt(IsZoomOutOnCursorEnabled.ToString()));
             PlayerPrefs.SetString(_isCameraRollEnabledKey, Encrypt(IsCameraRollEnabled.ToString()));
             PlayerPrefs.SetString(_isResetOnFocusEnabledKey, Encrypt(IsResetOnFocusEnabled.ToString()));
             PlayerPrefs.SetString(_isPauseAfterLoadEnabledKey, Encrypt(IsPauseOnLoadEnabled.ToString()));
+            PlayerPrefs.SetString(_isElementIconsEnabledKey, Encrypt(IsElementIconsEnabled.ToString()));
+            //D.Log("At Store, PlayerPrefsMgr.IsElementIconsEnabled = " + IsElementIconsEnabled);
 
             PlayerPrefs.SetInt(_qualitySettingKey, Encrypt(QualitySetting));
             PlayerPrefs.Save();
@@ -196,6 +186,7 @@ namespace CodeEnv.Master.GameContent {
             IsZoomOutOnCursorEnabled = (PlayerPrefs.HasKey(_isZoomOutOnCursorEnabledKey)) ? bool.Parse(Decrypt(PlayerPrefs.GetString(_isZoomOutOnCursorEnabledKey))) : true;
             IsCameraRollEnabled = (PlayerPrefs.HasKey(_isCameraRollEnabledKey)) ? bool.Parse(Decrypt(PlayerPrefs.GetString(_isCameraRollEnabledKey))) : false;
             IsResetOnFocusEnabled = (PlayerPrefs.HasKey(_isResetOnFocusEnabledKey)) ? bool.Parse(Decrypt(PlayerPrefs.GetString(_isResetOnFocusEnabledKey))) : true;
+            IsElementIconsEnabled = (PlayerPrefs.HasKey(_isElementIconsEnabledKey)) ? bool.Parse(Decrypt(PlayerPrefs.GetString(_isElementIconsEnabledKey))) : true;
             QualitySetting = (PlayerPrefs.HasKey(_qualitySettingKey)) ? Decrypt(PlayerPrefs.GetInt(_qualitySettingKey)) : QualitySettings.GetQualityLevel();
         }
 
@@ -213,8 +204,8 @@ namespace CodeEnv.Master.GameContent {
         private float Decrypt(float value) { return value; }
         private int Decrypt(int value) { return value; }
 
-        void OnDestroy() {
-            Dispose();
+        private void Cleanup() {
+            Unsubscribe();
         }
 
         private void Unsubscribe() {
@@ -249,7 +240,7 @@ namespace CodeEnv.Master.GameContent {
 
             if (isDisposing) {
                 // free managed resources here including unhooking events
-                Unsubscribe();
+                Cleanup();
             }
             // free unmanaged resources here
             alreadyDisposed = true;
@@ -291,6 +282,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
+
     }
 }
 

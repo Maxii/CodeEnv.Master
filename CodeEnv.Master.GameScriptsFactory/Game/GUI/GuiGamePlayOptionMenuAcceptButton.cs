@@ -77,9 +77,9 @@ public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
     protected override void OnLeftClick() {
         GamePlayOptionSettings settings = new GamePlayOptionSettings() {
             IsCameraRollEnabled = _isCameraRollEnabled,
-            IsPauseOnLoadEnabled = _isPauseOnLoadEnabled,
-            IsResetOnFocusEnabled = _isResetOnFocusEnabled,
             IsZoomOutOnCursorEnabled = _isZoomOutOnCursorEnabled,
+            IsResetOnFocusEnabled = _isResetOnFocusEnabled,
+            IsPauseOnLoadEnabled = _isPauseOnLoadEnabled,
             GameSpeedOnLoad = _gameSpeedOnLoad
         };
         ValidateState();

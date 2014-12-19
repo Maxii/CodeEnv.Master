@@ -30,17 +30,17 @@ public class GuiDateReadout : AGuiLabelReadoutBase {
         get { return "The current date in the game."; }
     }
 
-    private IList<IDisposable> _subscribers;
+    private GameTime _gameTime;
 
     protected override void Awake() {
         base.Awake();
+        _gameTime = GameTime.Instance;
         Subscribe();
     }
 
     private void Subscribe() {
-        _subscribers = new List<IDisposable>();
         //D.Log("{0} subscribing to {1}.onDateChanged.", GetType().Name, typeof(GameTime).Name);
-        GameTime.Instance.onDateChanged += OnDateChanged;
+        _gameTime.onDateChanged += OnDateChanged;
     }
 
     private void OnDateChanged(GameDate newDate) {
@@ -52,9 +52,7 @@ public class GuiDateReadout : AGuiLabelReadoutBase {
     }
 
     private void Unsubscribe() {
-        _subscribers.ForAll<IDisposable>(s => s.Dispose());
-        _subscribers.Clear();
-        GameTime.Instance.onDateChanged -= OnDateChanged;
+        _gameTime.onDateChanged -= OnDateChanged;
     }
 
     public override string ToString() {

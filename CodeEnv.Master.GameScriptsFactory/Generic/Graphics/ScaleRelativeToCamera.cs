@@ -40,6 +40,7 @@ public class ScaleRelativeToCamera : AMonoBase {
         _initialScale = _transform.localScale;
         UpdateRate = updateRate;
         CheckForUIPanelPresenceInParents();
+        enabled = false;
     }
 
     private void CheckForUIPanelPresenceInParents() {

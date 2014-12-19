@@ -113,7 +113,7 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        EnableParentOrbiter(true);
+        PlaceParentOrbiterInMotion(true);
         CurrentState = PlanetoidState.Idling;
     }
 
@@ -125,11 +125,11 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
     protected override void OnDeath() {
         base.OnDeath();
         collider.enabled = false;
-        EnableParentOrbiter(false);
+        PlaceParentOrbiterInMotion(false);
     }
 
-    private void EnableParentOrbiter(bool toEnable) {
-        _transform.parent.GetInterface<IOrbiter>().enabled = toEnable;
+    private void PlaceParentOrbiterInMotion(bool toOrbit) {
+        _transform.parent.GetInterface<IOrbiter>().IsOrbiterInMotion = toOrbit;
     }
 
     protected override void OnOwnerChanging(IPlayer newOwner) {
@@ -168,7 +168,7 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
             case PlanetoidState.Idling:
                 break;
             case PlanetoidState.Dead:
-                OnDeath();
+                //OnDeath();
                 ShowAnimation(MortalAnimations.Dying);
                 break;
             case PlanetoidState.None:
@@ -213,9 +213,13 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         LogEvent();
         CombatStrength damage = attackerWeaponStrength - Data.DefensiveStrength;
         if (damage.Combined == Constants.ZeroF) {
+            D.Log("{0} has been hit but incurred no damage.", FullName);
             return;
         }
-        bool isAlive = ApplyDamage(damage.Combined);
+        D.Log("{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Combined);
+
+        float unusedDamageSeverity;
+        bool isAlive = ApplyDamage(damage, out unusedDamageSeverity);
         if (!isAlive) {
             InitiateDeath();
             return;
@@ -224,6 +228,26 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
     }
 
     #endregion
+    //#region IElementAttackableTarget Members
+
+    //public override void TakeHit(CombatStrength attackerWeaponStrength) {
+    //    if (!IsAliveAndOperating) {
+    //        return;
+    //    }
+    //    LogEvent();
+    //    CombatStrength damage = attackerWeaponStrength - Data.DefensiveStrength;
+    //    if (damage.Combined == Constants.ZeroF) {
+    //        return;
+    //    }
+    //    bool isAlive = ApplyDamage(damage.Combined);
+    //    if (!isAlive) {
+    //        InitiateDeath();
+    //        return;
+    //    }
+    //    ShowAnimation(MortalAnimations.Hit);
+    //}
+
+    //#endregion
 
     #region IShipOrbitable Members
 

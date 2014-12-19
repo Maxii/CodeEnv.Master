@@ -87,7 +87,7 @@
     <Compile Include="Generic\Graphics\IColoredTextList.cs" />
     <Compile Include="Generic\IO\AValuesHelper.cs" />
     <Compile Include="Generic\Graphics\GameColor.cs" />
-    <Compile Include="Game\Gameplay\DiplomaticRelations.cs" />
+    <Compile Include="Game\Gameplay\DiplomaticRelationship.cs" />
     <Compile Include="Generic\Framework\DisposePropertyChangingSubscription.cs" />
     <Compile Include="Generic\IO\UnityMouseButton.cs" />
     <Compile Include="Generic\IO\NguiMouseButton.cs" />

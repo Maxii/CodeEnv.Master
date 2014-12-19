@@ -31,7 +31,8 @@ public abstract class AGuiTooltip : AMonoBase {
     protected override void Awake() {
         base.Awake();
         if (_tooltipHasContent = Utility.CheckForContent(TooltipContent)) {
-            UnityUtility.ValidateComponentPresence<Collider2D>(gameObject);
+            UnityUtility.ValidateComponentPresence<Collider>(gameObject);
+            //UnityUtility.ValidateComponentPresence<Collider2D>(gameObject);   // OPTIMIZE use 2D Box Colliders for UI rather than 3D when Box2D Physics bug fixed
         }
     }
 

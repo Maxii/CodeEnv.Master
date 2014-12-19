@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
 
         #region IPlayer Members
 
-        public override void SetRelations(IPlayer player, DiplomaticRelations relation) {
+        public override void SetRelations(IPlayer player, DiplomaticRelationship relation) {
             throw new NotImplementedException("SetRelations() is not implemented in {0}.".Inject(GetType().Name));
         }
 

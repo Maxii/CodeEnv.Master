@@ -34,7 +34,10 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         float GetSpeedOfBodyInOrbit(float radius);
 
-        bool enabled { get; set; }
+        /// <summary>
+        /// Flag telling the Orbiter whether it should be moving or stationary around its orbited object.
+        /// </summary>
+        bool IsOrbiterInMotion { get; set; }
 
     }
 }

@@ -73,7 +73,7 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ICommandItem, 
     protected IList<ISensorRangeMonitor> _sensorRangeMonitors = new List<ISensorRangeMonitor>();
     protected FormationGenerator _formationGenerator;
 
-    private CommandTrackingSprite _cmdIcon;
+    private CommandTrackingSprite _icon;
 
     #region Initialization
 
@@ -100,16 +100,20 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ICommandItem, 
     }
 
     protected override void InitializeViewMembersOnDiscernible() {
-        _cmdIcon = TrackingWidgetFactory.Instance.CreateCmdTrackingSprite(this);
+        InitializeIcon();
+    }
+
+    private void InitializeIcon() {
+        _icon = TrackingWidgetFactory.Instance.CreateCmdTrackingSprite(this);
         // CmdIcon enabled state controlled by CmdIcon.Show()
 
-        var cmdIconEventListener = _cmdIcon.EventListener;
+        var cmdIconEventListener = _icon.EventListener;
         cmdIconEventListener.onHover += (cmdIconGo, isOver) => OnHover(isOver);
         cmdIconEventListener.onClick += (cmdIconGo) => OnClick();
         cmdIconEventListener.onDoubleClick += (cmdIconGo) => OnDoubleClick();
         cmdIconEventListener.onPress += (cmdIconGo, isDown) => OnPress(isDown);
 
-        var cmdIconCameraLosChgdListener = _cmdIcon.CameraLosChangedListener;
+        var cmdIconCameraLosChgdListener = _icon.CameraLosChangedListener;
         cmdIconCameraLosChgdListener.onCameraLosChanged += (cmdIconGo, inCameraLOS) => InCameraLOS = inCameraLOS;
         cmdIconCameraLosChgdListener.enabled = true;
     }
@@ -133,7 +137,7 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ICommandItem, 
         // TODO consider changing HQElement
         var unattachedSensors = element.Data.Sensors.Where(sensor => sensor.RangeMonitor == null);
         if (unattachedSensors.Any()) {
-            D.Log("{0} is attaching {1}'s sensors: {2}.", FullName, element.FullName, unattachedSensors.Select(s => s.Name).Concatenate());
+            //D.Log("{0} is attaching {1}'s sensors: {2}.", FullName, element.FullName, unattachedSensors.Select(s => s.Name).Concatenate());
             var unattachedSensorsArray = unattachedSensors.ToArray();
             AttachSensorsToMonitors(unattachedSensorsArray);
             // WARNING: Donot use the IEnumerable unattachedSensors here as it will no longer point to any unattached sensors, since they are all attached now
@@ -280,9 +284,9 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ICommandItem, 
     protected abstract IIcon MakeCmdIconInstance();
 
     private void ChangeCmdIcon(IIcon icon) {
-        if (_cmdIcon != null) {
-            _cmdIcon.Set(icon.Filename);
-            _cmdIcon.Color = icon.Color;
+        if (_icon != null) {
+            _icon.Set(icon.Filename);
+            _icon.Color = icon.Color;
             //D.Log("{0} Icon color is {1}.", Presenter.FullName, icon.Color.GetName());
             return;
         }
@@ -290,8 +294,8 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ICommandItem, 
     }
 
     private void ShowCmdIcon(bool toShow) {
-        if (_cmdIcon != null) {
-            _cmdIcon.Show(toShow);
+        if (_icon != null) {
+            _icon.Show(toShow);
         }
     }
 
@@ -341,7 +345,7 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ICommandItem, 
     }
 
     protected override void ShowCircle(bool toShow, Highlights highlight) {
-        ShowCircle(toShow, highlight, _cmdIcon.WidgetTransform);
+        ShowCircle(toShow, highlight, _icon.WidgetTransform);
     }
 
     #endregion
@@ -371,26 +375,59 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ICommandItem, 
 
     # region Combat Support Methods
 
-    public override void TakeHit(CombatStrength attackerWeaponStrength) {
-        CombatStrength damage = attackerWeaponStrength - Data.DefensiveStrength;
-        bool isCmdAlive = ApplyDamage(damage.Combined);
-        D.Assert(isCmdAlive, "{0} should never die as a result of being hit.".Inject(Data.Name));
-    }
-
     /// <summary>
-    /// Checks for damage to this Command when its HQElement takes a hit.
+    /// Checks for damage to this Command when its HQElement takes a hit. Returns true if 
+    /// the Command takes damage.
     /// </summary>
-    /// <param name="isHQElementAlive">if set to <c>true</c> [is hq element alive].</param>
-    /// <returns><c>true</c> if the Command has taken damage.</returns>
-    public bool __CheckForDamage(bool isHQElementAlive) {   // HACK needs work. Cmds should be hardened to defend against weapons, so pass along attackerWeaponStrength?
-        bool isHit = (isHQElementAlive) ? RandomExtended<bool>.SplitChance() : true;
+    /// <param name="isHQElementAlive">if set to <c>true</c> the command's HQ element is still alive.</param>
+    /// <param name="elementDamageSustained">The damage sustained by the HQ Element.</param>
+    /// <param name="elementDamageSeverity">The severity of the damage sustained by the HQ Element.</param>
+    /// <returns></returns>
+    public bool __CheckForDamage(bool isHQElementAlive, CombatStrength elementDamageSustained, float elementDamageSeverity) {
+        D.Log("{0}.__CheckForDamage() called. IsHQElementAlive = {1}, ElementDamageSustained = {2}, ElementDamageSeverity = {3}.",
+            FullName, isHQElementAlive, elementDamageSustained, elementDamageSeverity);
+        bool isHit = (isHQElementAlive) ? RandomExtended<bool>.Chance(elementDamageSeverity) : true;
         if (isHit) {
-            TakeHit(new CombatStrength(Enums<ArmamentCategory>.GetRandom(excludeDefault: true), UnityEngine.Random.Range(1F, Data.MaxHitPoints)));
+            TakeHit(elementDamageSustained);
         }
         else {
             D.Log("{0} avoided a hit.", FullName);
         }
         return isHit;
+    }
+
+    public override void TakeHit(CombatStrength elementDamageSustained) {
+        CombatStrength damageToCmd = elementDamageSustained - Data.DefensiveStrength;
+        float unusedDamageSeverity;
+        bool isCmdAlive = ApplyDamage(damageToCmd, out unusedDamageSeverity);
+        D.Assert(isCmdAlive, "{0} should never die as a result of being hit.".Inject(Data.Name));
+    }
+
+    /// <summary>
+    /// Applies the damage to the command and returns true if the command survived the hit.
+    /// </summary>
+    /// <param name="damageToCmd">The damage sustained.</param>
+    /// <param name="damageSeverity">The damage severity.</param>
+    /// <returns>
+    ///   <c>true</c> if the command survived.
+    /// </returns>
+    protected override bool ApplyDamage(CombatStrength damageToCmd, out float damageSeverity) {
+        var __combinedDmgToCmd = damageToCmd.Combined;
+        var minAllowedCurrentHitPoints = 0.5F * Data.MaxHitPoints;
+        var proposedCurrentHitPts = Data.CurrentHitPoints - __combinedDmgToCmd;
+        if (proposedCurrentHitPts < minAllowedCurrentHitPoints) {
+            Data.CurrentHitPoints = minAllowedCurrentHitPoints;
+        }
+        else {
+            Data.CurrentHitPoints -= __combinedDmgToCmd;
+        }
+        damageSeverity = Mathf.Clamp01(__combinedDmgToCmd / Data.CurrentHitPoints);
+        if (Data.Health > Constants.ZeroPercent) {
+            AssessCripplingDamageToEquipment(damageSeverity);
+            return true;
+        }
+        D.Assert(false);    // should never happen as Commands can't die directly from a hit on the command
+        return false;
     }
 
     protected void DestroyUnitContainer() {

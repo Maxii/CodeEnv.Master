@@ -33,13 +33,13 @@ namespace CodeEnv.Master.GameContent {
         // IMPROVE will need to replace this with FtlShipData-derived class as non-Ftl ships won't be part of fleets, aka FormationStation, etc
         // public bool IsShipFtlCapable { get { return true; } }
 
-        private bool _isFtlDamaged;
+        private bool _isFtlOperational;
         /// <summary>
-        /// Indicates whether the FTL engines are damaged.
+        /// Indicates whether the FTL engines are operational, aka undamaged.
         /// </summary>
-        public bool IsFtlDamaged {
-            get { return _isFtlDamaged; }
-            set { SetProperty<bool>(ref _isFtlDamaged, value, "IsFtlDamaged", OnIsFtlDamagedChanged); }
+        public bool IsFtlOperational {
+            get { return _isFtlOperational; }
+            set { SetProperty<bool>(ref _isFtlOperational, value, "IsFtlOperational", OnIsFtlOperationalChanged); }
         }
 
         public bool _isFtlDampedByField;
@@ -53,12 +53,12 @@ namespace CodeEnv.Master.GameContent {
 
         private bool _isFtlAvailableForUse;
         /// <summary>
-        /// Indicates whether the FTL engines are available for use - ie. undamaged, 
+        /// Indicates whether the FTL engines are operational and available for use - ie. undamaged, 
         /// not damped by a dampingField and currently located in OpenSpace.
         /// </summary>
         public bool IsFtlAvailableForUse {
             get { return _isFtlAvailableForUse; }
-            set { SetProperty<bool>(ref _isFtlAvailableForUse, value, "IsFtlAvailableForUse"); }
+            private set { SetProperty<bool>(ref _isFtlAvailableForUse, value, "IsFtlAvailableForUse"); }
         }
 
         #endregion
@@ -236,7 +236,7 @@ namespace CodeEnv.Master.GameContent {
         /// is OpenSpace rather than None. Can't use None = 0, as OpenSpace = 0 is used to generate a Pathfinding bitmask tag used to assign penalty values.
         /// </summary>
         public void AssessFtlAvailability() {
-            IsFtlAvailableForUse = Topography == Topography.OpenSpace && !IsFtlDamaged && !IsFtlDampedByField;
+            IsFtlAvailableForUse = Topography == Topography.OpenSpace && IsFtlOperational && !IsFtlDampedByField;
         }
 
         protected override void OnTransformChanged() {
@@ -247,7 +247,9 @@ namespace CodeEnv.Master.GameContent {
             _requestedHeading = CurrentHeading;  // initialize to something other than Vector3.zero which causes problems with LookRotation
         }
 
-        private void OnIsFtlDamagedChanged() {
+        private void OnIsFtlOperationalChanged() {
+            string msg = IsFtlOperational ? "now" : "no longer";
+            D.Log("{0} FTL is {1} operational.", FullName, msg);
             AssessFtlAvailability();
         }
 

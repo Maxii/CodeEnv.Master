@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: DiplomaticRelations.cs
+// File: DiplomaticRelationship.cs
 // Diplomatic relationship state between two players.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -19,19 +19,21 @@ namespace CodeEnv.Master.Common {
     /// <summary>
     /// Diplomatic relationship state between two players.
     /// </summary>
-    public enum DiplomaticRelations {
+    public enum DiplomaticRelationship {
 
         None,
 
-        Self,
+        War,
+
+        ColdWar,
 
         Neutral,
 
         Friend,
 
-        Enemy,
+        Ally,
 
-        Ally
+        Self
 
     }
 }

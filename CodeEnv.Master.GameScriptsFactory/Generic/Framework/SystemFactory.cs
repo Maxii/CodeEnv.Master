@@ -32,6 +32,7 @@ using UnityEngine;
 /// SystemData when a Settlement owner changes, or the settlement is added or removed from the system.
 /// </summary>
 public class SystemFactory : AGenericSingleton<SystemFactory> {
+    // Note: no reason to dispose of _instance during scene transition as all its references persist across scenes
 
     /// <summary>
     /// The prefab used to make stars. This top level gameobject's name is the same as the StarCategory

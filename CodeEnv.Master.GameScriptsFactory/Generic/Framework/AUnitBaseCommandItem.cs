@@ -280,7 +280,6 @@ public abstract class AUnitBaseCommandItem : AUnitCommandItem, IShipOrbitable {
 
     void Dead_EnterState() {
         LogEvent();
-        OnDeath();
         ShowAnimation(MortalAnimations.Dying);
     }
 

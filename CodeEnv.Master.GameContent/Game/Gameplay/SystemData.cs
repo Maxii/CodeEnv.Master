@@ -60,9 +60,7 @@ namespace CodeEnv.Master.GameContent {
         private SettlementCmdData _settlementData;
         public SettlementCmdData SettlementData {
             get { return _settlementData; }
-            set {
-                SetProperty<SettlementCmdData>(ref _settlementData, value, "SettlementData", OnSettlementDataChanged);
-            }
+            set { SetProperty<SettlementCmdData>(ref _settlementData, value, "SettlementData", OnSettlementDataChanged); }
         }
 
         private StarData _starData;

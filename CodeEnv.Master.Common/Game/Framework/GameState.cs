@@ -34,7 +34,8 @@ namespace CodeEnv.Master.Common {
         /// saved game. If the level is for a new game, the new game scene is loaded which 
         /// will be populated during Building. If the level is from a previously saved game, 
         /// the level loaded is the level that was saved which will be populated during Restoring.
-        /// Completion is indicated by OnLevelWasLoaded(). 
+        /// OnLevelWasLoaded() occurs during this state which finishes the state and allows
+        /// the game state to progress.
         /// </summary>
         Loading,
 
@@ -46,20 +47,19 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Primary focus is to allow deserialization of saved games so that objects in the
-        /// level that has just been loaded can have their saved state restored. Completion 
-        /// is indicated by OnDeserialized().
+        /// level that has just been loaded can have their saved state restored. OnDeserialized()
+        /// occurs during this state which finishes the state and allows the game state to 
+        /// progress.
         /// </summary>
         Restoring,
 
         /// <summary>
-        ///  The waiting state prior to beginning the progression to Running, waiting for approval to start the progression.
-        ///  IMPROVE this should probably be some sort of post load/restore initialization
-        ///  and Building and Loading should be the new game alternatives to Restoring...???
+        ///  A waiting state to allow other players to signal their readiness to progress the state.
         /// </summary>
         Waiting,
 
         /// <summary>
-        /// The build, initialize and deploy all Systems and other potential pathfinding obstacles prior to generating the network
+        /// Build, initialize and deploy all Systems and other potential pathfinding obstacles prior to generating the network
         /// of waypoints known as a PathGraph. Planetoid operations donot commence until Running.
         /// </summary>
         BuildAndDeploySystems,

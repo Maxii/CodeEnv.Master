@@ -86,8 +86,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnNameChanging(string newName) {
-            string existingName = Name.IsNullOrEmpty() ? "'nullOrEmpty'" : Name;
-            D.Log("{0}.Name changing from {1} to {2}.", GetType().Name, existingName, newName);
+            //string existingName = Name.IsNullOrEmpty() ? "'nullOrEmpty'" : Name;
+            //D.Log("{0}.Name changing from {1} to {2}.", GetType().Name, existingName, newName);
         }
 
         protected virtual void OnNameChanged() {
@@ -97,9 +97,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnParentNameChanging(string newParentName) {
-            string existingParentName = ParentName.IsNullOrEmpty() ? "'nullOrEmpty'" : ParentName;
-            string incomingParentName = newParentName.IsNullOrEmpty() ? "'nullOrEmpty'" : newParentName;
-            D.Log("{0}.ParentName changing from {1} to {2}.", Name, existingParentName, incomingParentName);
+            //string existingParentName = ParentName.IsNullOrEmpty() ? "'nullOrEmpty'" : ParentName;
+            //string incomingParentName = newParentName.IsNullOrEmpty() ? "'nullOrEmpty'" : newParentName;
+            //D.Log("{0}.ParentName changing from {1} to {2}.", Name, existingParentName, incomingParentName);
         }
 
         protected virtual void OnParentNameChanged() {

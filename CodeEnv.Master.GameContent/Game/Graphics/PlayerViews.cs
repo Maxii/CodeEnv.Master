@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Provides alternative mode views of the Universe for the player. The first implemented is a view of sectors.
     /// </summary>
-    public class PlayerViews : AGenericSingleton<PlayerViews> {
+    public class PlayerViews : AGenericSingleton<PlayerViews>, IDisposable {
 
         // static so nested classes can use it
         private static ViewModeKeys _lastViewModeKeyPressed;
@@ -88,6 +88,15 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        #region Cleaup
+
+        private void Cleanup() {
+            _lastViewModeKeyPressed = ViewModeKeys.None;
+            OnDispose();    // PlayerViews has state and should not persist across scenes
+        }
+
+        #endregion
+
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
@@ -122,6 +131,51 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        #endregion
+
+        #region IDisposable
+        [DoNotSerialize]
+        private bool _alreadyDisposed = false;
+        protected bool _isDisposing = false;
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose() {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
+        /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
+        /// </summary>
+        /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool isDisposing) {
+            // Allows Dispose(isDisposing) to be called more than once
+            if (_alreadyDisposed) {
+                return;
+            }
+
+            _isDisposing = true;
+            if (isDisposing) {
+                // free managed resources here including unhooking events
+                Cleanup();
+            }
+            // free unmanaged resources here
+
+            _alreadyDisposed = true;
+        }
+
+        // Example method showing check for whether the object has been disposed
+        //public void ExampleMethod() {
+        //    // throw Exception if called on object that is already disposed
+        //    if(alreadyDisposed) {
+        //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
+        //    }
+
+        //    // method content here
+        //}
         #endregion
 
     }

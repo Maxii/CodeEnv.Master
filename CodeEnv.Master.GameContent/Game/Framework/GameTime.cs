@@ -345,6 +345,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void Cleanup() {
             Unsubscribe();
+            OnDispose();
         }
 
         private void Unsubscribe() {

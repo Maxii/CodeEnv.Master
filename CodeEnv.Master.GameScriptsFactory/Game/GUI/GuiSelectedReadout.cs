@@ -72,6 +72,7 @@ public class GuiSelectedReadout : AGuiLabelReadoutBase {
 
     protected override void Cleanup() {
         Unsubscribe();
+        _selectionMgr.Dispose();
     }
 
     private void Unsubscribe() {

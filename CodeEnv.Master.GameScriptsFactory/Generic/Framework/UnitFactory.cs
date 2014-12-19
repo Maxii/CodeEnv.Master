@@ -28,6 +28,7 @@ using UnityEngine;
 /// It also can make a standalone Fleet encompassing a single ship.
 /// </summary>
 public class UnitFactory : AGenericSingleton<UnitFactory> {
+    // Note: no reason to dispose of _instance during scene transition as all its references persist across scenes
 
     private ShipItem[] _shipPrefabs;
     private FacilityItem[] _facilityPrefabs;
@@ -329,7 +330,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 monitor = monitorGo.GetSafeMonoBehaviourComponentInChildren<WeaponRangeMonitor>();
             }
             monitor.ParentElement = element;
-            D.Log("{0} has had a {1} chosen for {2}.", element.FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
+            //D.Log("{0} has had a {1} chosen for {2}.", element.FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
         }
         monitor.Add(weapon);
         return monitor;
@@ -358,7 +359,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 monitor = monitorGo.GetSafeMonoBehaviourComponentInChildren<SensorRangeMonitor>();
             }
             monitor.ParentCommand = command;
-            D.Log("{0} has had a {1} chosen for {2}.", command.FullName, typeof(SensorRangeMonitor).Name, sensor.Name);
+            //D.Log("{0} has had a {1} chosen for {2}.", command.FullName, typeof(SensorRangeMonitor).Name, sensor.Name);
         }
         monitor.Add(sensor);
         return monitor;

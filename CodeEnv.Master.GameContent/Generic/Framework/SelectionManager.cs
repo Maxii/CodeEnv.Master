@@ -32,16 +32,19 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<ISelectable>(ref _currentSelection, value, "CurrentSelection", null, OnSelectionChanging); }
         }
 
+        private IInputManager _inputMgr;
+
         private SelectionManager() {
             Initialize();
         }
 
         protected override void Initialize() {
+            _inputMgr = References.InputManager;
             References.GameManager.onIsRunningOneShot += Subscribe;
         }
 
         private void Subscribe() {
-            References.InputManager.onUnconsumedPressDown += OnUnconsumedPressDown;
+            _inputMgr.onUnconsumedPressDown += OnUnconsumedPressDown;
         }
 
         private void OnUnconsumedPressDown(NguiMouseButton button) {
@@ -62,7 +65,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Unsubscribe() {
-            References.InputManager.onUnconsumedPressDown -= OnUnconsumedPressDown;
+            if (UnityUtility.CheckNotNullOrAlreadyDestroyed(_inputMgr)) {
+                _inputMgr.onUnconsumedPressDown -= OnUnconsumedPressDown;
+            }
         }
 
         public override string ToString() {

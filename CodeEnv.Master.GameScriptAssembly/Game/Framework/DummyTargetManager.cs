@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: DummyTargetManager.cs
-// Simple container class placed on the programatically-created DummyTarget holding ICameraTargetable interface values.
+// A ICameraTargetable gameObject moved around the edge of the universe to allow the camera to zoom, truck and pedestal.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,9 +21,9 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Simple container class placed on the programatically-created DummyTarget holding ICameraTargetable interface values.
+/// A ICameraTargetable gameObject moved around the edge of the universe to allow the camera to zoom, truck and pedestal.
 /// </summary>
-public class DummyTargetManager : AMonoBase, ICameraTargetable {
+public class DummyTargetManager : AMonoSingleton<DummyTargetManager>, ICameraTargetable {
 
     protected override void Cleanup() { }
 
@@ -40,5 +40,6 @@ public class DummyTargetManager : AMonoBase, ICameraTargetable {
     public Transform Transform { get { return _transform; } }
 
     #endregion
+
 }
 

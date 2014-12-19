@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class Player : APropertyChangeTracking, IPlayer {
 
-        private IDictionary<IPlayer, DiplomaticRelations> _diplomaticRelations;
+        private IDictionary<IPlayer, DiplomaticRelationship> _diplomaticRelationship;
 
         /// <summary>
         /// Initializes a new random instance of the <see cref="Player"/> class for testing. Excludes Humans.
@@ -40,8 +40,8 @@ namespace CodeEnv.Master.GameContent {
             _race = race;
             IQ = iq;
             IsActive = true;
-            _diplomaticRelations = new Dictionary<IPlayer, DiplomaticRelations>();
-            _diplomaticRelations[this] = DiplomaticRelations.Self;  // assigning relations this way allows NoPlayer to make SetRelations illegal
+            _diplomaticRelationship = new Dictionary<IPlayer, DiplomaticRelationship>();
+            _diplomaticRelationship[this] = DiplomaticRelationship.Self;  // assigning relations this way allows NoPlayer to make SetRelations illegal
             //SetRelations(this, DiplomaticRelations.Self);
         }
 
@@ -71,34 +71,31 @@ namespace CodeEnv.Master.GameContent {
 
         public virtual GameColor Color { get { return _race.Color; } }
 
-        public DiplomaticRelations GetRelations(IPlayer player) {
-            if (!_diplomaticRelations.ContainsKey(player)) {
-                return DiplomaticRelations.None;
+        public DiplomaticRelationship GetRelations(IPlayer player) {
+            if (!_diplomaticRelationship.ContainsKey(player)) {
+                return DiplomaticRelationship.None;
             }
-            return _diplomaticRelations[player];
+            return _diplomaticRelationship[player];
         }
 
-        public virtual void SetRelations(IPlayer player, DiplomaticRelations relation) {
+        public virtual void SetRelations(IPlayer player, DiplomaticRelationship relationship) {
             if (player == this) {
-                D.Assert(relation == DiplomaticRelations.Self);
+                D.Assert(relationship == DiplomaticRelationship.Self);
             }
-            _diplomaticRelations[player] = relation;
+            _diplomaticRelationship[player] = relationship;
             // TODO send DiploRelationsChange event
         }
 
-        //public bool IsRelationship(IPlayer player, DiplomaticRelations relation) {
-        //    return GetRelations(player) == relation;
-        //}
-
-        public bool IsRelationship(IPlayer player, params DiplomaticRelations[] relations) {
+        public bool IsRelationship(IPlayer player, params DiplomaticRelationship[] relations) {
             return GetRelations(player).EqualsAnyOf(relations);
         }
 
         public bool IsEnemyOf(IPlayer player) {
-            return IsRelationship(player, DiplomaticRelations.Enemy);
+            return IsRelationship(player, DiplomaticRelationship.War, DiplomaticRelationship.ColdWar);
         }
 
         #endregion
+
     }
 }
 

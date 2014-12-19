@@ -153,9 +153,9 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
     private void AttachSettlement(SettlementCommandItem settlementCmd) {
         Transform settlementUnit = settlementCmd.transform.parent;
         var orbiter = Data.SettlementOrbitSlot.AssumeOrbit(settlementUnit, "Settlement Orbiter"); // IMPROVE the only remaining OrbitSlot held in Data
-        orbiter.enabled = settlementCmd.__OrbiterMoves;
+        orbiter.IsOrbiterInMotion = settlementCmd.__OrbiterMoves;
         // enabling (or not) the system orbiter can also be handled by the SettlementCreator once isRunning
-        D.Log("{0} has been deployed to {1}.", settlementCmd.DisplayName, FullName);
+        //D.Log("{0} has been deployed to {1}.", settlementCmd.DisplayName, FullName);
 
         var systemIntelCoverage = PlayerIntel.CurrentCoverage;
         if (systemIntelCoverage == IntelCoverage.None) {
@@ -297,7 +297,7 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region IDestinationTarget Members
+    #region INavigableTarget Members
 
     public override bool IsMobile { get { return false; } }
 

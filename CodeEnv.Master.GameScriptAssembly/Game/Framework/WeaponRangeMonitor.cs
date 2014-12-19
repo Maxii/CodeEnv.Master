@@ -112,12 +112,12 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
     }
 
     void OnTriggerEnter(Collider other) {
-        //D.Log("{0}.{1}.OnTriggerEnter() tripped by {2}.", ParentElement.FullName, GetType().Name, other.name);
         if (other.isTrigger) {
             //D.Log("{0}.{1}.OnTriggerEnter ignored {2}.", ParentElement.FullName, GetType().Name, other.name);
             return;
         }
 
+        //D.Log("{0}.{1}.OnTriggerEnter() tripped by non-Trigger {2}.", ParentElement.FullName, GetType().Name, other.name);
         if (_collidersToIgnore.Contains(other)) {
             return;
         }
@@ -132,12 +132,12 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
     }
 
     void OnTriggerExit(Collider other) {
-        //D.Log("{0}.{1}.OnTriggerExit() tripped by {2}.", ParentElement.FullName, GetType().Name, other.name);
         if (other.isTrigger) {
             //D.Log("{0}.{1}.OnTriggerExit ignored {2}.", ParentElement.FullName, GetType().Name, other.name);
             return;
         }
 
+        //D.Log("{0}.{1}.OnTriggerExit() tripped by non-Trigger {2}.", ParentElement.FullName, GetType().Name, other.name);
         if (_collidersToIgnore.Contains(other)) {
             return;
         }
@@ -195,6 +195,7 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
         }
         else {
             D.Warn("{0}.{1} attempted to add duplicate Target {2}.", ParentElement.FullName, GetType().Name, target.FullName);
+            return;
         }
 
         if (ParentElement.Owner.IsEnemyOf(target.Owner) && target.IsAliveAndOperating && !EnemyTargets.Contains(target)) {
@@ -203,8 +204,8 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
     }
 
     private void AddEnemyTarget(IElementAttackableTarget enemyTarget) {
-        //D.Log("{0}.{1}({2}) now tracking Enemy {3} at distance {4:0.0}.", ParentElement.FullName, GetType().Name,
-        //    Range.GetName(), enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
+        D.Log("{0}.{1} with Range {2:0.#} added Enemy Target {3} at distance {4:0.0}.", ParentElement.FullName, GetType().Name,
+            Range.GetWeaponRange(ParentElement.Owner), enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position) - enemyTarget.Radius);
         EnemyTargets.Add(enemyTarget);
         if (EnemyTargets.Count == Constants.One) {
             OnAnyEnemyInRangeChanged(true);   // there are now enemies in range
@@ -218,7 +219,6 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
                 //D.Log("{0}.{1} no longer tracking {2} at distance = {3}.", ParentElement.FullName, GetType().Name, target.FullName, Vector3.Distance(target.Position, _transform.position));
             }
             else {
-                // if target is being destroyed, its position can no longer be
                 D.Log("{0}.{1} no longer tracking dead target {2}.", ParentElement.FullName, GetType().Name, target.FullName);
             }
             target.onDeathOneShot -= OnTargetDeath;
@@ -226,17 +226,20 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
         }
         else {
             D.Warn("{0}.{1} target {2} not present to be removed.", ParentElement.FullName, GetType().Name, target.FullName);
+            return;
         }
-        RemoveEnemyTarget(target);
+        if (EnemyTargets.Contains(target)) {
+            RemoveEnemyTarget(target);
+        }
     }
 
     private void RemoveEnemyTarget(IElementAttackableTarget enemyTarget) {
-        if (EnemyTargets.Remove(enemyTarget)) {
-            if (EnemyTargets.Count == 0) {
-                OnAnyEnemyInRangeChanged(false);  // no longer any Enemies in range
-            }
-            D.Log("{0}.{1}({2}) removed Enemy Target {3} at distance {4:0.0}.", ParentElement.FullName, GetType().Name,
-                Range.GetName(), enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
+        var isRemoved = EnemyTargets.Remove(enemyTarget);
+        D.Assert(isRemoved);
+        D.Log("{0}.{1} with Range {2:0.#} removed Enemy Target {3} at distance {4:0.0}.", ParentElement.FullName, GetType().Name,
+            Range.GetWeaponRange(ParentElement.Owner), enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position) - enemyTarget.Radius);
+        if (EnemyTargets.Count == 0) {
+            OnAnyEnemyInRangeChanged(false);  // no longer any Enemies in range
         }
     }
 

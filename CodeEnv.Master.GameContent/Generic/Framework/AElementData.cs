@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -119,11 +119,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void RecalcMaxSensorRange() {
-            MaxSensorRange = Sensors.Where(s => s.IsOperational).Max(s => s.Range.GetSensorRange(Owner));
+            var operationalSensors = Sensors.Where(s => s.IsOperational);
+            MaxSensorRange = operationalSensors.Any() ? operationalSensors.Max(s => s.Range.GetSensorRange(Owner)) : Constants.ZeroF;
         }
 
         private void RecalcMaxWeaponsRange() {
-            MaxWeaponsRange = Weapons.Where(weap => weap.IsOperational).Max(weap => weap.Range.GetWeaponRange(Owner));
+            var operationalWeapons = Weapons.Where(w => w.IsOperational);
+            MaxWeaponsRange = operationalWeapons.Any() ? operationalWeapons.Max(w => w.Range.GetWeaponRange(Owner)) : Constants.ZeroF;
         }
 
         private void RecalcOffensiveStrength() {

@@ -11,7 +11,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -53,7 +53,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     protected void RelayToCurrentState(params object[] param) {
         if (CurrentState.Equals(default(E))) { return; }
         var message = CurrentState.ToString() + Constants.Underscore + new StackFrame(1).GetMethod().Name;
-        //D.Log("{0}.RelayToCurrentState content: {1}.", GetType().Name, message);
+        D.Log("{0}.RelayToCurrentState content: {1}.", GetType().Name, message);
         SendMessageEx(message, param);
     }
 
@@ -67,7 +67,8 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     /// </summary>
     /// <param name="message">The message.</param>
     /// <param name="param">The parameter.</param>
-    private void SendMessageEx(string message, object[] param) {
+    /// <returns>true if the method with signature <c>message</c> was invoked.</returns>
+    private bool SendMessageEx(string message, object[] param) {
         //Have we found that a delegate was already created
         var actionSpecified = false;
         //Try to get an Action delegate for the message
@@ -79,7 +80,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
             //a will be null if we previously tried to get an action and failed
             if (a != null) {
                 a();
-                return;
+                return true;    // my addition of true
             }
         }
 
@@ -99,7 +100,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
             //Cache for later
             lookup[message] = mtd;
         }
-        //If this message exists		
+        //If this message exists as a method...	
         if (mtd != null) {
             //If we haven't already tried to create an action
             if (!actionSpecified) {
@@ -113,15 +114,88 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
                     action();
                 }
                 else {
-                    //Otherwise flag that we cannot call this method
+                    //Otherwise flag that we cannot call this method thru the delegate system, then slow invoke it
                     _actions[message] = null;
+                    mtd.Invoke(this, param);    // my addition
                 }
             }
-            else
+            else {
                 //Otherwise slow invoke the method passing the parameters
                 mtd.Invoke(this, param);
+            }
+            return true; // my addition
+        }
+        else {
+            string parameters = string.Empty;
+            if (!param.IsNullOrEmpty()) {
+                parameters = param.Concatenate();
+            }
+            D.Warn("{0} did not find Method with signature {1}({2}).", _transform.name, message, parameters);  // my addition
+            return false;   // my addition
         }
     }
+
+
+    ///// <summary>
+    ///// Optimized SendMessage replacement.
+    ///// </summary>
+    ///// <param name="message">The message.</param>
+    ///// <param name="param">The parameter.</param>
+    //private void SendMessageEx(string message, object[] param) {
+    //    //Have we found that a delegate was already created
+    //    var actionSpecified = false;
+    //    //Try to get an Action delegate for the message
+    //    Action a = null;
+    //    //Try to uncache a delegate
+    //    if (_actions.TryGetValue(message, out a)) {
+    //        //If we got one then call it
+    //        actionSpecified = true;
+    //        //a will be null if we previously tried to get an action and failed
+    //        if (a != null) {
+    //            a();
+    //            return;
+    //        }
+    //    }
+
+    //    //Otherwise try to get the method for the name
+    //    MethodInfo mtd = null;
+    //    IDictionary<string, MethodInfo> lookup = null;
+    //    //See if we have scanned this type already
+    //    if (!_messages.TryGetValue(GetType(), out lookup)) {
+    //        //If we haven't then create a lookup for it, this will cache message names to their method info
+    //        lookup = new Dictionary<string, MethodInfo>();
+    //        _messages[GetType()] = lookup;
+    //    }
+    //    //See if we have already search for this message for this type (not instance)
+    //    if (!lookup.TryGetValue(message, out mtd)) {
+    //        //If we haven't then try to find it
+    //        mtd = GetType().GetMethod(message, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+    //        //Cache for later
+    //        lookup[message] = mtd;
+    //    }
+    //    //If this message exists		
+    //    if (mtd != null) {
+    //        //If we haven't already tried to create an action
+    //        if (!actionSpecified) {
+    //            //Ensure that the message requires no parameters and returns nothing
+    //            if (mtd.GetParameters().Length == 0 && mtd.ReturnType == typeof(void)) {
+    //                //Create an action delegate for it
+    //                var action = (Action)Delegate.CreateDelegate(typeof(Action), this, mtd);
+    //                //Cache the delegate
+    //                _actions[message] = action;
+    //                //Call the function
+    //                action();
+    //            }
+    //            else {
+    //                //Otherwise flag that we cannot call this method
+    //                _actions[message] = null;
+    //            }
+    //        }
+    //        else
+    //            //Otherwise slow invoke the method passing the parameters
+    //            mtd.Invoke(this, param);
+    //    }
+    //}
 
     #endregion
 
@@ -222,34 +296,42 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     [HideInInspector]
     public State state = new State();
 
-    /// <summary>
-    /// Gets or sets the current State.
-    /// 
-    /// NOTE: The sequencing when a change of state is initiated by setting CurrentState = newState
-    /// 1. the state we are changing from is recorded as lastState
-    /// 2. the event OnCurrentStateChanging(newState) is sent to subscribers
-    /// 3. the value of the CurrentState enum is changed to newState
-    /// 4. the lastState_ExitState() method is called 
-    ///          - while in this method, realize that the CurrentState enum has already changed to newState
-    /// 5. the CurrentState's delegates are updated 
-    ///          - meaning the EnterState delegate is changed from lastState_EnterState to newState_EnterState
-    /// 6. the newState_EnterState() method is called
-    ///          - as the event in 7 has not yet been called, you CANNOT set CurrentState = nextState within newState_EnterState()
-    ///              - this would initiate the whole cycle above again, BEFORE the event in 7 is called
-    ///              - you also can't just use a coroutine to wait then change it as the event is still held up
-    ///          - instead, change it in newState_Update() which allows the event in 7 to complete before this change occurs again
-    /// 7. the event OnCurrentStateChanged() is sent to subscribers
-    ///          - when this event is received, a get_CurrentState property inquiry will properly return newState
-    /// </summary>
+    // ************************************************************************************************************
+    // NOTE: The sequencing when a change of state is initiated by setting CurrentState = newState
+    //
+    // 1. the state we are changing from is recorded as lastState
+    // 2. the 2 events indicating a state is about to change are sent to subscribers
+    // 3. the value of the CurrentState enum is changed to newState
+    // 4. the lastState_ExitState() method is called 
+    //          - while in this method, realize that the CurrentState enum has already changed to newState
+    // 5. the CurrentState's delegates are updated 
+    //          - meaning the EnterState delegate is changed from lastState_EnterState to newState_EnterState
+    // 6. the newState_EnterState() method is called
+    //          - as the event in 7 has not yet been called, you CANNOT set CurrentState = nextState within newState_EnterState()
+    //              - this would initiate the whole cycle above again, BEFORE the event in 7 is called
+    //              - you also can't just use a coroutine to wait then change it as the event is still held up
+    //          - instead, change it a frame later after the EnterState method has completed, and the events have been fired
+    // 7. the 2 events indicating a state has just changed are sent to subscribers
+    //          - when this event is received, a get_CurrentState property inquiry will properly return newState
+    // *************************************************************************************************************
+
+    // ***********************************************************************************************************
+    // WARNING: IEnumerator State_EnterState methods are executed when the frame's Coroutine's are run, 
+    // not when the state itself is changed. The order in which those state execution coroutines 
+    // are run has nothing to do with the order in which the item's state is changed, aka if item1's state
+    // is changed before item2's state, that DOES NOT mean item1's enterState will be called before item2's enterState.
+    // ***********************************************************************************************************
+
     public virtual E CurrentState {
         get {
             return state.currentState;
         }
         protected set {
-            if (state.Equals(value)) {
-                return;
-            }
+            D.Assert(!state.Equals(value)); // a state object and a state's E CurrentState should never be equal
             ChangingState();
+            if (state.currentState.Equals(value)) {
+                D.Warn("{0} duplicate state {1} set attempt.", GetType().Name, value);
+            }
             state.currentState = value;
             ConfigureCurrentState();
         }
@@ -351,7 +433,16 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         GetStateMethods();
 
         if (state.enterState != null) {
-            state.enterStateEnumerator = state.enterState();
+            //var statePriorToEnterStateExecution = state.currentState;
+            state.enterStateEnumerator = state.enterState();    // a void enterState() method executes immediately here rather than wait until the enterCoroutine makes its next pass
+            // This warning should no longer be necessary as the derived class AFSMSingleton_NoCall validates that no new state is set in a void State_EnterState() method
+            //if (state.enterStateEnumerator == null) {
+            //    D.Log("{0}'s State {1} has a null enterStateEnumerator indicating a method that returns void.", GetType().Name, state.currentState);
+            //    if (!state.currentState.Equals(statePriorToEnterStateExecution)) {
+            //        // when this happens, the stateChanged event that follows after the enterState() method has executed will show the newest state, not the state that caused the event
+            //        D.Warn("{0} has changed state from {1} to {2} while in a void EnterState.", GetType().Name, statePriorToEnterStateExecution, state.currentState);
+            //    }
+            //}
             enterStateCoroutine.Run(state.enterStateEnumerator);
         }
     }

@@ -18,6 +18,7 @@
 // default namespace
 
 using System;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -42,6 +43,7 @@ public abstract class AGuiMenuAcceptButtonBase : AGuiButtonBase {
         _popupLists = buttonParent.GetComponentsInChildren<UIPopupList>(includeInactive: true);
         _sliders = buttonParent.GetComponentsInChildren<UISlider>(includeInactive: true);
 
+        //D.Log("Checkboxes found: {0}.", _checkboxes.Select(c => c.name).Concatenate());
         CaptureInitializedState();
         AddMenuElementListeners();
     }
@@ -84,7 +86,7 @@ public abstract class AGuiMenuAcceptButtonBase : AGuiButtonBase {
     protected virtual void OnCheckboxStateChange() {
         string checkboxName = UIToggle.current.name.ToLower();
         bool isChecked = UIToggle.current.value;
-        //D.Log("Checkbox Named {0} had a state change to {1}.", checkboxName, isChecked);
+        //D.Log("Checkbox {0} had a state change to {1}.", checkboxName, isChecked);
         RecordCheckboxState(checkboxName, isChecked);
     }
 

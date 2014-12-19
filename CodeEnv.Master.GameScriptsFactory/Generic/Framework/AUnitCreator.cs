@@ -65,18 +65,14 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     protected override void Awake() {
         base.Awake();
         D.Assert(isCompositionPreset == _transform.childCount > 0, "{0}.{1} Composition Preset flag is incorrect.".Inject(UnitName, GetType().Name));
+        InitializeValuesAndReferences();
+    }
+
+    private void InitializeValuesAndReferences() {
         if (_factory == null) {
             _factory = UnitFactory.Instance;
         }
-    }
-
-    protected override void Start() {
-        base.Start();
         _gameMgr = References.GameManager;
-        _owner = ValidateAndInitializeOwner();
-        _availableWeaponStats = __CreateAvailableWeaponsStats(9);
-        _availableCountermeasureStats = __CreateAvailableCountermeasureStats(9);
-        _availableSensorStats = __CreateAvailableSensorStats(9);
         Subscribe();
     }
 
@@ -102,6 +98,29 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     private void OnGameStateChanged() {
         var gameState = _gameMgr.CurrentState;
+
+        switch (gameState) {
+            case GameState.Building:
+                _owner = ValidateAndInitializeOwner();
+                _availableWeaponStats = __CreateAvailableWeaponsStats(9);
+                _availableCountermeasureStats = __CreateAvailableCountermeasureStats(9);
+                _availableSensorStats = __CreateAvailableSensorStats(9);
+                break;
+            case GameState.Lobby:
+            case GameState.Waiting:
+            case GameState.BuildAndDeploySystems:
+            case GameState.GeneratingPathGraphs:
+            case GameState.PrepareUnitsForDeployment:
+            case GameState.DeployingUnits:
+            case GameState.RunningCountdown_1:
+            case GameState.Running:
+            case GameState.Loading:
+            case GameState.Restoring:
+                break;
+            case GameState.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(gameState));
+        }
 
         if (toDelayOperations) {
             if (toDelayBuild) {
@@ -555,25 +574,29 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             return humanPlayer;
         }
         IPlayer aiOwner = new Player();
-        switch (ownerRelationshipWithHuman) {
-            case DiploStateWithHuman.Enemy:
-                aiOwner.SetRelations(humanPlayer, DiplomaticRelations.Enemy);
-                humanPlayer.SetRelations(aiOwner, DiplomaticRelations.Enemy);
+        switch (ownerRelationshipWithPlayer) {
+            case __DiploStateWithPlayer.Ally:
+                aiOwner.SetRelations(humanPlayer, DiplomaticRelationship.Ally);
+                humanPlayer.SetRelations(aiOwner, DiplomaticRelationship.Ally);
                 break;
-            case DiploStateWithHuman.Ally:
-                aiOwner.SetRelations(humanPlayer, DiplomaticRelations.Ally);
-                humanPlayer.SetRelations(aiOwner, DiplomaticRelations.Ally);
+            case __DiploStateWithPlayer.Friend:
+                aiOwner.SetRelations(humanPlayer, DiplomaticRelationship.Friend);
+                humanPlayer.SetRelations(aiOwner, DiplomaticRelationship.Friend);
                 break;
-            case DiploStateWithHuman.Friend:
-                aiOwner.SetRelations(humanPlayer, DiplomaticRelations.Friend);
-                humanPlayer.SetRelations(aiOwner, DiplomaticRelations.Friend);
+            case __DiploStateWithPlayer.Neutral:
+                aiOwner.SetRelations(humanPlayer, DiplomaticRelationship.Neutral);
+                humanPlayer.SetRelations(aiOwner, DiplomaticRelationship.Neutral);
                 break;
-            case DiploStateWithHuman.Neutral:
-                aiOwner.SetRelations(humanPlayer, DiplomaticRelations.Neutral);
-                humanPlayer.SetRelations(aiOwner, DiplomaticRelations.Neutral);
+            case __DiploStateWithPlayer.ColdWar:
+                aiOwner.SetRelations(humanPlayer, DiplomaticRelationship.ColdWar);
+                humanPlayer.SetRelations(aiOwner, DiplomaticRelationship.ColdWar);
+                break;
+            case __DiploStateWithPlayer.War:
+                aiOwner.SetRelations(humanPlayer, DiplomaticRelationship.War);
+                humanPlayer.SetRelations(aiOwner, DiplomaticRelationship.War);
                 break;
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(ownerRelationshipWithHuman));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(ownerRelationshipWithPlayer));
         }
         return aiOwner;
     }

@@ -301,22 +301,38 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        /// Checks whether the MonoBehaviour Interface provided is not null or already destroyed.
+        /// This is necessary as interfaces in Unity (unlike MonoBehaviours) do not return null when slated for destruction.
+        /// Returns <c>true</c> if not null and not destroyed, otherwise returns false.
+        /// </summary>
+        /// <typeparam name="I">The interface Type.</typeparam>
+        /// <param name="i">The interface.</param>
+        /// <returns></returns>
+        /// <exception cref="System.ArgumentException">If i is not a Component.</exception>
+        public static bool CheckNotNullOrAlreadyDestroyed<I>(I i) where I : class {
+            if (i != null) {
+                if (!(i is Component)) {
+                    throw new System.ArgumentException("Interface is of Type {0}, which is not a Component.".Inject(typeof(I).Name));
+                }
+                var c = i as Component;
+                if (c != null) {
+                    // i is not destroyed
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Destroys the gameObject associated with the Interface i, if i is not null or already destroyed.
         /// This is necessary as interfaces in Unity (unlike MonoBehaviours) do not return null when slated for destruction.
         /// </summary>
         /// <typeparam name="I">The Interface type.</typeparam>
         /// <param name="i">The Interface instance.</param>
-        /// <exception cref="System.ArgumentException">if i is not a Component.</exception>
-        public static void DestroyIfNotNullOrAlreadyDestroyed<I>(I i) {
-            if (i != null) {
-                if (!(i is Component)) {
-                    throw new System.ArgumentException("i is of Type {0}, which is not a Component.".Inject(typeof(I).Name));
-                }
-                var c = i as Component;
-                if (c != null) {
-                    // i is not destroyed
-                    GameObject.Destroy(c.gameObject);
-                }
+        /// <exception cref="System.ArgumentException">If i is not a Component.</exception>
+        public static void DestroyIfNotNullOrAlreadyDestroyed<I>(I i) where I : class {
+            if (CheckNotNullOrAlreadyDestroyed<I>(i)) {
+                GameObject.Destroy((i as Component).gameObject);
             }
         }
 

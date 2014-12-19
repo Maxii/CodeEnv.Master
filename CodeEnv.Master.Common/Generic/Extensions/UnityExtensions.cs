@@ -489,7 +489,6 @@ namespace CodeEnv.Master.Common {
 
         #endregion
 
-
         /// <summary>
         /// Gets the current OnScreen diameter in pixels of this collider. Can be Zero if not
         /// on the screen. WARNING: Do not use to scale an object

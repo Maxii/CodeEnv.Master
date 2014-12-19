@@ -228,17 +228,19 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
         else {
             D.Warn("{0}.{1} target {2} not present to be removed.", ParentCommand.FullName, GetType().Name, target.FullName);
         }
-        RemoveEnemyTarget(target);
+        if (EnemyTargets.Contains(target)) {
+            RemoveEnemyTarget(target);
+        }
     }
 
     private void RemoveEnemyTarget(IElementAttackableTarget enemyTarget) {
-        if (EnemyTargets.Remove(enemyTarget)) {
-            if (EnemyTargets.Count == 0) {
-                OnAnyEnemyInRangeChanged(false);  // no longer any Enemies in range
-            }
-            D.Log("{0}.{1}({2}) removed Enemy Target {3} at distance {4:0.0}.", ParentCommand.FullName, GetType().Name,
-                Range.GetName(), enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
+        var isRemoved = EnemyTargets.Remove(enemyTarget);
+        D.Assert(isRemoved);
+        if (EnemyTargets.Count == 0) {
+            OnAnyEnemyInRangeChanged(false);  // no longer any Enemies in range
         }
+        D.Log("{0}.{1}({2}) removed Enemy Target {3} at distance {4:0.0}.", ParentCommand.FullName, GetType().Name,
+            Range.GetName(), enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
     }
 
     /// <summary>
