@@ -80,6 +80,7 @@
     <Compile Include="Generic\Graphics\ATrackingWidget.cs" />
     <Compile Include="Generic\Graphics\AWorldTrackingWidget_VariableSize.cs" />
     <Compile Include="Generic\Graphics\AUITrackingWidget.cs" />
+    <Compile Include="Generic\IO\InputManager.cs" />
     <Compile Include="Generic\_Debug\FpsReadout.cs" />
     <Compile Include="Generic\Framework\GeneralFactory.cs" />
     <Compile Include="Generic\Framework\UnitFactory.cs" />
@@ -147,7 +148,6 @@
     <Compile Include="Game\GUI\SystemCtxControl.cs" />
     <Compile Include="Game\GUI\SystemCtxControl_Player.cs" />
     <Compile Include="Generic\Graphics\GuiInputModeControlButton.cs" />
-    <Compile Include="Generic\IO\InputManager.cs" />
     <Compile Include="Generic\IO\OrbitalPlaneInputEventRouter.cs" />
     <Compile Include="Generic\Framework\SectorFactory.cs" />
     <Compile Include="Game\GUI\GuiAudioOptionMenuAcceptButton.cs" />

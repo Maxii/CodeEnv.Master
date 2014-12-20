@@ -87,7 +87,6 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     private PlayerViews _playerViews;
     private GameManager _gameMgr;
     private IList<IDisposable> _subscribers;
-
     private SceneLevel _currentScene;
 
     #region Initialization
@@ -95,21 +94,30 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
         References.InputManager = Instance;
+    }
+
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
+        InitializeLocalReferencesAndValues();
+        InitializeNonpersistentReferences();
+        InputMode = GameInputMode.NoInput;
+        Subscribe();
+    }
+
+    private void InitializeLocalReferencesAndValues() {
         _inputHelper = GameInputHelper.Instance;
-        _playerViews = PlayerViews.Instance;
         _gameMgr = GameManager.Instance;
         _currentScene = (SceneLevel)Application.loadedLevel;
         enabled = false;
     }
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    private void InitializeNonpersistentReferences() {
+        D.Log("{0} is [re]initializing nonpersistent references.", GetType().Name);
         InitializeUIEventDispatcher();
         if (_currentScene == SceneLevel.GameScene) {
+            _playerViews = PlayerViews.Instance;
             InitializeWorldEventDispatcher();
         }
-        InputMode = GameInputMode.NoInput;
-        Subscribe();
     }
 
     private void InitializeUIEventDispatcher() {
@@ -151,28 +159,21 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
         _gameMgr.onSceneLoaded += OnSceneLoaded;
     }
 
-    private void ReinitializeEventDispatchers() {
-        D.Log("{0} is reinitializing new EventDispatcher instances.", GetType().Name);
-        InitializeUIEventDispatcher();
-        InitializeWorldEventDispatcher();
-    }
-
     #endregion
 
-    private void OnSceneLoading(SceneLevel newScene) {
-        InvalidateEventDispatchers();
+    private void OnSceneLoading(SceneLevel incomingScene) {
+        InvalidateNonpersistentReferences();
     }
 
     private void OnSceneLoaded() {
         _currentScene = _gameMgr.CurrentScene;
-        ReinitializeEventDispatchers();
+        InitializeNonpersistentReferences();
     }
 
     private void OnGameStateChanging(GameState incomingState) {
         var previousState = GameManager.Instance.CurrentState;
         if (previousState == GameState.Lobby) {
-            // TODO GameInputManager, which exists only in the GameScene receives this Lobby state change from the startup simulation
-            //D.Warn("{0} received a GameState exit event from {1}.", GetType().Name, previousState.GetName());
+            //D.Log("{0} received a GameStateChanging event. Previous GameState = {1}.", GetType().Name, previousState.GetName());
             InputMode = GameInputMode.NoInput;
         }
         if (previousState == GameState.Running) {
@@ -610,14 +611,21 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 #pragma warning restore 0168
     }
 
-    private void InvalidateEventDispatchers() {
-        UIEventDispatcher = null;
-        WorldEventDispatcher = null;
-    }
+    #region Cleanup
 
     protected override void Cleanup() {
         References.InputManager = null;
+        InvalidateNonpersistentReferences();
         Unsubscribe();
+    }
+
+    private void InvalidateNonpersistentReferences() {
+        UIEventDispatcher = null;
+        if (_currentScene == SceneLevel.GameScene) {
+            _playerViews.Dispose();
+            _playerViews = null;
+            WorldEventDispatcher = null;
+        }
     }
 
     private void Unsubscribe() {
@@ -642,6 +650,8 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
         UICamera.onDragEnd -= OnDragEnd;
         UICamera.onPress -= OnPress;
     }
+
+    #endregion
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

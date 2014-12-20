@@ -1015,20 +1015,15 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     //    UpdateCamera_Follow();
     //}
 
-    void Follow_LateUpdate() {
-        UpdateCamera_Follow();
-    }
-
-    //void Follow_FixedUpdate() {
+    //void Follow_LateUpdate() {
     //    UpdateCamera_Follow();
     //}
 
-    private void UpdateCamera_Follow() {
-        //if (ACtxControl.IsAnyContextMenuShowing) {
-        //    // avoid camera movement when a context menu is showing 
-        //    return;
-        //}
+    void Follow_FixedUpdate() { // testing shows minimum jitter 
+        UpdateCamera_Follow();
+    }
 
+    private void UpdateCamera_Follow() {
         if (dragFreePanTilt.IsActivated() || scrollFreeZoom.IsActivated()) {
             CurrentState = CameraState.Freeform;
             return;

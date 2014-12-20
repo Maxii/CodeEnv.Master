@@ -28,6 +28,7 @@ using UnityEngine;
 /// different than Unitys.
 /// </summary>
 public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHelper {
+    // Note: no reason to dispose of between scenes as this singleton holds no references to objects that do not persist
 
     private GameInputHelper() {
         Initialize();

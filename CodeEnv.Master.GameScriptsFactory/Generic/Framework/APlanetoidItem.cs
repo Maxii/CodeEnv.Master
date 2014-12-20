@@ -90,9 +90,9 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         });
 
         var animations = gameObject.GetComponentsInImmediateChildren<Animation>();
-        animations.ForAll(a => {
-            a.cullingType = AnimationCullingType.BasedOnRenderers; // aka, disabled when not visible
-            a.enabled = true;
+        animations.ForAll(anim => {
+            anim.cullingType = AnimationCullingType.BasedOnRenderers; // aka, disabled when not visible
+            anim.enabled = true;
         });
         // TODO animation settings and distance controls
 
