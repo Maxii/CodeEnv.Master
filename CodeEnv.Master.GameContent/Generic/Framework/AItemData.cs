@@ -46,10 +46,10 @@ namespace CodeEnv.Master.GameContent {
             get { return ParentName.IsNullOrEmpty() ? Name : ParentName + Constants.Underscore + Name; }
         }
 
-        private IPlayer _owner = TempGameValues.NoPlayer;
-        public IPlayer Owner {
+        private Player _owner = TempGameValues.NoPlayer;
+        public Player Owner {
             get { return _owner; }
-            set { SetProperty<IPlayer>(ref _owner, value, "Owner", OnOwnerChanged); }
+            set { SetProperty<Player>(ref _owner, value, "Owner", OnOwnerChanged); }
         }
 
         public Topography Topography { get; protected set; }   // can't use OnPropertyChanged approach as default(SpaceTopography) = OpenSpace, aka 0 tag

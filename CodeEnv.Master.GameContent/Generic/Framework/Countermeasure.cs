@@ -54,6 +54,15 @@ namespace CodeEnv.Master.GameContent {
             _stat = stat;
         }
 
+        /// <summary>
+        /// Copy Constructor.
+        /// </summary>
+        /// <param name="counterMeasure">The Countermeasure to copy.</param>
+        public Countermeasure(Countermeasure counterMeasure)
+            : this(counterMeasure._stat) {
+            _isOperational = counterMeasure._isOperational;
+        }
+
         private void OnIsOperationalChanged() {
             if (onIsOperationalChanged != null) {
                 onIsOperationalChanged(this);

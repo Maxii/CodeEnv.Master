@@ -60,7 +60,7 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsPaused { get; }
 
-        HumanPlayer HumanPlayer { get; }
+        Player HumanPlayer { get; }
 
         GameState CurrentState { get; }
 

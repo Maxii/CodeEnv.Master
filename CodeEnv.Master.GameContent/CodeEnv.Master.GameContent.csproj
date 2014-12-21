@@ -89,8 +89,6 @@
     <Compile Include="Generic\Graphics\CubeWireframe.cs" />
     <Compile Include="Game\Framework\FleetComposition.cs" />
     <Compile Include="Game\Framework\GameSettings.cs" />
-    <Compile Include="Game\Framework\HumanPlayer.cs" />
-    <Compile Include="Game\Framework\IPlayer.cs" />
     <Compile Include="Game\Framework\Player.cs" />
     <Compile Include="Game\Framework\Race.cs" />
     <Compile Include="Generic\IO\RaceStat.cs" />
@@ -199,6 +197,7 @@
     <Compile Include="Generic\Framework\IWeaponRangeMonitor.cs" />
     <Compile Include="Generic\Framework\ICommandItem.cs" />
     <Compile Include="Generic\Framework\ISensorRangeMonitor.cs" />
+    <Compile Include="PlanetoidDataRecord.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\ShipData.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />

@@ -32,8 +32,8 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
     }
 
     private UniverseSize _universeSize;
-    private Species _playerRace;
-    //private GameColor _playerColor;
+    private Species _playerSpecies;
+    private GameColor _playerColor;
 
     protected override void CaptureInitializedState() {
         base.CaptureInitializedState();
@@ -42,19 +42,21 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
 
     protected override void RecordPopupListState(string popupListName, string selectionName) {
         base.RecordPopupListState(popupListName, selectionName);
+        // IMPROVE attempts to parse selectionName in all three Enum types for each selectionName
         UniverseSize universeSize;
         if (Enums<UniverseSize>.TryParse(selectionName, true, out universeSize)) {
-            //D.Log("UniverseSize recorded as {0}.".Inject(selectionName));
+            //D.Log("Successfully parsed {0}.", selectionName);
             _universeSize = universeSize;
         }
-        Species playerRace;
-        if (Enums<Species>.TryParse(selectionName, true, out playerRace)) {
-            //D.Log("Player recorded as {0}.".Inject(selectionName));
-            _playerRace = playerRace;
+        Species playerSpecies;
+        if (Enums<Species>.TryParse(selectionName, true, out playerSpecies)) {
+            //D.Log("Successfully parsed {0}.", selectionName);
+            _playerSpecies = playerSpecies;
         }
         GameColor playerColor;
         if (Enums<GameColor>.TryParse(selectionName, true, out playerColor)) {
-            //_playerColor = playerColor;
+            //D.Log("Successfully parsed {0}.", selectionName);
+            _playerColor = playerColor;
         }
     }
 
@@ -62,7 +64,7 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
         GameSettings settings = new GameSettings() {
             IsNewGame = true,
             UniverseSize = _universeSize,
-            PlayerRace = TempGameValues.HumanPlayersRace
+            PlayerRace = new Race(new RaceStat(_playerSpecies, "Maxii", "Maxii description", _playerColor))
         };
         _gameMgr.InitiateNewGame(settings);
     }
@@ -70,7 +72,7 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
     [Conditional("UNITY_EDITOR")]
     private void ValidateState() {
         D.Assert(_universeSize != UniverseSize.None, "UniverseSize!");
-        D.Assert(_playerRace != Species.None, "PlayerRace!");
+        D.Assert(_playerSpecies != Species.None, "PlayerRace!");
     }
 
     protected override void Cleanup() { }

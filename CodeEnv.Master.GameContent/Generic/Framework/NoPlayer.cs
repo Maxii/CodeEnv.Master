@@ -30,13 +30,9 @@ namespace CodeEnv.Master.GameContent {
             return new ObjectAnalyzer().ToString(this);
         }
 
-        #region IPlayer Members
-
-        public override void SetRelations(IPlayer player, DiplomaticRelationship relation) {
+        public override void SetRelations(Player player, DiplomaticRelationship relation) {
             throw new NotImplementedException("SetRelations() is not implemented in {0}.".Inject(GetType().Name));
         }
-
-        #endregion
 
     }
 }

@@ -104,7 +104,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         InitializeContextMenu(Owner);
     }
 
-    private void InitializeContextMenu(IPlayer owner) {
+    private void InitializeContextMenu(Player owner) {
         D.Assert(owner != TempGameValues.NoPlayer);
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
@@ -226,7 +226,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         }
     }
 
-    protected override void OnOwnerChanging(IPlayer newOwner) {
+    protected override void OnOwnerChanging(Player newOwner) {
         base.OnOwnerChanging(newOwner);
         if (_isViewMembersOnDiscernibleInitialized) {
             // _ctxControl has already been initialized
@@ -1108,7 +1108,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     protected override void Cleanup() {
         base.Cleanup();
-        if (_helm != null) { _helm.Dispose(); }
+        _helm.Dispose();
         if (_velocityRay != null) { _velocityRay.Dispose(); }
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();

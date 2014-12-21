@@ -130,7 +130,7 @@ public class StarItem : AItem, INavigableTarget, IShipOrbitable {
         cameraLosChgdListener.enabled = true;
     }
 
-    private void InitializeContextMenu(IPlayer owner) {
+    private void InitializeContextMenu(Player owner) {
         _ctxControl = new StarCtxControl(this);
     }
 
@@ -138,7 +138,7 @@ public class StarItem : AItem, INavigableTarget, IShipOrbitable {
 
     #region Model Methods
 
-    protected override void OnOwnerChanging(IPlayer newOwner) {
+    protected override void OnOwnerChanging(Player newOwner) {
         base.OnOwnerChanging(newOwner);
         // there is only 1 type of ContextMenu for Stars so no need to generate a new one
     }

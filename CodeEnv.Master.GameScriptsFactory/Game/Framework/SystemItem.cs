@@ -119,7 +119,7 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
         __systemHighlightRenderer.enabled = true;
     }
 
-    private void InitializeContextMenu(IPlayer owner) {
+    private void InitializeContextMenu(Player owner) {
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
         }
@@ -165,7 +165,7 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
         Settlement.PlayerIntel.CurrentCoverage = systemIntelCoverage;
     }
 
-    protected override void OnOwnerChanging(IPlayer newOwner) {
+    protected override void OnOwnerChanging(Player newOwner) {
         base.OnOwnerChanging(newOwner);
         if (_isViewMembersOnDiscernibleInitialized) {
             // _ctxControl has already been initialized

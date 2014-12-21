@@ -177,6 +177,7 @@
     <Compile Include="GuiZoomOutOnCursorOption.cs" />
     <Compile Include="Helm.cs" />
     <Compile Include="HudPublisher.cs" />
+    <Compile Include="HumanPlayer.cs" />
     <Compile Include="IBaseCmdTarget.cs" />
     <Compile Include="ICameraLOSChangedClient.cs" />
     <Compile Include="ICameraLOSChangedRelay.cs" />
@@ -216,6 +217,7 @@
     <Compile Include="IPlanetModel.cs" />
     <Compile Include="IPlanetoidModel.cs" />
     <Compile Include="IPlanetoidTarget.cs" />
+    <Compile Include="IPlayer.cs" />
     <Compile Include="IRangeTracker.cs" />
     <Compile Include="ISectorModel.cs" />
     <Compile Include="ISectorTarget.cs" />

@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
 
         float Radius { get; }
 
-        IPlayer Owner { get; }
+        Player Owner { get; }
 
         Vector3 Position { get; }
 

@@ -40,7 +40,8 @@ namespace CodeEnv.Master.GameContent {
         {IntelCoverage.Aware, new List<GuiHudLineKeys> { GuiHudLineKeys.SectorIndex,
 
                                                                        GuiHudLineKeys.IntelState,
-                                                                       GuiHudLineKeys.CameraDistance }},
+                                                                       GuiHudLineKeys.CameraDistance 
+        }},
 
         {IntelCoverage.Minimal, new List<GuiHudLineKeys> { GuiHudLineKeys.SectorIndex,
                                                                         GuiHudLineKeys.IntelState,
@@ -55,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
                                                                             GuiHudLineKeys.Owner,
                                                                        GuiHudLineKeys.Density,
                                                                            GuiHudLineKeys.Speed
-                                                                            }},
+         }},
 
          {IntelCoverage.Moderate, new List<GuiHudLineKeys> { GuiHudLineKeys.SectorIndex,
                                                                         GuiHudLineKeys.IntelState,
@@ -73,7 +74,7 @@ namespace CodeEnv.Master.GameContent {
                                                                             GuiHudLineKeys.Health,
                                                                            GuiHudLineKeys.CombatStrength,
                                                                            GuiHudLineKeys.Composition
-                                                                         }},
+       }},
 
        {IntelCoverage.Comprehensive, new List<GuiHudLineKeys> { GuiHudLineKeys.SectorIndex,
                                                                         GuiHudLineKeys.IntelState,
@@ -96,7 +97,7 @@ namespace CodeEnv.Master.GameContent {
                                                                            GuiHudLineKeys.ShipDetails,
                                                                             GuiHudLineKeys.TargetName,
                                                                             GuiHudLineKeys.TargetDistance
-       }}
+      }}
     };
 
         protected static IColoredTextList _emptyTextList = new ColoredTextListBase();
@@ -256,7 +257,7 @@ namespace CodeEnv.Master.GameContent {
 
         public class ColoredTextList_Owner : ColoredTextListBase {
 
-            public ColoredTextList_Owner(IPlayer player) {
+            public ColoredTextList_Owner(Player player) {
                 _list.Add(new ColoredText(player.LeaderName, player.Color));
             }
         }

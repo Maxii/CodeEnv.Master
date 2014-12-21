@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
 
         event Action<IItem> onOwnerChanged;
 
-        IPlayer Owner { get; }
+        Player Owner { get; }
 
         bool IsAliveAndOperating { get; }
 

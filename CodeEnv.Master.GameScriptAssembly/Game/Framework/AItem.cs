@@ -96,7 +96,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
         protected set { _radius = value; }
     }
 
-    public IPlayer Owner { get { return Data.Owner; } }
+    public Player Owner { get { return Data.Owner; } }
 
     /// <summary>
     /// Property that allows each derived class to establish the radius of the sphericalHighlight.
@@ -187,8 +187,8 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
         D.Assert(_subscribers != null);
         _subscribers.Add(Data.SubscribeToPropertyChanged<AItemData, string>(d => d.Name, OnNamingChanged));
         _subscribers.Add(Data.SubscribeToPropertyChanged<AItemData, string>(d => d.ParentName, OnNamingChanged));
-        _subscribers.Add(Data.SubscribeToPropertyChanging<AItemData, IPlayer>(d => d.Owner, OnOwnerChanging));
-        _subscribers.Add(Data.SubscribeToPropertyChanged<AItemData, IPlayer>(d => d.Owner, OnOwnerChanged));
+        _subscribers.Add(Data.SubscribeToPropertyChanging<AItemData, Player>(d => d.Owner, OnOwnerChanging));
+        _subscribers.Add(Data.SubscribeToPropertyChanged<AItemData, Player>(d => d.Owner, OnOwnerChanged));
     }
 
     #endregion
@@ -200,7 +200,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
     /// </summary>
     protected virtual void OnNamingChanged() { }
 
-    protected virtual void OnOwnerChanging(IPlayer newOwner) { }
+    protected virtual void OnOwnerChanging(Player newOwner) { }
 
     protected virtual void OnOwnerChanged() {
         if (onOwnerChanged != null) {

@@ -71,7 +71,7 @@ public abstract class AUnitBaseCommandItem : AUnitCommandItem, IShipOrbitable {
         // revolvers control their own enabled state
     }
 
-    private void InitializeContextMenu(IPlayer owner) {
+    private void InitializeContextMenu(Player owner) {
         D.Assert(owner != TempGameValues.NoPlayer);
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
@@ -139,7 +139,7 @@ public abstract class AUnitBaseCommandItem : AUnitCommandItem, IShipOrbitable {
         CurrentState = BaseState.Dead;
     }
 
-    protected override void OnOwnerChanging(IPlayer newOwner) {
+    protected override void OnOwnerChanging(Player newOwner) {
         base.OnOwnerChanging(newOwner);
         if (_isViewMembersOnDiscernibleInitialized) {
             // _ctxControl has already been initialized

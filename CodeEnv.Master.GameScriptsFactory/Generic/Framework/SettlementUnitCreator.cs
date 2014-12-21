@@ -61,7 +61,7 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory
         get { return new FacilityCategory[] { FacilityCategory.CentralHub }; }
     }
 
-    protected override SettlementCommandItem MakeCommand(IPlayer owner) {
+    protected override SettlementCommandItem MakeCommand(Player owner) {
         LogEvent();
         var countermeasures = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerCmd);
         SettlementCmdStat cmdStat = new SettlementCmdStat(UnitName, 10F, 100, Formation.Circle, 100);

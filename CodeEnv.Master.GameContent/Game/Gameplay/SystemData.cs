@@ -205,7 +205,7 @@ namespace CodeEnv.Master.GameContent {
             if (_settlementSubscribers == null) {
                 _settlementSubscribers = new List<IDisposable>();
             }
-            _settlementSubscribers.Add(SettlementData.SubscribeToPropertyChanged<SettlementCmdData, IPlayer>(sd => sd.Owner, OnSettlementOwnerChanged));
+            _settlementSubscribers.Add(SettlementData.SubscribeToPropertyChanged<SettlementCmdData, Player>(sd => sd.Owner, OnSettlementOwnerChanged));
         }
 
         private void UnsubscribeToPlanetoidDataValueChanges(APlanetoidData data) {

@@ -58,7 +58,7 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityCategory, 
         get { return new FacilityCategory[] { FacilityCategory.CentralHub }; }
     }
 
-    protected override StarbaseCommandItem MakeCommand(IPlayer owner) {
+    protected override StarbaseCommandItem MakeCommand(Player owner) {
         LogEvent();
         var countermeasures = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerCmd);
         StarbaseCmdStat cmdStat = new StarbaseCmdStat(UnitName, 10F, 100, Formation.Circle);

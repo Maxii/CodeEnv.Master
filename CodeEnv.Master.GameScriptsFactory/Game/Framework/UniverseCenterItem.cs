@@ -93,7 +93,7 @@ public class UniverseCenterItem : AItem, IShipOrbitable {
         cameraLosChgdListener.enabled = true;
     }
 
-    private void InitializeContextMenu(IPlayer owner) {
+    private void InitializeContextMenu(Player owner) {
         _ctxControl = new UniverseCenterCtxControl(this);
     }
 

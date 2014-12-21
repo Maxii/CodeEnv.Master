@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
     public class PlayerPrefsManager : AGenericSingleton<PlayerPrefsManager>, IInstanceCount {
 
         private string _universeSizeKey = "Universe Size Preference";
-        private string _playerRaceKey = "Player Race Preference";
+        private string _playerSpeciesKey = "Player Species Preference";
         private string _playerColorKey = "Player Color Preference";
 
         private string _gameSpeedOnLoadKey = "Game Speed On Load Option";
@@ -43,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
         // notifications not needed as no change will be allowed to affect an existing game instance    // TODO
         public UniverseSize UniverseSize { get; private set; }
         public GameClockSpeed GameSpeedOnLoad { get; private set; }
-        public Species PlayerRace { get; private set; }
+        public Species PlayerSpecies { get; private set; }
         public GameColor PlayerColor { get; private set; }
 
         public bool IsPauseOnLoadEnabled { get; private set; }
@@ -106,7 +106,7 @@ namespace CodeEnv.Master.GameContent {
         private void OnNewGameBuilding() {
             var settings = _gameMgr.GameSettings;
             UniverseSize = settings.UniverseSize;
-            PlayerRace = settings.PlayerRace.Species;
+            PlayerSpecies = settings.PlayerRace.Species;
             PlayerColor = settings.PlayerRace.Color;
             ValidateState();
         }
@@ -140,9 +140,9 @@ namespace CodeEnv.Master.GameContent {
                 encryptedStringValue = Encrypt(GameSpeedOnLoad.GetName());
                 PlayerPrefs.SetString(_gameSpeedOnLoadKey, encryptedStringValue);
             }
-            if (PlayerRace != Species.None) {
-                encryptedStringValue = Encrypt(PlayerRace.GetName());
-                PlayerPrefs.SetString(_playerRaceKey, encryptedStringValue);
+            if (PlayerSpecies != Species.None) {
+                encryptedStringValue = Encrypt(PlayerSpecies.GetName());
+                PlayerPrefs.SetString(_playerSpeciesKey, encryptedStringValue);
             }
             if (PlayerColor != GameColor.None) {
                 encryptedStringValue = Encrypt(PlayerColor.GetName());
@@ -177,7 +177,7 @@ namespace CodeEnv.Master.GameContent {
             //D.Log("GameSpeedOnLoad = {0} before retrieval.", GameSpeedOnLoad);
             GameSpeedOnLoad = PlayerPrefs.HasKey(_gameSpeedOnLoadKey) ? RetrieveEnumPref<GameClockSpeed>(_gameSpeedOnLoadKey) : GameClockSpeed.Normal;
             //D.Log("GameSpeedOnLoad = {0} after retrieval.", GameSpeedOnLoad);
-            PlayerRace = PlayerPrefs.HasKey(_playerRaceKey) ? RetrieveEnumPref<Species>(_playerRaceKey) : Species.Human;
+            PlayerSpecies = PlayerPrefs.HasKey(_playerSpeciesKey) ? RetrieveEnumPref<Species>(_playerSpeciesKey) : Species.Human;
             PlayerColor = PlayerPrefs.HasKey(_playerColorKey) ? RetrieveEnumPref<GameColor>(_playerColorKey) : GameColor.Blue;
 
             IsPauseOnLoadEnabled = (PlayerPrefs.HasKey(_isPauseAfterLoadEnabledKey)) ? bool.Parse(Decrypt(PlayerPrefs.GetString(_isPauseAfterLoadEnabledKey))) : false;

@@ -85,6 +85,8 @@ namespace CodeEnv.Master.GameContent {
             _stat = stat;
         }
 
+        // Copy Constructor makes no sense when a RangeMonitor must be attached.
+
         /// <summary>
         /// Fires on the specified enemy target. If the target is null, then attempts to fire on
         /// an enemy target of opportunity. Returns <c>true </c> if an enemy target was fired on.

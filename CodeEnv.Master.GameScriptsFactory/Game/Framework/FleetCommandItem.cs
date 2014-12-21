@@ -256,7 +256,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         }
     }
 
-    protected override void OnOwnerChanging(IPlayer newOwner) {
+    protected override void OnOwnerChanging(Player newOwner) {
         base.OnOwnerChanging(newOwner);
         if (_isViewMembersOnDiscernibleInitialized) {
             // _ctxControl has already been initialized
@@ -748,6 +748,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
         }
+        _navigator.Dispose();
     }
 
     #endregion
@@ -792,7 +793,12 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         /// <summary>
         /// The real-time worldspace location of the target.
         /// </summary>
-        public Vector3 Destination { get { return Target.Position; } }
+        public Vector3 Destination {
+            get {
+                //D.Log("{0}.Destination called.", Target.FullName);
+                return Target.Position;
+            }
+        }
 
         /// <summary>
         /// The speed to travel at.
@@ -1291,6 +1297,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         }
 
         private void Cleanup() {
+            //D.Log("{0}.Cleanup() called.", _fleet.FullName);
             Unsubscribe();
             if (_pilotJob != null) {
                 _pilotJob.Dispose();

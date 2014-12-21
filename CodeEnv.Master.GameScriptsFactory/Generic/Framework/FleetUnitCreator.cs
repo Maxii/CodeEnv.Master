@@ -49,7 +49,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
         return new ShipStat(elementName, mass, 50F, category, combatStance, maxTurnRate, drag, fullStlThrust, fullFtlThrust);
     }
 
-    protected override FleetCommandItem MakeCommand(IPlayer owner) {
+    protected override FleetCommandItem MakeCommand(Player owner) {
         LogEvent();
         var countermeasures = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerCmd);
         FleetCmdStat cmdStat = new FleetCmdStat(UnitName, 10F, 100, Formation.Globe);
@@ -123,7 +123,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
 
     private void __GetFleetUnderway() {
         LogEvent();
-        IPlayer fleetOwner = _owner;
+        Player fleetOwner = _owner;
         IEnumerable<INavigableTarget> moveTgts = StarbaseUnitCreator.AllUnitCommands.Where(sb => sb.IsAliveAndOperating && fleetOwner.IsRelationship(sb.Owner, DiplomaticRelationship.Ally)).Cast<INavigableTarget>();
         if (!moveTgts.Any()) {
             // in case no starbases qualify
@@ -158,7 +158,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
 
     private void __GetFleetAttackUnderway() {
         LogEvent();
-        IPlayer fleetOwner = _owner;
+        Player fleetOwner = _owner;
         IEnumerable<IUnitAttackableTarget> attackTgts = StarbaseUnitCreator.AllUnitCommands.Where(sb => sb.IsAliveAndOperating && fleetOwner.IsEnemyOf(sb.Owner)).Cast<IUnitAttackableTarget>();
         if (attackTgts.IsNullOrEmpty()) {
             // in case no Starbases qualify

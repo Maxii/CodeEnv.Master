@@ -21,6 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for all kinds of players.
     /// </summary>
+    [System.Obsolete]
     public interface IPlayer {
 
         bool IsActive { get; set; }

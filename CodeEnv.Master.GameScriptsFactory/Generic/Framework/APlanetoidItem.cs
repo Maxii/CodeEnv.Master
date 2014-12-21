@@ -103,7 +103,7 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         cameraLosChgdListener.enabled = true;
     }
 
-    private void InitializeContextMenu(IPlayer owner) {
+    private void InitializeContextMenu(Player owner) {
         _ctxControl = new PlanetoidCtxControl(this);
     }
 
@@ -132,7 +132,7 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         _transform.parent.GetInterface<IOrbiter>().IsOrbiterInMotion = toOrbit;
     }
 
-    protected override void OnOwnerChanging(IPlayer newOwner) {
+    protected override void OnOwnerChanging(Player newOwner) {
         base.OnOwnerChanging(newOwner);
         // there is only 1 type of ContextMenu for Planetoids so no need to generate a new one
     }
@@ -228,26 +228,6 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
     }
 
     #endregion
-    //#region IElementAttackableTarget Members
-
-    //public override void TakeHit(CombatStrength attackerWeaponStrength) {
-    //    if (!IsAliveAndOperating) {
-    //        return;
-    //    }
-    //    LogEvent();
-    //    CombatStrength damage = attackerWeaponStrength - Data.DefensiveStrength;
-    //    if (damage.Combined == Constants.ZeroF) {
-    //        return;
-    //    }
-    //    bool isAlive = ApplyDamage(damage.Combined);
-    //    if (!isAlive) {
-    //        InitiateDeath();
-    //        return;
-    //    }
-    //    ShowAnimation(MortalAnimations.Hit);
-    //}
-
-    //#endregion
 
     #region IShipOrbitable Members
 

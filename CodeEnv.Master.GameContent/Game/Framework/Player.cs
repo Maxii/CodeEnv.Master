@@ -25,9 +25,32 @@ namespace CodeEnv.Master.GameContent {
     /// Instantiable base class for a player.
     /// TODO Need a PlayerFactory to make players so there is only one instance of each player allowing == comparisons
     /// </summary>
-    public class Player : APropertyChangeTracking, IPlayer {
+    public class Player : APropertyChangeTracking {
 
-        private IDictionary<IPlayer, DiplomaticRelationship> _diplomaticRelationship;
+        private bool _isActive = true;
+        public bool IsActive {  // accomodates an AIPlayer being eliminated in the game
+            get { return _isActive; }
+            set { SetProperty<bool>(ref _isActive, value, "IsActive"); }
+        }
+
+        public bool IsPlayer { get; private set; }
+
+        public IQ IQ { get; private set; }
+
+        public string LeaderName { get { return _race.LeaderName; } }
+
+        private Race _race;
+        /// <summary>
+        /// A copy of this player's race.
+        /// </summary>
+        public Race Race {
+            get { return new Race(_race); } // race instance cannot be modified as I only return a copy
+            private set { _race = value; }
+        }
+
+        public GameColor Color { get { return _race.Color; } }
+
+        private IDictionary<Player, DiplomaticRelationship> _diplomaticRelationship = new Dictionary<Player, DiplomaticRelationship>();
 
         /// <summary>
         /// Initializes a new random instance of the <see cref="Player"/> class for testing. Excludes Humans.
@@ -36,49 +59,27 @@ namespace CodeEnv.Master.GameContent {
             : this(new Race(RandomExtended<Species>.Choice(Enums<Species>.GetValues().Except(Species.None, Species.Human))),
                 Enums<IQ>.GetRandom(excludeDefault: true)) { }
 
-        public Player(Race race, IQ iq) {
-            _race = race;
+        public Player(Race race, IQ iq, bool isPlayer = false) {
+            Race = race;
             IQ = iq;
-            IsActive = true;
-            _diplomaticRelationship = new Dictionary<IPlayer, DiplomaticRelationship>();
-            _diplomaticRelationship[this] = DiplomaticRelationship.Self;  // assigning relations this way allows NoPlayer to make SetRelations illegal
-            //SetRelations(this, DiplomaticRelations.Self);
+            IsPlayer = isPlayer;
+            _diplomaticRelationship[this] = DiplomaticRelationship.Self;    // assigning relations this way allows NoPlayer to make SetRelations illegal
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
+        /// <summary>
+        /// Copy Constructor.
+        /// </summary>
+        /// <param name="player">The player to copy.</param>
+        public Player(Player player) : this(player.Race, player.IQ, player.IsPlayer) { }
 
-        #region IPlayer Members
-
-        private bool _isActive;
-        public bool IsActive {  // accomodates an AIPlayer being eliminated in the game
-            get { return _isActive; }
-            set { SetProperty<bool>(ref _isActive, value, "IsActive"); }
-        }
-
-        public virtual bool IsPlayer { get { return false; } }
-
-        public IQ IQ { get; private set; }
-
-        public virtual string LeaderName { get { return _race.LeaderName; } }
-
-        private Race _race;
-        public Race Race {
-            get { return new Race(_race); } // race instance cannot be modified as I only return a copy
-            private set { _race = value; }
-        }
-
-        public virtual GameColor Color { get { return _race.Color; } }
-
-        public DiplomaticRelationship GetRelations(IPlayer player) {
+        public DiplomaticRelationship GetRelations(Player player) {
             if (!_diplomaticRelationship.ContainsKey(player)) {
                 return DiplomaticRelationship.None;
             }
             return _diplomaticRelationship[player];
         }
 
-        public virtual void SetRelations(IPlayer player, DiplomaticRelationship relationship) {
+        public virtual void SetRelations(Player player, DiplomaticRelationship relationship) {
             if (player == this) {
                 D.Assert(relationship == DiplomaticRelationship.Self);
             }
@@ -86,15 +87,17 @@ namespace CodeEnv.Master.GameContent {
             // TODO send DiploRelationsChange event
         }
 
-        public bool IsRelationship(IPlayer player, params DiplomaticRelationship[] relations) {
+        public bool IsRelationship(Player player, params DiplomaticRelationship[] relations) {
             return GetRelations(player).EqualsAnyOf(relations);
         }
 
-        public bool IsEnemyOf(IPlayer player) {
+        public bool IsEnemyOf(Player player) {
             return IsRelationship(player, DiplomaticRelationship.War, DiplomaticRelationship.ColdWar);
         }
 
-        #endregion
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
+        }
 
     }
 }

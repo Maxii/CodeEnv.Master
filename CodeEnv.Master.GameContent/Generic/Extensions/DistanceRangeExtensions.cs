@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public static class DistanceRangeExtensions {
 
-        public static float GetWeaponRange(this DistanceRange weaponRange, IPlayer owner) {
+        public static float GetWeaponRange(this DistanceRange weaponRange, Player owner) {
             var speciesModifier = owner.Race.Species.GetWeaponRangeModifier();
             switch (weaponRange) {
                 case DistanceRange.Short:
@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public static float GetSensorRange(this DistanceRange sensorRange, IPlayer owner) {
+        public static float GetSensorRange(this DistanceRange sensorRange, Player owner) {
             var speciesModifier = owner.Race.Species.GetSensorRangeModifier();
             switch (sensorRange) {
                 case DistanceRange.Short:

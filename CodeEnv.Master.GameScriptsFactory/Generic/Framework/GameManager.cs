@@ -224,8 +224,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         Application.LoadLevel((int)SceneLevel.GameScene);
     }
 
-    private HumanPlayer CreateHumanPlayer(GameSettings gameSettings) {
-        return new HumanPlayer(gameSettings.PlayerRace);
+    private Player CreateHumanPlayer(GameSettings gameSettings) {
+        return new Player(gameSettings.PlayerRace, IQ.Normal, isPlayer: true);
     }
 
     #endregion
@@ -397,7 +397,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
             GameSettings = new GameSettings {
                 IsNewGame = true,
                 UniverseSize = _playerPrefsMgr.UniverseSize,
-                PlayerRace = TempGameValues.HumanPlayersRace
+                PlayerRace = new Race(new RaceStat(_playerPrefsMgr.PlayerSpecies, "Maxii", "Maxii description", _playerPrefsMgr.PlayerColor))
             };
             HumanPlayer = CreateHumanPlayer(GameSettings);
             return;
@@ -691,7 +691,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         set { SetProperty<bool>(ref _isPaused, value, "IsPaused"); }
     }
 
-    public HumanPlayer HumanPlayer { get; private set; }
+    public Player HumanPlayer { get; private set; }
 
     public void RecordGameStateProgressionReadiness(MonoBehaviour source, GameState maxGameStateUntilReady, bool isReady) {
         IList<MonoBehaviour> unreadyElements = _gameStateProgressionReadinessLookup[maxGameStateUntilReady];

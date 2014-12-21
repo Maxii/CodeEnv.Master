@@ -67,6 +67,8 @@ namespace CodeEnv.Master.GameContent {
             _stat = stat;
         }
 
+        // Copy Constructor makes no sense when a RangeMonitor must be attached
+
         private void OnIsAnyEnemyInRangeChanged() {
             // TODO
         }

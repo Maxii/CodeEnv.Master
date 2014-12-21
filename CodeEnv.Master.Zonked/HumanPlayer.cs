@@ -22,6 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// The human Player with the optionally ability to set a 
     /// custom Leadername and Color.
     /// </summary>
+    [System.Obsolete]
     public class HumanPlayer : Player {
 
         public HumanPlayer(Race race, GameColor color = GameColor.None, string leaderName = Constants.Empty)
@@ -36,17 +37,17 @@ namespace CodeEnv.Master.GameContent {
 
         #region IPlayer Members
 
-        public override bool IsPlayer { get { return true; } }
+        //public override bool IsPlayer { get { return true; } }
 
         private string _leaderName;
-        public override string LeaderName {
-            get { return !_leaderName.Equals(string.Empty) ? _leaderName : base.LeaderName; }
-        }
+        //public override string LeaderName {
+        //    get { return !_leaderName.Equals(string.Empty) ? _leaderName : base.LeaderName; }
+        //}
 
         private GameColor _color;
-        public override GameColor Color {
-            get { return _color != GameColor.None ? _color : base.Color; }
-        }
+        //public override GameColor Color {
+        //    get { return _color != GameColor.None ? _color : base.Color; }
+        //}
 
         #endregion
 

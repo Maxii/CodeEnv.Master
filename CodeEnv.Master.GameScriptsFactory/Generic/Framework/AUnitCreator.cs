@@ -53,7 +53,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     protected IList<CountermeasureStat> _availableCountermeasureStats;
     protected CommandType _command;
-    protected IPlayer _owner;
+    protected Player _owner;
 
     private IList<ElementStatType> _elementStats;
     private IList<ElementType> _elements;
@@ -476,7 +476,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     /// <param name="element">The element.</param>
     protected abstract ElementType MakeElement(ElementStatType stat, IEnumerable<WeaponStat> wStats, IEnumerable<CountermeasureStat> countermeasuresStats, IEnumerable<SensorStat> sensorStats);
 
-    protected abstract CommandType MakeCommand(IPlayer owner);
+    protected abstract CommandType MakeCommand(Player owner);
 
     #region Enablement
 
@@ -568,12 +568,12 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     protected abstract void __IssueFirstUnitCommand();
 
-    private IPlayer ValidateAndInitializeOwner() {
-        IPlayer humanPlayer = _gameMgr.HumanPlayer;
+    private Player ValidateAndInitializeOwner() {
+        Player humanPlayer = _gameMgr.HumanPlayer;
         if (isOwnerPlayer) {
             return humanPlayer;
         }
-        IPlayer aiOwner = new Player();
+        Player aiOwner = new Player();
         switch (ownerRelationshipWithPlayer) {
             case __DiploStateWithPlayer.Ally:
                 aiOwner.SetRelations(humanPlayer, DiplomaticRelationship.Ally);
