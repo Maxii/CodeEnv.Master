@@ -23,9 +23,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IElementAttackableTarget : INavigableTarget {
 
-        event Action<IMortalItem> onDeathOneShot;
-
         event Action<IItem> onOwnerChanged;
+
+        event Action<IMortalItem> onDeathOneShot;
 
         Player Owner { get; }
 

@@ -16,11 +16,12 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
     /// <summary>
-    /// Interface for a target that one can navigate (move) to.
+    ///Interface for a target that one can navigate (move) to.
     /// </summary>
     public interface INavigableTarget {
 

@@ -32,11 +32,11 @@ namespace CodeEnv.Master.GameContent {
 
         public ISensorRangeMonitor RangeMonitor { get; set; }
 
-        private bool _isAnyEnemyInRange;
-        public bool IsAnyEnemyInRange {
-            get { return _isAnyEnemyInRange; }
-            set { SetProperty<bool>(ref _isAnyEnemyInRange, value, "IsAnyEnemyInRange", OnIsAnyEnemyInRangeChanged); }
-        }
+        //private bool _isAnyEnemyInRange;
+        //public bool IsAnyEnemyInRange {
+        //    get { return _isAnyEnemyInRange; }
+        //    set { SetProperty<bool>(ref _isAnyEnemyInRange, value, "IsAnyEnemyInRange", OnIsAnyEnemyInRangeChanged); }
+        //}
 
         private bool _isOperational;
         public bool IsOperational {
@@ -69,9 +69,9 @@ namespace CodeEnv.Master.GameContent {
 
         // Copy Constructor makes no sense when a RangeMonitor must be attached
 
-        private void OnIsAnyEnemyInRangeChanged() {
-            // TODO
-        }
+        //private void OnIsAnyEnemyInRangeChanged() {
+        //    // TODO
+        //}
 
         private void OnIsOperationalChanged() {
             if (onIsOperationalChanged != null) {

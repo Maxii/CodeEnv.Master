@@ -28,8 +28,7 @@ namespace CodeEnv.Master.GameContent {
 
         ICommandItem ParentCommand { get; set; }
 
-        IList<IElementAttackableTarget> EnemyTargets { get; }
-        IList<IElementAttackableTarget> AllTargets { get; }
+        IList<INavigableTarget> AllTargets { get; }
 
         void Add(Sensor sensor);
 
@@ -40,8 +39,6 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensor">The sensor.</param>
         /// <returns></returns>
         bool Remove(Sensor sensor);
-
-        bool TryGetRandomEnemyTarget(out IElementAttackableTarget enemyTarget);
 
     }
 }

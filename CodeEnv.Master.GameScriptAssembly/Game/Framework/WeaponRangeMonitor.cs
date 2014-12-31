@@ -152,15 +152,16 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
         ParentElement.onOwnerChanged += OnOwnerChanged;
     }
 
-    private void OnTargetOwnerChanged(IItem target) {
-        var _target = target as IElementAttackableTarget;
+    private void OnTargetOwnerChanged(IItem item) {
+        var target = item as IElementAttackableTarget;
+        D.Assert(target != null);   // the only way this monitor would be notified of this change is if it was already qualified as a target
         if (ParentElement.Owner.IsEnemyOf(target.Owner)) {
-            if (!EnemyTargets.Contains(_target)) {
-                AddEnemyTarget(_target);
+            if (!EnemyTargets.Contains(target)) {
+                AddEnemyTarget(target);
             }
         }
         else {
-            RemoveEnemyTarget(_target);
+            RemoveEnemyTarget(target);
         }
     }
 
@@ -191,6 +192,7 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
             }
             else {
                 D.Log("{0}.{1} avoided adding target {2} that is already dead but not yet destroyed.", ParentElement.FullName, GetType().Name, target.FullName);
+                return; // added
             }
         }
         else {
@@ -198,9 +200,13 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
             return;
         }
 
-        if (ParentElement.Owner.IsEnemyOf(target.Owner) && target.IsAliveAndOperating && !EnemyTargets.Contains(target)) {
+        if (ParentElement.Owner.IsEnemyOf(target.Owner)) {
+            D.Assert(!EnemyTargets.Contains(target));
             AddEnemyTarget(target);
         }
+        //if (ParentElement.Owner.IsEnemyOf(target.Owner) && target.IsAliveAndOperating && !EnemyTargets.Contains(target)) {
+        //    AddEnemyTarget(target);
+        //}
     }
 
     private void AddEnemyTarget(IElementAttackableTarget enemyTarget) {
@@ -228,6 +234,7 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
             D.Warn("{0}.{1} target {2} not present to be removed.", ParentElement.FullName, GetType().Name, target.FullName);
             return;
         }
+
         if (EnemyTargets.Contains(target)) {
             RemoveEnemyTarget(target);
         }
@@ -266,6 +273,10 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
         Weapons.ForAll(w => {
             w.onIsOperationalChanged -= OnWeaponIsOperationalChanged;
             w.Dispose();
+        });
+        AllTargets.ForAll(t => {
+            t.onOwnerChanged -= OnTargetOwnerChanged;
+            t.onDeathOneShot -= OnTargetDeath;
         });
     }
 

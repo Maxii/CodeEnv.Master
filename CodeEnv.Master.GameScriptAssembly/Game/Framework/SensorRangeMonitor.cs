@@ -11,7 +11,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -30,7 +30,7 @@ using UnityEngine;
 /// </summary>
 public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
 
-    private static HashSet<Collider> _collidersToIgnore = new HashSet<Collider>();
+    private static HashSet<Collider> _collidersToIgnore = new HashSet<Collider>();  // UNCLEAR ever any colliders to ignore?
 
     private DistanceRange _range;
     public DistanceRange Range {
@@ -47,8 +47,8 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
         }
     }
 
-    public IList<IElementAttackableTarget> EnemyTargets { get; private set; }
-    public IList<IElementAttackableTarget> AllTargets { get; private set; }
+    //public IList<INavigableTarget> EnemyTargets { get; private set; }
+    public IList<INavigableTarget> AllTargets { get; private set; }
 
     public IList<Sensor> Sensors { get; private set; }
 
@@ -60,8 +60,8 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
         _collider.isTrigger = true;
         _collider.radius = Constants.ZeroF;  // initialize to same value as Range
 
-        AllTargets = new List<IElementAttackableTarget>();
-        EnemyTargets = new List<IElementAttackableTarget>();
+        AllTargets = new List<INavigableTarget>();
+        //EnemyTargets = new List<INavigableTarget>();
         Sensors = new List<Sensor>();
         _collider.enabled = false;
     }
@@ -98,19 +98,6 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
         return true;
     }
 
-    public bool TryGetRandomEnemyTarget(out IElementAttackableTarget enemyTarget) {
-        bool result = false;
-        enemyTarget = null;
-        if (EnemyTargets.Count > 0) {
-            result = true;
-            enemyTarget = RandomExtended<IElementAttackableTarget>.Choice(EnemyTargets);
-        }
-        else {
-            D.Warn("{0}.{1} found no enemy target in range. It should have.", ParentCommand.FullName, GetType().Name);
-        }
-        return result;
-    }
-
     void OnTriggerEnter(Collider other) {
         D.Log("{0}.{1}.OnTriggerEnter() tripped by {2}.", ParentCommand.FullName, GetType().Name, other.name);
         if (other.isTrigger) {
@@ -122,7 +109,7 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
             return;
         }
 
-        var target = other.gameObject.GetInterface<IElementAttackableTarget>();
+        var target = other.gameObject.GetInterface<INavigableTarget>();
         if (target == null) {
             _collidersToIgnore.Add(other);
             D.Log("{0}.{1} now ignoring {2}.", ParentCommand.FullName, GetType().Name, other.name);
@@ -142,7 +129,7 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
             return;
         }
 
-        var target = other.gameObject.GetInterface<IElementAttackableTarget>();
+        var target = other.gameObject.GetInterface<INavigableTarget>();
         if (target != null) {
             Remove(target);
         }
@@ -152,19 +139,21 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
         ParentCommand.onOwnerChanged += OnOwnerChanged;
     }
 
-    private void OnTargetOwnerChanged(IItem target) {
-        var _target = target as IElementAttackableTarget;
-        if (ParentCommand.Owner.IsEnemyOf(target.Owner)) {
-            if (!EnemyTargets.Contains(_target)) {
-                AddEnemyTarget(_target);
-            }
-        }
-        else {
-            RemoveEnemyTarget(_target);
-        }
-    }
+    //private void OnTargetOwnerChanged(IItem item) {
+    //    var target = item as INavigableTarget;
+    //    D.Assert(target != null);   // the only way this monitor would be notified of this change is if it was already qualified as a target
+    //    if (ParentCommand.Owner.IsEnemyOf(target.Owner)) {
+    //        if (!EnemyTargets.Contains(target)) {
+    //            AddEnemyTarget(target);
+    //        }
+    //    }
+    //    else {
+    //        RemoveEnemyTarget(target);
+    //    }
+    //}
 
     private void OnOwnerChanged(IItem item) {
+        // a change of monitor owner can change the range of the monitor
         Refresh();
     }
 
@@ -173,75 +162,74 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
         Refresh();
     }
 
-    private void OnAnyEnemyInRangeChanged(bool isAnyEnemyInRange) {
-        Sensors.ForAll(s => s.IsAnyEnemyInRange = isAnyEnemyInRange);
-    }
+    //private void OnAnyEnemyInRangeChanged(bool isAnyEnemyInRange) {
+    //    Sensors.ForAll(s => s.IsAnyEnemyInRange = isAnyEnemyInRange);
+    //}
 
     private void OnTargetDeath(IMortalItem target) {
-        Remove(target as IElementAttackableTarget);
+        Remove(target as INavigableTarget);
     }
 
-    private void Add(IElementAttackableTarget target) {
+    private void Add(INavigableTarget target) {
         if (!AllTargets.Contains(target)) {
-            if (target.IsAliveAndOperating) {
-                D.Log("{0}.{1} now tracking target {2}.", ParentCommand.FullName, GetType().Name, target.FullName);
-                target.onDeathOneShot += OnTargetDeath;
-                target.onOwnerChanged += OnTargetOwnerChanged;
-                AllTargets.Add(target);
+            var attackableTarget = target as IElementAttackableTarget;
+            if (attackableTarget != null) {
+                if (attackableTarget.IsAliveAndOperating) {
+                    attackableTarget.onDeathOneShot += OnTargetDeath;
+                }
+                else {
+                    D.Log("{0}.{1} avoided adding target {2} that is already dead but not yet destroyed.", ParentCommand.FullName, GetType().Name, target.FullName);
+                    return;
+                }
             }
-            else {
-                D.Log("{0}.{1} avoided adding target {2} that is already dead but not yet destroyed.", ParentCommand.FullName, GetType().Name, target.FullName);
-            }
+            D.Log("{0}.{1} now tracking target {2}.", ParentCommand.FullName, GetType().Name, target.FullName);
+            // target ownership changes don't matter as I'm not differentiating by DiplomaticRelationship
+            AllTargets.Add(target);
         }
         else {
             D.Warn("{0}.{1} attempted to add duplicate Target {2}.", ParentCommand.FullName, GetType().Name, target.FullName);
         }
-
-        if (ParentCommand.Owner.IsEnemyOf(target.Owner) && target.IsAliveAndOperating && !EnemyTargets.Contains(target)) {
-            AddEnemyTarget(target);
-        }
     }
 
-    private void AddEnemyTarget(IElementAttackableTarget enemyTarget) {
-        D.Log("{0}.{1}({2}) now tracking Enemy {3} at distance {4:0.0}.", ParentCommand.FullName, GetType().Name,
-            Range.GetName(), enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
-        EnemyTargets.Add(enemyTarget);
-        if (EnemyTargets.Count == Constants.One) {
-            OnAnyEnemyInRangeChanged(true);   // there are now enemies in range
-        }
-    }
+    //private void AddEnemyTarget(IElementAttackableTarget enemyTarget) {
+    //    D.Log("{0}.{1}({2}) now tracking Enemy {3} at distance {4:0.0}.", ParentCommand.FullName, GetType().Name,
+    //        Range.GetName(), enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
+    //    EnemyTargets.Add(enemyTarget);
+    //    if (EnemyTargets.Count == Constants.One) {
+    //        OnAnyEnemyInRangeChanged(true);   // there are now enemies in range
+    //    }
+    //}
 
-    private void Remove(IElementAttackableTarget target) {
+    private void Remove(INavigableTarget target) {
         bool isRemoved = AllTargets.Remove(target);
         if (isRemoved) {
-            if (target.IsAliveAndOperating) {
-                D.Log("{0}.{1} no longer tracking {2} at distance = {3}.", ParentCommand.FullName, GetType().Name,
-                    target.FullName, Vector3.Distance(target.Position, _transform.position));
+            var attackableTarget = target as IElementAttackableTarget;
+            if (attackableTarget != null) {
+                if (attackableTarget.IsAliveAndOperating) {
+                    D.Log("{0}.{1} no longer tracking {2} at distance = {3}.", ParentCommand.FullName, GetType().Name,
+                        attackableTarget.FullName, Vector3.Distance(attackableTarget.Position, _transform.position));
+                }
+                else {
+                    D.Log("{0}.{1} no longer tracking dead target {2}.", ParentCommand.FullName, GetType().Name, attackableTarget.FullName);
+                }
+                attackableTarget.onDeathOneShot -= OnTargetDeath;
             }
-            else {
-                // if target is being destroyed, its position can no longer be
-                D.Log("{0}.{1} no longer tracking dead target {2}.", ParentCommand.FullName, GetType().Name, target.FullName);
-            }
-            target.onDeathOneShot -= OnTargetDeath;
-            target.onOwnerChanged -= OnTargetOwnerChanged;
+            // target ownership changes don't matter as I'm not differentiating by DiplomaticRelationship
         }
         else {
             D.Warn("{0}.{1} target {2} not present to be removed.", ParentCommand.FullName, GetType().Name, target.FullName);
         }
-        if (EnemyTargets.Contains(target)) {
-            RemoveEnemyTarget(target);
-        }
     }
 
-    private void RemoveEnemyTarget(IElementAttackableTarget enemyTarget) {
-        var isRemoved = EnemyTargets.Remove(enemyTarget);
-        D.Assert(isRemoved);
-        if (EnemyTargets.Count == 0) {
-            OnAnyEnemyInRangeChanged(false);  // no longer any Enemies in range
-        }
-        D.Log("{0}.{1}({2}) removed Enemy Target {3} at distance {4:0.0}.", ParentCommand.FullName, GetType().Name,
-            Range.GetName(), enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
-    }
+    //private void RemoveEnemyTarget(IElementAttackableTarget enemyTarget) {
+    //    var isRemoved = EnemyTargets.Remove(enemyTarget);
+    //    D.Assert(isRemoved);
+    //    if (EnemyTargets.Count == 0) {
+    //        OnAnyEnemyInRangeChanged(false);  // no longer any Enemies in range
+    //    }
+    //    D.Log("{0}.{1}({2}) removed Enemy Target {3} at distance {4:0.0}.", ParentCommand.FullName, GetType().Name,
+    //        Range.GetName(), enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
+    //}
 
     /// <summary>
     /// Refreshes the contents of this Monitor.
@@ -249,7 +237,7 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
     private void Refresh() {
         bool savedEnabledState = _collider.enabled;
         _collider.enabled = false;
-        _collider.radius = Range.GetWeaponRange(ParentCommand.Owner);
+        _collider.radius = Range.GetSensorRange(ParentCommand.Owner);
         var allTargetsCopy = AllTargets.ToArray();
         allTargetsCopy.ForAll(t => Remove(t));  // clears both AllTargets and EnemyTargets
         _collider.enabled = savedEnabledState;    //  TODO unconfirmed - this should repopulate the Targets when re-enabled with new radius
@@ -265,6 +253,13 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
         }
         Sensors.ForAll(s => {
             s.onIsOperationalChanged -= OnSensorIsOperationalChanged;
+        });
+        AllTargets.ForAll(t => {
+            //t.onOwnerChanged -= OnTargetOwnerChanged;
+            var attackableTarget = t as IElementAttackableTarget;
+            if (attackableTarget != null) {
+                attackableTarget.onDeathOneShot -= OnTargetDeath;
+            }
         });
     }
 
