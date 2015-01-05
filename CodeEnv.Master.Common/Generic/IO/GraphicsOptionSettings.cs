@@ -21,7 +21,7 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public class GraphicsOptionSettings {
 
-        public int QualitySetting { get; set; }
+        public string QualitySetting { get; set; }
 
         public bool IsElementIconsEnabled { get; set; }
 

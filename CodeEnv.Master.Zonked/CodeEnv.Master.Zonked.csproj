@@ -67,6 +67,9 @@
     <Compile Include="AGameInputConfiguration.cs" />
     <Compile Include="AGameObjectManager.cs" />
     <Compile Include="AGraphics.cs" />
+    <Compile Include="AGuiEnumPopupList.cs" />
+    <Compile Include="AGuiPopupList.cs" />
+    <Compile Include="AGuiStringPopupList.cs" />
     <Compile Include="AInputManager.cs" />
     <Compile Include="AItem.cs" />
     <Compile Include="AItemModel.cs" />

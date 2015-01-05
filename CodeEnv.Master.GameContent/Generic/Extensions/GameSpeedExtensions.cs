@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GameSpeedExtensions.cs
-// Extension class providing values acquired externally from Xml for the GameClockSpeed enum.
+// Extension methods for GameClockSpeed values.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Extension class providing values acquired externally from Xml for the GameClockSpeed enum.
+    /// Extension methods for GameClockSpeed values.
     /// </summary>
     public static class GameSpeedExtensions {
 

@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface ISensorRangeMonitor {
 
+        string FullName { get; }
+
         DistanceRange Range { get; }
 
         ICommandItem ParentCommand { get; set; }

@@ -22,7 +22,7 @@ using UnityEngine;
 /// <summary>
 /// Accept button for the SaveGameMenu.
 /// </summary>
-public class GuiSaveMenuAcceptButton : AGuiMenuAcceptButtonBase {
+public class GuiSaveMenuAcceptButton : AGuiMenuAcceptButton {
 
     protected override string TooltipContent {
         get { return "Click to save game."; }

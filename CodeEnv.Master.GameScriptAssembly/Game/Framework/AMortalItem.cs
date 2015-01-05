@@ -64,8 +64,8 @@ public abstract class AMortalItem : AItem, IMortalItem {
     #region Model Methods
 
     public virtual void CommenceOperations() {
-        Data.Countermeasures.ForAll(cm => cm.IsOperational = true);
         IsAliveAndOperating = true;
+        Data.Countermeasures.ForAll(cm => cm.IsOperational = true);
     }
 
     public void AddCountermeasure(CountermeasureStat cmStat) {

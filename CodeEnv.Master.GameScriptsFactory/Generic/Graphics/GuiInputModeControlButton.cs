@@ -22,7 +22,7 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// Changes the InputMode to that selected on Button LeftClick.
 /// </summary>
-public class GuiInputModeControlButton : AGuiButtonBase {
+public class GuiInputModeControlButton : AGuiButton {
 
     public GameInputMode inputModeOnClick;
 

@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IWeaponRangeMonitor {
 
+        string FullName { get; }
+
         DistanceRange Range { get; }
 
         IElementItem ParentElement { get; set; }

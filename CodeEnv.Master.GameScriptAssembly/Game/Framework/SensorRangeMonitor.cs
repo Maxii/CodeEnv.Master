@@ -30,7 +30,11 @@ using UnityEngine;
 /// </summary>
 public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
 
+    private static string _nameFormat = "{0}.{1}[{2}]";
+
     private static HashSet<Collider> _collidersToIgnore = new HashSet<Collider>();  // UNCLEAR ever any colliders to ignore?
+
+    public string FullName { get { return _nameFormat.Inject(ParentCommand.FullName, GetType().Name, Range.GetName()); } }
 
     private DistanceRange _range;
     public DistanceRange Range {
@@ -99,9 +103,9 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
     }
 
     void OnTriggerEnter(Collider other) {
-        D.Log("{0}.{1}.OnTriggerEnter() tripped by {2}.", ParentCommand.FullName, GetType().Name, other.name);
+        //D.Log("{0}.OnTriggerEnter() tripped by {1}.", FullName, other.name);
         if (other.isTrigger) {
-            D.Log("{0}.{1}.OnTriggerEnter ignored {2}.", ParentCommand.FullName, GetType().Name, other.name);
+            //D.Log("{0}.OnTriggerEnter() ignored {1}.", FullName, other.name);
             return;
         }
 
@@ -112,16 +116,16 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
         var target = other.gameObject.GetInterface<INavigableTarget>();
         if (target == null) {
             _collidersToIgnore.Add(other);
-            D.Log("{0}.{1} now ignoring {2}.", ParentCommand.FullName, GetType().Name, other.name);
+            //D.Log("{0} now ignoring {1}.", FullName, other.name);
             return;
         }
         Add(target);
     }
 
     void OnTriggerExit(Collider other) {
-        D.Log("{0}.{1}.OnTriggerExit() tripped by {2}.", ParentCommand.FullName, GetType().Name, other.name);
+        //D.Log("{0}.OnTriggerExit() tripped by {1}.", FullName, other.name);
         if (other.isTrigger) {
-            D.Log("{0}.{1}.OnTriggerExit ignored {2}.", ParentCommand.FullName, GetType().Name, other.name);
+            // D.Log("{0}.OnTriggerExit() ignored {1}.", FullName, other.name);
             return;
         }
 
@@ -158,7 +162,7 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
     }
 
     private void OnRangeChanged() {
-        D.Log("{0}.{1}.Range changed to {2}.", ParentCommand.FullName, GetType().Name, Range.GetName());
+        //D.Log("{0}.Range changed to {1}.", FullName, Range.GetName());
         Refresh();
     }
 
@@ -171,6 +175,7 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
     }
 
     private void Add(INavigableTarget target) {
+        //D.Log("{0}.Add({1}) called.", FullName, target.FullName);
         if (!AllTargets.Contains(target)) {
             var attackableTarget = target as IElementAttackableTarget;
             if (attackableTarget != null) {
@@ -178,16 +183,16 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
                     attackableTarget.onDeathOneShot += OnTargetDeath;
                 }
                 else {
-                    D.Log("{0}.{1} avoided adding target {2} that is already dead but not yet destroyed.", ParentCommand.FullName, GetType().Name, target.FullName);
+                    //D.Log("{0} avoided adding target {1} that is either not operational or already dead.", FullName, target.FullName);
                     return;
                 }
             }
-            D.Log("{0}.{1} now tracking target {2}.", ParentCommand.FullName, GetType().Name, target.FullName);
+            //D.Log("{0} now tracking target {1}.", FullName, target.FullName);
             // target ownership changes don't matter as I'm not differentiating by DiplomaticRelationship
             AllTargets.Add(target);
         }
         else {
-            D.Warn("{0}.{1} attempted to add duplicate Target {2}.", ParentCommand.FullName, GetType().Name, target.FullName);
+            D.Warn("{0} attempted to add duplicate Target {1}.", FullName, target.FullName);
         }
     }
 
@@ -206,18 +211,17 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
             var attackableTarget = target as IElementAttackableTarget;
             if (attackableTarget != null) {
                 if (attackableTarget.IsAliveAndOperating) {
-                    D.Log("{0}.{1} no longer tracking {2} at distance = {3}.", ParentCommand.FullName, GetType().Name,
-                        attackableTarget.FullName, Vector3.Distance(attackableTarget.Position, _transform.position));
+                    //D.Log("{0} no longer tracking {1} at distance {2}.", FullName, attackableTarget.FullName, Vector3.Distance(attackableTarget.Position, _transform.position));
                 }
                 else {
-                    D.Log("{0}.{1} no longer tracking dead target {2}.", ParentCommand.FullName, GetType().Name, attackableTarget.FullName);
+                    //D.Log("{0} no longer tracking (not operational or dead) target {1}.", FullName, attackableTarget.FullName);
                 }
                 attackableTarget.onDeathOneShot -= OnTargetDeath;
             }
             // target ownership changes don't matter as I'm not differentiating by DiplomaticRelationship
         }
         else {
-            D.Warn("{0}.{1} target {2} not present to be removed.", ParentCommand.FullName, GetType().Name, target.FullName);
+            D.Warn("{0} target {1} not present to be removed.", FullName, target.FullName);
         }
     }
 
@@ -241,10 +245,12 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
         var allTargetsCopy = AllTargets.ToArray();
         allTargetsCopy.ForAll(t => Remove(t));  // clears both AllTargets and EnemyTargets
         _collider.enabled = savedEnabledState;    //  TODO unconfirmed - this should repopulate the Targets when re-enabled with new radius
+        //D.Log("{0}'s collider.enabled = {1}.", FullName, _collider.enabled);
     }
 
     private void OnSensorIsOperationalChanged(Sensor sensor) {
         _collider.enabled = Sensors.Where(s => s.IsOperational).Any();
+        //D.Log("{0}'s collider.enabled = {1}.", FullName, _collider.enabled);
     }
 
     protected override void Cleanup() {

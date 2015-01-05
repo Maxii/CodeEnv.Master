@@ -74,6 +74,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
         _gameSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();
         // Note: Radius is set in derived classes due to the difference in meshes
         collider.isTrigger = false;
+        collider.enabled = false;
     }
 
     protected override void InitializeModelMembers() {
@@ -128,6 +129,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
 
     public override void CommenceOperations() {
         base.CommenceOperations();
+        collider.enabled = true;
         Data.Weapons.ForAll(w => w.IsOperational = true);
         Data.Sensors.ForAll(s => s.IsOperational = true);
     }

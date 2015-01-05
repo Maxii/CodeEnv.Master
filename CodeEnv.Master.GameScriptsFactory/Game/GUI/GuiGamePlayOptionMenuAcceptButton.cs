@@ -19,12 +19,14 @@
 using System;
 using System.Diagnostics;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
 /// Accept button script for the GamePlayOptionsMenu.
 /// </summary>
-public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
+public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButton {
 
     protected override string TooltipContent {
         get { return "Accept Option changes."; }
@@ -42,31 +44,35 @@ public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
         ValidateState();
     }
 
-    protected override void RecordCheckboxState(string checkboxName, bool checkedState) {
-        if (checkboxName.Contains("roll")) {
-            _isCameraRollEnabled = checkedState;
+    protected override void RecordCheckboxState(GuiMenuElementID checkboxID, bool checkedState) {
+        base.RecordCheckboxState(checkboxID, checkedState);
+        switch (checkboxID) {
+            case GuiMenuElementID.PauseOnLoadCheckbox:
+                _isPauseOnLoadEnabled = checkedState;
+                break;
+            case GuiMenuElementID.CameraRollCheckbox:
+                _isCameraRollEnabled = checkedState;
+                break;
+            case GuiMenuElementID.ResetOnFocusCheckbox:
+                _isResetOnFocusEnabled = checkedState;
+                break;
+            case GuiMenuElementID.ZoomOutOnCursorCheckbox:
+                _isZoomOutOnCursorEnabled = checkedState;
+                break;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(checkboxID));
         }
-        else if (checkboxName.Contains("zoom")) {
-            _isZoomOutOnCursorEnabled = checkedState;
-        }
-        else if (checkboxName.Contains("focus")) {
-            _isResetOnFocusEnabled = checkedState;
-        }
-        else if (checkboxName.Contains("pause")) {
-            _isPauseOnLoadEnabled = checkedState;
-        }
-        else {
-            D.Error("Name of Checkbox {0} not found.", checkboxName);
-        }
-        // TODO more checkboxes here
     }
 
-    protected override void RecordPopupListState(string popupListName, string selectionName) {
-        GameClockSpeed gameSpeedOnLoad;
-        if (Enums<GameClockSpeed>.TryParse(selectionName, true, out gameSpeedOnLoad)) {
-            _gameSpeedOnLoad = gameSpeedOnLoad;
+    protected override void RecordPopupListState(GuiMenuElementID popupListID, string selectionName) {
+        base.RecordPopupListState(popupListID, selectionName);
+        switch (popupListID) {
+            case GuiMenuElementID.GameSpeedOnLoadPopupList:
+                _gameSpeedOnLoad = Enums<GameClockSpeed>.Parse(selectionName);
+                break;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(popupListID));
         }
-        // TODO more popupLists here
     }
 
     protected override void OnPopupListSelectionChange() {

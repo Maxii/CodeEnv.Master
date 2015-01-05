@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
 
         public Species Species { get; private set; }
 
-        private string _leaderName; // can initialize as null
+        private string _leaderName;
         public string LeaderName {
             get {
                 if (_leaderName.IsNullOrEmpty()) {
@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private string _description;    // can initialize as null
+        private string _description;
         public string Description {
             get {
                 if (_description.IsNullOrEmpty()) {

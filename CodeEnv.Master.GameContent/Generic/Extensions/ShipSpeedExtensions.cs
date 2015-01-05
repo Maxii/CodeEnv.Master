@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ShipSpeedExtensions.cs
-// Extension class providing values acquired externally from Xml for the Speed enum.
+// Extension methods for Speed values.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
-    /// Extension class providing values acquired externally from Xml for the Speed enum.
+    /// Extension methods for Speed values.
     /// TODO Externalize values in XML.
     /// </summary>
     public static class ShipSpeedExtensions {

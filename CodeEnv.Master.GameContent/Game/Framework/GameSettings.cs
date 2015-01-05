@@ -12,6 +12,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System.Collections.Generic;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -21,7 +22,8 @@ namespace CodeEnv.Master.GameContent {
 
         public bool IsNewGame { get; set; }
         public UniverseSize UniverseSize { get; set; }
-        public Race PlayerRace { get; set; }
+        public Race HumanPlayerRace { get; set; }
+        public Race[] AIPlayerRaces { get; set; }
 
         public GameSettings() { }
 

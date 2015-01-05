@@ -259,7 +259,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
             __ValidateNoNewStateSetDuringEnterState(value);
             ChangingState();
             if (state.currentState != null && state.currentState.Equals(value)) {
-                D.Warn("{0} duplicate state {1} set attempt.", GetType().Name, value);
+                D.Log("{0} duplicate state {1} set attempt.", GetType().Name, value);
             }
             //D.Log("{0} setting CurrentState to {1}.", FullName, value.ToString());
             state.currentState = value;

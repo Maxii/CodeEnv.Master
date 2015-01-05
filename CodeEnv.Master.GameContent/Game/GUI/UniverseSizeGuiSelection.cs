@@ -1,23 +1,31 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2015 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: UniverseSize.cs
-// The various Universe sizes available to play. 
+// File: UniverseSizeGuiSelection.cs
+// The Universe size choices that can be selected from the Gui.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-namespace CodeEnv.Master.Common {
+#define DEBUG_LOG
+#define DEBUG_WARN
+#define DEBUG_ERROR
+
+namespace CodeEnv.Master.GameContent {
+
+    using CodeEnv.Master.Common;
 
     /// <summary>
-    /// The various Universe sizes available to play. 
+    /// The Universe size choices that can be selected from the Gui.
     /// </summary>
-    public enum UniverseSize {
+    public enum UniverseSizeGuiSelection {
 
-        None = 0,
+        None,
+
+        Random,
 
         [EnumAttribute("The smallest.")]
         Tiny,
@@ -36,7 +44,6 @@ namespace CodeEnv.Master.Common {
 
         [EnumAttribute("The largest.")]
         Gigantic
-
 
     }
 }

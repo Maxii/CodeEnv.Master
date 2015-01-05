@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Custom Gui button control for the main Player Pause/Resume Button.
 /// </summary>
-public class GuiPauseButton : AGuiButtonBase {
+public class GuiPauseButton : AGuiButton {
 
     protected override string TooltipContent {  // called by AGuiTooltip before _pauseButtonLabel reference is established
         get { return _pauseButtonLabel != null ? "{0} the game.".Inject(_pauseButtonLabel.text) : "I'm not empty."; }

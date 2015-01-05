@@ -58,6 +58,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Graphics\AGuiPopupList.cs" />
+    <Compile Include="Generic\Graphics\AGuiMenuElement.cs" />
     <Compile Include="Generic\Graphics\AGuiTooltip.cs" />
     <Compile Include="Generic\Framework\AUnitCreator.cs" />
     <Compile Include="Generic\Graphics\ACtxControl_Player.cs" />
@@ -89,7 +91,7 @@
     <Compile Include="Generic\Framework\FleetUnitCreator.cs" />
     <Compile Include="Generic\IO\MainCameraControl.cs" />
     <Compile Include="Generic\Framework\GameManager.cs" />
-    <Compile Include="Generic\Graphics\AGuiButtonBase.cs" />
+    <Compile Include="Generic\Graphics\AGuiButton.cs" />
     <Compile Include="Generic\Graphics\AHud.cs" />
     <Compile Include="Generic\Graphics\GuiTooltip.cs" />
     <Compile Include="Generic\Graphics\ScaleRelativeToCamera.cs" />
@@ -101,26 +103,24 @@
     <Compile Include="Game\GUI\GuiDateReadout.cs" />
     <Compile Include="Game\GUI\GuiGameSpeedReadout.cs" />
     <Compile Include="Game\GUI\GuiGameSpeedSlider.cs" />
-    <Compile Include="Generic\Graphics\AGuiLabelReadoutBase.cs" />
+    <Compile Include="Generic\Graphics\AGuiLabelReadout.cs" />
     <Compile Include="Game\GUI\GuiPauseButton.cs" />
-    <Compile Include="Generic\Graphics\AGuiEnumSliderBase.cs" />
+    <Compile Include="Generic\Graphics\AGuiEnumSlider.cs" />
     <Compile Include="Game\GUI\GuiManager.cs" />
     <Compile Include="Game\GUI\GuiExitButton.cs" />
     <Compile Include="Game\GUI\GuiNewGameMenuLaunchButton.cs" />
-    <Compile Include="Game\GUI\GuiCheckbox.cs" />
-    <Compile Include="Generic\Graphics\AGuiEnumPopupListBase.cs" />
+    <Compile Include="Game\GUI\GuiMenuCheckbox.cs" />
     <Compile Include="Game\GUI\GuiGameSpeedOnLoadPopupList.cs" />
     <Compile Include="Game\GUI\GuiUniverseSizePopupList.cs" />
     <Compile Include="Generic\Graphics\GuiMenuCancelButton.cs" />
     <Compile Include="Game\GUI\GuiPrefabLinker.cs" />
     <Compile Include="Generic\Graphics\GuiPauseStateControlButton.cs" />
-    <Compile Include="Generic\Graphics\AGuiMenuAcceptButtonBase.cs" />
+    <Compile Include="Generic\Graphics\AGuiMenuAcceptButton.cs" />
     <Compile Include="Game\GUI\GuiLoadGameMenuLaunchButton.cs" />
     <Compile Include="Game\GUI\GuiSavedGamesPopupList.cs" />
     <Compile Include="Game\GUI\GuiSaveMenuAcceptButton.cs" />
-    <Compile Include="Generic\Graphics\AGuiPopupListBase.cs" />
     <Compile Include="Game\GUI\GuiPlayerColorPopupList.cs" />
-    <Compile Include="Game\GUI\GuiPlayerRacePopupList.cs" />
+    <Compile Include="Game\GUI\GuiPlayerSpeciesPopupList.cs" />
     <Compile Include="Generic\Graphics\TrackingWidgetFactory.cs" />
     <Compile Include="Game\GUI\GuiGraphicsOptionMenuAcceptButton.cs" />
     <Compile Include="Game\GUI\GuiQualitySettingPopupList.cs" />

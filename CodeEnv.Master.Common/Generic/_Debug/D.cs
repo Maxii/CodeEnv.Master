@@ -96,9 +96,13 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="message">The message string.</param>
         /// <param name="context">The object that sent the message.</param>
+        /// <param name="pause">if set to <c>true</c> [pause]. Default is <c>true</c>.</param>
         [System.Diagnostics.Conditional("DEBUG_ERROR"), System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
-        public static void ErrorContext(string message, Object context) {
+        public static void ErrorContext(string message, Object context, bool pause = true) {
             Debug.LogError(message, context);
+            if (pause) {
+                Debug.Break();
+            }
         }
 
         /// <summary>
@@ -115,6 +119,7 @@ namespace CodeEnv.Master.Common {
             else {
                 Debug.LogError(format);
             }
+            Debug.Break();
         }
 
         /// <summary>

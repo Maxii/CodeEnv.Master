@@ -322,7 +322,11 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
 
     public void __IssueShipMovementOrders(INavigableTarget target, Speed speed) {
         var shipMoveToOrder = new ShipOrder(ShipDirective.Move, OrderSource.UnitCommand, target, speed);
-        Elements.ForAll(e => (e as ShipItem).CurrentOrder = shipMoveToOrder);
+        Elements.ForAll(e => {
+            var ship = e as ShipItem;
+            D.Log("{0} issuing Move order to {1}. Target = {2}.", FullName, ship.FullName, target.FullName);
+            ship.CurrentOrder = shipMoveToOrder;
+        });
     }
 
     protected override void InitiateDeath() {
@@ -818,8 +822,12 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         /// </summary>
         private bool IsCourseReplotNeeded {
             get {
-                return Target.IsMobile &&
-                    Vector3.SqrMagnitude(Destination - _destinationAtLastPlot) > _targetMovementReplotThresholdDistanceSqrd;
+                if (Target.IsMobile) {
+                    var sqrDistanceBetweenDestinations = Vector3.SqrMagnitude(Destination - _destinationAtLastPlot);
+                    //D.Log("{0}.IsCourseReplotNeeded called. {1} > {2}?, Dest: {3}, PrevDest: {4}.", _fleet.FullName, sqrDistanceBetweenDestinations, _targetMovementReplotThresholdDistanceSqrd, Destination, _destinationAtLastPlot);
+                    return sqrDistanceBetweenDestinations > _targetMovementReplotThresholdDistanceSqrd;
+                }
+                return false;
             }
         }
 
@@ -1064,7 +1072,6 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         private void OnCoursePlotFailure() {
             if (_isCourseReplot) {
                 D.Warn("{0}'s course to {1} couldn't be replotted.", _fleet.FullName, Target.FullName);
-                //D.Warn("{0}'s course to {1} couldn't be replotted.", _fleet.FullName, DestinationInfo.Target.FullName);
             }
             _fleet.OnCoursePlotFailure();
         }
@@ -1222,8 +1229,8 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
 
         private void GenerateCourse() {
             Vector3 start = _fleet.Data.Position;
-            //string replot = _isCourseReplot ? "replotting" : "plotting";
-            //D.Log("{0} is {1} course to {2}. Start = {3}, Destination = {4}.", _fleet.FullName, replot, Target.FullName, start, Destination);
+            string replot = _isCourseReplot ? "replotting" : "plotting";
+            D.Log("{0} is {1} course to {2}. Start = {3}, Destination = {4}.", _fleet.FullName, replot, Target.FullName, start, Destination);
             //Debug.DrawLine(start, Destination, Color.yellow, 20F, false);
             //Path path = new Path(startPosition, targetPosition, null);    // Path is now abstract
             //Path path = PathPool<ABPath>.GetPath();   // don't know how to assign start and target points

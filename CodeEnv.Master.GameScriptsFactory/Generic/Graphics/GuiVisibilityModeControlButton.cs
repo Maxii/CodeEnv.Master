@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Changes the GuiVisibilityMode to that designated on LClk.
 /// </summary>
-public class GuiVisibilityModeControlButton : AGuiButtonBase {
+public class GuiVisibilityModeControlButton : AGuiButton {
 
     /// <summary>
     /// Gui element visibility mode to implement when this button is LClk.

@@ -23,27 +23,16 @@ using UnityEngine;
 /// <summary>
 /// The QualitySetting option popupList.
 /// </summary>
-public class GuiQualitySettingPopupList : AGuiPopupListBase {
+public class GuiQualitySettingPopupList : AGuiPopupList<string> {
 
-    private string[] _qualityNames;
+    public override GuiMenuElementID ElementID { get { return GuiMenuElementID.QualitySettingPopupList; } }
 
-    protected override void ConfigurePopupList() {
-        base.ConfigurePopupList();
-        _qualityNames = QualitySettings.names;
-    }
+    public override bool HasPreference { get { return true; } }
 
-    protected override void InitializeListValues() {
-        _popupList.items.Clear();
-        _qualityNames.ForAll(qName => {
-            //D.Log("Adding QualitySetting name {0}.", qName);
-            _popupList.items.Add(qName);
-        });
-    }
+    protected override string[] GetNames() { return QualitySettings.names; }
 
-    protected override void InitializeSelection() {
-        int qualitySettingPreference = PlayerPrefsManager.Instance.QualitySetting;
-        _popupList.value = _popupList.items[qualitySettingPreference];
-    }
+    // no need for taking an action OnPopupListSelectionChanged as changes aren't recorded 
+    // from this popup list until the Menu Accept Button is pushed
 
     protected override void Cleanup() { }
 

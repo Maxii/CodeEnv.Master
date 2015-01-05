@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GuiSavedGamesPopupList.cs
-// PopupList allowing selection from all games that have been saved.
+// File: GuiPlayerSpeciesPopupList.cs
+// Player Species selection popup list in the Gui.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,26 +16,25 @@
 
 // default namespace
 
-using System;
-using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// PopupList allowing selection from all games that have been saved.
+/// Player Spieces selection popup list in the Gui.
 /// </summary>
-public class GuiSavedGamesPopupList : AGuiPopupList<string> {
+public class GuiPlayerSpeciesPopupList : AGuiPopupList<SpeciesGuiSelection> {
 
-    private static string[] __dummySavedGameNames = new string[] { "DummySave1", "DummySave2", "DummySave3" };
+    public GuiMenuElementID elementID;
 
-    public override GuiMenuElementID ElementID { get { return GuiMenuElementID.SavedGamesPopupList; } }
+    public bool hasPreference;
 
-    protected override string[] GetNames() { return __dummySavedGameNames; }
+    public override GuiMenuElementID ElementID { get { return elementID; } }
 
-    //protected override string[] GetNames() {
-    //    var savedGames = LevelSerializer.SavedGames[LevelSerializer.PlayerName];
-    //    return savedGames.Select(sg => sg.Caption).ToArray();
-    //}
+    protected override bool IncludesRandom { get { return true; } }
+
+    public override bool HasPreference { get { return hasPreference; } }
+
+    protected override string[] GetNames() { return Enums<SpeciesGuiSelection>.GetNames(excludeDefault: true); }
 
     // no need for taking an action OnPopupListSelectionChanged as changes aren't recorded 
     // from this popup list until the Menu Accept Button is pushed

@@ -184,7 +184,12 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
         if (CurrentOrder != null) {
             D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetName());
-            Data.Target = CurrentOrder.Target;  // can be null
+            if (Data.Target == null || !Data.Target.Equals(CurrentOrder.Target)) {   // OPTIMIZE     avoids Property equal warning
+                Data.Target = CurrentOrder.Target;  // can be null
+                if (CurrentOrder.Target != null) {
+                    D.Log("{0}'s target for new order {1} is {2}.", FullName, CurrentOrder.Directive.GetName(), CurrentOrder.Target.FullName);
+                }
+            }
 
             ShipDirective order = CurrentOrder.Directive;
             switch (order) {

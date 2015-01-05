@@ -24,11 +24,9 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// Gui Slider that changes the speed of the game.
 /// </summary>
-public class GuiGameSpeedSlider : AGuiEnumSliderBase<GameClockSpeed> {
+public class GuiGameSpeedSlider : AGuiEnumSlider<GameClockSpeed> {
 
-    protected override string TooltipContent {
-        get { return "Slide to adjust game speed."; }
-    }
+    protected override string TooltipContent { get { return "Slide to adjust game speed."; } }
 
     protected override void OnSliderEnumValueChange(GameClockSpeed value) {
         //D.Log("{0}.OnSliderTValueChange({1}.{2}) called.", GetType().Name, typeof(GameClockSpeed).Name, value.GetName());

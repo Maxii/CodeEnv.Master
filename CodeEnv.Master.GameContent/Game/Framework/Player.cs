@@ -53,10 +53,10 @@ namespace CodeEnv.Master.GameContent {
         private IDictionary<Player, DiplomaticRelationship> _diplomaticRelationship = new Dictionary<Player, DiplomaticRelationship>();
 
         /// <summary>
-        /// Initializes a new random instance of the <see cref="Player"/> class for testing. Excludes Humans.
+        /// Initializes a new random instance of the <see cref="Player"/> class for testing. 
         /// </summary>
         public Player()
-            : this(new Race(RandomExtended<Species>.Choice(Enums<Species>.GetValues().Except(Species.None, Species.Human))),
+            : this(new Race(Enums<Species>.GetRandomExcept(Species.None)),
                 Enums<IQ>.GetRandom(excludeDefault: true)) { }
 
         public Player(Race race, IQ iq, bool isPlayer = false) {

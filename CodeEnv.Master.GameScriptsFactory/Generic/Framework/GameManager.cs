@@ -34,6 +34,45 @@ using UnityEngine;
 [SerializeAll]
 public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameManager {
 
+    /// <summary>
+    /// Fires when GameState changes to Running, then clears all subscribers.
+    /// WARNING: This event will fire each time the GameState changes to Running, 
+    /// but as it clears its subscribers each time, clients will need to resubscribe if
+    /// they want to receive the event again. Clients which persist across scene changes
+    /// should pay particular attention as they won't automatically resubscribe since Awake
+    /// (or a Constructor) is only called once in the life of the client.
+    /// </summary>
+    /// <remarks>
+    /// Current clients SelectionManager, AGuiEnumSliderBase and DebugHud have been checked.
+    /// </remarks>
+    public event Action onIsRunningOneShot;
+
+    /// <summary>
+    /// Occurs just before a scene starts loading.
+    /// Note: Event is not fired when the first scene is about to start loading as a result of the Application starting.
+    /// </summary>
+    public event Action<SceneLevel> onSceneLoading;
+
+    /// <summary>
+    /// Occurs just after a scene finishes loading, aka immediately after OnLevelWasLoaded is received.
+    /// Note: Event is not fired when the first scene is loaded as a result of the Application starting.
+    /// </summary>
+    public event Action onSceneLoaded;
+
+    public event Action onNewGameBuilding;
+
+    public GameSettings GameSettings { get; private set; }
+
+    private bool _isPaused;
+    public bool IsPaused {
+        get { return _isPaused; }
+        set { SetProperty<bool>(ref _isPaused, value, "IsPaused"); }
+    }
+
+    public Player HumanPlayer { get; private set; }
+
+    public IList<Player> AIPlayers { get; private set; }
+
     public SceneLevel CurrentScene { get; private set; }
 
     private bool _isRunning;
@@ -202,7 +241,20 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         }
     }
 
-    // RecordGameStateProgressionReadiness() located under IGameManager Members
+    public void RecordGameStateProgressionReadiness(MonoBehaviour source, GameState maxGameStateUntilReady, bool isReady) {
+        IList<MonoBehaviour> unreadyElements = _gameStateProgressionReadinessLookup[maxGameStateUntilReady];
+        if (!isReady) {
+            D.Assert(!unreadyElements.Contains(source), "UnreadyElements for {0} already has {1} registered!".Inject(maxGameStateUntilReady.GetName(), source.name));
+            unreadyElements.Add(source);
+            //D.Log("{0} has registered as unready to progress beyond {1}.", source.name, maxGameStateUntilReady.GetName());
+        }
+        else {
+            D.Assert(unreadyElements.Contains(source), "UnreadyElements for {0} has no record of {1}!".Inject(maxGameStateUntilReady.GetName(), source.name));
+            unreadyElements.Remove(source);
+            //D.Log("{0} is now ready to progress beyond {1}. Remaining unready elements: {2}.",
+            //source.name, maxGameStateUntilReady.GetName(), unreadyElements.Any() ? unreadyElements.Select(m => m.gameObject.name).Concatenate() : "None");
+        }
+    }
 
     #endregion
 
@@ -217,6 +269,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
         GameSettings = settings;
         HumanPlayer = CreateHumanPlayer(settings);
+        AIPlayers = CreateAIPlayers(settings);
 
         CurrentState = GameState.Loading;
 
@@ -225,7 +278,18 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     }
 
     private Player CreateHumanPlayer(GameSettings gameSettings) {
-        return new Player(gameSettings.PlayerRace, IQ.Normal, isPlayer: true);
+        return new Player(gameSettings.HumanPlayerRace, IQ.Normal, isPlayer: true);
+    }
+
+    private IList<Player> CreateAIPlayers(GameSettings gameSettings) {
+        var aiPlayerRaces = gameSettings.AIPlayerRaces;
+        var aiPlayers = new List<Player>(aiPlayerRaces.Length);
+        aiPlayerRaces.ForAll(aiRace => {
+            var aiPlayer = new Player(aiRace, IQ.Normal);
+            D.Log("AI Player {0} created.", aiPlayer.LeaderName);
+            aiPlayers.Add(aiPlayer);
+        });
+        return aiPlayers;
     }
 
     #endregion
@@ -394,12 +458,26 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         StartGameStateProgressionReadinessChecks();
 
         if (__isStartupSimulation) {
-            GameSettings = new GameSettings {
+            var universeSize = _playerPrefsMgr.UniverseSizeSelection.Convert();
+
+            int aiPlayerCount = universeSize.DefaultAIPlayerCount();
+            //int aiPlayerCount = _playerPrefsMgr.UniverseSize.DefaultAIPlayerCount();
+            var aiPlayerRaces = new Race[aiPlayerCount];
+            for (int i = 0; i < aiPlayerCount; i++) {
+                var aiSpecies = Enums<Species>.GetRandomExcept(Species.None, Species.Human);
+                aiPlayerRaces[i] = new Race(aiSpecies);
+            }
+
+            var gameSettings = new GameSettings {
                 IsNewGame = true,
-                UniverseSize = _playerPrefsMgr.UniverseSize,
-                PlayerRace = new Race(new RaceStat(_playerPrefsMgr.PlayerSpecies, "Maxii", "Maxii description", _playerPrefsMgr.PlayerColor))
+                UniverseSize = universeSize,
+                //UniverseSize = _playerPrefsMgr.UniverseSize,
+                HumanPlayerRace = new Race(new RaceStat(_playerPrefsMgr.PlayerSpeciesSelection.Convert(), "Maxii", "Maxii description", _playerPrefsMgr.PlayerColor)),
+                AIPlayerRaces = aiPlayerRaces
             };
-            HumanPlayer = CreateHumanPlayer(GameSettings);
+            GameSettings = gameSettings;
+            HumanPlayer = CreateHumanPlayer(gameSettings);
+            AIPlayers = CreateAIPlayers(gameSettings);
             return;
         }
 
@@ -644,7 +722,6 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     protected override void Cleanup() {
         References.GameManager = null;
         _gameTime.Dispose();
-        _playerPrefsMgr.Dispose();
         if (__progressCheckJob != null) {
             __progressCheckJob.Dispose();
         }
@@ -653,62 +730,6 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region IGameManager Members
-
-    /// <summary>
-    /// Fires when GameState changes to Running, then clears all subscribers.
-    /// WARNING: This event will fire each time the GameState changes to Running, 
-    /// but as it clears its subscribers each time, clients will need to resubscribe if
-    /// they want to receive the event again. Clients which persist across scene changes
-    /// should pay particular attention as they won't automatically resubscribe since Awake
-    /// (or a Constructor) is only called once in the life of the client.
-    /// </summary>
-    /// <remarks>
-    /// Current clients SelectionManager, AGuiEnumSliderBase and DebugHud have been checked.
-    /// </remarks>
-    public event Action onIsRunningOneShot;
-
-    /// <summary>
-    /// Occurs just before a scene starts loading.
-    /// Note: Event is not fired when the first scene is about to start loading as a result of the Application starting.
-    /// </summary>
-    public event Action<SceneLevel> onSceneLoading;
-
-    /// <summary>
-    /// Occurs just after a scene finishes loading, aka immediately after OnLevelWasLoaded is received.
-    /// Note: Event is not fired when the first scene is loaded as a result of the Application starting.
-    /// </summary>
-    public event Action onSceneLoaded;
-
-    public event Action onNewGameBuilding;
-
-    public GameSettings GameSettings { get; private set; }
-
-    private bool _isPaused;
-    public bool IsPaused {
-        get { return _isPaused; }
-        set { SetProperty<bool>(ref _isPaused, value, "IsPaused"); }
-    }
-
-    public Player HumanPlayer { get; private set; }
-
-    public void RecordGameStateProgressionReadiness(MonoBehaviour source, GameState maxGameStateUntilReady, bool isReady) {
-        IList<MonoBehaviour> unreadyElements = _gameStateProgressionReadinessLookup[maxGameStateUntilReady];
-        if (!isReady) {
-            D.Assert(!unreadyElements.Contains(source), "UnreadyElements for {0} already has {1} registered!".Inject(maxGameStateUntilReady.GetName(), source.name));
-            unreadyElements.Add(source);
-            //D.Log("{0} has registered as unready to progress beyond {1}.", source.name, maxGameStateUntilReady.GetName());
-        }
-        else {
-            D.Assert(unreadyElements.Contains(source), "UnreadyElements for {0} has no record of {1}!".Inject(maxGameStateUntilReady.GetName(), source.name));
-            unreadyElements.Remove(source);
-            //D.Log("{0} is now ready to progress beyond {1}. Remaining unready elements: {2}.",
-            //source.name, maxGameStateUntilReady.GetName(), unreadyElements.Any() ? unreadyElements.Select(m => m.gameObject.name).Concatenate() : "None");
-        }
-    }
-
-    #endregion
 
 }
 

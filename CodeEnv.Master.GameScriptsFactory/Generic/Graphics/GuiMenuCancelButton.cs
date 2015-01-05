@@ -26,7 +26,7 @@ using UnityEngine;
 /// General-purpose Menu Cancel Button that restores the original state of the menu
 /// to what it was when it was opened.
 /// </summary>
-public class GuiMenuCancelButton : AGuiButtonBase {
+public class GuiMenuCancelButton : AGuiButton {
 
     protected override string TooltipContent {
         get { return "Click to cancel changes."; }
@@ -41,12 +41,14 @@ public class GuiMenuCancelButton : AGuiButtonBase {
 
     protected override void Start() {
         base.Start();
-        GameObject buttonParent = gameObject.transform.parent.gameObject;
-        _checkboxes = buttonParent.GetComponentsInChildren<UIToggle>(includeInactive: true);
+        //GameObject buttonParent = gameObject.transform.parent.gameObject;
+        UIPanel parentPanel = gameObject.GetSafeMonoBehaviourComponentInParents<UIPanel>();
+
+        _checkboxes = parentPanel.gameObject.GetComponentsInChildren<UIToggle>(includeInactive: true);
         //D.Assert(checkboxes.Length == 0, "There are no checkboxes on Menu {0}.".Inject(buttonParent.name)); 
         _openingCheckboxesState = new bool[_checkboxes.Length];
 
-        _popupLists = buttonParent.GetComponentsInChildren<UIPopupList>(includeInactive: true);
+        _popupLists = parentPanel.gameObject.GetComponentsInChildren<UIPopupList>(includeInactive: true);
         //D.Assert(popupLists.Length == 0, "There are no PopupLists on Menu {0}.".Inject(buttonParent.name)); 
 
         _openingPopupListsSelection = new string[_popupLists.Length];

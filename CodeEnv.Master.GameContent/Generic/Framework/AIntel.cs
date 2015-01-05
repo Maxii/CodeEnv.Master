@@ -34,9 +34,9 @@ namespace CodeEnv.Master.GameContent {
 
         public AIntel() : this(IntelCoverage.None) { }
 
-        public AIntel(IntelCoverage currentCoverage) {
-            PreProcessChange(currentCoverage);
-            _currentCoverage = currentCoverage;
+        public AIntel(IntelCoverage coverage) {
+            PreProcessChange(coverage);
+            _currentCoverage = coverage;
         }
 
         /// <summary>
@@ -46,8 +46,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="newCoverage">The new coverage.</param>
         protected virtual void PreProcessChange(IntelCoverage newCoverage) { }
 
-        private void OnCurrentCoverageChanging(IntelCoverage newCurrentCoverage) {
-            PreProcessChange(newCurrentCoverage);
+        private void OnCurrentCoverageChanging(IntelCoverage newCoverage) {
+            PreProcessChange(newCoverage);
         }
 
     }

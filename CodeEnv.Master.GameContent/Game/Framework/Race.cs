@@ -38,14 +38,15 @@ namespace CodeEnv.Master.GameContent {
         public GameColor Color { get; set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Race"/> class for testing.
+        /// Initializes a new instance of the <see cref="Race" /> class for testing.
         /// </summary>
-        /// <param name="species">Type of the race.</param>
-        public Race(Species species) {
+        /// <param name="species">Species of the race.</param>
+        /// <param name="color">Optional color.</param>
+        public Race(Species species, GameColor color = default(GameColor)) {
             Species = species;
             LeaderName = species.GetName() + " Leader";
             Description = species.GetDescription();
-            Color = RandomExtended<GameColor>.Choice(Enums<GameColor>.GetValues()
+            Color = (color != default(GameColor)) ? color : RandomExtended<GameColor>.Choice(Enums<GameColor>.GetValues()
                 .Except(default(GameColor), GameColor.Black, GameColor.Clear));
         }
 

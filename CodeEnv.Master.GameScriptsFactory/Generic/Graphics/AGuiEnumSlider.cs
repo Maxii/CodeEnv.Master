@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AGuiEnumSliderBase.cs
-// Base class for  Gui Sliders built with NGUI.
+// File: AGuiEnumSlider.cs
+// Abstract generic base class that uses Enums to populate sliders in the Gui. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,10 +23,10 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Generic base class for Gui Sliders that select enum values built with NGUI.
+/// Abstract generic base class that uses Enums to populate sliders in the Gui. 
 /// </summary>
 /// <typeparam name="E">The enum type.</typeparam>
-public abstract class AGuiEnumSliderBase<E> : AGuiTooltip where E : struct {
+public abstract class AGuiEnumSlider<E> : AGuiTooltip where E : struct {
 
     private UISlider _slider;
     private float[] _orderedSliderStepValues;

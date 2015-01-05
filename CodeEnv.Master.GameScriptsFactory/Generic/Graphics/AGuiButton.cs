@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AGuiButtonBase.cs
-// Base class for GUI Buttons built with NGUI.
+// File: AGuiButton.cs
+// Abstract base class for button scripts.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,9 +21,11 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Base class for GUI Buttons built with NGUI.
+/// Abstract base class for button scripts.
+/// Note: There is no Button that inherits from AGuiMenuElement as buttons
+/// aren't used to set state within a Menu.
 /// </summary>
-public abstract class AGuiButtonBase : AGuiTooltip {
+public abstract class AGuiButton : AGuiTooltip {
 
     protected PlayerPrefsManager _playerPrefsMgr;
     protected GameManager _gameMgr;

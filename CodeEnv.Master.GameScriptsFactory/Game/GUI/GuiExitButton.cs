@@ -22,7 +22,7 @@ using UnityEngine;
 /// <summary>
 /// Exit button script.
 /// </summary>
-public class GuiExitButton : AGuiButtonBase {
+public class GuiExitButton : AGuiButton {
 
     protected override string TooltipContent {
         get { return "Exit the Game."; }

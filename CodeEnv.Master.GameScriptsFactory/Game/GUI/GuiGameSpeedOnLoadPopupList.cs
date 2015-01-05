@@ -16,14 +16,24 @@
 
 // default namespace
 
+using System;
+using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// The GameSpeedOnLoad option popupList.
 /// </summary>
-public class GuiGameSpeedOnLoadPopupList : AGuiEnumPopupListBase<GameClockSpeed> {
+public class GuiGameSpeedOnLoadPopupList : AGuiPopupList<GameClockSpeed> {
 
-    protected override void OnPopupListSelectionChange() { }
+    public override GuiMenuElementID ElementID { get { return GuiMenuElementID.GameSpeedOnLoadPopupList; } }
+
+    public override bool HasPreference { get { return true; } }
+
+    protected override string[] GetNames() { return Enums<GameClockSpeed>.GetNames(excludeDefault: true); }
+
+    // no need for taking an action OnPopupListSelectionChanged as changes aren't recorded 
+    // from this popup list until the Menu Accept Button is pushed
 
     protected override void Cleanup() { }
 

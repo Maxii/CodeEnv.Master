@@ -133,6 +133,15 @@ namespace CodeEnv.Master.Common.LocalResources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Random.
+        /// </summary>
+        public static string Random {
+            get {
+                return ResourceManager.GetString("Random", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Right.
         /// </summary>
         public static string Right {

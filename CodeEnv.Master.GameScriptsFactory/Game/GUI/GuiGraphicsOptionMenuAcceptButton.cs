@@ -16,19 +16,23 @@
 
 // default namespace
 
+using System;
+using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
 /// Accept button for the GraphicsOptionsMenu.
 /// </summary>
-public class GuiGraphicsOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
+public class GuiGraphicsOptionMenuAcceptButton : AGuiMenuAcceptButton {
 
     protected override string TooltipContent {
         get { return "Click to implement Option changes."; }
     }
 
-    private int _qualitySetting;
+    private string _qualitySetting;
     private bool _isElementIconsEnabled;
 
     protected override void CaptureInitializedState() {
@@ -36,19 +40,25 @@ public class GuiGraphicsOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
         ValidateState();
     }
 
-    protected override void RecordPopupListState(string popupListName, string selectionName) {
-        base.RecordPopupListState(popupListName, selectionName);
-        //D.Log("SelectionName = {0}.", selectionName);
-        _qualitySetting = QualitySettings.names.IndexOf<string>(selectionName);
-        // TODO more popupLists here
+    protected override void RecordPopupListState(GuiMenuElementID popupListID, string selectionName) {
+        base.RecordPopupListState(popupListID, selectionName);
+        switch (popupListID) {
+            case GuiMenuElementID.QualitySettingPopupList:
+                _qualitySetting = selectionName;
+                break;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(popupListID));
+        }
     }
 
-    protected override void RecordCheckboxState(string checkboxName, bool checkedState) {
-        if (checkboxName.Contains("element")) {
-            _isElementIconsEnabled = checkedState;
-        }
-        else {
-            D.Error("Name of Checkbox {0} not found.", checkboxName);
+    protected override void RecordCheckboxState(GuiMenuElementID checkboxID, bool checkedState) {
+        base.RecordCheckboxState(checkboxID, checkedState);
+        switch (checkboxID) {
+            case GuiMenuElementID.ElementIconsCheckbox:
+                _isElementIconsEnabled = checkedState;
+                break;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(checkboxID));
         }
     }
 
@@ -68,7 +78,7 @@ public class GuiGraphicsOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
 
     [System.Diagnostics.Conditional("UNITY_EDITOR")]
     private void ValidateState() {
-        D.Assert(Utility.IsInRange(_qualitySetting, Constants.Zero, QualitySettings.names.Length - 1), "QualitySetting = {0}.".Inject(_qualitySetting));
+        D.Assert(QualitySettings.names.ToList().Contains(_qualitySetting), "QualitySetting {0} not present among {1}.".Inject(_qualitySetting, QualitySettings.names.Concatenate()));
     }
 
     protected override void Cleanup() { }

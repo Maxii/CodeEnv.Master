@@ -60,12 +60,10 @@ public class Loader : AMonoSingleton<Loader> {
 
     private void Subscribe() {
         _subscribers = new List<IDisposable>();
-        _subscribers.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, int>(ppm => ppm.QualitySetting, OnQualitySettingChanged));
+        _subscribers.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, string>(ppm => ppm.QualitySetting, OnQualitySettingChanged));
     }
 
-    // GameStateProgressionSystem moved to GameManager
-
-    private void CheckDebugSettings(int qualitySetting) {
+    private void CheckDebugSettings() {
         if (DebugSettings.Instance.ForceFpsToTarget) {
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = TargetFPS;
@@ -73,12 +71,13 @@ public class Loader : AMonoSingleton<Loader> {
     }
 
     private void OnQualitySettingChanged() {
-        int newQualitySetting = _playerPrefsMgr.QualitySetting;
-        if (newQualitySetting != QualitySettings.GetQualityLevel()) {
+        string newQualitySetting = _playerPrefsMgr.QualitySetting;
+        if (newQualitySetting != QualitySettings.names[QualitySettings.GetQualityLevel()]) {
             // EDITOR Quality Level Changes will not be saved while in Editor play mode
-            QualitySettings.SetQualityLevel(newQualitySetting, applyExpensiveChanges: true);
+            int newQualitySettingIndex = QualitySettings.names.IndexOf(newQualitySetting);
+            QualitySettings.SetQualityLevel(newQualitySettingIndex, applyExpensiveChanges: true);
         }
-        CheckDebugSettings(newQualitySetting);
+        CheckDebugSettings();
     }
 
     protected override void Cleanup() {

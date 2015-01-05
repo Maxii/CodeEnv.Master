@@ -32,31 +32,31 @@ namespace CodeEnv.Master.Common {
     /// </code>
     /// </summary>
     /// <remarks>Courtesy of Damien Guard. http://damieng.com/blog/category/development/net </remarks>
-    public static class Enums<T> where T : struct {
+    public static class Enums<E> where E : struct {
 
         private static Random _rng = new Random();
 
-        // Each dIctionary is completely populated for the Type T the first time any of these methods are called for the type.
-        private static readonly IEnumerable<T> All = Enum.GetValues(typeof(T)).Cast<T>();
-        private static readonly Dictionary<string, T> InsensitiveNames = All.ToDictionary(k => Enum.GetName(typeof(T), k).ToUpperInvariant());  // Upper chg from FxCop
-        private static readonly Dictionary<string, T> SensitiveNames = All.ToDictionary(k => Enum.GetName(typeof(T), k));
-        private static readonly Dictionary<int, T> Values = All.ToDictionary(k => Convert.ToInt32(k, CultureInfo.InvariantCulture));    // Culture chg from FxCop
-        private static readonly Dictionary<T, string> Names = All.ToDictionary(k => k, v => v.ToString());
+        // Each dIctionary is completely populated for the Type E the first time any of these methods are called for the type.
+        private static readonly IEnumerable<E> All = Enum.GetValues(typeof(E)).Cast<E>();
+        private static readonly Dictionary<string, E> InsensitiveNames = All.ToDictionary(k => Enum.GetName(typeof(E), k).ToUpperInvariant());  // Upper chg from FxCop
+        private static readonly Dictionary<string, E> SensitiveNames = All.ToDictionary(k => Enum.GetName(typeof(E), k));
+        private static readonly Dictionary<int, E> Values = All.ToDictionary(k => Convert.ToInt32(k, CultureInfo.InvariantCulture));    // Culture chg from FxCop
+        private static readonly Dictionary<E, string> Names = All.ToDictionary(k => k, v => v.ToString());
 
         /// <summary>
-        /// Determines whether the specified enumConstant is defined by T.
+        /// Determines whether the specified enumConstant is defined by E.
         /// Syntax: <c>var isDefined = Enums&lt;MyEnumbers&gt;.IsDefined(MyEnumbers.Eight);</c>
         /// </summary>
         /// <param name="enumConstant">The enumConstant.</param>
         /// <returns>
         ///   <c>true</c> if the specified enumConstant is defined; otherwise, <c>false</c>.
         /// </returns>
-        public static bool IsDefined(T enumConstant) {
+        public static bool IsDefined(E enumConstant) {
             return Names.Keys.Contains(enumConstant);
         }
 
         /// <summary>
-        /// Determines whether the specified enumName is defined by T.
+        /// Determines whether the specified enumName is defined by E.
         /// Syntax: <c>var isDefined = Enums&lt;MyEnumbers&gt;.IsDefined("Eight");</c>
         /// </summary>
         /// <param name="enumName">The enumName.</param>
@@ -68,7 +68,7 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Determines whether the specified int value is defined by T.
+        /// Determines whether the specified int value is defined by E.
         /// Syntax: <c>var isDefined = Enums&lt;MyEnumbers&gt;.IsDefined(8);</c>
         /// </summary>
         /// <param name="value">The int value.</param>
@@ -80,18 +80,28 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Gets all the values of the Enum Type T.
+        /// Gets all the values of the Enum Type E.
         /// </summary>
+        /// <param name="excludeDefault">if set to <c>true</c> [exclude default].</param>
         /// <returns></returns>
-        public static IEnumerable<T> GetValues() {
+        public static IEnumerable<E> GetValues(bool excludeDefault = false) {
+            if (excludeDefault) {
+                return All.Except<E>(default(E));
+            }
             return All;
         }
 
         /// <summary>
-        /// Gets the names of all Type T constants.
+        /// Gets the names of all Type E constants.
         /// </summary>
-        /// <returns>An array of string names.</returns>
-        public static string[] GetNames() {
+        /// <param name="excludeDefault">if set to <c>true</c> [exclude default].</param>
+        /// <returns>
+        /// An array of string names.
+        /// </returns>
+        public static string[] GetNames(bool excludeDefault = false) {
+            if (excludeDefault) {
+                return Names.Values.ToList().Except(GetName(default(E))).ToArray();
+            }
             return Names.Values.ToArray();
         }
 
@@ -100,21 +110,21 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="enumConstant">The enumConstant.</param>
         /// <returns>The string name associated with the Enum constant. Can be string.EMPTY if the constant doesn'fieldType exist.</returns>
-        public static string GetName(T enumConstant) {
+        public static string GetName(E enumConstant) {
             string name;
             Names.TryGetValue(enumConstant, out name);
             return name;
         }
 
         /// <summary>
-        /// Parses the specified string name into its corresponding Type T constant.
+        /// Parses the specified string name into its corresponding Type E constant.
         /// Syntax: <c>var parse = Enums&lt;MyEnumbers&gt;.Parse("Seven");</c>
         /// </summary>
-        /// <param name="enumName">The string name equivalent of a Type T constant.</param>
+        /// <param name="enumName">The string name equivalent of a Type E constant.</param>
         /// <returns></returns>
         /// <exception cref="System.ArgumentException"></exception>
-        public static T Parse(string enumName) {
-            T parsed = default(T);  // the default enumConstant(null, 0, false) of the generic type T
+        public static E Parse(string enumName) {
+            E parsed = default(E);  // the default enumConstant(null, 0, false) of the generic type E
             if (!SensitiveNames.TryGetValue(enumName, out parsed)) {
                 string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
                 throw new ArgumentException(ErrorMessages.NoEnumForString.Inject(enumName, callingMethodName));
@@ -123,19 +133,19 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        ///  Parses the specified string name into its corresponding Type T constant.
+        ///  Parses the specified string name into its corresponding Type E constant.
         /// </summary>
-        /// <param name="enumName">The string name equivalent of a Type T constant.</param>
+        /// <param name="enumName">The string name equivalent of a Type E constant.</param>
         /// <param name="ignoreCase">if set to <c>true</c> [ignore case].</param>
         /// <returns></returns>
         /// <exception cref="System.ArgumentException"></exception>
-        public static T Parse(string enumName, bool ignoreCase) {
+        public static E Parse(string enumName, bool ignoreCase) {
             Arguments.ValidateForContent(enumName);
             if (!ignoreCase) {
                 return Parse(enumName);
             }
 
-            T parsed = default(T);  // the default enumConstant(null, 0, false) of the generic type T
+            E parsed = default(E);  // the default enumConstant(null, 0, false) of the generic type T
             if (!InsensitiveNames.TryGetValue(enumName.ToUpperInvariant(), out parsed)) {
                 string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
                 throw new ArgumentException(ErrorMessages.NoEnumForString.Inject(enumName, callingMethodName));
@@ -144,26 +154,26 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Attempts to parse the string name provided into its corresponding Type T  constant.
+        /// Attempts to parse the string name provided into its corresponding Type E constant.
         /// Syntax: <c>MyEnumbers tryParse;     Enums&lt;MyEnumbers&gt;.TryParse("Zero", out tryParse);</c>
         /// </summary>
-        /// <param name="enumName">The string name equivalent of a Type T  constant.</param>
-        /// <param name="returnValue">The Type T  constant represented by the string name. If the parsing
-        /// fails, the value returned is the default value of T.</param>
+        /// <param name="enumName">The string name equivalent of a Type E  constant.</param>
+        /// <param name="returnValue">The Type E  constant represented by the string name. If the parsing
+        /// fails, the value returned is the default value of E.</param>
         /// <returns><c>true</c> if successful.</returns>
-        public static bool TryParse(string enumName, out T returnValue) {
+        public static bool TryParse(string enumName, out E returnValue) {
             return SensitiveNames.TryGetValue(enumName, out returnValue);
         }
 
         /// <summary>
-        ///Attempts to parse the string name provided into its corresponding Type T  constant.
+        ///Attempts to parse the string name provided into its corresponding Type E  constant.
         /// </summary>
-        /// <param name="enumName">The string name equivalent of an Type T  constant.</param>
+        /// <param name="enumName">The string name equivalent of an Type E  constant.</param>
         /// <param name="ignoreCase">if set to <c>true</c> [ignore case].</param>
-        /// <param name="returnValue">The Type T  constant represented by the string name. If the parsing
-        /// fails, the value returned is the default value of T.</param>
+        /// <param name="returnValue">The Type E constant represented by the string name. If the parsing
+        /// fails, the value returned is the default value of E.</param>
         /// <returns><c>true</c> if successful.</returns>
-        public static bool TryParse(string enumName, bool ignoreCase, out T returnValue) {
+        public static bool TryParse(string enumName, bool ignoreCase, out E returnValue) {
             Arguments.ValidateForContent(enumName);
             if (!ignoreCase) {
                 return TryParse(enumName, out returnValue);
@@ -172,17 +182,17 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Parses the specified string name into its corresponding Type T  constant.
+        /// Parses the specified string name into its corresponding Type E  constant.
         /// Syntax: <c>MyEnumbers myValue = Enums&lt;MyEnumbers&gt;.ParseOrNull("Nine-teen") ?? MyEnumbers.Zero;</c>
         /// </summary>
         /// <param name="enumName">The string enumName.</param>
-        /// <returns>The Type T  Constant associated with enumName or null if not found.</returns>
-        public static T? ParseOrNull(string enumName) {
+        /// <returns>The Type E Constant associated with enumName or null if not found.</returns>
+        public static E? ParseOrNull(string enumName) {
             if (!Utility.CheckForContent(enumName)) {
                 return null;
             }
 
-            T foundConstant;
+            E foundConstant;
             if (InsensitiveNames.TryGetValue(enumName.ToUpperInvariant(), out foundConstant)) {
                 return foundConstant;
             }
@@ -190,12 +200,12 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Casts the provided int value into its equivalentType T Constant.
+        /// Casts the provided int value into its equivalentType E Constant.
         /// </summary>
         /// <param name="value">The int value.</param>
-        /// <returns>The Type T constant or null if there is no equivalent.</returns>
-        public static T? CastOrNull(int value) {
-            T foundConstant;
+        /// <returns>The Type Econstant or null if there is no equivalent.</returns>
+        public static E? CastOrNull(int value) {
+            E foundConstant;
             if (Values.TryGetValue(value, out foundConstant)) {
                 return foundConstant;
             }
@@ -204,22 +214,33 @@ namespace CodeEnv.Master.Common {
 
 
         /// <summary>
-        /// Gets a random Enum constant selected from all values of type T.
+        /// Gets a random Enum constant selected from all values of type E
         /// </summary>
         /// <param name="excludeDefault">if set to <c>true</c> [exclude default].</param>
         /// <returns></returns>
-        public static T GetRandom(bool excludeDefault = false) {
-            T[] values = GetValues().ToArray<T>();
-            values = excludeDefault ? values.Except<T>(default(T)).ToArray() : values;
-            return GetRandom(values);
+        public static E GetRandom(bool excludeDefault = false) {
+            E[] values = GetValues().ToArray();
+            values = excludeDefault ? values.Except(default(E)).ToArray() : values;
+            return GetRandomFrom(values);
         }
 
         /// <summary>
-        /// Gets a random Enum constant of Type T from the array of Type T enums provided.
+        /// Gets a random Enum constant selected from all values of type E except 
+        /// those provided.
+        /// </summary>
+        /// <param name="exclusions">The exclusions.</param>
+        /// <returns></returns>
+        public static E GetRandomExcept(params E[] exclusions) {
+            E[] values = GetValues().Except(exclusions).ToArray();
+            return GetRandomFrom(values);
+        }
+
+        /// <summary>
+        /// Gets a random Enum constant of Type Efrom the array of Type E enums provided.
         /// </summary>
         /// <param name="values">The enum values to select from.</param>
         /// <returns></returns>
-        public static T GetRandom(T[] values) {
+        public static E GetRandomFrom(E[] values) {
             return values[_rng.Next(values.Length)];
         }
     }

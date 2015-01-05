@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Selection readout class for the Gui, based on Ngui UILabel.
 /// </summary>
-public class GuiSelectedReadout : AGuiLabelReadoutBase {
+public class GuiSelectedReadout : AGuiLabelReadout {
 
     protected override string TooltipContent {
         get { return "The currently selected game object."; }

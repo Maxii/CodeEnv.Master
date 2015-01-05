@@ -141,6 +141,9 @@
   <data name="MultiplySign" xml:space="preserve">
     <value>x </value>
   </data>
+  <data name="Random" xml:space="preserve">
+    <value>Random</value>
+  </data>
   <data name="Right" xml:space="preserve">
     <value>Right</value>
   </data>

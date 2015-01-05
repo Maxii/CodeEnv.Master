@@ -53,6 +53,16 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
         set { SetProperty<bool>(ref _inCameraLOS, value, "InCameraLOS", OnInCameraLOSChanged); }
     }
 
+    protected IDictionary<Player, AIntel> _playersIntel;
+
+    public void SetIntelCoverage(Player player, IntelCoverage coverage) {
+        _playersIntel[player].CurrentCoverage = coverage;
+    }
+
+    public AIntel GetIntel(Player player) {
+        return _playersIntel[player];
+    }
+
     public AIntel PlayerIntel { get; private set; }
 
     public IGuiHudPublisher HudPublisher { get; private set; }
@@ -146,6 +156,10 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
     /// </summary>
     /// <returns></returns>
     protected virtual AIntel InitializePlayerIntel() { return new Intel(); }
+
+    //protected virtual IDictionary<Player, AIntel> InitializeIntel() {
+    //    return 
+    //}
 
     protected virtual void Subscribe() {
         _subscribers = new List<IDisposable>();

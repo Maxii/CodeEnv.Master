@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AGuiLabelReadoutBase.cs
-// Base class for Dynamic Gui Labels (used as readouts) built with NGUI. Supports Tooltips.
+// File: AGuiLabelReadout.cs
+// Abstract base class for Gui Labels used as readouts. Supports Tooltips.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,9 +20,9 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Base class for Dynamic Gui Labels (used as readouts) built with NGUI. Supports Tooltips.
+/// Abstract base class for Gui Labels used as readouts. Supports Tooltips.
 /// </summary>
-public abstract class AGuiLabelReadoutBase : AGuiTooltip {
+public abstract class AGuiLabelReadout : AGuiTooltip {
 
     protected UILabel _readoutLabel;
 

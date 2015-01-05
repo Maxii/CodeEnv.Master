@@ -17,14 +17,25 @@
 // default namespace
 
 using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// Player Color selection popup list in the Gui.
 /// </summary>
-public class GuiPlayerColorPopupList : AGuiEnumPopupListBase<GameColor> {
+public class GuiPlayerColorPopupList : AGuiPopupList<GameColor> {
 
-    // no need for taking an action OnPopupListSelectionChange as changes aren't recorded 
-    // from this popup list until the NewGameLaunchAcceptButton is pushed
+    public GuiMenuElementID elementID;
+
+    public bool hasPreference;
+
+    public override GuiMenuElementID ElementID { get { return elementID; } }
+
+    public override bool HasPreference { get { return hasPreference; } }
+
+    protected override string[] GetNames() { return Enums<GameColor>.GetNames(excludeDefault: true); }
+
+    // no need for taking an action OnPopupListSelectionChanged as changes aren't recorded 
+    // from this popup list until the Menu Accept Button is pushed
 
     protected override void Cleanup() { }
 

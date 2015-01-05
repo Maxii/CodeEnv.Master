@@ -30,7 +30,11 @@ using UnityEngine;
 /// </summary>
 public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
 
-    private static HashSet<Collider> _collidersToIgnore = new HashSet<Collider>();
+    private static string _nameFormat = "{0}.{1}[{2}]";
+
+    private static HashSet<Collider> _collidersToIgnore = new HashSet<Collider>();  // UNCLEAR ever any colliders to ignore?
+
+    public string FullName { get { return _nameFormat.Inject(ParentElement.FullName, GetType().Name, Range.GetName()); } }
 
     private DistanceRange _range;
     public DistanceRange Range {
@@ -106,18 +110,18 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
             enemyTarget = RandomExtended<IElementAttackableTarget>.Choice(EnemyTargets);
         }
         else {
-            D.Warn("{0}.{1} found no enemy target in range. It should have.", ParentElement.FullName, GetType().Name);
+            D.Warn("{0} found no enemy target in range. It should have.", FullName);
         }
         return result;
     }
 
     void OnTriggerEnter(Collider other) {
         if (other.isTrigger) {
-            //D.Log("{0}.{1}.OnTriggerEnter ignored {2}.", ParentElement.FullName, GetType().Name, other.name);
+            //D.Log("{0}.OnTriggerEnter() ignored {1}.", FullName, other.name);
             return;
         }
 
-        //D.Log("{0}.{1}.OnTriggerEnter() tripped by non-Trigger {2}.", ParentElement.FullName, GetType().Name, other.name);
+        //D.Log("{0}.OnTriggerEnter() tripped by non-Trigger {1}.", FullName, other.name);
         if (_collidersToIgnore.Contains(other)) {
             return;
         }
@@ -125,7 +129,7 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
         var target = other.gameObject.GetInterface<IElementAttackableTarget>();
         if (target == null) {
             _collidersToIgnore.Add(other);
-            //D.Log("{0}.{1} now ignoring {2}.", ParentElement.FullName, GetType().Name, other.name);
+            //D.Log("{0} now ignoring {1}.", FullName, other.name);
             return;
         }
         Add(target);
@@ -133,11 +137,11 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
 
     void OnTriggerExit(Collider other) {
         if (other.isTrigger) {
-            //D.Log("{0}.{1}.OnTriggerExit ignored {2}.", ParentElement.FullName, GetType().Name, other.name);
+            // D.Log("{0}.OnTriggerExit() ignored {1}.", FullName, other.name);
             return;
         }
 
-        //D.Log("{0}.{1}.OnTriggerExit() tripped by non-Trigger {2}.", ParentElement.FullName, GetType().Name, other.name);
+        //D.Log("{0}.OnTriggerExit() tripped by non-Trigger {1}.", FullName, other.name);
         if (_collidersToIgnore.Contains(other)) {
             return;
         }
@@ -170,7 +174,7 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
     }
 
     private void OnRangeChanged() {
-        //D.Log("{0}.{1}.Range changed to {2}.", ParentElement.FullName, GetType().Name, Range.GetName());
+        D.Log("{0}.Range changed to {1}.", FullName, Range.GetName());
         Refresh();
     }
 
@@ -185,18 +189,18 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
     private void Add(IElementAttackableTarget target) {
         if (!AllTargets.Contains(target)) {
             if (target.IsAliveAndOperating) {
-                //D.Log("{0}.{1} now tracking target {2}.", ParentElement.FullName, GetType().Name, target.FullName);
+                //D.Log("{0} now tracking target {1}.", FullName, target.FullName);
                 target.onDeathOneShot += OnTargetDeath;
                 target.onOwnerChanged += OnTargetOwnerChanged;
                 AllTargets.Add(target);
             }
             else {
-                D.Log("{0}.{1} avoided adding target {2} that is already dead but not yet destroyed.", ParentElement.FullName, GetType().Name, target.FullName);
+                D.Log("{0} avoided adding target {1} that is either not operational or already dead.", FullName, target.FullName);
                 return; // added
             }
         }
         else {
-            D.Warn("{0}.{1} attempted to add duplicate Target {2}.", ParentElement.FullName, GetType().Name, target.FullName);
+            D.Warn("{0} attempted to add duplicate Target {1}.", FullName, target.FullName);
             return;
         }
 
@@ -210,8 +214,7 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
     }
 
     private void AddEnemyTarget(IElementAttackableTarget enemyTarget) {
-        D.Log("{0}.{1} with Range {2:0.#} added Enemy Target {3} at distance {4:0.0}.", ParentElement.FullName, GetType().Name,
-            Range.GetWeaponRange(ParentElement.Owner), enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position) - enemyTarget.Radius);
+        //D.Log("{0} with Range {1:0.#} added Enemy Target {2} at distance {3:0.0}.", FullName, Range.GetWeaponRange(ParentElement.Owner), enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position) - enemyTarget.Radius);
         EnemyTargets.Add(enemyTarget);
         if (EnemyTargets.Count == Constants.One) {
             OnAnyEnemyInRangeChanged(true);   // there are now enemies in range
@@ -222,16 +225,16 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
         bool isRemoved = AllTargets.Remove(target);
         if (isRemoved) {
             if (target.IsAliveAndOperating) {
-                //D.Log("{0}.{1} no longer tracking {2} at distance = {3}.", ParentElement.FullName, GetType().Name, target.FullName, Vector3.Distance(target.Position, _transform.position));
+                //D.Log("{0} no longer tracking {1} at distance = {2}.", FullName, target.FullName, Vector3.Distance(target.Position, _transform.position));
             }
             else {
-                D.Log("{0}.{1} no longer tracking dead target {2}.", ParentElement.FullName, GetType().Name, target.FullName);
+                //D.Log("{0} no longer tracking (not operational or dead) target {1}.", FullName, target.FullName);
             }
             target.onDeathOneShot -= OnTargetDeath;
             target.onOwnerChanged -= OnTargetOwnerChanged;
         }
         else {
-            D.Warn("{0}.{1} target {2} not present to be removed.", ParentElement.FullName, GetType().Name, target.FullName);
+            D.Warn("{0} target {1} not present to be removed.", FullName, target.FullName);
             return;
         }
 
@@ -243,8 +246,7 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
     private void RemoveEnemyTarget(IElementAttackableTarget enemyTarget) {
         var isRemoved = EnemyTargets.Remove(enemyTarget);
         D.Assert(isRemoved);
-        D.Log("{0}.{1} with Range {2:0.#} removed Enemy Target {3} at distance {4:0.0}.", ParentElement.FullName, GetType().Name,
-            Range.GetWeaponRange(ParentElement.Owner), enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position) - enemyTarget.Radius);
+        //D.Log("{0} with Range {1:0.#} removed Enemy Target {2} at distance {3:0.0}.", FullName, Range.GetWeaponRange(ParentElement.Owner), enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position) - enemyTarget.Radius);
         if (EnemyTargets.Count == 0) {
             OnAnyEnemyInRangeChanged(false);  // no longer any Enemies in range
         }

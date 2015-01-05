@@ -21,7 +21,7 @@ using CodeEnv.Master.Common;
 /// <summary>
 /// Executes the selected PauseRequest on button LClk.
 /// </summary>
-public class GuiPauseStateControlButton : AGuiButtonBase {
+public class GuiPauseStateControlButton : AGuiButton {
 
     public PauseRequest pauseRequestOnClick;
 

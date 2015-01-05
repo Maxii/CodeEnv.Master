@@ -28,23 +28,25 @@ namespace CodeEnv.Master.GameContent {
     [SerializeAll]
     public class PlayerPrefsManager : AGenericSingleton<PlayerPrefsManager>, IInstanceCount {
 
-        private string _universeSizeKey = "Universe Size Preference";
-        private string _playerSpeciesKey = "Player Species Preference";
-        private string _playerColorKey = "Player Color Preference";
+        private string _universeSizeKey = "Universe Size";
+        private string _playerSpeciesKey = "Player Species";
+        private string _playerColorKey = "Player Color";
 
-        private string _gameSpeedOnLoadKey = "Game Speed On Load Option";
-        private string _isZoomOutOnCursorEnabledKey = "Zoom Out On Cursor Option";
-        private string _isCameraRollEnabledKey = "Camera Roll Option";
-        private string _isResetOnFocusEnabledKey = "Reset On Focus Option";
-        private string _isPauseAfterLoadEnabledKey = "Paused On Load Option";
-        private string _isElementIconsEnabledKey = "Element Icons Option";
-        private string _qualitySettingKey = "Quality Setting Option";
+        private string _gameSpeedOnLoadKey = "Game Speed On Load";
+        private string _isZoomOutOnCursorEnabledKey = "Zoom Out On Cursor";
+        private string _isCameraRollEnabledKey = "Camera Roll";
+        private string _isResetOnFocusEnabledKey = "Reset On Focus";
+        private string _isPauseAfterLoadEnabledKey = "Paused On Load";
+        private string _isElementIconsEnabledKey = "Element Icons";
+        private string _qualitySettingKey = "Quality Setting";
 
-        // notifications not needed as no change will be allowed to affect an existing game instance    // TODO
-        public UniverseSize UniverseSize { get; private set; }
+        // WARNING: Changing the name of a Property here requires a comensurate change in the name returned by GuiMenuElementIDExtensions
+        // TODO: notifications are not needed for properties that cannot change during a game instance
+        public UniverseSizeGuiSelection UniverseSizeSelection { get; set; }
+
+        public SpeciesGuiSelection PlayerSpeciesSelection { get; set; }
+        public GameColor PlayerColor { get; set; }
         public GameClockSpeed GameSpeedOnLoad { get; private set; }
-        public Species PlayerSpecies { get; private set; }
-        public GameColor PlayerColor { get; private set; }
 
         public bool IsPauseOnLoadEnabled { get; private set; }
 
@@ -72,10 +74,10 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<bool>(ref _isElementIconsEnabled, value, "IsElementIconsEnabled"); }
         }
 
-        private int _qualitySetting;
-        public int QualitySetting {
+        private string _qualitySetting;
+        public string QualitySetting {
             get { return _qualitySetting; }
-            set { SetProperty<int>(ref _qualitySetting, value, "QualitySetting"); }
+            set { SetProperty<string>(ref _qualitySetting, value, "QualitySetting"); }
         }
 
         private IGameManager _gameMgr;
@@ -96,19 +98,6 @@ namespace CodeEnv.Master.GameContent {
             _generalSettings = GeneralSettings.Instance;
             _gameMgr = References.GameManager;
             Retrieve();
-            Subscribe();
-        }
-
-        private void Subscribe() {
-            _gameMgr.onNewGameBuilding += OnNewGameBuilding;
-        }
-
-        private void OnNewGameBuilding() {
-            var settings = _gameMgr.GameSettings;
-            UniverseSize = settings.UniverseSize;
-            PlayerSpecies = settings.PlayerRace.Species;
-            PlayerColor = settings.PlayerRace.Color;
-            ValidateState();
         }
 
         public void RecordGamePlayOptions(GamePlayOptionSettings settings) {
@@ -122,7 +111,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void RecordGraphicsOptions(GraphicsOptionSettings settings) {
-            QualitySetting = settings.QualitySetting;
+            if (!QualitySetting.Equals(settings.QualitySetting)) {  // HACK avoids property equal warning
+                QualitySetting = settings.QualitySetting;
+            }
             IsElementIconsEnabled = settings.IsElementIconsEnabled;
         }
 
@@ -132,16 +123,16 @@ namespace CodeEnv.Master.GameContent {
         public void Store() {
             // if variable not null/empty or None, convert the value to a string, encrypt it, and using the key, set it 
             string encryptedStringValue = string.Empty;
-            if (UniverseSize != UniverseSize.None) {
-                encryptedStringValue = Encrypt(UniverseSize.GetName());
+            if (UniverseSizeSelection != UniverseSizeGuiSelection.None) {
+                encryptedStringValue = Encrypt(UniverseSizeSelection.GetName());
                 PlayerPrefs.SetString(_universeSizeKey, encryptedStringValue);
             }
             if (GameSpeedOnLoad != GameClockSpeed.None) {
                 encryptedStringValue = Encrypt(GameSpeedOnLoad.GetName());
                 PlayerPrefs.SetString(_gameSpeedOnLoadKey, encryptedStringValue);
             }
-            if (PlayerSpecies != Species.None) {
-                encryptedStringValue = Encrypt(PlayerSpecies.GetName());
+            if (PlayerSpeciesSelection != SpeciesGuiSelection.None) {
+                encryptedStringValue = Encrypt(PlayerSpeciesSelection.GetName());
                 PlayerPrefs.SetString(_playerSpeciesKey, encryptedStringValue);
             }
             if (PlayerColor != GameColor.None) {
@@ -155,7 +146,7 @@ namespace CodeEnv.Master.GameContent {
             PlayerPrefs.SetString(_isElementIconsEnabledKey, Encrypt(IsElementIconsEnabled.ToString()));
             //D.Log("At Store, PlayerPrefsMgr.IsElementIconsEnabled = " + IsElementIconsEnabled);
 
-            PlayerPrefs.SetInt(_qualitySettingKey, Encrypt(QualitySetting));
+            PlayerPrefs.SetString(_qualitySettingKey, Encrypt(QualitySetting)); // changed from SetInt(key, value)
             PlayerPrefs.Save();
         }
 
@@ -173,11 +164,11 @@ namespace CodeEnv.Master.GameContent {
         /// </remarks>
         public void Retrieve() {
             D.Log("{0}.Retrieve() called.", GetType().Name);
-            UniverseSize = PlayerPrefs.HasKey(_universeSizeKey) ? RetrieveEnumPref<UniverseSize>(_universeSizeKey) : UniverseSize.Normal;
+            UniverseSizeSelection = PlayerPrefs.HasKey(_universeSizeKey) ? RetrieveEnumPref<UniverseSizeGuiSelection>(_universeSizeKey) : UniverseSizeGuiSelection.Normal;
             //D.Log("GameSpeedOnLoad = {0} before retrieval.", GameSpeedOnLoad);
             GameSpeedOnLoad = PlayerPrefs.HasKey(_gameSpeedOnLoadKey) ? RetrieveEnumPref<GameClockSpeed>(_gameSpeedOnLoadKey) : GameClockSpeed.Normal;
             //D.Log("GameSpeedOnLoad = {0} after retrieval.", GameSpeedOnLoad);
-            PlayerSpecies = PlayerPrefs.HasKey(_playerSpeciesKey) ? RetrieveEnumPref<Species>(_playerSpeciesKey) : Species.Human;
+            PlayerSpeciesSelection = PlayerPrefs.HasKey(_playerSpeciesKey) ? RetrieveEnumPref<SpeciesGuiSelection>(_playerSpeciesKey) : SpeciesGuiSelection.Human;
             PlayerColor = PlayerPrefs.HasKey(_playerColorKey) ? RetrieveEnumPref<GameColor>(_playerColorKey) : GameColor.Blue;
 
             IsPauseOnLoadEnabled = (PlayerPrefs.HasKey(_isPauseAfterLoadEnabledKey)) ? bool.Parse(Decrypt(PlayerPrefs.GetString(_isPauseAfterLoadEnabledKey))) : false;
@@ -187,7 +178,7 @@ namespace CodeEnv.Master.GameContent {
             IsCameraRollEnabled = (PlayerPrefs.HasKey(_isCameraRollEnabledKey)) ? bool.Parse(Decrypt(PlayerPrefs.GetString(_isCameraRollEnabledKey))) : false;
             IsResetOnFocusEnabled = (PlayerPrefs.HasKey(_isResetOnFocusEnabledKey)) ? bool.Parse(Decrypt(PlayerPrefs.GetString(_isResetOnFocusEnabledKey))) : true;
             IsElementIconsEnabled = (PlayerPrefs.HasKey(_isElementIconsEnabledKey)) ? bool.Parse(Decrypt(PlayerPrefs.GetString(_isElementIconsEnabledKey))) : true;
-            QualitySetting = (PlayerPrefs.HasKey(_qualitySettingKey)) ? Decrypt(PlayerPrefs.GetInt(_qualitySettingKey)) : QualitySettings.GetQualityLevel();
+            QualitySetting = (PlayerPrefs.HasKey(_qualitySettingKey)) ? Decrypt(PlayerPrefs.GetString(_qualitySettingKey)) : QualitySettings.names[QualitySettings.GetQualityLevel()];
         }
 
         private T RetrieveEnumPref<T>(string key) where T : struct {
@@ -204,59 +195,9 @@ namespace CodeEnv.Master.GameContent {
         private float Decrypt(float value) { return value; }
         private int Decrypt(int value) { return value; }
 
-        private void Cleanup() {
-            Unsubscribe();
-        }
-
-        private void Unsubscribe() {
-            _gameMgr.onNewGameBuilding -= OnNewGameBuilding;
-        }
-
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
-
-        #region IDisposable
-        private bool alreadyDisposed = false;
-
-        /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-        /// </summary>
-        public void Dispose() {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        /// <summary>
-        /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-        /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
-        /// </summary>
-        /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-        protected virtual void Dispose(bool isDisposing) {
-            // Allows Dispose(isDisposing) to be called more than once
-            if (alreadyDisposed) {
-                return;
-            }
-
-            if (isDisposing) {
-                // free managed resources here including unhooking events
-                Cleanup();
-            }
-            // free unmanaged resources here
-            alreadyDisposed = true;
-        }
-
-
-        // Example method showing check for whether the object has been disposed
-        //public void ExampleMethod() {
-        //    // throw Exception if called on object that is already disposed
-        //    if(alreadyDisposed) {
-        //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-        //    }
-
-        //    // method content here
-        //}
-        #endregion
 
         #region Debug
 
@@ -266,7 +207,7 @@ namespace CodeEnv.Master.GameContent {
             System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
             string callerIdMessage = " Called by {0}.{1}().".Inject(stackFrame.GetFileName(), stackFrame.GetMethod().Name);
 
-            D.Assert(UniverseSize != UniverseSize.None, callerIdMessage + " SizeOfUniverse cannot be None.", true);
+            D.Assert(UniverseSizeSelection != UniverseSizeGuiSelection.None, callerIdMessage + "UniverseSize selection cannot be None.", true);
             D.Assert(GameSpeedOnLoad != GameClockSpeed.None, callerIdMessage + "GameSpeedOnLoad cannot be None.", true);
         }
 

@@ -43,7 +43,7 @@ public class DebugHud : AHud<DebugHud>, IDebugHud {
     private void Subscribe() {
         _subscribers = new List<IDisposable>();
         _subscribers.Add(GameManager.Instance.SubscribeToPropertyChanged<GameManager, PauseState>(gm => gm.PauseState, OnPauseStateChanged));
-        _subscribers.Add(PlayerPrefsManager.Instance.SubscribeToPropertyChanged<PlayerPrefsManager, int>(ppm => ppm.QualitySetting, OnQualitySettingChanged));
+        _subscribers.Add(PlayerPrefsManager.Instance.SubscribeToPropertyChanged<PlayerPrefsManager, string>(ppm => ppm.QualitySetting, OnQualitySettingChanged));
         if (GameManager.Instance.CurrentScene == SceneLevel.GameScene) {
             _subscribers.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, MainCameraControl.CameraState>(cc => cc.CurrentState, OnCameraStateChanged));
             _subscribers.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, OnPlayerViewModeChanged));
@@ -78,8 +78,8 @@ public class DebugHud : AHud<DebugHud>, IDebugHud {
     }
 
     private void OnQualitySettingChanged() {
-        string forceFpsToTarget = DebugSettings.Instance.ForceFpsToTarget ? ", FpsForcedToTarget" : string.Empty;
-        Publish(DebugHudLineKeys.GraphicsQuality, QualitySettings.names[PlayerPrefsManager.Instance.QualitySetting] + forceFpsToTarget);
+        string forceFpsToTargetMsg = DebugSettings.Instance.ForceFpsToTarget ? ", FpsForcedToTarget" : string.Empty;
+        Publish(DebugHudLineKeys.GraphicsQuality, PlayerPrefsManager.Instance.QualitySetting + forceFpsToTargetMsg);
     }
 
     private void OnCameraSectorIndexChanged() {

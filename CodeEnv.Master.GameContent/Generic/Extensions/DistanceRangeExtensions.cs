@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: DistanceRangeExtensions.cs
-// Extension class providing values acquired externally from Xml for the DistanceRange enum.
+// Extension methods for DistanceRange values.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
-    /// Extension class providing values acquired externally from Xml for the DistanceRange enum.
+    /// Extension methods for DistanceRange values.
     /// TODO Externalize values in XML.
     /// </summary>
     public static class DistanceRangeExtensions {

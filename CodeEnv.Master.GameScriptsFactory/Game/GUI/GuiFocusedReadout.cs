@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Retained Focus readout class for the Gui, based on Ngui UILabel.
 /// </summary>
-public class GuiFocusedReadout : AGuiLabelReadoutBase {
+public class GuiFocusedReadout : AGuiLabelReadout {
 
     protected override string TooltipContent {
         get { return "The last game object in focus."; }

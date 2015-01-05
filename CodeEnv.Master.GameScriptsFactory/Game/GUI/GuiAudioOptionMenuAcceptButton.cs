@@ -21,7 +21,7 @@ using CodeEnv.Master.Common;
 /// <summary>
 /// Accept button for the AudioOptionsMenu. 
 /// </summary>
-public class GuiAudioOptionMenuAcceptButton : AGuiMenuAcceptButtonBase {
+public class GuiAudioOptionMenuAcceptButton : AGuiMenuAcceptButton {
 
     protected override string TooltipContent {
         get { return "Click to implement Option changes."; }

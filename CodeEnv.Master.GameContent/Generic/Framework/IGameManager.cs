@@ -17,6 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Collections.Generic;
     using System.ComponentModel;
     using CodeEnv.Master.Common;
     using UnityEngine;
@@ -61,6 +62,8 @@ namespace CodeEnv.Master.GameContent {
         bool IsPaused { get; }
 
         Player HumanPlayer { get; }
+
+        IList<Player> AIPlayers { get; }
 
         GameState CurrentState { get; }
 

@@ -16,14 +16,17 @@
 
 // default namespace
 
+using System;
 using System.Diagnostics;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
 /// Launch button script for the Load[Saved]GameMenu.
 /// </summary>
-public class GuiLoadGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
+public class GuiLoadGameMenuLaunchButton : AGuiMenuAcceptButton {
 
     protected override string TooltipContent {
         get { return "Launch the selected Saved Game."; }
@@ -36,10 +39,15 @@ public class GuiLoadGameMenuLaunchButton : AGuiMenuAcceptButtonBase {
         ValidateState();
     }
 
-    protected override void RecordPopupListState(string popupListName, string selectionName) {
-        base.RecordPopupListState(popupListName, selectionName);
-        _selectedGameCaption = selectionName;
-        //D.Log("{0} has recorded PopupList [{1}]'s current selection: {2}.", GetType().Name, popupListName, selectionName);
+    protected override void RecordPopupListState(GuiMenuElementID popupListID, string selectionName) {
+        base.RecordPopupListState(popupListID, selectionName);
+        switch (popupListID) {
+            case GuiMenuElementID.SavedGamesPopupList:
+                _selectedGameCaption = selectionName;
+                break;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(popupListID));
+        }
     }
 
     protected override void OnPopupListSelectionChange() {

@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2015 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: Species.cs
-// The species of a civilization.
+// File: SpeciesGuiSelection.cs
+// The Species choices that can be selected from the Gui.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,11 +17,13 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// The species of a civilization.
+    /// The Species choices that can be selected from the Gui.
     /// </summary>
-    public enum Species {
+    public enum SpeciesGuiSelection {
 
         None,
+
+        Random,
 
         Human,
 

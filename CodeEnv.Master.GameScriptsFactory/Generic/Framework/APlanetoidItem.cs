@@ -54,6 +54,7 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         Radius = meshRenderers.First().bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
         (collider as SphereCollider).radius = Radius;
         collider.isTrigger = false;
+        collider.enabled = false;
 
         InitializeShipOrbitSlot();
         InitializeKeepoutZone();
@@ -113,6 +114,7 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
 
     public override void CommenceOperations() {
         base.CommenceOperations();
+        collider.enabled = true;
         PlaceParentOrbiterInMotion(true);
         CurrentState = PlanetoidState.Idling;
     }

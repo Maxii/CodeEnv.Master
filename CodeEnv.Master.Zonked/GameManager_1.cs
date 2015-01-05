@@ -158,7 +158,7 @@ namespace CodeEnv.Master.GameContent {
             GameSettings settings = new GameSettings {
                 IsNewGame = true,
                 UniverseSize = _playerPrefsMgr.UniverseSize,
-                PlayerRace = new Race(new RaceStat(_playerPrefsMgr.PlayerSpecies, "Maxii", new StringBuilder("Maxii description"), _playerPrefsMgr.PlayerColor))
+                HumanPlayerRace = new Race(new RaceStat(_playerPrefsMgr.PlayerSpeciesSelection, "Maxii", new StringBuilder("Maxii description"), _playerPrefsMgr.PlayerColor))
             };
             Settings = settings;
             HumanPlayer = CreateHumanPlayer(settings);
@@ -204,7 +204,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private HumanPlayer CreateHumanPlayer(GameSettings gameSettings) {
-            HumanPlayer humanPlayer = new HumanPlayer(gameSettings.PlayerRace);
+            HumanPlayer humanPlayer = new HumanPlayer(gameSettings.HumanPlayerRace);
             return humanPlayer;
         }
 
