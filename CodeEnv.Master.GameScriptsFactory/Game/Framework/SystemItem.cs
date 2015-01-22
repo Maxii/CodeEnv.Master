@@ -157,13 +157,27 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
         // enabling (or not) the system orbiter can also be handled by the SettlementCreator once isRunning
         //D.Log("{0} has been deployed to {1}.", settlementCmd.DisplayName, FullName);
 
-        var systemIntelCoverage = PlayerIntel.CurrentCoverage;
+        var systemIntelCoverage = PlayerIntelCoverage;
         if (systemIntelCoverage == IntelCoverage.None) {
             D.Log("{0}.IntelCoverage set to None by its assigned System {1}.", settlementCmd.FullName, FullName);
         }
         // UNCLEAR should a new settlement being attached to a System take on the PlayerIntel state of the System??  See SystemPresenter.OnPlayerIntelCoverageChanged()
-        Settlement.PlayerIntel.CurrentCoverage = systemIntelCoverage;
+        Settlement.PlayerIntelCoverage = systemIntelCoverage;
     }
+    //private void AttachSettlement(SettlementCommandItem settlementCmd) {
+    //    Transform settlementUnit = settlementCmd.transform.parent;
+    //    var orbiter = Data.SettlementOrbitSlot.AssumeOrbit(settlementUnit, "Settlement Orbiter"); // IMPROVE the only remaining OrbitSlot held in Data
+    //    orbiter.IsOrbiterInMotion = settlementCmd.__OrbiterMoves;
+    //    // enabling (or not) the system orbiter can also be handled by the SettlementCreator once isRunning
+    //    //D.Log("{0} has been deployed to {1}.", settlementCmd.DisplayName, FullName);
+
+    //    var systemIntelCoverage = PlayerIntel.CurrentCoverage;
+    //    if (systemIntelCoverage == IntelCoverage.None) {
+    //        D.Log("{0}.IntelCoverage set to None by its assigned System {1}.", settlementCmd.FullName, FullName);
+    //    }
+    //    // UNCLEAR should a new settlement being attached to a System take on the PlayerIntel state of the System??  See SystemPresenter.OnPlayerIntelCoverageChanged()
+    //    Settlement.PlayerIntel.CurrentCoverage = systemIntelCoverage;
+    //}
 
     protected override void OnOwnerChanging(Player newOwner) {
         base.OnOwnerChanging(newOwner);
@@ -193,7 +207,7 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
         base.OnPlayerIntelCoverageChanged();
         // construct list each time as Settlement presence can change with time
         if (Settlement != null) {
-            Settlement.PlayerIntel.CurrentCoverage = PlayerIntel.CurrentCoverage;
+            Settlement.PlayerIntelCoverage = PlayerIntelCoverage;
         }
         // The approach below acquired all item children in the system and gave them the same IntelCoverage as the system
         //var childItemsInSystem = gameObject.GetSafeMonoBehaviourComponentsInChildren<AItem>().Except(this);

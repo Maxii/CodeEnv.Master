@@ -31,16 +31,6 @@ using UnityEngine;
 /// </summary>
 public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButton {
 
-    private static GuiMenuElementID[] _aiPlayerSpeciesPopupListIDs = new GuiMenuElementID[7] { 
-                                                                                                GuiMenuElementID.AIPlayer1SpeciesPopupList, 
-                                                                                                GuiMenuElementID.AIPlayer2SpeciesPopupList, 
-                                                                                                GuiMenuElementID.AIPlayer3SpeciesPopupList, 
-                                                                                                GuiMenuElementID.AIPlayer4SpeciesPopupList, 
-                                                                                                GuiMenuElementID.AIPlayer5SpeciesPopupList, 
-                                                                                                GuiMenuElementID.AIPlayer6SpeciesPopupList, 
-                                                                                                GuiMenuElementID.AIPlayer7SpeciesPopupList
-    };
-
     protected override string TooltipContent { get { return "Launch a New Game with these settings."; } }
 
     private UniverseSize _universeSize;
@@ -63,17 +53,28 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButton {
     private UniverseSizeGuiSelection _universeSizeSelection;
 
     private Species _humanPlayerSpecies;
+    private GameColor _humanPlayerColor;
     private SpeciesGuiSelection _humanPlayerSpeciesSelection;
 
-    private Species[] _aiPlayersSpecies = new Species[7];
-
-    private GameColor _humanPlayerColor;
-    private GameColor[] _aiPlayersColor = new GameColor[7];
+    private GuiMenuElementID[] _aiPlayerSpeciesPopupListIDs;
+    private Species[] _aiPlayersSpecies;
+    private GameColor[] _aiPlayersColor;
 
     private IDictionary<GuiMenuElementID, GameObject> _aiPlayerFolderLookup = new Dictionary<GuiMenuElementID, GameObject>(7);
 
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
+        _aiPlayerSpeciesPopupListIDs = new GuiMenuElementID[TempGameValues.MaxAIPlayers] { 
+                                                                            GuiMenuElementID.AIPlayer1SpeciesPopupList, 
+                                                                            GuiMenuElementID.AIPlayer2SpeciesPopupList, 
+                                                                            GuiMenuElementID.AIPlayer3SpeciesPopupList, 
+                                                                            GuiMenuElementID.AIPlayer4SpeciesPopupList, 
+                                                                            GuiMenuElementID.AIPlayer5SpeciesPopupList, 
+                                                                            GuiMenuElementID.AIPlayer6SpeciesPopupList, 
+                                                                            GuiMenuElementID.AIPlayer7SpeciesPopupList
+        };
+        _aiPlayersSpecies = new Species[TempGameValues.MaxAIPlayers];
+        _aiPlayersColor = new GameColor[TempGameValues.MaxAIPlayers];
         PopulateAIPlayerLookup();
     }
 
@@ -84,7 +85,7 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButton {
 
     protected override void RecordPopupListState(GuiMenuElementID popupListID, string selectionName) {
         base.RecordPopupListState(popupListID, selectionName);
-        D.Log("{0}.RecordPopupListState() called. ID = {1}, Selection = {2}.", GetType().Name, popupListID.GetName(), selectionName);
+        //D.Log("{0}.RecordPopupListState() called. ID = {1}, Selection = {2}.", GetType().Name, popupListID.GetName(), selectionName);
         switch (popupListID) {
             case GuiMenuElementID.UniverseSizePopupList:
                 _universeSizeSelection = Enums<UniverseSizeGuiSelection>.Parse(selectionName);
@@ -210,7 +211,6 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButton {
         }
 
         GameSettings settings = new GameSettings() {
-            IsNewGame = true,
             UniverseSize = UniverseSize,
             HumanPlayerRace = new Race(new RaceStat(_humanPlayerSpecies, "Maxii", "Maxii description", _humanPlayerColor)),
             AIPlayerRaces = aiPlayerRaces

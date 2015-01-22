@@ -36,9 +36,8 @@ namespace CodeEnv.Master.GameContent {
         /// Shows or hides a current GuiCursorHudText instance containing the HUD text to display.
         /// </summary>
         /// <param name="toShow">if set to <c>true</c> shows the hud, otherwise hides it.</param>
-        /// <param name="intel">The intel.</param>
         /// <param name="position">The position of the GameObject where this HUD should display.</param>
-        void ShowHud(bool toShow, AIntel intel, Vector3 position);
+        void ShowHud(bool toShow, Vector3 position);
 
 
         /// <summary>

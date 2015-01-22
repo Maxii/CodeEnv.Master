@@ -104,45 +104,46 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Initialize() { }
 
-        public GuiHudText MakeInstance(AIntel intel, DataType data) {
+        public GuiHudText MakeInstance(DataType data) {
             Arguments.ValidateNotNull(data);
+            var intelCoverage = data.PlayerIntel.CurrentCoverage;
             IList<GuiHudLineKeys> keys;
-            if (_hudLineKeyLookup.TryGetValue(intel.CurrentCoverage, out keys)) {
-                GuiHudText guiCursorHudText = new GuiHudText(intel.CurrentCoverage);
+            if (_hudLineKeyLookup.TryGetValue(intelCoverage, out keys)) {
+                GuiHudText guiCursorHudText = new GuiHudText(intelCoverage);
                 IColoredTextList textList;
-                D.Log("IntelCoverage = {0}, Keys = {1}.", intel.CurrentCoverage.GetName(), keys.Concatenate());
+                D.Log("IntelCoverage = {0}, Keys = {1}.", intelCoverage.GetName(), keys.Concatenate());
 
                 foreach (GuiHudLineKeys key in keys) {
-                    textList = MakeInstance(key, intel, data);
+                    textList = MakeInstance(key, data);
                     guiCursorHudText.Add(key, textList);
                 }
                 return guiCursorHudText;
             }
-            D.Error("{0} {1} Key is not present in Lookup.", typeof(IntelCoverage), intel.CurrentCoverage.GetName());
+            D.Error("{0} {1} Key is not present in Lookup.", typeof(IntelCoverage), intelCoverage.GetName());
             return null;
         }
 
-        public IColoredTextList MakeInstance(GuiHudLineKeys key, AIntel intel, DataType data) {
-            if (!ValidateKeyAgainstIntelLevel(key, intel)) {
+        public IColoredTextList MakeInstance(GuiHudLineKeys key, DataType data) {
+            if (!ValidateKeyAgainstIntelCoverage(key, data.PlayerIntel.CurrentCoverage)) {
                 return _emptyTextList;
             }
-            return MakeTextInstance(key, intel, data);
+            return MakeTextInstance(key, data);
         }
 
-        protected abstract IColoredTextList MakeTextInstance(GuiHudLineKeys key, AIntel intel, DataType data);
+        protected abstract IColoredTextList MakeTextInstance(GuiHudLineKeys key, DataType data);
 
         /// <summary>
-        /// Validates the key against intel, warning and returning false if the key provided is not a key
-        /// that is present in the key lookup list associated with this Intel. Usage:
-        /// <code>if(!ValidateKeyAgainstIntelLevel(key, intel) {
+        /// Validates the key against the intel coverage, warning and returning false if the key provided is not a key
+        /// that is present in the key lookup list associated with this Coverage. Usage:
+        /// <code>if(!ValidateKeyAgainstIntelCoveragel(key, intelCoverage) {
         /// return _emptyColoredTextList
         /// }</code>
         /// </summary>
         /// <param name="key">The key.</param>
-        /// <param name="intel">The intel.</param>
+        /// <param name="intelCoverage">The intel coverage.</param>
         /// <returns></returns>
-        private static bool ValidateKeyAgainstIntelLevel(GuiHudLineKeys key, AIntel intel) {
-            return _hudLineKeyLookup[intel.CurrentCoverage].Contains<GuiHudLineKeys>(key);
+        private static bool ValidateKeyAgainstIntelCoverage(GuiHudLineKeys key, IntelCoverage intelCoverage) {
+            return _hudLineKeyLookup[intelCoverage].Contains<GuiHudLineKeys>(key);
         }
 
         #region IColoredTextList Strategy Classes

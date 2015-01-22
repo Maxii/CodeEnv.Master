@@ -29,14 +29,14 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, AIntel intel, SettlementCmdData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, SettlementCmdData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.ParentName); // the name of the Settlement is the parentName of the Command
                 case GuiHudLineKeys.CameraDistance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
-                    return new ColoredTextList_Intel(intel);
+                    return new ColoredTextList_Intel(data.PlayerIntel);
                 case GuiHudLineKeys.Category:
                     return new ColoredTextList_String(data.Category.GetName(), data.Category.GetDescription());
                 case GuiHudLineKeys.Health:

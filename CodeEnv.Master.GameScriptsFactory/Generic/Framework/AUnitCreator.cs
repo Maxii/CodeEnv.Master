@@ -539,21 +539,19 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     protected virtual void __SetIntelCoverage() {
         LogEvent();
-
-        var cmdIntel = _command.PlayerIntel;
         if (toCycleIntelCoverage) {
-            new Job(__CycleIntelCoverage(cmdIntel), true);
+            new Job(__CycleIntelCoverage(), true);
         }
         else {
-            cmdIntel.CurrentCoverage = IntelCoverage.Comprehensive;
+            _command.PlayerIntelCoverage = IntelCoverage.Comprehensive;
         }
     }
 
     private IntelCoverage __previousCoverage;
-    private IEnumerator __CycleIntelCoverage(AIntel intel) {
-        intel.CurrentCoverage = IntelCoverage.None;
+    private IEnumerator __CycleIntelCoverage() {
+        _command.PlayerIntelCoverage = IntelCoverage.None;
         yield return new WaitForSeconds(4F);
-        intel.CurrentCoverage = IntelCoverage.Aware;
+        _command.PlayerIntelCoverage = IntelCoverage.Aware;
         __previousCoverage = IntelCoverage.Aware;
         while (true) {
             yield return new WaitForSeconds(4F);
@@ -561,7 +559,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             while (proposedCoverage == __previousCoverage) {
                 proposedCoverage = Enums<IntelCoverage>.GetRandom(excludeDefault: true);
             }
-            intel.CurrentCoverage = proposedCoverage;
+            _command.PlayerIntelCoverage = proposedCoverage;
             __previousCoverage = proposedCoverage;
         }
     }
@@ -573,31 +571,37 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         if (isOwnerPlayer) {
             return humanPlayer;
         }
-        Player aiOwner = new Player();
+        Player aiOwner;
+        IEnumerable<Player> aiOwnerCandidates;
+        DiplomaticRelationship desiredRelationship;
         switch (ownerRelationshipWithPlayer) {
             case __DiploStateWithPlayer.Ally:
-                aiOwner.SetRelations(humanPlayer, DiplomaticRelationship.Ally);
-                humanPlayer.SetRelations(aiOwner, DiplomaticRelationship.Ally);
+                desiredRelationship = DiplomaticRelationship.Ally;
                 break;
             case __DiploStateWithPlayer.Friend:
-                aiOwner.SetRelations(humanPlayer, DiplomaticRelationship.Friend);
-                humanPlayer.SetRelations(aiOwner, DiplomaticRelationship.Friend);
+                desiredRelationship = DiplomaticRelationship.Friend;
                 break;
             case __DiploStateWithPlayer.Neutral:
-                aiOwner.SetRelations(humanPlayer, DiplomaticRelationship.Neutral);
-                humanPlayer.SetRelations(aiOwner, DiplomaticRelationship.Neutral);
+                desiredRelationship = DiplomaticRelationship.Neutral;
                 break;
             case __DiploStateWithPlayer.ColdWar:
-                aiOwner.SetRelations(humanPlayer, DiplomaticRelationship.ColdWar);
-                humanPlayer.SetRelations(aiOwner, DiplomaticRelationship.ColdWar);
+                desiredRelationship = DiplomaticRelationship.ColdWar;
                 break;
             case __DiploStateWithPlayer.War:
-                aiOwner.SetRelations(humanPlayer, DiplomaticRelationship.War);
-                humanPlayer.SetRelations(aiOwner, DiplomaticRelationship.War);
+                desiredRelationship = DiplomaticRelationship.War;
                 break;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(ownerRelationshipWithPlayer));
         }
+        aiOwnerCandidates = _gameMgr.AIPlayers.Where(aiPlayer => aiPlayer.GetRelations(humanPlayer) == desiredRelationship);
+
+        if (!aiOwnerCandidates.Any()) {
+            D.Log("{0}.{1} couldn't find an AIPlayer with desired Human relationship = {2}.", UnitName, GetType().Name, desiredRelationship.GetName());
+            desiredRelationship = DiplomaticRelationship.None;
+            aiOwnerCandidates = _gameMgr.AIPlayers.Where(aiPlayer => aiPlayer.GetRelations(humanPlayer) == desiredRelationship);
+        }
+        aiOwner = aiOwnerCandidates.Shuffle().First();
+        D.Log("{0}.{1} picked AI Owner {2}. Human relationship = {3}.", UnitName, GetType().Name, aiOwner.LeaderName, desiredRelationship.GetName());
         return aiOwner;
     }
 

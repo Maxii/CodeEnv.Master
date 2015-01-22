@@ -272,7 +272,7 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ICommandItem, 
 
     protected override void OnPlayerIntelCoverageChanged() {
         base.OnPlayerIntelCoverageChanged();
-        Elements.ForAll(e => e.PlayerIntel.CurrentCoverage = PlayerIntel.CurrentCoverage);  // IMPROVE
+        Elements.ForAll(e => e.PlayerIntelCoverage = PlayerIntelCoverage); // IMPROVE
         AssessCmdIcon();
     }
 
@@ -458,7 +458,7 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ICommandItem, 
 
     #region ICameraFocusable Members
 
-    public override bool IsRetainedFocusEligible { get { return PlayerIntel.CurrentCoverage != IntelCoverage.None; } }
+    public override bool IsRetainedFocusEligible { get { return PlayerIntelCoverage != IntelCoverage.None; } }
 
     public override float OptimalCameraViewingDistance { get { return UnitRadius * optViewDistanceFactor; } }
 

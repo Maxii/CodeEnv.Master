@@ -747,7 +747,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     void ExecuteJoinFleetOrder_OnMakeFleetCompleted(FleetCommandItem transferFleet) {
         LogEvent();
-        transferFleet.PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
+        transferFleet.PlayerIntelCoverage = IntelCoverage.Comprehensive;
         // TODO PlayerIntelCoverage should be set through sensor detection
 
         // issue a JoinFleet order to our transferFleet

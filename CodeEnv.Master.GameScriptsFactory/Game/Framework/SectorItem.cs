@@ -39,8 +39,6 @@ public class SectorItem : AItem {
         // there is no collider associated with a SectorItem. The collider used for context menu activation is part of the SectorExaminer
     }
 
-    protected override AIntel InitializePlayerIntel() { return new ImprovingIntel(); }
-
     protected override void InitializeModelMembers() { }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {

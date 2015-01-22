@@ -199,6 +199,9 @@
     <Compile Include="Generic\Framework\ISensorRangeMonitor.cs" />
     <Compile Include="Generic\Graphics\GuiMenuElementID.cs" />
     <Compile Include="Generic\Extensions\GuiMenuElementIDExtensions.cs" />
+    <Compile Include="GuiLabelText.cs" />
+    <Compile Include="IntelCoverageExtensions.cs" />
+    <Compile Include="ItemDataPropertyID.cs" />
     <Compile Include="PlanetoidDataRecord.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\Gameplay\ShipData.cs" />

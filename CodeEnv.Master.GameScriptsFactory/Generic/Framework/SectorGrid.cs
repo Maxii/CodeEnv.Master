@@ -241,7 +241,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         var sector = _sectorFactory.MakeInstance(index, worldPosition);
 
         UnityUtility.WaitOneToExecute(onWaitFinished: (wasKilled) => {
-            sector.PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
+            sector.PlayerIntelCoverage = IntelCoverage.Comprehensive;
         });
 
         _sectors.Add(index, sector);

@@ -61,8 +61,8 @@ namespace CodeEnv.Master.GameContent {
             _hudRefreshRate *= speedChangeRatio;
         }
 
-        public void ShowHud(bool toShow, AIntel intel, Vector3 position) {
-            D.Log("{0}<{1}>.ShowHud({2} called. Intel = {3}, Position = {4}.", GetType().Name, typeof(DataType).Name, toShow, intel.CurrentCoverage.GetName(), position);
+        public void ShowHud(bool toShow, Vector3 position) {
+            D.Log("{0}<{1}>.ShowHud({2} called. IntelCoverage = {3}, Position = {4}.", GetType().Name, typeof(DataType).Name, toShow, _data.PlayerIntel.CurrentCoverage.GetName(), position);
 
             if (_displayHudJob != null && _displayHudJob.IsRunning) {
                 _displayHudJob.Kill();
@@ -70,8 +70,8 @@ namespace CodeEnv.Master.GameContent {
             }
 
             if (toShow) {
-                PrepareHudText(intel);
-                _displayHudJob = new Job(DisplayHudAtCursor(intel, position), toStart: true, onJobComplete: (wasKilled) => {
+                PrepareHudText();
+                _displayHudJob = new Job(DisplayHudAtCursor(position), toStart: true, onJobComplete: (wasKilled) => {
                     D.Log("{0}<{1}> DisplayHUD Job {2}.", GetType().Name, typeof(DataType).Name, wasKilled ? "was killed" : "has completed.");
                 });
             }
@@ -80,14 +80,14 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private IEnumerator DisplayHudAtCursor(AIntel intel, Vector3 position) {
+        private IEnumerator DisplayHudAtCursor(Vector3 position) {
             while (true) {
-                UpdateGuiCursorHudText(intel, GuiHudLineKeys.CameraDistance);
+                UpdateGuiCursorHudText(GuiHudLineKeys.CameraDistance);
                 // always update IntelState as the Coverage can change even if data age does not need refreshing
-                UpdateGuiCursorHudText(intel, GuiHudLineKeys.IntelState);
+                UpdateGuiCursorHudText(GuiHudLineKeys.IntelState);
 
                 if (_optionalKeys != null) {
-                    UpdateGuiCursorHudText(intel, _optionalKeys);
+                    UpdateGuiCursorHudText(_optionalKeys);
                 }
                 GuiCursorHud.Set(_guiCursorHudText, position);
                 yield return new WaitForSeconds(_hudRefreshRate);
@@ -95,10 +95,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         // NOTE: The HUD will update the value of a _dataProperty IFF the property is implemented with APropertyChangeTracking, aka _data.IsChanged will know
-        private void PrepareHudText(AIntel intel) {
-            if (_guiCursorHudText == null || _guiCursorHudText.IntelCoverage != intel.CurrentCoverage || _data.IsChanged) {
+        private void PrepareHudText() {
+            if (_guiCursorHudText == null || _guiCursorHudText.IntelCoverage != _data.PlayerIntel.CurrentCoverage || _data.IsChanged) {
                 // don't have the right version of GuiCursorHudText so make one
-                _guiCursorHudText = TextFactory.MakeInstance(intel, _data);
+                _guiCursorHudText = TextFactory.MakeInstance(_data);
                 _data.AcceptChanges();   // once we make a new one from current data, it is no longer dirty, if it ever was
             }
         }
@@ -108,10 +108,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="intelLevel">The intel level.</param>
         /// <param name="keys">The line keys.</param>
-        private void UpdateGuiCursorHudText(AIntel intel, params GuiHudLineKeys[] keys) {
+        private void UpdateGuiCursorHudText(params GuiHudLineKeys[] keys) {
             IColoredTextList coloredTextList;
             foreach (var key in keys) {
-                coloredTextList = TextFactory.MakeInstance(key, intel, _data);
+                coloredTextList = TextFactory.MakeInstance(key, _data);
                 _guiCursorHudText.Add(key, coloredTextList);
             }
         }

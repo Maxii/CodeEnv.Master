@@ -182,7 +182,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Cleanup() {
-            _reloadJob.Dispose();
+            if (_reloadJob != null) {   // can be null if element is destroyed before Running
+                _reloadJob.Dispose();
+            }
             // other cleanup here including any tracking Gui2D elements
         }
 

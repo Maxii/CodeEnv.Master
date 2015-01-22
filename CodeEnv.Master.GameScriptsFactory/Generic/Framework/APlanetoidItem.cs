@@ -78,8 +78,6 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         CurrentState = PlanetoidState.None;
     }
 
-    protected override AIntel InitializePlayerIntel() { return new ImprovingIntel(); }
-
     protected override void InitializeViewMembersOnDiscernible() {
         InitializeContextMenu(Owner);
         // Once the player initially discerns the planet, he will always be able to discern it

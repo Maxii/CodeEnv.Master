@@ -53,17 +53,10 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
         set { SetProperty<bool>(ref _inCameraLOS, value, "InCameraLOS", OnInCameraLOSChanged); }
     }
 
-    protected IDictionary<Player, AIntel> _playersIntel;
-
-    public void SetIntelCoverage(Player player, IntelCoverage coverage) {
-        _playersIntel[player].CurrentCoverage = coverage;
+    public IntelCoverage PlayerIntelCoverage {
+        get { return Data.PlayerIntel.CurrentCoverage; }
+        set { Data.PlayerIntel.CurrentCoverage = value; }
     }
-
-    public AIntel GetIntel(Player player) {
-        return _playersIntel[player];
-    }
-
-    public AIntel PlayerIntel { get; private set; }
 
     public IGuiHudPublisher HudPublisher { get; private set; }
 
@@ -148,23 +141,11 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
     protected virtual void InitializeLocalReferencesAndValues() {
         _inputHelper = References.InputHelper;
         _inputMgr = References.InputManager;
-        PlayerIntel = InitializePlayerIntel();
     }
-
-    /// <summary>
-    /// Derived classes should override this if they have a different type of IIntel than <see cref="Intel"/>.
-    /// </summary>
-    /// <returns></returns>
-    protected virtual AIntel InitializePlayerIntel() { return new Intel(); }
-
-    //protected virtual IDictionary<Player, AIntel> InitializeIntel() {
-    //    return 
-    //}
 
     protected virtual void Subscribe() {
         _subscribers = new List<IDisposable>();
         _subscribers.Add(_inputMgr.SubscribeToPropertyChanged<IInputManager, GameInputMode>(inputMgr => inputMgr.InputMode, OnInputModeChanged));
-        _subscribers.Add(PlayerIntel.SubscribeToPropertyChanged<AIntel, IntelCoverage>(pi => pi.CurrentCoverage, OnPlayerIntelCoverageChanged));
         // Subscriptions to data value changes should be done with SubscribeToDataValueChanges()
     }
 
@@ -203,6 +184,9 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
         _subscribers.Add(Data.SubscribeToPropertyChanged<AItemData, string>(d => d.ParentName, OnNamingChanged));
         _subscribers.Add(Data.SubscribeToPropertyChanging<AItemData, Player>(d => d.Owner, OnOwnerChanging));
         _subscribers.Add(Data.SubscribeToPropertyChanged<AItemData, Player>(d => d.Owner, OnOwnerChanged));
+
+        _subscribers.Add(Data.PlayerIntel.SubscribeToPropertyChanged<AIntel, IntelCoverage>(pi => pi.CurrentCoverage, OnPlayerIntelCoverageChanged));
+
     }
 
     #endregion
@@ -283,11 +267,11 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
     }
 
     public virtual void AssessDiscernability() {
-        IsDiscernible = InCameraLOS && PlayerIntel.CurrentCoverage != IntelCoverage.None;
+        IsDiscernible = InCameraLOS && Data.PlayerIntel.CurrentCoverage != IntelCoverage.None;
     }
 
     public void ShowHud(bool toShow) {
-        HudPublisher.ShowHud(toShow, PlayerIntel, _transform.position);
+        HudPublisher.ShowHud(toShow, _transform.position);
         D.Log("{0}.ShowHud({1}) called.", FullName, toShow);
     }
 
@@ -452,7 +436,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
 
     #region ICameraTargetable Members
 
-    public virtual bool IsEligible { get { return PlayerIntel.CurrentCoverage != IntelCoverage.None; } }
+    public virtual bool IsEligible { get { return PlayerIntelCoverage != IntelCoverage.None; } }
 
     public abstract float MinimumCameraViewingDistance { get; }
 

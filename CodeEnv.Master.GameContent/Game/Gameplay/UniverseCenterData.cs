@@ -29,6 +29,8 @@ namespace CodeEnv.Master.GameContent {
             base.Topography = Topography.OpenSpace;
         }
 
+        protected override AIntel InitializePlayerIntel() { return new FixedIntel(IntelCoverage.Comprehensive); }
+
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }

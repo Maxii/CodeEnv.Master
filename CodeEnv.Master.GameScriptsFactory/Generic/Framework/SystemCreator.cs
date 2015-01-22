@@ -607,23 +607,22 @@ public class SystemCreator : AMonoBase {
         // Systems simply use Intel like most other objects. It can be changed to any value
         // Planets and Moons use ImprovingIntel which means once a level is achieved it cannot be reduced
 
-        _planets.ForAll(p => p.PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive);
-        _moons.ForAll(m => m.PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive);
+        _planets.ForAll(p => p.PlayerIntelCoverage = IntelCoverage.Comprehensive);
+        _moons.ForAll(m => m.PlayerIntelCoverage = IntelCoverage.Comprehensive);
 
-        var systemIntel = _system.PlayerIntel;
         if (toCycleIntelCoverage) {
-            new Job(__CycleIntelCoverage(systemIntel), true);
+            new Job(__CycleIntelCoverage(), true);
         }
         else {
-            systemIntel.CurrentCoverage = IntelCoverage.Comprehensive;
+            _system.PlayerIntelCoverage = IntelCoverage.Comprehensive;
         }
     }
 
     private IntelCoverage __previousCoverage;
-    private IEnumerator __CycleIntelCoverage(AIntel intel) {
-        intel.CurrentCoverage = IntelCoverage.None;
+    private IEnumerator __CycleIntelCoverage() {
+        _system.PlayerIntelCoverage = IntelCoverage.None;
         yield return new WaitForSeconds(4F);
-        intel.CurrentCoverage = IntelCoverage.Aware;
+        _system.PlayerIntelCoverage = IntelCoverage.Aware;
         __previousCoverage = IntelCoverage.Aware;
         while (true) {
             yield return new WaitForSeconds(4F);
@@ -631,7 +630,7 @@ public class SystemCreator : AMonoBase {
             while (proposedCoverage == __previousCoverage) {
                 proposedCoverage = Enums<IntelCoverage>.GetRandom(excludeDefault: true);
             }
-            intel.CurrentCoverage = proposedCoverage;
+            _system.PlayerIntelCoverage = proposedCoverage;
             __previousCoverage = proposedCoverage;
         }
     }

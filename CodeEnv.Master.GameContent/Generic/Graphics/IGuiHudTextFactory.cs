@@ -25,21 +25,19 @@ namespace CodeEnv.Master.GameContent {
     public interface IGuiHudTextFactory<DataType> where DataType : AItemData {
 
         /// <summary>
-        /// Makes or acquires an instance of GuiCursorHudText for the IntelLevel derived from the data provided.
+        /// Makes or acquires an instance of GuiCursorHudText for the IntelCoverage derived from the data provided.
         /// </summary>
-        /// <param name="intel">The intel.</param>
         /// <param name="data">The _data.</param>
         /// <returns></returns>
-        GuiHudText MakeInstance(AIntel intel, DataType data);
+        GuiHudText MakeInstance(DataType data);
 
         /// <summary>
         /// Makes an instance of IColoredTextList for display by the IGuiHud.
         /// </summary>
         /// <param name="key">The key.</param>
-        /// <param name="intel">The intel.</param>
         /// <param name="data">The data.</param>
         /// <returns></returns>
-        IColoredTextList MakeInstance(GuiHudLineKeys key, AIntel intel, DataType data);
+        IColoredTextList MakeInstance(GuiHudLineKeys key, DataType data);
 
     }
 }

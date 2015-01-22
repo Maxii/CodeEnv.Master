@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, AIntel intel, SystemData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, SystemData data) {
             var settleData = data.SettlementData;
             switch (key) {
                 case GuiHudLineKeys.Name:
@@ -39,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.CameraDistance:
                     return new ColoredTextList_Distance();
                 case GuiHudLineKeys.IntelState:
-                    return new ColoredTextList_Intel(intel);
+                    return new ColoredTextList_Intel(data.PlayerIntel);
                 case GuiHudLineKeys.Owner:
                     return data.Owner != TempGameValues.NoPlayer ? new ColoredTextList_Owner(data.Owner) : _emptyTextList;
                 case GuiHudLineKeys.Health:

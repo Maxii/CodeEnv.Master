@@ -29,11 +29,13 @@ public class GuiVisibilityModeControlButtonEditor : Editor {
     public override void OnInspectorGUI() {
         var button = target as GuiVisibilityModeControlButton;
 
-        button.visibilityModeOnClick = (GuiVisibilityMode)EditorGUILayout.EnumPopup("Vis mode on LClk", button.visibilityModeOnClick);
+        button.visibilityModeOnClick = (GuiVisibilityMode)EditorGUILayout.EnumPopup("Vis mode on Clk", button.visibilityModeOnClick);
 
         if (button.visibilityModeOnClick == GuiVisibilityMode.Hidden) {
             EditorGUI.indentLevel++;
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("exceptions"), true);
+            var serializedExceptionsList = serializedObject.FindProperty("exceptions");
+            EditorGUILayout.PropertyField(serializedExceptionsList, true);
+            serializedObject.ApplyModifiedProperties(); // saves the changes made to the property. see www.ryan-meier.com/blog/?p=67
             EditorGUI.indentLevel--;
         }
 

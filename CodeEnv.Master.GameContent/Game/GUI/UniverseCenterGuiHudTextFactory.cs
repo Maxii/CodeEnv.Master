@@ -29,14 +29,14 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, AIntel intel, UniverseCenterData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, UniverseCenterData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.Name);
                 case GuiHudLineKeys.CameraDistance:
                     return new ColoredTextList_Distance(data.Position);    // returns empty if nothing is selected thereby making distance n/a
                 case GuiHudLineKeys.IntelState:
-                    return new ColoredTextList_Intel(intel);
+                    return new ColoredTextList_Intel(data.PlayerIntel);
 
                 // The following is a fall through catcher for line keys that aren't processed. An empty ColoredTextList will be returned which will be ignored by GuiCursorHudText
                 case GuiHudLineKeys.ParentName:

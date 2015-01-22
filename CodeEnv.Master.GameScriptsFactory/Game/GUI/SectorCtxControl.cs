@@ -67,7 +67,7 @@ public class SectorCtxControl : ACtxControl {
             case FleetDirective.Patrol:
                 return false;
             case FleetDirective.Explore:
-                return _sector.PlayerIntel.CurrentCoverage == IntelCoverage.Comprehensive;
+                return _sector.PlayerIntelCoverage == IntelCoverage.Comprehensive;
             case FleetDirective.Move:
             case FleetDirective.Guard:
                 return _remotePlayerOwnedSelectedItem.Owner.IsEnemyOf(_sector.Owner);

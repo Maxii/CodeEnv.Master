@@ -151,7 +151,7 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
         GameState = GameState.Lobby;  // avoids the Illegal state transition Error
         GameState = GameState.Building;
         GameSettings settings = new GameSettings {
-            IsNewGame = true,
+            IsSavedGame = true,
             UniverseSize = _playerPrefsMgr.UniverseSize,
             HumanPlayerRace = new Race(new RaceStat(_playerPrefsMgr.PlayerSpeciesSelection, "Maxii", new StringBuilder("Maxii description"), _playerPrefsMgr.PlayerColor))
         };
@@ -220,7 +220,7 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
     }
 
     private void SaveGame(string gameName) {
-        GameSettings.IsNewGame = false;
+        GameSettings.IsSavedGame = false;
         _gameTime.PrepareToSaveGame();
         LevelSerializer.SaveGame(gameName);
     }
@@ -265,7 +265,7 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
                 return;
             }
             _eventMgr.Raise<SceneChangedEvent>(new SceneChangedEvent(this, newScene));
-            if (LevelSerializer.IsDeserializing || !GameSettings.IsNewGame) {
+            if (LevelSerializer.IsDeserializing || !GameSettings.IsSavedGame) {
                 GameState = GameState.Restoring;
             }
             else {

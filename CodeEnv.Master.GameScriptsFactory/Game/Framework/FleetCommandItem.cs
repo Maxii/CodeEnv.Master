@@ -416,7 +416,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
     }
 
     protected override IIcon MakeCmdIconInstance() {
-        return FleetIconFactory.Instance.MakeInstance(Data, PlayerIntel);
+        return FleetIconFactory.Instance.MakeInstance(Data);
     }
 
     #endregion

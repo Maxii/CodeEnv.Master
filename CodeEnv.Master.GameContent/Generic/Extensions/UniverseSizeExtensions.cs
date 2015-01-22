@@ -68,7 +68,6 @@ namespace CodeEnv.Master.GameContent {
                     return values.EnormousRadius;
                 case UniverseSize.Gigantic:
                     return values.GiganticRadius;
-                //case UniverseSize.Random:
                 case UniverseSize.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(universeSize));
@@ -76,25 +75,33 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public static int DefaultAIPlayerCount(this UniverseSize universeSize) {
+            int defaultAIPlayerCount;
             UniverseSizeHelper values = UniverseSizeHelper.Instance;
             switch (universeSize) {
                 case UniverseSize.Tiny:
-                    return values.TinyDefaultAIPlayerCount;
+                    defaultAIPlayerCount = values.TinyDefaultAIPlayerCount;
+                    break;
                 case UniverseSize.Small:
-                    return values.SmallDefaultAIPlayerCount;
+                    defaultAIPlayerCount = values.SmallDefaultAIPlayerCount;
+                    break;
                 case UniverseSize.Normal:
-                    return values.NormalDefaultAIPlayerCount;
+                    defaultAIPlayerCount = values.NormalDefaultAIPlayerCount;
+                    break;
                 case UniverseSize.Large:
-                    return values.LargeDefaultAIPlayerCount;
+                    defaultAIPlayerCount = values.LargeDefaultAIPlayerCount;
+                    break;
                 case UniverseSize.Enormous:
-                    return values.EnormousDefaultAIPlayerCount;
+                    defaultAIPlayerCount = values.EnormousDefaultAIPlayerCount;
+                    break;
                 case UniverseSize.Gigantic:
-                    return values.GiganticDefaultAIPlayerCount;
-                //case UniverseSize.Random:
+                    defaultAIPlayerCount = values.GiganticDefaultAIPlayerCount;
+                    break;
                 case UniverseSize.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(universeSize));
             }
+            D.Assert(defaultAIPlayerCount <= TempGameValues.MaxAIPlayers);
+            return defaultAIPlayerCount;
         }
 
 
@@ -106,11 +113,7 @@ namespace CodeEnv.Master.GameContent {
             /// <summary>
             /// The type of the enum being supported by this class.
             /// </summary>
-            protected override Type EnumType {
-                get {
-                    return typeof(UniverseSize);
-                }
-            }
+            protected override Type EnumType { get { return typeof(UniverseSize); } }
 
             #region Universe Radius
 

@@ -41,15 +41,15 @@ namespace CodeEnv.Master.GameContent {
             _iconCache = new Dictionary<IconSection, IDictionary<IEnumerable<IconSelectionCriteria>, IIcon>>();
         }
 
-        public IIcon MakeInstance(DataType data, AIntel playerIntel) {
+        public IIcon MakeInstance(DataType data) {
             IconSection section = GetIconSection();
-            IconSelectionCriteria[] criteria = GetSelectionCriteria(data, playerIntel);
+            IconSelectionCriteria[] criteria = GetSelectionCriteria(data);
             return MakeInstance(section, data.Owner.Color, criteria);
         }
 
-        private IconSelectionCriteria[] GetSelectionCriteria(DataType data, AIntel playerIntel) {
+        private IconSelectionCriteria[] GetSelectionCriteria(DataType data) {
             IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
-            switch (playerIntel.CurrentCoverage) {
+            switch (data.PlayerIntel.CurrentCoverage) {
                 case IntelCoverage.None:
                     // always returns None
                     criteria.Add(IconSelectionCriteria.None);
@@ -69,7 +69,7 @@ namespace CodeEnv.Master.GameContent {
                     GetCriteriaFromComposition(data).ForAll(isc => criteria.Add(isc));
                     break;
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(playerIntel.CurrentCoverage));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(data.PlayerIntel.CurrentCoverage));
             }
             return criteria.ToArray();
         }

@@ -20,7 +20,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class GameSettings {
 
-        public bool IsNewGame { get; set; }
+        public bool IsStartupSimulation { get; set; }
+
+        public bool IsSavedGame { get; set; }
         public UniverseSize UniverseSize { get; set; }
         public Race HumanPlayerRace { get; set; }
         public Race[] AIPlayerRaces { get; set; }

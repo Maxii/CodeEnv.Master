@@ -79,7 +79,7 @@ public class StarbaseCommandItem : AUnitBaseCommandItem {
     }
 
     protected override IIcon MakeCmdIconInstance() {
-        return StarbaseIconFactory.Instance.MakeInstance(Data, PlayerIntel);
+        return StarbaseIconFactory.Instance.MakeInstance(Data);
     }
 
     #endregion

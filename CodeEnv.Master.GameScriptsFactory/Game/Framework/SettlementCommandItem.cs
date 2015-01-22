@@ -67,7 +67,7 @@ public class SettlementCommandItem : AUnitBaseCommandItem /*, ICameraFollowable 
     #region View Methods
 
     protected override IIcon MakeCmdIconInstance() {
-        return SettlementIconFactory.Instance.MakeInstance(Data, PlayerIntel);
+        return SettlementIconFactory.Instance.MakeInstance(Data);
     }
 
     #endregion

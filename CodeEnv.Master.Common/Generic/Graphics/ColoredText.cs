@@ -57,10 +57,6 @@ namespace CodeEnv.Master.Common {
             }
         }
 
-        //public override string ToString() {
-        //    return new ObjectAnalyzer().ToString(this);
-        //}
-
         #region Object.Equals and GetHashCode Override
 
         public override bool Equals(object obj) {

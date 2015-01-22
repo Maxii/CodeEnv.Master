@@ -63,8 +63,6 @@ public class StarItem : AItem, INavigableTarget, IShipOrbitable {
         //D.Log("{0}.Radius set to {1}.", FullName, Radius);
     }
 
-    protected override AIntel InitializePlayerIntel() { return new FixedIntel(IntelCoverage.Comprehensive); }
-
     private void InitializeShipOrbitSlot() {
         float innerOrbitRadius = Radius * TempGameValues.KeepoutRadiusMultiplier;
         float outerOrbitRadius = innerOrbitRadius + TempGameValues.DefaultShipOrbitSlotDepth;

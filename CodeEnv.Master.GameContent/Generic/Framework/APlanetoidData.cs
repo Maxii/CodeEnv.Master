@@ -57,6 +57,8 @@ namespace CodeEnv.Master.GameContent {
             Topography = Topography.System;
         }
 
+        protected override AIntel InitializePlayerIntel() { return new ImprovingIntel(); }
+
     }
 }
 

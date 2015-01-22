@@ -154,8 +154,6 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     #region Startup Simulation
 
-    private bool __isStartupSimulation;
-
     private void __SimulateStartup() {
         //D.Log("{0}{1}.SimulateStartup() called.", GetType().Name, InstanceCount);
         switch (CurrentScene) {
@@ -163,7 +161,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
                 CurrentState = GameState.Lobby;
                 break;
             case SceneLevel.GameScene:
-                __isStartupSimulation = true;
+                GameSettings = __CreateStartupSimulationGameSettings();
                 CurrentState = GameState.Lobby;
                 CurrentState = GameState.Loading;
                 CurrentState = GameState.Building;
@@ -172,6 +170,25 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(CurrentScene));
         }
+    }
+
+    private GameSettings __CreateStartupSimulationGameSettings() {
+        var universeSize = UniverseSize.Large;
+
+        int aiPlayerCount = universeSize.DefaultAIPlayerCount();
+        var aiPlayerRaces = new Race[aiPlayerCount];
+        for (int i = 0; i < aiPlayerCount; i++) {
+            var aiSpecies = Enums<Species>.GetRandomExcept(Species.None, Species.Human);
+            aiPlayerRaces[i] = new Race(aiSpecies);
+        }
+
+        var gameSettings = new GameSettings {
+            IsStartupSimulation = true,
+            UniverseSize = universeSize,
+            HumanPlayerRace = new Race(new RaceStat(_playerPrefsMgr.PlayerSpeciesSelection.Convert(), "Maxii", "Maxii description", _playerPrefsMgr.PlayerColor)),
+            AIPlayerRaces = aiPlayerRaces
+        };
+        return gameSettings;
     }
 
     #endregion
@@ -258,41 +275,51 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     #endregion
 
-    #region New Game
 
-    public void InitiateNewGame(GameSettings newGameSettings) {
-        LoadAndBuildNewGame(newGameSettings);
-    }
+    private void CreatePlayers(GameSettings settings) {
+        HumanPlayer = new Player(settings.HumanPlayerRace, IQ.None, isPlayer: true);
 
-    private void LoadAndBuildNewGame(GameSettings settings) {
-        D.Log("LoadAndBuildNewGame() called.");
+        var aiPlayerRaces = settings.AIPlayerRaces;
+        int aiPlayerCount = aiPlayerRaces.Length;
+        AIPlayers = new List<Player>(aiPlayerCount);
 
-        GameSettings = settings;
-        HumanPlayer = CreateHumanPlayer(settings);
-        AIPlayers = CreateAIPlayers(settings);
-
-        CurrentState = GameState.Loading;
-
-        //D.Log("Application.LoadLevel({0}) being called.", SceneLevel.GameScene.GetName());
-        Application.LoadLevel((int)SceneLevel.GameScene);
-    }
-
-    private Player CreateHumanPlayer(GameSettings gameSettings) {
-        return new Player(gameSettings.HumanPlayerRace, IQ.Normal, isPlayer: true);
-    }
-
-    private IList<Player> CreateAIPlayers(GameSettings gameSettings) {
-        var aiPlayerRaces = gameSettings.AIPlayerRaces;
-        var aiPlayers = new List<Player>(aiPlayerRaces.Length);
-        aiPlayerRaces.ForAll(aiRace => {
+        for (int i = 0; i < aiPlayerCount; i++) {
+            var aiRace = aiPlayerRaces[i];
             var aiPlayer = new Player(aiRace, IQ.Normal);
-            D.Log("AI Player {0} created.", aiPlayer.LeaderName);
-            aiPlayers.Add(aiPlayer);
-        });
-        return aiPlayers;
+            // if not startupSimulation, all relationships default to None
+            if (settings.IsStartupSimulation) {
+                switch (i) {
+                    case 0:
+                        // makes sure there will always be an AIPlayer with DiploRelation.None
+                        aiPlayer.SetRelations(HumanPlayer, DiplomaticRelationship.None);
+                        break;
+                    case 1:
+                        aiPlayer.SetRelations(HumanPlayer, DiplomaticRelationship.War);
+                        break;
+                    case 2:
+                        aiPlayer.SetRelations(HumanPlayer, DiplomaticRelationship.ColdWar);
+                        break;
+                    case 3:
+                        aiPlayer.SetRelations(HumanPlayer, DiplomaticRelationship.Ally);
+                        break;
+                    case 4:
+                        aiPlayer.SetRelations(HumanPlayer, DiplomaticRelationship.Friend);
+                        break;
+                    case 5:
+                        aiPlayer.SetRelations(HumanPlayer, DiplomaticRelationship.Neutral);
+                        break;
+                    case 6:
+                        aiPlayer.SetRelations(HumanPlayer, DiplomaticRelationship.War);
+                        break;
+                    default:
+                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(i));
+                }
+                HumanPlayer.SetRelations(aiPlayer, aiPlayer.GetRelations(HumanPlayer));
+            }
+            D.Log("AI Player {0} created. Human relationship = {1}.", aiPlayer.LeaderName, aiPlayer.GetRelations(HumanPlayer).GetName());
+            AIPlayers.Add(aiPlayer);
+        }
     }
-
-    #endregion
 
     /// <summary>
     /// This substitutes my own Event for OnLevelWasLoaded so I don't have to use OnLevelWasLoaded anywhere else
@@ -322,10 +349,29 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         _gameTime.CheckForDateChange(); // CheckForDateChange() will ignore the call if clock is not enabled or is paused
     }
 
+    #region New Game
+
+    public void InitiateNewGame(GameSettings newGameSettings) {
+        LoadAndBuildNewGame(newGameSettings);
+    }
+
+    private void LoadAndBuildNewGame(GameSettings settings) {
+        D.Log("LoadAndBuildNewGame() called.");
+
+        GameSettings = settings;
+        CurrentState = GameState.Loading;
+
+        //D.Log("Application.LoadLevel({0}) being called.", SceneLevel.GameScene.GetName());
+        Application.LoadLevel((int)SceneLevel.GameScene);
+    }
+
+    #endregion
+
     #region Saving and Restoring
 
     public void SaveGame(string gameName) {
-        GameSettings.IsNewGame = false;
+        GameSettings.IsSavedGame = true;
+        GameSettings.IsStartupSimulation = false;
         _gameTime.PrepareToSaveGame();
         LevelSerializer.SaveGame(gameName);
     }
@@ -457,29 +503,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         // Start state progression checks here as Loading is always called whether a new game, loading saved game or startup simulation
         StartGameStateProgressionReadinessChecks();
 
-        if (__isStartupSimulation) {
-            var universeSize = _playerPrefsMgr.UniverseSizeSelection.Convert();
-
-            int aiPlayerCount = universeSize.DefaultAIPlayerCount();
-            //int aiPlayerCount = _playerPrefsMgr.UniverseSize.DefaultAIPlayerCount();
-            var aiPlayerRaces = new Race[aiPlayerCount];
-            for (int i = 0; i < aiPlayerCount; i++) {
-                var aiSpecies = Enums<Species>.GetRandomExcept(Species.None, Species.Human);
-                aiPlayerRaces[i] = new Race(aiSpecies);
-            }
-
-            var gameSettings = new GameSettings {
-                IsNewGame = true,
-                UniverseSize = universeSize,
-                //UniverseSize = _playerPrefsMgr.UniverseSize,
-                HumanPlayerRace = new Race(new RaceStat(_playerPrefsMgr.PlayerSpeciesSelection.Convert(), "Maxii", "Maxii description", _playerPrefsMgr.PlayerColor)),
-                AIPlayerRaces = aiPlayerRaces
-            };
-            GameSettings = gameSettings;
-            HumanPlayer = CreateHumanPlayer(gameSettings);
-            AIPlayers = CreateAIPlayers(gameSettings);
-            return;
-        }
+        CreatePlayers(GameSettings);
+        if (GameSettings.IsStartupSimulation) { return; }
 
         RecordGameStateProgressionReadiness(Instance, GameState.Loading, isReady: false);
 
@@ -490,7 +515,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     }
 
     void Loading_OnLevelWasLoaded(int level) {
-        D.Assert(!__isStartupSimulation);
+        //D.Assert(!__isStartupSimulation);
+        D.Assert(!GameSettings.IsStartupSimulation);
         LogEvent();
 
         CurrentScene = (SceneLevel)level;
@@ -506,7 +532,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     void Loading_ProgressState() {
         LogEvent();
-        CurrentState = (LevelSerializer.IsDeserializing || !GameSettings.IsNewGame) ? GameState.Restoring : GameState.Building;
+        CurrentState = (LevelSerializer.IsDeserializing || GameSettings.IsSavedGame) ? GameState.Restoring : GameState.Building;
     }
 
     void Loading_ExitState() {
@@ -521,12 +547,12 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     void Building_EnterState() {
         LogEvent();
-        if (__isStartupSimulation) { return; }
+        if (GameSettings.IsStartupSimulation) { return; }
 
         RecordGameStateProgressionReadiness(Instance, GameState.Building, isReady: false);
 
         // Building is only for new games
-        D.Assert(GameSettings.IsNewGame);
+        D.Assert(!GameSettings.IsSavedGame);
         if (onNewGameBuilding != null) {
             onNewGameBuilding();
         }
@@ -558,6 +584,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     void Restoring_OnDeserialized() {
         LogEvent();
+        D.Assert(GameSettings.IsSavedGame && !GameSettings.IsStartupSimulation);
 
         ResetConditionsForGameStartup();
         _gameTime.PrepareToResumeSavedGame();
@@ -692,7 +719,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         if (_playerPrefsMgr.IsPauseOnLoadEnabled) {
             RequestPauseStateChange(toPause: true, toOverride: true);
         }
-        __isStartupSimulation = false;
+        //__isStartupSimulation = false;
         IsRunning = true;
     }
 

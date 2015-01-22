@@ -113,6 +113,12 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public const int TotalOrbitSlotsPerSystem = 6;
 
+        /// <summary>
+        /// The maximum number of AI Players allowed in any game instance.
+        /// Used to validate the New Game Gui setup.
+        /// </summary>
+        public const int MaxAIPlayers = 7;
+
         public static float __GetMass(ShipCategory hull) {
             switch (hull) {
                 case ShipCategory.Fighter:

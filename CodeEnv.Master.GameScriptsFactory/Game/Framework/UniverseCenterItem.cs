@@ -50,8 +50,6 @@ public class UniverseCenterItem : AItem, IShipOrbitable {
         InitializeKeepoutZone();
     }
 
-    protected override AIntel InitializePlayerIntel() { return new FixedIntel(IntelCoverage.Comprehensive); }
-
     private void InitializeShipOrbitSlot() {
         float innerOrbitRadius = Radius * TempGameValues.KeepoutRadiusMultiplier;
         float outerOrbitRadius = innerOrbitRadius + TempGameValues.DefaultShipOrbitSlotDepth;

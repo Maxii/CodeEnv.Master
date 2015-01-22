@@ -58,7 +58,7 @@ public class SystemCtxControl_AI : ACtxControl {
             case FleetDirective.Attack:
                 return !_remotePlayerOwnedSelectedItem.Owner.IsEnemyOf(_systemMenuOperator.Owner);
             case FleetDirective.Explore:
-                return _systemMenuOperator.PlayerIntel.CurrentCoverage == IntelCoverage.Comprehensive;
+                return _systemMenuOperator.PlayerIntelCoverage == IntelCoverage.Comprehensive;
             case FleetDirective.Move:
             case FleetDirective.Guard:
                 return _remotePlayerOwnedSelectedItem.Owner.IsEnemyOf(_systemMenuOperator.Owner);

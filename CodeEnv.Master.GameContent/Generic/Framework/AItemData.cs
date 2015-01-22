@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AItemData : APropertyChangeTracking {
 
+        public AIntel PlayerIntel { get; private set; }
+
         private string _name;
         /// <summary>
         /// Gets or sets the name of the item. 
@@ -71,7 +73,14 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The name.</param>
         public AItemData(string name) {
             Name = name;
+            PlayerIntel = InitializePlayerIntel();
         }
+
+        /// <summary>
+        /// Derived classes should override this if they have a different type of AIntel than <see cref="Intel"/>.
+        /// </summary>
+        /// <returns></returns>
+        protected virtual AIntel InitializePlayerIntel() { return new Intel(); }
 
         protected virtual void OnOwnerChanged() {
             D.Log("{0} Owner has changed to {1}.", FullName, Owner.LeaderName);
