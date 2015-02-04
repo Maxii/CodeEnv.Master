@@ -51,13 +51,14 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Evaluates the equality of two sequences with an option to ignore order of the members.
+        /// Sequences must implement IComparable<typeparamref name="T"/>
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="source">The source.</param>
-        /// <param name="second">The second.</param>
+        /// <param name="source">The source sequence.</param>
+        /// <param name="second">The second sequence.</param>
         /// <param name="ignoreOrder">if set to <c>true</c> [ignore order].</param>
         /// <returns></returns>
-        public static bool SequenceEquals<T>(this IEnumerable<T> source, IEnumerable<T> second, bool ignoreOrder = false) {
+        public static bool SequenceEquals<T>(this IEnumerable<T> source, IEnumerable<T> second, bool ignoreOrder = false) where T : IComparable<T> {
             if (ignoreOrder) {
                 return source.OrderBy(s => s).SequenceEqual<T>(second.OrderBy(s => s));
             }

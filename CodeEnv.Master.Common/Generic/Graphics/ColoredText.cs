@@ -39,7 +39,10 @@ namespace CodeEnv.Master.Common {
 
         #endregion
 
-        public string TextWithEmbeddedColor { get; private set; }
+        /// <summary>
+        /// The text with embedded color markers.
+        /// </summary>
+        public string Text { get; private set; }
 
         public ColoredText(string text) :
             this(text, GameColor.White) {
@@ -50,10 +53,10 @@ namespace CodeEnv.Master.Common {
             if (color != GameColor.White) {
                 string colorHex = MyNguiUtilities.ColorToHex(color);
                 string colorNgui = MyNguiConstants.NguiEmbeddedColorFormat.Inject(colorHex);
-                TextWithEmbeddedColor = colorNgui + text + MyNguiConstants.NguiEmbeddedColorTerminator;
+                Text = colorNgui + text + MyNguiConstants.NguiEmbeddedColorTerminator;
             }
             else {
-                TextWithEmbeddedColor = text;
+                Text = text;
             }
         }
 
@@ -73,20 +76,20 @@ namespace CodeEnv.Master.Common {
         /// </returns>
         public override int GetHashCode() {
             int hash = 17;  // 17 = some prime number
-            hash = hash * 31 + TextWithEmbeddedColor.GetHashCode(); // 31 = another prime number
+            hash = hash * 31 + Text.GetHashCode(); // 31 = another prime number
             return hash;
         }
 
         #endregion
 
         public override string ToString() {
-            return TextWithEmbeddedColor;
+            return Text;
         }
 
         #region IEquatable<ColoredText> Members
 
         public bool Equals(ColoredText other) {
-            return TextWithEmbeddedColor == other.TextWithEmbeddedColor;
+            return Text == other.Text;
         }
 
         #endregion

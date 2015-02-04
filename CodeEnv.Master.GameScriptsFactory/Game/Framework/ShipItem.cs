@@ -32,6 +32,9 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     public event Action onDestinationReached;
 
+    [Tooltip("The type of ship")]
+    public ShipCategory category;
+
     private ShipOrder _currentOrder;
     /// <summary>
     /// The last order this ship was instructed to execute.
@@ -70,9 +73,16 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     /// </summary>
     public FormationStationMonitor FormationStation { get; set; }
 
-    [Tooltip("The type of ship")]
-    public ShipCategory category;
+    private ShipPublisher _publisher;
+    public ShipPublisher Publisher {
+        get { return _publisher = _publisher ?? new ShipPublisher(Data); }
+    }
 
+    public override bool IsHudShowing {
+        get { return _hudManager != null && _hudManager.IsHudShowing; }
+    }
+
+    private HudManager<ShipPublisher> _hudManager;
     private ICtxControl _ctxControl;
     private ShipHelm _helm;
     private VelocityRay _velocityRay;
@@ -93,15 +103,19 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         CurrentState = ShipState.None;
     }
 
-    protected override IGuiHudPublisher InitializeHudPublisher() {
-        var hudPublisher = new GuiHudPublisher<ShipData>(Data);
-        hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed, GuiHudLineKeys.Health, GuiHudLineKeys.TargetDistance);
-        return hudPublisher;
-    }
+    //protected override IGuiHudPublisher InitializeHudPublisher() {
+    //    var hudPublisher = new GuiHudPublisher<ShipData>(Data);
+    //    hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed, GuiHudLineKeys.Health, GuiHudLineKeys.TargetDistance);
+    //    return hudPublisher;
+    //}
 
     protected override void InitializeViewMembersOnDiscernible() {
         base.InitializeViewMembersOnDiscernible();
         InitializeContextMenu(Owner);
+    }
+
+    protected override void InitializeHudPublisher() {
+        _hudManager = new HudManager<ShipPublisher>(Publisher);
     }
 
     private void InitializeContextMenu(Player owner) {
@@ -122,6 +136,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         Data.IsFtlOperational = true;   // will trigger Data.AssessFtlAvailability()
         CurrentState = ShipState.Idling;
     }
+
+    public ShipReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     /// <summary>
     /// Reattaches the ship's transform to the fleet container it came from.
@@ -257,6 +273,17 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     #endregion
 
     #region View Methods
+
+    public override void ShowHud(bool toShow) {
+        if (_hudManager != null) {
+            if (toShow) {
+                _hudManager.Show(Position);
+            }
+            else {
+                _hudManager.Hide();
+            }
+        }
+    }
 
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
@@ -747,7 +774,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     void ExecuteJoinFleetOrder_OnMakeFleetCompleted(FleetCommandItem transferFleet) {
         LogEvent();
-        transferFleet.PlayerIntelCoverage = IntelCoverage.Comprehensive;
+        transferFleet.HumanPlayerIntelCoverage = IntelCoverage.Comprehensive;
         // TODO PlayerIntelCoverage should be set through sensor detection
 
         // issue a JoinFleet order to our transferFleet
@@ -756,6 +783,17 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         transferFleet.CurrentOrder = joinFleetOrder;
         //// once joinFleetOrder takes, this ship state will be changed by its 'new'  transferFleet Command
     }
+    //void ExecuteJoinFleetOrder_OnMakeFleetCompleted(FleetCommandItem transferFleet) {
+    //    LogEvent();
+    //    transferFleet.PlayerIntelCoverage = IntelCoverage.Comprehensive;
+    //    // TODO PlayerIntelCoverage should be set through sensor detection
+
+    //    // issue a JoinFleet order to our transferFleet
+    //    var fleetToJoin = CurrentOrder.Target as FleetCommandItem;
+    //    FleetOrder joinFleetOrder = new FleetOrder(FleetDirective.Join, fleetToJoin);
+    //    transferFleet.CurrentOrder = joinFleetOrder;
+    //    //// once joinFleetOrder takes, this ship state will be changed by its 'new'  transferFleet Command
+    //}
 
     void ExecuteJoinFleetOrder_ExitState() {
         LogEvent();
@@ -1117,6 +1155,9 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         if (_velocityRay != null) { _velocityRay.Dispose(); }
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
+        }
+        if (_hudManager != null) {
+            _hudManager.Dispose();
         }
     }
 

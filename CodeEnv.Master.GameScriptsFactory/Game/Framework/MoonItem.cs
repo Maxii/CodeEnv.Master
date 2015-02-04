@@ -39,12 +39,6 @@ public class MoonItem : APlanetoidItem {
 
     #region Initialization
 
-    protected override IGuiHudPublisher InitializeHudPublisher() {
-        var publisher = new GuiHudPublisher<MoonData>(Data);
-        publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
-        return publisher;
-    }
-
     #endregion
 
     #region Model Methods

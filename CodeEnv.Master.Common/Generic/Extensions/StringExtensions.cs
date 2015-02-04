@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: StringExtensions.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// Extensions specifically for strings.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,7 +21,7 @@ namespace CodeEnv.Master.Common {
     using System.Text;
 
     /// <summary>
-    /// COMMENT 
+    /// Extensions specifically for strings.
     /// </summary>
     public static class StringExtensions {
 

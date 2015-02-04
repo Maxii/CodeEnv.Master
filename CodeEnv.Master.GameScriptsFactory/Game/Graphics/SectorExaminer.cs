@@ -174,7 +174,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
                 // OPTIMIZE cache sector and sectorView
                 var sector = _sectorGrid.GetSector(CurrentSectorIndex);
                 if (sector != null) {  // can be null if camera is located where no sector object was created
-                    if (sector.HudPublisher.IsHudShowing) {
+                    if (sector.IsHudShowing) {
                         sector.ShowHud(false);
                     }
                 }

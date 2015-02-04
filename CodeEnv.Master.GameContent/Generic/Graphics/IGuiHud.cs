@@ -14,8 +14,9 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-using UnityEngine;
 namespace CodeEnv.Master.GameContent {
+
+    using UnityEngine;
 
     /// <summary>
     /// Interface for GuiCursorHuds so non-scripts can refer to it.
@@ -23,11 +24,13 @@ namespace CodeEnv.Master.GameContent {
     public interface IGuiHud : IHud {
 
         /// <summary>
-        /// Populate the HUD with text from the GuiCursorHudText.
+        /// Populate the HUD with text pulled from LabelText.
         /// </summary>
-        /// <param name="guiCursorHudText">The GUI cursor hud text.</param>
+        /// <param name="labelText">The label text.</param>
         /// <param name="position">The position of the GameObject this HUD info represents.</param>
-        void Set(GuiHudText guiCursorHudText, Vector3 position);
+        void Set(ALabelText labelText, Vector3 position);
+
+        void Set(string text, Vector3 position);
 
 
     }

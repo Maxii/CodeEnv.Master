@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IColoredTextList.cs
-// Interface for strategy objects that provide lists of Colored Text for GuiCursorHudText.
+// Interface for objects that contain a list of Colored Text elements for a Label.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,14 +19,19 @@ namespace CodeEnv.Master.Common {
     using System.Collections.Generic;
 
     /// <summary>
-    /// Interface for strategy objects that provide lists of Colored Text for GuiCursorHudText.
+    /// Interface for objects that contain a list of Colored Text elements for a Label.
     /// </summary>
     public interface IColoredTextList {
 
         /// <summary>
-        /// Readonly, gets the list.
+        /// Readonly. The list of <c>ColoredText</c> elements.
         /// </summary>
         IList<ColoredText> List { get; }
+
+        /// <summary>
+        /// Readonly. The array of  elements as a <c>string</c> array.
+        /// </summary>
+        string[] TextElements { get; }
 
     }
 }

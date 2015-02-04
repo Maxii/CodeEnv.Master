@@ -6,8 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IGuiHudPublisher.cs
-// Interface for GuiHudPublisher instances so classes that are not in the scripts
-// project can talk to them.
+// Interface for the multiple GuiHudPublisher&lt;DataType&gt; types that publish IGuiHuds.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -15,29 +14,31 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-namespace CodeEnv.Master.Common {
+namespace CodeEnv.Master.GameContent {
 
     using System.Collections;
+    using CodeEnv.Master.Common;
+    using UnityEngine;
 
     /// <summary>
-    /// Interface for GuiHudPublisher instances so classes that are not in the scripts
-    /// project can talk to them.
+    /// Interface for the multiple GuiHudPublisher&lt;DataType&gt; types that
+    /// publish IGuiHuds.
     /// </summary>
     public interface IGuiHudPublisher {
 
         /// <summary>
-        /// Displays a new, updated or already existing GuiCursorHudText instance containing 
-        /// the text to display at the cursor.
+        /// Gets a value indicating whether the IGuiHud
+        /// is currently being shown by this Publisher.
         /// </summary>
-        /// <param name="intelLevel">The intel level.</param>
-        void DisplayHudAtCursor(IntelLevel intelLevel);
+        bool IsHudShowing { get; }
 
         /// <summary>
-        /// Coroutine compatible method that keeps the hud text current. 
+        /// Shows or hides a current GuiCursorHudText instance containing the HUD text to display.
         /// </summary>
-        /// <param name="updateFrequency">Seconds between updates.</param>
-        /// <returns></returns>
-        IEnumerator KeepHudCurrent(float updateFrequency);
+        /// <param name="toShow">if set to <c>true</c> shows the hud, otherwise hides it.</param>
+        /// <param name="position">The position of the GameObject where this HUD should display.</param>
+        void ShowHud(bool toShow, Vector3 position);
+
 
         /// <summary>
         /// Clients can optionally provide additional GuiCursorHudLineKeys they wish to routinely update whenever GetHudText is called.
@@ -45,11 +46,6 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="optionalKeys">The optional keys.</param>
         void SetOptionalUpdateKeys(params GuiHudLineKeys[] optionalKeys);
-
-        /// <summary>
-        /// Clears the hud and stops any coroutines keeping it updated.
-        /// </summary>
-        void ClearHud();
 
     }
 }

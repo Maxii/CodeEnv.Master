@@ -31,6 +31,12 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
 
     private static string __highlightName = "SystemHighlightMesh";  // IMPROVE
 
+    public bool enableTrackingLabel = true;
+
+    [Range(1.0F, 5.0F)]
+    [Tooltip("Minimum Camera View Distance in Units")]
+    public float minViewDistance = 2F;    // 2 units from the orbital plane
+
     public new SystemData Data {
         get { return base.Data as SystemData; }
         set { base.Data = value; }
@@ -47,14 +53,18 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
         }
     }
 
+    private SystemPublisher _publisher;
+    public SystemPublisher Publisher {
+        get { return _publisher = _publisher ?? new SystemPublisher(Data); }
+    }
+
+    public override bool IsHudShowing {
+        get { return _hudManager != null && _hudManager.IsHudShowing; }
+    }
+
     protected override float SphericalHighlightRadius { get { return Radius; } }
 
-    public bool enableTrackingLabel = true;
-
-    [Range(1.0F, 5.0F)]
-    [Tooltip("Minimum Camera View Distance in Units")]
-    public float minViewDistance = 2F;    // 2 units from the orbital plane
-
+    private SystemHudManager _hudManager;
     private ITrackingWidget _trackingLabel;
     private ICtxControl _ctxControl;
     private MeshRenderer __systemHighlightRenderer;
@@ -77,9 +87,9 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
         }
     }
 
-    protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<SystemData>(Data);
-    }
+    //protected override IGuiHudPublisher InitializeHudPublisher() {
+    //    return new GuiHudPublisher<SystemData>(Data);
+    //}
 
     private ITrackingWidget InitializeTrackingLabel() {
         float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
@@ -89,6 +99,7 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
     }
 
     protected override void InitializeViewMembersOnDiscernible() {
+        base.InitializeViewMembersOnDiscernible();
         InitializeContextMenu(Owner);
 
         _orbitalPlaneCollider = gameObject.GetComponentInChildren<MeshCollider>();
@@ -119,6 +130,10 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
         __systemHighlightRenderer.enabled = true;
     }
 
+    protected override void InitializeHudPublisher() {
+        _hudManager = new SystemHudManager(Publisher);
+    }
+
     private void InitializeContextMenu(Player owner) {
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
@@ -135,6 +150,17 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
     #endregion
 
     #region Model Methods
+
+    public SystemReport GetReport(Player player) { return Publisher.GetReport(player, GetStarReport(player), GetPlanetoidReports(player)); }
+
+    private PlanetoidReport[] GetPlanetoidReports(Player player) {
+        var planetoids = gameObject.GetSafeMonoBehaviourComponentsInChildren<APlanetoidItem>();
+        return planetoids.Select(p => p.GetReport(player)).ToArray();
+    }
+
+    private StarReport GetStarReport(Player player) {
+        return gameObject.GetSafeMonoBehaviourComponentInChildren<StarItem>().GetReport(player);
+    }
 
     private void OnSettlementChanged() {
         SettlementCmdData settlementData = null;
@@ -157,12 +183,12 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
         // enabling (or not) the system orbiter can also be handled by the SettlementCreator once isRunning
         //D.Log("{0} has been deployed to {1}.", settlementCmd.DisplayName, FullName);
 
-        var systemIntelCoverage = PlayerIntelCoverage;
+        var systemIntelCoverage = HumanPlayerIntelCoverage;
         if (systemIntelCoverage == IntelCoverage.None) {
             D.Log("{0}.IntelCoverage set to None by its assigned System {1}.", settlementCmd.FullName, FullName);
         }
         // UNCLEAR should a new settlement being attached to a System take on the PlayerIntel state of the System??  See SystemPresenter.OnPlayerIntelCoverageChanged()
-        Settlement.PlayerIntelCoverage = systemIntelCoverage;
+        Settlement.HumanPlayerIntelCoverage = systemIntelCoverage;
     }
     //private void AttachSettlement(SettlementCommandItem settlementCmd) {
     //    Transform settlementUnit = settlementCmd.transform.parent;
@@ -171,12 +197,12 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
     //    // enabling (or not) the system orbiter can also be handled by the SettlementCreator once isRunning
     //    //D.Log("{0} has been deployed to {1}.", settlementCmd.DisplayName, FullName);
 
-    //    var systemIntelCoverage = PlayerIntel.CurrentCoverage;
+    //    var systemIntelCoverage = PlayerIntelCoverage;
     //    if (systemIntelCoverage == IntelCoverage.None) {
     //        D.Log("{0}.IntelCoverage set to None by its assigned System {1}.", settlementCmd.FullName, FullName);
     //    }
     //    // UNCLEAR should a new settlement being attached to a System take on the PlayerIntel state of the System??  See SystemPresenter.OnPlayerIntelCoverageChanged()
-    //    Settlement.PlayerIntel.CurrentCoverage = systemIntelCoverage;
+    //    Settlement.PlayerIntelCoverage = systemIntelCoverage;
     //}
 
     protected override void OnOwnerChanging(Player newOwner) {
@@ -194,6 +220,18 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
 
     #region View Methods
 
+    public override void ShowHud(bool toShow) {
+        if (_hudManager != null) {
+            if (toShow) {
+                var humanPlayer = _gameMgr.HumanPlayer;
+                _hudManager.Show(Position, GetStarReport(humanPlayer), GetPlanetoidReports(humanPlayer));
+            }
+            else {
+                _hudManager.Hide();
+            }
+        }
+    }
+
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
         if (_trackingLabel != null) {
@@ -203,11 +241,11 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
         // orbitalPlane LineRenderers don't render when not visible to the camera
     }
 
-    protected override void OnPlayerIntelCoverageChanged() {
-        base.OnPlayerIntelCoverageChanged();
+    protected override void OnHumanPlayerIntelCoverageChanged() {
+        base.OnHumanPlayerIntelCoverageChanged();
         // construct list each time as Settlement presence can change with time
         if (Settlement != null) {
-            Settlement.PlayerIntelCoverage = PlayerIntelCoverage;
+            Settlement.HumanPlayerIntelCoverage = HumanPlayerIntelCoverage;
         }
         // The approach below acquired all item children in the system and gave them the same IntelCoverage as the system
         //var childItemsInSystem = gameObject.GetSafeMonoBehaviourComponentsInChildren<AItem>().Except(this);
@@ -293,6 +331,27 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
         }
     }
 
+    //private SystemReportGenerator _reportGenerator;
+    //public SystemReportGenerator ReportGenerator {
+    //    get {
+    //        return _reportGenerator = _reportGenerator ?? new SystemReportGenerator(Data);
+    //    }
+    //}
+
+    //protected override void OnHover(bool isOver) {
+    //    if (isOver) {
+    //        StarReport starReport = gameObject.GetSafeMonoBehaviourComponentInChildren<StarItem>().GetReport(_gameMgr.HumanPlayer);
+    //        var planetoids = gameObject.GetSafeMonoBehaviourComponentsInChildren<APlanetoidItem>();
+    //        PlanetoidReport[] planetoidReports = planetoids.Select(p => p.GetReport(_gameMgr.HumanPlayer)).ToArray();
+    //        string hudText = ReportGenerator.GetCursorHudText(starReport, planetoidReports);
+    //        GuiCursorHud.Instance.Set(hudText, Position);
+    //    }
+    //    else {
+    //        GuiCursorHud.Instance.Clear();
+    //    }
+    //}
+
+
     #endregion
 
     #region Cleanup
@@ -302,6 +361,9 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
         UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
+        }
+        if (_hudManager != null) {
+            _hudManager.Dispose();
         }
     }
 

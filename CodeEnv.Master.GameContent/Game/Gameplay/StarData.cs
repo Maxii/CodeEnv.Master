@@ -63,7 +63,11 @@ namespace CodeEnv.Master.GameContent {
             base.Topography = Topography.System;
         }
 
-        protected override AIntel InitializePlayerIntel() { return new FixedIntel(IntelCoverage.Comprehensive); }
+        protected override AIntel InitializeIntelState(Player player) {
+            AIntel beginningIntel = new ImprovingIntel();
+            beginningIntel.CurrentCoverage = IntelCoverage.Aware;
+            return beginningIntel;
+        }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

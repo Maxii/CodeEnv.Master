@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
@@ -37,17 +38,38 @@ public class SettlementCommandItem : AUnitBaseCommandItem /*, ICameraFollowable 
     /// </summary>
     public bool __OrbiterMoves { get; set; }
 
+    private SettlementPublisher _publisher;
+    public SettlementPublisher Publisher {
+        get { return _publisher = _publisher ?? new SettlementPublisher(Data); }
+    }
+
+    public override bool IsHudShowing {
+        get { return _hudManager != null && _hudManager.IsHudShowing; }
+    }
+
+    private CmdHudManager<SettlementPublisher> _hudManager;
+
     #region Initialization
 
-    protected override IGuiHudPublisher InitializeHudPublisher() {
-        var publisher = new GuiHudPublisher<SettlementCmdData>(Data);
-        publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
-        return publisher;
+    //protected override IGuiHudPublisher InitializeHudPublisher() {
+    //    var publisher = new GuiHudPublisher<SettlementCmdData>(Data);
+    //    publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
+    //    return publisher;
+    //}
+
+    protected override void InitializeHudPublisher() {
+        _hudManager = new CmdHudManager<SettlementPublisher>(Publisher);
     }
 
     #endregion
 
     #region Model Methods
+
+    public SettlementReport GetReport(Player player) { return Publisher.GetReport(player, GetElementReports(player)); }
+
+    private FacilityReport[] GetElementReports(Player player) {
+        return Elements.Cast<FacilityItem>().Select(e => e.GetReport(player)).ToArray();
+    }
 
     protected override void OnDeath() {
         base.OnDeath();
@@ -66,6 +88,17 @@ public class SettlementCommandItem : AUnitBaseCommandItem /*, ICameraFollowable 
 
     #region View Methods
 
+    public override void ShowHud(bool toShow) {
+        if (_hudManager != null) {
+            if (toShow) {
+                _hudManager.Show(Position, GetElementReports(_gameMgr.HumanPlayer));
+            }
+            else {
+                _hudManager.Hide();
+            }
+        }
+    }
+
     protected override IIcon MakeCmdIconInstance() {
         return SettlementIconFactory.Instance.MakeInstance(Data);
     }
@@ -73,6 +106,36 @@ public class SettlementCommandItem : AUnitBaseCommandItem /*, ICameraFollowable 
     #endregion
 
     #region Mouse Events
+
+    //private SettlementReportGenerator _reportGenerator;
+    //public SettlementReportGenerator ReportGenerator {
+    //    get {
+    //        return _reportGenerator = _reportGenerator ?? new SettlementReportGenerator(Data);
+    //    }
+    //}
+
+    //protected override void OnHover(bool isOver) {
+    //    if (isOver) {
+    //        FacilityReport[] elementReports = Elements.Cast<FacilityItem>().Select(f => f.GetReport(_gameMgr.HumanPlayer)).ToArray();
+    //        string hudText = ReportGenerator.GetCursorHudText(Data.GetHumanPlayerIntel(), elementReports);
+    //        GuiCursorHud.Instance.Set(hudText, Position);
+    //    }
+    //    else {
+    //        GuiCursorHud.Instance.Clear();
+    //    }
+    //}
+
+    #endregion
+
+    #region Cleanup
+
+    protected override void Cleanup() {
+        base.Cleanup();
+        if (_hudManager != null) {
+            _hudManager.Dispose();
+        }
+    }
+
     #endregion
 
     public override string ToString() {

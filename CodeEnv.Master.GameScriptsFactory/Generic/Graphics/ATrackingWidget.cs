@@ -126,7 +126,8 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     /// </summary>
     /// <param name="toShow">if set to <c>true</c> [to show].</param>
     public void Show(bool toShow) {
-        if (!toShow || (_toCheckShowDistance && !CheckShowDistance())) {
+        //D.Log("{0}.Show({1}) called. _toCheckShowDistance = {2}, IsWithinShowDistance = {3}.", _transform.name, toShow, _toCheckShowDistance, IsWithinShowDistance());
+        if (!toShow || (_toCheckShowDistance && !IsWithinShowDistance())) {
             Hide();
         }
         else {
@@ -135,14 +136,14 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
         // Note: If there is a CameraLosChangedListener installed, position updates must continue even when offscreen so that OnBecameVisible
         // will be received. Only really matters for UITrackableWidgets as they are the only version that needs to update position
         enabled = Widget.gameObject.GetComponent<CameraLosChangedListener>() != null ? true : toShow;
-        //D.Log("{0}.Show({1}) called. Panel alpha is now {2}.", GetType().Name, toShow, _panel.alpha);
+        //D.Log("{0}.Show({1}) called. Widget alpha is now {2}.", _transform.name, toShow, Widget.alpha);
     }
 
     /// <summary>
     /// Checks if the camera is within acceptable range of the target to show the widget.
     /// </summary>
     /// <returns><c>true</c> if within acceptable range, false otherwise.</returns>
-    private bool CheckShowDistance() {
+    private bool IsWithinShowDistance() {
         return Utility.IsInRange(Target.Transform.DistanceToCamera(), _minShowDistance, _maxShowDistance);
     }
 
@@ -153,6 +154,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     }
 
     protected virtual void Hide() {
+        //D.Log("{0}.Hide() called.", _transform.name);
         Widget.alpha = Constants.ZeroF;
         Widget.enabled = false;
         IsShowing = false;
@@ -183,7 +185,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
         base.OccasionalUpdate();
         RefreshPositionOnUpdate();
         if (_toCheckShowDistance) {
-            if (CheckShowDistance()) {
+            if (IsWithinShowDistance()) {
                 Show();
             }
             else {

@@ -28,8 +28,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class ACommandData : AMortalItemData {
 
-        public event Action onCompositionChanged;
-
         public new Topography Topography { get { return HQElementData.Topography; } }
 
         private Formation _unitFormation;
@@ -79,7 +77,6 @@ namespace CodeEnv.Master.GameContent {
             get { return _unitMaxSensorRange; }
             set { SetProperty<float>(ref _unitMaxSensorRange, value, "UnitMaxSensorRange"); }
         }
-
 
         private CombatStrength _unitOffensiveStrength;
         /// <summary>
@@ -153,10 +150,7 @@ namespace CodeEnv.Master.GameContent {
         private void InitializeCollections() {
             ElementsData = new List<AElementData>();
             _subscribers = new Dictionary<AElementData, IList<IDisposable>>();
-            InitializeComposition();
         }
-
-        protected abstract void InitializeComposition();
 
         protected virtual void OnHQElementDataChanged() {
             D.Assert(ElementsData.Contains(HQElementData),
@@ -193,12 +187,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected void OnCompositionChanged() {
-            if (onCompositionChanged != null) {
-                onCompositionChanged();
-            }
-        }
-
         protected override void OnHealthChanged() {
             base.OnHealthChanged();
             RefreshCurrentCmdEffectiveness();
@@ -228,7 +216,7 @@ namespace CodeEnv.Master.GameContent {
             UpdateElementParentName(elementData);
             ElementsData.Add(elementData);
 
-            ChangeComposition(elementData, toAdd: true);
+            UpdateComposition();
             Subscribe(elementData);
             RecalcPropertiesDerivedFromCombinedElements();
         }
@@ -251,17 +239,19 @@ namespace CodeEnv.Master.GameContent {
             elementData.ParentName = ParentName;    // the name of the fleet, not the command
         }
 
-        protected abstract void ChangeComposition(AElementData elementData, bool toAdd);
 
         public virtual bool RemoveElement(AElementData elementData) {
             D.Assert(ElementsData.Contains(elementData), "Attempted to remove {0} {1} that is not present.".Inject(typeof(AElementData).Name, elementData.ParentName));
             bool isRemoved = ElementsData.Remove(elementData);
 
-            ChangeComposition(elementData, toAdd: false);
+            UpdateComposition();
             Unsubscribe(elementData);
             RecalcPropertiesDerivedFromCombinedElements();
             return isRemoved;
         }
+
+        // OPTIMIZE avoid creating new Composition at startup for every element.add transaction
+        protected abstract void UpdateComposition();
 
         /// <summary>
         /// Recalculates any Command properties that are dependant upon the total element population.

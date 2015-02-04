@@ -32,7 +32,7 @@ public class GuiPlayerColorPopupList : AGuiPopupList<GameColor> {
 
     public override bool HasPreference { get { return hasPreference; } }
 
-    protected override string[] GetNames() { return Enums<GameColor>.GetNames(excludeDefault: true); }
+    protected override string[] GetNames() { return Enums<GameColor>.GetNamesExcept(default(GameColor), GameColor.Clear); }
 
     // no need for taking an action OnPopupListSelectionChanged as changes aren't recorded 
     // from this popup list until the Menu Accept Button is pushed

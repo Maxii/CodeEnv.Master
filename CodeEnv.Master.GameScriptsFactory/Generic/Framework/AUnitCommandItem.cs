@@ -29,6 +29,14 @@ using UnityEngine;
 /// </summary>
 public abstract class AUnitCommandItem : AMortalItemStateMachine, ICommandItem, ISelectable, IUnitAttackableTarget {
 
+    [Range(0.5F, 3.0F)]
+    [Tooltip("Minimum Camera View Distance Multiplier")]
+    public float minViewDistanceFactor = 0.9F;    // just inside Unit's highlight sphere
+
+    [Range(1.5F, 5.0F)]
+    [Tooltip("Optimal Camera View Distance Multiplier")]
+    public float optViewDistanceFactor = 2F;  // encompasses all elements of the Unit
+
     /// <summary>
     /// The transform that normally contains all elements and commands assigned to the Unit.
     /// </summary>
@@ -62,14 +70,6 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ICommandItem, 
         get { return Screen.height * ItemTypeCircleScale; }
     }
 
-    [Range(0.5F, 3.0F)]
-    [Tooltip("Minimum Camera View Distance Multiplier")]
-    public float minViewDistanceFactor = 0.9F;    // just inside Unit's highlight sphere
-
-    [Range(1.5F, 5.0F)]
-    [Tooltip("Optimal Camera View Distance Multiplier")]
-    public float optViewDistanceFactor = 2F;  // encompasses all elements of the Unit
-
     protected IList<ISensorRangeMonitor> _sensorRangeMonitors = new List<ISensorRangeMonitor>();
     protected FormationGenerator _formationGenerator;
 
@@ -95,11 +95,10 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ICommandItem, 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
         _subscribers.Add(Data.SubscribeToPropertyChanged<ACommandData, Formation>(d => d.UnitFormation, OnFormationChanged));
-
-        Data.onCompositionChanged += OnCompositionChanged;
     }
 
     protected override void InitializeViewMembersOnDiscernible() {
+        base.InitializeViewMembersOnDiscernible();
         InitializeIcon();
     }
 
@@ -143,6 +142,7 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ICommandItem, 
             // WARNING: Donot use the IEnumerable unattachedSensors here as it will no longer point to any unattached sensors, since they are all attached now
             // This is the IEnumerable<T> lazy evaluation GOTCHA
         }
+        AssessCmdIcon();
     }
 
     /// <summary>
@@ -188,7 +188,7 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ICommandItem, 
         D.Assert(isRemoved, "{0} not found.".Inject(element.FullName));
 
         DetachSensorsFromMonitors(element.Data.Sensors.ToArray());
-
+        AssessCmdIcon();
         if (Elements.Count == Constants.Zero) {
             D.Assert(Data.UnitHealth <= Constants.ZeroF, "{0} UnitHealth error.".Inject(FullName));
             InitiateDeath();
@@ -220,10 +220,6 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ICommandItem, 
         Radius = HQElement.Radius;
         PositionCmdOverHQElement();
         _formationGenerator.RegenerateFormation();
-    }
-
-    private void OnCompositionChanged() {
-        AssessCmdIcon();
     }
 
     private void OnFormationChanged() {
@@ -270,9 +266,9 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ICommandItem, 
         _transform.rotation = HQElement.Transform.rotation;
     }
 
-    protected override void OnPlayerIntelCoverageChanged() {
-        base.OnPlayerIntelCoverageChanged();
-        Elements.ForAll(e => e.PlayerIntelCoverage = PlayerIntelCoverage); // IMPROVE
+    protected override void OnHumanPlayerIntelCoverageChanged() {
+        base.OnHumanPlayerIntelCoverageChanged();
+        Elements.ForAll(e => e.HumanPlayerIntelCoverage = HumanPlayerIntelCoverage); // IMPROVE
         AssessCmdIcon();
     }
 
@@ -295,6 +291,7 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ICommandItem, 
 
     private void ShowCmdIcon(bool toShow) {
         if (_icon != null) {
+            //D.Log("{0}.ShowCmdIcon({1}) called.", FullName, toShow);
             _icon.Show(toShow);
         }
     }
@@ -458,7 +455,7 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ICommandItem, 
 
     #region ICameraFocusable Members
 
-    public override bool IsRetainedFocusEligible { get { return PlayerIntelCoverage != IntelCoverage.None; } }
+    public override bool IsRetainedFocusEligible { get { return HumanPlayerIntelCoverage != IntelCoverage.None; } }
 
     public override float OptimalCameraViewingDistance { get { return UnitRadius * optViewDistanceFactor; } }
 

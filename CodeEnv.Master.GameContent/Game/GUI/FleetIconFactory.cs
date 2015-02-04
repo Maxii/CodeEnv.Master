@@ -53,18 +53,32 @@ namespace CodeEnv.Master.GameContent {
 
         protected override IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(FleetCmdData data) {
             IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
-            IEnumerable<ShipCategory> shipCategories = data.Composition.Categories;
-            if (shipCategories.Contains(ShipCategory.Science)) {
+            IEnumerable<ShipCategory> elementCategories = data.UnitComposition.GetUniqueElementCategories();
+            if (elementCategories.Contains(ShipCategory.Science)) {
                 criteria.Add(IconSelectionCriteria.Science);
             }
-            if (shipCategories.Contains(ShipCategory.Troop)) {
+            if (elementCategories.Contains(ShipCategory.Troop)) {
                 criteria.Add(IconSelectionCriteria.Troop);
             }
-            if (shipCategories.Contains(ShipCategory.Colonizer)) {
+            if (elementCategories.Contains(ShipCategory.Colonizer)) {
                 criteria.Add(IconSelectionCriteria.Colony);
             }
             return criteria;
         }
+        //protected override IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(FleetCmdData data) {
+        //    IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
+        //    IEnumerable<ShipCategory> shipCategories = data.Composition.Categories;
+        //    if (shipCategories.Contains(ShipCategory.Science)) {
+        //        criteria.Add(IconSelectionCriteria.Science);
+        //    }
+        //    if (shipCategories.Contains(ShipCategory.Troop)) {
+        //        criteria.Add(IconSelectionCriteria.Troop);
+        //    }
+        //    if (shipCategories.Contains(ShipCategory.Colonizer)) {
+        //        criteria.Add(IconSelectionCriteria.Colony);
+        //    }
+        //    return criteria;
+        //}
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

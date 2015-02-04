@@ -543,15 +543,15 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             new Job(__CycleIntelCoverage(), true);
         }
         else {
-            _command.PlayerIntelCoverage = IntelCoverage.Comprehensive;
+            _command.HumanPlayerIntelCoverage = IntelCoverage.Comprehensive;
         }
     }
 
     private IntelCoverage __previousCoverage;
     private IEnumerator __CycleIntelCoverage() {
-        _command.PlayerIntelCoverage = IntelCoverage.None;
+        _command.HumanPlayerIntelCoverage = IntelCoverage.None;
         yield return new WaitForSeconds(4F);
-        _command.PlayerIntelCoverage = IntelCoverage.Aware;
+        _command.HumanPlayerIntelCoverage = IntelCoverage.Aware;
         __previousCoverage = IntelCoverage.Aware;
         while (true) {
             yield return new WaitForSeconds(4F);
@@ -559,10 +559,36 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             while (proposedCoverage == __previousCoverage) {
                 proposedCoverage = Enums<IntelCoverage>.GetRandom(excludeDefault: true);
             }
-            _command.PlayerIntelCoverage = proposedCoverage;
+            _command.HumanPlayerIntelCoverage = proposedCoverage;
             __previousCoverage = proposedCoverage;
         }
     }
+    //protected virtual void __SetIntelCoverage() {
+    //    LogEvent();
+    //    if (toCycleIntelCoverage) {
+    //        new Job(__CycleIntelCoverage(), true);
+    //    }
+    //    else {
+    //        _command.PlayerIntelCoverage = IntelCoverage.Comprehensive;
+    //    }
+    //}
+
+    //private IntelCoverage __previousCoverage;
+    //private IEnumerator __CycleIntelCoverage() {
+    //    _command.PlayerIntelCoverage = IntelCoverage.None;
+    //    yield return new WaitForSeconds(4F);
+    //    _command.PlayerIntelCoverage = IntelCoverage.Aware;
+    //    __previousCoverage = IntelCoverage.Aware;
+    //    while (true) {
+    //        yield return new WaitForSeconds(4F);
+    //        var proposedCoverage = Enums<IntelCoverage>.GetRandom(excludeDefault: true);
+    //        while (proposedCoverage == __previousCoverage) {
+    //            proposedCoverage = Enums<IntelCoverage>.GetRandom(excludeDefault: true);
+    //        }
+    //        _command.PlayerIntelCoverage = proposedCoverage;
+    //        __previousCoverage = proposedCoverage;
+    //    }
+    //}
 
     protected abstract void __IssueFirstUnitCommand();
 

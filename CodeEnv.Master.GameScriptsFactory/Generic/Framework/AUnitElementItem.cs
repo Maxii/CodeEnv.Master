@@ -29,19 +29,6 @@ using UnityEngine;
 /// </summary>
 public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, ICameraFollowable, IElementAttackableTarget {
 
-    public virtual bool IsHQElement { get; set; }
-
-    public new AElementData Data {
-        get { return base.Data as AElementData; }
-        set { base.Data = value; }
-    }
-
-    public override string FullName { get { return IsHQElement ? "[HQ]" + base.FullName : base.FullName; } }
-
-    public AUnitCommandItem Command { get; set; }
-
-    protected override float ItemTypeCircleScale { get { return 1.0F; } }
-
     [Range(1.0F, 3.0F)]
     [Tooltip("Minimum Camera View Distance Multiplier")]
     public float minViewDistanceFactor = 2.0F;
@@ -55,6 +42,19 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     public AudioClip repairing;
     public AudioClip refitting;
     public AudioClip disbanding;
+
+    public virtual bool IsHQElement { get; set; }
+
+    public new AElementData Data {
+        get { return base.Data as AElementData; }
+        set { base.Data = value; }
+    }
+
+    public override string FullName { get { return IsHQElement ? "[HQ]" + base.FullName : base.FullName; } }
+
+    public AUnitCommandItem Command { get; set; }
+
+    protected override float ItemTypeCircleScale { get { return 1.0F; } }
 
     protected IList<IWeaponRangeMonitor> _weaponRangeMonitors = new List<IWeaponRangeMonitor>();
     protected float _gameSpeedMultiplier;
@@ -94,6 +94,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     }
 
     protected override void InitializeViewMembersOnDiscernible() {
+        base.InitializeViewMembersOnDiscernible();
         _meshRenderer = gameObject.GetComponentInChildren<Renderer>();
         _meshRenderer.castShadows = true;
         _meshRenderer.receiveShadows = true;

@@ -89,6 +89,7 @@ namespace CodeEnv.Master.Common {
         public const string Ellipsis = "...";
         public const string SemiColon = ";";
         public const string Colon = ":";
+        public const string QuestionMark = "?";
 
         // Switch Strings
         public const string GodMode = "/GodMode";

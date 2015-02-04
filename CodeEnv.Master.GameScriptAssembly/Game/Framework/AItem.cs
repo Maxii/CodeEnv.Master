@@ -53,12 +53,12 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
         set { SetProperty<bool>(ref _inCameraLOS, value, "InCameraLOS", OnInCameraLOSChanged); }
     }
 
-    public IntelCoverage PlayerIntelCoverage {
-        get { return Data.PlayerIntel.CurrentCoverage; }
-        set { Data.PlayerIntel.CurrentCoverage = value; }
+    public IntelCoverage HumanPlayerIntelCoverage {
+        get { return Data.HumanPlayerIntelCoverage; }
+        set { Data.HumanPlayerIntelCoverage = value; }
     }
 
-    public IGuiHudPublisher HudPublisher { get; private set; }
+    public abstract bool IsHudShowing { get; }
 
     private bool _isDiscernible;
     public bool IsDiscernible {
@@ -122,6 +122,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
     protected bool _isCirclesRadiusDynamic = true;
     protected IGameInputHelper _inputHelper;
     protected IInputManager _inputMgr;
+    protected IGameManager _gameMgr;
     protected bool _isViewMembersOnDiscernibleInitialized;
 
     private HighlightCircle _circles;
@@ -141,6 +142,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
     protected virtual void InitializeLocalReferencesAndValues() {
         _inputHelper = References.InputHelper;
         _inputMgr = References.InputManager;
+        _gameMgr = References.GameManager;
     }
 
     protected virtual void Subscribe() {
@@ -161,19 +163,21 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
     protected abstract void InitializeModelMembers();
 
     /// <summary>
-    /// Called from Start, initializes View-related members of this item.
+    /// Called from Start, initializes View-related members of this item 
+    /// that can't wait until the Item first becomes discernible. Default
+    /// implementation does nothing.
     /// </summary>
-    protected virtual void InitializeViewMembers() {
-        HudPublisher = InitializeHudPublisher();
-    }
-
-    protected abstract IGuiHudPublisher InitializeHudPublisher();
+    protected virtual void InitializeViewMembers() { }
 
     /// <summary>
     /// Called when the Item first becomes discernible to the player, this method initializes the 
     /// View-related members of this item that are not needed until discernible.
     /// </summary>
-    protected abstract void InitializeViewMembersOnDiscernible();
+    protected virtual void InitializeViewMembersOnDiscernible() {
+        InitializeHudPublisher();
+    }
+
+    protected abstract void InitializeHudPublisher();
 
     /// <summary>
     /// Subscribes to changes to values contained in Data. 
@@ -185,8 +189,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
         _subscribers.Add(Data.SubscribeToPropertyChanging<AItemData, Player>(d => d.Owner, OnOwnerChanging));
         _subscribers.Add(Data.SubscribeToPropertyChanged<AItemData, Player>(d => d.Owner, OnOwnerChanged));
 
-        _subscribers.Add(Data.PlayerIntel.SubscribeToPropertyChanged<AIntel, IntelCoverage>(pi => pi.CurrentCoverage, OnPlayerIntelCoverageChanged));
-
+        _subscribers.Add(Data.HumanPlayerIntel.SubscribeToPropertyChanged<AIntel, IntelCoverage>(hpi => hpi.CurrentCoverage, OnHumanPlayerIntelCoverageChanged));
     }
 
     #endregion
@@ -210,12 +213,22 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
 
     #region View Methods
 
+    public void SetIntelCoverage(Player player, IntelCoverage coverage) {
+        Data.SetIntelCoverage(player, coverage);
+    }
+
+    public IntelCoverage GetIntelCoverage(Player player) {
+        return Data.GetIntelCoverage(player);
+    }
+
+    public abstract void ShowHud(bool toShow);
+
     private void OnInputModeChanged() {
         OnInputModeChanged(_inputMgr.InputMode);
     }
 
     protected virtual void OnInputModeChanged(GameInputMode inputMode) {
-        if (HudPublisher != null && HudPublisher.IsHudShowing) {
+        if (IsHudShowing) {
             switch (inputMode) {
                 case GameInputMode.NoInput:
                 case GameInputMode.PartialScreenPopup:
@@ -233,9 +246,9 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
         }
     }
 
-    protected virtual void OnPlayerIntelCoverageChanged() {
+    protected virtual void OnHumanPlayerIntelCoverageChanged() {
         AssessDiscernability();
-        if (HudPublisher.IsHudShowing) {
+        if (IsHudShowing) {
             // refresh the HUD as IntelCoverage has changed
             ShowHud(true);
         }
@@ -248,13 +261,12 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
         AssessHighlighting();
     }
 
-
     protected virtual void OnInCameraLOSChanged() {
         AssessDiscernability();
     }
 
     protected virtual void OnIsDiscernibleChanged() {
-        if (!IsDiscernible && HudPublisher.IsHudShowing) {
+        if (!IsDiscernible && IsHudShowing) {
             // lost ability to discern this object while showing the HUD so stop showing
             ShowHud(false);
         }
@@ -267,12 +279,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
     }
 
     public virtual void AssessDiscernability() {
-        IsDiscernible = InCameraLOS && Data.PlayerIntel.CurrentCoverage != IntelCoverage.None;
-    }
-
-    public void ShowHud(bool toShow) {
-        HudPublisher.ShowHud(toShow, _transform.position);
-        D.Log("{0}.ShowHud({1}) called.", FullName, toShow);
+        IsDiscernible = InCameraLOS && Data.HumanPlayerIntelCoverage != IntelCoverage.None;
     }
 
     public virtual void AssessHighlighting() {
@@ -422,7 +429,6 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
     /// Note: all members should be tested for null before disposing as Items can be destroyed in Creators before completely initialized
     /// </summary>
     protected override void Cleanup() {
-        if (HudPublisher != null) { (HudPublisher as IDisposable).Dispose(); }
         if (_circles != null) { _circles.Dispose(); }
         Unsubscribe();
     }
@@ -436,7 +442,8 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
 
     #region ICameraTargetable Members
 
-    public virtual bool IsEligible { get { return PlayerIntelCoverage != IntelCoverage.None; } }
+    public virtual bool IsEligible { get { return HumanPlayerIntelCoverage != IntelCoverage.None; } }
+    //public virtual bool IsEligible { get { return PlayerIntelCoverage != IntelCoverage.None; } }
 
     public abstract float MinimumCameraViewingDistance { get; }
 

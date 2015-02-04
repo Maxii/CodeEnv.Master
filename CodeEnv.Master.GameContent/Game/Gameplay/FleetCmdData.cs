@@ -65,47 +65,47 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public Vector3 CurrentHeading { get { return HQElementData.CurrentHeading; } }
 
-        private float _fullSpeed;
+        private float _unitFullSpeed;
         /// <summary>
         /// The maximum sustainable speed of the fleet in units per hour.
         /// </summary>
-        public float FullSpeed {
-            get { return _fullSpeed; }
-            private set { SetProperty<float>(ref _fullSpeed, value, "FullSpeed"); }
+        public float UnitFullSpeed {
+            get { return _unitFullSpeed; }
+            private set { SetProperty<float>(ref _unitFullSpeed, value, "UnitFullSpeed"); }
         }
 
-        private float _fullStlSpeed;
+        private float _unitFullStlSpeed;
         /// <summary>
         /// The maximum sustainable STL speed of the fleet in units per hour.
         /// </summary>
-        public float FullStlSpeed {
-            get { return _fullStlSpeed; }
-            private set { SetProperty<float>(ref _fullStlSpeed, value, "FullStlSpeed"); }
+        public float UnitFullStlSpeed {
+            get { return _unitFullStlSpeed; }
+            private set { SetProperty<float>(ref _unitFullStlSpeed, value, "UnitFullStlSpeed"); }
         }
 
-        private float _fullFtlSpeed;
+        private float _unitFullFtlSpeed;
         /// <summary>
         /// The maximum sustainable FTL speed of the fleet in units per hour.
         /// </summary>
-        public float FullFtlSpeed {
-            get { return _fullFtlSpeed; }
-            private set { SetProperty<float>(ref _fullFtlSpeed, value, "FullFtlSpeed"); }
+        public float UnitFullFtlSpeed {
+            get { return _unitFullFtlSpeed; }
+            private set { SetProperty<float>(ref _unitFullFtlSpeed, value, "UnitFullFtlSpeed"); }
         }
 
-        private float _maxTurnRate;
+        private float _unitMaxTurnRate;
         /// <summary>
         /// Gets the maximum turn rate of the fleet in radians per day.
         /// </summary>
-        public float MaxTurnRate {
+        public float UnitMaxTurnRate {
             get {
-                return _maxTurnRate;
+                return _unitMaxTurnRate;
             }
             private set {
-                SetProperty<float>(ref _maxTurnRate, value, "MaxTurnRate");
+                SetProperty<float>(ref _unitMaxTurnRate, value, "UnitMaxTurnRate");
             }
         }
 
-        public FleetComposition Composition { get; private set; }
+        public FleetUnitComposition UnitComposition { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FleetCmdData"/> class.
@@ -117,22 +117,20 @@ namespace CodeEnv.Master.GameContent {
             UnitFormation = stat.UnitFormation;
         }
 
-        protected override void InitializeComposition() {
-            Composition = new FleetComposition();
+        public override void AddElement(AElementData elementData) {
+            base.AddElement(elementData);
+            Category = GenerateCmdCategory(UnitComposition);
         }
 
-        /// <summary>
-        /// Adds or removes shipData from the Composition.
-        /// </summary>
-        /// <param name="elementData">The ship data.</param>
-        /// <param name="toAdd">if set to <c>true</c> add the ship, otherwise remove it.</param>
-        protected override void ChangeComposition(AElementData elementData, bool toAdd) {
-            bool isChanged = toAdd ? Composition.Add(elementData as ShipData) : Composition.Remove(elementData as ShipData);
-            D.Log("{0}.ChangeComposition({1}.Data, toAdd:{2}) called. IsChanged = {3}.", Name, elementData.FullName, toAdd, isChanged);
-            if (isChanged) {
-                AssessCommandCategory();
-                OnCompositionChanged();
-            }
+        public override bool RemoveElement(AElementData elementData) {
+            bool isRemoved = base.RemoveElement(elementData);
+            Category = GenerateCmdCategory(UnitComposition);
+            return isRemoved;
+        }
+
+        protected override void UpdateComposition() {
+            var elementCategories = ElementsData.Cast<ShipData>().Select(sd => sd.Category);
+            UnitComposition = new FleetUnitComposition(elementCategories);
         }
 
         protected override void RecalcPropertiesDerivedFromCombinedElements() {
@@ -143,15 +141,15 @@ namespace CodeEnv.Master.GameContent {
 
         private void UpdateFullSpeed() {
             if (ElementsData.Any()) {
-                FullStlSpeed = ElementsData.Min(eData => (eData as ShipData).FullStlSpeed);
-                FullFtlSpeed = ElementsData.Min(eData => (eData as ShipData).FullFtlSpeed);
-                FullSpeed = ElementsData.Min(eData => (eData as ShipData).FullSpeed);
+                UnitFullStlSpeed = ElementsData.Min(eData => (eData as ShipData).FullStlSpeed);
+                UnitFullFtlSpeed = ElementsData.Min(eData => (eData as ShipData).FullFtlSpeed);
+                UnitFullSpeed = ElementsData.Min(eData => (eData as ShipData).FullSpeed);
             }
         }
 
         private void UpdateMaxTurnRate() {
             if (ElementsData.Any()) {
-                MaxTurnRate = ElementsData.Min(data => (data as ShipData).MaxTurnRate);
+                UnitMaxTurnRate = ElementsData.Min(data => (data as ShipData).MaxTurnRate);
             }
         }
 
@@ -177,29 +175,25 @@ namespace CodeEnv.Master.GameContent {
             UpdateMaxTurnRate();
         }
 
-        private void AssessCommandCategory() {
-            D.Log("{0}.Composition.ElementCount = {1}.", FullName, Composition.ElementCount);
-            if (Composition.ElementCount >= 22) {
-                Category = FleetCategory.Armada;
-                return;
+        public FleetCategory GenerateCmdCategory(FleetUnitComposition unitComposition) {
+            int elementCount = UnitComposition.GetTotalElementsCount();
+            D.Log("{0}'s known elements count = {1}.", FullName, elementCount);
+            if (elementCount >= 22) {
+                return FleetCategory.Armada;
             }
-            if (Composition.ElementCount >= 15) {
-                Category = FleetCategory.BattleGroup;
-                return;
+            if (elementCount >= 15) {
+                return FleetCategory.BattleGroup;
             }
-            if (Composition.ElementCount >= 9) {
-                Category = FleetCategory.TaskForce;
-                return;
+            if (elementCount >= 9) {
+                return FleetCategory.TaskForce;
             }
-            if (Composition.ElementCount >= 4) {
-                Category = FleetCategory.Squadron;
-                return;
+            if (elementCount >= 4) {
+                return FleetCategory.Squadron;
             }
-            if (Composition.ElementCount >= 1) {
-                Category = FleetCategory.Flotilla;
-                return;
+            if (elementCount >= 1) {
+                return FleetCategory.Flotilla;
             }
-            // element count of 0 = dead, so don't generate a change to be handled
+            return FleetCategory.None;
         }
 
         public override string ToString() {

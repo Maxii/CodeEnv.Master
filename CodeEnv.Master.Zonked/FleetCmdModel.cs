@@ -106,7 +106,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         private void Subscribe() {
             _subscribers = new List<IDisposable>();
             _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
-            _subscribers.Add(_fleet.Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.FullSpeed, OnFullSpeedChanged));
+            _subscribers.Add(_fleet.Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.UnitFullSpeed, OnFullSpeedChanged));
             _seeker.pathCallback += OnCoursePlotCompleted;
             // No subscription to changes in a target's maxWeaponsRange as a fleet should not automatically get an enemy target's maxWeaponRange update when it changes
         }
@@ -513,7 +513,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
         private void AssessFrequencyOfCourseProgressChecks() {
             // frequency of course progress checks increases as fullSpeed value and gameSpeed increase
-            float courseProgressCheckFrequency = 1F + (_fleet.Data.FullSpeed * _gameSpeedMultiplier);
+            float courseProgressCheckFrequency = 1F + (_fleet.Data.UnitFullSpeed * _gameSpeedMultiplier);
             _courseProgressCheckPeriod = 1F / courseProgressCheckFrequency;
             //D.Log("{0}.{1} frequency of course progress checks adjusted to {2:0.##}.", _fleet.FullName, GetType().Name, courseProgressCheckFrequency);
         }

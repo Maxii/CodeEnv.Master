@@ -174,7 +174,7 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
     }
 
     private void OnRangeChanged() {
-        D.Log("{0}.Range changed to {1}.", FullName, Range.GetName());
+        //D.Log("{0}.Range changed to {1}.", FullName, Range.GetName());
         Refresh();
     }
 

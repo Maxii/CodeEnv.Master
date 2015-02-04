@@ -24,17 +24,10 @@ using UnityEngine;
 /// <summary>
 /// Item class for Stars.
 /// </summary>
-public class StarItem : AItem, INavigableTarget, IShipOrbitable {
+public class StarItem : AItem, IShipOrbitable {
 
     private static LayerMask _starLightCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
     Layers.Ship, Layers.Facility, Layers.Planetoid, Layers.Star);
-
-    public new StarData Data {
-        get { return base.Data as StarData; }
-        set { base.Data = value; }
-    }
-
-    protected override float ItemTypeCircleScale { get { return 1.5F; } }
 
     public StarCategory category;
 
@@ -46,6 +39,23 @@ public class StarItem : AItem, INavigableTarget, IShipOrbitable {
     [Tooltip("Optimal Camera View Distance Multiplier")]
     public float optViewDistanceFactor = 8F;
 
+    public new StarData Data {
+        get { return base.Data as StarData; }
+        set { base.Data = value; }
+    }
+
+    private StarPublisher _publisher;
+    public StarPublisher Publisher {
+        get { return _publisher = _publisher ?? new StarPublisher(Data); }
+    }
+
+    public override bool IsHudShowing {
+        get { return _hudManager != null && _hudManager.IsHudShowing; }
+    }
+
+    protected override float ItemTypeCircleScale { get { return 1.5F; } }
+
+    private HudManager<StarPublisher> _hudManager;
     private Billboard _billboard;
     private SystemItem _system;
     private ICtxControl _ctxControl;
@@ -86,11 +96,12 @@ public class StarItem : AItem, INavigableTarget, IShipOrbitable {
         AssessDiscernability(); // needed as FixedIntel gets set early and never changes
     }
 
-    protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<StarData>(Data);
-    }
+    //protected override IGuiHudPublisher InitializeHudPublisher() {
+    //    return new GuiHudPublisher<StarData>(Data);
+    //}
 
     protected override void InitializeViewMembersOnDiscernible() {
+        base.InitializeViewMembersOnDiscernible();
         InitializeContextMenu(Owner);
 
         var meshRenderer = gameObject.GetComponentInImmediateChildren<MeshRenderer>();
@@ -128,6 +139,10 @@ public class StarItem : AItem, INavigableTarget, IShipOrbitable {
         cameraLosChgdListener.enabled = true;
     }
 
+    protected override void InitializeHudPublisher() {
+        _hudManager = new HudManager<StarPublisher>(Publisher);
+    }
+
     private void InitializeContextMenu(Player owner) {
         _ctxControl = new StarCtxControl(this);
     }
@@ -135,6 +150,8 @@ public class StarItem : AItem, INavigableTarget, IShipOrbitable {
     #endregion
 
     #region Model Methods
+
+    public StarReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     protected override void OnOwnerChanging(Player newOwner) {
         base.OnOwnerChanging(newOwner);
@@ -144,6 +161,17 @@ public class StarItem : AItem, INavigableTarget, IShipOrbitable {
     #endregion
 
     #region View Methods
+
+    public override void ShowHud(bool toShow) {
+        if (_hudManager != null) {
+            if (toShow) {
+                _hudManager.Show(Position);
+            }
+            else {
+                _hudManager.Hide();
+            }
+        }
+    }
 
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
@@ -169,6 +197,64 @@ public class StarItem : AItem, INavigableTarget, IShipOrbitable {
         }
     }
 
+    //private HudPublisher<StarPublisher> _hudPublisher3;
+    //public HudPublisher<StarPublisher> HudPublisher3 {
+    //    get { return _hudPublisher3 = _hudPublisher3 ?? new HudPublisher<StarPublisher>(Publisher); }
+    //}
+
+    //private StarHudPublisher _hudPublisher2;
+    //public StarHudPublisher HudPublisher2 {
+    //    get { return _hudPublisher2 = _hudPublisher2 ?? new StarHudPublisher(Publisher); }
+    //}
+
+    //private StarPublisher _publisher;
+    //public StarPublisher Publisher {
+    //    get { return _publisher = _publisher ?? new StarPublisher(Data); }
+    //}
+    //private StarHudPublisher2 _reportGenerator;
+    //public StarHudPublisher2 ReportGenerator {
+    //    get {
+    //        return _reportGenerator = _reportGenerator ?? new StarHudPublisher2(Data);
+    //    }
+    //}
+    //private StarReportGenerator _reportGenerator;
+    //public StarReportGenerator ReportGenerator {
+    //    get {
+    //        return _reportGenerator = _reportGenerator ?? new StarReportGenerator(Data);
+    //    }
+    //}
+
+
+    //public StarReport GetReport(Player player) {
+    //    return Publisher.GetReport(player);
+    //}
+    //public StarReport GetReport(Player player) {
+    //    return ReportGenerator.GetReport(player);
+    //}
+    //public StarReport GetReport(Player player) {
+    //    return ReportGenerator.GetReport(player, Data.GetPlayerIntel(player));
+    //}
+
+    //protected override void OnHover(bool isOver) {
+    //    HudPublisher3.ShowHud(isOver, Position);
+    //}
+    //protected override void OnHover(bool isOver) {
+    //    HudPublisher2.ShowHud(isOver, Position);
+    //}
+    //protected override void OnHover(bool isOver) {
+    //        ReportGenerator.ShowHud(isOver, Position);
+    //}
+    //protected override void OnHover(bool isOver) {
+    //    if (isOver) {
+    //        string hudText = ReportGenerator.GetCursorHudText(Data.GetHumanPlayerIntel());
+    //        //string hudText = _starReportGenerator.GetCursorHudText(IntelCoverage.Comprehensive);
+    //        GuiCursorHud.Instance.Set(hudText, Position);
+    //    }
+    //    else {
+    //        GuiCursorHud.Instance.Clear();
+    //    }
+    //}
+
     #endregion
 
     #region Cleanup
@@ -178,6 +264,10 @@ public class StarItem : AItem, INavigableTarget, IShipOrbitable {
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
         }
+
+        if (_hudManager != null) {
+            _hudManager.Dispose();
+        }
     }
 
     #endregion
@@ -186,7 +276,7 @@ public class StarItem : AItem, INavigableTarget, IShipOrbitable {
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region IDestinationTarget Members
+    #region INavigableTarget Members
 
     public override bool IsMobile { get { return false; } }
 

@@ -31,6 +31,8 @@ using UnityEngine;
 /// </summary>
 public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
 
+    public bool enableTrackingLabel = false;
+
     public new FleetCmdData Data {
         get { return base.Data as FleetCmdData; }
         set { base.Data = value; }
@@ -64,8 +66,14 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         }
     }
 
-    public bool enableTrackingLabel = false;
-    private ITrackingWidget _trackingLabel;
+    private FleetPublisher _publisher;
+    public FleetPublisher Publisher {
+        get { return _publisher = _publisher ?? new FleetPublisher(Data); }
+    }
+
+    public override bool IsHudShowing {
+        get { return _hudManager != null && _hudManager.IsHudShowing; }
+    }
 
     /// <summary>
     /// The stations in this fleet's formation.
@@ -75,6 +83,8 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
     private PathfindingLine _pathfindingLine;
     private FleetNavigator _navigator;
     private ICtxControl _ctxControl;
+    private CmdHudManager<FleetPublisher> _hudManager;
+    private ITrackingWidget _trackingLabel;
 
     #region Initialization
 
@@ -94,11 +104,11 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         _navigator = new FleetNavigator(this, gameObject.GetSafeMonoBehaviourComponent<Seeker>());
     }
 
-    protected override IGuiHudPublisher InitializeHudPublisher() {
-        var hudPublisher = new GuiHudPublisher<FleetCmdData>(Data);
-        hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed, GuiHudLineKeys.Health, GuiHudLineKeys.TargetDistance);
-        return hudPublisher;
-    }
+    //protected override IGuiHudPublisher InitializeHudPublisher() {
+    //    var hudPublisher = new GuiHudPublisher<FleetCmdData>(Data);
+    //    hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed, GuiHudLineKeys.Health, GuiHudLineKeys.TargetDistance);
+    //    return hudPublisher;
+    //}
 
     private ITrackingWidget InitializeTrackingLabel() {
         float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
@@ -111,6 +121,10 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
     protected override void InitializeViewMembersOnDiscernible() {
         base.InitializeViewMembersOnDiscernible();
         InitializeContextMenu();
+    }
+
+    protected override void InitializeHudPublisher() {
+        _hudManager = new CmdHudManager<FleetPublisher>(Publisher);
     }
 
     private void InitializeContextMenu() {
@@ -187,6 +201,12 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
             }
             HQElement = newHQElement;
         }
+    }
+
+    public FleetReport GetReport(Player player) { return Publisher.GetReport(player, GetElementReports(player)); }
+
+    private ShipReport[] GetElementReports(Player player) {
+        return Elements.Cast<ShipItem>().Select(e => e.GetReport(player)).ToArray();
     }
 
     private ShipItem SelectHQElement() {
@@ -353,6 +373,17 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
 
     #region View Methods
 
+    public override void ShowHud(bool toShow) {
+        if (_hudManager != null) {
+            if (toShow) {
+                _hudManager.Show(Position, GetElementReports(_gameMgr.HumanPlayer));
+            }
+            else {
+                _hudManager.Hide();
+            }
+        }
+    }
+
     public void AssessShowPlottedPath(IList<Vector3> course) {
         bool toShow = course.Count > Constants.Zero && IsSelected;  // OPTIMIZE include IsDiscernible criteria
         ShowPlottedPath(toShow, course.ToArray());
@@ -430,6 +461,25 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
             _ctxControl.OnRightPressRelease();
         }
     }
+
+    //private FleetReportGenerator _reportGenerator;
+    //public FleetReportGenerator ReportGenerator {
+    //    get {
+    //        return _reportGenerator = _reportGenerator ?? new FleetReportGenerator(Data);
+    //    }
+    //}
+
+    //protected override void OnHover(bool isOver) {
+    //    if (isOver) {
+    //        ShipReport[] elementReports = Elements.Cast<ShipItem>().Select(f => f.GetReport(_gameMgr.HumanPlayer)).ToArray();
+    //        string hudText = ReportGenerator.GetCursorHudText(Data.GetHumanPlayerIntel(), elementReports);
+    //        GuiCursorHud.Instance.Set(hudText, Position);
+    //    }
+    //    else {
+    //        GuiCursorHud.Instance.Clear();
+    //    }
+    //}
+
 
     #endregion
 
@@ -753,6 +803,9 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
             (_ctxControl as IDisposable).Dispose();
         }
         _navigator.Dispose();
+        if (_hudManager != null) {
+            _hudManager.Dispose();
+        }
     }
 
     #endregion
@@ -867,7 +920,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         private void Subscribe() {
             _subscribers = new List<IDisposable>();
             _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
-            _subscribers.Add(_fleet.Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.FullSpeed, OnFullSpeedChanged));
+            _subscribers.Add(_fleet.Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.UnitFullSpeed, OnFullSpeedChanged));
             _seeker.pathCallback += OnCoursePlotCompleted;
             // No subscription to changes in a target's maxWeaponsRange as a fleet should not automatically get an enemy target's maxWeaponRange update when it changes
         }
@@ -1276,7 +1329,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
 
         private void AssessFrequencyOfCourseProgressChecks() {
             // frequency of course progress checks increases as fullSpeed value and gameSpeed increase
-            float courseProgressCheckFrequency = 1F + (_fleet.Data.FullSpeed * _gameSpeedMultiplier);
+            float courseProgressCheckFrequency = 1F + (_fleet.Data.UnitFullSpeed * _gameSpeedMultiplier);
             _courseProgressCheckPeriod = 1F / courseProgressCheckFrequency;
             //D.Log("{0}.{1} frequency of course progress checks adjusted to {2:0.##}.", _fleet.FullName, GetType().Name, courseProgressCheckFrequency);
         }

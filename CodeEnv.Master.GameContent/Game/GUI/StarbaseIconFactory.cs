@@ -53,18 +53,32 @@ namespace CodeEnv.Master.GameContent {
 
         protected override IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(StarbaseCmdData data) {
             IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
-            IEnumerable<FacilityCategory> shipCategories = data.Composition.Categories;
-            if (shipCategories.Contains(FacilityCategory.Science)) {
+            IEnumerable<FacilityCategory> elementCategories = data.UnitComposition.GetUniqueElementCategories();
+            if (elementCategories.Contains(FacilityCategory.Science)) {
                 criteria.Add(IconSelectionCriteria.Science);
             }
-            if (shipCategories.Contains(FacilityCategory.Defense)) {
+            if (elementCategories.Contains(FacilityCategory.Defense)) {
                 criteria.Add(IconSelectionCriteria.Troop);
             }
-            if (shipCategories.Contains(FacilityCategory.Economic)) {
+            if (elementCategories.Contains(FacilityCategory.Economic)) {
                 criteria.Add(IconSelectionCriteria.Colony);
             }
             return criteria;
         }
+        //protected override IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(StarbaseCmdData data) {
+        //    IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
+        //    IEnumerable<FacilityCategory> shipCategories = data.Composition.Categories;
+        //    if (shipCategories.Contains(FacilityCategory.Science)) {
+        //        criteria.Add(IconSelectionCriteria.Science);
+        //    }
+        //    if (shipCategories.Contains(FacilityCategory.Defense)) {
+        //        criteria.Add(IconSelectionCriteria.Troop);
+        //    }
+        //    if (shipCategories.Contains(FacilityCategory.Economic)) {
+        //        criteria.Add(IconSelectionCriteria.Colony);
+        //    }
+        //    return criteria;
+        //}
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

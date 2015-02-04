@@ -36,24 +36,26 @@ public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud {
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        InitializeHudPublishers();
+        InitializeHudManagers();
         UpdateRate = FrameUpdateFrequency.Frequent;
     }
 
-    private void InitializeHudPublishers() {
-        AGuiHudPublisher.GuiCursorHud = Instance;
-        GuiHudPublisher<SectorData>.TextFactory = SectorGuiHudTextFactory.Instance;
-        GuiHudPublisher<ShipData>.TextFactory = ShipGuiHudTextFactory.Instance;
-        GuiHudPublisher<FleetCmdData>.TextFactory = FleetGuiHudTextFactory.Instance;
-        GuiHudPublisher<StarData>.TextFactory = StarGuiHudTextFactory.Instance;
-        GuiHudPublisher<SettlementCmdData>.TextFactory = SettlementGuiHudTextFactory.Instance;
-        GuiHudPublisher<FacilityData>.TextFactory = FacilityGuiHudTextFactory.Instance;
-        GuiHudPublisher<StarbaseCmdData>.TextFactory = StarbaseGuiHudTextFactory.Instance;
-        GuiHudPublisher<UniverseCenterData>.TextFactory = UniverseCenterGuiHudTextFactory.Instance;
-        GuiHudPublisher<PlanetData>.TextFactory = PlanetGuiHudTextFactory.Instance;
-        GuiHudPublisher<MoonData>.TextFactory = MoonGuiHudTextFactory.Instance;
-        GuiHudPublisher<SystemData>.TextFactory = SystemGuiHudTextFactory.Instance;
+    private void InitializeHudManagers() {
+        //AGuiHudPublisher.GuiCursorHud = Instance;
+        //GuiHudPublisher<SectorData>.TextFactory = SectorGuiHudTextFactory.Instance;
+        //GuiHudPublisher<ShipData>.TextFactory = ShipGuiHudTextFactory.Instance;
+        //GuiHudPublisher<FleetCmdData>.TextFactory = FleetGuiHudTextFactory.Instance;
+        //GuiHudPublisher<StarData>.TextFactory = StarGuiHudTextFactory.Instance;
+        //GuiHudPublisher<SettlementCmdData>.TextFactory = SettlementGuiHudTextFactory.Instance;
+        //GuiHudPublisher<FacilityData>.TextFactory = FacilityGuiHudTextFactory.Instance;
+        //GuiHudPublisher<StarbaseCmdData>.TextFactory = StarbaseGuiHudTextFactory.Instance;
+        //GuiHudPublisher<UniverseCenterData>.TextFactory = UniverseCenterGuiHudTextFactory.Instance;
+        //GuiHudPublisher<PlanetData>.TextFactory = PlanetGuiHudTextFactory.Instance;
+        //GuiHudPublisher<MoonData>.TextFactory = MoonGuiHudTextFactory.Instance;
+        //GuiHudPublisher<SystemData>.TextFactory = SystemGuiHudTextFactory.Instance;
         //GuiHudPublisher<ItemData>.TextFactory = GuiHudTextFactory.Instance;
+
+        AHudManager.CursorHud = Instance;
     }
 
     /// <summary>
@@ -140,16 +142,25 @@ public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud {
 
     #region IGuiHud Members
 
-    public void Set(GuiHudText guiCursorHudText, Vector3 position) {
-        if (!_label.text.IsNullOrEmpty() && !guiCursorHudText.IsDirty) {
-            // the existing text hasn't been cleared and this new text has not changed so no reason to set it again
-            // D.Warn("{0} is not dirty!", typeof(GuiHudText));
+    /// <summary>
+    /// Populate the HUD with text pulled from LabelText. This method only needs to be called
+    /// when the content of labelText changes.
+    /// </summary>
+    /// <param name="labelText">The label text.</param>
+    /// <param name="position">The position of the GameObject this HUD info represents.</param>
+    public void Set(ALabelText labelText, Vector3 position) {
+        if (Utility.CheckForContent(_label.text) && !labelText.IsChanged) {
+            // the hud already has text and this new submission has no changes so no reason to proceed
+            D.Warn("{0} attempted to update its text when not needed.", GetType().Name);
             return;
         }
-
         PositionHud(position);
+        Set(labelText.GetText());
+        PositionLabel();
+    }
 
-        string text = guiCursorHudText.GetText().ToString();
+    public void Set(string text, Vector3 position) {
+        PositionHud(position);
         Set(text);
         PositionLabel();
     }

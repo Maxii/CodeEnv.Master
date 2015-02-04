@@ -26,15 +26,25 @@ using UnityEngine;
 /// </summary>
 public class UniverseCenterItem : AItem, IShipOrbitable {
 
+    [Range(0.5F, 3.0F)]
+    [Tooltip("Minimum Camera View Distance Multiplier")]
+    public float minViewDistanceFactor = 2F;
+
     public new UniverseCenterData Data {
         get { return base.Data as UniverseCenterData; }
         set { base.Data = value; }
     }
 
-    [Range(0.5F, 3.0F)]
-    [Tooltip("Minimum Camera View Distance Multiplier")]
-    public float minViewDistanceFactor = 2F;
+    private UniverseCenterPublisher _publisher;
+    public UniverseCenterPublisher Publisher {
+        get { return _publisher = _publisher ?? new UniverseCenterPublisher(Data); }
+    }
 
+    public override bool IsHudShowing {
+        get { return _hudManager != null && _hudManager.IsHudShowing; }
+    }
+
+    private HudManager<UniverseCenterPublisher> _hudManager;
     private ICtxControl _ctxControl;
 
     #region Initialization
@@ -70,11 +80,12 @@ public class UniverseCenterItem : AItem, IShipOrbitable {
         AssessDiscernability(); // needed as FixedIntel gets set early and never changes
     }
 
-    protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<UniverseCenterData>(Data);
-    }
+    //protected override IGuiHudPublisher InitializeHudPublisher() {
+    //    return new GuiHudPublisher<UniverseCenterData>(Data);
+    //}
 
     protected override void InitializeViewMembersOnDiscernible() {
+        base.InitializeViewMembersOnDiscernible();
         InitializeContextMenu(Owner);
 
         var meshRenderer = gameObject.GetComponentInChildren<MeshRenderer>();
@@ -91,6 +102,10 @@ public class UniverseCenterItem : AItem, IShipOrbitable {
         cameraLosChgdListener.enabled = true;
     }
 
+    protected override void InitializeHudPublisher() {
+        _hudManager = new HudManager<UniverseCenterPublisher>(Publisher);
+    }
+
     private void InitializeContextMenu(Player owner) {
         _ctxControl = new UniverseCenterCtxControl(this);
     }
@@ -99,6 +114,8 @@ public class UniverseCenterItem : AItem, IShipOrbitable {
 
     #region Model Methods
 
+    public UniverseCenterReport GetReport(Player player) { return Publisher.GetReport(player); }
+
     protected override void OnOwnerChanged() {
         throw new System.NotSupportedException("{0}.Owner is not allowed to change.".Inject(GetType().Name));
     }
@@ -106,6 +123,18 @@ public class UniverseCenterItem : AItem, IShipOrbitable {
     #endregion
 
     #region View Methods
+
+    public override void ShowHud(bool toShow) {
+        if (_hudManager != null) {
+            if (toShow) {
+                _hudManager.Show(Position);
+            }
+            else {
+                _hudManager.Hide();
+            }
+        }
+    }
+
     #endregion
 
     #region Mouse Events
@@ -126,6 +155,9 @@ public class UniverseCenterItem : AItem, IShipOrbitable {
         base.Cleanup();
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
+        }
+        if (_hudManager != null) {
+            _hudManager.Dispose();
         }
     }
 

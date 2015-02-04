@@ -39,12 +39,6 @@ public class PlanetItem : APlanetoidItem {
         Data.OrbitalSpeed = gameObject.GetSafeMonoBehaviourComponentInParents<Orbiter>().GetSpeedOfBodyInOrbit(orbitalRadius);
     }
 
-    protected override IGuiHudPublisher InitializeHudPublisher() {
-        var publisher = new GuiHudPublisher<PlanetData>(Data);
-        publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
-        return publisher;
-    }
-
     #endregion
 
     #region Model Methods

@@ -106,6 +106,17 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        /// Gets the names of all Type E constants except those E constants provided.
+        /// </summary>
+        /// <param name="exceptions">The exceptions.</param>
+        /// <returns></returns>
+        public static string[] GetNamesExcept(params E[] exceptions) {
+            var exceptionNames = new List<string>(exceptions.Length);
+            exceptions.ForAll(e => exceptionNames.Add(GetName(e)));
+            return Names.Values.ToArray().Except(exceptionNames).ToArray();
+        }
+
+        /// <summary>
         /// Gets the string name associated with the provided Enum constant.
         /// </summary>
         /// <param name="enumConstant">The enumConstant.</param>

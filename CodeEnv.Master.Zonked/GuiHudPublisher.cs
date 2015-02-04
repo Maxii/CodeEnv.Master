@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GuiHudPublisher.cs
-// Manages the content of the text that GuiCursorHud displays and provides
+// Manages the content of the text that the GuiCursorHud displays and provides
 // some customization and coroutine-based update methods that keep the text current.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -15,7 +15,7 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-namespace CodeEnv.Master.Common.Unity {
+namespace CodeEnv.Master.GameContent {
 
     using System;
     using System.Collections;
@@ -24,105 +24,133 @@ namespace CodeEnv.Master.Common.Unity {
     using UnityEngine;
 
     /// <summary>
-    /// Manages the content of the text that GuiCursorHud displays and provides
+    /// Manages the content of the text that the GuiCursorHud displays and provides
     /// some customization and coroutine-based update methods that keep the text current.
     /// </summary>
-    public class GuiHudPublisher : IDisposable {
+    /// <typeparam name="DataType">The type of Data used.</typeparam>
+    public class GuiHudPublisher<DataType> : AGuiHudPublisher, IGuiHudPublisher, IDisposable where DataType : AItemData {
 
-        public bool IsHudShowing { get; private set; }
+        public static IGuiHudTextFactory<DataType> TextFactory { private get; set; }
 
-        private static IGuiHud _guiCursorHud;
+        public bool IsHudShowing {
+            get { return _displayHudJob != null && _displayHudJob.IsRunning; }
+        }
 
         private GuiHudText _guiCursorHudText;
-        private Data _data;
+        private Job _displayHudJob;
+        private DataType _data;
         private GuiHudLineKeys[] _optionalKeys;
         private IList<IDisposable> _subscribers;
         private float _hudRefreshRate;  // OPTIMIZE static?
 
-        public GuiHudPublisher(IGuiHud guiHud, Data data) {
-            _guiCursorHud = _guiCursorHud ?? guiHud;
+        public GuiHudPublisher(DataType data) {
             _data = data;
             _hudRefreshRate = GeneralSettings.Instance.HudRefreshRate;
             Subscribe();
         }
 
         private void Subscribe() {
-            if (_subscribers == null) {
-                _subscribers = new List<IDisposable>();
-            }
+            _subscribers = new List<IDisposable>();
             _subscribers.Add(GameTime.Instance.SubscribeToPropertyChanging<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanging));
         }
 
         private void OnGameSpeedChanging(GameClockSpeed newSpeed) { // OPTIMIZE static?
+            //D.Log("{0}.OnGameSpeedChanging() called. OldSpeed = {1}, NewSpeed = {2}.", GetType().Name, GameTime.Instance.GameSpeed.GetName(), newSpeed.GetName());
             float currentSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();
             float speedChangeRatio = newSpeed.SpeedMultiplier() / currentSpeedMultiplier;
             _hudRefreshRate *= speedChangeRatio;
         }
 
-        /// <summary>
-        /// Displays a new, updated or already existing GuiCursorHudText instance containing 
-        /// the text to display at the cursor.
-        /// </summary>
-        /// <param name="intelLevel">The intel level.</param>
-        public void DisplayHudAtCursor(IntelLevel intelLevel) {
-            PrepareHudText(intelLevel);
-            _guiCursorHud.Set(_guiCursorHudText);
-            IsHudShowing = true;
-        }
+        public void ShowHud(bool toShow, Vector3 position) {
+            D.Log("{0}<{1}>.ShowHud({2} called. IntelCoverage = {3}, Position = {4}.", GetType().Name, typeof(DataType).Name, toShow, _data.HumanPlayerIntelCoverage().GetName(), position);
 
-        private void PrepareHudText(IntelLevel intelLevel) {        // OPTIMIZE Detect individual data property changes and replace them individually
-            if (_guiCursorHudText == null || _guiCursorHudText.IntelLevel != intelLevel || _data.IsChanged) {
-                // don't have the right version of GuiCursorHudText so make one
-                _guiCursorHudText = GuiHudTextFactory.MakeInstance(intelLevel, _data);
-                _data.AcceptChanges();   // once we make a new one from current data, it is no longer dirty, if it ever was
+            if (_displayHudJob != null && _displayHudJob.IsRunning) {
+                _displayHudJob.Kill();
+                _displayHudJob = null;
+            }
+
+            if (toShow) {
+                PrepareHudText();
+                _displayHudJob = new Job(DisplayHudAtCursor(position), toStart: true, onJobComplete: (wasKilled) => {
+                    D.Log("{0}<{1}> DisplayHUD Job {2}.", GetType().Name, typeof(DataType).Name, wasKilled ? "was killed" : "has completed.");
+                });
+            }
+            else {
+                GuiCursorHud.Clear();
             }
         }
+        //public void ShowHud(bool toShow, Vector3 position) {
+        //    D.Log("{0}<{1}>.ShowHud({2} called. IntelCoverage = {3}, Position = {4}.", GetType().Name, typeof(DataType).Name, toShow, _data.PlayerIntel.CurrentCoverage.GetName(), position);
 
-        /// <summary>
-        /// Coroutine compatible method that keeps the hud text current. 
-        /// </summary>
-        /// <returns></returns>
-        public IEnumerator KeepHudCurrent() {
-            IsHudShowing = true;
-            IntelLevel intelLevel = _guiCursorHudText.IntelLevel;
+        //    if (_displayHudJob != null && _displayHudJob.IsRunning) {
+        //        _displayHudJob.Kill();
+        //        _displayHudJob = null;
+        //    }
+
+        //    if (toShow) {
+        //        PrepareHudText();
+        //        _displayHudJob = new Job(DisplayHudAtCursor(position), toStart: true, onJobComplete: (wasKilled) => {
+        //            D.Log("{0}<{1}> DisplayHUD Job {2}.", GetType().Name, typeof(DataType).Name, wasKilled ? "was killed" : "has completed.");
+        //        });
+        //    }
+        //    else {
+        //        GuiCursorHud.Clear();
+        //    }
+        //}
+
+        private IEnumerator DisplayHudAtCursor(Vector3 position) {
             while (true) {
-                UpdateGuiCursorHudText(intelLevel, GuiHudLineKeys.Distance);
-                if (intelLevel == IntelLevel.OutOfDate) {
-                    UpdateGuiCursorHudText(IntelLevel.OutOfDate, GuiHudLineKeys.IntelState);
-                }
+                UpdateGuiCursorHudText(GuiHudLineKeys.CameraDistance);
+                // always update IntelState as the Coverage can change even if data age does not need refreshing
+                UpdateGuiCursorHudText(GuiHudLineKeys.IntelState);
+
                 if (_optionalKeys != null) {
-                    UpdateGuiCursorHudText(intelLevel, _optionalKeys);
+                    UpdateGuiCursorHudText(_optionalKeys);
                 }
-                _guiCursorHud.Set(_guiCursorHudText);
+                GuiCursorHud.Set(_guiCursorHudText, position);
                 yield return new WaitForSeconds(_hudRefreshRate);
             }
         }
+
+        // NOTE: The HUD will update the value of a _dataProperty IFF the property is implemented with APropertyChangeTracking, aka _data.IsChanged will know
+        private void PrepareHudText() {
+            if (_guiCursorHudText == null || _guiCursorHudText.IntelCoverage != _data.HumanPlayerIntelCoverage() || _data.IsChanged) {
+                // don't have the right version of GuiCursorHudText so make one
+                _guiCursorHudText = TextFactory.MakeInstance(_data);
+                _data.AcceptChanges();   // once we make a new one from current data, it is no longer dirty, if it ever was
+            }
+        }
+        //private void PrepareHudText() {
+        //    if (_guiCursorHudText == null || _guiCursorHudText.IntelCoverage != _data.PlayerIntel.CurrentCoverage || _data.IsChanged) {
+        //        // don't have the right version of GuiCursorHudText so make one
+        //        _guiCursorHudText = TextFactory.MakeInstance(_data);
+        //        _data.AcceptChanges();   // once we make a new one from current data, it is no longer dirty, if it ever was
+        //    }
+        //}
 
         /// <summary>
         /// Updates the current GuiCursorHudText instance by replacing the lines identified by keys.
         /// </summary>
         /// <param name="intelLevel">The intel level.</param>
         /// <param name="keys">The line keys.</param>
-        private void UpdateGuiCursorHudText(IntelLevel intelLevel, params GuiHudLineKeys[] keys) {
+        private void UpdateGuiCursorHudText(params GuiHudLineKeys[] keys) {
             IColoredTextList coloredTextList;
             foreach (var key in keys) {
-                coloredTextList = GuiHudTextFactory.MakeInstance(key, intelLevel, _data);
-                _guiCursorHudText.Replace(key, coloredTextList);
+                coloredTextList = TextFactory.MakeInstance(key, _data);
+                _guiCursorHudText.Add(key, coloredTextList);
             }
         }
 
-        /// <summary>
-        /// Clients can optionally provide additional GuiCursorHudLineKeys they wish to routinely update whenever GetHudText is called.
-        /// LineKeys already automatically handled for all managers include Distance and IntelState.
-        /// </summary>
-        /// <param name="optionalKeys">The optional keys.</param>
         public void SetOptionalUpdateKeys(params GuiHudLineKeys[] optionalKeys) {
             _optionalKeys = optionalKeys;
         }
 
-        public void ClearHud() {
-            _guiCursorHud.Clear();
-            IsHudShowing = false;
+        private void Cleanup() {
+            GuiCursorHud.Clear();
+            if (_displayHudJob != null) {
+                _displayHudJob.Dispose();
+            }
+            Unsubscribe();
         }
 
         private void Unsubscribe() {
@@ -159,7 +187,7 @@ namespace CodeEnv.Master.Common.Unity {
 
             if (isDisposing) {
                 // free managed resources here including unhooking events
-                Unsubscribe();
+                Cleanup();
             }
             // free unmanaged resources here
 

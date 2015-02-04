@@ -40,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
 
             float fleetFullSpeed = Constants.ZeroF;
             if (fleetData != null) {
-                fleetFullSpeed = fleetData.FullSpeed;
+                fleetFullSpeed = fleetData.UnitFullSpeed;
                 //D.Log("{0}.FullSpeed = {1} units/hour.", fleetData.FullName, fleetFullSpeed);
             }
 
@@ -78,7 +78,7 @@ namespace CodeEnv.Master.GameContent {
                 //    break;
 
                 case Speed.FleetSlow:
-                    result = 0.10F * fleetData.FullStlSpeed;
+                    result = 0.10F * fleetData.UnitFullStlSpeed;
                     break;
                 case Speed.FleetOneThird:
                     result = 0.25F * fleetFullSpeed;

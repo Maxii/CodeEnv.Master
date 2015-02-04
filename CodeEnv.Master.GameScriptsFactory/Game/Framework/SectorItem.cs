@@ -31,6 +31,17 @@ public class SectorItem : AItem {
 
     public Index3D SectorIndex { get { return Data.SectorIndex; } }
 
+    private SectorPublisher _publisher;
+    public SectorPublisher Publisher {
+        get { return _publisher = _publisher ?? new SectorPublisher(Data); }
+    }
+
+    public override bool IsHudShowing {
+        get { return _hudManager != null && _hudManager.IsHudShowing; }
+    }
+
+    private HudManager<SectorPublisher> _hudManager;
+
     #region Initialization
 
     protected override void InitializeLocalReferencesAndValues() {
@@ -41,28 +52,59 @@ public class SectorItem : AItem {
 
     protected override void InitializeModelMembers() { }
 
-    protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<SectorData>(Data);
-    }
+    //protected override IGuiHudPublisher InitializeHudPublisher() {
+    //    return new GuiHudPublisher<SectorData>(Data);
+    //}
 
     protected override void InitializeViewMembersOnDiscernible() {
+        base.InitializeViewMembersOnDiscernible();
         // TODO meshes and animations need to be added to sectors
         // UNCLEAR include a separate CullingLayer for Sector meshes and animations?   
+    }
+
+    protected override void InitializeHudPublisher() {
+        _hudManager = new HudManager<SectorPublisher>(Publisher);
     }
 
     #endregion
 
     #region Model Methods
+
+    public SectorReport GetReport(Player player) { return Publisher.GetReport(player); }
+
     #endregion
 
     #region View Methods
+
+    public override void ShowHud(bool toShow) {
+        if (_hudManager != null) {
+            if (toShow) {
+                _hudManager.Show(Position);
+            }
+            else {
+                _hudManager.Hide();
+            }
+        }
+    }
+
+    #endregion
+
+    #region Cleanup
+
+    protected override void Cleanup() {
+        base.Cleanup();
+        if (_hudManager != null) {
+            _hudManager.Dispose();
+        }
+    }
+
     #endregion
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region IDestinationTarget Members
+    #region INavigableTarget Members
 
     public override bool IsMobile { get { return false; } }
 
@@ -79,6 +121,7 @@ public class SectorItem : AItem {
     public override float OptimalCameraViewingDistance { get { return Radius * 2F; } }  // IMPROVE
 
     #endregion
+
 
 }
 

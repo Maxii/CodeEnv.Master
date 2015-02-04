@@ -164,8 +164,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
                 GameSettings = __CreateStartupSimulationGameSettings();
                 CurrentState = GameState.Lobby;
                 CurrentState = GameState.Loading;
-                CurrentState = GameState.Building;
-                CurrentState = GameState.Waiting;
+                //CurrentState = GameState.Building;
+                //CurrentState = GameState.Waiting;
                 break;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(CurrentScene));
@@ -211,7 +211,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     }
 
     private void StartGameStateProgressionReadinessChecks() {
-        //D.Log("{0}_{1} is starting GameState Progression System Readiness Checks.", GetType().Name, InstanceCount);
+        //D.Log("{0}_{1} is preparing to start GameState Progression System Readiness Checks.", GetType().Name, InstanceCount);
         __ValidateGameStateProgressionReadinessSystemState();
         __progressCheckJob = new Job(AssessReadinessToProgressGameState(), toStart: true, onJobComplete: (wasJobKilled) => {
             if (wasJobKilled) {
@@ -275,9 +275,9 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     #endregion
 
-
     private void CreatePlayers(GameSettings settings) {
         HumanPlayer = new Player(settings.HumanPlayerRace, IQ.None, isPlayer: true);
+        D.Assert(HumanPlayer.Color != GameColor.None && HumanPlayer.Color != GameColor.Clear);
 
         var aiPlayerRaces = settings.AIPlayerRaces;
         int aiPlayerCount = aiPlayerRaces.Length;
@@ -317,6 +317,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
                 HumanPlayer.SetRelations(aiPlayer, aiPlayer.GetRelations(HumanPlayer));
             }
             D.Log("AI Player {0} created. Human relationship = {1}.", aiPlayer.LeaderName, aiPlayer.GetRelations(HumanPlayer).GetName());
+            D.Assert(aiPlayer.Color != GameColor.None && aiPlayer.Color != GameColor.Clear);
             AIPlayers.Add(aiPlayer);
         }
     }
@@ -504,10 +505,12 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         StartGameStateProgressionReadinessChecks();
 
         CreatePlayers(GameSettings);
-        if (GameSettings.IsStartupSimulation) { return; }
+
+        if (GameSettings.IsStartupSimulation) {
+            return;
+        }
 
         RecordGameStateProgressionReadiness(Instance, GameState.Loading, isReady: false);
-
         // tell ManagementObjects to drop its children (including SaveGameManager!) before the scene gets reloaded
         if (onSceneLoading != null) {
             onSceneLoading(SceneLevel.GameScene);
@@ -515,7 +518,6 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     }
 
     void Loading_OnLevelWasLoaded(int level) {
-        //D.Assert(!__isStartupSimulation);
         D.Assert(!GameSettings.IsStartupSimulation);
         LogEvent();
 
@@ -547,12 +549,12 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     void Building_EnterState() {
         LogEvent();
-        if (GameSettings.IsStartupSimulation) { return; }
 
         RecordGameStateProgressionReadiness(Instance, GameState.Building, isReady: false);
 
-        // Building is only for new games
+        // Building is only for new or simulated games
         D.Assert(!GameSettings.IsSavedGame);
+
         if (onNewGameBuilding != null) {
             onNewGameBuilding();
         }
@@ -719,7 +721,6 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         if (_playerPrefsMgr.IsPauseOnLoadEnabled) {
             RequestPauseStateChange(toPause: true, toOverride: true);
         }
-        //__isStartupSimulation = false;
         IsRunning = true;
     }
 

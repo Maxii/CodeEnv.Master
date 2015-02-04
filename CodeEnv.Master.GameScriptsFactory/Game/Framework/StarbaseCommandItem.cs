@@ -16,6 +16,8 @@
 
 // default namespace
 
+using System;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
@@ -25,21 +27,35 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class StarbaseCommandItem : AUnitBaseCommandItem {
 
+    public bool enableTrackingLabel = false;
+
     public new StarbaseCmdData Data {
         get { return base.Data as StarbaseCmdData; }
         set { base.Data = value; }
     }
 
-    public bool enableTrackingLabel = false;
+    private StarbasePublisher _publisher;
+    public StarbasePublisher Publisher {
+        get { return _publisher = _publisher ?? new StarbasePublisher(Data); }
+    }
 
+    public override bool IsHudShowing {
+        get { return _hudManager != null && _hudManager.IsHudShowing; }
+    }
+
+    private CmdHudManager<StarbasePublisher> _hudManager;
     private ITrackingWidget _trackingLabel;
 
     #region Initialization
 
-    protected override IGuiHudPublisher InitializeHudPublisher() {
-        var publisher = new GuiHudPublisher<StarbaseCmdData>(Data);
-        publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
-        return publisher;
+    //protected override IGuiHudPublisher InitializeHudPublisher() {
+    //    var publisher = new GuiHudPublisher<StarbaseCmdData>(Data);
+    //    publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
+    //    return publisher;
+    //}
+
+    protected override void InitializeHudPublisher() {
+        _hudManager = new CmdHudManager<StarbasePublisher>(Publisher);
     }
 
     private ITrackingWidget InitializeTrackingLabel() {
@@ -53,6 +69,12 @@ public class StarbaseCommandItem : AUnitBaseCommandItem {
     #endregion
 
     #region Model Methods
+
+    public StarbaseReport GetReport(Player player) { return Publisher.GetReport(player, GetElementReports(player)); }
+
+    private FacilityReport[] GetElementReports(Player player) {
+        return Elements.Cast<FacilityItem>().Select(e => e.GetReport(player)).ToArray();
+    }
 
     protected override void OnHQElementChanged() {
         base.OnHQElementChanged();
@@ -71,6 +93,17 @@ public class StarbaseCommandItem : AUnitBaseCommandItem {
 
     #region View Methods
 
+    public override void ShowHud(bool toShow) {
+        if (_hudManager != null) {
+            if (toShow) {
+                _hudManager.Show(Position, GetElementReports(_gameMgr.HumanPlayer));
+            }
+            else {
+                _hudManager.Hide();
+            }
+        }
+    }
+
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
         if (_trackingLabel != null) {
@@ -85,6 +118,26 @@ public class StarbaseCommandItem : AUnitBaseCommandItem {
     #endregion
 
     #region Mouse Events
+
+    //private StarbaseReportGenerator _reportGenerator;
+    //public StarbaseReportGenerator ReportGenerator {
+    //    get {
+    //        return _reportGenerator = _reportGenerator ?? new StarbaseReportGenerator(Data);
+    //    }
+    //}
+
+
+    //protected override void OnHover(bool isOver) {
+    //    if (isOver) {
+    //        FacilityReport[] elementReports = Elements.Cast<FacilityItem>().Select(f => f.GetReport(_gameMgr.HumanPlayer)).ToArray();
+    //        string hudText = ReportGenerator.GetCursorHudText(Data.GetHumanPlayerIntel(), elementReports);
+    //        GuiCursorHud.Instance.Set(hudText, Position);
+    //    }
+    //    else {
+    //        GuiCursorHud.Instance.Clear();
+    //    }
+    //}
+
     #endregion
 
     #region Cleanup
@@ -92,6 +145,10 @@ public class StarbaseCommandItem : AUnitBaseCommandItem {
     protected override void Cleanup() {
         base.Cleanup();
         UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
+
+        if (_hudManager != null) {
+            _hudManager.Dispose();
+        }
     }
 
     #endregion

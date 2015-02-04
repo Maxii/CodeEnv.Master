@@ -80,7 +80,7 @@ namespace CodeEnv.Master.GameContent {
         /// <exception cref="ArgumentException" >Attempting to add a line key that is already present.</exception>
         public void Add(DebugHudLineKeys lineKey, IColoredTextList textList) {
             _textLine.Add(lineKey, textList);
-            D.Log("DebugHudText.Add() called. Content = {0}.", textList.List[0].TextWithEmbeddedColor);
+            D.Log("DebugHudText.Add() called. Content = {0}.", textList.List[0].Text);
             //_data[lineKey] = textList;
             IsDirty = true;
         }
@@ -137,7 +137,7 @@ namespace CodeEnv.Master.GameContent {
         private string ConstructTextLine(DebugHudLineKeys lineKey, IColoredTextList coloredTextList) {
             IList<string> textElements = new List<string>();
             foreach (var ct in coloredTextList.List) {
-                textElements.Add(ct.TextWithEmbeddedColor);
+                textElements.Add(ct.Text);
                 //D.Log("ConstructTextLine called. ColoredTextElement = {0}".Inject(ct.TextWithEmbeddedColor));
             }
 

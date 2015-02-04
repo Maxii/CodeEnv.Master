@@ -127,7 +127,7 @@ public class FleetNavigator : IDisposable {
         _subscribers = new List<IDisposable>();
         _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
         _subscribers.Add(_data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.MaxWeaponsRange, OnWeaponsRangeChanged));
-        _subscribers.Add(_data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.FullStlSpeed, OnFullSpeedChanged));
+        _subscribers.Add(_data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.UnitFullStlSpeed, OnFullSpeedChanged));
         _seeker.pathCallback += OnCoursePlotCompleted;
         _subscribers.Add(_fleet.SubscribeToPropertyChanging<AUnitCommandModel, IElementModel>(cmd => cmd.HQElement, OnHQElementChanging));
         _subscribers.Add(_fleet.SubscribeToPropertyChanged<AUnitCommandModel, IElementModel>(cmd => cmd.HQElement, OnHQElementChanged));
@@ -606,7 +606,7 @@ public class FleetNavigator : IDisposable {
 
     private void AssessFrequencyOfCourseProgressChecks() {
         // frequency of course progress checks increases as fullSpeed value and gameSpeed increase
-        float courseProgressCheckFrequency = 1F + (_data.FullStlSpeed * _gameSpeedMultiplier);
+        float courseProgressCheckFrequency = 1F + (_data.UnitFullStlSpeed * _gameSpeedMultiplier);
         _courseProgressCheckPeriod = 1F / courseProgressCheckFrequency;
         //D.Log("{0}.{1} frequency of course progress checks adjusted to {2:0.##}.", _fleet.FullName, GetType().Name, courseProgressCheckFrequency);
     }

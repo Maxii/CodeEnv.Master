@@ -250,7 +250,7 @@ namespace CodeEnv.Master.GameContent {
         private string _toString;
         public override string ToString() {
             if (_toString.IsNullOrEmpty()) {
-                D.Warn("Value is default({0}).", GetType().Name);
+                //D.Warn("Value is default({0}).", GetType().Name);
                 _toString = "{0}.{1}".Inject(GetType().Name, XResource.None.GetName());
             }
             return _toString;

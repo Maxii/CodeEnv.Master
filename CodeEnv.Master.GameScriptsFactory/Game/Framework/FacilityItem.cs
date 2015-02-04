@@ -29,6 +29,9 @@ using UnityEngine;
 /// </summary>
 public class FacilityItem : AUnitElementItem {
 
+    [Tooltip("The type of facility")]
+    public FacilityCategory category;
+
     public new FacilityData Data {
         get { return base.Data as FacilityData; }
         set { base.Data = value; }
@@ -64,9 +67,16 @@ public class FacilityItem : AUnitElementItem {
         set { SetProperty<FacilityOrder>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
     }
 
-    [Tooltip("The type of facility")]
-    public FacilityCategory category;
+    private FacilityPublisher _publisher;
+    public FacilityPublisher Publisher {
+        get { return _publisher = _publisher ?? new FacilityPublisher(Data); }
+    }
 
+    public override bool IsHudShowing {
+        get { return _hudManager != null && _hudManager.IsHudShowing; }
+    }
+
+    private HudManager<FacilityPublisher> _hudManager;
     private Revolver _revolver;
 
     #region Initialization
@@ -85,16 +95,20 @@ public class FacilityItem : AUnitElementItem {
         CurrentState = FacilityState.None;
     }
 
-    protected override IGuiHudPublisher InitializeHudPublisher() {
-        var publisher = new GuiHudPublisher<FacilityData>(Data);
-        publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
-        return publisher;
-    }
+    //protected override IGuiHudPublisher InitializeHudPublisher() {
+    //    var publisher = new GuiHudPublisher<FacilityData>(Data);
+    //    publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
+    //    return publisher;
+    //}
 
     protected override void InitializeViewMembersOnDiscernible() {
         base.InitializeViewMembersOnDiscernible();
         _revolver = gameObject.GetComponentInChildren<Revolver>();
         // TODO Revolver settings and distance controls, Revolvers control their own enabled state based on visibility
+    }
+
+    protected override void InitializeHudPublisher() {
+        _hudManager = new HudManager<FacilityPublisher>(Publisher);
     }
 
     #endregion
@@ -105,6 +119,8 @@ public class FacilityItem : AUnitElementItem {
         base.CommenceOperations();
         CurrentState = FacilityState.Idling;
     }
+
+    public FacilityReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     void OnCurrentOrderChanged() {
         // TODO if orders arrive when in a Call()ed state, the Call()ed state must Return() before the new state may be initiated
@@ -179,9 +195,15 @@ public class FacilityItem : AUnitElementItem {
 
     #region View Methods
 
-    protected override void OnIsDiscernibleChanged() {
-        base.OnIsDiscernibleChanged();
-        _revolver.enabled = IsDiscernible;  // Revolvers disable when invisible, but I also want to disable if IntelCoverage disappears
+    public override void ShowHud(bool toShow) {
+        if (_hudManager != null) {
+            if (toShow) {
+                _hudManager.Show(Position);
+            }
+            else {
+                _hudManager.Hide();
+            }
+        }
     }
 
     public override void AssessHighlighting() {
@@ -228,6 +250,15 @@ public class FacilityItem : AUnitElementItem {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(highlight));
         }
     }
+
+    protected override void OnIsDiscernibleChanged() {
+        base.OnIsDiscernibleChanged();
+        _revolver.enabled = IsDiscernible;  // Revolvers disable when invisible, but I also want to disable if IntelCoverage disappears
+    }
+
+    #endregion
+
+    #region Mouse Events
 
     #endregion
 
@@ -450,6 +481,17 @@ public class FacilityItem : AUnitElementItem {
 
     #endregion
 
+    #region Cleanup
+
+    protected override void Cleanup() {
+        base.Cleanup();
+        if (_hudManager != null) {
+            _hudManager.Dispose();
+        }
+    }
+
+    #endregion
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
@@ -529,6 +571,9 @@ public class FacilityItem : AUnitElementItem {
     //}
 
     #endregion
+
+
+
 
 }
 

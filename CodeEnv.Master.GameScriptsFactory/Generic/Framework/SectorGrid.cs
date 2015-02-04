@@ -57,6 +57,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     private SectorFactory _sectorFactory;
     private GridWireframe _gridWireframe;
     private IList<IDisposable> _subscribers;
+    private GameManager _gameMgr;
 
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
@@ -65,9 +66,14 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
+        InitializeLocalReferencesAndValues();
         InitializeGrid();
-        ConstructSectors();
         Subscribe();
+    }
+
+    private void InitializeLocalReferencesAndValues() {
+        _gameMgr = GameManager.Instance;
+        // TODO add other references here
     }
 
     private void InitializeGrid() {
@@ -85,6 +91,12 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     private void Subscribe() {
         _subscribers = new List<IDisposable>();
         _subscribers.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, OnPlayerViewModeChanged));
+        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
+    }
+
+    protected override void Start() {
+        base.Start();
+        _gameMgr.RecordGameStateProgressionReadiness(Instance, GameState.Building, isReady: false);
     }
 
     private void DynamicallySubscribe(bool toSubscribe) {
@@ -95,6 +107,14 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
             IDisposable d = _subscribers.Single(s => s as DisposePropertyChangedSubscription<MainCameraControl> != null);
             _subscribers.Remove(d);
             d.Dispose();
+        }
+    }
+
+    private void OnGameStateChanged() {
+        var gameState = _gameMgr.CurrentState;
+        if (gameState == GameState.Building) {
+            ConstructSectors();
+            _gameMgr.RecordGameStateProgressionReadiness(Instance, GameState.Building, isReady: true);
         }
     }
 
@@ -241,7 +261,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         var sector = _sectorFactory.MakeInstance(index, worldPosition);
 
         UnityUtility.WaitOneToExecute(onWaitFinished: (wasKilled) => {
-            sector.PlayerIntelCoverage = IntelCoverage.Comprehensive;
+            sector.HumanPlayerIntelCoverage = IntelCoverage.Comprehensive;
         });
 
         _sectors.Add(index, sector);

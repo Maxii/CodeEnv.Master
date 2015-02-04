@@ -28,11 +28,6 @@ using UnityEngine;
 /// </summary>
 public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbitable, IUnitAttackableTarget, IElementAttackableTarget {
 
-    public new APlanetoidData Data {
-        get { return base.Data as APlanetoidData; }
-        set { base.Data = value; }
-    }
-
     [Tooltip("The type of planetoid")]
     public PlanetoidCategory category;
 
@@ -44,6 +39,21 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
     [Tooltip("Optimal Camera View Distance Multiplier")]
     public float optViewDistanceFactor = 8F;
 
+    public new APlanetoidData Data {
+        get { return base.Data as APlanetoidData; }
+        set { base.Data = value; }
+    }
+
+    private PlanetoidPublisher _publisher;
+    public PlanetoidPublisher Publisher {
+        get { return _publisher = _publisher ?? new PlanetoidPublisher(Data); }
+    }
+
+    public override bool IsHudShowing {
+        get { return _hudManager != null && _hudManager.IsHudShowing; }
+    }
+
+    private HudManager<PlanetoidPublisher> _hudManager;
     private ICtxControl _ctxControl;
 
     #region Initialization
@@ -79,6 +89,7 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
     }
 
     protected override void InitializeViewMembersOnDiscernible() {
+        base.InitializeViewMembersOnDiscernible();
         InitializeContextMenu(Owner);
         // Once the player initially discerns the planet, he will always be able to discern it
         var meshRenderers = gameObject.GetComponentsInImmediateChildren<MeshRenderer>();
@@ -102,6 +113,10 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         cameraLosChgdListener.enabled = true;
     }
 
+    protected override void InitializeHudPublisher() {
+        _hudManager = new HudManager<PlanetoidPublisher>(Publisher);
+    }
+
     private void InitializeContextMenu(Player owner) {
         _ctxControl = new PlanetoidCtxControl(this);
     }
@@ -116,6 +131,8 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         PlaceParentOrbiterInMotion(true);
         CurrentState = PlanetoidState.Idling;
     }
+
+    public PlanetoidReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     protected override void InitiateDeath() {
         base.InitiateDeath();
@@ -140,6 +157,18 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
     #endregion
 
     #region View Methods
+
+    public override void ShowHud(bool toShow) {
+        if (_hudManager != null) {
+            if (toShow) {
+                _hudManager.Show(Position);
+            }
+            else {
+                _hudManager.Hide();
+            }
+        }
+    }
+
     #endregion
 
     #region Mouse Events
@@ -199,6 +228,9 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         base.Cleanup();
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
+        }
+        if (_hudManager != null) {
+            _hudManager.Dispose();
         }
     }
 

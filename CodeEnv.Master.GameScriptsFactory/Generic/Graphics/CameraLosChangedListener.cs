@@ -78,7 +78,7 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
             }
         }
         else {
-            //D.WarnContext("{0}.{1}.OnBecameVisible() called while not enabled.".Inject(_transform.name, GetType().Name), this);
+            D.WarnContext("{0}.{1}.OnBecameVisible() called while not enabled.".Inject(_transform.name, GetType().Name), this);
         }
     }
 
@@ -95,7 +95,7 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
             }
         }
         else {
-            //D.WarnContext("{0}.{1}.OnBecameInvisible() called while not enabled.".Inject(_transform.name, GetType().Name), this);
+            D.WarnContext("{0}.{1}.OnBecameInvisible() called while not enabled.".Inject(_transform.name, GetType().Name), this);
         }
     }
 

@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
 
         private IconSelectionCriteria[] GetSelectionCriteria(DataType data) {
             IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
-            switch (data.PlayerIntel.CurrentCoverage) {
+            switch (data.HumanPlayerIntelCoverage) {
                 case IntelCoverage.None:
                     // always returns None
                     criteria.Add(IconSelectionCriteria.None);
@@ -69,7 +69,7 @@ namespace CodeEnv.Master.GameContent {
                     GetCriteriaFromComposition(data).ForAll(isc => criteria.Add(isc));
                     break;
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(data.PlayerIntel.CurrentCoverage));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(data.HumanPlayerIntelCoverage));
             }
             return criteria.ToArray();
         }
@@ -104,7 +104,9 @@ namespace CodeEnv.Master.GameContent {
             if (_iconCache.TryGetValue(section, out criteriaCache)) {
                 IList<IEnumerable<IconSelectionCriteria>> cacheCritieraList = criteriaCache.Keys.ToList();
                 foreach (var criteriaSequenceInCache in cacheCritieraList) {
-                    if (criteriaSequenceInCache.SequenceEquals(criteria, ignoreOrder: true)) {
+                    // Note: cannot use SequenceEquals as enums don't implement IComparable<T>, just IComparable
+                    bool criteriaIsEqual = criteriaSequenceInCache.OrderBy(c => c).SequenceEqual(criteria.OrderBy(c => c));
+                    if (criteriaIsEqual) {
                         IEnumerable<IconSelectionCriteria> criteriaKey = criteriaSequenceInCache;
                         icon = criteriaCache[criteriaKey];
                         D.Log("A {0} has been reused from cache.", typeof(IconType).Name);

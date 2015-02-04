@@ -70,7 +70,7 @@ namespace CodeEnv.Master.GameContent {
             set { base.HQElementData = value; }
         }
 
-        public BaseComposition Composition { get; private set; }
+        public BaseUnitComposition UnitComposition { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SettlementCmdData"/> class.
@@ -83,46 +83,41 @@ namespace CodeEnv.Master.GameContent {
             UnitFormation = stat.UnitFormation;
         }
 
-        protected override void InitializeComposition() {
-            Composition = new BaseComposition();
+        public override void AddElement(AElementData elementData) {
+            base.AddElement(elementData);
+            Category = GenerateCmdCategory(UnitComposition);
         }
 
-        protected override void ChangeComposition(AElementData elementData, bool toAdd) {
-            bool isChanged = toAdd ? Composition.Add(elementData as FacilityData) : Composition.Remove(elementData as FacilityData);
-            if (isChanged) {
-                AssessCommandCategory();
-                OnCompositionChanged();
-            }
+        public override bool RemoveElement(AElementData elementData) {
+            bool isRemoved = base.RemoveElement(elementData);
+            Category = GenerateCmdCategory(UnitComposition);
+            return isRemoved;
         }
 
-        private void AssessCommandCategory() {
-            int elementCount = Composition.ElementCount;
-            switch (elementCount) {
-                case 1:
-                    Category = SettlementCategory.Colony;
-                    break;
-                case 2:
-                case 3:
-                    Category = SettlementCategory.City;
-                    break;
-                case 4:
-                case 5:
-                    Category = SettlementCategory.CityState;
-                    break;
-                case 6:
-                case 7:
-                    Category = SettlementCategory.Province;
-                    break;
-                case 8:
-                case 9:
-                    Category = SettlementCategory.Territory;
-                    break;
-                case 0:
-                    // element count of 0 = dead, so don't generate a change to be handled
-                    break;
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(elementCount));
+        protected override void UpdateComposition() {
+            var elementCategories = ElementsData.Cast<FacilityData>().Select(fd => fd.Category);
+            UnitComposition = new BaseUnitComposition(elementCategories);
+        }
+
+        public SettlementCategory GenerateCmdCategory(BaseUnitComposition unitComposition) {
+            int elementCount = UnitComposition.GetTotalElementsCount();
+            //D.Log("{0}'s known elements count = {1}.", FullName, elementCount);
+            if (elementCount >= 8) {
+                return SettlementCategory.Territory;
             }
+            if (elementCount >= 6) {
+                return SettlementCategory.Province;
+            }
+            if (elementCount >= 4) {
+                return SettlementCategory.CityState;
+            }
+            if (elementCount >= 2) {
+                return SettlementCategory.City;
+            }
+            if (elementCount >= 1) {
+                return SettlementCategory.Colony;
+            }
+            return SettlementCategory.None;
         }
 
         public override string ToString() {
