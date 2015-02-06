@@ -75,6 +75,7 @@ namespace CodeEnv.Master.GameContent {
                 D.Log(intelMsg);
                 return intelMsg;
             }
+
         }
 
         public class ColoredTextList_Distance : ColoredTextListBase {
@@ -115,6 +116,7 @@ namespace CodeEnv.Master.GameContent {
                 float distance = Vector3.Distance(pointA, pointB);
                 _list.Add(new ColoredText(format.Inject(distance)));
             }
+
         }
 
         public class ColoredTextList_Owner : ColoredTextListBase {

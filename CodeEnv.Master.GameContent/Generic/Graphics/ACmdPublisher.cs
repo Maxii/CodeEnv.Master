@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -39,13 +39,15 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public ReportType GetReport(Player player, ElementReportType[] elementReports) {
-            var intelCoverage = _data.GetPlayerIntel(player).CurrentCoverage;
+            var intelCoverage = _data.GetIntelCoverage(player);
             ReportType cachedReport;
             if (!IsCachedReportCurrent(player, intelCoverage, elementReports, out cachedReport)) {
-                D.Log("{0} generating new {1} for Player {2}, IntelCoverage {3}.", GetType().Name, typeof(FleetReport).Name, player.LeaderName, intelCoverage.GetName());
                 cachedReport = GenerateReport(player, elementReports);
                 CacheReport(player, cachedReport);
                 _data.AcceptChanges();
+            }
+            else {
+                D.Log("{0} reusing cached {1} for Player {2}, IntelCoverage {3}.", GetType().Name, typeof(ReportType).Name, player.LeaderName, intelCoverage.GetName());
             }
             return cachedReport;
         }
@@ -71,8 +73,9 @@ namespace CodeEnv.Master.GameContent {
             return cachedLabelText;
         }
 
-        public override IColoredTextList UpdateContent(LabelID labelID, LabelContentID contentID) {
-            return LabelTextFactory.MakeInstance(labelID, contentID, _data);
+        public override bool TryUpdateLabelTextContent(LabelID labelID, LabelContentID contentID, AElementItemReport[] elementReports, out IColoredTextList content) {
+            var eReports = elementReports.Cast<ElementReportType>().ToArray();
+            return LabelTextFactory.TryMakeInstance(labelID, contentID, GetReport(_gameMgr.HumanPlayer, eReports), _data, out content);
         }
 
         protected bool IsCachedLabelTextCurrent(LabelID labelID, IntelCoverage intelCoverage, ElementReportType[] elementReports, out LabelText cachedLabelText) {

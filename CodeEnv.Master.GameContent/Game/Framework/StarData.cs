@@ -29,25 +29,19 @@ namespace CodeEnv.Master.GameContent {
         private int _capacity;
         public int Capacity {
             get { return _capacity; }
-            set {
-                SetProperty<int>(ref _capacity, value, "Capacity");
-            }
+            set { SetProperty<int>(ref _capacity, value, "Capacity"); }
         }
 
         private OpeYield _resources;
         public OpeYield Resources {
             get { return _resources; }
-            set {
-                SetProperty<OpeYield>(ref _resources, value, "Resources");
-            }
+            set { SetProperty<OpeYield>(ref _resources, value, "Resources"); }
         }
 
         private XYield _specialResources;
         public XYield SpecialResources {
             get { return _specialResources; }
-            set {
-                SetProperty<XYield>(ref _specialResources, value, "SpecialResources");
-            }
+            set { SetProperty<XYield>(ref _specialResources, value, "SpecialResources"); }
         }
 
         /// <summary>

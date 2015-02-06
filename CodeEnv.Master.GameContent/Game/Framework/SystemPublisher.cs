@@ -41,17 +41,16 @@ namespace CodeEnv.Master.GameContent {
             _gameMgr = References.GameManager;
         }
 
-        public IColoredTextList UpdateLabelTextContent(LabelID labelID, LabelContentID contentID) {
-            return LabelTextFactory.MakeInstance(labelID, contentID, _data);
-        }
 
         public SystemReport GetReport(Player player, StarReport starReport, PlanetoidReport[] planetoidReports) {
             SystemReport cachedReport;
             if (!IsCachedReportCurrent(player, starReport, planetoidReports, out cachedReport)) {
-                D.Log("{0} generating new {1} for Player {2}.", GetType().Name, typeof(SystemReport).Name, player.LeaderName);
                 cachedReport = GenerateReport(player, starReport, planetoidReports);
                 CacheReport(player, cachedReport);
                 _data.AcceptChanges();
+            }
+            else {
+                D.Log("{0} reusing cached {1} for Player {2}.", GetType().Name, typeof(SystemReport).Name, player.LeaderName);
             }
             return cachedReport;
         }
@@ -75,9 +74,11 @@ namespace CodeEnv.Master.GameContent {
         public SystemLabelText GetLabelText(LabelID labelID, StarReport starReport, PlanetoidReport[] planetoidReports) {
             SystemLabelText cachedLabelText;
             if (!IsCachedLabelTextCurrent(labelID, starReport, planetoidReports, out cachedLabelText)) {
-                D.Log("{0} generating new {1} for Label {2}.", GetType().Name, typeof(SystemLabelText).Name, labelID.GetName());
                 cachedLabelText = LabelTextFactory.MakeInstance(labelID, GetReport(_gameMgr.HumanPlayer, starReport, planetoidReports), _data);
                 CacheLabelText(labelID, cachedLabelText);
+            }
+            else {
+                D.Log("{0} reusing cached {1} for Label {2}.", GetType().Name, typeof(SystemLabelText).Name, labelID.GetName());
             }
             return cachedLabelText;
         }
@@ -93,6 +94,11 @@ namespace CodeEnv.Master.GameContent {
             }
             cachedLabelText = null;
             return false;
+        }
+
+        public bool TryUpdateLabelTextContent(LabelID labelID, LabelContentID contentID, StarReport starReport, PlanetoidReport[] planetoidReports, out IColoredTextList content) {
+            var systemReport = GetReport(_gameMgr.HumanPlayer, starReport, planetoidReports);
+            return LabelTextFactory.TryMakeInstance(labelID, contentID, systemReport, _data, out content);
         }
 
         private void CacheLabelText(LabelID labelID, SystemLabelText labelText) {

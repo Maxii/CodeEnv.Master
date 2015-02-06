@@ -30,7 +30,7 @@ namespace CodeEnv.Master.GameContent {
         public CmdHudManager(CmdPublisherType publisher)
             : base() {
             _publisher = publisher;
-            AssignContentToUpdate(UpdatableLabelContentID.CameraDistance, UpdatableLabelContentID.IntelState);
+            AddContentToUpdate(UpdatableLabelContentID.CameraDistance, UpdatableLabelContentID.IntelState);
         }
 
         protected override ALabelText GetLabelText() {
@@ -46,8 +46,8 @@ namespace CodeEnv.Master.GameContent {
             ShowHud(false, default(Vector3));
         }
 
-        protected override IColoredTextList UpdateContent(LabelContentID contentID) {
-            return _publisher.UpdateContent(LabelID.CursorHud, contentID);
+        protected override bool TryUpdateContent(LabelContentID contentID, out IColoredTextList content) {
+            return _publisher.TryUpdateLabelTextContent(LabelID.CursorHud, contentID, _elementReports, out content);
         }
 
         public override string ToString() {

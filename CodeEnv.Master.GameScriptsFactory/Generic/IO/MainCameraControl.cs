@@ -1525,25 +1525,12 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     #region Nested Classes
 
     /// <summary>
-    /// Substitute for RaycastHit struct whose constructors are not accessible to me.
+    /// Substitute for Unity's RaycastHit whose constructors are not accessible to me.
+    /// Note: Changed from a struct as per Jon Skeet: mutable references in a immutable struct are sneakily evil, aka Transform
     /// </summary>
-    private struct SimpleRaycastHit : IEquatable<SimpleRaycastHit> {
+    private class SimpleRaycastHit {
 
-        #region Comparison Operators Override
-
-        // see C# 4.0 In a Nutshell, page 254
-
-        public static bool operator ==(SimpleRaycastHit left, SimpleRaycastHit right) {
-            return left.Equals(right);
-        }
-
-        public static bool operator !=(SimpleRaycastHit left, SimpleRaycastHit right) {
-            return !left.Equals(right);
-        }
-
-        #endregion
-
-        private static string _toStringFormat = "TransformHit: {0}, HitPoint: {1}";
+        private static string _toStringFormat = "Transform hit: {0}, HitPoint: {1}";
 
         public readonly Transform transform;
         public readonly Vector3 point;
@@ -1553,40 +1540,10 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             this.point = point;
         }
 
-        #region Object.Equals and GetHashCode Override
-
-        public override bool Equals(object obj) {
-            if (!(obj is SimpleRaycastHit)) { return false; }
-            return Equals((SimpleRaycastHit)obj);
-        }
-
-        /// <summary>
-        /// Returns a hash code for this instance.
-        /// See "Page 254, C# 4.0 in a Nutshell."
-        /// </summary>
-        /// <returns>
-        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
-        /// </returns>
-        public override int GetHashCode() {
-            int hash = 17;  // 17 = some prime number
-            hash = hash * 31 + transform.GetHashCode(); // 31 = another prime number
-            hash = hash * 31 + point.GetHashCode();
-            return hash;
-        }
-
-        #endregion
-
         public override string ToString() {
             return _toStringFormat.Inject(transform.name, point);
         }
 
-        #region IEquatable<IctHit> Members
-
-        public bool Equals(SimpleRaycastHit other) {
-            return transform == other.transform && point == other.point;
-        }
-
-        #endregion
     }
 
     public enum CameraState {

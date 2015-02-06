@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
 
         public FleetCategory Category { get; private set; }
 
-        public FleetUnitComposition? UnitComposition { get; private set; }
+        public FleetComposition UnitComposition { get; private set; }
 
         public INavigableTarget Target { get; private set; }
 
@@ -52,14 +52,15 @@ namespace CodeEnv.Master.GameContent {
         protected override void AssignValuesFrom(AElementItemReport[] elementReports, ACommandData cmdData) {
             base.AssignValuesFrom(elementReports, cmdData);
             var knownElementCategories = elementReports.Cast<ShipReport>().Select(r => r.Category).Where(cat => cat != ShipCategory.None);
-            UnitComposition = new FleetUnitComposition(knownElementCategories);
-            Category = UnitComposition.HasValue ? (cmdData as FleetCmdData).GenerateCmdCategory(UnitComposition.Value) : FleetCategory.None;
+            if (knownElementCategories.Any()) {
+                UnitComposition = new FleetComposition(knownElementCategories);
+            }
+            Category = UnitComposition != null ? (cmdData as FleetCmdData).GenerateCmdCategory(UnitComposition) : FleetCategory.None;
         }
 
         protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageComprehensive(data);
             FleetCmdData fData = data as FleetCmdData;
-            Target = fData.Target;
             UnitFullSpeed = fData.UnitFullSpeed;
             UnitMaxTurnRate = fData.UnitMaxTurnRate;
         }
@@ -67,6 +68,7 @@ namespace CodeEnv.Master.GameContent {
         protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageModerate(data);
             FleetCmdData fData = data as FleetCmdData;
+            Target = fData.Target;
             CurrentSpeed = fData.CurrentSpeed;
         }
 

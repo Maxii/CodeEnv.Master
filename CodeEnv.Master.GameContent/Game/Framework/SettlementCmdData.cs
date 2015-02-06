@@ -70,7 +70,11 @@ namespace CodeEnv.Master.GameContent {
             set { base.HQElementData = value; }
         }
 
-        public BaseUnitComposition UnitComposition { get; private set; }
+        private BaseComposition _unitComposition;
+        public BaseComposition UnitComposition {
+            get { return _unitComposition; }
+            set { SetProperty<BaseComposition>(ref _unitComposition, value, "UnitComposition"); }
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SettlementCmdData"/> class.
@@ -96,10 +100,10 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void UpdateComposition() {
             var elementCategories = ElementsData.Cast<FacilityData>().Select(fd => fd.Category);
-            UnitComposition = new BaseUnitComposition(elementCategories);
+            UnitComposition = new BaseComposition(elementCategories);
         }
 
-        public SettlementCategory GenerateCmdCategory(BaseUnitComposition unitComposition) {
+        public SettlementCategory GenerateCmdCategory(BaseComposition unitComposition) {
             int elementCount = UnitComposition.GetTotalElementsCount();
             //D.Log("{0}'s known elements count = {1}.", FullName, elementCount);
             if (elementCount >= 8) {

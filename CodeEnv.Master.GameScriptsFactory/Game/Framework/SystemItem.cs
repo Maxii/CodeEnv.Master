@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -53,6 +54,17 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
         }
     }
 
+    private StarItem _star;
+    public StarItem Star {
+        get { return _star; }
+        set {
+            D.Assert(_star == null, "{0}'s Star can only be set once.".Inject(FullName));
+            SetProperty<StarItem>(ref _star, value, "Star", OnStarChanged);
+        }
+    }
+
+    public IList<APlanetoidItem> Planetoids { get; private set; }
+
     private SystemPublisher _publisher;
     public SystemPublisher Publisher {
         get { return _publisher = _publisher ?? new SystemPublisher(Data); }
@@ -75,6 +87,7 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
         Radius = TempGameValues.SystemRadius;
+        Planetoids = new List<APlanetoidItem>();
         // there is no collider associated with a SystemItem implementation. The collider used for interaction is located on the orbital plane
     }
 
@@ -151,15 +164,25 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
 
     #region Model Methods
 
-    public SystemReport GetReport(Player player) { return Publisher.GetReport(player, GetStarReport(player), GetPlanetoidReports(player)); }
+    public void AddPlanetoid(APlanetoidItem planetoid) {
+        Planetoids.Add(planetoid);
+        Data.AddPlanetoid(planetoid.Data);
+    }
 
-    private PlanetoidReport[] GetPlanetoidReports(Player player) {
-        var planetoids = gameObject.GetSafeMonoBehaviourComponentsInChildren<APlanetoidItem>();
-        return planetoids.Select(p => p.GetReport(player)).ToArray();
+    public SystemReport GetReport(Player player) {
+        return Publisher.GetReport(player, GetStarReport(player), GetPlanetoidReports(player));
     }
 
     private StarReport GetStarReport(Player player) {
-        return gameObject.GetSafeMonoBehaviourComponentInChildren<StarItem>().GetReport(player);
+        return Star.GetReport(player);
+    }
+
+    private PlanetoidReport[] GetPlanetoidReports(Player player) {
+        return Planetoids.Select(p => p.GetReport(player)).ToArray();
+    }
+
+    private void OnStarChanged() {
+        Data.StarData = Star.Data;
     }
 
     private void OnSettlementChanged() {

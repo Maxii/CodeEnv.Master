@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -37,23 +37,21 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public ReportType GetReport(Player player) {
-            D.Assert(_data != null, "Data is null.");
-            D.Assert(_data.GetPlayerIntel(player) != null);
-            var intelCoverage = _data.GetPlayerIntel(player).CurrentCoverage;
-            ReportType report;
-            if (!IsCachedReportCurrent(player, intelCoverage, out report)) {
-                report = GenerateReport(player);
-                CacheReport(player, report);
+            var intelCoverage = _data.GetIntelCoverage(player);
+            ReportType cachedReport;
+            if (!IsCachedReportCurrent(player, intelCoverage, out cachedReport)) {
+                cachedReport = GenerateReport(player);
+                CacheReport(player, cachedReport);
                 _data.AcceptChanges();
             }
             else {
                 D.Log("{0} reusing cached {1} for Player {2}, IntelCoverage {3}.", GetType().Name, typeof(ReportType).Name, player.LeaderName, intelCoverage.GetName());
             }
-            return report;
+            return cachedReport;
         }
 
-        private bool IsCachedReportCurrent(Player player, IntelCoverage intelCoverage, out ReportType report) {
-            return TryGetCachedReport(player, out report) && !_data.IsChanged && report.IntelCoverage == intelCoverage;
+        private bool IsCachedReportCurrent(Player player, IntelCoverage intelCoverage, out ReportType cachedReport) {
+            return TryGetCachedReport(player, out cachedReport) && !_data.IsChanged && cachedReport.IntelCoverage == intelCoverage;
         }
 
         private void CacheReport(Player player, ReportType report) {
@@ -70,17 +68,20 @@ namespace CodeEnv.Master.GameContent {
         protected abstract ReportType GenerateReport(Player player);
 
         public override LabelText GetLabelText(LabelID labelID) {
-            LabelText labelText;
+            LabelText cachedLabelText;
             var intelCoverage = _data.HumanPlayerIntelCoverage;
-            if (!IsCachedLabelTextCurrent(labelID, intelCoverage, out labelText)) {
-                D.Log("{0} generating new {1} for Label {2}, HumanIntelCoverage {3}.", GetType().Name, typeof(LabelText).Name, labelID.GetName(), intelCoverage.GetName());
-                labelText = LabelTextFactory.MakeInstance(labelID, GetReport(_gameMgr.HumanPlayer), _data);
+            if (!IsCachedLabelTextCurrent(labelID, intelCoverage, out cachedLabelText)) {
+                cachedLabelText = LabelTextFactory.MakeInstance(labelID, GetReport(_gameMgr.HumanPlayer), _data);
+                CacheLabelText(labelID, cachedLabelText);
             }
-            return labelText;
+            else {
+                D.Log("{0} resuing cached {1} for Label {2}, HumanIntelCoverage {3}.", GetType().Name, typeof(LabelText).Name, labelID.GetName(), intelCoverage.GetName());
+            }
+            return cachedLabelText;
         }
 
-        public override IColoredTextList UpdateContent(LabelID labelID, LabelContentID contentID) {
-            return LabelTextFactory.MakeInstance(labelID, contentID, _data);
+        public override bool TryUpdateLabelTextContent(LabelID labelID, LabelContentID contentID, out IColoredTextList content) {
+            return LabelTextFactory.TryMakeInstance(labelID, contentID, GetReport(_gameMgr.HumanPlayer), _data, out content);
         }
 
     }

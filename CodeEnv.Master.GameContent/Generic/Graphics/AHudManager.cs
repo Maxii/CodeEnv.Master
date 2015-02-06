@@ -37,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
 
         private ALabelText _labelText;
         private Job _hudJob;
-        private LabelContentID[] _optionalUpdatableContentIDs;
+        private IList<LabelContentID> _optionalUpdatableContentIDs;
         private IList<IDisposable> _subscribers;
         private float _hudRefreshRate;  // OPTIMIZE static?
 
@@ -68,9 +68,12 @@ namespace CodeEnv.Master.GameContent {
                 _labelText = GetLabelText();
                 CursorHud.Set(_labelText, position);
 
-                _hudJob = new Job(DisplayHudAt(position), toStart: true, onJobComplete: (wasKilled) => {
-                    D.Log("{0} ShowHUD Job {1}.", GetType().Name, wasKilled ? "was killed" : "has completed.");
-                });
+                if (_optionalUpdatableContentIDs != null) {
+                    _hudJob = new Job(DisplayHudAt(position), toStart: true, onJobComplete: (wasKilled) => {
+                        //D.Log("{0} ShowHUD Job {1}.", GetType().Name, wasKilled ? "was killed" : "has completed.");
+                    });
+                }
+
             }
             else {
                 CursorHud.Clear();
@@ -81,12 +84,7 @@ namespace CodeEnv.Master.GameContent {
 
         private IEnumerator DisplayHudAt(Vector3 position) {
             while (true) {
-                bool isTextChanged = false;
-                if (_optionalUpdatableContentIDs != null) {
-                    isTextChanged = TryUpdateLabelText(_optionalUpdatableContentIDs);
-                }
-
-                if (isTextChanged) {
+                if (TryUpdateLabelText(_optionalUpdatableContentIDs)) {
                     CursorHud.Set(_labelText, position);
                 }
                 yield return new WaitForSeconds(_hudRefreshRate);
@@ -94,27 +92,42 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Updates the local LabelText instance by replacing the content indicated by <c>contentIDs</c>.
+        /// Tries to update the local LabelText instance by updating the content indicated by <c>contentIDs</c>.
+        /// Returns <c>true</c> if the local LabelText has had its content changed.
         /// </summary>
-        /// <param name="contentIDs">The content to change.</param>
-        private bool TryUpdateLabelText(params LabelContentID[] contentIDs) {
+        /// <param name="contentIDs">The contentIDs to update.</param>
+        /// <returns></returns>
+        private bool TryUpdateLabelText(IList<LabelContentID> contentIDs) {
             bool isTextChanged = false;
             foreach (var contentID in contentIDs) {
-                var content = UpdateContent(contentID);
-                isTextChanged = isTextChanged || _labelText.TryUpdate(contentID, content);
+                IColoredTextList content;
+                if (TryUpdateContent(contentID, out content)) {
+                    // GOTCHA using || means that TryUpdate() is no longer called once isTextChanged first becomes true
+                    isTextChanged = isTextChanged | _labelText.TryUpdate(contentID, content);
+                }
             }
             return isTextChanged;
         }
 
-        protected abstract IColoredTextList UpdateContent(LabelContentID contentID);
+        /// <summary>
+        /// Tries to update the content identified by <c>contentID</c>. Returns <c>true</c> if
+        /// <c>content</c> is not empty.
+        /// </summary>
+        /// <param name="contentID">The content identifier.</param>
+        /// <param name="content">The content.</param>
+        /// <returns></returns>
+        protected abstract bool TryUpdateContent(LabelContentID contentID, out IColoredTextList content);
 
         /// <summary>
-        /// Optionally assigns the contentIDs that should be continuously updated when the Hud is showing.
+        /// Adds one or more <c>UpdatableLabelContentID</c>s to the list of content to update
+        /// if not already present.
         /// </summary>
-        /// <param name="updatableContentIDs">The optional updatable content identifiers.</param>
+        /// <param name="updatableContentIDs">The updatable content i ds.</param>
         /// <exception cref="System.NotImplementedException"></exception>
-        protected void AssignContentToUpdate(params UpdatableLabelContentID[] updatableContentIDs) {
-            IList<LabelContentID> contentIDs = new List<LabelContentID>(updatableContentIDs.Length);
+        public void AddContentToUpdate(params UpdatableLabelContentID[] updatableContentIDs) {
+            if (_optionalUpdatableContentIDs == null) {
+                _optionalUpdatableContentIDs = new List<LabelContentID>();
+            }
             foreach (var updatableContentID in updatableContentIDs) {
                 LabelContentID contentID;
                 switch (updatableContentID) {
@@ -124,13 +137,42 @@ namespace CodeEnv.Master.GameContent {
                     case UpdatableLabelContentID.IntelState:
                         contentID = LabelContentID.IntelState;
                         break;
+                    case UpdatableLabelContentID.TargetDistance:
+                        contentID = LabelContentID.TargetDistance;
+                        break;
                     default:
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(updatableContentID));
                 }
-                contentIDs.Add(contentID);
+                if (!_optionalUpdatableContentIDs.Contains(contentID)) {
+                    _optionalUpdatableContentIDs.Add(contentID);
+                }
             }
-            _optionalUpdatableContentIDs = contentIDs.ToArray();
         }
+
+
+        /// <summary>
+        /// Optionally assigns the contentIDs that should be continuously updated when the Hud is showing.
+        /// </summary>
+        /// <param name="updatableContentIDs">The optional updatable content identifiers.</param>
+        /// <exception cref="System.NotImplementedException"></exception>
+        //protected void AssignContentToUpdate(params UpdatableLabelContentID[] updatableContentIDs) {
+        //    IList<LabelContentID> contentIDs = new List<LabelContentID>(updatableContentIDs.Length);
+        //    foreach (var updatableContentID in updatableContentIDs) {
+        //        LabelContentID contentID;
+        //        switch (updatableContentID) {
+        //            case UpdatableLabelContentID.CameraDistance:
+        //                contentID = LabelContentID.CameraDistance;
+        //                break;
+        //            case UpdatableLabelContentID.IntelState:
+        //                contentID = LabelContentID.IntelState;
+        //                break;
+        //            default:
+        //                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(updatableContentID));
+        //        }
+        //        contentIDs.Add(contentID);
+        //    }
+        //    _optionalUpdatableContentIDs = contentIDs.ToArray();
+        //}
 
         private void Cleanup() {
             CursorHud.Clear();
@@ -196,7 +238,9 @@ namespace CodeEnv.Master.GameContent {
 
             CameraDistance,
 
-            IntelState
+            IntelState,
+
+            TargetDistance
 
         }
 

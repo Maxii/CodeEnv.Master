@@ -38,12 +38,8 @@ namespace CodeEnv.Master.GameContent {
 
         private AElementData _hqElementData;
         public AElementData HQElementData {
-            get {
-                return _hqElementData;
-            }
-            set {
-                SetProperty<AElementData>(ref _hqElementData, value, "HQElementData", OnHQElementDataChanged);
-            }
+            get { return _hqElementData; }
+            set { SetProperty<AElementData>(ref _hqElementData, value, "HQElementData", OnHQElementDataChanged); }
         }
 
         // AItemData.Health, CurrentHitPts and MaxHitPts are all for this CommandData, not for the Unit as a whole.

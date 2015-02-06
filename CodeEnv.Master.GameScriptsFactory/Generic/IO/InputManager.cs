@@ -664,30 +664,17 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
         None,
 
         Left,
-
         Right,
-
         Top,
-
         Bottom
 
     }
 
-    public struct ScrollEvent : IEquatable<ScrollEvent> {
-
-        #region Comparison Operators Override
-
-        // see C# 4.0 In a Nutshell, page 254
-
-        public static bool operator ==(ScrollEvent left, ScrollEvent right) {
-            return left.Equals(right);
-        }
-
-        public static bool operator !=(ScrollEvent left, ScrollEvent right) {
-            return !left.Equals(right);
-        }
-
-        #endregion
+    /// <summary>
+    /// Simple container for a scroll event so it can be retrieved when desired by MainCameraControl.
+    /// Note: Changed from a struct as per Jon Skeet: mutable references in a immutable struct are sneakily evil, aka ICameraTargetable
+    /// </summary>
+    public class ScrollEvent {
 
         private static string _toStringFormat = "Target: {0}, Delta: {1}, HitPoint: {2}";
 
@@ -701,41 +688,9 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
             this.hitPoint = hitPoint;
         }
 
-        #region Object.Equals and GetHashCode Override
-
-        public override bool Equals(object obj) {
-            if (!(obj is ScrollEvent)) { return false; }
-            return Equals((ScrollEvent)obj);
-        }
-
-        /// <summary>
-        /// Returns a hash code for this instance.
-        /// See "Page 254, C# 4.0 in a Nutshell."
-        /// </summary>
-        /// <returns>
-        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
-        /// </returns>
-        public override int GetHashCode() {
-            int hash = 17;  // 17 = some prime number
-            hash = hash * 31 + target.GetHashCode(); // 31 = another prime number
-            hash = hash * 31 + delta.GetHashCode();
-            hash = hash * 31 + hitPoint.GetHashCode();
-            return hash;
-        }
-
-        #endregion
-
         public override string ToString() {
             return _toStringFormat.Inject(target, delta, hitPoint);
         }
-
-        #region IEquatable<ScrollEvent> Members
-
-        public bool Equals(ScrollEvent other) {
-            return target == other.target && delta == other.delta && hitPoint == other.hitPoint;
-        }
-
-        #endregion
 
     }
 

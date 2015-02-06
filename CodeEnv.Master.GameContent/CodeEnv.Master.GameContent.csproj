@@ -52,6 +52,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\GUI\BaseComposition.cs" />
+    <Compile Include="Game\GUI\FleetComposition.cs" />
     <Compile Include="Generic\Graphics\ACmdPublisher.cs" />
     <Compile Include="Generic\Graphics\ACmdPublisherBase.cs" />
     <Compile Include="Generic\Framework\ACmdReport.cs" />
@@ -72,7 +74,6 @@
     <Compile Include="Game\Framework\FleetReport.cs" />
     <Compile Include="Game\GUI\FleetLabelTextFactory.cs" />
     <Compile Include="Game\Framework\FleetPublisher.cs" />
-    <Compile Include="Game\Framework\FleetUnitComposition.cs" />
     <Compile Include="Generic\Extensions\GameExtensions.cs" />
     <Compile Include="Generic\Framework\Countermeasure.cs" />
     <Compile Include="Generic\IO\CountermeasureStat.cs" />
@@ -96,7 +97,7 @@
     <Compile Include="Generic\Framework\ACommandData.cs" />
     <Compile Include="Generic\Framework\AElementData.cs" />
     <Compile Include="Game\Gameplay\FacilityCategory.cs" />
-    <Compile Include="Game\Gameplay\FacilityData.cs" />
+    <Compile Include="Game\Framework\FacilityData.cs" />
     <Compile Include="Game\Gameplay\FacilityState.cs" />
     <Compile Include="Generic\Framework\AItemData.cs" />
     <Compile Include="Generic\Extensions\GameUtility.cs" />
@@ -113,7 +114,7 @@
     <Compile Include="Generic\IO\RaceStat.cs" />
     <Compile Include="Game\Gameplay\OpeResource.cs" />
     <Compile Include="Game\Gameplay\Species.cs" />
-    <Compile Include="Game\Gameplay\SettlementCmdData.cs" />
+    <Compile Include="Game\Framework\SettlementCmdData.cs" />
     <Compile Include="Game\Gameplay\SettlementCategory.cs" />
     <Compile Include="Game\Gameplay\ShipCategory.cs" />
     <Compile Include="Game\Gameplay\XResource.cs" />
@@ -132,7 +133,7 @@
     <Compile Include="Game\_Debug\DebugHudText.cs" />
     <Compile Include="Game\Framework\GameConstants.cs" />
     <Compile Include="Generic\Framework\AMortalItemData.cs" />
-    <Compile Include="Game\Gameplay\FleetCmdData.cs" />
+    <Compile Include="Game\Framework\FleetCmdData.cs" />
     <Compile Include="Game\_Debug\TempGameValues.cs" />
     <Compile Include="Game\Framework\GameTime.cs" />
     <Compile Include="Game\Framework\GameDate.cs" />
@@ -145,15 +146,14 @@
     <Compile Include="Game\Graphics\GridWireframe.cs" />
     <Compile Include="Game\Graphics\GridWireframe_Alt.cs" />
     <Compile Include="Game\Gameplay\PlanetoidCategory.cs" />
-    <Compile Include="Game\Gameplay\StarData.cs" />
+    <Compile Include="Game\Framework\StarData.cs" />
     <Compile Include="Game\Gameplay\StarCategory.cs" />
     <Compile Include="Game\Gameplay\ShipState.cs" />
     <Compile Include="Game\Gameplay\ShipDirective.cs" />
     <Compile Include="Generic\Framework\StationaryLocation.cs" />
-    <Compile Include="Game\Gameplay\SectorData.cs" />
-    <Compile Include="Game\Gameplay\ItemData.cs" />
+    <Compile Include="Game\Framework\SectorData.cs" />
     <Compile Include="Game\Gameplay\StarbaseCategory.cs" />
-    <Compile Include="Game\Gameplay\StarbaseCmdData.cs" />
+    <Compile Include="Game\Framework\StarbaseCmdData.cs" />
     <Compile Include="Game\GUI\SettlementIconFactory.cs" />
     <Compile Include="Game\GUI\StarbaseIconFactory.cs" />
     <Compile Include="Game\Gameplay\Intel.cs" />
@@ -171,9 +171,9 @@
     <Compile Include="Game\Gameplay\OpeYield.cs" />
     <Compile Include="Generic\IO\PlanetoidStat.cs" />
     <Compile Include="Generic\Framework\IShipOrbitable.cs" />
-    <Compile Include="Game\Gameplay\MoonData.cs" />
-    <Compile Include="Game\Gameplay\PlanetData.cs" />
-    <Compile Include="Game\Gameplay\SystemData.cs" />
+    <Compile Include="Game\Framework\MoonData.cs" />
+    <Compile Include="Game\Framework\PlanetData.cs" />
+    <Compile Include="Game\Framework\SystemData.cs" />
     <Compile Include="Generic\Framework\IOrbiter.cs" />
     <Compile Include="Generic\Framework\IOrbiterForShips.cs" />
     <Compile Include="Generic\Framework\IGeneralFactory.cs" />
@@ -208,7 +208,7 @@
     <Compile Include="Game\Framework\PlanetoidPublisher.cs" />
     <Compile Include="Game\Framework\PlanetoidReport.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Game\Gameplay\ShipData.cs" />
+    <Compile Include="Game\Framework\ShipData.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
     <Compile Include="Game\_Debug\VelocityRay.cs" />
     <Compile Include="Game\Graphics\MortalAnimations.cs" />
@@ -221,7 +221,7 @@
     <Compile Include="Generic\IO\StarbaseCmdStat.cs" />
     <Compile Include="Generic\IO\WeaponStat.cs" />
     <Compile Include="Generic\IO\StarStat.cs" />
-    <Compile Include="Game\Gameplay\UniverseCenterData.cs" />
+    <Compile Include="Game\Framework\UniverseCenterData.cs" />
     <Compile Include="Game\Gameplay\ShipOrbitSlot.cs" />
     <Compile Include="Generic\Extensions\SpeciesExtensions.cs" />
     <Compile Include="Generic\Framework\DistanceRange.cs" />
@@ -250,10 +250,10 @@
     <Compile Include="Game\GUI\SystemLabelTextFactory.cs" />
     <Compile Include="Game\Framework\SystemPublisher.cs" />
     <Compile Include="Game\Framework\SystemReport.cs" />
-    <Compile Include="Game\Framework\BaseUnitComposition.cs" />
     <Compile Include="Game\GUI\UniverseCenterLabelTextFactory.cs" />
     <Compile Include="Game\Framework\UniverseCenterPublisher.cs" />
     <Compile Include="Game\Framework\UniverseCenterReport.cs" />
+    <Compile Include="Generic\Graphics\AUnitComposition.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Generic\Math\" />

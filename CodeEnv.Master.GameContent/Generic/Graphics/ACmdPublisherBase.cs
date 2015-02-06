@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
 
         public abstract LabelText GetLabelText(LabelID labelID, AElementItemReport[] elementReports);
 
-        public abstract IColoredTextList UpdateContent(LabelID labelID, LabelContentID contentID);
+        public abstract bool TryUpdateLabelTextContent(LabelID labelID, LabelContentID contentID, AElementItemReport[] elementReports, out IColoredTextList content);
 
     }
 }

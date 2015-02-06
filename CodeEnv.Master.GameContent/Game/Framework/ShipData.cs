@@ -87,7 +87,11 @@ namespace CodeEnv.Master.GameContent {
 
         // FormationStation moved to ShipItem as it had no apparent value residing in data
 
-        public ShipCombatStance CombatStance { get; set; }  // TODO not currently used
+        private ShipCombatStance _combatStance; // TODO not currently used
+        public ShipCombatStance CombatStance {
+            get { return _combatStance; }
+            set { SetProperty<ShipCombatStance>(ref _combatStance, value, "CombatStance"); }
+        }
 
         /// <summary>
         /// Readonly. Gets the current speed of the ship in Units per hour, normalized for game speed.

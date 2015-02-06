@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
 
         public StarbaseCategory Category { get; private set; }
 
-        public BaseUnitComposition? UnitComposition { get; private set; }
+        public BaseComposition UnitComposition { get; private set; }
 
         public StarbaseReport(StarbaseCmdData cmdData, Player player, FacilityReport[] facilityReports)
             : base(cmdData, player, facilityReports) { }
@@ -36,8 +36,8 @@ namespace CodeEnv.Master.GameContent {
         protected override void AssignValuesFrom(AElementItemReport[] elementReports, ACommandData cmdData) {
             base.AssignValuesFrom(elementReports, cmdData);
             var knownElementCategories = elementReports.Cast<FacilityReport>().Select(r => r.Category).Where(cat => cat != FacilityCategory.None);
-            UnitComposition = new BaseUnitComposition(knownElementCategories);
-            Category = UnitComposition.HasValue ? (cmdData as StarbaseCmdData).GenerateCmdCategory(UnitComposition.Value) : StarbaseCategory.None;
+            UnitComposition = new BaseComposition(knownElementCategories);
+            Category = UnitComposition != null ? (cmdData as StarbaseCmdData).GenerateCmdCategory(UnitComposition) : StarbaseCategory.None;
         }
 
         public override string ToString() {

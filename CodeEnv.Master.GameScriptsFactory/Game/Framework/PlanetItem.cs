@@ -36,7 +36,7 @@ public class PlanetItem : APlanetoidItem {
     protected override void InitializeModelMembers() {
         base.InitializeModelMembers();
         float orbitalRadius = _transform.localPosition.magnitude;
-        Data.OrbitalSpeed = gameObject.GetSafeMonoBehaviourComponentInParents<Orbiter>().GetSpeedOfBodyInOrbit(orbitalRadius);
+        Data.OrbitalSpeed = gameObject.GetSafeMonoBehaviourComponentInParents<Orbiter>().GetRelativeOrbitSpeed(orbitalRadius);
     }
 
     #endregion

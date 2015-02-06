@@ -55,7 +55,7 @@ namespace CodeEnv.Master.GameContent {
 
         public SettlementLabelTextFactory() : base() { }
 
-        protected override bool TryMakeInstance(LabelID labelID, LabelContentID contentID, SettlementReport report, SettlementCmdData data, out IColoredTextList content) {
+        public override bool TryMakeInstance(LabelID labelID, LabelContentID contentID, SettlementReport report, SettlementCmdData data, out IColoredTextList content) {
             content = _includeUnknownLookup[labelID] ? _unknownValue : _emptyValue;
             switch (contentID) {
                 case LabelContentID.Name:
@@ -71,7 +71,7 @@ namespace CodeEnv.Master.GameContent {
                     content = report.Category != SettlementCategory.None ? new ColoredTextList<SettlementCategory>(report.Category) : content;
                     break;
                 case LabelContentID.Composition:
-                    content = report.UnitComposition.HasValue ? new ColoredTextList<BaseUnitComposition>(report.UnitComposition.Value) : content;
+                    content = report.UnitComposition != null ? new ColoredTextList_String(report.UnitComposition.ToString()) : content;
                     break;
                 case LabelContentID.Formation:
                     content = report.UnitFormation != Formation.None ? new ColoredTextList<Formation>(report.UnitFormation) : content;
@@ -114,8 +114,10 @@ namespace CodeEnv.Master.GameContent {
                     break;
 
                 case LabelContentID.CameraDistance:
+                    content = new ColoredTextList_Distance(data.Position);
+                    break;
                 case LabelContentID.IntelState:
-                    content = MakeInstance(labelID, contentID, data);
+                    content = new ColoredTextList_Intel(data.HumanPlayerIntel);
                     break;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(contentID));

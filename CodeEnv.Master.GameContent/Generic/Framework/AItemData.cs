@@ -88,7 +88,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void InitializePlayersIntel() {
             int playerCount = _gameMgr.AIPlayers.Count + 1;
-            D.Log("{0} initializing Players Intel settings. PlayerCount = {1}.", GetType().Name, playerCount);
+            //D.Log("{0} initializing Players Intel settings. PlayerCount = {1}.", GetType().Name, playerCount);
             _playerIntelLookup = new Dictionary<Player, AIntel>(playerCount);
             var humanPlayer = _gameMgr.HumanPlayer;
             _playerIntelLookup.Add(humanPlayer, InitializeIntelState(humanPlayer));
@@ -116,7 +116,7 @@ namespace CodeEnv.Master.GameContent {
         public AIntel GetPlayerIntel(Player player) { return _playerIntelLookup[player]; }
 
         protected virtual void OnOwnerChanged() {
-            D.Log("{0} Owner has changed to {1}.", FullName, Owner.LeaderName);
+            //D.Log("{0} Owner has changed to {1}.", FullName, Owner.LeaderName);
         }
 
         private void OnTransformChanging(Transform newTransform) {
@@ -128,8 +128,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnNameChanging(string newName) {
-            //string existingName = Name.IsNullOrEmpty() ? "'nullOrEmpty'" : Name;
-            //D.Log("{0}.Name changing from {1} to {2}.", GetType().Name, existingName, newName);
+            string existingName = Name.IsNullOrEmpty() ? "'nullOrEmpty'" : Name;
+            D.Log("{0}.Name changing from {1} to {2}.", GetType().Name, existingName, newName);
         }
 
         protected virtual void OnNameChanged() {
@@ -139,13 +139,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnParentNameChanging(string newParentName) {
-            //string existingParentName = ParentName.IsNullOrEmpty() ? "'nullOrEmpty'" : ParentName;
-            //string incomingParentName = newParentName.IsNullOrEmpty() ? "'nullOrEmpty'" : newParentName;
-            //D.Log("{0}.ParentName changing from {1} to {2}.", Name, existingParentName, incomingParentName);
+            string existingParentName = ParentName.IsNullOrEmpty() ? "'nullOrEmpty'" : ParentName;
+            string incomingParentName = newParentName.IsNullOrEmpty() ? "'nullOrEmpty'" : newParentName;
+            D.Log("{0}.ParentName changing from {1} to {2}.", Name, existingParentName, incomingParentName);
         }
 
         protected virtual void OnParentNameChanged() {
-            //string newParentName = ParentName.IsNullOrEmpty() ? "'nullOrEmpty'" : ParentName;
+            string newParentName = ParentName.IsNullOrEmpty() ? "'nullOrEmpty'" : ParentName;
             //D.Log("{0}.ParentName changed to {1}.", Name, newParentName);
         }
 

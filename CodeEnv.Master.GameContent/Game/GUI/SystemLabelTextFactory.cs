@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
 
         public SystemLabelTextFactory() : base() { }
 
-        private bool TryMakeInstance(LabelID labelID, LabelContentID contentID, SystemReport report, SystemData data, out IColoredTextList content) {
+        public bool TryMakeInstance(LabelID labelID, LabelContentID contentID, SystemReport report, SystemData data, out IColoredTextList content) {
             content = _includeUnknownLookup[labelID] ? _unknownValue : _emptyValue;
             switch (contentID) {
                 case LabelContentID.Name:
@@ -65,7 +65,7 @@ namespace CodeEnv.Master.GameContent {
                     break;
 
                 case LabelContentID.CameraDistance:
-                    content = MakeInstance(labelID, contentID, data);
+                    content = new ColoredTextList_Distance(data.Position);
                     break;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(contentID));
@@ -84,16 +84,6 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
             return labelText;
-        }
-
-        public IColoredTextList MakeInstance(LabelID labelID, LabelContentID contentID, SystemData data) {
-            ValidateIDs(labelID, contentID);
-            switch (contentID) {
-                case LabelContentID.CameraDistance:
-                    return new ColoredTextList<float>(data.Position.DistanceToCamera());
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(contentID));
-            }
         }
 
         protected override IDictionary<LabelContentID, string> GetFormatLookup(LabelID labelID) {

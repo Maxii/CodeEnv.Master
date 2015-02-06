@@ -111,6 +111,9 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         var cameraLosChgdListener = gameObject.GetSafeInterfaceInImmediateChildren<ICameraLosChangedListener>();
         cameraLosChgdListener.onCameraLosChanged += (go, inCameraLOS) => InCameraLOS = inCameraLOS;
         cameraLosChgdListener.enabled = true;
+
+        float orbitalRadius = _transform.localPosition.magnitude;
+        Data.OrbitalSpeed = gameObject.GetSafeMonoBehaviourComponentInParents<Orbiter>().GetRelativeOrbitSpeed(orbitalRadius);
     }
 
     protected override void InitializeHudPublisher() {

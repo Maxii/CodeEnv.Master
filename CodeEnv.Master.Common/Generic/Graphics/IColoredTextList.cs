@@ -33,6 +33,8 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         string[] TextElements { get; }
 
+        string ToString();
+
     }
 }
 

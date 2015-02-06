@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
 
         public SettlementCategory Category { get; private set; }
 
-        public BaseUnitComposition? UnitComposition { get; private set; }
+        public BaseComposition UnitComposition { get; private set; }
 
         public int? Population { get; private set; }
 
@@ -44,8 +44,8 @@ namespace CodeEnv.Master.GameContent {
         protected override void AssignValuesFrom(AElementItemReport[] elementReports, ACommandData cmdData) {
             base.AssignValuesFrom(elementReports, cmdData);
             var knownElementCategories = elementReports.Cast<FacilityReport>().Select(r => r.Category).Where(cat => cat != FacilityCategory.None);
-            UnitComposition = new BaseUnitComposition(knownElementCategories);
-            Category = UnitComposition.HasValue ? (cmdData as SettlementCmdData).GenerateCmdCategory(UnitComposition.Value) : SettlementCategory.None;
+            UnitComposition = new BaseComposition(knownElementCategories);
+            Category = UnitComposition != null ? (cmdData as SettlementCmdData).GenerateCmdCategory(UnitComposition) : SettlementCategory.None;
         }
 
         protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {

@@ -151,7 +151,7 @@ public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud {
     public void Set(ALabelText labelText, Vector3 position) {
         if (Utility.CheckForContent(_label.text) && !labelText.IsChanged) {
             // the hud already has text and this new submission has no changes so no reason to proceed
-            D.Warn("{0} attempted to update its text when not needed.", GetType().Name);
+            D.Warn("{0} attempted to update its text when not needed./nHud content: [{1}].", GetType().Name, _label.text);
             return;
         }
         PositionHud(position);

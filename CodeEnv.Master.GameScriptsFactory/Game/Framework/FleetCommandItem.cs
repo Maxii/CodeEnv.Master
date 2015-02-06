@@ -104,12 +104,6 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         _navigator = new FleetNavigator(this, gameObject.GetSafeMonoBehaviourComponent<Seeker>());
     }
 
-    //protected override IGuiHudPublisher InitializeHudPublisher() {
-    //    var hudPublisher = new GuiHudPublisher<FleetCmdData>(Data);
-    //    hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed, GuiHudLineKeys.Health, GuiHudLineKeys.TargetDistance);
-    //    return hudPublisher;
-    //}
-
     private ITrackingWidget InitializeTrackingLabel() {
         float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
         var trackingLabel = TrackingWidgetFactory.Instance.CreateUITrackingLabel(HQElement, WidgetPlacement.AboveRight, minShowDistance);
@@ -125,6 +119,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
 
     protected override void InitializeHudPublisher() {
         _hudManager = new CmdHudManager<FleetPublisher>(Publisher);
+        _hudManager.AddContentToUpdate(AHudManager.UpdatableLabelContentID.TargetDistance);
     }
 
     private void InitializeContextMenu() {
@@ -203,10 +198,12 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         }
     }
 
-    public FleetReport GetReport(Player player) { return Publisher.GetReport(player, GetElementReports(player)); }
+    public FleetReport GetReport(Player player) {
+        return Publisher.GetReport(player, GetElementReports(player));
+    }
 
     private ShipReport[] GetElementReports(Player player) {
-        return Elements.Cast<ShipItem>().Select(e => e.GetReport(player)).ToArray();
+        return Elements.Cast<ShipItem>().Select(s => s.GetReport(player)).ToArray();
     }
 
     private ShipItem SelectHQElement() {

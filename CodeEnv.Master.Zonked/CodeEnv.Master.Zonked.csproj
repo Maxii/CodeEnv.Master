@@ -256,6 +256,7 @@
     <Compile Include="ISystemTarget.cs" />
     <Compile Include="ISystemViewable.cs" />
     <Compile Include="ITarget.cs" />
+    <Compile Include="ItemData.cs" />
     <Compile Include="ItemGraphics.cs" />
     <Compile Include="IUnitFactory.cs" />
     <Compile Include="IUnitTarget.cs" />

@@ -28,7 +28,6 @@ namespace CodeEnv.Master.GameContent {
 
         private static IDictionary<LabelID, IDictionary<LabelContentID, string>> _formatLookupByLabelID = new Dictionary<LabelID, IDictionary<LabelContentID, string>>() {
             { LabelID.CursorHud, new Dictionary<LabelContentID, string>() {
-                {LabelContentID.IntelCoverage, "IntelCoverage: {0}"},
                 {LabelContentID.Name, "Name: {0}"},
                 {LabelContentID.ParentName, "ParentName: {0}"},
                 {LabelContentID.Owner, "Owner: {0}"},
@@ -50,12 +49,9 @@ namespace CodeEnv.Master.GameContent {
 
         public FacilityLabelTextFactory() : base() { }
 
-        protected override bool TryMakeInstance(LabelID labelID, LabelContentID contentID, FacilityReport report, FacilityData data, out IColoredTextList content) {
+        public override bool TryMakeInstance(LabelID labelID, LabelContentID contentID, FacilityReport report, FacilityData data, out IColoredTextList content) {
             content = _includeUnknownLookup[labelID] ? _unknownValue : _emptyValue;
             switch (contentID) {
-                case LabelContentID.IntelCoverage:
-                    content = new ColoredTextList_String(report.IntelCoverage.GetName());
-                    break;
                 case LabelContentID.Name:
                     content = !report.Name.IsNullOrEmpty() ? new ColoredTextList_String(report.Name) : content;
                     break;
@@ -94,8 +90,10 @@ namespace CodeEnv.Master.GameContent {
                     break;
 
                 case LabelContentID.CameraDistance:
+                    content = new ColoredTextList_Distance(data.Position);
+                    break;
                 case LabelContentID.IntelState:
-                    content = MakeInstance(labelID, contentID, data);
+                    content = new ColoredTextList_Intel(data.HumanPlayerIntel);
                     break;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(contentID));

@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: UniverseCenterData.cs
-// All the data associated with the UniverseCenter object.
+// File: PlanetData.cs
+// All the data associated with a particular Planet in a System.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,25 +16,15 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
     using CodeEnv.Master.Common;
+    using UnityEngine;
 
     /// <summary>
-    /// All the data associated with the UniverseCenter object.
+    /// All the data associated with a particular Planet in a System.
     /// </summary>
-    public class UniverseCenterData : AItemData {
+    public class PlanetData : APlanetoidData {
 
-        public UniverseCenterData(string name)
-            : base(name) {
-            base.Topography = Topography.OpenSpace;
-        }
-
-        protected override AIntel InitializeIntelState(Player player) {
-            AIntel beginningIntel = new ImprovingIntel();
-            beginningIntel.CurrentCoverage = IntelCoverage.Aware;
-            return beginningIntel;
-        }
-
+        public PlanetData(PlanetoidStat stat) : base(stat) { }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

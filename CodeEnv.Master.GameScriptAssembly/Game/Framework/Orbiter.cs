@@ -135,11 +135,15 @@ public class Orbiter : AMonoBase, IOrbiter {
 
     /// <summary>
     /// Acquires the speed at which the body located at <c>radius</c> units
-    /// from the orbit center is traveling.
+    /// from the orbit center is traveling. This value is always relative to the body being orbited.
+    /// e.g. the speed of a planet around a system is relative to an unmoving system, so this value
+    /// is the speed the planet is traveling in the universe. Conversely, the speed of a moon around a planet
+    /// is relative to the moving planet, so the value returned for the moon does not account for the 
+    /// speed of the planet.
     /// </summary>
     /// <param name="radius">The distance from the center of the orbited body to the body that is orbiting.</param>
     /// <returns></returns>
-    public float GetSpeedOfBodyInOrbit(float radius) {
+    public float GetRelativeOrbitSpeed(float radius) {
         if (_orbitSpeedInUnitsPerHour == Constants.ZeroF) {
             _orbitSpeedInUnitsPerHour = (2F * Mathf.PI * radius) / (OrbitPeriod.TotalInHours / relativeOrbitSpeed);
         }

@@ -27,7 +27,6 @@ namespace CodeEnv.Master.GameContent {
         ParentName,
         Owner,
 
-        IntelCoverage,
         IntelState,
 
         Category,
@@ -78,7 +77,8 @@ namespace CodeEnv.Master.GameContent {
         Density,
 
         CameraDistance,
-        TargetDistance
+        TargetDistance,
+        OrbitalSpeed
 
     }
 }

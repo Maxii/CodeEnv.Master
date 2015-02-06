@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -30,23 +30,21 @@ namespace CodeEnv.Master.GameContent {
 
         // This is needed as the order of Dictionary.Keys is not defined when iterating through it, even if they were added in the right order
         private static IList<LabelContentID> _displayOrder = new List<LabelContentID>() {
+                {LabelContentID.IntelState},
                 {LabelContentID.Name},
                 {LabelContentID.ParentName},
+                {LabelContentID.Owner},
+                {LabelContentID.Category},
                 {LabelContentID.Target},
                 {LabelContentID.TargetDistance},
-                {LabelContentID.FullSpeed},
                 {LabelContentID.CurrentSpeed}, 
+                {LabelContentID.FullSpeed},
                 {LabelContentID.MaxTurnRate},
                 {LabelContentID.SectorIndex},
-                {LabelContentID.Category},
-                {LabelContentID.IntelCoverage},
-                {LabelContentID.IntelState},
-                {LabelContentID.CameraDistance},
                 {LabelContentID.Capacity},
                 {LabelContentID.Resources},
                 {LabelContentID.Specials}, 
                 {LabelContentID.MaxHitPoints},
-                {LabelContentID.Owner},
                 {LabelContentID.Defense},
                 {LabelContentID.Offense},
                 {LabelContentID.Health}, 
@@ -69,7 +67,9 @@ namespace CodeEnv.Master.GameContent {
                 {LabelContentID.ResourcesUsed},
                 {LabelContentID.SpecialsUsed},
                 {LabelContentID.UnitFullSpeed},
-                {LabelContentID.UnitMaxTurnRate}
+                {LabelContentID.UnitMaxTurnRate},
+                {LabelContentID.OrbitalSpeed},
+                {LabelContentID.CameraDistance}
 };
 
         public LabelID LabelID { get; private set; }
@@ -110,8 +110,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="content">The content.</param>
         /// <param name="format">The format.</param>
         public void Add(LabelContentID contentID, IColoredTextList content, string format) {
-            D.Assert(!_contentLookup.ContainsKey(contentID));
-            D.Assert(!_formatLookup.ContainsKey(contentID));
+            D.Assert(!_contentLookup.ContainsKey(contentID), "ContentID already present: {0}.".Inject(contentID.GetName()));
+            D.Assert(!_formatLookup.ContainsKey(contentID), "ContentID already present: {0}.".Inject(contentID.GetName()));
 
             _contentLookup.Add(contentID, content);
             _formatLookup.Add(contentID, format);
@@ -124,14 +124,15 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="contentID">The content identifier.</param>
         /// <param name="content">The content.</param>
         public bool TryUpdate(LabelContentID contentID, IColoredTextList content) {
-            D.Assert(_contentLookup.ContainsKey(contentID));
-            D.Assert(_formatLookup.ContainsKey(contentID));
+            D.Assert(_contentLookup.ContainsKey(contentID), "Missing ContentID: {0}.".Inject(contentID.GetName()));
+            D.Assert(_formatLookup.ContainsKey(contentID), "Missing ContentID: {0}.".Inject(contentID.GetName()));
 
             IColoredTextList existingContent = _contentLookup[contentID];
             if (IsEqual(existingContent, content)) {
-                //D.Log("{0} Update not needed. ContentID: {1}, Content: [{2}].", GetType().Name, contentID.GetName(), content.List.Concatenate());
+                //D.Log("{0} content update not needed. ContentID: {1}, Content: [{2}].", GetType().Name, contentID.GetName(), content);
                 return false;
             }
+            //D.Log("{0} content being updated. ContentID: {1}, Content: [{2}].", GetType().Name, contentID.GetName(), content);
             _contentLookup.Remove(contentID);
             _contentLookup.Add(contentID, content);
             IsChanged = true;
@@ -179,7 +180,7 @@ namespace CodeEnv.Master.GameContent {
             string format;
             if (_formatLookup.TryGetValue(contentID, out format)) {
                 var textElements = content.TextElements;
-                D.Log("Format = {0}, TextElements = {1}.", format, textElements.Concatenate());
+                //D.Log("Format = {0}, TextElements = {1}.", format, textElements.Concatenate());
                 string phrase = format.Inject(textElements);
                 return phrase;
             }

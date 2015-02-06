@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="radius">The distance from the center of the orbited body to the body that is orbiting.</param>
         /// <returns></returns>
-        float GetSpeedOfBodyInOrbit(float radius);
+        float GetRelativeOrbitSpeed(float radius);
 
         /// <summary>
         /// Flag telling the Orbiter whether it should be moving or stationary around its orbited object.

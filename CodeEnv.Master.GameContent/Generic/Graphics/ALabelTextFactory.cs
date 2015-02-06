@@ -43,19 +43,7 @@ namespace CodeEnv.Master.GameContent {
             return labelText;
         }
 
-        protected abstract bool TryMakeInstance(LabelID labelID, LabelContentID contentID, ReportType report, DataType data, out IColoredTextList content);
-
-        public IColoredTextList MakeInstance(LabelID labelID, LabelContentID contentID, DataType data) {
-            ValidateIDs(labelID, contentID);
-            switch (contentID) {
-                case LabelContentID.CameraDistance:
-                    return new ColoredTextList<float>(data.Position.DistanceToCamera());
-                case LabelContentID.IntelState:
-                    return new ColoredTextList_Intel(data.HumanPlayerIntel);
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(contentID));
-            }
-        }
+        public abstract bool TryMakeInstance(LabelID labelID, LabelContentID contentID, ReportType report, DataType data, out IColoredTextList content);
 
     }
 }

@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: BaseUnitComposition.cs
-// Immutable structure holding the FacilityCategory composition of a BaseUnit (Starbase or Settlement).
+// File: AUnitComposition.cs
+// Immutable abstract generic class holding the<c>ElementCategoryType</c> composition of a Unit.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,40 +23,49 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
-    /// Immutable structure holding the FacilityCategory composition of a BaseUnit (Starbase or Settlement).
+    /// Immutable abstract class holding the<c>ElementCategoryType</c> composition of a Unit.
     /// </summary>
-    public struct BaseUnitComposition {
+    /// <typeparam name="ElementCategoryType">The type of ElementCategory the Unit is composed of.</typeparam>
+    public abstract class AUnitComposition<ElementCategoryType> where ElementCategoryType : struct {
 
-        private IDictionary<FacilityCategory, int> _categoryCountLookup;
+        private IDictionary<ElementCategoryType, int> _categoryCountLookup;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BaseUnitComposition"/> struct.
+        /// Initializes a new instance of the <see cref="AUnitComposition" /> class.
         /// Note: Provide the category associated with each and every element of the Unit that you want this
-        /// Composition to be aware of - aka due to IntelCoverage limits, not all players should be aware 
+        /// Composition to be aware of - aka due to IntelCoverage limits, not all players should be aware
         /// of the entire composition of a unit.
         /// </summary>
         /// <param name="nonUniqueUnitCategories">The non-unique categories present in the Unit.</param>
-        public BaseUnitComposition(IEnumerable<FacilityCategory> nonUniqueUnitCategories)
-            : this() {
+        public AUnitComposition(IEnumerable<ElementCategoryType> nonUniqueUnitCategories) {
             PopulateLookup(nonUniqueUnitCategories);
         }
 
-        private void PopulateLookup(IEnumerable<FacilityCategory> unitCategories) {
-            _categoryCountLookup = unitCategories.GroupBy(c => c).ToDictionary(group => group.Key, group => group.Count());
+        private void PopulateLookup(IEnumerable<ElementCategoryType> unitFacilityCategories) {
+            _categoryCountLookup = unitFacilityCategories.GroupBy(c => c).ToDictionary(group => group.Key, group => group.Count());
         }
 
         /// <summary>
-        /// Returns a copy of the unique FacilityCategories present in this Composition.
+        /// Returns a copy of the unique <c>ElementCategoryType</c>'s this unit is composed of.
         /// </summary>
         /// <returns></returns>
-        public IList<FacilityCategory> GetUniqueElementCategories() {
-            return new List<FacilityCategory>(_categoryCountLookup.Keys);
+        public IList<ElementCategoryType> GetUniqueElementCategories() {
+            return new List<ElementCategoryType>(_categoryCountLookup.Keys);
         }
 
-        public int GetElementCount(FacilityCategory elementCategory) {
+        /// <summary>
+        /// Gets the count of elements of this <c>elementCategory</c> present in the Unit.
+        /// </summary>
+        /// <param name="elementCategory">The element category.</param>
+        /// <returns></returns>
+        public int GetElementCount(ElementCategoryType elementCategory) {
             return _categoryCountLookup[elementCategory];
         }
 
+        /// <summary>
+        /// Gets the total count of elements present in the Unit.
+        /// </summary>
+        /// <returns></returns>
         public int GetTotalElementsCount() {
             return _categoryCountLookup.Values.Sum();
         }
@@ -68,9 +77,9 @@ namespace CodeEnv.Master.GameContent {
             var uniqueCategories = _categoryCountLookup.Keys.ToList();
             foreach (var cat in uniqueCategories) {
                 int count = _categoryCountLookup[cat];
-                sb.AppendFormat("{0}[", cat.GetDescription());
+                sb.AppendFormat("{0}[", GetCategoryDescription(cat));
                 sb.AppendFormat(Constants.FormatInt_1DMin, count);
-                if (cat != uniqueCategories.First() && cat != uniqueCategories.Last()) {
+                if (!cat.Equals(uniqueCategories.First()) && !cat.Equals(uniqueCategories.Last())) {
                     sb.AppendFormat("], ");
                     continue;
                 }
@@ -78,6 +87,8 @@ namespace CodeEnv.Master.GameContent {
             }
             return sb.ToString();
         }
+
+        protected abstract string GetCategoryDescription(ElementCategoryType category);
 
         private string _toString;
         public override string ToString() {
@@ -88,6 +99,5 @@ namespace CodeEnv.Master.GameContent {
         }
 
     }
-
 }
 

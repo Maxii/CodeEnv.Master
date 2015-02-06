@@ -28,6 +28,8 @@ namespace CodeEnv.Master.GameContent {
 
         public PlanetoidCategory Category { get; private set; }
 
+        public float? OrbitalSpeed { get; private set; }
+
         public int? Capacity { get; private set; }
 
         public OpeYield? Resources { get; private set; }
@@ -58,6 +60,7 @@ namespace CodeEnv.Master.GameContent {
             var planetoidData = data as APlanetoidData;
             Owner = planetoidData.Owner;
             Category = planetoidData.Category;
+            OrbitalSpeed = planetoidData.OrbitalSpeed;
         }
 
         protected override void AssignIncrementalValues_IntelCoverageAware(AItemData data) {

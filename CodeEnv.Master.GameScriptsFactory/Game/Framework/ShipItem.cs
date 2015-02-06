@@ -103,12 +103,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         CurrentState = ShipState.None;
     }
 
-    //protected override IGuiHudPublisher InitializeHudPublisher() {
-    //    var hudPublisher = new GuiHudPublisher<ShipData>(Data);
-    //    hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed, GuiHudLineKeys.Health, GuiHudLineKeys.TargetDistance);
-    //    return hudPublisher;
-    //}
-
     protected override void InitializeViewMembersOnDiscernible() {
         base.InitializeViewMembersOnDiscernible();
         InitializeContextMenu(Owner);
@@ -116,6 +110,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     protected override void InitializeHudPublisher() {
         _hudManager = new HudManager<ShipPublisher>(Publisher);
+        _hudManager.AddContentToUpdate(AHudManager.UpdatableLabelContentID.TargetDistance);
     }
 
     private void InitializeContextMenu(Player owner) {

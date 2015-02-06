@@ -306,7 +306,7 @@ public class SystemCreator : AMonoBase {
         AssignSystemOrbitSlotsToPlanets();    // modifies planet names to reflect the assigned orbit
         MakeMoons();    // makes each moon a child of a planet
         AssignPlanetOrbitSlotsToMoons();    // modifies moon names based on its assigned planetary orbit
-        AddMembersToSystemData();         // adds star and planet data to the system's data component
+        AddMembersToSystem();
         RecordInStaticCollections();
     }
 
@@ -542,11 +542,11 @@ public class SystemCreator : AMonoBase {
         }
     }
 
-    private void AddMembersToSystemData() {
+    private void AddMembersToSystem() {
         LogEvent();
-        _system.Data.StarData = _star.Data;
-        _planets.Select(p => p.Data).ForAll(pd => _system.Data.AddPlanetoid(pd));
-        _moons.Select(m => m.Data).ForAll(md => _system.Data.AddPlanetoid(md));
+        _system.Star = _star;
+        _planets.ForAll(p => _system.AddPlanetoid(p));
+        _moons.ForAll(m => _system.AddPlanetoid(m));
     }
 
     private void InitializeTopographyMonitor() {

@@ -32,10 +32,7 @@ namespace CodeEnv.Master.GameContent {
         private float _maxHitPoints;
         public float MaxHitPoints {
             get { return _maxHitPoints; }
-            set {
-                D.Assert(value >= Constants.ZeroF);
-                SetProperty<float>(ref _maxHitPoints, value, "MaxHitPoints", OnMaxHitPointsChanged, OnMaxHitPointsChanging);
-            }
+            set { SetProperty<float>(ref _maxHitPoints, value, "MaxHitPoints", OnMaxHitPointsChanged, OnMaxHitPointsChanging); }
         }
 
         private float _currentHitPoints;
@@ -116,6 +113,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnMaxHitPointsChanging(float newMaxHitPoints) {
+            D.Assert(newMaxHitPoints >= Constants.ZeroF);
             if (newMaxHitPoints < MaxHitPoints) {
                 // reduction in max hit points so reduce current hit points to match
                 CurrentHitPoints = Mathf.Clamp(CurrentHitPoints, Constants.ZeroF, newMaxHitPoints);

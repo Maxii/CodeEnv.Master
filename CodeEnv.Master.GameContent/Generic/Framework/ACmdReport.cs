@@ -76,6 +76,7 @@ namespace CodeEnv.Master.GameContent {
         protected override void AssignIncrementalValues_IntelCoverageMinimal(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageMinimal(data);
             Name = data.Name;
+            ParentName = data.ParentName;
         }
 
         protected virtual void AssignValuesFrom(AElementItemReport[] elementReports, ACommandData cmdData) {

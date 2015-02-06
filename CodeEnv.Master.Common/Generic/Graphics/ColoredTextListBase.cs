@@ -26,7 +26,7 @@ namespace CodeEnv.Master.Common {
         protected IList<ColoredText> _list = new List<ColoredText>(6);
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return TextElements.Concatenate();
         }
 
         #region IColoredTextList Members

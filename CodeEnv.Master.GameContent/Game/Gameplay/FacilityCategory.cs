@@ -16,6 +16,8 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using CodeEnv.Master.Common;
+
     /// <summary>
     /// Enum identifying the alternative kinds of Facility.
     /// </summary>
@@ -23,14 +25,19 @@ namespace CodeEnv.Master.GameContent {
 
         None,
 
+        [EnumAttribute("CH")]
         CentralHub,
 
+        [EnumAttribute("C")]
         Construction,
 
+        [EnumAttribute("E")]
         Economic,
 
+        [EnumAttribute("S")]
         Science,
 
+        [EnumAttribute("D")]
         Defense
 
     }

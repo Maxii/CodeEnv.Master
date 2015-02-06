@@ -97,15 +97,15 @@ namespace CodeEnv.Master.GameContent {
         /// Gets the maximum turn rate of the fleet in radians per day.
         /// </summary>
         public float UnitMaxTurnRate {
-            get {
-                return _unitMaxTurnRate;
-            }
-            private set {
-                SetProperty<float>(ref _unitMaxTurnRate, value, "UnitMaxTurnRate");
-            }
+            get { return _unitMaxTurnRate; }
+            private set { SetProperty<float>(ref _unitMaxTurnRate, value, "UnitMaxTurnRate"); }
         }
 
-        public FleetUnitComposition UnitComposition { get; private set; }
+        private FleetComposition _unitComposition;
+        public FleetComposition UnitComposition {
+            get { return _unitComposition; }
+            set { SetProperty<FleetComposition>(ref _unitComposition, value, "UnitComposition"); }
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FleetCmdData"/> class.
@@ -130,7 +130,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void UpdateComposition() {
             var elementCategories = ElementsData.Cast<ShipData>().Select(sd => sd.Category);
-            UnitComposition = new FleetUnitComposition(elementCategories);
+            UnitComposition = new FleetComposition(elementCategories);
         }
 
         protected override void RecalcPropertiesDerivedFromCombinedElements() {
@@ -175,7 +175,7 @@ namespace CodeEnv.Master.GameContent {
             UpdateMaxTurnRate();
         }
 
-        public FleetCategory GenerateCmdCategory(FleetUnitComposition unitComposition) {
+        public FleetCategory GenerateCmdCategory(FleetComposition unitComposition) {
             int elementCount = UnitComposition.GetTotalElementsCount();
             D.Log("{0}'s known elements count = {1}.", FullName, elementCount);
             if (elementCount >= 22) {

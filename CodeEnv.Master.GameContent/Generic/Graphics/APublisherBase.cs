@@ -33,13 +33,13 @@ namespace CodeEnv.Master.GameContent {
 
         public abstract LabelText GetLabelText(LabelID labelID);
 
-        public abstract IColoredTextList UpdateContent(LabelID labelID, LabelContentID contentID);
+        public abstract bool TryUpdateLabelTextContent(LabelID labelID, LabelContentID contentID, out IColoredTextList content);
 
         protected bool IsCachedLabelTextCurrent(LabelID labelID, IntelCoverage intelCoverage, out LabelText labelText) {
             return TryGetCachedLabelText(labelID, out labelText) && labelText.IntelCoverage == intelCoverage;
         }
 
-        private void CacheLabelText(LabelID labelID, LabelText labelText) {
+        protected void CacheLabelText(LabelID labelID, LabelText labelText) {
             _labelTextCache[labelID] = labelText;
         }
 
