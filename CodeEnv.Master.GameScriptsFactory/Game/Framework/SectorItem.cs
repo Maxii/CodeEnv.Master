@@ -52,10 +52,6 @@ public class SectorItem : AItem {
 
     protected override void InitializeModelMembers() { }
 
-    //protected override IGuiHudPublisher InitializeHudPublisher() {
-    //    return new GuiHudPublisher<SectorData>(Data);
-    //}
-
     protected override void InitializeViewMembersOnDiscernible() {
         base.InitializeViewMembersOnDiscernible();
         // TODO meshes and animations need to be added to sectors

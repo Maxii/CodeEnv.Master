@@ -75,19 +75,6 @@ public class SectorCtxControl : ACtxControl {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
     }
-    //protected override bool IsRemoteFleetMenuItemDisabled(FleetDirective directive) {
-    //    switch (directive) {
-    //        case FleetDirective.Patrol:
-    //            return false;
-    //        case FleetDirective.Explore:
-    //            return _sector.PlayerIntelCoverage == IntelCoverage.Comprehensive;
-    //        case FleetDirective.Move:
-    //        case FleetDirective.Guard:
-    //            return _remotePlayerOwnedSelectedItem.Owner.IsEnemyOf(_sector.Owner);
-    //        default:
-    //            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
-    //    }
-    //}
 
     protected override void OnMenuSelection_RemoteFleetAccess(int itemID) {
         base.OnMenuSelection_RemoteFleetAccess(itemID);
