@@ -107,7 +107,7 @@ public class FacilityItem : AUnitElementItem {
         // TODO Revolver settings and distance controls, Revolvers control their own enabled state based on visibility
     }
 
-    protected override void InitializeHudPublisher() {
+    protected override void InitializeHudManager() {
         _hudManager = new HudManager<FacilityPublisher>(Publisher);
     }
 

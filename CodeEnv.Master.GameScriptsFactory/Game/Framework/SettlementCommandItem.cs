@@ -57,7 +57,7 @@ public class SettlementCommandItem : AUnitBaseCommandItem /*, ICameraFollowable 
     //    return publisher;
     //}
 
-    protected override void InitializeHudPublisher() {
+    protected override void InitializeHudManager() {
         _hudManager = new CmdHudManager<SettlementPublisher>(Publisher);
     }
 

@@ -37,10 +37,10 @@ public class SectorFactory : AGenericSingleton<SectorFactory> {
         _sectorPrefab = RequiredPrefabs.Instance.sector.gameObject;
     }
 
-    public SectorItem MakeInstance(Index3D sectorIndex, Vector3 worldLocation) {
+    public Sector MakeSectorInstance(Index3D sectorIndex, Vector3 worldLocation) {
         GameObject sectorGO = UnityUtility.AddChild(SectorsFolder.Instance.Folder.gameObject, _sectorPrefab);
         // sector.Awake() runs immediately here, then disables itself
-        SectorItem sector = sectorGO.GetSafeMonoBehaviourComponent<SectorItem>();
+        Sector sector = sectorGO.GetSafeMonoBehaviourComponent<Sector>();
 
         SectorData data = new SectorData(sectorIndex) {
             Density = 1F

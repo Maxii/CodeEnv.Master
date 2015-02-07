@@ -305,6 +305,7 @@
     <Compile Include="SceneChangingEvent.cs" />
     <Compile Include="Sector.cs" />
     <Compile Include="SectorGuiHudTextFactory.cs" />
+    <Compile Include="SectorItem.cs" />
     <Compile Include="SectorLabelFormatter.cs" />
     <Compile Include="SectorModel.cs" />
     <Compile Include="SectorPresenter.cs" />

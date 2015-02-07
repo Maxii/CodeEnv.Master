@@ -30,7 +30,7 @@ using UnityEngine;
 /// </summary>
 public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
-    public static IList<SectorItem> AllSectors { get { return _instance._sectors.Values.ToList(); } }
+    public static IList<Sector> AllSectors { get { return _instance._sectors.Values.ToList(); } }
 
     /// <summary>
     /// Readonly. The location of the center of all sectors in world space.
@@ -52,7 +52,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     private IDictionary<Vector3, Index3D> _gridBoxToSectorIndexLookup;
     private IDictionary<Index3D, Vector3> _sectorIndexToGridBoxLookup;
     private IList<Vector3> _worldBoxLocations;
-    private IDictionary<Index3D, SectorItem> _sectors;
+    private IDictionary<Index3D, Sector> _sectors;
 
     private SectorFactory _sectorFactory;
     private GridWireframe _gridWireframe;
@@ -209,7 +209,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         _gridBoxToSectorIndexLookup = new Dictionary<Vector3, Index3D>();
         _sectorIndexToGridBoxLookup = new Dictionary<Index3D, Vector3>();
         _worldBoxLocations = new List<Vector3>();
-        _sectors = new Dictionary<Index3D, SectorItem>();
+        _sectors = new Dictionary<Index3D, Sector>();
 
         float xSize = _grid.size.x;
         float ySize = _grid.size.y;
@@ -258,12 +258,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     }
 
     private void __AddSector(Index3D index, Vector3 worldPosition) {
-        var sector = _sectorFactory.MakeInstance(index, worldPosition);
-
-        UnityUtility.WaitOneToExecute(onWaitFinished: (wasKilled) => {
-            sector.HumanPlayerIntelCoverage = IntelCoverage.Comprehensive;
-        });
-
+        Sector sector = _sectorFactory.MakeSectorInstance(index, worldPosition);
         _sectors.Add(index, sector);
         //D.Log("Sector added at index {0}.", index);
     }
@@ -331,7 +326,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         return index;
     }
 
-    public bool TryGetSector(Index3D index, out SectorItem sector) {
+    public bool TryGetSector(Index3D index, out Sector sector) {
         return _sectors.TryGetValue(index, out sector);
     }
 
@@ -342,10 +337,10 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// </summary>
     /// <param name="index">The index.</param>
     /// <returns></returns>
-    public SectorItem GetSector(Index3D index) {
-        SectorItem sector;
+    public Sector GetSector(Index3D index) {
+        Sector sector;
         if (!TryGetSector(index, out sector)) {
-            D.Warn("No SectorModel at {0}, returning null.", index);
+            D.Warn("No Sector at {0}, returning null.", index);
         }
         return sector;
     }
@@ -368,7 +363,6 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         return Topography.OpenSpace;
     }
 
-
     /// <summary>
     /// Gets the indexes of the neighbors to this sector index. A sector must
     /// occupy the index location to be included. The sector at center is
@@ -384,7 +378,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         foreach (var x in xValuePair) {
             foreach (var y in yValuePair) {
                 foreach (var z in zValuePair) {
-                    SectorItem unused;
+                    Sector unused;
                     Index3D index = new Index3D(x, y, z);
                     if (TryGetSector(index, out unused)) {
                         neighbors.Add(index);
@@ -410,8 +404,8 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// </summary>
     /// <param name="center">The center.</param>
     /// <returns></returns>
-    public IList<SectorItem> GetSectorNeighbors(Index3D center) {
-        IList<SectorItem> neighborSectors = new List<SectorItem>();
+    public IList<Sector> GetSectorNeighbors(Index3D center) {
+        IList<Sector> neighborSectors = new List<Sector>();
         foreach (var index in GetNeighbors(center)) {
             neighborSectors.Add(GetSector(index));
         }

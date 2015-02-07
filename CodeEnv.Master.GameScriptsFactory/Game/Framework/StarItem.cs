@@ -139,7 +139,7 @@ public class StarItem : AItem, IShipOrbitable {
         cameraLosChgdListener.enabled = true;
     }
 
-    protected override void InitializeHudPublisher() {
+    protected override void InitializeHudManager() {
         _hudManager = new HudManager<StarPublisher>(Publisher);
     }
 

@@ -55,7 +55,7 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
 
     public SphereCollider universeEdge;
     public Transform cameraDummyTarget;
-    public SectorItem sector;
+    public Sector sector;
 
     public Orbiter orbiter;
     public MovingOrbiter movingOrbiter;

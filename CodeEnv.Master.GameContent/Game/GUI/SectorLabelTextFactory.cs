@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// LabelText factory for Sectors.
     /// </summary>
-    public class SectorLabelTextFactory : ALabelTextFactory<SectorReport, SectorData> {
+    public class SectorLabelTextFactory : ALabelTextFactoryBase {
 
         private static IDictionary<LabelID, IDictionary<LabelContentID, string>> _formatLookupByLabelID = new Dictionary<LabelID, IDictionary<LabelContentID, string>>() {
             { LabelID.CursorHud, new Dictionary<LabelContentID, string>() {
@@ -33,15 +33,14 @@ namespace CodeEnv.Master.GameContent {
                 {LabelContentID.SectorIndex, "SectorIndex: {0}"},
                 {LabelContentID.Density, "Density: {0}"},
 
-                {LabelContentID.CameraDistance, "CameraDistance: {0}"},
-                {LabelContentID.IntelState, "< {0} >"}
+                {LabelContentID.CameraDistance, "CameraDistance: {0}"}
             }}
             // TODO more LabelIDs
         };
 
         public SectorLabelTextFactory() : base() { }
 
-        public override bool TryMakeInstance(LabelID labelID, LabelContentID contentID, SectorReport report, SectorData data, out IColoredTextList content) {
+        public bool TryMakeInstance(LabelID labelID, LabelContentID contentID, SectorReport report, SectorData data, out IColoredTextList content) {
             content = _includeUnknownLookup[labelID] ? _unknownValue : _emptyValue;
             switch (contentID) {
                 case LabelContentID.Name:
@@ -60,13 +59,23 @@ namespace CodeEnv.Master.GameContent {
                 case LabelContentID.CameraDistance:
                     content = new ColoredTextList_Distance(data.Position);
                     break;
-                case LabelContentID.IntelState:
-                    content = new ColoredTextList_Intel(data.HumanPlayerIntel);
-                    break;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(contentID));
             }
             return content != _emptyValue;
+        }
+
+        public SectorLabelText MakeInstance(LabelID labelID, SectorReport report, SectorData data) {
+            var formatLookup = GetFormatLookup(labelID);
+            SectorLabelText labelText = new SectorLabelText(labelID, report, _dedicatedLinePerContentIDLookup[labelID]);
+            foreach (var contentID in formatLookup.Keys) {
+                IColoredTextList content;
+                if (TryMakeInstance(labelID, contentID, report, data, out content)) {
+                    var format = formatLookup[contentID];
+                    labelText.Add(contentID, content, format);
+                }
+            }
+            return labelText;
         }
 
         protected override IDictionary<LabelContentID, string> GetFormatLookup(LabelID labelID) {

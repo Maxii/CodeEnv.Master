@@ -143,7 +143,7 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
         __systemHighlightRenderer.enabled = true;
     }
 
-    protected override void InitializeHudPublisher() {
+    protected override void InitializeHudManager() {
         _hudManager = new SystemHudManager(Publisher);
     }
 

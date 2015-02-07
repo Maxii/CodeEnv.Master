@@ -40,7 +40,7 @@ public class SectorCtxControl : ACtxControl {
     protected override int UniqueSubmenuCountReqd { get { return Constants.Zero; } }
 
     private SectorExaminer _sectorExaminerMenuOperator;
-    private SectorItem _sector;
+    private Sector _sector;
 
     public SectorCtxControl(SectorExaminer sectorExaminer)
         : base(sectorExaminer.gameObject) {
@@ -55,7 +55,7 @@ public class SectorCtxControl : ACtxControl {
     protected override void PopulateMenu_RemoteFleetAccess() {
         var sectorIndex = _sectorExaminerMenuOperator.CurrentSectorIndex;
         if (!SectorGrid.Instance.TryGetSector(sectorIndex, out _sector)) {
-            D.Warn("There is no {0} at {1}. {2} can not show Context Menu.", typeof(SectorItem).Name, sectorIndex, GetType().Name);
+            D.Warn("There is no {0} at {1}. {2} can not show Context Menu.", typeof(Sector).Name, sectorIndex, GetType().Name);
             // no sectorItem present underneath this examiner so don't build the menu
             return;
         }
@@ -67,7 +67,7 @@ public class SectorCtxControl : ACtxControl {
             case FleetDirective.Patrol:
                 return false;
             case FleetDirective.Explore:
-                return _sector.HumanPlayerIntelCoverage == IntelCoverage.Comprehensive;
+                return true; // IMPROVE _sectorItem.HumanPlayerIntelCoverage == IntelCoverage.Comprehensive;
             case FleetDirective.Move:
             case FleetDirective.Guard:
                 return _remotePlayerOwnedSelectedItem.Owner.IsEnemyOf(_sector.Owner);

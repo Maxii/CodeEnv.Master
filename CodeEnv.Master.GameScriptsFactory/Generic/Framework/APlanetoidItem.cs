@@ -116,7 +116,7 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         Data.OrbitalSpeed = gameObject.GetSafeMonoBehaviourComponentInParents<Orbiter>().GetRelativeOrbitSpeed(orbitalRadius);
     }
 
-    protected override void InitializeHudPublisher() {
+    protected override void InitializeHudManager() {
         _hudManager = new HudManager<PlanetoidPublisher>(Publisher);
     }
 

@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SectorReport.cs
-// Immutable report on a sector.
+// File: SectorLabelText.cs
+// Wrapper class for a StringBuilder that holds the text to be displayed in a Label for a Sector.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,25 +19,11 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    ///  Immutable report on a sector.
+    /// Wrapper class for a StringBuilder that holds the text to be displayed in a Label for a Sector.
     /// </summary>
-    public class SectorReport : AReport {
+    public class SectorLabelText : ALabelText {
 
-        public Index3D? SectorIndex { get; private set; }
-
-        public float? Density { get; private set; }
-
-        public SectorReport(SectorData data, Player player)
-            : base(player) {
-            AssignValues(data);
-        }
-
-        private void AssignValues(SectorData data) {
-            Name = data.Name;
-            Owner = data.Owner;
-            SectorIndex = SectorIndex;
-            Density = data.Density;
-        }
+        public SectorLabelText(LabelID labelID, SectorReport report, bool isDedicatedLinePerContentID) : base(labelID, report, isDedicatedLinePerContentID) { }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

@@ -6,8 +6,8 @@
 // </copyright> 
 // <summary> 
 // File: SystemReport.cs
-//  Immutable report on a system reflecting a specific player's IntelCoverage of
-// the planetoids, star and settlement of the system.
+// Immutable report on a system reflecting what a specific player's knows
+// about the planetoids, star and settlement of the system.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,8 +21,8 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    ///  Immutable report on a system reflecting a specific player's IntelCoverage
-    ///  of the planetoids, star and settlement of the system.
+    /// Immutable report on a system reflecting what a specific player's knows
+    ///  about the planetoids, star and settlement of the system.
     /// </summary>
     public class SystemReport : AReport {
 
@@ -41,7 +41,7 @@ namespace CodeEnv.Master.GameContent {
         public PlanetoidReport[] PlanetoidReports { get; private set; }
 
 
-        public SystemReport(Player player, SystemData data, StarReport starReport, PlanetoidReport[] planetoidReports)
+        public SystemReport(SystemData data, Player player, StarReport starReport, PlanetoidReport[] planetoidReports)
             : base(player) {
             StarReport = starReport;
             PlanetoidReports = planetoidReports;

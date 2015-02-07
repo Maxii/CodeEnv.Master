@@ -174,10 +174,10 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
     /// View-related members of this item that are not needed until discernible.
     /// </summary>
     protected virtual void InitializeViewMembersOnDiscernible() {
-        InitializeHudPublisher();
+        InitializeHudManager();
     }
 
-    protected abstract void InitializeHudPublisher();
+    protected abstract void InitializeHudManager();
 
     /// <summary>
     /// Subscribes to changes to values contained in Data. 

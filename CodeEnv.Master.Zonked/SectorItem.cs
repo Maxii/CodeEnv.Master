@@ -58,7 +58,7 @@ public class SectorItem : AItem {
         // UNCLEAR include a separate CullingLayer for Sector meshes and animations?   
     }
 
-    protected override void InitializeHudPublisher() {
+    protected override void InitializeHudManager() {
         _hudManager = new HudManager<SectorPublisher>(Publisher);
     }
 

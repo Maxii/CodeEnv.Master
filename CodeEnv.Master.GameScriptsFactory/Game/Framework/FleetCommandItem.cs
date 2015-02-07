@@ -117,7 +117,7 @@ public class FleetCommandItem : AUnitCommandItem, ICameraFollowable {
         InitializeContextMenu();
     }
 
-    protected override void InitializeHudPublisher() {
+    protected override void InitializeHudManager() {
         _hudManager = new CmdHudManager<FleetPublisher>(Publisher);
         _hudManager.AddContentToUpdate(AHudManager.UpdatableLabelContentID.TargetDistance);
     }

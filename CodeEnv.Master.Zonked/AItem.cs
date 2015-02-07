@@ -77,7 +77,7 @@ public abstract class AItem : AMonoBase, ICameraTargetable, IHasData, IDisposabl
     }
 
     protected virtual void OnDataChanged() {
-        HudPublisher = InitializeHudPublisher();
+        HudPublisher = InitializeHudManager();
     }
 
     protected abstract IGuiHudPublisher InitializeHudPublisher();

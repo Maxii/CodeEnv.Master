@@ -185,7 +185,6 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         }
     }
 
-
     private IEnumerator ShowSectorUnderMouse() {
         while (true) {
             if (!_ctxControl.IsShowing) {   // don't change highlighted sector while context menu is showing
@@ -195,7 +194,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
                 Vector3 mouseWorldPoint = Camera.main.ScreenToWorldPoint(mousePosition);
                 Index3D sectorIndexUnderMouse = _sectorGrid.GetSectorIndex(mouseWorldPoint);
                 bool toShow;
-                SectorItem notUsed;
+                Sector notUsed;
                 if (toShow = _sectorGrid.TryGetSector(sectorIndexUnderMouse, out notUsed)) {
                     if (!CurrentSectorIndex.Equals(sectorIndexUnderMouse)) {
                         CurrentSectorIndex = sectorIndexUnderMouse; // avoid the SetProperty equivalent warnings

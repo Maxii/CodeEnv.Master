@@ -108,7 +108,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         InitializeContextMenu(Owner);
     }
 
-    protected override void InitializeHudPublisher() {
+    protected override void InitializeHudManager() {
         _hudManager = new HudManager<ShipPublisher>(Publisher);
         _hudManager.AddContentToUpdate(AHudManager.UpdatableLabelContentID.TargetDistance);
     }
@@ -1275,9 +1275,9 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 D.Assert(orderSource == OrderSource.ElementCaptain);
                 DestinationInfo = new ShipDestinationInfo(target as FormationStationMonitor);
             }
-            else if (target is SectorItem) {
+            else if (target is Sector) {
                 Vector3 destinationOffset = orderSource == OrderSource.UnitCommand ? _ship.FormationStation.StationOffset : Vector3.zero;
-                DestinationInfo = new ShipDestinationInfo(target as SectorItem, destinationOffset);
+                DestinationInfo = new ShipDestinationInfo(target as Sector, destinationOffset);
             }
             else if (target is StationaryLocation) {
                 Vector3 destinationOffset = orderSource == OrderSource.UnitCommand ? _ship.FormationStation.StationOffset : Vector3.zero;
@@ -2015,7 +2015,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 _progressCheckDistance = fst.StationRadius;
             }
 
-            public ShipDestinationInfo(SectorItem sector, Vector3 fstOffset) {
+            public ShipDestinationInfo(Sector sector, Vector3 fstOffset) {
                 Target = sector;
                 _fstOffset = fstOffset;
                 _closeEnoughDistance = sector.Radius;

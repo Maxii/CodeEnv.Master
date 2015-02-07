@@ -287,12 +287,19 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
             // scroll event hit something so check in self and parents as some colliders are located on a child mesh or sprite
             target = go.GetInterfaceInParents<ICameraTargetable>(excludeSelf: false);
 
-            if (target == null && _playerViews.ViewMode == PlayerViewMode.SectorView) {
-                var sectorExaminer = go.GetComponent<SectorExaminer>();
-                if (sectorExaminer != null) {
-                    target = SectorGrid.Instance.GetSector(sectorExaminer.CurrentSectorIndex);
-                }
-            }
+            /****************************************************************************************************************
+                         * UNDONE Below is code that makes a Sector the ICameraTargetable target (if so designated) using the collider of the
+                         * SectorExaminer. This allows a slow approach to the sector highlighted by the SectorExaminer. Without this, the
+                         * Zoom target is the DummyTarget which might make the approach much too fast. For now, Sectors are not
+                         * ICameraTargetable. Going forward, if I want to be able to approach a sector slowly with the camera, I should 
+                         * consider making SectorExaminer : ICameraTargetable. Also, what about being able to focus on a Sector?
+                          *****************************************************************************************************************/
+            //if (target == null && _playerViews.ViewMode == PlayerViewMode.SectorView) {
+            //    var sectorExaminer = go.GetComponent<SectorExaminer>();
+            //    if (sectorExaminer != null) {
+            //        target = SectorGrid.Instance.GetSector(sectorExaminer.CurrentSectorIndex);
+            //    }
+            //}
         }
 
         if (target != null) {

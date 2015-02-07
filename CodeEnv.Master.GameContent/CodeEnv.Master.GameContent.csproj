@@ -254,6 +254,8 @@
     <Compile Include="Game\Framework\UniverseCenterPublisher.cs" />
     <Compile Include="Game\Framework\UniverseCenterReport.cs" />
     <Compile Include="Generic\Graphics\AUnitComposition.cs" />
+    <Compile Include="Game\GUI\SectorHudManager.cs" />
+    <Compile Include="Game\GUI\SectorLabelText.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Generic\Math\" />

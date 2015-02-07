@@ -61,7 +61,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private SystemReport GenerateReport(Player player, StarReport starReport, PlanetoidReport[] planetoidReports) {
-            return new SystemReport(player, _data, starReport, planetoidReports);
+            return new SystemReport(_data, player, starReport, planetoidReports);
         }
 
         /// <summary>
