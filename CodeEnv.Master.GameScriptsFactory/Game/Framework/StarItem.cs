@@ -24,7 +24,8 @@ using UnityEngine;
 /// <summary>
 /// Item class for Stars.
 /// </summary>
-public class StarItem : AItem, IShipOrbitable {
+public class StarItem : AIntelItem, IShipOrbitable, IDetectableItem {
+    //public class StarItem : AItem, IShipOrbitable {
 
     private static LayerMask _starLightCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
     Layers.Ship, Layers.Facility, Layers.Planetoid, Layers.Star);
@@ -39,10 +40,14 @@ public class StarItem : AItem, IShipOrbitable {
     [Tooltip("Optimal Camera View Distance Multiplier")]
     public float optViewDistanceFactor = 8F;
 
-    public new StarData Data {
-        get { return base.Data as StarData; }
+    public new StarData2 Data {
+        get { return base.Data as StarData2; }
         set { base.Data = value; }
     }
+    //public new StarData Data {
+    //    get { return base.Data as StarData; }
+    //    set { base.Data = value; }
+    //}
 
     private StarPublisher _publisher;
     public StarPublisher Publisher {

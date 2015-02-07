@@ -48,10 +48,14 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ICommandItem, 
     /// </summary>
     public virtual float UnitRadius { get; protected set; }
 
-    public new ACommandData Data {
-        get { return base.Data as ACommandData; }
+    public new ACommandData2 Data {
+        get { return base.Data as ACommandData2; }
         set { base.Data = value; }
     }
+    //public new ACommandData Data {
+    //    get { return base.Data as ACommandData; }
+    //    set { base.Data = value; }
+    //}
 
     private AUnitElementItem _hqElement;
     public AUnitElementItem HQElement {
@@ -94,8 +98,12 @@ public abstract class AUnitCommandItem : AMortalItemStateMachine, ICommandItem, 
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
-        _subscribers.Add(Data.SubscribeToPropertyChanged<ACommandData, Formation>(d => d.UnitFormation, OnFormationChanged));
+        _subscribers.Add(Data.SubscribeToPropertyChanged<ACommandData2, Formation>(d => d.UnitFormation, OnFormationChanged));
     }
+    //protected override void SubscribeToDataValueChanges() {
+    //    base.SubscribeToDataValueChanges();
+    //    _subscribers.Add(Data.SubscribeToPropertyChanged<ACommandData, Formation>(d => d.UnitFormation, OnFormationChanged));
+    //}
 
     protected override void InitializeViewMembersOnDiscernible() {
         base.InitializeViewMembersOnDiscernible();

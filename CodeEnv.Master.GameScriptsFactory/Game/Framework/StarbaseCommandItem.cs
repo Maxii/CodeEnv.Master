@@ -29,10 +29,14 @@ public class StarbaseCommandItem : AUnitBaseCommandItem {
 
     public bool enableTrackingLabel = false;
 
-    public new StarbaseCmdData Data {
-        get { return base.Data as StarbaseCmdData; }
+    public new StarbaseCmdData2 Data {
+        get { return base.Data as StarbaseCmdData2; }
         set { base.Data = value; }
     }
+    //public new StarbaseCmdData Data {
+    //    get { return base.Data as StarbaseCmdData; }
+    //    set { base.Data = value; }
+    //}
 
     private StarbasePublisher _publisher;
     public StarbasePublisher Publisher {
@@ -119,25 +123,6 @@ public class StarbaseCommandItem : AUnitBaseCommandItem {
 
     #region Mouse Events
 
-    //private StarbaseReportGenerator _reportGenerator;
-    //public StarbaseReportGenerator ReportGenerator {
-    //    get {
-    //        return _reportGenerator = _reportGenerator ?? new StarbaseReportGenerator(Data);
-    //    }
-    //}
-
-
-    //protected override void OnHover(bool isOver) {
-    //    if (isOver) {
-    //        FacilityReport[] elementReports = Elements.Cast<FacilityItem>().Select(f => f.GetReport(_gameMgr.HumanPlayer)).ToArray();
-    //        string hudText = ReportGenerator.GetCursorHudText(Data.GetHumanPlayerIntel(), elementReports);
-    //        GuiCursorHud.Instance.Set(hudText, Position);
-    //    }
-    //    else {
-    //        GuiCursorHud.Instance.Clear();
-    //    }
-    //}
-
     #endregion
 
     #region Cleanup
@@ -145,7 +130,6 @@ public class StarbaseCommandItem : AUnitBaseCommandItem {
     protected override void Cleanup() {
         base.Cleanup();
         UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
-
         if (_hudManager != null) {
             _hudManager.Dispose();
         }

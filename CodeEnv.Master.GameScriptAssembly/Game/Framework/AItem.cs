@@ -26,20 +26,21 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for all Items.
 /// </summary>
-public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusable, IWidgetTrackable {
+public abstract class AItem : AItemBase, ICameraFocusable, IWidgetTrackable {
+    //public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusable, IWidgetTrackable {
 
-    public event Action<IItem> onOwnerChanged;
+    //public event Action<IItem> onOwnerChanged;
 
-    private AItemData _data;
-    public AItemData Data {
-        get { return _data; }
-        set {
-            if (_data != null) { throw new MethodAccessException("{0}.{1}.Data can only be set once.".Inject(FullName, GetType().Name)); }
-            _data = value;
-            _data.Transform = _transform;
-            SubscribeToDataValueChanges();
-        }
-    }
+    //private AItemData _data;
+    //public AItemData Data {
+    //    get { return _data; }
+    //    set {
+    //        if (_data != null) { throw new MethodAccessException("{0}.{1}.Data can only be set once.".Inject(FullName, GetType().Name)); }
+    //        _data = value;
+    //        _data.Transform = _transform;
+    //        SubscribeToDataValueChanges();
+    //    }
+    //}
 
     private bool _inCameraLOS = true;
     /// <summary>
@@ -53,12 +54,12 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
         set { SetProperty<bool>(ref _inCameraLOS, value, "InCameraLOS", OnInCameraLOSChanged); }
     }
 
-    public IntelCoverage HumanPlayerIntelCoverage {
-        get { return Data.HumanPlayerIntelCoverage; }
-        set { Data.HumanPlayerIntelCoverage = value; }
-    }
+    //public IntelCoverage HumanPlayerIntelCoverage {
+    //    get { return Data.HumanPlayerIntelCoverage; }
+    //    set { Data.HumanPlayerIntelCoverage = value; }
+    //}
 
-    public abstract bool IsHudShowing { get; }
+    //public abstract bool IsHudShowing { get; }
 
     private bool _isDiscernible;
     public bool IsDiscernible {
@@ -69,37 +70,37 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
     /// <summary>
     /// The name to use for display in the UI.
     /// </summary>
-    public virtual string DisplayName { get { return Name; } }
+    //public virtual string DisplayName { get { return Name; } }
 
-    public virtual string FullName {
-        get {
-            if (Data != null) {
-                return Data.FullName;
-            }
-            return _transform.name + "(from transform)";
-        }
-    }
+    //public virtual string FullName {
+    //    get {
+    //        if (Data != null) {
+    //            return Data.FullName;
+    //        }
+    //        return _transform.name + "(from transform)";
+    //    }
+    //}
 
-    /// <summary>
-    /// The name of this individual Item.
-    /// </summary>
-    public string Name { get { return Data.Name; } }
+    ///// <summary>
+    ///// The name of this individual Item.
+    ///// </summary>
+    //public string Name { get { return Data.Name; } }
 
-    public Vector3 Position { get { return Data.Position; } }
+    //public Vector3 Position { get { return Data.Position; } }
 
-    private float _radius;
-    /// <summary>
-    /// The radius of the conceptual 'globe' that encompasses this Item.
-    /// </summary>
-    public virtual float Radius {
-        get {
-            D.Assert(_radius != Constants.ZeroF, "{0}.Radius has not yet been set.".Inject(FullName));
-            return _radius;
-        }
-        protected set { _radius = value; }
-    }
+    //private float _radius;
+    ///// <summary>
+    ///// The radius of the conceptual 'globe' that encompasses this Item.
+    ///// </summary>
+    //public virtual float Radius {
+    //    get {
+    //        D.Assert(_radius != Constants.ZeroF, "{0}.Radius has not yet been set.".Inject(FullName));
+    //        return _radius;
+    //    }
+    //    protected set { _radius = value; }
+    //}
 
-    public Player Owner { get { return Data.Owner; } }
+    //public Player Owner { get { return Data.Owner; } }
 
     /// <summary>
     /// Property that allows each derived class to establish the radius of the sphericalHighlight.
@@ -118,10 +119,10 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
     /// </summary>
     protected virtual float ItemTypeCircleScale { get { return 3.0F; } }
 
-    protected IList<IDisposable> _subscribers;
+    //protected IList<IDisposable> _subscribers;
     protected bool _isCirclesRadiusDynamic = true;
     protected IGameInputHelper _inputHelper;
-    protected IInputManager _inputMgr;
+    //protected IInputManager _inputMgr;
     protected IGameManager _gameMgr;
     protected bool _isViewMembersOnDiscernibleInitialized;
 
@@ -129,45 +130,51 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
 
     #region Initialization
 
-    protected override void Awake() {
-        base.Awake();
-        InitializeLocalReferencesAndValues();
-        Subscribe();
-        enabled = false;
-    }
+    //protected override void Awake() {
+    //    base.Awake();
+    //    InitializeLocalReferencesAndValues();
+    //    Subscribe();
+    //    enabled = false;
+    //}
 
     /// <summary>
     /// Called from Awake, initializes local references and values including Radius-related components.
     /// </summary>
-    protected virtual void InitializeLocalReferencesAndValues() {
+    protected override void InitializeLocalReferencesAndValues() {
+        base.InitializeLocalReferencesAndValues();
         _inputHelper = References.InputHelper;
-        _inputMgr = References.InputManager;
         _gameMgr = References.GameManager;
     }
+    //protected virtual void InitializeLocalReferencesAndValues() {
+    //    _inputHelper = References.InputHelper;
+    //    _inputMgr = References.InputManager;
+    //    _gameMgr = References.GameManager;
+    //}
 
-    protected virtual void Subscribe() {
-        _subscribers = new List<IDisposable>();
-        _subscribers.Add(_inputMgr.SubscribeToPropertyChanged<IInputManager, GameInputMode>(inputMgr => inputMgr.InputMode, OnInputModeChanged));
-        // Subscriptions to data value changes should be done with SubscribeToDataValueChanges()
-    }
+    //protected virtual void Subscribe() {
+    //    _subscribers = new List<IDisposable>();
+    //    _subscribers.Add(_inputMgr.SubscribeToPropertyChanged<IInputManager, GameInputMode>(inputMgr => inputMgr.InputMode, OnInputModeChanged));
+    //    // Subscriptions to data value changes should be done with SubscribeToDataValueChanges()
+    //}
 
-    protected override void Start() {
-        base.Start();
-        InitializeModelMembers();
-        InitializeViewMembers();
-    }
+    //protected override void Start() {
+    //    base.Start();
+    //    InitializeModelMembers();
+    //    InitializeViewMembers();
+    //}
 
     /// <summary>
     /// Called from Start, initializes Model-related members of this Item.
     /// </summary>
-    protected abstract void InitializeModelMembers();
+    //protected abstract void InitializeModelMembers();
 
     /// <summary>
     /// Called from Start, initializes View-related members of this item 
     /// that can't wait until the Item first becomes discernible. Default
     /// implementation does nothing.
     /// </summary>
-    protected virtual void InitializeViewMembers() { }
+    protected override void InitializeViewMembers() { }
+    //protected virtual void InitializeViewMembers() { }
 
     /// <summary>
     /// Called when the Item first becomes discernible to the player, this method initializes the 
@@ -177,20 +184,20 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
         InitializeHudManager();
     }
 
-    protected abstract void InitializeHudManager();
+    //protected abstract void InitializeHudManager();
 
     /// <summary>
     /// Subscribes to changes to values contained in Data. 
     /// </summary>
-    protected virtual void SubscribeToDataValueChanges() {
-        D.Assert(_subscribers != null);
-        _subscribers.Add(Data.SubscribeToPropertyChanged<AItemData, string>(d => d.Name, OnNamingChanged));
-        _subscribers.Add(Data.SubscribeToPropertyChanged<AItemData, string>(d => d.ParentName, OnNamingChanged));
-        _subscribers.Add(Data.SubscribeToPropertyChanging<AItemData, Player>(d => d.Owner, OnOwnerChanging));
-        _subscribers.Add(Data.SubscribeToPropertyChanged<AItemData, Player>(d => d.Owner, OnOwnerChanged));
+    //protected virtual void SubscribeToDataValueChanges() {
+    //    D.Assert(_subscribers != null);
+    //    _subscribers.Add(Data.SubscribeToPropertyChanged<AItemData, string>(d => d.Name, OnNamingChanged));
+    //    _subscribers.Add(Data.SubscribeToPropertyChanged<AItemData, string>(d => d.ParentName, OnNamingChanged));
+    //    _subscribers.Add(Data.SubscribeToPropertyChanging<AItemData, Player>(d => d.Owner, OnOwnerChanging));
+    //    _subscribers.Add(Data.SubscribeToPropertyChanged<AItemData, Player>(d => d.Owner, OnOwnerChanged));
 
-        _subscribers.Add(Data.HumanPlayerIntel.SubscribeToPropertyChanged<AIntel, IntelCoverage>(hpi => hpi.CurrentCoverage, OnHumanPlayerIntelCoverageChanged));
-    }
+    //    _subscribers.Add(Data.HumanPlayerIntel.SubscribeToPropertyChanged<AIntel, IntelCoverage>(hpi => hpi.CurrentCoverage, OnHumanPlayerIntelCoverageChanged));
+    //}
 
     #endregion
 
@@ -199,60 +206,60 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
     /// <summary>
     /// Called when either the Item name or parentName is changed.
     /// </summary>
-    protected virtual void OnNamingChanged() { }
+    //protected virtual void OnNamingChanged() { }
 
-    protected virtual void OnOwnerChanging(Player newOwner) { }
+    //protected virtual void OnOwnerChanging(Player newOwner) { }
 
-    protected virtual void OnOwnerChanged() {
-        if (onOwnerChanged != null) {
-            onOwnerChanged(this);
-        }
-    }
+    //protected virtual void OnOwnerChanged() {
+    //    if (onOwnerChanged != null) {
+    //        onOwnerChanged(this);
+    //    }
+    //}
 
     #endregion
 
     #region View Methods
 
-    public void SetIntelCoverage(Player player, IntelCoverage coverage) {
-        Data.SetIntelCoverage(player, coverage);
-    }
+    //public void SetIntelCoverage(Player player, IntelCoverage coverage) {
+    //    Data.SetIntelCoverage(player, coverage);
+    //}
 
-    public IntelCoverage GetIntelCoverage(Player player) {
-        return Data.GetIntelCoverage(player);
-    }
+    //public IntelCoverage GetIntelCoverage(Player player) {
+    //    return Data.GetIntelCoverage(player);
+    //}
 
-    public abstract void ShowHud(bool toShow);
+    //public abstract void ShowHud(bool toShow);
 
-    private void OnInputModeChanged() {
-        OnInputModeChanged(_inputMgr.InputMode);
-    }
+    //private void OnInputModeChanged() {
+    //    OnInputModeChanged(_inputMgr.InputMode);
+    //}
 
-    protected virtual void OnInputModeChanged(GameInputMode inputMode) {
-        if (IsHudShowing) {
-            switch (inputMode) {
-                case GameInputMode.NoInput:
-                case GameInputMode.PartialScreenPopup:
-                case GameInputMode.FullScreenPopup:
-                    D.Log("InputMode changed to {0}. {1} is no longer showing HUD.", inputMode.GetName(), FullName);
-                    ShowHud(false);
-                    break;
-                case GameInputMode.Normal:
-                    // do nothing
-                    break;
-                case GameInputMode.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(inputMode));
-            }
-        }
-    }
+    //protected virtual void OnInputModeChanged(GameInputMode inputMode) {
+    //    if (IsHudShowing) {
+    //        switch (inputMode) {
+    //            case GameInputMode.NoInput:
+    //            case GameInputMode.PartialScreenPopup:
+    //            case GameInputMode.FullScreenPopup:
+    //                D.Log("InputMode changed to {0}. {1} is no longer showing HUD.", inputMode.GetName(), FullName);
+    //                ShowHud(false);
+    //                break;
+    //            case GameInputMode.Normal:
+    //                // do nothing
+    //                break;
+    //            case GameInputMode.None:
+    //            default:
+    //                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(inputMode));
+    //        }
+    //    }
+    //}
 
-    protected virtual void OnHumanPlayerIntelCoverageChanged() {
-        AssessDiscernability();
-        if (IsHudShowing) {
-            // refresh the HUD as IntelCoverage has changed
-            ShowHud(true);
-        }
-    }
+    //protected virtual void OnHumanPlayerIntelCoverageChanged() {
+    //    AssessDiscernability();
+    //    if (IsHudShowing) {
+    //        // refresh the HUD as IntelCoverage has changed
+    //        ShowHud(true);
+    //    }
+    //}
 
     protected virtual void OnIsFocusChanged() {
         if (IsFocus) {
@@ -279,8 +286,11 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
     }
 
     public virtual void AssessDiscernability() {
-        IsDiscernible = InCameraLOS && Data.HumanPlayerIntelCoverage != IntelCoverage.None;
+        IsDiscernible = InCameraLOS;
     }
+    //public virtual void AssessDiscernability() {
+    //    IsDiscernible = InCameraLOS && Data.HumanPlayerIntelCoverage != IntelCoverage.None;
+    //}
 
     public virtual void AssessHighlighting() {
         if (!IsDiscernible) {
@@ -420,30 +430,34 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
 
     #region Cleanup
 
-    protected sealed override void OnDestroy() {
-        base.OnDestroy();
-    }
+    //protected sealed override void OnDestroy() {
+    //    base.OnDestroy();
+    //}
 
     /// <summary>
     /// Cleans up this instance.
     /// Note: all members should be tested for null before disposing as Items can be destroyed in Creators before completely initialized
     /// </summary>
     protected override void Cleanup() {
+        base.Cleanup();
         if (_circles != null) { _circles.Dispose(); }
-        Unsubscribe();
     }
+    //protected override void Cleanup() {
+    //    if (_circles != null) { _circles.Dispose(); }
+    //    Unsubscribe();
+    //}
 
-    protected virtual void Unsubscribe() {
-        _subscribers.ForAll(s => s.Dispose());
-        _subscribers.Clear();
-    }
+    //protected virtual void Unsubscribe() {
+    //    _subscribers.ForAll(s => s.Dispose());
+    //    _subscribers.Clear();
+    //}
 
     #endregion
 
     #region ICameraTargetable Members
 
-    public virtual bool IsEligible { get { return HumanPlayerIntelCoverage != IntelCoverage.None; } }
-    //public virtual bool IsEligible { get { return PlayerIntelCoverage != IntelCoverage.None; } }
+    public virtual bool IsEligible { get { return IsDiscernible; } }
+    //public virtual bool IsEligible { get { return HumanPlayerIntelCoverage != IntelCoverage.None; } }
 
     public abstract float MinimumCameraViewingDistance { get; }
 
@@ -497,13 +511,13 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget, ICameraFocusab
 
     #endregion
 
-    #region INavigableTarget Members
+    //#region INavigableTarget Members
 
-    public virtual Topography Topography { get { return Data.Topography; } }
+    //public virtual Topography Topography { get { return Data.Topography; } }
 
-    public virtual bool IsMobile { get { return true; } }
+    //public virtual bool IsMobile { get { return true; } }
 
-    #endregion
+    //#endregion
 
     #region Nested Classes
 

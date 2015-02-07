@@ -52,10 +52,19 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\ACommandData2.cs" />
+    <Compile Include="Generic\Framework\AElementData2.cs" />
+    <Compile Include="Generic\Framework\AIntelData2.cs" />
+    <Compile Include="Generic\Framework\AItemData2.cs" />
+    <Compile Include="Generic\Framework\AMortalItemData2.cs" />
+    <Compile Include="Game\Framework\FacilityData2.cs" />
+    <Compile Include="Game\Framework\FleetCmdData2.cs" />
+    <Compile Include="Generic\Framework\IDetectableItem.cs" />
+    <Compile Include="Game\Framework\PlanetoidData2.cs" />
     <Compile Include="Game\GUI\BaseComposition.cs" />
     <Compile Include="Game\GUI\FleetComposition.cs" />
-    <Compile Include="Generic\Graphics\ACmdPublisher.cs" />
-    <Compile Include="Generic\Graphics\ACmdPublisherBase.cs" />
+    <Compile Include="Generic\Framework\ACmdPublisher.cs" />
+    <Compile Include="Generic\Framework\ACmdPublisherBase.cs" />
     <Compile Include="Generic\Framework\ACmdReport.cs" />
     <Compile Include="Generic\Framework\AElementItemReport.cs" />
     <Compile Include="Generic\Graphics\AHudManager.cs" />
@@ -64,8 +73,8 @@
     <Compile Include="Generic\Graphics\ALabelTextFactory.cs" />
     <Compile Include="Generic\Graphics\ALabelTextFactoryBase.cs" />
     <Compile Include="Generic\Framework\AMortalItemReport.cs" />
-    <Compile Include="Generic\Graphics\APublisher.cs" />
-    <Compile Include="Generic\Graphics\APublisherBase.cs" />
+    <Compile Include="Generic\Framework\APublisher.cs" />
+    <Compile Include="Generic\Framework\APublisherBase.cs" />
     <Compile Include="Generic\Framework\AReport.cs" />
     <Compile Include="Game\GUI\CmdHudManager.cs" />
     <Compile Include="Game\GUI\FacilityLabelTextFactory.cs" />
@@ -256,6 +265,13 @@
     <Compile Include="Generic\Graphics\AUnitComposition.cs" />
     <Compile Include="Game\GUI\SectorHudManager.cs" />
     <Compile Include="Game\GUI\SectorLabelText.cs" />
+    <Compile Include="Game\Framework\SectorData2.cs" />
+    <Compile Include="Game\Framework\SettlementCmdData2.cs" />
+    <Compile Include="Game\Framework\ShipData2.cs" />
+    <Compile Include="Game\Framework\StarbaseCmdData2.cs" />
+    <Compile Include="Game\Framework\StarData2.cs" />
+    <Compile Include="Game\Framework\SystemData2.cs" />
+    <Compile Include="Game\Framework\UniverseCenterData2.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Generic\Math\" />

@@ -27,7 +27,8 @@ using UnityEngine;
 /// <summary>
 ///  Abstract base class for UnitElement Items.
 /// </summary>
-public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, ICameraFollowable, IElementAttackableTarget {
+public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, ICameraFollowable, IElementAttackableTarget, IDetectableItem {
+    //public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, ICameraFollowable, IElementAttackableTarget {
 
     [Range(1.0F, 3.0F)]
     [Tooltip("Minimum Camera View Distance Multiplier")]
@@ -45,10 +46,14 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
 
     public virtual bool IsHQElement { get; set; }
 
-    public new AElementData Data {
-        get { return base.Data as AElementData; }
+    public new AElementData2 Data {
+        get { return base.Data as AElementData2; }
         set { base.Data = value; }
     }
+    //public new AElementData Data {
+    //    get { return base.Data as AElementData; }
+    //    set { base.Data = value; }
+    //}
 
     public override string FullName { get { return IsHQElement ? "[HQ]" + base.FullName : base.FullName; } }
 

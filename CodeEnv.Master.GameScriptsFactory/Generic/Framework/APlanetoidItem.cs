@@ -26,7 +26,8 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for Planetoid (Planet and Moon) Items.
 /// </summary>
-public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbitable, IUnitAttackableTarget, IElementAttackableTarget {
+public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbitable, IUnitAttackableTarget, IElementAttackableTarget, IDetectableItem {
+    //public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbitable, IUnitAttackableTarget, IElementAttackableTarget {
 
     [Tooltip("The type of planetoid")]
     public PlanetoidCategory category;
@@ -39,10 +40,14 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
     [Tooltip("Optimal Camera View Distance Multiplier")]
     public float optViewDistanceFactor = 8F;
 
-    public new APlanetoidData Data {
-        get { return base.Data as APlanetoidData; }
+    public new PlanetoidData2 Data {
+        get { return base.Data as PlanetoidData2; }
         set { base.Data = value; }
     }
+    //public new APlanetoidData Data {
+    //    get { return base.Data as APlanetoidData; }
+    //    set { base.Data = value; }
+    //}
 
     private PlanetoidPublisher _publisher;
     public PlanetoidPublisher Publisher {

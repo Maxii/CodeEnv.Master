@@ -27,14 +27,19 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for all items that can die.
 /// </summary>
-public abstract class AMortalItem : AItem, IMortalItem {
+public abstract class AMortalItem : AIntelItem, IMortalItem {
+    //public abstract class AMortalItem : AItem, IMortalItem {
 
     public event Action<IMortalItem> onDeathOneShot;
 
-    public new AMortalItemData Data {
-        get { return base.Data as AMortalItemData; }
+    public new AMortalItemData2 Data {
+        get { return base.Data as AMortalItemData2; }
         set { base.Data = value; }
     }
+    //public new AMortalItemData Data {
+    //    get { return base.Data as AMortalItemData; }
+    //    set { base.Data = value; }
+    //}
 
     /// <summary>
     /// Flag indicating whether this MortalItem is alive and operating.
@@ -56,8 +61,12 @@ public abstract class AMortalItem : AItem, IMortalItem {
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
-        _subscribers.Add(Data.SubscribeToPropertyChanged<AMortalItemData, float>(d => d.Health, OnHealthChanged));
+        _subscribers.Add(Data.SubscribeToPropertyChanged<AMortalItemData2, float>(d => d.Health, OnHealthChanged));
     }
+    //protected override void SubscribeToDataValueChanges() {
+    //    base.SubscribeToDataValueChanges();
+    //    _subscribers.Add(Data.SubscribeToPropertyChanged<AMortalItemData, float>(d => d.Health, OnHealthChanged));
+    //}
 
     #endregion
 

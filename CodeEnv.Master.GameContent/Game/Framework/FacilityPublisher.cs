@@ -21,13 +21,15 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Report and LabelText Publisher for Facilities.
     /// </summary>
-    public class FacilityPublisher : APublisher<FacilityReport, FacilityData> {
+    public class FacilityPublisher : APublisher<FacilityReport, FacilityData2> {
+        //public class FacilityPublisher : APublisher<FacilityReport, FacilityData> {
 
         static FacilityPublisher() {
             LabelTextFactory = new FacilityLabelTextFactory();
         }
 
-        public FacilityPublisher(FacilityData data) : base(data) { }
+        public FacilityPublisher(FacilityData2 data) : base(data) { }
+        //public FacilityPublisher(FacilityData data) : base(data) { }
 
         protected override FacilityReport GenerateReport(Player player) {
             return new FacilityReport(_data, player);

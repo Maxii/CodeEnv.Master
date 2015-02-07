@@ -25,7 +25,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class ACmdPublisher<ReportType, DataType, ElementReportType> : ACmdPublisherBase
         where ReportType : ACmdReport
-        where DataType : ACommandData
+        where DataType : ACommandData2
+        //where DataType : ACommandData
         where ElementReportType : AElementItemReport {
 
         protected static ALabelTextFactory<ReportType, DataType> LabelTextFactory { private get; set; }

@@ -26,18 +26,18 @@ using UnityEngine;
 /// </summary>
 public class PlanetItem : APlanetoidItem {
 
-    public new PlanetData Data {
-        get { return base.Data as PlanetData; }
-        set { base.Data = value; }
-    }
+    //public new PlanetData Data {
+    //    get { return base.Data as PlanetData; }
+    //    set { base.Data = value; }
+    //}
 
     #region Initialization
 
-    protected override void InitializeModelMembers() {
-        base.InitializeModelMembers();
-        float orbitalRadius = _transform.localPosition.magnitude;
-        Data.OrbitalSpeed = gameObject.GetSafeMonoBehaviourComponentInParents<Orbiter>().GetRelativeOrbitSpeed(orbitalRadius);
-    }
+    //protected override void InitializeModelMembers() {
+    //    base.InitializeModelMembers();
+    //    float orbitalRadius = _transform.localPosition.magnitude;
+    //    Data.OrbitalSpeed = gameObject.GetSafeMonoBehaviourComponentInParents<Orbiter>().GetRelativeOrbitSpeed(orbitalRadius);
+    //}
 
     #endregion
 

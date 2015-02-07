@@ -28,10 +28,10 @@ using UnityEngine;
 /// </summary>
 public class MoonItem : APlanetoidItem {
 
-    public new MoonData Data {
-        get { return base.Data as MoonData; }
-        set { base.Data = value; }
-    }
+    //public new MoonData Data {
+    //    get { return base.Data as MoonData; }
+    //    set { base.Data = value; }
+    //}
 
     protected override float SphericalHighlightRadius { get { return Radius * 3F; } }
 

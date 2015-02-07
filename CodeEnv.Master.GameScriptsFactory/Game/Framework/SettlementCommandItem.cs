@@ -25,10 +25,14 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class SettlementCommandItem : AUnitBaseCommandItem /*, ICameraFollowable  [not currently in motion]*/ {
 
-    public new SettlementCmdData Data {
-        get { return base.Data as SettlementCmdData; }
+    public new SettlementCmdData2 Data {
+        get { return base.Data as SettlementCmdData2; }
         set { base.Data = value; }
     }
+    //public new SettlementCmdData Data {
+    //    get { return base.Data as SettlementCmdData; }
+    //    set { base.Data = value; }
+    //}
 
     /// <summary>
     /// Temporary flag set from SettlementCreator indicating whether
@@ -50,12 +54,6 @@ public class SettlementCommandItem : AUnitBaseCommandItem /*, ICameraFollowable 
     private CmdHudManager<SettlementPublisher> _hudManager;
 
     #region Initialization
-
-    //protected override IGuiHudPublisher InitializeHudPublisher() {
-    //    var publisher = new GuiHudPublisher<SettlementCmdData>(Data);
-    //    publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
-    //    return publisher;
-    //}
 
     protected override void InitializeHudManager() {
         _hudManager = new CmdHudManager<SettlementPublisher>(Publisher);
@@ -106,24 +104,6 @@ public class SettlementCommandItem : AUnitBaseCommandItem /*, ICameraFollowable 
     #endregion
 
     #region Mouse Events
-
-    //private SettlementReportGenerator _reportGenerator;
-    //public SettlementReportGenerator ReportGenerator {
-    //    get {
-    //        return _reportGenerator = _reportGenerator ?? new SettlementReportGenerator(Data);
-    //    }
-    //}
-
-    //protected override void OnHover(bool isOver) {
-    //    if (isOver) {
-    //        FacilityReport[] elementReports = Elements.Cast<FacilityItem>().Select(f => f.GetReport(_gameMgr.HumanPlayer)).ToArray();
-    //        string hudText = ReportGenerator.GetCursorHudText(Data.GetHumanPlayerIntel(), elementReports);
-    //        GuiCursorHud.Instance.Set(hudText, Position);
-    //    }
-    //    else {
-    //        GuiCursorHud.Instance.Clear();
-    //    }
-    //}
 
     #endregion
 

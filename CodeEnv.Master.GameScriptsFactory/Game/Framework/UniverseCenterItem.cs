@@ -24,16 +24,21 @@ using UnityEngine;
 /// <summary>
 /// Item class for the Universe Center.
 /// </summary>
-public class UniverseCenterItem : AItem, IShipOrbitable {
+public class UniverseCenterItem : AItem, IShipOrbitable, IDetectableItem {
+    //public class UniverseCenterItem : AItem, IShipOrbitable {
 
     [Range(0.5F, 3.0F)]
     [Tooltip("Minimum Camera View Distance Multiplier")]
     public float minViewDistanceFactor = 2F;
 
-    public new UniverseCenterData Data {
-        get { return base.Data as UniverseCenterData; }
+    public new UniverseCenterData2 Data {
+        get { return base.Data as UniverseCenterData2; }
         set { base.Data = value; }
     }
+    //public new UniverseCenterData Data {
+    //    get { return base.Data as UniverseCenterData; }
+    //    set { base.Data = value; }
+    //}
 
     private UniverseCenterPublisher _publisher;
     public UniverseCenterPublisher Publisher {

@@ -24,7 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class APublisher<ReportType, DataType> : APublisherBase
         where ReportType : AItemReport
-        where DataType : AItemData {
+        where DataType : AIntelData2 {
+        //where DataType : AItemData {
 
         protected static ALabelTextFactory<ReportType, DataType> LabelTextFactory { private get; set; }
 

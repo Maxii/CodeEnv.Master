@@ -53,6 +53,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Framework\AIntelItem.cs" />
+    <Compile Include="Game\Framework\AItemBase.cs" />
     <Compile Include="Generic\_Debug\DrawTriggerCollider.cs" />
     <Compile Include="Game\Framework\FormationStationMonitor.cs" />
     <Compile Include="Game\Framework\MovingOrbiter.cs" />

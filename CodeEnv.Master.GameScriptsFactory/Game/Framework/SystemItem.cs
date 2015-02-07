@@ -38,10 +38,14 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
     [Tooltip("Minimum Camera View Distance in Units")]
     public float minViewDistance = 2F;    // 2 units from the orbital plane
 
-    public new SystemData Data {
-        get { return base.Data as SystemData; }
+    public new SystemData2 Data {
+        get { return base.Data as SystemData2; }
         set { base.Data = value; }
     }
+    //public new SystemData Data {
+    //    get { return base.Data as SystemData; }
+    //    set { base.Data = value; }
+    //}
 
     private SettlementCommandItem _settlement;
     public SettlementCommandItem Settlement {
@@ -99,10 +103,6 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
             _trackingLabel = InitializeTrackingLabel();
         }
     }
-
-    //protected override IGuiHudPublisher InitializeHudPublisher() {
-    //    return new GuiHudPublisher<SystemData>(Data);
-    //}
 
     private ITrackingWidget InitializeTrackingLabel() {
         float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
@@ -186,7 +186,7 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
     }
 
     private void OnSettlementChanged() {
-        SettlementCmdData settlementData = null;
+        SettlementCmdData2 settlementData = null;
         if (Settlement != null) {
             settlementData = Settlement.Data;
             AttachSettlement(Settlement);
@@ -198,6 +198,19 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
         Data.SettlementData = settlementData;
         // The owner of a system and all it's celestial objects is determined by the ownership of the Settlement, if any
     }
+    //private void OnSettlementChanged() {
+    //    SettlementCmdData settlementData = null;
+    //    if (Settlement != null) {
+    //        settlementData = Settlement.Data;
+    //        AttachSettlement(Settlement);
+    //    }
+    //    else {
+    //        // The existing Settlement has been destroyed, so cleanup the orbit slot in prep for a future Settlement
+    //        Data.SettlementOrbitSlot.DestroyOrbiter();
+    //    }
+    //    Data.SettlementData = settlementData;
+    //    // The owner of a system and all it's celestial objects is determined by the ownership of the Settlement, if any
+    //}
 
     private void AttachSettlement(SettlementCommandItem settlementCmd) {
         Transform settlementUnit = settlementCmd.transform.parent;
@@ -205,13 +218,6 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
         orbiter.IsOrbiterInMotion = settlementCmd.__OrbiterMoves;
         // enabling (or not) the system orbiter can also be handled by the SettlementCreator once isRunning
         //D.Log("{0} has been deployed to {1}.", settlementCmd.DisplayName, FullName);
-
-        var systemIntelCoverage = HumanPlayerIntelCoverage;
-        if (systemIntelCoverage == IntelCoverage.None) {
-            D.Log("{0}.IntelCoverage set to None by its assigned System {1}.", settlementCmd.FullName, FullName);
-        }
-        // UNCLEAR should a new settlement being attached to a System take on the PlayerIntel state of the System??  See SystemPresenter.OnPlayerIntelCoverageChanged()
-        Settlement.HumanPlayerIntelCoverage = systemIntelCoverage;
     }
     //private void AttachSettlement(SettlementCommandItem settlementCmd) {
     //    Transform settlementUnit = settlementCmd.transform.parent;
@@ -264,16 +270,16 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
         // orbitalPlane LineRenderers don't render when not visible to the camera
     }
 
-    protected override void OnHumanPlayerIntelCoverageChanged() {
-        base.OnHumanPlayerIntelCoverageChanged();
-        // construct list each time as Settlement presence can change with time
-        if (Settlement != null) {
-            Settlement.HumanPlayerIntelCoverage = HumanPlayerIntelCoverage;
-        }
-        // The approach below acquired all item children in the system and gave them the same IntelCoverage as the system
-        //var childItemsInSystem = gameObject.GetSafeMonoBehaviourComponentsInChildren<AItem>().Except(this);
-        //childItemsInSystem.ForAll(i => i.PlayerIntel.CurrentCoverage = PlayerIntel.CurrentCoverage);
-    }
+    //protected override void OnHumanPlayerIntelCoverageChanged() {
+    //    base.OnHumanPlayerIntelCoverageChanged();
+    //    // construct list each time as Settlement presence can change with time
+    //    if (Settlement != null) {
+    //        Settlement.HumanPlayerIntelCoverage = HumanPlayerIntelCoverage;
+    //    }
+    //    // The approach below acquired all item children in the system and gave them the same IntelCoverage as the system
+    //    //var childItemsInSystem = gameObject.GetSafeMonoBehaviourComponentsInChildren<AItem>().Except(this);
+    //    //childItemsInSystem.ForAll(i => i.PlayerIntel.CurrentCoverage = PlayerIntel.CurrentCoverage);
+    //}
 
     private void OnIsSelectedChanged() {
         if (IsSelected) {
