@@ -202,6 +202,7 @@
     <Compile Include="Game\GUI\PlanetoidLabelTextFactory.cs" />
     <Compile Include="Game\Framework\PlanetoidPublisher.cs" />
     <Compile Include="Game\Framework\PlanetoidReport.cs" />
+    <Compile Include="IPublisherItem.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
     <Compile Include="Game\_Debug\VelocityRay.cs" />
