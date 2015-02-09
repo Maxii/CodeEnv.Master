@@ -37,13 +37,13 @@ namespace CodeEnv.Master.GameContent {
         private static ALabelFormatter<SettlementReport> LabelFormatter { get; set; }
 
         private StringBuilder _stringBuilder;
-        private SettlementCmdData _data;
+        private SettlementCmdItemData _data;
         private IGameManager _gameMgr;
         private SettlementReport _report;
         private LabelID _currentTextLabelID;
         private FacilityReport[] _elementReports;
 
-        public SettlementReportGenerator(SettlementCmdData data) {
+        public SettlementReportGenerator(SettlementCmdItemData data) {
             _data = data;
             _gameMgr = References.GameManager;
             _stringBuilder = new StringBuilder();

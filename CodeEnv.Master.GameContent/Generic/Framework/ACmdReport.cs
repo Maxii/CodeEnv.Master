@@ -16,15 +16,13 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
     using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
     /// Abstract class for all Command Reports.
     /// </summary>
-    public abstract class ACmdReport : AItemReport {
+    public abstract class ACmdReport : AIntelItemReport {
 
         public string ParentName { get; protected set; }
 
@@ -55,31 +53,33 @@ namespace CodeEnv.Master.GameContent {
 
         public AElementItemReport[] ElementReports { get; private set; }
 
-        public ACmdReport(ACommandData data, Player player, AElementItemReport[] elementReports)
+        public ACmdReport(AUnitCmdItemData data, Player player, AElementItemReport[] elementReports)
             : base(data, player) {
             ElementReports = elementReports;
             AssignValuesFrom(elementReports, data);
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AIntelItemData data) {
             base.AssignIncrementalValues_IntelCoverageComprehensive(data);
-            ACommandData cmdData = data as ACommandData;
+            AUnitCmdItemData cmdData = data as AUnitCmdItemData;
             UnitFormation = cmdData.UnitFormation;
             CurrentCmdEffectiveness = cmdData.CurrentCmdEffectiveness;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageModerate(AIntelItemData data) {
             base.AssignIncrementalValues_IntelCoverageModerate(data);
-            Owner = data.Owner;
+            AUnitCmdItemData cmdData = data as AUnitCmdItemData;
+            Owner = cmdData.Owner;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageMinimal(AItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageMinimal(AIntelItemData data) {
             base.AssignIncrementalValues_IntelCoverageMinimal(data);
-            Name = data.Name;
-            ParentName = data.ParentName;
+            AUnitCmdItemData cmdData = data as AUnitCmdItemData;
+            Name = cmdData.Name;
+            ParentName = cmdData.ParentName;
         }
 
-        protected virtual void AssignValuesFrom(AElementItemReport[] elementReports, ACommandData cmdData) {
+        protected virtual void AssignValuesFrom(AElementItemReport[] elementReports, AUnitCmdItemData cmdData) {
             UnitDefensiveStrength = elementReports.Select(er => er.DefensiveStrength).Sum();
             UnitOffensiveStrength = elementReports.Select(er => er.OffensiveStrength).Sum();
 

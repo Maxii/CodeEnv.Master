@@ -23,13 +23,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Factory that makes GuiCursorHudText and IColoredTextList instances for Fleets.
     /// </summary>
-    public class FleetGuiHudTextFactory : AGuiHudTextFactory<FleetGuiHudTextFactory, FleetCmdData> {
+    public class FleetGuiHudTextFactory : AGuiHudTextFactory<FleetGuiHudTextFactory, FleetCmdItemData> {
 
         private FleetGuiHudTextFactory() {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, FleetCmdData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, FleetCmdItemData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.ParentName); // the name of the Fleet is the parentName of the Command

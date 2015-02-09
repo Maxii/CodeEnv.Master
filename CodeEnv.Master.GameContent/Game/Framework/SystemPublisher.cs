@@ -34,9 +34,9 @@ namespace CodeEnv.Master.GameContent {
         private IDictionary<Player, SystemReport> _reportCache = new Dictionary<Player, SystemReport>();
         private IDictionary<LabelID, SystemLabelText> _labelTextCache = new Dictionary<LabelID, SystemLabelText>();
         private IGameManager _gameMgr;
-        private SystemData _data;
+        private SystemItemData _data;
 
-        public SystemPublisher(SystemData data) {
+        public SystemPublisher(SystemItemData data) {
             _data = data;
             _gameMgr = References.GameManager;
         }
@@ -124,7 +124,7 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
-        private bool IsEqual(IEnumerable<AReport> reportsA, IEnumerable<AReport> reportsB) {
+        private bool IsEqual(IEnumerable<AItemReport> reportsA, IEnumerable<AItemReport> reportsB) {
             return reportsA.OrderBy(r => r.Name).SequenceEqual(reportsB.OrderBy(r => r.Name));
         }
 

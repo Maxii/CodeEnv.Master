@@ -34,7 +34,7 @@ public static class GameSpecificExtensions {
     /// <param name="unitTargets">The unitTargets to search.</param>
     /// <returns></returns>
     public static IUnitAttackableTarget FindClosest<T>(this T item, IEnumerable<IUnitAttackableTarget> unitTargets)
-        where T : AItem {
+        where T : ADiscernibleItem {
         return unitTargets.MinBy(t => Vector3.SqrMagnitude(t.Position - item.Position));
     }
 
@@ -47,7 +47,7 @@ public static class GameSpecificExtensions {
     /// <param name="unitTargets">The unitTargets to search.</param>
     /// <returns></returns>
     public static IUnitAttackableTarget FindFurthest<T>(this T item, IEnumerable<IUnitAttackableTarget> unitTargets)
-        where T : AItem {
+        where T : ADiscernibleItem {
         return unitTargets.MaxBy(t => Vector3.SqrMagnitude(t.Position - item.Position));
     }
 

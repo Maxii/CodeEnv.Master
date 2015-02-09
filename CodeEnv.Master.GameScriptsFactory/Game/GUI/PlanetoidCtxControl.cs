@@ -46,8 +46,8 @@ public class PlanetoidCtxControl : ACtxControl {
         _planetoidMenuOperator = planetoid;
     }
 
-    protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCommandItem selectedFleet) {
-        selectedFleet = selected as FleetCommandItem;
+    protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
+        selectedFleet = selected as FleetCmdItem;
         return selectedFleet != null && selectedFleet.Owner.IsPlayer;
     }
 
@@ -83,7 +83,7 @@ public class PlanetoidCtxControl : ACtxControl {
 
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = _planetoidMenuOperator;
-        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCommandItem;
+        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }
 

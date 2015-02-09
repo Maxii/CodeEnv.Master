@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ShipItem.cs
-// Item class for  Unit Ship Elements.
+// Class for AUnitElementItems that are Ships.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -26,7 +26,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Item class for  Unit Ship Elements.
+/// Class for AUnitElementItems that are Ships.
 /// </summary>
 public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
@@ -48,13 +48,13 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         set { SetProperty<ShipOrder>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
     }
 
-    public new ShipData Data {
-        get { return base.Data as ShipData; }
+    public new ShipItemData Data {
+        get { return base.Data as ShipItemData; }
         set { base.Data = value; }
     }
 
-    public new FleetCommandItem Command {
-        get { return base.Command as FleetCommandItem; }
+    public new FleetCmdItem Command {
+        get { return base.Command as FleetCmdItem; }
         set { base.Command = value; }
     }
 
@@ -97,7 +97,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     }
 
     protected override void InitializeModelMembers() {
-        base.InitializeModelMembers();
         D.Assert(category == Data.Category);
         _helm = new ShipHelm(this);
         CurrentState = ShipState.None;
@@ -153,6 +152,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         //D.Log("{0}.OnTopographicBoundaryTransition({1}).", FullName, newTopography.GetName());
         Data.Topography = newTopography;
         Data.AssessFtlAvailability();
+    }
+
+    public void AttachTo(IOrbiterForShips orbiter) {
+        _transform.parent = orbiter.Transform;
     }
 
     /// <summary>
@@ -750,8 +753,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
         TryBreakOrbit();
 
-        var fleetToJoin = CurrentOrder.Target as FleetCommandItem;
-        FleetCommandItem transferFleet = null;
+        var fleetToJoin = CurrentOrder.Target as FleetCmdItem;
+        FleetCmdItem transferFleet = null;
         string transferFleetName = "TransferTo_" + fleetToJoin.DisplayName;
         if (Command.Elements.Count > 1) {
             // detach from fleet and create tempFleetCmd
@@ -761,19 +764,19 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         else {
             // this ship's current fleet only has this ship so simply issue the order to this fleet
             D.Assert(Command.Elements.Single().Equals(this));
-            transferFleet = Command as FleetCommandItem;
+            transferFleet = Command as FleetCmdItem;
             transferFleet.Data.ParentName = transferFleetName;
             OnMakeFleetCompleted(transferFleet);
         }
     }
 
-    void ExecuteJoinFleetOrder_OnMakeFleetCompleted(FleetCommandItem transferFleet) {
+    void ExecuteJoinFleetOrder_OnMakeFleetCompleted(FleetCmdItem transferFleet) {
         LogEvent();
         transferFleet.HumanPlayerIntelCoverage = IntelCoverage.Comprehensive;
         // TODO PlayerIntelCoverage should be set through sensor detection
 
         // issue a JoinFleet order to our transferFleet
-        var fleetToJoin = CurrentOrder.Target as FleetCommandItem;
+        var fleetToJoin = CurrentOrder.Target as FleetCmdItem;
         FleetOrder joinFleetOrder = new FleetOrder(FleetDirective.Join, fleetToJoin);
         transferFleet.CurrentOrder = joinFleetOrder;
         //// once joinFleetOrder takes, this ship state will be changed by its 'new'  transferFleet Command
@@ -953,9 +956,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         //D.Log("{0}.AssessWhetherToAssumeOrbit() called.", FullName);
         D.Assert(!_isInOrbit);
         D.Assert(!_helm.IsAutoPilotEngaged, "{0}'s autopilot is still engaged.".Inject(FullName));
-        var objectToOrbit = _helm.DestinationInfo.Target as IShipOrbitable;
+        //var objectToOrbit = _helm.DestinationInfo.Target as IShipOrbitable;
+        var objectToOrbit = _helm.Target as IShipOrbitable;
         if (objectToOrbit != null) {
-            var baseCmdObjectToOrbit = objectToOrbit as AUnitBaseCommandItem;
+            var baseCmdObjectToOrbit = objectToOrbit as AUnitBaseCmdItem;
             if (baseCmdObjectToOrbit != null) {
                 if (Owner.IsEnemyOf(baseCmdObjectToOrbit.Owner)) {
                     return false;
@@ -1015,7 +1019,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     }
 
     private void __HandleDestinationUnreachable() {
-        D.Warn("{0} reporting destination {1} as unreachable.", FullName, _helm.DestinationInfo.Target.FullName);
+        D.Warn("{0} reporting destination {1} as unreachable.", FullName, _helm.Target.FullName);
+        //D.Warn("{0} reporting destination {1} as unreachable.", FullName, _helm.DestinationInfo.Target.FullName);
         if (IsHQElement) {
             Command.__OnHQElementEmergency();   // HACK stays in this state, assuming this will cause a new order from Cmd
         }
@@ -1061,7 +1066,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
             uniqueEnemyTargetsInRange = uniqueEnemyTargetsInRange.Union<IElementAttackableTarget>(rangeMonitor.EnemyTargets);  // OPTIMIZE
         }
 
-        var cmdTarget = _ordersTarget as AUnitCommandItem;
+        var cmdTarget = _ordersTarget as AUnitCmdItem;
         if (cmdTarget != null) {
             var primaryTargets = cmdTarget.Elements.Cast<IElementAttackableTarget>();
             var primaryTargetsInRange = primaryTargets.Intersect(uniqueEnemyTargetsInRange);
@@ -1117,7 +1122,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     void OnDestinationUnreachable() { RelayToCurrentState(); }
 
-    void OnMakeFleetCompleted(FleetCommandItem fleet) { RelayToCurrentState(fleet); }
+    void OnMakeFleetCompleted(FleetCmdItem fleet) { RelayToCurrentState(fleet); }
 
     #endregion
 
@@ -1172,12 +1177,19 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     #endregion
 
+    #region INavigableTarget Members
+
+    public override bool IsMobile { get { return true; } }
+
+    #endregion
+
     #region Nested Classes
 
     /// <summary>
     /// Navigator class for Ships.
     /// </summary>
-    public class ShipHelm : IDisposable {
+    private class ShipHelm : IDisposable {
+    //public class ShipHelm : IDisposable {
 
         /// <summary>
         /// The AutoPilotSpeed float equivalent in units per hour.
@@ -1193,6 +1205,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         /// Initially, if the order source is fleetCmd, this means the ship does not depart until the fleet is ready.
         /// </summary>
         public OrderSource OrderSource { get; private set; }
+
+        public INavigableTarget Target { get { return DestinationInfo.Target; } }   // new
 
         public float DistanceToDestination { get { return Vector3.Distance(DestinationInfo.Destination, _ship.Data.Position); } }
 
@@ -1228,8 +1242,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         /// </summary>
         private float _courseProgressCheckPeriod = 1F;
 
-        internal ShipDestinationInfo DestinationInfo { get; private set; }
+        private ShipDestinationInfo DestinationInfo;
+        //internal ShipDestinationInfo DestinationInfo { get; private set; }
         private ShipItem _ship;
+        private Rigidbody _shipRigidbody;
         private EngineRoom _engineRoom;
 
         private Job _pilotJob;
@@ -1245,6 +1261,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         /// <param name="ship">The ship.</param>
         public ShipHelm(ShipItem ship) {
             _ship = ship;
+            _shipRigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(ship.gameObject);
             _gameTime = GameTime.Instance;
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
             _engineRoom = new EngineRoom(_ship);
@@ -1254,9 +1271,9 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         private void Subscribe() {
             _subscribers = new List<IDisposable>();
             _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
-            _subscribers.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullStlSpeed, OnFullSpeedChanged));
-            _subscribers.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullFtlSpeed, OnFullSpeedChanged));
-            _subscribers.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, bool>(d => d.IsFtlAvailableForUse, OnFtlAvailableForUseChanged));
+            _subscribers.Add(_ship.Data.SubscribeToPropertyChanged<ShipItemData, float>(d => d.FullStlSpeed, OnFullSpeedChanged));
+            _subscribers.Add(_ship.Data.SubscribeToPropertyChanged<ShipItemData, float>(d => d.FullFtlSpeed, OnFullSpeedChanged));
+            _subscribers.Add(_ship.Data.SubscribeToPropertyChanged<ShipItemData, bool>(d => d.IsFtlAvailableForUse, OnFtlAvailableForUseChanged));
         }
 
         /// <summary>
@@ -1275,24 +1292,24 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 D.Assert(orderSource == OrderSource.ElementCaptain);
                 DestinationInfo = new ShipDestinationInfo(target as FormationStationMonitor);
             }
-            else if (target is Sector) {
+            else if (target is SectorItem) {
                 Vector3 destinationOffset = orderSource == OrderSource.UnitCommand ? _ship.FormationStation.StationOffset : Vector3.zero;
-                DestinationInfo = new ShipDestinationInfo(target as Sector, destinationOffset);
+                DestinationInfo = new ShipDestinationInfo(target as SectorItem, destinationOffset);
             }
             else if (target is StationaryLocation) {
                 Vector3 destinationOffset = orderSource == OrderSource.UnitCommand ? _ship.FormationStation.StationOffset : Vector3.zero;
                 var autoPilotSpeedReference = new Reference<float>(() => _autoPilotSpeedInUnitsPerHour);
                 DestinationInfo = new ShipDestinationInfo((StationaryLocation)target, destinationOffset, autoPilotSpeedReference);
             }
-            else if (target is FleetCommandItem) {
+            else if (target is FleetCmdItem) {
                 D.Assert(orderSource == OrderSource.UnitCommand);
-                var fleetTarget = target as FleetCommandItem;
+                var fleetTarget = target as FleetCmdItem;
                 bool isEnemy = _ship.Owner.IsEnemyOf(fleetTarget.Owner);
                 DestinationInfo = new ShipDestinationInfo(fleetTarget, _ship.FormationStation.StationOffset, isEnemy);
             }
-            else if (target is AUnitBaseCommandItem) {
+            else if (target is AUnitBaseCmdItem) {
                 D.Assert(orderSource == OrderSource.UnitCommand);
-                var baseTarget = target as AUnitBaseCommandItem;
+                var baseTarget = target as AUnitBaseCmdItem;
                 bool isEnemy = _ship.Owner.IsEnemyOf(baseTarget.Owner);
                 DestinationInfo = new ShipDestinationInfo(baseTarget, _ship.FormationStation.StationOffset, isEnemy);
             }
@@ -1439,7 +1456,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 }
 
                 if (CheckSeparation(distanceToTargetSqrd, ref previousDistanceSqrd)) {
-                    if (DestinationInfo.Target is FleetCommandItem || DestinationInfo.Target is ShipItem) {
+                    if (DestinationInfo.Target is FleetCmdItem || DestinationInfo.Target is ShipItem) {
                         // the ship or fleet is getting away
                         OnDestinationUnreachable();
                         yield break;
@@ -1610,8 +1627,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 //D.Log("{0}.AllStop() called.", _ship.FullName);
             }
             if (instantStop) {
-                _ship.__rigidbody.velocity = Vector3.zero;
-                _ship.__rigidbody.angularVelocity = Vector3.zero;
+                _shipRigidbody.velocity = Vector3.zero;
+                _shipRigidbody.angularVelocity = Vector3.zero;
             }
             if (IsAutoPilotEngaged) {
                 D.Warn("{0}.AutoPilot remains engaged.", _ship.FullName);
@@ -1959,7 +1976,8 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
         #region Nested Classes
 
-        internal class ShipDestinationInfo {
+        private class ShipDestinationInfo {
+            //internal class ShipDestinationInfo {
 
             /// <summary>
             /// The target this ship is trying to reach. Can be a FormationStation, 
@@ -2015,7 +2033,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 _progressCheckDistance = fst.StationRadius;
             }
 
-            public ShipDestinationInfo(Sector sector, Vector3 fstOffset) {
+            public ShipDestinationInfo(SectorItem sector, Vector3 fstOffset) {
                 Target = sector;
                 _fstOffset = fstOffset;
                 _closeEnoughDistance = sector.Radius;
@@ -2029,7 +2047,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 _progressCheckDistanceRef = distanceTraveledInOneHour;
             }
 
-            public ShipDestinationInfo(FleetCommandItem cmd, Vector3 fstOffset, bool isEnemy) {
+            public ShipDestinationInfo(FleetCmdItem cmd, Vector3 fstOffset, bool isEnemy) {
                 Target = cmd;
                 _fstOffset = fstOffset;
                 if (isEnemy) {  // HACK
@@ -2041,7 +2059,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 _progressCheckDistance = 5F;
             }
 
-            public ShipDestinationInfo(AUnitBaseCommandItem cmd, Vector3 fstOffset, bool isEnemy) {
+            public ShipDestinationInfo(AUnitBaseCmdItem cmd, Vector3 fstOffset, bool isEnemy) {
                 Target = cmd;
                 _fstOffset = fstOffset;
                 var shipOrbitSlot = cmd.ShipOrbitSlot;
@@ -2136,7 +2154,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
             private float _gameSpeedMultiplier;
             private Vector3 _velocityOnPause;
 
-            private ShipData _shipData;
+            private ShipItemData _shipData;
             private Rigidbody _shipRigidbody;
 
             private Job _operateEnginesJob;
@@ -2422,7 +2440,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     private void __ReportCollision(Collision collision) {
         D.Warn("While {0}, {1} collided with {2} at a relative velocity of {3}. {4}Resulting velocity = {5} units/sec, angular velocity = {6} radians/sec. {4}Distance between objects = {7}, {8} collider size = {9}.",
-            CurrentState.GetName(), FullName, collision.transform.name, collision.relativeVelocity.magnitude, Constants.NewLine, __rigidbody.velocity, __rigidbody.angularVelocity, (Position - collision.transform.position).magnitude, collision.transform.name, collision.collider.bounds.size);
+            CurrentState.GetName(), FullName, collision.transform.name, collision.relativeVelocity.magnitude, Constants.NewLine, rigidbody.velocity, rigidbody.angularVelocity, (Position - collision.transform.position).magnitude, collision.transform.name, collision.collider.bounds.size);
 
         //foreach (ContactPoint contact in collision.contacts) {
         //    Debug.DrawRay(contact.point, contact.normal, Color.white);

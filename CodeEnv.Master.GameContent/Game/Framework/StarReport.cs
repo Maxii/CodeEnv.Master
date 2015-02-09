@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Immutable report on a star reflecting a specific player's IntelCoverage.
     /// </summary>
-    public class StarReport : AItemReport {
+    public class StarReport : AIntelItemReport {
 
         public string ParentName { get; protected set; }
 
@@ -34,26 +34,30 @@ namespace CodeEnv.Master.GameContent {
         public XYield? SpecialResources { get; private set; }
 
 
-        public StarReport(StarData data, Player player) : base(data, player) { }
+        public StarReport(StarItemData data, Player player) : base(data, player) { }
 
-        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
-            var starData = data as StarData;
+        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AIntelItemData data) {
+            base.AssignIncrementalValues_IntelCoverageComprehensive(data);
+            var starData = data as StarItemData;
             SpecialResources = starData.SpecialResources;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
-            var starData = data as StarData;
+        protected override void AssignIncrementalValues_IntelCoverageModerate(AIntelItemData data) {
+            base.AssignIncrementalValues_IntelCoverageModerate(data);
+            var starData = data as StarItemData;
             Capacity = starData.Capacity;
             Resources = starData.Resources;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageMinimal(AItemData data) {
-            var starData = data as StarData;
+        protected override void AssignIncrementalValues_IntelCoverageMinimal(AIntelItemData data) {
+            base.AssignIncrementalValues_IntelCoverageMinimal(data);
+            var starData = data as StarItemData;
             Owner = starData.Owner;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageAware(AItemData data) {
-            var starData = data as StarData;
+        protected override void AssignIncrementalValues_IntelCoverageAware(AIntelItemData data) {
+            base.AssignIncrementalValues_IntelCoverageAware(data);
+            var starData = data as StarItemData;
             Name = starData.Name;
             ParentName = starData.ParentName;
             Category = starData.Category;

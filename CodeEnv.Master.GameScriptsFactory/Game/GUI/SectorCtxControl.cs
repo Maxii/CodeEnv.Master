@@ -40,22 +40,22 @@ public class SectorCtxControl : ACtxControl {
     protected override int UniqueSubmenuCountReqd { get { return Constants.Zero; } }
 
     private SectorExaminer _sectorExaminerMenuOperator;
-    private Sector _sector;
+    private SectorItem _sector;
 
     public SectorCtxControl(SectorExaminer sectorExaminer)
         : base(sectorExaminer.gameObject) {
         _sectorExaminerMenuOperator = sectorExaminer;
     }
 
-    protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCommandItem selectedFleet) {
-        selectedFleet = selected as FleetCommandItem;
+    protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
+        selectedFleet = selected as FleetCmdItem;
         return selectedFleet != null && selectedFleet.Owner.IsPlayer;
     }
 
     protected override void PopulateMenu_RemoteFleetAccess() {
         var sectorIndex = _sectorExaminerMenuOperator.CurrentSectorIndex;
         if (!SectorGrid.Instance.TryGetSector(sectorIndex, out _sector)) {
-            D.Warn("There is no {0} at {1}. {2} can not show Context Menu.", typeof(Sector).Name, sectorIndex, GetType().Name);
+            D.Warn("There is no {0} at {1}. {2} can not show Context Menu.", typeof(SectorItem).Name, sectorIndex, GetType().Name);
             // no sectorItem present underneath this examiner so don't build the menu
             return;
         }
@@ -81,7 +81,7 @@ public class SectorCtxControl : ACtxControl {
 
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = _sector;
-        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCommandItem;
+        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }
 

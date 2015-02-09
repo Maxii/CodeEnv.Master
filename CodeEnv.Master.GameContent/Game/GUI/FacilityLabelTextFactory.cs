@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// LabelText factory for Facilities.
     /// </summary>
-    public class FacilityLabelTextFactory : ALabelTextFactory<FacilityReport, FacilityData2> {
+    public class FacilityLabelTextFactory : ALabelTextFactory<FacilityReport, FacilityData> {
         //public class FacilityLabelTextFactory : ALabelTextFactory<FacilityReport, FacilityData> {
 
         private static IDictionary<LabelID, IDictionary<LabelContentID, string>> _formatLookupByLabelID = new Dictionary<LabelID, IDictionary<LabelContentID, string>>() {

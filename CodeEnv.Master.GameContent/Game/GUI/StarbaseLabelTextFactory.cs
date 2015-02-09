@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// LabelText factory for a Starbase.
     /// </summary>
-    public class StarbaseLabelTextFactory : ALabelTextFactory<StarbaseReport, StarbaseCmdData> {
+    public class StarbaseLabelTextFactory : ALabelTextFactory<StarbaseReport, StarbaseCmdItemData> {
 
         private static IDictionary<LabelID, IDictionary<LabelContentID, string>> _formatLookupByLabelID = new Dictionary<LabelID, IDictionary<LabelContentID, string>>() {
             { LabelID.CursorHud, new Dictionary<LabelContentID, string>() {
@@ -51,7 +51,7 @@ namespace CodeEnv.Master.GameContent {
 
         public StarbaseLabelTextFactory() : base() { }
 
-        public override bool TryMakeInstance(LabelID labelID, LabelContentID contentID, StarbaseReport report, StarbaseCmdData data, out IColoredTextList content) {
+        public override bool TryMakeInstance(LabelID labelID, LabelContentID contentID, StarbaseReport report, StarbaseCmdItemData data, out IColoredTextList content) {
             content = _includeUnknownLookup[labelID] ? _unknownValue : _emptyValue;
             switch (contentID) {
                 case LabelContentID.Name:

@@ -55,19 +55,19 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
 
     public SphereCollider universeEdge;
     public Transform cameraDummyTarget;
-    public Sector sector;
+    public SectorItem sector;
 
     public Orbiter orbiter;
     public MovingOrbiter movingOrbiter;
     public OrbiterForShips orbiterForShips;
     public MovingOrbiterForShips movingOrbiterForShips;
 
-    public FleetCommandItem fleetCmd;
+    public FleetCmdItem fleetCmd;
     public ShipItem[] ships;
 
-    public SettlementCommandItem settlementCmd;
+    public SettlementCmdItem settlementCmd;
 
-    public StarbaseCommandItem starbaseCmd;
+    public StarbaseCmdItem starbaseCmd;
 
     public FacilityItem[] facilities;
 

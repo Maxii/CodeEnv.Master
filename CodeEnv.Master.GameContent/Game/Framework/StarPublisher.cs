@@ -21,13 +21,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Report and LabelText Publisher for Stars.
     /// </summary>
-    public class StarPublisher : APublisher<StarReport, StarData> {
+    public class StarPublisher : APublisher<StarReport, StarItemData> {
 
         static StarPublisher() {
             LabelTextFactory = new StarLabelTextFactory();
         }
 
-        public StarPublisher(StarData data) : base(data) { }
+        public StarPublisher(StarItemData data) : base(data) { }
 
         protected override StarReport GenerateReport(Player player) {
             return new StarReport(_data, player);

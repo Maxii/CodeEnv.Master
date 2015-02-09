@@ -30,7 +30,7 @@ namespace CodeEnv.Master.GameContent {
     public class SystemComposition {
         // SystemComposition no longer contains any SettlementData or Orbit info
 
-        public StarData StarData { get; set; }
+        public StarItemData StarData { get; set; }
 
         public IList<PlanetoidCategory> PlanetCategories {
             get {
@@ -38,16 +38,16 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private IDictionary<PlanetoidCategory, IList<PlanetoidData>> _composition;
+        private IDictionary<PlanetoidCategory, IList<PlanetoidItemData>> _composition;
 
         public SystemComposition() {
-            _composition = new SortedDictionary<PlanetoidCategory, IList<PlanetoidData>>();
+            _composition = new SortedDictionary<PlanetoidCategory, IList<PlanetoidItemData>>();
         }
 
-        public bool AddPlanet(PlanetoidData data) {
+        public bool AddPlanet(PlanetoidItemData data) {
             PlanetoidCategory pType = data.Category;
             if (!_composition.ContainsKey(pType)) {
-                _composition.Add(pType, new List<PlanetoidData>());
+                _composition.Add(pType, new List<PlanetoidItemData>());
             }
             if (_composition[pType].Contains(data)) {
                 return false;
@@ -56,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
             return true;
         }
 
-        public bool RemovePlanet(PlanetoidData data) {
+        public bool RemovePlanet(PlanetoidItemData data) {
             PlanetoidCategory pType = data.Category;
             bool isRemoved = _composition[pType].Remove(data);
             if (_composition[pType].Count == Constants.Zero) {
@@ -65,17 +65,17 @@ namespace CodeEnv.Master.GameContent {
             return isRemoved;
         }
 
-        public bool ContainsPlanet(PlanetoidData data) {
+        public bool ContainsPlanet(PlanetoidItemData data) {
             PlanetoidCategory hull = data.Category;
             return _composition[hull].Contains(data);
         }
 
-        public IList<PlanetoidData> GetPlanetData(PlanetoidCategory pType) {
+        public IList<PlanetoidItemData> GetPlanetData(PlanetoidCategory pType) {
             return _composition[pType];
         }
 
-        public IEnumerable<PlanetoidData> GetPlanetData() {
-            IEnumerable<PlanetoidData> allData = new List<PlanetoidData>();
+        public IEnumerable<PlanetoidItemData> GetPlanetData() {
+            IEnumerable<PlanetoidItemData> allData = new List<PlanetoidItemData>();
             foreach (var pType in PlanetCategories) {
                 allData = allData.Concat(GetPlanetData(pType));
             }

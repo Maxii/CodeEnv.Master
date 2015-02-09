@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: StarItem.cs
-// Item class for Stars.
+// Class for AIntelItems that are Stars.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,10 +22,9 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Item class for Stars.
+/// Class for AIntelItems that are Stars.
 /// </summary>
-public class StarItem : AIntelItem, IShipOrbitable, IDetectableItem {
-    //public class StarItem : AItem, IShipOrbitable {
+public class StarItem : AIntelItem, IShipOrbitable, IDetectable {
 
     private static LayerMask _starLightCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
     Layers.Ship, Layers.Facility, Layers.Planetoid, Layers.Star);
@@ -40,14 +39,10 @@ public class StarItem : AIntelItem, IShipOrbitable, IDetectableItem {
     [Tooltip("Optimal Camera View Distance Multiplier")]
     public float optViewDistanceFactor = 8F;
 
-    public new StarData2 Data {
-        get { return base.Data as StarData2; }
+    public new StarItemData Data {
+        get { return base.Data as StarItemData; }
         set { base.Data = value; }
     }
-    //public new StarData Data {
-    //    get { return base.Data as StarData; }
-    //    set { base.Data = value; }
-    //}
 
     private StarPublisher _publisher;
     public StarPublisher Publisher {
@@ -93,17 +88,8 @@ public class StarItem : AIntelItem, IShipOrbitable, IDetectableItem {
 
     protected override void InitializeModelMembers() {
         D.Assert(category == Data.Category);
-    }
-
-    protected override void InitializeViewMembers() {
-        base.InitializeViewMembers();
         _system = gameObject.GetSafeMonoBehaviourComponentInParents<SystemItem>();
-        AssessDiscernability(); // needed as FixedIntel gets set early and never changes
     }
-
-    //protected override IGuiHudPublisher InitializeHudPublisher() {
-    //    return new GuiHudPublisher<StarData>(Data);
-    //}
 
     protected override void InitializeViewMembersOnDiscernible() {
         base.InitializeViewMembersOnDiscernible();
@@ -202,64 +188,6 @@ public class StarItem : AIntelItem, IShipOrbitable, IDetectableItem {
         }
     }
 
-    //private HudPublisher<StarPublisher> _hudPublisher3;
-    //public HudPublisher<StarPublisher> HudPublisher3 {
-    //    get { return _hudPublisher3 = _hudPublisher3 ?? new HudPublisher<StarPublisher>(Publisher); }
-    //}
-
-    //private StarHudPublisher _hudPublisher2;
-    //public StarHudPublisher HudPublisher2 {
-    //    get { return _hudPublisher2 = _hudPublisher2 ?? new StarHudPublisher(Publisher); }
-    //}
-
-    //private StarPublisher _publisher;
-    //public StarPublisher Publisher {
-    //    get { return _publisher = _publisher ?? new StarPublisher(Data); }
-    //}
-    //private StarHudPublisher2 _reportGenerator;
-    //public StarHudPublisher2 ReportGenerator {
-    //    get {
-    //        return _reportGenerator = _reportGenerator ?? new StarHudPublisher2(Data);
-    //    }
-    //}
-    //private StarReportGenerator _reportGenerator;
-    //public StarReportGenerator ReportGenerator {
-    //    get {
-    //        return _reportGenerator = _reportGenerator ?? new StarReportGenerator(Data);
-    //    }
-    //}
-
-
-    //public StarReport GetReport(Player player) {
-    //    return Publisher.GetReport(player);
-    //}
-    //public StarReport GetReport(Player player) {
-    //    return ReportGenerator.GetReport(player);
-    //}
-    //public StarReport GetReport(Player player) {
-    //    return ReportGenerator.GetReport(player, Data.GetPlayerIntel(player));
-    //}
-
-    //protected override void OnHover(bool isOver) {
-    //    HudPublisher3.ShowHud(isOver, Position);
-    //}
-    //protected override void OnHover(bool isOver) {
-    //    HudPublisher2.ShowHud(isOver, Position);
-    //}
-    //protected override void OnHover(bool isOver) {
-    //        ReportGenerator.ShowHud(isOver, Position);
-    //}
-    //protected override void OnHover(bool isOver) {
-    //    if (isOver) {
-    //        string hudText = ReportGenerator.GetCursorHudText(Data.GetHumanPlayerIntel());
-    //        //string hudText = _starReportGenerator.GetCursorHudText(IntelCoverage.Comprehensive);
-    //        GuiCursorHud.Instance.Set(hudText, Position);
-    //    }
-    //    else {
-    //        GuiCursorHud.Instance.Clear();
-    //    }
-    //}
-
     #endregion
 
     #region Cleanup
@@ -269,7 +197,6 @@ public class StarItem : AIntelItem, IShipOrbitable, IDetectableItem {
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
         }
-
         if (_hudManager != null) {
             _hudManager.Dispose();
         }
@@ -280,12 +207,6 @@ public class StarItem : AIntelItem, IShipOrbitable, IDetectableItem {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region INavigableTarget Members
-
-    public override bool IsMobile { get { return false; } }
-
-    #endregion
 
     #region IShipOrbitable Members
 
@@ -305,5 +226,16 @@ public class StarItem : AIntelItem, IShipOrbitable, IDetectableItem {
 
     #endregion
 
+    #region IDetectableItem Members
+
+    public void OnDetectionGained(ICommandItem cmdItem, DistanceRange sensorRange) {
+        throw new NotImplementedException();
+    }
+
+    public void OnDetectionLost(ICommandItem cmdItem, DistanceRange sensorRange) {
+        throw new NotImplementedException();
+    }
+
+    #endregion
 }
 

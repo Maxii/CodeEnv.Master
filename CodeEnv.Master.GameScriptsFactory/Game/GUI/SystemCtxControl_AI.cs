@@ -39,7 +39,7 @@ public class SystemCtxControl_AI : ACtxControl {
     protected override int UniqueSubmenuCountReqd { get { return 0; } }
 
     private SystemItem _systemMenuOperator;
-    private SettlementCommandItem _settlement;
+    private SettlementCmdItem _settlement;
 
     public SystemCtxControl_AI(SystemItem system)
         : base(system.gameObject) {
@@ -48,8 +48,8 @@ public class SystemCtxControl_AI : ACtxControl {
         _settlement = system.Settlement;
     }
 
-    protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCommandItem selectedFleet) {
-        selectedFleet = selected as FleetCommandItem;
+    protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
+        selectedFleet = selected as FleetCmdItem;
         return selectedFleet != null && selectedFleet.Owner.IsPlayer;
     }
 
@@ -58,7 +58,7 @@ public class SystemCtxControl_AI : ACtxControl {
             case FleetDirective.Attack:
                 return !_remotePlayerOwnedSelectedItem.Owner.IsEnemyOf(_systemMenuOperator.Owner);
             case FleetDirective.Explore:
-                return _systemMenuOperator.HumanPlayerIntelCoverage == IntelCoverage.Comprehensive;
+                return false; // TODO //_systemMenuOperator.HumanPlayerIntelCoverage == IntelCoverage.Comprehensive;
             case FleetDirective.Move:
             case FleetDirective.Guard:
                 return _remotePlayerOwnedSelectedItem.Owner.IsEnemyOf(_systemMenuOperator.Owner);
@@ -72,7 +72,7 @@ public class SystemCtxControl_AI : ACtxControl {
 
         var directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = directive == FleetDirective.Attack ? _settlement as INavigableTarget : _systemMenuOperator;
-        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCommandItem;
+        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }
 

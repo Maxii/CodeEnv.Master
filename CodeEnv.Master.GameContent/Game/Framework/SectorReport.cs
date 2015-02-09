@@ -21,18 +21,18 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     ///  Immutable report on a sector.
     /// </summary>
-    public class SectorReport : AReport {
+    public class SectorReport : AItemReport {
 
         public Index3D? SectorIndex { get; private set; }
 
         public float? Density { get; private set; }
 
-        public SectorReport(SectorData data, Player player)
+        public SectorReport(SectorItemData data, Player player)
             : base(player) {
             AssignValues(data);
         }
 
-        private void AssignValues(SectorData data) {
+        private void AssignValues(SectorItemData data) {
             Name = data.Name;
             Owner = data.Owner;
             SectorIndex = SectorIndex;

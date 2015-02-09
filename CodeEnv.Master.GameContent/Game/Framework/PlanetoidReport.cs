@@ -16,15 +16,14 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using UnityEngine;
 
     /// <summary>
     /// Immutable report on a planetoid reflecting a specific player's IntelCoverage.
     /// </summary>
     public class PlanetoidReport : AMortalItemReport {
+
+        public string ParentName { get; protected set; }
 
         public PlanetoidCategory Category { get; private set; }
 
@@ -36,18 +35,20 @@ namespace CodeEnv.Master.GameContent {
 
         public XYield? SpecialResources { get; private set; }
 
-        public PlanetoidReport(APlanetoidData data, Player player)
+        public PlanetoidReport(PlanetoidItemData data, Player player)
             : base(data, player) {
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
-            var planetoidData = data as APlanetoidData;
+        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AIntelItemData data) {
+            base.AssignIncrementalValues_IntelCoverageComprehensive(data);
+            var planetoidData = data as PlanetoidItemData;
             CurrentHitPoints = planetoidData.CurrentHitPoints;
             Health = planetoidData.Health;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
-            var planetoidData = data as APlanetoidData;
+        protected override void AssignIncrementalValues_IntelCoverageModerate(AIntelItemData data) {
+            base.AssignIncrementalValues_IntelCoverageModerate(data);
+            var planetoidData = data as PlanetoidItemData;
             MaxHitPoints = planetoidData.MaxHitPoints;
             DefensiveStrength = planetoidData.DefensiveStrength;
             Mass = planetoidData.Mass;
@@ -56,15 +57,17 @@ namespace CodeEnv.Master.GameContent {
             SpecialResources = planetoidData.SpecialResources;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageMinimal(AItemData data) {
-            var planetoidData = data as APlanetoidData;
+        protected override void AssignIncrementalValues_IntelCoverageMinimal(AIntelItemData data) {
+            base.AssignIncrementalValues_IntelCoverageMinimal(data);
+            var planetoidData = data as PlanetoidItemData;
             Owner = planetoidData.Owner;
             Category = planetoidData.Category;
             OrbitalSpeed = planetoidData.OrbitalSpeed;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageAware(AItemData data) {
-            var planetoidData = data as APlanetoidData;
+        protected override void AssignIncrementalValues_IntelCoverageAware(AIntelItemData data) {
+            base.AssignIncrementalValues_IntelCoverageAware(data);
+            var planetoidData = data as PlanetoidItemData;
             Name = planetoidData.Name;
             ParentName = planetoidData.ParentName;
         }

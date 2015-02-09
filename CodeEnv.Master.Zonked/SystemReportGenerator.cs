@@ -32,14 +32,14 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private StringBuilder _stringBuilder;
-        private SystemData _data;
+        private SystemItemData _data;
         private IGameManager _gameMgr;
         private SystemReport _report;
         private LabelID _currentTextLabelID;
         private StarReport _starReport;
         private PlanetoidReport[] _planetoidReports;
 
-        public SystemReportGenerator(SystemData data) {
+        public SystemReportGenerator(SystemItemData data) {
             _data = data;
             _gameMgr = References.GameManager;
             _stringBuilder = new StringBuilder();

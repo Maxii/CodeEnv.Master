@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
     /// <typeparam name="FactoryType">The type of the Factory.</typeparam>
     public abstract class AIconFactory<IconType, DataType, FactoryType> : AGenericSingleton<FactoryType>
         where IconType : AIcon
-        where DataType : ACommandData
+        where DataType : AUnitCmdItemData
         where FactoryType : class {
 
         private static IDictionary<IconSection, IDictionary<IEnumerable<IconSelectionCriteria>, IIcon>> _iconCache;

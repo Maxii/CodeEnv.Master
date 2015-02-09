@@ -38,27 +38,27 @@ namespace CodeEnv.Master.GameContent {
 
         public XYield? SpecialResourcesUsed { get; private set; }
 
-        public SettlementReport(SettlementCmdData cmdData, Player player, FacilityReport[] facilityReports)
+        public SettlementReport(SettlementCmdItemData cmdData, Player player, FacilityReport[] facilityReports)
             : base(cmdData, player, facilityReports) { }
 
-        protected override void AssignValuesFrom(AElementItemReport[] elementReports, ACommandData cmdData) {
+        protected override void AssignValuesFrom(AElementItemReport[] elementReports, AUnitCmdItemData cmdData) {
             base.AssignValuesFrom(elementReports, cmdData);
             var knownElementCategories = elementReports.Cast<FacilityReport>().Select(r => r.Category).Where(cat => cat != FacilityCategory.None);
             UnitComposition = new BaseComposition(knownElementCategories);
-            Category = UnitComposition != null ? (cmdData as SettlementCmdData).GenerateCmdCategory(UnitComposition) : SettlementCategory.None;
+            Category = UnitComposition != null ? (cmdData as SettlementCmdItemData).GenerateCmdCategory(UnitComposition) : SettlementCategory.None;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AIntelItemData data) {
             base.AssignIncrementalValues_IntelCoverageComprehensive(data);
-            var sData = data as SettlementCmdData;
+            var sData = data as SettlementCmdItemData;
             CapacityUsed = sData.CapacityUsed;
             ResourcesUsed = sData.ResourcesUsed;
             SpecialResourcesUsed = sData.SpecialResourcesUsed;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageModerate(AIntelItemData data) {
             base.AssignIncrementalValues_IntelCoverageModerate(data);
-            var sData = data as SettlementCmdData;
+            var sData = data as SettlementCmdItemData;
             Population = sData.Population;
         }
 

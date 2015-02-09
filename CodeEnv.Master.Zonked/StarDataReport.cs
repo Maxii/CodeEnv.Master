@@ -59,14 +59,14 @@ namespace CodeEnv.Master.GameContent {
 
         public IntelCoverage IntelCoverage { get; private set; }
 
-        public StarDataReport(StarData data, Player player, IntelCoverage intelCoverage)
+        public StarDataReport(StarItemData data, Player player, IntelCoverage intelCoverage)
             : this() {
             Player = player;
             IntelCoverage = intelCoverage;
             SetValues(data);
         }
 
-        private void SetValues(StarData data) {
+        private void SetValues(StarItemData data) {
             switch (IntelCoverage) {
                 case IntelCoverage.Comprehensive:
                     SpecialResources = data.SpecialResources;

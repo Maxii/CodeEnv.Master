@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: MoonItem.cs
-// Item class for Moon Planetoids.
+// Class for APlanetoidItems that are Moons.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,21 +17,14 @@
 // default namespace
 
 using System;
-using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
-using UnityEngine;
 
 /// <summary>
-///  Item class for Moon Planetoids. 
+/// Class for APlanetoidItems that are Moons.
 /// </summary>
 public class MoonItem : APlanetoidItem {
-
-    //public new MoonData Data {
-    //    get { return base.Data as MoonData; }
-    //    set { base.Data = value; }
-    //}
 
     protected override float SphericalHighlightRadius { get { return Radius * 3F; } }
 

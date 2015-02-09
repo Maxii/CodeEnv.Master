@@ -47,13 +47,13 @@ namespace CodeEnv.Master.GameContent {
         private float _gameSpeedMultiplier;
         private Vector3 _velocityOnPause;
 
-        private ShipData _data;
+        private ShipItemData _data;
         private Rigidbody _rigidbody;
 
         private Job _job;
         private IList<IDisposable> _subscribers;
 
-        public EngineRoom(ShipData data, Rigidbody rigidbody) {
+        public EngineRoom(ShipItemData data, Rigidbody rigidbody) {
             _data = data;
             _rigidbody = rigidbody;
             _rigidbody.useGravity = false;

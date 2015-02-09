@@ -16,18 +16,16 @@
 
 // default namespace
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
-using UnityEngine;
 
 /// <summary>
 ///  Initialization class that deploys a Settlement that is available for assignment to a System.
 ///  When assigned, the Settlement relocates to the orbital slot for Settlements held open by the System.
 /// </summary>
-public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory, FacilityData, FacilityStat, SettlementCommandItem> {
+public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory, FacilityData, FacilityStat, SettlementCmdItem> {
 
     public bool orbitMoves;
 
@@ -61,14 +59,14 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory
         get { return new FacilityCategory[] { FacilityCategory.CentralHub }; }
     }
 
-    protected override SettlementCommandItem MakeCommand(Player owner) {
+    protected override SettlementCmdItem MakeCommand(Player owner) {
         LogEvent();
         var countermeasures = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerCmd);
         SettlementCmdStat cmdStat = new SettlementCmdStat(UnitName, 10F, 100, Formation.Circle, 100);
 
-        SettlementCommandItem cmd;
+        SettlementCmdItem cmd;
         if (isCompositionPreset) {
-            cmd = gameObject.GetSafeMonoBehaviourComponentInChildren<SettlementCommandItem>();
+            cmd = gameObject.GetSafeMonoBehaviourComponentInChildren<SettlementCmdItem>();
             _factory.PopulateInstance(cmdStat, countermeasures, owner, ref cmd);
         }
         else {
@@ -96,10 +94,6 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory
         var candidateHQElements = _command.Elements.Where(e => HQElementCategories.Contains((e as FacilityItem).Data.Category));
         D.Assert(!candidateHQElements.IsNullOrEmpty()); // bases must have a CentralHub, even if preset
         _command.HQElement = RandomExtended<AUnitElementItem>.Choice(candidateHQElements) as FacilityItem;
-    }
-
-    protected override void __SetIntelCoverage() {
-        // Settlements assume the intel coverage of their assigned system
     }
 
     protected override void __IssueFirstUnitCommand() {

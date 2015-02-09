@@ -27,13 +27,13 @@ namespace CodeEnv.Master.GameContent {
     /// the object's equality comparer (same instance in memory) is used by the client of the factory
     /// to determine which icon is currently showing.
     /// </summary>
-    public class SettlementIconFactory : AIconFactory<FleetIcon, SettlementCmdData, SettlementIconFactory> {
+    public class SettlementIconFactory : AIconFactory<FleetIcon, SettlementCmdItemData, SettlementIconFactory> {
 
         private SettlementIconFactory() {
             Initialize();
         }
 
-        protected override IconSelectionCriteria GetCriteriaFromCategory(SettlementCmdData data) {
+        protected override IconSelectionCriteria GetCriteriaFromCategory(SettlementCmdItemData data) {
             switch (data.Category) {
                 case SettlementCategory.Colony:
                     return IconSelectionCriteria.Level1;
@@ -51,7 +51,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(SettlementCmdData data) {
+        protected override IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(SettlementCmdItemData data) {
             IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
             IEnumerable<FacilityCategory> elementCategories = data.UnitComposition.GetUniqueElementCategories();
             if (elementCategories.Contains(FacilityCategory.Science)) {

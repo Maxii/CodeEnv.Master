@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
 
         public new ICmdModel Model { get { return base.Model as ICmdModel; } }
 
-        protected new ACommandData Data { get { return base.Data as ACommandData; } }
+        protected new AUnitCmdItemData Data { get { return base.Data as AUnitCmdItemData; } }
 
         protected new ICommandViewable View {
             get { return base.View as ICommandViewable; }

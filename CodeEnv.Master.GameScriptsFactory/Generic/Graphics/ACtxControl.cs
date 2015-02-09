@@ -91,7 +91,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// <summary>
     /// The player-owned Item that is selected and remotely accessing this Menu.
     /// </summary>
-    protected AItem _remotePlayerOwnedSelectedItem;
+    protected ADiscernibleItem _remotePlayerOwnedSelectedItem;
     protected CtxObject _ctxObject;
     private CtxAccessSource _accessSource;
     private GameManager _gameMgr;
@@ -177,7 +177,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
                 return;
             }
 
-            FleetCommandItem selectedFleet;
+            FleetCmdItem selectedFleet;
             if (TryIsRemoteFleetAccessAttempted(selectedItem, out selectedFleet)) {
                 // a remote player owned fleet is selected
                 _accessSource = CtxAccessSource.RemoteFleet;
@@ -186,7 +186,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
                 return;
             }
 
-            AUnitBaseCommandItem selectedBase;
+            AUnitBaseCmdItem selectedBase;
             if (TryIsRemoteBaseAccessAttempted(selectedItem, out selectedBase)) {
                 // a remote player owned base is selected
                 _accessSource = CtxAccessSource.RemoteBase;
@@ -226,7 +226,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// <param name="selected">The Item currently selected.</param>
     /// <param name="selectedFleet">The player-owned, selected fleet, if any.</param>
     /// <returns></returns>
-    protected virtual bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCommandItem selectedFleet) {
+    protected virtual bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = null;
         return false;
     }
@@ -238,7 +238,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// <param name="selected">The Item currently selected.</param>
     /// <param name="selectedBase">The player-owned, selected base, if any.</param>
     /// <returns></returns>
-    protected virtual bool TryIsRemoteBaseAccessAttempted(ISelectable selected, out AUnitBaseCommandItem selectedBase) {
+    protected virtual bool TryIsRemoteBaseAccessAttempted(ISelectable selected, out AUnitBaseCmdItem selectedBase) {
         selectedBase = null;
         return false;
     }

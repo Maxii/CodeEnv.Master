@@ -194,7 +194,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
                 Vector3 mouseWorldPoint = Camera.main.ScreenToWorldPoint(mousePosition);
                 Index3D sectorIndexUnderMouse = _sectorGrid.GetSectorIndex(mouseWorldPoint);
                 bool toShow;
-                Sector notUsed;
+                SectorItem notUsed;
                 if (toShow = _sectorGrid.TryGetSector(sectorIndexUnderMouse, out notUsed)) {
                     if (!CurrentSectorIndex.Equals(sectorIndexUnderMouse)) {
                         CurrentSectorIndex = sectorIndexUnderMouse; // avoid the SetProperty equivalent warnings

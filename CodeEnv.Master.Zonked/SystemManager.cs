@@ -26,7 +26,7 @@ public class SystemManager : AMonoBase, ISelectable, IHasData {
     /// <summary>
     /// Used for convenience only. Actual SystemData repository is held by OrbitalPlane.
     /// </summary>
-    public SystemData Data {
+    public SystemItemData Data {
         get { return _orbitalPlane.Data; }
         set { _orbitalPlane.Data = value; }
     }

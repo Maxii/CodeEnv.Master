@@ -37,37 +37,35 @@ namespace CodeEnv.Master.GameContent {
         //public float RequestedSpeed { get; private set; }
         //public Vector3 RequestedHeading { get; private set; }
         //public Vector3 CurrentHeading { get; private set; }
-
-        public float? UnitFullSpeed { get; private set; }
-
         //public float UnitFullStlSpeed { get; private set; }
         //public float UnitFullFtlSpeed { get; private set; }
 
+        public float? UnitFullSpeed { get; private set; }
+
         public float? UnitMaxTurnRate { get; private set; }
 
-
-        public FleetReport(FleetCmdData cmdData, Player player, ShipReport[] shipReports)
+        public FleetReport(FleetCmdItemData cmdData, Player player, ShipReport[] shipReports)
             : base(cmdData, player, shipReports) { }
 
-        protected override void AssignValuesFrom(AElementItemReport[] elementReports, ACommandData cmdData) {
+        protected override void AssignValuesFrom(AElementItemReport[] elementReports, AUnitCmdItemData cmdData) {
             base.AssignValuesFrom(elementReports, cmdData);
             var knownElementCategories = elementReports.Cast<ShipReport>().Select(r => r.Category).Where(cat => cat != ShipCategory.None);
             if (knownElementCategories.Any()) {
                 UnitComposition = new FleetComposition(knownElementCategories);
             }
-            Category = UnitComposition != null ? (cmdData as FleetCmdData).GenerateCmdCategory(UnitComposition) : FleetCategory.None;
+            Category = UnitComposition != null ? (cmdData as FleetCmdItemData).GenerateCmdCategory(UnitComposition) : FleetCategory.None;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AIntelItemData data) {
             base.AssignIncrementalValues_IntelCoverageComprehensive(data);
-            FleetCmdData fData = data as FleetCmdData;
+            FleetCmdItemData fData = data as FleetCmdItemData;
             UnitFullSpeed = fData.UnitFullSpeed;
             UnitMaxTurnRate = fData.UnitMaxTurnRate;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageModerate(AIntelItemData data) {
             base.AssignIncrementalValues_IntelCoverageModerate(data);
-            FleetCmdData fData = data as FleetCmdData;
+            FleetCmdItemData fData = data as FleetCmdItemData;
             Target = fData.Target;
             CurrentSpeed = fData.CurrentSpeed;
         }

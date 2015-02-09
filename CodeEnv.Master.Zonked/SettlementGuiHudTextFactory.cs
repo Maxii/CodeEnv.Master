@@ -23,13 +23,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     ///  Factory that makes GuiCursorHudText and IColoredTextList instances for Settlements.
     /// </summary>
-    public class SettlementGuiHudTextFactory : AGuiHudTextFactory<SettlementGuiHudTextFactory, SettlementCmdData> {
+    public class SettlementGuiHudTextFactory : AGuiHudTextFactory<SettlementGuiHudTextFactory, SettlementCmdItemData> {
 
         private SettlementGuiHudTextFactory() {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, SettlementCmdData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, SettlementCmdItemData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.ParentName); // the name of the Settlement is the parentName of the Command

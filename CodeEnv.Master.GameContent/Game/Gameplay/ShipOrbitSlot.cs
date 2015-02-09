@@ -75,17 +75,13 @@ namespace CodeEnv.Master.GameContent {
                 GameObject orbitedObjectGo = OrbitedObject.Transform.gameObject;
                 _orbiter = References.GeneralFactory.MakeOrbiterInstance(orbitedObjectGo, _isOrbitedObjectMobile, true, _orbitPeriod, "ShipOrbiter") as IOrbiterForShips;
             }
-            AttachShipToOrbit(ship);
+            ship.AttachTo(_orbiter);
             _orbiter.IsOrbiterInMotion = true;
             D.Log("{0} has assumed orbit around {1}.", ship.FullName, OrbitedObject.FullName);
             float shipOrbitRadius = Vector3.Distance(ship.Position, OrbitedObject.Position);
             if (!Contains(shipOrbitRadius)) {
                 D.Warn("{0} has assumed orbit around {2} but not within {3}. Ship's current orbit radius is {1}.", ship.FullName, shipOrbitRadius, OrbitedObject.FullName, this);
             }
-        }
-
-        private void AttachShipToOrbit(IShipItem ship) {
-            ship.Transform.parent = _orbiter.Transform; // ship retains existing position, rotation, scale and layer
         }
 
         /// <summary>

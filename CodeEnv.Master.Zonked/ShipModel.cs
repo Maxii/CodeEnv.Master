@@ -212,7 +212,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
             private float _gameSpeedMultiplier;
             private Vector3 _velocityOnPause;
 
-            private ShipData _shipData;
+            private ShipItemData _shipData;
             private Rigidbody _shipRigidbody;
 
             private Job _operateEnginesJob;
@@ -543,9 +543,9 @@ public class ShipModel : AUnitElementModel, IShipModel {
         private void Subscribe() {
             _subscribers = new List<IDisposable>();
             _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
-            _subscribers.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullStlSpeed, OnFullSpeedChanged));
-            _subscribers.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullFtlSpeed, OnFullSpeedChanged));
-            _subscribers.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, bool>(d => d.IsFtlAvailableForUse, OnFtlAvailableForUseChanged));
+            _subscribers.Add(_ship.Data.SubscribeToPropertyChanged<ShipItemData, float>(d => d.FullStlSpeed, OnFullSpeedChanged));
+            _subscribers.Add(_ship.Data.SubscribeToPropertyChanged<ShipItemData, float>(d => d.FullFtlSpeed, OnFullSpeedChanged));
+            _subscribers.Add(_ship.Data.SubscribeToPropertyChanged<ShipItemData, bool>(d => d.IsFtlAvailableForUse, OnFtlAvailableForUseChanged));
         }
 
         /// <summary>
@@ -1257,8 +1257,8 @@ public class ShipModel : AUnitElementModel, IShipModel {
         set { SetProperty<ShipOrder>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
     }
 
-    public new ShipData Data {
-        get { return base.Data as ShipData; }
+    public new ShipItemData Data {
+        get { return base.Data as ShipItemData; }
         set { base.Data = value; }
     }
 

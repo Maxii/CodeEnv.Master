@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// LabelText factory for Settlements.
     /// </summary>
-    public class SettlementLabelTextFactory : ALabelTextFactory<SettlementReport, SettlementCmdData> {
+    public class SettlementLabelTextFactory : ALabelTextFactory<SettlementReport, SettlementCmdItemData> {
 
         private static IDictionary<LabelID, IDictionary<LabelContentID, string>> _formatLookupByLabelID = new Dictionary<LabelID, IDictionary<LabelContentID, string>>() {
             { LabelID.CursorHud, new Dictionary<LabelContentID, string>() {
@@ -55,7 +55,7 @@ namespace CodeEnv.Master.GameContent {
 
         public SettlementLabelTextFactory() : base() { }
 
-        public override bool TryMakeInstance(LabelID labelID, LabelContentID contentID, SettlementReport report, SettlementCmdData data, out IColoredTextList content) {
+        public override bool TryMakeInstance(LabelID labelID, LabelContentID contentID, SettlementReport report, SettlementCmdItemData data, out IColoredTextList content) {
             content = _includeUnknownLookup[labelID] ? _unknownValue : _emptyValue;
             switch (contentID) {
                 case LabelContentID.Name:

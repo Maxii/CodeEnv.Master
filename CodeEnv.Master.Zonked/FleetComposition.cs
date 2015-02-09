@@ -36,17 +36,17 @@ namespace CodeEnv.Master.GameContent {
 
         public int ElementCount { get { return GetAllData().Count(); } }
 
-        private IDictionary<ShipCategory, IList<ShipData>> _composition;
+        private IDictionary<ShipCategory, IList<ShipItemData>> _composition;
 
         public FleetComposition() {
-            _composition = new SortedDictionary<ShipCategory, IList<ShipData>>();
+            _composition = new SortedDictionary<ShipCategory, IList<ShipItemData>>();
         }
 
-        public bool Add(ShipData elementData) {
+        public bool Add(ShipItemData elementData) {
             ShipCategory category = elementData.Category;
             D.Assert(category != default(ShipCategory), "{0}.Category is {1}.".Inject(elementData.FullName, default(ShipCategory).GetName()));
             if (!_composition.ContainsKey(category)) {
-                _composition.Add(category, new List<ShipData>());
+                _composition.Add(category, new List<ShipItemData>());
             }
             if (_composition[category].Contains(elementData)) {
                 D.Warn("{0} already contains Data for {1}.", GetType().Name, elementData.Name);
@@ -56,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
             return true;
         }
 
-        public bool Remove(ShipData elementData) {
+        public bool Remove(ShipItemData elementData) {
             ShipCategory category = elementData.Category;
             D.Assert(category != default(ShipCategory), "{0}.Category is {1}.".Inject(elementData.FullName, default(ShipCategory).GetName()));
             bool isRemoved = _composition[category].Remove(elementData);
@@ -66,17 +66,17 @@ namespace CodeEnv.Master.GameContent {
             return isRemoved;
         }
 
-        public bool Contains(ShipData elementData) {
+        public bool Contains(ShipItemData elementData) {
             ShipCategory category = elementData.Category;
             return _composition[category].Contains(elementData);
         }
 
-        public IList<ShipData> GetData(ShipCategory category) {
+        public IList<ShipItemData> GetData(ShipCategory category) {
             return _composition[category];
         }
 
-        public IEnumerable<ShipData> GetAllData() {
-            IEnumerable<ShipData> allData = new List<ShipData>();
+        public IEnumerable<ShipItemData> GetAllData() {
+            IEnumerable<ShipItemData> allData = new List<ShipItemData>();
             foreach (var hull in Categories) {
                 allData = allData.Concat(GetData(hull));
             }

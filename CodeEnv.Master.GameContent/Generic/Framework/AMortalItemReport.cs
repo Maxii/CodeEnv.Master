@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AMortalItemReport.cs
-// Abstract class for MortalItem Reports.
+// Abstract class for Reports associated with an AMortalItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,13 +17,9 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Abstract class for MortalItem Reports.
+    /// Abstract class for Reports associated with an AMortalItem.
     /// </summary>
-    public abstract class AMortalItemReport : AItemReport {
-
-        //public IList<Countermeasure> Countermeasures { get; protected set; }
-
-        public string ParentName { get; protected set; }
+    public abstract class AMortalItemReport : AIntelItemReport {
 
         public float? MaxHitPoints { get; protected set; }
 

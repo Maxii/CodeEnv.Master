@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2015 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
 // File: FacilityData.cs
-// All the data associated with a particular Facility.
+// Class for Data associated with a FacilityItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,24 +16,24 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
     /// <summary>
-    /// All the data associated with a particular Facility.
+    /// Class for Data associated with a FacilityItem.
     /// </summary>
-    public class FacilityData : AElementData {
+    public class FacilityData : AUnitElementItemData {
 
         public FacilityCategory Category { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FacilityData" /> class.
         /// </summary>
+        /// <param name="facilityTransform">The facility transform.</param>
         /// <param name="stat">The stat.</param>
         /// <param name="topography">The topography.</param>
-        public FacilityData(FacilityStat stat, Topography topography)
-            : base(stat.Name, stat.Mass, stat.MaxHitPoints) {
+        public FacilityData(Transform facilityTransform, FacilityStat stat, Topography topography)
+            : base(facilityTransform, stat.Name, stat.Mass, stat.MaxHitPoints) {
             Category = stat.Category;
             base.Topography = topography;
         }

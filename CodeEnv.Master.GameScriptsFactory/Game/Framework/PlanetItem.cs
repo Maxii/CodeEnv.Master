@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: PlanetItem.cs
-// Item class for Planet Planetoids.
+// Class for APlanetoidItems that are Planets.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,26 +18,13 @@
 
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.GameContent;
-using UnityEngine;
 
 /// <summary>
-/// Item class for Planet Planetoids. 
+/// Class for APlanetoidItems that are Planets.
 /// </summary>
 public class PlanetItem : APlanetoidItem {
 
-    //public new PlanetData Data {
-    //    get { return base.Data as PlanetData; }
-    //    set { base.Data = value; }
-    //}
-
     #region Initialization
-
-    //protected override void InitializeModelMembers() {
-    //    base.InitializeModelMembers();
-    //    float orbitalRadius = _transform.localPosition.magnitude;
-    //    Data.OrbitalSpeed = gameObject.GetSafeMonoBehaviourComponentInParents<Orbiter>().GetRelativeOrbitSpeed(orbitalRadius);
-    //}
 
     #endregion
 

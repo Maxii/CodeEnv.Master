@@ -23,8 +23,8 @@ using UnityEngine;
 [System.Obsolete]
 public class ShipCaptain : FollowableItem, ISelectable, IHasData, IDisposable {
 
-    public new ShipData Data {
-        get { return base.Data as ShipData; }
+    public new ShipItemData Data {
+        get { return base.Data as ShipItemData; }
         set { base.Data = value; }
     }
 
@@ -56,7 +56,7 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasData, IDisposable {
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<ShipData>(Data);
+        return new GuiHudPublisher<ShipItemData>(Data);
     }
 
     private void __InitializeNavigator() {
@@ -99,7 +99,7 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasData, IDisposable {
     }
 
     private void SubscribeToDataValueChanges() {
-        Data.SubscribeToPropertyChanged<ShipData, float>(sd => sd.Health, OnHealthChanged);
+        Data.SubscribeToPropertyChanged<ShipItemData, float>(sd => sd.Health, OnHealthChanged);
     }
 
     private void Die() {

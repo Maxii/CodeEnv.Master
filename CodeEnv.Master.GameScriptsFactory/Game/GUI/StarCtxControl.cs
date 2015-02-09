@@ -46,8 +46,8 @@ public class StarCtxControl : ACtxControl {
         _starMenuOperator = star;
     }
 
-    protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCommandItem selectedFleet) {
-        selectedFleet = selected as FleetCommandItem;
+    protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
+        selectedFleet = selected as FleetCmdItem;
         return selectedFleet != null && selectedFleet.Owner.IsPlayer;
     }
 
@@ -70,7 +70,7 @@ public class StarCtxControl : ACtxControl {
 
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = _starMenuOperator;
-        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCommandItem;
+        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }
 

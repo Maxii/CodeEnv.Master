@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AUnitElementItem.cs
-// Abstract base class for UnitElement Items.
+// Abstract class for AMortalItem's that are Unit Elements.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,18 +17,17 @@
 // default namespace
 
 using System;
-using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-///  Abstract base class for UnitElement Items.
+///  Abstract class for AMortalItem's that are Unit Elements.
 /// </summary>
-public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, ICameraFollowable, IElementAttackableTarget, IDetectableItem {
-    //public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, ICameraFollowable, IElementAttackableTarget {
+public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, ICameraFollowable, IElementAttackableTarget, IDetectable {
 
     [Range(1.0F, 3.0F)]
     [Tooltip("Minimum Camera View Distance Multiplier")]
@@ -46,24 +45,19 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
 
     public virtual bool IsHQElement { get; set; }
 
-    public new AElementData2 Data {
-        get { return base.Data as AElementData2; }
+    public new AUnitElementItemData Data {
+        get { return base.Data as AUnitElementItemData; }
         set { base.Data = value; }
     }
-    //public new AElementData Data {
-    //    get { return base.Data as AElementData; }
-    //    set { base.Data = value; }
-    //}
 
     public override string FullName { get { return IsHQElement ? "[HQ]" + base.FullName : base.FullName; } }
 
-    public AUnitCommandItem Command { get; set; }
+    public AUnitCmdItem Command { get; set; }
 
     protected override float ItemTypeCircleScale { get { return 1.0F; } }
 
     protected IList<IWeaponRangeMonitor> _weaponRangeMonitors = new List<IWeaponRangeMonitor>();
     protected float _gameSpeedMultiplier;
-    protected Rigidbody __rigidbody;
 
     private Color _originalMeshColor_Main;
     private Color _originalMeshColor_Specular;
@@ -80,11 +74,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
         // Note: Radius is set in derived classes due to the difference in meshes
         collider.isTrigger = false;
         collider.enabled = false;
-    }
-
-    protected override void InitializeModelMembers() {
-        __rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
-        __rigidbody.mass = Data.Mass;
     }
 
     protected override void Subscribe() {
@@ -510,6 +499,18 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     private float _followRotationDampener = 1.0F;
     public virtual float FollowRotationDampener {
         get { return _followRotationDampener; }
+    }
+
+    #endregion
+
+    #region IDetectableItem Members
+
+    public void OnDetectionGained(ICommandItem cmdItem, DistanceRange sensorRange) {
+        throw new NotImplementedException();
+    }
+
+    public void OnDetectionLost(ICommandItem cmdItem, DistanceRange sensorRange) {
+        throw new NotImplementedException();
     }
 
     #endregion

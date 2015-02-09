@@ -37,13 +37,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private StringBuilder _stringBuilder;
-        private FleetCmdData _data;
+        private FleetCmdItemData _data;
         private IGameManager _gameMgr;
         private FleetReport _report;
         private LabelID _currentTextLabelID;
         private ShipReport[] _elementReports;
 
-        public FleetReportGenerator(FleetCmdData data) {
+        public FleetReportGenerator(FleetCmdItemData data) {
             _data = data;
             _gameMgr = References.GameManager;
             _stringBuilder = new StringBuilder();

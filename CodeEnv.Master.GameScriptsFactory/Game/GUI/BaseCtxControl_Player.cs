@@ -25,7 +25,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Context Menu Control for <see cref="AUnitBaseCommandItem"/>s operated by the Human Player.
+/// Context Menu Control for <see cref="AUnitBaseCmdItem"/>s operated by the Human Player.
 /// </summary>
 public class BaseCtxControl_Player : ACtxControl_Player<BaseDirective> {
 
@@ -58,25 +58,25 @@ public class BaseCtxControl_Player : ACtxControl_Player<BaseDirective> {
 
     protected override int UniqueSubmenuCountReqd { get { return 1; } }
 
-    protected override AItem ItemForFindClosest { get { return _baseMenuOperator; } }
+    protected override ADiscernibleItem ItemForFindClosest { get { return _baseMenuOperator; } }
 
-    private AUnitBaseCommandItem _baseMenuOperator;
+    private AUnitBaseCmdItem _baseMenuOperator;
 
-    public BaseCtxControl_Player(AUnitBaseCommandItem baseCmd)
+    public BaseCtxControl_Player(AUnitBaseCmdItem baseCmd)
         : base(baseCmd.gameObject) {
         _baseMenuOperator = baseCmd;
     }
 
     protected override bool TryIsSelectedItemAccessAttempted(ISelectable selected) {
         if (_baseMenuOperator.IsSelected) {
-            D.Assert(_baseMenuOperator == selected as AUnitBaseCommandItem);
+            D.Assert(_baseMenuOperator == selected as AUnitBaseCmdItem);
             return true;
         }
         return false;
     }
 
-    protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCommandItem selectedFleet) {
-        selectedFleet = selected as FleetCommandItem;
+    protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
+        selectedFleet = selected as FleetCmdItem;
         return selectedFleet != null && selectedFleet.Owner.IsPlayer;
     }
 
@@ -111,7 +111,7 @@ public class BaseCtxControl_Player : ACtxControl_Player<BaseDirective> {
     protected override bool TryGetSubMenuUnitTargets_SelectedItemAccess(BaseDirective directive, out IEnumerable<IUnitAttackableTarget> targets) {
         switch (directive) {
             case BaseDirective.Attack:
-                targets = GameObject.FindObjectsOfType<FleetCommandItem>().Where(f => f.Owner.IsEnemyOf(_baseMenuOperator.Owner)).Cast<IUnitAttackableTarget>(); ;
+                targets = GameObject.FindObjectsOfType<FleetCmdItem>().Where(f => f.Owner.IsEnemyOf(_baseMenuOperator.Owner)).Cast<IUnitAttackableTarget>(); ;
                 return true;
             case BaseDirective.Disband:
             case BaseDirective.Refit:
@@ -127,7 +127,7 @@ public class BaseCtxControl_Player : ACtxControl_Player<BaseDirective> {
     protected override bool IsRemoteFleetMenuItemDisabled(FleetDirective directive) {  // not really needed as base returns false
         switch (directive) {
             case FleetDirective.Repair:
-                var fleet = _remotePlayerOwnedSelectedItem as FleetCommandItem;
+                var fleet = _remotePlayerOwnedSelectedItem as FleetCmdItem;
                 return fleet.Data.UnitHealth == Constants.OneHundredPercent && fleet.Data.Health == Constants.OneHundredPercent;
             case FleetDirective.Disband:
             case FleetDirective.Refit:
@@ -165,7 +165,7 @@ public class BaseCtxControl_Player : ACtxControl_Player<BaseDirective> {
 
         var directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = _baseMenuOperator;
-        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCommandItem;
+        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }
 

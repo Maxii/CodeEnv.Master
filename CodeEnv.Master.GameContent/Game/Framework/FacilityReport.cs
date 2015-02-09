@@ -16,7 +16,6 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System.Collections.Generic;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -28,19 +27,22 @@ namespace CodeEnv.Master.GameContent {
 
         public FacilityReport(FacilityData data, Player player) : base(data, player) { }
 
-        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AIntelItemData data) {
+            base.AssignIncrementalValues_IntelCoverageComprehensive(data);
             var fData = data as FacilityData;
             CurrentHitPoints = fData.CurrentHitPoints;
             Health = fData.Health;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageModerate(AIntelItemData data) {
+            base.AssignIncrementalValues_IntelCoverageModerate(data);
             var fData = data as FacilityData;
             DefensiveStrength = fData.DefensiveStrength;
             OffensiveStrength = fData.OffensiveStrength;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageMinimal(AItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageMinimal(AIntelItemData data) {
+            base.AssignIncrementalValues_IntelCoverageMinimal(data);
             var fData = data as FacilityData;
             ParentName = fData.ParentName;
             Owner = fData.Owner;
@@ -51,7 +53,8 @@ namespace CodeEnv.Master.GameContent {
             MaxWeaponsRange = fData.MaxWeaponsRange;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageAware(AItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageAware(AIntelItemData data) {
+            base.AssignIncrementalValues_IntelCoverageAware(data);
             var fData = data as FacilityData;
             Name = fData.Name;
         }

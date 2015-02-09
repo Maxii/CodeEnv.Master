@@ -31,7 +31,7 @@ using UnityEngine;
 public class ShipFSM : AMonoStateMachine<ShipState> {
 
     private ShipItem _ship;
-    private ShipData Data;
+    private ShipItemData Data;
     private ShipItem.ShipHelm _helm;
 
     protected override void Awake() {
@@ -419,8 +419,8 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
 
         TryBreakOrbit();
 
-        var fleetToJoin = _ship.CurrentOrder.Target as FleetCommandItem;
-        FleetCommandItem transferFleet = null;
+        var fleetToJoin = _ship.CurrentOrder.Target as FleetCmdItem;
+        FleetCmdItem transferFleet = null;
         string transferFleetName = "TransferTo_" + fleetToJoin.DisplayName;
         if (_ship.Command.Elements.Count > 1) {
             // detach from fleet and create tempFleetCmd
@@ -430,19 +430,19 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
         else {
             // this ship's current fleet only has this ship so simply issue the order to this fleet
             //D.Assert(Command.Elements.Single().Equals(this));
-            transferFleet = _ship.Command as FleetCommandItem;
+            transferFleet = _ship.Command as FleetCmdItem;
             transferFleet.Data.ParentName = transferFleetName;
             OnMakeFleetCompleted(transferFleet);
         }
     }
 
-    void ExecuteJoinFleetOrder_OnMakeFleetCompleted(FleetCommandItem transferFleet) {
+    void ExecuteJoinFleetOrder_OnMakeFleetCompleted(FleetCmdItem transferFleet) {
         LogEvent();
         transferFleet.PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
         // TODO PlayerIntelCoverage should be set through sensor detection
 
         // issue a JoinFleet order to our transferFleet
-        var fleetToJoin = _ship.CurrentOrder.Target as FleetCommandItem;
+        var fleetToJoin = _ship.CurrentOrder.Target as FleetCmdItem;
         FleetOrder joinFleetOrder = new FleetOrder(FleetDirective.Join, fleetToJoin);
         transferFleet.CurrentOrder = joinFleetOrder;
         //// once joinFleetOrder takes, this ship state will be changed by its 'new'  transferFleet Command
@@ -606,7 +606,7 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
         //D.Assert(!_helm.IsAutoPilotEngaged, "{0}'s autopilot is still engaged.".Inject(FullName));
         var objectToOrbit = _helm.DestinationInfo.Target as IShipOrbitable;
         if (objectToOrbit != null) {
-            var baseCmdObjectToOrbit = objectToOrbit as AUnitBaseCommandItem;
+            var baseCmdObjectToOrbit = objectToOrbit as AUnitBaseCmdItem;
             if (baseCmdObjectToOrbit != null) {
                 if (_ship.Owner.IsEnemyOf(baseCmdObjectToOrbit.Owner)) {
                     return false;
@@ -697,7 +697,7 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
             uniqueEnemyTargetsInRange = uniqueEnemyTargetsInRange.Union<AMortalItem>(rangeMonitor.EnemyTargets);  // OPTIMIZE
         }
 
-        var cmdTarget = _ordersTarget as AUnitCommandItem;
+        var cmdTarget = _ordersTarget as AUnitCmdItem;
         if (cmdTarget != null) {
             //var primaryTargets = cmdTarget.UnitElementTargets.Cast<IMortalTarget>();
             var primaryTargets = cmdTarget.Elements.Cast<AMortalItem>();
@@ -789,7 +789,7 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
 
     //void OnDestinationUnreachable() { RelayToCurrentState(); }
 
-    void OnMakeFleetCompleted(FleetCommandItem fleet) { RelayToCurrentState(fleet); }
+    void OnMakeFleetCompleted(FleetCmdItem fleet) { RelayToCurrentState(fleet); }
 
     #endregion
 

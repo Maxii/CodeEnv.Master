@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AMortalItem.cs
-// Abstract base class for all items that can die.
+// Abstract class for AIntelItem's that can die.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,29 +17,24 @@
 // default namespace
 
 using System;
-using System.Linq;
 using System.Collections;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract base class for all items that can die.
+/// Abstract class for AIntelItem's that can die.
 /// </summary>
 public abstract class AMortalItem : AIntelItem, IMortalItem {
-    //public abstract class AMortalItem : AItem, IMortalItem {
 
     public event Action<IMortalItem> onDeathOneShot;
 
-    public new AMortalItemData2 Data {
-        get { return base.Data as AMortalItemData2; }
+    public new AMortalItemData Data {
+        get { return base.Data as AMortalItemData; }
         set { base.Data = value; }
     }
-    //public new AMortalItemData Data {
-    //    get { return base.Data as AMortalItemData; }
-    //    set { base.Data = value; }
-    //}
 
     /// <summary>
     /// Flag indicating whether this MortalItem is alive and operating.
@@ -61,12 +56,8 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
-        _subscribers.Add(Data.SubscribeToPropertyChanged<AMortalItemData2, float>(d => d.Health, OnHealthChanged));
+        _subscribers.Add(Data.SubscribeToPropertyChanged<AMortalItemData, float>(d => d.Health, OnHealthChanged));
     }
-    //protected override void SubscribeToDataValueChanges() {
-    //    base.SubscribeToDataValueChanges();
-    //    _subscribers.Add(Data.SubscribeToPropertyChanged<AMortalItemData, float>(d => d.Health, OnHealthChanged));
-    //}
 
     #endregion
 

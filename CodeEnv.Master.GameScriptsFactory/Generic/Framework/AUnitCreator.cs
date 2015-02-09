@@ -36,9 +36,9 @@ using UnityEngine;
 public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementDataType, ElementStatType, CommandType> : ACreator
     where ElementType : AUnitElementItem
     where ElementCategoryType : struct
-    where ElementDataType : AElementData
+    where ElementDataType : AUnitElementItemData
     where ElementStatType : struct
-    where CommandType : AUnitCommandItem {
+    where CommandType : AUnitCmdItem {
 
     private static IList<CommandType> _allUnitCommands = new List<CommandType>();
     public static IList<CommandType> AllUnitCommands { get { return _allUnitCommands; } }
@@ -563,32 +563,6 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             __previousCoverage = proposedCoverage;
         }
     }
-    //protected virtual void __SetIntelCoverage() {
-    //    LogEvent();
-    //    if (toCycleIntelCoverage) {
-    //        new Job(__CycleIntelCoverage(), true);
-    //    }
-    //    else {
-    //        _command.PlayerIntelCoverage = IntelCoverage.Comprehensive;
-    //    }
-    //}
-
-    //private IntelCoverage __previousCoverage;
-    //private IEnumerator __CycleIntelCoverage() {
-    //    _command.PlayerIntelCoverage = IntelCoverage.None;
-    //    yield return new WaitForSeconds(4F);
-    //    _command.PlayerIntelCoverage = IntelCoverage.Aware;
-    //    __previousCoverage = IntelCoverage.Aware;
-    //    while (true) {
-    //        yield return new WaitForSeconds(4F);
-    //        var proposedCoverage = Enums<IntelCoverage>.GetRandom(excludeDefault: true);
-    //        while (proposedCoverage == __previousCoverage) {
-    //            proposedCoverage = Enums<IntelCoverage>.GetRandom(excludeDefault: true);
-    //        }
-    //        _command.PlayerIntelCoverage = proposedCoverage;
-    //        __previousCoverage = proposedCoverage;
-    //    }
-    //}
 
     protected abstract void __IssueFirstUnitCommand();
 

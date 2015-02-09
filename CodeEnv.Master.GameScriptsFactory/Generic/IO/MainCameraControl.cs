@@ -1005,7 +1005,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         // some values are continuously recalculated in update as the target moves so they don't need to be here too
 
         //D.Log("Follow Target is now {0}.", _target.gameObject.GetSafeMonoBehaviourComponent<AItemModel>().FullName);
-        D.Log("Follow Target is now {0}.", _target.gameObject.GetSafeMonoBehaviourComponent<AItem>().FullName);
+        D.Log("Follow Target is now {0}.", _target.gameObject.GetSafeMonoBehaviourComponent<ADiscernibleItem>().FullName);
         ICameraFollowable icfTarget = _target.GetInterface<ICameraFollowable>();
         _cameraRotationDampener = icfTarget.FollowRotationDampener;
         _cameraPositionDampener = icfTarget.FollowDistanceDampener;

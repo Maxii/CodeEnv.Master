@@ -140,7 +140,7 @@ namespace CodeEnv.Master.GameContent {
 
         public class ColoredTextList_Settlement : ColoredTextListBase {
 
-            public ColoredTextList_Settlement(SettlementCmdData settlement) {
+            public ColoredTextList_Settlement(SettlementCmdItemData settlement) {
                 _list.Add(new ColoredText(settlement.Category.GetName()));
                 _list.Add(new ColoredText(settlement.Population.ToString()));
                 _list.Add(new ColoredText(settlement.CapacityUsed.ToString()));
@@ -151,7 +151,7 @@ namespace CodeEnv.Master.GameContent {
 
         public class ColoredTextList_Ship : ColoredTextListBase {
 
-            public ColoredTextList_Ship(ShipData ship, string valueFormat = Constants.FormatFloat_1DpMax) {
+            public ColoredTextList_Ship(ShipItemData ship, string valueFormat = Constants.FormatFloat_1DpMax) {
                 _list.Add(new ColoredText(ship.Category.GetName()));
                 _list.Add(new ColoredText(valueFormat.Inject(ship.Mass)));
                 _list.Add(new ColoredText(valueFormat.Inject(ship.MaxTurnRate)));

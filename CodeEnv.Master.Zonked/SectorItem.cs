@@ -22,10 +22,10 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 ///  Item class for Sectors. 
 /// </summary>
-public class SectorItem : AItem {
+public class SectorItem : ADiscernibleItem {
 
-    public new SectorData Data {
-        get { return base.Data as SectorData; }
+    public new SectorItemData Data {
+        get { return base.Data as SectorItemData; }
         set { base.Data = value; }
     }
 

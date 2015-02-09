@@ -103,7 +103,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         D.Assert(starStat.Category == star.category, "{0} {1} should = {2}.".Inject(typeof(StarCategory).Name, starStat.Category.GetName(), star.category.GetName()));
 
         string starName = systemName + Constants.Space + CommonTerms.Star;
-        star.Data = new StarData(starStat) {
+        star.Data = new StarItemData(star.Transform, starStat) {
             Name = starName,
             ParentName = systemName
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
@@ -141,7 +141,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         D.Assert(planetStat.Category == planet.category,
             "{0} {1} should = {2}.".Inject(typeof(PlanetoidCategory).Name, planetStat.Category.GetName(), planet.category.GetName()));
 
-        planet.Data = new PlanetData(planetStat) {
+        planet.Data = new PlanetoidItemData(planet.Transform, planetStat) {   // new PlanetData(planetStat) {
             ParentName = parentSystemName
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
             // CombatStrength is default(CombatStrength), aka all values zero'd out
@@ -180,7 +180,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         D.Assert(moonStat.Category == moon.category,
             "{0} {1} should = {2}.".Inject(typeof(PlanetoidCategory).Name, moonStat.Category.GetName(), moon.category.GetName()));
 
-        moon.Data = new MoonData(moonStat) {
+        moon.Data = new PlanetoidItemData(moon.Transform, moonStat) {   // new MoonData(moonStat) {
             ParentName = parentPlanetName
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
             // CombatStrength is default(CombatStrength), aka all values zero'd out
@@ -217,7 +217,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="system">The system item.</param>
     public void MakeSystemInstance(string systemName, Index3D sectorIndex, Topography topography, ref SystemItem system) {
         D.Assert(system.transform.parent != null, "{0} should already have a parent.".Inject(system.FullName));
-        SystemData data = new SystemData(systemName, sectorIndex, topography) {
+        SystemItemData data = new SystemItemData(system.Transform, systemName, sectorIndex, topography) {
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
         };
         system.Data = data;

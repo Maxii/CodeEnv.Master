@@ -37,13 +37,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private StringBuilder _stringBuilder;
-        private StarbaseCmdData _data;
+        private StarbaseCmdItemData _data;
         private IGameManager _gameMgr;
         private StarbaseReport _report;
         private LabelID _currentTextLabelID;
         private FacilityReport[] _elementReports;
 
-        public StarbaseReportGenerator(StarbaseCmdData data) {
+        public StarbaseReportGenerator(StarbaseCmdItemData data) {
             _data = data;
             _gameMgr = References.GameManager;
             _stringBuilder = new StringBuilder();

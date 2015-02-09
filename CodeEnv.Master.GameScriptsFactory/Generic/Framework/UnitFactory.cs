@@ -66,9 +66,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner.</param>
     /// <returns></returns>
-    public FleetCommandItem MakeInstance(FleetCmdStat cmdStat, IEnumerable<CountermeasureStat> cmStats, Player owner) {
+    public FleetCmdItem MakeInstance(FleetCmdStat cmdStat, IEnumerable<CountermeasureStat> cmStats, Player owner) {
         GameObject cmdGo = UnityUtility.AddChild(null, _fleetCmdPrefab);
-        var cmd = cmdGo.GetSafeMonoBehaviourComponent<FleetCommandItem>();
+        var cmd = cmdGo.GetSafeMonoBehaviourComponent<FleetCmdItem>();
         MakeInstance(cmdStat, cmStats, owner, ref cmd);
         return cmd;
     }
@@ -80,9 +80,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner.</param>
     /// <param name="item">The item.</param>
-    public void MakeInstance(FleetCmdStat cmdStat, IEnumerable<CountermeasureStat> cmStats, Player owner, ref FleetCommandItem item) {
+    public void MakeInstance(FleetCmdStat cmdStat, IEnumerable<CountermeasureStat> cmStats, Player owner, ref FleetCmdItem item) {
         D.Assert(!item.enabled, "{0} should not be enabled.".Inject(item.FullName));
-        item.Data = new FleetCmdData(cmdStat) {
+        item.Data = new FleetCmdItemData(item.Transform, cmdStat) {
             Owner = owner
         };
         AttachCountermeasures(cmStats, item);
@@ -96,7 +96,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="fleetName">Name of the fleet.</param>
     /// <param name="element">The ship which is designated the HQ Element.</param>
     /// <param name="onCompletion">Delegate that returns the Fleet on completion.</param>
-    public void MakeFleetInstance(string fleetName, ShipItem element, Action<FleetCommandItem> onCompletion) {
+    public void MakeFleetInstance(string fleetName, ShipItem element, Action<FleetCmdItem> onCompletion) {
         FleetCmdStat cmdStat = new FleetCmdStat(fleetName, 10F, 100, Formation.Globe);
         var countermeasureStats = new CountermeasureStat[] { new CountermeasureStat(new CombatStrength(), 0F, 0F) };
         MakeFleetInstance(cmdStat, countermeasureStats, element, onCompletion);
@@ -111,8 +111,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="element">The ship which is designated the HQ Element.</param>
     /// <param name="onCompletion">Delegate that returns the Fleet on completion.</param>
-    public void MakeFleetInstance(FleetCmdStat cmdStat, IEnumerable<CountermeasureStat> cmStats, ShipItem element, Action<FleetCommandItem> onCompletion) {
-        FleetCommandItem cmd = MakeInstance(cmdStat, cmStats, element.Owner);
+    public void MakeFleetInstance(FleetCmdStat cmdStat, IEnumerable<CountermeasureStat> cmStats, ShipItem element, Action<FleetCmdItem> onCompletion) {
+        FleetCmdItem cmd = MakeInstance(cmdStat, cmStats, element.Owner);
         GameObject unitGo = new GameObject(cmdStat.Name);
         UnityUtility.AttachChildToParent(unitGo, FleetsFolder.Instance.Folder.gameObject);
         UnityUtility.AttachChildToParent(cmd.gameObject, unitGo);
@@ -165,7 +165,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         D.Assert(!item.enabled, "{0} should not be enabled.".Inject(item.FullName));
         var categoryFromItem = item.category;
         D.Assert(shipStat.Category == categoryFromItem, "{0} should be same as {1}.".Inject(shipStat.Category.GetName(), categoryFromItem.GetName()));
-        ShipData data = new ShipData(shipStat) {
+        ShipItemData data = new ShipItemData(item.Transform, shipStat) {
             Owner = owner
         };
         item.Data = data;
@@ -181,9 +181,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner of the unit.</param>
     /// <returns></returns>
-    public StarbaseCommandItem MakeInstance(StarbaseCmdStat cmdStat, IEnumerable<CountermeasureStat> cmStats, Player owner) {
+    public StarbaseCmdItem MakeInstance(StarbaseCmdStat cmdStat, IEnumerable<CountermeasureStat> cmStats, Player owner) {
         GameObject cmdGo = UnityUtility.AddChild(null, _starbaseCmdPrefab);
-        StarbaseCommandItem cmd = cmdGo.GetSafeMonoBehaviourComponent<StarbaseCommandItem>();
+        StarbaseCmdItem cmd = cmdGo.GetSafeMonoBehaviourComponent<StarbaseCmdItem>();
         PopulateInstance(cmdStat, cmStats, owner, ref cmd);
         return cmd;
     }
@@ -195,9 +195,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner.</param>
     /// <param name="item">The item.</param>
-    public void PopulateInstance(StarbaseCmdStat cmdStat, IEnumerable<CountermeasureStat> cmStats, Player owner, ref StarbaseCommandItem item) {
+    public void PopulateInstance(StarbaseCmdStat cmdStat, IEnumerable<CountermeasureStat> cmStats, Player owner, ref StarbaseCmdItem item) {
         D.Assert(!item.enabled, "{0} should not be enabled.".Inject(item.FullName));
-        item.Data = new StarbaseCmdData(cmdStat) {
+        item.Data = new StarbaseCmdItemData(item.Transform, cmdStat) {
             Owner = owner
         };
         AttachCountermeasures(cmStats, item);
@@ -210,9 +210,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner of the unit.</param>
     /// <returns></returns>
-    public SettlementCommandItem MakeInstance(SettlementCmdStat cmdStat, IEnumerable<CountermeasureStat> cmStats, Player owner) {
+    public SettlementCmdItem MakeInstance(SettlementCmdStat cmdStat, IEnumerable<CountermeasureStat> cmStats, Player owner) {
         GameObject cmdGo = UnityUtility.AddChild(null, _settlementCmdPrefab);
-        SettlementCommandItem cmd = cmdGo.GetSafeMonoBehaviourComponent<SettlementCommandItem>();
+        SettlementCmdItem cmd = cmdGo.GetSafeMonoBehaviourComponent<SettlementCmdItem>();
         PopulateInstance(cmdStat, cmStats, owner, ref cmd);
         return cmd;
     }
@@ -224,9 +224,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="owner">The owner.</param>
     /// <param name="item">The item.</param>
-    public void PopulateInstance(SettlementCmdStat cmdStat, IEnumerable<CountermeasureStat> cmStats, Player owner, ref SettlementCommandItem item) {
+    public void PopulateInstance(SettlementCmdStat cmdStat, IEnumerable<CountermeasureStat> cmStats, Player owner, ref SettlementCmdItem item) {
         D.Assert(!item.enabled, "{0} should not be enabled.".Inject(item.FullName));
-        item.Data = new SettlementCmdData(cmdStat) {
+        item.Data = new SettlementCmdItemData(item.Transform, cmdStat) {
             Owner = owner
         };
         AttachCountermeasures(cmStats, item);
@@ -266,7 +266,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     public void PopulateInstance(FacilityStat facStat, Topography topography, IEnumerable<WeaponStat> wStats, IEnumerable<CountermeasureStat> cmStats, IEnumerable<SensorStat> sensorStats, Player owner, ref FacilityItem item) {
         var categoryFromItem = item.category;
         D.Assert(facStat.Category == categoryFromItem, "{0} should be same as {1}.".Inject(facStat.Category.GetName(), categoryFromItem.GetName()));
-        FacilityData data = new FacilityData(facStat, topography) {
+        FacilityData data = new FacilityData(item.Transform, facStat, topography) {
             Owner = owner
         };
         item.Data = data;
@@ -275,7 +275,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         AttachSensors(sensorStats, item);
     }
 
-    public FormationStationMonitor MakeFormationStationInstance(Vector3 stationOffset, FleetCommandItem fleetCmd) {
+    public FormationStationMonitor MakeFormationStationInstance(Vector3 stationOffset, FleetCmdItem fleetCmd) {
         // make a folder for neatness if one doesn't yet exist
         GameObject formationStationsFolder = null;
         var stations = fleetCmd.gameObject.GetComponentsInChildren<FormationStationMonitor>();
@@ -342,7 +342,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="sensor">The sensor from one of the command's elements.</param>
     /// <param name="command">The command that has sensor monitors as children.</param>
     /// <returns></returns>
-    public ISensorRangeMonitor MakeMonitorInstance(Sensor sensor, AUnitCommandItem command) {
+    public ISensorRangeMonitor MakeMonitorInstance(Sensor sensor, AUnitCmdItem command) {
         var allSensorMonitors = command.gameObject.GetComponentsInChildren<SensorRangeMonitor>();
         var sensorMonitorsInUse = allSensorMonitors.Where(m => m.Range != DistanceRange.None);
 

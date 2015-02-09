@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// Immutable report on a system reflecting what a specific player's knows
     ///  about the planetoids, star and settlement of the system.
     /// </summary>
-    public class SystemReport : AReport {
+    public class SystemReport : AItemReport {
 
         // TODO Include Settlement in aggregation
 
@@ -36,19 +36,17 @@ namespace CodeEnv.Master.GameContent {
 
         public XYield? SpecialResources { get; private set; }
 
-
         public StarReport StarReport { get; private set; }
         public PlanetoidReport[] PlanetoidReports { get; private set; }
 
-
-        public SystemReport(SystemData data, Player player, StarReport starReport, PlanetoidReport[] planetoidReports)
+        public SystemReport(SystemItemData data, Player player, StarReport starReport, PlanetoidReport[] planetoidReports)
             : base(player) {
             StarReport = starReport;
             PlanetoidReports = planetoidReports;
             AssignValues(data, starReport, planetoidReports);
         }
 
-        private void AssignValues(SystemData data, StarReport starReport, PlanetoidReport[] planetoidReports) {
+        private void AssignValues(SystemItemData data, StarReport starReport, PlanetoidReport[] planetoidReports) {
             Name = data.Name;
             SectorIndex = data.SectorIndex;
             Owner = data.Owner;

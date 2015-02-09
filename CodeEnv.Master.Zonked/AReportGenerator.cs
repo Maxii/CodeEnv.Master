@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
     public abstract class AReportGenerator<DataType, ReportType>
         where DataType : AItemData
         //where ReportType : class {
-        where ReportType : AItemReport {
+        where ReportType : AIntelItemReport {
 
         protected static ALabelFormatter<ReportType> LabelFormatter { private get; set; }
 

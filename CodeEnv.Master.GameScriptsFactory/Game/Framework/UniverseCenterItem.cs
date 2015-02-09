@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: UniverseCenterItem.cs
-// Item class for the Universe Center.
+// Class for the ADiscernibleItem that is the UniverseCenter.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,23 +22,18 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Item class for the Universe Center.
+/// Class for the ADiscernibleItem that is the UniverseCenter.
 /// </summary>
-public class UniverseCenterItem : AItem, IShipOrbitable, IDetectableItem {
-    //public class UniverseCenterItem : AItem, IShipOrbitable {
+public class UniverseCenterItem : ADiscernibleItem, IShipOrbitable, IDetectable {
 
     [Range(0.5F, 3.0F)]
     [Tooltip("Minimum Camera View Distance Multiplier")]
     public float minViewDistanceFactor = 2F;
 
-    public new UniverseCenterData2 Data {
-        get { return base.Data as UniverseCenterData2; }
+    public new UniverseCenterItemData Data {
+        get { return base.Data as UniverseCenterItemData; }
         set { base.Data = value; }
     }
-    //public new UniverseCenterData Data {
-    //    get { return base.Data as UniverseCenterData; }
-    //    set { base.Data = value; }
-    //}
 
     private UniverseCenterPublisher _publisher;
     public UniverseCenterPublisher Publisher {
@@ -79,15 +74,6 @@ public class UniverseCenterItem : AItem, IShipOrbitable, IDetectableItem {
     }
 
     protected override void InitializeModelMembers() { }
-
-    protected override void InitializeViewMembers() {
-        base.InitializeViewMembers();
-        AssessDiscernability(); // needed as FixedIntel gets set early and never changes
-    }
-
-    //protected override IGuiHudPublisher InitializeHudPublisher() {
-    //    return new GuiHudPublisher<UniverseCenterData>(Data);
-    //}
 
     protected override void InitializeViewMembersOnDiscernible() {
         base.InitializeViewMembersOnDiscernible();
@@ -172,12 +158,6 @@ public class UniverseCenterItem : AItem, IShipOrbitable, IDetectableItem {
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region IDestinationTarget Members
-
-    public override bool IsMobile { get { return false; } }
-
-    #endregion
-
     #region IShipOrbitable Members
 
     public ShipOrbitSlot ShipOrbitSlot { get; private set; }
@@ -198,5 +178,16 @@ public class UniverseCenterItem : AItem, IShipOrbitable, IDetectableItem {
 
     #endregion
 
+    #region IDetectableItem Members
+
+    public void OnDetectionGained(ICommandItem cmdItem, DistanceRange sensorRange) {
+        throw new NotImplementedException();
+    }
+
+    public void OnDetectionLost(ICommandItem cmdItem, DistanceRange sensorRange) {
+        throw new NotImplementedException();
+    }
+
+    #endregion
 }
 

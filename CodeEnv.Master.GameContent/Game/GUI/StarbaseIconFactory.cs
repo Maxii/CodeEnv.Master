@@ -27,13 +27,13 @@ namespace CodeEnv.Master.GameContent {
     /// the object's equality comparer (same instance in memory) is used by the client of the factory
     /// to determine which icon is currently showing.
     /// </summary>
-    public class StarbaseIconFactory : AIconFactory<FleetIcon, StarbaseCmdData, StarbaseIconFactory> {
+    public class StarbaseIconFactory : AIconFactory<FleetIcon, StarbaseCmdItemData, StarbaseIconFactory> {
 
         private StarbaseIconFactory() {
             Initialize();
         }
 
-        protected override IconSelectionCriteria GetCriteriaFromCategory(StarbaseCmdData data) {
+        protected override IconSelectionCriteria GetCriteriaFromCategory(StarbaseCmdItemData data) {
             switch (data.Category) {
                 case StarbaseCategory.Outpost:
                     return IconSelectionCriteria.Level1;
@@ -51,7 +51,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(StarbaseCmdData data) {
+        protected override IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(StarbaseCmdItemData data) {
             IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
             IEnumerable<FacilityCategory> elementCategories = data.UnitComposition.GetUniqueElementCategories();
             if (elementCategories.Contains(FacilityCategory.Science)) {

@@ -21,13 +21,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Report and LabelText Publisher for Planetoids.
     /// </summary>
-    public class PlanetoidPublisher : APublisher<PlanetoidReport, APlanetoidData> {
+    public class PlanetoidPublisher : APublisher<PlanetoidReport, PlanetoidItemData> {
 
         static PlanetoidPublisher() {
             LabelTextFactory = new PlanetoidLabelTextFactory();
         }
 
-        public PlanetoidPublisher(APlanetoidData data) : base(data) { }
+        public PlanetoidPublisher(PlanetoidItemData data) : base(data) { }
 
         protected override PlanetoidReport GenerateReport(Player player) {
             return new PlanetoidReport(_data, player);

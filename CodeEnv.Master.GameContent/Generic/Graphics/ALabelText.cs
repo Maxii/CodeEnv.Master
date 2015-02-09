@@ -83,7 +83,7 @@ namespace CodeEnv.Master.GameContent {
         /// The Report this LabelText is derived from. 
         /// Used by the Publisher to check whether this cached LabelText was derived from a current report.
         /// </summary>
-        public AReport Report { get; private set; }
+        public AItemReport Report { get; private set; }
 
         private IDictionary<LabelContentID, string> _formatLookup = new Dictionary<LabelContentID, string>();
         private IDictionary<LabelContentID, IColoredTextList> _contentLookup = new Dictionary<LabelContentID, IColoredTextList>();
@@ -97,7 +97,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="labelID">The label identifier.</param>
         /// <param name="report">The report this LabelText is derived from.</param>
         /// <param name="isDedicatedLinePerContentID">if set to <c>true</c> the text associated with each key will be displayed on a separate line.</param>
-        public ALabelText(LabelID labelID, AReport report, bool isDedicatedLinePerContentID) {
+        public ALabelText(LabelID labelID, AItemReport report, bool isDedicatedLinePerContentID) {
             LabelID = labelID;
             Report = report;
             _isDedicatedLinePerContentID = isDedicatedLinePerContentID;

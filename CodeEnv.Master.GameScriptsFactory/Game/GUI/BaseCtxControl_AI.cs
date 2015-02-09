@@ -23,7 +23,7 @@ using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Context Menu Control for <see cref="AUnitBaseCommandItem"/>s operated by the AI.
+/// Context Menu Control for <see cref="AUnitBaseCmdItem"/>s operated by the AI.
 /// </summary>
 public class BaseCtxControl_AI : ACtxControl {
 
@@ -36,15 +36,15 @@ public class BaseCtxControl_AI : ACtxControl {
 
     protected override int UniqueSubmenuCountReqd { get { return Constants.Zero; } }
 
-    private AUnitBaseCommandItem _baseMenuOperator;
+    private AUnitBaseCmdItem _baseMenuOperator;
 
-    public BaseCtxControl_AI(AUnitBaseCommandItem baseCmd)
+    public BaseCtxControl_AI(AUnitBaseCmdItem baseCmd)
         : base(baseCmd.gameObject) {
         _baseMenuOperator = baseCmd;
     }
 
-    protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCommandItem selectedFleet) {
-        selectedFleet = selected as FleetCommandItem;
+    protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
+        selectedFleet = selected as FleetCmdItem;
         return selectedFleet != null && selectedFleet.Owner.IsPlayer;
     }
 
@@ -65,7 +65,7 @@ public class BaseCtxControl_AI : ACtxControl {
 
         var directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = _baseMenuOperator;
-        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCommandItem;
+        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }
 

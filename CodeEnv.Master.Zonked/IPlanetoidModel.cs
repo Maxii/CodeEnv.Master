@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IPlanetoidModel : IMortalModel {
 
-        new PlanetoidData Data { get; set; }
+        new PlanetoidItemData Data { get; set; }
 
     }
 }

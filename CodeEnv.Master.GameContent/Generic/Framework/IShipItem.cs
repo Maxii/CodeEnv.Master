@@ -24,6 +24,13 @@ namespace CodeEnv.Master.GameContent {
     public interface IShipItem : IElementItem {
 
         /// <summary>
+        /// Parents the ship to the provided orbiter's transform.
+        /// The ship retains existing position, rotation, scale and layer.
+        /// </summary>
+        /// <param name="orbiter">The orbiter.</param>
+        void AttachTo(IOrbiterForShips orbiter);
+
+        /// <summary>
         /// Reattaches the ship's transform to the fleet container it came from.
         /// </summary>
         void ReattachToParentFleetContainer();

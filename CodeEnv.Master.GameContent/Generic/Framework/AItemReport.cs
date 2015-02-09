@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AItemReport.cs
-//  Abstract base class for Item Reports.
+// Abstract class for Reports associated with an AItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,50 +16,20 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-
     /// <summary>
-    /// Abstract class for Item Reports.
+    /// Abstract class for Reports associated with an AItem.
     /// </summary>
-    public abstract class AItemReport : AReport {
+    public abstract class AItemReport {
 
-        public IntelCoverage IntelCoverage { get; private set; }
+        public string Name { get; protected set; }
 
-        public AItemReport(AItemData data, Player player)
-            : base(player) {
-            IntelCoverage = data.GetIntelCoverage(player);
-            AssignValues(data);
+        public Player Owner { get; protected set; }
+
+        public Player Player { get; private set; }
+
+        public AItemReport(Player player) {
+            Player = player;
         }
-
-        private void AssignValues(AItemData data) {
-            switch (IntelCoverage) {
-                case IntelCoverage.Comprehensive:
-                    AssignIncrementalValues_IntelCoverageComprehensive(data);
-                    goto case IntelCoverage.Moderate;
-                case IntelCoverage.Moderate:
-                    AssignIncrementalValues_IntelCoverageModerate(data);
-                    goto case IntelCoverage.Minimal;
-                case IntelCoverage.Minimal:
-                    AssignIncrementalValues_IntelCoverageMinimal(data);
-                    goto case IntelCoverage.Aware;
-                case IntelCoverage.Aware:
-                    AssignIncrementalValues_IntelCoverageAware(data);
-                    goto case IntelCoverage.None;
-                case IntelCoverage.None:
-                    AssignIncrementalValues_IntelCoverageNone(data);
-                    break;
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(IntelCoverage));
-            }
-        }
-
-        protected virtual void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) { }
-        protected virtual void AssignIncrementalValues_IntelCoverageModerate(AItemData data) { }
-        protected virtual void AssignIncrementalValues_IntelCoverageMinimal(AItemData data) { }
-        protected virtual void AssignIncrementalValues_IntelCoverageAware(AItemData data) { }
-        protected virtual void AssignIncrementalValues_IntelCoverageNone(AItemData data) { }
 
     }
 }

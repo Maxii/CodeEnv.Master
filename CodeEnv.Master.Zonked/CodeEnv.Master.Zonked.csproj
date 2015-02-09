@@ -55,7 +55,9 @@
     </Compile>
     <Compile Include="ACombatItemData.cs" />
     <Compile Include="ACombatItemModel.cs" />
+    <Compile Include="ACommandData.cs" />
     <Compile Include="ACommandStats.cs" />
+    <Compile Include="AElementData.cs" />
     <Compile Include="AElementStats.cs" />
     <Compile Include="AFocusableItem.cs" />
     <Compile Include="AFocusableItemPresenter.cs" />
@@ -74,6 +76,7 @@
     <Compile Include="AGuiStringPopupList.cs" />
     <Compile Include="AInputManager.cs" />
     <Compile Include="AItem.cs" />
+    <Compile Include="AItemData.cs" />
     <Compile Include="AItemModel.cs" />
     <Compile Include="AItemPresenter.cs" />
     <Compile Include="AItemStats.cs" />
@@ -84,12 +87,14 @@
     <Compile Include="AMonoBehaviourBaseSingletonInstanceIdentity.cs" />
     <Compile Include="AMonoStateMachineSingleton.cs" />
     <Compile Include="AMortalFocusablePresenter.cs" />
+    <Compile Include="AMortalItemData.cs" />
     <Compile Include="AMortalItemModel.cs" />
     <Compile Include="AMortalItemModelStateMachine.cs" />
     <Compile Include="AMortalItemPresenter.cs" />
     <Compile Include="AMortalItemView.cs" />
     <Compile Include="ANavigator.cs" />
     <Compile Include="AOwnedItemModel.cs" />
+    <Compile Include="APlanetoidData.cs" />
     <Compile Include="APlanetoidModel.cs" />
     <Compile Include="APlanetoidView.cs" />
     <Compile Include="APresenter.cs" />
@@ -118,6 +123,7 @@
     <Compile Include="ElementReadyEvent.cs" />
     <Compile Include="EngineRoom.cs" />
     <Compile Include="ExitGameEvent.cs" />
+    <Compile Include="FacilityData.cs" />
     <Compile Include="FacilityGuiHudTextFactory.cs" />
     <Compile Include="FacilityLabelFormatter.cs" />
     <Compile Include="FacilityModel.cs" />
@@ -129,6 +135,7 @@
     <Compile Include="FleetAdmiralIcon.cs" />
     <Compile Include="FleetAutoPilot.cs" />
     <Compile Include="FleetAutoPilot2.cs" />
+    <Compile Include="FleetCmdData.cs" />
     <Compile Include="FleetCmdModel.cs" />
     <Compile Include="FleetCmdPresenter.cs" />
     <Compile Include="FleetCmdPresenter_AI.cs" />
@@ -271,6 +278,7 @@
     <Compile Include="LoadSavedGameEvent.cs" />
     <Compile Include="LobbyInputManager.cs" />
     <Compile Include="MonoGameManager.cs" />
+    <Compile Include="MoonData.cs" />
     <Compile Include="MoonGuiHudTextFactory.cs" />
     <Compile Include="MoonModel.cs" />
     <Compile Include="MoonPresenter.cs" />
@@ -285,6 +293,7 @@
     <Compile Include="OrbitalPlaneManager.cs" />
     <Compile Include="OrbitalSlot.cs" />
     <Compile Include="PauseCommand.cs" />
+    <Compile Include="PlanetData.cs" />
     <Compile Include="PlanetGuiHudTextFactory.cs" />
     <Compile Include="PlanetModel.cs" />
     <Compile Include="PlanetoidData.cs" />
@@ -304,6 +313,7 @@
     <Compile Include="SceneChangedEvent.cs" />
     <Compile Include="SceneChangingEvent.cs" />
     <Compile Include="Sector.cs" />
+    <Compile Include="SectorData.cs" />
     <Compile Include="SectorGuiHudTextFactory.cs" />
     <Compile Include="SectorItem.cs" />
     <Compile Include="SectorLabelFormatter.cs" />
@@ -311,6 +321,7 @@
     <Compile Include="SectorPresenter.cs" />
     <Compile Include="SectorReportGenerator.cs" />
     <Compile Include="SectorView.cs" />
+    <Compile Include="SettlementCmdData.cs" />
     <Compile Include="SettlementCmdModel.cs" />
     <Compile Include="SettlementCmdPresenter.cs" />
     <Compile Include="SettlementCmdPresenter_AI.cs" />
@@ -328,6 +339,7 @@
     <Compile Include="ShipAttackTask.cs" />
     <Compile Include="ShipCaptain.cs" />
     <Compile Include="ShipCtxControl_AI.cs" />
+    <Compile Include="ShipData.cs" />
     <Compile Include="ShipFSM.cs" />
     <Compile Include="ShipGraphics.cs" />
     <Compile Include="ShipGuiHudTextFactory.cs" />
@@ -346,6 +358,7 @@
     <Compile Include="ShipView_Player.cs" />
     <Compile Include="Star.cs" />
     <Compile Include="StarAnimator.cs" />
+    <Compile Include="StarbaseCmdData.cs" />
     <Compile Include="StarbaseCmdModel.cs" />
     <Compile Include="StarbaseCmdPresenter.cs" />
     <Compile Include="StarbaseCmdPresenter_AI.cs" />
@@ -362,6 +375,7 @@
     <Compile Include="StarBasePresenter.cs" />
     <Compile Include="StarbaseReportGenerator.cs" />
     <Compile Include="StarBaseView.cs" />
+    <Compile Include="StarData.cs" />
     <Compile Include="StarDataReport.cs" />
     <Compile Include="StarGlowAnimator.cs" />
     <Compile Include="StarGraphics.cs" />
@@ -393,6 +407,7 @@
     <Compile Include="UnitOrder.cs" />
     <Compile Include="UnitTargetOrder.cs" />
     <Compile Include="UniverseCenter.cs" />
+    <Compile Include="UniverseCenterData.cs" />
     <Compile Include="UniverseCenterGuiHudTextFactory.cs" />
     <Compile Include="UniverseCenterLabelFormatter.cs" />
     <Compile Include="UniverseCenterModel.cs" />

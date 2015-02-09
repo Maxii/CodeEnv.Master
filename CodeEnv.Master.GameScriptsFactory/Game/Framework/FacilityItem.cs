@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FacilityItem.cs
-// Item class for  Unit Facility Elements.
+// Class for AUnitElementItems that are Facilities.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,14 +18,13 @@
 
 using System;
 using System.Collections;
-using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Item class for  Unit Facility Elements.
+/// Class for AUnitElementItems that are Facilities.
 /// </summary>
 public class FacilityItem : AUnitElementItem {
 
@@ -49,8 +48,8 @@ public class FacilityItem : AUnitElementItem {
         }
     }
 
-    public new AUnitBaseCommandItem Command {
-        get { return base.Command as AUnitBaseCommandItem; }
+    public new AUnitBaseCmdItem Command {
+        get { return base.Command as AUnitBaseCmdItem; }
         set { base.Command = value; }
     }
 
@@ -90,16 +89,10 @@ public class FacilityItem : AUnitElementItem {
     }
 
     protected override void InitializeModelMembers() {
-        base.InitializeModelMembers();
+        //base.InitializeModelMembers();
         D.Assert(category == Data.Category);
         CurrentState = FacilityState.None;
     }
-
-    //protected override IGuiHudPublisher InitializeHudPublisher() {
-    //    var publisher = new GuiHudPublisher<FacilityData>(Data);
-    //    publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
-    //    return publisher;
-    //}
 
     protected override void InitializeViewMembersOnDiscernible() {
         base.InitializeViewMembersOnDiscernible();
@@ -495,12 +488,6 @@ public class FacilityItem : AUnitElementItem {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region INavigableTarget Members
-
-    public override bool IsMobile { get { return false; } }
-
-    #endregion
 
     #region Distributed Damage Archive
 

@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2015 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
 // File: AMortalItemData.cs
-// Abstract base class that holds data for Items that can take damage and die.
+// Abstract class for Data associated with an AMortalItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,16 +16,16 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System.Linq;
+    using System;
     using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
     using UnityEngine;
-    using System;
 
     /// <summary>
-    /// Abstract base class that holds data for Items that can take damage and die.
+    /// Abstract class for Data associated with an AMortalItem.
     /// </summary>
-    public abstract class AMortalItemData : AItemData, IDisposable {
+    public abstract class AMortalItemData : AIntelItemData, IDisposable {
 
         public IList<Countermeasure> Countermeasures { get; private set; }
 
@@ -36,9 +36,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private float _currentHitPoints;
-        /// <summary>
-        /// Gets or sets the current hit points of this item. 
-        /// </summary>
         public virtual float CurrentHitPoints {
             get { return _currentHitPoints; }
             set {
@@ -49,7 +46,7 @@ namespace CodeEnv.Master.GameContent {
 
         private float _health;
         /// <summary>
-        /// Readonly. Indicates the health of the item, a value between 0 and 1.
+        /// The health of the item, a value between 0 and 1.
         /// </summary>
         public virtual float Health {
             get { return _health; }
@@ -65,15 +62,9 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<CombatStrength>(ref _defensiveStrength, value, "DefensiveStrength"); }
         }
 
-        /// <summary>
-        /// The mass of the Item.
-        /// </summary>
-        public float Mass { get; private set; }
-
-        public AMortalItemData(string name, float mass, float maxHitPts)
-            : base(name) {
+        public AMortalItemData(Transform itemTransform, string name, float maxHitPts)
+            : base(itemTransform, name) {
             Countermeasures = new List<Countermeasure>();
-            Mass = mass;
             MaxHitPoints = maxHitPts;
             CurrentHitPoints = maxHitPts;
         }
@@ -133,6 +124,8 @@ namespace CodeEnv.Master.GameContent {
             D.Log("{0}: Health {1}, CurrentHitPoints {2}, MaxHitPoints {3}.", FullName, _health, CurrentHitPoints, MaxHitPoints);
         }
 
+        #region Cleanup
+
         protected virtual void Cleanup() {
             Unsubscribe();
         }
@@ -140,6 +133,8 @@ namespace CodeEnv.Master.GameContent {
         protected virtual void Unsubscribe() {
             Countermeasures.ForAll(cm => cm.onIsOperationalChanged -= OnCountermeasureIsOperationalChanged);
         }
+
+        #endregion
 
         #region IDisposable
         [DoNotSerialize]

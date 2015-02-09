@@ -84,7 +84,7 @@ public class SystemCreator : AMonoBase {
     public int maxPlanetsInRandomSystem = 3;
     public int maxMoonsInRandomSystem = 3;
     public int countermeasuresPerPlanetoid = 1;
-    public bool toCycleIntelCoverage = false;
+    //public bool toCycleIntelCoverage = false;
 
     public string SystemName { get { return _transform.name; } }    // the SystemCreator carries the name of the System
 
@@ -207,13 +207,13 @@ public class SystemCreator : AMonoBase {
     private StarStat CreateStarStatFromChildren() {
         D.Assert(isCompositionPreset);
         StarCategory category = gameObject.GetSafeMonoBehaviourComponentInChildren<StarItem>().category;
-        return new StarStat(category, 100, new OpeYield(0F, 0F, 100F), new XYield(XResource.Special_3, 0.3F));
+        return new StarStat(category, 100, 10000000F, new OpeYield(0F, 0F, 100F), new XYield(XResource.Special_3, 0.3F));
     }
 
     private StarStat CreateRandomStarStat() {
         D.Assert(!isCompositionPreset);
         StarCategory category = Enums<StarCategory>.GetRandom(excludeDefault: true);
-        return new StarStat(category, 100, new OpeYield(0F, 0F, 100F), new XYield(XResource.Special_3, 0.3F));
+        return new StarStat(category, 100, 10000000F, new OpeYield(0F, 0F, 100F), new XYield(XResource.Special_3, 0.3F));
     }
 
     private IList<PlanetoidStat> CreatePlanetStatsFromChildren() {
@@ -601,38 +601,12 @@ public class SystemCreator : AMonoBase {
         });
     }
 
-    private void __SetIntelCoverage() {    // UNCLEAR how should system, star, planet and moon intel coverage levels relate to each other?
+    private void __SetIntelCoverage() {
         LogEvent();
-        // Stars use FixedIntel set to Comprehensive. It is not changeable
-        // Systems simply use Intel like most other objects. It can be changed to any value
-        // Planets and Moons use ImprovingIntel which means once a level is achieved it cannot be reduced
-
+        // Stars, Planets and Moons use ImprovingIntel which means once a level is achieved it cannot be reduced
+        _star.HumanPlayerIntelCoverage = IntelCoverage.Comprehensive;
         _planets.ForAll(p => p.HumanPlayerIntelCoverage = IntelCoverage.Comprehensive);
         _moons.ForAll(m => m.HumanPlayerIntelCoverage = IntelCoverage.Comprehensive);
-
-        if (toCycleIntelCoverage) {
-            new Job(__CycleIntelCoverage(), true);
-        }
-        else {
-            _system.HumanPlayerIntelCoverage = IntelCoverage.Comprehensive;
-        }
-    }
-
-    private IntelCoverage __previousCoverage;
-    private IEnumerator __CycleIntelCoverage() {
-        _system.HumanPlayerIntelCoverage = IntelCoverage.None;
-        yield return new WaitForSeconds(4F);
-        _system.HumanPlayerIntelCoverage = IntelCoverage.Aware;
-        __previousCoverage = IntelCoverage.Aware;
-        while (true) {
-            yield return new WaitForSeconds(4F);
-            var proposedCoverage = Enums<IntelCoverage>.GetRandom(excludeDefault: true);
-            while (proposedCoverage == __previousCoverage) {
-                proposedCoverage = Enums<IntelCoverage>.GetRandom(excludeDefault: true);
-            }
-            _system.HumanPlayerIntelCoverage = proposedCoverage;
-            __previousCoverage = proposedCoverage;
-        }
     }
 
     private void BeginSystemOperations(Action onCompletion) {

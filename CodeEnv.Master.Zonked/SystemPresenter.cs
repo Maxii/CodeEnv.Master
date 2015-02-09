@@ -23,16 +23,16 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SystemPresenter : AFocusableItemPresenter {
 
-        protected new SystemData Data { get { return base.Data as SystemData; } }
+        protected new SystemItemData Data { get { return base.Data as SystemItemData; } }
 
         public SystemPresenter(IViewable view) : base(view) { }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
-            return new GuiHudPublisher<SystemData>(Data as SystemData);
+            return new GuiHudPublisher<SystemItemData>(Data as SystemItemData);
         }
 
         public void RequestContextMenu(bool isDown) {
-            SettlementCmdData settlementData = Data.SettlementData;
+            SettlementCmdItemData settlementData = Data.SettlementData;
             //D.Log("Settlement null = {0}, isHumanOwner = {1}.", settlement == null, settlement.Owner.IsHuman);
             if (settlementData != null && (DebugSettings.Instance.AllowEnemyOrders || settlementData.Owner.IsPlayer)) {
                 _cameraControl.ShowContextMenuOnPress(isDown);

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AIntelItem.cs
-// COMMENT - one line to give a brief idea of what this file does.
+// Abstract class for ADiscernibleItem's that have knowledge of each player's IntelCoverage.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,21 +16,16 @@
 
 // default namespace
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
-using UnityEngine;
 
 /// <summary>
-/// COMMENT 
+/// Abstract class for ADiscernibleItem's that have knowledge of each player's IntelCoverage.
 /// </summary>
-public abstract class AIntelItem : AItem {
+public abstract class AIntelItem : ADiscernibleItem {
 
-    public new AIntelData2 Data {
-        get { return base.Data as AIntelData2; }
+    public new AIntelItemData Data {
+        get { return base.Data as AIntelItemData; }
         set { base.Data = value; }
     }
 
@@ -39,12 +34,8 @@ public abstract class AIntelItem : AItem {
         set { Data.HumanPlayerIntelCoverage = value; }
     }
 
-
     #region Initialization
 
-    /// <summary>
-    /// Subscribes to changes to values contained in Data. 
-    /// </summary>
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
         _subscribers.Add(Data.HumanPlayerIntel.SubscribeToPropertyChanged<AIntel, IntelCoverage>(hpi => hpi.CurrentCoverage, OnHumanPlayerIntelCoverageChanged));
@@ -83,11 +74,6 @@ public abstract class AIntelItem : AItem {
     #region Mouse Events
 
     #endregion
-
-    #region Cleanup
-
-    #endregion
-
 
 }
 

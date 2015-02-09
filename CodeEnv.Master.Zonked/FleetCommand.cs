@@ -47,7 +47,7 @@ public class FleetCommand : FollowableItem, IFleetCommand {
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<FleetCmdData>(Data);
+        return new GuiHudPublisher<FleetCmdItemData>(Data);
     }
 
     public void __GetFleetUnderway() {
@@ -94,7 +94,7 @@ public class FleetCommand : FollowableItem, IFleetCommand {
     }
 
     private void SubscribeToDataValueChanges() {
-        Data.SubscribeToPropertyChanged<FleetCmdData, float>(fd => fd.UnitHealth, OnHealthChanged);
+        Data.SubscribeToPropertyChanged<FleetCmdItemData, float>(fd => fd.UnitHealth, OnHealthChanged);
     }
 
     private void OnHealthChanged() {
@@ -130,8 +130,8 @@ public class FleetCommand : FollowableItem, IFleetCommand {
 
     #region IFleetCommand Members
 
-    public new FleetCmdData Data {
-        get { return base.Data as FleetCmdData; }
+    public new FleetCmdItemData Data {
+        get { return base.Data as FleetCmdItemData; }
         set { base.Data = value; }
     }
 

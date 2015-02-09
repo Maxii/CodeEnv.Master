@@ -26,8 +26,8 @@ using UnityEngine;
 /// </summary>
 public class SectorModel : AOwnedItemModel, INavigableTarget {
 
-    public new SectorData Data {
-        get { return base.Data as SectorData; }
+    public new SectorItemData Data {
+        get { return base.Data as SectorItemData; }
         set { base.Data = value; }
     }
 

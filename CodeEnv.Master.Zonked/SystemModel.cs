@@ -26,8 +26,8 @@ using UnityEngine;
 /// </summary>
 public class SystemModel : AOwnedItemModel, INavigableTarget {
 
-    public new SystemData Data {
-        get { return base.Data as SystemData; }
+    public new SystemItemData Data {
+        get { return base.Data as SystemItemData; }
         set { base.Data = value; }
     }
 

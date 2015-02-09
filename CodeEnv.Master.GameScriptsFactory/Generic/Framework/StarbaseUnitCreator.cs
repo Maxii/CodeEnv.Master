@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Initialization class that deploys a Starbase at the location of this StarbaseCreator. 
 /// </summary>
-public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityCategory, FacilityData, FacilityStat, StarbaseCommandItem> {
+public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityCategory, FacilityData, FacilityStat, StarbaseCmdItem> {
 
     // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
 
@@ -58,14 +58,14 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityCategory, 
         get { return new FacilityCategory[] { FacilityCategory.CentralHub }; }
     }
 
-    protected override StarbaseCommandItem MakeCommand(Player owner) {
+    protected override StarbaseCmdItem MakeCommand(Player owner) {
         LogEvent();
         var countermeasures = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerCmd);
         StarbaseCmdStat cmdStat = new StarbaseCmdStat(UnitName, 10F, 100, Formation.Circle);
 
-        StarbaseCommandItem cmd;
+        StarbaseCmdItem cmd;
         if (isCompositionPreset) {
-            cmd = gameObject.GetSafeMonoBehaviourComponentInChildren<StarbaseCommandItem>();
+            cmd = gameObject.GetSafeMonoBehaviourComponentInChildren<StarbaseCmdItem>();
             _factory.PopulateInstance(cmdStat, countermeasures, owner, ref cmd);
         }
         else {

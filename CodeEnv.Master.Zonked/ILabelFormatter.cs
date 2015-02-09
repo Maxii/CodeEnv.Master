@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// 
     /// </summary>
-    public interface ILabelFormatter<ReportType> where ReportType : AItemReport {
+    public interface ILabelFormatter<ReportType> where ReportType : AIntelItemReport {
 
         bool IncludeUnknown { get; set; }
 

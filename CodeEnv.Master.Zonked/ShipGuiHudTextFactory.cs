@@ -23,13 +23,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Factory that makes GuiCursorHudText and IColoredTextList instances for Ships.
     /// </summary>
-    public class ShipGuiHudTextFactory : AGuiHudTextFactory<ShipGuiHudTextFactory, ShipData> {
+    public class ShipGuiHudTextFactory : AGuiHudTextFactory<ShipGuiHudTextFactory, ShipItemData> {
 
         private ShipGuiHudTextFactory() {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, ShipData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, ShipItemData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.Name);

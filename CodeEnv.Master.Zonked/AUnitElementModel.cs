@@ -31,8 +31,8 @@ public abstract class AUnitElementModel : ACombatItemModel, IElementModel, IElem
 
     public virtual bool IsHQElement { get; set; }
 
-    public new AElementData Data {
-        get { return base.Data as AElementData; }
+    public new AUnitElementItemData Data {
+        get { return base.Data as AUnitElementItemData; }
         set { base.Data = value; }
     }
 

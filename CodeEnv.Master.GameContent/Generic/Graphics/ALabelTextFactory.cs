@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// Abstract generic class for LabelText Factories.
     /// </summary>
     public abstract class ALabelTextFactory<ReportType, DataType> : ALabelTextFactoryBase
-        where ReportType : AItemReport
+        where ReportType : AIntelItemReport
         where DataType : AItemData {
 
         public ALabelTextFactory() : base() { }

@@ -29,9 +29,9 @@ using UnityEngine;
 /// </summary>
 public class FormationGenerator {
 
-    private AUnitCommandItem _unitCmd;
+    private AUnitCmdItem _unitCmd;
 
-    public FormationGenerator(AUnitCommandItem unitCmd) {
+    public FormationGenerator(AUnitCmdItem unitCmd) {
         _unitCmd = unitCmd;
     }
 

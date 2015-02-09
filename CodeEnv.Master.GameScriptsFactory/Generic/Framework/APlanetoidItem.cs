@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: APlanetoidItem.cs
-//  Abstract base class for Planetoid (Planet and Moon) Items.
+// Abstract class for AMortalItems that are Planetoid (Planet and Moon) Items.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -24,10 +24,9 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract base class for Planetoid (Planet and Moon) Items.
+/// Abstract class for AMortalItems that are Planetoid (Planet and Moon) Items.
 /// </summary>
-public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbitable, IUnitAttackableTarget, IElementAttackableTarget, IDetectableItem {
-    //public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbitable, IUnitAttackableTarget, IElementAttackableTarget {
+public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbitable, IUnitAttackableTarget, IElementAttackableTarget, IDetectable {
 
     [Tooltip("The type of planetoid")]
     public PlanetoidCategory category;
@@ -40,14 +39,10 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
     [Tooltip("Optimal Camera View Distance Multiplier")]
     public float optViewDistanceFactor = 8F;
 
-    public new PlanetoidData2 Data {
-        get { return base.Data as PlanetoidData2; }
+    public new PlanetoidItemData Data {
+        get { return base.Data as PlanetoidItemData; }
         set { base.Data = value; }
     }
-    //public new APlanetoidData Data {
-    //    get { return base.Data as APlanetoidData; }
-    //    set { base.Data = value; }
-    //}
 
     private PlanetoidPublisher _publisher;
     public PlanetoidPublisher Publisher {
@@ -300,6 +295,24 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
     public virtual float FollowRotationDampener {
         get { return cameraFollowRotationDampener; }
     }
+
+    #endregion
+
+    #region IDetectableItem Members
+
+    public void OnDetectionGained(ICommandItem cmdItem, DistanceRange sensorRange) {
+        throw new NotImplementedException();
+    }
+
+    public void OnDetectionLost(ICommandItem cmdItem, DistanceRange sensorRange) {
+        throw new NotImplementedException();
+    }
+
+    #endregion
+
+    #region INavigableTarget Members
+
+    public override bool IsMobile { get { return true; } }
 
     #endregion
 

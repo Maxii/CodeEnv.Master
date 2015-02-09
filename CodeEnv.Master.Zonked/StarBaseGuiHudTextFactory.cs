@@ -23,13 +23,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Factory that makes GuiCursorHudText and IColoredTextList instances for Starbases.
     /// </summary>
-    public class StarbaseGuiHudTextFactory : AGuiHudTextFactory<StarbaseGuiHudTextFactory, StarbaseCmdData> {
+    public class StarbaseGuiHudTextFactory : AGuiHudTextFactory<StarbaseGuiHudTextFactory, StarbaseCmdItemData> {
 
         private StarbaseGuiHudTextFactory() {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, StarbaseCmdData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, StarbaseCmdItemData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.ParentName);   // the name of the Starbase is the parentName of the Command

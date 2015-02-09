@@ -32,8 +32,8 @@ public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarge
 
     public string UnitName { get { return Data.ParentName; } }
 
-    public new ACommandData Data {
-        get { return base.Data as ACommandData; }
+    public new AUnitCmdItemData Data {
+        get { return base.Data as AUnitCmdItemData; }
         set { base.Data = value; }
     }
 
@@ -63,7 +63,7 @@ public abstract class AUnitCommandModel : ACombatItemModel, ICmdModel, ICmdTarge
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
-        _subscribers.Add(Data.SubscribeToPropertyChanged<ACommandData, Formation>(d => d.UnitFormation, OnFormationChanged));
+        _subscribers.Add(Data.SubscribeToPropertyChanged<AUnitCmdItemData, Formation>(d => d.UnitFormation, OnFormationChanged));
     }
 
     /// <summary>

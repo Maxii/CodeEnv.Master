@@ -16,7 +16,6 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
     using UnityEngine;
 
     /// <summary>
@@ -34,8 +33,6 @@ namespace CodeEnv.Master.GameContent {
         Player Owner { get; }
 
         Vector3 Position { get; }
-
-        Transform Transform { get; }
 
     }
 }

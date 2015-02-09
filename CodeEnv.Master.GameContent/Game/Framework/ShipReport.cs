@@ -41,34 +41,36 @@ namespace CodeEnv.Master.GameContent {
         //public float FullFtlThrust { get; private set; }
         //public Vector3 RequestedHeading { get; private set; }
         //public Vector3 CurrentHeading { get; private set; }
-
-        public float? FullSpeed { get; private set; }
-
         //public float FullFtlSpeed { get; private set; }
         //public float FullStlSpeed { get; private set; }
+
+        public float? FullSpeed { get; private set; }
 
         public float? MaxTurnRate { get; private set; }
 
         public ShipCategory Category { get; private set; }
 
-        public ShipReport(ShipData data, Player player) : base(data, player) { }
+        public ShipReport(ShipItemData data, Player player) : base(data, player) { }
 
-        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
-            var sData = data as ShipData;
+        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AIntelItemData data) {
+            base.AssignIncrementalValues_IntelCoverageComprehensive(data);
+            var sData = data as ShipItemData;
             CurrentHitPoints = sData.CurrentHitPoints;
             Health = sData.Health;
             CombatStance = sData.CombatStance;
             Target = sData.Target;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
-            var sData = data as ShipData;
+        protected override void AssignIncrementalValues_IntelCoverageModerate(AIntelItemData data) {
+            base.AssignIncrementalValues_IntelCoverageModerate(data);
+            var sData = data as ShipItemData;
             DefensiveStrength = sData.DefensiveStrength;
             OffensiveStrength = sData.OffensiveStrength;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageMinimal(AItemData data) {
-            var sData = data as ShipData;
+        protected override void AssignIncrementalValues_IntelCoverageMinimal(AIntelItemData data) {
+            base.AssignIncrementalValues_IntelCoverageMinimal(data);
+            var sData = data as ShipItemData;
             ParentName = sData.ParentName;
             Owner = sData.Owner;
             Category = sData.Category;
@@ -80,8 +82,9 @@ namespace CodeEnv.Master.GameContent {
             FullSpeed = sData.FullSpeed;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageAware(AItemData data) {
-            var sData = data as ShipData;
+        protected override void AssignIncrementalValues_IntelCoverageAware(AIntelItemData data) {
+            base.AssignIncrementalValues_IntelCoverageAware(data);
+            var sData = data as ShipItemData;
             Name = sData.Name;
             CurrentSpeed = sData.CurrentSpeed;
         }

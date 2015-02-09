@@ -27,8 +27,8 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class SettlementCmdModel : AUnitBaseCmdModel {
 
-    public new SettlementCmdData Data {
-        get { return base.Data as SettlementCmdData; }
+    public new SettlementCmdItemData Data {
+        get { return base.Data as SettlementCmdItemData; }
         set { base.Data = value; }
     }
 

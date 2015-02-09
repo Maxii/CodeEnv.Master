@@ -40,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
 
         public SectorLabelTextFactory() : base() { }
 
-        public bool TryMakeInstance(LabelID labelID, LabelContentID contentID, SectorReport report, SectorData data, out IColoredTextList content) {
+        public bool TryMakeInstance(LabelID labelID, LabelContentID contentID, SectorReport report, SectorItemData data, out IColoredTextList content) {
             content = _includeUnknownLookup[labelID] ? _unknownValue : _emptyValue;
             switch (contentID) {
                 case LabelContentID.Name:
@@ -65,7 +65,7 @@ namespace CodeEnv.Master.GameContent {
             return content != _emptyValue;
         }
 
-        public SectorLabelText MakeInstance(LabelID labelID, SectorReport report, SectorData data) {
+        public SectorLabelText MakeInstance(LabelID labelID, SectorReport report, SectorItemData data) {
             var formatLookup = GetFormatLookup(labelID);
             SectorLabelText labelText = new SectorLabelText(labelID, report, _dedicatedLinePerContentIDLookup[labelID]);
             foreach (var contentID in formatLookup.Keys) {

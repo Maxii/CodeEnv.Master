@@ -40,7 +40,7 @@ public class ShipCtxControl_Player : ACtxControl_Player<ShipDirective> {
 
     protected override int UniqueSubmenuCountReqd { get { return 3; } }
 
-    protected override AItem ItemForFindClosest { get { return _shipMenuOperator; } }
+    protected override ADiscernibleItem ItemForFindClosest { get { return _shipMenuOperator; } }
     private ShipItem _shipMenuOperator;
 
     public ShipCtxControl_Player(ShipItem ship)
@@ -79,11 +79,11 @@ public class ShipCtxControl_Player : ACtxControl_Player<ShipDirective> {
     protected override bool TryGetSubMenuUnitTargets_SelectedItemAccess(ShipDirective directive, out IEnumerable<IUnitAttackableTarget> targets) {
         switch (directive) {
             case ShipDirective.Join:
-                targets = GameObject.FindObjectsOfType<FleetCommandItem>().Where(f => f.Owner.IsPlayer).Except(_shipMenuOperator.Command).Cast<IUnitAttackableTarget>();
+                targets = GameObject.FindObjectsOfType<FleetCmdItem>().Where(f => f.Owner.IsPlayer).Except(_shipMenuOperator.Command).Cast<IUnitAttackableTarget>();
                 return true;
             case ShipDirective.Refit:
             case ShipDirective.Disband:
-                targets = GameObject.FindObjectsOfType<AUnitBaseCommandItem>().Where(b => b.Owner.IsPlayer).Cast<IUnitAttackableTarget>();
+                targets = GameObject.FindObjectsOfType<AUnitBaseCmdItem>().Where(b => b.Owner.IsPlayer).Cast<IUnitAttackableTarget>();
                 return true;
             case ShipDirective.SelfDestruct:
                 targets = Enumerable.Empty<IUnitAttackableTarget>();

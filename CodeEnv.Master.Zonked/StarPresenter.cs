@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class StarPresenter : AFocusableItemPresenter {
 
-        protected new StarData Data { get { return base.Data as StarData; } }
+        protected new StarItemData Data { get { return base.Data as StarItemData; } }
 
         private IViewable _systemView;
 
@@ -34,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
-            return new GuiHudPublisher<StarData>(Data);
+            return new GuiHudPublisher<StarItemData>(Data);
         }
 
         public void OnLeftClick() {

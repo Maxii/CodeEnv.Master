@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="labelID">The label identifier.</param>
         /// <param name="report">The report.</param>
         /// <param name="isDedicatedLinePerContentID">if set to <c>true</c> the text associated with each key will be displayed on a separate line.</param>
-        public LabelText(LabelID labelID, AItemReport report, bool isDedicatedLinePerContentID)
+        public LabelText(LabelID labelID, AIntelItemReport report, bool isDedicatedLinePerContentID)
             : base(labelID, report, isDedicatedLinePerContentID) {
             IntelCoverage = report.IntelCoverage;
         }

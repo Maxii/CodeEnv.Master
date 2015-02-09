@@ -29,7 +29,7 @@ using UnityEngine;
 /// it will be built and then initialized.
 /// </summary>
 [SerializeAll]
-public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, ShipStat, FleetCommandItem> {
+public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipItemData, ShipStat, FleetCmdItem> {
 
     public bool move;
     public bool attack;
@@ -49,13 +49,13 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
         return new ShipStat(elementName, mass, 50F, category, combatStance, maxTurnRate, drag, fullStlThrust, fullFtlThrust);
     }
 
-    protected override FleetCommandItem MakeCommand(Player owner) {
+    protected override FleetCmdItem MakeCommand(Player owner) {
         LogEvent();
         var countermeasures = _availableCountermeasureStats.Shuffle().Take(countermeasuresPerCmd);
         FleetCmdStat cmdStat = new FleetCmdStat(UnitName, 10F, 100, Formation.Globe);
-        FleetCommandItem cmd;
+        FleetCmdItem cmd;
         if (isCompositionPreset) {
-            cmd = gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommandItem>();
+            cmd = gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCmdItem>();
             _factory.MakeInstance(cmdStat, countermeasures, owner, ref cmd);
         }
         else {

@@ -45,19 +45,19 @@ public class SystemCtxControl : ACtxControl {
         _systemMenuOperator = system;
     }
 
-    protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCommandItem selectedFleet) {
-        selectedFleet = selected as FleetCommandItem;
+    protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
+        selectedFleet = selected as FleetCmdItem;
         return selectedFleet != null && selectedFleet.Owner.IsPlayer;
     }
 
     protected override bool IsRemoteFleetMenuItemDisabled(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Explore:
-                return _systemMenuOperator.HumanPlayerIntelCoverage == IntelCoverage.Comprehensive;
+            //return _systemMenuOperator.HumanPlayerIntelCoverage == IntelCoverage.Comprehensive;
             case FleetDirective.Move:
             case FleetDirective.Guard:
             case FleetDirective.Patrol:
-                // not owned by anyone so no disabling conditions
+                // TODO
                 return false;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -69,7 +69,7 @@ public class SystemCtxControl : ACtxControl {
 
         var directive = (FleetDirective)_directiveLookup[itemID];
         INavigableTarget target = _systemMenuOperator;
-        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCommandItem;
+        var remoteFleet = _remotePlayerOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, target, Speed.FleetStandard);
     }
 

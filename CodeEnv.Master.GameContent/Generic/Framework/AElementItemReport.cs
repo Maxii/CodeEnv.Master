@@ -21,8 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AElementItemReport : AMortalItemReport {
 
-        //public IList<Weapon> Weapons { get; private set; }
-        //public IList<Sensor> Sensors { get; private set; }
+        public string ParentName { get; protected set; }
 
         public CombatStrength? OffensiveStrength { get; protected set; }
 
@@ -30,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
 
         public float? MaxSensorRange { get; protected set; }
 
-        public AElementItemReport(AElementData data, Player player) : base(data, player) { }
+        public AElementItemReport(AUnitElementItemData data, Player player) : base(data, player) { }
 
     }
 }

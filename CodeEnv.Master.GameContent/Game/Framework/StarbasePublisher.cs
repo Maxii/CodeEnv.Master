@@ -21,13 +21,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Report and LabelText Publisher for Starbases.
     /// </summary>
-    public class StarbasePublisher : ACmdPublisher<StarbaseReport, StarbaseCmdData, FacilityReport> {
+    public class StarbasePublisher : ACmdPublisher<StarbaseReport, StarbaseCmdItemData, FacilityReport> {
 
         static StarbasePublisher() {
             LabelTextFactory = new StarbaseLabelTextFactory();
         }
 
-        public StarbasePublisher(StarbaseCmdData data) : base(data) { }
+        public StarbasePublisher(StarbaseCmdItemData data) : base(data) { }
 
         protected override StarbaseReport GenerateReport(Player player, FacilityReport[] elementReports) {
             return new StarbaseReport(_data, player, elementReports);

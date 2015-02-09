@@ -33,9 +33,9 @@ namespace CodeEnv.Master.GameContent {
         private IDictionary<Player, SectorReport> _reportCache = new Dictionary<Player, SectorReport>();
         private IDictionary<LabelID, SectorLabelText> _labelTextCache = new Dictionary<LabelID, SectorLabelText>();
         private IGameManager _gameMgr;
-        private SectorData _data;
+        private SectorItemData _data;
 
-        public SectorPublisher(SectorData data) {
+        public SectorPublisher(SectorItemData data) {
             _data = data;
             _gameMgr = References.GameManager;
         }

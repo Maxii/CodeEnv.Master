@@ -21,12 +21,12 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Immutable report on the universe center reflecting a specific player's IntelCoverage.
     /// </summary>
-    public class UniverseCenterReport : AItemReport {
+    public class UniverseCenterReport : AIntelItemReport {
 
-        public UniverseCenterReport(UniverseCenterData data, Player player)
+        public UniverseCenterReport(UniverseCenterItemData data, Player player)
             : base(data, player) { }
 
-        protected override void AssignIncrementalValues_IntelCoverageAware(AItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageAware(AIntelItemData data) {
             base.AssignIncrementalValues_IntelCoverageAware(data);
             Name = data.Name;
             Owner = data.Owner;

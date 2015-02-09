@@ -44,7 +44,7 @@ public class SettlementPresenter : AMortalItemPresenter {
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<SettlementCmdData>(Mode.Data);
+        return new GuiHudPublisher<SettlementCmdItemData>(Mode.Data);
     }
 
     protected override void Subscribe() {

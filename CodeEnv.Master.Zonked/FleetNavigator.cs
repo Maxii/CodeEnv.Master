@@ -100,7 +100,7 @@ public class FleetNavigator : IDisposable {
     /// every second at a speed of 1 unit per day and normal gamespeed.
     /// </summary>
     private float _courseProgressCheckPeriod = 1F;
-    private FleetCmdData _data;
+    private FleetCmdItemData _data;
     private IList<IDisposable> _subscribers;
     private GameTime _gameTime;
     private float _gameSpeedMultiplier;
@@ -126,8 +126,8 @@ public class FleetNavigator : IDisposable {
     private void Subscribe() {
         _subscribers = new List<IDisposable>();
         _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
-        _subscribers.Add(_data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.MaxWeaponsRange, OnWeaponsRangeChanged));
-        _subscribers.Add(_data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.UnitFullStlSpeed, OnFullSpeedChanged));
+        _subscribers.Add(_data.SubscribeToPropertyChanged<FleetCmdItemData, float>(d => d.MaxWeaponsRange, OnWeaponsRangeChanged));
+        _subscribers.Add(_data.SubscribeToPropertyChanged<FleetCmdItemData, float>(d => d.UnitFullStlSpeed, OnFullSpeedChanged));
         _seeker.pathCallback += OnCoursePlotCompleted;
         _subscribers.Add(_fleet.SubscribeToPropertyChanging<AUnitCommandModel, IElementModel>(cmd => cmd.HQElement, OnHQElementChanging));
         _subscribers.Add(_fleet.SubscribeToPropertyChanged<AUnitCommandModel, IElementModel>(cmd => cmd.HQElement, OnHQElementChanged));

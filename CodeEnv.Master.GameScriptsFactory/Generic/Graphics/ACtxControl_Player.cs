@@ -37,7 +37,7 @@ public abstract class ACtxControl_Player<T> : ACtxControl where T : struct {
     /// <summary>
     /// Gets the Item to measure from when determining which IUnitTargets are closest.
     /// </summary>
-    protected abstract AItem ItemForFindClosest { get; }
+    protected abstract ADiscernibleItem ItemForFindClosest { get; }
 
     private Stack<CtxMenu> _unusedSubMenus;
 

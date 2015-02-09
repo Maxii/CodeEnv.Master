@@ -25,8 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class ACmdPublisher<ReportType, DataType, ElementReportType> : ACmdPublisherBase
         where ReportType : ACmdReport
-        where DataType : ACommandData2
-        //where DataType : ACommandData
+        where DataType : AUnitCmdItemData
         where ElementReportType : AElementItemReport {
 
         protected static ALabelTextFactory<ReportType, DataType> LabelTextFactory { private get; set; }
@@ -111,7 +110,7 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
-        protected bool IsEqual(IEnumerable<AReport> reportsA, IEnumerable<AReport> reportsB) {
+        protected bool IsEqual(IEnumerable<AItemReport> reportsA, IEnumerable<AItemReport> reportsB) {
             return reportsA.OrderBy(r => r.Name).SequenceEqual(reportsB.OrderBy(r => r.Name));
         }
 

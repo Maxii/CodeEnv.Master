@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SystemItem.cs
-//  Item class for Systems. 
+// Class for ADiscernibleItems that are Systems.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,7 +17,6 @@
 // default namespace
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
@@ -26,9 +25,9 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Item class for Systems. 
+/// Class for ADiscernibleItems that are Systems.
 /// </summary>
-public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonitorable {
+public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopographyMonitorable {
 
     private static string __highlightName = "SystemHighlightMesh";  // IMPROVE
 
@@ -38,23 +37,19 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
     [Tooltip("Minimum Camera View Distance in Units")]
     public float minViewDistance = 2F;    // 2 units from the orbital plane
 
-    public new SystemData2 Data {
-        get { return base.Data as SystemData2; }
+    public new SystemItemData Data {
+        get { return base.Data as SystemItemData; }
         set { base.Data = value; }
     }
-    //public new SystemData Data {
-    //    get { return base.Data as SystemData; }
-    //    set { base.Data = value; }
-    //}
 
-    private SettlementCommandItem _settlement;
-    public SettlementCommandItem Settlement {
+    private SettlementCmdItem _settlement;
+    public SettlementCmdItem Settlement {
         get { return _settlement; }
         set {
             if (_settlement != null && value != null) {
                 D.Error("{0} cannot assign {1} when {2} is already present.", FullName, value.FullName, _settlement.FullName);
             }
-            SetProperty<SettlementCommandItem>(ref _settlement, value, "Settlement", OnSettlementChanged);
+            SetProperty<SettlementCmdItem>(ref _settlement, value, "Settlement", OnSettlementChanged);
         }
     }
 
@@ -186,7 +181,7 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
     }
 
     private void OnSettlementChanged() {
-        SettlementCmdData2 settlementData = null;
+        SettlementCmdItemData settlementData = null;
         if (Settlement != null) {
             settlementData = Settlement.Data;
             AttachSettlement(Settlement);
@@ -198,41 +193,14 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
         Data.SettlementData = settlementData;
         // The owner of a system and all it's celestial objects is determined by the ownership of the Settlement, if any
     }
-    //private void OnSettlementChanged() {
-    //    SettlementCmdData settlementData = null;
-    //    if (Settlement != null) {
-    //        settlementData = Settlement.Data;
-    //        AttachSettlement(Settlement);
-    //    }
-    //    else {
-    //        // The existing Settlement has been destroyed, so cleanup the orbit slot in prep for a future Settlement
-    //        Data.SettlementOrbitSlot.DestroyOrbiter();
-    //    }
-    //    Data.SettlementData = settlementData;
-    //    // The owner of a system and all it's celestial objects is determined by the ownership of the Settlement, if any
-    //}
 
-    private void AttachSettlement(SettlementCommandItem settlementCmd) {
+    private void AttachSettlement(SettlementCmdItem settlementCmd) {
         Transform settlementUnit = settlementCmd.transform.parent;
         var orbiter = Data.SettlementOrbitSlot.AssumeOrbit(settlementUnit, "Settlement Orbiter"); // IMPROVE the only remaining OrbitSlot held in Data
         orbiter.IsOrbiterInMotion = settlementCmd.__OrbiterMoves;
         // enabling (or not) the system orbiter can also be handled by the SettlementCreator once isRunning
         //D.Log("{0} has been deployed to {1}.", settlementCmd.DisplayName, FullName);
     }
-    //private void AttachSettlement(SettlementCommandItem settlementCmd) {
-    //    Transform settlementUnit = settlementCmd.transform.parent;
-    //    var orbiter = Data.SettlementOrbitSlot.AssumeOrbit(settlementUnit, "Settlement Orbiter"); // IMPROVE the only remaining OrbitSlot held in Data
-    //    orbiter.IsOrbiterInMotion = settlementCmd.__OrbiterMoves;
-    //    // enabling (or not) the system orbiter can also be handled by the SettlementCreator once isRunning
-    //    //D.Log("{0} has been deployed to {1}.", settlementCmd.DisplayName, FullName);
-
-    //    var systemIntelCoverage = PlayerIntelCoverage;
-    //    if (systemIntelCoverage == IntelCoverage.None) {
-    //        D.Log("{0}.IntelCoverage set to None by its assigned System {1}.", settlementCmd.FullName, FullName);
-    //    }
-    //    // UNCLEAR should a new settlement being attached to a System take on the PlayerIntel state of the System??  See SystemPresenter.OnPlayerIntelCoverageChanged()
-    //    Settlement.PlayerIntelCoverage = systemIntelCoverage;
-    //}
 
     protected override void OnOwnerChanging(Player newOwner) {
         base.OnOwnerChanging(newOwner);
@@ -269,17 +237,6 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
         _orbitalPlaneCollider.enabled = IsDiscernible;
         // orbitalPlane LineRenderers don't render when not visible to the camera
     }
-
-    //protected override void OnHumanPlayerIntelCoverageChanged() {
-    //    base.OnHumanPlayerIntelCoverageChanged();
-    //    // construct list each time as Settlement presence can change with time
-    //    if (Settlement != null) {
-    //        Settlement.HumanPlayerIntelCoverage = HumanPlayerIntelCoverage;
-    //    }
-    //    // The approach below acquired all item children in the system and gave them the same IntelCoverage as the system
-    //    //var childItemsInSystem = gameObject.GetSafeMonoBehaviourComponentsInChildren<AItem>().Except(this);
-    //    //childItemsInSystem.ForAll(i => i.PlayerIntel.CurrentCoverage = PlayerIntel.CurrentCoverage);
-    //}
 
     private void OnIsSelectedChanged() {
         if (IsSelected) {
@@ -360,27 +317,6 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
         }
     }
 
-    //private SystemReportGenerator _reportGenerator;
-    //public SystemReportGenerator ReportGenerator {
-    //    get {
-    //        return _reportGenerator = _reportGenerator ?? new SystemReportGenerator(Data);
-    //    }
-    //}
-
-    //protected override void OnHover(bool isOver) {
-    //    if (isOver) {
-    //        StarReport starReport = gameObject.GetSafeMonoBehaviourComponentInChildren<StarItem>().GetReport(_gameMgr.HumanPlayer);
-    //        var planetoids = gameObject.GetSafeMonoBehaviourComponentsInChildren<APlanetoidItem>();
-    //        PlanetoidReport[] planetoidReports = planetoids.Select(p => p.GetReport(_gameMgr.HumanPlayer)).ToArray();
-    //        string hudText = ReportGenerator.GetCursorHudText(starReport, planetoidReports);
-    //        GuiCursorHud.Instance.Set(hudText, Position);
-    //    }
-    //    else {
-    //        GuiCursorHud.Instance.Clear();
-    //    }
-    //}
-
-
     #endregion
 
     #region Cleanup
@@ -394,6 +330,7 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
         if (_hudManager != null) {
             _hudManager.Dispose();
         }
+        Data.Dispose();
     }
 
     #endregion
@@ -401,12 +338,6 @@ public class SystemItem : AItem, IZoomToFurthest, ISelectable, ITopographyMonito
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
-
-    #region INavigableTarget Members
-
-    public override bool IsMobile { get { return false; } }
-
-    #endregion
 
     #region ICameraTargetable Members
 
