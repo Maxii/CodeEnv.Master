@@ -32,11 +32,12 @@ namespace CodeEnv.Master.GameContent {
             AssignValues(data);
         }
 
-        private void AssignValues(SectorItemData data) {
-            Name = data.Name;
-            Owner = data.Owner;
-            SectorIndex = SectorIndex;
-            Density = data.Density;
+        protected override void AssignValues(AItemData data) {
+            var sData = data as SectorItemData;
+            Name = sData.Name;
+            Owner = sData.Owner;
+            SectorIndex = sData.SectorIndex;
+            Density = sData.Density;
         }
 
         public override string ToString() {

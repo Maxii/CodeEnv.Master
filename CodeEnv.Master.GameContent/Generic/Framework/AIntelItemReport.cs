@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AIntelItemReport.cs
-//  Abstract class for Reports associated with an AIntelItem.
+// Abstract class for Reports that support Items with PlayerIntel.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
-    /// Abstract class for Reports associated with an AIntelItem.
+    ///  Abstract class for Reports that support Items with PlayerIntel.
     /// </summary>
     public abstract class AIntelItemReport : AItemReport {
 
@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
             AssignValues(data);
         }
 
-        private void AssignValues(AIntelItemData data) {
+        protected override void AssignValues(AItemData data) {
             switch (IntelCoverage) {
                 case IntelCoverage.Comprehensive:
                     AssignIncrementalValues_IntelCoverageComprehensive(data);
@@ -55,11 +55,11 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected virtual void AssignIncrementalValues_IntelCoverageComprehensive(AIntelItemData data) { }
-        protected virtual void AssignIncrementalValues_IntelCoverageModerate(AIntelItemData data) { }
-        protected virtual void AssignIncrementalValues_IntelCoverageMinimal(AIntelItemData data) { }
-        protected virtual void AssignIncrementalValues_IntelCoverageAware(AIntelItemData data) { }
-        protected virtual void AssignIncrementalValues_IntelCoverageNone(AIntelItemData data) { }
+        protected virtual void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) { }
+        protected virtual void AssignIncrementalValues_IntelCoverageModerate(AItemData data) { }
+        protected virtual void AssignIncrementalValues_IntelCoverageMinimal(AItemData data) { }
+        protected virtual void AssignIncrementalValues_IntelCoverageAware(AItemData data) { }
+        protected virtual void AssignIncrementalValues_IntelCoverageNone(AItemData data) { }
 
     }
 }

@@ -27,10 +27,10 @@ namespace CodeEnv.Master.GameContent {
             LabelTextFactory = new SettlementLabelTextFactory();
         }
 
-        public SettlementPublisher(SettlementCmdItemData data) : base(data) { }
+        public SettlementPublisher(SettlementCmdItemData data, ICmdPublisherClient<FacilityReport> cmdItem) : base(data, cmdItem) { }
 
-        protected override SettlementReport GenerateReport(Player player, FacilityReport[] elementReports) {
-            return new SettlementReport(_data, player, elementReports);
+        protected override SettlementReport GenerateReport(Player player) {
+            return new SettlementReport(_data, player, _cmdItem.GetElementReports(player));
         }
 
         public override string ToString() {

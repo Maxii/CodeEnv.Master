@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Report and LabelText Publisher for Ships.
     /// </summary>
-    public class ShipPublisher : APublisher<ShipReport, ShipItemData> {
+    public class ShipPublisher : AIntelItemPublisher<ShipReport, ShipItemData> {
 
         static ShipPublisher() {
             LabelTextFactory = new ShipLabelTextFactory();

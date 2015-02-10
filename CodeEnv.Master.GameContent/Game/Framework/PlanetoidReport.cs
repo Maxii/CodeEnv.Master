@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: PlanetoidDataRecord.cs
-// Immutable report on a planetoid reflecting a specific player's IntelCoverage.
+// Immutable report for APlanetoidItems.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Immutable report on a planetoid reflecting a specific player's IntelCoverage.
+    /// Immutable report for APlanetoidItems.
     /// </summary>
     public class PlanetoidReport : AMortalItemReport {
 
@@ -39,14 +39,14 @@ namespace CodeEnv.Master.GameContent {
             : base(data, player) {
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AIntelItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageComprehensive(data);
             var planetoidData = data as PlanetoidItemData;
             CurrentHitPoints = planetoidData.CurrentHitPoints;
             Health = planetoidData.Health;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageModerate(AIntelItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageModerate(data);
             var planetoidData = data as PlanetoidItemData;
             MaxHitPoints = planetoidData.MaxHitPoints;
@@ -57,7 +57,7 @@ namespace CodeEnv.Master.GameContent {
             SpecialResources = planetoidData.SpecialResources;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageMinimal(AIntelItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageMinimal(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageMinimal(data);
             var planetoidData = data as PlanetoidItemData;
             Owner = planetoidData.Owner;
@@ -65,7 +65,7 @@ namespace CodeEnv.Master.GameContent {
             OrbitalSpeed = planetoidData.OrbitalSpeed;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageAware(AIntelItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageAware(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageAware(data);
             var planetoidData = data as PlanetoidItemData;
             Name = planetoidData.Name;

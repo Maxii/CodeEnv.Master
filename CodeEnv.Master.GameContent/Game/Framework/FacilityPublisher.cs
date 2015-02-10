@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Report and LabelText Publisher for Facilities.
     /// </summary>
-    public class FacilityPublisher : APublisher<FacilityReport, FacilityData> {
+    public class FacilityPublisher : AIntelItemPublisher<FacilityReport, FacilityData> {
 
         static FacilityPublisher() {
             LabelTextFactory = new FacilityLabelTextFactory();

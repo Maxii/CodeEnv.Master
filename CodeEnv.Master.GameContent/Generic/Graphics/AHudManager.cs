@@ -19,7 +19,6 @@ namespace CodeEnv.Master.GameContent {
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
@@ -63,6 +62,7 @@ namespace CodeEnv.Master.GameContent {
                 _hudJob.Kill();
                 _hudJob = null;
             }
+            CursorHud.Clear();  // automatically clear beforehand, just like with hudJob
 
             if (toShow) {
                 _labelText = GetLabelText();
@@ -73,10 +73,6 @@ namespace CodeEnv.Master.GameContent {
                         //D.Log("{0} ShowHUD Job {1}.", GetType().Name, wasKilled ? "was killed" : "has completed.");
                     });
                 }
-
-            }
-            else {
-                CursorHud.Clear();
             }
         }
 
@@ -148,31 +144,6 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
         }
-
-
-        /// <summary>
-        /// Optionally assigns the contentIDs that should be continuously updated when the Hud is showing.
-        /// </summary>
-        /// <param name="updatableContentIDs">The optional updatable content identifiers.</param>
-        /// <exception cref="System.NotImplementedException"></exception>
-        //protected void AssignContentToUpdate(params UpdatableLabelContentID[] updatableContentIDs) {
-        //    IList<LabelContentID> contentIDs = new List<LabelContentID>(updatableContentIDs.Length);
-        //    foreach (var updatableContentID in updatableContentIDs) {
-        //        LabelContentID contentID;
-        //        switch (updatableContentID) {
-        //            case UpdatableLabelContentID.CameraDistance:
-        //                contentID = LabelContentID.CameraDistance;
-        //                break;
-        //            case UpdatableLabelContentID.IntelState:
-        //                contentID = LabelContentID.IntelState;
-        //                break;
-        //            default:
-        //                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(updatableContentID));
-        //        }
-        //        contentIDs.Add(contentID);
-        //    }
-        //    _optionalUpdatableContentIDs = contentIDs.ToArray();
-        //}
 
         private void Cleanup() {
             CursorHud.Clear();

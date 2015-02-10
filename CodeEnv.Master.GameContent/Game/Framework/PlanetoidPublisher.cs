@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Report and LabelText Publisher for Planetoids.
     /// </summary>
-    public class PlanetoidPublisher : APublisher<PlanetoidReport, PlanetoidItemData> {
+    public class PlanetoidPublisher : AIntelItemPublisher<PlanetoidReport, PlanetoidItemData> {
 
         static PlanetoidPublisher() {
             LabelTextFactory = new PlanetoidLabelTextFactory();

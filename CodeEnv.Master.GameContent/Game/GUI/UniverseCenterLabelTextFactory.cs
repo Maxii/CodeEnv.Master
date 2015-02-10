@@ -24,29 +24,32 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// LabelText factory for the UniverseCenter.
     /// </summary>
-    public class UniverseCenterLabelTextFactory : ALabelTextFactory<UniverseCenterReport, UniverseCenterItemData> {
+    public class UniverseCenterLabelTextFactory : AIntelItemLabelTextFactory<UniverseCenterReport, UniverseCenterItemData> {
 
-        private static IDictionary<LabelID, IDictionary<LabelContentID, string>> _formatLookupByLabelID = new Dictionary<LabelID, IDictionary<LabelContentID, string>>() {
-            { LabelID.CursorHud, new Dictionary<LabelContentID, string>() {
-                {LabelContentID.Name, "Name: {0}"},
-                {LabelContentID.Owner, "Owner: {0}"},
+        private static IDictionary<LabelID, IList<LabelContentID>> _includedContentLookup = new Dictionary<LabelID, IList<LabelContentID>>() {
+            {LabelID.CursorHud, new List<LabelContentID>() {
+                LabelContentID.Name,
+                LabelContentID.Owner,
 
-                {LabelContentID.CameraDistance, "CameraDistance: {0}"},
-                {LabelContentID.IntelState, "< {0} >"}
+                LabelContentID.CameraDistance,
+                LabelContentID.IntelState
             }}
-            // TODO more LabelIDs
         };
+
+#pragma warning disable 0649
+        private static IDictionary<LabelID, IDictionary<LabelContentID, string>> _phraseOverrideLookup;
+#pragma warning restore 0649
 
         public UniverseCenterLabelTextFactory() : base() { }
 
         public override bool TryMakeInstance(LabelID labelID, LabelContentID contentID, UniverseCenterReport report, UniverseCenterItemData data, out IColoredTextList content) {
-            content = _includeUnknownLookup[labelID] ? _unknownValue : _emptyValue;
+            content = _includeUnknownLookup[labelID] ? _unknownContent : _emptyContent;
             switch (contentID) {
                 case LabelContentID.Name:
                     content = !report.Name.IsNullOrEmpty() ? new ColoredTextList_String(report.Name) : content;
                     break;
                 case LabelContentID.Owner:
-                    content = report.Owner != null ? new ColoredTextList_String(report.Owner.LeaderName) : content;
+                    content = report.Owner != null ? new ColoredTextList_Owner(report.Owner) : content;
                     break;
 
                 case LabelContentID.CameraDistance:
@@ -58,11 +61,19 @@ namespace CodeEnv.Master.GameContent {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(contentID));
             }
-            return content != _emptyValue;
+            return content != _emptyContent;
         }
 
-        protected override IDictionary<LabelContentID, string> GetFormatLookup(LabelID labelID) {
-            return _formatLookupByLabelID[labelID];
+        protected override IEnumerable<LabelContentID> GetIncludedContentIDs(LabelID labelID) {
+            return _includedContentLookup[labelID];
+        }
+
+        protected override bool TryGetOverridePhrase(LabelID labelID, LabelContentID contentID, out string overridePhrase) {
+            if (_phraseOverrideLookup == null) {
+                overridePhrase = null;
+                return false;
+            }
+            return _phraseOverrideLookup[labelID].TryGetValue(contentID, out overridePhrase);
         }
 
         public override string ToString() {

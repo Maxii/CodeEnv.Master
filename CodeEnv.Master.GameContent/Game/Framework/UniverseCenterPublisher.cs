@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Report and LabelText Publisher for the Universe Center.
     /// </summary>
-    public class UniverseCenterPublisher : APublisher<UniverseCenterReport, UniverseCenterItemData> {
+    public class UniverseCenterPublisher : AIntelItemPublisher<UniverseCenterReport, UniverseCenterItemData> {
 
         static UniverseCenterPublisher() {
             LabelTextFactory = new UniverseCenterLabelTextFactory();

@@ -53,6 +53,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="ACmdPublisherBase.cs" />
     <Compile Include="ACombatItemData.cs" />
     <Compile Include="ACombatItemModel.cs" />
     <Compile Include="ACommandData.cs" />
@@ -115,6 +116,7 @@
     <Compile Include="CameraControl.cs" />
     <Compile Include="CameraControl_1.cs" />
     <Compile Include="CameraLOSChangedRelay.cs" />
+    <Compile Include="CmdHudManager.cs" />
     <Compile Include="ColliderExtensions.cs" />
     <Compile Include="ColliderRelay.cs" />
     <Compile Include="CoroutineManager.cs" />
@@ -315,8 +317,10 @@
     <Compile Include="Sector.cs" />
     <Compile Include="SectorData.cs" />
     <Compile Include="SectorGuiHudTextFactory.cs" />
+    <Compile Include="SectorHudManager.cs" />
     <Compile Include="SectorItem.cs" />
     <Compile Include="SectorLabelFormatter.cs" />
+    <Compile Include="SectorLabelText.cs" />
     <Compile Include="SectorModel.cs" />
     <Compile Include="SectorPresenter.cs" />
     <Compile Include="SectorReportGenerator.cs" />
@@ -392,7 +396,9 @@
     <Compile Include="SystemData.cs" />
     <Compile Include="SystemGraphics.cs" />
     <Compile Include="SystemGuiHudTextFactory.cs" />
+    <Compile Include="SystemHudManager.cs" />
     <Compile Include="SystemLabelFormatter.cs" />
+    <Compile Include="SystemLabelText.cs" />
     <Compile Include="SystemManager.cs" />
     <Compile Include="SystemModel.cs" />
     <Compile Include="SystemPresenter.cs" />

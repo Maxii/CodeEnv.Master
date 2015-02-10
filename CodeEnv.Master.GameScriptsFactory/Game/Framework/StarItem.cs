@@ -49,13 +49,8 @@ public class StarItem : AIntelItem, IShipOrbitable, IDetectable {
         get { return _publisher = _publisher ?? new StarPublisher(Data); }
     }
 
-    public override bool IsHudShowing {
-        get { return _hudManager != null && _hudManager.IsHudShowing; }
-    }
-
     protected override float ItemTypeCircleScale { get { return 1.5F; } }
 
-    private HudManager<StarPublisher> _hudManager;
     private Billboard _billboard;
     private SystemItem _system;
     private ICtxControl _ctxControl;
@@ -130,8 +125,10 @@ public class StarItem : AIntelItem, IShipOrbitable, IDetectable {
         cameraLosChgdListener.enabled = true;
     }
 
-    protected override void InitializeHudManager() {
-        _hudManager = new HudManager<StarPublisher>(Publisher);
+    protected override HudManager InitializeHudManager() {
+        var hudManager = new HudManager(Publisher);
+        hudManager.AddContentToUpdate(AHudManager.UpdatableLabelContentID.IntelState);
+        return hudManager;
     }
 
     private void InitializeContextMenu(Player owner) {
@@ -152,17 +149,6 @@ public class StarItem : AIntelItem, IShipOrbitable, IDetectable {
     #endregion
 
     #region View Methods
-
-    public override void ShowHud(bool toShow) {
-        if (_hudManager != null) {
-            if (toShow) {
-                _hudManager.Show(Position);
-            }
-            else {
-                _hudManager.Hide();
-            }
-        }
-    }
 
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
@@ -196,9 +182,6 @@ public class StarItem : AIntelItem, IShipOrbitable, IDetectable {
         base.Cleanup();
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
-        }
-        if (_hudManager != null) {
-            _hudManager.Dispose();
         }
     }
 

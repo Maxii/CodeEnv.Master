@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -84,8 +84,8 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     /// that can't wait until the Item first becomes discernible. 
     /// </summary>
     /// <remarks> 
-    /// Overrides AItemBase without calling base.InitializeViewMembers() as HudManager is
-    /// initialized when first discernible for all items except SectorItem
+    /// Overrides AItem without calling base.InitializeViewMembers() as HudManager is
+    /// initialized when first discernible for all items except SectorItem.
     /// </remarks>
     protected override void InitializeViewMembers() {
         AssessDiscernability(); // reqd to initialize IsDiscernible
@@ -97,7 +97,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     /// </summary>
     protected virtual void InitializeViewMembersOnDiscernible() {
         //D.Log("{0}.InitializeViewMembersOnDiscernible() called.", FullName);
-        InitializeHudManager();
+        _hudManager = InitializeHudManager();
     }
 
     #endregion

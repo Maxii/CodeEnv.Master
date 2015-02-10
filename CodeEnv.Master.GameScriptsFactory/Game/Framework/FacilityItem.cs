@@ -71,11 +71,6 @@ public class FacilityItem : AUnitElementItem {
         get { return _publisher = _publisher ?? new FacilityPublisher(Data); }
     }
 
-    public override bool IsHudShowing {
-        get { return _hudManager != null && _hudManager.IsHudShowing; }
-    }
-
-    private HudManager<FacilityPublisher> _hudManager;
     private Revolver _revolver;
 
     #region Initialization
@@ -100,8 +95,10 @@ public class FacilityItem : AUnitElementItem {
         // TODO Revolver settings and distance controls, Revolvers control their own enabled state based on visibility
     }
 
-    protected override void InitializeHudManager() {
-        _hudManager = new HudManager<FacilityPublisher>(Publisher);
+    protected override HudManager InitializeHudManager() {
+        var hudManager = new HudManager(Publisher);
+        hudManager.AddContentToUpdate(AHudManager.UpdatableLabelContentID.IntelState);
+        return hudManager;
     }
 
     #endregion
@@ -187,17 +184,6 @@ public class FacilityItem : AUnitElementItem {
     #endregion
 
     #region View Methods
-
-    public override void ShowHud(bool toShow) {
-        if (_hudManager != null) {
-            if (toShow) {
-                _hudManager.Show(Position);
-            }
-            else {
-                _hudManager.Hide();
-            }
-        }
-    }
 
     public override void AssessHighlighting() {
         if (!IsDiscernible) {
@@ -475,13 +461,6 @@ public class FacilityItem : AUnitElementItem {
     #endregion
 
     #region Cleanup
-
-    protected override void Cleanup() {
-        base.Cleanup();
-        if (_hudManager != null) {
-            _hudManager.Dispose();
-        }
-    }
 
     #endregion
 

@@ -52,6 +52,9 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\AItemReport.cs" />
+    <Compile Include="Generic\Graphics\AItemLabelTextFactory.cs" />
+    <Compile Include="Generic\Framework\AItemPublisher.cs" />
     <Compile Include="Generic\Framework\AUnitCmdItemData.cs" />
     <Compile Include="Generic\Framework\AUnitElementItemData.cs" />
     <Compile Include="Generic\Framework\AIntelItemData.cs" />
@@ -64,19 +67,17 @@
     <Compile Include="Game\GUI\BaseComposition.cs" />
     <Compile Include="Game\GUI\FleetComposition.cs" />
     <Compile Include="Generic\Framework\ACmdPublisher.cs" />
-    <Compile Include="Generic\Framework\ACmdPublisherBase.cs" />
     <Compile Include="Generic\Framework\ACmdReport.cs" />
     <Compile Include="Generic\Framework\AElementItemReport.cs" />
     <Compile Include="Generic\Graphics\AHudManager.cs" />
     <Compile Include="Generic\Framework\AIntelItemReport.cs" />
     <Compile Include="Generic\Graphics\ALabelText.cs" />
+    <Compile Include="Generic\Graphics\AIntelItemLabelTextFactory.cs" />
     <Compile Include="Generic\Graphics\ALabelTextFactory.cs" />
-    <Compile Include="Generic\Graphics\ALabelTextFactoryBase.cs" />
     <Compile Include="Generic\Framework\AMortalItemReport.cs" />
+    <Compile Include="Generic\Framework\AIntelItemPublisher.cs" />
     <Compile Include="Generic\Framework\APublisher.cs" />
-    <Compile Include="Generic\Framework\APublisherBase.cs" />
-    <Compile Include="Generic\Framework\AItemReport.cs" />
-    <Compile Include="Game\GUI\CmdHudManager.cs" />
+    <Compile Include="Generic\Framework\AReport.cs" />
     <Compile Include="Game\GUI\FacilityLabelTextFactory.cs" />
     <Compile Include="Game\Framework\FacilityPublisher.cs" />
     <Compile Include="Game\Framework\FacilityReport.cs" />
@@ -198,11 +199,13 @@
     <Compile Include="Game\GUI\HudManager.cs" />
     <Compile Include="Game\GUI\LabelContentID.cs" />
     <Compile Include="Game\GUI\LabelID.cs" />
-    <Compile Include="Game\GUI\LabelText.cs" />
+    <Compile Include="Game\GUI\IntelLabelText.cs" />
     <Compile Include="Game\GUI\PlanetoidLabelTextFactory.cs" />
     <Compile Include="Game\Framework\PlanetoidPublisher.cs" />
     <Compile Include="Game\Framework\PlanetoidReport.cs" />
-    <Compile Include="IPublisherItem.cs" />
+    <Compile Include="Generic\Framework\ICmdPublisherClient.cs" />
+    <Compile Include="Game\GUI\LabelText.cs" />
+    <Compile Include="Generic\Framework\ISystemPublisherClient.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
     <Compile Include="Game\_Debug\VelocityRay.cs" />
@@ -239,8 +242,6 @@
     <Compile Include="Game\GUI\StarLabelTextFactory.cs" />
     <Compile Include="Game\Framework\StarPublisher.cs" />
     <Compile Include="Game\Framework\StarReport.cs" />
-    <Compile Include="Game\GUI\SystemHudManager.cs" />
-    <Compile Include="Game\GUI\SystemLabelText.cs" />
     <Compile Include="Game\GUI\SystemLabelTextFactory.cs" />
     <Compile Include="Game\Framework\SystemPublisher.cs" />
     <Compile Include="Game\Framework\SystemReport.cs" />
@@ -248,8 +249,6 @@
     <Compile Include="Game\Framework\UniverseCenterPublisher.cs" />
     <Compile Include="Game\Framework\UniverseCenterReport.cs" />
     <Compile Include="Generic\Graphics\AUnitComposition.cs" />
-    <Compile Include="Game\GUI\SectorHudManager.cs" />
-    <Compile Include="Game\GUI\SectorLabelText.cs" />
     <Compile Include="Game\Framework\SectorItemData.cs" />
     <Compile Include="Game\Framework\SettlementCmdItemData.cs" />
     <Compile Include="Game\Framework\ShipItemData.cs" />

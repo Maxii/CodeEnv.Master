@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ACmdReport.cs
-// Abstract class for all Command Reports.
+// Abstract class for Reports associated with UnitCmdItems.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Abstract class for all Command Reports.
+    /// Abstract class for Reports associated with UnitCmdItems.
     /// </summary>
     public abstract class ACmdReport : AIntelItemReport {
 
@@ -59,20 +59,20 @@ namespace CodeEnv.Master.GameContent {
             AssignValuesFrom(elementReports, data);
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AIntelItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageComprehensive(data);
             AUnitCmdItemData cmdData = data as AUnitCmdItemData;
             UnitFormation = cmdData.UnitFormation;
             CurrentCmdEffectiveness = cmdData.CurrentCmdEffectiveness;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageModerate(AIntelItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageModerate(data);
             AUnitCmdItemData cmdData = data as AUnitCmdItemData;
             Owner = cmdData.Owner;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageMinimal(AIntelItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageMinimal(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageMinimal(data);
             AUnitCmdItemData cmdData = data as AUnitCmdItemData;
             Name = cmdData.Name;

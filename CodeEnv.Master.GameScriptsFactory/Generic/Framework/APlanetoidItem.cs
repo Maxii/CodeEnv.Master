@@ -49,11 +49,6 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         get { return _publisher = _publisher ?? new PlanetoidPublisher(Data); }
     }
 
-    public override bool IsHudShowing {
-        get { return _hudManager != null && _hudManager.IsHudShowing; }
-    }
-
-    private HudManager<PlanetoidPublisher> _hudManager;
     private ICtxControl _ctxControl;
 
     #region Initialization
@@ -116,8 +111,10 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         Data.OrbitalSpeed = gameObject.GetSafeMonoBehaviourComponentInParents<Orbiter>().GetRelativeOrbitSpeed(orbitalRadius);
     }
 
-    protected override void InitializeHudManager() {
-        _hudManager = new HudManager<PlanetoidPublisher>(Publisher);
+    protected override HudManager InitializeHudManager() {
+        var hudManager = new HudManager(Publisher);
+        hudManager.AddContentToUpdate(AHudManager.UpdatableLabelContentID.IntelState);
+        return hudManager;
     }
 
     private void InitializeContextMenu(Player owner) {
@@ -160,17 +157,6 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
     #endregion
 
     #region View Methods
-
-    public override void ShowHud(bool toShow) {
-        if (_hudManager != null) {
-            if (toShow) {
-                _hudManager.Show(Position);
-            }
-            else {
-                _hudManager.Hide();
-            }
-        }
-    }
 
     #endregion
 
@@ -231,9 +217,6 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         base.Cleanup();
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
-        }
-        if (_hudManager != null) {
-            _hudManager.Dispose();
         }
     }
 

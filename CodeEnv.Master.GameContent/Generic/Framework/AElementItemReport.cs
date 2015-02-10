@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AElementItemReport.cs
-// Abstract class for ElementItem Reports.
+// Abstract class for Reports associated with UnitElementItems.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,7 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Abstract class for ElementItem Reports.
+    /// Abstract class for Reports associated with UnitElementItems.
     /// </summary>
     public abstract class AElementItemReport : AMortalItemReport {
 

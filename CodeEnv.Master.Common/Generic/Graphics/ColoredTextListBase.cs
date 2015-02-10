@@ -17,6 +17,7 @@
 namespace CodeEnv.Master.Common {
 
     using System.Collections.Generic;
+    using System.Linq;
 
     /// <summary>
     /// Base class for strategy objects that provide lists of Colored Text for Huds.
@@ -33,16 +34,7 @@ namespace CodeEnv.Master.Common {
 
         public IList<ColoredText> List { get { return _list; } }
 
-        public string[] TextElements {
-            get {
-                var count = _list.Count;
-                var result = new string[count];
-                for (int i = 0; i < count; i++) {
-                    result[i] = _list[i].Text;
-                }
-                return result;
-            }
-        }
+        public string[] TextElements { get { return List.Select(ct => ct.Text).ToArray(); } }
 
         #endregion
 

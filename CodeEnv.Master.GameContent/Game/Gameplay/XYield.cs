@@ -121,8 +121,8 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private static string _firstResourceToStringFormat = "{0}[1:0.#]";
-        private static string _continuingToStringFormat = ", {0}[1:0.#]";
+        private static string _firstResourceToStringFormat = "{0}({1:0.#})"; // use of [ ] causes Ngui label problems
+        private static string _continuingToStringFormat = ", {0}({1:0.#})";
 
         public float Special_1 { get; private set; }
 

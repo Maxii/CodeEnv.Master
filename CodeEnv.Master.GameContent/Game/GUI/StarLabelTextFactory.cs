@@ -24,28 +24,32 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// LabelText Factory for Stars.
     /// </summary>
-    public class StarLabelTextFactory : ALabelTextFactory<StarReport, StarItemData> {
+    public class StarLabelTextFactory : AIntelItemLabelTextFactory<StarReport, StarItemData> {
 
-        private static IDictionary<LabelID, IDictionary<LabelContentID, string>> _formatLookupByLabelID = new Dictionary<LabelID, IDictionary<LabelContentID, string>>() {
-            { LabelID.CursorHud, new Dictionary<LabelContentID, string>() {
-                {LabelContentID.Name, "Name: {0}"},
-                {LabelContentID.ParentName, "ParentName: {0}"},
-                {LabelContentID.Owner, "Owner: {0}"},
-                {LabelContentID.Category, "Category: {0}"},
-                {LabelContentID.Capacity, "Capacity: {0}"},
-                {LabelContentID.Resources, "Resources: {0}"},
-                {LabelContentID.Specials, "[800080]Specials:[-] {0}"}, 
+        private static IDictionary<LabelID, IList<LabelContentID>> _includedContentLookup = new Dictionary<LabelID, IList<LabelContentID>>() {
+            {LabelID.CursorHud, new List<LabelContentID>() {
+                LabelContentID.Name,
+                LabelContentID.ParentName,
+                LabelContentID.Owner,
+                LabelContentID.Category,
 
-                {LabelContentID.CameraDistance, "CameraDistance: {0}"},
-                {LabelContentID.IntelState, "< {0} >"}
+                LabelContentID.Capacity,
+                LabelContentID.Resources,
+                LabelContentID.Specials,
+
+                LabelContentID.CameraDistance,
+                LabelContentID.IntelState
             }}
-            // TODO more LabelIDs
         };
+
+#pragma warning disable 0649
+        private static IDictionary<LabelID, IDictionary<LabelContentID, string>> _phraseOverrideLookup;
+#pragma warning restore 0649
 
         public StarLabelTextFactory() : base() { }
 
         public override bool TryMakeInstance(LabelID labelID, LabelContentID contentID, StarReport report, StarItemData data, out IColoredTextList content) {
-            content = _includeUnknownLookup[labelID] ? _unknownValue : _emptyValue;
+            content = _includeUnknownLookup[labelID] ? _unknownContent : _emptyContent;
             switch (contentID) {
                 case LabelContentID.Name:
                     content = !report.Name.IsNullOrEmpty() ? new ColoredTextList_String(report.Name) : content;
@@ -54,13 +58,13 @@ namespace CodeEnv.Master.GameContent {
                     content = !report.ParentName.IsNullOrEmpty() ? new ColoredTextList_String(report.ParentName) : content;
                     break;
                 case LabelContentID.Owner:
-                    content = report.Owner != null ? new ColoredTextList_String(report.Owner.LeaderName) : content;
+                    content = report.Owner != null ? new ColoredTextList_Owner(report.Owner) : content;
                     break;
                 case LabelContentID.Category:
-                    content = report.Category != StarCategory.None ? new ColoredTextList<StarCategory>(report.Category) : content;
+                    content = report.Category != StarCategory.None ? new ColoredTextList_String(report.Category.GetName()) : content;
                     break;
                 case LabelContentID.Capacity:
-                    content = report.Capacity.HasValue ? new ColoredTextList<int>(report.Capacity.Value) : content;
+                    content = report.Capacity.HasValue ? new ColoredTextList<int>(GetFormat(contentID), report.Capacity.Value) : content;
                     break;
                 case LabelContentID.Resources:
                     content = report.Resources.HasValue ? new ColoredTextList<OpeYield>(report.Resources.Value) : content;
@@ -78,11 +82,19 @@ namespace CodeEnv.Master.GameContent {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(contentID));
             }
-            return content != _emptyValue;
+            return content != _emptyContent;
         }
 
-        protected override IDictionary<LabelContentID, string> GetFormatLookup(LabelID labelID) {
-            return _formatLookupByLabelID[labelID];
+        protected override IEnumerable<LabelContentID> GetIncludedContentIDs(LabelID labelID) {
+            return _includedContentLookup[labelID];
+        }
+
+        protected override bool TryGetOverridePhrase(LabelID labelID, LabelContentID contentID, out string overridePhrase) {
+            if (_phraseOverrideLookup == null) {
+                overridePhrase = null;
+                return false;
+            }
+            return _phraseOverrideLookup[labelID].TryGetValue(contentID, out overridePhrase);
         }
 
         public override string ToString() {

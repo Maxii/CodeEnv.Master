@@ -27,10 +27,10 @@ namespace CodeEnv.Master.GameContent {
             LabelTextFactory = new StarbaseLabelTextFactory();
         }
 
-        public StarbasePublisher(StarbaseCmdItemData data) : base(data) { }
+        public StarbasePublisher(StarbaseCmdItemData data, ICmdPublisherClient<FacilityReport> cmdItem) : base(data, cmdItem) { }
 
-        protected override StarbaseReport GenerateReport(Player player, FacilityReport[] elementReports) {
-            return new StarbaseReport(_data, player, elementReports);
+        protected override StarbaseReport GenerateReport(Player player) {
+            return new StarbaseReport(_data, player, _cmdItem.GetElementReports(player));
         }
 
         public override string ToString() {

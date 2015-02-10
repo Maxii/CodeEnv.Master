@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: PlanetoidLabelTextFactory.cs
-//  LabelText factory for Planetoids.
+// LabelText factory for Planetoids.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -24,34 +24,39 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// LabelText factory for Planetoids.
     /// </summary>
-    public class PlanetoidLabelTextFactory : ALabelTextFactory<PlanetoidReport, PlanetoidItemData> {
+    public class PlanetoidLabelTextFactory : AIntelItemLabelTextFactory<PlanetoidReport, PlanetoidItemData> {
 
-        private static IDictionary<LabelID, IDictionary<LabelContentID, string>> _formatLookupByLabelID = new Dictionary<LabelID, IDictionary<LabelContentID, string>>() {
-            { LabelID.CursorHud, new Dictionary<LabelContentID, string>() {
-                {LabelContentID.Name, "Name: {0}"},
-                {LabelContentID.ParentName, "ParentName: {0}"},
-                {LabelContentID.Owner, "Owner: {0}"},
-                {LabelContentID.Category, "Category: {0}"},
-                {LabelContentID.Capacity, "Capacity: {0}"},
-                {LabelContentID.Resources, "Resources: {0}"},
-                {LabelContentID.Specials, "[800080]Specials:[-] {0}"},
-                {LabelContentID.MaxHitPoints, "MaxHitPts: {0}"},
-                {LabelContentID.CurrentHitPoints, "CurrentHitPts: {0}"},
-                {LabelContentID.Health, "Health: {0}"},
-                {LabelContentID.Defense, "Defense: {0}"},
-                {LabelContentID.Mass, "Mass: {0}"},
-                {LabelContentID.OrbitalSpeed, "RelativeOrbitSpeed: {0}"},
+        private static IDictionary<LabelID, IList<LabelContentID>> _includedContentLookup = new Dictionary<LabelID, IList<LabelContentID>>() {
+            {LabelID.CursorHud, new List<LabelContentID>() {
+                LabelContentID.Name,
+                LabelContentID.ParentName,
+                LabelContentID.Owner,
+                LabelContentID.Category,
+                LabelContentID.Capacity,
+                LabelContentID.Resources,
+                LabelContentID.Specials,
 
-                {LabelContentID.CameraDistance, "CameraDistance: {0}"},
-                {LabelContentID.IntelState, "< {0} >"}
+                //LabelContentID.MaxHitPoints,
+                //LabelContentID.CurrentHitPoints,
+                LabelContentID.Health,
+                LabelContentID.Defense,
+                LabelContentID.Mass,
+                LabelContentID.OrbitalSpeed,
+
+                LabelContentID.CameraDistance,
+                LabelContentID.IntelState
             }}
-            // TODO more LabelIDs
         };
+
+#pragma warning disable 0649
+        private static IDictionary<LabelID, IDictionary<LabelContentID, string>> _phraseOverrideLookup;
+#pragma warning restore 0649
+
 
         public PlanetoidLabelTextFactory() : base() { }
 
         public override bool TryMakeInstance(LabelID labelID, LabelContentID contentID, PlanetoidReport report, PlanetoidItemData data, out IColoredTextList content) {
-            content = _includeUnknownLookup[labelID] ? _unknownValue : _emptyValue;
+            content = _includeUnknownLookup[labelID] ? _unknownContent : _emptyContent;
             switch (contentID) {
                 case LabelContentID.Name:
                     content = !report.Name.IsNullOrEmpty() ? new ColoredTextList_String(report.Name) : content;
@@ -60,13 +65,13 @@ namespace CodeEnv.Master.GameContent {
                     content = !report.ParentName.IsNullOrEmpty() ? new ColoredTextList_String(report.ParentName) : content;
                     break;
                 case LabelContentID.Owner:
-                    content = report.Owner != null ? new ColoredTextList_String(report.Owner.LeaderName) : content;
+                    content = report.Owner != null ? new ColoredTextList_Owner(report.Owner) : content;
                     break;
                 case LabelContentID.Category:
-                    content = report.Category != PlanetoidCategory.None ? new ColoredTextList<PlanetoidCategory>(report.Category) : content;
+                    content = report.Category != PlanetoidCategory.None ? new ColoredTextList_String(report.Category.GetName()) : content;
                     break;
                 case LabelContentID.Capacity:
-                    content = report.Capacity.HasValue ? new ColoredTextList<int>(report.Capacity.Value) : content;
+                    content = report.Capacity.HasValue ? new ColoredTextList<int>(GetFormat(contentID), report.Capacity.Value) : content;
                     break;
                 case LabelContentID.Resources:
                     content = report.Resources.HasValue ? new ColoredTextList<OpeYield>(report.Resources.Value) : content;
@@ -74,23 +79,24 @@ namespace CodeEnv.Master.GameContent {
                 case LabelContentID.Specials:
                     content = report.SpecialResources.HasValue ? new ColoredTextList<XYield>(report.SpecialResources.Value) : content;
                     break;
-                case LabelContentID.MaxHitPoints:
-                    content = report.MaxHitPoints.HasValue ? new ColoredTextList<float>(report.MaxHitPoints.Value) : content;
-                    break;
-                case LabelContentID.CurrentHitPoints:
-                    content = report.CurrentHitPoints.HasValue ? new ColoredTextList<float>(report.CurrentHitPoints.Value) : content;
-                    break;
+                //case LabelContentID.MaxHitPoints:
+                //    content = report.MaxHitPoints.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.MaxHitPoints.Value) : content;
+                //    break;
+                //case LabelContentID.CurrentHitPoints:
+                //    content = report.CurrentHitPoints.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.CurrentHitPoints.Value) : content;
+                //    break;
                 case LabelContentID.Health:
-                    content = report.Health.HasValue ? new ColoredTextList<float>(report.Health.Value) : content;
+                    content = new ColoredTextList_Health(report.Health, report.MaxHitPoints);
+                    //content = report.Health.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.Health.Value) : content;
                     break;
                 case LabelContentID.Defense:
                     content = report.DefensiveStrength.HasValue ? new ColoredTextList<CombatStrength>(report.DefensiveStrength.Value) : content;
                     break;
                 case LabelContentID.Mass:
-                    content = report.Mass.HasValue ? new ColoredTextList<float>(report.Mass.Value) : content;
+                    content = report.Mass.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.Mass.Value) : content;
                     break;
                 case LabelContentID.OrbitalSpeed:
-                    content = report.OrbitalSpeed.HasValue ? new ColoredTextList<float>(report.OrbitalSpeed.Value) : content;
+                    content = report.OrbitalSpeed.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.OrbitalSpeed.Value) : content;
                     break;
 
                 case LabelContentID.CameraDistance:
@@ -102,12 +108,21 @@ namespace CodeEnv.Master.GameContent {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(contentID));
             }
-            return content != _emptyValue;
+            return content != _emptyContent;
         }
 
-        protected override IDictionary<LabelContentID, string> GetFormatLookup(LabelID labelID) {
-            return _formatLookupByLabelID[labelID];
+        protected override IEnumerable<LabelContentID> GetIncludedContentIDs(LabelID labelID) {
+            return _includedContentLookup[labelID];
         }
+
+        protected override bool TryGetOverridePhrase(LabelID labelID, LabelContentID contentID, out string overridePhrase) {
+            if (_phraseOverrideLookup == null) {
+                overridePhrase = null;
+                return false;
+            }
+            return _phraseOverrideLookup[labelID].TryGetValue(contentID, out overridePhrase);
+        }
+
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }

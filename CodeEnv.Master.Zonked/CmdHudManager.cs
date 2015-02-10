@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SystemHudManager.cs
-// Manages the HUD for Systems.
+// File: CmdHudManager.cs
+// Generic class that manages the HUD for each command.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,31 +16,29 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
     /// <summary>
-    /// Manages the HUD for Systems.
+    /// Generic class that manages the HUD for each command.
     /// </summary>
-    public class SystemHudManager : AHudManager {
+    [Obsolete]
+    public class CmdHudManager : AHudManager {
 
-        private StarReport _starReport;
-        private PlanetoidReport[] _planetoidReports;
-        private SystemPublisher _publisher;
+        private APublisher _publisher;
 
-        public SystemHudManager(SystemPublisher publisher)
+        public CmdHudManager(APublisher publisher)
             : base() {
             _publisher = publisher;
-            AddContentToUpdate(UpdatableLabelContentID.CameraDistance);
+            AddContentToUpdate(UpdatableLabelContentID.CameraDistance, UpdatableLabelContentID.IntelState);
         }
 
         protected override ALabelText GetLabelText() {
-            return _publisher.GetLabelText(LabelID.CursorHud, _starReport, _planetoidReports);
+            return _publisher.GetLabelText(LabelID.CursorHud);
         }
 
-        public void Show(Vector3 position, StarReport starReport, PlanetoidReport[] planetoidReports) {
-            _starReport = starReport;
-            _planetoidReports = planetoidReports;
+        public void Show(Vector3 position) {
             ShowHud(true, position);
         }
 
@@ -49,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override bool TryUpdateContent(LabelContentID contentID, out IColoredTextList content) {
-            return _publisher.TryUpdateLabelTextContent(LabelID.CursorHud, contentID, _starReport, _planetoidReports, out content);
+            return _publisher.TryUpdateLabelTextContent(LabelID.CursorHud, contentID, out content);
         }
 
         public override string ToString() {

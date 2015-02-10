@@ -16,8 +16,6 @@
 
 // default namespace
 
-using System;
-using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -41,20 +39,6 @@ public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud {
     }
 
     private void InitializeHudManagers() {
-        //AGuiHudPublisher.GuiCursorHud = Instance;
-        //GuiHudPublisher<SectorData>.TextFactory = SectorGuiHudTextFactory.Instance;
-        //GuiHudPublisher<ShipData>.TextFactory = ShipGuiHudTextFactory.Instance;
-        //GuiHudPublisher<FleetCmdData>.TextFactory = FleetGuiHudTextFactory.Instance;
-        //GuiHudPublisher<StarData>.TextFactory = StarGuiHudTextFactory.Instance;
-        //GuiHudPublisher<SettlementCmdData>.TextFactory = SettlementGuiHudTextFactory.Instance;
-        //GuiHudPublisher<FacilityData>.TextFactory = FacilityGuiHudTextFactory.Instance;
-        //GuiHudPublisher<StarbaseCmdData>.TextFactory = StarbaseGuiHudTextFactory.Instance;
-        //GuiHudPublisher<UniverseCenterData>.TextFactory = UniverseCenterGuiHudTextFactory.Instance;
-        //GuiHudPublisher<PlanetData>.TextFactory = PlanetGuiHudTextFactory.Instance;
-        //GuiHudPublisher<MoonData>.TextFactory = MoonGuiHudTextFactory.Instance;
-        //GuiHudPublisher<SystemData>.TextFactory = SystemGuiHudTextFactory.Instance;
-        //GuiHudPublisher<ItemData>.TextFactory = GuiHudTextFactory.Instance;
-
         AHudManager.CursorHud = Instance;
     }
 
@@ -151,7 +135,8 @@ public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud {
     public void Set(ALabelText labelText, Vector3 position) {
         if (Utility.CheckForContent(_label.text) && !labelText.IsChanged) {
             // the hud already has text and this new submission has no changes so no reason to proceed
-            D.Warn("{0} attempted to update its text when not needed./nHud content: [{1}].", GetType().Name, _label.text);
+            D.Warn("{0} attempted to update its text when not needed.\nExisting Hud content: [{1}]\nIncoming LabelText content: [{2}].",
+                GetType().Name, _label.text, labelText.GetText());
             return;
         }
         PositionHud(position);

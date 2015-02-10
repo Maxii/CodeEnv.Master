@@ -16,12 +16,14 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
     /// <summary>
     /// Manages the HUD for Sectors.
     /// </summary>
+    [Obsolete]
     public class SectorHudManager : AHudManager {
 
         private SectorPublisher _publisher;

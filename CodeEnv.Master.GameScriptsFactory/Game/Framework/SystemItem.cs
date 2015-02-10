@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// Class for ADiscernibleItems that are Systems.
 /// </summary>
-public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopographyMonitorable {
+public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopographyMonitorable, ISystemPublisherClient {
 
     private static string __highlightName = "SystemHighlightMesh";  // IMPROVE
 
@@ -66,16 +66,11 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
 
     private SystemPublisher _publisher;
     public SystemPublisher Publisher {
-        get { return _publisher = _publisher ?? new SystemPublisher(Data); }
-    }
-
-    public override bool IsHudShowing {
-        get { return _hudManager != null && _hudManager.IsHudShowing; }
+        get { return _publisher = _publisher ?? new SystemPublisher(Data, this); }
     }
 
     protected override float SphericalHighlightRadius { get { return Radius; } }
 
-    private SystemHudManager _hudManager;
     private ITrackingWidget _trackingLabel;
     private ICtxControl _ctxControl;
     private MeshRenderer __systemHighlightRenderer;
@@ -138,8 +133,9 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
         __systemHighlightRenderer.enabled = true;
     }
 
-    protected override void InitializeHudManager() {
-        _hudManager = new SystemHudManager(Publisher);
+    protected override HudManager InitializeHudManager() {
+        var hudManager = new HudManager(Publisher);
+        return hudManager;
     }
 
     private void InitializeContextMenu(Player owner) {
@@ -165,15 +161,24 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
     }
 
     public SystemReport GetReport(Player player) {
-        return Publisher.GetReport(player, GetStarReport(player), GetPlanetoidReports(player));
+        return Publisher.GetReport(player);
     }
 
-    private StarReport GetStarReport(Player player) {
+    public StarReport GetStarReport(Player player) {
         return Star.GetReport(player);
     }
 
-    private PlanetoidReport[] GetPlanetoidReports(Player player) {
+    public PlanetoidReport[] GetPlanetoidReports(Player player) {
         return Planetoids.Select(p => p.GetReport(player)).ToArray();
+    }
+
+    /// <summary>
+    /// Gets the settlement report if a settlement is present. Can be null.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <returns></returns>
+    public SettlementReport GetSettlementReport(Player player) {
+        return Settlement != null ? Settlement.GetReport(player) : null;
     }
 
     private void OnStarChanged() {
@@ -216,18 +221,6 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
     #endregion
 
     #region View Methods
-
-    public override void ShowHud(bool toShow) {
-        if (_hudManager != null) {
-            if (toShow) {
-                var humanPlayer = _gameMgr.HumanPlayer;
-                _hudManager.Show(Position, GetStarReport(humanPlayer), GetPlanetoidReports(humanPlayer));
-            }
-            else {
-                _hudManager.Hide();
-            }
-        }
-    }
 
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
@@ -326,9 +319,6 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
         UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
-        }
-        if (_hudManager != null) {
-            _hudManager.Dispose();
         }
         Data.Dispose();
     }

@@ -27,12 +27,12 @@ namespace CodeEnv.Master.GameContent {
             LabelTextFactory = new FleetLabelTextFactory();
         }
 
-        public FleetPublisher(FleetCmdItemData data)
-            : base(data) {
+        public FleetPublisher(FleetCmdItemData data, ICmdPublisherClient<ShipReport> cmdItem)
+            : base(data, cmdItem) {
         }
 
-        protected override FleetReport GenerateReport(Player player, ShipReport[] elementReports) {
-            return new FleetReport(_data, player, elementReports);
+        protected override FleetReport GenerateReport(Player player) {
+            return new FleetReport(_data, player, _cmdItem.GetElementReports(player));
         }
 
         public override string ToString() {

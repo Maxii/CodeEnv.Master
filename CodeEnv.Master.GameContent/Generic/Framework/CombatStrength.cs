@@ -18,7 +18,6 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
-    using System.Collections.Generic;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
 
@@ -70,7 +69,7 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private static string _toStringFormat = "(B[{0:0.#}], M[{1:0.#}], P[{2:0.#}])";
+        private static string _toStringFormat = "B({0:0.#}), M({1:0.#}), P({2:0.#})";
 
         public float Combined { get { return Beam + Missile + Particle; } }
 

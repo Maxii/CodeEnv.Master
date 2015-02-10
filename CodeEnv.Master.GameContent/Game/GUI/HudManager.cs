@@ -22,15 +22,14 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Generic class that manages the HUD for each item.
     /// </summary>
-    /// <typeparam name="PublisherType">The type of Publisher.</typeparam>
-    public class HudManager<PublisherType> : AHudManager where PublisherType : APublisherBase {
+    public class HudManager : AHudManager {
 
-        private PublisherType _publisher;
+        private APublisher _publisher;
 
-        public HudManager(PublisherType publisher)
+        public HudManager(APublisher publisher)
             : base() {
             _publisher = publisher;
-            AddContentToUpdate(UpdatableLabelContentID.CameraDistance, UpdatableLabelContentID.IntelState);
+            AddContentToUpdate(UpdatableLabelContentID.CameraDistance);
         }
 
         protected override ALabelText GetLabelText() {

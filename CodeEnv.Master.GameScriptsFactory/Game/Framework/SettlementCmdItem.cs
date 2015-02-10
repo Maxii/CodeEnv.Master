@@ -23,7 +23,7 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// Class for AUnitBaseCmdItems that are Settlements.
 /// </summary>
-public class SettlementCmdItem : AUnitBaseCmdItem /*, ICameraFollowable  [not currently in motion]*/ {
+public class SettlementCmdItem : AUnitBaseCmdItem, ICmdPublisherClient<FacilityReport> /*, ICameraFollowable  [not currently in motion]*/ {
 
     public new SettlementCmdItemData Data {
         get { return base.Data as SettlementCmdItemData; }
@@ -40,28 +40,24 @@ public class SettlementCmdItem : AUnitBaseCmdItem /*, ICameraFollowable  [not cu
 
     private SettlementPublisher _publisher;
     public SettlementPublisher Publisher {
-        get { return _publisher = _publisher ?? new SettlementPublisher(Data); }
+        get { return _publisher = _publisher ?? new SettlementPublisher(Data, this); }
     }
-
-    public override bool IsHudShowing {
-        get { return _hudManager != null && _hudManager.IsHudShowing; }
-    }
-
-    private CmdHudManager<SettlementPublisher> _hudManager;
 
     #region Initialization
 
-    protected override void InitializeHudManager() {
-        _hudManager = new CmdHudManager<SettlementPublisher>(Publisher);
+    protected override HudManager InitializeHudManager() {
+        var hudManager = new HudManager(Publisher);
+        hudManager.AddContentToUpdate(AHudManager.UpdatableLabelContentID.IntelState);
+        return hudManager;
     }
 
     #endregion
 
     #region Model Methods
 
-    public SettlementReport GetReport(Player player) { return Publisher.GetReport(player, GetElementReports(player)); }
+    public SettlementReport GetReport(Player player) { return Publisher.GetReport(player); }
 
-    private FacilityReport[] GetElementReports(Player player) {
+    public FacilityReport[] GetElementReports(Player player) {
         return Elements.Cast<FacilityItem>().Select(e => e.GetReport(player)).ToArray();
     }
 
@@ -82,17 +78,6 @@ public class SettlementCmdItem : AUnitBaseCmdItem /*, ICameraFollowable  [not cu
 
     #region View Methods
 
-    public override void ShowHud(bool toShow) {
-        if (_hudManager != null) {
-            if (toShow) {
-                _hudManager.Show(Position, GetElementReports(_gameMgr.HumanPlayer));
-            }
-            else {
-                _hudManager.Hide();
-            }
-        }
-    }
-
     protected override IIcon MakeCmdIconInstance() {
         return SettlementIconFactory.Instance.MakeInstance(Data);
     }
@@ -104,13 +89,6 @@ public class SettlementCmdItem : AUnitBaseCmdItem /*, ICameraFollowable  [not cu
     #endregion
 
     #region Cleanup
-
-    protected override void Cleanup() {
-        base.Cleanup();
-        if (_hudManager != null) {
-            _hudManager.Dispose();
-        }
-    }
 
     #endregion
 

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FacilityReport.cs
-// Immutable report on a facility reflecting a specific player's IntelCoverage.
+// Immutable report for FacilityItems.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    ///  Immutable report on a facility reflecting a specific player's IntelCoverage.
+    /// Immutable report for FacilityItems.
     /// </summary>
     public class FacilityReport : AElementItemReport {
 
@@ -27,21 +27,21 @@ namespace CodeEnv.Master.GameContent {
 
         public FacilityReport(FacilityData data, Player player) : base(data, player) { }
 
-        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AIntelItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageComprehensive(data);
             var fData = data as FacilityData;
             CurrentHitPoints = fData.CurrentHitPoints;
             Health = fData.Health;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageModerate(AIntelItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageModerate(data);
             var fData = data as FacilityData;
             DefensiveStrength = fData.DefensiveStrength;
             OffensiveStrength = fData.OffensiveStrength;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageMinimal(AIntelItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageMinimal(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageMinimal(data);
             var fData = data as FacilityData;
             ParentName = fData.ParentName;
@@ -53,7 +53,7 @@ namespace CodeEnv.Master.GameContent {
             MaxWeaponsRange = fData.MaxWeaponsRange;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageAware(AIntelItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageAware(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageAware(data);
             var fData = data as FacilityData;
             Name = fData.Name;

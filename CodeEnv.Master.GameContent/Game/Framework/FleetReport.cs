@@ -21,8 +21,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Immutable report on a fleet reflecting a specific player's IntelCoverage of
-    /// the fleet's command and its elements.
+    ///Immutable report for FleetCmdItems.
     /// </summary>
     public class FleetReport : ACmdReport {
 
@@ -56,14 +55,14 @@ namespace CodeEnv.Master.GameContent {
             Category = UnitComposition != null ? (cmdData as FleetCmdItemData).GenerateCmdCategory(UnitComposition) : FleetCategory.None;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AIntelItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageComprehensive(data);
             FleetCmdItemData fData = data as FleetCmdItemData;
             UnitFullSpeed = fData.UnitFullSpeed;
             UnitMaxTurnRate = fData.UnitMaxTurnRate;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageModerate(AIntelItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageModerate(data);
             FleetCmdItemData fData = data as FleetCmdItemData;
             Target = fData.Target;

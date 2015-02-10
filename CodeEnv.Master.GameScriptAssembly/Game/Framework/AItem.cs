@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -40,7 +40,9 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
         }
     }
 
-    public abstract bool IsHudShowing { get; }
+    public bool IsHudShowing {
+        get { return _hudManager != null && _hudManager.IsHudShowing; }
+    }
 
     /// <summary>
     /// The name to use for display in the UI.
@@ -78,6 +80,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
 
     protected IList<IDisposable> _subscribers;
     protected IInputManager _inputMgr;
+    protected HudManager _hudManager;
 
     #region Initialization
 
@@ -118,11 +121,11 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     /// implementation does nothing.
     /// </summary>
     protected virtual void InitializeViewMembers() {            // TODO AItem must override and init hud on discernible
-        InitializeHudManager();
+        _hudManager = InitializeHudManager();
     }
 
 
-    protected abstract void InitializeHudManager();
+    protected abstract HudManager InitializeHudManager();
 
     /// <summary>
     /// Subscribes to changes to values contained in Data. 
@@ -149,7 +152,16 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
 
     #region View Methods
 
-    public abstract void ShowHud(bool toShow);
+    public void ShowHud(bool toShow) {
+        if (_hudManager != null) {
+            if (toShow) {
+                _hudManager.Show(Position);
+            }
+            else {
+                _hudManager.Hide();
+            }
+        }
+    }
 
     private void OnInputModeChanged() {
         OnInputModeChanged(_inputMgr.InputMode);
@@ -191,6 +203,9 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     /// Note: most members should be tested for null before disposing as Items can be destroyed in Creators before completely initialized
     /// </summary>
     protected override void Cleanup() {
+        if (_hudManager != null) {
+            _hudManager.Dispose();
+        }
         Unsubscribe();
     }
 

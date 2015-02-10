@@ -29,7 +29,7 @@ using UnityEngine;
 /// <summary>
 /// Class for AUnitCmdItems that are Fleets.
 /// </summary>
-public class FleetCmdItem : AUnitCmdItem, ICameraFollowable {
+public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient<ShipReport> {
 
     public bool enableTrackingLabel = false;
 
@@ -68,11 +68,7 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable {
 
     private FleetPublisher _publisher;
     public FleetPublisher Publisher {
-        get { return _publisher = _publisher ?? new FleetPublisher(Data); }
-    }
-
-    public override bool IsHudShowing {
-        get { return _hudManager != null && _hudManager.IsHudShowing; }
+        get { return _publisher = _publisher ?? new FleetPublisher(Data, this); }
     }
 
     /// <summary>
@@ -83,7 +79,6 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable {
     private PathfindingLine _pathfindingLine;
     private FleetNavigator _navigator;
     private ICtxControl _ctxControl;
-    private CmdHudManager<FleetPublisher> _hudManager;
     private ITrackingWidget _trackingLabel;
 
     #region Initialization
@@ -117,9 +112,10 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable {
         InitializeContextMenu();
     }
 
-    protected override void InitializeHudManager() {
-        _hudManager = new CmdHudManager<FleetPublisher>(Publisher);
-        _hudManager.AddContentToUpdate(AHudManager.UpdatableLabelContentID.TargetDistance);
+    protected override HudManager InitializeHudManager() {
+        var hudManager = new HudManager(Publisher);
+        hudManager.AddContentToUpdate(AHudManager.UpdatableLabelContentID.IntelState, AHudManager.UpdatableLabelContentID.TargetDistance);
+        return hudManager;
     }
 
     private void InitializeContextMenu() {
@@ -199,10 +195,10 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable {
     }
 
     public FleetReport GetReport(Player player) {
-        return Publisher.GetReport(player, GetElementReports(player));
+        return Publisher.GetReport(player);
     }
 
-    private ShipReport[] GetElementReports(Player player) {
+    public ShipReport[] GetElementReports(Player player) {
         return Elements.Cast<ShipItem>().Select(s => s.GetReport(player)).ToArray();
     }
 
@@ -369,17 +365,6 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable {
     #endregion
 
     #region View Methods
-
-    public override void ShowHud(bool toShow) {
-        if (_hudManager != null) {
-            if (toShow) {
-                _hudManager.Show(Position, GetElementReports(_gameMgr.HumanPlayer));
-            }
-            else {
-                _hudManager.Hide();
-            }
-        }
-    }
 
     public void AssessShowPlottedPath(IList<Vector3> course) {
         bool toShow = course.Count > Constants.Zero && IsSelected;  // OPTIMIZE include IsDiscernible criteria
@@ -800,9 +785,6 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable {
             (_ctxControl as IDisposable).Dispose();
         }
         _navigator.Dispose();
-        if (_hudManager != null) {
-            _hudManager.Dispose();
-        }
     }
 
     #endregion

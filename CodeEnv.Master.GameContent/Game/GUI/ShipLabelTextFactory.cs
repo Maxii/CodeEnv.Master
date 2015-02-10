@@ -24,39 +24,45 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// LabelText factory for Ships.
     /// </summary>
-    public class ShipLabelTextFactory : ALabelTextFactory<ShipReport, ShipItemData> {
+    public class ShipLabelTextFactory : AIntelItemLabelTextFactory<ShipReport, ShipItemData> {
 
-        private static IDictionary<LabelID, IDictionary<LabelContentID, string>> _formatLookupByLabelID = new Dictionary<LabelID, IDictionary<LabelContentID, string>>() {
-            { LabelID.CursorHud, new Dictionary<LabelContentID, string>() {
-                {LabelContentID.Name, "Name: {0}"},
-                {LabelContentID.ParentName, "ParentName: {0}"},
-                {LabelContentID.Owner, "Owner: {0}"},
-                {LabelContentID.Category, "Category: {0}"},
-                {LabelContentID.MaxHitPoints, "MaxHitPts: {0}"},
-                {LabelContentID.CurrentHitPoints, "CurrentHitPts: {0}"},
-                {LabelContentID.Health, "Health: {0}"},
-                {LabelContentID.Defense, "Defense: {0}"},
-                {LabelContentID.Mass, "Mass: {0}"},
-                {LabelContentID.MaxWeaponsRange, "MaxWeaponsRange: {0}"},
-                {LabelContentID.MaxSensorRange, "MaxSensorRange: {0}"},
-                {LabelContentID.Offense, "Offense: {0}"},
-                {LabelContentID.Target, "Target: {0}"},
-                {LabelContentID.TargetDistance, "TargetDistance: {0}"},
-                {LabelContentID.CombatStance, "Stance: {0}"},
-                {LabelContentID.CurrentSpeed, "Speed: {0}"},
-                {LabelContentID.FullSpeed, "FullSpeed: {0}"}, 
-                {LabelContentID.MaxTurnRate, "MaxTurnRate: {0}"},
+        private static IDictionary<LabelID, IList<LabelContentID>> _includedContentLookup = new Dictionary<LabelID, IList<LabelContentID>>() {
+            {LabelID.CursorHud, new List<LabelContentID>() {
+                LabelContentID.Name,
+                LabelContentID.ParentName,
+                LabelContentID.Owner,
+                LabelContentID.Category,
 
-                {LabelContentID.CameraDistance, "CameraDistance: {0}"},
-                {LabelContentID.IntelState, "< {0} >"}
+                //LabelContentID.MaxHitPoints,
+                //LabelContentID.UnitCurrentHitPts,
+                LabelContentID.Health,
+                LabelContentID.Defense,
+                LabelContentID.Mass,
+                LabelContentID.MaxWeaponsRange,
+                LabelContentID.MaxSensorRange,
+                LabelContentID.Offense,
+
+                LabelContentID.Target,
+                LabelContentID.TargetDistance,
+                LabelContentID.CombatStance,
+                LabelContentID.CurrentSpeed,
+                LabelContentID.FullSpeed,
+                LabelContentID.MaxTurnRate,
+
+                LabelContentID.CameraDistance,
+                LabelContentID.IntelState
             }}
-            // TODO more LabelIDs
         };
+
+#pragma warning disable 0649
+        private static IDictionary<LabelID, IDictionary<LabelContentID, string>> _phraseOverrideLookup;
+#pragma warning restore 0649
+
 
         public ShipLabelTextFactory() : base() { }
 
         public override bool TryMakeInstance(LabelID labelID, LabelContentID contentID, ShipReport report, ShipItemData data, out IColoredTextList content) {
-            content = _includeUnknownLookup[labelID] ? _unknownValue : _emptyValue;
+            content = _includeUnknownLookup[labelID] ? _unknownContent : _emptyContent;
             switch (contentID) {
                 case LabelContentID.Name:
                     content = !report.Name.IsNullOrEmpty() ? new ColoredTextList_String(report.Name) : content;
@@ -65,31 +71,32 @@ namespace CodeEnv.Master.GameContent {
                     content = !report.ParentName.IsNullOrEmpty() ? new ColoredTextList_String(report.ParentName) : content;
                     break;
                 case LabelContentID.Owner:
-                    content = report.Owner != null ? new ColoredTextList_String(report.Owner.LeaderName) : content;
+                    content = report.Owner != null ? new ColoredTextList_Owner(report.Owner) : content;
                     break;
                 case LabelContentID.Category:
-                    content = report.Category != ShipCategory.None ? new ColoredTextList<ShipCategory>(report.Category) : content;
+                    content = report.Category != ShipCategory.None ? new ColoredTextList_String(report.Category.GetName()) : content;
                     break;
-                case LabelContentID.MaxHitPoints:
-                    content = report.MaxHitPoints.HasValue ? new ColoredTextList<float>(report.MaxHitPoints.Value) : content;
-                    break;
-                case LabelContentID.CurrentHitPoints:
-                    content = report.CurrentHitPoints.HasValue ? new ColoredTextList<float>(report.CurrentHitPoints.Value) : content;
-                    break;
+                //case LabelContentID.MaxHitPoints:
+                //    content = report.MaxHitPoints.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.MaxHitPoints.Value) : content;
+                //    break;
+                //case LabelContentID.CurrentHitPoints:
+                //    content = report.CurrentHitPoints.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.CurrentHitPoints.Value) : content;
+                //    break;
                 case LabelContentID.Health:
-                    content = report.Health.HasValue ? new ColoredTextList<float>(report.Health.Value) : content;
+                    content = new ColoredTextList_Health(report.Health, report.MaxHitPoints);
+                    //content = report.Health.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.Health.Value) : content;
                     break;
                 case LabelContentID.Defense:
                     content = report.DefensiveStrength.HasValue ? new ColoredTextList<CombatStrength>(report.DefensiveStrength.Value) : content;
                     break;
                 case LabelContentID.Mass:
-                    content = report.Mass.HasValue ? new ColoredTextList<float>(report.Mass.Value) : content;
+                    content = report.Mass.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.Mass.Value) : content;
                     break;
                 case LabelContentID.MaxWeaponsRange:
-                    content = report.MaxWeaponsRange.HasValue ? new ColoredTextList<float>(report.MaxWeaponsRange.Value) : content;
+                    content = report.MaxWeaponsRange.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.MaxWeaponsRange.Value) : content;
                     break;
                 case LabelContentID.MaxSensorRange:
-                    content = report.MaxSensorRange.HasValue ? new ColoredTextList<float>(report.MaxSensorRange.Value) : content;
+                    content = report.MaxSensorRange.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.MaxSensorRange.Value) : content;
                     break;
                 case LabelContentID.Offense:
                     content = report.OffensiveStrength.HasValue ? new ColoredTextList<CombatStrength>(report.OffensiveStrength.Value) : content;
@@ -101,16 +108,16 @@ namespace CodeEnv.Master.GameContent {
                     content = report.Target != null ? new ColoredTextList_Distance(data.Position, report.Target.Position) : content;
                     break;
                 case LabelContentID.CombatStance:
-                    content = report.CombatStance != ShipCombatStance.None ? new ColoredTextList<ShipCombatStance>(report.CombatStance.GetName()) : content;
+                    content = report.CombatStance != ShipCombatStance.None ? new ColoredTextList_String(report.CombatStance.GetName()) : content;
                     break;
                 case LabelContentID.CurrentSpeed:
-                    content = report.CurrentSpeed.HasValue ? new ColoredTextList<float>(report.CurrentSpeed.Value) : content;
+                    content = report.CurrentSpeed.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.CurrentSpeed.Value) : content;
                     break;
                 case LabelContentID.FullSpeed:
-                    content = report.FullSpeed.HasValue ? new ColoredTextList<float>(report.FullSpeed.Value) : content;
+                    content = report.FullSpeed.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.FullSpeed.Value) : content;
                     break;
                 case LabelContentID.MaxTurnRate:
-                    content = report.MaxTurnRate.HasValue ? new ColoredTextList<float>(report.MaxTurnRate.Value) : content;
+                    content = report.MaxTurnRate.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.MaxTurnRate.Value) : content;
                     break;
 
                 case LabelContentID.CameraDistance:
@@ -122,11 +129,19 @@ namespace CodeEnv.Master.GameContent {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(contentID));
             }
-            return content != _emptyValue;
+            return content != _emptyContent;
         }
 
-        protected override IDictionary<LabelContentID, string> GetFormatLookup(LabelID labelID) {
-            return _formatLookupByLabelID[labelID];
+        protected override IEnumerable<LabelContentID> GetIncludedContentIDs(LabelID labelID) {
+            return _includedContentLookup[labelID];
+        }
+
+        protected override bool TryGetOverridePhrase(LabelID labelID, LabelContentID contentID, out string overridePhrase) {
+            if (_phraseOverrideLookup == null) {
+                overridePhrase = null;
+                return false;
+            }
+            return _phraseOverrideLookup[labelID].TryGetValue(contentID, out overridePhrase);
         }
 
         public override string ToString() {

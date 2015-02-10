@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: CmdHudManager.cs
-// Generic class that manages the HUD for each command.
+// File: SystemHudManager.cs
+// Manages the HUD for Systems.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,29 +16,33 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
     /// <summary>
-    /// Generic class that manages the HUD for each command.
+    /// Manages the HUD for Systems.
     /// </summary>
-    public class CmdHudManager<CmdPublisherType> : AHudManager where CmdPublisherType : ACmdPublisherBase {
+    [Obsolete]
+    public class SystemHudManager : AHudManager {
 
-        private AElementItemReport[] _elementReports;
-        private CmdPublisherType _publisher;
+        private StarReport _starReport;
+        private PlanetoidReport[] _planetoidReports;
+        private SystemPublisher _publisher;
 
-        public CmdHudManager(CmdPublisherType publisher)
+        public SystemHudManager(SystemPublisher publisher)
             : base() {
             _publisher = publisher;
-            AddContentToUpdate(UpdatableLabelContentID.CameraDistance, UpdatableLabelContentID.IntelState);
+            AddContentToUpdate(UpdatableLabelContentID.CameraDistance);
         }
 
         protected override ALabelText GetLabelText() {
-            return _publisher.GetLabelText(LabelID.CursorHud, _elementReports);
+            return _publisher.GetLabelText(LabelID.CursorHud, _starReport, _planetoidReports);
         }
 
-        public void Show(Vector3 position, AElementItemReport[] elementReports) {
-            _elementReports = elementReports;
+        public void Show(Vector3 position, StarReport starReport, PlanetoidReport[] planetoidReports) {
+            _starReport = starReport;
+            _planetoidReports = planetoidReports;
             ShowHud(true, position);
         }
 
@@ -47,7 +51,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override bool TryUpdateContent(LabelContentID contentID, out IColoredTextList content) {
-            return _publisher.TryUpdateLabelTextContent(LabelID.CursorHud, contentID, _elementReports, out content);
+            return _publisher.TryUpdateLabelTextContent(LabelID.CursorHud, contentID, _starReport, _planetoidReports, out content);
         }
 
         public override string ToString() {

@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IPublisherItem.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// File: AReport.cs
+// Abstract base class for Reports associated with an AItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,13 +16,20 @@
 
 namespace CodeEnv.Master.GameContent {
 
-
     /// <summary>
-    /// 
+    /// Abstract base class for Reports associated with an AItem.
     /// </summary>
-    public interface IPublisherItem<DataType> where DataType : AItemData {
+    public abstract class AReport {
 
-        DataType Data { get; }
+        public string Name { get; protected set; }
+
+        public Player Owner { get; protected set; }
+
+        public Player Player { get; private set; }
+
+        public AReport(Player player) {
+            Player = player;
+        }
 
     }
 }

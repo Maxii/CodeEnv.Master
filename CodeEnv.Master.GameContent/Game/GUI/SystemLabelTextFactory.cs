@@ -24,26 +24,30 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// LabelText Factory for Systems.
     /// </summary>
-    public class SystemLabelTextFactory : ALabelTextFactoryBase {
+    public class SystemLabelTextFactory : AItemLabelTextFactory<SystemReport, SystemItemData> {//ALabelTextFactory {
 
-        private static IDictionary<LabelID, IDictionary<LabelContentID, string>> _formatLookupByLabelID = new Dictionary<LabelID, IDictionary<LabelContentID, string>>() {
-            { LabelID.CursorHud, new Dictionary<LabelContentID, string>() {
-                {LabelContentID.Name, "Name: {0}"},
-                {LabelContentID.SectorIndex, "Sector: {0}"},
-                {LabelContentID.Owner, "Owner: {0}"},
-                {LabelContentID.Capacity, "Capacity: {0}"},
-                {LabelContentID.Resources, "Resources: {0}"},
-                {LabelContentID.Specials, "[800080]Specials:[-] {0}"},
+        private static IDictionary<LabelID, IList<LabelContentID>> _includedContentLookup = new Dictionary<LabelID, IList<LabelContentID>>() {
+            {LabelID.CursorHud, new List<LabelContentID>() {
+                LabelContentID.Name,
+                LabelContentID.SectorIndex,
+                LabelContentID.Owner,
 
-                {LabelContentID.CameraDistance, "CameraDistance: {0}"}
+                LabelContentID.Capacity,
+                LabelContentID.Resources,
+                LabelContentID.Specials,
+
+                LabelContentID.CameraDistance,
             }}
-            // TODO more LabelIDs
         };
+
+#pragma warning disable 0649
+        private static IDictionary<LabelID, IDictionary<LabelContentID, string>> _phraseOverrideLookup;
+#pragma warning restore 0649
 
         public SystemLabelTextFactory() : base() { }
 
-        public bool TryMakeInstance(LabelID labelID, LabelContentID contentID, SystemReport report, SystemItemData data, out IColoredTextList content) {
-            content = _includeUnknownLookup[labelID] ? _unknownValue : _emptyValue;
+        public override bool TryMakeInstance(LabelID labelID, LabelContentID contentID, SystemReport report, SystemItemData data, out IColoredTextList content) {
+            content = _includeUnknownLookup[labelID] ? _unknownContent : _emptyContent;
             switch (contentID) {
                 case LabelContentID.Name:
                     content = !report.Name.IsNullOrEmpty() ? new ColoredTextList_String(report.Name) : content;
@@ -52,10 +56,10 @@ namespace CodeEnv.Master.GameContent {
                     content = new ColoredTextList<Index3D>(report.SectorIndex);
                     break;
                 case LabelContentID.Owner:
-                    content = report.Owner != null ? new ColoredTextList_String(report.Owner.LeaderName) : content;
+                    content = report.Owner != null ? new ColoredTextList_Owner(report.Owner) : content;
                     break;
                 case LabelContentID.Capacity:
-                    content = report.Capacity.HasValue ? new ColoredTextList<int>(report.Capacity.Value) : content;
+                    content = report.Capacity.HasValue ? new ColoredTextList<int>(GetFormat(contentID), report.Capacity.Value) : content;
                     break;
                 case LabelContentID.Resources:
                     content = report.Resources.HasValue ? new ColoredTextList<OpeYield>(report.Resources.Value) : content;
@@ -70,24 +74,19 @@ namespace CodeEnv.Master.GameContent {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(contentID));
             }
-            return content != _emptyValue;
+            return content != _emptyContent;
         }
 
-        public SystemLabelText MakeInstance(LabelID labelID, SystemReport report, SystemItemData data) {
-            var formatLookup = GetFormatLookup(labelID);
-            SystemLabelText labelText = new SystemLabelText(labelID, report, _dedicatedLinePerContentIDLookup[labelID]);
-            foreach (var contentID in formatLookup.Keys) {
-                IColoredTextList content;
-                if (TryMakeInstance(labelID, contentID, report, data, out content)) {
-                    var format = formatLookup[contentID];
-                    labelText.Add(contentID, content, format);
-                }
+        protected override IEnumerable<LabelContentID> GetIncludedContentIDs(LabelID labelID) {
+            return _includedContentLookup[labelID];
+        }
+
+        protected override bool TryGetOverridePhrase(LabelID labelID, LabelContentID contentID, out string overridePhrase) {
+            if (_phraseOverrideLookup == null) {
+                overridePhrase = null;
+                return false;
             }
-            return labelText;
-        }
-
-        protected override IDictionary<LabelContentID, string> GetFormatLookup(LabelID labelID) {
-            return _formatLookupByLabelID[labelID];
+            return _phraseOverrideLookup[labelID].TryGetValue(contentID, out overridePhrase);
         }
 
         public override string ToString() {

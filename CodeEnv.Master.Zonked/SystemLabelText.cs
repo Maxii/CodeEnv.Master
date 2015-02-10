@@ -16,11 +16,13 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
 
     /// <summary>
     /// Wrapper class for a StringBuilder that holds the text to be displayed in a Label for a System.
     /// </summary>
+    [Obsolete]
     public class SystemLabelText : ALabelText {
 
         public SystemLabelText(LabelID labelID, SystemReport report, bool isDedicatedLinePerContentID) : base(labelID, report, isDedicatedLinePerContentID) { }

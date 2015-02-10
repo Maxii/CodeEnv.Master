@@ -78,11 +78,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         get { return _publisher = _publisher ?? new ShipPublisher(Data); }
     }
 
-    public override bool IsHudShowing {
-        get { return _hudManager != null && _hudManager.IsHudShowing; }
-    }
-
-    private HudManager<ShipPublisher> _hudManager;
     private ICtxControl _ctxControl;
     private ShipHelm _helm;
     private VelocityRay _velocityRay;
@@ -107,9 +102,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         InitializeContextMenu(Owner);
     }
 
-    protected override void InitializeHudManager() {
-        _hudManager = new HudManager<ShipPublisher>(Publisher);
-        _hudManager.AddContentToUpdate(AHudManager.UpdatableLabelContentID.TargetDistance);
+    protected override HudManager InitializeHudManager() {
+        var hudManager = new HudManager(Publisher);
+        hudManager.AddContentToUpdate(AHudManager.UpdatableLabelContentID.IntelState, AHudManager.UpdatableLabelContentID.TargetDistance);
+        return hudManager;
     }
 
     private void InitializeContextMenu(Player owner) {
@@ -271,17 +267,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     #endregion
 
     #region View Methods
-
-    public override void ShowHud(bool toShow) {
-        if (_hudManager != null) {
-            if (toShow) {
-                _hudManager.Show(Position);
-            }
-            else {
-                _hudManager.Hide();
-            }
-        }
-    }
 
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
@@ -1156,9 +1141,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
         }
-        if (_hudManager != null) {
-            _hudManager.Dispose();
-        }
     }
 
     #endregion
@@ -1189,7 +1171,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     /// Navigator class for Ships.
     /// </summary>
     private class ShipHelm : IDisposable {
-    //public class ShipHelm : IDisposable {
+        //public class ShipHelm : IDisposable {
 
         /// <summary>
         /// The AutoPilotSpeed float equivalent in units per hour.

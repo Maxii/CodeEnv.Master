@@ -46,7 +46,7 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private static string _toStringFormat = "O[{0:0.#}], P[{1:0.#}], E[{2:0.#}]";
+        private static string _toStringFormat = "O({0:0.#}), P({1:0.#}), E({2:0.#})";  // use of [ ] causes Ngui label problems
 
         public float Organics { get; private set; }
 

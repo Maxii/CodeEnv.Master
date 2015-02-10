@@ -83,7 +83,7 @@ namespace CodeEnv.Master.GameContent {
         /// The Report this LabelText is derived from. 
         /// Used by the Publisher to check whether this cached LabelText was derived from a current report.
         /// </summary>
-        public AItemReport Report { get; private set; }
+        public AReport Report { get; private set; }
 
         private IDictionary<LabelContentID, string> _formatLookup = new Dictionary<LabelContentID, string>();
         private IDictionary<LabelContentID, IColoredTextList> _contentLookup = new Dictionary<LabelContentID, IColoredTextList>();
@@ -92,12 +92,12 @@ namespace CodeEnv.Master.GameContent {
         private bool _isDedicatedLinePerContentID;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="LabelText" /> class.
+        /// Initializes a new instance of the <see cref="IntelLabelText" /> class.
         /// </summary>
         /// <param name="labelID">The label identifier.</param>
         /// <param name="report">The report this LabelText is derived from.</param>
         /// <param name="isDedicatedLinePerContentID">if set to <c>true</c> the text associated with each key will be displayed on a separate line.</param>
-        public ALabelText(LabelID labelID, AItemReport report, bool isDedicatedLinePerContentID) {
+        public ALabelText(LabelID labelID, AReport report, bool isDedicatedLinePerContentID) {
             LabelID = labelID;
             Report = report;
             _isDedicatedLinePerContentID = isDedicatedLinePerContentID;
@@ -119,10 +119,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Only used to update existing content, this method changes the content if it is different from what aleady exists.
+        /// Only used to update existing content, this method changes the content 
+        /// and returns true if it is different from what already exists.
         /// </summary>
         /// <param name="contentID">The content identifier.</param>
         /// <param name="content">The content.</param>
+        /// <returns></returns>
         public bool TryUpdate(LabelContentID contentID, IColoredTextList content) {
             D.Assert(_contentLookup.ContainsKey(contentID), "Missing ContentID: {0}.".Inject(contentID.GetName()));
             D.Assert(_formatLookup.ContainsKey(contentID), "Missing ContentID: {0}.".Inject(contentID.GetName()));
@@ -141,12 +143,12 @@ namespace CodeEnv.Master.GameContent {
 
         public string GetText() {
             if (IsChanged) {
-                UpdateText();
+                RebuildText();
             }
             return _sb.ToString();
         }
 
-        private void UpdateText() {
+        private void RebuildText() {
             _sb.Clear();
             foreach (var contentID in _displayOrder) {
                 IColoredTextList content;
@@ -168,6 +170,7 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
             IsChanged = false;
+            D.Log("{0} rebuilt its text. IsChanged now false.", GetType().Name);
         }
 
         /// <summary>

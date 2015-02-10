@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: LabelText.cs
+// File: IntelLabelText.cs
 // Wrapper class for a StringBuilder that holds text for display in Labels.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -20,9 +20,11 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Wrapper class for a StringBuilder that holds text for display in Labels.
-    /// This derived class supports AItems, aka Items that have no PlayerIntel.
+    /// This derived class supports AIntelItems, aka Items that have PlayerIntel.
     /// </summary>
-    public class LabelText : ALabelText {
+    public class IntelLabelText : LabelText {
+
+        public IntelCoverage IntelCoverage { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IntelLabelText" /> class.
@@ -30,8 +32,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="labelID">The label identifier.</param>
         /// <param name="report">The report.</param>
         /// <param name="isDedicatedLinePerContentID">if set to <c>true</c> the text associated with each key will be displayed on a separate line.</param>
-        public LabelText(LabelID labelID, AReport report, bool isDedicatedLinePerContentID)
+        public IntelLabelText(LabelID labelID, AIntelItemReport report, bool isDedicatedLinePerContentID)
             : base(labelID, report, isDedicatedLinePerContentID) {
+            IntelCoverage = report.IntelCoverage;
         }
 
         public override string ToString() {

@@ -215,8 +215,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void UnsubscribeToSettlementDataValueChanges() {
-            _settlementSubscribers.ForAll(d => d.Dispose());
-            _settlementSubscribers.Clear();
+            if (_settlementSubscribers != null) {
+                _settlementSubscribers.ForAll(d => d.Dispose());
+                _settlementSubscribers.Clear();
+            }
         }
 
         private void Cleanup() {

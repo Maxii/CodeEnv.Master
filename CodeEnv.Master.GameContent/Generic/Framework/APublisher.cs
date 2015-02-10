@@ -6,11 +6,11 @@
 // </copyright> 
 // <summary> 
 // File: APublisher.cs
-// Abstract generic class for Report and LabelText Publishers.
+// Abstract base class for Report and LabelText Publishers.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -20,68 +20,27 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Abstract generic class for Report and LabelText Publishers.
+    /// Abstract base class for Report and LabelText Publishers.
     /// </summary>
-    public abstract class APublisher<ReportType, DataType> : APublisherBase
-        where ReportType : AIntelItemReport
-        where DataType : AIntelItemData {
+    public abstract class APublisher {
 
-        protected static ALabelTextFactory<ReportType, DataType> LabelTextFactory { private get; set; }
+        protected IGameManager _gameMgr;
+        private IDictionary<LabelID, ALabelText> _labelTextCache = new Dictionary<LabelID, ALabelText>();
 
-        protected DataType _data;
-        private IDictionary<Player, ReportType> _reportCache = new Dictionary<Player, ReportType>();
-
-        public APublisher(DataType data)
-            : base() {
-            _data = data;
+        public APublisher() {
+            _gameMgr = References.GameManager;
         }
 
-        public ReportType GetReport(Player player) {
-            var intelCoverage = _data.GetIntelCoverage(player);
-            ReportType cachedReport;
-            if (!IsCachedReportCurrent(player, intelCoverage, out cachedReport)) {
-                cachedReport = GenerateReport(player);
-                CacheReport(player, cachedReport);
-                _data.AcceptChanges();
-            }
-            else {
-                D.Log("{0} reusing cached {1} for Player {2}, IntelCoverage {3}.", GetType().Name, typeof(ReportType).Name, player.LeaderName, intelCoverage.GetName());
-            }
-            return cachedReport;
+        public abstract ALabelText GetLabelText(LabelID labelID);
+
+        public abstract bool TryUpdateLabelTextContent(LabelID labelID, LabelContentID contentID, out IColoredTextList content);
+
+        protected void CacheLabelText(LabelID labelID, ALabelText labelText) {
+            _labelTextCache[labelID] = labelText;
         }
 
-        private bool IsCachedReportCurrent(Player player, IntelCoverage intelCoverage, out ReportType cachedReport) {
-            return TryGetCachedReport(player, out cachedReport) && !_data.IsChanged && cachedReport.IntelCoverage == intelCoverage;
-        }
-
-        private void CacheReport(Player player, ReportType report) {
-            _reportCache[player] = report;
-        }
-
-        private bool TryGetCachedReport(Player player, out ReportType cachedReport) {
-            if (_reportCache.TryGetValue(player, out cachedReport)) {
-                return true;
-            }
-            return false;
-        }
-
-        protected abstract ReportType GenerateReport(Player player);
-
-        public override LabelText GetLabelText(LabelID labelID) {
-            LabelText cachedLabelText;
-            var intelCoverage = _data.HumanPlayerIntelCoverage;
-            if (!IsCachedLabelTextCurrent(labelID, intelCoverage, out cachedLabelText)) {
-                cachedLabelText = LabelTextFactory.MakeInstance(labelID, GetReport(_gameMgr.HumanPlayer), _data);
-                CacheLabelText(labelID, cachedLabelText);
-            }
-            else {
-                D.Log("{0} resuing cached {1} for Label {2}, HumanIntelCoverage {3}.", GetType().Name, typeof(LabelText).Name, labelID.GetName(), intelCoverage.GetName());
-            }
-            return cachedLabelText;
-        }
-
-        public override bool TryUpdateLabelTextContent(LabelID labelID, LabelContentID contentID, out IColoredTextList content) {
-            return LabelTextFactory.TryMakeInstance(labelID, contentID, GetReport(_gameMgr.HumanPlayer), _data, out content);
+        protected bool TryGetCachedLabelText(LabelID labelID, out ALabelText cachedLabelText) {
+            return _labelTextCache.TryGetValue(labelID, out cachedLabelText);
         }
 
     }

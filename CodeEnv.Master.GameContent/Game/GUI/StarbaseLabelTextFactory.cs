@@ -24,35 +24,39 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// LabelText factory for a Starbase.
     /// </summary>
-    public class StarbaseLabelTextFactory : ALabelTextFactory<StarbaseReport, StarbaseCmdItemData> {
+    public class StarbaseLabelTextFactory : AIntelItemLabelTextFactory<StarbaseReport, StarbaseCmdItemData> {
 
-        private static IDictionary<LabelID, IDictionary<LabelContentID, string>> _formatLookupByLabelID = new Dictionary<LabelID, IDictionary<LabelContentID, string>>() {
-            { LabelID.CursorHud, new Dictionary<LabelContentID, string>() {
-                {LabelContentID.Name, "Name: {0}"},
-                {LabelContentID.ParentName, "Parent: {0}"},
-                {LabelContentID.Owner, "Owner: {0}"},
-                {LabelContentID.Category, "Category: {0}"},
-                {LabelContentID.Composition, "{0}"},
-                {LabelContentID.Formation, "Formation: {0}"},
-                {LabelContentID.CurrentCmdEffectiveness, "Cmd Eff: {0}"},
-                {LabelContentID.UnitMaxWeaponsRange, "UnitMaxWeaponsRange: {0}"},
-                {LabelContentID.UnitMaxSensorRange, "UnitMaxSensorRange: {0}"},
-                {LabelContentID.UnitOffense, "UnitOffense: {0}"},
-                {LabelContentID.UnitDefense, "UnitDefense: {0}"},
-                {LabelContentID.UnitMaxHitPts, "UnitMaxHitPts: {0}"},
-                {LabelContentID.UnitCurrentHitPts, "UnitCurrentHitPts: {0}"},
-                {LabelContentID.UnitHealth, "UnitHealth: {0}"},
+        private static IDictionary<LabelID, IList<LabelContentID>> _includedContentLookup = new Dictionary<LabelID, IList<LabelContentID>>() {
+            {LabelID.CursorHud, new List<LabelContentID>() {
+                LabelContentID.Name,
+                LabelContentID.ParentName,
+                LabelContentID.Owner,
+                LabelContentID.Category,
 
-                {LabelContentID.CameraDistance, "CameraDistance: {0}"},
-                {LabelContentID.IntelState, "< {0} >"}
+                LabelContentID.Composition,
+                LabelContentID.Formation,
+                LabelContentID.CurrentCmdEffectiveness,
+                LabelContentID.UnitMaxWeaponsRange,
+                LabelContentID.UnitMaxSensorRange,
+                LabelContentID.UnitOffense,
+                LabelContentID.UnitDefense,
+                //LabelContentID.UnitMaxHitPts,
+                //LabelContentID.UnitCurrentHitPts,
+                LabelContentID.UnitHealth,
+
+                LabelContentID.CameraDistance,
+                LabelContentID.IntelState
             }}
-            // TODO more LabelIDs
         };
+
+#pragma warning disable 0649
+        private static IDictionary<LabelID, IDictionary<LabelContentID, string>> _phraseOverrideLookup;
+#pragma warning restore 0649
 
         public StarbaseLabelTextFactory() : base() { }
 
         public override bool TryMakeInstance(LabelID labelID, LabelContentID contentID, StarbaseReport report, StarbaseCmdItemData data, out IColoredTextList content) {
-            content = _includeUnknownLookup[labelID] ? _unknownValue : _emptyValue;
+            content = _includeUnknownLookup[labelID] ? _unknownContent : _emptyContent;
             switch (contentID) {
                 case LabelContentID.Name:
                     content = !report.Name.IsNullOrEmpty() ? new ColoredTextList_String(report.Name) : content;
@@ -61,25 +65,25 @@ namespace CodeEnv.Master.GameContent {
                     content = !report.ParentName.IsNullOrEmpty() ? new ColoredTextList_String(report.ParentName) : content;
                     break;
                 case LabelContentID.Owner:
-                    content = report.Owner != null ? new ColoredTextList_String(report.Owner.LeaderName) : content;
+                    content = report.Owner != null ? new ColoredTextList_Owner(report.Owner) : content;
                     break;
                 case LabelContentID.Category:
-                    content = report.Category != StarbaseCategory.None ? new ColoredTextList<StarbaseCategory>(report.Category) : content;
+                    content = report.Category != StarbaseCategory.None ? new ColoredTextList_String(report.Category.GetName()) : content;
                     break;
                 case LabelContentID.Composition:
                     content = report.UnitComposition != null ? new ColoredTextList_String(report.UnitComposition.ToString()) : content;
                     break;
                 case LabelContentID.Formation:
-                    content = report.UnitFormation != Formation.None ? new ColoredTextList<Formation>(report.UnitFormation) : content;
+                    content = report.UnitFormation != Formation.None ? new ColoredTextList_String(report.UnitFormation.GetName()) : content;
                     break;
                 case LabelContentID.CurrentCmdEffectiveness:
-                    content = report.CurrentCmdEffectiveness.HasValue ? new ColoredTextList<float>(report.CurrentCmdEffectiveness.Value) : content;
+                    content = report.CurrentCmdEffectiveness.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.CurrentCmdEffectiveness.Value) : content;
                     break;
                 case LabelContentID.UnitMaxWeaponsRange:
-                    content = report.UnitMaxWeaponsRange.HasValue ? new ColoredTextList<float>(report.UnitMaxWeaponsRange.Value) : content;
+                    content = report.UnitMaxWeaponsRange.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.UnitMaxWeaponsRange.Value) : content;
                     break;
                 case LabelContentID.UnitMaxSensorRange:
-                    content = report.UnitMaxSensorRange.HasValue ? new ColoredTextList<float>(report.UnitMaxSensorRange.Value) : content;
+                    content = report.UnitMaxSensorRange.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.UnitMaxSensorRange.Value) : content;
                     break;
                 case LabelContentID.UnitOffense:
                     content = report.UnitOffensiveStrength.HasValue ? new ColoredTextList<CombatStrength>(report.UnitOffensiveStrength.Value) : content;
@@ -87,14 +91,15 @@ namespace CodeEnv.Master.GameContent {
                 case LabelContentID.UnitDefense:
                     content = report.UnitDefensiveStrength.HasValue ? new ColoredTextList<CombatStrength>(report.UnitDefensiveStrength.Value) : content;
                     break;
-                case LabelContentID.UnitMaxHitPts:
-                    content = report.UnitMaxHitPoints.HasValue ? new ColoredTextList<float>(report.UnitMaxHitPoints.Value) : content;
-                    break;
-                case LabelContentID.UnitCurrentHitPts:
-                    content = report.UnitCurrentHitPoints.HasValue ? new ColoredTextList<float>(report.UnitCurrentHitPoints.Value) : content;
-                    break;
+                //case LabelContentID.UnitMaxHitPts:
+                //    content = report.UnitMaxHitPoints.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.UnitMaxHitPoints.Value) : content;
+                //    break;
+                //case LabelContentID.UnitCurrentHitPts:
+                //    content = report.UnitCurrentHitPoints.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.UnitCurrentHitPoints.Value) : content;
+                //    break;
                 case LabelContentID.UnitHealth:
-                    content = report.UnitHealth.HasValue ? new ColoredTextList<float>(report.UnitHealth.Value) : content;
+                    content = new ColoredTextList_Health(report.UnitHealth, report.UnitMaxHitPoints);
+                    //content = report.UnitHealth.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.UnitHealth.Value) : content;
                     break;
 
                 case LabelContentID.CameraDistance:
@@ -106,11 +111,19 @@ namespace CodeEnv.Master.GameContent {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(contentID));
             }
-            return content != _emptyValue;
+            return content != _emptyContent;
         }
 
-        protected override IDictionary<LabelContentID, string> GetFormatLookup(LabelID labelID) {
-            return _formatLookupByLabelID[labelID];
+        protected override IEnumerable<LabelContentID> GetIncludedContentIDs(LabelID labelID) {
+            return _includedContentLookup[labelID];
+        }
+
+        protected override bool TryGetOverridePhrase(LabelID labelID, LabelContentID contentID, out string overridePhrase) {
+            if (_phraseOverrideLookup == null) {
+                overridePhrase = null;
+                return false;
+            }
+            return _phraseOverrideLookup[labelID].TryGetValue(contentID, out overridePhrase);
         }
 
         public override string ToString() {

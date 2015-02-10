@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ShipReport.cs
-//  Immutable report on a ship reflecting a specific player's IntelCoverage.
+// Immutable report for ShipItems.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    ///  Immutable report on a ship reflecting a specific player's IntelCoverage.
+    /// Immutable report for ShipItems.
     /// </summary>
     public class ShipReport : AElementItemReport {
 
@@ -52,7 +52,7 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipReport(ShipItemData data, Player player) : base(data, player) { }
 
-        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AIntelItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageComprehensive(data);
             var sData = data as ShipItemData;
             CurrentHitPoints = sData.CurrentHitPoints;
@@ -61,14 +61,14 @@ namespace CodeEnv.Master.GameContent {
             Target = sData.Target;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageModerate(AIntelItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageModerate(data);
             var sData = data as ShipItemData;
             DefensiveStrength = sData.DefensiveStrength;
             OffensiveStrength = sData.OffensiveStrength;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageMinimal(AIntelItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageMinimal(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageMinimal(data);
             var sData = data as ShipItemData;
             ParentName = sData.ParentName;
@@ -82,7 +82,7 @@ namespace CodeEnv.Master.GameContent {
             FullSpeed = sData.FullSpeed;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageAware(AIntelItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageAware(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageAware(data);
             var sData = data as ShipItemData;
             Name = sData.Name;

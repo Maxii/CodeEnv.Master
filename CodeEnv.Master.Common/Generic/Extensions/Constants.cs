@@ -43,7 +43,7 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// Zero decimal places, rounded.
         /// </summary>
-        public const string FormatFloat_0Dp = "{0:0.}";   // "{0:0.}"?
+        public const string FormatFloat_0Dp = "{0:0.}";
         /// <summary>
         /// Up to one decimal place, rounded.
         /// </summary>
@@ -60,6 +60,19 @@ namespace CodeEnv.Master.Common {
         /// Up to four decimal places, rounded.
         /// </summary>
         public const string FormatFloat_4DpMax = "{0:0.####}";
+
+        /// <summary>
+        /// Two decimal places, rounded.
+        /// </summary>
+        public const string FormatPercent_2Dp = "{0:P02}";
+        /// <summary>
+        /// One decimal place, rounded.
+        /// </summary>
+        public const string FormatPercent_1Dp = "{0:P01}";
+        /// <summary>
+        /// Zero decimal places, rounded.
+        /// </summary>
+        public const string FormatPercent_0Dp = "{0:P00}";
 
         // Common Numeric Formatting  see http://msdn.microsoft.com/en-us/library/dwhawy9k.aspx
         public const string CurrencyNumericFormat = "C02";

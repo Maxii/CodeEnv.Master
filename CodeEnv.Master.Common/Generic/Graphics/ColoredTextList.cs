@@ -16,17 +16,19 @@
 
 namespace CodeEnv.Master.Common {
 
+
     /// <summary>
-    /// Generic version of class for strategy objects that provide lists of Colored Text for Huds.
+    /// Generic version of class for strategy objects that provide lists of Colored Text for TextLabels.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">A structure that is not an Enum.</typeparam>
     public class ColoredTextList<T> : ColoredTextListBase where T : struct {
 
         public ColoredTextList(params T[] values) : this(Constants.FormatNumber_Default, values) { }
 
         public ColoredTextList(string format, params T[] values) {
+            D.Assert(!typeof(T).IsEnum, "IllegalType {0}".Inject(typeof(T).Name));  // Enums need different format specifiers than other structs
             foreach (T v in values) {
-                _list.Add(new ColoredText(format.Inject(v.ToString())));
+                _list.Add(new ColoredText(format.Inject(v)));
             }
         }
 

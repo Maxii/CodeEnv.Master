@@ -6,8 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: StarbaseReport.cs
-// Immutable report on a starbase reflecting a specific player's IntelCoverage of
-// the starbase's command and its elements.
+// Immutable report for StarbaseCmdItems.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,8 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Immutable report on a starbase reflecting a specific player's IntelCoverage of
-    /// the starbase's command and its elements.
+    /// Immutable report for StarbaseCmdItems.
     /// </summary>
     public class StarbaseReport : ACmdReport {
 

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: UniverseCenterReport.cs
-// Immutable report on the universe center reflecting a specific player's IntelCoverage.
+// Immutable report for UniverseCenterItems.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,14 +19,15 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Immutable report on the universe center reflecting a specific player's IntelCoverage.
+    /// Immutable report for UniverseCenterItems.
     /// </summary>
     public class UniverseCenterReport : AIntelItemReport {
 
         public UniverseCenterReport(UniverseCenterItemData data, Player player)
-            : base(data, player) { }
+            : base(data, player) {
+        }
 
-        protected override void AssignIncrementalValues_IntelCoverageAware(AIntelItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageAware(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageAware(data);
             Name = data.Name;
             Owner = data.Owner;

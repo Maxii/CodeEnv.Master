@@ -77,13 +77,13 @@ namespace CodeEnv.Master.GameContent {
             var uniqueCategories = _categoryCountLookup.Keys.ToList();
             foreach (var cat in uniqueCategories) {
                 int count = _categoryCountLookup[cat];
-                sb.AppendFormat("{0}[", GetCategoryDescription(cat));
+                sb.AppendFormat("{0}(", GetCategoryDescription(cat));
                 sb.AppendFormat(Constants.FormatInt_1DMin, count);
                 if (!cat.Equals(uniqueCategories.First()) && !cat.Equals(uniqueCategories.Last())) {
-                    sb.AppendFormat("], ");
+                    sb.AppendFormat("), ");
                     continue;
                 }
-                sb.Append("]");
+                sb.Append(")");
             }
             return sb.ToString();
         }

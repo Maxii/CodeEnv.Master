@@ -36,12 +36,6 @@ public class SectorItem : AItem {
         get { return _publisher = _publisher ?? new SectorPublisher(Data); }
     }
 
-    public override bool IsHudShowing {
-        get { return _hudManager != null && _hudManager.IsHudShowing; }
-    }
-
-    private SectorHudManager _hudManager;
-
     #region Initialization
 
     /// <summary>
@@ -55,8 +49,9 @@ public class SectorItem : AItem {
 
     protected override void InitializeModelMembers() { }
 
-    protected override void InitializeHudManager() {
-        _hudManager = new SectorHudManager(Publisher);
+    protected override HudManager InitializeHudManager() {
+        var hudManager = new HudManager(Publisher);
+        return hudManager;
     }
 
     #endregion
@@ -69,27 +64,9 @@ public class SectorItem : AItem {
 
     #region View Methods
 
-    public override void ShowHud(bool toShow) {
-        if (_hudManager != null) {
-            if (toShow) {
-                _hudManager.Show(Position);
-            }
-            else {
-                _hudManager.Hide();
-            }
-        }
-    }
-
     #endregion
 
     #region Cleanup
-
-    protected override void Cleanup() {
-        base.Cleanup();
-        if (_hudManager != null) {
-            _hudManager.Dispose();
-        }
-    }
 
     #endregion
 

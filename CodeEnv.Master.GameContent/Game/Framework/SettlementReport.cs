@@ -6,8 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SettlementReport.cs
-// Immutable report on a settlement reflecting a specific player's IntelCoverage of
-// the settlement's command and its elements.
+// Immutable report for SettlementCmdItems.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,8 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Immutable report on a settlement reflecting a specific player's IntelCoverage of
-    /// the settlement's command and its elements.
+    /// Immutable report for SettlementCmdItems.
     /// </summary>
     public class SettlementReport : ACmdReport {
 
@@ -48,7 +46,7 @@ namespace CodeEnv.Master.GameContent {
             Category = UnitComposition != null ? (cmdData as SettlementCmdItemData).GenerateCmdCategory(UnitComposition) : SettlementCategory.None;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AIntelItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageComprehensive(data);
             var sData = data as SettlementCmdItemData;
             CapacityUsed = sData.CapacityUsed;
@@ -56,7 +54,7 @@ namespace CodeEnv.Master.GameContent {
             SpecialResourcesUsed = sData.SpecialResourcesUsed;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageModerate(AIntelItemData data) {
+        protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageModerate(data);
             var sData = data as SettlementCmdItemData;
             Population = sData.Population;

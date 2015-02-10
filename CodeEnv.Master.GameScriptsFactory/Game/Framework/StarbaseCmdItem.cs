@@ -24,7 +24,7 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// Class for AUnitBaseCmdItems that are Starbases.
 /// </summary>
-public class StarbaseCmdItem : AUnitBaseCmdItem {
+public class StarbaseCmdItem : AUnitBaseCmdItem, ICmdPublisherClient<FacilityReport> {
 
     public bool enableTrackingLabel = false;
 
@@ -35,20 +35,17 @@ public class StarbaseCmdItem : AUnitBaseCmdItem {
 
     private StarbasePublisher _publisher;
     public StarbasePublisher Publisher {
-        get { return _publisher = _publisher ?? new StarbasePublisher(Data); }
+        get { return _publisher = _publisher ?? new StarbasePublisher(Data, this); }
     }
 
-    public override bool IsHudShowing {
-        get { return _hudManager != null && _hudManager.IsHudShowing; }
-    }
-
-    private CmdHudManager<StarbasePublisher> _hudManager;
     private ITrackingWidget _trackingLabel;
 
     #region Initialization
 
-    protected override void InitializeHudManager() {
-        _hudManager = new CmdHudManager<StarbasePublisher>(Publisher);
+    protected override HudManager InitializeHudManager() {
+        var hudManager = new HudManager(Publisher);
+        hudManager.AddContentToUpdate(AHudManager.UpdatableLabelContentID.IntelState);
+        return hudManager;
     }
 
     private ITrackingWidget InitializeTrackingLabel() {
@@ -63,9 +60,9 @@ public class StarbaseCmdItem : AUnitBaseCmdItem {
 
     #region Model Methods
 
-    public StarbaseReport GetReport(Player player) { return Publisher.GetReport(player, GetElementReports(player)); }
+    public StarbaseReport GetReport(Player player) { return Publisher.GetReport(player); }
 
-    private FacilityReport[] GetElementReports(Player player) {
+    public FacilityReport[] GetElementReports(Player player) {
         return Elements.Cast<FacilityItem>().Select(e => e.GetReport(player)).ToArray();
     }
 
@@ -85,17 +82,6 @@ public class StarbaseCmdItem : AUnitBaseCmdItem {
     #endregion
 
     #region View Methods
-
-    public override void ShowHud(bool toShow) {
-        if (_hudManager != null) {
-            if (toShow) {
-                _hudManager.Show(Position, GetElementReports(_gameMgr.HumanPlayer));
-            }
-            else {
-                _hudManager.Hide();
-            }
-        }
-    }
 
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
@@ -119,9 +105,6 @@ public class StarbaseCmdItem : AUnitBaseCmdItem {
     protected override void Cleanup() {
         base.Cleanup();
         UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
-        if (_hudManager != null) {
-            _hudManager.Dispose();
-        }
     }
 
     #endregion
