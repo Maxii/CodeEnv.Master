@@ -246,14 +246,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
 
-        public virtual bool RemoveElement(AUnitElementItemData elementData) {
-            D.Assert(ElementsData.Contains(elementData), "Attempted to remove {0} {1} that is not present.".Inject(typeof(AUnitElementItemData).Name, elementData.ParentName));
+        public virtual void RemoveElement(AUnitElementItemData elementData) {
             bool isRemoved = ElementsData.Remove(elementData);
+            D.Assert(isRemoved, "Attempted to remove {0} {1} that is not present.".Inject(typeof(AUnitElementItemData).Name, elementData.ParentName));
 
             UpdateComposition();
             Unsubscribe(elementData);
             RecalcPropertiesDerivedFromCombinedElements();
-            return isRemoved;
         }
 
         // OPTIMIZE avoid creating new Composition at startup for every element.add transaction

@@ -25,12 +25,12 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AIntelItemData : AItemData {
 
-        public IntelCoverage HumanPlayerIntelCoverage {
-            get { return HumanPlayerIntel.CurrentCoverage; }
-            set { HumanPlayerIntel.CurrentCoverage = value; }
-        }
+        //public IntelCoverage HumanPlayerIntelCoverage {
+        //    get { return HumanPlayerIntel.CurrentCoverage; }
+        //    set { HumanPlayerIntel.CurrentCoverage = value; }
+        //}
 
-        public AIntel HumanPlayerIntel { get { return GetPlayerIntel(_gameMgr.HumanPlayer); } }
+        //public AIntel HumanPlayerIntel { get { return GetPlayerIntel(_gameMgr.HumanPlayer); } }
 
         private IDictionary<Player, AIntel> _playerIntelLookup;
         protected IGameManager _gameMgr;
@@ -53,22 +53,40 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Derived classes should override this if they have a different type of AIntel and/or starting coverage than <see cref="Intel" /> and
-        /// <see cref="IntelCoverage.None"/>.
+        /// Derived classes should override this if they have a different type of AIntel  than <see cref="Intel" /> and/or starting coverage than
+        /// <see cref="IntelCoverage.Comprehensive"/> if the owner or <see cref="IntelCoverage.None"/> if not.
         /// </summary>
         /// <param name="player">The player.</param>
         /// <returns></returns>
         protected virtual AIntel InitializeIntelState(Player player) {
             AIntel beginningIntel = new Intel();
-            beginningIntel.CurrentCoverage = IntelCoverage.None;
+            beginningIntel.CurrentCoverage = Owner == player ? IntelCoverage.Comprehensive : IntelCoverage.None;
             return beginningIntel;
         }
 
-        public void SetIntelCoverage(Player player, IntelCoverage coverage) { GetPlayerIntel(player).CurrentCoverage = coverage; }
+        public void SetHumanPlayerIntelCoverage(IntelCoverage newCoverage) {
+            SetIntelCoverage(_gameMgr.HumanPlayer, newCoverage);
+        }
+
+        public void SetIntelCoverage(Player player, IntelCoverage newCoverage) {
+            var playerIntel = GetPlayerIntel(player);
+            if (playerIntel.CurrentCoverage != newCoverage) {
+                playerIntel.CurrentCoverage = newCoverage;
+                OnPlayerIntelCoverageChanged(player);
+            }
+        }
+
+        public IntelCoverage GetHumanPlayerIntelCoverage() { return GetIntelCoverage(_gameMgr.HumanPlayer); }
 
         public IntelCoverage GetIntelCoverage(Player player) { return GetPlayerIntel(player).CurrentCoverage; }
 
-        public AIntel GetPlayerIntel(Player player) { return _playerIntelLookup[player]; }
+        public AIntel GetHumanPlayerIntel() { return GetPlayerIntel(_gameMgr.HumanPlayer); }
+
+        private AIntel GetPlayerIntel(Player player) { return _playerIntelLookup[player]; }
+
+        protected virtual void OnPlayerIntelCoverageChanged(Player player) {
+
+        }
 
     }
 }

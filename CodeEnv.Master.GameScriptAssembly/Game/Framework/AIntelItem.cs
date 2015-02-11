@@ -29,11 +29,6 @@ public abstract class AIntelItem : ADiscernibleItem {
         set { base.Data = value; }
     }
 
-    public IntelCoverage HumanPlayerIntelCoverage {
-        get { return Data.HumanPlayerIntelCoverage; }
-        set { Data.HumanPlayerIntelCoverage = value; }
-    }
-
     #region Initialization
 
     protected override void SubscribeToDataValueChanges() {

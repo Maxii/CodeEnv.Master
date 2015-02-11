@@ -184,12 +184,14 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
 
     public virtual void RemoveElement(AUnitElementItem element) {
         bool isRemoved = Elements.Remove(element);
-        isRemoved = isRemoved && Data.RemoveElement(element.Data);
         D.Assert(isRemoved, "{0} not found.".Inject(element.FullName));
+        Data.RemoveElement(element.Data);
 
         DetachSensorsFromMonitors(element.Data.Sensors.ToArray());
-        AssessCmdIcon();
-        if (Elements.Count == Constants.Zero) {
+        if (Elements.Count > Constants.Zero) {
+            AssessCmdIcon();
+        }
+        else {
             D.Assert(Data.UnitHealth <= Constants.ZeroF, "{0} UnitHealth error.".Inject(FullName));
             InitiateDeath();
         }
@@ -218,7 +220,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
         Data.HQElementData = HQElement.Data;
         //D.Log("{0}'s HQElement is now {1}.", Data.ParentName, HQElement.Data.Name);
         Radius = HQElement.Radius;
-        PositionCmdOverHQElement();
+        PlaceCmdUnderHQElement();
+        //PositionCmdOverHQElement();
         _formationGenerator.RegenerateFormation();
     }
 
@@ -232,6 +235,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
         if (IsSelected) {
             SelectionManager.Instance.CurrentSelection = null;
         }
+    }
+
+    private void PlaceCmdUnderHQElement() {
+        D.Assert(UnitContainer != null);    // can't relocate Cmd until it has recorded the UnitContainer
+        UnityUtility.AttachChildToParent(gameObject, HQElement.gameObject);
     }
 
     public override void __SimulateAttacked() {
@@ -261,10 +269,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
         if (IsSelected) { SelectionManager.Instance.CurrentSelection = this; }
     }
 
-    protected virtual void PositionCmdOverHQElement() {
-        _transform.position = HQElement.Position;
-        _transform.rotation = HQElement.Transform.rotation;
-    }
+    //protected virtual void PositionCmdOverHQElement() {
+    //    _transform.position = HQElement.Position;
+    //    _transform.rotation = HQElement.Transform.rotation;
+    //}
 
     protected override void OnHumanPlayerIntelCoverageChanged() {
         base.OnHumanPlayerIntelCoverageChanged();

@@ -384,12 +384,12 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient
         AssessShowPlottedPath(_navigator.Course);
     }
 
-    protected override void Update() {
-        base.Update();
-        if (HQElement != null) {    // IMPROVE Item is enabled before HQElement is assigned
-            PositionCmdOverHQElement();
-        }
-    }
+    //protected override void Update() {
+    //    base.Update();
+    //    if (HQElement != null) {    // IMPROVE Item is enabled before HQElement is assigned
+    //        PositionCmdOverHQElement();
+    //    }
+    //}
 
     /// <summary>
     /// Shows a Ray eminating from the Fleet's CommandTransform (tracking the HQ ship) indicating its course and speed.
@@ -704,8 +704,8 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient
     IEnumerator ExecuteJoinFleetOrder_EnterState() {
         D.Log("{0}.ExecuteJoinFleetOrder_EnterState called.", FullName);
         _moveTarget = CurrentOrder.Target;
-        D.Assert(CurrentOrder.Speed == Speed.None,
-            "{0}.JoinFleetOrder has speed set to {1}.".Inject(FullName, CurrentOrder.Speed.GetName()));
+        // UNCLEAR why I had this assert here as currently orders can take a speed
+        //D.Assert(CurrentOrder.Speed == Speed.None, "{0}.JoinFleetOrder has speed set to {1}.".Inject(FullName, CurrentOrder.Speed.GetName()));
         _moveSpeed = Speed.FleetStandard;
         Call(FleetState.Moving);
         yield return null;  // required immediately after Call() to avoid FSM bug

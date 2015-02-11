@@ -122,10 +122,9 @@ namespace CodeEnv.Master.GameContent {
             Category = GenerateCmdCategory(UnitComposition);
         }
 
-        public override bool RemoveElement(AUnitElementItemData elementData) {
-            bool isRemoved = base.RemoveElement(elementData);
+        public override void RemoveElement(AUnitElementItemData elementData) {
+            base.RemoveElement(elementData);
             Category = GenerateCmdCategory(UnitComposition);
-            return isRemoved;
         }
 
         protected override void UpdateComposition() {

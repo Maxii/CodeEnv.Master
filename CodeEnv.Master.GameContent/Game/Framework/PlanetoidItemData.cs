@@ -76,7 +76,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override AIntel InitializeIntelState(Player player) {
             AIntel beginningIntel = new ImprovingIntel();
-            beginningIntel.CurrentCoverage = IntelCoverage.None;
+            beginningIntel.CurrentCoverage = Owner == player ? IntelCoverage.Comprehensive : IntelCoverage.None;
             return beginningIntel;
         }
 

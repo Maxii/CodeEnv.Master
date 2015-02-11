@@ -123,7 +123,7 @@ namespace CodeEnv.Master.GameContent {
                     content = new ColoredTextList_Distance(data.Position);
                     break;
                 case LabelContentID.IntelState:
-                    content = new ColoredTextList_Intel(data.HumanPlayerIntel);
+                    content = new ColoredTextList_Intel(data.GetHumanPlayerIntel());
                     break;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(contentID));
