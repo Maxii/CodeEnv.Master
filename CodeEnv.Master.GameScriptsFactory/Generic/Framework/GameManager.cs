@@ -179,7 +179,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         var aiPlayerRaces = new Race[aiPlayerCount];
         for (int i = 0; i < aiPlayerCount; i++) {
             var aiSpecies = Enums<Species>.GetRandomExcept(Species.None, Species.Human);
-            aiPlayerRaces[i] = new Race(aiSpecies);
+            var aiColor = Enums<GameColor>.GetRandomExcept(GameColor.None, GameColor.Clear);
+            aiPlayerRaces[i] = new Race(aiSpecies, aiColor);
         }
 
         var gameSettings = new GameSettings {

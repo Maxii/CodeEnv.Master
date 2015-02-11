@@ -123,7 +123,7 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
         }
-        _ctxControl = Owner.IsPlayer ? new FleetCtxControl_Player(this) as ICtxControl : new FleetCtxControl_AI(this);
+        _ctxControl = Owner.IsHumanUser ? new FleetCtxControl_Player(this) as ICtxControl : new FleetCtxControl_AI(this);
         //D.Log("{0} initializing {1}.", FullName, _ctxControl.GetType().Name);
     }
 
@@ -273,7 +273,7 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient
         base.OnOwnerChanging(newOwner);
         if (_isViewMembersOnDiscernibleInitialized) {
             // _ctxControl has already been initialized
-            if (Owner.IsPlayer != newOwner.IsPlayer) {
+            if (Owner.IsHumanUser != newOwner.IsHumanUser) {
                 // Kind of owner has changed between AI and Player so generate a new ctxControl
                 InitializeContextMenu();
             }

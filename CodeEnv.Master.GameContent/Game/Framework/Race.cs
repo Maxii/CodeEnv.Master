@@ -17,10 +17,6 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using System.Linq;
-    using System.Collections.Generic;
-    using System.Text;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -42,12 +38,11 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="species">Species of the race.</param>
         /// <param name="color">Optional color.</param>
-        public Race(Species species, GameColor color = default(GameColor)) {
+        public Race(Species species, GameColor color) {
             Species = species;
             LeaderName = species.GetName() + " Leader";
             Description = species.GetDescription();
-            Color = (color != default(GameColor)) ? color : RandomExtended<GameColor>.Choice(Enums<GameColor>.GetValues()
-                .Except(default(GameColor), GameColor.Black, GameColor.Clear));
+            Color = color;
         }
 
         /// <summary>

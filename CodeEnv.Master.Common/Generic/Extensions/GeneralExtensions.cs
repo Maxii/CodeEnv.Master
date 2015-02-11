@@ -23,6 +23,8 @@ namespace CodeEnv.Master.Common {
     using System.Linq.Expressions;
     using System.Reflection;
     using System.Text;
+    using CodeEnv.Master.Common.LocalResources;
+    using UnityEngine;
 
     /// <summary>
     /// General purpose Extensions. 
@@ -70,7 +72,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="sourceRNG">A Random Number Generator instance.</param>
         /// <returns></returns>
-        public static bool CoinToss(this Random sourceRNG) {
+        public static bool CoinToss(this System.Random sourceRNG) {
             //  'this' sourceRNG can never be null without the CLR throwing a Null reference exception
             return sourceRNG.Next(2) == 0;
         }
@@ -82,7 +84,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="sourceRNG">The Random Number Generator instance.</param>
         /// <param name="itemsToPickFrom">The array of items of Type T to pick from.</param>
         /// <returns></returns>
-        public static T OneOf<T>(this Random sourceRNG, params T[] itemsToPickFrom) {
+        public static T OneOf<T>(this System.Random sourceRNG, params T[] itemsToPickFrom) {
             Arguments.ValidateNotNullOrEmpty(itemsToPickFrom);
             return itemsToPickFrom[sourceRNG.Next(itemsToPickFrom.Length)];
         }
@@ -256,6 +258,35 @@ namespace CodeEnv.Master.Common {
             return result;
         }
 
+        public static Color ToUnityColor(this GameColor color) {
+            switch (color) {
+                case GameColor.Black:
+                    return Color.black;
+                case GameColor.Blue:
+                    return Color.blue;
+                case GameColor.Cyan:
+                    return Color.cyan;
+                case GameColor.Green:
+                    return Color.green;
+                case GameColor.Gray:
+                    return Color.gray;
+                case GameColor.Clear:
+                    return Color.clear;
+                case GameColor.Magenta:
+                    return Color.magenta;
+                case GameColor.Red:
+                    return Color.red;
+                case GameColor.White:
+                    return Color.white;
+                case GameColor.Yellow:
+                    return Color.yellow;
+                case GameColor.None:
+                    return Color.white;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(color));
+            }
+        }
+
         #region Generic INotifyPropertyChanged, INotifyPropertyChanging Extensions
 
         /// <summary>
@@ -343,6 +374,7 @@ namespace CodeEnv.Master.Common {
             }
             return propertyInfo.Name;
         }
+
         #endregion
 
     }

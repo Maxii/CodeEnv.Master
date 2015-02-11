@@ -52,12 +52,12 @@ public class FleetCtxControl_AI : ACtxControl {
 
     protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
-        return selectedFleet != null && selectedFleet.Owner.IsPlayer;
+        return selectedFleet != null && selectedFleet.Owner.IsHumanUser;
     }
 
     protected override bool TryIsRemoteBaseAccessAttempted(ISelectable selected, out AUnitBaseCmdItem selectedBase) {
         selectedBase = selected as AUnitBaseCmdItem;
-        return selectedBase != null && selectedBase.Owner.IsPlayer;
+        return selectedBase != null && selectedBase.Owner.IsHumanUser;
     }
 
     protected override bool IsRemoteFleetMenuItemDisabled(FleetDirective directive) {

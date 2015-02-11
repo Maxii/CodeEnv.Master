@@ -73,12 +73,12 @@ public class FleetCtxControl_Player : ACtxControl_Player<FleetDirective> {
 
     protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
-        return selectedFleet != null && selectedFleet.Owner.IsPlayer;
+        return selectedFleet != null && selectedFleet.Owner.IsHumanUser;
     }
 
     protected override bool TryIsRemoteShipAccessAttempted(ISelectable selected, out ShipItem selectedShip) {
         selectedShip = selected as ShipItem;
-        return selectedShip != null && selectedShip.Owner.IsPlayer;
+        return selectedShip != null && selectedShip.Owner.IsHumanUser;
     }
 
     protected override bool IsSelectedItemMenuItemDisabled(FleetDirective directive) {
@@ -105,12 +105,12 @@ public class FleetCtxControl_Player : ACtxControl_Player<FleetDirective> {
     protected override bool TryGetSubMenuUnitTargets_SelectedItemAccess(FleetDirective directive, out IEnumerable<IUnitAttackableTarget> targets) {
         switch (directive) {
             case FleetDirective.Join:
-                targets = GameObject.FindObjectsOfType<FleetCmdItem>().Where(b => b.Owner.IsPlayer).Except(_fleetMenuOperator).Cast<IUnitAttackableTarget>();
+                targets = GameObject.FindObjectsOfType<FleetCmdItem>().Where(b => b.Owner.IsHumanUser).Except(_fleetMenuOperator).Cast<IUnitAttackableTarget>();
                 return true;
             case FleetDirective.Repair:
             case FleetDirective.Refit:
             case FleetDirective.Disband:
-                targets = GameObject.FindObjectsOfType<AUnitBaseCmdItem>().Where(b => b.Owner.IsPlayer).Cast<IUnitAttackableTarget>();
+                targets = GameObject.FindObjectsOfType<AUnitBaseCmdItem>().Where(b => b.Owner.IsHumanUser).Cast<IUnitAttackableTarget>();
                 return true;
             case FleetDirective.SelfDestruct:
                 targets = Enumerable.Empty<IUnitAttackableTarget>();

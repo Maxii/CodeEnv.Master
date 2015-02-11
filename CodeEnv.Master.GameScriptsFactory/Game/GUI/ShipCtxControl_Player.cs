@@ -79,11 +79,11 @@ public class ShipCtxControl_Player : ACtxControl_Player<ShipDirective> {
     protected override bool TryGetSubMenuUnitTargets_SelectedItemAccess(ShipDirective directive, out IEnumerable<IUnitAttackableTarget> targets) {
         switch (directive) {
             case ShipDirective.Join:
-                targets = GameObject.FindObjectsOfType<FleetCmdItem>().Where(f => f.Owner.IsPlayer).Except(_shipMenuOperator.Command).Cast<IUnitAttackableTarget>();
+                targets = GameObject.FindObjectsOfType<FleetCmdItem>().Where(f => f.Owner.IsHumanUser).Except(_shipMenuOperator.Command).Cast<IUnitAttackableTarget>();
                 return true;
             case ShipDirective.Refit:
             case ShipDirective.Disband:
-                targets = GameObject.FindObjectsOfType<AUnitBaseCmdItem>().Where(b => b.Owner.IsPlayer).Cast<IUnitAttackableTarget>();
+                targets = GameObject.FindObjectsOfType<AUnitBaseCmdItem>().Where(b => b.Owner.IsHumanUser).Cast<IUnitAttackableTarget>();
                 return true;
             case ShipDirective.SelfDestruct:
                 targets = Enumerable.Empty<IUnitAttackableTarget>();

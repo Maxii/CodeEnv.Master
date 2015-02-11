@@ -48,7 +48,7 @@ public class StarCtxControl : ACtxControl {
 
     protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
-        return selectedFleet != null && selectedFleet.Owner.IsPlayer;
+        return selectedFleet != null && selectedFleet.Owner.IsHumanUser;
     }
 
     protected override bool IsRemoteFleetMenuItemDisabled(FleetDirective directive) {

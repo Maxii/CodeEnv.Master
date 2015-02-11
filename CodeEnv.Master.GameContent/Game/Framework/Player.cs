@@ -16,10 +16,8 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
     using System.Collections.Generic;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
     /// Instantiable base class for a player.
@@ -33,7 +31,10 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<bool>(ref _isActive, value, "IsActive"); }
         }
 
-        public bool IsPlayer { get; private set; }
+        /// <summary>
+        /// Indicates whether this Player is the human user playing the game.
+        /// </summary>
+        public bool IsHumanUser { get; private set; }
 
         public IQ IQ { get; private set; }
 
@@ -52,17 +53,10 @@ namespace CodeEnv.Master.GameContent {
 
         private IDictionary<Player, DiplomaticRelationship> _diplomaticRelationship = new Dictionary<Player, DiplomaticRelationship>();
 
-        /// <summary>
-        /// Initializes a new random instance of the <see cref="Player"/> class for testing. 
-        /// </summary>
-        public Player()
-            : this(new Race(Enums<Species>.GetRandomExcept(Species.None)),
-                Enums<IQ>.GetRandom(excludeDefault: true)) { }
-
         public Player(Race race, IQ iq, bool isPlayer = false) {
             Race = race;
             IQ = iq;
-            IsPlayer = isPlayer;
+            IsHumanUser = isPlayer;
             _diplomaticRelationship[this] = DiplomaticRelationship.Self;    // assigning relations this way allows NoPlayer to make SetRelations illegal
         }
 
@@ -70,7 +64,7 @@ namespace CodeEnv.Master.GameContent {
         /// Copy Constructor.
         /// </summary>
         /// <param name="player">The player to copy.</param>
-        public Player(Player player) : this(player.Race, player.IQ, player.IsPlayer) { }
+        public Player(Player player) : this(player.Race, player.IQ, player.IsHumanUser) { }
 
         public DiplomaticRelationship GetRelations(Player player) {
             if (!_diplomaticRelationship.ContainsKey(player)) {

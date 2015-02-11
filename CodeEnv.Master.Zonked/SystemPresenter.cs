@@ -34,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
         public void RequestContextMenu(bool isDown) {
             SettlementCmdItemData settlementData = Data.SettlementData;
             //D.Log("Settlement null = {0}, isHumanOwner = {1}.", settlement == null, settlement.Owner.IsHuman);
-            if (settlementData != null && (DebugSettings.Instance.AllowEnemyOrders || settlementData.Owner.IsPlayer)) {
+            if (settlementData != null && (DebugSettings.Instance.AllowEnemyOrders || settlementData.Owner.IsHumanUser)) {
                 _cameraControl.ShowContextMenuOnPress(isDown);
             }
         }

@@ -76,12 +76,12 @@ public class SystemCtxControl_Player : ACtxControl_Player<BaseDirective> {
 
     protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
-        return selectedFleet != null && selectedFleet.Owner.IsPlayer;
+        return selectedFleet != null && selectedFleet.Owner.IsHumanUser;
     }
 
     protected override bool TryIsRemoteShipAccessAttempted(ISelectable selected, out ShipItem selectedShip) {
         selectedShip = selected as ShipItem;
-        return selectedShip != null && selectedShip.Owner.IsPlayer;
+        return selectedShip != null && selectedShip.Owner.IsHumanUser;
     }
 
     protected override bool IsSelectedItemMenuItemDisabled(BaseDirective directive) {

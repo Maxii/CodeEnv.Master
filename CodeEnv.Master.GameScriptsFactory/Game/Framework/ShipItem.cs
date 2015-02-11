@@ -113,7 +113,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
         }
-        _ctxControl = owner.IsPlayer ? new ShipCtxControl_Player(this) as ICtxControl : null;
+        _ctxControl = owner.IsHumanUser ? new ShipCtxControl_Player(this) as ICtxControl : null;
     }
 
     #endregion
@@ -245,7 +245,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         base.OnOwnerChanging(newOwner);
         if (_isViewMembersOnDiscernibleInitialized) {
             // _ctxControl has already been initialized
-            if (Owner.IsPlayer != newOwner.IsPlayer) {
+            if (Owner.IsHumanUser != newOwner.IsHumanUser) {
                 // Kind of owner has changed between AI and Player so generate a new ctxControl
                 InitializeContextMenu(newOwner);
             }

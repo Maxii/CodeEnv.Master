@@ -146,7 +146,7 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
             _ctxControl = new SystemCtxControl(this);
         }
         else {
-            _ctxControl = owner.IsPlayer ? new SystemCtxControl_Player(this) as ICtxControl : new SystemCtxControl_AI(this);
+            _ctxControl = owner.IsHumanUser ? new SystemCtxControl_Player(this) as ICtxControl : new SystemCtxControl_AI(this);
         }
         //D.Log("{0} initializing {1}.", FullName, _ctxControl.GetType().Name);
     }
@@ -211,7 +211,7 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
         base.OnOwnerChanging(newOwner);
         if (_isViewMembersOnDiscernibleInitialized) {
             // _ctxControl has already been initialized
-            if (Owner == TempGameValues.NoPlayer || newOwner == TempGameValues.NoPlayer || Owner.IsPlayer != newOwner.IsPlayer) {
+            if (Owner == TempGameValues.NoPlayer || newOwner == TempGameValues.NoPlayer || Owner.IsHumanUser != newOwner.IsHumanUser) {
                 // Kind of owner has changed between AI, Player and NoPlayer so generate a new ctxControl
                 InitializeContextMenu(newOwner);
             }

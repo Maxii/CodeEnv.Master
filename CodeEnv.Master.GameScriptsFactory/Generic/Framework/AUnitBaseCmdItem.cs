@@ -76,7 +76,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IShipOrbitable {
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
         }
-        _ctxControl = owner.IsPlayer ? new BaseCtxControl_Player(this) as ICtxControl : new BaseCtxControl_AI(this);
+        _ctxControl = owner.IsHumanUser ? new BaseCtxControl_Player(this) as ICtxControl : new BaseCtxControl_AI(this);
         //D.Log("{0} initializing {1}.", FullName, _ctxControl.GetType().Name);
     }
 
@@ -143,7 +143,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IShipOrbitable {
         base.OnOwnerChanging(newOwner);
         if (_isViewMembersOnDiscernibleInitialized) {
             // _ctxControl has already been initialized
-            if (Owner == TempGameValues.NoPlayer || newOwner == TempGameValues.NoPlayer || Owner.IsPlayer != newOwner.IsPlayer) {
+            if (Owner == TempGameValues.NoPlayer || newOwner == TempGameValues.NoPlayer || Owner.IsHumanUser != newOwner.IsHumanUser) {
                 // Kind of owner has changed between AI and Player so generate a new ctxControl
                 InitializeContextMenu(newOwner);
             }

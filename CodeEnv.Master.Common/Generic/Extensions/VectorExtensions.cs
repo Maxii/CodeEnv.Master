@@ -17,9 +17,9 @@
 namespace CodeEnv.Master.Common {
 
     using System;
-    using System.Linq;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
 
@@ -85,35 +85,6 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         public static float FindMeanDistance(this Vector3 myLoc, IEnumerable<Vector3> otherLocations) {
             return myLoc.FindMean(otherLocations).magnitude;
-        }
-
-        public static Color ToUnityColor(this GameColor color) {
-            switch (color) {
-                case GameColor.Black:
-                    return Color.black;
-                case GameColor.Blue:
-                    return Color.blue;
-                case GameColor.Cyan:
-                    return Color.cyan;
-                case GameColor.Green:
-                    return Color.green;
-                case GameColor.Gray:
-                    return Color.gray;
-                case GameColor.Clear:
-                    return Color.clear;
-                case GameColor.Magenta:
-                    return Color.magenta;
-                case GameColor.Red:
-                    return Color.red;
-                case GameColor.White:
-                    return Color.white;
-                case GameColor.Yellow:
-                    return Color.yellow;
-                case GameColor.None:
-                    return Color.white;
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(color));
-            }
         }
 
         public static void SetX(this Transform t, float x) {
