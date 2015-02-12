@@ -140,6 +140,12 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
 
     #region Model Methods
 
+    /// <summary>
+    /// Should be called when the Item should start operations, typically once
+    /// the game is running.
+    /// </summary>
+    public virtual void CommenceOperations() { }
+
     protected virtual void OnOwnerChanging(Player newOwner) { }
 
     protected virtual void OnOwnerChanged() {

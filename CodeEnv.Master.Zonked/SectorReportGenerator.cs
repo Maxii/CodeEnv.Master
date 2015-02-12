@@ -27,13 +27,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// 
     /// </summary>
-    public class SectorReportGenerator : AReportGenerator<SectorItemData, SectorReport> {
+    public class SectorReportGenerator : AReportGenerator<SectorData, SectorReport> {
 
         static SectorReportGenerator() {
             LabelFormatter = new SectorLabelFormatter();
         }
 
-        public SectorReportGenerator(SectorItemData data) : base(data) { }
+        public SectorReportGenerator(SectorData data) : base(data) { }
 
         protected override SectorReport GenerateReport(Player player, AIntel intel) {
             return new SectorReport(_data, player, intel);

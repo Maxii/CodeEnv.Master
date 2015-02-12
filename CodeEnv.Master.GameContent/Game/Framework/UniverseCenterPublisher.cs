@@ -21,13 +21,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Report and LabelText Publisher for the Universe Center.
     /// </summary>
-    public class UniverseCenterPublisher : AIntelItemPublisher<UniverseCenterReport, UniverseCenterItemData> {
+    public class UniverseCenterPublisher : AIntelItemPublisher<UniverseCenterReport, UniverseCenterData> {
 
         static UniverseCenterPublisher() {
             LabelTextFactory = new UniverseCenterLabelTextFactory();
         }
 
-        public UniverseCenterPublisher(UniverseCenterItemData data) : base(data) { }
+        public UniverseCenterPublisher(UniverseCenterData data) : base(data) { }
 
         protected override UniverseCenterReport GenerateReport(Player player) {
             return new UniverseCenterReport(_data, player);

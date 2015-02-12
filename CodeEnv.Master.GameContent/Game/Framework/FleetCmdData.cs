@@ -5,12 +5,12 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FleetCmdItemData.cs
+// File: FleetCmdData.cs
 // Class for Data associated with an FleetCmdItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Class for Data associated with an FleetCmdItem.
     /// </summary>
-    public class FleetCmdItemData : AUnitCmdItemData {
+    public class FleetCmdData : AUnitCmdItemData {
 
         private INavigableTarget _target;
         public INavigableTarget Target {
@@ -39,8 +39,8 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<FleetCategory>(ref _category, value, "Category"); }
         }
 
-        public new ShipItemData HQElementData {
-            get { return base.HQElementData as ShipItemData; }
+        public new ShipData HQElementData {
+            get { return base.HQElementData as ShipData; }
             set { base.HQElementData = value; }
         }
 
@@ -107,12 +107,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FleetCmdItemData" /> class.
+        /// Initializes a new instance of the <see cref="FleetCmdData" /> class.
         /// </summary>
         /// <param name="cmdTransform">The command transform.</param>
         /// <param name="stat">The stat.</param>
-        public FleetCmdItemData(Transform cmdTransform, FleetCmdStat stat)
-            : base(cmdTransform, stat.Name, stat.MaxHitPoints) {
+        /// <param name="owner">The owner.</param>
+        public FleetCmdData(Transform cmdTransform, FleetCmdStat stat, Player owner)
+            : base(cmdTransform, stat.Name, stat.MaxHitPoints, owner) {
             MaxCmdEffectiveness = stat.MaxCmdEffectiveness;
             UnitFormation = stat.UnitFormation;
         }
@@ -128,7 +129,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override void UpdateComposition() {
-            var elementCategories = ElementsData.Cast<ShipItemData>().Select(sd => sd.Category);
+            var elementCategories = ElementsData.Cast<ShipData>().Select(sd => sd.Category);
             UnitComposition = new FleetComposition(elementCategories);
         }
 
@@ -140,26 +141,26 @@ namespace CodeEnv.Master.GameContent {
 
         private void UpdateFullSpeed() {
             if (ElementsData.Any()) {
-                UnitFullStlSpeed = ElementsData.Min(eData => (eData as ShipItemData).FullStlSpeed);
-                UnitFullFtlSpeed = ElementsData.Min(eData => (eData as ShipItemData).FullFtlSpeed);
-                UnitFullSpeed = ElementsData.Min(eData => (eData as ShipItemData).FullSpeed);
+                UnitFullStlSpeed = ElementsData.Min(eData => (eData as ShipData).FullStlSpeed);
+                UnitFullFtlSpeed = ElementsData.Min(eData => (eData as ShipData).FullFtlSpeed);
+                UnitFullSpeed = ElementsData.Min(eData => (eData as ShipData).FullSpeed);
             }
         }
 
         private void UpdateMaxTurnRate() {
             if (ElementsData.Any()) {
-                UnitMaxTurnRate = ElementsData.Min(data => (data as ShipItemData).MaxTurnRate);
+                UnitMaxTurnRate = ElementsData.Min(data => (data as ShipData).MaxTurnRate);
             }
         }
 
         protected override void Subscribe(AUnitElementItemData elementData) {
             base.Subscribe(elementData);
             IList<IDisposable> anElementsSubscriptions = _subscribers[elementData];
-            ShipItemData shipData = elementData as ShipItemData;
-            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipItemData, float>(ed => ed.FullStlSpeed, OnShipFullSpeedChanged));
-            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipItemData, float>(ed => ed.FullFtlSpeed, OnShipFullSpeedChanged));
-            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipItemData, bool>(ed => ed.IsFtlAvailableForUse, OnShipFtlAvailableForUseChanged));
-            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipItemData, float>(ed => ed.MaxTurnRate, OnShipElementMaxTurnRateChanged));
+            ShipData shipData = elementData as ShipData;
+            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.FullStlSpeed, OnShipFullSpeedChanged));
+            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.FullFtlSpeed, OnShipFullSpeedChanged));
+            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, bool>(ed => ed.IsFtlAvailableForUse, OnShipFtlAvailableForUseChanged));
+            anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.MaxTurnRate, OnShipElementMaxTurnRateChanged));
         }
 
         private void OnShipFullSpeedChanged() {

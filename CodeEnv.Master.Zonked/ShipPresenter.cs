@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
 
         public new IShipModel Model { get { return base.Model as IShipModel; } }
 
-        protected new ShipItemData Data { get { return base.Data as ShipItemData; } }
+        protected new ShipData Data { get { return base.Data as ShipData; } }
 
         public ShipPresenter(IElementViewable view)
             : base(view) {
@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
-            var hudPublisher = new GuiHudPublisher<ShipItemData>(Data);
+            var hudPublisher = new GuiHudPublisher<ShipData>(Data);
             hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed, GuiHudLineKeys.Health, GuiHudLineKeys.TargetDistance);
             return hudPublisher;
         }

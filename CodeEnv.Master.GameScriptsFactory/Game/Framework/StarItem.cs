@@ -39,8 +39,8 @@ public class StarItem : AIntelItem, IShipOrbitable, IDetectable {
     [Tooltip("Optimal Camera View Distance Multiplier")]
     public float optViewDistanceFactor = 8F;
 
-    public new StarItemData Data {
-        get { return base.Data as StarItemData; }
+    public new StarData Data {
+        get { return base.Data as StarData; }
         set { base.Data = value; }
     }
 

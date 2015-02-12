@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// LabelText factory for a Starbase.
     /// </summary>
-    public class StarbaseLabelTextFactory : AIntelItemLabelTextFactory<StarbaseReport, StarbaseCmdItemData> {
+    public class StarbaseLabelTextFactory : AIntelItemLabelTextFactory<StarbaseReport, StarbaseCmdData> {
 
         private static IDictionary<LabelID, IList<LabelContentID>> _includedContentLookup = new Dictionary<LabelID, IList<LabelContentID>>() {
             {LabelID.CursorHud, new List<LabelContentID>() {
@@ -55,7 +55,7 @@ namespace CodeEnv.Master.GameContent {
 
         public StarbaseLabelTextFactory() : base() { }
 
-        public override bool TryMakeInstance(LabelID labelID, LabelContentID contentID, StarbaseReport report, StarbaseCmdItemData data, out IColoredTextList content) {
+        public override bool TryMakeInstance(LabelID labelID, LabelContentID contentID, StarbaseReport report, StarbaseCmdData data, out IColoredTextList content) {
             content = _includeUnknownLookup[labelID] ? _unknownContent : _emptyContent;
             switch (contentID) {
                 case LabelContentID.Name:
@@ -99,14 +99,13 @@ namespace CodeEnv.Master.GameContent {
                 //    break;
                 case LabelContentID.UnitHealth:
                     content = new ColoredTextList_Health(report.UnitHealth, report.UnitMaxHitPoints);
-                    //content = report.UnitHealth.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.UnitHealth.Value) : content;
                     break;
 
                 case LabelContentID.CameraDistance:
                     content = new ColoredTextList_Distance(data.Position);
                     break;
                 case LabelContentID.IntelState:
-                    content = new ColoredTextList_Intel(data.GetHumanPlayerIntel());
+                    content = new ColoredTextList_Intel(data.GetHumanPlayerIntelCopy());
                     break;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(contentID));

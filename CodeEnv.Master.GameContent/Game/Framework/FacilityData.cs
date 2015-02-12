@@ -32,8 +32,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="facilityTransform">The facility transform.</param>
         /// <param name="stat">The stat.</param>
         /// <param name="topography">The topography.</param>
-        public FacilityData(Transform facilityTransform, FacilityStat stat, Topography topography)
-            : base(facilityTransform, stat.Name, stat.Mass, stat.MaxHitPoints) {
+        /// <param name="owner">The owner.</param>
+        public FacilityData(Transform facilityTransform, FacilityStat stat, Topography topography, Player owner)
+            : base(facilityTransform, stat.Name, stat.Mass, stat.MaxHitPoints, owner) {
             Category = stat.Category;
             base.Topography = topography;
         }

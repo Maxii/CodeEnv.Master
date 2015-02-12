@@ -63,7 +63,8 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
 
     #region Model Methods
 
-    public virtual void CommenceOperations() {
+    public override void CommenceOperations() {
+        base.CommenceOperations();
         IsAliveAndOperating = true;
         Data.Countermeasures.ForAll(cm => cm.IsOperational = true);
     }

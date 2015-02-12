@@ -39,8 +39,8 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
     [Tooltip("Optimal Camera View Distance Multiplier")]
     public float optViewDistanceFactor = 8F;
 
-    public new PlanetoidItemData Data {
-        get { return base.Data as PlanetoidItemData; }
+    public new PlanetoidData Data {
+        get { return base.Data as PlanetoidData; }
         set { base.Data = value; }
     }
 

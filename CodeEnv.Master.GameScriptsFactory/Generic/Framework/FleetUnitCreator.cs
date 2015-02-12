@@ -29,7 +29,7 @@ using UnityEngine;
 /// it will be built and then initialized.
 /// </summary>
 [SerializeAll]
-public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipItemData, ShipStat, FleetCmdItem> {
+public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, ShipStat, FleetCmdItem> {
 
     public bool move;
     public bool attack;
@@ -62,6 +62,7 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipItemDat
             cmd = _factory.MakeInstance(cmdStat, countermeasures, owner);
             UnityUtility.AttachChildToParent(cmd.gameObject, gameObject);
         }
+        cmd.IsTrackingLabelEnabled = enableTrackingLabel;
         return cmd;
     }
 

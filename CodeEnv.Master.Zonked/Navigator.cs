@@ -37,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
         private GameStatus _gameStatus;
         private GeneralSettings _generalSettings;
         private float _gameSpeedMultiplier;
-        private ShipItemData _data;
+        private ShipData _data;
 
         private Job _speedJob;
         private Job _headingJob;
@@ -53,7 +53,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="t">Ship Transform</param>
         /// <param name="data">Ship data.</param>
-        public ShipNavigator(Transform t, ShipItemData data) {
+        public ShipNavigator(Transform t, ShipData data) {
             _transform = t;
             _data = data;
             _rigidbody = t.rigidbody;

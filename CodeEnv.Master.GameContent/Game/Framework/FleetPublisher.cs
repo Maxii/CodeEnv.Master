@@ -21,13 +21,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Report and LabelText Publisher for Fleets.
     /// </summary>
-    public class FleetPublisher : ACmdPublisher<FleetReport, FleetCmdItemData, ShipReport> {
+    public class FleetPublisher : ACmdPublisher<FleetReport, FleetCmdData, ShipReport> {
 
         static FleetPublisher() {
             LabelTextFactory = new FleetLabelTextFactory();
         }
 
-        public FleetPublisher(FleetCmdItemData data, ICmdPublisherClient<ShipReport> cmdItem)
+        public FleetPublisher(FleetCmdData data, ICmdPublisherClient<ShipReport> cmdItem)
             : base(data, cmdItem) {
         }
 

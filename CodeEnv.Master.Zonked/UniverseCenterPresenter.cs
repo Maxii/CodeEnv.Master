@@ -23,12 +23,12 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class UniverseCenterPresenter : AFocusableItemPresenter {
 
-        protected new UniverseCenterItemData Data { get { return base.Data as UniverseCenterItemData; } }
+        protected new UniverseCenterData Data { get { return base.Data as UniverseCenterData; } }
 
         public UniverseCenterPresenter(IViewable view) : base(view) { }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
-            return new GuiHudPublisher<UniverseCenterItemData>(Data);
+            return new GuiHudPublisher<UniverseCenterData>(Data);
         }
 
         public override string ToString() {

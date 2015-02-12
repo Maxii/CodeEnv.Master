@@ -31,10 +31,8 @@ using UnityEngine;
 /// </summary>
 public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient<ShipReport> {
 
-    public bool enableTrackingLabel = false;
-
-    public new FleetCmdItemData Data {
-        get { return base.Data as FleetCmdItemData; }
+    public new FleetCmdData Data {
+        get { return base.Data as FleetCmdData; }
         set { base.Data = value; }
     }
 
@@ -79,7 +77,6 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient
     private PathfindingLine _pathfindingLine;
     private FleetNavigator _navigator;
     private ICtxControl _ctxControl;
-    private ITrackingWidget _trackingLabel;
 
     #region Initialization
 
@@ -97,14 +94,6 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient
 
     private void InitializeNavigator() {
         _navigator = new FleetNavigator(this, gameObject.GetSafeMonoBehaviourComponent<Seeker>());
-    }
-
-    private ITrackingWidget InitializeTrackingLabel() {
-        float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
-        var trackingLabel = TrackingWidgetFactory.Instance.CreateUITrackingLabel(HQElement, WidgetPlacement.AboveRight, minShowDistance);
-        trackingLabel.Name = DisplayName + CommonTerms.Label;
-        trackingLabel.Set(DisplayName);
-        return trackingLabel;
     }
 
     protected override void InitializeViewMembersOnDiscernible() {
@@ -213,14 +202,6 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient
     protected override void OnHQElementChanging(AUnitElementItem newHQElement) {
         base.OnHQElementChanging(newHQElement);
         _navigator.OnHQElementChanging(HQElement, newHQElement as ShipItem);
-    }
-
-    protected override void OnHQElementChanged() {
-        base.OnHQElementChanged();
-        if (enableTrackingLabel) {
-            _trackingLabel = _trackingLabel ?? InitializeTrackingLabel();
-            _trackingLabel.Target = HQElement;
-        }
     }
 
     private void OnCurrentOrderChanged() {
@@ -373,9 +354,6 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient
 
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
-        if (_trackingLabel != null) {
-            _trackingLabel.Show(IsDiscernible);
-        }
         ShowVelocityRay(IsDiscernible);
     }
 
@@ -383,13 +361,6 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient
         base.OnIsSelectedChanged();
         AssessShowPlottedPath(_navigator.Course);
     }
-
-    //protected override void Update() {
-    //    base.Update();
-    //    if (HQElement != null) {    // IMPROVE Item is enabled before HQElement is assigned
-    //        PositionCmdOverHQElement();
-    //    }
-    //}
 
     /// <summary>
     /// Shows a Ray eminating from the Fleet's CommandTransform (tracking the HQ ship) indicating its course and speed.
@@ -443,25 +414,6 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient
             _ctxControl.OnRightPressRelease();
         }
     }
-
-    //private FleetReportGenerator _reportGenerator;
-    //public FleetReportGenerator ReportGenerator {
-    //    get {
-    //        return _reportGenerator = _reportGenerator ?? new FleetReportGenerator(Data);
-    //    }
-    //}
-
-    //protected override void OnHover(bool isOver) {
-    //    if (isOver) {
-    //        ShipReport[] elementReports = Elements.Cast<ShipItem>().Select(f => f.GetReport(_gameMgr.HumanPlayer)).ToArray();
-    //        string hudText = ReportGenerator.GetCursorHudText(Data.GetHumanPlayerIntel(), elementReports);
-    //        GuiCursorHud.Instance.Set(hudText, Position);
-    //    }
-    //    else {
-    //        GuiCursorHud.Instance.Clear();
-    //    }
-    //}
-
 
     #endregion
 
@@ -780,7 +732,6 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient
             _velocityRay.Dispose();
             _velocityRay = null;
         }
-        UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
         }
@@ -905,7 +856,7 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient
         private void Subscribe() {
             _subscribers = new List<IDisposable>();
             _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
-            _subscribers.Add(_fleet.Data.SubscribeToPropertyChanged<FleetCmdItemData, float>(d => d.UnitFullSpeed, OnFullSpeedChanged));
+            _subscribers.Add(_fleet.Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.UnitFullSpeed, OnFullSpeedChanged));
             _seeker.pathCallback += OnCoursePlotCompleted;
             // No subscription to changes in a target's maxWeaponsRange as a fleet should not automatically get an enemy target's maxWeaponRange update when it changes
         }

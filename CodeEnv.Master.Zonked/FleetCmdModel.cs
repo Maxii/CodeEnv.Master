@@ -106,7 +106,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         private void Subscribe() {
             _subscribers = new List<IDisposable>();
             _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
-            _subscribers.Add(_fleet.Data.SubscribeToPropertyChanged<FleetCmdItemData, float>(d => d.UnitFullSpeed, OnFullSpeedChanged));
+            _subscribers.Add(_fleet.Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.UnitFullSpeed, OnFullSpeedChanged));
             _seeker.pathCallback += OnCoursePlotCompleted;
             // No subscription to changes in a target's maxWeaponsRange as a fleet should not automatically get an enemy target's maxWeaponRange update when it changes
         }
@@ -665,8 +665,8 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
     }
 
-    public new FleetCmdItemData Data {
-        get { return base.Data as FleetCmdItemData; }
+    public new FleetCmdData Data {
+        get { return base.Data as FleetCmdData; }
         set { base.Data = value; }
     }
 

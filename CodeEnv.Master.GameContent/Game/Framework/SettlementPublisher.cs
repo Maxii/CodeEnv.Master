@@ -21,13 +21,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Report and LabelText Publisher for Settlements.
     /// </summary>
-    public class SettlementPublisher : ACmdPublisher<SettlementReport, SettlementCmdItemData, FacilityReport> {
+    public class SettlementPublisher : ACmdPublisher<SettlementReport, SettlementCmdData, FacilityReport> {
 
         static SettlementPublisher() {
             LabelTextFactory = new SettlementLabelTextFactory();
         }
 
-        public SettlementPublisher(SettlementCmdItemData data, ICmdPublisherClient<FacilityReport> cmdItem) : base(data, cmdItem) { }
+        public SettlementPublisher(SettlementCmdData data, ICmdPublisherClient<FacilityReport> cmdItem) : base(data, cmdItem) { }
 
         protected override SettlementReport GenerateReport(Player player) {
             return new SettlementReport(_data, player, _cmdItem.GetElementReports(player));

@@ -21,13 +21,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Report and LabelText Publisher for Ships.
     /// </summary>
-    public class ShipPublisher : AIntelItemPublisher<ShipReport, ShipItemData> {
+    public class ShipPublisher : AIntelItemPublisher<ShipReport, ShipData> {
 
         static ShipPublisher() {
             LabelTextFactory = new ShipLabelTextFactory();
         }
 
-        public ShipPublisher(ShipItemData data) : base(data) { }
+        public ShipPublisher(ShipData data) : base(data) { }
 
         protected override ShipReport GenerateReport(Player player) {
             return new ShipReport(_data, player);

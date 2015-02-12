@@ -22,8 +22,8 @@ using UnityEngine;
 [System.Obsolete]
 public class OrbitalPlane : StationaryItem, IZoomToFurthest {
 
-    public new SystemItemData Data {
-        get { return base.Data as SystemItemData; }
+    public new SystemData Data {
+        get { return base.Data as SystemData; }
         set { base.Data = value; }
     }
 
@@ -47,7 +47,7 @@ public class OrbitalPlane : StationaryItem, IZoomToFurthest {
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        return new GuiHudPublisher<SystemItemData>(Data);
+        return new GuiHudPublisher<SystemData>(Data);
     }
 
     protected override void OnHover(bool isOver) {

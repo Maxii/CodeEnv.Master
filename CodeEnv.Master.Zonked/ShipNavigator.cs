@@ -88,7 +88,7 @@ namespace CodeEnv.Master.GameContent {
         private float _courseProgressCheckPeriod = 1F;
 
         private TargetInfo _targetInfo;
-        private ShipItemData _data;
+        private ShipData _data;
         private IShipModel _ship;
 
         private IList<IDisposable> _subscribers;
@@ -114,7 +114,7 @@ namespace CodeEnv.Master.GameContent {
         private void Subscribe() {
             _subscribers = new List<IDisposable>();
             _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
-            _subscribers.Add(_data.SubscribeToPropertyChanged<ShipItemData, float>(d => d.FullStlSpeed, OnFullSpeedChanged));
+            _subscribers.Add(_data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullStlSpeed, OnFullSpeedChanged));
         }
 
         #region PlotCourse

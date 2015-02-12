@@ -24,8 +24,8 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class SectorItem : ADiscernibleItem {
 
-    public new SectorItemData Data {
-        get { return base.Data as SectorItemData; }
+    public new SectorData Data {
+        get { return base.Data as SectorData; }
         set { base.Data = value; }
     }
 

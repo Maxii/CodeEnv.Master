@@ -74,6 +74,7 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory
             UnityUtility.AttachChildToParent(cmd.gameObject, gameObject);
         }
         cmd.__OrbiterMoves = orbitMoves;
+        cmd.IsTrackingLabelEnabled = enableTrackingLabel;
         return cmd;
     }
 

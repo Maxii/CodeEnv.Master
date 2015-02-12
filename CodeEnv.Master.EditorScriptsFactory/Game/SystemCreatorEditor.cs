@@ -41,6 +41,7 @@ public class SystemCreatorEditor : Editor {
         creator.countermeasuresPerPlanetoid = EditorGUILayout.IntSlider("Countermeasures/Planetoid", creator.countermeasuresPerPlanetoid, 0, 2);
 
         //creator.toCycleIntelCoverage = GUILayout.Toggle(creator.toCycleIntelCoverage, "Cycle Intel Coverage");
+        creator.enableTrackingLabel = GUILayout.Toggle(creator.enableTrackingLabel, "Enable Tracking Label");
 
         // Note: The owner of a System (and Star, Planets and Moons) is automatically set to the owner of the Settlement located in the System, if any.
 

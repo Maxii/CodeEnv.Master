@@ -58,6 +58,7 @@ public abstract class AUnitCreatorEditor<T> : Editor where T : ACreator {
         creator.countermeasuresPerCmd = EditorGUILayout.IntSlider("Countermeasures/Cmd", creator.countermeasuresPerCmd, 0, 3);
 
         creator.toCycleIntelCoverage = GUILayout.Toggle(creator.toCycleIntelCoverage, "Cycle Intel Coverage");
+        creator.enableTrackingLabel = GUILayout.Toggle(creator.enableTrackingLabel, "Enable Tracking Label");
 
         if (GUI.changed) {
             EditorUtility.SetDirty(target);

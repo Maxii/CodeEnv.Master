@@ -35,20 +35,20 @@ namespace CodeEnv.Master.GameContent {
 
         public XYield? SpecialResources { get; private set; }
 
-        public PlanetoidReport(PlanetoidItemData data, Player player)
+        public PlanetoidReport(PlanetoidData data, Player player)
             : base(data, player) {
         }
 
         protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageComprehensive(data);
-            var planetoidData = data as PlanetoidItemData;
+            var planetoidData = data as PlanetoidData;
             CurrentHitPoints = planetoidData.CurrentHitPoints;
             Health = planetoidData.Health;
         }
 
         protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageModerate(data);
-            var planetoidData = data as PlanetoidItemData;
+            var planetoidData = data as PlanetoidData;
             MaxHitPoints = planetoidData.MaxHitPoints;
             DefensiveStrength = planetoidData.DefensiveStrength;
             Mass = planetoidData.Mass;
@@ -59,7 +59,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void AssignIncrementalValues_IntelCoverageMinimal(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageMinimal(data);
-            var planetoidData = data as PlanetoidItemData;
+            var planetoidData = data as PlanetoidData;
             Owner = planetoidData.Owner;
             Category = planetoidData.Category;
             OrbitalSpeed = planetoidData.OrbitalSpeed;
@@ -67,7 +67,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void AssignIncrementalValues_IntelCoverageAware(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageAware(data);
-            var planetoidData = data as PlanetoidItemData;
+            var planetoidData = data as PlanetoidData;
             Name = planetoidData.Name;
             ParentName = planetoidData.ParentName;
         }

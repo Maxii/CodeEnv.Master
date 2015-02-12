@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: StarbaseCmdItemData.cs
+// File: StarbaseCmdData.cs
 // Class for Data associated with a StarbaseCmdItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Class for Data associated with a StarbaseCmdItem.
     /// </summary>
-    public class StarbaseCmdItemData : AUnitCmdItemData {
+    public class StarbaseCmdData : AUnitCmdItemData {
 
         private StarbaseCategory _category;
         public StarbaseCategory Category {
@@ -47,12 +47,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="StarbaseCmdItemData" /> class.
+        /// Initializes a new instance of the <see cref="StarbaseCmdData" /> class.
         /// </summary>
         /// <param name="cmdTransform">The command transform.</param>
         /// <param name="stat">The stat.</param>
-        public StarbaseCmdItemData(Transform cmdTransform, StarbaseCmdStat stat)
-            : base(cmdTransform, stat.Name, stat.MaxHitPoints) {
+        /// <param name="owner">The owner.</param>
+        public StarbaseCmdData(Transform cmdTransform, StarbaseCmdStat stat, Player owner)
+            : base(cmdTransform, stat.Name, stat.MaxHitPoints, owner) {
             MaxCmdEffectiveness = stat.MaxCmdEffectiveness;
             UnitFormation = stat.UnitFormation;
         }

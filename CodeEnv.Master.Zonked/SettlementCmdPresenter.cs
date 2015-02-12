@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SettlementCmdPresenter : AUnitCommandPresenter {
 
-        protected new SettlementCmdItemData Data { get { return base.Data as SettlementCmdItemData; } }
+        protected new SettlementCmdData Data { get { return base.Data as SettlementCmdData; } }
 
         public SettlementCmdPresenter(ICommandViewable view)
             : base(view) {
@@ -34,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
-            var publisher = new GuiHudPublisher<SettlementCmdItemData>(Data);
+            var publisher = new GuiHudPublisher<SettlementCmdData>(Data);
             publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
             return publisher;
         }

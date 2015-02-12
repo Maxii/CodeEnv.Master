@@ -27,13 +27,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// 
     /// </summary>
-    public class UniverseCenterReportGenerator : AReportGenerator<UniverseCenterItemData, UniverseCenterReport> {
+    public class UniverseCenterReportGenerator : AReportGenerator<UniverseCenterData, UniverseCenterReport> {
 
         static UniverseCenterReportGenerator() {
             LabelFormatter = new UniverseCenterLabelFormatter();
         }
 
-        public UniverseCenterReportGenerator(UniverseCenterItemData data) : base(data) { }
+        public UniverseCenterReportGenerator(UniverseCenterData data) : base(data) { }
 
         protected override UniverseCenterReport GenerateReport(Player player, AIntel intel) {
             return new UniverseCenterReport(_data, player, intel);

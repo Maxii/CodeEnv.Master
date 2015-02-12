@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class UniverseCenterReport : AIntelItemReport {
 
-        public UniverseCenterReport(UniverseCenterItemData data, Player player)
+        public UniverseCenterReport(UniverseCenterData data, Player player)
             : base(data, player) {
         }
 

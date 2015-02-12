@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using System.Collections.Generic;
     using CodeEnv.Master.Common;
     using UnityEngine;
@@ -25,18 +26,15 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AIntelItemData : AItemData {
 
-        //public IntelCoverage HumanPlayerIntelCoverage {
-        //    get { return HumanPlayerIntel.CurrentCoverage; }
-        //    set { HumanPlayerIntel.CurrentCoverage = value; }
-        //}
+        public event Action onHumanPlayerIntelCoverageChanged;
 
-        //public AIntel HumanPlayerIntel { get { return GetPlayerIntel(_gameMgr.HumanPlayer); } }
+        public event Action<Player> onPlayerIntelCoverageChanged;
 
         private IDictionary<Player, AIntel> _playerIntelLookup;
         protected IGameManager _gameMgr;
 
-        public AIntelItemData(Transform itemTransform, string name)
-            : base(itemTransform, name) {
+        public AIntelItemData(Transform itemTransform, string name, Player owner)
+            : base(itemTransform, name, owner) {
             _gameMgr = References.GameManager;
             InitializePlayersIntel();
         }
@@ -78,14 +76,38 @@ namespace CodeEnv.Master.GameContent {
 
         public IntelCoverage GetHumanPlayerIntelCoverage() { return GetIntelCoverage(_gameMgr.HumanPlayer); }
 
-        public IntelCoverage GetIntelCoverage(Player player) { return GetPlayerIntel(player).CurrentCoverage; }
+        public IntelCoverage GetIntelCoverage(Player player) { return GetPlayerIntelCopy(player).CurrentCoverage; }
 
-        public AIntel GetHumanPlayerIntel() { return GetPlayerIntel(_gameMgr.HumanPlayer); }
+        /// <summary>
+        /// Returns a copy of the intel instance for the HumanPlayer.
+        /// </summary>
+        /// <returns></returns>
+        public AIntel GetHumanPlayerIntelCopy() { return GetPlayerIntelCopy(_gameMgr.HumanPlayer); }
 
-        private AIntel GetPlayerIntel(Player player) { return _playerIntelLookup[player]; }
+        /// <summary>
+        /// Returns a copy of the intel instance for this player.
+        /// </summary>
+        /// <param name="player">The player.</param>
+        /// <returns></returns>
+        public AIntel GetPlayerIntelCopy(Player player) {
+            AIntel intelToCopy = GetPlayerIntel(player);
+            if (intelToCopy is Intel) {
+                return new Intel(intelToCopy as Intel);
+            }
+            return new ImprovingIntel(intelToCopy as ImprovingIntel);
+        }
 
-        protected virtual void OnPlayerIntelCoverageChanged(Player player) {
+        private AIntel GetPlayerIntel(Player player) {
+            return _playerIntelLookup[player];
+        }
 
+        private void OnPlayerIntelCoverageChanged(Player player) {
+            if (onPlayerIntelCoverageChanged != null) {
+                onPlayerIntelCoverageChanged(player);
+            }
+            if (onHumanPlayerIntelCoverageChanged != null && player.IsHumanUser) {
+                onHumanPlayerIntelCoverageChanged();
+            }
         }
 
     }

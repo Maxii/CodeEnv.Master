@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class StarbaseCmdPresenter : AUnitCommandPresenter {
 
-        protected new StarbaseCmdItemData Data { get { return base.Data as StarbaseCmdItemData; } }
+        protected new StarbaseCmdData Data { get { return base.Data as StarbaseCmdData; } }
 
         public StarbaseCmdPresenter(ICommandViewable view)
             : base(view) {
@@ -34,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
-            var publisher = new GuiHudPublisher<StarbaseCmdItemData>(Data);
+            var publisher = new GuiHudPublisher<StarbaseCmdData>(Data);
             publisher.SetOptionalUpdateKeys(GuiHudLineKeys.Health);
             return publisher;
         }

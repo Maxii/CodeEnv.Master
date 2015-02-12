@@ -51,16 +51,16 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<XYield>(ref _specialResources, value, "SpecialResources"); }
         }
 
-        private SettlementCmdItemData _settlementData;
-        public SettlementCmdItemData SettlementData {
+        private SettlementCmdData _settlementData;
+        public SettlementCmdData SettlementData {
             get { return _settlementData; }
-            set { SetProperty<SettlementCmdItemData>(ref _settlementData, value, "SettlementData", OnSettlementDataChanged); }
+            set { SetProperty<SettlementCmdData>(ref _settlementData, value, "SettlementData", OnSettlementDataChanged); }
         }
 
-        private StarItemData _starData;
-        public StarItemData StarData {
+        private StarData _starData;
+        public StarData StarData {
             get { return _starData; }
-            set { SetProperty<StarItemData>(ref _starData, value, "StarData", OnStarDataChanged, OnStarDataChanging); }
+            set { SetProperty<StarData>(ref _starData, value, "StarData", OnStarDataChanged, OnStarDataChanging); }
         }
 
         private IList<APlanetoidData> _allPlanetoidData = new List<APlanetoidData>();

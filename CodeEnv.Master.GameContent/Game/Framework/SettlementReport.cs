@@ -36,19 +36,19 @@ namespace CodeEnv.Master.GameContent {
 
         public XYield? SpecialResourcesUsed { get; private set; }
 
-        public SettlementReport(SettlementCmdItemData cmdData, Player player, FacilityReport[] facilityReports)
+        public SettlementReport(SettlementCmdData cmdData, Player player, FacilityReport[] facilityReports)
             : base(cmdData, player, facilityReports) { }
 
         protected override void AssignValuesFrom(AElementItemReport[] elementReports, AUnitCmdItemData cmdData) {
             base.AssignValuesFrom(elementReports, cmdData);
             var knownElementCategories = elementReports.Cast<FacilityReport>().Select(r => r.Category).Where(cat => cat != FacilityCategory.None);
             UnitComposition = new BaseComposition(knownElementCategories);
-            Category = UnitComposition != null ? (cmdData as SettlementCmdItemData).GenerateCmdCategory(UnitComposition) : SettlementCategory.None;
+            Category = UnitComposition != null ? (cmdData as SettlementCmdData).GenerateCmdCategory(UnitComposition) : SettlementCategory.None;
         }
 
         protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageComprehensive(data);
-            var sData = data as SettlementCmdItemData;
+            var sData = data as SettlementCmdData;
             CapacityUsed = sData.CapacityUsed;
             ResourcesUsed = sData.ResourcesUsed;
             SpecialResourcesUsed = sData.SpecialResourcesUsed;
@@ -56,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageModerate(data);
-            var sData = data as SettlementCmdItemData;
+            var sData = data as SettlementCmdData;
             Population = sData.Population;
         }
 

@@ -23,13 +23,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Factory that makes GuiCursorHudText and IColoredTextList instances for Stars.
     /// </summary>
-    public class StarGuiHudTextFactory : AGuiHudTextFactory<StarGuiHudTextFactory, StarItemData> {
+    public class StarGuiHudTextFactory : AGuiHudTextFactory<StarGuiHudTextFactory, StarData> {
 
         private StarGuiHudTextFactory() {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, StarItemData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, StarData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.Name);

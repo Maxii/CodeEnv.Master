@@ -25,8 +25,8 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class SettlementCmdItem : AUnitBaseCmdItem, ICmdPublisherClient<FacilityReport> /*, ICameraFollowable  [not currently in motion]*/ {
 
-    public new SettlementCmdItemData Data {
-        get { return base.Data as SettlementCmdItemData; }
+    public new SettlementCmdData Data {
+        get { return base.Data as SettlementCmdData; }
         set { base.Data = value; }
     }
 

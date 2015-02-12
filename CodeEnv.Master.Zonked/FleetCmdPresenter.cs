@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
 
         public new IFleetCmdModel Model { get { return base.Model as IFleetCmdModel; } }
 
-        protected new FleetCmdItemData Data { get { return base.Data as FleetCmdItemData; } }
+        protected new FleetCmdData Data { get { return base.Data as FleetCmdData; } }
 
         protected new IFleetCmdViewable View { get { return base.View as IFleetCmdViewable; } }
 
@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
-            var hudPublisher = new GuiHudPublisher<FleetCmdItemData>(Data);
+            var hudPublisher = new GuiHudPublisher<FleetCmdData>(Data);
             hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed, GuiHudLineKeys.Health, GuiHudLineKeys.TargetDistance);
             return hudPublisher;
         }

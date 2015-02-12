@@ -23,13 +23,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Factory that makes GuiCursorHudText and IColoredTextList instances for the UniverseCenter object.
     /// </summary>
-    public class UniverseCenterGuiHudTextFactory : AGuiHudTextFactory<UniverseCenterGuiHudTextFactory, UniverseCenterItemData> {
+    public class UniverseCenterGuiHudTextFactory : AGuiHudTextFactory<UniverseCenterGuiHudTextFactory, UniverseCenterData> {
 
         private UniverseCenterGuiHudTextFactory() {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, UniverseCenterItemData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, UniverseCenterData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.Name);

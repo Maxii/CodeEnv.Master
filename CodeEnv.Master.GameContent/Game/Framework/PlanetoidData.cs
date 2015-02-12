@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: PlanetoidItemData.cs
+// File: PlanetoidData.cs
 // Class for Data associated with a PlanetoidItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Class for Data associated with a PlanetoidItem.
     /// </summary>
-    public class PlanetoidItemData : AMortalItemData {
+    public class PlanetoidData : AMortalItemData {
 
         public PlanetoidCategory Category { get; private set; }
 
@@ -59,12 +59,22 @@ namespace CodeEnv.Master.GameContent {
         public float Mass { get; private set; }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="PlanetoidData" /> class
+        /// with the owner initialized to NoPlayer.
+        /// </summary>
+        /// <param name="planetoidTransform">The planetoid transform.</param>
+        /// <param name="stat">The stat.</param>
+        public PlanetoidData(Transform planetoidTransform, PlanetoidStat stat)
+            : this(planetoidTransform, stat, TempGameValues.NoPlayer) { }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="APlanetoidData" /> class.
         /// </summary>
         /// <param name="planetoidTransform">The planetoid transform.</param>
         /// <param name="stat">The stat.</param>
-        public PlanetoidItemData(Transform planetoidTransform, PlanetoidStat stat)
-            : base(planetoidTransform, stat.Category.GetName(), stat.MaxHitPoints) {
+        /// <param name="owner">The owner.</param>
+        public PlanetoidData(Transform planetoidTransform, PlanetoidStat stat, Player owner)
+            : base(planetoidTransform, stat.Category.GetName(), stat.MaxHitPoints, owner) {
             Mass = stat.Mass;
             planetoidTransform.rigidbody.mass = stat.Mass;
             Category = stat.Category;

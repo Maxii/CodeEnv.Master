@@ -43,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
 
         public float? UnitMaxTurnRate { get; private set; }
 
-        public FleetReport(FleetCmdItemData cmdData, Player player, ShipReport[] shipReports)
+        public FleetReport(FleetCmdData cmdData, Player player, ShipReport[] shipReports)
             : base(cmdData, player, shipReports) { }
 
         protected override void AssignValuesFrom(AElementItemReport[] elementReports, AUnitCmdItemData cmdData) {
@@ -52,19 +52,19 @@ namespace CodeEnv.Master.GameContent {
             if (knownElementCategories.Any()) {
                 UnitComposition = new FleetComposition(knownElementCategories);
             }
-            Category = UnitComposition != null ? (cmdData as FleetCmdItemData).GenerateCmdCategory(UnitComposition) : FleetCategory.None;
+            Category = UnitComposition != null ? (cmdData as FleetCmdData).GenerateCmdCategory(UnitComposition) : FleetCategory.None;
         }
 
         protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageComprehensive(data);
-            FleetCmdItemData fData = data as FleetCmdItemData;
+            FleetCmdData fData = data as FleetCmdData;
             UnitFullSpeed = fData.UnitFullSpeed;
             UnitMaxTurnRate = fData.UnitMaxTurnRate;
         }
 
         protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageModerate(data);
-            FleetCmdItemData fData = data as FleetCmdItemData;
+            FleetCmdData fData = data as FleetCmdData;
             Target = fData.Target;
             CurrentSpeed = fData.CurrentSpeed;
         }

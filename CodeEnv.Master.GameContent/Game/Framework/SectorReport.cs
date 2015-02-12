@@ -27,13 +27,13 @@ namespace CodeEnv.Master.GameContent {
 
         public float? Density { get; private set; }
 
-        public SectorReport(SectorItemData data, Player player)
+        public SectorReport(SectorData data, Player player)
             : base(player) {
             AssignValues(data);
         }
 
         protected override void AssignValues(AItemData data) {
-            var sData = data as SectorItemData;
+            var sData = data as SectorData;
             Name = sData.Name;
             Owner = sData.Owner;
             SectorIndex = sData.SectorIndex;

@@ -41,6 +41,16 @@ namespace CodeEnv.Master.GameContent {
 
         public ImprovingIntel(IntelCoverage currentCoverage) : base(currentCoverage) { }
 
+        /// <summary>
+        /// Copy constructor. Initializes a new instance of the <see cref="ImprovingIntel"/> class,
+        /// a copy of <c>intelToCopy</c>.
+        /// </summary>
+        /// <param name="intelToCopy">The intel to copy.</param>
+        public ImprovingIntel(ImprovingIntel intelToCopy)
+            : this() {
+            this.CurrentCoverage = intelToCopy.CurrentCoverage;
+        }
+
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }

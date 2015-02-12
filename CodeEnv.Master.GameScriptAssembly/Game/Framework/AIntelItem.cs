@@ -33,7 +33,7 @@ public abstract class AIntelItem : ADiscernibleItem {
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
-        _subscribers.Add(Data.HumanPlayerIntel.SubscribeToPropertyChanged<AIntel, IntelCoverage>(hpi => hpi.CurrentCoverage, OnHumanPlayerIntelCoverageChanged));
+        Data.onHumanPlayerIntelCoverageChanged += OnHumanPlayerIntelCoverageChanged;
     }
 
     #endregion
@@ -44,13 +44,9 @@ public abstract class AIntelItem : ADiscernibleItem {
 
     #region View Methods
 
-    public void SetIntelCoverage(Player player, IntelCoverage coverage) {
-        Data.SetIntelCoverage(player, coverage);
-    }
+    public IntelCoverage GetHumanPlayerIntelCoverage() { return Data.GetHumanPlayerIntelCoverage(); }
 
-    public IntelCoverage GetIntelCoverage(Player player) {
-        return Data.GetIntelCoverage(player);
-    }
+    public void SetHumanPlayerIntelCoverage(IntelCoverage coverage) { Data.SetHumanPlayerIntelCoverage(coverage); }
 
     protected virtual void OnHumanPlayerIntelCoverageChanged() {
         AssessDiscernability();
@@ -61,7 +57,7 @@ public abstract class AIntelItem : ADiscernibleItem {
     }
 
     public override void AssessDiscernability() {
-        IsDiscernible = InCameraLOS && HumanPlayerIntelCoverage != IntelCoverage.None;
+        IsDiscernible = InCameraLOS && GetHumanPlayerIntelCoverage() != IntelCoverage.None;
     }
 
     #endregion
@@ -70,5 +66,13 @@ public abstract class AIntelItem : ADiscernibleItem {
 
     #endregion
 
+    #region Cleanup
+
+    protected override void Unsubscribe() {
+        base.Unsubscribe();
+        Data.onHumanPlayerIntelCoverageChanged -= OnHumanPlayerIntelCoverageChanged;
+    }
+
+    #endregion
 }
 

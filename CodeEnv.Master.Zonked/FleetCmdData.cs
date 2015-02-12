@@ -40,8 +40,8 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<FleetCategory>(ref _category, value, "Category"); }
         }
 
-        public new ShipItemData HQElementData {
-            get { return base.HQElementData as ShipItemData; }
+        public new ShipData HQElementData {
+            get { return base.HQElementData as ShipData; }
             set { base.HQElementData = value; }
         }
 

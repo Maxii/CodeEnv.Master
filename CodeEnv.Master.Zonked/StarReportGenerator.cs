@@ -21,13 +21,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Item ReportGenerator for a Star.
     /// </summary>
-    public class StarReportGenerator : AReportGenerator<StarItemData, StarReport> {
+    public class StarReportGenerator : AReportGenerator<StarData, StarReport> {
 
         static StarReportGenerator() {
             LabelFormatter = new StarLabelFormatter();
         }
 
-        public StarReportGenerator(StarItemData data) : base(data) { }
+        public StarReportGenerator(StarData data) : base(data) { }
 
         protected override StarReport GenerateReport(Player player, AIntel intel) {
             return new StarReport(_data, player, intel);

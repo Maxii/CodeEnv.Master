@@ -28,8 +28,8 @@ public class StarModel : AOwnedItemModel, INavigableTarget, IShipOrbitable {
 
     public StarCategory category;
 
-    public new StarItemData Data {
-        get { return base.Data as StarItemData; }
+    public new StarData Data {
+        get { return base.Data as StarData; }
         set { base.Data = value; }
     }
 

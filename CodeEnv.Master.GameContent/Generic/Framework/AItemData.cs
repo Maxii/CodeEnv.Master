@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
 
         public virtual string FullName { get { return Name; } }
 
-        private Player _owner = TempGameValues.NoPlayer;
+        private Player _owner;
         public Player Owner {
             get { return _owner; }
             set { SetProperty<Player>(ref _owner, value, "Owner", OnOwnerChanged); }
@@ -45,13 +45,15 @@ namespace CodeEnv.Master.GameContent {
         protected Transform _itemTransform;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AItemData" /> class.
+        /// Initializes a new instance of the <see cref="AItemData"/> class.
         /// </summary>
         /// <param name="itemTransform">The item transform.</param>
         /// <param name="name">The name.</param>
-        public AItemData(Transform itemTransform, string name) {
+        /// <param name="owner">The owner.</param>
+        public AItemData(Transform itemTransform, string name, Player owner) {
             _itemTransform = itemTransform; // must preceed Name change
             Name = name;
+            _owner = owner;
         }
 
         protected virtual void OnOwnerChanged() {

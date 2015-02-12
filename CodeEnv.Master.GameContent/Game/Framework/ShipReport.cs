@@ -50,11 +50,11 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipCategory Category { get; private set; }
 
-        public ShipReport(ShipItemData data, Player player) : base(data, player) { }
+        public ShipReport(ShipData data, Player player) : base(data, player) { }
 
         protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageComprehensive(data);
-            var sData = data as ShipItemData;
+            var sData = data as ShipData;
             CurrentHitPoints = sData.CurrentHitPoints;
             Health = sData.Health;
             CombatStance = sData.CombatStance;
@@ -63,14 +63,14 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageModerate(data);
-            var sData = data as ShipItemData;
+            var sData = data as ShipData;
             DefensiveStrength = sData.DefensiveStrength;
             OffensiveStrength = sData.OffensiveStrength;
         }
 
         protected override void AssignIncrementalValues_IntelCoverageMinimal(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageMinimal(data);
-            var sData = data as ShipItemData;
+            var sData = data as ShipData;
             ParentName = sData.ParentName;
             Owner = sData.Owner;
             Category = sData.Category;
@@ -84,7 +84,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void AssignIncrementalValues_IntelCoverageAware(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageAware(data);
-            var sData = data as ShipItemData;
+            var sData = data as ShipData;
             Name = sData.Name;
             CurrentSpeed = sData.CurrentSpeed;
         }

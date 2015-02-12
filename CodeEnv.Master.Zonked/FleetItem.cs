@@ -25,8 +25,8 @@ using UnityEngine;
 /// </summary>
 public class FleetItem : AItemModel {
 
-    public new FleetCmdItemData Data {
-        get { return base.Data as FleetCmdItemData; }
+    public new FleetCmdData Data {
+        get { return base.Data as FleetCmdData; }
         set { base.Data = value; }
     }
 

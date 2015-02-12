@@ -21,13 +21,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Report Generator for Ships.
     /// </summary>
-    public class ShipReportGenerator : AReportGenerator<ShipItemData, ShipReport> {
+    public class ShipReportGenerator : AReportGenerator<ShipData, ShipReport> {
 
         static ShipReportGenerator() {
             LabelFormatter = new ShipLabelFormatter();
         }
 
-        public ShipReportGenerator(ShipItemData data) : base(data) { }
+        public ShipReportGenerator(ShipData data) : base(data) { }
 
         protected override ShipReport GenerateReport(Player player, AIntel intel) {
             return new ShipReport(_data, player, intel);

@@ -51,13 +51,14 @@ public class __UniverseInitializer : AMonoBase {
         }
         if (gameState == GameState.Running) {
             EnableOtherWhenRunning();
+            BeginOperations();
         }
     }
 
     private void InitializeUniverseCenter() {
         _universeCenter = gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterItem>();
         if (_universeCenter != null) {
-            UniverseCenterItemData data = new UniverseCenterItemData(_universeCenter.Transform, "UniverseCenter", 100000000F);
+            UniverseCenterData data = new UniverseCenterData(_universeCenter.Transform, "UniverseCenter", 100000000F);
             _universeCenter.Data = data;
             _universeCenter.enabled = true;
         }
@@ -69,6 +70,12 @@ public class __UniverseInitializer : AMonoBase {
     private void EnableOtherWhenRunning() {
         if (_universeCenter != null) {
             // CameraLosChangedListener is enabled in Item.InitializeViewMembersOnDiscernible
+        }
+    }
+
+    private void BeginOperations() {
+        if (_universeCenter != null) {
+            _universeCenter.CommenceOperations();
         }
     }
 

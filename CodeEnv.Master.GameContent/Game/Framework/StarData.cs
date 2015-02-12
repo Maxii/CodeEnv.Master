@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Class for Data associated with a StarItem.
     /// </summary>
-    public class StarItemData : AIntelItemData {
+    public class StarData : AIntelItemData {
 
         public StarCategory Category { get; private set; }
 
@@ -57,12 +57,22 @@ namespace CodeEnv.Master.GameContent {
         public float Mass { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="StarItemData" /> class.
+        /// Initializes a new instance of the <see cref="StarData" /> class
+        /// with the owner initialized to NoPlayer.
         /// </summary>
         /// <param name="starTransform">The star transform.</param>
         /// <param name="stat">The stat.</param>
-        public StarItemData(Transform starTransform, StarStat stat)
-            : base(starTransform, stat.Category.GetName()) {
+        public StarData(Transform starTransform, StarStat stat)
+            : this(starTransform, stat, TempGameValues.NoPlayer) { }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StarData" /> class.
+        /// </summary>
+        /// <param name="starTransform">The star transform.</param>
+        /// <param name="stat">The stat.</param>
+        /// <param name="owner">The owner.</param>
+        public StarData(Transform starTransform, StarStat stat, Player owner)
+            : base(starTransform, stat.Category.GetName(), owner) {
             Category = stat.Category;
             Capacity = stat.Capacity;
             Mass = stat.Mass;

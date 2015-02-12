@@ -28,14 +28,14 @@ namespace CodeEnv.Master.GameContent {
 
         public BaseComposition UnitComposition { get; private set; }
 
-        public StarbaseReport(StarbaseCmdItemData cmdData, Player player, FacilityReport[] facilityReports)
+        public StarbaseReport(StarbaseCmdData cmdData, Player player, FacilityReport[] facilityReports)
             : base(cmdData, player, facilityReports) { }
 
         protected override void AssignValuesFrom(AElementItemReport[] elementReports, AUnitCmdItemData cmdData) {
             base.AssignValuesFrom(elementReports, cmdData);
             var knownElementCategories = elementReports.Cast<FacilityReport>().Select(r => r.Category).Where(cat => cat != FacilityCategory.None);
             UnitComposition = new BaseComposition(knownElementCategories);
-            Category = UnitComposition != null ? (cmdData as StarbaseCmdItemData).GenerateCmdCategory(UnitComposition) : StarbaseCategory.None;
+            Category = UnitComposition != null ? (cmdData as StarbaseCmdData).GenerateCmdCategory(UnitComposition) : StarbaseCategory.None;
         }
 
         public override string ToString() {

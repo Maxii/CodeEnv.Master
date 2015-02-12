@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// LabelText Factory for Systems.
     /// </summary>
-    public class SystemLabelTextFactory : AItemLabelTextFactory<SystemReport, SystemItemData> {//ALabelTextFactory {
+    public class SystemLabelTextFactory : AItemLabelTextFactory<SystemReport, SystemData> {//ALabelTextFactory {
 
         private static IDictionary<LabelID, IList<LabelContentID>> _includedContentLookup = new Dictionary<LabelID, IList<LabelContentID>>() {
             {LabelID.CursorHud, new List<LabelContentID>() {
@@ -46,7 +46,7 @@ namespace CodeEnv.Master.GameContent {
 
         public SystemLabelTextFactory() : base() { }
 
-        public override bool TryMakeInstance(LabelID labelID, LabelContentID contentID, SystemReport report, SystemItemData data, out IColoredTextList content) {
+        public override bool TryMakeInstance(LabelID labelID, LabelContentID contentID, SystemReport report, SystemData data, out IColoredTextList content) {
             content = _includeUnknownLookup[labelID] ? _unknownContent : _emptyContent;
             switch (contentID) {
                 case LabelContentID.Name:

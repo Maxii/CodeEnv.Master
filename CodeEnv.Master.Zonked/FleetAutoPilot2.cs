@@ -57,7 +57,7 @@ public class FleetAutoPilot2 : APropertyChangeTracking, IDisposable {
 
     private Seeker _seeker;
     private FleetCmdModel _fleet;
-    private FleetCmdItemData _fleetData;
+    private FleetCmdData _fleetData;
     private IList<IDisposable> _subscribers;
 
     public FleetAutoPilot2(FleetCmdModel fleet, Seeker seeker) {

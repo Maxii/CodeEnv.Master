@@ -37,9 +37,9 @@ public class StationaryItem : AItemModel, ICameraFocusable {
     private static void InitializeStaticHudPublisherFields() {
         AGuiHudPublisher.SetGuiCursorHud(GuiCursorHud.Instance);
         GuiHudPublisher<AMortalItemData>.SetFactory(GuiHudTextFactory.Instance);
-        GuiHudPublisher<ShipItemData>.SetFactory(ShipGuiHudTextFactory.Instance);
-        GuiHudPublisher<FleetCmdItemData>.SetFactory(FleetGuiHudTextFactory.Instance);
-        GuiHudPublisher<SystemItemData>.SetFactory(SystemGuiHudTextFactory.Instance);
+        GuiHudPublisher<ShipData>.SetFactory(ShipGuiHudTextFactory.Instance);
+        GuiHudPublisher<FleetCmdData>.SetFactory(FleetGuiHudTextFactory.Instance);
+        GuiHudPublisher<SystemData>.SetFactory(SystemGuiHudTextFactory.Instance);
         _isStaticHudPublisherFieldsInitialized = true;
     }
 

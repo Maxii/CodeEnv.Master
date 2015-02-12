@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: StarbaseIconFactory.cs
-// Singleton. Factory that makes instances of IIcon, caches and reuses them. 
+// File: SettlementIconFactory.cs
+//  Singleton. Factory that makes instances of IIcon, caches and reuses them.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -27,31 +27,31 @@ namespace CodeEnv.Master.GameContent {
     /// the object's equality comparer (same instance in memory) is used by the client of the factory
     /// to determine which icon is currently showing.
     /// </summary>
-    public class StarbaseIconFactory : AIconFactory<FleetIcon, StarbaseCmdItemData, StarbaseIconFactory> {
+    public class SettlementIconFactory : AIconFactory<FleetIcon, SettlementCmdData, SettlementIconFactory> {
 
-        private StarbaseIconFactory() {
+        private SettlementIconFactory() {
             Initialize();
         }
 
-        protected override IconSelectionCriteria GetCriteriaFromCategory(StarbaseCmdItemData data) {
+        protected override IconSelectionCriteria GetCriteriaFromCategory(SettlementCmdData data) {
             switch (data.Category) {
-                case StarbaseCategory.Outpost:
+                case SettlementCategory.Colony:
                     return IconSelectionCriteria.Level1;
-                case StarbaseCategory.LocalBase:
+                case SettlementCategory.City:
                     return IconSelectionCriteria.Level2;
-                case StarbaseCategory.DistrictBase:
+                case SettlementCategory.CityState:
                     return IconSelectionCriteria.Level3;
-                case StarbaseCategory.RegionalBase:
+                case SettlementCategory.Province:
                     return IconSelectionCriteria.Level4;
-                case StarbaseCategory.TerritorialBase:
+                case SettlementCategory.Territory:
                     return IconSelectionCriteria.Level5;
-                case StarbaseCategory.None:
+                case SettlementCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(data.Category));
             }
         }
 
-        protected override IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(StarbaseCmdItemData data) {
+        protected override IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(SettlementCmdData data) {
             IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
             IEnumerable<FacilityCategory> elementCategories = data.UnitComposition.GetUniqueElementCategories();
             if (elementCategories.Contains(FacilityCategory.Science)) {
@@ -65,7 +65,7 @@ namespace CodeEnv.Master.GameContent {
             }
             return criteria;
         }
-        //protected override IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(StarbaseCmdData data) {
+        //protected override IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(SettlementCmdData data) {
         //    IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
         //    IEnumerable<FacilityCategory> shipCategories = data.Composition.Categories;
         //    if (shipCategories.Contains(FacilityCategory.Science)) {

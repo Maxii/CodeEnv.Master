@@ -51,6 +51,18 @@ namespace CodeEnv.Master.GameContent {
         public Intel(IntelCoverage coverage) : base(coverage) { }
 
         /// <summary>
+        /// Copy constructor. Initializes a new instance of the <see cref="Intel"/> class,
+        /// a copy of <c>intelToCopy</c>.
+        /// </summary>
+        /// <param name="intelToCopy">The intel to copy.</param>
+        public Intel(Intel intelToCopy)
+            : this() {
+            this.CurrentCoverage = intelToCopy.CurrentCoverage;
+            this.DatedCoverage = intelToCopy.DatedCoverage;
+            this.DateStamp = intelToCopy.DateStamp;
+        }
+
+        /// <summary>
         /// Processes the change to a new level of coverage BEFORE the new level of coverage
         /// is applied.
         /// </summary>
@@ -59,7 +71,7 @@ namespace CodeEnv.Master.GameContent {
             if (newCoverage < CurrentCoverage) {
                 // we have less data than before so record the level we had and stamp the date
                 DatedCoverage = CurrentCoverage;
-                if (DateStamp != GameTime.Instance.CurrentDate) {    // avoids PropertyChangeTracking equals warning
+                if (DateStamp != GameTime.Instance.CurrentDate) {    // HACK avoids PropertyChangeTracking equals warning
                     DateStamp = GameTime.Instance.CurrentDate;
                 }
             }

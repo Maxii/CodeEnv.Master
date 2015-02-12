@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: UniverseCenterItemData.cs
+// File: UniverseCenterData.cs
 // Class for Data associated with the UniverseCenterItem..
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -16,23 +16,18 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
     using UnityEngine;
 
     /// <summary>
     /// Class for Data associated with the UniverseCenterItem..
     /// </summary>
-    public class UniverseCenterItemData : AIntelItemData {
+    public class UniverseCenterData : AIntelItemData {
 
         public float Mass { get; private set; }
 
-        public UniverseCenterItemData(Transform ucTransform, string name, float mass)
-            : base(ucTransform, name) {
+        public UniverseCenterData(Transform ucTransform, string name, float mass)
+            : base(ucTransform, name, TempGameValues.NoPlayer) {
             Mass = mass;
             ucTransform.rigidbody.mass = mass;
             base.Topography = Topography.OpenSpace;
@@ -42,6 +37,10 @@ namespace CodeEnv.Master.GameContent {
             AIntel beginningIntel = new ImprovingIntel();
             beginningIntel.CurrentCoverage = Owner == player ? IntelCoverage.Comprehensive : IntelCoverage.Aware;
             return beginningIntel;
+        }
+
+        protected override void OnOwnerChanged() {
+            throw new System.InvalidOperationException("Illegal attempt by {0} to set Owner: {1}.".Inject(FullName, Owner.LeaderName));
         }
 
         public override string ToString() {

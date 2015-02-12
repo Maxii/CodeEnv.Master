@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SectorItemData.cs
+// File: SectorData.cs
 // Class for Data associated with a SectorItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -16,18 +16,13 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
     using UnityEngine;
 
     /// <summary>
     /// Class for Data associated with a SectorItem.
     /// </summary>
-    public class SectorItemData : AItemData {
+    public class SectorData : AItemData {
 
         public Index3D SectorIndex { get; private set; }
 
@@ -42,12 +37,22 @@ namespace CodeEnv.Master.GameContent {
         public float Density { get; set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SectorItemData" /> class.
+        /// Initializes a new instance of the <see cref="SectorData" /> class
+        /// with the owner initialized to NoPlayer.
         /// </summary>
         /// <param name="sectorTransform">The sector transform.</param>
         /// <param name="index">The index.</param>
-        public SectorItemData(Transform sectorTransform, Index3D index)
-            : base(sectorTransform, "Sector {0}".Inject(index)) {
+        public SectorData(Transform sectorTransform, Index3D index)
+            : this(sectorTransform, index, TempGameValues.NoPlayer) { }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SectorData" /> class.
+        /// </summary>
+        /// <param name="sectorTransform">The sector transform.</param>
+        /// <param name="index">The index.</param>
+        /// <param name="owner">The owner.</param>
+        public SectorData(Transform sectorTransform, Index3D index, Player owner)
+            : base(sectorTransform, "Sector {0}".Inject(index), owner) {
             SectorIndex = index;
             base.Topography = Topography.OpenSpace;
         }

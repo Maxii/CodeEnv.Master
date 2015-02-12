@@ -42,7 +42,7 @@ public class SectorFactory : AGenericSingleton<SectorFactory> {
         // sector.Awake() runs immediately here, then disables itself
         SectorItem sector = sectorGO.GetSafeMonoBehaviourComponent<SectorItem>();
 
-        SectorItemData data = new SectorItemData(sector.Transform, sectorIndex) {
+        SectorData data = new SectorData(sector.Transform, sectorIndex) {
             Density = 1F
         };
         sector.Data = data;

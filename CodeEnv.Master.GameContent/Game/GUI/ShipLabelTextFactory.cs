@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// LabelText factory for Ships.
     /// </summary>
-    public class ShipLabelTextFactory : AIntelItemLabelTextFactory<ShipReport, ShipItemData> {
+    public class ShipLabelTextFactory : AIntelItemLabelTextFactory<ShipReport, ShipData> {
 
         private static IDictionary<LabelID, IList<LabelContentID>> _includedContentLookup = new Dictionary<LabelID, IList<LabelContentID>>() {
             {LabelID.CursorHud, new List<LabelContentID>() {
@@ -61,7 +61,7 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipLabelTextFactory() : base() { }
 
-        public override bool TryMakeInstance(LabelID labelID, LabelContentID contentID, ShipReport report, ShipItemData data, out IColoredTextList content) {
+        public override bool TryMakeInstance(LabelID labelID, LabelContentID contentID, ShipReport report, ShipData data, out IColoredTextList content) {
             content = _includeUnknownLookup[labelID] ? _unknownContent : _emptyContent;
             switch (contentID) {
                 case LabelContentID.Name:
@@ -84,7 +84,6 @@ namespace CodeEnv.Master.GameContent {
                 //    break;
                 case LabelContentID.Health:
                     content = new ColoredTextList_Health(report.Health, report.MaxHitPoints);
-                    //content = report.Health.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.Health.Value) : content;
                     break;
                 case LabelContentID.Defense:
                     content = report.DefensiveStrength.HasValue ? new ColoredTextList<CombatStrength>(report.DefensiveStrength.Value) : content;
@@ -124,7 +123,7 @@ namespace CodeEnv.Master.GameContent {
                     content = new ColoredTextList_Distance(data.Position);
                     break;
                 case LabelContentID.IntelState:
-                    content = new ColoredTextList_Intel(data.GetHumanPlayerIntel());
+                    content = new ColoredTextList_Intel(data.GetHumanPlayerIntelCopy());
                     break;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(contentID));

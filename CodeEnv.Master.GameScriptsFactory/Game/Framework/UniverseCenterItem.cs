@@ -30,8 +30,8 @@ public class UniverseCenterItem : ADiscernibleItem, IShipOrbitable, IDetectable 
     [Tooltip("Minimum Camera View Distance Multiplier")]
     public float minViewDistanceFactor = 2F;
 
-    public new UniverseCenterItemData Data {
-        get { return base.Data as UniverseCenterItemData; }
+    public new UniverseCenterData Data {
+        get { return base.Data as UniverseCenterData; }
         set { base.Data = value; }
     }
 

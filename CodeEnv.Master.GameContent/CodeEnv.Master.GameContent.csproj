@@ -61,9 +61,9 @@
     <Compile Include="Generic\Framework\AItemData.cs" />
     <Compile Include="Generic\Framework\AMortalItemData.cs" />
     <Compile Include="Game\Framework\FacilityData.cs" />
-    <Compile Include="Game\Framework\FleetCmdItemData.cs" />
+    <Compile Include="Game\Framework\FleetCmdData.cs" />
     <Compile Include="Generic\Framework\IDetectable.cs" />
-    <Compile Include="Game\Framework\PlanetoidItemData.cs" />
+    <Compile Include="Game\Framework\PlanetoidData.cs" />
     <Compile Include="Game\GUI\BaseComposition.cs" />
     <Compile Include="Game\GUI\FleetComposition.cs" />
     <Compile Include="Generic\Framework\ACmdPublisher.cs" />
@@ -131,7 +131,7 @@
     <Compile Include="Generic\Graphics\ICameraFocusable.cs" />
     <Compile Include="Generic\Graphics\ICameraFollowable.cs" />
     <Compile Include="Generic\Graphics\ICameraTargetable.cs" />
-    <Compile Include="Game\GUI\FleetIconFactory.cs" />
+    <Compile Include="Game\Graphics\FleetIconFactory.cs" />
     <Compile Include="Generic\Graphics\IZoomToFurthest.cs" />
     <Compile Include="Generic\IO\AnimationSettings.cs" />
     <Compile Include="Game\_Debug\DebugHudText.cs" />
@@ -153,8 +153,8 @@
     <Compile Include="Game\Gameplay\ShipDirective.cs" />
     <Compile Include="Generic\Framework\StationaryLocation.cs" />
     <Compile Include="Game\Gameplay\StarbaseCategory.cs" />
-    <Compile Include="Game\GUI\SettlementIconFactory.cs" />
-    <Compile Include="Game\GUI\StarbaseIconFactory.cs" />
+    <Compile Include="Game\Graphics\SettlementIconFactory.cs" />
+    <Compile Include="Game\Graphics\StarbaseIconFactory.cs" />
     <Compile Include="Game\Gameplay\Intel.cs" />
     <Compile Include="Game\Gameplay\ImprovingIntel.cs" />
     <Compile Include="Game\Gameplay\PlanetoidState.cs" />
@@ -249,13 +249,13 @@
     <Compile Include="Game\Framework\UniverseCenterPublisher.cs" />
     <Compile Include="Game\Framework\UniverseCenterReport.cs" />
     <Compile Include="Generic\Graphics\AUnitComposition.cs" />
-    <Compile Include="Game\Framework\SectorItemData.cs" />
-    <Compile Include="Game\Framework\SettlementCmdItemData.cs" />
-    <Compile Include="Game\Framework\ShipItemData.cs" />
-    <Compile Include="Game\Framework\StarbaseCmdItemData.cs" />
-    <Compile Include="Game\Framework\StarItemData.cs" />
-    <Compile Include="Game\Framework\SystemItemData.cs" />
-    <Compile Include="Game\Framework\UniverseCenterItemData.cs" />
+    <Compile Include="Game\Framework\SectorData.cs" />
+    <Compile Include="Game\Framework\SettlementCmdData.cs" />
+    <Compile Include="Game\Framework\ShipData.cs" />
+    <Compile Include="Game\Framework\StarbaseCmdData.cs" />
+    <Compile Include="Game\Framework\StarData.cs" />
+    <Compile Include="Game\Framework\SystemData.cs" />
+    <Compile Include="Game\Framework\UniverseCenterData.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Generic\Math\" />

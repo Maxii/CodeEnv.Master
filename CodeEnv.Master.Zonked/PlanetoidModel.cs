@@ -30,8 +30,8 @@ using UnityEngine;
 public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IShipOrbitable {
     //public class PlanetoidModel : AMortalItemModelStateMachine {
 
-    public new PlanetoidItemData Data {
-        get { return base.Data as PlanetoidItemData; }
+    public new PlanetoidData Data {
+        get { return base.Data as PlanetoidData; }
         set { base.Data = value; }
     }
 

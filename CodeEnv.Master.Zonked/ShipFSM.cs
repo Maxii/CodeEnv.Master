@@ -31,7 +31,7 @@ using UnityEngine;
 public class ShipFSM : AMonoStateMachine<ShipState> {
 
     private ShipItem _ship;
-    private ShipItemData Data;
+    private ShipData Data;
     private ShipItem.ShipHelm _helm;
 
     protected override void Awake() {

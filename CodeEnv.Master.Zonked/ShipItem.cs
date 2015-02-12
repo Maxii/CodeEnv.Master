@@ -22,8 +22,8 @@ using UnityEngine;
 /// </summary>
 public class ShipItem : AItemModel {
 
-    public new ShipItemData Data {
-        get { return base.Data as ShipItemData; }
+    public new ShipData Data {
+        get { return base.Data as ShipData; }
         set { base.Data = value; }
     }
 

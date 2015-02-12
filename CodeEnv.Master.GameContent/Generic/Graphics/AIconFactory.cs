@@ -49,7 +49,9 @@ namespace CodeEnv.Master.GameContent {
 
         private IconSelectionCriteria[] GetSelectionCriteria(DataType data) {
             IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
-            switch (data.GetHumanPlayerIntelCoverage()) {
+            IntelCoverage humanPlayerIntelCoverage = data.GetHumanPlayerIntelCoverage();
+            //D.Log("{0} found HumanPlayerIntelCoverage = {1}.", GetType().Name, humanPlayerIntelCoverage.GetName());
+            switch (humanPlayerIntelCoverage) {
                 case IntelCoverage.None:
                     // always returns None
                     criteria.Add(IconSelectionCriteria.None);
@@ -69,7 +71,7 @@ namespace CodeEnv.Master.GameContent {
                     GetCriteriaFromComposition(data).ForAll(isc => criteria.Add(isc));
                     break;
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(data.GetHumanPlayerIntelCoverage()));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(humanPlayerIntelCoverage));
             }
             return criteria.ToArray();
         }

@@ -23,13 +23,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Factory that makes GuiCursorHudText and IColoredTextList instances for Systems.
     /// </summary>
-    public class SystemGuiHudTextFactory : AGuiHudTextFactory<SystemGuiHudTextFactory, SystemItemData> {
+    public class SystemGuiHudTextFactory : AGuiHudTextFactory<SystemGuiHudTextFactory, SystemData> {
 
         private SystemGuiHudTextFactory() {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, SystemItemData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, SystemData data) {
             var settleData = data.SettlementData;
             switch (key) {
                 case GuiHudLineKeys.Name:

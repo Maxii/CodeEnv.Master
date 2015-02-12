@@ -46,7 +46,7 @@ public class FleetPresenter : AMortalItemPresenter {
     }
 
     protected override IGuiHudPublisher InitializeHudPublisher() {
-        var hudPublisher = new GuiHudPublisher<FleetCmdItemData>(Model.Data);
+        var hudPublisher = new GuiHudPublisher<FleetCmdData>(Model.Data);
         hudPublisher.SetOptionalUpdateKeys(GuiHudLineKeys.Speed);
         return hudPublisher;
     }

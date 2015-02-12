@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
         public SettlementReport SettlementReport { get; private set; }
         public PlanetoidReport[] PlanetoidReports { get; private set; }
 
-        public SystemReport(SystemItemData data, Player player, StarReport starReport, SettlementReport settlementReport, PlanetoidReport[] planetoidReports)
+        public SystemReport(SystemData data, Player player, StarReport starReport, SettlementReport settlementReport, PlanetoidReport[] planetoidReports)
             : base(player) {
             StarReport = starReport;
             SettlementReport = settlementReport;
@@ -45,7 +45,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override void AssignValues(AItemData data) {
-            var sysData = data as SystemItemData;
+            var sysData = data as SystemData;
             Name = sysData.Name;
             SectorIndex = sysData.SectorIndex;
             Owner = SettlementReport != null ? SettlementReport.Owner : null;        // IMPROVE other Settlement info?

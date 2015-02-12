@@ -537,21 +537,22 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         _allUnitCommands.Add(_command);
     }
 
-    protected virtual void __SetIntelCoverage() {
+    private void __SetIntelCoverage() {
         LogEvent();
         if (toCycleIntelCoverage) {
             new Job(__CycleIntelCoverage(), true);
         }
         else {
-            _command.HumanPlayerIntelCoverage = IntelCoverage.Comprehensive;
+            _elements.ForAll(e => e.SetHumanPlayerIntelCoverage(IntelCoverage.Comprehensive));
+            //_command.SetHumanPlayerIntelCoverage(IntelCoverage.Comprehensive);
         }
     }
 
     private IntelCoverage __previousCoverage;
     private IEnumerator __CycleIntelCoverage() {
-        _command.HumanPlayerIntelCoverage = IntelCoverage.None;
+        _command.SetHumanPlayerIntelCoverage(IntelCoverage.None);
         yield return new WaitForSeconds(4F);
-        _command.HumanPlayerIntelCoverage = IntelCoverage.Aware;
+        _command.SetHumanPlayerIntelCoverage(IntelCoverage.Aware);
         __previousCoverage = IntelCoverage.Aware;
         while (true) {
             yield return new WaitForSeconds(4F);
@@ -559,7 +560,8 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             while (proposedCoverage == __previousCoverage) {
                 proposedCoverage = Enums<IntelCoverage>.GetRandom(excludeDefault: true);
             }
-            _command.HumanPlayerIntelCoverage = proposedCoverage;
+            _elements.ForAll(e => e.SetHumanPlayerIntelCoverage(proposedCoverage));
+            //_command.SetHumanPlayerIntelCoverage(proposedCoverage);
             __previousCoverage = proposedCoverage;
         }
     }
@@ -571,8 +573,6 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         if (isOwnerPlayer) {
             return humanPlayer;
         }
-        Player aiOwner;
-        IEnumerable<Player> aiOwnerCandidates;
         DiplomaticRelationship desiredRelationship;
         switch (ownerRelationshipWithPlayer) {
             case __DiploStateWithPlayer.Ally:
@@ -593,14 +593,14 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(ownerRelationshipWithPlayer));
         }
-        aiOwnerCandidates = _gameMgr.AIPlayers.Where(aiPlayer => aiPlayer.GetRelations(humanPlayer) == desiredRelationship);
+        IEnumerable<Player> aiOwnerCandidates = _gameMgr.AIPlayers.Where(aiPlayer => aiPlayer.GetRelations(humanPlayer) == desiredRelationship);
 
         if (!aiOwnerCandidates.Any()) {
             D.Log("{0}.{1} couldn't find an AIPlayer with desired Human relationship = {2}.", UnitName, GetType().Name, desiredRelationship.GetName());
             desiredRelationship = DiplomaticRelationship.None;
             aiOwnerCandidates = _gameMgr.AIPlayers.Where(aiPlayer => aiPlayer.GetRelations(humanPlayer) == desiredRelationship);
         }
-        aiOwner = aiOwnerCandidates.Shuffle().First();
+        Player aiOwner = aiOwnerCandidates.Shuffle().First();
         D.Log("{0}.{1} picked AI Owner {2}. Human relationship = {3}.", UnitName, GetType().Name, aiOwner.LeaderName, desiredRelationship.GetName());
         return aiOwner;
     }

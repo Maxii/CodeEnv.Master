@@ -82,9 +82,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="item">The item.</param>
     public void MakeInstance(FleetCmdStat cmdStat, IEnumerable<CountermeasureStat> cmStats, Player owner, ref FleetCmdItem item) {
         D.Assert(!item.enabled, "{0} should not be enabled.".Inject(item.FullName));
-        item.Data = new FleetCmdItemData(item.Transform, cmdStat) {
-            Owner = owner
-        };
+        item.Data = new FleetCmdData(item.Transform, cmdStat, owner) { };
         AttachCountermeasures(cmStats, item);
     }
 
@@ -165,10 +163,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         D.Assert(!item.enabled, "{0} should not be enabled.".Inject(item.FullName));
         var categoryFromItem = item.category;
         D.Assert(shipStat.Category == categoryFromItem, "{0} should be same as {1}.".Inject(shipStat.Category.GetName(), categoryFromItem.GetName()));
-        ShipItemData data = new ShipItemData(item.Transform, shipStat) {
-            Owner = owner
-        };
-        item.Data = data;
+        item.Data = new ShipData(item.Transform, shipStat, owner) { };
         AttachCountermeasures(cmStats, item);
         AttachWeapons(weapStats, item);
         AttachSensors(sensorStats, item);
@@ -197,9 +192,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="item">The item.</param>
     public void PopulateInstance(StarbaseCmdStat cmdStat, IEnumerable<CountermeasureStat> cmStats, Player owner, ref StarbaseCmdItem item) {
         D.Assert(!item.enabled, "{0} should not be enabled.".Inject(item.FullName));
-        item.Data = new StarbaseCmdItemData(item.Transform, cmdStat) {
-            Owner = owner
-        };
+        item.Data = new StarbaseCmdData(item.Transform, cmdStat, owner) { };
         AttachCountermeasures(cmStats, item);
     }
 
@@ -226,9 +219,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="item">The item.</param>
     public void PopulateInstance(SettlementCmdStat cmdStat, IEnumerable<CountermeasureStat> cmStats, Player owner, ref SettlementCmdItem item) {
         D.Assert(!item.enabled, "{0} should not be enabled.".Inject(item.FullName));
-        item.Data = new SettlementCmdItemData(item.Transform, cmdStat) {
-            Owner = owner
-        };
+        item.Data = new SettlementCmdData(item.Transform, cmdStat, owner) { };
         AttachCountermeasures(cmStats, item);
     }
 
@@ -266,9 +257,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     public void PopulateInstance(FacilityStat facStat, Topography topography, IEnumerable<WeaponStat> wStats, IEnumerable<CountermeasureStat> cmStats, IEnumerable<SensorStat> sensorStats, Player owner, ref FacilityItem item) {
         var categoryFromItem = item.category;
         D.Assert(facStat.Category == categoryFromItem, "{0} should be same as {1}.".Inject(facStat.Category.GetName(), categoryFromItem.GetName()));
-        FacilityData data = new FacilityData(item.Transform, facStat, topography) {
-            Owner = owner
-        };
+        FacilityData data = new FacilityData(item.Transform, facStat, topography, owner) { };
         item.Data = data;
         AttachCountermeasures(cmStats, item);
         AttachWeapons(wStats, item);

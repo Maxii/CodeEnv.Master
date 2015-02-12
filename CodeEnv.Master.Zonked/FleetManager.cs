@@ -34,7 +34,7 @@ public class FleetManager : AMonoBase, ISelectable, IHasData, IDisposable {
     /// <summary>
     /// Used for convenience only. Actual FleetData repository is held by FleetCommand.
     /// </summary>
-    public FleetCmdItemData Data {
+    public FleetCmdData Data {
         get { return _fleetCmd.Data; }
         set { _fleetCmd.Data = value; }
     }
@@ -104,7 +104,7 @@ public class FleetManager : AMonoBase, ISelectable, IHasData, IDisposable {
             _subscribers = new List<IDisposable>();
         }
         _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.GameState, OnGameStateChanged));
-        _subscribers.Add(_fleetCmd.SubscribeToPropertyChanged<FleetCommand, FleetCmdItemData>(fc => fc.Data, OnFleetDataChanged));
+        _subscribers.Add(_fleetCmd.SubscribeToPropertyChanged<FleetCommand, FleetCmdData>(fc => fc.Data, OnFleetDataChanged));
     }
 
     private void OnGameStateChanged() {
@@ -117,7 +117,7 @@ public class FleetManager : AMonoBase, ISelectable, IHasData, IDisposable {
     }
 
     private void OnFleetDataChanged() {
-        _subscribers.Add(_fleetCmd.Data.SubscribeToPropertyChanged<FleetCmdItemData, FleetComposition>(fd => fd.Composition, OnFleetCompositionChanged));
+        _subscribers.Add(_fleetCmd.Data.SubscribeToPropertyChanged<FleetCmdData, FleetComposition>(fd => fd.Composition, OnFleetCompositionChanged));
     }
 
     private void OnFleetCompositionChanged() {

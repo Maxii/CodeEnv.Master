@@ -346,7 +346,7 @@ public class SystemCreator : AMonoBase, IDisposable {
                     PlanetoidCategory moonCategory = DeriveCategory<PlanetoidCategory>(moon.transform);
                     PlanetoidStat stat = new PlanetoidStat(moonName, 1000F, 100000F, moonCategory, 5, new OpeYield(0.1F, 1F, 0.8F));
 
-                    PlanetoidItemData data = new PlanetoidItemData(stat) {
+                    PlanetoidData data = new PlanetoidData(stat) {
                         ParentName = SystemName
                         // Owners are all initialized to TempGameValues.NoPlayer by AItemData
                         // CombatStrength is default(CombatStrength), aka all values zero'd out

@@ -21,13 +21,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Report and LabelText Publisher for Sectors.
     /// </summary>
-    public class SectorPublisher : AItemPublisher<SectorReport, SectorItemData> {
+    public class SectorPublisher : AItemPublisher<SectorReport, SectorData> {
 
         static SectorPublisher() {
             LabelTextFactory = new SectorLabelTextFactory();
         }
 
-        public SectorPublisher(SectorItemData data) : base(data) { }
+        public SectorPublisher(SectorData data) : base(data) { }
 
         protected override SectorReport GenerateReport(Player player) {
             return new SectorReport(_data, player);

@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Report and LabelText Publisher for Systems.
     /// </summary>
-    public class SystemPublisher : AItemPublisher<SystemReport, SystemItemData> {
+    public class SystemPublisher : AItemPublisher<SystemReport, SystemData> {
 
         static SystemPublisher() {
             LabelTextFactory = new SystemLabelTextFactory();
@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
 
         private ISystemPublisherClient _systemItem;
 
-        public SystemPublisher(SystemItemData data, ISystemPublisherClient systemItem)
+        public SystemPublisher(SystemData data, ISystemPublisherClient systemItem)
             : base(data) {
             _systemItem = systemItem;
         }

@@ -84,7 +84,7 @@ public class SystemCreator : AMonoBase {
     public int maxPlanetsInRandomSystem = 3;
     public int maxMoonsInRandomSystem = 3;
     public int countermeasuresPerPlanetoid = 1;
-    //public bool toCycleIntelCoverage = false;
+    public bool enableTrackingLabel = false;
 
     public string SystemName { get { return _transform.name; } }    // the SystemCreator carries the name of the System
 
@@ -320,6 +320,7 @@ public class SystemCreator : AMonoBase {
         else {
             _system = _factory.MakeSystemInstance(sectorIndex, Topography.OpenSpace, this);
         }
+        _system.IsTrackingLabelEnabled = enableTrackingLabel;
     }
 
     private void MakeStar() {
@@ -604,15 +605,17 @@ public class SystemCreator : AMonoBase {
     private void __SetIntelCoverage() {
         LogEvent();
         // Stars, Planets and Moons use ImprovingIntel which means once a level is achieved it cannot be reduced
-        _star.HumanPlayerIntelCoverage = IntelCoverage.Comprehensive;
-        _planets.ForAll(p => p.HumanPlayerIntelCoverage = IntelCoverage.Comprehensive);
-        _moons.ForAll(m => m.HumanPlayerIntelCoverage = IntelCoverage.Comprehensive);
+        _star.SetHumanPlayerIntelCoverage(IntelCoverage.Comprehensive);
+        _planets.ForAll(p => p.SetHumanPlayerIntelCoverage(IntelCoverage.Comprehensive));
+        _moons.ForAll(m => m.SetHumanPlayerIntelCoverage(IntelCoverage.Comprehensive));
     }
 
     private void BeginSystemOperations(Action onCompletion) {
         LogEvent();
         _planets.ForAll(p => p.CommenceOperations());
         _moons.ForAll(m => m.CommenceOperations());
+        _star.CommenceOperations();
+        _system.CommenceOperations();
         UnityUtility.WaitOneToExecute(onWaitFinished: (wasKilled) => {
             onCompletion();
         });

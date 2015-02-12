@@ -53,7 +53,7 @@ public class AutoPilot : APropertyChangeTracking, IDisposable {
     private Job _job;
 
     private ShipModel _ship;
-    private ShipItemData _shipData;
+    private ShipData _shipData;
     private IList<IDisposable> _subscribers;
 
     public AutoPilot(ShipModel ship) {

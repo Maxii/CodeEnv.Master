@@ -26,13 +26,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     ///  Factory that makes GuiCursorHudText and IColoredTextList instances for Planetoids.
     /// </summary>
-    public class PlanetoidGuiHudTextFactory : AGuiHudTextFactory<PlanetoidGuiHudTextFactory, PlanetoidItemData> {
+    public class PlanetoidGuiHudTextFactory : AGuiHudTextFactory<PlanetoidGuiHudTextFactory, PlanetoidData> {
 
         private PlanetoidGuiHudTextFactory() {
             Initialize();
         }
 
-        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, PlanetoidItemData data) {
+        protected override IColoredTextList MakeTextInstance(GuiHudLineKeys key, IIntel intel, PlanetoidData data) {
             switch (key) {
                 case GuiHudLineKeys.Name:
                     return new ColoredTextList_String(data.Name);

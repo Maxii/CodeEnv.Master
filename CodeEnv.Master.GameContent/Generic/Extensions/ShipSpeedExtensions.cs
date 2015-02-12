@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="shipData">The ship data.</param>
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
-        public static float GetValue(this Speed speed, FleetCmdItemData fleetData, ShipItemData shipData = null) {
+        public static float GetValue(this Speed speed, FleetCmdData fleetData, ShipData shipData = null) {
             D.Assert(fleetData != null || shipData != null);
 
             float fleetFullSpeed = Constants.ZeroF;

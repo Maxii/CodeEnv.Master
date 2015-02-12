@@ -84,11 +84,12 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     /// that can't wait until the Item first becomes discernible. 
     /// </summary>
     /// <remarks> 
-    /// Overrides AItem without calling base.InitializeViewMembers() as HudManager is
-    /// initialized when first discernible for all items except SectorItem.
+    /// Overrides AItem.InitializeViewMembers() without calling base method as AItem
+    /// initializes the HudManager in the base method. Discernible Items wish to defer this
+    /// initialization until first discernible, aka in InitializeViewMembersOnDiscernible()..
     /// </remarks>
     protected override void InitializeViewMembers() {
-        AssessDiscernability(); // reqd to initialize IsDiscernible
+        //AssessDiscernability(); // too early. Now occurs in CommenceOperations()
     }
 
     /// <summary>
@@ -103,6 +104,11 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     #endregion
 
     #region Model Methods
+
+    public override void CommenceOperations() {
+        base.CommenceOperations();
+        AssessDiscernability();
+    }
 
     #endregion
 

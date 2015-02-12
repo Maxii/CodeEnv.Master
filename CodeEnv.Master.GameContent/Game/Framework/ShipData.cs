@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ShipItemData.cs
+// File: ShipData.cs
 // Class for Data associated with a ShipItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Class for Data associated with a ShipItem.
     /// </summary>
-    public class ShipItemData : AUnitElementItemData {
+    public class ShipData : AUnitElementItemData {
 
         #region FTL
 
@@ -203,12 +203,13 @@ namespace CodeEnv.Master.GameContent {
         private float _gameSpeedMultiplier;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ShipItemData" /> class.
+        /// Initializes a new instance of the <see cref="ShipData" /> class.
         /// </summary>
         /// <param name="shipTransform">The ship transform.</param>
         /// <param name="stat">The stat.</param>
-        public ShipItemData(Transform shipTransform, ShipStat stat)
-            : base(shipTransform, stat.Name, stat.Mass, stat.MaxHitPoints) {
+        /// <param name="owner">The owner.</param>
+        public ShipData(Transform shipTransform, ShipStat stat, Player owner)
+            : base(shipTransform, stat.Name, stat.Mass, stat.MaxHitPoints, owner) {
             _rigidbody = shipTransform.rigidbody;
             // rigidbody mass assignment handled by AElementData
 

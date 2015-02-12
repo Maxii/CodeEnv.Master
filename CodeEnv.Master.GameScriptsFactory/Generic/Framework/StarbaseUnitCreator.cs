@@ -72,6 +72,7 @@ public class StarbaseUnitCreator : AUnitCreator<FacilityItem, FacilityCategory, 
             cmd = _factory.MakeInstance(cmdStat, countermeasures, owner);
             UnityUtility.AttachChildToParent(cmd.gameObject, gameObject);
         }
+        cmd.IsTrackingLabelEnabled = enableTrackingLabel;
         return cmd;
     }
 

@@ -31,14 +31,14 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
 
     private static string __highlightName = "SystemHighlightMesh";  // IMPROVE
 
-    public bool enableTrackingLabel = true;
-
     [Range(1.0F, 5.0F)]
     [Tooltip("Minimum Camera View Distance in Units")]
     public float minViewDistance = 2F;    // 2 units from the orbital plane
 
-    public new SystemItemData Data {
-        get { return base.Data as SystemItemData; }
+    public bool IsTrackingLabelEnabled { private get; set; }
+
+    public new SystemData Data {
+        get { return base.Data as SystemData; }
         set { base.Data = value; }
     }
 
@@ -86,20 +86,6 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
     }
 
     protected override void InitializeModelMembers() { }
-
-    protected override void InitializeViewMembers() {
-        base.InitializeViewMembers();
-        if (enableTrackingLabel && _trackingLabel == null) {
-            _trackingLabel = InitializeTrackingLabel();
-        }
-    }
-
-    private ITrackingWidget InitializeTrackingLabel() {
-        float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
-        var trackingLabel = TrackingWidgetFactory.Instance.CreateUITrackingLabel(this, WidgetPlacement.Above, minShowDistance);
-        trackingLabel.Set(FullName);
-        return trackingLabel;
-    }
 
     protected override void InitializeViewMembersOnDiscernible() {
         base.InitializeViewMembersOnDiscernible();
@@ -151,6 +137,15 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
         //D.Log("{0} initializing {1}.", FullName, _ctxControl.GetType().Name);
     }
 
+    private ITrackingWidget InitializeTrackingLabel() {
+        float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
+        var trackingLabel = TrackingWidgetFactory.Instance.CreateUITrackingLabel(this, WidgetPlacement.Above, minShowDistance);
+        trackingLabel.Name = DisplayName + CommonTerms.Label;
+        trackingLabel.Set(DisplayName);
+        trackingLabel.Color = Owner.Color;
+        return trackingLabel;
+    }
+
     #endregion
 
     #region Model Methods
@@ -186,7 +181,7 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
     }
 
     private void OnSettlementChanged() {
-        SettlementCmdItemData settlementData = null;
+        SettlementCmdData settlementData = null;
         if (Settlement != null) {
             settlementData = Settlement.Data;
             AttachSettlement(Settlement);
@@ -218,15 +213,20 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
         }
     }
 
+    protected override void OnOwnerChanged() {
+        base.OnOwnerChanged();
+        if (_trackingLabel != null) {
+            _trackingLabel.Color = Owner.Color;
+        }
+    }
+
     #endregion
 
     #region View Methods
 
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
-        if (_trackingLabel != null) {
-            _trackingLabel.Show(IsDiscernible);
-        }
+        ShowTrackingLabel(IsDiscernible);
         _orbitalPlaneCollider.enabled = IsDiscernible;
         // orbitalPlane LineRenderers don't render when not visible to the camera
     }
@@ -284,6 +284,13 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
             case Highlights.FocusAndGeneral:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(highlight));
+        }
+    }
+
+    private void ShowTrackingLabel(bool toShow) {
+        if (IsTrackingLabelEnabled) {
+            _trackingLabel = _trackingLabel ?? InitializeTrackingLabel();
+            _trackingLabel.Show(toShow);
         }
     }
 

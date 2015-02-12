@@ -75,7 +75,6 @@ namespace CodeEnv.Master.GameContent {
                 //    break;
                 case LabelContentID.Health:
                     content = new ColoredTextList_Health(report.Health, report.MaxHitPoints);
-                    //content = report.Health.HasValue ? new ColoredTextList<float>(GetFormat(contentID), report.Health.Value) : content;
                     break;
                 case LabelContentID.Defense:
                     content = report.DefensiveStrength.HasValue ? new ColoredTextList<CombatStrength>(report.DefensiveStrength.Value) : content;
@@ -97,7 +96,7 @@ namespace CodeEnv.Master.GameContent {
                     content = new ColoredTextList_Distance(data.Position);
                     break;
                 case LabelContentID.IntelState:
-                    content = new ColoredTextList_Intel(data.GetHumanPlayerIntel());
+                    content = new ColoredTextList_Intel(data.GetHumanPlayerIntelCopy());
                     break;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(contentID));

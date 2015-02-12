@@ -23,12 +23,12 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SectorPresenter : AItemPresenter {
 
-        protected new SectorItemData Data { get { return base.Data as SectorItemData; } }
+        protected new SectorData Data { get { return base.Data as SectorData; } }
 
         public SectorPresenter(IViewable view) : base(view) { }
 
         protected override IGuiHudPublisher InitializeHudPublisher() {
-            return new GuiHudPublisher<SectorItemData>(Data);
+            return new GuiHudPublisher<SectorData>(Data);
         }
 
         public override string ToString() {

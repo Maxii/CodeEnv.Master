@@ -62,8 +62,15 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<CombatStrength>(ref _defensiveStrength, value, "DefensiveStrength"); }
         }
 
-        public AMortalItemData(Transform itemTransform, string name, float maxHitPts)
-            : base(itemTransform, name) {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AMortalItemData"/> class.
+        /// </summary>
+        /// <param name="itemTransform">The item transform.</param>
+        /// <param name="name">The name.</param>
+        /// <param name="maxHitPts">The maximum hit PTS.</param>
+        /// <param name="owner">The owner.</param>
+        public AMortalItemData(Transform itemTransform, string name, float maxHitPts, Player owner)
+            : base(itemTransform, name, owner) {
             Countermeasures = new List<Countermeasure>();
             MaxHitPoints = maxHitPts;
             CurrentHitPoints = maxHitPts;

@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
         private AUnitElementItemData _hqElementData;
         public AUnitElementItemData HQElementData {
             get { return _hqElementData; }
-            set { SetProperty<AUnitElementItemData>(ref _hqElementData, value, "HQElementData", OnHQElementDataChanged); }
+            set { SetProperty<AUnitElementItemData>(ref _hqElementData, value, "HQElementData", OnHQElementDataChanged, OnHQElementDataChanging); }
         }
 
         // AItemData.Health, CurrentHitPts and MaxHitPts are all for this CommandData, not for the Unit as a whole.
@@ -147,8 +147,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cmdTransform">The command transform.</param>
         /// <param name="unitName">Name of this Unit, eg. the FleetName for a FleetCommand.</param>
         /// <param name="cmdMaxHitPoints">The maximum hit points of this Command staff.</param>
-        public AUnitCmdItemData(Transform cmdTransform, string unitName, float cmdMaxHitPoints)
-            : base(cmdTransform, CommonTerms.Command, cmdMaxHitPoints) {
+        /// <param name="owner">The owner.</param>
+        public AUnitCmdItemData(Transform cmdTransform, string unitName, float cmdMaxHitPoints, Player owner)
+            : base(cmdTransform, CommonTerms.Command, cmdMaxHitPoints, owner) {
             ParentName = unitName;
             // A command's UnitMaxHitPoints are constructed from the sum of the elements
             InitializeCollections();
@@ -159,9 +160,23 @@ namespace CodeEnv.Master.GameContent {
             _subscribers = new Dictionary<AUnitElementItemData, IList<IDisposable>>();
         }
 
+        protected virtual void OnHQElementDataChanging(AUnitElementItemData newHQElementData) {
+            var previousHQElementData = HQElementData;
+            if (previousHQElementData != null) {
+                previousHQElementData.onPlayerIntelCoverageChanged -= OnHQElementIntelCoverageChanged;
+            }
+        }
+
         protected virtual void OnHQElementDataChanged() {
             D.Assert(ElementsData.Contains(HQElementData),
                 "HQ Element {0} assigned not present in {1}.".Inject(_hqElementData.FullName, FullName));
+            HQElementData.onPlayerIntelCoverageChanged += OnHQElementIntelCoverageChanged;
+        }
+
+        private void OnHQElementIntelCoverageChanged(Player player) {
+            var playerIntelCoverageOfHQElement = HQElementData.GetIntelCoverage(player);
+            SetIntelCoverage(player, playerIntelCoverageOfHQElement);
+            D.Log("{0}.HQElement's IntelCoverage for {1} has changed to {2}. {0} has assumed the same value.", FullName, player.LeaderName, playerIntelCoverageOfHQElement.GetName());
         }
 
         private void OnUnitMaxHitPointsChanging(float newMaxHitPoints) {
@@ -241,7 +256,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void UpdateElementParentName(AUnitElementItemData elementData) {
             // TODO something more than just assigning a parent name?
-            D.Log("{0} OptionalParentName changing to {1}.", elementData.Name, ParentName);
+            //D.Log("{0}.ParentName changing to {1}.", elementData.Name, ParentName);
             elementData.ParentName = ParentName;    // the name of the fleet, not the command
         }
 
@@ -336,6 +351,11 @@ namespace CodeEnv.Master.GameContent {
         private void Unsubscribe(AUnitElementItemData elementData) {
             _subscribers[elementData].ForAll(d => d.Dispose());
             _subscribers.Remove(elementData);
+
+            D.Assert(HQElementData != null);    // UNCLEAR when HQElementData gets nulled when elementData == HQElementData
+            if (elementData == HQElementData) {
+                HQElementData.onPlayerIntelCoverageChanged -= OnHQElementIntelCoverageChanged;
+            }
         }
 
         #endregion

@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SettlementCmdItemData.cs
+// File: SettlementCmdData.cs
 // Class for Data associated with a SettlementCmdItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Class for Data associated with a SettlementCmdItem.
     /// </summary>
-    public class SettlementCmdItemData : AUnitCmdItemData {
+    public class SettlementCmdData : AUnitCmdItemData {
 
         private SettlementCategory _category;
         public SettlementCategory Category {
@@ -79,12 +79,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SettlementCmdItemData" /> class.
+        /// Initializes a new instance of the <see cref="SettlementCmdData" /> class.
         /// </summary>
         /// <param name="cmdTransform">The command transform.</param>
         /// <param name="stat">The stat.</param>
-        public SettlementCmdItemData(Transform cmdTransform, SettlementCmdStat stat)
-            : base(cmdTransform, stat.Name, stat.MaxHitPoints) {
+        /// <param name="owner">The owner.</param>
+        public SettlementCmdData(Transform cmdTransform, SettlementCmdStat stat, Player owner)
+            : base(cmdTransform, stat.Name, stat.MaxHitPoints, owner) {
             MaxCmdEffectiveness = stat.MaxCmdEffectiveness;
             Population = stat.Population;
             UnitFormation = stat.UnitFormation;

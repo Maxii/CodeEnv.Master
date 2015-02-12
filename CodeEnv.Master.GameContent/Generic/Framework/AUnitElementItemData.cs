@@ -66,8 +66,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The name of the Element.</param>
         /// <param name="mass">The mass of the Element.</param>
         /// <param name="maxHitPoints">The maximum hit points.</param>
-        public AUnitElementItemData(Transform elementTransform, string name, float mass, float maxHitPoints)
-            : base(elementTransform, name, maxHitPoints) {
+        /// <param name="owner">The owner.</param>
+        public AUnitElementItemData(Transform elementTransform, string name, float mass, float maxHitPoints, Player owner)
+            : base(elementTransform, name, maxHitPoints, owner) {
             Mass = mass;
             elementTransform.rigidbody.mass = mass;
             Weapons = new List<Weapon>();
