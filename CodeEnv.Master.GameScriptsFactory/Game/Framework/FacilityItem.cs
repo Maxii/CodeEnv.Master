@@ -28,24 +28,12 @@ using UnityEngine;
 /// </summary>
 public class FacilityItem : AUnitElementItem {
 
-    [Tooltip("The type of facility")]
+    [Tooltip("The type of Facility")]
     public FacilityCategory category;
 
     public new FacilityData Data {
         get { return base.Data as FacilityData; }
         set { base.Data = value; }
-    }
-
-    public override bool IsHQElement {  // OPTIMIZE temp override to add Assertion protection
-        get {
-            return base.IsHQElement;
-        }
-        set {
-            if (value) {
-                D.Assert(Data.Category == FacilityCategory.CentralHub);
-            }
-            base.IsHQElement = value;
-        }
     }
 
     public new AUnitBaseCmdItem Command {
@@ -84,7 +72,7 @@ public class FacilityItem : AUnitElementItem {
     }
 
     protected override void InitializeModelMembers() {
-        //base.InitializeModelMembers();
+        base.InitializeModelMembers();
         D.Assert(category == Data.Category);
         CurrentState = FacilityState.None;
     }
@@ -298,7 +286,7 @@ public class FacilityItem : AUnitElementItem {
         D.Log("{0}.ExecuteAttackOrder_EnterState() called.", FullName);
         _ordersTarget = CurrentOrder.Target;
 
-        while (_ordersTarget.IsAliveAndOperating) {
+        while (_ordersTarget.IsOperational) {
             // TODO Primary target needs to be picked
             // if a primaryTarget is inRange, primary target is not null so OnWeaponReady will attack it
             // if not in range, then primary target will be null, so OnWeaponReady will attack other targets of opportunity, if any

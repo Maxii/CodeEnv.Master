@@ -27,7 +27,7 @@ using UnityEngine;
 public class StarView : AFocusableItemView {
 
     private static LayerMask _starLightCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
-        Layers.Ship, Layers.Facility, Layers.Planetoid, Layers.Star);
+        Layers.ShipCull, Layers.FacilityCull, Layers.PlanetoidCull, Layers.StarCull);
 
     public new StarPresenter Presenter {
         get { return base.Presenter as StarPresenter; }

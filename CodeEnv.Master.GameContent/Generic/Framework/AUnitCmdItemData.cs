@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -55,7 +55,6 @@ namespace CodeEnv.Master.GameContent {
         // AItemData.Health, CurrentHitPts and MaxHitPts are all for this CommandData, not for the Unit as a whole.
         // This CurrentHitPts value is managed by the AUnitCommandItem.ApplyDamage() override which currently 
         // doesn't let it drop below 50% of MaxHitPts. Health is directly derived from changes in CurrentHitPts.
-
 
         private int _currentCmdEffectiveness;
         public int CurrentCmdEffectiveness {  // TODO make use of this
@@ -175,7 +174,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void OnHQElementIntelCoverageChanged(Player player) {
             var playerIntelCoverageOfHQElement = HQElementData.GetIntelCoverage(player);
-            SetIntelCoverage(player, playerIntelCoverageOfHQElement);
+            D.Assert(TrySetIntelCoverage(player, playerIntelCoverageOfHQElement));
             D.Log("{0}.HQElement's IntelCoverage for {1} has changed to {2}. {0} has assumed the same value.", FullName, player.LeaderName, playerIntelCoverageOfHQElement.GetName());
         }
 

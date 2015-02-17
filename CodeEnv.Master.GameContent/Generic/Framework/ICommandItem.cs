@@ -23,6 +23,15 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface ICommandItem : IMortalItem {
 
+        /// <summary>
+        /// Occurs when the owner of this <c>IItem</c> is about to change.
+        /// The new incoming owner is the <c>Player</c> provided.
+        /// </summary>
+        event Action<IItem, Player> onOwnerChanging;
+
+        /// <summary>
+        /// Occurs when the owner of this <c>IItem</c> has changed.
+        /// </summary>
         event Action<IItem> onOwnerChanged;
 
     }

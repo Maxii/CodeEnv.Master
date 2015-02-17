@@ -6,8 +6,8 @@
 // </copyright> 
 // <summary> 
 // File: SensorRangeMonitor.cs
-// Maintains a list of all IElementAttackableTargets within a specified range of this monitor and generates
-// an event when the first or last enemy target enters/exits the range.
+// Detects IDetectable Items that enter and exit the range of its sensors and sends each 
+// a OnDetection() or OnDetectionLost() event.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -24,17 +24,22 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Maintains a list of all IElementAttackableTargets within a specified range of this monitor and generates
-///  an event when the first or last enemy target enters/exits the range.
+/// Detects IDetectable Items that enter and exit the range of its sensors and sends each 
+/// a OnDetection() or OnDetectionLost() event.
 /// TODO Account for a diploRelations change with an owner.
 /// </summary>
 public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
 
-    private static string _nameFormat = "{0}.{1}[{2}]";
+    private static string _fullNameFormat = "{0}.{1}[{2}, {3:0.} Units]";
+    private static string _rangeInfoFormat = "{0}, {1:0.} Units";
 
-    private static HashSet<Collider> _collidersToIgnore = new HashSet<Collider>();  // UNCLEAR ever any colliders to ignore?
+    private static HashSet<Collider> _collidersToIgnore = new HashSet<Collider>();
 
-    public string FullName { get { return _nameFormat.Inject(ParentCommand.FullName, GetType().Name, Range.GetName()); } }
+    public string FullName { get { return _fullNameFormat.Inject(ParentCommand.FullName, GetType().Name, Range.GetName(), _collider.radius); } }
+
+    [SerializeField]
+    [Tooltip("For Editor display only")]
+    private string _rangeInfo;
 
     private DistanceRange _range;
     public DistanceRange Range {
@@ -51,10 +56,21 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
         }
     }
 
-    //public IList<INavigableTarget> EnemyTargets { get; private set; }
-    public IList<INavigableTarget> AllTargets { get; private set; }
-
     public IList<Sensor> Sensors { get; private set; }
+    public IList<IDetectable> ItemsDetected { get; private set; }
+
+    /// <summary>
+    /// Control for enabling/disabling the monitor's collider.
+    /// </summary>
+    private bool IsOperational {
+        get { return _collider.enabled; }
+        set {
+            if (_collider.enabled != value) {
+                _collider.enabled = value;
+                OnIsOperationalChanged();
+            }
+        }
+    }
 
     private SphereCollider _collider;
 
@@ -64,15 +80,14 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
         _collider.isTrigger = true;
         _collider.radius = Constants.ZeroF;  // initialize to same value as Range
 
-        AllTargets = new List<INavigableTarget>();
-        //EnemyTargets = new List<INavigableTarget>();
         Sensors = new List<Sensor>();
-        _collider.enabled = false;
+        ItemsDetected = new List<IDetectable>();
+        IsOperational = false;  // IsOperational changed when the operational state of the sensors changes
     }
 
     public void Add(Sensor sensor) {
         D.Assert(!Sensors.Contains(sensor));
-
+        D.Assert(!sensor.IsOperational);
         if (Range == DistanceRange.None) {
             Range = sensor.Range;
         }
@@ -96,6 +111,7 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
         Sensors.Remove(sensor);
         sensor.onIsOperationalChanged -= OnSensorIsOperationalChanged;
         if (Sensors.Count == Constants.Zero) {
+            IsOperational = false;
             Range = DistanceRange.None;
             return false;
         }
@@ -105,7 +121,7 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
     void OnTriggerEnter(Collider other) {
         //D.Log("{0}.OnTriggerEnter() tripped by {1}.", FullName, other.name);
         if (other.isTrigger) {
-            //D.Log("{0}.OnTriggerEnter() ignored {1}.", FullName, other.name);
+            //D.Log("{0}.OnTriggerEnter() ignored TriggerCollider {1}.", FullName, other.name);
             return;
         }
 
@@ -113,19 +129,21 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
             return;
         }
 
-        var target = other.gameObject.GetInterface<INavigableTarget>();
-        if (target == null) {
+        var detectedItem = other.gameObject.GetInterface<IDetectable>();
+        if (detectedItem == null) {
             _collidersToIgnore.Add(other);
-            //D.Log("{0} now ignoring {1}.", FullName, other.name);
+            D.Log("{0} now ignoring {1}.", FullName, other.name);
             return;
         }
-        Add(target);
+        //D.Log("{0} detected {1} at {2:0.} units.", FullName, detectedItem.FullName, Vector3.Distance(_transform.position, detectedItem.Position));
+        Add(detectedItem);
+        detectedItem.OnDetection(ParentCommand, Range);
     }
 
     void OnTriggerExit(Collider other) {
         //D.Log("{0}.OnTriggerExit() tripped by {1}.", FullName, other.name);
         if (other.isTrigger) {
-            // D.Log("{0}.OnTriggerExit() ignored {1}.", FullName, other.name);
+            //D.Log("{0}.OnTriggerExit() ignored TriggerCollider {1}.", FullName, other.name);
             return;
         }
 
@@ -133,140 +151,121 @@ public class SensorRangeMonitor : AMonoBase, ISensorRangeMonitor {
             return;
         }
 
-        var target = other.gameObject.GetInterface<INavigableTarget>();
-        if (target != null) {
-            Remove(target);
+        var detectedItem = other.gameObject.GetInterface<IDetectable>();
+        if (detectedItem != null) {
+            //D.Log("{0} lost detection of {1} at {2:0.} units.", FullName, detectedItem.FullName, Vector3.Distance(_transform.position, detectedItem.Position));
+            Remove(detectedItem);
+            detectedItem.OnDetectionLost(ParentCommand, Range);
+        }
+    }
+
+    private void OnIsOperationalChanged() {
+        if (!IsOperational) {
+            var itemsDetectedCopy = ItemsDetected.ToArray();
+            itemsDetectedCopy.ForAll(id => {
+                Remove(id);
+                if (!IsApplicationQuiting) {    // HACK to avoid msg spam when AIntelItemData.DEBUG_LOG defined
+                    id.OnDetectionLost(ParentCommand, Range);
+                }
+            });
         }
     }
 
     private void OnParentCommandChanged() {
-        ParentCommand.onOwnerChanged += OnOwnerChanged;
+        ParentCommand.onOwnerChanging += OnParentCmdOwnerChanging;
+        ParentCommand.onOwnerChanged += OnParentCmdOwnerChanged;
     }
-
-    //private void OnTargetOwnerChanged(IItem item) {
-    //    var target = item as INavigableTarget;
-    //    D.Assert(target != null);   // the only way this monitor would be notified of this change is if it was already qualified as a target
-    //    if (ParentCommand.Owner.IsEnemyOf(target.Owner)) {
-    //        if (!EnemyTargets.Contains(target)) {
-    //            AddEnemyTarget(target);
-    //        }
-    //    }
-    //    else {
-    //        RemoveEnemyTarget(target);
-    //    }
-    //}
-
-    private void OnOwnerChanged(IItem item) {
-        // a change of monitor owner can change the range of the monitor
-        Refresh();
-    }
-
-    private void OnRangeChanged() {
-        //D.Log("{0}.Range changed to {1}.", FullName, Range.GetName());
-        Refresh();
-    }
-
-    //private void OnAnyEnemyInRangeChanged(bool isAnyEnemyInRange) {
-    //    Sensors.ForAll(s => s.IsAnyEnemyInRange = isAnyEnemyInRange);
-    //}
-
-    private void OnTargetDeath(IMortalItem target) {
-        Remove(target as INavigableTarget);
-    }
-
-    private void Add(INavigableTarget target) {
-        //D.Log("{0}.Add({1}) called.", FullName, target.FullName);
-        if (!AllTargets.Contains(target)) {
-            var attackableTarget = target as IElementAttackableTarget;
-            if (attackableTarget != null) {
-                if (attackableTarget.IsAliveAndOperating) {
-                    attackableTarget.onDeathOneShot += OnTargetDeath;
-                }
-                else {
-                    //D.Log("{0} avoided adding target {1} that is either not operational or already dead.", FullName, target.FullName);
-                    return;
-                }
-            }
-            //D.Log("{0} now tracking target {1}.", FullName, target.FullName);
-            // target ownership changes don't matter as I'm not differentiating by DiplomaticRelationship
-            AllTargets.Add(target);
-        }
-        else {
-            D.Warn("{0} attempted to add duplicate Target {1}.", FullName, target.FullName);
-        }
-    }
-
-    //private void AddEnemyTarget(IElementAttackableTarget enemyTarget) {
-    //    D.Log("{0}.{1}({2}) now tracking Enemy {3} at distance {4:0.0}.", ParentCommand.FullName, GetType().Name,
-    //        Range.GetName(), enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
-    //    EnemyTargets.Add(enemyTarget);
-    //    if (EnemyTargets.Count == Constants.One) {
-    //        OnAnyEnemyInRangeChanged(true);   // there are now enemies in range
-    //    }
-    //}
-
-    private void Remove(INavigableTarget target) {
-        bool isRemoved = AllTargets.Remove(target);
-        if (isRemoved) {
-            var attackableTarget = target as IElementAttackableTarget;
-            if (attackableTarget != null) {
-                if (attackableTarget.IsAliveAndOperating) {
-                    //D.Log("{0} no longer tracking {1} at distance {2}.", FullName, attackableTarget.FullName, Vector3.Distance(attackableTarget.Position, _transform.position));
-                }
-                else {
-                    //D.Log("{0} no longer tracking (not operational or dead) target {1}.", FullName, attackableTarget.FullName);
-                }
-                attackableTarget.onDeathOneShot -= OnTargetDeath;
-            }
-            // target ownership changes don't matter as I'm not differentiating by DiplomaticRelationship
-        }
-        else {
-            D.Warn("{0} target {1} not present to be removed.", FullName, target.FullName);
-        }
-    }
-
-    //private void RemoveEnemyTarget(IElementAttackableTarget enemyTarget) {
-    //    var isRemoved = EnemyTargets.Remove(enemyTarget);
-    //    D.Assert(isRemoved);
-    //    if (EnemyTargets.Count == 0) {
-    //        OnAnyEnemyInRangeChanged(false);  // no longer any Enemies in range
-    //    }
-    //    D.Log("{0}.{1}({2}) removed Enemy Target {3} at distance {4:0.0}.", ParentCommand.FullName, GetType().Name,
-    //        Range.GetName(), enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position));
-    //}
 
     /// <summary>
-    /// Refreshes the contents of this Monitor.
+    /// Called when [range changed]. This only occurs when the first Sensor (not yet operational)
+    /// is added, or the last is removed.
     /// </summary>
-    private void Refresh() {
-        bool savedEnabledState = _collider.enabled;
-        _collider.enabled = false;
+    private void OnRangeChanged() {
         _collider.radius = Range.GetSensorRange(ParentCommand.Owner);
-        var allTargetsCopy = AllTargets.ToArray();
-        allTargetsCopy.ForAll(t => Remove(t));  // clears both AllTargets and EnemyTargets
-        _collider.enabled = savedEnabledState;    //  TODO unconfirmed - this should repopulate the Targets when re-enabled with new radius
-        //D.Log("{0}'s collider.enabled = {1}.", FullName, _collider.enabled);
+        _rangeInfo = _rangeInfoFormat.Inject(Range.GetName(), _collider.radius);
+        //D.Log("{0}.Range changed to {1}.", FullName, Range.GetName());
+        // No reason to reacquire detectable items as a result of this collider radius change as this method is only called when not operational
     }
 
     private void OnSensorIsOperationalChanged(Sensor sensor) {
-        _collider.enabled = Sensors.Where(s => s.IsOperational).Any();
-        //D.Log("{0}'s collider.enabled = {1}.", FullName, _collider.enabled);
+        IsOperational = Sensors.Where(s => s.IsOperational).Any();
+        //D.Log("{0}.OnSensorIsOperationalChanged() called. Monitor.IsOperational = {1}.", FullName, IsOperational);
+    }
+
+    private void OnParentCmdOwnerChanging(IItem item, Player newOwner) {
+        IsOperational = false;  // if not already false, this clears all tracked detectable items using the ParentCmd with the old owner
+    }
+
+    private void OnParentCmdOwnerChanged(IItem item) {
+        bool isAnySensorOperational = Sensors.Where(s => s.IsOperational).Any();
+        // reacquisition of detectable items should only occur here if the monitor was operational before OnParentCmdOwnerChanging() was called
+        // we can tell by testing the sensors as OnSensorIsOperationalChanged() is the only mechanism used to control IsOperational
+        // if it wasn't operational then, then reacquisition of detectable items is deferred until a sensor becomes operational again
+        IsOperational = isAnySensorOperational;
+    }
+
+    /***************************************************************************************************
+        * Note: no reason to track detectedItem ownership changes as the detectedItem is responsible 
+        * for its own detection state adjustments if/when its owner changes.
+        *****************************************************************************************************/
+
+    private void Add(IDetectable detectedItem) {
+        if (!ItemsDetected.Contains(detectedItem)) {
+            if (detectedItem.IsOperational) {
+                //D.Log("{0} now tracking {1} {2}.", FullName, typeof(IDetectable).Name, detectedItem.FullName);
+                var mortalItem = detectedItem as IMortalItem;
+                if (mortalItem != null) {
+                    mortalItem.onDeathOneShot += OnDetectedItemDeath;
+                }
+                ItemsDetected.Add(detectedItem);
+            }
+            else {
+                D.Log("{0} avoided adding {1} {2} that is not operational.", FullName, typeof(IDetectable).Name, detectedItem.FullName);
+            }
+        }
+        else {
+            D.Warn("{0} attempted to add duplicate {1} {2}.", FullName, typeof(IDetectable).Name, detectedItem.FullName);
+        }
+    }
+
+    private void Remove(IDetectable detectedItem) {
+        bool isRemoved = ItemsDetected.Remove(detectedItem);
+        if (isRemoved) {
+            if (detectedItem.IsOperational) {
+                //D.Log("{0} no longer tracking {1} {2} at distance = {3}.", FullName, typeof(IDetectable).Name, detectedItem.FullName, Vector3.Distance(detectedItem.Position, _transform.position));
+            }
+            else {
+                D.Log("{0} no longer tracking dead {1} {2}.", FullName, typeof(IDetectable).Name, detectedItem.FullName);
+            }
+            var mortalItem = detectedItem as IMortalItem;
+            if (mortalItem != null) {
+                mortalItem.onDeathOneShot -= OnDetectedItemDeath;
+            }
+        }
+        else {
+            D.Warn("{0} reports {1} {2} not present to be removed.", FullName, typeof(IDetectable).Name, detectedItem.FullName);
+        }
+    }
+
+    /// <summary>
+    /// Called when a tracked IDetectable item dies. It is necessary to track each item's onDeath
+    /// event as OnTriggerExit() is not called when an item inside the collider is destroyed.
+    /// </summary>
+    /// <param name="mortalItem">The mortal item.</param>
+    private void OnDetectedItemDeath(IMortalItem mortalItem) {
+        // no reason to tell a dead IDetectable that it is no longer detected
+        Remove(mortalItem as IDetectable);
     }
 
     protected override void Cleanup() {
         if (ParentCommand != null) {
-            ParentCommand.onOwnerChanged -= OnOwnerChanged;
+            ParentCommand.onOwnerChanging -= OnParentCmdOwnerChanging;
+            ParentCommand.onOwnerChanged -= OnParentCmdOwnerChanged;
         }
         Sensors.ForAll(s => {
             s.onIsOperationalChanged -= OnSensorIsOperationalChanged;
         });
-        AllTargets.ForAll(t => {
-            //t.onOwnerChanged -= OnTargetOwnerChanged;
-            var attackableTarget = t as IElementAttackableTarget;
-            if (attackableTarget != null) {
-                attackableTarget.onDeathOneShot -= OnTargetDeath;
-            }
-        });
+        IsOperational = false;  // important to cleanup the onDeath subscription and detected state for each item detected
     }
 
     public override string ToString() {

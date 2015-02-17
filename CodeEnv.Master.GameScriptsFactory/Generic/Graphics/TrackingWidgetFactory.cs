@@ -53,7 +53,6 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
-        trackingWidget.Name = target.Transform.name + CommonTerms.Label;
         return trackingWidget;
     }
 
@@ -77,7 +76,6 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
-        trackingWidget.Name = target.Transform.name + CommonTerms.Sprite;
         return trackingWidget;
     }
 
@@ -101,7 +99,6 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         trackingWidget.Target = cmdTarget;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
-        trackingWidget.Name = cmdTarget.Transform.name + CommonTerms.Sprite;
         //D.Log("CmdTrackingSprite made for {0}.", cmdTarget.Transform.name);
         return trackingWidget;
     }
@@ -124,7 +121,6 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min);
-        trackingWidget.Name = target.Transform.name + CommonTerms.Label;
         return trackingWidget;
     }
 
@@ -147,7 +143,6 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min);
-        trackingWidget.Name = target.Transform.name + CommonTerms.Sprite;
         return trackingWidget;
     }
 
@@ -173,7 +168,6 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
-        trackingWidget.Name = target.Transform.name + CommonTerms.Sprite;
         return trackingWidget;
     }
 
@@ -196,7 +190,6 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
-        trackingWidget.Name = target.Transform.name + CommonTerms.Label;
         return trackingWidget;
     }
 

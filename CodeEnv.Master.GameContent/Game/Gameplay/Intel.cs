@@ -46,8 +46,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public virtual GameDate DateStamp { get; private set; }
 
-        public Intel() : base() { }
-
         public Intel(IntelCoverage coverage) : base(coverage) { }
 
         /// <summary>
@@ -56,10 +54,13 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="intelToCopy">The intel to copy.</param>
         public Intel(Intel intelToCopy)
-            : this() {
-            this.CurrentCoverage = intelToCopy.CurrentCoverage;
+            : this(intelToCopy.CurrentCoverage) {
             this.DatedCoverage = intelToCopy.DatedCoverage;
             this.DateStamp = intelToCopy.DateStamp;
+        }
+
+        public override bool IsCoverageChangeAllowed(IntelCoverage newCoverage) {
+            return CurrentCoverage != newCoverage;
         }
 
         /// <summary>

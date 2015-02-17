@@ -258,7 +258,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         UnityUtility.WaitOneToExecute((wasKilled) => {
             // delay 1 frame to allow Element and Command Idling_EnterState to execute
             RecordInStaticCollections();
-            __SetIntelCoverage();
+            //__SetIntelCoverage();
             __IssueFirstUnitCommand();
             RemoveCreatorScript();
         });
@@ -535,35 +535,6 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         // Can't use a Contains(item) test as the new item instance will never equal the old instance from the previous scene, even with the same name
         D.Assert(!cmdNamesStored.Contains(_command.DisplayName), "{0}.{1} reports {2} already present.".Inject(UnitName, GetType().Name, _command.DisplayName));
         _allUnitCommands.Add(_command);
-    }
-
-    private void __SetIntelCoverage() {
-        LogEvent();
-        if (toCycleIntelCoverage) {
-            new Job(__CycleIntelCoverage(), true);
-        }
-        else {
-            _elements.ForAll(e => e.SetHumanPlayerIntelCoverage(IntelCoverage.Comprehensive));
-            //_command.SetHumanPlayerIntelCoverage(IntelCoverage.Comprehensive);
-        }
-    }
-
-    private IntelCoverage __previousCoverage;
-    private IEnumerator __CycleIntelCoverage() {
-        _command.SetHumanPlayerIntelCoverage(IntelCoverage.None);
-        yield return new WaitForSeconds(4F);
-        _command.SetHumanPlayerIntelCoverage(IntelCoverage.Aware);
-        __previousCoverage = IntelCoverage.Aware;
-        while (true) {
-            yield return new WaitForSeconds(4F);
-            var proposedCoverage = Enums<IntelCoverage>.GetRandom(excludeDefault: true);
-            while (proposedCoverage == __previousCoverage) {
-                proposedCoverage = Enums<IntelCoverage>.GetRandom(excludeDefault: true);
-            }
-            _elements.ForAll(e => e.SetHumanPlayerIntelCoverage(proposedCoverage));
-            //_command.SetHumanPlayerIntelCoverage(proposedCoverage);
-            __previousCoverage = proposedCoverage;
-        }
     }
 
     protected abstract void __IssueFirstUnitCommand();

@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
         where DataType : AUnitCmdItemData
         where FactoryType : class {
 
-        private static IDictionary<IconSection, IDictionary<IEnumerable<IconSelectionCriteria>, IIcon>> _iconCache;
+        private IDictionary<IconSection, IDictionary<IEnumerable<IconSelectionCriteria>, IIcon>> _iconCache;
 
         protected override void Initialize() {
             _iconCache = new Dictionary<IconSection, IDictionary<IEnumerable<IconSelectionCriteria>, IIcon>>();

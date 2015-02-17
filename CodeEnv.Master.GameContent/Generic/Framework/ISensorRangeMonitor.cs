@@ -30,8 +30,6 @@ namespace CodeEnv.Master.GameContent {
 
         ICommandItem ParentCommand { get; set; }
 
-        IList<INavigableTarget> AllTargets { get; }
-
         void Add(Sensor sensor);
 
         /// <summary>

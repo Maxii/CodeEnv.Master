@@ -16,12 +16,21 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
+    using UnityEngine;
+
     /// <summary>
     /// Interface indicating an Item is detectable by sensors.
     /// </summary>
     public interface IDetectable {
 
-        void OnDetectionGained(ICommandItem cmdItem, DistanceRange sensorRange);
+        bool IsOperational { get; }
+
+        string FullName { get; }
+
+        Vector3 Position { get; }
+
+        void OnDetection(ICommandItem cmdItem, DistanceRange sensorRange);
 
         void OnDetectionLost(ICommandItem cmdItem, DistanceRange sensorRange);
     }

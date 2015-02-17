@@ -170,7 +170,7 @@ namespace Pathfinding {
         /// </summary>
         /// <returns></returns>
         private IDictionary<Topography, IList<Vector3>> ConstructGraphWaypoints() {
-            var sectors = SectorGrid.AllSectors;
+            var sectors = SectorGrid.Instance.AllSectors;
             var sectorCenters = SectorGrid.Instance.SectorCenters;
             D.Assert(sectorCenters != null, "{0} not yet initialized.".Inject(typeof(SectorGrid).Name));  // AstarPath has an option to automatically call Scan() on Awake which can be too early
             IEnumerable<Vector3> openSpaceWaypoints = new List<Vector3>(sectorCenters);

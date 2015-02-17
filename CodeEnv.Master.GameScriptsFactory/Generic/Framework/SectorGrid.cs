@@ -30,7 +30,7 @@ using UnityEngine;
 /// </summary>
 public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
-    public static IList<SectorItem> AllSectors { get { return _instance._sectors.Values.ToList(); } }
+    public IList<SectorItem> AllSectors { get { return _sectors.Values.ToList(); } }
 
     /// <summary>
     /// Readonly. The location of the center of all sectors in world space.

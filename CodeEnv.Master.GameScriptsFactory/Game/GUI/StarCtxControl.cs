@@ -54,10 +54,12 @@ public class StarCtxControl : ACtxControl {
     protected override bool IsRemoteFleetMenuItemDisabled(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Explore:
-            // IMPROVE exploring a star is always available? needed to initiate explore of unknown system?
+                // IMPROVE exploring a star is always available? needed to initiate explore of unknown system?
+                return false;
             case FleetDirective.Patrol:
                 return false;
             case FleetDirective.Move:
+                return false;
             case FleetDirective.Guard:
                 return _remotePlayerOwnedSelectedItem.Owner.IsEnemyOf(_starMenuOperator.Owner);
             default:

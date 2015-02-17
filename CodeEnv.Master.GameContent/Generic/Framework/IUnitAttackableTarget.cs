@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
 
         event Action<IMortalItem> onDeathOneShot;
 
-        bool IsAliveAndOperating { get; }
+        bool IsOperational { get; }
 
     }
 }

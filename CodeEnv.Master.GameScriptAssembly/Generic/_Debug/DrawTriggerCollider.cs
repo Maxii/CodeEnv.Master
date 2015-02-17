@@ -27,9 +27,15 @@ using UnityEngine;
 /// </summary>
 public class DrawTriggerCollider : AMonoBase {
 
-    public bool activate;
+#pragma warning disable 0414
+    [SerializeField]
+    private string _note1 = "To Hide all, collapse component";
+    [SerializeField]
+    private string _note2 = "To show collider's wireframe, enable.";
+#pragma warning restore 0414
 
-    public bool drawOnlyWhenSelected;
+    [Tooltip("Draw only when selected")]
+    public bool drawSelected;
 
     public Color color = Color.white;
 
@@ -50,13 +56,13 @@ public class DrawTriggerCollider : AMonoBase {
     }
 
     void OnDrawGizmos() {
-        if (activate && !drawOnlyWhenSelected) {
+        if (enabled && !drawSelected) {
             DrawGizmos();
         }
     }
 
     void OnDrawGizmosSelected() {
-        if (activate && drawOnlyWhenSelected) {
+        if (enabled && drawSelected) {
             DrawGizmos();
         }
     }
@@ -73,6 +79,7 @@ public class DrawTriggerCollider : AMonoBase {
             var colliderCenter = _transform.position + SphereCollider.center;
             Gizmos.DrawWireSphere(colliderCenter, SphereCollider.radius);
         }
+        Gizmos.color = oldColor;
     }
 
     protected override void Cleanup() { }

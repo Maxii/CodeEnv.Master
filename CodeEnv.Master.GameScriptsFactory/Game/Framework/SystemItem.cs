@@ -140,7 +140,6 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
     private ITrackingWidget InitializeTrackingLabel() {
         float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
         var trackingLabel = TrackingWidgetFactory.Instance.CreateUITrackingLabel(this, WidgetPlacement.Above, minShowDistance);
-        trackingLabel.Name = DisplayName + CommonTerms.Label;
         trackingLabel.Set(DisplayName);
         trackingLabel.Color = Owner.Color;
         return trackingLabel;
@@ -195,7 +194,7 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
     }
 
     private void AttachSettlement(SettlementCmdItem settlementCmd) {
-        Transform settlementUnit = settlementCmd.transform.parent;
+        Transform settlementUnit = settlementCmd.UnitContainer;
         var orbiter = Data.SettlementOrbitSlot.AssumeOrbit(settlementUnit, "Settlement Orbiter"); // IMPROVE the only remaining OrbitSlot held in Data
         orbiter.IsOrbiterInMotion = settlementCmd.__OrbiterMoves;
         // enabling (or not) the system orbiter can also be handled by the SettlementCreator once isRunning

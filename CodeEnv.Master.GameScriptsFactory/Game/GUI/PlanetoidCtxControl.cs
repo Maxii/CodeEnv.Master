@@ -58,6 +58,7 @@ public class PlanetoidCtxControl : ACtxControl {
             case FleetDirective.Explore:
                 return _planetoidMenuOperator.GetHumanPlayerIntelCoverage() == IntelCoverage.Comprehensive;
             case FleetDirective.Move:
+                return false;
             case FleetDirective.Guard:
                 return _remotePlayerOwnedSelectedItem.Owner.IsEnemyOf(_planetoidMenuOperator.Owner);
             default:

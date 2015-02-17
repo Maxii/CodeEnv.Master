@@ -40,6 +40,7 @@ public class UniverseCenterItem : ADiscernibleItem, IShipOrbitable, IDetectable 
         get { return _publisher = _publisher ?? new UniverseCenterPublisher(Data); }
     }
 
+    private DetectionHandler _detectionHandler;
     private ICtxControl _ctxControl;
 
     #region Initialization
@@ -49,6 +50,7 @@ public class UniverseCenterItem : ADiscernibleItem, IShipOrbitable, IDetectable 
         var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
         Radius = meshRenderer.bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
         D.Assert(Mathfx.Approx(Radius, TempGameValues.UniverseCenterRadius, 1F));    // 50
+        collider.enabled = false;
         collider.isTrigger = false;
         (collider as SphereCollider).radius = Radius;
         InitializeShipOrbitSlot();
@@ -68,7 +70,9 @@ public class UniverseCenterItem : ADiscernibleItem, IShipOrbitable, IDetectable 
         keepoutZoneCollider.radius = ShipOrbitSlot.InnerRadius;
     }
 
-    protected override void InitializeModelMembers() { }
+    protected override void InitializeModelMembers() {
+        _detectionHandler = new DetectionHandler(Data);
+    }
 
     protected override void InitializeViewMembersOnDiscernible() {
         base.InitializeViewMembersOnDiscernible();
@@ -102,6 +106,11 @@ public class UniverseCenterItem : ADiscernibleItem, IShipOrbitable, IDetectable 
 
     #region Model Methods
 
+    public override void CommenceOperations() {
+        base.CommenceOperations();
+        collider.enabled = true;
+    }
+
     public UniverseCenterReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     protected override void OnOwnerChanged() {
@@ -133,6 +142,9 @@ public class UniverseCenterItem : ADiscernibleItem, IShipOrbitable, IDetectable 
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
         }
+        if (_detectionHandler != null) {
+            _detectionHandler.Dispose();
+        }
     }
 
     #endregion
@@ -161,16 +173,17 @@ public class UniverseCenterItem : ADiscernibleItem, IShipOrbitable, IDetectable 
 
     #endregion
 
-    #region IDetectableItem Members
+    #region IDetectable Members
 
-    public void OnDetectionGained(ICommandItem cmdItem, DistanceRange sensorRange) {
-        throw new NotImplementedException();
+    public void OnDetection(ICommandItem cmdItem, DistanceRange sensorRange) {
+        _detectionHandler.OnDetection(cmdItem, sensorRange);
     }
 
     public void OnDetectionLost(ICommandItem cmdItem, DistanceRange sensorRange) {
-        throw new NotImplementedException();
+        _detectionHandler.OnDetectionLost(cmdItem, sensorRange);
     }
 
     #endregion
+
 }
 

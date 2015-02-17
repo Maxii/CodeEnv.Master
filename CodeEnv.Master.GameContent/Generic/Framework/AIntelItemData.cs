@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -57,21 +57,28 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="player">The player.</param>
         /// <returns></returns>
         protected virtual AIntel InitializeIntelState(Player player) {
-            AIntel beginningIntel = new Intel();
-            beginningIntel.CurrentCoverage = Owner == player ? IntelCoverage.Comprehensive : IntelCoverage.None;
-            return beginningIntel;
+            var coverage = IsAllIntelCoverageComprehensive || Owner == player ? IntelCoverage.Comprehensive : IntelCoverage.None;
+            return new Intel(coverage);
         }
 
-        public void SetHumanPlayerIntelCoverage(IntelCoverage newCoverage) {
-            SetIntelCoverage(_gameMgr.HumanPlayer, newCoverage);
+        protected bool IsAllIntelCoverageComprehensive {
+            get { return DebugSettings.Instance.AllIntelCoverageComprehensive; }
         }
 
-        public void SetIntelCoverage(Player player, IntelCoverage newCoverage) {
+        public bool TrySetHumanPlayerIntelCoverage(IntelCoverage newCoverage) {
+            return TrySetIntelCoverage(_gameMgr.HumanPlayer, newCoverage);
+        }
+
+        public bool TrySetIntelCoverage(Player player, IntelCoverage newCoverage) {
             var playerIntel = GetPlayerIntel(player);
-            if (playerIntel.CurrentCoverage != newCoverage) {
+            if (playerIntel.IsCoverageChangeAllowed(newCoverage)) {
                 playerIntel.CurrentCoverage = newCoverage;
                 OnPlayerIntelCoverageChanged(player);
+                return true;
             }
+            //D.Log("{0} properly ignored changing {1}'s IntelCoverage from {2} to {3}.",
+            //    FullName, player.LeaderName, playerIntel.CurrentCoverage.GetName(), newCoverage.GetName());
+            return false;
         }
 
         public IntelCoverage GetHumanPlayerIntelCoverage() { return GetIntelCoverage(_gameMgr.HumanPlayer); }

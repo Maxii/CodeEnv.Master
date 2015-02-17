@@ -50,14 +50,26 @@ public class FormationStationMonitor : AMonoBase, INavigableTarget {
     /// </summary>
     public Vector3 VectorToStation { get { return Position - AssignedShip.Position; } }
 
+    /// <summary>
+    /// Control for enabling/disabling the monitor's collider.
+    /// </summary>
+    private bool IsOperational {
+        get { return _collider.enabled; }
+        set {
+            if (_collider.enabled != value) {
+                _collider.enabled = value;
+                OnIsOperationalChanged();
+            }
+        }
+    }
+
     private SphereCollider _collider;
 
     protected override void Awake() {
         base.Awake();
         _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
         _collider.isTrigger = true;
-        _collider.enabled = false;
-        // stations control collider enabled when AssignedShip changes
+        IsOperational = false;  // IsOperational controlled when AssignedShip changes
     }
 
     void OnTriggerEnter(Collider other) {
@@ -90,10 +102,10 @@ public class FormationStationMonitor : AMonoBase, INavigableTarget {
             // Note: OnTriggerEnter appears to detect ship is onStation once the collider is enabled even if already inside
             // Unfortunately, that detection has a small delay (collider init?) so this is needed to fill the gap
             IsOnStation = IsShipAlreadyOnStation;
-            _collider.enabled = true;
+            IsOperational = true;
         }
         else {
-            _collider.enabled = false;
+            IsOperational = false;
             IsOnStation = false;
         }
     }
@@ -106,6 +118,8 @@ public class FormationStationMonitor : AMonoBase, INavigableTarget {
         _transform.position += StationOffset;
         // UNCLEAR when an FST changes its offset (location), does OnTriggerEnter/Exit detect it?
     }
+
+    private void OnIsOperationalChanged() { }
 
     /// <summary>
     /// Manually detects whether the ship is on station by seeing whether the ship's

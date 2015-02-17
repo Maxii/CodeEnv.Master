@@ -159,7 +159,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// The layers the main 3DCamera is allowed to render.
     /// </summary>
     private LayerMask _mainCameraCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
-        Layers.DummyTarget, Layers.UniverseEdge, Layers.Ship, Layers.Facility, Layers.Planetoid, Layers.Star, Layers.SystemOrbitalPlane);
+        Layers.DummyTarget, Layers.UniverseEdge, Layers.ShipCull, Layers.FacilityCull, Layers.PlanetoidCull, Layers.StarCull, Layers.SystemOrbitalPlane);
 
     private LayerMask _universeEdgeOnlyMask = LayerMaskExtensions.CreateInclusiveMask(Layers.UniverseEdge);
     private LayerMask _dummyTargetOnlyMask = LayerMaskExtensions.CreateInclusiveMask(Layers.DummyTarget);
@@ -284,10 +284,10 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
         //_camera.layerCullSpherical = true;
         float[] cullDistances = new float[32];
-        cullDistances[(int)Layers.Ship] = TempGameValues.ShipMaxRadius * AnimationSettings.Instance.ShipLayerCullingDistanceFactor;   // 5
-        cullDistances[(int)Layers.Facility] = TempGameValues.FacilityMaxRadius * AnimationSettings.Instance.FacilityLayerCullingDistanceFactor;  // 12.5
-        cullDistances[(int)Layers.Planetoid] = TempGameValues.PlanetoidMaxRadius * AnimationSettings.Instance.PlanetoidLayerCullingDistanceFactor;   // 500
-        cullDistances[(int)Layers.Star] = TempGameValues.StarMaxRadius * AnimationSettings.Instance.StarLayerCullingDistanceFactor; // 3000
+        cullDistances[(int)Layers.ShipCull] = TempGameValues.ShipMaxRadius * AnimationSettings.Instance.ShipLayerCullingDistanceFactor;   // 5
+        cullDistances[(int)Layers.FacilityCull] = TempGameValues.FacilityMaxRadius * AnimationSettings.Instance.FacilityLayerCullingDistanceFactor;  // 12.5
+        cullDistances[(int)Layers.PlanetoidCull] = TempGameValues.PlanetoidMaxRadius * AnimationSettings.Instance.PlanetoidLayerCullingDistanceFactor;   // 500
+        cullDistances[(int)Layers.StarCull] = TempGameValues.StarMaxRadius * AnimationSettings.Instance.StarLayerCullingDistanceFactor; // 3000
         _camera.layerCullDistances = cullDistances;
     }
 

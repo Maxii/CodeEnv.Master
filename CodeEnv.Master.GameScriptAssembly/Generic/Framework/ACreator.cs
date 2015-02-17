@@ -50,7 +50,6 @@ public abstract class ACreator : AMonoBase {
     public int sensorsPerElement = 2;
     public int countermeasuresPerCmd = 2;
 
-    public bool toCycleIntelCoverage = false;
     public bool enableTrackingLabel = false;
 
 }

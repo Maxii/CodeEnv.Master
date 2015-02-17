@@ -34,9 +34,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override AIntel InitializeIntelState(Player player) {
-            AIntel beginningIntel = new ImprovingIntel();
-            beginningIntel.CurrentCoverage = Owner == player ? IntelCoverage.Comprehensive : IntelCoverage.Aware;
-            return beginningIntel;
+            var coverage = IsAllIntelCoverageComprehensive || Owner == player ? IntelCoverage.Comprehensive : IntelCoverage.Aware;
+            return new ImprovingIntel(coverage);
         }
 
         protected override void OnOwnerChanged() {

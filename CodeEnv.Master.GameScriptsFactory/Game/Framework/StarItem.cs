@@ -27,7 +27,7 @@ using UnityEngine;
 public class StarItem : AIntelItem, IShipOrbitable, IDetectable {
 
     private static LayerMask _starLightCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
-    Layers.Ship, Layers.Facility, Layers.Planetoid, Layers.Star);
+    Layers.ShipCull, Layers.FacilityCull, Layers.PlanetoidCull, Layers.StarCull);
 
     public StarCategory category;
 
@@ -53,6 +53,7 @@ public class StarItem : AIntelItem, IShipOrbitable, IDetectable {
 
     private Billboard _billboard;
     private SystemItem _system;
+    private DetectionHandler _detectionHandler;
     private ICtxControl _ctxControl;
 
     #region Initialization
@@ -61,6 +62,7 @@ public class StarItem : AIntelItem, IShipOrbitable, IDetectable {
         base.InitializeLocalReferencesAndValues();
         var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
         Radius = meshRenderer.bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
+        collider.enabled = false;
         collider.isTrigger = false;
         (collider as SphereCollider).radius = Radius;
         InitializeShipOrbitSlot();
@@ -84,6 +86,7 @@ public class StarItem : AIntelItem, IShipOrbitable, IDetectable {
     protected override void InitializeModelMembers() {
         D.Assert(category == Data.Category);
         _system = gameObject.GetSafeMonoBehaviourComponentInParents<SystemItem>();
+        _detectionHandler = new DetectionHandler(Data);
     }
 
     protected override void InitializeViewMembersOnDiscernible() {
@@ -139,6 +142,11 @@ public class StarItem : AIntelItem, IShipOrbitable, IDetectable {
 
     #region Model Methods
 
+    public override void CommenceOperations() {
+        base.CommenceOperations();
+        collider.enabled = true;
+    }
+
     public StarReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     protected override void OnOwnerChanging(Player newOwner) {
@@ -183,6 +191,9 @@ public class StarItem : AIntelItem, IShipOrbitable, IDetectable {
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
         }
+        if (_detectionHandler != null) {
+            _detectionHandler.Dispose();
+        }
     }
 
     #endregion
@@ -209,16 +220,17 @@ public class StarItem : AIntelItem, IShipOrbitable, IDetectable {
 
     #endregion
 
-    #region IDetectableItem Members
+    #region IDetectable Members
 
-    public void OnDetectionGained(ICommandItem cmdItem, DistanceRange sensorRange) {
-        throw new NotImplementedException();
+    public void OnDetection(ICommandItem cmdItem, DistanceRange sensorRange) {
+        _detectionHandler.OnDetection(cmdItem, sensorRange);
     }
 
     public void OnDetectionLost(ICommandItem cmdItem, DistanceRange sensorRange) {
-        throw new NotImplementedException();
+        _detectionHandler.OnDetectionLost(cmdItem, sensorRange);
     }
 
     #endregion
+
 }
 

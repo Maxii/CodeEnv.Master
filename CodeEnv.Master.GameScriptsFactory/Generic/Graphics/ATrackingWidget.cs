@@ -32,12 +32,17 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     /// </summary>
     public bool IsShowing { get; private set; }
 
+    private string _optionalRootName;
     /// <summary>
-    /// The name of this tracking widget gameObject.
+    /// The name to use as the root name of these gameObjects. Optional.
+    /// If not set, the root name will be the DisplayName of the Target.
+    /// The name of this gameObject will be the root name supplemented
+    /// by the Type name. The name of the child gameObject holding the widget
+    /// will be the root name supplemented by the widget Type name.
     /// </summary>
-    public string Name {
-        get { return _transform.name; }
-        set { _transform.name = value; }
+    public string OptionalRootName {
+        private get { return _optionalRootName; }
+        set { SetProperty<string>(ref _optionalRootName, value, "OptionalRootName", OnOptionalRootNameChanged); }
     }
 
     private GameColor _color = GameColor.White;
@@ -264,6 +269,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     protected virtual void RefreshPositionOnUpdate() { }
 
     protected virtual void OnTargetChanged() {
+        RenameGameObjects();
         RefreshWidgetValues();
     }
 
@@ -287,6 +293,18 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     private void OnIsHighlightedChanged() {
         Widget.color = IsHighlighted && IsShowing ? HighlightColor.ToUnityColor() : Color.ToUnityColor();
         //D.Log("{0} Highlighting changed to {1}.".Inject(gameObject.name, toHighlight));
+    }
+
+    private void OnOptionalRootNameChanged() {
+        RenameGameObjects();
+    }
+
+    private void RenameGameObjects() {
+        if (Target != null) {   // Target can be null if OptionalRootName is set before Target
+            var rootName = OptionalRootName.IsNullOrEmpty() ? Target.DisplayName : OptionalRootName;
+            _transform.name = rootName + Constants.Space + GetType().Name;
+            WidgetTransform.name = rootName + Constants.Space + Widget.GetType().Name;
+        }
     }
 
 }

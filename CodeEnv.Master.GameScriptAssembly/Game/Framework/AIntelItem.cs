@@ -46,8 +46,6 @@ public abstract class AIntelItem : ADiscernibleItem {
 
     public IntelCoverage GetHumanPlayerIntelCoverage() { return Data.GetHumanPlayerIntelCoverage(); }
 
-    public void SetHumanPlayerIntelCoverage(IntelCoverage coverage) { Data.SetHumanPlayerIntelCoverage(coverage); }
-
     protected virtual void OnHumanPlayerIntelCoverageChanged() {
         AssessDiscernability();
         if (IsHudShowing) {
@@ -57,7 +55,7 @@ public abstract class AIntelItem : ADiscernibleItem {
     }
 
     public override void AssessDiscernability() {
-        IsDiscernible = InCameraLOS && GetHumanPlayerIntelCoverage() != IntelCoverage.None;
+        IsDiscernible = InCameraLOS && Data.GetHumanPlayerIntelCoverage() != IntelCoverage.None;
     }
 
     #endregion

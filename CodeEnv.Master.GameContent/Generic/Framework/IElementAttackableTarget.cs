@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
 
         Player Owner { get; }
 
-        bool IsAliveAndOperating { get; }
+        bool IsOperational { get; }
 
         void TakeHit(CombatStrength attackerWeaponStrength);
 

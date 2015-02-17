@@ -34,6 +34,19 @@ public class TopographyMonitor : AMonoBase {
         }
     }
 
+    /// <summary>
+    /// Control for enabling/disabling the monitor's collider.
+    /// </summary>
+    private bool IsOperational {
+        get { return _collider.enabled; }
+        set {
+            if (_collider.enabled != value) {
+                _collider.enabled = value;
+                OnIsOperationalChanged();
+            }
+        }
+    }
+
     public Topography SurroundingTopography { get; set; }   // IMPROVE ItemMonitored should know about their surrounding topology
 
     private SphereCollider _collider;
@@ -42,8 +55,7 @@ public class TopographyMonitor : AMonoBase {
         base.Awake();
         _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
         _collider.isTrigger = true;
-        _collider.enabled = false;
-        // collider enabled when ItemMonitored added
+        IsOperational = false;  // IsOperational controlled when ItemMonitored added
     }
 
     void OnTriggerEnter(Collider other) {
@@ -68,8 +80,10 @@ public class TopographyMonitor : AMonoBase {
 
     private void OnItemMonitoredChanged() {
         _collider.radius = ItemMonitored.Radius;
-        _collider.enabled = true;
+        IsOperational = true;
     }
+
+    private void OnIsOperationalChanged() { }
 
     protected override void Cleanup() { }
 

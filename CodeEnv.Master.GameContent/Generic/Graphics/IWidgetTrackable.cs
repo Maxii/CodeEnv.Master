@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IWidgetTrackable {
 
+        string DisplayName { get; }
+
         /// <summary>
         /// Gets the transform of this IWidgetTrackable target.
         /// </summary>

@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -30,14 +30,10 @@ namespace CodeEnv.Master.GameContent {
         public override IntelCoverage CurrentCoverage {
             get { return base.CurrentCoverage; }
             set {
-                if (value < CurrentCoverage) {
-                    throw new InvalidOperationException("{0} does not support regressing coverage from {1} to {2}.".Inject(GetType().Name, value.GetName(), CurrentCoverage.GetName()));
-                }
+                D.Assert(IsCoverageChangeAllowed(value));
                 base.CurrentCoverage = value;
             }
         }
-
-        public ImprovingIntel() : base() { }
 
         public ImprovingIntel(IntelCoverage currentCoverage) : base(currentCoverage) { }
 
@@ -47,8 +43,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="intelToCopy">The intel to copy.</param>
         public ImprovingIntel(ImprovingIntel intelToCopy)
-            : this() {
-            this.CurrentCoverage = intelToCopy.CurrentCoverage;
+            : this(intelToCopy.CurrentCoverage) { }
+
+        public override bool IsCoverageChangeAllowed(IntelCoverage newCoverage) {
+            return newCoverage > CurrentCoverage;
         }
 
         public override string ToString() {

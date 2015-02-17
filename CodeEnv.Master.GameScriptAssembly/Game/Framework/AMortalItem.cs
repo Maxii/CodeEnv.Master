@@ -39,7 +39,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     /// <summary>
     /// Flag indicating whether this MortalItem is alive and operating.
     /// </summary>
-    public bool IsAliveAndOperating { get; private set; }
+    //public bool IsOperational { get; private set; }
 
     public AudioClip dying;
     public AudioClip hit;
@@ -65,14 +65,13 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        IsAliveAndOperating = true;
         Data.Countermeasures.ForAll(cm => cm.IsOperational = true);
     }
 
     public void AddCountermeasure(CountermeasureStat cmStat) {
         Countermeasure countermeasure = new Countermeasure(cmStat);
         Data.AddCountermeasure(countermeasure);
-        if (IsAliveAndOperating) {
+        if (IsOperational) {
             // we have already commenced operations so start the new countermeasure
             // countermeasures added before operations have commenced are started when operations commence
             countermeasure.IsOperational = true;
@@ -80,7 +79,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     }
 
     public void RemoveCountermeasure(Countermeasure countermeasure) {
-        D.Assert(IsAliveAndOperating);
+        D.Assert(IsOperational);
         countermeasure.IsOperational = false;
         Data.RemoveCountermeasure(countermeasure);
     }
@@ -104,7 +103,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     /// </summary>
     protected virtual void InitiateDeath() {
         D.Log("{0}.InitiateDeath() called.", FullName);
-        IsAliveAndOperating = false;
+        IsOperational = false;
         OnDeath();
     }
 

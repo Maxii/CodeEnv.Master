@@ -43,14 +43,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     public AudioClip refitting;
     public AudioClip disbanding;
 
-    public virtual bool IsHQElement { get; set; }
-
     public new AUnitElementItemData Data {
         get { return base.Data as AUnitElementItemData; }
         set { base.Data = value; }
     }
-
-    public override string FullName { get { return IsHQElement ? "[HQ]" + base.FullName : base.FullName; } }
 
     public AUnitCmdItem Command { get; set; }
 
@@ -65,6 +61,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     private Renderer _meshRenderer;
     private Animation _animation;
     private ITrackingWidget _icon;
+    private DetectionHandler _detectionHandler;
 
     #region Initialization
 
@@ -72,14 +69,19 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
         base.InitializeLocalReferencesAndValues();
         _gameSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();
         // Note: Radius is set in derived classes due to the difference in meshes
-        collider.isTrigger = false;
         collider.enabled = false;
+        collider.isTrigger = false;
     }
 
     protected override void Subscribe() {
         base.Subscribe();
         _subscribers.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
         _subscribers.Add(PlayerPrefsManager.Instance.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsElementIconsEnabled, OnElementIconsEnabledChanged));
+    }
+
+    protected override void InitializeModelMembers() {
+        //D.Log("{0}.InitializeModelMembers() called.", FullName);
+        _detectionHandler = new DetectionHandler(Data);
     }
 
     protected override void SubscribeToDataValueChanges() {
@@ -172,7 +174,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
         }
         Data.AddWeapon(weapon);
         weapon.onReadyToFireOnEnemyChanged += OnWeaponReadyToFireOnEnemyChanged;
-        if (IsAliveAndOperating) {
+        if (IsOperational) {
             // we have already commenced operations so start the new weapon
             // weapons added before operations have commenced are started when operations commence
             weapon.IsOperational = true;
@@ -186,7 +188,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
             Command.AttachSensorsToMonitors(sensor);
         }
         Data.AddSensor(sensor);
-        if (IsAliveAndOperating) {
+        if (IsOperational) {
             // we have already commenced operations so start the new sensor
             // sensors added before operations have commenced are started when operations commence
             sensor.IsOperational = true;
@@ -195,7 +197,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
 
     public void RemoveSensor(Sensor sensor) {
         D.Assert(Command != null);
-        D.Assert(IsAliveAndOperating);
+        D.Assert(IsOperational);
         Command.DetachSensorsFromMonitors(sensor);
         sensor.IsOperational = false;
         Data.RemoveSensor(sensor);
@@ -207,7 +209,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     public void RemoveWeapon(Weapon weapon) {
-        D.Assert(IsAliveAndOperating);
+        D.Assert(IsOperational);
         var monitor = weapon.RangeMonitor;
         bool isRangeMonitorStillInUse = monitor.Remove(weapon);
 
@@ -434,6 +436,13 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
 
     #region Cleanup
 
+    protected override void Cleanup() {
+        base.Cleanup();
+        if (_detectionHandler != null) {
+            _detectionHandler.Dispose();
+        }
+    }
+
     // no need to destroy _icon as it is a child of this element
 
     #endregion
@@ -444,7 +453,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     #region IElementAttackableTarget Members
 
     public override void TakeHit(CombatStrength attackerWeaponStrength) {
-        if (!IsAliveAndOperating) { return; }
+        if (!IsOperational) { return; }
 
         CombatStrength damageSustained = attackerWeaponStrength - Data.DefensiveStrength;
         if (damageSustained.Combined == Constants.ZeroF) {
@@ -458,7 +467,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
         if (!isElementAlive) {
             InitiateDeath();    // should immediately propogate thru to Cmd's alive status
         }
-        if (IsHQElement && Command.IsAliveAndOperating) {
+        if (Data.IsHQElement && Command.IsOperational) {
             isCmdHit = Command.__CheckForDamage(isElementAlive, damageSustained, damageSeverity);
         }
 
@@ -503,14 +512,14 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
 
     #endregion
 
-    #region IDetectableItem Members
+    #region IDetectable Members
 
-    public void OnDetectionGained(ICommandItem cmdItem, DistanceRange sensorRange) {
-        throw new NotImplementedException();
+    public void OnDetection(ICommandItem cmdItem, DistanceRange sensorRange) {
+        _detectionHandler.OnDetection(cmdItem, sensorRange);
     }
 
     public void OnDetectionLost(ICommandItem cmdItem, DistanceRange sensorRange) {
-        throw new NotImplementedException();
+        _detectionHandler.OnDetectionLost(cmdItem, sensorRange);
     }
 
     #endregion

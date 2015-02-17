@@ -52,6 +52,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\DetectionHandler.cs" />
     <Compile Include="Generic\Framework\AItemReport.cs" />
     <Compile Include="Generic\Graphics\AItemLabelTextFactory.cs" />
     <Compile Include="Generic\Framework\AItemPublisher.cs" />

@@ -113,19 +113,15 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IShipOrbitable {
                     CurrentState = BaseState.ExecuteAttackOrder;
                     break;
                 case BaseDirective.StopAttack:
-
-                    break;
-                case BaseDirective.Repair:
-
-                    break;
-                case BaseDirective.Refit:
-
-                    break;
-                case BaseDirective.Disband:
-
                     break;
                 case BaseDirective.SelfDestruct:
                     KillUnit();
+                    break;
+
+                case BaseDirective.Repair:
+                case BaseDirective.Refit:
+                case BaseDirective.Disband:
+                    D.Warn("{0}.{1} is not currently implemented.", typeof(BaseDirective).Name, order.GetName());
                     break;
                 case BaseDirective.None:
                 default:

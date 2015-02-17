@@ -182,7 +182,7 @@ public class SystemCreator : AMonoBase {
             InitializeTopographyMonitor();
             BeginSystemOperations(onCompletion: delegate {
                 // wait to allow any cellestial objects using the IEnumerator StateMachine to enter their starting state
-                __SetIntelCoverage();
+                //__SetIntelCoverage();
                 DestroyCreationObject(); // destruction deferred so __UniverseInitializer can complete its work
             });
         }
@@ -600,14 +600,6 @@ public class SystemCreator : AMonoBase {
                 onCompletion();
             }
         });
-    }
-
-    private void __SetIntelCoverage() {
-        LogEvent();
-        // Stars, Planets and Moons use ImprovingIntel which means once a level is achieved it cannot be reduced
-        _star.SetHumanPlayerIntelCoverage(IntelCoverage.Comprehensive);
-        _planets.ForAll(p => p.SetHumanPlayerIntelCoverage(IntelCoverage.Comprehensive));
-        _moons.ForAll(m => m.SetHumanPlayerIntelCoverage(IntelCoverage.Comprehensive));
     }
 
     private void BeginSystemOperations(Action onCompletion) {

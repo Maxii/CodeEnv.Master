@@ -53,7 +53,6 @@ public class SystemCtxControl : ACtxControl {
     protected override bool IsRemoteFleetMenuItemDisabled(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Explore:
-            //return _systemMenuOperator.HumanPlayerIntelCoverage == IntelCoverage.Comprehensive;
             case FleetDirective.Move:
             case FleetDirective.Guard:
             case FleetDirective.Patrol:

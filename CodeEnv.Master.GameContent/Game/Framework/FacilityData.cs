@@ -26,6 +26,14 @@ namespace CodeEnv.Master.GameContent {
 
         public FacilityCategory Category { get; private set; }
 
+        public override bool IsHQElement {  // HACK temp override to add Assertion protection
+            get { return base.IsHQElement; }
+            set {
+                D.Assert(value && Category == FacilityCategory.CentralHub);
+                base.IsHQElement = value;
+            }
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="FacilityData" /> class.
         /// </summary>

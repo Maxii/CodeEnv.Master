@@ -88,9 +88,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     /// initializes the HudManager in the base method. Discernible Items wish to defer this
     /// initialization until first discernible, aka in InitializeViewMembersOnDiscernible()..
     /// </remarks>
-    protected override void InitializeViewMembers() {
-        //AssessDiscernability(); // too early. Now occurs in CommenceOperations()
-    }
+    protected override void InitializeViewMembers() { }
 
     /// <summary>
     /// Called when the Item first becomes discernible to the player, this method initializes the 
@@ -136,6 +134,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
             _isViewMembersOnDiscernibleInitialized = true;
         }
         AssessHighlighting();
+        //D.Log("{0}.IsDiscernible changed to {1}.", FullName, IsDiscernible);
     }
 
     /// <summary>
@@ -223,7 +222,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     #region Mouse Events
 
     protected virtual void OnHover(bool isOver) {
-        D.Log("{0}.OnHover({1}) called.", FullName, isOver);
+        //D.Log("{0}.OnHover({1}) called.", FullName, isOver);
         if (IsDiscernible && isOver) {
             ShowHud(true);
             ShowSphericalHighlight(true);
@@ -234,7 +233,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     }
 
     protected virtual void OnClick() {
-        D.Log("{0}.OnClick() called.", FullName);
+        //D.Log("{0}.OnClick() called.", FullName);
         if (IsDiscernible) {
             if (_inputHelper.IsLeftMouseButton) {
                 KeyCode notUsed;
@@ -298,7 +297,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     /// Indicates whether this instance is currently eligible to be a camera target for zooming, focusing or following.
     /// e.g. - the camera should not know the object exists when it is not discernible to the human player.
     /// </summary>
-    public virtual bool IsEligible { get { return IsDiscernible; } }
+    public bool IsEligible { get { return IsDiscernible; } }
 
     public abstract float MinimumCameraViewingDistance { get; }
 

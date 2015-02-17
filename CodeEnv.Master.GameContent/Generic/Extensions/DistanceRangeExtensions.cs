@@ -48,9 +48,9 @@ namespace CodeEnv.Master.GameContent {
                 case DistanceRange.Short:
                     return 120F * speciesModifier;
                 case DistanceRange.Medium:
-                    return 1200F * speciesModifier;
+                    return 500F * speciesModifier;
                 case DistanceRange.Long:
-                    return 3600F * speciesModifier;
+                    return 2000F * speciesModifier;
                 case DistanceRange.None:
                     return Constants.ZeroF;
                 default:

@@ -92,6 +92,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     }
 
     protected override void InitializeModelMembers() {
+        base.InitializeModelMembers();
         D.Assert(category == Data.Category);
         _helm = new ShipHelm(this);
         CurrentState = ShipState.None;
@@ -168,7 +169,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
             if (CurrentOrder.Source != OrderSource.ElementCaptain) {
                 // the current order is from the Captain's superior so retain it
                 standingOrder = CurrentOrder;
-                if (IsHQElement) {
+                if (Data.IsHQElement) {
                     // the captain is overriding his superior on the flagship so declare an emergency   // HACK
                     Command.__OnHQElementEmergency();
                 }
@@ -210,9 +211,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                     // issued when peace declared while attacking
                     CurrentState = ShipState.Idling;
                     break;
-                case ShipDirective.Disband:
-                    CurrentState = ShipState.Disbanding;
-                    break;
                 case ShipDirective.Entrench:
                     CurrentState = ShipState.Entrenching;
                     break;
@@ -222,9 +220,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                 case ShipDirective.Repair:
                     CurrentState = ShipState.ExecuteRepairOrder;
                     break;
-                case ShipDirective.Refit:
-                    CurrentState = ShipState.Refitting;
-                    break;
                 case ShipDirective.Join:
                     CurrentState = ShipState.ExecuteJoinFleetOrder;
                     break;
@@ -233,6 +228,14 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
                     break;
                 case ShipDirective.SelfDestruct:
                     InitiateDeath();
+                    break;
+
+                case ShipDirective.Disband:
+                //CurrentState = ShipState.Disbanding;
+                //break;
+                case ShipDirective.Refit:
+                    //CurrentState = ShipState.Refitting;
+                    D.Warn("{0}.{1} is not currently implemented.", typeof(ShipDirective).Name, order.GetName());
                     break;
                 case ShipDirective.None:
                 default:
@@ -350,7 +353,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     /// </summary>
     /// <param name="toShow">if set to <c>true</c> [automatic show].</param>
     private void ShowVelocityRay(bool toShow) {
-        if (DebugSettings.Instance.EnableShipVelocityRays && !IsHQElement) {
+        if (DebugSettings.Instance.EnableShipVelocityRays && !Data.IsHQElement) {
             if (!toShow && _velocityRay == null) {
                 return;
             }
@@ -423,7 +426,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
             }
         }
         else {
-            if (!IsHQElement) {
+            if (!Data.IsHQElement) {
                 //D.Log("{0} is already on station.", FullName);
             }
         }
@@ -671,7 +674,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         _ordersTarget = CurrentOrder.Target as IUnitAttackableTarget;
         TryBreakOrbit();
 
-        while (_ordersTarget.IsAliveAndOperating) {
+        while (_ordersTarget.IsOperational) {
             // once picked, _primaryTarget cannot be null when _ordersTarget is alive
             bool inRange = PickPrimaryTarget(out _primaryTarget);
             if (inRange) {
@@ -757,8 +760,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     void ExecuteJoinFleetOrder_OnMakeFleetCompleted(FleetCmdItem transferFleet) {
         LogEvent();
-        transferFleet.SetHumanPlayerIntelCoverage(IntelCoverage.Comprehensive);
-        // TODO PlayerIntelCoverage should be set through sensor detection
+        //transferFleet.SetHumanPlayerIntelCoverage(IntelCoverage.Comprehensive);
 
         // issue a JoinFleet order to our transferFleet
         var fleetToJoin = CurrentOrder.Target as FleetCmdItem;
@@ -766,17 +768,6 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
         transferFleet.CurrentOrder = joinFleetOrder;
         //// once joinFleetOrder takes, this ship state will be changed by its 'new'  transferFleet Command
     }
-    //void ExecuteJoinFleetOrder_OnMakeFleetCompleted(FleetCommandItem transferFleet) {
-    //    LogEvent();
-    //    transferFleet.PlayerIntelCoverage = IntelCoverage.Comprehensive;
-    //    // TODO PlayerIntelCoverage should be set through sensor detection
-
-    //    // issue a JoinFleet order to our transferFleet
-    //    var fleetToJoin = CurrentOrder.Target as FleetCommandItem;
-    //    FleetOrder joinFleetOrder = new FleetOrder(FleetDirective.Join, fleetToJoin);
-    //    transferFleet.CurrentOrder = joinFleetOrder;
-    //    //// once joinFleetOrder takes, this ship state will be changed by its 'new'  transferFleet Command
-    //}
 
     void ExecuteJoinFleetOrder_ExitState() {
         LogEvent();
@@ -1006,7 +997,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     private void __HandleDestinationUnreachable() {
         D.Warn("{0} reporting destination {1} as unreachable.", FullName, _helm.Target.FullName);
         //D.Warn("{0} reporting destination {1} as unreachable.", FullName, _helm.DestinationInfo.Target.FullName);
-        if (IsHQElement) {
+        if (Data.IsHQElement) {
             Command.__OnHQElementEmergency();   // HACK stays in this state, assuming this will cause a new order from Cmd
         }
         CurrentState = ShipState.Idling;
@@ -1014,11 +1005,10 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     private bool AssessWhetherToReturnToStation(out Speed speed) {
         speed = Speed.None;
-        if (IsHQElement) {
+        if (Data.IsHQElement) {
             D.Warn("Flagship {0} at {1} is not OnStation! Station: Location = {2}, Radius = {3}.", FullName, Position, FormationStation.Position, FormationStation.Radius);
             return false;
         }
-        //D.Assert(!IsHQElement, "Flagship {0} is not onStation!".Inject(FullName)); // HQElement should never be OffStation
         D.Assert(!FormationStation.IsOnStation, "{0} is already onStation!".Inject(FullName));
         if (Command.HQElement._helm.IsAutoPilotEngaged) {
             // Flagship still has a destination so don't bother
@@ -1044,7 +1034,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
     /// <param name="chosenTarget">The chosen target from orders or null if no targets remain alive.</param>
     /// <returns> <c>true</c> if the target is in range, <c>false</c> otherwise.</returns>
     private bool PickPrimaryTarget(out IElementAttackableTarget chosenTarget) {
-        D.Assert(_ordersTarget != null && _ordersTarget.IsAliveAndOperating, "{0}'s target from orders is null or dead.".Inject(Data.FullName));
+        D.Assert(_ordersTarget != null && _ordersTarget.IsOperational, "{0}'s target from orders is null or dead.".Inject(Data.FullName));
         bool isTargetInRange = false;
         var uniqueEnemyTargetsInRange = Enumerable.Empty<IElementAttackableTarget>();
         foreach (var rangeMonitor in _weaponRangeMonitors) {

@@ -115,9 +115,8 @@ namespace CodeEnv.Master.GameContent {
                 {LabelContentID.OrbitalSpeed, Constants.FormatFloat_2DpMax}
         };
 
-
         protected static IDictionary<LabelID, bool> _includeUnknownLookup = new Dictionary<LabelID, bool>() {
-            {LabelID.CursorHud, false }
+            {LabelID.CursorHud, true }
             // TODO
         };
 

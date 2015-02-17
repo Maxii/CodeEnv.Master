@@ -183,6 +183,17 @@ namespace CodeEnv.Master.Common {
             private set { _allowEnemyOrders = value; }
         }
 
+        private bool _allIntelCoverageComprehensive;
+        public bool AllIntelCoverageComprehensive {
+            get {
+                if (!isPropertyValuesInitialized) {
+                    InitializePropertyValues();
+                }
+                return _allIntelCoverageComprehensive;
+            }
+            private set { _allIntelCoverageComprehensive = value; }
+        }
+
         private DebugSettings() {
             Initialize();
         }

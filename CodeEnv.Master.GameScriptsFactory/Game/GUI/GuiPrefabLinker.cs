@@ -31,9 +31,10 @@ public class GuiPrefabLinker : AMonoBase {
 
     /// <summary>
     /// A Window or WindowSystem prefab gameObject that has one or more embedded window
-    /// menus
+    /// menus.
     /// </summary>
     public GameObject linkedPrefab;
+
     /// <summary>
     /// The button (w/UIPlayAnimation script) that launches the topLevel WindowMenu embedded
     /// in the linkedPrefab.

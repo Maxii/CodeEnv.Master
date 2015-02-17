@@ -49,6 +49,7 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         get { return _publisher = _publisher ?? new PlanetoidPublisher(Data); }
     }
 
+    private DetectionHandler _detectionHandler;
     private ICtxControl _ctxControl;
 
     #region Initialization
@@ -57,9 +58,9 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         base.InitializeLocalReferencesAndValues();
         var meshRenderers = gameObject.GetComponentsInImmediateChildren<Renderer>();    // some planetoids have an atmosphere
         Radius = meshRenderers.First().bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
-        (collider as SphereCollider).radius = Radius;
-        collider.isTrigger = false;
         collider.enabled = false;
+        collider.isTrigger = false;
+        (collider as SphereCollider).radius = Radius;
 
         InitializeShipOrbitSlot();
         InitializeKeepoutZone();
@@ -80,6 +81,7 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
 
     protected override void InitializeModelMembers() {
         D.Assert(category == Data.Category);
+        _detectionHandler = new DetectionHandler(Data);
         CurrentState = PlanetoidState.None;
     }
 
@@ -218,6 +220,9 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
         }
+        if (_detectionHandler != null) {
+            _detectionHandler.Dispose();
+        }
     }
 
     #endregion
@@ -225,7 +230,7 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
     #region IElementAttackableTarget Members
 
     public override void TakeHit(CombatStrength attackerWeaponStrength) {
-        if (!IsAliveAndOperating) {
+        if (!IsOperational) {
             return;
         }
         LogEvent();
@@ -281,14 +286,14 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
 
     #endregion
 
-    #region IDetectableItem Members
+    #region IDetectable Members
 
-    public void OnDetectionGained(ICommandItem cmdItem, DistanceRange sensorRange) {
-        throw new NotImplementedException();
+    public void OnDetection(ICommandItem cmdItem, DistanceRange sensorRange) {
+        _detectionHandler.OnDetection(cmdItem, sensorRange);
     }
 
     public void OnDetectionLost(ICommandItem cmdItem, DistanceRange sensorRange) {
-        throw new NotImplementedException();
+        _detectionHandler.OnDetectionLost(cmdItem, sensorRange);
     }
 
     #endregion

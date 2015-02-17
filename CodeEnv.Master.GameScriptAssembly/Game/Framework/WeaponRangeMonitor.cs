@@ -30,11 +30,16 @@ using UnityEngine;
 /// </summary>
 public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
 
-    private static string _nameFormat = "{0}.{1}[{2}]";
+    private static string _fullNameFormat = "{0}.{1}[{2}, {3:0.} Units]";
+    private static string _rangeInfoFormat = "{0}, {1:0.} Units";
 
     private static HashSet<Collider> _collidersToIgnore = new HashSet<Collider>();  // UNCLEAR ever any colliders to ignore?
 
-    public string FullName { get { return _nameFormat.Inject(ParentElement.FullName, GetType().Name, Range.GetName()); } }
+    public string FullName { get { return _fullNameFormat.Inject(ParentElement.FullName, GetType().Name, Range.GetName(), _collider.radius); } }
+
+    [SerializeField]
+    [Tooltip("For Editor display only")]
+    private string _rangeInfo;
 
     private DistanceRange _range;
     public DistanceRange Range {
@@ -53,8 +58,20 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
 
     public IList<IElementAttackableTarget> EnemyTargets { get; private set; }
     public IList<IElementAttackableTarget> AllTargets { get; private set; }
-
     public IList<Weapon> Weapons { get; private set; }
+
+    /// <summary>
+    /// Control for enabling/disabling the monitor's collider.
+    /// </summary>
+    private bool IsOperational {
+        get { return _collider.enabled; }
+        set {
+            if (_collider.enabled != value) {
+                _collider.enabled = value;
+                OnIsOperationalChanged();
+            }
+        }
+    }
 
     private SphereCollider _collider;
 
@@ -67,12 +84,12 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
         AllTargets = new List<IElementAttackableTarget>();
         EnemyTargets = new List<IElementAttackableTarget>();
         Weapons = new List<Weapon>();
-        _collider.enabled = false;
+        IsOperational = false;  // IsOperational changed when the operational state of the weapons changes
     }
 
     public void Add(Weapon weapon) {
         D.Assert(!Weapons.Contains(weapon));
-
+        D.Assert(!weapon.IsOperational);
         if (Range == DistanceRange.None) {
             Range = weapon.Range;
         }
@@ -96,6 +113,7 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
         Weapons.Remove(weapon);
         weapon.onIsOperationalChanged -= OnWeaponIsOperationalChanged;
         if (Weapons.Count == Constants.Zero) {
+            IsOperational = false;
             Range = DistanceRange.None;
             return false;
         }
@@ -117,7 +135,7 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
 
     void OnTriggerEnter(Collider other) {
         if (other.isTrigger) {
-            //D.Log("{0}.OnTriggerEnter() ignored {1}.", FullName, other.name);
+            //D.Log("{0}.OnTriggerEnter() ignored TriggerCollider {1}.", FullName, other.name);
             return;
         }
 
@@ -137,7 +155,7 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
 
     void OnTriggerExit(Collider other) {
         if (other.isTrigger) {
-            // D.Log("{0}.OnTriggerExit() ignored {1}.", FullName, other.name);
+            //D.Log("{0}.OnTriggerExit() ignored TriggerCollider {1}.", FullName, other.name);
             return;
         }
 
@@ -153,7 +171,7 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
     }
 
     private void OnParentElementChanged() {
-        ParentElement.onOwnerChanged += OnOwnerChanged;
+        ParentElement.onOwnerChanged += OnParentElementOwnerChanged;
     }
 
     private void OnTargetOwnerChanged(IItem item) {
@@ -169,13 +187,32 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
         }
     }
 
-    private void OnOwnerChanged(IItem item) {
-        Refresh();
+    private void OnParentElementOwnerChanged(IItem item) {
+        _collider.radius = Range.GetWeaponRange(ParentElement.Owner);
+        _rangeInfo = _rangeInfoFormat.Inject(Range.GetName(), _collider.radius);
+        // targets must be refreshed as the definition of enemy may have changed
+        // if not operational, AllTargets is already clear. When a weapon becomes operational again, the targets will be reacquired
+        if (IsOperational) {
+            RefreshTargets();
+        }
     }
 
+    private void OnIsOperationalChanged() {
+        if (!IsOperational) {
+            var allTargetsCopy = AllTargets.ToArray();
+            allTargetsCopy.ForAll(t => Remove(t));  // clears both AllTargets and EnemyTargets
+        }
+    }
+
+    /// <summary>
+    /// Called when [range changed]. This only occurs when the first Weapon (not yet operational)
+    /// is added, or the last is removed.
+    /// </summary>
     private void OnRangeChanged() {
+        _collider.radius = Range.GetWeaponRange(ParentElement.Owner);
+        _rangeInfo = _rangeInfoFormat.Inject(Range.GetName(), _collider.radius);
         //D.Log("{0}.Range changed to {1}.", FullName, Range.GetName());
-        Refresh();
+        // No reason to refresh targets as this only occurs when not operational
     }
 
     private void OnAnyEnemyInRangeChanged(bool isAnyEnemyInRange) {
@@ -188,15 +225,15 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
 
     private void Add(IElementAttackableTarget target) {
         if (!AllTargets.Contains(target)) {
-            if (target.IsAliveAndOperating) {
+            if (target.IsOperational) {
                 //D.Log("{0} now tracking target {1}.", FullName, target.FullName);
                 target.onDeathOneShot += OnTargetDeath;
                 target.onOwnerChanged += OnTargetOwnerChanged;
                 AllTargets.Add(target);
             }
             else {
-                D.Log("{0} avoided adding target {1} that is either not operational or already dead.", FullName, target.FullName);
-                return; // added
+                D.Log("{0} avoided adding target {1} that is not operational.", FullName, target.FullName);
+                return;
             }
         }
         else {
@@ -205,12 +242,10 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
         }
 
         if (ParentElement.Owner.IsEnemyOf(target.Owner)) {
+            D.Assert(target.IsOperational);
             D.Assert(!EnemyTargets.Contains(target));
             AddEnemyTarget(target);
         }
-        //if (ParentElement.Owner.IsEnemyOf(target.Owner) && target.IsAliveAndOperating && !EnemyTargets.Contains(target)) {
-        //    AddEnemyTarget(target);
-        //}
     }
 
     private void AddEnemyTarget(IElementAttackableTarget enemyTarget) {
@@ -224,7 +259,7 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
     private void Remove(IElementAttackableTarget target) {
         bool isRemoved = AllTargets.Remove(target);
         if (isRemoved) {
-            if (target.IsAliveAndOperating) {
+            if (target.IsOperational) {
                 //D.Log("{0} no longer tracking {1} at distance = {2}.", FullName, target.FullName, Vector3.Distance(target.Position, _transform.position));
             }
             else {
@@ -252,34 +287,24 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
         }
     }
 
-    /// <summary>
-    /// Refreshes the contents of this Monitor.
-    /// </summary>
-    private void Refresh() {
-        bool savedEnabledState = _collider.enabled;
-        _collider.enabled = false;
-        _collider.radius = Range.GetWeaponRange(ParentElement.Owner);
-        var allTargetsCopy = AllTargets.ToArray();
-        allTargetsCopy.ForAll(t => Remove(t));  // clears both AllTargets and EnemyTargets
-        _collider.enabled = savedEnabledState;    //  TODO unconfirmed - this should repopulate the Targets when re-enabled with new radius
+    private void RefreshTargets() {
+        IsOperational = false;
+        IsOperational = true;
     }
 
     private void OnWeaponIsOperationalChanged(Weapon weapon) {
-        _collider.enabled = Weapons.Where(w => w.IsOperational).Any();
+        IsOperational = Weapons.Where(w => w.IsOperational).Any();
     }
 
     protected override void Cleanup() {
         if (ParentElement != null) {
-            ParentElement.onOwnerChanged -= OnOwnerChanged;
+            ParentElement.onOwnerChanged -= OnParentElementOwnerChanged;
         }
         Weapons.ForAll(w => {
             w.onIsOperationalChanged -= OnWeaponIsOperationalChanged;
             w.Dispose();
         });
-        AllTargets.ForAll(t => {
-            t.onOwnerChanged -= OnTargetOwnerChanged;
-            t.onDeathOneShot -= OnTargetDeath;
-        });
+        IsOperational = false;  // important to cleanup the onDeath subscription for each Target
     }
 
     public override string ToString() {

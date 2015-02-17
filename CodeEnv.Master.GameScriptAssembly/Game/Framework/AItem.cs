@@ -28,6 +28,15 @@ using UnityEngine;
 /// </summary>
 public abstract class AItem : AMonoBase, IItem, INavigableTarget {
 
+    /// <summary>
+    /// Occurs when the owner of this <c>IItem</c> is about to change.
+    /// The new incoming owner is the <c>Player</c> provided.
+    /// </summary>
+    public event Action<IItem, Player> onOwnerChanging;
+
+    /// <summary>
+    /// Occurs when the owner of this <c>IItem</c> has changed.
+    /// </summary>
     public event Action<IItem> onOwnerChanged;
 
     private AItemData _data;
@@ -45,16 +54,22 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     }
 
     /// <summary>
+    /// Indicates whether this item has commenced operations, and if
+    /// it is a MortalItem, that it is not dead.
+    /// </summary>
+    public bool IsOperational { get; protected set; }
+
+    /// <summary>
     /// The name to use for display in the UI.
     /// </summary>
     public virtual string DisplayName { get { return Name; } }
 
-    public virtual string FullName {
+    public string FullName {
         get {
-            if (Data != null) {
-                return Data.FullName;
+            if (Data == null) {
+                return _transform.name + "(from transform)";
             }
-            return _transform.name + "(from transform)";
+            return Data.FullName;
         }
     }
 
@@ -124,7 +139,6 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
         _hudManager = InitializeHudManager();
     }
 
-
     protected abstract HudManager InitializeHudManager();
 
     /// <summary>
@@ -141,12 +155,18 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     #region Model Methods
 
     /// <summary>
-    /// Should be called when the Item should start operations, typically once
+    /// Called when the Item should start operations, typically once
     /// the game is running.
     /// </summary>
-    public virtual void CommenceOperations() { }
+    public virtual void CommenceOperations() {
+        IsOperational = true;
+    }
 
-    protected virtual void OnOwnerChanging(Player newOwner) { }
+    protected virtual void OnOwnerChanging(Player newOwner) {
+        if (onOwnerChanging != null) {
+            onOwnerChanging(this, newOwner);
+        }
+    }
 
     protected virtual void OnOwnerChanged() {
         if (onOwnerChanged != null) {

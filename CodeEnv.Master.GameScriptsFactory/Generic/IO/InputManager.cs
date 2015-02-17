@@ -305,8 +305,9 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
         if (target != null) {
             // scroll event target is an ICameraTargetable
             if (!target.IsEligible) {
-                // the object's collider shouldn't be enabled when not eligible (aka not discernible)
-                D.Warn("InEligible {0} found while scrolling.", typeof(ICameraTargetable).Name);
+                // Note: This is OK, albeit infrequent. Stars, Planetoids, Ships and Facilities all keep their collider on, even when not discernible. 
+                // All can lose discernibility <- distance culling
+                D.Log("InEligible {0} {1} found while scrolling.", typeof(ICameraTargetable).Name, target.Transform.name);
                 return;
             }
             hitPoint = (target is IZoomToFurthest) ? UICamera.lastHit.point : target.Transform.position;

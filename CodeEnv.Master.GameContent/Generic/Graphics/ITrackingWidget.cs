@@ -27,9 +27,13 @@ namespace CodeEnv.Master.GameContent {
         bool IsShowing { get; }
 
         /// <summary>
-        /// The name of this tracking widget gameObject.
+        /// The name to use as the root name of these gameObjects. Optional.
+        /// If not set, the root name will be the DisplayName of the Target.
+        /// The name of this gameObject will be the root name supplemented 
+        /// by the Type name. The name of the child gameObject holding the widget 
+        /// will be the root name supplemented by the widget Type name.
         /// </summary>
-        string Name { get; set; }
+        string OptionalRootName { set; }
 
         GameColor Color { get; set; }
 

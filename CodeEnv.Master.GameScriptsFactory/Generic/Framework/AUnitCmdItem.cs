@@ -125,7 +125,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
         D.Assert(HQElement != null);
         float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
         var trackingLabel = TrackingWidgetFactory.Instance.CreateUITrackingLabel(this, WidgetPlacement.AboveRight, minShowDistance);
-        trackingLabel.Name = DisplayName + CommonTerms.Label;
         trackingLabel.Set(DisplayName);
         trackingLabel.Color = Owner.Color;
         return trackingLabel;
@@ -146,7 +145,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
     /// <param name="element">The Element to add.</param>
     public virtual void AddElement(AUnitElementItem element) {
         D.Assert(!Elements.Contains(element), "{0} attempting to add {1} that is already present.".Inject(FullName, element.FullName));
-        D.Assert(!element.IsHQElement, "{0} adding element {1} already designated as the HQ Element.".Inject(FullName, element.FullName));
+        D.Assert(!element.Data.IsHQElement, "{0} adding element {1} already designated as the HQ Element.".Inject(FullName, element.FullName));
         // elements should already be enabled when added to a Cmd as that is commonly their state when transferred during runtime
         D.Assert((element as MonoBehaviour).enabled, "{0} is not yet enabled.".Inject(element.FullName));
         Elements.Add(element);
@@ -161,7 +160,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
             // WARNING: Donot use the IEnumerable unattachedSensors here as it will no longer point to any unattached sensors, since they are all attached now
             // This is the IEnumerable<T> lazy evaluation GOTCHA
         }
-        if (IsAliveAndOperating) {
+        if (IsOperational) {
             // avoid the extra work if adding before beginning operations
             AssessCmdIcon();
         }
@@ -210,7 +209,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
         Data.RemoveElement(element.Data);
 
         DetachSensorsFromMonitors(element.Data.Sensors.ToArray());
-        if (IsAliveAndOperating) {
+        if (IsOperational) {
             // avoid this work if removing during startup
             if (Elements.Count > Constants.Zero) {
                 AssessCmdIcon();
@@ -230,8 +229,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
 
     protected virtual void OnHQElementChanging(AUnitElementItem newHQElement) {
         Arguments.ValidateNotNull(newHQElement);
-        if (HQElement != null) {
-            HQElement.IsHQElement = false;
+        var previousHQElement = HQElement;
+        if (previousHQElement != null) {
+            previousHQElement.Data.IsHQElement = false;
         }
         if (!Elements.Contains(newHQElement)) {
             // the player will typically select/change the HQ element of a Unit from the elements already present in the unit
@@ -241,7 +241,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
     }
 
     protected virtual void OnHQElementChanged() {
-        HQElement.IsHQElement = true;
+        HQElement.Data.IsHQElement = true;
         Data.HQElementData = HQElement.Data;
         //D.Log("{0}'s HQElement is now {1}.", Data.ParentName, HQElement.Data.Name);
         Radius = HQElement.Radius;
@@ -506,7 +506,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
 
     #region ICameraFocusable Members
 
-    public override bool IsRetainedFocusEligible { get { return GetHumanPlayerIntelCoverage() != IntelCoverage.None; } }
+    public override bool IsRetainedFocusEligible { get { return Data.GetHumanPlayerIntelCoverage() != IntelCoverage.None; } }
 
     public override float OptimalCameraViewingDistance { get { return UnitRadius * optViewDistanceFactor; } }
 

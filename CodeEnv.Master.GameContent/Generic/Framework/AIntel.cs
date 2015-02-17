@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AIntel : APropertyChangeTracking {
 
-        protected IntelCoverage _currentCoverage;
+        private IntelCoverage _currentCoverage;
         /// <summary>
         /// The current level of data coverage achieved on this object.
         /// </summary>
@@ -32,12 +32,12 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<IntelCoverage>(ref _currentCoverage, value, "CurrentCoverage", null, OnCurrentCoverageChanging); }
         }
 
-        public AIntel() : this(IntelCoverage.None) { }
-
         public AIntel(IntelCoverage coverage) {
             PreProcessChange(coverage);
             _currentCoverage = coverage;
         }
+
+        public abstract bool IsCoverageChangeAllowed(IntelCoverage newCoverage);
 
         /// <summary>
         /// Processes the change to a new level of coverage BEFORE the new level of coverage

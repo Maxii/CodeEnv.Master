@@ -26,8 +26,16 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitElementItemData : AMortalItemData {
 
+        private static string _hqNameAddendum = "[HQ]";
+
         public IList<Weapon> Weapons { get; private set; }
         public IList<Sensor> Sensors { get; private set; }
+
+        private bool _isHQElement;
+        public virtual bool IsHQElement {
+            get { return _isHQElement; }
+            set { SetProperty<bool>(ref _isHQElement, value, "IsHQElement", OnIsHQElementChanged); }
+        }
 
         private string _parentName;
         public string ParentName {
@@ -109,6 +117,10 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(!sensor.IsOperational);
             Sensors.Remove(sensor);
             sensor.onIsOperationalChanged -= OnSensorIsOperationalChanged;
+        }
+
+        private void OnIsHQElementChanged() {
+            Name = IsHQElement ? Name + _hqNameAddendum : Name.Remove(_hqNameAddendum);
         }
 
         private void OnSensorIsOperationalChanged(Sensor sensor) {

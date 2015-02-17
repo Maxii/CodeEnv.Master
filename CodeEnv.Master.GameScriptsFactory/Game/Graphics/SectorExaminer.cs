@@ -271,6 +271,8 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
     public Transform Transform { get { return _transform; } }
 
+    public string DisplayName { get { return GetType().Name; } }
+
     #endregion
 
     #region Archive

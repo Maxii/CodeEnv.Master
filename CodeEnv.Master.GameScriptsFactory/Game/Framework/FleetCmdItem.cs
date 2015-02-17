@@ -153,7 +153,7 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient
     public void TransferShip(ShipItem ship, FleetCmdItem fleetCmd) {
         // UNCLEAR does this ship need to be in ShipState.None while these changes take place?
         RemoveElement(ship);
-        ship.IsHQElement = false; // Needed - RemoveElement never changes HQ Element as the TransferCmd is dead as soon as ship removed
+        ship.Data.IsHQElement = false; // Needed - RemoveElement never changes HQ Element as the TransferCmd is dead as soon as ship removed
         fleetCmd.AddElement(ship);
     }
 
@@ -166,7 +166,7 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient
         shipFst.AssignedShip = null;
         ship.FormationStation = null;
 
-        if (!IsAliveAndOperating) {
+        if (!IsOperational) {
             // fleetCmd has died
             return;
         }
@@ -218,30 +218,24 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient
                 case FleetDirective.Attack:
                     CurrentState = FleetState.ExecuteAttackOrder;
                     break;
-                case FleetDirective.Explore:
-                    break;
-                case FleetDirective.StopAttack:
-                    break;
-                case FleetDirective.Disband:
-                    break;
-                case FleetDirective.Guard:
-                    break;
                 case FleetDirective.Join:
                     CurrentState = FleetState.ExecuteJoinFleetOrder;
                     break;
                 case FleetDirective.Move:
                     CurrentState = FleetState.ExecuteMoveOrder;
                     break;
-                case FleetDirective.Patrol:
-                    break;
-                case FleetDirective.Refit:
-                    break;
-                case FleetDirective.Repair:
-                    break;
-                case FleetDirective.Retreat:
-                    break;
                 case FleetDirective.SelfDestruct:
                     KillUnit();
+                    break;
+                case FleetDirective.Explore:
+                case FleetDirective.StopAttack:
+                case FleetDirective.Disband:
+                case FleetDirective.Guard:
+                case FleetDirective.Patrol:
+                case FleetDirective.Refit:
+                case FleetDirective.Repair:
+                case FleetDirective.Retreat:
+                    D.Warn("{0}.{1} is not currently implemented.", typeof(FleetDirective).Name, order.GetName());
                     break;
                 case FleetDirective.None:
                 default:
@@ -585,7 +579,7 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient
             CurrentState = FleetState.Idling;
             yield break;
         }
-        if (!(CurrentOrder.Target as IUnitAttackableTarget).IsAliveAndOperating) {
+        if (!(CurrentOrder.Target as IUnitAttackableTarget).IsOperational) {
             // Moving Return()s if the target dies
             CurrentState = FleetState.Idling;
             yield break;
