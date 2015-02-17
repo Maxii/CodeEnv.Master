@@ -30,6 +30,7 @@ public class GuiInputModeControlButton : AGuiButton {
         if (inputModeOnClick == default(GameInputMode)) {
             D.WarnContext("{0} has not set {1}.".Inject(GetType().Name, typeof(GameInputMode).Name), gameObject);
         }
+        D.Log("{0} is about to set InputMode to {1}.", GetType().Name, inputModeOnClick.GetName());
         InputManager.Instance.InputMode = inputModeOnClick;
     }
 

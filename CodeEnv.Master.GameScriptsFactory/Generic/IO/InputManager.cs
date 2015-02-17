@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -112,7 +112,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     }
 
     private void InitializeNonpersistentReferences() {
-        D.Log("{0} is [re]initializing nonpersistent references.", GetType().Name);
+        D.Log("{0}_{1} is [re]initializing nonpersistent references.", GetType().Name, InstanceCount);
         InitializeUIEventDispatcher();
         if (_currentScene == SceneLevel.GameScene) {
             _playerViews = PlayerViews.Instance;
@@ -172,8 +172,8 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 
     private void OnGameStateChanging(GameState incomingState) {
         var previousState = GameManager.Instance.CurrentState;
+        D.Log("{0}_{1} received a GameStateChanging event. Previous GameState = {2}.", GetType().Name, InstanceCount, previousState.GetName());
         if (previousState == GameState.Lobby) {
-            //D.Log("{0} received a GameStateChanging event. Previous GameState = {1}.", GetType().Name, previousState.GetName());
             InputMode = GameInputMode.NoInput;
         }
         if (previousState == GameState.Running) {
@@ -183,10 +183,9 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 
     private void OnGameStateChanged() {
         var enteringGameState = GameManager.Instance.CurrentState;
-
+        D.Log("{0}_{1} received a GameStateChanged event. New GameState = {2}.", GetType().Name, InstanceCount, enteringGameState.GetName());
         if (enteringGameState == GameState.Lobby) {
-            //D.Log("{0} received GameState change to Lobby.", GetType().Name);
-            InputMode = GameInputMode.Normal;
+            InputMode = GameInputMode.PartialScreenPopup;   // as the Lobby only has UIPopup layer screens, this is the 'normal' InputMode for the Lobby
         }
         if (enteringGameState == GameState.Running) {
             InputMode = GameInputMode.Normal;
@@ -213,7 +212,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     /// </summary>
     /// <exception cref="System.NotImplementedException"></exception>
     private void OnInputModeChanged() {
-        //D.Log("{0}_{1}.{2} is now {3}.", GetType().Name, InstanceCount, typeof(GameInputMode).Name, InputMode.GetName());
+        D.Log("{0}_{1}.{2} is now {3}.", GetType().Name, InstanceCount, typeof(GameInputMode).Name, InputMode.GetName());
         __ValidateEventDispatchersNotDestroyed();
 
         switch (InputMode) {

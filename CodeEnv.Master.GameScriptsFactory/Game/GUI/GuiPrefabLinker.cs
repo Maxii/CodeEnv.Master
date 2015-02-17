@@ -26,6 +26,8 @@ using UnityEngine;
 /// Manages the instantiation and setup of a prefab Gui windowed menu system. This is primarily used when
 /// the same windowed menu system is used by more than one scene's Gui system, allowing the dev
 /// to maintain only the one prefab.
+/// Usage: Place this script on the gameObject that you wish to be the parent of the newly instantiated prefab
+/// clone.
 /// </summary>
 public class GuiPrefabLinker : AMonoBase {
 
@@ -48,9 +50,9 @@ public class GuiPrefabLinker : AMonoBase {
     /// </summary>
     public List<UIPanel> optionalHidePanelExceptions;
 
-    protected override void Awake() {
-        base.Awake();
-        SetupLinkedPrefab();
+    protected override void Start() {
+        base.Start();
+        SetupLinkedPrefab();    // called from Start to allow disabling in scene without error, i.e. Awake() is called even when disabled
     }
 
     /// <summary>

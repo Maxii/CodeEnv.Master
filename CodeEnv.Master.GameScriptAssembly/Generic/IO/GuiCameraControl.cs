@@ -21,6 +21,7 @@ using UnityEngine;
 
 /// <summary>
 /// Singleton. Initializes the Camera dedicated to the UI layer.
+/// Note: UICamera settings for this GuiCamera are controlled by InputManager.
 /// </summary>
 public class GuiCameraControl : AMonoSingleton<GuiCameraControl> {
 

@@ -437,7 +437,7 @@ public class SystemCreator : AMonoBase {
         if (planetsToDestroy != null) {
             planetsToDestroy.ForAll(p => {
                 _planets.Remove(p);
-                D.Log("Destroying Planet {0}.", p.FullName);
+                //D.Log("Destroying Planet {0}.", p.FullName);
                 Destroy(p.gameObject);
             });
         }
@@ -537,7 +537,7 @@ public class SystemCreator : AMonoBase {
         if (moonsToDestroy != null) {
             moonsToDestroy.ForAll(m => {
                 _moons.Remove(m);
-                D.Log("Destroying Moon {0}.", m.FullName);
+                //D.Log("Destroying Moon {0}.", m.FullName);
                 Destroy(m.gameObject);
             });
         }

@@ -34,8 +34,9 @@ public class GuiMenuCheckbox : AGuiMenuElement {
     public GuiMenuElementID elementID;
 
     public override bool HasPreference { get { return hasPreference; } }
-    protected override string TooltipContent { get { return tooltip; } }
     public override GuiMenuElementID ElementID { get { return elementID; } }
+
+    protected override string TooltipContent { get { return tooltip; } }
 
     protected UIToggle _checkbox;
 

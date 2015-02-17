@@ -35,6 +35,8 @@ public class GuiVisibilityModeControlButton : AGuiButton {
 
     /// <summary>
     /// The list of UIPanels that should be excepted from the <c>visibilityModeOnClick</c>.
+    /// Note: Even without the showing panel being listed, it will still be reactivated immediately 
+    /// after being deactivated if Ngui's UIPlayAnimation.ifDisabledOnStart = EnableThenPlay. 
     /// </summary>
     public List<UIPanel> exceptions;
 
@@ -43,8 +45,7 @@ public class GuiVisibilityModeControlButton : AGuiButton {
             case GuiVisibilityMode.Hidden:
                 if (exceptions.Count == Constants.Zero || exceptions[0] == null) {
                     D.Warn("{0}.{1} has no Exceptions listed. \nAs a minimum, it should list the panel being shown.", gameObject.name, GetType().Name);
-                    // NOTE: Even without the showing panel being listed, it will still be reactivated immediately after being deactivated
-                    // if MyNguiPlayAnimation.ifDisabledOnPlay = EnableThenPlay. 
+                    // see Note on exceptions above
                 }
                 break;
             case GuiVisibilityMode.Visible:
