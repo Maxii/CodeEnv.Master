@@ -30,14 +30,14 @@ namespace CodeEnv.Master.GameContent {
 
         private Transform _target;
 
-        private Transform _parent;
-        /// <summary>
-        /// The parent transform where you want the wireframe line object to reside in the scene.
-        /// </summary>
-        public Transform Parent {
-            get { return _parent; }
-            set { SetProperty<Transform>(ref _parent, value, "Parent", OnParentChanged); }
-        }
+        //private Transform _parent;
+        ///// <summary>
+        ///// The parent transform where you want the wireframe line object to reside in the scene.
+        ///// </summary>
+        //public Transform Parent {
+        //    get { return _parent; }
+        //    set { SetProperty<Transform>(ref _parent, value, "Parent", OnParentChanged); }
+        //}
 
         private GameColor _color;
         public GameColor Color {
@@ -61,11 +61,10 @@ namespace CodeEnv.Master.GameContent {
         private Vector3[] _points;
         private Visibility _visibility;
 
-        public GridWireframe_Alt(string name, Transform target, Vector3[] points, Transform parent = null, Visibility visibility = Visibility.Always, float width = 1F, GameColor color = GameColor.Gray) {
+        public GridWireframe_Alt(string name, Transform target, Vector3[] points, Visibility visibility = Visibility.Always, float width = 1F, GameColor color = GameColor.Gray) {
             _lineName = name;
             _target = target;
             _points = points;
-            _parent = parent;
             _visibility = visibility;
             _lineWidth = width;
             _color = color;
@@ -76,8 +75,9 @@ namespace CodeEnv.Master.GameContent {
                 return;
             }
             if (_line == null) {
-                _line = new VectorLine(LineName, _points, Color.ToUnityColor(), null, LineWidth);
-                if (Parent != null) { OnParentChanged(); }
+                _line = new VectorLine(LineName, _points, null, LineWidth);
+                _line.color = Color.ToUnityColor(); // color removed from constructor by Vectrosity 4.0
+
                 VectorManager.useDraw3D = true;
                 VectorManager.ObjectSetup(_target.gameObject, _line, _visibility, Brightness.Fog);
                 VectorManager.SetBrightnessParameters(5000F, 250f, 32, .2F, GameColor.Clear.ToUnityColor());
@@ -88,14 +88,6 @@ namespace CodeEnv.Master.GameContent {
             }
             _line.active = toShow;
             D.Log("{0} line.active = {1}.", this.GetType().Name, toShow);
-        }
-
-        private void OnParentChanged() {
-            if (_line != null) {
-                _line.vectorObject.transform.parent = Parent;
-                // Changing the rotation of the child to identity causes the wireframe to startout rotated
-                //UnityUtility.AttachChildToParent(_line.vectorObject, Parent.gameObject);
-            }
         }
 
         private void OnColorChanged() {

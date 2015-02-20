@@ -44,7 +44,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     /// </summary>
     public static LayerMask WorldEventDispatcherMask_NormalInput { get { return _worldEventDispatcherMask_NormalInput; } }
     private static LayerMask _worldEventDispatcherMask_NormalInput = LayerMaskExtensions.CreateExclusiveMask(Layers.UniverseEdge,
-        Layers.DeepSpace, Layers.UI, Layers.UIPopup, Layers.Vectrosity2D, Layers.CelestialObjectKeepout, Layers.IgnoreRaycast, Layers.Water);
+        Layers.DeepSpace, Layers.UI, Layers.UIPopup, Layers.CelestialObjectKeepout, Layers.IgnoreRaycast, Layers.Water);
 
     /// <summary>
     /// The layers the UI EventDispatcher (2D) is allowed to 'see' when determining whether to raise an event.

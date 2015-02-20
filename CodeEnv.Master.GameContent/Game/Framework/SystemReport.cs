@@ -48,7 +48,7 @@ namespace CodeEnv.Master.GameContent {
             var sysData = data as SystemData;
             Name = sysData.Name;
             SectorIndex = sysData.SectorIndex;
-            Owner = SettlementReport != null ? SettlementReport.Owner : null;        // IMPROVE other Settlement info?
+            Owner = SettlementReport != null ? SettlementReport.Owner : null;        // IMPROVE NoPlayer?, other Settlement info?
             Capacity = StarReport.Capacity + PlanetoidReports.Sum(pr => pr.Capacity);
             Resources = StarReport.Resources.Sum(PlanetoidReports.Select(pr => pr.Resources).ToArray());
             SpecialResources = StarReport.SpecialResources.Sum(PlanetoidReports.Select(pr => pr.SpecialResources).ToArray());

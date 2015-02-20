@@ -151,6 +151,7 @@
     <Compile Include="Generic\Framework\SectorFactory.cs" />
     <Compile Include="Game\GUI\GuiAudioOptionMenuAcceptButton.cs" />
     <Compile Include="Game\Framework\SectorItem.cs" />
+    <Compile Include="Generic\Graphics\MenuCancelButton.cs" />
     <Compile Include="ThirdParty\MyEnvelopContent.cs" />
     <Compile Include="ThirdParty\MyAStarPointGraph.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

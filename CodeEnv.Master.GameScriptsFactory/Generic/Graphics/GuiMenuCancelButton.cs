@@ -23,8 +23,9 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// General-purpose Menu Cancel Button that restores the original state of the menu
-/// to what it was when it was opened.
+/// Menu Cancel Button that restores the original state of the menu to what it was when it was opened.
+/// Warning: This button requires the presence of UIPlayAnimation with proper ifDisabledOnPlay
+/// and disableWhenFinished settings as indicated in ValidateSetup().
 /// </summary>
 public class GuiMenuCancelButton : AGuiButton {
 
@@ -41,7 +42,8 @@ public class GuiMenuCancelButton : AGuiButton {
 
     protected override void Start() {
         base.Start();
-        //GameObject buttonParent = gameObject.transform.parent.gameObject;
+
+        ValidateSetup();
         UIPanel parentPanel = gameObject.GetSafeMonoBehaviourComponentInParents<UIPanel>();
 
         _checkboxes = parentPanel.gameObject.GetComponentsInChildren<UIToggle>(includeInactive: true);
@@ -52,17 +54,26 @@ public class GuiMenuCancelButton : AGuiButton {
         //D.Assert(popupLists.Length == 0, "There are no PopupLists on Menu {0}.".Inject(buttonParent.name)); 
 
         _openingPopupListsSelection = new string[_popupLists.Length];
-        CaptureOpeningState();
+        CaptureMenuOpeningState();
     }
 
     protected override void OnEnable() {
         base.OnEnable();
         if (_isInitialized) {
-            CaptureOpeningState();
+            CaptureMenuOpeningState();
         }
     }
 
-    private void CaptureOpeningState() {
+    /// <summary>
+    /// Captures the state of the menu each time it opens.
+    /// Warning: As this method is called from OnEnable(), this approach
+    /// relies on this button being disabled when the menu is closed and re-enabled
+    /// (calling OnEnable()) when opened again. If this doesn't happen, then the
+    /// opening state of the menu that is captured will always be the state when 
+    /// Start() was called, even if the menu's values were changed and accepted
+    /// previously. See ValidationSetup() below.
+    /// </summary>
+    private void CaptureMenuOpeningState() {
         for (int i = 0; i < _checkboxes.Length; i++) {
             _openingCheckboxesState[i] = _checkboxes[i].value;
         }
@@ -73,15 +84,27 @@ public class GuiMenuCancelButton : AGuiButton {
     }
 
     protected override void OnLeftClick() {
-        RestoreOpeningState();
+        RestoreMenuOpeningState();
     }
 
-    private void RestoreOpeningState() {
+    private void RestoreMenuOpeningState() {
         for (int i = 0; i < _checkboxes.Length; i++) {
             _checkboxes[i].value = _openingCheckboxesState[i];
         }
         for (int i = 0; i < _popupLists.Length; i++) {
             _popupLists[i].value = _openingPopupListsSelection[i];
+        }
+    }
+
+    private void ValidateSetup() {
+        var nguiPlayAnimation = UnityUtility.ValidateMonoBehaviourPresence<UIPlayAnimation>(gameObject);
+        D.Assert(nguiPlayAnimation.ifDisabledOnPlay == AnimationOrTween.EnableCondition.EnableThenPlay);
+        D.Assert(nguiPlayAnimation.playDirection != AnimationOrTween.Direction.Toggle); // its either Forward or Reverse
+        if (nguiPlayAnimation.playDirection == AnimationOrTween.Direction.Forward) {
+            D.Assert(nguiPlayAnimation.disableWhenFinished == AnimationOrTween.DisableCondition.DisableAfterForward);
+        }
+        else {
+            D.Assert(nguiPlayAnimation.disableWhenFinished == AnimationOrTween.DisableCondition.DisableAfterReverse);
         }
     }
 

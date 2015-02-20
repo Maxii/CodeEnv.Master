@@ -53,8 +53,10 @@ public class Loader : AMonoSingleton<Loader> {
     }
 
     private void InitializeVectrosity() {
-        VectorLine.useMeshLines = true;
-        VectorLine.useMeshPoints = true;
+        // Note: not necessary to use VectorLine.SetCamera3D(mainCamera) as the default camera for 3D lines Vectrosity finds is mainCamera
+
+        //VectorLine.useMeshLines = true; // removed in Vectrosity 4.0
+        //VectorLine.useMeshPoints = true;    // removed in Vectrosity 4.0
         //VectorLine.useMeshQuads = true;       // removed in Vectrosity 3.0 as no advantages to using it
     }
 

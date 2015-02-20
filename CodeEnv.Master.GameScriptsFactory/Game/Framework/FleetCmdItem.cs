@@ -365,7 +365,7 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient
             if (_velocityRay == null) {
                 if (!toShow) { return; }
                 Reference<float> fleetSpeed = new Reference<float>(() => Data.CurrentSpeed);
-                _velocityRay = new VelocityRay("FleetVelocityRay", _transform, fleetSpeed, width: 2F, color: GameColor.Green);
+                _velocityRay = new VelocityRay("FleetVelocity", _transform, fleetSpeed, width: 2F, color: GameColor.Green);
             }
             _velocityRay.Show(toShow);
         }

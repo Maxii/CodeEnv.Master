@@ -36,14 +36,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private Transform _parent;
-        /// <summary>
-        /// The parent transform where you want the VectorObject to reside in the scene.
-        /// </summary>
-        public Transform Parent {
-            get { return _parent; }
-            set { SetProperty<Transform>(ref _parent, value, "Parent", OnParentChanged); }
-        }
+        // Note: Ability to assign a Vectrosity object to a designated Parent removed as Vectrosity 4.0's
+        // use of Unity 4.6's new UICanvas requires that the objects be children of the canvas
 
         private string _lineName;
         public string LineName {
@@ -58,21 +52,11 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="AVectrosityBase" /> class.
         /// </summary>
         /// <param name="name">The name of the VectorLine.</param>
-        /// <param name="parent">The parent to attach the VectorObject too.</param>
-        public AVectrosityBase(string name, Transform parent = null) {
+        public AVectrosityBase(string name) {
             _lineName = name;
-            _parent = parent;
         }
 
         protected abstract void Initialize();
-
-        protected void OnParentChanged() {
-            if (_line != null) {
-                _line.vectorObject.transform.parent = Parent;
-                // Changing the rotation of the child to identity causes the wireframe to startout rotated
-                //UnityUtility.AttachChildToParent(_line.vectorObject, Parent.gameObject);
-            }
-        }
 
         private void OnLineNameChanged() {
             if (_line != null) {

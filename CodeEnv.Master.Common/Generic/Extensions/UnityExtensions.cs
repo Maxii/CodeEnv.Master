@@ -41,7 +41,7 @@ namespace CodeEnv.Master.Common {
             Transform parent = excludeSelf ? go.transform.parent : go.transform;
             T component = parent.gameObject.GetComponentInParent<T>();
             if (component == null) {
-                D.Warn(ErrorMessages.ComponentNotFound, typeof(T).Name, go.name);
+                D.WarnContext(ErrorMessages.ComponentNotFound.Inject(typeof(T).Name, go.name), go);
             }
             return component;
         }
@@ -96,7 +96,7 @@ namespace CodeEnv.Master.Common {
         public static T GetSafeMonoBehaviourComponent<T>(this Transform t) where T : MonoBehaviour {
             T component = t.GetComponent<T>();
             if (component == null) {
-                D.Warn(ErrorMessages.ComponentNotFound, typeof(T).Name, t.name);
+                D.WarnContext(ErrorMessages.ComponentNotFound.Inject(typeof(T).Name, t.name), t.gameObject);
             }
             return component;
         }
@@ -111,7 +111,7 @@ namespace CodeEnv.Master.Common {
         public static T GetSafeMonoBehaviourComponent<T>(this GameObject go) where T : MonoBehaviour {
             T component = go.GetComponent<T>();
             if (component == null) {
-                D.Warn(ErrorMessages.ComponentNotFound, typeof(T).Name, go.name);
+                D.WarnContext(ErrorMessages.ComponentNotFound.Inject(typeof(T).Name, go.name), go);
             }
             return component;
         }
@@ -126,7 +126,7 @@ namespace CodeEnv.Master.Common {
         public static T[] GetSafeMonoBehaviourComponents<T>(this GameObject go) where T : MonoBehaviour {
             T[] components = go.GetComponents<T>();
             if (components.Length == 0) {
-                D.Warn(ErrorMessages.ComponentNotFound, typeof(T).Name, go.name);
+                D.WarnContext(ErrorMessages.ComponentNotFound.Inject(typeof(T).Name, go.name), go);
             }
             return components;
         }
@@ -141,7 +141,7 @@ namespace CodeEnv.Master.Common {
         public static T GetSafeMonoBehaviourComponentInChildren<T>(this GameObject go) where T : MonoBehaviour {
             T component = go.GetComponentInChildren<T>();
             if (component == null) {
-                D.Warn(ErrorMessages.ComponentNotFound, typeof(T).Name, go.name);
+                D.WarnContext(ErrorMessages.ComponentNotFound.Inject(typeof(T).Name, go.name), go);
             }
             return component;
         }
@@ -170,7 +170,7 @@ namespace CodeEnv.Master.Common {
         public static T[] GetSafeMonoBehaviourComponentsInChildren<T>(this GameObject go, bool includeInactive = false) where T : MonoBehaviour {
             T[] components = go.GetComponentsInChildren<T>(includeInactive);
             if (components.Length == 0) {
-                D.Warn(ErrorMessages.ComponentNotFound, typeof(T).Name, go.name);
+                D.WarnContext(ErrorMessages.ComponentNotFound.Inject(typeof(T).Name, go.name), go);
             }
             return components;
         }
@@ -186,7 +186,7 @@ namespace CodeEnv.Master.Common {
         public static Transform FindSafeChild<T>(this Transform t) where T : MonoBehaviour {
             T mono = t.GetComponentInChildren<T>();
             if (mono == null || mono.transform == t) {
-                D.Warn(ErrorMessages.ComponentNotFound, typeof(T).Name, t.name);
+                D.WarnContext(ErrorMessages.ComponentNotFound.Inject(typeof(T).Name, t.name), t.gameObject);
                 return null;
             }
             return mono.transform;
@@ -208,7 +208,7 @@ namespace CodeEnv.Master.Common {
             if (i != null) {
                 return parent;
             }
-            D.Warn(ErrorMessages.ComponentNotFound, typeof(I).Name, t.name);
+            D.WarnContext(ErrorMessages.ComponentNotFound.Inject(typeof(I).Name, t.name), t.gameObject);
             return null;
         }
 
@@ -224,7 +224,7 @@ namespace CodeEnv.Master.Common {
             Transform parent = excludeSelf ? t.parent : t;
             I i = parent.GetComponentInParent(typeof(I)) as I;
             if (i == null) {
-                D.Warn(ErrorMessages.ComponentNotFound, typeof(I).Name, t.name);
+                D.WarnContext(ErrorMessages.ComponentNotFound.Inject(typeof(I).Name, t.name), t.gameObject);
             }
             return i;
         }
@@ -295,7 +295,7 @@ namespace CodeEnv.Master.Common {
         public static I GetSafeInterface<I>(this GameObject go) where I : class {
             I i = go.GetInterface<I>();
             if (i == null) {
-                D.Warn(ErrorMessages.ComponentNotFound, typeof(I).Name, go.name);
+                D.WarnContext(ErrorMessages.ComponentNotFound.Inject(typeof(I).Name, go.name), go);
             }
             return i;
         }
@@ -321,7 +321,7 @@ namespace CodeEnv.Master.Common {
         public static I GetSafeInterfaceInChildren<I>(this GameObject go) where I : class {
             I i = go.transform.GetInterfaceInChildren<I>();
             if (i == null) {
-                D.Warn(ErrorMessages.ComponentNotFound, typeof(I).Name, go.name);
+                D.WarnContext(ErrorMessages.ComponentNotFound.Inject(typeof(I).Name, go.name), go);
             }
             return i;
         }
@@ -424,7 +424,7 @@ namespace CodeEnv.Master.Common {
         public static I[] GetSafeInterfacesInChildren<I>(this GameObject go) where I : class {
             I[] interfaces = go.GetInterfacesInChildren<I>();
             if (interfaces.Length == 0) {
-                D.Warn(ErrorMessages.ComponentNotFound, typeof(I).Name, go.name);
+                D.WarnContext(ErrorMessages.ComponentNotFound.Inject(typeof(I).Name, go.name), go);
             }
             return interfaces;
         }
@@ -442,7 +442,7 @@ namespace CodeEnv.Master.Common {
         public static I GetSafeInterfaceInImmediateChildren<I>(this GameObject go) where I : class {
             I[] interfaces = go.GetInterfacesInImmediateChildren<I>();
             if (interfaces.Length == Constants.Zero) {
-                D.Warn(ErrorMessages.ComponentNotFound, typeof(I).Name, go.name);
+                D.WarnContext(ErrorMessages.ComponentNotFound.Inject(typeof(I).Name, go.name), go);
                 return null;
             }
             return interfaces.Single();

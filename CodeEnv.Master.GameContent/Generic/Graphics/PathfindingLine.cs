@@ -34,12 +34,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="pathPoints">All the points along the path.</param>
         /// <param name="destination">The potentially moving destination reference.</param>
         public PathfindingLine(string name, Vector3[] pathPoints, Reference<Vector3> destination)
-            : base(name, pathPoints, null, References.DynamicObjectsFolder.Folder, LineType.Continuous, 1F, GameColor.Gray) {
+            : base(name, pathPoints, null, LineType.Continuous, 1F, GameColor.Gray) {
             Destination = destination;
         }
 
         protected override void Draw3D() {
-            int destinationIndex = _line.points3.Length - 1;
+            int destinationIndex = _line.points3.Count - 1;    // points3 changed to List in Vectrosity 4.0
             _line.points3[destinationIndex] = Destination.Value;
             base.Draw3D();
         }

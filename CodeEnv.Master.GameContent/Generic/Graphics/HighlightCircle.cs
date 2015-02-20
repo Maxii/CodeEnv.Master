@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -24,6 +24,7 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Draws circle[s] around a Target. 
+    /// IMPROVE class needs to be re-designed for Vectrosity 4.0
     /// </summary>
     public class HighlightCircle : AVectrosityBase {
 
@@ -65,7 +66,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="width">The width.</param>
         /// <param name="color">The color.</param>
         public HighlightCircle(string name, Transform target, float normalizedRadius, bool isRadiusDynamic = true, int maxCircles = 1, float width = 1F, GameColor color = GameColor.White)
-            : base(name, References.DynamicObjectsFolder.Folder) {
+            : base(name) {
             Target = target;
             NormalizedRadius = normalizedRadius;
             IsRadiusDynamic = isRadiusDynamic;
@@ -105,18 +106,20 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <returns></returns>
         private IEnumerator DrawCircles() {
+            D.Log("{0} totalLinePoints = {1}.", GetType().Name, _line.points2.Count);
             while (true) {
                 Vector2 screenPoint = Camera.main.WorldToScreenPoint(Target.position);
                 float distanceToCamera = IsRadiusDynamic ? Target.DistanceToCamera() : 1F;
                 //float distanceToCamera = Camera.main.transform.InverseTransformPoint(Target.position).z;
                 for (int circleIndex = 0; circleIndex < MaxCircles; circleIndex++) {
                     if (_circlesToShow[circleIndex]) {
-                        //float radius = NormalizedRadius + (circleIndex * _circleSeparation) / distanceToCamera;
                         float radius = (NormalizedRadius / distanceToCamera) + (circleIndex * _circleSeparation);
 
                         int startpointIndex = _segmentsPerCircle * circleIndex * 2;
                         _line.MakeCircle(screenPoint, radius, _segmentsPerCircle, startpointIndex);
                     }
+                    // Note: Can't use _line.drawStart and .drawEnd to visually clear a not showing circle as second circle 
+                    // might be not showing requiring a start and end point each for first and third circle
                 }
                 _line.Draw();
                 yield return null;
@@ -140,8 +143,16 @@ namespace CodeEnv.Master.GameContent {
             if (_circlesToShow[index]) {
                 _circlesToShow[index] = false;
                 D.Log("Circle {0} removed from {1}.", index, LineName);
-                // Note: selectively zeroing only points for this circle draws a line to (0,0)
-                _line.ZeroPoints();
+
+                //_line.ZeroPoints();   // ZeroPoints() removed in Vectrosity 4.0
+                // HACK my replacement for ZeroPoints() as whole class needs to be re-designed for Vectrosity 4.0
+                _line.points2.Clear();
+                _line.Draw();   // clears the screen of all circles. Coroutine will refill with showing circles
+                int pointsCount = MaxCircles * _segmentsPerCircle * 2;  // 2 points per segment for a discrete line
+                _line.Resize(pointsCount);  //_line.points2.AddRange(new Vector2[pointsCount]);
+                InitializeColors();
+                InitializeWidths();
+
                 if (_circlesToShow.Where(cShowing => cShowing == true).IsNullOrEmpty()) {
                     D.Log("Line {0} no longer active.", LineName);
                     _job.Kill();
@@ -151,22 +162,12 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public void Clear() {
-            _line.ZeroPoints();
-            _circlesToShow.ForAll(c => c = false);
-            _job.Kill();
-            _job = null;
-            _line.active = false;
-        }
-
         protected override void Initialize() {
-            int points = MaxCircles * _segmentsPerCircle * 2;   // 2 points per segment for a discrete line
-            _line = new VectorLine(LineName, new Vector2[points], null, 1F, LineType.Discrete);
-            if (Parent != null) {
-                OnParentChanged();
-            }
+            int pointsCount = MaxCircles * _segmentsPerCircle * 2;   // 2 points per segment for a discrete line
+            _line = new VectorLine(LineName, new Vector2[pointsCount], null, 1F, LineType.Discrete);
 
-            _line.vectorObject.layer = (int)Layers.Vectrosity2D;
+            // can't use this as Vectrosity2D layer was only seen by the removed VectorCam, the default layer is now UI which the GuiCamera should see
+            //_line.rectTransform.gameObject.layer = (int)Layers.Vectrosity2D;    //_line.vectorObject.layer = (int)Layers.Vectrosity2D;  // vectorObject removed in Vectrosity 4.0
             _line.active = false;
 
             _circlesToShow = new bool[MaxCircles];
@@ -174,6 +175,22 @@ namespace CodeEnv.Master.GameContent {
             InitializeColors();
             InitializeWidths();
         }
+        //protected override void Initialize() {
+        //    int points = MaxCircles * _segmentsPerCircle * 2;   // 2 points per segment for a discrete line
+        //    _line = new VectorLine(LineName, new Vector2[points], null, 1F, LineType.Discrete);
+        //    if (Parent != null) {
+        //        OnParentChanged();
+        //    }
+
+        //    // can't use this as Vectrosity2D layer was only seen by the removed VectorCam, the default layer is now UI which the GuiCamera should see
+        //    //_line.rectTransform.gameObject.layer = (int)Layers.Vectrosity2D;    //_line.vectorObject.layer = (int)Layers.Vectrosity2D;  // vectorObject removed in Vectrosity 4.0
+        //    _line.active = false;
+
+        //    _circlesToShow = new bool[MaxCircles];
+
+        //    InitializeColors();
+        //    InitializeWidths();
+        //}
 
         private void InitializeColors() {
             int length = Colors.Length;

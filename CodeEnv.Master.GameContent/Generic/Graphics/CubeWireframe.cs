@@ -32,17 +32,6 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<Vector3>(ref _size, value, "Size", OnSizeChanged); }
         }
 
-        ///// <summary>
-        ///// <c>true</c> if [is mouse over hot spot]; otherwise, <c>false</c>.
-        ///// </summary>
-        //public bool IsMouseOverHotSpot {
-        //    get {
-        //        if (_pointLine == null) { return false; }
-        //        int unused;
-        //        return _pointLine.Selected(Input.mousePosition, 40, out unused);
-        //    }
-        //}
-
         /// <summary>
         /// The visual center point of the wireframe.
         /// </summary>
@@ -57,7 +46,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="width">The width.</param>
         /// <param name="color">The color.</param>
         public CubeWireframe(string name, Transform target, Vector3 cubeSize, float width = 1F, GameColor color = GameColor.White)
-            : base(name, new Vector3[24], target, References.DynamicObjectsFolder.Folder, LineType.Discrete, width, color) {
+            : base(name, new Vector3[24], target, LineType.Discrete, width, color) {
             Arguments.ValidateNotNull(target);
             _size = cubeSize;
         }
@@ -66,7 +55,10 @@ namespace CodeEnv.Master.GameContent {
             base.Initialize();
             _line.MakeCube(Vector3.zero, Size.x, Size.y, Size.z);
             Vector3[] centerPoint = new Vector3[] { new Vector3(0F, 0F, 0F) };
-            _pointLine = new VectorPoints("CenterPoint", centerPoint, Color.ToUnityColor(), material, 2F);
+
+            _pointLine = new VectorPoints("CenterPoint", centerPoint, material, 2F);
+            _pointLine.color = Color.ToUnityColor();    // color removed from constructor in Vectrosity 4.0
+
             _pointLine.drawTransform = _target; // _line.Draw3D(_target);  removed by Vectrosity 3.0
         }
 
@@ -77,8 +69,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Draw3D() {
             base.Draw3D();
-            // _line.Draw3D(_target);  removed by Vectrosity 3.0
-            _pointLine.Draw3D();
+            _pointLine.Draw3D();    // _line.Draw3D(_target);  removed by Vectrosity 3.0
         }
 
         private void OnSizeChanged() {
@@ -95,6 +86,22 @@ namespace CodeEnv.Master.GameContent {
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
+        #region OverHotSpot Archive
+
+        ///// <summary>
+        ///// <c>true</c> if [is mouse over hot spot]; otherwise, <c>false</c>.
+        ///// </summary>
+        //public bool IsMouseOverHotSpot {
+        //    get {
+        //        if (_pointLine == null) { return false; }
+        //        int unused;
+        //        return _pointLine.Selected(Input.mousePosition, 40, out unused);
+        //    }
+        //}
+
+        #endregion
+
     }
 }
 

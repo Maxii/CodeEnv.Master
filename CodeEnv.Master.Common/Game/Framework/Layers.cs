@@ -80,7 +80,7 @@ namespace CodeEnv.Master.Common {
         /// Layer that allows Fleets and Ships to raycast without interference from 
         /// other colliders, for the purpose of detecting keepout zones to avoid.
         /// </summary>
-        CelestialObjectKeepout = 21,
+        CelestialObjectKeepout = 21
 
         // IgnoreGuiEvents = 22, // Removed 3.19.14, replaced by IgnoreRaycast
 
@@ -88,7 +88,7 @@ namespace CodeEnv.Master.Common {
         /// Layer that allows the dedicated VectorCam (Vectrosity Camera) to cull all meshes
         /// except the Vectrosity2D meshes in the scene.
         /// </summary>
-        Vectrosity2D = 31
+        //Vectrosity2D = 31 // Removed 2.20.15 when upgrading to Vectrosity 4.0
 
     }
 }

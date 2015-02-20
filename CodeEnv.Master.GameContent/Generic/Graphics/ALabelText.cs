@@ -85,7 +85,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public AReport Report { get; private set; }
 
-        private IDictionary<LabelContentID, string> _formatLookup = new Dictionary<LabelContentID, string>();
+        private IDictionary<LabelContentID, string> _phraseFormatLookup = new Dictionary<LabelContentID, string>();
         private IDictionary<LabelContentID, IColoredTextList> _contentLookup = new Dictionary<LabelContentID, IColoredTextList>();
 
         private StringBuilder _sb = new StringBuilder();
@@ -108,13 +108,13 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="contentID">The content identifier.</param>
         /// <param name="content">The content.</param>
-        /// <param name="format">The format.</param>
-        public void Add(LabelContentID contentID, IColoredTextList content, string format) {
-            D.Assert(!_contentLookup.ContainsKey(contentID), "ContentID already present: {0}.".Inject(contentID.GetName()));
-            D.Assert(!_formatLookup.ContainsKey(contentID), "ContentID already present: {0}.".Inject(contentID.GetName()));
+        /// <param name="phraseFormat">The phrase as a string.Format for insertion of content.</param>
+        public void Add(LabelContentID contentID, IColoredTextList content, string phraseFormat) {
+            D.Assert(!_contentLookup.ContainsKey(contentID), "ContentID {0} already present.".Inject(contentID.GetName()));
+            D.Assert(!_phraseFormatLookup.ContainsKey(contentID), "ContentID {0} already present.".Inject(contentID.GetName()));
 
             _contentLookup.Add(contentID, content);
-            _formatLookup.Add(contentID, format);
+            _phraseFormatLookup.Add(contentID, phraseFormat);
             IsChanged = true;
         }
 
@@ -127,7 +127,7 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         public bool TryUpdate(LabelContentID contentID, IColoredTextList content) {
             D.Assert(_contentLookup.ContainsKey(contentID), "Missing ContentID: {0}.".Inject(contentID.GetName()));
-            D.Assert(_formatLookup.ContainsKey(contentID), "Missing ContentID: {0}.".Inject(contentID.GetName()));
+            D.Assert(_phraseFormatLookup.ContainsKey(contentID), "Missing ContentID: {0}.".Inject(contentID.GetName()));
 
             IColoredTextList existingContent = _contentLookup[contentID];
             if (IsEqual(existingContent, content)) {
@@ -180,12 +180,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="content">The colored text elements.</param>
         /// <returns></returns>
         private string ConstructTextPhrase(LabelContentID contentID, IColoredTextList content) {
-            string format;
-            if (_formatLookup.TryGetValue(contentID, out format)) {
+            string phraseFormat;
+            if (_phraseFormatLookup.TryGetValue(contentID, out phraseFormat)) {
                 var textElements = content.TextElements;
                 //D.Log("Format = {0}, TextElements = {1}.", format, textElements.Concatenate());
-                string phrase = format.Inject(textElements);
-                return phrase;
+                string textPhrase = phraseFormat.Inject(textElements);
+                return textPhrase;
             }
 
             string warn = "No format found for {0}.".Inject(contentID.GetName());

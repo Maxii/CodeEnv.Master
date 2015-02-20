@@ -53,12 +53,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The name.</param>
         /// <param name="points">The points.</param>
         /// <param name="target">The transform that this line follows in the scene.</param>
-        /// <param name="parent">The parent to attach the VectorObject too.</param>
         /// <param name="lineType">Type of the line.</param>
         /// <param name="width">The width.</param>
         /// <param name="color">The color.</param>
-        public A3DVectrosityBase(string name, Vector3[] points, Transform target, Transform parent, LineType lineType = LineType.Discrete, float width = 1F, GameColor color = GameColor.White)
-            : base(name, parent) {
+        public A3DVectrosityBase(string name, Vector3[] points, Transform target, LineType lineType = LineType.Discrete, float width = 1F, GameColor color = GameColor.White)
+            : base(name) {
             _points = points;
             _target = target;
             _lineType = lineType;
@@ -67,9 +66,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override void Initialize() {
-            _line = new VectorLine(LineName, _points, Color.ToUnityColor(), material, LineWidth, _lineType);
+            VectorLine.canvas3D.gameObject.layer = (int)Layers.TransparentFX;   // make the 3D canvas visible to the default 3D camera, aka mainCamera
+
+            _line = new VectorLine(LineName, _points, material, LineWidth, _lineType);
+            _line.color = Color.ToUnityColor(); // color removed from constructor in Vectrosity 4.0
+
+
             if (_target != null) { _line.drawTransform = _target; } // added as Vectrosity 3.0 removed Draw3D(Transform)
-            if (Parent != null) { OnParentChanged(); }
         }
 
         /// <summary>
@@ -101,8 +104,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void Draw3D() {
-            _line.Draw3D();
-            // _line.Draw3D(_target);  removed by Vectrosity 3.0
+            _line.Draw3D();  // _line.Draw3D(_target);  removed by Vectrosity 3.0
         }
 
         private void OnColorChanged() {
@@ -119,7 +121,8 @@ namespace CodeEnv.Master.GameContent {
 
         private void OnPointsChanged() {
             if (_line != null) {
-                _line.Resize(Points);
+                _line.points3.Clear();  //_line.Resize(Points); removed by Vectrosity 4.0
+                _line.points3.AddRange(Points);
             }
         }
     }
