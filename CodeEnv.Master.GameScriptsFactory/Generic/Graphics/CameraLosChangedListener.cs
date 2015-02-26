@@ -52,8 +52,8 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
     protected override void Start() {
         base.Start();
         if (renderer != null) {
-            // renderers usually start enabled. This is to make sure as renderers do not deliver OnBecameVisible() events if not enabled
-            renderer.enabled = true;
+            renderer.enabled = true;    // renderers usually start enabled. This is to make sure as renderers do not deliver OnBecameVisible() events if not enabled
+
             if (!renderer.isVisible) {
                 // all subscribers begin with InCameraLOS = true, aka they think they are in the camera's line of sight. When the renderer first wakes up,
                 // it sends OnBecameInvisible if it is not visible. If this occurs before this listener is enabled, the listener's subscribers will not receive

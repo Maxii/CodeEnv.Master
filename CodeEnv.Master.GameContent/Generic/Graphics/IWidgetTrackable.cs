@@ -26,6 +26,8 @@ namespace CodeEnv.Master.GameContent {
 
         string DisplayName { get; }
 
+        Vector3 Position { get; }
+
         /// <summary>
         /// Gets the transform of this IWidgetTrackable target.
         /// </summary>

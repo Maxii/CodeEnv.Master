@@ -152,6 +152,7 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
     public void AddPlanetoid(APlanetoidItem planetoid) {
         Planetoids.Add(planetoid);
         Data.AddPlanetoid(planetoid.Data);
+        planetoid.Data.onHumanPlayerIntelCoverageChanged += OnMemberHumanPlayerIntelCoverageChanged;
     }
 
     public SystemReport GetReport(Player player) {
@@ -177,6 +178,7 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
 
     private void OnStarChanged() {
         Data.StarData = Star.Data;
+        Star.Data.onHumanPlayerIntelCoverageChanged += OnMemberHumanPlayerIntelCoverageChanged;
     }
 
     private void OnSettlementChanged() {
@@ -223,6 +225,14 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
 
     #region View Methods
 
+    public override void AssessDiscernability() {
+        // a System is not discernible to the humanPlayer unless it is visible to the camera 
+        // AND the humanPlayer knows more about it than just being aware of its star
+        var hasInvestigated = HasPlayerInvestigated(_gameMgr.HumanPlayer);
+        //D.Log("{0}.AssessDiscernability() called. InCameraLOS = {1}, HasPlayerInvestigated = {2}.", FullName, InCameraLOS, hasInvestigated);
+        IsDiscernible = InCameraLOS && hasInvestigated;
+    }
+
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
         ShowTrackingLabel(IsDiscernible);
@@ -235,6 +245,15 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
             SelectionManager.Instance.CurrentSelection = this;
         }
         AssessHighlighting();
+    }
+
+    private void OnMemberHumanPlayerIntelCoverageChanged() {
+        // HACK one time event to trigger System's first assessment of discernability as System has no IntelCoverage to trigger it itself
+        D.Assert(!_isViewMembersOnDiscernibleInitialized);
+        AssessDiscernability();
+        D.Assert(_isViewMembersOnDiscernibleInitialized);
+        Star.Data.onHumanPlayerIntelCoverageChanged -= OnMemberHumanPlayerIntelCoverageChanged;
+        Planetoids.ForAll(p => p.Data.onHumanPlayerIntelCoverageChanged -= OnMemberHumanPlayerIntelCoverageChanged);
     }
 
     public override void AssessHighlighting() {
@@ -326,6 +345,8 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
         }
+        Star.Data.onHumanPlayerIntelCoverageChanged -= OnMemberHumanPlayerIntelCoverageChanged;
+        Planetoids.ForAll(p => p.Data.onHumanPlayerIntelCoverageChanged -= OnMemberHumanPlayerIntelCoverageChanged);
         Data.Dispose();
     }
 

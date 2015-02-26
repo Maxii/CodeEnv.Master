@@ -47,7 +47,7 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ICmdPublisherClient<FacilityR
 
     protected override HudManager InitializeHudManager() {
         var hudManager = new HudManager(Publisher);
-        hudManager.AddContentToUpdate(AHudManager.UpdatableLabelContentID.IntelState);
+        hudManager.AddContentToUpdate(HudManager.UpdatableLabelContentID.IntelState);
         return hudManager;
     }
 

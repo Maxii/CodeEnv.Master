@@ -65,6 +65,10 @@ namespace CodeEnv.Master.GameContent {
             get { return DebugSettings.Instance.AllIntelCoverageComprehensive; }
         }
 
+        public override bool HasPlayerInvestigated(Player player) {
+            return GetIntelCoverage(player) != IntelCoverage.None;
+        }
+
         public bool TrySetHumanPlayerIntelCoverage(IntelCoverage newCoverage) {
             return TrySetIntelCoverage(_gameMgr.HumanPlayer, newCoverage);
         }

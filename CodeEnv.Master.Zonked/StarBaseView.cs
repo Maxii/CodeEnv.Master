@@ -272,7 +272,7 @@ public class StarBaseView : AFocusableItemView, IStarBaseViewable, ISelectable, 
 
     #region ICameraTargetable Members
 
-    public override bool IsEligible {
+    public override bool IsCameraTargetEligible {
         get {
             return IsDiscernible;
         }

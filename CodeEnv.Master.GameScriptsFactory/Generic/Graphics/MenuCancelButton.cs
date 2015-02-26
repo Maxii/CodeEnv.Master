@@ -47,7 +47,7 @@ public class MenuCancelButton : AGuiButton {
 
     /// <summary>
     /// Captures the state of the elements in the menu when called.
-    /// This is typically called when the menu has just completed its showing
+    /// This is typically called when the menu has just started or completed its showing
     /// transition process and is now ready for user interaction.
     /// </summary>
     public void CaptureMenuState() {

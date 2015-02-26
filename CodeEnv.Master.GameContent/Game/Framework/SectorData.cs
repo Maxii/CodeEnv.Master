@@ -57,6 +57,10 @@ namespace CodeEnv.Master.GameContent {
             base.Topography = Topography.OpenSpace;
         }
 
+        public override bool HasPlayerInvestigated(Player player) {
+            return true;
+        }
+
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }

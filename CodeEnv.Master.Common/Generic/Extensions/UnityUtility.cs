@@ -196,7 +196,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="parent">The object to parent too. If null, the object is instantiated without a parent.</param>
         /// <param name="prefab">The prefab to instantiate from.</param>
         /// <returns></returns>
-        static public GameObject AddChild(GameObject parent, GameObject prefab) {
+        public static GameObject AddChild(GameObject parent, GameObject prefab) {
             GameObject clone = GameObject.Instantiate(prefab) as GameObject;
             clone.name = prefab.name;
             if (clone != null && parent != null) {
@@ -354,6 +354,13 @@ namespace CodeEnv.Master.Common {
                 yield break;
             }
             GameObject.Destroy(gameObject);
+        }
+
+        public static AudioClip __GetAudioClip(AudioClipID clipID) {
+            //return (AudioClip)Resources.Load(clipID.GetName());   // Resources folder not currently implemented as it places all assets present in the scene
+            // HACK should probably be handled by an AudioManager which also works with Ngui.PlaySound
+            // so that there isn't an AudioClip copy on each UI element
+            return null;
         }
 
 
@@ -591,7 +598,28 @@ namespace CodeEnv.Master.Common {
 
         #endregion
 
+        #region Nested Classes
 
+        public enum AudioClipID {
+
+            None,
+
+            Hit,
+
+            CmdHit,
+
+            Dying,
+
+            Attacking,
+
+            Repairing,
+
+            Refitting,
+
+            Disbanding
+
+        }
+        #endregion
     }
 }
 

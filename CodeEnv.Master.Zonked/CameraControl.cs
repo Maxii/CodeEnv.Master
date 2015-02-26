@@ -572,7 +572,7 @@ public class CameraControl : AMonoBaseSingleton<MainCameraControl> {
         // I am requiring that the interface be present with the Rigidbody.
         ICameraTargetable qualifiedCameraTarget = newTarget.GetInterface<ICameraTargetable>();
         if (qualifiedCameraTarget != null) {
-            if (!qualifiedCameraTarget.IsEligible) {
+            if (!qualifiedCameraTarget.IsCameraTargetEligible) {
                 return;
             }
             _minimumDistanceFromTarget = qualifiedCameraTarget.MinimumCameraViewingDistance;
@@ -1128,7 +1128,7 @@ public class CameraControl : AMonoBaseSingleton<MainCameraControl> {
         //}
         hits = (from h in hits
                 let ict = h.transform.GetInterface<ICameraTargetable>()
-                where ict != null && ict.IsEligible
+                where ict != null && ict.IsCameraTargetEligible
                 select h).ToArray<RaycastHit>();
         if (!hits.IsNullOrEmpty<RaycastHit>()) {
             // one or more object under cursor encountered

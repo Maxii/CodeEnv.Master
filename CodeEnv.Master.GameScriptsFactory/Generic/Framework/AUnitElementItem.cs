@@ -113,8 +113,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
 
     private void InitializeIcon() {
         D.Assert(PlayerPrefsManager.Instance.IsElementIconsEnabled);
-        _icon = TrackingWidgetFactory.Instance.CreateConstantSizeTrackingSprite(this, new Vector2(12, 12), WidgetPlacement.Below);
-        _icon.Set("FleetIcon_Unknown");  // HACK 
+        _icon = TrackingWidgetFactory.Instance.CreateConstantSizeTrackingSprite(this, TrackingWidgetFactory.IconAtlasID.Fleet,
+            new Vector2(16, 16), WidgetPlacement.Below);
+        _icon.Set("FleetIcon_Unknown");
         ChangeIconColor(Owner.Color);
         //D.Log("{0} initialized its Icon.", FullName);
         // icon enabled state controlled by _icon.Show()

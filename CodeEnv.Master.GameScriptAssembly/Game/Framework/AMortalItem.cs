@@ -36,11 +36,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
         set { base.Data = value; }
     }
 
-    /// <summary>
-    /// Flag indicating whether this MortalItem is alive and operating.
-    /// </summary>
-    //public bool IsOperational { get; private set; }
-
     public AudioClip dying;
     public AudioClip hit;
 

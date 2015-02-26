@@ -149,10 +149,11 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     /// </summary>
     /// <returns><c>true</c> if within acceptable range, false otherwise.</returns>
     private bool IsWithinShowDistance() {
-        return Utility.IsInRange(Target.Transform.DistanceToCamera(), _minShowDistance, _maxShowDistance);
+        return Utility.IsInRange(Target.Position.DistanceToCamera(), _minShowDistance, _maxShowDistance);
     }
 
     protected virtual void Show() {
+        //D.Log("{0}.Show() called.", _transform.name);
         Widget.alpha = 1.0F;
         Widget.enabled = true;
         IsShowing = true;

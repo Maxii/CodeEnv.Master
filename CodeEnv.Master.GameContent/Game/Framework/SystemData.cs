@@ -118,6 +118,13 @@ namespace CodeEnv.Master.GameContent {
             return true;
         }
 
+        public override bool HasPlayerInvestigated(Player player) {
+            var isStarInvestigated = StarData.HasPlayerInvestigated(player);
+            var planetoidsInvestigatedState = _allPlanetoidData.Select(pd => pd.HasPlayerInvestigated(player));
+            //D.Log("{0}.HasPlayerInvestigated({1}) called. Star = {2}, Planetoids = {3}.", FullName, player.LeaderName, isStarInvestigated, planetoidsInvestigatedState.Concatenate());
+            return isStarInvestigated || planetoidsInvestigatedState.Any(pis => pis == true);
+        }
+
         private void OnSystemMemberCapacityChanged() {
             UpdateCapacity();
         }

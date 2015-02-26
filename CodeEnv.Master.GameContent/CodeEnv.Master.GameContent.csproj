@@ -70,7 +70,6 @@
     <Compile Include="Generic\Framework\ACmdPublisher.cs" />
     <Compile Include="Generic\Framework\ACmdReport.cs" />
     <Compile Include="Generic\Framework\AElementItemReport.cs" />
-    <Compile Include="Generic\Graphics\AHudManager.cs" />
     <Compile Include="Generic\Framework\AIntelItemReport.cs" />
     <Compile Include="Generic\Graphics\ALabelText.cs" />
     <Compile Include="Generic\Graphics\AIntelItemLabelTextFactory.cs" />

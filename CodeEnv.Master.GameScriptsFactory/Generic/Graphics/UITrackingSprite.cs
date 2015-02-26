@@ -37,7 +37,6 @@ public class UITrackingSprite : AUITrackingWidget {
 
     protected override void Awake() {
         base.Awake();
-        D.Assert(Widget.atlas != null, "Sprite atlas has not been assigned.", true, WidgetTransform);
         D.Assert(Widget.localSize != new Vector2(2, 2) && Widget.localSize != Vector2.zero, "Sprite size not set.", this);
         __AdjustSpriteSize();
     }
@@ -47,6 +46,7 @@ public class UITrackingSprite : AUITrackingWidget {
     /// </summary>
     /// <param name="spriteName">Name of the sprite.</param>
     public override void Set(string spriteName) {
+        D.Assert(Widget.atlas != null, "Sprite atlas has not been assigned.", true, WidgetTransform);
         if (Widget.spriteName == spriteName) { return; }
         Widget.spriteName = spriteName;
     }

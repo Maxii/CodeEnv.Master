@@ -387,7 +387,7 @@ public class FleetView : AFollowableView, IFleetViewable, ISelectable {
 
     #region ICameraTargetable Members
 
-    public override bool IsEligible {
+    public override bool IsCameraTargetEligible {
         get {
             return IsDetectable;
         }

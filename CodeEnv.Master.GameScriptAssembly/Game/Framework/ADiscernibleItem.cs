@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -297,7 +297,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     /// Indicates whether this instance is currently eligible to be a camera target for zooming, focusing or following.
     /// e.g. - the camera should not know the object exists when it is not discernible to the human player.
     /// </summary>
-    public bool IsEligible { get { return IsDiscernible; } }
+    public virtual bool IsCameraTargetEligible { get { return IsDiscernible; } }
 
     public abstract float MinimumCameraViewingDistance { get; }
 

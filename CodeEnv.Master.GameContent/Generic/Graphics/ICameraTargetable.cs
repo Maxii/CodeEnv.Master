@@ -25,9 +25,9 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Indicates whether this instance is currently eligible to be a camera target for zooming, focusing or following.  
-        /// e.g. - the camera should not know the object exists when it is not visible to the player.
+        /// e.g. - the camera should not know the object exists when it is not discernible by the human player.
         /// </summary>
-        bool IsEligible { get; }
+        bool IsCameraTargetEligible { get; }
 
         /// <summary>
         /// Gets the minimum camera viewing distance allowed for this ICameraTargetable object.

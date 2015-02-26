@@ -26,6 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Abstract base class holding the static reference to CursorHud for all HudManagers.
     /// </summary>
+    [Obsolete]
     public abstract class AHudManager {
 
         public static IGuiHud CursorHud { protected get; set; }

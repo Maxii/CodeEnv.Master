@@ -118,7 +118,7 @@ public abstract class AItem : AMonoBase, ICameraTargetable, IHasData, IDisposabl
 
     #region ICameraTargetable Members
 
-    public virtual bool IsEligible {
+    public virtual bool IsCameraTargetEligible {
         get { return true; }
     }
 

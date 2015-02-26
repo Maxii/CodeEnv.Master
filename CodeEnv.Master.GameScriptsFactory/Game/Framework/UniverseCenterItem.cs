@@ -94,7 +94,7 @@ public class UniverseCenterItem : ADiscernibleItem, IShipOrbitable, IDetectable 
 
     protected override HudManager InitializeHudManager() {
         var hudManager = new HudManager(Publisher);
-        hudManager.AddContentToUpdate(AHudManager.UpdatableLabelContentID.IntelState);
+        hudManager.AddContentToUpdate(HudManager.UpdatableLabelContentID.IntelState);
         return hudManager;
     }
 

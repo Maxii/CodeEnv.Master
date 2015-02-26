@@ -105,7 +105,7 @@ public class ShipItem : AUnitElementItem, IShipItem, ISelectable {
 
     protected override HudManager InitializeHudManager() {
         var hudManager = new HudManager(Publisher);
-        hudManager.AddContentToUpdate(AHudManager.UpdatableLabelContentID.IntelState, AHudManager.UpdatableLabelContentID.TargetDistance);
+        hudManager.AddContentToUpdate(HudManager.UpdatableLabelContentID.IntelState, HudManager.UpdatableLabelContentID.TargetDistance);
         return hudManager;
     }
 

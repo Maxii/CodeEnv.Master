@@ -1,16 +1,16 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2015 Microsoft
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AMortalItemView.cs
-// Abstract class managing the UI View for a mortal object.
+// File: AMortalItemDisplayManager.cs
+// COMMENT - one line to give a brief idea of what the file does.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -18,82 +18,64 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-///  Abstract class managing the UI View for a mortal object.
-///  </summary>
-public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
+/// 
+/// </summary>
+public abstract class AMortalItemDisplayManager : ADiscernibleItemDisplayManager {
 
-    #region Debug
+    protected new AMortalItem Item { get { return base.Item as AMortalItem; } }
 
-    /// <summary>
-    /// Logs the method name called. WARNING:  Coroutines showup as &lt;IEnumerator.MoveNext&gt; rather than the method name
-    /// </summary>
-    public override void LogEvent() {
-        if (DebugSettings.Instance.EnableEventLogging) {
-            System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackFrame(1);
-            string name = Presenter != null ? Presenter.Model.FullName : _transform.name + "(from transform)";
-            Debug.Log("{0}.{1}.{2}() called.".Inject(name, GetType().Name, stackFrame.GetMethod().Name));
-        }
-    }
-
-    #endregion
-
-    public new AMortalItemPresenter Presenter {
-        get { return base.Presenter as AMortalItemPresenter; }
-        protected set { base.Presenter = value; }
-    }
-
-    public AudioClip dying;
-    public AudioClip hit;
     protected AudioSource _audioSource;
     protected Job _showingJob;
 
-    protected override void Awake() {
-        base.Awake();
-        _audioSource = UnityUtility.ValidateComponentPresence<AudioSource>(gameObject);
-        LogEvent();
+
+    public AMortalItemDisplayManager(AMortalItem item)
+        : base(item) {
+        _audioSource = UnityUtility.ValidateComponentPresence<AudioSource>(item.gameObject);
     }
 
-    #region Mouse Events
-
-    protected override void OnAltLeftClick() {
-        base.OnAltLeftClick();
-        Presenter.__SimulateAttacked();
+    protected void OnShowCompletion() {
+        Item.OnShowCompletion();
     }
 
-    #endregion
-
-    #region Animations
-
-    // these must return onShowCompletion when finished
+    // these must call OnShowCompletion when finished
     private void ShowDying() {
-        LogEvent();
-        _showingJob = new Job(ShowingDying(), toStart: true);
+        if (_showingJob != null && _showingJob.IsRunning) {
+            _showingJob.Kill();
+        }
+        _showingJob = new Job(ShowingDying(), toStart: true, onJobComplete: (wasKilled) => {
+            OnShowCompletion();
+        });
     }
 
-    // these run until finished with no requirement to return onShowCompletion
+    // these run until finished with no requirement to call OnShowCompletion
     private void ShowHit() {
-        LogEvent();
+        if (_showingJob != null && _showingJob.IsRunning) {
+            _showingJob.Kill();
+        }
         _showingJob = new Job(ShowingHit(), toStart: true);
     }
 
-    protected virtual void ShowCmdHit() { LogEvent(); }
+    protected virtual void ShowCmdHit() { }
 
-    protected virtual void ShowAttacking() { LogEvent(); }
+    protected virtual void ShowAttacking() { }
 
     // these run continuously until they are stopped via StopAnimation() 
-    protected virtual void ShowRepairing() { LogEvent(); }
+    protected virtual void ShowRepairing() { }
 
-    protected virtual void ShowRefitting() { LogEvent(); }
+    protected virtual void ShowRefitting() { }
 
-    protected virtual void ShowDisbanding() { LogEvent(); }
+    protected virtual void ShowDisbanding() { }
 
     private IEnumerator ShowingHit() {
+        AudioClip hit = UnityUtility.__GetAudioClip(UnityUtility.AudioClipID.Hit);
         if (hit != null) {
             _audioSource.PlayOneShot(hit);
         }
@@ -104,34 +86,14 @@ public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
     }
 
     private IEnumerator ShowingDying() {
+        AudioClip dying = UnityUtility.__GetAudioClip(UnityUtility.AudioClipID.Dying);
         if (dying != null) {
             _audioSource.PlayOneShot(dying);
         }
         //animation.Stop();
         //yield return UnityUtility.PlayAnimation(animation, "die");  // show debree particles for some period of time?
         yield return null;
-        OnShowCompletion();
     }
-
-    protected void OnShowCompletion() {
-        if (onShowCompletion != null) {
-            onShowCompletion();
-        }
-    }
-
-    #endregion
-
-    #region ICameraTargetable Members
-
-    public override bool IsCameraTargetEligible {
-        get { return PlayerIntel.CurrentCoverage != IntelCoverage.None; }
-    }
-
-    #endregion
-
-    #region IMortalViewable Members
-
-    public event Action onShowCompletion;
 
     public void ShowAnimation(MortalAnimations animation) {
         switch (animation) {
@@ -165,12 +127,10 @@ public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
     public void StopAnimation(MortalAnimations animation) {
         if (_showingJob != null && _showingJob.IsRunning) {
             _showingJob.Kill();
+            return;
         }
+        //D.Warn("No Animation named {0} to stop.", animation.GetName());   // Commented out as most show Jobs not yet implemented
     }
-
-    public virtual void OnDeath() { }
-
-    #endregion
 
 }
 

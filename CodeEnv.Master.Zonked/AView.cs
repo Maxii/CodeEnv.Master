@@ -262,7 +262,7 @@ public abstract class AView : AMonoBase, IViewable, ICameraLOSChangedClient, ICa
 
     #region ICameraTargetable Members
 
-    public virtual bool IsEligible {
+    public virtual bool IsCameraTargetEligible {
         get { return true; }
     }
 

@@ -40,7 +40,7 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, ICmdPublisherClient<FacilityRep
 
     protected override HudManager InitializeHudManager() {
         var hudManager = new HudManager(Publisher);
-        hudManager.AddContentToUpdate(AHudManager.UpdatableLabelContentID.IntelState);
+        hudManager.AddContentToUpdate(HudManager.UpdatableLabelContentID.IntelState);
         return hudManager;
     }
 

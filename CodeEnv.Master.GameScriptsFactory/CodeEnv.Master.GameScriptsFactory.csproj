@@ -58,6 +58,13 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="ADiscernibleItemDisplayManager.cs" />
+    <Compile Include="AMortalItemDisplayManager.cs" />
+    <Compile Include="AUnitCmdDisplayManager.cs" />
+    <Compile Include="AUnitElementItemDisplayManager.cs" />
+    <Compile Include="BaseDisplayManager.cs" />
+    <Compile Include="FacilityDisplayManager.cs" />
+    <Compile Include="FleetDisplayManager.cs" />
     <Compile Include="Generic\Graphics\AGuiPopupList.cs" />
     <Compile Include="Generic\Graphics\AGuiMenuElement.cs" />
     <Compile Include="Generic\Graphics\AGuiTooltip.cs" />
@@ -78,7 +85,7 @@
     <Compile Include="Generic\Graphics\CameraLosChangedListener.cs" />
     <Compile Include="Generic\Graphics\AWorldTrackingWidget.cs" />
     <Compile Include="Generic\Graphics\AWorldTrackingWidget_ConstantSize.cs" />
-    <Compile Include="Game\Graphics\CommandTrackingSprite.cs" />
+    <Compile Include="Game\Graphics\InteractableTrackingSprite.cs" />
     <Compile Include="Generic\Graphics\ATrackingWidget.cs" />
     <Compile Include="Generic\Graphics\AWorldTrackingWidget_VariableSize.cs" />
     <Compile Include="Generic\Graphics\AUITrackingWidget.cs" />
@@ -152,6 +159,11 @@
     <Compile Include="Game\GUI\GuiAudioOptionMenuAcceptButton.cs" />
     <Compile Include="Game\Framework\SectorItem.cs" />
     <Compile Include="Generic\Graphics\MenuCancelButton.cs" />
+    <Compile Include="Game\Graphics\StarDisplayMgr.cs" />
+    <Compile Include="PlanetoidDisplayManager.cs" />
+    <Compile Include="ShipDisplayManager.cs" />
+    <Compile Include="StarDisplayManager.cs" />
+    <Compile Include="SystemDisplayManager.cs" />
     <Compile Include="ThirdParty\MyEnvelopContent.cs" />
     <Compile Include="ThirdParty\MyAStarPointGraph.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

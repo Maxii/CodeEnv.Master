@@ -82,6 +82,10 @@ namespace CodeEnv.Master.GameContent {
             base.Topography = Topography.System;
         }
 
+        public override bool HasPlayerInvestigated(Player player) {
+            return GetIntelCoverage(player) > IntelCoverage.Aware;
+        }
+
         protected override AIntel InitializeIntelState(Player player) {
             var coverage = IsAllIntelCoverageComprehensive || Owner == player ? IntelCoverage.Comprehensive : IntelCoverage.Aware;
             return new ImprovingIntel(coverage);

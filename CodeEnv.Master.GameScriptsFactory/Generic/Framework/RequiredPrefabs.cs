@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: RequiredPrefabs.cs
-// Singleton container that holds prefabs that are guaranteed to be used in the GameScene.
+// Persistent singleton container that holds prefab instances that can be used to instantiate a clone in a scene.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,12 +21,8 @@ using CodeEnv.Master.Common;
 using UnityEngine;
 
 /// <summary>
-/// Singleton container that holds prefabs that are guaranteed to be used in the GameScene.
+/// Persistent singleton container that holds prefab instances that can be used to instantiate a clone in a scene.
 /// </summary>
-/// <remarks>
-/// I think these are a real reference to the prefab in the Project view, not a separate instance
-/// clone of the Prefab in the startScene. As such, they must be Instantiated before use.
-/// </remarks>
 public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
 
     #region Prefabs
@@ -37,21 +33,24 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
     /// </summary>
     public GameObject worldTrackingLabel;
     /// <summary>
-    /// A generic prefab for sprites that track the world object they are parented too.
-    /// They need to have specific scripts added after instantiation to function.
-    /// </summary>
-    public GameObject worldTrackingSprite;
-
-    /// <summary>
     /// A specific prefab for labels that track world objects from the UI layer.
     /// Includes all scripts.
     /// </summary>
     public UITrackingLabel uiTrackingLabel;
     /// <summary>
-    /// A specific prefab for sprites that track world objects from the UI layer.
-    /// Includes all scripts.
+    /// Prefab for sprites that track the world object they are parented too.
+    /// They need specific scripts and an atlas added after instantiation to function.
+    /// </summary>
+    public GameObject worldTrackingSprite;
+
+    /// <summary>
+    /// Prefab for sprites that track world objects from the UI layer.
+    /// Includes all scripts but needs an atlas added.
     /// </summary>
     public UITrackingSprite uiTrackingSprite;
+
+    public UIAtlas fleetIconAtlas;
+    public UIAtlas contextualAtlas;
 
     public SphereCollider universeEdge;
     public Transform cameraDummyTarget;

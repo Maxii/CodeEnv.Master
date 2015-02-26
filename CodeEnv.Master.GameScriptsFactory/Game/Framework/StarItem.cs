@@ -51,16 +51,19 @@ public class StarItem : AIntelItem, IShipOrbitable, IDetectable {
 
     protected override float ItemTypeCircleScale { get { return 1.5F; } }
 
-    private Billboard _billboard;
+    //private Billboard _billboard;
     private SystemItem _system;
     private DetectionHandler _detectionHandler;
     private ICtxControl _ctxControl;
+    //private InteractableTrackingSprite _icon;
+
+    private StarDisplayMgr _displayMgr;
 
     #region Initialization
 
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
-        var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
+        var meshRenderer = gameObject.GetComponentInChildren<Renderer>();   // FIXME this gets first, but there is more than one
         Radius = meshRenderer.bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
         collider.enabled = false;
         collider.isTrigger = false;
@@ -69,6 +72,17 @@ public class StarItem : AIntelItem, IShipOrbitable, IDetectable {
         InitializeKeepoutZone();
         //D.Log("{0}.Radius set to {1}.", FullName, Radius);
     }
+    //protected override void InitializeLocalReferencesAndValues() {
+    //    base.InitializeLocalReferencesAndValues();
+    //    var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
+    //    Radius = meshRenderer.bounds.size.x / 2F;    // half of the (length, width or height, all the same surrounding a sphere)
+    //    collider.enabled = false;
+    //    collider.isTrigger = false;
+    //    (collider as SphereCollider).radius = Radius;
+    //    InitializeShipOrbitSlot();
+    //    InitializeKeepoutZone();
+    //    //D.Log("{0}.Radius set to {1}.", FullName, Radius);
+    //}
 
     private void InitializeShipOrbitSlot() {
         float innerOrbitRadius = Radius * TempGameValues.KeepoutRadiusMultiplier;
@@ -93,50 +107,106 @@ public class StarItem : AIntelItem, IShipOrbitable, IDetectable {
         base.InitializeViewMembersOnDiscernible();
         InitializeContextMenu(Owner);
 
-        var meshRenderer = gameObject.GetComponentInImmediateChildren<MeshRenderer>();
-        meshRenderer.castShadows = false;
-        meshRenderer.receiveShadows = false;
-        meshRenderer.enabled = true;
+        _displayMgr = gameObject.GetSafeMonoBehaviourComponentInChildren<StarDisplayMgr>();
+        _displayMgr.Initialize(trackedItem: this);
 
-        var glowRenderers = gameObject.GetComponentsInChildren<MeshRenderer>().Except(meshRenderer);
-        glowRenderers.ForAll(gr => {
-            gr.castShadows = false;
-            gr.receiveShadows = false;
-            gr.enabled = true;
-        });
+        var iconEventListener = _displayMgr.IconEventListener;
+        iconEventListener.onHover += (iconGo, isOver) => OnHover(isOver);
+        iconEventListener.onClick += (iconGo) => OnClick();
+        iconEventListener.onDoubleClick += (iconGo) => OnDoubleClick();
+        iconEventListener.onPress += (iconGo, isDown) => OnPress(isDown);
 
-        var starLight = gameObject.GetComponentInChildren<Light>();
-        starLight.range = GameManager.Instance.GameSettings.UniverseSize.Radius();
-        starLight.intensity = 0.5F;
-        starLight.cullingMask = _starLightCullingMask;
-        starLight.enabled = true;
-
-        _billboard = gameObject.GetSafeMonoBehaviourComponentInChildren<Billboard>();
-        _billboard.enabled = true;
-
-        var animation = gameObject.GetComponentInChildren<Animation>();
-        animation.cullingType = AnimationCullingType.BasedOnRenderers; // aka, disabled when not visible
-        animation.enabled = true;
-        // TODO animation settings and distance controls
-
-        // var revolvers = gameObject.GetSafeMonoBehaviourComponentsInChildren<Revolver>();
-        // revolvers.ForAll(r => r.axisOfRotation = new Vector3(Constants.Zero, Constants.One, Constants.Zero));
-        // TODO Revolver settings and distance controls, Revolvers control their own enabled state based on visibility
-
-        var cameraLosChgdListener = gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLosChangedListener>();
-        cameraLosChgdListener.onCameraLosChanged += (go, inCameraLOS) => InCameraLOS = inCameraLOS;
-        cameraLosChgdListener.enabled = true;
+        _subscribers.Add(_displayMgr.SubscribeToPropertyChanged<StarDisplayMgr, bool>(sdm => sdm.InCameraLOS, __OnDisplayMgrInCameraLOSChanged));
+        _displayMgr.IconColor = Owner.Color;
+        _displayMgr.enabled = true;
     }
+
+    //protected override void InitializeViewMembersOnDiscernible() {
+    //    base.InitializeViewMembersOnDiscernible();
+    //    InitializeContextMenu(Owner);
+
+    //    _displayMgr = gameObject.GetSafeMonoBehaviourComponentInChildren<StarDisplayMgr>();
+    //    _displayMgr.Initialize();
+
+    //    var iconEventListener = _displayMgr.IconEventListener;
+    //    iconEventListener.onHover += (iconGo, isOver) => OnHover(isOver);
+    //    iconEventListener.onClick += (iconGo) => OnClick();
+    //    iconEventListener.onDoubleClick += (iconGo) => OnDoubleClick();
+    //    iconEventListener.onPress += (iconGo, isDown) => OnPress(isDown);
+
+    //    _displayMgr.onInCameraLosChanged += (inCameraLOS) => InCameraLOS = inCameraLOS;
+    //    _displayMgr.AllowShowing = true;
+    //}
+    //protected override void InitializeViewMembersOnDiscernible() {
+    //    base.InitializeViewMembersOnDiscernible();
+    //    InitializeContextMenu(Owner);
+
+    //    var meshRenderer = gameObject.GetComponentInImmediateChildren<MeshRenderer>();
+    //    meshRenderer.castShadows = false;
+    //    meshRenderer.receiveShadows = false;
+    //    meshRenderer.enabled = true;
+
+    //    var glowRenderers = gameObject.GetComponentsInChildren<MeshRenderer>().Except(meshRenderer);
+    //    glowRenderers.ForAll(gr => {
+    //        gr.castShadows = false;
+    //        gr.receiveShadows = false;
+    //        gr.enabled = true;
+    //    });
+
+    //    var starLight = gameObject.GetComponentInChildren<Light>();
+    //    starLight.range = GameManager.Instance.GameSettings.UniverseSize.Radius();
+    //    starLight.intensity = 0.5F;
+    //    starLight.cullingMask = _starLightCullingMask;
+    //    starLight.enabled = true;
+
+    //    _billboard = gameObject.GetSafeMonoBehaviourComponentInChildren<Billboard>();
+    //    _billboard.enabled = true;
+
+    //    var animation = gameObject.GetComponentInChildren<Animation>();
+    //    animation.cullingType = AnimationCullingType.BasedOnRenderers; // aka, disabled when not visible
+    //    animation.enabled = true;
+    //    // TODO animation settings and distance controls
+
+    //    // var revolvers = gameObject.GetSafeMonoBehaviourComponentsInChildren<Revolver>();
+    //    // revolvers.ForAll(r => r.axisOfRotation = new Vector3(Constants.Zero, Constants.One, Constants.Zero));
+    //    // TODO Revolver settings and distance controls, Revolvers control their own enabled state based on visibility
+
+    //    var cameraLosChgdListener = gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLosChangedListener>();
+    //    cameraLosChgdListener.onCameraLosChanged += (go, inCameraLOS) => InCameraLOS = inCameraLOS;
+    //    cameraLosChgdListener.enabled = true;
+
+    //    InitializeIcon();
+    //}
 
     protected override HudManager InitializeHudManager() {
         var hudManager = new HudManager(Publisher);
-        hudManager.AddContentToUpdate(AHudManager.UpdatableLabelContentID.IntelState);
+        hudManager.AddContentToUpdate(HudManager.UpdatableLabelContentID.IntelState);
         return hudManager;
     }
 
     private void InitializeContextMenu(Player owner) {
         _ctxControl = new StarCtxControl(this);
     }
+
+    //private void InitializeIcon() {
+    //    float minShowDistance = Camera.main.layerCullDistances[(int)Layers.StarCull];
+    //    _icon = TrackingWidgetFactory.Instance.CreateInteractableTrackingSprite(this, TrackingWidgetFactory.IconAtlasID.Contextual,
+    //        new Vector2(16, 16), WidgetPlacement.Over, minShowDistance);
+    //    _icon.Set("Icon01");
+    //    ChangeIconColor(Owner.Color);
+
+    //    var cmdIconEventListener = _icon.EventListener;
+    //    cmdIconEventListener.onHover += (cmdIconGo, isOver) => OnHover(isOver);
+    //    cmdIconEventListener.onClick += (cmdIconGo) => OnClick();
+    //    cmdIconEventListener.onDoubleClick += (cmdIconGo) => OnDoubleClick();
+    //    cmdIconEventListener.onPress += (cmdIconGo, isDown) => OnPress(isDown);
+
+    //    var cmdIconCameraLosChgdListener = _icon.CameraLosChangedListener;
+    //    cmdIconCameraLosChgdListener.onCameraLosChanged += (cmdIconGo, inCameraLOS) => InCameraLOS = inCameraLOS;
+    //    cmdIconCameraLosChgdListener.enabled = true;
+    //    //D.Log("{0} initialized its Icon.", FullName);
+    //    // icon enabled state controlled by _icon.Show()
+    //}
 
     #endregion
 
@@ -154,13 +224,56 @@ public class StarItem : AIntelItem, IShipOrbitable, IDetectable {
         // there is only 1 type of ContextMenu for Stars so no need to generate a new one
     }
 
+    protected override void OnOwnerChanged() {
+        base.OnOwnerChanged();
+        if (_displayMgr != null) {
+            _displayMgr.IconColor = Owner.Color;
+        }
+    }
+    //protected override void OnOwnerChanged() {
+    //    base.OnOwnerChanged();
+    //    _displayMgr.ChangeIconColor(Owner.Color);
+    //}
+    //protected override void OnOwnerChanged() {
+    //    base.OnOwnerChanged();
+    //    ChangeIconColor(Owner.Color);
+    //}
+
     #endregion
 
     #region View Methods
 
-    protected override void OnIsDiscernibleChanged() {
-        base.OnIsDiscernibleChanged();
-        _billboard.enabled = IsDiscernible;
+    protected override void OnHumanPlayerIntelCoverageChanged() {
+        base.OnHumanPlayerIntelCoverageChanged();
+        _displayMgr.enabled = GetHumanPlayerIntelCoverage() != IntelCoverage.None;
+    }
+    //protected override void OnHumanPlayerIntelCoverageChanged() {
+    //    base.OnHumanPlayerIntelCoverageChanged();
+    //    _displayMgr.AllowShowing = GetHumanPlayerIntelCoverage() != IntelCoverage.None;
+    //}
+
+    //protected override void OnIsDiscernibleChanged() {
+    //    base.OnIsDiscernibleChanged();
+    //    _billboard.enabled = IsDiscernible;
+    //    // icon only shows when in front of the camera and beyond the star mesh's culling distance
+    //    ShowIcon(!IsDiscernible && UnityUtility.IsWithinCameraViewport(Position));
+    //}
+
+    //private void ShowIcon(bool toShow) {
+    //    if (_icon != null) {
+    //        //D.Log("{0}.ShowIcon({1}) called.", FullName, toShow);
+    //        _icon.Show(toShow);
+    //    }
+    //}
+
+    //private void ChangeIconColor(GameColor color) {
+    //    if (_icon != null) {
+    //        _icon.Color = color;
+    //    }
+    //}
+
+    private void __OnDisplayMgrInCameraLOSChanged() {
+        InCameraLOS = _displayMgr.InCameraLOS;
     }
 
     #endregion
@@ -195,6 +308,8 @@ public class StarItem : AIntelItem, IShipOrbitable, IDetectable {
             _detectionHandler.Dispose();
         }
     }
+
+    // no need to destroy _icon as it is a child of this element
 
     #endregion
 

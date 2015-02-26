@@ -287,7 +287,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         cullDistances[(int)Layers.ShipCull] = TempGameValues.ShipMaxRadius * AnimationSettings.Instance.ShipLayerCullingDistanceFactor;   // 5
         cullDistances[(int)Layers.FacilityCull] = TempGameValues.FacilityMaxRadius * AnimationSettings.Instance.FacilityLayerCullingDistanceFactor;  // 12.5
         cullDistances[(int)Layers.PlanetoidCull] = TempGameValues.PlanetoidMaxRadius * AnimationSettings.Instance.PlanetoidLayerCullingDistanceFactor;   // 500
-        cullDistances[(int)Layers.StarCull] = TempGameValues.StarMaxRadius * AnimationSettings.Instance.StarLayerCullingDistanceFactor; // 3000
+        cullDistances[(int)Layers.StarCull] = TempGameValues.StarMaxRadius * AnimationSettings.Instance.StarLayerCullingDistanceFactor; // 3000   // temp commented to always see
         _camera.layerCullDistances = cullDistances;
     }
 
@@ -1127,7 +1127,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         // I am requiring that the interface be present with the Rigidbody.
         ICameraTargetable qualifiedCameraTarget = newTarget.GetInterface<ICameraTargetable>();
         if (qualifiedCameraTarget != null) {
-            if (!qualifiedCameraTarget.IsEligible) {
+            if (!qualifiedCameraTarget.IsCameraTargetEligible) {
                 return;
             }
             _minimumDistanceFromTarget = qualifiedCameraTarget.MinimumCameraViewingDistance;
@@ -1352,14 +1352,14 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             SimpleRaycastHit eligibleIctHit = default(SimpleRaycastHit);
             ICameraTargetable ict = hit.transform.GetInterface<ICameraTargetable>();
             if (ict != null) {
-                if (ict.IsEligible) {
+                if (ict.IsCameraTargetEligible) {
                     eligibleIctHit = new SimpleRaycastHit(hit.transform, hit.point);
                 }
             }
             else {
                 Transform t = hit.transform.GetTransformWithInterfaceInParents<ICameraTargetable>(out ict);
                 if (t != null) {
-                    if (ict.IsEligible) {
+                    if (ict.IsCameraTargetEligible) {
                         eligibleIctHit = new SimpleRaycastHit(t, hit.point);
                     }
                 }

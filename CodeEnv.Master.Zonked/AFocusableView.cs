@@ -164,7 +164,7 @@ public abstract class AFocusableView : AItemView, ICameraFocusable {
 
     #region ICameraTargetable Members
 
-    public virtual bool IsEligible {
+    public virtual bool IsCameraTargetEligible {
         get { return true; }
     }
 

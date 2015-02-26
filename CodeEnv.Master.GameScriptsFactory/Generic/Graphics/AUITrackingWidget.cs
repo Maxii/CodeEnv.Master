@@ -40,7 +40,7 @@ public abstract class AUITrackingWidget : ATrackingWidget {
 
     protected override void SetPosition() {
         //D.Log("Target position = {0}, Offset = {1}.", _target.Transform.position, _offset);
-        _transform.OverlayPosition(Target.Transform.position + _offset, Camera.main, _uiCamera);
+        _transform.OverlayPosition(Target.Position + _offset, Camera.main, _uiCamera);
         //D.Log("Resulting position of UI element = {0}.", _transform.position);
         _transform.SetZ(Constants.ZeroF);
     }

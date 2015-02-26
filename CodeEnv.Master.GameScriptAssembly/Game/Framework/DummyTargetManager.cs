@@ -33,7 +33,7 @@ public class DummyTargetManager : AMonoSingleton<DummyTargetManager>, ICameraTar
 
     #region ICameraTargetable Members
 
-    public bool IsEligible { get { return true; } }
+    public bool IsCameraTargetEligible { get { return true; } }
 
     public float MinimumCameraViewingDistance { get { return 50F; } }
 

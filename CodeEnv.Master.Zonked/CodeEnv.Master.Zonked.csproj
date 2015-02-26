@@ -75,6 +75,7 @@
     <Compile Include="AGuiHudTextFactory.cs" />
     <Compile Include="AGuiPopupList.cs" />
     <Compile Include="AGuiStringPopupList.cs" />
+    <Compile Include="AHudManager.cs" />
     <Compile Include="AInputManager.cs" />
     <Compile Include="AItem.cs" />
     <Compile Include="AItemData.cs" />

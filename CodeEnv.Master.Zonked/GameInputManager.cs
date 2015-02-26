@@ -246,7 +246,7 @@ public class GameInputManager : AInputManager<GameInputManager>, IInputManager {
 
         if (target != null) {
             // scroll event target is an ICameraTargetable
-            if (!target.IsEligible) {
+            if (!target.IsCameraTargetEligible) {
                 // the object's collider shouldn't be enabled when not eligible (aka not discernible)
                 D.Warn("InEligible {0} found while scrolling.", typeof(ICameraTargetable).Name);
                 return;

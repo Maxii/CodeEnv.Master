@@ -303,7 +303,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 
         if (target != null) {
             // scroll event target is an ICameraTargetable
-            if (!target.IsEligible) {
+            if (!target.IsCameraTargetEligible) {
                 // Note: This is OK, albeit infrequent. Stars, Planetoids, Ships and Facilities all keep their collider on, even when not discernible. 
                 // All can lose discernibility <- distance culling
                 D.Log("InEligible {0} {1} found while scrolling.", typeof(ICameraTargetable).Name, target.Transform.name);

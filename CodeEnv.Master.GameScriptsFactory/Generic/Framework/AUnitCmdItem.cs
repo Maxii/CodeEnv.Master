@@ -75,8 +75,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
     protected IList<ISensorRangeMonitor> _sensorRangeMonitors = new List<ISensorRangeMonitor>();
     protected FormationGenerator _formationGenerator;
 
-    private CommandTrackingSprite _icon;
+    private InteractableTrackingSprite _icon;
     private ITrackingWidget _trackingLabel;
+
+    private Transform _cmdHighlightTransform;
+    private float _cmdHighlightBaseRadius;
 
     #region Initialization
 
@@ -103,11 +106,13 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
     protected override void InitializeViewMembersOnDiscernible() {
         base.InitializeViewMembersOnDiscernible();
         InitializeIcon();
+        InitializeCmdHighlight();
     }
 
     private void InitializeIcon() {
         //D.Log("{0}.InitializeIcon() called.", FullName);
-        _icon = TrackingWidgetFactory.Instance.CreateCmdTrackingSprite(this);
+        _icon = TrackingWidgetFactory.Instance.CreateInteractableTrackingSprite(this, TrackingWidgetFactory.IconAtlasID.Fleet,
+            new Vector2(24, 24));
         // CmdIcon enabled state controlled by CmdIcon.Show()
 
         var cmdIconEventListener = _icon.EventListener;
@@ -128,6 +133,19 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
         trackingLabel.Set(DisplayName);
         trackingLabel.Color = Owner.Color;
         return trackingLabel;
+    }
+
+    private void InitializeCmdHighlight() {
+        var cmdHighlightRenderer = gameObject.GetComponentInImmediateChildren<MeshRenderer>();
+        _cmdHighlightTransform = cmdHighlightRenderer.transform;
+        _cmdHighlightBaseRadius = cmdHighlightRenderer.bounds.size.x / 2F;
+    }
+
+    private void ResizeCmdHighlight() {
+        if (_cmdHighlightTransform != null) {
+            float scale = Radius / _cmdHighlightBaseRadius;
+            _cmdHighlightTransform.localScale = new Vector3(scale, scale, scale);
+        }
     }
 
     #endregion
@@ -247,6 +265,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
         Radius = HQElement.Radius;
         PlaceCmdUnderHQElement();
         _formationGenerator.RegenerateFormation();
+        ResizeCmdHighlight();
     }
 
     protected override void OnOwnerChanged() {
@@ -381,6 +400,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
     }
 
     private void ShowTrackingLabel(bool toShow) {
+        D.Log("{0}.ShowTrackingLabel({1}) called. IsTrackingLabelEnabled = {2}.", FullName, toShow, IsTrackingLabelEnabled);
         if (IsTrackingLabelEnabled) {
             _trackingLabel = _trackingLabel ?? InitializeTrackingLabel();
             _trackingLabel.Show(toShow);

@@ -39,7 +39,7 @@ public class GuiCursorHud : AHud<GuiCursorHud>, IGuiHud {
     }
 
     private void InitializeHudManagers() {
-        AHudManager.CursorHud = Instance;
+        HudManager.CursorHud = Instance;
     }
 
     /// <summary>

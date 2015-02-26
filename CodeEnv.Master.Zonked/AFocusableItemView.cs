@@ -211,7 +211,7 @@ public abstract class AFocusableItemView : AItemView, ICameraFocusable, IWidgetT
 
     #region ICameraTargetable Members
 
-    public virtual bool IsEligible { get { return true; } }
+    public virtual bool IsCameraTargetEligible { get { return true; } }
 
     public abstract float MinimumCameraViewingDistance { get; }
 
