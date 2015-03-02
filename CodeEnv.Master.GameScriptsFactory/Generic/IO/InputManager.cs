@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -172,7 +172,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 
     private void OnGameStateChanging(GameState incomingState) {
         var previousState = GameManager.Instance.CurrentState;
-        D.Log("{0}_{1} received a GameStateChanging event. Previous GameState = {2}.", GetType().Name, InstanceCount, previousState.GetName());
+        //D.Log("{0}_{1} received a GameStateChanging event. Previous GameState = {2}.", GetType().Name, InstanceCount, previousState.GetName());
         if (previousState == GameState.Lobby) {
             InputMode = GameInputMode.NoInput;
         }
@@ -183,7 +183,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 
     private void OnGameStateChanged() {
         var enteringGameState = GameManager.Instance.CurrentState;
-        D.Log("{0}_{1} received a GameStateChanged event. New GameState = {2}.", GetType().Name, InstanceCount, enteringGameState.GetName());
+        //D.Log("{0}_{1} received a GameStateChanged event. New GameState = {2}.", GetType().Name, InstanceCount, enteringGameState.GetName());
         if (enteringGameState == GameState.Lobby) {
             InputMode = GameInputMode.PartialScreenPopup;   // as the Lobby only has UIPopup layer screens, this is the 'normal' InputMode for the Lobby
         }

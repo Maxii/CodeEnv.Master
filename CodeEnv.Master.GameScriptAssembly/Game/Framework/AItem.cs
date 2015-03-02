@@ -142,7 +142,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     protected abstract HudManager InitializeHudManager();
 
     /// <summary>
-    /// Subscribes to changes to values contained in Data. 
+    ///  Subscribes to changes to values contained in Data. Called when Data first set.
     /// </summary>
     protected virtual void SubscribeToDataValueChanges() {
         D.Assert(_subscribers != null);
@@ -160,21 +160,6 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     /// </summary>
     public virtual void CommenceOperations() {
         IsOperational = true;
-    }
-
-    /// <summary>
-    /// Indicates whether the provided <c>player</c> has investigated the item and
-    /// gained knowledge of the item that is greater than the default level when the game started. 
-    /// Example 1: All players start with IntelCoverage.Aware knowledge of Stars. This method would 
-    /// return false if the player's IntelCoverage of the Star was not greater than Aware.
-    /// Example 2: For a System, this method would return true if the player's IntelCoverage of the
-    /// System's Star was greater than IntelCoverage.Aware OR the player's IntelCoverage of any of
-    /// the System's Planetoids was greater than IntelCoverage.None.
-    /// </summary>
-    /// <param name="player">The player.</param>
-    /// <returns></returns>
-    public bool HasPlayerInvestigated(Player player) {
-        return Data.HasPlayerInvestigated(player);
     }
 
     protected virtual void OnOwnerChanging(Player newOwner) {

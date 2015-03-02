@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AIconFactory.cs
-// Singleton. Factory that makes instances of IIcon, caches and reuses them.
+// File: FleetIconIDFactory.cs
+// Singleton. Factory that makes instances of AIconID, caches and reuses them.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,13 +23,13 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
-    /// Singleton. Factory that makes instances of IIcon, caches and reuses them. The reuse is critical as 
+    /// Singleton. Factory that makes instances of AIconID, caches and reuses them. The reuse is critical as 
     /// the object's equality comparer (same instance in memory) is used by the client of the factory
     /// to determine which icon is currently showing.
     /// </summary>
-    public class FleetIconFactory : AIconFactory<FleetIcon, FleetCmdData, FleetIconFactory> {
+    public class FleetIconIDFactory : AIconIDFactory<FleetIconID, FleetCmdData, FleetIconIDFactory> {
 
-        private FleetIconFactory() {
+        private FleetIconIDFactory() {
             Initialize();
         }
 

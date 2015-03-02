@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AIcon.cs
-// Generic abstract base class that acquires the filename of an Icon image based on a provided set of criteria.
+// File: AIconID.cs
+// Abstract base class that acquires the filename of an Icon image based on a provided set of criteria.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -24,7 +24,7 @@ namespace CodeEnv.Master.Common {
     /// Acquires the filename of the appropriate image from the xml file holding the filenames, derived from the IconSection and 
     /// IconSelectionCriteria provided.
     /// </summary>
-    public abstract class AIcon : IIcon {
+    public abstract class AIconID {
 
         private static string _sectionTagName = "Section";
         private static string _sectionAttributeTagName = "SectionName";
@@ -32,29 +32,42 @@ namespace CodeEnv.Master.Common {
         private static string _criteriaTagName = "Criteria";
         private static string _iconFilenameTagName = "Filename";
 
+        private string _iconFilename;
+        public string IconFilename {
+            get {
+                if (!Utility.CheckForContent(_iconFilename)) {
+                    _iconFilename = AcquireFilename();
+                }
+                return _iconFilename;
+            }
+        }
+
+        public GameColor Color { get; set; }
+
         /// <summary>
         /// The tag name of the root of the Xml DOM.
         /// </summary>
         protected virtual string RootTagName { get { return "Icon"; } }
 
         /// <summary>
-        /// The name of the Xml file without extension. Default is the name of the derived class T.
+        /// The name of the Xml file without extension. WARNING: Default is the name of the derived class.
         /// </summary>
         protected virtual string XmlFilename { get { return GetType().Name; } }
         private XElement _xElement;
 
-        private string _iconFilename;
+        private IconSection _section;
+        private IconSelectionCriteria[] _criteria;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AIcon{T}"/> class. WARNING: Clients of derived types
+        /// Initializes a new instance of the <see cref="AIconID"/> class. WARNING: Clients of derived types
         /// should use IconFactory.MakeInstance() rather than this constructor so the instances can be used in 
         /// equality tests with each other.
         /// </summary>
         /// <param name="section">The section of the icon the image should be applied too.</param>
         /// <param name="criteria">The selection criteria to use in picking the image.</param>
-        public AIcon(IconSection section, params IconSelectionCriteria[] criteria) {
-            Section = section;
-            Criteria = criteria;
+        public AIconID(IconSection section, params IconSelectionCriteria[] criteria) {
+            _section = section;
+            _criteria = criteria;
             Initialize();
         }
 
@@ -71,41 +84,23 @@ namespace CodeEnv.Master.Common {
         }
 
         protected virtual bool ValidateElement(XElement xElement) {
+            //D.Log("{0}.ValidateElement: RootTagName = {1}, xElementName = {2}.", GetType().Name, RootTagName, xElement.Name.ToString());
             return RootTagName.Equals(xElement.Name.ToString());
         }
 
         private string AcquireFilename() {
-            XElement sectionNode = _xElement.Elements(_sectionTagName).Where(e => e.Attribute(_sectionAttributeTagName).Value.Equals(Section.GetName())).Single();
+            XElement sectionNode = _xElement.Elements(_sectionTagName).Where(e => e.Attribute(_sectionAttributeTagName).Value.Equals(_section.GetName())).Single();
             var selectionNodes = sectionNode.Elements(_selectionTagName);
             foreach (var selectionNode in selectionNodes) {
                 var criteriaValues = selectionNode.Elements(_criteriaTagName).Select(node => node.Value);
-                if (criteriaValues.OrderBy(v => v).SequenceEqual(Criteria.Select(c => c.GetName()).OrderBy(n => n))) {
+                if (criteriaValues.OrderBy(v => v).SequenceEqual(_criteria.Select(c => c.GetName()).OrderBy(n => n))) {
                     // found the criteria values we were looking for in this node
                     return selectionNode.Element(_iconFilenameTagName).Value;
                 }
             }
-            D.Error("No filename for {0} using Section {1} and Criteria {2} found.", GetType().Name, Section.GetName(), Criteria.Concatenate());
+            D.Error("No filename for {0} using Section {1} and Criteria {2} found.", GetType().Name, _section.GetName(), _criteria.Concatenate());
             return string.Empty;
         }
-
-        #region IIcon Members
-
-        public IconSection Section { get; private set; }
-
-        public IconSelectionCriteria[] Criteria { get; private set; }
-
-        public string Filename {
-            get {
-                if (!Utility.CheckForContent(_iconFilename)) {
-                    _iconFilename = AcquireFilename();
-                }
-                return _iconFilename;
-            }
-        }
-
-        public GameColor Color { get; set; }
-
-        #endregion
 
     }
 }

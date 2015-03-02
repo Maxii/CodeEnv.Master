@@ -37,7 +37,7 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
     public float minCameraViewDistanceMultiplier = 0.9F;    // just inside Unit's highlight sphere
     public float optimalCameraViewDistanceMultiplier = 2F;  // encompasses all elements of the Unit
 
-    private InteractableTrackingSprite _cmdIcon;
+    private ResponsiveTrackingSprite _cmdIcon;
 
     protected override void Awake() {
         base.Awake();
@@ -47,7 +47,7 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
     }
 
     protected override void InitializeVisualMembers() {
-        _cmdIcon = TrackingWidgetFactory.Instance.CreateInteractableTrackingSprite(this);
+        _cmdIcon = TrackingWidgetFactory.Instance.CreateResponsiveTrackingSprite(this);
         // CmdIcon enabled state controlled by CmdIcon.Show()
 
         var cmdIconEventListener = _cmdIcon.EventListener;

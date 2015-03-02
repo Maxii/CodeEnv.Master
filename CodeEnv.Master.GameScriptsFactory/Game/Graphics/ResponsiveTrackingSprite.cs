@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: InteractableTrackingSprite.cs
-// Sprite resident in world space that can interact with the mouse. 
+// File: ResponsiveTrackingSprite.cs
+// Sprite resident in world space that can respond to the mouse. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,10 +21,10 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Sprite resident in world space that can interact with the mouse. 
+/// Sprite resident in world space that can respond to the mouse. 
 /// The user perceives the widget at a constant size, independent of camera distance.
 /// </summary>
-public class InteractableTrackingSprite : ConstantSizeTrackingSprite {
+public class ResponsiveTrackingSprite : ConstantSizeTrackingSprite {
 
     public CameraLosChangedListener CameraLosChangedListener { get; private set; }
 

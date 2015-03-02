@@ -48,7 +48,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
     /// The radius of the entire Unit. 
     /// This is not the radius of the Command which is the radius of the HQElement.
     /// </summary>
-    public virtual float UnitRadius { get; protected set; }
+    public abstract float UnitRadius { get; }
 
     public new AUnitCmdItemData Data {
         get { return base.Data as AUnitCmdItemData; }
@@ -63,23 +63,12 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
 
     public IList<AUnitElementItem> Elements { get; private set; }
 
-    protected override float SphericalHighlightRadius { get { return UnitRadius; } }
-
-    protected override float ItemTypeCircleScale { get { return 0.03F; } }
-
-    protected override float RadiusOfHighlightCircle {
-        // this override eliminates the Radius of the Item in the calculation as Cmd radius changes with HQ Element
-        get { return Screen.height * ItemTypeCircleScale; }
-    }
+    protected new UnitCmdDisplayManager DisplayMgr { get { return base.DisplayMgr as UnitCmdDisplayManager; } }
 
     protected IList<ISensorRangeMonitor> _sensorRangeMonitors = new List<ISensorRangeMonitor>();
     protected FormationGenerator _formationGenerator;
 
-    private InteractableTrackingSprite _icon;
     private ITrackingWidget _trackingLabel;
-
-    private Transform _cmdHighlightTransform;
-    private float _cmdHighlightBaseRadius;
 
     #region Initialization
 
@@ -87,8 +76,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
         base.InitializeLocalReferencesAndValues();
         Elements = new List<AUnitElementItem>();
         _formationGenerator = new FormationGenerator(this);
-        _isCirclesRadiusDynamic = false;
-        UpdateRate = FrameUpdateFrequency.Normal;
     }
 
     protected override void InitializeModelMembers() {
@@ -103,29 +90,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
         _subscribers.Add(Data.SubscribeToPropertyChanged<AUnitCmdItemData, Formation>(d => d.UnitFormation, OnFormationChanged));
     }
 
-    protected override void InitializeViewMembersOnDiscernible() {
-        base.InitializeViewMembersOnDiscernible();
-        InitializeIcon();
-        InitializeCmdHighlight();
-    }
-
-    private void InitializeIcon() {
-        //D.Log("{0}.InitializeIcon() called.", FullName);
-        _icon = TrackingWidgetFactory.Instance.CreateInteractableTrackingSprite(this, TrackingWidgetFactory.IconAtlasID.Fleet,
-            new Vector2(24, 24));
-        // CmdIcon enabled state controlled by CmdIcon.Show()
-
-        var cmdIconEventListener = _icon.EventListener;
-        cmdIconEventListener.onHover += (cmdIconGo, isOver) => OnHover(isOver);
-        cmdIconEventListener.onClick += (cmdIconGo) => OnClick();
-        cmdIconEventListener.onDoubleClick += (cmdIconGo) => OnDoubleClick();
-        cmdIconEventListener.onPress += (cmdIconGo, isDown) => OnPress(isDown);
-
-        var cmdIconCameraLosChgdListener = _icon.CameraLosChangedListener;
-        cmdIconCameraLosChgdListener.onCameraLosChanged += (cmdIconGo, inCameraLOS) => InCameraLOS = inCameraLOS;
-        cmdIconCameraLosChgdListener.enabled = true;
-    }
-
     private ITrackingWidget InitializeTrackingLabel() {
         D.Assert(HQElement != null);
         float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
@@ -135,18 +99,29 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
         return trackingLabel;
     }
 
-    private void InitializeCmdHighlight() {
-        var cmdHighlightRenderer = gameObject.GetComponentInImmediateChildren<MeshRenderer>();
-        _cmdHighlightTransform = cmdHighlightRenderer.transform;
-        _cmdHighlightBaseRadius = cmdHighlightRenderer.bounds.size.x / 2F;
+    protected override IHighlighter InitializeHighlighter() {
+        var iconTransform = DisplayMgr.Icon.WidgetTransform;
+        return new Highlighter(this, iconTransform, false); // icon is constant size on the screen so no need for the highlight to dynamically adjust its size
     }
 
-    private void ResizeCmdHighlight() {
-        if (_cmdHighlightTransform != null) {
-            float scale = Radius / _cmdHighlightBaseRadius;
-            _cmdHighlightTransform.localScale = new Vector3(scale, scale, scale);
-        }
+    protected override ADisplayManager InitializeDisplayManager() {
+        var displayMgr = new UnitCmdDisplayManager(gameObject);
+        displayMgr.Icon = InitializeIcon();
+        return displayMgr;
     }
+
+    private ResponsiveTrackingSprite InitializeIcon() {
+        var icon = MakeIcon();
+        icon.Color = Owner.Color;
+        var iconEventListener = icon.EventListener;
+        iconEventListener.onHover += (iconGo, isOver) => OnHover(isOver);
+        iconEventListener.onClick += (iconGo) => OnClick();
+        iconEventListener.onDoubleClick += (iconGo) => OnDoubleClick();
+        iconEventListener.onPress += (iconGo, isDown) => OnPress(isDown);
+        return icon;
+    }
+
+    protected abstract ResponsiveTrackingSprite MakeIcon();
 
     #endregion
 
@@ -265,13 +240,18 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
         Radius = HQElement.Radius;
         PlaceCmdUnderHQElement();
         _formationGenerator.RegenerateFormation();
-        ResizeCmdHighlight();
+        if (DisplayMgr != null) {
+            DisplayMgr.ResizePrimaryMesh(Radius);
+        }
     }
 
     protected override void OnOwnerChanged() {
         base.OnOwnerChanged();
         if (_trackingLabel != null) {
             _trackingLabel.Color = Owner.Color;
+        }
+        if (DisplayMgr != null && DisplayMgr.Icon != null) {
+            DisplayMgr.Icon.Color = Owner.Color;
         }
     }
 
@@ -281,7 +261,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
 
     protected override void OnDeath() {
         base.OnDeath();
-        ShowCmdIcon(false);
         if (IsSelected) {
             SelectionManager.Instance.CurrentSelection = null;
         }
@@ -310,7 +289,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
 
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
-        ShowCmdIcon(IsDiscernible);
         ShowTrackingLabel(IsDiscernible);
     }
 
@@ -327,76 +305,36 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
 
     private void AssessCmdIcon() {
         //D.Log("{0}.AssessCmdIcon() called.", FullName);
-        IIcon icon = MakeCmdIconInstance();
-        ChangeCmdIcon(icon);
+        AIconID iconID = RefreshCmdIconID();
+        PickCmdIcon(iconID);
     }
 
-    protected abstract IIcon MakeCmdIconInstance();
+    protected abstract AIconID RefreshCmdIconID();
 
-    private void ChangeCmdIcon(IIcon icon) {
-        if (_icon != null) {
-            _icon.Set(icon.Filename);
-            _icon.Color = icon.Color;
-            //D.Log("{0} Icon filename: {1}, color: {2}.", FullName, icon.Filename, icon.Color.GetName());
-            return;
-        }
-        //D.Log("{0} attempting to change a CmdIcon that isn't initialized yet.", FullName);
-    }
-
-    private void ShowCmdIcon(bool toShow) {
-        if (_icon != null) {
-            //D.Log("{0}.ShowCmdIcon({1}) called.", FullName, toShow);
-            _icon.Show(toShow);
+    private void PickCmdIcon(AIconID iconID) {
+        if (DisplayMgr != null) {
+            DisplayMgr.Icon.Set(iconID.IconFilename);
+            DisplayMgr.Icon.Color = iconID.Color;
+            //D.Log("{0} Icon filename: {1}, color: {2}.", FullName, iconID.IconFilename, iconID.Color.GetName());
         }
     }
 
     public override void AssessHighlighting() {
-        if (!IsDiscernible) {
-            Highlight(Highlights.None);
-            return;
-        }
-        if (IsFocus) {
-            if (IsSelected) {
-                Highlight(Highlights.SelectedAndFocus);
+        if (IsDiscernible) {
+            if (IsFocus) {
+                if (IsSelected) {
+                    ShowHighlights(HighlightID.Focused, HighlightID.Selected);
+                    return;
+                }
+                ShowHighlights(HighlightID.Focused);
                 return;
             }
-            Highlight(Highlights.Focused);
-            return;
+            if (IsSelected) {
+                ShowHighlights(HighlightID.Selected);
+                return;
+            }
         }
-        if (IsSelected) {
-            Highlight(Highlights.Selected);
-            return;
-        }
-        Highlight(Highlights.None);
-    }
-
-    protected override void Highlight(Highlights highlight) {
-        switch (highlight) {
-            case Highlights.Focused:
-                ShowCircle(false, Highlights.Selected);
-                ShowCircle(true, Highlights.Focused);
-                break;
-            case Highlights.Selected:
-                ShowCircle(true, Highlights.Selected);
-                ShowCircle(false, Highlights.Focused);
-                break;
-            case Highlights.SelectedAndFocus:
-                ShowCircle(true, Highlights.Selected);
-                ShowCircle(true, Highlights.Focused);
-                break;
-            case Highlights.None:
-                ShowCircle(false, Highlights.Selected);
-                ShowCircle(false, Highlights.Focused);
-                break;
-            case Highlights.General:
-            case Highlights.FocusAndGeneral:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(highlight));
-        }
-    }
-
-    protected override void ShowCircle(bool toShow, Highlights highlight) {
-        ShowCircle(toShow, highlight, _icon.WidgetTransform);
+        ShowHighlights(HighlightID.None);
     }
 
     private void ShowTrackingLabel(bool toShow) {
@@ -424,7 +362,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
         D.Error("{0}.Dead_ExitState should not occur.", Data.Name);
     }
 
-    protected override void OnShowCompletion() { RelayToCurrentState(); }
+    public override void OnShowCompletion() { RelayToCurrentState(); }
 
     protected void OnTargetDeath(IMortalItem deadTarget) { RelayToCurrentState(deadTarget); }
 
@@ -503,6 +441,17 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
         UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
     }
 
+    protected override void Unsubscribe() {
+        base.Unsubscribe();
+        if (DisplayMgr != null && DisplayMgr.Icon != null) {
+            var iconEventListener = DisplayMgr.Icon.EventListener;
+            iconEventListener.onHover -= (iconGo, isOver) => OnHover(isOver);
+            iconEventListener.onClick -= (iconGo) => OnClick();
+            iconEventListener.onDoubleClick -= (iconGo) => OnDoubleClick();
+            iconEventListener.onPress -= (iconGo, isDown) => OnPress(isDown);
+        }
+    }
+
     // subscriptions contained completely within this gameobject (both subscriber
     // and subscribee) donot have to be cleaned up as all instances are destroyed
 
@@ -539,6 +488,14 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
         get { return _isSelected; }
         set { SetProperty<bool>(ref _isSelected, value, "IsSelected", OnIsSelectedChanged); }
     }
+
+    #endregion
+
+    #region IHighlightable Members
+
+    public override float HoverHighlightRadius { get { return UnitRadius; } }
+
+    public override float HighlightRadius { get { return Screen.height * 0.03F; } }
 
     #endregion
 

@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
@@ -28,8 +27,6 @@ using UnityEngine;
 /// Class for ADiscernibleItems that are Systems.
 /// </summary>
 public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopographyMonitorable, ISystemPublisherClient {
-
-    private static string __highlightName = "SystemHighlightMesh";  // IMPROVE
 
     [Range(1.0F, 5.0F)]
     [Tooltip("Minimum Camera View Distance in Units")]
@@ -69,11 +66,8 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
         get { return _publisher = _publisher ?? new SystemPublisher(Data, this); }
     }
 
-    protected override float SphericalHighlightRadius { get { return Radius; } }
-
     private ITrackingWidget _trackingLabel;
     private ICtxControl _ctxControl;
-    private MeshRenderer __systemHighlightRenderer;
     private MeshCollider _orbitalPlaneCollider;
 
     #region Initialization
@@ -94,29 +88,6 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
         _orbitalPlaneCollider = gameObject.GetComponentInChildren<MeshCollider>();
         _orbitalPlaneCollider.isTrigger = true;
         _orbitalPlaneCollider.enabled = true;
-
-        // IMPROVE meshRenderer's sole purpose right now is to allow receipt of visibility changes by CameraLosChangedListener 
-        // Other ideas could include making an invisible bounds mesh for the plane like done for UIWidgets in CameraLosChangedListener
-        var meshRenderer = _orbitalPlaneCollider.gameObject.GetComponent<MeshRenderer>();
-        meshRenderer.castShadows = false;
-        meshRenderer.receiveShadows = false;
-        meshRenderer.enabled = true;
-
-        var orbitalPlaneLineRenderers = _orbitalPlaneCollider.gameObject.GetComponentsInChildren<LineRenderer>();
-        orbitalPlaneLineRenderers.ForAll(lr => {
-            lr.castShadows = false;
-            lr.receiveShadows = false;
-            lr.enabled = true;
-        });
-
-        var cameraLosChgdListener = CameraLosChangedListener.Get(_orbitalPlaneCollider.gameObject);
-        cameraLosChgdListener.onCameraLosChanged += (go, inCameraLOS) => InCameraLOS = inCameraLOS;
-        cameraLosChgdListener.enabled = true;
-
-        __systemHighlightRenderer = __FindSystemHighlight();
-        __systemHighlightRenderer.castShadows = false;
-        __systemHighlightRenderer.receiveShadows = false;
-        __systemHighlightRenderer.enabled = true;
     }
 
     protected override HudManager InitializeHudManager() {
@@ -145,6 +116,10 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
         return trackingLabel;
     }
 
+    protected override ADisplayManager InitializeDisplayManager() {
+        return new SystemDisplayManager(gameObject);
+    }
+
     #endregion
 
     #region Model Methods
@@ -152,7 +127,7 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
     public void AddPlanetoid(APlanetoidItem planetoid) {
         Planetoids.Add(planetoid);
         Data.AddPlanetoid(planetoid.Data);
-        planetoid.Data.onHumanPlayerIntelCoverageChanged += OnMemberHumanPlayerIntelCoverageChanged;
+        planetoid.Data.onHumanPlayerIntelCoverageChanged += __OnMemberHumanPlayerIntelCoverageChanged;
     }
 
     public SystemReport GetReport(Player player) {
@@ -178,7 +153,7 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
 
     private void OnStarChanged() {
         Data.StarData = Star.Data;
-        Star.Data.onHumanPlayerIntelCoverageChanged += OnMemberHumanPlayerIntelCoverageChanged;
+        Star.Data.onHumanPlayerIntelCoverageChanged += __OnMemberHumanPlayerIntelCoverageChanged;
     }
 
     private void OnSettlementChanged() {
@@ -225,19 +200,37 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
 
     #region View Methods
 
-    public override void AssessDiscernability() {
+    protected override void AssessDiscernability() {
         // a System is not discernible to the humanPlayer unless it is visible to the camera 
         // AND the humanPlayer knows more about it than just being aware of its star
-        var hasInvestigated = HasPlayerInvestigated(_gameMgr.HumanPlayer);
-        //D.Log("{0}.AssessDiscernability() called. InCameraLOS = {1}, HasPlayerInvestigated = {2}.", FullName, InCameraLOS, hasInvestigated);
-        IsDiscernible = InCameraLOS && hasInvestigated;
+        var hasInvestigated = Data.HasPlayerInvestigated(_gameMgr.HumanPlayer);
+        var inCameraLOS = DisplayMgr == null ? true : DisplayMgr.InCameraLOS;
+        //D.Log("{0}.AssessDiscernability() called. InCameraLOS = {1}, HasPlayerInvestigated = {2}.", FullName, inCameraLOS, hasInvestigated);
+        IsDiscernible = inCameraLOS && hasInvestigated;
+    }
+
+    public override void AssessHighlighting() {
+        if (IsDiscernible) {
+            if (IsFocus) {
+                if (IsSelected) {
+                    ShowHighlights(HighlightID.Focused, HighlightID.Selected);
+                    return;
+                }
+                ShowHighlights(HighlightID.Focused);
+                return;
+            }
+            if (IsSelected) {
+                ShowHighlights(HighlightID.Selected);
+                return;
+            }
+        }
+        ShowHighlights(HighlightID.None);
     }
 
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
         ShowTrackingLabel(IsDiscernible);
         _orbitalPlaneCollider.enabled = IsDiscernible;
-        // orbitalPlane LineRenderers don't render when not visible to the camera
     }
 
     private void OnIsSelectedChanged() {
@@ -247,62 +240,13 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
         AssessHighlighting();
     }
 
-    private void OnMemberHumanPlayerIntelCoverageChanged() {
+    private void __OnMemberHumanPlayerIntelCoverageChanged() {
         // HACK one time event to trigger System's first assessment of discernability as System has no IntelCoverage to trigger it itself
         D.Assert(!_isViewMembersOnDiscernibleInitialized);
         AssessDiscernability();
         D.Assert(_isViewMembersOnDiscernibleInitialized);
-        Star.Data.onHumanPlayerIntelCoverageChanged -= OnMemberHumanPlayerIntelCoverageChanged;
-        Planetoids.ForAll(p => p.Data.onHumanPlayerIntelCoverageChanged -= OnMemberHumanPlayerIntelCoverageChanged);
-    }
-
-    public override void AssessHighlighting() {
-        if (!IsDiscernible) {
-            Highlight(Highlights.None);
-            return;
-        }
-        if (IsFocus) {
-            if (IsSelected) {
-                Highlight(Highlights.SelectedAndFocus);
-                return;
-            }
-            Highlight(Highlights.Focused);
-            return;
-        }
-        if (IsSelected) {
-            Highlight(Highlights.Selected);
-            return;
-        }
-        Highlight(Highlights.None);
-    }
-
-    protected override void Highlight(Highlights highlight) {
-        //D.Log("{0}.Highlight({1}) called. IsDiscernible = {2}, SystemHighlightRendererGO.activeSelf = {3}.",
-        //gameObject.name, highlight, IsDiscernible, _systemHighlightRenderer.gameObject.activeSelf);
-        switch (highlight) {
-            case Highlights.Focused:
-                __systemHighlightRenderer.gameObject.SetActive(true);
-                __systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Main, UnityDebugConstants.FocusedColor.ToUnityColor());
-                __systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Outline, UnityDebugConstants.FocusedColor.ToUnityColor());
-                break;
-            case Highlights.Selected:
-                __systemHighlightRenderer.gameObject.SetActive(true);
-                __systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Main, UnityDebugConstants.SelectedColor.ToUnityColor());
-                __systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Outline, UnityDebugConstants.SelectedColor.ToUnityColor());
-                break;
-            case Highlights.SelectedAndFocus:
-                __systemHighlightRenderer.gameObject.SetActive(true);
-                __systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Main, UnityDebugConstants.GeneralHighlightColor.ToUnityColor());
-                __systemHighlightRenderer.material.SetColor(UnityConstants.MaterialColor_Outline, UnityDebugConstants.GeneralHighlightColor.ToUnityColor());
-                break;
-            case Highlights.None:
-                __systemHighlightRenderer.gameObject.SetActive(false);
-                break;
-            case Highlights.General:
-            case Highlights.FocusAndGeneral:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(highlight));
-        }
+        Star.Data.onHumanPlayerIntelCoverageChanged -= __OnMemberHumanPlayerIntelCoverageChanged;
+        Planetoids.ForAll(p => p.Data.onHumanPlayerIntelCoverageChanged -= __OnMemberHumanPlayerIntelCoverageChanged);
     }
 
     private void ShowTrackingLabel(bool toShow) {
@@ -310,12 +254,6 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
             _trackingLabel = _trackingLabel ?? InitializeTrackingLabel();
             _trackingLabel.Show(toShow);
         }
-    }
-
-    private MeshRenderer __FindSystemHighlight() {
-        MeshRenderer[] meshes = gameObject.GetComponentsInChildren<MeshRenderer>();
-        MeshRenderer renderer = meshes.Single<MeshRenderer>(m => m.gameObject.name == __highlightName);
-        return renderer;
     }
 
     #endregion
@@ -345,8 +283,8 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
         }
-        Star.Data.onHumanPlayerIntelCoverageChanged -= OnMemberHumanPlayerIntelCoverageChanged;
-        Planetoids.ForAll(p => p.Data.onHumanPlayerIntelCoverageChanged -= OnMemberHumanPlayerIntelCoverageChanged);
+        Star.Data.onHumanPlayerIntelCoverageChanged -= __OnMemberHumanPlayerIntelCoverageChanged;
+        Planetoids.ForAll(p => p.Data.onHumanPlayerIntelCoverageChanged -= __OnMemberHumanPlayerIntelCoverageChanged);
         Data.Dispose();
     }
 
@@ -377,6 +315,14 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
         get { return _isSelected; }
         set { SetProperty<bool>(ref _isSelected, value, "IsSelected", OnIsSelectedChanged); }
     }
+
+    #endregion
+
+    #region IHighlightable Members
+
+    public override float HoverHighlightRadius { get { return Radius; } }
+
+    public override float HighlightRadius { get { return Radius * Screen.height * 1F; } }
 
     #endregion
 

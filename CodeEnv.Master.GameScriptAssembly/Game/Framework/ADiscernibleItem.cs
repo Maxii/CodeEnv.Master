@@ -25,19 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract class for Items that can change whether they are discernible by the HumanPlayer.
 /// </summary>
-public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackable {
-
-    private bool _inCameraLOS = true;
-    /// <summary>
-    /// Indicates whether this item is within a Camera's Line Of Sight.
-    /// Note: All items start out thinking they are in a camera's LOS. This is so IsDiscernible will properly operate
-    /// during the period when a item's visual members have not yet been initialized. If and when they are
-    /// initialized, the item will be notified by their CameraLosChangedListener of their actual InCameraLOS state.
-    /// </summary>
-    protected bool InCameraLOS {
-        get { return _inCameraLOS; }
-        set { SetProperty<bool>(ref _inCameraLOS, value, "InCameraLOS", OnInCameraLOSChanged); }
-    }
+public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable {
 
     private bool _isDiscernible;
     public bool IsDiscernible {
@@ -45,28 +33,13 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
         protected set { SetProperty<bool>(ref _isDiscernible, value, "IsDiscernible", OnIsDiscernibleChanged); }
     }
 
-    /// <summary>
-    /// Property that allows each derived class to establish the radius of the sphericalHighlight.
-    /// Default is twice the radius of the item.
-    /// </summary>
-    protected virtual float SphericalHighlightRadius { get { return Radius * 2F; } }
-
-    /// <summary>
-    /// The radius of the smallest highlighting circle used by this Item.
-    /// </summary>
-    protected virtual float RadiusOfHighlightCircle { get { return Screen.height * Radius * ItemTypeCircleScale; } }
-
-    /// <summary>
-    /// Circle scale factor specific to the derived type of the Item.
-    /// e.g. ShipItem, CommandItem, StarItem, etc.
-    /// </summary>
-    protected virtual float ItemTypeCircleScale { get { return 3.0F; } }
+    protected ADisplayManager DisplayMgr { get; private set; }
 
     protected IGameManager _gameMgr;
     protected bool _isViewMembersOnDiscernibleInitialized;
-    protected bool _isCirclesRadiusDynamic = true;
+
     private IGameInputHelper _inputHelper;
-    private HighlightCircle _circles;
+    private IHighlighter _highlighter;
 
     #region Initialization
 
@@ -97,6 +70,20 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     protected virtual void InitializeViewMembersOnDiscernible() {
         //D.Log("{0}.InitializeViewMembersOnDiscernible() called.", FullName);
         _hudManager = InitializeHudManager();
+
+        DisplayMgr = InitializeDisplayManager();
+        _subscribers.Add(DisplayMgr.SubscribeToPropertyChanged(dm => dm.InCameraLOS, OnInCameraLOSChanged));
+        // always start enabled as HumanPlayerIntelCoverage must be > None for this method to be called,
+        // or, in the case of SystemItem, its members coverage must be > their starting coverage
+        DisplayMgr.IsDisplayEnabled = true;
+
+        _highlighter = InitializeHighlighter();
+    }
+
+    protected abstract ADisplayManager InitializeDisplayManager();
+
+    protected virtual IHighlighter InitializeHighlighter() {
+        return new Highlighter(this);
     }
 
     #endregion
@@ -138,82 +125,27 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     }
 
     /// <summary>
-    /// Assesses the discernability of this item. Derived classes should override this
-    /// method when other factors affecting IsDiscernible are added. This default 
-    /// version only takes InCameraLOS into account.
+    /// Assesses the discernability of this item. 
     /// </summary>
-    public virtual void AssessDiscernability() {
-        IsDiscernible = InCameraLOS;
-    }
+    protected abstract void AssessDiscernability();
 
     public virtual void AssessHighlighting() {
-        if (!IsDiscernible) {
-            Highlight(Highlights.None);
+        if (IsDiscernible && IsFocus) {
+            ShowHighlights(HighlightID.Focused);
             return;
         }
-        if (IsFocus) {
-            Highlight(Highlights.Focused);
-            return;
-        }
-        Highlight(Highlights.None);
+        ShowHighlights(HighlightID.None);
     }
 
-    protected virtual void Highlight(Highlights highlight) {
-        switch (highlight) {
-            case Highlights.Focused:
-                ShowCircle(true, Highlights.Focused);
-                break;
-            case Highlights.None:
-                ShowCircle(false, Highlights.Focused);
-                break;
-            case Highlights.Selected:
-            case Highlights.SelectedAndFocus:
-            case Highlights.General:
-            case Highlights.FocusAndGeneral:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(highlight));
+    protected void ShowHighlights(params HighlightID[] highlightIDs) {
+        if (_highlighter != null) {
+            _highlighter.Show(highlightIDs);
         }
     }
 
-    /// <summary>
-    /// Shows or hides the highlighting circles around this item. Derived classes should override
-    /// this if they wish to have the circles track a different transform besides the transform associated 
-    /// with this item.
-    /// </summary>
-    /// <param name="toShow">if set to <c>true</c> [to show].</param>
-    /// <param name="highlight">The highlight.</param>
-    protected virtual void ShowCircle(bool toShow, Highlights highlight) {
-        ShowCircle(toShow, highlight, _transform);
-    }
-
-    /// <summary>
-    /// Shows or hides highlighting circles.
-    /// </summary>
-    /// <param name="toShow">if set to <c>true</c> [automatic show].</param>
-    /// <param name="highlight">The highlight.</param>
-    /// <param name="transform">The transform the circles should track.</param>
-    protected void ShowCircle(bool toShow, Highlights highlight, Transform transform) {
-        if (!toShow && _circles == null) {
-            return;
-        }
-        if (_circles == null) {
-            string circlesTitle = "{0} Circle".Inject(gameObject.name);
-            _circles = new HighlightCircle(circlesTitle, transform, RadiusOfHighlightCircle, _isCirclesRadiusDynamic, maxCircles: 3);
-            _circles.Colors = new GameColor[3] { UnityDebugConstants.FocusedColor, UnityDebugConstants.SelectedColor, UnityDebugConstants.GeneralHighlightColor };
-            _circles.Widths = new float[3] { 2F, 2F, 1F };
-        }
-        //string showHide = toShow ? "showing" : "not showing";
-        //D.Log("{0} {1} circle {2}.", gameObject.name, showHide, highlight.GetName());
-        _circles.Show(toShow, (int)highlight);
-    }
-
-    private void ShowSphericalHighlight(bool toShow) {
-        var sphericalHighlight = References.SphericalHighlight;
-        if (sphericalHighlight != null) {  // allows deactivation of the SphericalHighlight gameObject
-            if (toShow) {
-                sphericalHighlight.SetTarget(this, SphericalHighlightRadius);
-            }
-            sphericalHighlight.Show(toShow);
+    protected void ShowHoverHighlight(bool toShow) {
+        if (_highlighter != null) {
+            _highlighter.ShowHovered(toShow);
         }
     }
 
@@ -225,11 +157,11 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
         //D.Log("{0}.OnHover({1}) called.", FullName, isOver);
         if (IsDiscernible && isOver) {
             ShowHud(true);
-            ShowSphericalHighlight(true);
+            ShowHoverHighlight(true);
             return;
         }
         ShowHud(false);
-        ShowSphericalHighlight(false);
+        ShowHoverHighlight(false);
     }
 
     protected virtual void OnClick() {
@@ -283,11 +215,6 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     #endregion
 
     #region Cleanup
-
-    protected override void Cleanup() {
-        base.Cleanup();
-        if (_circles != null) { _circles.Dispose(); }
-    }
 
     #endregion
 
@@ -349,34 +276,11 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
 
     #endregion
 
-    #region Nested Classes
+    #region IHighlightable Members
 
-    public enum Highlights {
+    public virtual float HoverHighlightRadius { get { return Radius * 2F; } }
 
-        None = -1,
-        /// <summary>
-        /// The item is the focus.
-        /// </summary>
-        Focused = 0,
-        /// <summary>
-        /// The item is selected.
-        /// </summary>
-        Selected = 1,
-        /// <summary>
-        /// The item is highlighted for other reasons. This is
-        /// typically used on a fleet's ships when the fleet is selected.
-        /// </summary>
-        General = 2,
-        /// <summary>
-        /// The item is both selected and the focus.
-        /// </summary>
-        SelectedAndFocus = 3,
-        /// <summary>
-        /// The item is both the focus and generally highlighted.
-        /// </summary>
-        FocusAndGeneral = 4
-
-    }
+    public virtual float HighlightRadius { get { return Radius * Screen.height * 3F; } }
 
     #endregion
 

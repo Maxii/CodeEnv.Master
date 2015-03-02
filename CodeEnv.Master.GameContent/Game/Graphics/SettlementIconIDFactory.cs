@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SettlementIconFactory.cs
-//  Singleton. Factory that makes instances of IIcon, caches and reuses them.
+// File: SettlementIconIDFactory.cs
+//  Singleton. Factory that makes instances of AIconID, caches and reuses them.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,13 +23,13 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common.LocalResources;
 
     /// <summary>
-    /// Singleton. Factory that makes instances of IIcon, caches and reuses them. The reuse is critical as 
+    /// Singleton. Factory that makes instances of AIconID, caches and reuses them. The reuse is critical as 
     /// the object's equality comparer (same instance in memory) is used by the client of the factory
     /// to determine which icon is currently showing.
     /// </summary>
-    public class SettlementIconFactory : AIconFactory<FleetIcon, SettlementCmdData, SettlementIconFactory> {
+    public class SettlementIconIDFactory : AIconIDFactory<FleetIconID, SettlementCmdData, SettlementIconIDFactory> {
 
-        private SettlementIconFactory() {
+        private SettlementIconIDFactory() {
             Initialize();
         }
 
@@ -65,20 +65,6 @@ namespace CodeEnv.Master.GameContent {
             }
             return criteria;
         }
-        //protected override IEnumerable<IconSelectionCriteria> GetCriteriaFromComposition(SettlementCmdData data) {
-        //    IList<IconSelectionCriteria> criteria = new List<IconSelectionCriteria>();
-        //    IEnumerable<FacilityCategory> shipCategories = data.Composition.Categories;
-        //    if (shipCategories.Contains(FacilityCategory.Science)) {
-        //        criteria.Add(IconSelectionCriteria.Science);
-        //    }
-        //    if (shipCategories.Contains(FacilityCategory.Defense)) {
-        //        criteria.Add(IconSelectionCriteria.Troop);
-        //    }
-        //    if (shipCategories.Contains(FacilityCategory.Economic)) {
-        //        criteria.Add(IconSelectionCriteria.Colony);
-        //    }
-        //    return criteria;
-        //}
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

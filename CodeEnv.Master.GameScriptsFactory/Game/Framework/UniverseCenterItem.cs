@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// Class for the ADiscernibleItem that is the UniverseCenter.
 /// </summary>
-public class UniverseCenterItem : ADiscernibleItem, IShipOrbitable, IDetectable {
+public class UniverseCenterItem : AIntelItem, IShipOrbitable, IDetectable {
 
     [Range(0.5F, 3.0F)]
     [Tooltip("Minimum Camera View Distance Multiplier")]
@@ -77,19 +77,6 @@ public class UniverseCenterItem : ADiscernibleItem, IShipOrbitable, IDetectable 
     protected override void InitializeViewMembersOnDiscernible() {
         base.InitializeViewMembersOnDiscernible();
         InitializeContextMenu(Owner);
-
-        var meshRenderer = gameObject.GetComponentInChildren<MeshRenderer>();
-        meshRenderer.castShadows = false;
-        meshRenderer.receiveShadows = false;
-        meshRenderer.enabled = true;
-
-        var animation = meshRenderer.gameObject.GetComponent<Animation>();
-        animation.cullingType = AnimationCullingType.BasedOnRenderers; // aka, disabled when not visible
-        animation.enabled = true;
-
-        var cameraLosChgdListener = gameObject.GetSafeInterfaceInChildren<ICameraLosChangedListener>();
-        cameraLosChgdListener.onCameraLosChanged += (go, inCameraLOS) => InCameraLOS = inCameraLOS;
-        cameraLosChgdListener.enabled = true;
     }
 
     protected override HudManager InitializeHudManager() {
@@ -100,6 +87,10 @@ public class UniverseCenterItem : ADiscernibleItem, IShipOrbitable, IDetectable 
 
     private void InitializeContextMenu(Player owner) {
         _ctxControl = new UniverseCenterCtxControl(this);
+    }
+
+    protected override ADisplayManager InitializeDisplayManager() {
+        return new UniverseCenterDisplayManager(gameObject);
     }
 
     #endregion

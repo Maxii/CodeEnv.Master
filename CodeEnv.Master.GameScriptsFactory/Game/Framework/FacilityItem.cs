@@ -89,6 +89,7 @@ public class FacilityItem : AUnitElementItem {
         return hudManager;
     }
 
+
     #endregion
 
     #region Model Methods
@@ -174,48 +175,28 @@ public class FacilityItem : AUnitElementItem {
     #region View Methods
 
     public override void AssessHighlighting() {
-        if (!IsDiscernible) {
-            Highlight(Highlights.None);
-            return;
-        }
-        if (IsFocus) {
-            if (Command.IsSelected) {
-                Highlight(Highlights.FocusAndGeneral);
+        if (IsDiscernible) {
+            if (IsFocus) {
+                if (Command.IsSelected) {
+                    ShowHighlights(HighlightID.Focused, HighlightID.UnitElement);
+                    return;
+                }
+                ShowHighlights(HighlightID.Focused);
                 return;
             }
-            Highlight(Highlights.Focused);
-            return;
+            if (Command.IsSelected) {
+                ShowHighlights(HighlightID.UnitElement);
+                return;
+            }
         }
-        if (Command.IsSelected) {
-            Highlight(Highlights.General);
-            return;
-        }
-        Highlight(Highlights.None);
+        ShowHighlights(HighlightID.None);
     }
 
-    protected override void Highlight(Highlights highlight) {
-        switch (highlight) {
-            case Highlights.Focused:
-                ShowCircle(true, Highlights.Focused);
-                ShowCircle(false, Highlights.General);
-                break;
-            case Highlights.General:
-                ShowCircle(false, Highlights.Focused);
-                ShowCircle(true, Highlights.General);
-                break;
-            case Highlights.FocusAndGeneral:
-                ShowCircle(true, Highlights.Focused);
-                ShowCircle(true, Highlights.General);
-                break;
-            case Highlights.None:
-                ShowCircle(false, Highlights.Focused);
-                ShowCircle(false, Highlights.General);
-                break;
-            case Highlights.Selected:
-            case Highlights.SelectedAndFocus:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(highlight));
-        }
+    protected override ResponsiveTrackingSprite MakeIcon() {
+        var icon = TrackingWidgetFactory.Instance.CreateResponsiveTrackingSprite(this, TrackingWidgetFactory.IconAtlasID.Fleet,
+            new Vector2(12, 12), WidgetPlacement.Over);
+        icon.Set("FleetIcon_Unknown");
+        return icon;
     }
 
     protected override void OnIsDiscernibleChanged() {
@@ -337,7 +318,7 @@ public class FacilityItem : AUnitElementItem {
 
     IEnumerator Repairing_EnterState() {
         D.Log("{0}.Repairing_EnterState called.", FullName);
-        ShowAnimation(MortalAnimations.Repairing);
+        StartAnimation(MortalAnimations.Repairing);
         yield return new WaitForSeconds(2);
         Data.CurrentHitPoints += 0.5F * (Data.MaxHitPoints - Data.CurrentHitPoints);
         D.Log("{0}'s repair is 50% complete.", FullName);
@@ -404,7 +385,7 @@ public class FacilityItem : AUnitElementItem {
 
     void Dead_EnterState() {
         LogEvent();
-        ShowAnimation(MortalAnimations.Dying);
+        StartAnimation(MortalAnimations.Dying);
     }
 
     void Dead_OnShowCompletion() {
@@ -525,9 +506,6 @@ public class FacilityItem : AUnitElementItem {
     //}
 
     #endregion
-
-
-
 
 }
 

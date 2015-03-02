@@ -88,26 +88,6 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
     protected override void InitializeViewMembersOnDiscernible() {
         base.InitializeViewMembersOnDiscernible();
         InitializeContextMenu(Owner);
-        // Once the player initially discerns the planet, he will always be able to discern it
-        var meshRenderers = gameObject.GetComponentsInImmediateChildren<MeshRenderer>();
-        meshRenderers.ForAll(mr => {
-            mr.castShadows = true;
-            mr.receiveShadows = true;
-            mr.enabled = true;
-        });
-
-        var animations = gameObject.GetComponentsInImmediateChildren<Animation>();
-        animations.ForAll(anim => {
-            anim.cullingType = AnimationCullingType.BasedOnRenderers; // aka, disabled when not visible
-            anim.enabled = true;
-        });
-        // TODO animation settings and distance controls
-
-        // TODO Revolver settings and distance controls, Revolvers control their own enabled state based on visibility
-
-        var cameraLosChgdListener = gameObject.GetSafeInterfaceInImmediateChildren<ICameraLosChangedListener>();
-        cameraLosChgdListener.onCameraLosChanged += (go, inCameraLOS) => InCameraLOS = inCameraLOS;
-        cameraLosChgdListener.enabled = true;
 
         float orbitalRadius = _transform.localPosition.magnitude;
         Data.OrbitalSpeed = gameObject.GetSafeMonoBehaviourComponentInParents<Orbiter>().GetRelativeOrbitSpeed(orbitalRadius);
@@ -188,8 +168,7 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
             case PlanetoidState.Idling:
                 break;
             case PlanetoidState.Dead:
-                //OnDeath();
-                ShowAnimation(MortalAnimations.Dying);
+                StartAnimation(MortalAnimations.Dying);
                 break;
             case PlanetoidState.None:
             default:
@@ -197,7 +176,7 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         }
     }
 
-    protected override void OnShowCompletion() {
+    public override void OnShowCompletion() {
         switch (CurrentState) {
             case PlanetoidState.Dead:
                 __DestroyMe(3F);
@@ -244,10 +223,24 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         float unusedDamageSeverity;
         bool isAlive = ApplyDamage(damage, out unusedDamageSeverity);
         if (!isAlive) {
+            //__GenerateExplosionMedia();
             InitiateDeath();
             return;
         }
-        ShowAnimation(MortalAnimations.Hit);
+        StartAnimation(MortalAnimations.Hit);
+        //__GenerateHitImpactMedia();
+    }
+
+    private void __GenerateHitImpactMedia() {
+        var impactPrefab = RequiredPrefabs.Instance.hitImpact;
+        var impactClone = UnityUtility.AddChild(gameObject, impactPrefab);
+        D.Warn("{0} showing impact.", FullName);
+    }
+
+    private void __GenerateExplosionMedia() {
+        var explosionPrefab = RequiredPrefabs.Instance.explosion;
+        var explosionClone = UnityUtility.AddChild(gameObject, explosionPrefab);
+        D.Warn("{0} showing explosion.", FullName);
     }
 
     #endregion

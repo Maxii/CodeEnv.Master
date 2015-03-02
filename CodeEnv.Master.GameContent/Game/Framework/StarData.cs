@@ -56,6 +56,8 @@ namespace CodeEnv.Master.GameContent {
 
         public float Mass { get; private set; }
 
+        protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.Aware; } }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="StarData" /> class
         /// with the owner initialized to NoPlayer.
@@ -82,13 +84,8 @@ namespace CodeEnv.Master.GameContent {
             base.Topography = Topography.System;
         }
 
-        public override bool HasPlayerInvestigated(Player player) {
-            return GetIntelCoverage(player) > IntelCoverage.Aware;
-        }
-
-        protected override AIntel InitializeIntelState(Player player) {
-            var coverage = IsAllIntelCoverageComprehensive || Owner == player ? IntelCoverage.Comprehensive : IntelCoverage.Aware;
-            return new ImprovingIntel(coverage);
+        protected override AIntel MakeIntel(IntelCoverage initialcoverage) {
+            return new ImprovingIntel(initialcoverage);
         }
 
         public override string ToString() {

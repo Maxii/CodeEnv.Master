@@ -118,7 +118,15 @@ namespace CodeEnv.Master.GameContent {
             return true;
         }
 
-        public override bool HasPlayerInvestigated(Player player) {
+        /// <summary>
+        /// Indicates whether the provided <c>player</c> has investigated members of the system and
+        /// gained knowledge about any member that is greater than the default level when the game started.
+        /// Example: This method would return true if the player's IntelCoverage of the System's Star was greater than 
+        /// IntelCoverage.Aware OR the player's IntelCoverage of any of the System's Planetoids was greater than IntelCoverage.None.
+        /// </summary>
+        /// <param name="player">The player.</param>
+        /// <returns></returns>
+        public bool HasPlayerInvestigated(Player player) {
             var isStarInvestigated = StarData.HasPlayerInvestigated(player);
             var planetoidsInvestigatedState = _allPlanetoidData.Select(pd => pd.HasPlayerInvestigated(player));
             //D.Log("{0}.HasPlayerInvestigated({1}) called. Star = {2}, Planetoids = {3}.", FullName, player.LeaderName, isStarInvestigated, planetoidsInvestigatedState.Concatenate());

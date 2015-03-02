@@ -16,8 +16,6 @@
 
 // default namespace
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
@@ -37,12 +35,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     [Tooltip("Optimal Camera View Distance Multiplier")]
     public float optViewDistanceFactor = 2.4F;
 
-    public AudioClip cmdHit;
-    public AudioClip attacking;
-    public AudioClip repairing;
-    public AudioClip refitting;
-    public AudioClip disbanding;
-
     public new AUnitElementItemData Data {
         get { return base.Data as AUnitElementItemData; }
         set { base.Data = value; }
@@ -50,17 +42,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
 
     public AUnitCmdItem Command { get; set; }
 
-    protected override float ItemTypeCircleScale { get { return 1.0F; } }
+    protected new ElementDisplayManager DisplayMgr { get { return base.DisplayMgr as ElementDisplayManager; } }
 
     protected IList<IWeaponRangeMonitor> _weaponRangeMonitors = new List<IWeaponRangeMonitor>();
     protected float _gameSpeedMultiplier;
 
-    private Color _originalMeshColor_Main;
-    private Color _originalMeshColor_Specular;
-    private Color _hiddenMeshColor = GameColor.Clear.ToUnityColor();
-    private Renderer _meshRenderer;
-    private Animation _animation;
-    private ITrackingWidget _icon;
     private DetectionHandler _detectionHandler;
 
     #region Initialization
@@ -76,7 +62,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     protected override void Subscribe() {
         base.Subscribe();
         _subscribers.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
-        _subscribers.Add(PlayerPrefsManager.Instance.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsElementIconsEnabled, OnElementIconsEnabledChanged));
+        _subscribers.Add(PlayerPrefsManager.Instance.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsElementIconsEnabled, OnElementIconsEnabledOptionChanged));
     }
 
     protected override void InitializeModelMembers() {
@@ -89,36 +75,29 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
         //TODO: Weapon values don't change but weapons do so I need to know when that happens
     }
 
-    protected override void InitializeViewMembersOnDiscernible() {
-        base.InitializeViewMembersOnDiscernible();
-        _meshRenderer = gameObject.GetComponentInChildren<Renderer>();
-        _meshRenderer.castShadows = true;
-        _meshRenderer.receiveShadows = true;
-        _originalMeshColor_Main = _meshRenderer.material.GetColor(UnityConstants.MaterialColor_Main);
-        _originalMeshColor_Specular = _meshRenderer.material.GetColor(UnityConstants.MaterialColor_Specular);
-        _meshRenderer.enabled = true;
-
-        _animation = _meshRenderer.gameObject.GetComponent<Animation>();
-        _animation.cullingType = AnimationCullingType.BasedOnRenderers; // aka, disabled when not visible
-        _animation.enabled = true;
-
-        var meshCameraLosChgdListener = _meshRenderer.gameObject.GetSafeInterface<ICameraLosChangedListener>();
-        meshCameraLosChgdListener.onCameraLosChanged += (go, inCameraLOS) => InCameraLOS = inCameraLOS;
-        meshCameraLosChgdListener.enabled = true;
-
-        if (PlayerPrefsManager.Instance.IsElementIconsEnabled) {
-            InitializeIcon();
-        }
+    protected override IAnimator InitializeAnimator() {
+        var animation = gameObject.GetComponentInImmediateChildren<Animation>();
+        var audioSource = gameObject.GetComponent<AudioSource>();
+        return new ElementItemAnimator(animation, audioSource);
     }
 
-    private void InitializeIcon() {
-        D.Assert(PlayerPrefsManager.Instance.IsElementIconsEnabled);
-        _icon = TrackingWidgetFactory.Instance.CreateConstantSizeTrackingSprite(this, TrackingWidgetFactory.IconAtlasID.Fleet,
-            new Vector2(16, 16), WidgetPlacement.Below);
-        _icon.Set("FleetIcon_Unknown");
-        ChangeIconColor(Owner.Color);
-        //D.Log("{0} initialized its Icon.", FullName);
-        // icon enabled state controlled by _icon.Show()
+    protected override ADisplayManager InitializeDisplayManager() {
+        var displayMgr = new ElementDisplayManager(gameObject);
+        if (PlayerPrefsManager.Instance.IsElementIconsEnabled) {
+            displayMgr.Icon = InitializeIcon();
+        }
+        return displayMgr;
+    }
+
+    private ResponsiveTrackingSprite InitializeIcon() {
+        var icon = MakeIcon();
+        icon.Color = Owner.Color;
+        var iconEventListener = icon.EventListener;
+        iconEventListener.onHover += (iconGo, isOver) => OnHover(isOver);
+        iconEventListener.onClick += (iconGo) => OnClick();
+        iconEventListener.onDoubleClick += (iconGo) => OnDoubleClick();
+        iconEventListener.onPress += (iconGo, isDown) => OnPress(isDown);
+        return icon;
     }
 
     #endregion
@@ -143,7 +122,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
 
     protected override void OnOwnerChanged() {
         base.OnOwnerChanged();
-        ChangeIconColor(Owner.Color);
+        if (DisplayMgr != null && DisplayMgr.Icon != null) {
+            DisplayMgr.Icon.Color = Owner.Color;
+        }
     }
 
     private void OnGameSpeedChanged() {
@@ -230,147 +211,30 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
 
     #region View Methods
 
-    protected override void OnIsDiscernibleChanged() {
-        base.OnIsDiscernibleChanged();
-        ShowMesh(IsDiscernible);
-        _animation.enabled = IsDiscernible;
-        ShowIcon(IsDiscernible);
-    }
+    protected abstract ResponsiveTrackingSprite MakeIcon();
 
-    private void OnElementIconsEnabledChanged() {
-        if (_icon != null) {
-            ShowIcon(false); // accessing destroy gameObject error if we are showing it while destroying it
-            UnityUtility.DestroyIfNotNullOrAlreadyDestroyed<ITrackingWidget>(_icon);
-            _icon = null;
-        }
-
-        if (PlayerPrefsManager.Instance.IsElementIconsEnabled && _isViewMembersOnDiscernibleInitialized) {
-            InitializeIcon();
-            ShowIcon(IsDiscernible);
+    private void OnElementIconsEnabledOptionChanged() {
+        if (DisplayMgr != null) {
+            var elementIconsEnabled = PlayerPrefsManager.Instance.IsElementIconsEnabled;
+            if (elementIconsEnabled) {
+                D.Assert(DisplayMgr.Icon == null);
+                DisplayMgr.Icon = InitializeIcon();
+            }
+            else {
+                D.Assert(DisplayMgr.Icon != null);
+                UnwireIconEvents();
+                DisplayMgr.Icon = null;
+            }
         }
     }
 
-    private void ShowMesh(bool toShow) {
-        if (toShow) {
-            _meshRenderer.material.SetColor(UnityConstants.MaterialColor_Main, _originalMeshColor_Main);
-            _meshRenderer.material.SetColor(UnityConstants.MaterialColor_Specular, _originalMeshColor_Specular);
-            // TODO audio on goes here
-        }
-        else {
-            _meshRenderer.material.SetColor(UnityConstants.MaterialColor_Main, _hiddenMeshColor);
-            _meshRenderer.material.SetColor(UnityConstants.MaterialColor_Specular, _hiddenMeshColor);
-            // TODO audio off goes here
-        }
+    private void UnwireIconEvents() {
+        var iconEventListener = DisplayMgr.Icon.EventListener;
+        iconEventListener.onHover -= (iconGo, isOver) => OnHover(isOver);
+        iconEventListener.onClick -= (iconGo) => OnClick();
+        iconEventListener.onDoubleClick -= (iconGo) => OnDoubleClick();
+        iconEventListener.onPress -= (iconGo, isDown) => OnPress(isDown);
     }
-
-    private void ChangeIconColor(GameColor color) {
-        if (_icon != null) {
-            _icon.Color = color;
-        }
-    }
-
-    private void ShowIcon(bool toShow) {
-        if (_icon != null) {
-            //D.Log("{0}.ShowIcon({1}) called.", FullName, toShow);
-            _icon.Show(toShow);
-        }
-    }
-
-    #region Animations
-
-    // these run until finished with no requirement to call OnShowCompletion
-    protected override void ShowCmdHit() {
-        base.ShowCmdHit();
-        if (_showingJob != null && _showingJob.IsRunning) {
-            _showingJob.Kill();
-        }
-        _showingJob = new Job(ShowingCmdHit(), toStart: true);
-    }
-
-    protected override void ShowAttacking() {
-        base.ShowAttacking();
-        if (_showingJob != null && _showingJob.IsRunning) {
-            _showingJob.Kill();
-        }
-        _showingJob = new Job(ShowingAttacking(), toStart: true);
-    }
-
-    // these run continuously until they are stopped via StopAnimation() 
-    protected override void ShowRepairing() {
-        base.ShowRepairing();
-        if (_showingJob != null && _showingJob.IsRunning) {
-            _showingJob.Kill();
-        }
-        _showingJob = new Job(ShowingRepairing(), toStart: true);
-    }
-
-    protected override void ShowRefitting() {
-        base.ShowRefitting();
-        if (_showingJob != null && _showingJob.IsRunning) {
-            _showingJob.Kill();
-        }
-        _showingJob = new Job(ShowingRefitting(), toStart: true);
-    }
-
-    protected override void ShowDisbanding() {
-        base.ShowDisbanding();
-        if (_showingJob != null && _showingJob.IsRunning) {
-            _showingJob.Kill();
-        }
-        _showingJob = new Job(ShowingDisbanding(), toStart: true);
-    }
-
-    private IEnumerator ShowingCmdHit() {
-        if (cmdHit != null) {
-            _audioSource.PlayOneShot(cmdHit);
-        }
-        //animation.Stop();
-        //yield return UnityUtility.PlayAnimation(animation, "hit");  
-        yield return null;
-        // does not use OnShowCompletion
-    }
-
-    private IEnumerator ShowingAttacking() {
-        if (attacking != null) {
-            _audioSource.PlayOneShot(attacking);
-        }
-        //animation.Stop();
-        //yield return UnityUtility.PlayAnimation(animation, "hit");  
-        yield return null;
-        // does not use OnShowCompletion
-    }
-
-    private IEnumerator ShowingRefitting() {
-        if (refitting != null) {
-            _audioSource.PlayOneShot(refitting);
-        }
-        //animation.Stop();
-        //yield return UnityUtility.PlayAnimation(animation, "hit");  
-        yield return null;
-        // does not useOnShowCompletion
-    }
-
-    private IEnumerator ShowingDisbanding() {
-        if (disbanding != null) {
-            _audioSource.PlayOneShot(disbanding);
-        }
-        //animation.Stop();
-        //yield return UnityUtility.PlayAnimation(animation, "hit");  
-        yield return null;
-        // does not use OnShowCompletion
-    }
-
-    private IEnumerator ShowingRepairing() {
-        if (repairing != null) {
-            _audioSource.PlayOneShot(repairing);
-        }
-        //animation.Stop();
-        //yield return UnityUtility.PlayAnimation(animation, "hit");  
-        yield return null;
-        // does not use OnShowCompletion
-    }
-
-    #endregion
 
     #endregion
 
@@ -390,7 +254,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
         D.Error("{0}.Dead_ExitState should not occur.", Data.Name);
     }
 
-    protected override void OnShowCompletion() { RelayToCurrentState(); }
+    public override void OnShowCompletion() { RelayToCurrentState(); }
 
     void OnDetectedEnemy() { RelayToCurrentState(); }   // TODO connect to sensors when I get them
 
@@ -424,7 +288,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     /// <returns></returns>
     protected bool Fire(Weapon weapon, IElementAttackableTarget target = null) {
         if (weapon.FireOnEnemyTarget(target)) {
-            ShowAnimation(MortalAnimations.Attacking);
+            StartAnimation(MortalAnimations.Attacking);
             return true;
         }
         D.Log("{0}.{1} did not fire.", FullName, weapon.Name);
@@ -444,7 +308,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
         }
     }
 
-    // no need to destroy _icon as it is a child of this element
+    protected override void Unsubscribe() {
+        base.Unsubscribe();
+        if (DisplayMgr != null && DisplayMgr.Icon != null) {
+            UnwireIconEvents();
+        }
+    }
 
     #endregion
 
@@ -474,7 +343,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
 
         if (isElementAlive) {
             var hitAnimation = isCmdHit ? MortalAnimations.CmdHit : MortalAnimations.Hit;
-            ShowAnimation(hitAnimation);
+            StartAnimation(hitAnimation);
             AssessNeedForRepair();
         }
     }
@@ -522,6 +391,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IElementItem, 
     public void OnDetectionLost(ICommandItem cmdItem, DistanceRange sensorRange) {
         _detectionHandler.OnDetectionLost(cmdItem, sensorRange);
     }
+
+    #endregion
+
+    #region IHighlightable Members
+
+    public override float HighlightRadius { get { return Radius * Screen.height * 1F; } }
 
     #endregion
 

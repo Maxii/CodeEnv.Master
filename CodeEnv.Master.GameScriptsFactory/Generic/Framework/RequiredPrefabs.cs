@@ -27,6 +27,10 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
 
     #region Prefabs
 
+    public GameObject explosion;
+
+    public GameObject hitImpact;
+
     /// <summary>
     /// A generic prefab for labels that track the world object they are parented too.
     /// They need to have specific scripts added after instantiation to function.

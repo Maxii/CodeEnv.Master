@@ -59,9 +59,6 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient
             //D.Log("{0}.UnitRadius is {1}.", FullName, result);
             return result;
         }
-        protected set {
-            throw new NotImplementedException("Cannot set the value of {0}'s Radius.".Inject(FullName));
-        }
     }
 
     private FleetPublisher _publisher;
@@ -346,6 +343,11 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient
         ShowPlottedPath(toShow, course.ToArray());
     }
 
+    protected override ResponsiveTrackingSprite MakeIcon() {
+        return TrackingWidgetFactory.Instance.CreateResponsiveTrackingSprite(this, TrackingWidgetFactory.IconAtlasID.Fleet,
+            new Vector2(24, 24), WidgetPlacement.Above);
+    }
+
     protected override void OnIsDiscernibleChanged() {
         base.OnIsDiscernibleChanged();
         ShowVelocityRay(IsDiscernible);
@@ -393,8 +395,8 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient
         }
     }
 
-    protected override IIcon MakeCmdIconInstance() {
-        return FleetIconFactory.Instance.MakeInstance(Data);
+    protected override AIconID RefreshCmdIconID() {
+        return FleetIconIDFactory.Instance.MakeInstance(Data);
     }
 
     #endregion
@@ -691,7 +693,7 @@ public class FleetCmdItem : AUnitCmdItem, ICameraFollowable, ICmdPublisherClient
 
     void Dead_EnterState() {
         LogEvent();
-        ShowAnimation(MortalAnimations.Dying);
+        StartAnimation(MortalAnimations.Dying);
     }
 
     void Dead_OnShowCompletion() {

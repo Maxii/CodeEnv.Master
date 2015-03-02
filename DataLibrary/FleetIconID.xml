@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- Be careful where comments are placed! -->
-<Icon IconTypeName="FleetIcon">
+<!-- IMPROVE IconTypeName not used in validation. -->
+<Icon IconTypeName="FleetIconID">
   <Section SectionName="Base">
     <Selection>
       <Criteria>None</Criteria>

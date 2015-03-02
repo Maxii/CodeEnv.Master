@@ -36,22 +36,25 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
         set { base.Data = value; }
     }
 
-    public AudioClip dying;
-    public AudioClip hit;
-
-    protected AudioSource _audioSource;
-    protected Job _showingJob;
+    private IAnimator _animator;
 
     #region Initialization
 
-    protected override void InitializeLocalReferencesAndValues() {
-        base.InitializeLocalReferencesAndValues();
-        _audioSource = UnityUtility.ValidateComponentPresence<AudioSource>(gameObject);
+    protected override void InitializeViewMembersOnDiscernible() {
+        base.InitializeViewMembersOnDiscernible();
+        _animator = InitializeAnimator();
+        _animator.onAnimationFinished += OnShowCompletion;
     }
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
         _subscribers.Add(Data.SubscribeToPropertyChanged<AMortalItemData, float>(d => d.Health, OnHealthChanged));
+    }
+
+    protected virtual IAnimator InitializeAnimator() {
+        var animation = gameObject.GetComponentInImmediateChildren<Animation>();
+        var audioSource = gameObject.GetComponent<AudioSource>();
+        return new MortalItemAnimator(animation, audioSource);
     }
 
     #endregion
@@ -89,12 +92,12 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
 
     /// <summary>
     /// Initiates the death sequence of this MortalItem. This is the primary method
-    /// to call to initiate death. Donot use OnDeath or set IsAlive or set a state of Dead.
-    /// Note: the primary reason is to make sure IsAlive immediately reflects the death
+    /// to call to initiate death. Donot use OnDeath or set IsOperational or set a state of Dead.
+    /// Note: the primary reason is to make sure IsOperational immediately reflects the death
     /// and can be used right away to check for it. Use of a state of Dead for the filter 
     /// can also work as it is changed immediately too. However, the previous implementation
-    /// had IsAlive being set when the Dead EnterState ran, which can be a whole frame later,
-    /// given the way the state machine works. This approach keeps isAlive and Dead in sync.
+    /// had IsOperational being set when the Dead EnterState ran, which can be a whole frame later,
+    /// given the way the state machine works. This approach keeps IsOperational and Dead in sync.
     /// </summary>
     protected virtual void InitiateDeath() {
         D.Log("{0}.InitiateDeath() called.", FullName);
@@ -114,98 +117,19 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
 
     #region View Methods
 
-    protected abstract void OnShowCompletion();
+    public abstract void OnShowCompletion();
 
-    #region Animations
-
-    // these must call OnShowCompletion when finished
-    private void ShowDying() {
-        LogEvent();
-        if (_showingJob != null && _showingJob.IsRunning) {
-            _showingJob.Kill();
-        }
-        _showingJob = new Job(ShowingDying(), toStart: true, onJobComplete: (wasKilled) => {
-            OnShowCompletion();
-        });
-    }
-
-    // these run until finished with no requirement to call OnShowCompletion
-    private void ShowHit() {
-        LogEvent();
-        if (_showingJob != null && _showingJob.IsRunning) {
-            _showingJob.Kill();
-        }
-        _showingJob = new Job(ShowingHit(), toStart: true);
-    }
-
-    protected virtual void ShowCmdHit() { LogEvent(); }
-
-    protected virtual void ShowAttacking() { LogEvent(); }
-
-    // these run continuously until they are stopped via StopAnimation() 
-    protected virtual void ShowRepairing() { LogEvent(); }
-
-    protected virtual void ShowRefitting() { LogEvent(); }
-
-    protected virtual void ShowDisbanding() { LogEvent(); }
-
-    private IEnumerator ShowingHit() {
-        if (hit != null) {
-            _audioSource.PlayOneShot(hit);
-        }
-        //animation.Stop();
-        //yield return UnityUtility.PlayAnimation(animation, "hit");  
-        yield return null;
-        // does not use onShowCompletion
-    }
-
-    private IEnumerator ShowingDying() {
-        if (dying != null) {
-            _audioSource.PlayOneShot(dying);
-        }
-        //animation.Stop();
-        //yield return UnityUtility.PlayAnimation(animation, "die");  // show debree particles for some period of time?
-        yield return null;
-    }
-
-    public void ShowAnimation(MortalAnimations animation) {
-        switch (animation) {
-            case MortalAnimations.Dying:
-                ShowDying();
-                break;
-            case MortalAnimations.Hit:
-                ShowHit();
-                break;
-            case MortalAnimations.Attacking:
-                ShowAttacking();
-                break;
-            case MortalAnimations.CmdHit:
-                ShowCmdHit();
-                break;
-            case MortalAnimations.Disbanding:
-                ShowDisbanding();
-                break;
-            case MortalAnimations.Refitting:
-                ShowRefitting();
-                break;
-            case MortalAnimations.Repairing:
-                ShowRepairing();
-                break;
-            case MortalAnimations.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(animation));
+    protected void StartAnimation(MortalAnimations animationID) {
+        if (_animator != null) {
+            _animator.Start(animationID);
         }
     }
 
-    public void StopAnimation(MortalAnimations animation) {
-        if (_showingJob != null && _showingJob.IsRunning) {
-            _showingJob.Kill();
-            return;
+    protected void StopAnimation(MortalAnimations animationID) {
+        if (_animator != null) {
+            _animator.Stop(animationID);
         }
-        //D.Warn("No Animation named {0} to stop.", animation.GetName());   // Commented out as most show Jobs not yet implemented
     }
-
-    #endregion
 
     #endregion
 
@@ -270,9 +194,9 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
 
     protected override void Cleanup() {
         base.Cleanup();
-        if (_showingJob != null) {
-            _showingJob.Dispose();
-        }
+        //if (_showingJob != null) {
+        //    _showingJob.Dispose();
+        //}
         Data.Dispose();
     }
 

@@ -30,8 +30,10 @@ namespace CodeEnv.Master.GameContent {
 
         public event Action<Player> onPlayerIntelCoverageChanged;
 
-        private IDictionary<Player, AIntel> _playerIntelLookup;
+        protected virtual IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.None; } }
+
         protected IGameManager _gameMgr;
+        private IDictionary<Player, AIntel> _playerIntelLookup;
 
         public AIntelItemData(Transform itemTransform, string name, Player owner)
             : base(itemTransform, name, owner) {
@@ -50,23 +52,31 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        private AIntel InitializeIntelState(Player player) {
+            bool isCoverageComprehensive = DebugSettings.Instance.AllIntelCoverageComprehensive || Owner == player;
+            var coverage = isCoverageComprehensive ? IntelCoverage.Comprehensive : DefaultStartingIntelCoverage;
+            return MakeIntel(coverage);
+        }
+
         /// <summary>
-        /// Derived classes should override this if they have a different type of AIntel  than <see cref="Intel" /> and/or starting coverage than
-        /// <see cref="IntelCoverage.Comprehensive"/> if the owner or <see cref="IntelCoverage.None"/> if not.
+        /// Derived classes should override this if they have a different type of AIntel  than <see cref="Intel" />.
+        /// </summary>
+        /// <param name="initialcoverage">The initial coverage.</param>
+        /// <returns></returns>
+        protected virtual AIntel MakeIntel(IntelCoverage initialcoverage) {
+            return new Intel(initialcoverage);
+        }
+
+        /// <summary>
+        /// Indicates whether the provided <c>player</c> has investigated the item and
+        /// gained knowledge of the item that is greater than the default level when the game started.
+        /// Example: All players start with IntelCoverage.Aware knowledge of Stars. This method would
+        /// return false if the player's IntelCoverage of the Star was not greater than Aware.
         /// </summary>
         /// <param name="player">The player.</param>
         /// <returns></returns>
-        protected virtual AIntel InitializeIntelState(Player player) {
-            var coverage = IsAllIntelCoverageComprehensive || Owner == player ? IntelCoverage.Comprehensive : IntelCoverage.None;
-            return new Intel(coverage);
-        }
-
-        protected bool IsAllIntelCoverageComprehensive {
-            get { return DebugSettings.Instance.AllIntelCoverageComprehensive; }
-        }
-
-        public override bool HasPlayerInvestigated(Player player) {
-            return GetIntelCoverage(player) != IntelCoverage.None;
+        public bool HasPlayerInvestigated(Player player) {
+            return GetIntelCoverage(player) > DefaultStartingIntelCoverage;
         }
 
         public bool TrySetHumanPlayerIntelCoverage(IntelCoverage newCoverage) {

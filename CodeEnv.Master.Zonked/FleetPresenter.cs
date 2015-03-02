@@ -193,7 +193,7 @@ public class FleetPresenter : AMortalItemPresenter {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(View.PlayerIntelLevel));
         }
-        D.Log("IntelLevel is {2}, changing {0} to {1}.", typeof(FleetIcon).Name, fleetIcon.Filename, View.PlayerIntelLevel.GetName());
+        D.Log("IntelLevel is {2}, changing {0} to {1}.", typeof(FleetIconIdentity).Name, fleetIcon.Filename, View.PlayerIntelLevel.GetName());
         View.ChangeCmdIcon(fleetIcon, color);
     }
 

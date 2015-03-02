@@ -154,12 +154,6 @@ namespace CodeEnv.Master.GameContent {
             InitializeCollections();
         }
 
-        // UNCLEAR Should a player's awareness of a UnitCmd be based upon their knowledge of the Cmd's HQElement
-        // as currently implemented, or should having knowledge of any element in the Cmd be sufficient?
-        public override bool HasPlayerInvestigated(Player player) {
-            return base.HasPlayerInvestigated(player);
-        }
-
         private void InitializeCollections() {
             ElementsData = new List<AUnitElementItemData>();
             _subscribers = new Dictionary<AUnitElementItemData, IList<IDisposable>>();

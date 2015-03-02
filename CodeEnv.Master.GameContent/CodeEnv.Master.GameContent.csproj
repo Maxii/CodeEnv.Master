@@ -52,6 +52,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Graphics\ElementItemAnimator.cs" />
     <Compile Include="Generic\Framework\DetectionHandler.cs" />
     <Compile Include="Generic\Framework\AItemReport.cs" />
     <Compile Include="Generic\Graphics\AItemLabelTextFactory.cs" />
@@ -110,7 +111,7 @@
     <Compile Include="Game\Gameplay\FleetState.cs" />
     <Compile Include="Generic\Framework\SelectionManager.cs" />
     <Compile Include="Generic\Graphics\A3DVectrosityBase.cs" />
-    <Compile Include="Generic\Graphics\AIconFactory.cs" />
+    <Compile Include="Generic\Graphics\AIconIDFactory.cs" />
     <Compile Include="Generic\Graphics\AVectrosityBase.cs" />
     <Compile Include="Generic\Graphics\CubeWireframe.cs" />
     <Compile Include="Game\Framework\GameSettings.cs" />
@@ -131,7 +132,7 @@
     <Compile Include="Generic\Graphics\ICameraFocusable.cs" />
     <Compile Include="Generic\Graphics\ICameraFollowable.cs" />
     <Compile Include="Generic\Graphics\ICameraTargetable.cs" />
-    <Compile Include="Game\Graphics\FleetIconFactory.cs" />
+    <Compile Include="Game\Graphics\FleetIconIDFactory.cs" />
     <Compile Include="Generic\Graphics\IZoomToFurthest.cs" />
     <Compile Include="Generic\IO\AnimationSettings.cs" />
     <Compile Include="Game\_Debug\DebugHudText.cs" />
@@ -153,8 +154,8 @@
     <Compile Include="Game\Gameplay\ShipDirective.cs" />
     <Compile Include="Generic\Framework\StationaryLocation.cs" />
     <Compile Include="Game\Gameplay\StarbaseCategory.cs" />
-    <Compile Include="Game\Graphics\SettlementIconFactory.cs" />
-    <Compile Include="Game\Graphics\StarbaseIconFactory.cs" />
+    <Compile Include="Game\Graphics\SettlementIconIDFactory.cs" />
+    <Compile Include="Game\Graphics\StarbaseIconIDFactory.cs" />
     <Compile Include="Game\Gameplay\Intel.cs" />
     <Compile Include="Game\Gameplay\ImprovingIntel.cs" />
     <Compile Include="Game\Gameplay\PlanetoidState.cs" />
@@ -206,6 +207,12 @@
     <Compile Include="Generic\Framework\ICmdPublisherClient.cs" />
     <Compile Include="Game\GUI\LabelText.cs" />
     <Compile Include="Generic\Framework\ISystemPublisherClient.cs" />
+    <Compile Include="Generic\Graphics\Highlighter.cs" />
+    <Compile Include="Generic\Graphics\HighlightID.cs" />
+    <Compile Include="Generic\Graphics\IAnimator.cs" />
+    <Compile Include="Generic\Graphics\IHighlightable.cs" />
+    <Compile Include="Generic\Graphics\IHighlighter.cs" />
+    <Compile Include="Game\Graphics\MortalItemAnimator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
     <Compile Include="Game\_Debug\VelocityRay.cs" />

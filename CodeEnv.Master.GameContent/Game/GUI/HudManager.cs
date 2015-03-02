@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Manages the HUD for items.
     /// </summary>
-    public class HudManager {
+    public class HudManager : IDisposable {
 
         public static IGuiHud CursorHud { private get; set; }
 
@@ -34,12 +34,12 @@ namespace CodeEnv.Master.GameContent {
             get { return _hudJob != null && _hudJob.IsRunning; }
         }
 
+        private float _hudRefreshRate;  // OPTIMIZE use static event to change?
         private APublisher _publisher;
         private ALabelText _labelText;
         private Job _hudJob;
         private IList<LabelContentID> _optionalUpdatableContentIDs;
         private IList<IDisposable> _subscribers;
-        private float _hudRefreshRate;  // OPTIMIZE static?
 
         public HudManager(APublisher publisher) {
             _publisher = publisher;
@@ -53,7 +53,7 @@ namespace CodeEnv.Master.GameContent {
             _subscribers.Add(GameTime.Instance.SubscribeToPropertyChanging<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanging));
         }
 
-        private void OnGameSpeedChanging(GameClockSpeed newSpeed) { // OPTIMIZE static?
+        private void OnGameSpeedChanging(GameClockSpeed newSpeed) { // OPTIMIZE use static event?
             //D.Log("{0}.OnGameSpeedChanging() called. OldSpeed = {1}, NewSpeed = {2}.", GetType().Name, GameTime.Instance.GameSpeed.GetName(), newSpeed.GetName());
             float currentSpeedMultiplier = GameTime.Instance.GameSpeed.SpeedMultiplier();
             float speedChangeRatio = newSpeed.SpeedMultiplier() / currentSpeedMultiplier;

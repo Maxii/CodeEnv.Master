@@ -201,7 +201,7 @@ public class FleetManager : AMonoBase, ISelectable, IHasData, IDisposable {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(PlayerIntelLevel));
         }
         _fleetIconSprite.spriteName = _fleetIcon.Filename;
-        D.Log("IntelLevel is {2}, changing {0} to {1}.", typeof(FleetIcon).Name, _fleetIcon.Filename, PlayerIntelLevel.GetName());
+        D.Log("IntelLevel is {2}, changing {0} to {1}.", typeof(FleetIconIdentity).Name, _fleetIcon.Filename, PlayerIntelLevel.GetName());
     }
 
     private void OnIsSelectedChanged() {

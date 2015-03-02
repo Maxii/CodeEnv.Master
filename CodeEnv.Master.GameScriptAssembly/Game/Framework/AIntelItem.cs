@@ -47,15 +47,18 @@ public abstract class AIntelItem : ADiscernibleItem {
     public IntelCoverage GetHumanPlayerIntelCoverage() { return Data.GetHumanPlayerIntelCoverage(); }
 
     protected virtual void OnHumanPlayerIntelCoverageChanged() {
+        //D.Log("{0}.OnHumanPlayerIntelCoverageChanged() called. IntelCoverage = {1}.", FullName, GetHumanPlayerIntelCoverage().GetName());
         AssessDiscernability();
         if (IsHudShowing) {
             // refresh the HUD as IntelCoverage has changed
             ShowHud(true);
         }
+        DisplayMgr.IsDisplayEnabled = Data.GetHumanPlayerIntelCoverage() != IntelCoverage.None;
     }
 
-    public override void AssessDiscernability() {
-        IsDiscernible = InCameraLOS && Data.GetHumanPlayerIntelCoverage() != IntelCoverage.None;
+    protected override void AssessDiscernability() {
+        var inCameraLOS = DisplayMgr == null ? true : DisplayMgr.InCameraLOS;
+        IsDiscernible = inCameraLOS && Data.GetHumanPlayerIntelCoverage() != IntelCoverage.None;
     }
 
     #endregion

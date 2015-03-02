@@ -35,13 +35,14 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IShipOrbitable {
         set { SetProperty<BaseOrder>(ref _currentOrder, value, "CurrentOrder", OnCurrentOrderChanged); }
     }
 
+    public override float UnitRadius { get { return TempGameValues.BaseRadius; } }
+
     private ICtxControl _ctxControl;
 
     #region Initialization
 
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
-        UnitRadius = TempGameValues.BaseRadius;
         // radius of the command is the same as the radius of the HQElement
         InitializeShipOrbitSlot();
         InitializeKeepoutZone();
@@ -277,7 +278,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IShipOrbitable {
 
     void Dead_EnterState() {
         LogEvent();
-        ShowAnimation(MortalAnimations.Dying);
+        StartAnimation(MortalAnimations.Dying);
     }
 
     void Dead_OnShowCompletion() {

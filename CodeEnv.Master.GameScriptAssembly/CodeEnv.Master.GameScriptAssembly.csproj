@@ -55,6 +55,7 @@
     </Compile>
     <Compile Include="Game\Framework\AIntelItem.cs" />
     <Compile Include="Game\Framework\AItem.cs" />
+    <Compile Include="Game\Graphics\ADisplayManager.cs" />
     <Compile Include="Generic\_Debug\DrawTriggerCollider.cs" />
     <Compile Include="Game\Framework\FormationStationMonitor.cs" />
     <Compile Include="Game\Framework\MovingOrbiter.cs" />
@@ -111,7 +112,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Game\Gameplay\" />
-    <Folder Include="Game\Graphics\" />
     <Folder Include="Game\GUI\" />
     <Folder Include="Generic\Math\" />
   </ItemGroup>

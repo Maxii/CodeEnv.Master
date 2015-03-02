@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FleetIcon.cs
+// File: FleetIconID.cs
 // Class that acquires the filename of a Fleet Icon image based on a provided set of criteria.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -18,10 +18,11 @@ namespace CodeEnv.Master.Common {
 
     /// <summary>
     /// Class that acquires the filename of a Fleet Icon image based on a provided set of criteria.
+    /// WARNING: Type name is used to find XML filename.
     /// </summary>
-    public class FleetIcon : AIcon {
+    public class FleetIconID : AIconID {
 
-        public FleetIcon(IconSection section, params IconSelectionCriteria[] criteria)
+        public FleetIconID(IconSection section, params IconSelectionCriteria[] criteria)
             : base(section, criteria) {
         }
 

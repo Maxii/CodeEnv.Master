@@ -71,8 +71,8 @@
     <Compile Include="Generic\Framework\Index3D.cs" />
     <Compile Include="ThirdParty\Reference.cs" />
     <Compile Include="ThirdParty\CustomStringComparer.cs" />
-    <Compile Include="Generic\Graphics\AIcon.cs" />
-    <Compile Include="Game\Graphics\FleetIcon.cs" />
+    <Compile Include="Generic\Graphics\AIconID.cs" />
+    <Compile Include="Game\Graphics\FleetIconID.cs" />
     <Compile Include="Generic\Extensions\LayerMaskExtensions.cs" />
     <Compile Include="Generic\Extensions\UnityExtensions.cs" />
     <Compile Include="Generic\Extensions\VectorExtensions.cs" />
@@ -119,7 +119,6 @@
     <Compile Include="Generic\_Debug\UnityDebugConstants.cs" />
     <Compile Include="Generic\Graphics\IconSection.cs" />
     <Compile Include="Generic\Graphics\IconSelectionCriteria.cs" />
-    <Compile Include="Generic\Graphics\IIcon.cs" />
     <Compile Include="ThirdParty\PropertyHelper.cs" />
     <Compile Include="ThirdParty\TextScanner.cs" />
     <Compile Include="ThirdParty\FlagsHelper.cs" />

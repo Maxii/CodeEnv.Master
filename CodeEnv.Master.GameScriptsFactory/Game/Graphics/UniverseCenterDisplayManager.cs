@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FleetDisplayManager.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// File: UniverseCenterDisplayManager.cs
+// DisplayManager for the UniverseCenter.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,26 +16,22 @@
 
 // default namespace
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
-using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// 
+/// DisplayManager for the UniverseCenter.
 /// </summary>
-public class FleetDisplayManager : AUnitCmdDisplayManager {
+public class UniverseCenterDisplayManager : ADisplayManager {
 
-    public new FleetCmdItem Item { get { return base.Item as FleetCmdItem; } }
+    public UniverseCenterDisplayManager(GameObject itemGO) : base(itemGO) { }
 
-    protected override float SphericalHighlightRadius { get { return Item.UnitRadius; } }
-
-    public FleetDisplayManager(FleetCmdItem item) : base(item) { }
-
-    protected override Layers GetCullingLayer() { return Layers.ShipCull; }
+    protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
+        var primaryMeshRenderer = itemGo.GetComponentInImmediateChildren<MeshRenderer>();
+        primaryMeshRenderer.castShadows = true;
+        primaryMeshRenderer.receiveShadows = true;
+        return primaryMeshRenderer;
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

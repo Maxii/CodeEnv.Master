@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2013 Strategic Forge
+// Copyright © 2012 - 2015 Microsoft
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IIcon.cs
-// Interface for AIcons used by IconFactory to make instances of AIcon&lt;T&gt;.
+// File: IHighlightable.cs
+// Interface for Items that can be highlighted.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -14,20 +14,16 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-namespace CodeEnv.Master.Common {
+namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for AIcons used by IconFactory to make instances of AIcon&lt;T&gt;.
+    /// Interface for Items that can be highlighted.
     /// </summary>
-    public interface IIcon {
+    public interface IHighlightable : IWidgetTrackable {
 
-        IconSection Section { get; }
+        float HoverHighlightRadius { get; }
 
-        IconSelectionCriteria[] Criteria { get; }
-
-        string Filename { get; }
-
-        GameColor Color { get; }
+        float HighlightRadius { get; }
 
     }
 }

@@ -19,6 +19,7 @@
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// Class for AUnitBaseCmdItems that are Settlements.
@@ -78,8 +79,13 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ICmdPublisherClient<FacilityR
 
     #region View Methods
 
-    protected override IIcon MakeCmdIconInstance() {
-        return SettlementIconFactory.Instance.MakeInstance(Data);
+    protected override ResponsiveTrackingSprite MakeIcon() {
+        return TrackingWidgetFactory.Instance.CreateResponsiveTrackingSprite(this, TrackingWidgetFactory.IconAtlasID.Fleet,
+            new Vector2(24, 24), WidgetPlacement.Above);
+    }
+
+    protected override AIconID RefreshCmdIconID() {
+        return SettlementIconIDFactory.Instance.MakeInstance(Data);
     }
 
     #endregion
@@ -102,7 +108,7 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ICmdPublisherClient<FacilityR
 
     #endregion
 
-    //#region ICameraFollowable Members
+    #region ICameraFollowable Members
 
     //[SerializeField]
     //private float cameraFollowDistanceDampener = 3.0F;
@@ -116,7 +122,7 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ICmdPublisherClient<FacilityR
     //    get { return cameraFollowRotationDampener; }
     //}
 
-    //#endregion
+    #endregion
 
 }
 

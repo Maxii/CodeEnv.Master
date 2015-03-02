@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -54,7 +54,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
-        D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(UITrackingLabel).Name, target.DisplayName);
+        //D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(UITrackingLabel).Name, target.DisplayName);
         return trackingWidget;
     }
 
@@ -82,12 +82,12 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
-        D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(UITrackingSprite).Name, target.DisplayName);
+        //D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(UITrackingSprite).Name, target.DisplayName);
         return trackingWidget;
     }
 
     /// <summary>
-    /// Creates a tracking sprite which can interact with the mouse.
+    /// Creates a tracking sprite which can respond to the mouse.
     /// The sprite's size stays constant, parented to and tracks the <c>target</c>.
     /// </summary>
     /// <param name="target">The target.</param>
@@ -97,7 +97,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
     /// <param name="min">The minimum show distance.</param>
     /// <param name="max">The maximum show distance.</param>
     /// <returns></returns>
-    public InteractableTrackingSprite CreateInteractableTrackingSprite(IWidgetTrackable target, IconAtlasID atlasID, Vector2 __dimensions, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity) {
+    public ResponsiveTrackingSprite CreateResponsiveTrackingSprite(IWidgetTrackable target, IconAtlasID atlasID, Vector2 __dimensions, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity) {
         GameObject prefab = RequiredPrefabs.Instance.worldTrackingSprite;
         GameObject clone = NGUITools.AddChild(target.Transform.gameObject, prefab);
 
@@ -107,12 +107,12 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         UISprite sprite = clone.GetSafeMonoBehaviourComponentInChildren<UISprite>();
         sprite.atlas = GetAtlas(atlasID);
 
-        var trackingWidget = clone.AddComponent<InteractableTrackingSprite>();   // AddComponent() runs Awake before returning
+        var trackingWidget = clone.AddComponent<ResponsiveTrackingSprite>();   // AddComponent() runs Awake before returning
         trackingWidget.__SetDimensions(Mathf.RoundToInt(__dimensions.x), Mathf.RoundToInt(__dimensions.y));
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
-        D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(InteractableTrackingSprite).Name, target.DisplayName);
+        //D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(ResponsiveTrackingSprite).Name, target.DisplayName);
         return trackingWidget;
     }
 
@@ -134,7 +134,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min);
-        D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(VariableSizeTrackingSprite).Name, target.DisplayName);
+        //D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(VariableSizeTrackingSprite).Name, target.DisplayName);
         return trackingWidget;
     }
 
@@ -160,7 +160,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min);
-        D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(VariableSizeTrackingSprite).Name, target.DisplayName);
+        //D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(VariableSizeTrackingSprite).Name, target.DisplayName);
         return trackingWidget;
     }
 
@@ -189,7 +189,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
-        D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(ConstantSizeTrackingSprite).Name, target.DisplayName);
+        //D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(ConstantSizeTrackingSprite).Name, target.DisplayName);
         return trackingWidget;
     }
 
@@ -212,7 +212,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
-        D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(ConstantSizeTrackingSprite).Name, target.DisplayName);
+        //D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(ConstantSizeTrackingSprite).Name, target.DisplayName);
         return trackingWidget;
     }
 

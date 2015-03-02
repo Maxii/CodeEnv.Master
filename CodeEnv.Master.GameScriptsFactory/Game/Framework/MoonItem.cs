@@ -26,11 +26,13 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class MoonItem : APlanetoidItem {
 
-    protected override float SphericalHighlightRadius { get { return Radius * 3F; } }
-
     private bool _isParentPlanetDying;
 
     #region Initialization
+
+    protected override ADisplayManager InitializeDisplayManager() {
+        return new MoonDisplayManager(gameObject);
+    }
 
     #endregion
 
@@ -51,7 +53,7 @@ public class MoonItem : APlanetoidItem {
         InitiateDeath();
     }
 
-    protected override void OnShowCompletion() {
+    public override void OnShowCompletion() {
         switch (CurrentState) {
             case PlanetoidState.Dead:
                 if (!_isParentPlanetDying) {  // if the planet dieing is the cause of this moons death, than let the planet destroy all the game objects
@@ -78,6 +80,12 @@ public class MoonItem : APlanetoidItem {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region IHighlightable Members
+
+    public override float HoverHighlightRadius { get { return Radius * 3F; } }
+
+    #endregion
 
 }
 

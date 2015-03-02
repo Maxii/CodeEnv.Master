@@ -40,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IIcon MakeCmdIconInstance() {
-            return SettlementIconFactory.Instance.MakeInstance(Data, View.PlayerIntel);
+            return SettlementIconIDFactory.Instance.MakeInstance(Data, View.PlayerIntel);
         }
 
         public override string ToString() {
