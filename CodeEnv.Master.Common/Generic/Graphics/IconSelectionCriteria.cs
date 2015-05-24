@@ -18,7 +18,7 @@ namespace CodeEnv.Master.Common {
 
     /// <summary>
     /// Enum of selection criteria that can be used to pick
-    /// an icon image. Used in conjuction with IconSection.
+    /// an icon image. Used in conjunction with IconSection.
     /// </summary>
     public enum IconSelectionCriteria {
 

@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override ALabelText GetLabelText() {
-            return _publisher.GetLabelText(LabelID.CursorHud);
+            return _publisher.GetLabelText(DisplayTargetID.CursorHud);
         }
 
         public void Show(Vector3 position) {
@@ -47,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override bool TryUpdateContent(LabelContentID contentID, out IColoredTextList content) {
-            return _publisher.TryUpdateLabelTextContent(LabelID.CursorHud, contentID, out content);
+            return _publisher.TryUpdateLabelTextContent(DisplayTargetID.CursorHud, contentID, out content);
         }
 
         public override string ToString() {

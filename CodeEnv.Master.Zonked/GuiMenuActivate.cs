@@ -30,7 +30,7 @@ public class GuiMenuActivate : AMonoBase {
     UIButton[] childButtons;
 
     void Start() {
-        childButtons = gameObject.GetSafeMonoBehaviourComponentsInChildren<UIButton>(includeInactive: true);
+        childButtons = gameObject.GetSafeMonoBehavioursInChildren<UIButton>(includeInactive: true);
         foreach (UIButton button in childButtons) {
             UIEventListener.Get(button.gameObject).onClick += OnChildButtonClick;
         }

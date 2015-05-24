@@ -49,7 +49,7 @@ public class SectorCtxControl : ACtxControl {
 
     protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
-        return selectedFleet != null && selectedFleet.Owner.IsHumanUser;
+        return selectedFleet != null && selectedFleet.Owner.IsUser;
     }
 
     protected override void PopulateMenu_RemoteFleetAccess() {

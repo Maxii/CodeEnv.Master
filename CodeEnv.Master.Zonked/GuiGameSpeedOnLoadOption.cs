@@ -35,8 +35,8 @@ public class GuiGameSpeedOnLoadOption : AGuiPopupList {
     }
 
     protected override void OnPopupListSelectionChange(string item) {
-        GameClockSpeed speed;
-        if (!Enums<GameClockSpeed>.TryParse(item, true, out speed)) {
+        GameSpeed speed;
+        if (!Enums<GameSpeed>.TryParse(item, true, out speed)) {
             WarnOnIncorrectName(item);
             return;
         }

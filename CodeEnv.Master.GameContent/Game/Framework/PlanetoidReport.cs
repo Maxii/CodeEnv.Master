@@ -17,13 +17,14 @@
 namespace CodeEnv.Master.GameContent {
 
     using CodeEnv.Master.Common;
+    using UnityEngine;
 
     /// <summary>
     /// Immutable report for APlanetoidItems.
     /// </summary>
     public class PlanetoidReport : AMortalItemReport {
 
-        public string ParentName { get; protected set; }
+        public string ParentName { get; private set; }
 
         public PlanetoidCategory Category { get; private set; }
 
@@ -31,12 +32,10 @@ namespace CodeEnv.Master.GameContent {
 
         public int? Capacity { get; private set; }
 
-        public OpeYield? Resources { get; private set; }
+        public ResourceYield? Resources { get; private set; }
 
-        public XYield? SpecialResources { get; private set; }
-
-        public PlanetoidReport(PlanetoidData data, Player player)
-            : base(data, player) {
+        public PlanetoidReport(PlanetoidData data, Player player, IPlanetoidItem item)
+            : base(data, player, item) {
         }
 
         protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
@@ -46,30 +45,31 @@ namespace CodeEnv.Master.GameContent {
             Health = planetoidData.Health;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
-            base.AssignIncrementalValues_IntelCoverageModerate(data);
+        protected override void AssignIncrementalValues_IntelCoverageBroad(AItemData data) {
+            base.AssignIncrementalValues_IntelCoverageBroad(data);
             var planetoidData = data as PlanetoidData;
             MaxHitPoints = planetoidData.MaxHitPoints;
             DefensiveStrength = planetoidData.DefensiveStrength;
             Mass = planetoidData.Mass;
             Capacity = planetoidData.Capacity;
             Resources = planetoidData.Resources;
-            SpecialResources = planetoidData.SpecialResources;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageMinimal(AItemData data) {
-            base.AssignIncrementalValues_IntelCoverageMinimal(data);
+        protected override void AssignIncrementalValues_IntelCoverageEssential(AItemData data) {
+            base.AssignIncrementalValues_IntelCoverageEssential(data);
             var planetoidData = data as PlanetoidData;
             Owner = planetoidData.Owner;
             Category = planetoidData.Category;
             OrbitalSpeed = planetoidData.OrbitalSpeed;
+            Position = planetoidData.Position;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageAware(AItemData data) {
-            base.AssignIncrementalValues_IntelCoverageAware(data);
+        protected override void AssignIncrementalValues_IntelCoverageBasic(AItemData data) {
+            base.AssignIncrementalValues_IntelCoverageBasic(data);
             var planetoidData = data as PlanetoidData;
             Name = planetoidData.Name;
             ParentName = planetoidData.ParentName;
+            SectorIndex = planetoidData.SectorIndex;
         }
 
         public override string ToString() {

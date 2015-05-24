@@ -60,7 +60,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     private PlayerViewMode _viewMode;
     private Job _sectorViewJob;
 
-    private IList<IDisposable> _subscribers;
+    private IList<IDisposable> _subscriptions;
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
@@ -78,18 +78,18 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     }
 
     private void Subscribe() {
-        _subscribers = new List<IDisposable>();
-        _subscribers.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, OnPlayerViewModeChanged));
+        _subscriptions = new List<IDisposable>();
+        _subscriptions.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, OnPlayerViewModeChanged));
     }
 
     private void DynamicallySubscribe(bool toSubscribe) {
         if (toSubscribe) {
-            _subscribers.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, Index3D>(cc => cc.SectorIndex, OnCameraSectorIndexChanged));
+            _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, Index3D>(cc => cc.SectorIndex, OnCameraSectorIndexChanged));
             //GameInput.Instance.onUnconsumedPress += OnUnconsumedPress;
         }
         else {
-            IDisposable d = _subscribers.Single(s => s as DisposePropertyChangedSubscription<MainCameraControl> != null);
-            _subscribers.Remove(d);
+            IDisposable d = _subscriptions.Single(s => s as DisposePropertyChangedSubscription<MainCameraControl> != null);
+            _subscriptions.Remove(d);
             d.Dispose();
             //GameInput.Instance.onUnconsumedPress -= OnUnconsumedPress;
         }
@@ -136,8 +136,8 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     }
 
     private ITrackingWidget InitializeSectorIDLabel() {
-        var sectorIDLabel = TrackingWidgetFactory.Instance.CreateUITrackingLabel(this, WidgetPlacement.Over);
-        sectorIDLabel.Color = UnityDebugConstants.SectorHighlightColor;
+        var sectorIDLabel = TrackingWidgetFactory.Instance.MakeUITrackingLabel(this, WidgetPlacement.Over);
+        sectorIDLabel.Color = TempGameValues.SectorHighlightColor;
         return sectorIDLabel;
     }
 
@@ -212,7 +212,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
             return;
         }
         if (_wireframe == null) {
-            _wireframe = new CubeWireframe("SectorWireframe", _transform, TempGameValues.SectorSize, width: 2F, color: UnityDebugConstants.SectorHighlightColor);
+            _wireframe = new CubeWireframe("SectorWireframe", _transform, TempGameValues.SectorSize, width: 2F, color: TempGameValues.SectorHighlightColor);
         }
         if (_sectorIDLabel == null) {
             UpdateSectorIDLabel();
@@ -232,8 +232,8 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     }
 
     private void Unsubscribe() {
-        _subscribers.ForAll(s => s.Dispose());
-        _subscribers.Clear();
+        _subscriptions.ForAll(s => s.Dispose());
+        _subscriptions.Clear();
     }
 
     public override string ToString() {

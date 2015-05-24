@@ -25,6 +25,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public static class UniverseSizeExtensions {
 
+        private static UniverseSizeHelper _values = UniverseSizeHelper.Instance;
+
         /// <summary>
         /// Converts this UniverseSizeGuiSelection value to a UniverseSize value.
         /// </summary>
@@ -54,20 +56,19 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public static float Radius(this UniverseSize universeSize) {
-            UniverseSizeHelper values = UniverseSizeHelper.Instance;
             switch (universeSize) {
                 case UniverseSize.Tiny:
-                    return values.TinyRadius;
+                    return _values.TinyRadius;
                 case UniverseSize.Small:
-                    return values.SmallRadius;
+                    return _values.SmallRadius;
                 case UniverseSize.Normal:
-                    return values.NormalRadius;
+                    return _values.NormalRadius;
                 case UniverseSize.Large:
-                    return values.LargeRadius;
+                    return _values.LargeRadius;
                 case UniverseSize.Enormous:
-                    return values.EnormousRadius;
+                    return _values.EnormousRadius;
                 case UniverseSize.Gigantic:
-                    return values.GiganticRadius;
+                    return _values.GiganticRadius;
                 case UniverseSize.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(universeSize));
@@ -76,25 +77,24 @@ namespace CodeEnv.Master.GameContent {
 
         public static int DefaultAIPlayerCount(this UniverseSize universeSize) {
             int defaultAIPlayerCount;
-            UniverseSizeHelper values = UniverseSizeHelper.Instance;
             switch (universeSize) {
                 case UniverseSize.Tiny:
-                    defaultAIPlayerCount = values.TinyDefaultAIPlayerCount;
+                    defaultAIPlayerCount = _values.TinyDefaultAIPlayerCount;
                     break;
                 case UniverseSize.Small:
-                    defaultAIPlayerCount = values.SmallDefaultAIPlayerCount;
+                    defaultAIPlayerCount = _values.SmallDefaultAIPlayerCount;
                     break;
                 case UniverseSize.Normal:
-                    defaultAIPlayerCount = values.NormalDefaultAIPlayerCount;
+                    defaultAIPlayerCount = _values.NormalDefaultAIPlayerCount;
                     break;
                 case UniverseSize.Large:
-                    defaultAIPlayerCount = values.LargeDefaultAIPlayerCount;
+                    defaultAIPlayerCount = _values.LargeDefaultAIPlayerCount;
                     break;
                 case UniverseSize.Enormous:
-                    defaultAIPlayerCount = values.EnormousDefaultAIPlayerCount;
+                    defaultAIPlayerCount = _values.EnormousDefaultAIPlayerCount;
                     break;
                 case UniverseSize.Gigantic:
-                    defaultAIPlayerCount = values.GiganticDefaultAIPlayerCount;
+                    defaultAIPlayerCount = _values.GiganticDefaultAIPlayerCount;
                     break;
                 case UniverseSize.None:
                 default:
@@ -104,25 +104,17 @@ namespace CodeEnv.Master.GameContent {
             return defaultAIPlayerCount;
         }
 
-
         /// <summary>
         /// Parses UniverseSize.xml used to provide externalized values for the UniverseSize enum.
         /// </summary>
         public sealed class UniverseSizeHelper : AEnumValuesHelper<UniverseSizeHelper> {
-
-            /// <summary>
-            /// The type of the enum being supported by this class.
-            /// </summary>
-            protected override Type EnumType { get { return typeof(UniverseSize); } }
 
             #region Universe Radius
 
             private float _tinyRadius;
             public float TinyRadius {
                 get {
-                    if (!isPropertyValuesInitialized) {
-                        InitializePropertyValues();
-                    }
+                    CheckValuesInitialized();
                     return _tinyRadius;
                 }
                 private set { _tinyRadius = value; }
@@ -131,9 +123,7 @@ namespace CodeEnv.Master.GameContent {
             private float _smallRadius;
             public float SmallRadius {
                 get {
-                    if (!isPropertyValuesInitialized) {
-                        InitializePropertyValues();
-                    }
+                    CheckValuesInitialized();
                     return _smallRadius;
                 }
                 private set { _smallRadius = value; }
@@ -142,9 +132,7 @@ namespace CodeEnv.Master.GameContent {
             private float _normalRadius;
             public float NormalRadius {
                 get {
-                    if (!isPropertyValuesInitialized) {
-                        InitializePropertyValues();
-                    }
+                    CheckValuesInitialized();
                     return _normalRadius;
                 }
                 private set { _normalRadius = value; }
@@ -153,9 +141,7 @@ namespace CodeEnv.Master.GameContent {
             private float _largeRadius;
             public float LargeRadius {
                 get {
-                    if (!isPropertyValuesInitialized) {
-                        InitializePropertyValues();
-                    }
+                    CheckValuesInitialized();
                     return _largeRadius;
                 }
                 private set { _largeRadius = value; }
@@ -164,9 +150,7 @@ namespace CodeEnv.Master.GameContent {
             private float _enormousRadius;
             public float EnormousRadius {
                 get {
-                    if (!isPropertyValuesInitialized) {
-                        InitializePropertyValues();
-                    }
+                    CheckValuesInitialized();
                     return _enormousRadius;
                 }
                 private set { _enormousRadius = value; }
@@ -175,9 +159,7 @@ namespace CodeEnv.Master.GameContent {
             private float _giganticRadius;
             public float GiganticRadius {
                 get {
-                    if (!isPropertyValuesInitialized) {
-                        InitializePropertyValues();
-                    }
+                    CheckValuesInitialized();
                     return _giganticRadius;
                 }
                 private set { _giganticRadius = value; }
@@ -190,9 +172,7 @@ namespace CodeEnv.Master.GameContent {
             private int _tinyDefaultAIPlayerCount;
             public int TinyDefaultAIPlayerCount {
                 get {
-                    if (!isPropertyValuesInitialized) {
-                        InitializePropertyValues();
-                    }
+                    CheckValuesInitialized();
                     return _tinyDefaultAIPlayerCount;
                 }
                 private set { _tinyDefaultAIPlayerCount = value; }
@@ -201,9 +181,7 @@ namespace CodeEnv.Master.GameContent {
             private int _smallDefaultAIPlayerCount;
             public int SmallDefaultAIPlayerCount {
                 get {
-                    if (!isPropertyValuesInitialized) {
-                        InitializePropertyValues();
-                    }
+                    CheckValuesInitialized();
                     return _smallDefaultAIPlayerCount;
                 }
                 private set { _smallDefaultAIPlayerCount = value; }
@@ -212,9 +190,7 @@ namespace CodeEnv.Master.GameContent {
             private int _normalDefaultAIPlayerCount;
             public int NormalDefaultAIPlayerCount {
                 get {
-                    if (!isPropertyValuesInitialized) {
-                        InitializePropertyValues();
-                    }
+                    CheckValuesInitialized();
                     return _normalDefaultAIPlayerCount;
                 }
                 private set { _normalDefaultAIPlayerCount = value; }
@@ -223,9 +199,7 @@ namespace CodeEnv.Master.GameContent {
             private int _largeDefaultAIPlayerCount;
             public int LargeDefaultAIPlayerCount {
                 get {
-                    if (!isPropertyValuesInitialized) {
-                        InitializePropertyValues();
-                    }
+                    CheckValuesInitialized();
                     return _largeDefaultAIPlayerCount;
                 }
                 private set { _largeDefaultAIPlayerCount = value; }
@@ -234,9 +208,7 @@ namespace CodeEnv.Master.GameContent {
             private int _enormousDefaultAIPlayerCount;
             public int EnormousDefaultAIPlayerCount {
                 get {
-                    if (!isPropertyValuesInitialized) {
-                        InitializePropertyValues();
-                    }
+                    CheckValuesInitialized();
                     return _enormousDefaultAIPlayerCount;
                 }
                 private set { _enormousDefaultAIPlayerCount = value; }
@@ -245,15 +217,18 @@ namespace CodeEnv.Master.GameContent {
             private int _giganticDefaultAIPlayerCount;
             public int GiganticDefaultAIPlayerCount {
                 get {
-                    if (!isPropertyValuesInitialized) {
-                        InitializePropertyValues();
-                    }
+                    CheckValuesInitialized();
                     return _giganticDefaultAIPlayerCount;
                 }
                 private set { _giganticDefaultAIPlayerCount = value; }
             }
 
             #endregion
+
+            /// <summary>
+            /// The type of the enum being supported by this class.
+            /// </summary>
+            protected override Type EnumType { get { return typeof(UniverseSize); } }
 
             private UniverseSizeHelper() {
                 Initialize();

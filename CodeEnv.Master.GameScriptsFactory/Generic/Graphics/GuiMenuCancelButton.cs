@@ -44,7 +44,7 @@ public class GuiMenuCancelButton : AGuiButton {
         base.Start();
 
         ValidateSetup();
-        UIPanel parentPanel = gameObject.GetSafeMonoBehaviourComponentInParents<UIPanel>();
+        UIPanel parentPanel = gameObject.GetSafeMonoBehaviourInParents<UIPanel>();
 
         _checkboxes = parentPanel.gameObject.GetComponentsInChildren<UIToggle>(includeInactive: true);
         //D.Assert(checkboxes.Length == 0, "There are no checkboxes on Menu {0}.".Inject(buttonParent.name)); 

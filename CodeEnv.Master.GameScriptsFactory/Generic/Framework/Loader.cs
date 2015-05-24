@@ -32,7 +32,7 @@ public class Loader : AMonoSingleton<Loader> {
 
     protected override bool IsPersistentAcrossScenes { get { return true; } }
 
-    private IList<IDisposable> _subscribers;
+    private IList<IDisposable> _subscriptions;
     private PlayerPrefsManager _playerPrefsMgr;
 
     protected override void InitializeOnInstance() {
@@ -42,6 +42,7 @@ public class Loader : AMonoSingleton<Loader> {
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
+        AssignAudioListener();
         InitializeQualitySettings();
         InitializeVectrosity();
         Subscribe();
@@ -61,8 +62,32 @@ public class Loader : AMonoSingleton<Loader> {
     }
 
     private void Subscribe() {
-        _subscribers = new List<IDisposable>();
-        _subscribers.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, string>(ppm => ppm.QualitySetting, OnQualitySettingChanged));
+        _subscriptions = new List<IDisposable>();
+        _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, string>(ppm => ppm.QualitySetting, OnQualitySettingChanged));
+        GameManager.Instance.onSceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded() {
+        D.Assert(GameManager.Instance.CurrentScene == SceneLevel.GameScene);
+        AssignAudioListener();
+    }
+
+    private void AssignAudioListener() {
+        if (GameManager.Instance.CurrentScene == SceneLevel.GameScene) {
+            var cameraAL = MainCameraControl.Instance.gameObject.AddComponent<AudioListener>();
+            cameraAL.gameObject.SetActive(true);
+            var loaderAL = gameObject.GetComponent<AudioListener>();
+            if (loaderAL != null) { // will be null if going from GameScene to GameScene as it has already been destroyed
+                Destroy(loaderAL);  // destroy AFTER cameraAL installed and activated
+            }
+
+            // Ngui installs an AudioSource next to the AudioListener when it trys to play a sound so remove it if it is there
+            // Another will be added to the new AudioListener gameObject if needed
+            var loaderAS = gameObject.GetComponent<AudioSource>();
+            if (loaderAS != null) {
+                Destroy(loaderAS);
+            }
+        }
     }
 
     private void CheckDebugSettings() {
@@ -87,8 +112,9 @@ public class Loader : AMonoSingleton<Loader> {
     }
 
     private void Unsubscribe() {
-        _subscribers.ForAll<IDisposable>(s => s.Dispose());
-        _subscribers.Clear();
+        _subscriptions.ForAll<IDisposable>(s => s.Dispose());
+        _subscriptions.Clear();
+        //GameManager.Instance.onSceneLoaded -= OnSceneLoaded;
     }
 
     public override string ToString() {

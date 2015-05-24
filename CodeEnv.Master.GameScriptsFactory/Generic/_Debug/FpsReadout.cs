@@ -17,6 +17,7 @@
 // default namespace
 
 using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -24,11 +25,16 @@ using UnityEngine;
 /// </summary>
 public class FpsReadout : AGuiLabelReadout {
 
+    public static float FramesPerSecond { get { return _lastFpsValue; } }
+
+    private static float _redFramerate = TempGameValues.MinimumFramerate;
+    private static float _yellowFramerate = TempGameValues.MinimumFramerate + 5F;
+    private static string _formattedFpsText = "{0:F1} FPS";
+    private static float _lastFpsValue = 500F;
+
     public float secondsBetweenDisplayRefresh = 0.5F;
 
-    protected override string TooltipContent {
-        get { return "Current Frames per Second displayed."; }
-    }
+    protected override string TooltipContent { get { return "Current Frames per Second displayed."; } }
 
     private float _accumulatedFpsOverInterval;
     private int _framesDrawnInInterval;
@@ -37,6 +43,8 @@ public class FpsReadout : AGuiLabelReadout {
     protected override void Awake() {
         base.Awake();
         _timeRemainingInInterval = secondsBetweenDisplayRefresh;
+        enabled = false;
+        GameManager.Instance.onIsRunningOneShot += OnIsRunning;
     }
 
     protected override void Update() {
@@ -50,26 +58,27 @@ public class FpsReadout : AGuiLabelReadout {
         // Interval ended - update GUI text and start new interval
         if (_timeRemainingInInterval <= Constants.ZeroF) {
             // display two fractional digits (f2 formattedFpsValue)
-            float fps = _accumulatedFpsOverInterval / _framesDrawnInInterval;
-            RefreshReadout(fps);
+            _lastFpsValue = _accumulatedFpsOverInterval / _framesDrawnInInterval;
+            RefreshReadout();
             _timeRemainingInInterval = secondsBetweenDisplayRefresh;
             _accumulatedFpsOverInterval = Constants.ZeroF;
             _framesDrawnInInterval = Constants.Zero;
         }
     }
 
-    private void RefreshReadout(float fps) {
-        string formattedFpsValue = string.Format("{0:F1} FPS", fps);
-
+    private void RefreshReadout() {
         GameColor color = GameColor.Green;
-        if (fps < 25) {
-            color = GameColor.Yellow;
-        }
-        else if (fps < 15) {
+        if (_lastFpsValue < _redFramerate) {
             color = GameColor.Red;
         }
+        else if (_lastFpsValue < _yellowFramerate) {
+            color = GameColor.Yellow;
+        }
+        RefreshReadout(_formattedFpsText.Inject(_lastFpsValue), color);
+    }
 
-        RefreshReadout(formattedFpsValue, color);
+    private void OnIsRunning() {
+        enabled = true;
     }
 
     protected override void Cleanup() { }

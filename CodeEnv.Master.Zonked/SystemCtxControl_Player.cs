@@ -23,11 +23,11 @@ using CodeEnv.Master.GameContent;
 /// Context Menu Control for <see cref="SystemItem"/>s operated by the Human Player.
 /// Simply a shortcut to the context menu of the System's player-owned Settlement Base.
 /// </summary>
-public class SystemCtxControl_Player : BaseCtxControl_Player {
+public class SystemCtxControl_Player : BaseCtxControl_User {
 
     private SystemItem _system;
 
-    public SystemCtxControl_Player(SystemItem system)
+    public SystemCtxControl_User(SystemItem system)
         : base(system.Settlement, system.gameObject) {
         D.Assert(system.Settlement != null);
         _system = system;

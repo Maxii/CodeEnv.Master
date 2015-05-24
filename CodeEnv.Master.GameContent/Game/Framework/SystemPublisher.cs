@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SystemPublisher.cs
-// Report and LabelText Publisher for Systems.
+// Report and HudContent Publisher for Systems.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,33 +21,30 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Report and LabelText Publisher for Systems.
+    /// Report and HudContent Publisher for Systems.
     /// </summary>
     public class SystemPublisher : AItemPublisher<SystemReport, SystemData> {
 
-        static SystemPublisher() {
-            LabelTextFactory = new SystemLabelTextFactory();
+        public override ColoredStringBuilder HudContent {
+            get { return SystemDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        private ISystemPublisherClient _systemItem;
+        private ISystemItem _item;
 
-        public SystemPublisher(SystemData data, ISystemPublisherClient systemItem)
+        public SystemPublisher(SystemData data, ISystemItem item)
             : base(data) {
-            _systemItem = systemItem;
+            _item = item;
         }
 
         protected override bool IsCachedReportCurrent(Player player, out SystemReport cachedReport) {
             return base.IsCachedReportCurrent(player, out cachedReport) &&
-                cachedReport.StarReport == _systemItem.GetStarReport(player) &&
-                cachedReport.SettlementReport == _systemItem.GetSettlementReport(player) &&
-                IsEqual(cachedReport.PlanetoidReports, _systemItem.GetPlanetoidReports(player));
+                cachedReport.StarReport == _item.GetStarReport(player) &&
+                cachedReport.SettlementReport == _item.GetSettlementReport(player) &&
+                IsEqual(cachedReport.PlanetoidReports, _item.GetPlanetoidReports(player));
         }
 
         protected override SystemReport GenerateReport(Player player) {
-            var starReport = _systemItem.GetStarReport(player);
-            var settlementReport = _systemItem.GetSettlementReport(player);
-            var planetoidReports = _systemItem.GetPlanetoidReports(player);
-            return new SystemReport(_data, player, starReport, settlementReport, planetoidReports);
+            return new SystemReport(_data, player, _item);
         }
 
         private bool IsEqual(IEnumerable<PlanetoidReport> reportsA, IEnumerable<PlanetoidReport> reportsB) {

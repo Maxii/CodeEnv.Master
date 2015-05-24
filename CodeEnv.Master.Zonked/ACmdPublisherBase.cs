@@ -26,16 +26,16 @@ namespace CodeEnv.Master.GameContent {
     [Obsolete]
     public abstract class ACmdPublisherBase {
 
-        protected IDictionary<LabelID, IntelLabelText> _labelTextCache = new Dictionary<LabelID, IntelLabelText>();
+        protected IDictionary<DisplayTargetID, IntelLabelText> _labelTextCache = new Dictionary<DisplayTargetID, IntelLabelText>();
         protected IGameManager _gameMgr;
 
         public ACmdPublisherBase() {
             _gameMgr = References.GameManager;
         }
 
-        public abstract IntelLabelText GetLabelText(LabelID labelID, AElementItemReport[] elementReports);
+        public abstract IntelLabelText GetLabelText(DisplayTargetID displayTgtID, AElementItemReport[] elementReports);
 
-        public abstract bool TryUpdateLabelTextContent(LabelID labelID, LabelContentID contentID, AElementItemReport[] elementReports, out IColoredTextList content);
+        public abstract bool TryUpdateLabelTextContent(DisplayTargetID displayTgtID, LabelContentID contentID, AElementItemReport[] elementReports, out IColoredTextList content);
 
     }
 }

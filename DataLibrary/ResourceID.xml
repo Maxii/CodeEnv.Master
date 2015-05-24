@@ -1,0 +1,155 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- Be careful where comments are placed! -->
+<EnumValues EnumTypeName="ResourceID">
+  
+  <Boolean>
+    <Setting>
+      <PropertyName></PropertyName>
+      <PropertyValue>false</PropertyValue>
+    </Setting>
+  </Boolean>
+
+  <Integer>
+    <Setting>
+      <PropertyName></PropertyName>
+      <PropertyValue>0</PropertyValue>
+    </Setting>
+  </Integer>
+
+  <Float>
+    <Setting>
+      <PropertyName></PropertyName>
+      <PropertyValue>0.0</PropertyValue>
+    </Setting>
+  </Float>
+
+  <Text>
+    <Setting>
+      <PropertyName>OrganicsImageFilename</PropertyName>
+      <PropertyValue>image</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>OrganicsImageAtlasID</PropertyName>
+      <PropertyValue>MyGui</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>OrganicsIconFilename</PropertyName>
+      <PropertyValue>sprig2_12</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>OrganicsIconAtlasID</PropertyName>
+      <PropertyValue>MyGui</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>OrganicsDescription</PropertyName>
+      <PropertyValue>A Organics Description...</PropertyValue>
+    </Setting>
+
+    <Setting>
+      <PropertyName>ParticulatesImageFilename</PropertyName>
+      <PropertyValue>image</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>ParticulatesImageAtlasID</PropertyName>
+      <PropertyValue>MyGui</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>ParticulatesIconFilename</PropertyName>
+      <PropertyValue>settings48_12</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>ParticulatesIconAtlasID</PropertyName>
+      <PropertyValue>MyGui</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>ParticulatesDescription</PropertyName>
+      <PropertyValue>A Particulates Description...</PropertyValue>
+    </Setting>
+    
+    <Setting>
+      <PropertyName>EnergyImageFilename</PropertyName>
+      <PropertyValue>image</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>EnergyImageAtlasID</PropertyName>
+      <PropertyValue>MyGui</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>EnergyIconFilename</PropertyName>
+      <PropertyValue>lightning24_12</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>EnergyIconAtlasID</PropertyName>
+      <PropertyValue>MyGui</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>EnergyDescription</PropertyName>
+      <PropertyValue>A Energy Description...</PropertyValue>
+    </Setting>
+
+    <Setting>
+      <PropertyName>TitaniumImageFilename</PropertyName>
+      <PropertyValue>image</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>TitaniumImageAtlasID</PropertyName>
+      <PropertyValue>MyGui</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>TitaniumIconFilename</PropertyName>
+      <PropertyValue>Stats1_12</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>TitaniumIconAtlasID</PropertyName>
+      <PropertyValue>MyGui</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>TitaniumDescription</PropertyName>
+      <PropertyValue>A Titanium Description...</PropertyValue>
+    </Setting>
+
+    <Setting>
+      <PropertyName>DuraniumImageFilename</PropertyName>
+      <PropertyValue>image</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>DuraniumImageAtlasID</PropertyName>
+      <PropertyValue>MyGui</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>DuraniumIconFilename</PropertyName>
+      <PropertyValue>Stats1_12</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>DuraniumIconAtlasID</PropertyName>
+      <PropertyValue>MyGui</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>DuraniumDescription</PropertyName>
+      <PropertyValue>A Duranium Description...</PropertyValue>
+    </Setting>
+    
+    <Setting>
+      <PropertyName>UnobtaniumImageFilename</PropertyName>
+      <PropertyValue>image</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>UnobtaniumImageAtlasID</PropertyName>
+      <PropertyValue>MyGui</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>UnobtaniumIconFilename</PropertyName>
+      <PropertyValue>Stats1_12</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>UnobtaniumIconAtlasID</PropertyName>
+      <PropertyValue>MyGui</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>UnobtaniumDescription</PropertyName>
+      <PropertyValue>A Unobtanium Description...</PropertyValue>
+    </Setting>
+
+  </Text>
+</EnumValues>
+<!-- Empty property value nodes return the default of the type, but only in this format <PropertyValue/>-->

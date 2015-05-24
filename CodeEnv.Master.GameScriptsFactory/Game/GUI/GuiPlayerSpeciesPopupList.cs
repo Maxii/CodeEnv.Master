@@ -24,11 +24,11 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class GuiPlayerSpeciesPopupList : AGuiPopupList<SpeciesGuiSelection> {
 
-    public GuiMenuElementID elementID;
+    public GuiElementID elementID;
 
     public bool hasPreference;
 
-    public override GuiMenuElementID ElementID { get { return elementID; } }
+    public override GuiElementID ElementID { get { return elementID; } }
 
     protected override bool IncludesRandom { get { return true; } }
 

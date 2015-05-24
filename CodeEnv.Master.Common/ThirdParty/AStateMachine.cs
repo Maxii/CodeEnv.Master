@@ -248,6 +248,9 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Optimized SendMessage replacement.
+        /// WARNING: BindingFlags.NonPublic DOES NOT find private methods in base classes! This is noted in GetMethods() 
+        /// below, but NOT in the comparable GetMethod() documentation!
+        /// <see cref="https://msdn.microsoft.com/en-us/library/4d848zkb(v=vs.110).aspx"/>
         /// </summary>
         /// <param name="message">The message.</param>
         /// <param name="param">The parameter.</param>
@@ -305,6 +308,14 @@ namespace CodeEnv.Master.Common {
                     //Otherwise slow invoke the method passing the parameters
                     mtd.Invoke(this, param);
             }
+            else {
+                string parameters = string.Empty;
+                if (!param.IsNullOrEmpty()) {
+                    parameters = param.Concatenate();
+                }
+                D.Warn("{0} did not find Method with signature {1}({2}). Is it a private method in a base class?", GetType().Name, message, parameters);  // my addition
+            }
+
         }
 
         #endregion
@@ -565,8 +576,10 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// FInds or creates a delegate for the current state and Method name (aka CurrentState_OnClick), or
         /// if the Method name is not present in this State Machine, then returns Default. Also puts an 
-        /// IEnumerator wrapper around EnterState or ExitState methods that return void rather than
-        /// IEnumerator.
+        /// IEnumerator wrapper around EnterState or ExitState methods that return void rather than IEnumerator.
+        /// WARNING: BindingFlags.NonPublic DOES NOT find private methods in base classes! This is noted in GetMethods() 
+        /// below, but NOT in the comparable GetMethod() documentation!
+        /// <see cref="https://msdn.microsoft.com/en-us/library/4d848zkb(v=vs.110).aspx"/>
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="methodRoot">Substring of the methodName that follows "StateName_", eg EnterState from State1_EnterState.</param>
@@ -590,11 +603,18 @@ namespace CodeEnv.Master.Common {
                         Func<IEnumerator> func = () => { a(); return null; };
                         returnValue = func;
                     }
-                    else
+                    else {
                         returnValue = Delegate.CreateDelegate(typeof(T), this, mtd);
+                    }
                 }
                 else {
                     returnValue = Default as Delegate;
+                    if (methodRoot == _enterStateText || methodRoot == _exitStateText) {
+                        D.Warn("{0} did not find method {1}_{2}. Is it a private method in a base class?", GetType().Name, state.currentState.ToString(), methodRoot);
+                    }
+                    else {
+                        D.Log("{0} did not find method {1}_{2}. Is it a private method in a base class?", GetType().Name, state.currentState.ToString(), methodRoot);
+                    }
                 }
                 lookup[methodRoot] = returnValue;
             }
@@ -665,6 +685,12 @@ namespace CodeEnv.Master.Common {
 
         #endregion
 
+        #region Debug
+
+        private static string _exitStateText = "ExitState";
+        private static string _enterStateText = "EnterState";
+
+        #endregion
 
     }
 }

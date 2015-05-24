@@ -34,19 +34,19 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     private GameObject _systemItemGo;
     private GameInputHelper _inputHelper;
     private InputManager _inputMgr;
-    private IList<IDisposable> _subscribers;
+    private IList<IDisposable> _subscriptions;
 
     protected override void Awake() {
         base.Awake();
         _inputHelper = GameInputHelper.Instance;
         _inputMgr = InputManager.Instance;
-        _systemItemGo = gameObject.GetSafeMonoBehaviourComponentInParents<SystemItem>().gameObject;
+        _systemItemGo = gameObject.GetSafeMonoBehaviourInParents<SystemItem>().gameObject;
         Subscribe();
     }
 
     private void Subscribe() {
-        _subscribers = new List<IDisposable>();
-        _subscribers.Add(_inputMgr.SubscribeToPropertyChanged<InputManager, GameInputMode>(im => im.InputMode, OnInputModeChanged));
+        _subscriptions = new List<IDisposable>();
+        _subscriptions.Add(_inputMgr.SubscribeToPropertyChanged<InputManager, GameInputMode>(im => im.InputMode, OnInputModeChanged));
     }
 
     private void OnInputModeChanged() {
@@ -347,8 +347,8 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     }
 
     private void Unsubscribe() {
-        _subscribers.ForAll(d => d.Dispose());
-        _subscribers.Clear();
+        _subscriptions.ForAll(d => d.Dispose());
+        _subscriptions.Clear();
     }
 
     public override string ToString() {

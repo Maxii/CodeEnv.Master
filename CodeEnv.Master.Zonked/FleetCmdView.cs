@@ -118,7 +118,7 @@ public class FleetCmdView : AUnitCommandView, IFleetCmdViewable, ICameraFollowab
     private ITrackingWidget InitializeTrackingLabel() {
         float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
         string fleetName = Presenter.Model.UnitName;
-        var trackingLabel = TrackingWidgetFactory.Instance.CreateUITrackingLabel(TrackingTarget, WidgetPlacement.AboveRight, minShowDistance);
+        var trackingLabel = TrackingWidgetFactory.Instance.MakeUITrackingLabel(TrackingTarget, WidgetPlacement.AboveRight, minShowDistance);
         trackingLabel.OptionalRootName = fleetName + CommonTerms.Label;
         trackingLabel.Set(fleetName);
         return trackingLabel;

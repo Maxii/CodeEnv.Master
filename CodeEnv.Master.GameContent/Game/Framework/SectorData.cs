@@ -54,7 +54,7 @@ namespace CodeEnv.Master.GameContent {
         public SectorData(Transform sectorTransform, Index3D index, Player owner)
             : base(sectorTransform, "Sector {0}".Inject(index), owner) {
             SectorIndex = index;
-            base.Topography = Topography.OpenSpace;
+            Topography = Topography.OpenSpace;
         }
 
         public override string ToString() {

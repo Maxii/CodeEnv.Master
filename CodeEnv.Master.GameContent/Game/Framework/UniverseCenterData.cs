@@ -24,15 +24,13 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class UniverseCenterData : AIntelItemData {
 
-        public float Mass { get; private set; }
+        protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.Basic; } }
 
-        protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.Aware; } }
+        // No SectorIndex as UC is located at the origin at the intersection of 8 sectors
 
-        public UniverseCenterData(Transform ucTransform, string name, float mass)
+        public UniverseCenterData(Transform ucTransform, string name)
             : base(ucTransform, name, TempGameValues.NoPlayer) {
-            Mass = mass;
-            ucTransform.rigidbody.mass = mass;
-            base.Topography = Topography.OpenSpace;
+            Topography = Topography.OpenSpace;
         }
 
         protected override AIntel MakeIntel(IntelCoverage initialcoverage) {

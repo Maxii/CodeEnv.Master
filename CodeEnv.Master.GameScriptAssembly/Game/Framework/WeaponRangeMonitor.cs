@@ -35,7 +35,12 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
 
     private static HashSet<Collider> _collidersToIgnore = new HashSet<Collider>();  // UNCLEAR ever any colliders to ignore?
 
-    public string FullName { get { return _fullNameFormat.Inject(ParentElement.FullName, GetType().Name, Range.GetName(), _collider.radius); } }
+    public string FullName {
+        get {
+            if (ParentElement == null) { return _transform.name; }
+            return _fullNameFormat.Inject(ParentElement.FullName, GetType().Name, Range.GetName(), _collider.radius);
+        }
+    }
 
     [SerializeField]
     [Tooltip("For Editor display only")]
@@ -47,14 +52,16 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
         private set { SetProperty<DistanceRange>(ref _range, value, "Range", OnRangeChanged); }
     }
 
-    private IElementItem _parentElement;
-    public IElementItem ParentElement {
-        get { return _parentElement; }
+    private IUnitElementItem _parentElement;
+    public IUnitElementItem ParentElement {
+        private get { return _parentElement; }
         set {
             D.Assert(_parentElement == null);   // should only happen once
-            SetProperty<IElementItem>(ref _parentElement, value, "ParentElement", OnParentElementChanged);
+            SetProperty<IUnitElementItem>(ref _parentElement, value, "ParentElement", OnParentElementChanged);
         }
     }
+
+    public Player Owner { get { return ParentElement.Owner; } }
 
     public IList<IElementAttackableTarget> EnemyTargets { get; private set; }
     public IList<IElementAttackableTarget> AllTargets { get; private set; }
@@ -62,6 +69,7 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
 
     /// <summary>
     /// Control for enabling/disabling the monitor's collider.
+    /// Warning: When collider becomes disabled, OnTriggerExit is NOT called for items inside trigger
     /// </summary>
     private bool IsOperational {
         get { return _collider.enabled; }
@@ -73,10 +81,15 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
         }
     }
 
+    private IList<IElementAttackableTarget> __targetsDetectedViaWorkaround = new List<IElementAttackableTarget>();
     private SphereCollider _collider;
+    private Rigidbody _rigidbody;
 
     protected override void Awake() {
         base.Awake();
+        // kinematic rigidbody reqd to keep parent rigidbody from forming compound collider
+        _rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
+        _rigidbody.isKinematic = true;
         _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
         _collider.isTrigger = true;
         _collider.radius = Constants.ZeroF;  // initialize to same value as Range
@@ -120,20 +133,8 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
         return true;
     }
 
-    public bool TryGetRandomEnemyTarget(out IElementAttackableTarget enemyTarget) {
-        bool result = false;
-        enemyTarget = null;
-        if (EnemyTargets.Count > 0) {
-            result = true;
-            enemyTarget = RandomExtended<IElementAttackableTarget>.Choice(EnemyTargets);
-        }
-        else {
-            D.Warn("{0} found no enemy target in range. It should have.", FullName);
-        }
-        return result;
-    }
-
-    void OnTriggerEnter(Collider other) {
+    protected override void OnTriggerEnter(Collider other) {
+        base.OnTriggerEnter(other);
         if (other.isTrigger) {
             //D.Log("{0}.OnTriggerEnter() ignored TriggerCollider {1}.", FullName, other.name);
             return;
@@ -146,14 +147,21 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
 
         var target = other.gameObject.GetInterface<IElementAttackableTarget>();
         if (target == null) {
+            var ordnance = other.gameObject.GetInterface<IOrdnance>();
+            if (ordnance != null) {
+                // its temporary ordnance we've detected so ignore it but don't record it to ignore
+                // OPTIMIZE once pooling ordnance instances, recording them could payoff
+                return;
+            }
             _collidersToIgnore.Add(other);
-            //D.Log("{0} now ignoring {1}.", FullName, other.name);
+            D.Log("{0} now ignoring {1}.", FullName, other.name);
             return;
         }
         Add(target);
     }
 
-    void OnTriggerExit(Collider other) {
+    protected override void OnTriggerExit(Collider other) {
+        base.OnTriggerExit(other);
         if (other.isTrigger) {
             //D.Log("{0}.OnTriggerExit() ignored TriggerCollider {1}.", FullName, other.name);
             return;
@@ -172,36 +180,52 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
 
     private void OnParentElementChanged() {
         ParentElement.onOwnerChanged += OnParentElementOwnerChanged;
+        ParentElement.onDeathOneShot += OnParentElementDeath;
+    }
+
+    private void OnParentElementDeath(IMortalItem deadParent) {
+        Weapons.ForAll(w => w.OnParentElementDeath());
     }
 
     private void OnTargetOwnerChanged(IItem item) {
         var target = item as IElementAttackableTarget;
         D.Assert(target != null);   // the only way this monitor would be notified of this change is if it was already qualified as a target
-        if (ParentElement.Owner.IsEnemyOf(target.Owner)) {
+        if (target.Owner.IsEnemyOf(Owner)) {
             if (!EnemyTargets.Contains(target)) {
                 AddEnemyTarget(target);
+                Weapons.ForAll(w => w.CheckActiveOrdnanceTargeting());
             }
         }
         else {
             RemoveEnemyTarget(target);
+            Weapons.ForAll(w => w.CheckActiveOrdnanceTargeting());
         }
     }
 
     private void OnParentElementOwnerChanged(IItem item) {
-        _collider.radius = Range.GetWeaponRange(ParentElement.Owner);
+        _collider.radius = Range.GetWeaponRange(Owner);
         _rangeInfo = _rangeInfoFormat.Inject(Range.GetName(), _collider.radius);
         // targets must be refreshed as the definition of enemy may have changed
         // if not operational, AllTargets is already clear. When a weapon becomes operational again, the targets will be reacquired
         if (IsOperational) {
             RefreshTargets();
         }
+        Weapons.ForAll(w => w.CheckActiveOrdnanceTargeting());
     }
 
     private void OnIsOperationalChanged() {
-        if (!IsOperational) {
+        //D.Log("{0}.OnIsOperationalChanged() called. IsOperational: {1}.", FullName, IsOperational);
+        if (IsOperational) {
+            WorkaroundToDetectAllCollidersInRange();
+        }
+        else {
             var allTargetsCopy = AllTargets.ToArray();
             allTargetsCopy.ForAll(t => Remove(t));  // clears both AllTargets and EnemyTargets
         }
+    }
+
+    private void OnWeaponIsOperationalChanged(Weapon weapon) {
+        IsOperational = Weapons.Where(w => w.IsOperational).Any();
     }
 
     /// <summary>
@@ -209,14 +233,11 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
     /// is added, or the last is removed.
     /// </summary>
     private void OnRangeChanged() {
-        _collider.radius = Range.GetWeaponRange(ParentElement.Owner);
+        _collider.radius = Range.GetWeaponRange(Owner);
         _rangeInfo = _rangeInfoFormat.Inject(Range.GetName(), _collider.radius);
         //D.Log("{0}.Range changed to {1}.", FullName, Range.GetName());
-        // No reason to refresh targets as this only occurs when not operational
-    }
+        D.Assert(!IsOperational);   // No reason to refresh targets as this only occurs when not operational
 
-    private void OnAnyEnemyInRangeChanged(bool isAnyEnemyInRange) {
-        Weapons.ForAll(w => w.IsAnyEnemyInRange = isAnyEnemyInRange);
     }
 
     private void OnTargetDeath(IMortalItem target) {
@@ -237,11 +258,12 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
             }
         }
         else {
-            D.Warn("{0} attempted to add duplicate Target {1}.", FullName, target.FullName);
+            D.Warn(!__targetsDetectedViaWorkaround.Contains(target), "{0} attempted to add duplicate Target {1}.",
+                FullName, target.FullName);
             return;
         }
 
-        if (ParentElement.Owner.IsEnemyOf(target.Owner)) {
+        if (target.Owner.IsEnemyOf(Owner)) {
             D.Assert(target.IsOperational);
             D.Assert(!EnemyTargets.Contains(target));
             AddEnemyTarget(target);
@@ -249,11 +271,9 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
     }
 
     private void AddEnemyTarget(IElementAttackableTarget enemyTarget) {
-        //D.Log("{0} with Range {1:0.#} added Enemy Target {2} at distance {3:0.0}.", FullName, Range.GetWeaponRange(ParentElement.Owner), enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position) - enemyTarget.Radius);
+        //D.Log("{0} added Enemy Target {1} at distance {2:0.0}.", FullName, enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position) - enemyTarget.Radius);
         EnemyTargets.Add(enemyTarget);
-        if (EnemyTargets.Count == Constants.One) {
-            OnAnyEnemyInRangeChanged(true);   // there are now enemies in range
-        }
+        Weapons.ForAll(w => w.OnEnemyTargetInRangeChanged(enemyTarget, true));
     }
 
     private void Remove(IElementAttackableTarget target) {
@@ -281,10 +301,7 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
     private void RemoveEnemyTarget(IElementAttackableTarget enemyTarget) {
         var isRemoved = EnemyTargets.Remove(enemyTarget);
         D.Assert(isRemoved);
-        //D.Log("{0} with Range {1:0.#} removed Enemy Target {2} at distance {3:0.0}.", FullName, Range.GetWeaponRange(ParentElement.Owner), enemyTarget.FullName, Vector3.Distance(_transform.position, enemyTarget.Position) - enemyTarget.Radius);
-        if (EnemyTargets.Count == 0) {
-            OnAnyEnemyInRangeChanged(false);  // no longer any Enemies in range
-        }
+        Weapons.ForAll(w => w.OnEnemyTargetInRangeChanged(enemyTarget, false));
     }
 
     private void RefreshTargets() {
@@ -292,8 +309,37 @@ public class WeaponRangeMonitor : AMonoBase, IWeaponRangeMonitor {
         IsOperational = true;
     }
 
-    private void OnWeaponIsOperationalChanged(Weapon weapon) {
-        IsOperational = Weapons.Where(w => w.IsOperational).Any();
+    /// <summary>
+    /// Detects all colliders in range, including those that would otherwise not generate
+    /// an OnTriggerEnter() event. The later includes static colliders and any 
+    /// rigidbody colliders that are currently asleep (unmoving). This is necessary as some
+    /// versions of this monitor don't move, keeping its rigidbody perpetually asleep. When
+    /// the monitor's rigidbody is asleep, it will only detect other rigidbody colliders that are
+    /// currently awake (moving). This technique finds all colliders in range, then finds those
+    /// IElementAttackableTarget items among them that haven't been added and adds them. 
+    /// The 1 frame delay used allows the monitor to find those it can on its own. I then filter those 
+    /// out and add only those that aren't already present, avoiding duplication warnings.
+    /// <remarks>Using WakeUp() doesn't work on kinematic rigidbodies. This makes 
+    /// sense as they are always asleep, being that they don't interact with the physics system.
+    /// </remarks>
+    /// </summary>
+    private void WorkaroundToDetectAllCollidersInRange() {
+        D.Assert(AllTargets.Count == Constants.Zero);
+        __targetsDetectedViaWorkaround.Clear();
+
+        UnityUtility.WaitOneFixedUpdateToExecute(() => {
+            // delay to allow monitor 1 fixed update to record items that it detects
+            var allCollidersInRange = Physics.OverlapSphere(_transform.position, _collider.radius);
+            var allAttackableTargetsInRange = allCollidersInRange.Where(c => c.gameObject.GetInterface<IElementAttackableTarget>() != null).Select(c => c.gameObject.GetInterface<IElementAttackableTarget>());
+            var undetectedAttackableTargets = allAttackableTargetsInRange.Except(AllTargets);
+            if (undetectedAttackableTargets.Any()) {
+                undetectedAttackableTargets.ForAll(undetectedTgt => {
+                    //D.Log("{0} adding undetected Target {1}.", FullName, undetectedTgt.FullName);
+                    __targetsDetectedViaWorkaround.Add(undetectedTgt);
+                    Add(undetectedTgt);
+                });
+            }
+        });
     }
 
     protected override void Cleanup() {

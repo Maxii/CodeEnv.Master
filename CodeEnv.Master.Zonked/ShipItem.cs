@@ -39,8 +39,8 @@ public class ShipItem : AItemModel {
 
     protected override void Start() {
         base.Start();
-        var fleetParent = gameObject.GetSafeMonoBehaviourComponentInParents<FleetUnitCreator>();
-        _fleet = fleetParent.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCmdModel>();
+        var fleetParent = gameObject.GetSafeMonoBehaviourInParents<FleetUnitCreator>();
+        _fleet = fleetParent.gameObject.GetSafeMonoBehaviourInChildren<FleetCmdModel>();
         __InitializeNavigator();
         //InitializeAutoPilot();
     }
@@ -102,7 +102,7 @@ public class ShipItem : AItemModel {
     //}
 
     public void __SimulateAttacked() {
-        if (!DebugSettings.Instance.MakePlayerInvincible) {
+        if (!DebugSettings.Instance.AllPlayersInvulnerable) {
             __OnHit(UnityEngine.Random.Range(Constants.ZeroF, Data.MaxHitPoints + 1F));
         }
     }

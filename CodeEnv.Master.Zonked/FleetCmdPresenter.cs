@@ -54,7 +54,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IIcon MakeCmdIconInstance() {
-            return FleetIconIDFactory.Instance.MakeInstance(Data, View.PlayerIntel);
+            return FleetIconInfoFactory.Instance.MakeInstance(Data, View.PlayerIntel);
         }
 
         public override void OnIsSelectedChanged() {

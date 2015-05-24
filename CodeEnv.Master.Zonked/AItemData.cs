@@ -71,7 +71,7 @@ namespace CodeEnv.Master.GameContent {
             set { HumanPlayerIntel.CurrentCoverage = value; }
         }
 
-        public AIntel HumanPlayerIntel { get { return GetPlayerIntel(_gameMgr.HumanPlayer); } }
+        public AIntel HumanPlayerIntel { get { return GetPlayerIntel(_gameMgr.UserPlayer); } }
 
         private IGameManager _gameMgr;
         private IDictionary<Player, AIntel> _playerIntelLookup;
@@ -90,7 +90,7 @@ namespace CodeEnv.Master.GameContent {
             int playerCount = _gameMgr.AIPlayers.Count + 1;
             //D.Log("{0} initializing Players Intel settings. PlayerCount = {1}.", GetType().Name, playerCount);
             _playerIntelLookup = new Dictionary<Player, AIntel>(playerCount);
-            var humanPlayer = _gameMgr.HumanPlayer;
+            var humanPlayer = _gameMgr.UserPlayer;
             _playerIntelLookup.Add(humanPlayer, InitializeIntelState(humanPlayer));
             foreach (var aiPlayer in _gameMgr.AIPlayers) {
                 _playerIntelLookup.Add(aiPlayer, InitializeIntelState(aiPlayer));

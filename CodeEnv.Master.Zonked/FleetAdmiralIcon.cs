@@ -25,7 +25,7 @@ public class FleetAdmiralIcon : FollowableItem, ISelectable {
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        _fleetMgr = _transform.parent.parent.gameObject.GetSafeMonoBehaviourComponent<FleetUnitCreator>();
+        _fleetMgr = _transform.parent.parent.gameObject.GetSafeMonoBehaviour<FleetUnitCreator>();
     }
 
     //protected override void __InitializeData() {

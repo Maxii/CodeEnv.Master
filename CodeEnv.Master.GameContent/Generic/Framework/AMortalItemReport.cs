@@ -16,10 +16,14 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using CodeEnv.Master.Common;
+
     /// <summary>
     /// Abstract class for Reports associated with an AMortalItem.
     /// </summary>
     public abstract class AMortalItemReport : AIntelItemReport {
+
+        public Index3D SectorIndex { get; protected set; }
 
         public float? MaxHitPoints { get; protected set; }
 
@@ -31,8 +35,8 @@ namespace CodeEnv.Master.GameContent {
 
         public float? Mass { get; protected set; }
 
-        public AMortalItemReport(AMortalItemData data, Player player)
-            : base(data, player) {
+        public AMortalItemReport(AMortalItemData data, Player player, IMortalItem item)
+            : base(data, player, item) {
         }
 
     }

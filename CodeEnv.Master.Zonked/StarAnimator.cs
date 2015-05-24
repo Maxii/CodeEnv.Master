@@ -52,7 +52,7 @@ public class StarAnimator : AMonoBase {
     }
 
     private void AnimateGlobeRotation() {
-        float adjustedDeltaTime = GameTime.DeltaTimeWithGameSpeed * (int)UpdateRate; //GameTime.TimeInCurrentSession;
+        float adjustedDeltaTime = GameTime.GameSpeedAdjustedDeltaTime * (int)UpdateRate; //GameTime.TimeInCurrentSession;
         if (_primaryMaterial != null) {  // OPTIMIZE can remove. Only needed for testing
             primaryMaterialAnimator.Animate(_primaryMaterial, adjustedDeltaTime);
         }

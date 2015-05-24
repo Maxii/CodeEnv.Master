@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     [Obsolete]
     public class SystemLabelText : ALabelText {
 
-        public SystemLabelText(LabelID labelID, SystemReport report, bool isDedicatedLinePerContentID) : base(labelID, report, isDedicatedLinePerContentID) { }
+        public SystemLabelText(DisplayTargetID displayTgtID, SystemReport report, bool isDedicatedLinePerContentID) : base(displayTgtID, report, isDedicatedLinePerContentID) { }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

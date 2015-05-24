@@ -25,20 +25,21 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public static class GameSpeedExtensions {
 
-        public static float SpeedMultiplier(this GameClockSpeed gameSpeed) {
-            GameClockSpeedHelper values = GameClockSpeedHelper.Instance;
+        private static GameClockSpeedHelper _values = GameClockSpeedHelper.Instance;
+
+        public static float SpeedMultiplier(this GameSpeed gameSpeed) {
             switch (gameSpeed) {
-                case GameClockSpeed.Slowest:
-                    return values.SlowestMultiplier;
-                case GameClockSpeed.Slow:
-                    return values.SlowMultiplier;
-                case GameClockSpeed.Normal:
-                    return values.NormalMultiplier;
-                case GameClockSpeed.Fast:
-                    return values.FastMultiplier;
-                case GameClockSpeed.Fastest:
-                    return values.FastestMultiplier;
-                case GameClockSpeed.None:
+                case GameSpeed.Slowest:
+                    return _values.SlowestMultiplier;
+                case GameSpeed.Slow:
+                    return _values.SlowMultiplier;
+                case GameSpeed.Normal:
+                    return _values.NormalMultiplier;
+                case GameSpeed.Fast:
+                    return _values.FastMultiplier;
+                case GameSpeed.Fastest:
+                    return _values.FastestMultiplier;
+                case GameSpeed.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(gameSpeed));
             }
@@ -49,21 +50,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public sealed class GameClockSpeedHelper : AEnumValuesHelper<GameClockSpeedHelper> {
 
-            /// <summary>
-            /// The type of the enum being supported by this class.
-            /// </summary>
-            protected override Type EnumType {
-                get {
-                    return typeof(GameClockSpeed);
-                }
-            }
-
             private float _slowestMultiplier;
             public float SlowestMultiplier {
                 get {
-                    if (!isPropertyValuesInitialized) {
-                        InitializePropertyValues();
-                    }
+                    CheckValuesInitialized();
                     return _slowestMultiplier;
                 }
                 private set { _slowestMultiplier = value; }
@@ -72,9 +62,7 @@ namespace CodeEnv.Master.GameContent {
             private float _slowMultiplier;
             public float SlowMultiplier {
                 get {
-                    if (!isPropertyValuesInitialized) {
-                        InitializePropertyValues();
-                    }
+                    CheckValuesInitialized();
                     return _slowMultiplier;
                 }
                 private set { _slowMultiplier = value; }
@@ -83,9 +71,7 @@ namespace CodeEnv.Master.GameContent {
             private float _normalMultiplier;
             public float NormalMultiplier {
                 get {
-                    if (!isPropertyValuesInitialized) {
-                        InitializePropertyValues();
-                    }
+                    CheckValuesInitialized();
                     return _normalMultiplier;
                 }
                 private set { _normalMultiplier = value; }
@@ -94,9 +80,7 @@ namespace CodeEnv.Master.GameContent {
             private float _fastMultiplier;
             public float FastMultiplier {
                 get {
-                    if (!isPropertyValuesInitialized) {
-                        InitializePropertyValues();
-                    }
+                    CheckValuesInitialized();
                     return _fastMultiplier;
                 }
                 private set { _fastMultiplier = value; }
@@ -105,13 +89,16 @@ namespace CodeEnv.Master.GameContent {
             private float _fastestMultiplier;
             public float FastestMultiplier {
                 get {
-                    if (!isPropertyValuesInitialized) {
-                        InitializePropertyValues();
-                    }
+                    CheckValuesInitialized();
                     return _fastestMultiplier;
                 }
                 private set { _fastestMultiplier = value; }
             }
+
+            /// <summary>
+            /// The type of the enum being supported by this class.
+            /// </summary>
+            protected override Type EnumType { get { return typeof(GameSpeed); } }
 
             private GameClockSpeedHelper() {
                 Initialize();

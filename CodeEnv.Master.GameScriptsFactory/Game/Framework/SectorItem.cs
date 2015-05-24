@@ -22,7 +22,9 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// Class for AItems that are Sectors.
 /// </summary>
-public class SectorItem : AItem {
+public class SectorItem : AItem, ISectorItem {
+
+    private static string _toStringFormat = "{0}{1}";
 
     public new SectorData Data {
         get { return base.Data as SectorData; }
@@ -33,7 +35,7 @@ public class SectorItem : AItem {
 
     private SectorPublisher _publisher;
     public SectorPublisher Publisher {
-        get { return _publisher = _publisher ?? new SectorPublisher(Data); }
+        get { return _publisher = _publisher ?? new SectorPublisher(Data, this); }
     }
 
     #region Initialization
@@ -50,13 +52,14 @@ public class SectorItem : AItem {
     protected override void InitializeModelMembers() { }
 
     protected override HudManager InitializeHudManager() {
-        var hudManager = new HudManager(Publisher);
-        return hudManager;
+        return new HudManager(Publisher);
     }
 
     #endregion
 
     #region Model Methods
+
+    public SectorReport GetUserReport() { return Publisher.GetUserReport(); }
 
     public SectorReport GetReport(Player player) { return Publisher.GetReport(player); }
 
@@ -71,7 +74,7 @@ public class SectorItem : AItem {
     #endregion
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return _toStringFormat.Inject(GetType().Name, SectorIndex);
     }
 
 }

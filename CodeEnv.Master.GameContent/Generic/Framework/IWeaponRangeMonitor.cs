@@ -28,9 +28,10 @@ namespace CodeEnv.Master.GameContent {
 
         DistanceRange Range { get; }
 
-        IElementItem ParentElement { get; set; }
+        Player Owner { get; }
 
         IList<IElementAttackableTarget> EnemyTargets { get; }
+
         IList<IElementAttackableTarget> AllTargets { get; }
 
         void Add(Weapon weapon);
@@ -42,8 +43,6 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="weapon">The weapon.</param>
         /// <returns></returns>
         bool Remove(Weapon weapon);
-
-        bool TryGetRandomEnemyTarget(out IElementAttackableTarget enemyTarget);
 
     }
 }

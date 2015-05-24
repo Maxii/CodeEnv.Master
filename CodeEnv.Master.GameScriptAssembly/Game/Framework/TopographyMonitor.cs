@@ -36,6 +36,7 @@ public class TopographyMonitor : AMonoBase {
 
     /// <summary>
     /// Control for enabling/disabling the monitor's collider.
+    /// Warning: When collider becomes disabled, OnTriggerExit is NOT called for items inside trigger
     /// </summary>
     private bool IsOperational {
         get { return _collider.enabled; }
@@ -53,12 +54,14 @@ public class TopographyMonitor : AMonoBase {
 
     protected override void Awake() {
         base.Awake();
+        // kinematic rigidbody not reqd as parent has no rigidbody to create compound collider
         _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
         _collider.isTrigger = true;
         IsOperational = false;  // IsOperational controlled when ItemMonitored added
     }
 
-    void OnTriggerEnter(Collider other) {
+    protected override void OnTriggerEnter(Collider other) {
+        base.OnTriggerEnter(other);
         if (other.isTrigger) { return; }
         D.Log("{0}.{1}.OnTriggerEnter() tripped by Collider {2}. Distance from Monitor = {3}.",
         ItemMonitored.FullName, GetType().Name, other.name, Vector3.Magnitude(other.transform.position - _transform.position));
@@ -68,7 +71,8 @@ public class TopographyMonitor : AMonoBase {
         }
     }
 
-    void OnTriggerExit(Collider other) {
+    protected override void OnTriggerExit(Collider other) {
+        base.OnTriggerExit(other);
         if (other.isTrigger) { return; }
         D.Log("{0}.{1}.OnTriggerExit() tripped by Collider {2}. Distance from Monitor = {3}.",
         ItemMonitored.FullName, GetType().Name, other.name, Vector3.Magnitude(other.transform.position - _transform.position));

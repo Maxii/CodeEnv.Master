@@ -27,8 +27,8 @@ namespace CodeEnv.Master.GameContent {
 
         public int Population { get; set; }
         public int CapacityUsed { get; set; }
-        public OpeYield ResourcesUsed { get; set; }
-        public XYield SpecialResourcesUsed { get; set; }
+        public OpeResourceYield ResourcesUsed { get; set; }
+        public RareResourceYield SpecialResourcesUsed { get; set; }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

@@ -33,6 +33,8 @@ namespace CodeEnv.Master.GameContent {
 
         void TakeHit(CombatStrength attackerWeaponStrength);
 
+        bool IsVisualDetailDiscernibleToUser { get; }
+
     }
 }
 

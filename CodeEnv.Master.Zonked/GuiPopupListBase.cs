@@ -45,7 +45,7 @@ public abstract class GuiPopupListBase : GuiTooltip, IDisposable {
     /// Override to initialize the tooltip message. Remember base.InitializeOnAwake();
     /// </summary>
     protected virtual void Initialize() {
-        popupList = gameObject.GetSafeMonoBehaviourComponent<UIPopupList>();
+        popupList = gameObject.GetSafeMonoBehaviour<UIPopupList>();
         popupList.onSelectionChange += OnPopupListSelectionChange;
     }
 

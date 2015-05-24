@@ -206,7 +206,7 @@ public class StarbaseCmdModel : AUnitBaseCmdModel {
     void Dead_EnterState() {
         LogEvent();
         OnDeath();
-        OnShowAnimation(MortalAnimations.Dying);
+        OnShowAnimation(EffectID.Dying);
     }
 
     void Dead_OnShowCompletion() {

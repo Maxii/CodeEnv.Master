@@ -40,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
         private SettlementCmdData _data;
         private IGameManager _gameMgr;
         private SettlementReport _report;
-        private LabelID _currentTextLabelID;
+        private DisplayTargetID _currentTextLabelID;
         private FacilityReport[] _elementReports;
 
         public SettlementReportGenerator(SettlementCmdData data) {
@@ -68,27 +68,27 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public string GetCursorHudText(AIntel intel, FacilityReport[] elementReports, bool includeUnknown = true) {
-            return GetText(LabelID.CursorHud, _gameMgr.HumanPlayer, intel, elementReports, includeUnknown);
+            return GetText(DisplayTargetID.CursorHud, _gameMgr.UserPlayer, intel, elementReports, includeUnknown);
         }
 
-        public string GetText(LabelID labelID, Player player, AIntel intel, FacilityReport[] elementReports, bool includeUnknown) {
-            if (!IsTextCurrent(labelID, player, intel.CurrentCoverage, elementReports, includeUnknown)) {
-                D.Log("{0} generating new text for Label {1}, Player {2}.", GetType().Name, labelID.GetName(), player.LeaderName);
-                GenerateText(labelID, player, intel, elementReports, includeUnknown);
+        public string GetText(DisplayTargetID displayTgtID, Player player, AIntel intel, FacilityReport[] elementReports, bool includeUnknown) {
+            if (!IsTextCurrent(displayTgtID, player, intel.CurrentCoverage, elementReports, includeUnknown)) {
+                D.Log("{0} generating new text for Label {1}, Player {2}.", GetType().Name, displayTgtID.GetName(), player.LeaderName);
+                GenerateText(displayTgtID, player, intel, elementReports, includeUnknown);
             }
             return _stringBuilder.ToString();
         }
 
-        private bool IsTextCurrent(LabelID labelID, Player player, IntelCoverage intelCoverage, FacilityReport[] elementReports, bool includeUnknown) {
-            return labelID == _currentTextLabelID && includeUnknown == LabelFormatter.IncludeUnknown && IsReportCurrent(player, intelCoverage, elementReports);
+        private bool IsTextCurrent(DisplayTargetID displayTgtID, Player player, IntelCoverage intelCoverage, FacilityReport[] elementReports, bool includeUnknown) {
+            return displayTgtID == _currentTextLabelID && includeUnknown == LabelFormatter.IncludeUnknown && IsReportCurrent(player, intelCoverage, elementReports);
         }
 
-        private void GenerateText(LabelID labelID, Player player, AIntel intel, FacilityReport[] elementReports, bool includeUnknown) {
+        private void GenerateText(DisplayTargetID displayTgtID, Player player, AIntel intel, FacilityReport[] elementReports, bool includeUnknown) {
             _stringBuilder.Clear();
-            _currentTextLabelID = labelID;
+            _currentTextLabelID = displayTgtID;
             LabelFormatter.IncludeUnknown = includeUnknown;
             LabelFormatter.Report = GetReport(player, intel, elementReports);
-            var labelLines = LabelFormatter.GetLabelLines(labelID);
+            var labelLines = LabelFormatter.GetLabelLines(displayTgtID);
             foreach (var line in labelLines) {
                 _stringBuilder.AppendLine(line);
                 // IMPROVE don't include a line break on the last line

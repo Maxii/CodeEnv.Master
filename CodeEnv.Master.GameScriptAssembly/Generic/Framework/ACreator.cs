@@ -25,7 +25,7 @@ using CodeEnv.Master.Common;
 [SerializeAll]
 public abstract class ACreator : AMonoBase {
 
-    public enum __DiploStateWithPlayer {    // avoids offering None or Self
+    public enum __DiploStateWithUser {    // avoids offering None or Self
         Ally,
         Friend,
         Neutral,
@@ -33,8 +33,8 @@ public abstract class ACreator : AMonoBase {
         War
     }
 
-    public bool isOwnerPlayer;
-    public __DiploStateWithPlayer ownerRelationshipWithPlayer;
+    public bool isOwnerUser;
+    public __DiploStateWithUser ownerRelationshipWithUser;
 
     public bool isCompositionPreset;
     public int maxElementsInRandomUnit = 8;

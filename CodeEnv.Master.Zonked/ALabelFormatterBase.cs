@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected static IColoredTextList _unknownValue = new ColoredTextList_String(Constants.QuestionMark);
 
-        protected static IColoredTextList _emptyValue = new ColoredTextListBase();
+        protected static IColoredTextList _emptyValue = new ColoredTextList();
 
         #region Nested Classes
 

@@ -26,33 +26,28 @@ namespace CodeEnv.Master.GameContent {
 
         public Species Species { get; private set; }
 
-        private string _leaderName;
-        public string LeaderName {
-            get {
-                if (_leaderName.IsNullOrEmpty()) {
-                    return string.Empty;
-                }
-                return _leaderName;
-            }
-        }
+        public string LeaderName { get; private set; }
 
-        private string _description;
-        public string Description {
-            get {
-                if (_description.IsNullOrEmpty()) {
-                    return string.Empty;
-                }
-                return _description;
-            }
-        }
+        public string ImageFilename { get; private set; }
+
+        public string Description { get; private set; }
 
         public GameColor Color { get; private set; }
 
-        public RaceStat(Species species, string leaderName, string description, GameColor color)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RaceStat"/> struct.
+        /// </summary>
+        /// <param name="species">The species.</param>
+        /// <param name="leaderName">Name of the race leader.</param>
+        /// <param name="imageFilename">The filename used to find the image texture in an atlas for this race.</param>
+        /// <param name="description">The race description.</param>
+        /// <param name="color">The race color.</param>
+        public RaceStat(Species species, string leaderName, string imageFilename, string description, GameColor color)
             : this() {
             Species = species;
-            _leaderName = leaderName;
-            _description = description;
+            LeaderName = leaderName;
+            ImageFilename = imageFilename;
+            Description = description;
             Color = color;
         }
 

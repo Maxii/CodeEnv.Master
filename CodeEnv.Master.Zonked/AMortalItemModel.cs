@@ -28,8 +28,8 @@ using UnityEngine;
 /// </summary>
 public abstract class AMortalItemModel : AOwnedItemModel, IMortalModel, IMortalTarget {
 
-    public event Action<MortalAnimations> onShowAnimation;
-    public event Action<MortalAnimations> onStopAnimation;
+    public event Action<EffectID> onShowAnimation;
+    public event Action<EffectID> onStopAnimation;
 
     public new AMortalItemData Data {
         get { return base.Data as AMortalItemData; }
@@ -68,13 +68,13 @@ public abstract class AMortalItemModel : AOwnedItemModel, IMortalModel, IMortalT
         GameEventManager.Instance.Raise<MortalItemDeathEvent>(new MortalItemDeathEvent(this, this));
     }
 
-    protected void OnShowAnimation(MortalAnimations animation) {
+    protected void OnShowAnimation(EffectID animation) {
         if (onShowAnimation != null) {
             onShowAnimation(animation);
         }
     }
 
-    protected void OnStopAnimation(MortalAnimations animation) {
+    protected void OnStopAnimation(EffectID animation) {
         if (onStopAnimation != null) {
             onStopAnimation(animation);
         }

@@ -33,9 +33,7 @@ namespace CodeEnv.Master.GameContent {
         private int _gameStartYear;
         public int GameStartYear {
             get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
+                CheckValuesInitialized();
                 return _gameStartYear;
             }
             private set { _gameStartYear = value; }
@@ -44,9 +42,7 @@ namespace CodeEnv.Master.GameContent {
         private int _gameEndYear;
         public int GameEndYear {
             get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
+                CheckValuesInitialized();
                 return _gameEndYear;
             }
             private set { _gameEndYear = value; }
@@ -55,9 +51,7 @@ namespace CodeEnv.Master.GameContent {
         private int _daysPerYear;
         public int DaysPerYear {
             get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
+                CheckValuesInitialized();
                 return _daysPerYear;
             }
             private set { _daysPerYear = value; }
@@ -66,9 +60,7 @@ namespace CodeEnv.Master.GameContent {
         private int _hoursPerDay;
         public int HoursPerDay {
             get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
+                CheckValuesInitialized();
                 return _hoursPerDay;
             }
             private set { _hoursPerDay = value; }
@@ -80,11 +72,13 @@ namespace CodeEnv.Master.GameContent {
         #region Float
 
         private float _hoursPerSecond;
+        /// <summary>
+        /// The number of GameHours in a real-time Second at 
+        /// a GameSpeedMultiplier of 1 (aka GameSpeed.Normal).
+        /// </summary>
         public float HoursPerSecond {
             get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
+                CheckValuesInitialized();
                 return _hoursPerSecond;
             }
             private set { _hoursPerSecond = value; }
@@ -93,9 +87,7 @@ namespace CodeEnv.Master.GameContent {
         private float _injuredHealthThreshold;
         public float InjuredHealthThreshold {
             get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
+                CheckValuesInitialized();
                 return _injuredHealthThreshold;
             }
             private set { _injuredHealthThreshold = value; }
@@ -104,12 +96,37 @@ namespace CodeEnv.Master.GameContent {
         private float _criticalHealthThreshold;
         public float CriticalHealthThreshold {
             get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
+                CheckValuesInitialized();
                 return _criticalHealthThreshold;
             }
             private set { _criticalHealthThreshold = value; }
+        }
+
+        private float _contentApprovalThreshold;
+        public float ContentApprovalThreshold {
+            get {
+                CheckValuesInitialized();
+                return _contentApprovalThreshold;
+            }
+            private set { _contentApprovalThreshold = value; }
+        }
+
+        private float _unhappyApprovalThreshold;
+        public float UnhappyApprovalThreshold {
+            get {
+                CheckValuesInitialized();
+                return _unhappyApprovalThreshold;
+            }
+            private set { _unhappyApprovalThreshold = value; }
+        }
+
+        private float _revoltApprovalThreshold;
+        public float RevoltApprovalThreshold {
+            get {
+                CheckValuesInitialized();
+                return _revoltApprovalThreshold;
+            }
+            private set { _revoltApprovalThreshold = value; }
         }
 
         private float _hudRefreshRate;
@@ -119,9 +136,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float HudRefreshRate {
             get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
+                CheckValuesInitialized();
                 return _hudRefreshRate;
             }
             private set { _hudRefreshRate = value; }

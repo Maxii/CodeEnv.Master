@@ -52,6 +52,7 @@ public class FormationStationMonitor : AMonoBase, INavigableTarget {
 
     /// <summary>
     /// Control for enabling/disabling the monitor's collider.
+    /// Warning: When collider becomes disabled, OnTriggerExit is NOT called for items inside trigger
     /// </summary>
     private bool IsOperational {
         get { return _collider.enabled; }
@@ -67,12 +68,16 @@ public class FormationStationMonitor : AMonoBase, INavigableTarget {
 
     protected override void Awake() {
         base.Awake();
+        // kinematic rigidbody reqd to keep parent rigidbody from forming compound collider
+        var rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
+        rigidbody.isKinematic = true;
         _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
         _collider.isTrigger = true;
         IsOperational = false;  // IsOperational controlled when AssignedShip changes
     }
 
-    void OnTriggerEnter(Collider other) {
+    protected override void OnTriggerEnter(Collider other) {
+        base.OnTriggerEnter(other);
         if (other.isTrigger) { return; }
         D.Log("{0}.{1} OnTriggerEnter() tripped by Collider {2}.", FullName, GetType().Name, other.name);
         var arrivingShip = other.gameObject.GetInterface<IShipItem>();
@@ -83,7 +88,8 @@ public class FormationStationMonitor : AMonoBase, INavigableTarget {
         }
     }
 
-    void OnTriggerExit(Collider other) {
+    protected override void OnTriggerExit(Collider other) {
+        base.OnTriggerExit(other);
         if (other.isTrigger) { return; }
         D.Log("{0}.{1} OnTriggerExit() tripped by Collider {2}.", FullName, GetType().Name, other.name);
         var departingShip = other.gameObject.GetInterface<IShipItem>();
@@ -125,9 +131,6 @@ public class FormationStationMonitor : AMonoBase, INavigableTarget {
     /// Manually detects whether the ship is on station by seeing whether the ship's
     /// position is inside the collider bounds.
     /// </summary>
-    /// <value>
-    /// <c>true</c> if this ship is already on station; otherwise, <c>false</c>.
-    /// </value>
     private bool IsShipAlreadyOnStation {
         get { return _collider.bounds.Contains(AssignedShip.Position); }
     }

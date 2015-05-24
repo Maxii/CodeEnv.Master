@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IMortalItem.cs
-//  Interface for all items that can die.
+// Interface for easy access to all items that can die.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,15 +17,18 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using CodeEnv.Master.Common;
 
     /// <summary>
-    ///  Interface for all items that can die.
+    /// Interface for easy access to all items that can die.
     /// </summary>
-    public interface IMortalItem : IItem {
+    public interface IMortalItem : IIntelItem {
 
         event Action<IMortalItem> onDeathOneShot;
 
         bool IsOperational { get; }
+
+        Index3D SectorIndex { get; }
 
     }
 }

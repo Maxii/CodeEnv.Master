@@ -24,13 +24,13 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// The GameSpeedOnLoad option popupList.
 /// </summary>
-public class GuiGameSpeedOnLoadPopupList : AGuiPopupList<GameClockSpeed> {
+public class GuiGameSpeedOnLoadPopupList : AGuiPopupList<GameSpeed> {
 
-    public override GuiMenuElementID ElementID { get { return GuiMenuElementID.GameSpeedOnLoadPopupList; } }
+    public override GuiElementID ElementID { get { return GuiElementID.GameSpeedOnLoadPopupList; } }
 
     public override bool HasPreference { get { return true; } }
 
-    protected override string[] GetNames() { return Enums<GameClockSpeed>.GetNames(excludeDefault: true); }
+    protected override string[] GetNames() { return Enums<GameSpeed>.GetNames(excludeDefault: true); }
 
     // no need for taking an action OnPopupListSelectionChanged as changes aren't recorded 
     // from this popup list until the Menu Accept Button is pushed

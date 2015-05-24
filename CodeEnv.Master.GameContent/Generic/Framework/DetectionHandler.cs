@@ -25,63 +25,71 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class DetectionHandler : IDisposable {
 
-        private IDictionary<Player, IDictionary<DistanceRange, IList<ICommandItem>>> _detectionLookup = new Dictionary<Player, IDictionary<DistanceRange, IList<ICommandItem>>>();
-        private AIntelItemData _data;
-        private IList<IDisposable> _subscribers;
+        /// <summary>
+        /// Lookup that holds a list of the Cmds that have detected this Item, organized by the range
+        /// of the sensor used and the owner of the Cmd.
+        /// </summary>
+        private IDictionary<Player, IDictionary<DistanceRange, IList<IUnitCmdItem>>> _detectionLookup = new Dictionary<Player, IDictionary<DistanceRange, IList<IUnitCmdItem>>>();
+        private IIntelItem _item;
+        private IGameManager _gameMgr;
 
-        public DetectionHandler(AIntelItemData data) {
-            _data = data;
+        public DetectionHandler(IIntelItem item) {
+            _item = item;
+            _gameMgr = References.GameManager;
             Subscribe();
         }
 
         private void Subscribe() {
-            _subscribers = new List<IDisposable>();
-            _subscribers.Add(_data.SubscribeToPropertyChanging<AItemData, Player>(d => d.Owner, OnOwnerChanging));
-            _subscribers.Add(_data.SubscribeToPropertyChanged<AItemData, Player>(d => d.Owner, OnOwnerChanged));
+            _item.onOwnerChanging += OnOwnerChanging;
+            _item.onOwnerChanged += OnOwnerChanged;
         }
 
-        public void OnDetection(ICommandItem cmdItem, DistanceRange sensorRange) {
+        public void OnDetection(IUnitCmdItem cmdItem, DistanceRange sensorRange) {
+            D.Log("{0}.{1}.OnDetection called. Detecting Cmd: {2}, SensorRange: {3}.", _item.FullName, GetType().Name, cmdItem.FullName, sensorRange.GetName());
             Player detectingPlayer = cmdItem.Owner;
 
-            IDictionary<DistanceRange, IList<ICommandItem>> rangeLookup;
+            IDictionary<DistanceRange, IList<IUnitCmdItem>> rangeLookup;
             if (!_detectionLookup.TryGetValue(detectingPlayer, out rangeLookup)) {
-                rangeLookup = new Dictionary<DistanceRange, IList<ICommandItem>>();
+                rangeLookup = new Dictionary<DistanceRange, IList<IUnitCmdItem>>();
                 _detectionLookup.Add(detectingPlayer, rangeLookup);
             }
 
-            IList<ICommandItem> cmds;
+            IList<IUnitCmdItem> cmds;
             if (!rangeLookup.TryGetValue(sensorRange, out cmds)) {
-                cmds = new List<ICommandItem>();
+                cmds = new List<IUnitCmdItem>();
                 rangeLookup.Add(sensorRange, cmds);
             }
-            D.Assert(!cmds.Contains(cmdItem), "{0} attempted to add duplicate {1}.".Inject(_data.FullName, cmdItem.FullName));
+            D.Assert(!cmds.Contains(cmdItem), "{0} attempted to add duplicate {1}.".Inject(_item.FullName, cmdItem.FullName));
             cmds.Add(cmdItem);
 
             AssignDetectingPlayerIntelCoverage(detectingPlayer);
+            UpdatePlayerKnowledge(detectingPlayer);
         }
 
-        public void OnDetectionLost(ICommandItem cmdItem, DistanceRange sensorRange) {
+        public void OnDetectionLost(IUnitCmdItem cmdItem, DistanceRange sensorRange) {
+            D.Log("{0}.{1}.OnDetectionLost called. Detecting Cmd: {2}, SensorRange: {3}.", _item.FullName, GetType().Name, cmdItem.FullName, sensorRange.GetName());
             Player detectingPlayer = cmdItem.Owner;
 
-            IDictionary<DistanceRange, IList<ICommandItem>> rangeLookup;
+            IDictionary<DistanceRange, IList<IUnitCmdItem>> rangeLookup;
             if (!_detectionLookup.TryGetValue(detectingPlayer, out rangeLookup)) {
-                D.Error("{0} found no Sensor Range lookup. Player: {1}.", _data.FullName, detectingPlayer.LeaderName);
+                D.Error("{0} found no Sensor Range lookup. Detecting Cmd: {1}.", _item.FullName, cmdItem.FullName);
                 return;
             }
 
-            IList<ICommandItem> cmds;
+            IList<IUnitCmdItem> cmds;
             if (!rangeLookup.TryGetValue(sensorRange, out cmds)) {
-                D.Error("{0} found no List of Commands. Player: {1}, SensorRange: {2}.", _data.FullName, detectingPlayer.LeaderName, sensorRange.GetName());
+                D.Error("{0} found no List of Commands. Detecting Cmd: {1}, SensorRange: {2}.", _item.FullName, cmdItem.FullName, sensorRange.GetName());
                 return;
             }
 
             bool isRemoved = cmds.Remove(cmdItem);
-            D.Assert(isRemoved, "{0} could not find {1} to remove.".Inject(_data.FullName, cmdItem.FullName));
+            D.Assert(isRemoved, "{0} could not find {1} to remove.".Inject(_item.FullName, cmdItem.FullName));
             if (cmds.Count == Constants.Zero) {
                 rangeLookup.Remove(sensorRange);
             }
 
             AssignDetectingPlayerIntelCoverage(detectingPlayer);
+            UpdatePlayerKnowledge(detectingPlayer);
         }
 
         /// <summary>
@@ -89,7 +97,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="detectingPlayer">The detecting player.</param>
         private void AssignDetectingPlayerIntelCoverage(Player detectingPlayer) {
-            AssignIntelCoverage(detectingPlayer, _data.Owner);
+            AssignIntelCoverage(detectingPlayer, _item.Owner);
         }
 
         /// <summary>
@@ -106,37 +114,53 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(itemOwner != null);
 
             IntelCoverage newCoverage;
-            if (player == itemOwner) {
+            if (DebugSettings.Instance.AllIntelCoverageComprehensive || player == itemOwner) {
                 newCoverage = IntelCoverage.Comprehensive;
             }
             else {
-                IDictionary<DistanceRange, IList<ICommandItem>> rangeLookup;
+                IDictionary<DistanceRange, IList<IUnitCmdItem>> rangeLookup;
                 if (!_detectionLookup.TryGetValue(player, out rangeLookup)) {
-                    D.Error("{0} found no Sensor Range lookup. Player: {1}.", _data.FullName, player.LeaderName);
+                    D.Error("{0} found no Sensor Range lookup. Player: {1}.", _item.FullName, player.LeaderName);
                     return;
                 }
                 if (rangeLookup.ContainsKey(DistanceRange.Short)) {
-                    newCoverage = IntelCoverage.Moderate;
+                    newCoverage = IntelCoverage.Broad;
                 }
                 else if (rangeLookup.ContainsKey(DistanceRange.Medium)) {
-                    newCoverage = IntelCoverage.Minimal;
+                    newCoverage = IntelCoverage.Essential;
                 }
                 else if (rangeLookup.ContainsKey(DistanceRange.Long)) {
-                    newCoverage = IntelCoverage.Aware;
+                    newCoverage = IntelCoverage.Basic;
                 }
                 else {
                     newCoverage = IntelCoverage.None;
                 }
             }
 
-            if (_data.TrySetIntelCoverage(player, newCoverage)) {
-                D.Log("{0} successfully set {1}'s IntelCoverage to {2}.", _data.FullName, player.LeaderName, newCoverage.GetName());
+            if (_item.SetIntelCoverage(player, newCoverage)) {
+                D.Log("{0} successfully set {1}'s IntelCoverage to {2}.", _item.FullName, player.LeaderName, newCoverage.GetName());
             }
         }
 
+        private void UpdatePlayerKnowledge(Player player) {
+            IDictionary<DistanceRange, IList<IUnitCmdItem>> rangeLookup;
+            if (!_detectionLookup.TryGetValue(player, out rangeLookup)) {
+                D.Error("{0} found no Sensor Range lookup. Player: {1}.", _item.FullName, player.LeaderName);
+                return;
+            }
 
-        private void OnOwnerChanging(Player newOwner) {
-            var outgoingOwner = _data.Owner;
+            if (rangeLookup.Keys.Count > Constants.Zero) {
+                // there are one or more DistanceRange keys so some Cmd of player has this item in sensor range
+                _gameMgr.GetPlayerKnowledge(player).OnItemDetected(_item);
+            }
+            else {
+                // there are no DistanceRange keys so player has no Cmds in sensor range of this item
+                _gameMgr.GetPlayerKnowledge(player).OnItemDetectionLost(_item);
+            }
+        }
+
+        private void OnOwnerChanging(IItem item, Player newOwner) {
+            var outgoingOwner = item.Owner;
             D.Assert(outgoingOwner != null);    // default should be NoPlayer rather than null
             if (outgoingOwner == TempGameValues.NoPlayer) {
                 return; // NoPlayer is not a player in the game with IntelCoverage to track
@@ -144,8 +168,8 @@ namespace CodeEnv.Master.GameContent {
             AssignIntelCoverage(outgoingOwner, newOwner);
         }
 
-        private void OnOwnerChanged() {
-            var newOwner = _data.Owner;
+        private void OnOwnerChanged(IItem item) {
+            var newOwner = item.Owner;
             if (newOwner == TempGameValues.NoPlayer) {
                 return; // NoPlayer is not a player in the game with IntelCoverage to track
             }
@@ -158,8 +182,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Unsubscribe() {
-            _subscribers.ForAll(d => d.Dispose());
-            _subscribers.Clear();
+            _item.onOwnerChanging -= OnOwnerChanging;
+            _item.onOwnerChanged -= OnOwnerChanged;
         }
 
         public override string ToString() {

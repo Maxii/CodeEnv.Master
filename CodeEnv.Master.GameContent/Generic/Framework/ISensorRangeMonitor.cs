@@ -28,7 +28,9 @@ namespace CodeEnv.Master.GameContent {
 
         DistanceRange Range { get; }
 
-        ICommandItem ParentCommand { get; set; }
+        IUnitCmdItem ParentCommand { set; }
+
+        Player Owner { get; }
 
         void Add(Sensor sensor);
 
@@ -39,6 +41,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensor">The sensor.</param>
         /// <returns></returns>
         bool Remove(Sensor sensor);
+
+        IList<IElementAttackableTarget> EnemyTargetsDetected { get; }
+
 
     }
 }

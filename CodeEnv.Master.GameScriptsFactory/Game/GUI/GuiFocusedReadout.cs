@@ -32,7 +32,7 @@ public class GuiFocusedReadout : AGuiLabelReadout {
     }
 
     private ICameraFocusable _retainedFocus;
-    private IList<IDisposable> _subscribers;
+    private IList<IDisposable> _subscriptions;
 
     protected override void Awake() {
         base.Awake();
@@ -40,9 +40,9 @@ public class GuiFocusedReadout : AGuiLabelReadout {
     }
 
     private void Subscribe() {
-        _subscribers = new List<IDisposable>();
-        _subscribers.Add(MainCameraControl.Instance.SubscribeToPropertyChanging<MainCameraControl, ICameraFocusable>(cc => cc.CurrentFocus, OnFocusChanging));
-        _subscribers.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, ICameraFocusable>(cc => cc.CurrentFocus, OnFocusChanged));
+        _subscriptions = new List<IDisposable>();
+        _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanging<MainCameraControl, ICameraFocusable>(cc => cc.CurrentFocus, OnFocusChanging));
+        _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, ICameraFocusable>(cc => cc.CurrentFocus, OnFocusChanged));
     }
 
     private void OnFocusChanging(ICameraFocusable newFocus) {
@@ -94,8 +94,8 @@ public class GuiFocusedReadout : AGuiLabelReadout {
     }
 
     private void Unsubscribe() {
-        _subscribers.ForAll(s => s.Dispose());
-        _subscribers.Clear();
+        _subscriptions.ForAll(s => s.Dispose());
+        _subscriptions.Clear();
         if (_retainedFocus != null) {
             var mortalRetainedFocus = _retainedFocus as IMortalItem;
             if (mortalRetainedFocus != null) {

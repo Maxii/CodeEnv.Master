@@ -28,9 +28,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         public bool EnableFpsReadout {
             get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
+                CheckValuesInitialized();
                 return _enableFpsReadout;
             }
             private set { _enableFpsReadout = value; }
@@ -39,9 +37,7 @@ namespace CodeEnv.Master.Common {
         private bool _unlockAllItems;
         public bool UnlockAllItems {
             get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
+                CheckValuesInitialized();
                 return _unlockAllItems;
             }
             private set { _unlockAllItems = value; }
@@ -50,9 +46,7 @@ namespace CodeEnv.Master.Common {
         private bool _disableEnemies;
         public bool DisableEnemies {
             get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
+                CheckValuesInitialized();
                 return _disableEnemies;
             }
             private set { _disableEnemies = value; }
@@ -61,31 +55,25 @@ namespace CodeEnv.Master.Common {
         private bool _disableGui;
         public bool DisableGui {
             get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
+                CheckValuesInitialized();
                 return _disableGui;
             }
             private set { _disableGui = value; }
         }
 
-        private bool _makePlayerInvincible;
-        public bool MakePlayerInvincible {
+        private bool _allPlayersInvulnerable;
+        public bool AllPlayersInvulnerable {
             get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
-                return _makePlayerInvincible;
+                CheckValuesInitialized();
+                return _allPlayersInvulnerable;
             }
-            private set { _makePlayerInvincible = value; }
+            private set { _allPlayersInvulnerable = value; }
         }
 
         private bool _disableAllGameplay;
         public bool DisableAllGameplay {
             get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
+                CheckValuesInitialized();
                 return _disableAllGameplay;
             }
             private set { _disableAllGameplay = value; }
@@ -101,9 +89,7 @@ namespace CodeEnv.Master.Common {
         /// </value>
         public bool ForceFpsToTarget {
             get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
+                CheckValuesInitialized();
                 return _forceFpsToTarget;
             }
             private set { _forceFpsToTarget = value; }
@@ -116,9 +102,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         public bool EnableEventLogging {
             get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
+                CheckValuesInitialized();
                 return _enableEventLogging;
             }
             private set { _enableEventLogging = value; }
@@ -131,9 +115,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         public bool EnableVerboseDebugLog {
             get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
+                CheckValuesInitialized();
                 return _enableVerboseDebugLog;
             }
             private set { _enableVerboseDebugLog = value; }
@@ -142,9 +124,7 @@ namespace CodeEnv.Master.Common {
         private bool _enableShipVelocityRays;
         public bool EnableShipVelocityRays {
             get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
+                CheckValuesInitialized();
                 return _enableShipVelocityRays;
             }
             private set { _enableShipVelocityRays = value; }
@@ -153,31 +133,45 @@ namespace CodeEnv.Master.Common {
         private bool _enableFleetVelocityRays;
         public bool EnableFleetVelocityRays {
             get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
+                CheckValuesInitialized();
                 return _enableFleetVelocityRays;
             }
             private set { _enableFleetVelocityRays = value; }
         }
 
-        private bool _stopShipMovement;
-        public bool StopShipMovement {
+        private bool _enableFleetCourseDisplay;
+        public bool EnableFleetCourseDisplay {
             get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
-                return _stopShipMovement;
+                CheckValuesInitialized();
+                return _enableFleetCourseDisplay;
             }
-            private set { _stopShipMovement = value; }
+            private set { _enableFleetCourseDisplay = value; }
         }
+
+        private bool _enableShipCourseDisplay;
+        public bool EnableShipCourseDisplay {
+            get {
+                CheckValuesInitialized();
+                return _enableShipCourseDisplay;
+            }
+            private set { _enableShipCourseDisplay = value; }
+        }
+
+        //private bool _stopShipMovement;
+        //public bool StopShipMovement {
+        //    get {
+        //        if (!isPropertyValuesInitialized) {
+        //            InitializePropertyValues();
+        //        }
+        //        return _stopShipMovement;
+        //    }
+        //    private set { _stopShipMovement = value; }
+        //}
 
         private bool _allowEnemyOrders;
         public bool AllowEnemyOrders {
             get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
+                CheckValuesInitialized();
                 return _allowEnemyOrders;
             }
             private set { _allowEnemyOrders = value; }
@@ -186,9 +180,7 @@ namespace CodeEnv.Master.Common {
         private bool _allIntelCoverageComprehensive;
         public bool AllIntelCoverageComprehensive {
             get {
-                if (!isPropertyValuesInitialized) {
-                    InitializePropertyValues();
-                }
+                CheckValuesInitialized();
                 return _allIntelCoverageComprehensive;
             }
             private set { _allIntelCoverageComprehensive = value; }

@@ -45,7 +45,7 @@ public abstract class GuiCheckboxBase : GuiTooltip, IDisposable {
     /// Override to initialize the tooltip message. Remember base.InitializeOnAwake();
     /// </summary>
     protected virtual void Initialize() {
-        checkbox = gameObject.GetSafeMonoBehaviourComponent<UICheckbox>();
+        checkbox = gameObject.GetSafeMonoBehaviour<UICheckbox>();
         checkbox.onStateChange += OnCheckboxStateChange;
     }
 

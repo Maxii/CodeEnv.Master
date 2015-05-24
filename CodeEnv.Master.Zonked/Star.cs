@@ -27,8 +27,8 @@ public class Star : StationaryItem {
 
     protected override void Awake() {
         base.Awake();
-        _systemManager = gameObject.GetSafeMonoBehaviourComponentInParents<SystemCreator>();
-        _systemGraphics = gameObject.GetSafeMonoBehaviourComponentInParents<SystemGraphics>();
+        _systemManager = gameObject.GetSafeMonoBehaviourInParents<SystemCreator>();
+        _systemGraphics = gameObject.GetSafeMonoBehaviourInParents<SystemGraphics>();
     }
 
     protected override void OnHover(bool isOver) {

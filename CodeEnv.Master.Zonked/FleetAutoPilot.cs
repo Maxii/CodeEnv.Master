@@ -57,8 +57,8 @@ public class FleetAutoPilot : AMonoBase, IDisposable {
 
     protected override void Awake() {
         base.Awake();
-        _fleet = gameObject.GetSafeMonoBehaviourComponent<FleetCmdModel>();
-        _seeker = gameObject.GetSafeMonoBehaviourComponent<Seeker>();
+        _fleet = gameObject.GetSafeMonoBehaviour<FleetCmdModel>();
+        _seeker = gameObject.GetSafeMonoBehaviour<Seeker>();
         _fleetData = _fleet.Data;
         _closeEnoughToWaypointDistance = 5F * GameTime.Instance.GameSpeed.SpeedMultiplier();
         Subscribe();
@@ -68,7 +68,7 @@ public class FleetAutoPilot : AMonoBase, IDisposable {
         if (_subscribers == null) {
             _subscribers = new List<IDisposable>();
         }
-        _subscribers.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
+        _subscribers.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
         _seeker.pathCallback += OnCoursePlotCompleted;
     }
 
@@ -78,7 +78,7 @@ public class FleetAutoPilot : AMonoBase, IDisposable {
     /// <param name="destination">The destination.</param>
     public void PlotCourse(Vector3 destination) {
         IsFinalDestinationReached = false;
-        if (!destination.IsSame(Destination)) {
+        if (!destination.IsSameAs(Destination)) {
             Destination = destination;
         }
         else {

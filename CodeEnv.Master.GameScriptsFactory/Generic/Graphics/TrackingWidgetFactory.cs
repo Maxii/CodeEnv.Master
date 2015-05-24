@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Singleton Factory that creates preconfigured ITrackingWidgets.
 /// </summary>
-public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
+public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, ITrackingWidgetFactory, IDisposable {
     // Note: no reason to dispose of _instance during scene transition as all its references persist across scenes
 
     private TrackingWidgetFactory() {
@@ -42,7 +42,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
     /// <param name="min">The minimum show distance.</param>
     /// <param name="max">The maximum show distance.</param>
     /// <returns></returns>
-    public ITrackingWidget CreateUITrackingLabel(IWidgetTrackable target, WidgetPlacement placement = WidgetPlacement.Over, float min = Constants.ZeroF, float max = Mathf.Infinity) {
+    public ITrackingWidget MakeUITrackingLabel(IWidgetTrackable target, WidgetPlacement placement = WidgetPlacement.Over, float min = Constants.ZeroF, float max = Mathf.Infinity) {
         GameObject prefab = RequiredPrefabs.Instance.uiTrackingLabel.gameObject;
         var clone = NGUITools.AddChild(DynamicWidgetsFolder.Instance.Folder.gameObject, prefab);
 
@@ -50,7 +50,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         NGUITools.SetLayer(clone, (int)layerForTrackingWidget);
 
         //var trackingWidget = clone.GetSafeInterface<ITrackingWidget>();
-        var trackingWidget = clone.GetSafeMonoBehaviourComponent<UITrackingLabel>();
+        var trackingWidget = clone.GetSafeMonoBehaviour<UITrackingLabel>();
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
@@ -67,18 +67,18 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
     /// <param name="min">The minimum show distance.</param>
     /// <param name="max">The maximum show distance.</param>
     /// <returns></returns>
-    public ITrackingWidget CreateUITrackingSprite(IWidgetTrackable target, IconAtlasID atlasID, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity) {
+    public ITrackingWidget MakeUITrackingSprite(IWidgetTrackable target, AtlasID atlasID, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity) {
         GameObject prefab = RequiredPrefabs.Instance.uiTrackingSprite.gameObject;
         var clone = NGUITools.AddChild(DynamicWidgetsFolder.Instance.Folder.gameObject, prefab);
 
         Layers layerForTrackingWidget = CheckLayers(target, prefab);
         NGUITools.SetLayer(clone, (int)layerForTrackingWidget);
 
-        UISprite sprite = clone.GetSafeMonoBehaviourComponentInChildren<UISprite>();
-        sprite.atlas = GetAtlas(atlasID);
+        UISprite sprite = clone.GetSafeMonoBehaviourInChildren<UISprite>();
+        sprite.atlas = MyNguiUtilities.GetAtlas(atlasID);
 
         //var trackingWidget = clone.GetSafeInterface<ITrackingWidget>();
-        var trackingWidget = clone.GetSafeMonoBehaviourComponent<UITrackingSprite>();
+        var trackingWidget = clone.GetSafeMonoBehaviour<UITrackingSprite>();
         trackingWidget.Target = target;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
@@ -90,30 +90,33 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
     /// Creates a tracking sprite which can respond to the mouse.
     /// The sprite's size stays constant, parented to and tracks the <c>target</c>.
     /// </summary>
-    /// <param name="target">The target.</param>
-    /// <param name="atlasID">The atlas identifier.</param>
-    /// <param name="__dimensions">The desired dimensions of the sprite in pixels.</param>
-    /// <param name="placement">The placement.</param>
+    /// <param name="target">The target this sprite will track.</param>
+    /// <param name="iconInfo">The info needed to build the sprite.</param>
+    /// <param name="size">The size of the sprite in pixels.</param>
+    /// <param name="placement">The placement of the sprite relative to the target.</param>
     /// <param name="min">The minimum show distance.</param>
     /// <param name="max">The maximum show distance.</param>
     /// <returns></returns>
-    public ResponsiveTrackingSprite CreateResponsiveTrackingSprite(IWidgetTrackable target, IconAtlasID atlasID, Vector2 __dimensions, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity) {
+    public IResponsiveTrackingSprite MakeResponsiveTrackingSprite(IWidgetTrackable target, IconInfo iconInfo, Vector2 size, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity) {
         GameObject prefab = RequiredPrefabs.Instance.worldTrackingSprite;
         GameObject clone = NGUITools.AddChild(target.Transform.gameObject, prefab);
 
         Layers layer = CheckLayers(target, prefab);
         NGUITools.SetLayer(clone, (int)layer);
 
-        UISprite sprite = clone.GetSafeMonoBehaviourComponentInChildren<UISprite>();
-        sprite.atlas = GetAtlas(atlasID);
+        UISprite sprite = clone.GetSafeMonoBehaviourInChildren<UISprite>(); // IMPROVE get rid of the need to set atlas this way
+        sprite.atlas = MyNguiUtilities.GetAtlas(iconInfo.AtlasID);
+        // Note: Donot use sprite.spriteName and sprite.color here. Change them using the ResponsiveTrackingSprite
 
-        var trackingWidget = clone.AddComponent<ResponsiveTrackingSprite>();   // AddComponent() runs Awake before returning
-        trackingWidget.__SetDimensions(Mathf.RoundToInt(__dimensions.x), Mathf.RoundToInt(__dimensions.y));
-        trackingWidget.Target = target;
-        trackingWidget.Placement = placement;
-        trackingWidget.SetShowDistance(min, max);
+        var trackingSprite = clone.AddComponent<ResponsiveTrackingSprite>();   // AddComponent() runs Awake before returning
+        trackingSprite.__SetDimensions(Mathf.RoundToInt(size.x), Mathf.RoundToInt(size.y));
+        trackingSprite.Target = target;
+        trackingSprite.Set(iconInfo.Filename);
+        trackingSprite.Color = iconInfo.Color;
+        trackingSprite.Placement = placement;
+        trackingSprite.SetShowDistance(min, max);
         //D.Log("{0} made a {1} for {2}.", GetType().Name, typeof(ResponsiveTrackingSprite).Name, target.DisplayName);
-        return trackingWidget;
+        return trackingSprite;
     }
 
     /// <summary>
@@ -123,7 +126,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
     /// <param name="placement">The placement.</param>
     /// <param name="min">The minimum show distance.</param>
     /// <returns></returns>
-    public ITrackingWidget CreateVariableSizeTrackingLabel(IWidgetTrackable target, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF) {
+    public ITrackingWidget MakeVariableSizeTrackingLabel(IWidgetTrackable target, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF) {
         GameObject prefab = RequiredPrefabs.Instance.worldTrackingLabel;
         var clone = NGUITools.AddChild(target.Transform.gameObject, prefab);
 
@@ -146,15 +149,15 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
     /// <param name="placement">The placement.</param>
     /// <param name="min">The minimum show distance.</param>
     /// <returns></returns>
-    public ITrackingWidget CreateVariableSizeTrackingSprite(IWidgetTrackable target, IconAtlasID atlasID, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF) {
+    public ITrackingWidget MakeVariableSizeTrackingSprite(IWidgetTrackable target, AtlasID atlasID, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF) {
         GameObject prefab = RequiredPrefabs.Instance.worldTrackingSprite;
         var clone = NGUITools.AddChild(target.Transform.gameObject, prefab);
 
         Layers layer = CheckLayers(target, prefab);
         NGUITools.SetLayer(clone, (int)layer);
 
-        UISprite sprite = clone.GetSafeMonoBehaviourComponentInChildren<UISprite>();
-        sprite.atlas = GetAtlas(atlasID);
+        UISprite sprite = clone.GetSafeMonoBehaviourInChildren<UISprite>();
+        sprite.atlas = MyNguiUtilities.GetAtlas(atlasID);
 
         var trackingWidget = clone.AddComponent<VariableSizeTrackingSprite>();  // AddComponent() runs Awake before returning
         trackingWidget.Target = target;
@@ -174,15 +177,15 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
     /// <param name="min">The minimum show distance.</param>
     /// <param name="max">The maximum show distance.</param>
     /// <returns></returns>
-    public ITrackingWidget CreateConstantSizeTrackingSprite(IWidgetTrackable target, IconAtlasID atlasID, Vector2 __dimensions, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity) {
+    public ITrackingWidget MakeConstantSizeTrackingSprite(IWidgetTrackable target, AtlasID atlasID, Vector2 __dimensions, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity) {
         GameObject prefab = RequiredPrefabs.Instance.worldTrackingSprite;
         var clone = NGUITools.AddChild(target.Transform.gameObject, prefab);
 
         Layers layer = CheckLayers(target, prefab);
         NGUITools.SetLayer(clone, (int)layer);
 
-        UISprite sprite = clone.GetSafeMonoBehaviourComponentInChildren<UISprite>();
-        sprite.atlas = GetAtlas(atlasID);
+        UISprite sprite = clone.GetSafeMonoBehaviourInChildren<UISprite>();
+        sprite.atlas = MyNguiUtilities.GetAtlas(atlasID);
 
         var trackingWidget = clone.AddComponent<ConstantSizeTrackingSprite>();  // AddComponent() runs Awake before returning
         trackingWidget.__SetDimensions(Mathf.RoundToInt(__dimensions.x), Mathf.RoundToInt(__dimensions.y));
@@ -201,7 +204,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
     /// <param name="min">The minimum show distance.</param>
     /// <param name="max">The maximum show distance.</param>
     /// <returns></returns>
-    public ITrackingWidget CreateConstantSizeTrackingLabel(IWidgetTrackable target, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity) {
+    public ITrackingWidget MakeConstantSizeTrackingLabel(IWidgetTrackable target, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity) {
         GameObject prefab = RequiredPrefabs.Instance.worldTrackingLabel;
         var clone = NGUITools.AddChild(target.Transform.gameObject, prefab);
 
@@ -225,31 +228,58 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory> {
         return prefabLayer;
     }
 
-    private UIAtlas GetAtlas(IconAtlasID atlasID) {
-        switch (atlasID) {
-            case IconAtlasID.Fleet:
-                return RequiredPrefabs.Instance.fleetIconAtlas;
-            case IconAtlasID.Contextual:
-                return RequiredPrefabs.Instance.contextualAtlas;
-            case IconAtlasID.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(atlasID));
-        }
+    private void Cleanup() {
+        OnDispose();
     }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
 
-    public enum IconAtlasID {
+    #region IDisposable
+    [DoNotSerialize]
+    private bool _alreadyDisposed = false;
+    protected bool _isDisposing = false;
 
-        None,
-
-        Fleet,
-
-        Contextual
-
+    /// <summary>
+    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// </summary>
+    public void Dispose() {
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
+
+    /// <summary>
+    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
+    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
+    /// </summary>
+    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+    protected virtual void Dispose(bool isDisposing) {
+        // Allows Dispose(isDisposing) to be called more than once
+        if (_alreadyDisposed) {
+            return;
+        }
+
+        _isDisposing = true;
+        if (isDisposing) {
+            // free managed resources here including unhooking events
+            Cleanup();
+        }
+        // free unmanaged resources here
+
+        _alreadyDisposed = true;
+    }
+
+    // Example method showing check for whether the object has been disposed
+    //public void ExampleMethod() {
+    //    // throw Exception if called on object that is already disposed
+    //    if(alreadyDisposed) {
+    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
+    //    }
+
+    //    // method content here
+    //}
+    #endregion
 
 }
 

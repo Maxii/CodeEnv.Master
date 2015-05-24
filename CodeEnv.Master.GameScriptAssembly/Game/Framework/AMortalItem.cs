@@ -17,10 +17,8 @@
 // default namespace
 
 using System;
-using System.Collections;
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
@@ -36,25 +34,21 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
         set { base.Data = value; }
     }
 
-    private IAnimator _animator;
+    public Index3D SectorIndex { get { return Data.SectorIndex; } }
 
     #region Initialization
 
-    protected override void InitializeViewMembersOnDiscernible() {
-        base.InitializeViewMembersOnDiscernible();
-        _animator = InitializeAnimator();
-        _animator.onAnimationFinished += OnShowCompletion;
+    protected override void InitializeViewMembersWhenFirstDiscernibleToUser() {
+        base.InitializeViewMembersWhenFirstDiscernibleToUser();
     }
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
-        _subscribers.Add(Data.SubscribeToPropertyChanged<AMortalItemData, float>(d => d.Health, OnHealthChanged));
+        _subscriptions.Add(Data.SubscribeToPropertyChanged<AMortalItemData, float>(d => d.Health, OnHealthChanged));
     }
 
-    protected virtual IAnimator InitializeAnimator() {
-        var animation = gameObject.GetComponentInImmediateChildren<Animation>();
-        var audioSource = gameObject.GetComponent<AudioSource>();
-        return new MortalItemAnimator(animation, audioSource);
+    protected override EffectsManager InitializeEffectsManager() {
+        return new MortalEffectsManager(this);
     }
 
     #endregion
@@ -116,21 +110,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
     #endregion
 
     #region View Methods
-
-    public abstract void OnShowCompletion();
-
-    protected void StartAnimation(MortalAnimations animationID) {
-        if (_animator != null) {
-            _animator.Start(animationID);
-        }
-    }
-
-    protected void StopAnimation(MortalAnimations animationID) {
-        if (_animator != null) {
-            _animator.Stop(animationID);
-        }
-    }
-
     #endregion
 
     #region Mouse Events
@@ -186,7 +165,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem {
 
     #endregion
 
-    protected void __DestroyMe(float delay, Action onCompletion = null) {
+    protected void __DestroyMe(float delay = 0F, Action onCompletion = null) {
         UnityUtility.Destroy(gameObject, delay, onCompletion);
     }
 

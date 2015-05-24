@@ -23,6 +23,8 @@ namespace CodeEnv.Master.GameContent {
 
     public static class TempGameValues {
 
+        public const float MinimumFramerate = 25F;
+
         public const int MinTrackingLabelShowDistance = 50;
         public const int MaxTrackingLabelShowDistance = 5000;
 
@@ -50,7 +52,7 @@ namespace CodeEnv.Master.GameContent {
         /// The radius of a Fleet. May not include all of the fleet's ships.
         /// TODO MaxShipsPerFleet and FleetRadius should be tied together.
         /// </summary>
-        public const float FleetRadius = 4F;
+        //public const float FleetRadius = 4F;
 
         /// <summary>
         /// The length in world units of a sector side along any of the axis. As a sector
@@ -121,22 +123,22 @@ namespace CodeEnv.Master.GameContent {
 
         public static float __GetMass(ShipCategory hull) {
             switch (hull) {
-                case ShipCategory.Fighter:
-                    return 10F;
                 case ShipCategory.Frigate:
                     return 50F;
                 case ShipCategory.Destroyer:
+                case ShipCategory.Support:
                     return 100F;
                 case ShipCategory.Cruiser:
+                case ShipCategory.Colonizer:
+                case ShipCategory.Science:
                     return 200F;
                 case ShipCategory.Dreadnaught:
+                case ShipCategory.Troop:
                     return 400F;
                 case ShipCategory.Carrier:
                     return 500F;
-                case ShipCategory.Colonizer:
-                case ShipCategory.Science:
                 case ShipCategory.Scout:
-                case ShipCategory.Troop:
+                case ShipCategory.Fighter:
                 case ShipCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hull));
@@ -145,9 +147,28 @@ namespace CodeEnv.Master.GameContent {
 
         public static readonly Player NoPlayer = new NoPlayer();
 
-        public static readonly XYield NoSpecialResources = default(XYield);
+        public static readonly ResourceYield NoResources = default(ResourceYield);
 
         public static readonly CombatStrength NoCombatStrength = default(CombatStrength);
+
+        /// <summary>
+        /// The name of the only current image in MyGuiAtlas.
+        /// </summary>
+        public const string AnImageFilename = "image";
+
+
+        public static GameColor SelectedColor { get { return GameColor.Green; } }
+
+        public static GameColor FocusedColor { get { return GameColor.Yellow; } }
+
+        public static GameColor GeneralHighlightColor { get { return GameColor.White; } }
+
+        public static GameColor SectorHighlightColor { get { return GameColor.Yellow; } }
+
+
+        public static GameColor DisabledColor { get { return GameColor.Gray; } }
+
+        public const string BackgroundSpriteName = "Background";
 
 
     }

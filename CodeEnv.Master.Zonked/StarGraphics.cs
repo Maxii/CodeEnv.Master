@@ -26,13 +26,13 @@ public class StarGraphics : ItemGraphics {
 
     protected override void RegisterComponentsToDisable() {
         base.RegisterComponentsToDisable();
-        IEnumerable<GameObject> glowGameObjects = gameObject.GetSafeMonoBehaviourComponentsInChildren<StarGlowAnimator>().Select(sg => sg.gameObject);
+        IEnumerable<GameObject> glowGameObjects = gameObject.GetSafeMonoBehavioursInChildren<StarGlowAnimator>().Select(sg => sg.gameObject);
         if (disableGameObjectOnCameraDistance.IsNullOrEmpty()) {
             disableGameObjectOnCameraDistance = new GameObject[0];
         }
         disableGameObjectOnCameraDistance = disableGameObjectOnCameraDistance.Union(glowGameObjects).ToArray();
 
-        Component[] starAnimatingBehaviours = new Component[2] { gameObject.GetSafeMonoBehaviourComponent<StarAnimator>(), gameObject.GetSafeMonoBehaviourComponentInChildren<Billboard>() };
+        Component[] starAnimatingBehaviours = new Component[2] { gameObject.GetSafeMonoBehaviour<StarAnimator>(), gameObject.GetSafeMonoBehaviourInChildren<Billboard>() };
         if (disableComponentOnCameraDistance.IsNullOrEmpty()) {
             disableComponentOnCameraDistance = new Component[0];
         }

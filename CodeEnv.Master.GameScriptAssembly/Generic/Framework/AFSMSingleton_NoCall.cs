@@ -32,9 +32,6 @@ public abstract class AFSMSingleton_NoCall<T, E> : AFSMSingleton<T, E>
     where T : AFSMSingleton_NoCall<T, E>
     where E : struct {
 
-    public event Action onCurrentStateChanged;
-    public event Action<E> onCurrentStateChanging;
-
     // ************************************************************************************************************
     // NOTE: The sequencing when a change of state is initiated by setting CurrentState = newState
     //
@@ -61,12 +58,15 @@ public abstract class AFSMSingleton_NoCall<T, E> : AFSMSingleton<T, E>
     // is changed before item2's state, that DOES NOT mean item1's enterState will be called before item2's enterState.
     // ***********************************************************************************************************
 
+    /// <summary>
+    /// The current State of Type E of this FSM. 
+    /// </summary>
     public override E CurrentState {
         get { return state.currentState; }
         protected set {
             D.Assert(!state.Equals(value)); // a state object and a state's E CurrentState should never be equal
             if (state.currentState.Equals(value)) {
-                D.Warn("{0} duplicate state {1} set attempt.", GetType().Name, value);
+                //D.Log("{0} duplicate state {1} set attempt.", GetType().Name, value);
             }
             SetProperty<E>(ref state.currentState, value, "CurrentState", OnCurrentStateChanged, OnCurrentStateChanging);
         }
@@ -75,16 +75,10 @@ public abstract class AFSMSingleton_NoCall<T, E> : AFSMSingleton<T, E>
     protected virtual void OnCurrentStateChanging(E incomingState) {
         __ValidateNoNewStateSetDuringEnterState(incomingState);
         ChangingState();
-        if (onCurrentStateChanging != null) {
-            onCurrentStateChanging(incomingState);
-        }
     }
 
     protected virtual void OnCurrentStateChanged() {
         ConfigureCurrentState();
-        if (onCurrentStateChanged != null) {
-            onCurrentStateChanged();
-        }
         __ResetStateChangeValidationTest();
     }
 

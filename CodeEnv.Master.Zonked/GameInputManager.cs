@@ -99,7 +99,7 @@ public class GameInputManager : AInputManager<GameInputManager>, IInputManager {
     }
 
     private void InitializeWorldEventDispatcher() {
-        WorldEventDispatcher = MainCameraControl.Instance.gameObject.GetSafeMonoBehaviourComponentInChildren<UICamera>();
+        WorldEventDispatcher = MainCameraControl.Instance.gameObject.GetSafeMonoBehaviourInChildren<UICamera>();
         WorldEventDispatcher.eventType = UICamera.EventType.World_3D;
         WorldEventDispatcher.useKeyboard = true;
         WorldEventDispatcher.useMouse = true;

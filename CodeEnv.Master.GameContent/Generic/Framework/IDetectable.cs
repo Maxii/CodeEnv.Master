@@ -30,9 +30,9 @@ namespace CodeEnv.Master.GameContent {
 
         Vector3 Position { get; }
 
-        void OnDetection(ICommandItem cmdItem, DistanceRange sensorRange);
+        void OnDetection(IUnitCmdItem cmdItem, DistanceRange sensorRange);
 
-        void OnDetectionLost(ICommandItem cmdItem, DistanceRange sensorRange);
+        void OnDetectionLost(IUnitCmdItem cmdItem, DistanceRange sensorRange);
     }
 }
 

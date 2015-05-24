@@ -26,11 +26,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.Zonked", "Co
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DataLibrary", "DataLibrary", "{2963CF2F-1606-484D-9F4B-61A9C9872F41}"
 	ProjectSection(SolutionItems) = preProject
-		DataLibrary\AnimationSettings.xml = DataLibrary\AnimationSettings.xml
 		DataLibrary\DebugSettings.xml = DataLibrary\DebugSettings.xml
-		DataLibrary\FleetIconID.xml = DataLibrary\FleetIconID.xml
-		DataLibrary\GameClockSpeed.xml = DataLibrary\GameClockSpeed.xml
+		DataLibrary\FleetIconInfo.xml = DataLibrary\FleetIconInfo.xml
+		DataLibrary\GameSpeed.xml = DataLibrary\GameSpeed.xml
 		DataLibrary\GeneralSettings.xml = DataLibrary\GeneralSettings.xml
+		DataLibrary\GraphicsSettings.xml = DataLibrary\GraphicsSettings.xml
+		DataLibrary\ResourceID.xml = DataLibrary\ResourceID.xml
 		DataLibrary\UniverseSize.xml = DataLibrary\UniverseSize.xml
 	EndProjectSection
 EndProject
@@ -53,6 +54,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vectrosity", "..\..\Plugins\Vectrosity\Vectrosity.csproj", "{742472E2-310C-430C-A59B-1B527D852181}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpaceD", "..\..\Plugins\SpaceD\SpaceD.csproj", "{D1D9E6DA-D2AC-4CDC-B8A8-3B749D41CA5E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SoundManagerPro", "..\..\Plugins\SoundManagerPro\SoundManagerPro.csproj", "{6150DE6A-13CE-45C9-9254-1486A6BC6661}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NguiEditor", "..\..\Plugins\NguiEditor\NguiEditor.csproj", "{99D34A21-2FF7-4FB8-89B6-2552CE630941}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -118,6 +123,14 @@ Global
 		{D1D9E6DA-D2AC-4CDC-B8A8-3B749D41CA5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D1D9E6DA-D2AC-4CDC-B8A8-3B749D41CA5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D1D9E6DA-D2AC-4CDC-B8A8-3B749D41CA5E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6150DE6A-13CE-45C9-9254-1486A6BC6661}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6150DE6A-13CE-45C9-9254-1486A6BC6661}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6150DE6A-13CE-45C9-9254-1486A6BC6661}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6150DE6A-13CE-45C9-9254-1486A6BC6661}.Release|Any CPU.Build.0 = Release|Any CPU
+		{99D34A21-2FF7-4FB8-89B6-2552CE630941}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{99D34A21-2FF7-4FB8-89B6-2552CE630941}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{99D34A21-2FF7-4FB8-89B6-2552CE630941}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{99D34A21-2FF7-4FB8-89B6-2552CE630941}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -131,6 +144,8 @@ Global
 		{89B92DFD-410D-4E95-BF4E-4A42868C5AE3} = {63764D99-5C21-4125-9DB9-F76DE1415D52}
 		{742472E2-310C-430C-A59B-1B527D852181} = {63764D99-5C21-4125-9DB9-F76DE1415D52}
 		{D1D9E6DA-D2AC-4CDC-B8A8-3B749D41CA5E} = {63764D99-5C21-4125-9DB9-F76DE1415D52}
+		{6150DE6A-13CE-45C9-9254-1486A6BC6661} = {63764D99-5C21-4125-9DB9-F76DE1415D52}
+		{99D34A21-2FF7-4FB8-89B6-2552CE630941} = {63764D99-5C21-4125-9DB9-F76DE1415D52}
 		{5A9CBCC8-54ED-4987-9001-99015BA18C5C} = {2963CF2F-1606-484D-9F4B-61A9C9872F41}
 	EndGlobalSection
 EndGlobal

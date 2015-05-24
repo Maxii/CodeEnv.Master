@@ -25,7 +25,7 @@ using UnityEngine;
 /// </summary>
 public class GuiQualitySettingPopupList : AGuiPopupList<string> {
 
-    public override GuiMenuElementID ElementID { get { return GuiMenuElementID.QualitySettingPopupList; } }
+    public override GuiElementID ElementID { get { return GuiElementID.QualitySettingPopupList; } }
 
     public override bool HasPreference { get { return true; } }
 

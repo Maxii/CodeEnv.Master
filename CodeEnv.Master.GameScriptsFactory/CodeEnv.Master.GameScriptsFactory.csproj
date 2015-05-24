@@ -58,18 +58,33 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Generic\Graphics\AIconDisplayManager.cs" />
-    <Compile Include="Game\Graphics\UnitCmdDisplayManager.cs" />
-    <Compile Include="Game\Graphics\ElementDisplayManager.cs" />
+    <Compile Include="Generic\Graphics\ATableScreenManager.cs" />
+    <Compile Include="Generic\Graphics\AGuiWindow.cs" />
+    <Compile Include="Generic\Graphics\AHud.cs" />
+    <Compile Include="Game\GUI\ItemHud.cs" />
+    <Compile Include="Game\GUI\ItemSelectionHudElement.cs" />
+    <Compile Include="Game\GUI\SelectionHud.cs" />
+    <Compile Include="Generic\_Debug\DebugInfo.cs" />
+    <Compile Include="Game\GUI\Tooltip.cs" />
+    <Compile Include="Game\GUI\ApprovalGuiElement.cs" />
+    <Compile Include="Generic\Graphics\ACommandsScreenManager.cs" />
+    <Compile Include="Generic\Graphics\ACompositionGuiElement.cs" />
+    <Compile Include="Game\GUI\FleetCompositionGuiElement.cs" />
+    <Compile Include="Game\GUI\FleetsScreenManager.cs" />
+    <Compile Include="Generic\Extensions\MyNguiUtilities.cs" />
+    <Compile Include="Generic\Framework\AOrdnance.cs" />
+    <Compile Include="Generic\Framework\AProjectile.cs" />
+    <Compile Include="Game\Gameplay\Beam.cs" />
+    <Compile Include="Generic\Framework\ANavigator.cs" />
     <Compile Include="Generic\Graphics\AGuiPopupList.cs" />
     <Compile Include="Generic\Graphics\AGuiMenuElement.cs" />
     <Compile Include="Generic\Graphics\AGuiTooltip.cs" />
     <Compile Include="Generic\Framework\AUnitCreator.cs" />
-    <Compile Include="Generic\Graphics\ACtxControl_Player.cs" />
+    <Compile Include="Generic\Graphics\ACtxControl_User.cs" />
     <Compile Include="Game\GUI\BaseCtxControl_AI.cs" />
     <Compile Include="Generic\Graphics\ACtxControl.cs" />
-    <Compile Include="Game\GUI\BaseCtxControl_Player.cs" />
-    <Compile Include="Game\GUI\FleetCtxControl_Player.cs" />
+    <Compile Include="Game\GUI\BaseCtxControl_User.cs" />
+    <Compile Include="Game\GUI\FleetCtxControl_User.cs" />
     <Compile Include="Game\GUI\FleetCtxControl_AI.cs" />
     <Compile Include="Game\Framework\FleetCmdItem.cs" />
     <Compile Include="Game\Framework\FacilityItem.cs" />
@@ -95,12 +110,9 @@
     <Compile Include="Generic\IO\MainCameraControl.cs" />
     <Compile Include="Generic\Framework\GameManager.cs" />
     <Compile Include="Generic\Graphics\AGuiButton.cs" />
-    <Compile Include="Generic\Graphics\AHud.cs" />
     <Compile Include="Generic\Graphics\GuiTooltip.cs" />
     <Compile Include="Generic\Graphics\ScaleRelativeToCamera.cs" />
-    <Compile Include="Generic\_Debug\DebugHud.cs" />
     <Compile Include="Generic\Graphics\Billboard.cs" />
-    <Compile Include="Generic\Graphics\GuiCursorHud.cs" />
     <Compile Include="Generic\Graphics\GuiVisibilityModeControlButton.cs" />
     <Compile Include="Game\GUI\GuiGamePlayOptionMenuAcceptButton.cs" />
     <Compile Include="Game\GUI\GuiDateReadout.cs" />
@@ -127,7 +139,6 @@
     <Compile Include="Generic\Graphics\TrackingWidgetFactory.cs" />
     <Compile Include="Game\GUI\GuiGraphicsOptionMenuAcceptButton.cs" />
     <Compile Include="Game\GUI\GuiQualitySettingPopupList.cs" />
-    <Compile Include="Game\GUI\GuiSelectedReadout.cs" />
     <Compile Include="Game\GUI\GuiFocusedReadout.cs" />
     <Compile Include="Generic\Framework\SectorGrid.cs" />
     <Compile Include="Generic\Framework\StarbaseUnitCreator.cs" />
@@ -144,21 +155,39 @@
     <Compile Include="Game\Framework\ShipItem.cs" />
     <Compile Include="Game\GUI\PlanetoidCtxControl.cs" />
     <Compile Include="Game\GUI\SectorCtxControl.cs" />
-    <Compile Include="Game\GUI\ShipCtxControl_Player.cs" />
+    <Compile Include="Game\GUI\ShipCtxControl_User.cs" />
     <Compile Include="Game\GUI\StarCtxControl.cs" />
     <Compile Include="Game\GUI\SystemCtxControl_AI.cs" />
     <Compile Include="Game\GUI\SystemCtxControl.cs" />
-    <Compile Include="Game\GUI\SystemCtxControl_Player.cs" />
+    <Compile Include="Game\GUI\SystemCtxControl_User.cs" />
     <Compile Include="Generic\Graphics\GuiInputModeControlButton.cs" />
     <Compile Include="Generic\IO\OrbitalPlaneInputEventRouter.cs" />
     <Compile Include="Generic\Framework\SectorFactory.cs" />
     <Compile Include="Game\GUI\GuiAudioOptionMenuAcceptButton.cs" />
     <Compile Include="Game\Framework\SectorItem.cs" />
     <Compile Include="Generic\Graphics\MenuCancelButton.cs" />
-    <Compile Include="Game\Graphics\MoonDisplayManager.cs" />
-    <Compile Include="Game\Graphics\PlanetDisplayManager.cs" />
-    <Compile Include="Game\Graphics\StarDisplayManager.cs" />
-    <Compile Include="Game\Graphics\SystemDisplayManager.cs" />
+    <Compile Include="Game\Gameplay\Missile.cs" />
+    <Compile Include="Game\Gameplay\Projectile.cs" />
+    <Compile Include="Generic\IO\SFXManager.cs" />
+    <Compile Include="Generic\Graphics\GuiElement.cs" />
+    <Compile Include="Game\GUI\GuiWindow.cs" />
+    <Compile Include="Game\GUI\HeroGuiElement.cs" />
+    <Compile Include="Game\GUI\OwnerGuiElement.cs" />
+    <Compile Include="Game\GUI\LocationGuiElement.cs" />
+    <Compile Include="Game\GUI\SettlementCompositionGuiElement.cs" />
+    <Compile Include="Game\GUI\StarbaseCompositionGuiElement.cs" />
+    <Compile Include="Game\GUI\StarbasesScreenManager.cs" />
+    <Compile Include="Game\GUI\StrengthGuiElement.cs" />
+    <Compile Include="Game\GUI\HealthGuiElement.cs" />
+    <Compile Include="Generic\_Debug\RowElementIndexer.cs" />
+    <Compile Include="Generic\_Debug\RowOrganizer.cs" />
+    <Compile Include="Game\GUI\SettlementsScreenManager.cs" />
+    <Compile Include="Game\GUI\NetIncomeGuiElement.cs" />
+    <Compile Include="Game\GUI\ResourceHudElement.cs" />
+    <Compile Include="Game\GUI\TextHudElement.cs" />
+    <Compile Include="Game\GUI\ResourcesGuiElement.cs" />
+    <Compile Include="Game\GUI\SystemsScreenManager.cs" />
+    <Compile Include="ThirdParty\MyNguiEventListener.cs" />
     <Compile Include="ThirdParty\MyEnvelopContent.cs" />
     <Compile Include="ThirdParty\MyAStarPointGraph.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -176,7 +205,7 @@
     <Compile Include="Generic\Graphics\ConstantSizeTrackingSprite.cs" />
     <Compile Include="Game\Framework\UniverseCenterItem.cs" />
     <Compile Include="Game\GUI\UniverseCenterCtxControl.cs" />
-    <Compile Include="Game\Graphics\UniverseCenterDisplayManager.cs" />
+    <Compile Include="Generic\_Debug\VisualEffectScale.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">
@@ -203,6 +232,10 @@
       <Name>Ngui</Name>
       <Private>False</Private>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\Plugins\SoundManagerPro\SoundManagerPro.csproj">
+      <Project>{6150de6a-13ce-45c9-9254-1486a6bc6661}</Project>
+      <Name>SoundManagerPro</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\Plugins\SpaceD\SpaceD.csproj">
       <Project>{d1d9e6da-d2ac-4cdc-b8a8-3b749d41ca5e}</Project>
       <Name>SpaceD</Name>
@@ -225,7 +258,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Game\Gameplay\" />
     <Folder Include="Game\_Debug\" />
     <Folder Include="Generic\Deferred\" />
     <Folder Include="Generic\Math\" />

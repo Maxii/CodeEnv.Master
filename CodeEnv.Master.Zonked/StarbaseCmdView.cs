@@ -76,7 +76,7 @@ public class StarbaseCmdView : AUnitCommandView {
     private ITrackingWidget InitializeTrackingLabel() {
         float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
         string starbaseName = Presenter.Model.UnitName;
-        var trackingLabel = TrackingWidgetFactory.Instance.CreateUITrackingLabel(TrackingTarget, WidgetPlacement.AboveRight, minShowDistance);
+        var trackingLabel = TrackingWidgetFactory.Instance.MakeUITrackingLabel(TrackingTarget, WidgetPlacement.AboveRight, minShowDistance);
         trackingLabel.OptionalRootName = starbaseName + CommonTerms.Label;
         trackingLabel.Set(starbaseName);
         return trackingLabel;

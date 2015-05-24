@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ADiscernibleItem.cs
-// Abstract class for Items that can change whether they are discernible by the HumanPlayer.
+// Abstract class for Items that can change whether they are discernible by the UserPlayer.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,20 +23,28 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract class for Items that can change whether they are discernible by the HumanPlayer.
+/// Abstract class for Items that can change whether they are discernible by the UserPlayer.
 /// </summary>
-public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable {
+public abstract class ADiscernibleItem : AItem, IDiscernibleItem, ICameraFocusable, IHighlightable, IEffectsClient {
 
-    private bool _isDiscernible;
-    public bool IsDiscernible {
-        get { return _isDiscernible; }
-        protected set { SetProperty<bool>(ref _isDiscernible, value, "IsDiscernible", OnIsDiscernibleChanged); }
+    private bool _isDiscernibleToUser;
+    public bool IsDiscernibleToUser {
+        get { return _isDiscernibleToUser; }
+        protected set { SetProperty<bool>(ref _isDiscernibleToUser, value, "IsDiscernibleToUser", OnIsDiscernibleToUserChanged); }
     }
 
-    protected ADisplayManager DisplayMgr { get; private set; }
+    /// <summary>
+    /// Indicates whether the visual detail of this Item is discernible to the user. 
+    /// Detail here refers to the mesh(es) and animations, not to the icon, if any.
+    /// </summary>
+    public bool IsVisualDetailDiscernibleToUser {
+        get { return DisplayMgr != null ? IsDiscernibleToUser && DisplayMgr.IsPrimaryMeshInMainCameraLOS : IsDiscernibleToUser; }
+    }
 
-    protected IGameManager _gameMgr;
-    protected bool _isViewMembersOnDiscernibleInitialized;
+    public ADisplayManager DisplayMgr { get; private set; }
+
+    protected EffectsManager EffectsMgr { get; private set; }
+    protected bool _isViewMembersInitialized;
 
     private IGameInputHelper _inputHelper;
     private IHighlighter _highlighter;
@@ -49,38 +57,43 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
         _inputHelper = References.InputHelper;
-        _gameMgr = References.GameManager;
     }
 
     /// <summary>
     /// Called from Start, initializes View-related members of this item 
-    /// that can't wait until the Item first becomes discernible. 
+    /// that aren't initialized in some other manner.
     /// </summary>
     /// <remarks> 
     /// Overrides AItem.InitializeViewMembers() without calling base method as AItem
     /// initializes the HudManager in the base method. Discernible Items wish to defer this
-    /// initialization until first discernible, aka in InitializeViewMembersOnDiscernible()..
+    /// initialization until first discernible.
     /// </remarks>
     protected override void InitializeViewMembers() { }
 
     /// <summary>
-    /// Called when the Item first becomes discernible to the player, this method initializes the 
-    /// View-related members of this item that are not needed until discernible.
+    /// Called when the Item first becomes discernible to the user, this method initializes the 
+    /// View-related members of this item that are not needed until the item is discernible to the user.
     /// </summary>
-    protected virtual void InitializeViewMembersOnDiscernible() {
-        //D.Log("{0}.InitializeViewMembersOnDiscernible() called.", FullName);
+    protected virtual void InitializeViewMembersWhenFirstDiscernibleToUser() {
+        //D.Log("{0}.InitializeViewMembersWhenFirstDiscernibleToUser() called.", FullName);
         _hudManager = InitializeHudManager();
 
         DisplayMgr = InitializeDisplayManager();
-        _subscribers.Add(DisplayMgr.SubscribeToPropertyChanged(dm => dm.InCameraLOS, OnInCameraLOSChanged));
-        // always start enabled as HumanPlayerIntelCoverage must be > None for this method to be called,
+        _subscriptions.Add(DisplayMgr.SubscribeToPropertyChanged(dm => dm.IsInMainCameraLOS, OnIsInMainCameraLosChanged));
+        _subscriptions.Add(DisplayMgr.SubscribeToPropertyChanged(dm => dm.IsPrimaryMeshInMainCameraLOS, OnIsVisualDetailDiscernibleToUserChanged));
+        // always start enabled as UserPlayerIntelCoverage must be > None for this method to be called,
         // or, in the case of SystemItem, its members coverage must be > their starting coverage
-        DisplayMgr.IsDisplayEnabled = true;
+        DisplayMgr.EnableDisplay(true);
 
+        EffectsMgr = InitializeEffectsManager();
         _highlighter = InitializeHighlighter();
     }
 
     protected abstract ADisplayManager InitializeDisplayManager();
+
+    protected virtual EffectsManager InitializeEffectsManager() {
+        return new EffectsManager(this);
+    }
 
     protected virtual IHighlighter InitializeHighlighter() {
         return new Highlighter(this);
@@ -92,7 +105,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        AssessDiscernability();
+        AssessDiscernibleToUser();
     }
 
     #endregion
@@ -106,31 +119,33 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
         AssessHighlighting();
     }
 
-    protected virtual void OnInCameraLOSChanged() {
-        AssessDiscernability();
+    protected virtual void OnIsInMainCameraLosChanged() {
+        AssessDiscernibleToUser();
     }
 
-    protected virtual void OnIsDiscernibleChanged() {
-        if (!IsDiscernible && IsHudShowing) {
+    protected virtual void OnIsDiscernibleToUserChanged() {
+        if (!IsDiscernibleToUser && IsHudShowing) {
             // lost ability to discern this object while showing the HUD so stop showing
             ShowHud(false);
         }
-        if (!_isViewMembersOnDiscernibleInitialized) {
-            D.Assert(IsDiscernible);    // first time change should always be to true
-            InitializeViewMembersOnDiscernible();
-            _isViewMembersOnDiscernibleInitialized = true;
+        if (!_isViewMembersInitialized) {
+            D.Assert(IsDiscernibleToUser);    // first time change should always be true
+            InitializeViewMembersWhenFirstDiscernibleToUser();
+            _isViewMembersInitialized = true;
         }
         AssessHighlighting();
-        //D.Log("{0}.IsDiscernible changed to {1}.", FullName, IsDiscernible);
+        //D.Log("{0}.IsDiscernibleToUser changed to {1}.", FullName, IsDiscernibleToUser);
     }
 
+    protected virtual void OnIsVisualDetailDiscernibleToUserChanged() { }
+
     /// <summary>
-    /// Assesses the discernability of this item. 
+    /// Assesses the discernability of this item to the user.
     /// </summary>
-    protected abstract void AssessDiscernability();
+    protected abstract void AssessDiscernibleToUser();
 
     public virtual void AssessHighlighting() {
-        if (IsDiscernible && IsFocus) {
+        if (IsDiscernibleToUser && IsFocus) {
             ShowHighlights(HighlightID.Focused);
             return;
         }
@@ -149,13 +164,33 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
         }
     }
 
+    public virtual void OnEffectFinished(EffectID effectID) { }
+
+    protected void StartEffect(EffectID effectID) {
+        if (IsVisualDetailDiscernibleToUser) {
+            D.Assert(EffectsMgr != null);   // if DisplayMgr is initialized, so is EffectsMgr
+            EffectsMgr.StartEffect(effectID);
+        }
+        else {
+            // Not going to show the effect. Complete the handshake so any dependancies can continue
+            OnEffectFinished(effectID);
+        }
+    }
+
+    protected void StopEffect(EffectID effectID) {
+        if (EffectsMgr != null) {
+            EffectsMgr.StopEffect(effectID);
+        }
+        // if EffectsMgr never initialized, then caller of StartEffect already got its OnEffectFinished callback
+    }
+
     #endregion
 
-    #region Mouse Events
+    #region Events
 
     protected virtual void OnHover(bool isOver) {
         //D.Log("{0}.OnHover({1}) called.", FullName, isOver);
-        if (IsDiscernible && isOver) {
+        if (IsDiscernibleToUser && isOver) {
             ShowHud(true);
             ShowHoverHighlight(true);
             return;
@@ -166,7 +201,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
 
     protected virtual void OnClick() {
         //D.Log("{0}.OnClick() called.", FullName);
-        if (IsDiscernible) {
+        if (IsDiscernibleToUser) {
             if (_inputHelper.IsLeftMouseButton) {
                 KeyCode notUsed;
                 if (_inputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftAlt, KeyCode.RightAlt)) {
@@ -197,7 +232,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
     protected virtual void OnRightClick() { }
 
     protected virtual void OnDoubleClick() {
-        if (IsDiscernible && _inputHelper.IsLeftMouseButton) {
+        if (IsDiscernibleToUser && _inputHelper.IsLeftMouseButton) {
             OnLeftDoubleClick();
         }
     }
@@ -205,7 +240,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
     protected virtual void OnLeftDoubleClick() { }
 
     protected virtual void OnPress(bool isDown) {
-        if (IsDiscernible && _inputHelper.IsRightMouseButton) {
+        if (IsDiscernibleToUser && _inputHelper.IsRightMouseButton) {
             OnRightPress(isDown);
         }
     }
@@ -224,7 +259,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IHighlightable
     /// Indicates whether this instance is currently eligible to be a camera target for zooming, focusing or following.
     /// e.g. - the camera should not know the object exists when it is not discernible to the human player.
     /// </summary>
-    public virtual bool IsCameraTargetEligible { get { return IsDiscernible; } }
+    public virtual bool IsCameraTargetEligible { get { return IsDiscernibleToUser; } }
 
     public abstract float MinimumCameraViewingDistance { get; }
 

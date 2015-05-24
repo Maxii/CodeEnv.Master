@@ -48,7 +48,7 @@ public class PlanetoidCtxControl : ACtxControl {
 
     protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
-        return selectedFleet != null && selectedFleet.Owner.IsHumanUser;
+        return selectedFleet != null && selectedFleet.Owner.IsUser;
     }
 
     protected override bool IsRemoteFleetMenuItemDisabled(FleetDirective directive) {
@@ -56,7 +56,7 @@ public class PlanetoidCtxControl : ACtxControl {
             case FleetDirective.Attack:
                 return !_remotePlayerOwnedSelectedItem.Owner.IsEnemyOf(_planetoidMenuOperator.Owner);
             case FleetDirective.Explore:
-                return _planetoidMenuOperator.GetHumanPlayerIntelCoverage() == IntelCoverage.Comprehensive;
+                return _planetoidMenuOperator.GetUserIntelCoverage() == IntelCoverage.Comprehensive;
             case FleetDirective.Move:
                 return false;
             case FleetDirective.Guard:

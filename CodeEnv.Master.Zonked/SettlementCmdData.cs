@@ -49,19 +49,19 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private OpeYield _resourcesUsed;
-        public OpeYield ResourcesUsed {
+        private OpeResourceYield _resourcesUsed;
+        public OpeResourceYield ResourcesUsed {
             get { return _resourcesUsed; }
             set {
-                SetProperty<OpeYield>(ref _resourcesUsed, value, "ResourcesUsed");
+                SetProperty<OpeResourceYield>(ref _resourcesUsed, value, "ResourcesUsed");
             }
         }
 
-        private XYield _specialResourcesUsed;
-        public XYield SpecialResourcesUsed {
+        private RareResourceYield _specialResourcesUsed;
+        public RareResourceYield SpecialResourcesUsed {
             get { return _specialResourcesUsed; }
             set {
-                SetProperty<XYield>(ref _specialResourcesUsed, value, "SpecialResourcesUsed");
+                SetProperty<RareResourceYield>(ref _specialResourcesUsed, value, "SpecialResourcesUsed");
             }
         }
 

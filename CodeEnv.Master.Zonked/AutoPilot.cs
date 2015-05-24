@@ -67,7 +67,7 @@ public class AutoPilot : APropertyChangeTracking, IDisposable {
         if (_subscribers == null) {
             _subscribers = new List<IDisposable>();
         }
-        _subscribers.Add(GameTime.Instance.SubscribeToPropertyChanging<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanging));
+        _subscribers.Add(GameTime.Instance.SubscribeToPropertyChanging<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanging));
         onDestinationReached += OnDestinationReached;
     }
 
@@ -121,7 +121,7 @@ public class AutoPilot : APropertyChangeTracking, IDisposable {
         onDestinationReached();
     }
 
-    private void OnGameSpeedChanging(GameClockSpeed newGameSpeed) {
+    private void OnGameSpeedChanging(GameSpeed newGameSpeed) {
         _courseUpdateFrequency *= GameTime.Instance.GameSpeed.SpeedMultiplier() / newGameSpeed.SpeedMultiplier();
     }
 

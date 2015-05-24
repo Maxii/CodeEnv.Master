@@ -18,6 +18,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
     using UnityEngine;
@@ -28,16 +29,10 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipOrbitSlot : AOrbitSlot {
 
-        /// <summary>
-        /// Raised if and when <c>OrbitedObject</c> dies. Ships should assign their
-        /// method that breaks them from orbit to this event. The event automatically 
-        /// unsubscribes all subscribers after it is called.
-        /// </summary>
-        public event Action onOrbitedObjectDeathOneShot;
-
         public IShipOrbitable OrbitedObject { get; private set; }
 
-        private IOrbiterForShips _orbiter;
+        private IShipOrbitSimulator _orbitSimulator;
+        private IList<IShipItem> _orbitingShips;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ShipOrbitSlot"/> class. 
@@ -60,49 +55,51 @@ namespace CodeEnv.Master.GameContent {
         public ShipOrbitSlot(float innerRadius, float outerRadius, IShipOrbitable orbitedObject, GameTimeDuration orbitPeriod)
             : base(innerRadius, outerRadius, orbitedObject.IsMobile, orbitPeriod) {
             OrbitedObject = orbitedObject;
-            var mortalOrbitedObject = orbitedObject as IMortalItem;
-            if (mortalOrbitedObject != null) {
-                mortalOrbitedObject.onDeathOneShot += OnOrbitedObjectDeath;
-            }
+            _orbitingShips = new List<IShipItem>();
         }
 
+
         /// <summary>
-        /// Places the ship within this orbit and commences orbital movement if not already underway.
+        /// Notifies the ShipOrbitSlot that the provided ship is preparing to assume orbit around <c>OrbitedObject</c>.
+        /// Returns the OrbitSimulator for the ship to attach too.
         /// </summary>
         /// <param name="ship">The ship.</param>
-        public void AssumeOrbit(IShipItem ship) {
-            if (_orbiter == null) {
+        /// <returns></returns>
+        public IShipOrbitSimulator PrepareToAssumeOrbit(IShipItem ship) {
+            if (_orbitSimulator == null) {
+                D.Assert(_orbitingShips.Count == Constants.Zero);
                 GameObject orbitedObjectGo = OrbitedObject.Transform.gameObject;
-                _orbiter = References.GeneralFactory.MakeOrbiterInstance(orbitedObjectGo, _isOrbitedObjectMobile, true, _orbitPeriod, "ShipOrbiter") as IOrbiterForShips;
+                _orbitSimulator = References.GeneralFactory.MakeOrbitSimulatorInstance(orbitedObjectGo, _isOrbitedObjectMobile, true, _orbitPeriod, "ShipOrbitSimulator") as IShipOrbitSimulator;
             }
-            ship.AttachTo(_orbiter);
-            _orbiter.IsOrbiterInMotion = true;
-            D.Log("{0} has assumed orbit around {1}.", ship.FullName, OrbitedObject.FullName);
+            _orbitingShips.Add(ship);
+            _orbitSimulator.IsActive = true;
+            D.Log("{0} is preparing to assume orbit around {1}.", ship.FullName, OrbitedObject.FullName);
             float shipOrbitRadius = Vector3.Distance(ship.Position, OrbitedObject.Position);
             if (!Contains(shipOrbitRadius)) {
-                D.Warn("{0} has assumed orbit around {2} but not within {3}. Ship's current orbit radius is {1}.", ship.FullName, shipOrbitRadius, OrbitedObject.FullName, this);
+                D.Warn("{0} is preparing to assume orbit around {2} but not within {3}. Ship's current orbit radius is {1}.", ship.FullName, shipOrbitRadius, OrbitedObject.FullName, this);
             }
+            return _orbitSimulator;
         }
 
         /// <summary>
-        /// Breaks the ship from this orbit. If this was the last ship in orbit, the orbital movement is disabled
-        /// until a ship again assumes orbit.
+        /// Notifys the orbit slot that the provided ship has left orbit. If this is the last ship in orbit, the orbitSimulator is deactiveated/destroyed.
         /// </summary>
-        /// <param name="orbitingShip">The orbiting ship.</param>
-        public void BreakOrbit(IShipItem orbitingShip) {
-            D.Assert(_orbiter != null);
-            //D.Log("{0} attempting to break orbit around {1}.", orbitingShip.FullName, OrbitedObject.FullName);
-            var orbitingShips = _orbiter.Transform.gameObject.GetSafeInterfacesInChildren<IShipItem>();
-            var ship = orbitingShips.Single(s => s == orbitingShip);
-            var remainingShips = orbitingShips.Except(ship);
-            ship.ReattachToParentFleetContainer();
+        /// <param name="ship">The ship that just left orbit.</param>
+        public void OnLeftOrbit(IShipItem ship) {
+            D.Assert(_orbitSimulator != null);
+            var isRemoved = _orbitingShips.Remove(ship);
+            D.Assert(isRemoved);
             D.Log("{0} has left orbit around {1}.", ship.FullName, OrbitedObject.FullName);
             float shipOrbitRadius = Vector3.Distance(ship.Position, OrbitedObject.Position);
             if (!Contains(shipOrbitRadius)) {
-                D.Warn("{0} orbit radius of {1} is not contained within {2}'s {3}.", ship.FullName, shipOrbitRadius, OrbitedObject.FullName, this);
+                D.Warn("{0} is leaving orbit of {1} but not from within its orbit slot. ShipOrbitRadius: {2}, OrbitSlot: {3}.",
+                    ship.FullName, OrbitedObject.FullName, shipOrbitRadius, this);
             }
-            if (!remainingShips.Any()) {
-                _orbiter.IsOrbiterInMotion = false; // leave the orbiter object for future visitors
+            if (_orbitingShips.Count == Constants.Zero) {
+                _orbitSimulator.IsActive = false;
+                D.Log("Destroying {0}'s {1}.", OrbitedObject.FullName, typeof(IOrbitSimulator).Name);
+                GameObject.Destroy(_orbitSimulator.Transform.gameObject);
+                // IMPROVE could also keep it around for future uses as rigidbody.isKinematic = true so not using up physics engine cycles
             }
         }
 
@@ -124,15 +121,6 @@ namespace CodeEnv.Master.GameContent {
             }
             //D.Log("{0}'s distance {1:0.#} from {2} is not within {2}'s {3}.", ship.FullName, shipDistance, OrbitedObject.FullName, this);
             return false;
-        }
-
-        private void OnOrbitedObjectDeath(IMortalItem orbitedObject) {
-            if (onOrbitedObjectDeathOneShot != null) {
-                onOrbitedObjectDeathOneShot();
-                onOrbitedObjectDeathOneShot = null;
-            }
-            // the _orbiter will be disabled when the last ship breaks orbit
-            // the _orbiter GO will be destroyed when its parent OrbitedObject is destroyed
         }
 
         public override string ToString() {

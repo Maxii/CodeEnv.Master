@@ -129,7 +129,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected IList<AUnitElementItemData> ElementsData { get; private set; }
-        protected IDictionary<AUnitElementItemData, IList<IDisposable>> _subscribers;
+        protected IDictionary<AUnitElementItemData, IList<IDisposable>> _subscriptions;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ACommandItemData" /> class.

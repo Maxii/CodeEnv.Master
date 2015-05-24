@@ -22,6 +22,7 @@ namespace CodeEnv.Master.Common {
     /// <summary>
     /// Abstract Base AGameEvent that holds a StringBuilder.
     /// </summary>
+    [Obsolete]
     public abstract class AStringBuilderTextEvent : AGameEvent {
 
         /// <summary>

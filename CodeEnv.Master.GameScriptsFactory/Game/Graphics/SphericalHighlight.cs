@@ -74,7 +74,7 @@ public class SphericalHighlight : AMonoSingleton<SphericalHighlight>, ISpherical
     }
 
     private ITrackingWidget InitializeTrackingLabel() {
-        var trackingLabel = TrackingWidgetFactory.Instance.CreateUITrackingLabel(_target);
+        var trackingLabel = TrackingWidgetFactory.Instance.MakeUITrackingLabel(_target);
         trackingLabel.OptionalRootName = GetType().Name;
         return trackingLabel;
     }

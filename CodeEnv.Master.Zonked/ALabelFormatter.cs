@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// Abstract generic class for Label Formatters.
     /// </summary>
     //public abstract class ALabelFormatter : ALabelFormatterBase {
-        //public abstract class ALabelFormatter<ReportType> : ALabelFormatterBase where ReportType : AItemReport {
+    //public abstract class ALabelFormatter<ReportType> : ALabelFormatterBase where ReportType : AItemReport {
     public abstract class ALabelFormatter<ReportType> : ALabelFormatterBase where ReportType : class {
 
         public bool IncludeUnknown { get; set; }
@@ -32,8 +32,8 @@ namespace CodeEnv.Master.GameContent {
 
         protected IDictionary<LabelLineID, string> _labelLineLookup;
 
-        public IList<string> GetLabelLines(LabelID labelID) {
-            _labelLineLookup = GetLabelLineLookup(labelID);
+        public IList<string> GetLabelLines(DisplayTargetID displayTgtID) {
+            _labelLineLookup = GetLabelLineLookup(displayTgtID);
 
             var formattedLines = new List<string>();
             string formattedLine;
@@ -48,9 +48,9 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Provides the lookup table for label lines, sourced from the derived class' labelIDLookup table.
         /// </summary>
-        /// <param name="labelID">The label identifier.</param>
+        /// <param name="displayTgtID">The label identifier.</param>
         /// <returns></returns>
-        protected abstract IDictionary<LabelLineID, string> GetLabelLineLookup(LabelID labelID);
+        protected abstract IDictionary<LabelLineID, string> GetLabelLineLookup(DisplayTargetID displayTgtID);
 
         /// <summary>
         /// Tries to return the formatted line associated with this lineID, returning <c>true</c> if

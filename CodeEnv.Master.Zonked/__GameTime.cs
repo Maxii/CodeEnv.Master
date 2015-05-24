@@ -43,7 +43,7 @@ namespace CodeEnv.Master.Common.Unity {
     [Serializable]
     public class __GameTime : IDisposable {
 
-        public static GameClockSpeed GameSpeed { get; private set; }
+        public static GameSpeed GameSpeed { get; private set; }
 
         /// <tPrefsValue>
         /// The amount of time in seconds elapsed since the last Frame 

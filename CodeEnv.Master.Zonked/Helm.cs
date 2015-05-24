@@ -721,7 +721,7 @@ public class Helm : APropertyChangeTracking, IDisposable {
         Vector3 currentPosition = _data.Position;
         Vector3 vectorToLocation = location - currentPosition;
         float distanceToLocation = vectorToLocation.magnitude;
-        float closeEnoughDistance = location.IsSame(_targetInfo.Destination) ? _targetInfo.CloseEnoughDistance : _waypointCloseEnoughDistance;
+        float closeEnoughDistance = location.IsSameAs(_targetInfo.Destination) ? _targetInfo.CloseEnoughDistance : _waypointCloseEnoughDistance;
         if (distanceToLocation < closeEnoughDistance) {
             // already inside close enough distance
             return true;

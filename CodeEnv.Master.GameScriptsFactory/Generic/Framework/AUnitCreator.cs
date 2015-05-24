@@ -77,7 +77,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     }
 
     private void Subscribe() {
-        _gameMgr.onCurrentStateChanged += OnGameStateChanged;
+        _gameMgr.onGameStateChanged += OnGameStateChanged;
         SubscribeStaticallyOnce();
     }
 
@@ -98,7 +98,6 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     private void OnGameStateChanged() {
         var gameState = _gameMgr.CurrentState;
-
         switch (gameState) {
             case GameState.Building:
                 _owner = ValidateAndInitializeOwner();
@@ -200,6 +199,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             var runtimeDelay = new GameTimeDuration(hourDelay, dayDelay, yearDelay);
             if (runtimeDelay == default(GameTimeDuration)) {
                 // delayOperations selected but delay is 0 so begin operations now
+                //D.Log("Beginning Unit Operations with 0 hours delay.");
                 BuildDeployAndBeginUnitOperations();
             }
             else {
@@ -253,12 +253,12 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     private void BeginUnitOperations() {
         LogEvent();
+
         BeginElementsOperations();
         BeginCommandOperations();
-        UnityUtility.WaitOneToExecute((wasKilled) => {
+        UnityUtility.WaitOneToExecute(() => {
             // delay 1 frame to allow Element and Command Idling_EnterState to execute
             RecordInStaticCollections();
-            //__SetIntelCoverage();
             __IssueFirstUnitCommand();
             RemoveCreatorScript();
         });
@@ -282,34 +282,48 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         IList<WeaponStat> statsList = new List<WeaponStat>(quantity);
         for (int i = 0; i < quantity; i++) {
             DistanceRange range;
-            int reloadPeriod;
+            float accuracy;
+            float reloadPeriod;
             string name;
             float strengthValue;
-            ArmamentCategory armament = Enums<ArmamentCategory>.GetRandom(excludeDefault: true);
+            CombatStrength strength;
+            WeaponStat weapStat;
+            ArmamentCategory armament = Enums<ArmamentCategory>.GetRandomExcept(ArmamentCategory.None);
+            //ArmamentCategory armament = ArmamentCategory.Beam;
+            //ArmamentCategory armament = ArmamentCategory.Projectile;
+            //ArmamentCategory armament = ArmamentCategory.Missile;
             switch (armament) {
                 case ArmamentCategory.Beam:
                     range = DistanceRange.Short;
-                    reloadPeriod = UnityEngine.Random.Range(1, 2);
-                    name = "Phaser";
-                    strengthValue = UnityEngine.Random.Range(3F, 4F);
+                    accuracy = UnityEngine.Random.Range(0.90F, Constants.OneF);
+                    reloadPeriod = UnityEngine.Random.Range(3F, 5F);
+                    name = "BeamPlatform";
+                    float duration = 2F;
+                    strengthValue = UnityEngine.Random.Range(6F, 8F);
+                    strength = new CombatStrength(armament, strengthValue);
+                    weapStat = new BeamWeaponStat(armament, strength, range, accuracy, reloadPeriod, 0F, 0F, duration, name);
                     break;
                 case ArmamentCategory.Missile:
                     range = DistanceRange.Long;
-                    reloadPeriod = UnityEngine.Random.Range(4, 6);
-                    name = "Torpedo";
+                    accuracy = UnityEngine.Random.Range(0.95F, Constants.OneF);
+                    reloadPeriod = UnityEngine.Random.Range(4F, 6F);
+                    name = "MissileLauncher";
                     strengthValue = UnityEngine.Random.Range(5F, 6F);
+                    strength = new CombatStrength(armament, strengthValue);
+                    weapStat = new WeaponStat(armament, strength, range, accuracy, reloadPeriod, 0F, 0F, name);
                     break;
-                case ArmamentCategory.Particle:
+                case ArmamentCategory.Projectile:
                     range = DistanceRange.Medium;
-                    reloadPeriod = UnityEngine.Random.Range(2, 4);
-                    name = "Disruptor";
+                    accuracy = UnityEngine.Random.Range(0.90F, Constants.OneF);
+                    reloadPeriod = UnityEngine.Random.Range(2F, 4F);
+                    name = "ProjectileLauncher";
                     strengthValue = UnityEngine.Random.Range(4F, 5F);
+                    strength = new CombatStrength(armament, strengthValue);
+                    weapStat = new WeaponStat(armament, strength, range, accuracy, reloadPeriod, 0F, 0F, name);
                     break;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(armament));
             }
-            CombatStrength strength = new CombatStrength(armament, strengthValue);
-            WeaponStat weapStat = new WeaponStat(strength, range, reloadPeriod, 0F, 0F, name);
             statsList.Add(weapStat);
         }
         return statsList;
@@ -329,7 +343,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
                 case ArmamentCategory.Missile:
                     strengthValue = UnityEngine.Random.Range(3F, 8F);
                     break;
-                case ArmamentCategory.Particle:
+                case ArmamentCategory.Projectile:
                     name = "Armor";
                     strengthValue = UnityEngine.Random.Range(2F, 3F);
                     break;
@@ -348,14 +362,16 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
         for (int i = 0; i < quantity; i++) {
             string name = string.Empty;
             DistanceRange range = Enums<DistanceRange>.GetRandom(excludeDefault: true);
+            //DistanceRange range = DistanceRange.Long;
             switch (range) {
                 case DistanceRange.Short:
-                    name = "ProximitySensor";
+                    name = "ProximityDetector";
                     break;
                 case DistanceRange.Medium:
+                    name = "RegularSensors";
                     break;
                 case DistanceRange.Long:
-                    name = "FarAwaySensor";
+                    name = "DeepScanArray";
                     break;
                 case DistanceRange.None:
                 default:
@@ -368,12 +384,13 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     }
 
     private void CreateElementStats() {
+        LogEvent();
         _elementStats = isCompositionPreset ? CreateElementStatsFromChildren() : CreateRandomElementStats();
     }
 
     private IList<ElementStatType> CreateElementStatsFromChildren() {
         LogEvent();
-        var elements = gameObject.GetSafeMonoBehaviourComponentsInChildren<ElementType>();
+        var elements = gameObject.GetSafeMonoBehavioursInChildren<ElementType>();
         var elementStats = new List<ElementStatType>(elements.Count());
         var elementCategoriesUsedCount = new Dictionary<ElementCategoryType, int>();
         foreach (var element in elements) {
@@ -431,7 +448,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
             ElementType element = null;
             if (isCompositionPreset) {
                 // find a preExisting element of the right category first to provide to Make
-                var categoryElements = gameObject.GetSafeMonoBehaviourComponentsInChildren<ElementType>()
+                var categoryElements = gameObject.GetSafeMonoBehavioursInChildren<ElementType>()
                     .Where(e => GetCategory(e).Equals(GetCategory(elementStat)));
                 var categoryElementsStillAvailable = categoryElements.Except(elements);
                 element = categoryElementsStillAvailable.First();
@@ -540,39 +557,39 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
     protected abstract void __IssueFirstUnitCommand();
 
     private Player ValidateAndInitializeOwner() {
-        Player humanPlayer = _gameMgr.HumanPlayer;
-        if (isOwnerPlayer) {
-            return humanPlayer;
+        Player userPlayer = _gameMgr.UserPlayer;
+        if (isOwnerUser) {
+            return userPlayer;
         }
         DiplomaticRelationship desiredRelationship;
-        switch (ownerRelationshipWithPlayer) {
-            case __DiploStateWithPlayer.Ally:
+        switch (ownerRelationshipWithUser) {
+            case __DiploStateWithUser.Ally:
                 desiredRelationship = DiplomaticRelationship.Ally;
                 break;
-            case __DiploStateWithPlayer.Friend:
+            case __DiploStateWithUser.Friend:
                 desiredRelationship = DiplomaticRelationship.Friend;
                 break;
-            case __DiploStateWithPlayer.Neutral:
+            case __DiploStateWithUser.Neutral:
                 desiredRelationship = DiplomaticRelationship.Neutral;
                 break;
-            case __DiploStateWithPlayer.ColdWar:
+            case __DiploStateWithUser.ColdWar:
                 desiredRelationship = DiplomaticRelationship.ColdWar;
                 break;
-            case __DiploStateWithPlayer.War:
+            case __DiploStateWithUser.War:
                 desiredRelationship = DiplomaticRelationship.War;
                 break;
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(ownerRelationshipWithPlayer));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(ownerRelationshipWithUser));
         }
-        IEnumerable<Player> aiOwnerCandidates = _gameMgr.AIPlayers.Where(aiPlayer => aiPlayer.GetRelations(humanPlayer) == desiredRelationship);
+        IEnumerable<Player> aiOwnerCandidates = _gameMgr.AIPlayers.Where(aiPlayer => aiPlayer.GetRelations(userPlayer) == desiredRelationship);
 
         if (!aiOwnerCandidates.Any()) {
-            D.Log("{0}.{1} couldn't find an AIPlayer with desired Human relationship = {2}.", UnitName, GetType().Name, desiredRelationship.GetName());
+            D.Log("{0}.{1} couldn't find an AIPlayer with desired user relationship = {2}.", UnitName, GetType().Name, desiredRelationship.GetName());
             desiredRelationship = DiplomaticRelationship.None;
-            aiOwnerCandidates = _gameMgr.AIPlayers.Where(aiPlayer => aiPlayer.GetRelations(humanPlayer) == desiredRelationship);
+            aiOwnerCandidates = _gameMgr.AIPlayers.Where(aiPlayer => aiPlayer.GetRelations(userPlayer) == desiredRelationship);
         }
         Player aiOwner = aiOwnerCandidates.Shuffle().First();
-        D.Log("{0}.{1} picked AI Owner {2}. Human relationship = {3}.", UnitName, GetType().Name, aiOwner.LeaderName, desiredRelationship.GetName());
+        D.Log("{0}.{1} picked AI Owner {2}. User relationship = {3}.", UnitName, GetType().Name, aiOwner.LeaderName, desiredRelationship.GetName());
         return aiOwner;
     }
 
@@ -599,7 +616,7 @@ public abstract class AUnitCreator<ElementType, ElementCategoryType, ElementData
 
     protected virtual void Unsubscribe() {
         if (_gameMgr != null) {
-            _gameMgr.onCurrentStateChanged -= OnGameStateChanged;
+            _gameMgr.onGameStateChanged -= OnGameStateChanged;
         }
     }
 

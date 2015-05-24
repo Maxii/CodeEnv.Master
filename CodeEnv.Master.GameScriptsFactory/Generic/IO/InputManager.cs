@@ -86,7 +86,6 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     private GameInputHelper _inputHelper;
     private PlayerViews _playerViews;
     private GameManager _gameMgr;
-    private IList<IDisposable> _subscribers;
     private SceneLevel _currentScene;
 
     #region Initialization
@@ -121,7 +120,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     }
 
     private void InitializeUIEventDispatcher() {
-        UIEventDispatcher = UIRoot.list.Single().gameObject.GetSafeMonoBehaviourComponentInChildren<UICamera>();
+        UIEventDispatcher = UIRoot.list.Single().gameObject.GetSafeMonoBehaviourInChildren<UICamera>();
 
         //UIEventDispatcher.eventType = UICamera.EventType.UI_2D;
         UIEventDispatcher.eventType = UICamera.EventType.UI_3D;
@@ -132,7 +131,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     }
 
     private void InitializeWorldEventDispatcher() {
-        WorldEventDispatcher = MainCameraControl.Instance.gameObject.GetSafeMonoBehaviourComponentInChildren<UICamera>();
+        WorldEventDispatcher = MainCameraControl.Instance.gameObject.GetSafeMonoBehaviourInChildren<UICamera>();
         WorldEventDispatcher.eventType = UICamera.EventType.World_3D;
         WorldEventDispatcher.useKeyboard = true;
         WorldEventDispatcher.useMouse = true;
@@ -152,9 +151,8 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     }
 
     private void Subscribe() {
-        _subscribers = new List<IDisposable>();
-        _subscribers.Add(_gameMgr.SubscribeToPropertyChanging<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanging));
-        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
+        _gameMgr.onGameStateChanging += OnGameStateChanging;
+        _gameMgr.onGameStateChanged += OnGameStateChanged;
         _gameMgr.onSceneLoading += OnSceneLoading;
         _gameMgr.onSceneLoaded += OnSceneLoaded;
     }
@@ -171,7 +169,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     }
 
     private void OnGameStateChanging(GameState incomingState) {
-        var previousState = GameManager.Instance.CurrentState;
+        var previousState = _gameMgr.CurrentState;
         //D.Log("{0}_{1} received a GameStateChanging event. Previous GameState = {2}.", GetType().Name, InstanceCount, previousState.GetName());
         if (previousState == GameState.Lobby) {
             InputMode = GameInputMode.NoInput;
@@ -182,12 +180,12 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     }
 
     private void OnGameStateChanged() {
-        var enteringGameState = GameManager.Instance.CurrentState;
+        var gameState = _gameMgr.CurrentState;
         //D.Log("{0}_{1} received a GameStateChanged event. New GameState = {2}.", GetType().Name, InstanceCount, enteringGameState.GetName());
-        if (enteringGameState == GameState.Lobby) {
+        if (gameState == GameState.Lobby) {
             InputMode = GameInputMode.PartialScreenPopup;   // as the Lobby only has UIPopup layer screens, this is the 'normal' InputMode for the Lobby
         }
-        if (enteringGameState == GameState.Running) {
+        if (gameState == GameState.Running) {
             InputMode = GameInputMode.Normal;
         }
     }
@@ -636,8 +634,8 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     }
 
     private void Unsubscribe() {
-        _subscribers.ForAll(d => d.Dispose());
-        _subscribers.Clear();
+        _gameMgr.onGameStateChanging -= OnGameStateChanging;
+        _gameMgr.onGameStateChanged -= OnGameStateChanged;
         _gameMgr.onSceneLoading -= OnSceneLoading;
         _gameMgr.onSceneLoaded -= OnSceneLoaded;
         UnsubscribeToWorldMouseEvents();

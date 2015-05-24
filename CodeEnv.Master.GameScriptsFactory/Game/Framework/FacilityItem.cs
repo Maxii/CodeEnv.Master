@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Class for AUnitElementItems that are Facilities.
 /// </summary>
-public class FacilityItem : AUnitElementItem {
+public class FacilityItem : AUnitElementItem, IFacilityItem {
 
     [Tooltip("The type of Facility")]
     public FacilityCategory category;
@@ -56,19 +56,17 @@ public class FacilityItem : AUnitElementItem {
 
     private FacilityPublisher _publisher;
     public FacilityPublisher Publisher {
-        get { return _publisher = _publisher ?? new FacilityPublisher(Data); }
+        get { return _publisher = _publisher ?? new FacilityPublisher(Data, this); }
     }
-
-    private Revolver _revolver;
 
     #region Initialization
 
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
         var meshRenderer = gameObject.GetComponentInImmediateChildren<Renderer>();
-        Radius = meshRenderer.bounds.extents.magnitude;
+        Radius = meshRenderer.bounds.extents.magnitude; // ~ 0.25
         // IMPROVE for now, a Facilities collider is a capsule with size values preset in its prefab 
-        // D.Log("Facility {0}.Radius = {1}.", FullName, Radius);
+        //D.Log("Facility {0}.Radius = {1}.", FullName, Radius);
     }
 
     protected override void InitializeModelMembers() {
@@ -77,18 +75,13 @@ public class FacilityItem : AUnitElementItem {
         CurrentState = FacilityState.None;
     }
 
-    protected override void InitializeViewMembersOnDiscernible() {
-        base.InitializeViewMembersOnDiscernible();
-        _revolver = gameObject.GetComponentInChildren<Revolver>();
-        // TODO Revolver settings and distance controls, Revolvers control their own enabled state based on visibility
-    }
-
     protected override HudManager InitializeHudManager() {
-        var hudManager = new HudManager(Publisher);
-        hudManager.AddContentToUpdate(HudManager.UpdatableLabelContentID.IntelState);
-        return hudManager;
+        return new HudManager(Publisher);
     }
 
+    protected override AIconDisplayManager MakeDisplayManager() {
+        return new FacilityDisplayManager(this);
+    }
 
     #endregion
 
@@ -98,6 +91,8 @@ public class FacilityItem : AUnitElementItem {
         base.CommenceOperations();
         CurrentState = FacilityState.Idling;
     }
+
+    public FacilityReport GetUserReport() { return Publisher.GetUserReport(); }
 
     public FacilityReport GetReport(Player player) { return Publisher.GetReport(player); }
 
@@ -175,7 +170,7 @@ public class FacilityItem : AUnitElementItem {
     #region View Methods
 
     public override void AssessHighlighting() {
-        if (IsDiscernible) {
+        if (IsDiscernibleToUser) {
             if (IsFocus) {
                 if (Command.IsSelected) {
                     ShowHighlights(HighlightID.Focused, HighlightID.UnitElement);
@@ -192,21 +187,28 @@ public class FacilityItem : AUnitElementItem {
         ShowHighlights(HighlightID.None);
     }
 
-    protected override ResponsiveTrackingSprite MakeIcon() {
-        var icon = TrackingWidgetFactory.Instance.CreateResponsiveTrackingSprite(this, TrackingWidgetFactory.IconAtlasID.Fleet,
-            new Vector2(12, 12), WidgetPlacement.Over);
-        icon.Set("FleetIcon_Unknown");
-        return icon;
-    }
-
-    protected override void OnIsDiscernibleChanged() {
-        base.OnIsDiscernibleChanged();
-        _revolver.enabled = IsDiscernible;  // Revolvers disable when invisible, but I also want to disable if IntelCoverage disappears
+    protected override IconInfo MakeIconInfo() {
+        var report = GetUserReport();
+        GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
+        return new IconInfo("FleetIcon_Unknown", AtlasID.Fleet, iconColor);
     }
 
     #endregion
 
-    #region Mouse Events
+    #region Events
+
+    //protected override void OnHover(bool isOver) {
+    //    //base.OnHover(isOver);
+    //}
+
+    //void OnTooltip(bool toShow) {
+    //    if (toShow) {
+    //        Tooltip.Show(FacilityDisplayInfoFactory.Instance.MakeInstance(GetUserReport()));
+    //    }
+    //    else {
+    //        Tooltip.Hide();
+    //    }
+    //}
 
     #endregion
 
@@ -245,10 +247,9 @@ public class FacilityItem : AUnitElementItem {
         // TODO register as available
     }
 
-    void Idling_OnWeaponReady(Weapon weapon) {
+    void Idling_OnWeaponReadyAndEnemyInRange(Weapon weapon) {
         LogEvent();
-        //TryFireOnAnyTarget(weapon);
-        Fire(weapon);
+        FindTargetAndFire(weapon);
     }
 
     void Idling_ExitState() {
@@ -276,15 +277,9 @@ public class FacilityItem : AUnitElementItem {
         CurrentState = FacilityState.Idling;
     }
 
-    void ExecuteAttackOrder_OnWeaponReady(Weapon weapon) {
+    void ExecuteAttackOrder_OnWeaponReadyAndEnemyInRange(Weapon weapon) {
         LogEvent();
-        if (_primaryTarget != null) {
-            //D.Log("{0}.{1} firing at {2} from {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
-            Fire(weapon, _primaryTarget);
-        }
-        else {
-            Fire(weapon);
-        }
+        FindTargetAndFire(weapon, _primaryTarget);
     }
 
     void ExecuteAttackOrder_ExitState() {
@@ -303,9 +298,9 @@ public class FacilityItem : AUnitElementItem {
         yield return null;  // required immediately after Call() to avoid FSM bug
     }
 
-    void ExecuteRepairOrder_OnWeaponReady(Weapon weapon) {
+    void ExecuteRepairOrder_OnWeaponReadyAndEnemyInRange(Weapon weapon) {
         LogEvent();
-        Fire(weapon);
+        FindTargetAndFire(weapon);
     }
 
     void ExecuteRepairOrder_ExitState() {
@@ -318,26 +313,28 @@ public class FacilityItem : AUnitElementItem {
 
     IEnumerator Repairing_EnterState() {
         D.Log("{0}.Repairing_EnterState called.", FullName);
-        StartAnimation(MortalAnimations.Repairing);
-        yield return new WaitForSeconds(2);
-        Data.CurrentHitPoints += 0.5F * (Data.MaxHitPoints - Data.CurrentHitPoints);
-        D.Log("{0}'s repair is 50% complete.", FullName);
-        yield return new WaitForSeconds(3);
-        Data.CurrentHitPoints = Data.MaxHitPoints;
+        StartEffect(EffectID.Repairing);
+
+        var repairCompleteHitPoints = Data.MaxHitPoints * 0.90F;
+        while (Data.CurrentHitPoints < repairCompleteHitPoints) {
+            var repairedHitPts = 0.1F * (Data.MaxHitPoints - Data.CurrentHitPoints);
+            Data.CurrentHitPoints += repairedHitPts;
+            D.Log("{0} repaired {1:0.#} hit points.", FullName, repairedHitPts);
+            yield return new WaitForSeconds(10F);
+        }
 
         Data.Countermeasures.ForAll(cm => cm.IsOperational = true);
         Data.Weapons.ForAll(w => w.IsOperational = true);
         Data.Sensors.ForAll(s => s.IsOperational = true);
+        D.Log("{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
 
-        D.Log("{0}'s repair is 100% complete.", FullName);
-        StopAnimation(MortalAnimations.Repairing);
+        StopEffect(EffectID.Repairing);
         Return();
     }
 
-    void Repairing_OnWeaponReady(Weapon weapon) {
+    void Repairing_OnWeaponReadyAndEnemyInRange(Weapon weapon) {
         LogEvent();
-        //TryFireOnAnyTarget(weapon);
-        Fire(weapon);
+        FindTargetAndFire(weapon);
     }
 
     void Repairing_ExitState() {
@@ -385,33 +382,24 @@ public class FacilityItem : AUnitElementItem {
 
     void Dead_EnterState() {
         LogEvent();
-        StartAnimation(MortalAnimations.Dying);
+        StartEffect(EffectID.Dying);
     }
 
-    void Dead_OnShowCompletion() {
+    void Dead_OnEffectFinished(EffectID effectID) {
         LogEvent();
-        __DestroyMe(3F);
+        __DestroyMe();
     }
 
     #endregion
 
     #region StateMachine Support Methods
 
-    /// <summary>
-    /// Attempts to fire the provided weapon at a target within range.
-    /// </summary>
-    /// <param name="weapon">The weapon.</param>
-    //private void TryFireOnAnyTarget(Weapon weapon) {
-    //    if (_weaponRangeMonitorLookup[weapon.MonitorID].__TryGetRandomEnemyTarget(out _attackTarget)) {
-    //        D.Log("{0}.{1} firing at {2} from State {3}.", FullName, weapon.Name, _attackTarget.FullName, CurrentState.GetName());
-    //        //_attackStrength = weapon.Strength;
-    //        _attackingWeapon = weapon;
-    //        Call(FacilityState.Attacking);
-    //    }
-    //    else {
-    //        D.Warn("{0}.{1} could not lockon to a target from State {2}.", FullName, weapon.Name, CurrentState.GetName());
-    //    }
-    //}
+    public override void OnEffectFinished(EffectID effectID) {
+        base.OnEffectFinished(effectID);
+        if (CurrentState == FacilityState.Dead) {   // OPTIMIZE avoids 'method not found' warning spam
+            RelayToCurrentState(effectID);
+        }
+    }
 
     #endregion
 
@@ -436,6 +424,33 @@ public class FacilityItem : AUnitElementItem {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region Nested Classes
+
+    /// <summary>
+    /// Enum defining the states a Facility can operate in.
+    /// </summary>
+    public enum FacilityState {
+
+        None,
+
+        Idling,
+
+        ExecuteAttackOrder,
+
+        //Attacking,
+
+        Repairing,
+
+        Refitting,
+
+        Disbanding,
+
+        Dead
+
+    }
+
+    #endregion
 
     #region Distributed Damage Archive
 

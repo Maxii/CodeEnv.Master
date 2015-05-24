@@ -29,8 +29,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SettlementLabelFormatter : ALabelFormatter<SettlementReport> {
 
-        private static IDictionary<LabelID, IDictionary<LabelLineID, string>> _labelLookup = new Dictionary<LabelID, IDictionary<LabelLineID, string>>() {
-            { LabelID.CursorHud, new Dictionary<LabelLineID, string>() {
+        private static IDictionary<DisplayTargetID, IDictionary<LabelLineID, string>> _labelLookup = new Dictionary<DisplayTargetID, IDictionary<LabelLineID, string>>() {
+            { DisplayTargetID.CursorHud, new Dictionary<LabelLineID, string>() {
                 {LabelLineID.Name, "Name: {0}"},
                 {LabelLineID.ParentName, "Parent: {0}"},
                 {LabelLineID.Owner, "Owner: {0}"},
@@ -56,8 +56,8 @@ namespace CodeEnv.Master.GameContent {
 
         public SettlementLabelFormatter() { }
 
-        protected override IDictionary<LabelLineID, string> GetLabelLineLookup(LabelID labelID) {
-            return _labelLookup[labelID];
+        protected override IDictionary<LabelLineID, string> GetLabelLineLookup(DisplayTargetID displayTgtID) {
+            return _labelLookup[displayTgtID];
         }
 
         protected override bool TryGetFormattedLine(LabelLineID lineID, out string formattedLine) {
@@ -113,10 +113,10 @@ namespace CodeEnv.Master.GameContent {
                     content = Report.CapacityUsed.HasValue ? new ColoredTextList<float>(Report.CapacityUsed.Value) : content;
                     break;
                 case LabelLineID.ResourcesUsed:
-                    content = Report.ResourcesUsed.HasValue ? new ColoredTextList<OpeYield>(Report.ResourcesUsed.Value) : content;
+                    content = Report.ResourcesUsed.HasValue ? new ColoredTextList<OpeResourceYield>(Report.ResourcesUsed.Value) : content;
                     break;
                 case LabelLineID.SpecialsUsed:
-                    content = Report.SpecialResourcesUsed.HasValue ? new ColoredTextList<XYield>(Report.SpecialResourcesUsed.Value) : content;
+                    content = Report.SpecialResourcesUsed.HasValue ? new ColoredTextList<RareResourceYield>(Report.SpecialResourcesUsed.Value) : content;
                     break;
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(lineID));

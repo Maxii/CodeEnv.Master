@@ -37,26 +37,26 @@ public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButton {
     private bool _isResetOnFocusEnabled;
     private bool _isPauseOnLoadEnabled;
 
-    private GameClockSpeed _gameSpeedOnLoad;
+    private GameSpeed _gameSpeedOnLoad;
 
     protected override void CaptureInitializedState() {
         base.CaptureInitializedState();
         ValidateState();
     }
 
-    protected override void RecordCheckboxState(GuiMenuElementID checkboxID, bool checkedState) {
+    protected override void RecordCheckboxState(GuiElementID checkboxID, bool checkedState) {
         base.RecordCheckboxState(checkboxID, checkedState);
         switch (checkboxID) {
-            case GuiMenuElementID.PauseOnLoadCheckbox:
+            case GuiElementID.PauseOnLoadCheckbox:
                 _isPauseOnLoadEnabled = checkedState;
                 break;
-            case GuiMenuElementID.CameraRollCheckbox:
+            case GuiElementID.CameraRollCheckbox:
                 _isCameraRollEnabled = checkedState;
                 break;
-            case GuiMenuElementID.ResetOnFocusCheckbox:
+            case GuiElementID.ResetOnFocusCheckbox:
                 _isResetOnFocusEnabled = checkedState;
                 break;
-            case GuiMenuElementID.ZoomOutOnCursorCheckbox:
+            case GuiElementID.ZoomOutOnCursorCheckbox:
                 _isZoomOutOnCursorEnabled = checkedState;
                 break;
             default:
@@ -64,11 +64,11 @@ public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButton {
         }
     }
 
-    protected override void RecordPopupListState(GuiMenuElementID popupListID, string selectionName) {
+    protected override void RecordPopupListState(GuiElementID popupListID, string selectionName) {
         base.RecordPopupListState(popupListID, selectionName);
         switch (popupListID) {
-            case GuiMenuElementID.GameSpeedOnLoadPopupList:
-                _gameSpeedOnLoad = Enums<GameClockSpeed>.Parse(selectionName);
+            case GuiElementID.GameSpeedOnLoadPopupList:
+                _gameSpeedOnLoad = Enums<GameSpeed>.Parse(selectionName);
                 break;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(popupListID));
@@ -94,7 +94,7 @@ public class GuiGamePlayOptionMenuAcceptButton : AGuiMenuAcceptButton {
 
     [Conditional("UNITY_EDITOR")]
     private void ValidateState() {
-        D.Assert(_gameSpeedOnLoad != GameClockSpeed.None);
+        D.Assert(_gameSpeedOnLoad != GameSpeed.None);
     }
 
     protected override void Cleanup() { }

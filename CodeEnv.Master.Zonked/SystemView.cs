@@ -422,7 +422,7 @@ public class SystemView : AFocusableItemView, ISelectable, IZoomToFurthest {
 
     private ITrackingWidget InitializeTrackingLabel() {
         float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
-        var trackingLabel = TrackingWidgetFactory.Instance.CreateUITrackingLabel(this, WidgetPlacement.Above, minShowDistance);
+        var trackingLabel = TrackingWidgetFactory.Instance.MakeUITrackingLabel(this, WidgetPlacement.Above, minShowDistance);
         trackingLabel.Set(Presenter.FullName);
         return trackingLabel;
     }
@@ -436,8 +436,8 @@ public class SystemView : AFocusableItemView, ISelectable, IZoomToFurthest {
     #region ContextMenu
 
     private void __InitializeContextMenu() {      // IMPROVE use of string
-        _ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
-        CtxMenu generalMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "GeneralMenu");
+        _ctxObject = gameObject.GetSafeMonoBehaviour<CtxObject>();
+        CtxMenu generalMenu = GuiManager.Instance.gameObject.GetSafeMonoBehavioursInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "GeneralMenu");
         _ctxObject.contextMenu = generalMenu;
         D.Assert(_ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
         //UnityUtility.ValidateComponentPresence<Collider>(gameObject);

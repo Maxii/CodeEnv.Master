@@ -25,11 +25,13 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AIntelItemReport : AItemReport {
 
-        public IntelCoverage IntelCoverage { get; private set; }
+        public AIntel Intel { get; private set; }
 
-        public AIntelItemReport(AIntelItemData data, Player player)
-            : base(player) {
-            IntelCoverage = data.GetIntelCoverage(player);
+        public IntelCoverage IntelCoverage { get { return Intel.CurrentCoverage; } }
+
+        public AIntelItemReport(AIntelItemData data, Player player, IIntelItem item)
+            : base(player, item) {
+            Intel = data.GetIntelCopy(player);
             AssignValues(data);
         }
 
@@ -37,15 +39,15 @@ namespace CodeEnv.Master.GameContent {
             switch (IntelCoverage) {
                 case IntelCoverage.Comprehensive:
                     AssignIncrementalValues_IntelCoverageComprehensive(data);
-                    goto case IntelCoverage.Moderate;
-                case IntelCoverage.Moderate:
-                    AssignIncrementalValues_IntelCoverageModerate(data);
-                    goto case IntelCoverage.Minimal;
-                case IntelCoverage.Minimal:
-                    AssignIncrementalValues_IntelCoverageMinimal(data);
-                    goto case IntelCoverage.Aware;
-                case IntelCoverage.Aware:
-                    AssignIncrementalValues_IntelCoverageAware(data);
+                    goto case IntelCoverage.Broad;
+                case IntelCoverage.Broad:
+                    AssignIncrementalValues_IntelCoverageBroad(data);
+                    goto case IntelCoverage.Essential;
+                case IntelCoverage.Essential:
+                    AssignIncrementalValues_IntelCoverageEssential(data);
+                    goto case IntelCoverage.Basic;
+                case IntelCoverage.Basic:
+                    AssignIncrementalValues_IntelCoverageBasic(data);
                     goto case IntelCoverage.None;
                 case IntelCoverage.None:
                     AssignIncrementalValues_IntelCoverageNone(data);
@@ -56,9 +58,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) { }
-        protected virtual void AssignIncrementalValues_IntelCoverageModerate(AItemData data) { }
-        protected virtual void AssignIncrementalValues_IntelCoverageMinimal(AItemData data) { }
-        protected virtual void AssignIncrementalValues_IntelCoverageAware(AItemData data) { }
+        protected virtual void AssignIncrementalValues_IntelCoverageBroad(AItemData data) { }
+        protected virtual void AssignIncrementalValues_IntelCoverageEssential(AItemData data) { }
+        protected virtual void AssignIncrementalValues_IntelCoverageBasic(AItemData data) { }
         protected virtual void AssignIncrementalValues_IntelCoverageNone(AItemData data) { }
 
     }

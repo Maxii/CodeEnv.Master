@@ -41,9 +41,16 @@ namespace CodeEnv.Master.GameContent {
         /// </remarks>
         event Action onIsRunningOneShot;
 
-        event Action<GameState> onCurrentStateChanging;
+        /// <summary>
+        /// Occurs when GameState is about to change. The parameter is
+        /// the GameState the game is about to change too.
+        /// </summary>
+        event Action<GameState> onGameStateChanging;
 
-        event Action onCurrentStateChanged;
+        /// <summary>
+        /// Occurs when the GameState has just changed. 
+        /// </summary>
+        event Action onGameStateChanged;
 
         /// <summary>
         /// Occurs just before a scene starts loading.
@@ -59,12 +66,23 @@ namespace CodeEnv.Master.GameContent {
 
         event Action onNewGameBuilding;
 
+        bool IsSceneLoading { get; }
+
         bool IsPaused { get; }
 
-        Player HumanPlayer { get; }
+        IList<Player> AllPlayers { get; }
+
+        Player UserPlayer { get; }
 
         IList<Player> AIPlayers { get; }
 
+        PlayerKnowledge GetPlayerKnowledge(Player player);
+
+        /// <summary>
+        /// The current GameState. 
+        /// WARNING: Donot subscribe to this. 
+        /// Use the events as I can find out who has subscribed to them.
+        /// </summary>
         GameState CurrentState { get; }
 
         GameSettings GameSettings { get; }

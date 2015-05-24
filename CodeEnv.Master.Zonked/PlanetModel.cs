@@ -40,7 +40,7 @@ public class PlanetModel : APlanetoidModel {
     protected override void Initialize() {
         base.Initialize();
         float orbitalRadius = _transform.localPosition.magnitude;
-        Data.OrbitalSpeed = gameObject.GetSafeMonoBehaviourComponentInParents<Orbiter>().GetRelativeOrbitSpeed(orbitalRadius);
+        Data.OrbitalSpeed = gameObject.GetSafeMonoBehaviourInParents<OrbitSimulator>().GetRelativeOrbitSpeed(orbitalRadius);
     }
 
     protected override void OnDeath() {

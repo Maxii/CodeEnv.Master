@@ -31,7 +31,7 @@ public class ScaleSpriteRelativeToCamera : AMonoBase {
     protected override void Awake() {
         base.Awake();
         // record initial scale of the GO and use it as a basis
-        _sprite = gameObject.GetSafeMonoBehaviourComponent<UISprite>();
+        _sprite = gameObject.GetSafeMonoBehaviour<UISprite>();
         _initialScale = _sprite.localSize;
         UpdateRate = updateRate;
     }

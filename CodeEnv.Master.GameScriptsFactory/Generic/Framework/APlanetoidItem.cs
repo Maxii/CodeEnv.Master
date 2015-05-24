@@ -26,7 +26,12 @@ using UnityEngine;
 /// <summary>
 /// Abstract class for AMortalItems that are Planetoid (Planet and Moon) Items.
 /// </summary>
-public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbitable, IUnitAttackableTarget, IElementAttackableTarget, IDetectable {
+public abstract class APlanetoidItem : AMortalItem, IPlanetoidItem, ICameraFollowable, IShipOrbitable, IUnitAttackableTarget, IElementAttackableTarget, IDetectable {
+
+    /// <summary>
+    /// Gets the maximum possible orbital speed of a planetoid in Units per hour, aka the max speed of any planet plus the max speed of any moon.
+    /// </summary>
+    public static float MaxOrbitalSpeed { get { return SystemCreator.AllPlanets.Max(p => p.Data.OrbitalSpeed) + SystemCreator.AllMoons.Max(m => m.Data.OrbitalSpeed); } }
 
     [Tooltip("The type of planetoid")]
     public PlanetoidCategory category;
@@ -46,8 +51,10 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
 
     private PlanetoidPublisher _publisher;
     public PlanetoidPublisher Publisher {
-        get { return _publisher = _publisher ?? new PlanetoidPublisher(Data); }
+        get { return _publisher = _publisher ?? new PlanetoidPublisher(Data, this); }
     }
+
+    public ISystemItem System { get; private set; }
 
     private DetectionHandler _detectionHandler;
     private ICtxControl _ctxControl;
@@ -62,41 +69,41 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         collider.isTrigger = false;
         (collider as SphereCollider).radius = Radius;
 
-        InitializeShipOrbitSlot();
         InitializeKeepoutZone();
-    }
-
-    private void InitializeShipOrbitSlot() {
-        float innerOrbitRadius = Radius * TempGameValues.KeepoutRadiusMultiplier;
-        float outerOrbitRadius = innerOrbitRadius + TempGameValues.DefaultShipOrbitSlotDepth;
-        ShipOrbitSlot = new ShipOrbitSlot(innerOrbitRadius, outerOrbitRadius, this);
+        InitializeShipOrbitSlot();
     }
 
     private void InitializeKeepoutZone() {
         SphereCollider keepoutZoneCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.isTrigger).Single();
         D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
         keepoutZoneCollider.isTrigger = true;
-        keepoutZoneCollider.radius = ShipOrbitSlot.InnerRadius;
+        keepoutZoneCollider.radius = Radius * TempGameValues.KeepoutRadiusMultiplier;
+        KeepoutRadius = keepoutZoneCollider.radius;
+    }
+
+    private void InitializeShipOrbitSlot() {
+        float innerOrbitRadius = KeepoutRadius;
+        float outerOrbitRadius = innerOrbitRadius + TempGameValues.DefaultShipOrbitSlotDepth;
+        ShipOrbitSlot = new ShipOrbitSlot(innerOrbitRadius, outerOrbitRadius, this);
     }
 
     protected override void InitializeModelMembers() {
         D.Assert(category == Data.Category);
-        _detectionHandler = new DetectionHandler(Data);
+        System = gameObject.GetComponentInParent<SystemItem>();
+        _detectionHandler = new DetectionHandler(this);
         CurrentState = PlanetoidState.None;
     }
 
-    protected override void InitializeViewMembersOnDiscernible() {
-        base.InitializeViewMembersOnDiscernible();
+    protected override void InitializeViewMembersWhenFirstDiscernibleToUser() {
+        base.InitializeViewMembersWhenFirstDiscernibleToUser();
         InitializeContextMenu(Owner);
 
         float orbitalRadius = _transform.localPosition.magnitude;
-        Data.OrbitalSpeed = gameObject.GetSafeMonoBehaviourComponentInParents<Orbiter>().GetRelativeOrbitSpeed(orbitalRadius);
+        Data.OrbitalSpeed = gameObject.GetSafeMonoBehaviourInParents<OrbitSimulator>().GetRelativeOrbitSpeed(orbitalRadius);
     }
 
     protected override HudManager InitializeHudManager() {
-        var hudManager = new HudManager(Publisher);
-        hudManager.AddContentToUpdate(HudManager.UpdatableLabelContentID.IntelState);
-        return hudManager;
+        return new HudManager(Publisher);
     }
 
     private void InitializeContextMenu(Player owner) {
@@ -114,6 +121,8 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         CurrentState = PlanetoidState.Idling;
     }
 
+    public PlanetoidReport GetUserReport() { return Publisher.GetUserReport(); }
+
     public PlanetoidReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     protected override void InitiateDeath() {
@@ -128,7 +137,7 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
     }
 
     private void PlaceParentOrbiterInMotion(bool toOrbit) {
-        _transform.parent.GetInterface<IOrbiter>().IsOrbiterInMotion = toOrbit;
+        _transform.parent.GetInterface<IOrbitSimulator>().IsActive = toOrbit;
     }
 
     protected override void OnOwnerChanging(Player newOwner) {
@@ -142,7 +151,7 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
 
     #endregion
 
-    #region Mouse Events
+    #region Events
 
     protected override void OnRightPress(bool isDown) {
         base.OnRightPress(isDown);
@@ -168,7 +177,7 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
             case PlanetoidState.Idling:
                 break;
             case PlanetoidState.Dead:
-                StartAnimation(MortalAnimations.Dying);
+                StartEffect(EffectID.Dying);
                 break;
             case PlanetoidState.None:
             default:
@@ -176,7 +185,8 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
         }
     }
 
-    public override void OnShowCompletion() {
+    public override void OnEffectFinished(EffectID effectID) {
+        base.OnEffectFinished(effectID);
         switch (CurrentState) {
             case PlanetoidState.Dead:
                 __DestroyMe(3F);
@@ -209,9 +219,10 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
     #region IElementAttackableTarget Members
 
     public override void TakeHit(CombatStrength attackerWeaponStrength) {
-        if (!IsOperational) {
+        if (DebugSettings.Instance.AllPlayersInvulnerable) {
             return;
         }
+        D.Assert(IsOperational);
         LogEvent();
         CombatStrength damage = attackerWeaponStrength - Data.DefensiveStrength;
         if (damage.Combined == Constants.ZeroF) {
@@ -227,25 +238,27 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
             InitiateDeath();
             return;
         }
-        StartAnimation(MortalAnimations.Hit);
+        StartEffect(EffectID.Hit);
         //__GenerateHitImpactMedia();
     }
 
-    private void __GenerateHitImpactMedia() {
-        var impactPrefab = RequiredPrefabs.Instance.hitImpact;
-        var impactClone = UnityUtility.AddChild(gameObject, impactPrefab);
-        D.Warn("{0} showing impact.", FullName);
-    }
+    //private void __GenerateHitImpactMedia() {
+    //    var impactPrefab = RequiredPrefabs.Instance.hitImpact;
+    //    var impactClone = UnityUtility.AddChild(gameObject, impactPrefab);
+    //    D.Warn("{0} showing impact.", FullName);
+    //}
 
-    private void __GenerateExplosionMedia() {
-        var explosionPrefab = RequiredPrefabs.Instance.explosion;
-        var explosionClone = UnityUtility.AddChild(gameObject, explosionPrefab);
-        D.Warn("{0} showing explosion.", FullName);
-    }
+    //private void __GenerateExplosionMedia() {
+    //    var explosionPrefab = RequiredPrefabs.Instance.explosion;
+    //    var explosionClone = UnityUtility.AddChild(gameObject, explosionPrefab);
+    //    D.Warn("{0} showing explosion.", FullName);
+    //}
 
     #endregion
 
     #region IShipOrbitable Members
+
+    public float KeepoutRadius { get; private set; }
 
     public ShipOrbitSlot ShipOrbitSlot { get; private set; }
 
@@ -281,11 +294,11 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
 
     #region IDetectable Members
 
-    public void OnDetection(ICommandItem cmdItem, DistanceRange sensorRange) {
+    public void OnDetection(IUnitCmdItem cmdItem, DistanceRange sensorRange) {
         _detectionHandler.OnDetection(cmdItem, sensorRange);
     }
 
-    public void OnDetectionLost(ICommandItem cmdItem, DistanceRange sensorRange) {
+    public void OnDetectionLost(IUnitCmdItem cmdItem, DistanceRange sensorRange) {
         _detectionHandler.OnDetectionLost(cmdItem, sensorRange);
     }
 
@@ -294,6 +307,23 @@ public abstract class APlanetoidItem : AMortalItem, ICameraFollowable, IShipOrbi
     #region INavigableTarget Members
 
     public override bool IsMobile { get { return true; } }
+
+    #endregion
+
+    #region Nested Classes
+
+    /// <summary>
+    /// Enum defining the states a Planetoid can operate in.
+    /// </summary>
+    public enum PlanetoidState {
+
+        None,
+
+        Idling,
+
+        Dead
+
+    }
 
     #endregion
 

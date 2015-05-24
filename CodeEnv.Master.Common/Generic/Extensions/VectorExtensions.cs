@@ -26,16 +26,16 @@ namespace CodeEnv.Master.Common {
     public static class VectorExtensions {
 
         public static void ValidateNormalized(this Vector3 v) {
-            if (!v.IsSame(v.normalized)) {
+            if (!v.IsSameAs(v.normalized)) {
                 string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
                 throw new ArgumentOutOfRangeException(ErrorMessages.NotNormalized.Inject(v, callingMethodName));
             }
         }
 
         /// <summary>
-        /// Compares 2 vectors for equality.
+        /// Efficient way of comparing two vectors for equality.
         /// </summary>
-        public static bool IsSame(this Vector3 source, Vector3 v) {
+        public static bool IsSameAs(this Vector3 source, Vector3 v) {
             return Mathfx.Approx(source, v, .0001F);    // 1M times less precise than Unity's built in == comparison
         }
 
@@ -87,31 +87,64 @@ namespace CodeEnv.Master.Common {
             return myLoc.FindMean(otherLocations).magnitude;
         }
 
-        public static void SetX(this Transform t, float x) {
+        /// <summary>
+        /// Sets the x value of this transform's world position.
+        /// </summary>
+        /// <param name="t">The transform.</param>
+        /// <param name="x">The x.</param>
+        public static void SetWorldPositionX(this Transform t, float x) {
             Vector3 newPosition = new Vector3(x, t.position.y, t.position.z);
             t.position = newPosition;
         }
 
-        public static void SetY(this Transform t, float y) {
+        /// <summary>
+        /// Sets the x value of this transform's world position.
+        /// </summary>
+        /// <param name="t">The transform.</param>
+        /// <param name="y">The y.</param>
+        public static void SetWorldPositionY(this Transform t, float y) {
             Vector3 newPosition = new Vector3(t.position.x, y, t.position.z);
             t.position = newPosition;
         }
 
-        public static void SetZ(this Transform t, float z) {
+        /// <summary>
+        /// Sets the x value of this transform's world position.
+        /// </summary>
+        /// <param name="t">The transform.</param>
+        /// <param name="z">The z.</param>
+        public static void SetWorldPositionZ(this Transform t, float z) {
             Vector3 newPosition = new Vector3(t.position.x, t.position.y, z);
             t.position = newPosition;
         }
 
-        public static Vector3 SetX(this Vector3 v, float x) {
-            return new Vector3(x, v.y, v.z);
+        /// <summary>
+        /// Sets the x value of this transform's local position.
+        /// </summary>
+        /// <param name="t">The transform.</param>
+        /// <param name="x">The x.</param>
+        public static void SetLocalPositionX(this Transform t, float x) {
+            Vector3 newPosition = new Vector3(x, t.localPosition.y, t.localPosition.z);
+            t.localPosition = newPosition;
         }
 
-        public static Vector3 SetY(this Vector3 v, float y) {
-            return new Vector3(v.x, y, v.z);
+        /// <summary>
+        /// Sets the x value of this transform's local position.
+        /// </summary>
+        /// <param name="t">The transform.</param>
+        /// <param name="y">The y.</param>
+        public static void SetLocalPositionY(this Transform t, float y) {
+            Vector3 newPosition = new Vector3(t.localPosition.x, y, t.localPosition.z);
+            t.localPosition = newPosition;
         }
 
-        public static Vector3 SetZ(this Vector3 v, float z) {
-            return new Vector3(v.x, v.y, z);
+        /// <summary>
+        /// Sets the x value of this transform's local position.
+        /// </summary>
+        /// <param name="t">The transform.</param>
+        /// <param name="z">The z.</param>
+        public static void SetLocalPositionZ(this Transform t, float z) {
+            Vector3 newPosition = new Vector3(t.localPosition.x, t.localPosition.y, z);
+            t.localPosition = newPosition;
         }
 
     }

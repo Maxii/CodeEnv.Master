@@ -50,14 +50,23 @@ public class FleetCtxControl_AI : ACtxControl {
         _fleetMenuOperator = fleetCmd;
     }
 
+    protected override bool TryIsSelectedItemAccessAttempted(ISelectable selected) {
+        D.Warn("You are trying to open a ContextMenu that doesn't belong to you!");
+        return base.TryIsSelectedItemAccessAttempted(selected);
+    }
+
+    protected override bool TryIsRemoteShipAccessAttempted(ISelectable selected, out ShipItem selectedShip) {
+        return base.TryIsRemoteShipAccessAttempted(selected, out selectedShip);
+    }
+
     protected override bool TryIsRemoteFleetAccessAttempted(ISelectable selected, out FleetCmdItem selectedFleet) {
         selectedFleet = selected as FleetCmdItem;
-        return selectedFleet != null && selectedFleet.Owner.IsHumanUser;
+        return selectedFleet != null && selectedFleet.Owner.IsUser;
     }
 
     protected override bool TryIsRemoteBaseAccessAttempted(ISelectable selected, out AUnitBaseCmdItem selectedBase) {
         selectedBase = selected as AUnitBaseCmdItem;
-        return selectedBase != null && selectedBase.Owner.IsHumanUser;
+        return selectedBase != null && selectedBase.Owner.IsUser;
     }
 
     protected override bool IsRemoteFleetMenuItemDisabled(FleetDirective directive) {

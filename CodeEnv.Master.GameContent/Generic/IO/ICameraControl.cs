@@ -54,7 +54,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The distance from the camera's target point to the camera's focal plane.
         /// </summary>
-        float DistanceToCamera { get; }
+        float DistanceToCameraTarget { get; }
 
     }
 }

@@ -31,7 +31,7 @@ namespace CodeEnv.Master.Common {
         #region IEqualityComparer<Vector3> Members
 
         public bool Equals(Vector3 v, Vector3 other) {
-            if (v.IsSame(other)) {
+            if (v.IsSameAs(other)) {
                 return true;
             }
             return false;

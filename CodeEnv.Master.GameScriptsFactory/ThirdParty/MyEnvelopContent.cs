@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// Resizes the widget it's attached to in order to envelop not just one widget, but all the widgets
 /// within the chosen heirarchy - targetRoot. Most common use - resizing a background to envelop
-/// multiple widgets such as in a custom tooltiop containing multiple elements. 
+/// multiple widgets such as in a custom tooltip containing multiple elements. 
 /// Derived from Ngui/Examples/Other/EnvelopContent.
 /// </summary>
 [RequireComponent(typeof(UIWidget))]
@@ -53,6 +53,7 @@ public class MyEnvelopContent : AMonoBase {
         if (_isStarted) { Execute(); }
     }
 
+    [ContextMenu("Execute")]
     public void Execute() {
         if (targetRoot == transform) {
             D.ErrorContext("Target Root object cannot be the same object that has Envelop Content. Make it a sibling instead.", this);

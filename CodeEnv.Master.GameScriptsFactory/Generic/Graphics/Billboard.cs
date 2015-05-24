@@ -24,7 +24,7 @@ using UnityEngine;
 /// Instantiable Base class that manages basic Billboard functionality - continuously facing the camera,
 /// filling out the attached label, if any.
 /// </summary>
-public class Billboard : AMonoBase {
+public class Billboard : AMonoBase, IBillboard {
 
     public bool reverseFacing;
     public bool reverseLabelFacing;

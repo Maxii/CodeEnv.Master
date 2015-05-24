@@ -103,18 +103,20 @@ namespace CodeEnv.Master.Common {
         public const string SemiColon = ";";
         public const string Colon = ":";
         public const string QuestionMark = "?";
+        public const string PercentSign = "%";
+        /// <summary>
+        /// The forward slash, aka division sign.
+        /// </summary>
+        public const string ForwardSlash = "/";
+        public const string BackSlash = "\\";
 
         // Switch Strings
         public const string GodMode = "/GodMode";
 
         // Common Characters     
-        public static char FileSeparator {
-            get { return Path.DirectorySeparatorChar; }
-        }
+        public static char FileSeparator { get { return Path.DirectorySeparatorChar; } }
 
-        public static char PathSeparator {
-            get { return Path.PathSeparator; }
-        }
+        public static char PathSeparator { get { return Path.PathSeparator; } }
         public const char CommaDelimiter = ',';
         public const char SpaceDelimiter = ' ';
         public const char PeriodDelimiter = '.';

@@ -642,11 +642,13 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
         state.DoFixedUpdate();
     }
 
-    void OnTriggerEnter(Collider other) {
+    protected override void OnTriggerEnter(Collider other) {
+        base.OnTriggerEnter(other);
         state.DoOnTriggerEnter(other);
     }
 
-    void OnTriggerExit(Collider other) {
+    protected override void OnTriggerExit(Collider other) {
+        base.OnTriggerExit(other);
         state.DoOnTriggerExit(other);
     }
 
@@ -654,16 +656,18 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
         state.DoOnTriggerStay(other);
     }
 
-    void OnCollisionEnter(Collision other) {
-        state.DoOnCollisionEnter(other);
+    protected override void OnCollisionEnter(Collision collision) {
+        base.OnCollisionEnter(collision);
+        state.DoOnCollisionEnter(collision);
     }
 
-    void OnCollisionExit(Collision other) {
-        state.DoOnCollisionExit(other);
+    protected override void OnCollisionExit(Collision collision) {
+        base.OnCollisionExit(collision);
+        state.DoOnCollisionExit(collision);
     }
 
-    void OnCollisionStay(Collision other) {
-        state.DoOnCollisionStay(other);
+    void OnCollisionStay(Collision collision) {
+        state.DoOnCollisionStay(collision);
     }
 
     void OnHover(bool isOver) {

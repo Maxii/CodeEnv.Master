@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
         private SystemData _data;
         private IGameManager _gameMgr;
         private SystemReport _report;
-        private LabelID _currentTextLabelID;
+        private DisplayTargetID _currentTextLabelID;
         private StarReport _starReport;
         private PlanetoidReport[] _planetoidReports;
 
@@ -65,27 +65,27 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public string GetCursorHudText(StarReport starReport, PlanetoidReport[] planetoidReports, bool includeUnknown = true) {
-            return GetText(LabelID.CursorHud, _gameMgr.HumanPlayer, starReport, planetoidReports, includeUnknown);
+            return GetText(DisplayTargetID.CursorHud, _gameMgr.UserPlayer, starReport, planetoidReports, includeUnknown);
         }
 
-        public string GetText(LabelID labelID, Player player, StarReport starReport, PlanetoidReport[] planetoidReports, bool includeUnknown) {
-            if (!IsTextCurrent(labelID, player, starReport, planetoidReports, includeUnknown)) {
-                D.Log("{0} generating new text for Label {1}, Player {2}.", GetType().Name, labelID.GetName(), player.LeaderName);
-                GenerateText(labelID, player, starReport, planetoidReports, includeUnknown);
+        public string GetText(DisplayTargetID displayTgtID, Player player, StarReport starReport, PlanetoidReport[] planetoidReports, bool includeUnknown) {
+            if (!IsTextCurrent(displayTgtID, player, starReport, planetoidReports, includeUnknown)) {
+                D.Log("{0} generating new text for Label {1}, Player {2}.", GetType().Name, displayTgtID.GetName(), player.LeaderName);
+                GenerateText(displayTgtID, player, starReport, planetoidReports, includeUnknown);
             }
             return _stringBuilder.ToString();
         }
 
-        private bool IsTextCurrent(LabelID labelID, Player player, StarReport starReport, PlanetoidReport[] planetoidReports, bool includeUnknown) {
-            return labelID == _currentTextLabelID && includeUnknown == LabelFormatter.IncludeUnknown && IsReportCurrent(player, starReport, planetoidReports);
+        private bool IsTextCurrent(DisplayTargetID displayTgtID, Player player, StarReport starReport, PlanetoidReport[] planetoidReports, bool includeUnknown) {
+            return displayTgtID == _currentTextLabelID && includeUnknown == LabelFormatter.IncludeUnknown && IsReportCurrent(player, starReport, planetoidReports);
         }
 
-        private void GenerateText(LabelID labelID, Player player, StarReport starReport, PlanetoidReport[] planetoidReports, bool includeUnknown) {
+        private void GenerateText(DisplayTargetID displayTgtID, Player player, StarReport starReport, PlanetoidReport[] planetoidReports, bool includeUnknown) {
             _stringBuilder.Clear();
-            _currentTextLabelID = labelID;
+            _currentTextLabelID = displayTgtID;
             LabelFormatter.IncludeUnknown = includeUnknown;
             LabelFormatter.Report = GetReport(player, starReport, planetoidReports);
-            var labelLines = LabelFormatter.GetLabelLines(labelID);
+            var labelLines = LabelFormatter.GetLabelLines(displayTgtID);
             foreach (var line in labelLines) {
                 _stringBuilder.AppendLine(line);
                 // IMPROVE don't include a line break on the last line

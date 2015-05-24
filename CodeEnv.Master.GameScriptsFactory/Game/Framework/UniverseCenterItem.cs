@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// Class for the ADiscernibleItem that is the UniverseCenter.
 /// </summary>
-public class UniverseCenterItem : AIntelItem, IShipOrbitable, IDetectable {
+public class UniverseCenterItem : AIntelItem, IUniverseCenterItem, IShipOrbitable, IDetectable {
 
     [Range(0.5F, 3.0F)]
     [Tooltip("Minimum Camera View Distance Multiplier")]
@@ -37,7 +37,7 @@ public class UniverseCenterItem : AIntelItem, IShipOrbitable, IDetectable {
 
     private UniverseCenterPublisher _publisher;
     public UniverseCenterPublisher Publisher {
-        get { return _publisher = _publisher ?? new UniverseCenterPublisher(Data); }
+        get { return _publisher = _publisher ?? new UniverseCenterPublisher(Data, this); }
     }
 
     private DetectionHandler _detectionHandler;
@@ -53,36 +53,35 @@ public class UniverseCenterItem : AIntelItem, IShipOrbitable, IDetectable {
         collider.enabled = false;
         collider.isTrigger = false;
         (collider as SphereCollider).radius = Radius;
-        InitializeShipOrbitSlot();
         InitializeKeepoutZone();
-    }
-
-    private void InitializeShipOrbitSlot() {
-        float innerOrbitRadius = Radius * TempGameValues.KeepoutRadiusMultiplier;
-        float outerOrbitRadius = innerOrbitRadius + TempGameValues.DefaultShipOrbitSlotDepth;
-        ShipOrbitSlot = new ShipOrbitSlot(innerOrbitRadius, outerOrbitRadius, this);
+        InitializeShipOrbitSlot();
     }
 
     private void InitializeKeepoutZone() {
         SphereCollider keepoutZoneCollider = gameObject.GetComponentInImmediateChildren<SphereCollider>();
         D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
         keepoutZoneCollider.isTrigger = true;
-        keepoutZoneCollider.radius = ShipOrbitSlot.InnerRadius;
+        keepoutZoneCollider.radius = Radius * TempGameValues.KeepoutRadiusMultiplier;
+        KeepoutRadius = keepoutZoneCollider.radius;
+    }
+
+    private void InitializeShipOrbitSlot() {
+        float innerOrbitRadius = KeepoutRadius;
+        float outerOrbitRadius = innerOrbitRadius + TempGameValues.DefaultShipOrbitSlotDepth;
+        ShipOrbitSlot = new ShipOrbitSlot(innerOrbitRadius, outerOrbitRadius, this);
     }
 
     protected override void InitializeModelMembers() {
-        _detectionHandler = new DetectionHandler(Data);
+        _detectionHandler = new DetectionHandler(this);
     }
 
-    protected override void InitializeViewMembersOnDiscernible() {
-        base.InitializeViewMembersOnDiscernible();
+    protected override void InitializeViewMembersWhenFirstDiscernibleToUser() {
+        base.InitializeViewMembersWhenFirstDiscernibleToUser();
         InitializeContextMenu(Owner);
     }
 
     protected override HudManager InitializeHudManager() {
-        var hudManager = new HudManager(Publisher);
-        hudManager.AddContentToUpdate(HudManager.UpdatableLabelContentID.IntelState);
-        return hudManager;
+        return new HudManager(Publisher);
     }
 
     private void InitializeContextMenu(Player owner) {
@@ -102,6 +101,8 @@ public class UniverseCenterItem : AIntelItem, IShipOrbitable, IDetectable {
         collider.enabled = true;
     }
 
+    public UniverseCenterReport GetUserReport() { return Publisher.GetUserReport(); }
+
     public UniverseCenterReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     protected override void OnOwnerChanged() {
@@ -114,7 +115,7 @@ public class UniverseCenterItem : AIntelItem, IShipOrbitable, IDetectable {
 
     #endregion
 
-    #region Mouse Events
+    #region Events
 
     protected override void OnRightPress(bool isDown) {
         base.OnRightPress(isDown);
@@ -146,6 +147,8 @@ public class UniverseCenterItem : AIntelItem, IShipOrbitable, IDetectable {
 
     #region IShipOrbitable Members
 
+    public float KeepoutRadius { get; private set; }
+
     public ShipOrbitSlot ShipOrbitSlot { get; private set; }
 
     #endregion
@@ -166,11 +169,11 @@ public class UniverseCenterItem : AIntelItem, IShipOrbitable, IDetectable {
 
     #region IDetectable Members
 
-    public void OnDetection(ICommandItem cmdItem, DistanceRange sensorRange) {
+    public void OnDetection(IUnitCmdItem cmdItem, DistanceRange sensorRange) {
         _detectionHandler.OnDetection(cmdItem, sensorRange);
     }
 
-    public void OnDetectionLost(ICommandItem cmdItem, DistanceRange sensorRange) {
+    public void OnDetectionLost(IUnitCmdItem cmdItem, DistanceRange sensorRange) {
         _detectionHandler.OnDetectionLost(cmdItem, sensorRange);
     }
 

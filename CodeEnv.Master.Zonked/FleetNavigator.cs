@@ -125,7 +125,7 @@ public class FleetNavigator : IDisposable {
 
     private void Subscribe() {
         _subscribers = new List<IDisposable>();
-        _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
+        _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
         _subscribers.Add(_data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.MaxWeaponsRange, OnWeaponsRangeChanged));
         _subscribers.Add(_data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.UnitFullStlSpeed, OnFullSpeedChanged));
         _seeker.pathCallback += OnCoursePlotCompleted;
@@ -154,7 +154,7 @@ public class FleetNavigator : IDisposable {
     public void PlotCourse(INavigableTarget target, Speed speed) {
         Target = target;
         Speed = speed;
-        D.Assert(speed != Speed.AllStop, "{0} designated speed to new target {1} is 0!".Inject(_fleet.FullName, target.FullName));
+        D.Assert(speed != Speed.Stop, "{0} designated speed to new target {1} is 0!".Inject(_fleet.FullName, target.FullName));
         InitializeTargetValues();
         InitializeReplotValues();
         GenerateCourse();

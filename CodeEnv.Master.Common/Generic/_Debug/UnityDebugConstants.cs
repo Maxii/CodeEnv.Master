@@ -34,22 +34,6 @@ namespace CodeEnv.Master.Common {
             get { return Environment.ExpandEnvironmentVariables(@"%CustomToolsDir%"); }
         }
 
-        public static GameColor SelectedColor {
-            get { return GameColor.Green; }
-        }
-
-        public static GameColor FocusedColor {
-            get { return GameColor.Yellow; }
-        }
-
-        public static GameColor GeneralHighlightColor {
-            get { return GameColor.White; }
-        }
-
-        public static GameColor SectorHighlightColor {
-            get { return GameColor.Yellow; }
-        }
-
     }
 }
 

@@ -56,7 +56,7 @@ public class SettlementView : AFollowableView, ISettlementViewable {
         base.Awake();
         _audioSource = UnityUtility.ValidateComponentPresence<AudioSource>(gameObject);
         circleScaleFactor = 1.0F;
-        maxAnimateDistance = Mathf.RoundToInt(AnimationSettings.Instance.MaxShipAnimateDistanceFactor * Radius);
+        maxAnimateDistance = Mathf.RoundToInt(GraphicsSettings.Instance.MaxShipAnimateDistanceFactor * Radius);
         InitializeHighlighting();
     }
 

@@ -113,7 +113,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void Subscribe() {
             _subscribers = new List<IDisposable>();
-            _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
+            _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
             _subscribers.Add(_data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullStlSpeed, OnFullSpeedChanged));
         }
 

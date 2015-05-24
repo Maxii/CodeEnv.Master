@@ -48,10 +48,10 @@ public class SettlementCmdView_AI : SettlementCmdView {
     private CtxObject _ctxObject;
 
     private void __InitializeContextMenu() {      // IMPROVE use of string
-        _ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
+        _ctxObject = gameObject.GetSafeMonoBehaviour<CtxObject>();
         _ctxObject.offsetMenu = true;
 
-        CtxMenu generalMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "GeneralMenu");
+        CtxMenu generalMenu = GuiManager.Instance.gameObject.GetSafeMonoBehavioursInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "GeneralMenu");
         _ctxObject.contextMenu = generalMenu;
         D.Assert(_ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, Presenter.FullName));
 

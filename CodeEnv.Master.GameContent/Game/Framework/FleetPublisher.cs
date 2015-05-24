@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FleetPublisher.cs
-// Report and LabelText Publisher for Fleets.
+// Report and HudContent Publisher for Fleets.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,20 +19,27 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Report and LabelText Publisher for Fleets.
+    /// Report and HudContent Publisher for Fleets.
     /// </summary>
-    public class FleetPublisher : ACmdPublisher<FleetReport, FleetCmdData, ShipReport> {
+    public class FleetPublisher : ACmdPublisher<FleetReport, FleetCmdData> {
 
-        static FleetPublisher() {
-            LabelTextFactory = new FleetLabelTextFactory();
+        public override ColoredStringBuilder HudContent {
+            get { return FleetDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        public FleetPublisher(FleetCmdData data, ICmdPublisherClient<ShipReport> cmdItem)
-            : base(data, cmdItem) {
+        private IFleetCmdItem _item;
+
+        public FleetPublisher(FleetCmdData data, IFleetCmdItem item)
+            : base(data) {
+            _item = item;
         }
 
         protected override FleetReport GenerateReport(Player player) {
-            return new FleetReport(_data, player, _cmdItem.GetElementReports(player));
+            return new FleetReport(_data, player, _item);
+        }
+
+        protected override bool IsCachedReportCurrent(Player player, out FleetReport cachedReport) {
+            return base.IsCachedReportCurrent(player, out cachedReport) && IsEqual(cachedReport.ElementReports, _item.GetElementReports(player));
         }
 
         public override string ToString() {

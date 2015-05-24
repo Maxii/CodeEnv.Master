@@ -10,18 +10,14 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
     using UnityEngine;
 
     /// <summary>
@@ -35,6 +31,10 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<StarbaseCategory>(ref _category, value, "Category"); }
         }
 
+        public int Capacity { get; private set; }
+
+        public ResourceYield Resources { get; private set; }
+
         public new FacilityData HQElementData {
             get { return base.HQElementData as FacilityData; }
             set { base.HQElementData = value; }
@@ -46,6 +46,9 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<BaseComposition>(ref _unitComposition, value, "UnitComposition"); }
         }
 
+        private Index3D _sectorIndex;
+        public override Index3D SectorIndex { get { return _sectorIndex; } }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="StarbaseCmdData" /> class.
         /// </summary>
@@ -56,6 +59,8 @@ namespace CodeEnv.Master.GameContent {
             : base(cmdTransform, stat.Name, stat.MaxHitPoints, owner) {
             MaxCmdEffectiveness = stat.MaxCmdEffectiveness;
             UnitFormation = stat.UnitFormation;
+            _sectorIndex = References.SectorGrid.GetSectorIndex(Position);
+            __PopulateResourcesFromSector();
         }
 
         public override void AddElement(AUnitElementItemData elementData) {
@@ -92,6 +97,20 @@ namespace CodeEnv.Master.GameContent {
                 return StarbaseCategory.Outpost;
             }
             return StarbaseCategory.None;
+        }
+
+        // TODO Acquire resource values this starbase has access too, ala SettlementCmdData approach
+        private void __PopulateResourcesFromSector() {
+            Capacity = 10;
+            var resources = new ResourceYield.ResourceValuePair[] {
+                new ResourceYield.ResourceValuePair(ResourceID.Organics, 0.3F),
+                new ResourceYield.ResourceValuePair(ResourceID.Particulates, 0.5F),
+                new ResourceYield.ResourceValuePair(ResourceID.Energy, 1.2F),
+                new ResourceYield.ResourceValuePair(ResourceID.Titanium, 0.5F),
+                new ResourceYield.ResourceValuePair(ResourceID.Duranium, 1.1F),
+                new ResourceYield.ResourceValuePair(ResourceID.Unobtanium, 0.1F)
+            };
+            Resources = new ResourceYield(resources);
         }
 
         public override string ToString() {

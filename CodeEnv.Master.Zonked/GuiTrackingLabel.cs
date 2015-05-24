@@ -105,10 +105,10 @@ public class GuiTrackingLabel : AMonoBase {
         Layers guiTrackingLabelLayer = (Layers)gameObject.layer;
         D.Assert(guiTrackingLabelLayer == Layers.UI, "{0} Layer is {1}, should be {2}.".Inject(GetType().Name, guiTrackingLabelLayer.GetName(), Layers.UI.GetName()));
         _uiCamera = NGUITools.FindCameraForLayer((int)guiTrackingLabelLayer);
-        _label = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
+        _label = gameObject.GetSafeMonoBehaviourInChildren<UILabel>();
         _label.depth = -100; // draw below other Gui Elements in the same Panel
         _label.color = Color.ToUnityColor();
-        _widgets = gameObject.GetSafeMonoBehaviourComponentsInChildren<UIWidget>();
+        _widgets = gameObject.GetSafeMonoBehavioursInChildren<UIWidget>();
         //normally enabled to allow OccasionalUpdate to evaluate distance to camera
         UpdateRate = FrameUpdateFrequency.Normal;
 

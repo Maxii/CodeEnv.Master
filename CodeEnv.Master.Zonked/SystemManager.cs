@@ -46,10 +46,10 @@ public class SystemManager : AMonoBase, ISelectable, IHasData {
 
     protected override void Awake() {
         base.Awake();
-        _orbitalPlane = gameObject.GetSafeMonoBehaviourComponentInChildren<OrbitalPlaneInputEventRouter>();
-        _systemGraphics = gameObject.GetSafeMonoBehaviourComponent<SystemGraphics>();
-        _star = gameObject.GetSafeMonoBehaviourComponentInChildren<Star>();
-        _planetsAndMoons = gameObject.GetSafeMonoBehaviourComponentsInChildren<FollowableItem>();
+        _orbitalPlane = gameObject.GetSafeMonoBehaviourInChildren<OrbitalPlaneInputEventRouter>();
+        _systemGraphics = gameObject.GetSafeMonoBehaviour<SystemGraphics>();
+        _star = gameObject.GetSafeMonoBehaviourInChildren<Star>();
+        _planetsAndMoons = gameObject.GetSafeMonoBehavioursInChildren<FollowableItem>();
         _eventMgr = GameEventManager.Instance;
         _selectionMgr = SelectionManager.Instance;
     }

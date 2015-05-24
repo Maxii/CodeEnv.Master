@@ -32,12 +32,6 @@ namespace CodeEnv.Master.GameContent {
 
         public ISensorRangeMonitor RangeMonitor { get; set; }
 
-        //private bool _isAnyEnemyInRange;
-        //public bool IsAnyEnemyInRange {
-        //    get { return _isAnyEnemyInRange; }
-        //    set { SetProperty<bool>(ref _isAnyEnemyInRange, value, "IsAnyEnemyInRange", OnIsAnyEnemyInRangeChanged); }
-        //}
-
         private bool _isOperational;
         public bool IsOperational {
             get { return _isOperational; }
@@ -49,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
         public string Name {
             get {
                 if (RangeMonitor == null) { return _stat.RootName; }
-                return _nameFormat.Inject(_stat.RootName, Range.GetSensorRange(RangeMonitor.ParentCommand.Owner));
+                return _nameFormat.Inject(_stat.RootName, Range.GetSensorRange(RangeMonitor.Owner));
             }
         }
 
@@ -69,9 +63,12 @@ namespace CodeEnv.Master.GameContent {
 
         // Copy Constructor makes no sense when a RangeMonitor must be attached
 
-        //private void OnIsAnyEnemyInRangeChanged() {
-        //    // TODO
-        //}
+        /// <summary>
+        /// Called when this Sensor should first start operating. 
+        /// </summary>
+        public void CommenceOperations() {
+            IsOperational = true;
+        }
 
         private void OnIsOperationalChanged() {
             if (onIsOperationalChanged != null) {

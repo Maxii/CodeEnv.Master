@@ -26,12 +26,16 @@ namespace CodeEnv.Master.GameContent {
 
         public FacilityCategory Category { get; private set; }
 
-        public override bool IsHQElement {  // HACK temp override to add Assertion protection
-            get { return base.IsHQElement; }
+        public override bool IsHQ {  // HACK temp override to add Assertion protection
+            get { return base.IsHQ; }
             set {
                 D.Assert(value && Category == FacilityCategory.CentralHub);
-                base.IsHQElement = value;
+                base.IsHQ = value;
             }
+        }
+
+        public override Index3D SectorIndex {
+            get { return References.SectorGrid.GetSectorIndex(Position); } // Settlement Facilities get relocated
         }
 
         /// <summary>
@@ -44,7 +48,11 @@ namespace CodeEnv.Master.GameContent {
         public FacilityData(Transform facilityTransform, FacilityStat stat, Topography topography, Player owner)
             : base(facilityTransform, stat.Name, stat.Mass, stat.MaxHitPoints, owner) {
             Category = stat.Category;
-            base.Topography = topography;
+            Topography = topography;
+            Science = stat.Science;
+            Culture = stat.Culture;
+            Income = stat.Income;
+            Expense = stat.Expense;
         }
 
         public override string ToString() {

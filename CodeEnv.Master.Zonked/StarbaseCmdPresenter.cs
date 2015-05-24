@@ -40,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IIcon MakeCmdIconInstance() {
-            return StarbaseIconIDFactory.Instance.MakeInstance(Data, View.PlayerIntel);
+            return StarbaseIconInfoFactory.Instance.MakeInstance(Data, View.PlayerIntel);
         }
 
         public override string ToString() {

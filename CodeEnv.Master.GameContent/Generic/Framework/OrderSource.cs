@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
 
         UnitCommand,
 
-        Player  // UNDONE This has largely not been rolled in yet
+        User  // UNDONE This has largely not been rolled in yet
 
     }
 }

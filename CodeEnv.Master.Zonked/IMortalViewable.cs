@@ -25,9 +25,9 @@ namespace CodeEnv.Master.GameContent {
 
         event Action onShowCompletion;
 
-        void ShowAnimation(MortalAnimations animation);
+        void ShowAnimation(EffectID animation);
 
-        void StopAnimation(MortalAnimations animation);
+        void StopAnimation(EffectID animation);
 
         void OnDeath();
 

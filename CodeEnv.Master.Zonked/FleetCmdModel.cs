@@ -105,7 +105,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
 
         private void Subscribe() {
             _subscribers = new List<IDisposable>();
-            _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
+            _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
             _subscribers.Add(_fleet.Data.SubscribeToPropertyChanged<FleetCmdData, float>(d => d.UnitFullSpeed, OnFullSpeedChanged));
             _seeker.pathCallback += OnCoursePlotCompleted;
             // No subscription to changes in a target's maxWeaponsRange as a fleet should not automatically get an enemy target's maxWeaponRange update when it changes
@@ -117,7 +117,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
         /// <param name="target">The target.</param>
         /// <param name="speed">The speed.</param>
         public void PlotCourse(INavigableTarget target, Speed speed) {
-            D.Assert(speed != default(Speed) && speed != Speed.AllStop, "{0} speed of {1} is illegal.".Inject(_fleet.FullName, speed.GetName()));
+            D.Assert(speed != default(Speed) && speed != Speed.Stop, "{0} speed of {1} is illegal.".Inject(_fleet.FullName, speed.GetName()));
 
             TryCheckForSystemAccessPoints(target, out _fleetSystemExitPoint, out _targetSystemEntryPoint);
 
@@ -376,12 +376,12 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
                     D.Log("{0} start and destination {1} is contained within System {2}.", _fleet.FullName, target.FullName, fleetSystem.FullName);
                     return result;
                 }
-                fleetSystemExitPt = UnityUtility.FindClosestPointOnSphereSurfaceTo(_fleet.Position, fleetSystem.Position, fleetSystem.Radius);
+                fleetSystemExitPt = UnityUtility.FindClosestPointOnSphereTo(_fleet.Position, fleetSystem.Position, fleetSystem.Radius);
                 result = true;
             }
 
             if (targetSystem != null) {
-                targetSystemEntryPt = UnityUtility.FindClosestPointOnSphereSurfaceTo(target.Position, targetSystem.Position, targetSystem.Radius);
+                targetSystemEntryPt = UnityUtility.FindClosestPointOnSphereTo(target.Position, targetSystem.Position, targetSystem.Radius);
                 result = true;
             }
             return result;
@@ -453,7 +453,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
                 Vector3 halfWayPointInsideKeepoutZone = rayEntryPoint + (rayExitPoint - rayEntryPoint) / 2F;
                 Vector3 obstacleLocation = hitInfo.transform.position;
                 float obstacleClearanceLeeway = 1F;
-                detour = UnityUtility.FindClosestPointOnSphereSurfaceTo(halfWayPointInsideKeepoutZone, obstacleLocation, keepoutRadius + obstacleClearanceLeeway);
+                detour = UnityUtility.FindClosestPointOnSphereTo(halfWayPointInsideKeepoutZone, obstacleLocation, keepoutRadius + obstacleClearanceLeeway);
                 float detourDistanceFromObstacleCenter = (detour - obstacleLocation).magnitude;
                 D.Log("{0}'s detour to avoid obstacle {1} at {2} is at {3}. Distance to detour is {4}. \nObstacle keepout radius = {5}. Detour is {6} from obstacle center.",
                     _fleet.FullName, obstacleName, obstacleLocation, detour, Vector3.Magnitude(detour - _fleet.Data.Position), keepoutRadius, detourDistanceFromObstacleCenter);
@@ -700,7 +700,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     }
 
     private void InitializeNavigator() {
-        _navigator = new FleetNavigator(this, gameObject.GetSafeMonoBehaviourComponent<Seeker>());
+        _navigator = new FleetNavigator(this, gameObject.GetSafeMonoBehaviour<Seeker>());
     }
 
     public override void CommenceOperations() {
@@ -1147,7 +1147,7 @@ public class FleetCmdModel : AUnitCommandModel, IFleetCmdModel {
     void Dead_EnterState() {
         LogEvent();
         OnDeath();
-        OnShowAnimation(MortalAnimations.Dying);
+        OnShowAnimation(EffectID.Dying);
     }
 
     void Dead_OnShowCompletion() {

@@ -44,41 +44,40 @@ public class Revolver : AMonoBase, IRevolver {
     private GameTimeDuration _rotationPeriod; // IMPROVE use custom editor to make setable from inspector
 
     /// <summary>
-    /// The self rotation speed of the object around its own axis in degrees per second.
+    /// The rotation speed of the object around <c>axisOfRotation</c> in degrees per second.
     /// </summary>
     private float _rotationSpeed;
+    private GameTime _gameTime;
 
     protected override void Awake() {
         base.Awake();
         UnityUtility.ValidateComponentPresence<MeshRenderer>(gameObject);
+        _gameTime = GameTime.Instance;
         _rotationPeriod = GameTimeDuration.OneDay;
-        _rotationSpeed = relativeRotationSpeed * Constants.DegreesPerRotation * (GameTime.HoursPerSecond / (float)_rotationPeriod.TotalInHours);
+        var rotationSpeedInDegreesPerHour = relativeRotationSpeed * Constants.DegreesPerRotation / (float)_rotationPeriod.TotalInHours;
+        _rotationSpeed = rotationSpeedInDegreesPerHour * GameTime.HoursPerSecond;
         UpdateRate = FrameUpdateFrequency.Frequent;
         enabled = false;
     }
 
-    void OnBecameVisible() {
-        enabled = true;
-        //D.Log("{0}.enabled.", _transform.name);
-    }
-
-    void OnBecameInvisible() {
-        enabled = false;
-        //D.Log("{0}.disabled.", _transform.name);
-    }
+    // Note: Revolvers no longer control their own enabled state based on visibility as I also need to control it based on IntelCoverage
 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
-        float deltaTime = GameTime.Instance.DeltaTimeWithGameSpeed * (int)UpdateRate;    // Rotates when paused
-        UpdateRotation(deltaTime);
+        float gameSpeedAdjustedDeltaTimeSinceLastUpdate = _gameTime.GameSpeedAdjustedDeltaTime * (int)UpdateRate;
+        UpdateRotation(gameSpeedAdjustedDeltaTimeSinceLastUpdate);
     }
 
     /// <summary>
-    /// Updates the rotation of 'rotatingObject' around its own local Y axis.
+    /// Updates the rotation of the revolving object this script is attached to around 
+    /// the <c>axisOfRotation</c>. Using <c>deltaTimeInGameSecs</c> speeds up or
+    /// slows down the rotation rate based on GameSpeed - aka rotates faster at higher
+    /// GameSpeeds. For esthetic purposes, rotation does not cease while paused.
     /// </summary>
-    /// <param name="deltaTime">The delta time.</param>
-    private void UpdateRotation(float deltaTime) {
-        _transform.Rotate(axisOfRotation * _rotationSpeed * deltaTime, relativeTo: Space.Self);
+    /// <param name="speedAdjustedDeltaTimeSinceLastUpdate">The speed adjusted elapsed time since the last update.</param>
+    private void UpdateRotation(float speedAdjustedDeltaTimeSinceLastUpdate) {
+        var degreesToRotate = _rotationSpeed * speedAdjustedDeltaTimeSinceLastUpdate;
+        _transform.Rotate(axisOfRotation, degreesToRotate, relativeTo: Space.Self);
     }
 
     protected override void Cleanup() { }

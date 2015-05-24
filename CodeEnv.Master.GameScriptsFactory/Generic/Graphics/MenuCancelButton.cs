@@ -36,7 +36,7 @@ public class MenuCancelButton : AGuiButton {
     protected override void Start() {
         base.Start();
 
-        UIPanel parentPanel = gameObject.GetSafeMonoBehaviourComponentInParents<UIPanel>();
+        UIPanel parentPanel = gameObject.GetSafeMonoBehaviourInParents<UIPanel>();
 
         _checkboxes = parentPanel.gameObject.GetComponentsInChildren<UIToggle>(includeInactive: true);
         _checkboxesStateOnShow = new bool[_checkboxes.Length];

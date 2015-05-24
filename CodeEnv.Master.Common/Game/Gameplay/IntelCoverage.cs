@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IntelCoverage.cs
-// Enum defining the scope of knowledge a player currently has about an object in the game.
+// Enum defining the scope of knowledge a player currently has about an item in the game.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,40 +17,45 @@
 namespace CodeEnv.Master.Common {
 
     /// <summary>
-    /// Enum defining the scope of knowledge a player currently has about an object in the game.
+    /// Enum defining the scope of knowledge a player currently has about an item in the game.
     /// </summary>
     public enum IntelCoverage {
 
         /// <summary>
-        /// There is zero knowledge of an object, not even its existance.
+        /// There is zero knowledge of an item, not even its existance.
         /// </summary>
         None,
 
         /// <summary>
-        /// We are aware of the existance of an object but that is all.
+        /// The  player is aware of the existance of an item and knows a couple of basic facts but that is all.
         /// Typically the location is 1) within range of long range sensors, and/or 2) can be observed empirically
         /// by all and/or 3) our info is based off of rumor and inuendo.
         /// </summary>
-        Aware,
+        Basic,
 
         /// <summary>
-        /// We have collected basic information on this object. 
+        /// The player has modest knowledge of this item
         /// Typically the object is within range of medium range sensors. 
         /// </summary>
-        Minimal,
+        Essential,
 
         /// <summary>
-        /// We have collected quite a bit of information on this object.  
+        /// The player has collected quite a bit of information about this item.  
         /// Typically the object is within range of short range sensors. 
         /// </summary>
-        Moderate,
+        Broad,
 
         /// <summary>
-        /// The object is under constant observation and is completely connected into our real-time knowledge
-        /// systems. We know everything there is to know. Typically the object is owned by us, is
-        /// a trusted ally or we have a source of realtime information.
+        /// The item is under constant observation and is completely connected into the player's real-time knowledge
+        /// systems. We know everything there is to know. Typically the item is owned by the player, is
+        /// a trusted ally or the player has a source of realtime information.
         /// </summary>
         Comprehensive
+
+        // Aware, Primative, Nominal, Minimal, Minimum, Fundamental, Elementary, Essential, Basic
+        // Nominal, Fundamental, Essential
+        // Moderate, Intermediate, Medium, Broad, Extensive
+        // Comprehensive, Complete, Sweeping, Exhaustive, Full
 
     }
 }

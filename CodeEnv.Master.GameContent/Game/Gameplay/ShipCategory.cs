@@ -49,15 +49,14 @@ namespace CodeEnv.Master.GameContent {
         [EnumAttribute("SS")]
         Science,
 
-        [EnumAttribute("TR")]
+        [EnumAttribute("TT")]
         Troop,
 
-        [EnumAttribute("SP")]
+        [EnumAttribute("SU")]
         Support,
 
-        [EnumAttribute("SC")]
+        [EnumAttribute("S")]
         Scout
-
 
     }
 }

@@ -16,6 +16,9 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using CodeEnv.Master.Common;
+    using UnityEngine;
+
     /// <summary>
     /// Abstract class for Reports associated with UnitElementItems.
     /// </summary>
@@ -29,7 +32,18 @@ namespace CodeEnv.Master.GameContent {
 
         public float? MaxSensorRange { get; protected set; }
 
-        public AElementItemReport(AUnitElementItemData data, Player player) : base(data, player) { }
+        public float? Science { get; protected set; }
+        public float? Culture { get; protected set; }
+        public float? Income { get; protected set; }
+        public float? Expense { get; protected set; }
+
+        public AElementItemReport(AUnitElementItemData data, Player player, IUnitElementItem item) : base(data, player, item) { }
+
+        protected override void AssignIncrementalValues_IntelCoverageBasic(AItemData data) {
+            base.AssignIncrementalValues_IntelCoverageBasic(data);
+            AUnitElementItemData eData = data as AUnitElementItemData;
+            SectorIndex = eData.SectorIndex;
+        }
 
     }
 }

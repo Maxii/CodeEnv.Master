@@ -158,7 +158,7 @@ namespace CodeEnv.Master.GameContent {
             GameSettings settings = new GameSettings {
                 IsSavedGame = true,
                 UniverseSize = _playerPrefsMgr.UniverseSize,
-                HumanPlayerRace = new Race(new RaceStat(_playerPrefsMgr.PlayerSpeciesSelection, "Maxii", new StringBuilder("Maxii description"), _playerPrefsMgr.PlayerColor))
+                UserPlayerRace = new Race(new RaceStat(_playerPrefsMgr.UserPlayerSpeciesSelection, "Maxii", new StringBuilder("Maxii description"), _playerPrefsMgr.UserPlayerColor))
             };
             Settings = settings;
             HumanPlayer = CreateHumanPlayer(settings);
@@ -204,7 +204,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private HumanPlayer CreateHumanPlayer(GameSettings gameSettings) {
-            HumanPlayer humanPlayer = new HumanPlayer(gameSettings.HumanPlayerRace);
+            HumanPlayer humanPlayer = new HumanPlayer(gameSettings.UserPlayerRace);
             return humanPlayer;
         }
 

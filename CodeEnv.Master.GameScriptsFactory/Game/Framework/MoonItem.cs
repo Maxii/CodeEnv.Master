@@ -31,7 +31,8 @@ public class MoonItem : APlanetoidItem {
     #region Initialization
 
     protected override ADisplayManager InitializeDisplayManager() {
-        return new MoonDisplayManager(gameObject);
+        var displayMgr = new MoonDisplayManager(gameObject);
+        return displayMgr;
     }
 
     #endregion
@@ -53,10 +54,11 @@ public class MoonItem : APlanetoidItem {
         InitiateDeath();
     }
 
-    public override void OnShowCompletion() {
+    public override void OnEffectFinished(EffectID effectID) {
+        base.OnEffectFinished(effectID);
         switch (CurrentState) {
             case PlanetoidState.Dead:
-                if (!_isParentPlanetDying) {  // if the planet dieing is the cause of this moons death, than let the planet destroy all the game objects
+                if (!_isParentPlanetDying) {  // if the planet dying is the cause of this moons death, than let the planet destroy all the game objects
                     __DestroyMe(3F);
                 }
                 break;
@@ -74,7 +76,7 @@ public class MoonItem : APlanetoidItem {
     #region View Methods
     #endregion
 
-    #region Mouse Events
+    #region Events
     #endregion
 
     public override string ToString() {

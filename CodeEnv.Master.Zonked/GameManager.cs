@@ -153,10 +153,10 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
         GameSettings settings = new GameSettings {
             IsSavedGame = true,
             UniverseSize = _playerPrefsMgr.UniverseSize,
-            HumanPlayerRace = new Race(new RaceStat(_playerPrefsMgr.PlayerSpeciesSelection, "Maxii", new StringBuilder("Maxii description"), _playerPrefsMgr.PlayerColor))
+            UserPlayerRace = new Race(new RaceStat(_playerPrefsMgr.UserPlayerSpeciesSelection, "Maxii", new StringBuilder("Maxii description"), _playerPrefsMgr.UserPlayerColor))
         };
         GameSettings = settings;
-        HumanPlayer = CreateHumanPlayer(settings);
+        UserPlayer = CreateHumanPlayer(settings);
         GameState = GameState.Loading;
     }
 
@@ -185,7 +185,7 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
         GameState = GameState.Building;
         // building the level begins here when implemented
         GameSettings = settings;
-        HumanPlayer = CreateHumanPlayer(settings);
+        UserPlayer = CreateHumanPlayer(settings);
 
         GameState = GameState.Loading;
         // tell ManagementObjects to drop its children (including SaveGameManager!) before the scene gets reloaded
@@ -195,7 +195,7 @@ public class GameManager : AMonoBaseSingleton<GameManager>, IDisposable {
     }
 
     private HumanPlayer CreateHumanPlayer(GameSettings gameSettings) {
-        HumanPlayer humanPlayer = new HumanPlayer(gameSettings.HumanPlayerRace);
+        HumanPlayer humanPlayer = new HumanPlayer(gameSettings.UserPlayerRace);
         return humanPlayer;
     }
 

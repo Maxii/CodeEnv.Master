@@ -98,11 +98,11 @@ public class ShipView_Player : ShipView {
 
     private void InitializeContextMenu() {    // IMPROVE use of strings
         UnityUtility.ValidateComponentPresence<Collider>(gameObject);
-        _ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
+        _ctxObject = gameObject.GetSafeMonoBehaviour<CtxObject>();
         _ctxObject.offsetMenu = true;
 
         if (_shipMenu == null) {
-            _shipMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>()
+            _shipMenu = GuiManager.Instance.gameObject.GetSafeMonoBehavioursInChildren<CtxMenu>()
                 .Single(menu => menu.gameObject.name.Equals("ShipMenu"));
 
             // NOTE: Cannot set CtxMenu.items from here as CtxMenu.Awake sets defaultItems = items (null) before I can set items programmatically.
@@ -122,7 +122,7 @@ public class ShipView_Player : ShipView {
         }
         if (_subMenuLookup == null) {
             _subMenuLookup = new Dictionary<ShipDirective, CtxMenu>(_shipMenuOrders.Length);
-            var availableSubMenus = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>()
+            var availableSubMenus = GuiManager.Instance.gameObject.GetSafeMonoBehavioursInChildren<CtxMenu>()
                 .Where(menu => menu.gameObject.name.Equals("SubMenu")).ToArray();
             D.Assert(_shipMenuOrders.Length <= availableSubMenus.Length);
             for (int i = 0; i < _shipMenuOrders.Length; i++) {
@@ -215,7 +215,7 @@ public class ShipView_Player : ShipView {
         ShipDirective orderSelected = _subMenuOrderLookup[orderKey];
         IMortalTarget targetSelected = GetTargetSelected(orderSelected, subMenuItemId);
         D.Log("{0} selected order {1} and submenu item {2} from context menu.", Presenter.FullName, orderSelected.GetName(), targetSelected.FullName);
-        ShipOrder order = new ShipOrder(orderSelected, OrderSource.Player, targetSelected);
+        ShipOrder order = new ShipOrder(orderSelected, OrderSource.User, targetSelected);
         Presenter.Model.CurrentOrder = order;
     }
 

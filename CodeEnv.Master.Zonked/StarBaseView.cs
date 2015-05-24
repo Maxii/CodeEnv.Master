@@ -177,8 +177,8 @@ public class StarBaseView : AFocusableItemView, IStarBaseViewable, ISelectable, 
     #region ContextMenu
 
     private void __InitializeContextMenu() {      // IMPROVE use of string
-        _ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
-        CtxMenu starBaseMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "StarBaseMenu");
+        _ctxObject = gameObject.GetSafeMonoBehaviour<CtxObject>();
+        CtxMenu starBaseMenu = GuiManager.Instance.gameObject.GetSafeMonoBehavioursInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "StarBaseMenu");
         _ctxObject.contextMenu = starBaseMenu;
         D.Assert(_ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
         UnityUtility.ValidateComponentPresence<Collider>(gameObject);

@@ -73,10 +73,19 @@ namespace CodeEnv.Master.Common {
                         yield return _coroutine.Current;
                     }
                     else {
+                        // ************** My Addition **************
+                        if (onJobComplete != null) {
+                            onJobComplete(_jobWasKilled);
+                        }
+                        // ******************************************
+
                         // run our child jobs if we have any
                         if (_childJobStack != null && _childJobStack.Count > 0) {
                             Job childJob = _childJobStack.Pop();
                             _coroutine = childJob._coroutine;
+                            // ************** My Addition **************
+                            onJobComplete = childJob.onJobComplete;
+                            // ******************************************
                         }
                         else {
                             IsRunning = false;
@@ -85,19 +94,29 @@ namespace CodeEnv.Master.Common {
                 }
             }
 
+            // ************** My Deletion **************
             // fire off a complete event
-            if (onJobComplete != null) {
-                onJobComplete(_jobWasKilled);
-            }
+            //if (onJobComplete != null) {
+            //    onJobComplete(_jobWasKilled);
+            //}
+            // ******************************************
+
         }
 
         #region public API
 
-        public Job CreateAndAddChildJob(IEnumerator coroutine) {
-            var j = new Job(coroutine, false);
+        //public Job CreateAndAddChildJob(IEnumerator coroutine) {
+        //    var j = new Job(coroutine, false);
+        //    AddChildJob(j);
+        //    return j;
+        //}
+        // ************** My Replacement **************
+        public Job CreateAndAddChildJob(IEnumerator coroutine, Action<bool> onJobComplete = null) {
+            var j = new Job(coroutine, false, onJobComplete);
             AddChildJob(j);
             return j;
         }
+        // ******************************************
 
         public void AddChildJob(Job childJob) {
             if (_childJobStack == null)

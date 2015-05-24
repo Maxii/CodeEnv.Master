@@ -36,8 +36,8 @@ public class ItemGraphics : AGraphics, IDisposable {
     protected override void Awake() {
         base.Awake();
         Target = _transform;
-        _item = gameObject.GetSafeMonoBehaviourComponent<StationaryItem>();
-        maxAnimateDistance = Mathf.RoundToInt(AnimationSettings.Instance.MaxCelestialObjectAnimateDistanceFactor * _item.Size);
+        _item = gameObject.GetSafeMonoBehaviour<StationaryItem>();
+        maxAnimateDistance = Mathf.RoundToInt(GraphicsSettings.Instance.MaxCelestialObjectAnimateDistanceFactor * _item.Size);
         //D.Log("MaxAnimateDistanceFactor = {1}, {2}.Size = " + Constants.FormatFloat_4DpMax, _item.Size, AnimationSettings.Instance.MaxCelestialObjectAnimateDistanceFactor, _item.name);
         Subscribe();
     }

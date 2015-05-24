@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SettlementPublisher.cs
-// Report and LabelText Publisher for Settlements.
+// Report and HudContent Publisher for Settlements.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,18 +19,27 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Report and LabelText Publisher for Settlements.
+    /// Report and HudContent Publisher for Settlements.
     /// </summary>
-    public class SettlementPublisher : ACmdPublisher<SettlementReport, SettlementCmdData, FacilityReport> {
+    public class SettlementPublisher : ACmdPublisher<SettlementReport, SettlementCmdData> {
 
-        static SettlementPublisher() {
-            LabelTextFactory = new SettlementLabelTextFactory();
+        public override ColoredStringBuilder HudContent {
+            get { return SettlementDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        public SettlementPublisher(SettlementCmdData data, ICmdPublisherClient<FacilityReport> cmdItem) : base(data, cmdItem) { }
+        private ISettlementCmdItem _item;
+
+        public SettlementPublisher(SettlementCmdData data, ISettlementCmdItem item)
+            : base(data) {
+            _item = item;
+        }
 
         protected override SettlementReport GenerateReport(Player player) {
-            return new SettlementReport(_data, player, _cmdItem.GetElementReports(player));
+            return new SettlementReport(_data, player, _item);
+        }
+
+        protected override bool IsCachedReportCurrent(Player player, out SettlementReport cachedReport) {
+            return base.IsCachedReportCurrent(player, out cachedReport) && IsEqual(cachedReport.ElementReports, _item.GetElementReports(player));
         }
 
         public override string ToString() {

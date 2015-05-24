@@ -26,16 +26,39 @@ namespace CodeEnv.Master.GameContent {
 
         public StarbaseCategory Category { get; private set; }
 
+        public int? Capacity { get; private set; }
+
+        public ResourceYield? Resources { get; private set; }
+
         public BaseComposition UnitComposition { get; private set; }
 
-        public StarbaseReport(StarbaseCmdData cmdData, Player player, FacilityReport[] facilityReports)
-            : base(cmdData, player, facilityReports) { }
+        public FacilityReport[] ElementReports { get; private set; }
 
-        protected override void AssignValuesFrom(AElementItemReport[] elementReports, AUnitCmdItemData cmdData) {
-            base.AssignValuesFrom(elementReports, cmdData);
-            var knownElementCategories = elementReports.Cast<FacilityReport>().Select(r => r.Category).Where(cat => cat != FacilityCategory.None);
-            UnitComposition = new BaseComposition(knownElementCategories);
-            Category = UnitComposition != null ? (cmdData as StarbaseCmdData).GenerateCmdCategory(UnitComposition) : StarbaseCategory.None;
+        public StarbaseReport(StarbaseCmdData cmdData, Player player, IStarbaseCmdItem item)
+            : base(cmdData, player, item) {
+            ElementReports = item.GetElementReports(player);
+            AssignValuesFromElementReports(cmdData);
+        }
+
+        private void AssignValuesFromElementReports(StarbaseCmdData cmdData) {
+            var knownElementCategories = ElementReports.Select(r => r.Category).Where(cat => cat != default(FacilityCategory));
+            if (knownElementCategories.Any()) { // Player will always know about the HQElement (since knows Cmd) but Category may not yet be revealed
+                UnitComposition = new BaseComposition(knownElementCategories);
+            }
+            Category = UnitComposition != null ? cmdData.GenerateCmdCategory(UnitComposition) : StarbaseCategory.None;
+            AssignValuesFrom(ElementReports);
+        }
+
+        protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
+            base.AssignIncrementalValues_IntelCoverageComprehensive(data);
+            var sData = data as StarbaseCmdData;
+            Capacity = sData.Capacity;
+        }
+
+        protected override void AssignIncrementalValues_IntelCoverageBroad(AItemData data) {
+            base.AssignIncrementalValues_IntelCoverageBroad(data);
+            var sData = data as StarbaseCmdData;
+            Resources = sData.Resources;
         }
 
         public override string ToString() {

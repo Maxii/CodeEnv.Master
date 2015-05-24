@@ -31,7 +31,7 @@ public class GuiGameSpeedReadout : AGuiLabelReadout {
         get { return "Game Speed relative to Normal."; }
     }
 
-    private IList<IDisposable> _subscribers;
+    private IList<IDisposable> _subscriptions;
 
     protected override void Awake() {
         base.Awake();
@@ -40,15 +40,15 @@ public class GuiGameSpeedReadout : AGuiLabelReadout {
     }
 
     private void Subscribe() {
-        _subscribers = new List<IDisposable>();
-        _subscribers.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
+        _subscriptions = new List<IDisposable>();
+        _subscriptions.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
     }
 
     private void OnGameSpeedChanged() {
         RefreshReadout(GameTime.Instance.GameSpeed);
     }
 
-    private void RefreshReadout(GameClockSpeed clockSpeed) {
+    private void RefreshReadout(GameSpeed clockSpeed) {
         RefreshReadout(CommonTerms.MultiplySign + clockSpeed.SpeedMultiplier().ToString());
     }
 
@@ -57,8 +57,8 @@ public class GuiGameSpeedReadout : AGuiLabelReadout {
     }
 
     private void Unsubscribe() {
-        _subscribers.ForAll<IDisposable>(s => s.Dispose());
-        _subscribers.Clear();
+        _subscriptions.ForAll<IDisposable>(s => s.Dispose());
+        _subscriptions.Clear();
     }
 
     public override string ToString() {

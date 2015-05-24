@@ -13,9 +13,9 @@
 namespace CodeEnv.Master.Common {
 
 
-    public class GameSpeedChangeEvent : AEnumValueChangeEvent<GameClockSpeed> {
+    public class GameSpeedChangeEvent : AEnumValueChangeEvent<GameSpeed> {
 
-        public GameSpeedChangeEvent(object source, GameClockSpeed newSpeed)
+        public GameSpeedChangeEvent(object source, GameSpeed newSpeed)
             : base(source, newSpeed) {
         }
 

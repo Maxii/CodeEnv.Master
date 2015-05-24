@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
 
         ReportType DataReport { set; }
 
-        IList<string> GetLabelLines(LabelID labelID);
+        IList<string> GetLabelLines(DisplayTargetID displayTgtID);
 
     }
 }

@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipOrder {
 
+        private static string _toStringFormat = "Directive: {0}, Source: {1}, Target: {2}, Speed: {3}, StandingOrder: {4}.";
+
         public ShipOrder StandingOrder { get; set; }
 
         public Speed Speed { get; private set; }
@@ -62,7 +64,9 @@ namespace CodeEnv.Master.GameContent {
             : this(order, source, new StationaryLocation(destination), speed) { }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            string targetText = Target != null ? Target.FullName : "null";
+            string standingOrderText = StandingOrder != null ? StandingOrder.ToString() : "null";
+            return _toStringFormat.Inject(Directive.GetName(), Source.GetName(), targetText, Speed.GetName(), standingOrderText);
         }
 
     }

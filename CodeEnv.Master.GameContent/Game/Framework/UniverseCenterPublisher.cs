@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: UniverseCenterPublisher.cs
-// Report and LabelText Publisher for the Universe Center.
+// Report and HudContent Publisher for the Universe Center.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,18 +19,23 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Report and LabelText Publisher for the Universe Center.
+    /// Report and HudContent Publisher for the Universe Center.
     /// </summary>
     public class UniverseCenterPublisher : AIntelItemPublisher<UniverseCenterReport, UniverseCenterData> {
 
-        static UniverseCenterPublisher() {
-            LabelTextFactory = new UniverseCenterLabelTextFactory();
+        public override ColoredStringBuilder HudContent {
+            get { return UniverseCenterDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        public UniverseCenterPublisher(UniverseCenterData data) : base(data) { }
+        private IUniverseCenterItem _item;
+
+        public UniverseCenterPublisher(UniverseCenterData data, IUniverseCenterItem item)
+            : base(data) {
+            _item = item;
+        }
 
         protected override UniverseCenterReport GenerateReport(Player player) {
-            return new UniverseCenterReport(_data, player);
+            return new UniverseCenterReport(_data, player, _item);
         }
 
         public override string ToString() {

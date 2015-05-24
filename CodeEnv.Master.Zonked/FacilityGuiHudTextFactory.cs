@@ -41,7 +41,7 @@ namespace CodeEnv.Master.GameContent {
                     //return new ColoredTextList_Intel(data.PlayerIntel);
                     return new ColoredTextList_Intel(data.HumanPlayerIntel());
                 case GuiHudLineKeys.Category:
-                    return new ColoredTextList_String(data.Category.GetName(), data.Category.GetDescription());
+                    return new ColoredTextList_String(data.Category.GetName(), data.Category.GetEnumAttributeText());
                 case GuiHudLineKeys.Health:
                     return new ColoredTextList_Health(data.Health, data.MaxHitPoints);
                 case GuiHudLineKeys.Owner:

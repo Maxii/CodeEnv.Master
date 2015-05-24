@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract class for AMortalItem's that are Unit Commands.
 /// </summary>
-public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISelectable, IUnitAttackableTarget {
+public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmdItem, ISelectable, IUnitAttackableTarget {
 
     [Range(0.5F, 3.0F)]
     [Tooltip("Minimum Camera View Distance Multiplier")]
@@ -43,6 +43,16 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
     public Transform UnitContainer { get; private set; }
 
     public bool IsTrackingLabelEnabled { private get; set; }
+
+    public IconInfo IconInfo {
+        get {
+            if (DisplayMgr == null) {
+                D.Warn("{0}.DisplayMgr is null when attempting access to IconInfo.", GetType().Name);
+                return default(IconInfo);
+            }
+            return DisplayMgr.IconInfo;
+        }
+    }
 
     /// <summary>
     /// The radius of the entire Unit. 
@@ -63,9 +73,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
 
     public IList<AUnitElementItem> Elements { get; private set; }
 
+    public IList<ISensorRangeMonitor> SensorRangeMonitors { get; private set; }
+
     protected new UnitCmdDisplayManager DisplayMgr { get { return base.DisplayMgr as UnitCmdDisplayManager; } }
 
-    protected IList<ISensorRangeMonitor> _sensorRangeMonitors = new List<ISensorRangeMonitor>();
     protected FormationGenerator _formationGenerator;
 
     private ITrackingWidget _trackingLabel;
@@ -75,6 +86,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
         Elements = new List<AUnitElementItem>();
+        SensorRangeMonitors = new List<ISensorRangeMonitor>();
         _formationGenerator = new FormationGenerator(this);
     }
 
@@ -87,13 +99,13 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
-        _subscribers.Add(Data.SubscribeToPropertyChanged<AUnitCmdItemData, Formation>(d => d.UnitFormation, OnFormationChanged));
+        _subscriptions.Add(Data.SubscribeToPropertyChanged<AUnitCmdItemData, Formation>(d => d.UnitFormation, OnFormationChanged));
     }
 
     private ITrackingWidget InitializeTrackingLabel() {
         D.Assert(HQElement != null);
         float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
-        var trackingLabel = TrackingWidgetFactory.Instance.CreateUITrackingLabel(this, WidgetPlacement.AboveRight, minShowDistance);
+        var trackingLabel = TrackingWidgetFactory.Instance.MakeUITrackingLabel(this, WidgetPlacement.AboveRight, minShowDistance);
         trackingLabel.Set(DisplayName);
         trackingLabel.Color = Owner.Color;
         return trackingLabel;
@@ -105,23 +117,22 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
     }
 
     protected override ADisplayManager InitializeDisplayManager() {
-        var displayMgr = new UnitCmdDisplayManager(gameObject);
-        displayMgr.Icon = InitializeIcon();
+        var displayMgr = new UnitCmdDisplayManager(this, MakeIconInfo());
+        SubscribeToIconEvents(displayMgr.Icon);
         return displayMgr;
     }
 
-    private ResponsiveTrackingSprite InitializeIcon() {
-        var icon = MakeIcon();
-        icon.Color = Owner.Color;
+    private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
-        iconEventListener.onHover += (iconGo, isOver) => OnHover(isOver);
-        iconEventListener.onClick += (iconGo) => OnClick();
-        iconEventListener.onDoubleClick += (iconGo) => OnDoubleClick();
-        iconEventListener.onPress += (iconGo, isDown) => OnPress(isDown);
-        return icon;
+        iconEventListener.onHover += (go, isOver) => OnHover(isOver);
+        iconEventListener.onClick += (go) => OnClick();
+        iconEventListener.onDoubleClick += (go) => OnDoubleClick();
+        iconEventListener.onPress += (go, isDown) => OnPress(isDown);
     }
 
-    protected abstract ResponsiveTrackingSprite MakeIcon();
+    protected override EffectsManager InitializeEffectsManager() {
+        return new UnitCmdEffectsManager(this);
+    }
 
     #endregion
 
@@ -129,7 +140,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        AssessCmdIcon();
+        AssessIcon();
     }
 
     /// <summary>
@@ -138,12 +149,13 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
     /// <param name="element">The Element to add.</param>
     public virtual void AddElement(AUnitElementItem element) {
         D.Assert(!Elements.Contains(element), "{0} attempting to add {1} that is already present.".Inject(FullName, element.FullName));
-        D.Assert(!element.Data.IsHQElement, "{0} adding element {1} already designated as the HQ Element.".Inject(FullName, element.FullName));
+        D.Assert(!element.IsHQ, "{0} adding element {1} already designated as the HQ Element.".Inject(FullName, element.FullName));
         // elements should already be enabled when added to a Cmd as that is commonly their state when transferred during runtime
-        D.Assert((element as MonoBehaviour).enabled, "{0} is not yet enabled.".Inject(element.FullName));
+        D.Assert(element.enabled, "{0} is not yet enabled.".Inject(element.FullName));
         Elements.Add(element);
         Data.AddElement(element.Data);
-        element.AttachElementAsChildOfUnitContainer(UnitContainer);
+        element.AttachAsChildOf(UnitContainer);
+        Subscribe(element);
         // TODO consider changing HQElement
         var unattachedSensors = element.Data.Sensors.Where(sensor => sensor.RangeMonitor == null);
         if (unattachedSensors.Any()) {
@@ -155,7 +167,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
         }
         if (IsOperational) {
             // avoid the extra work if adding before beginning operations
-            AssessCmdIcon();
+            AssessIcon();
         }
     }
 
@@ -169,9 +181,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
     public void AttachSensorsToMonitors(params Sensor[] sensors) {
         sensors.ForAll(sensor => {
             var monitor = UnitFactory.Instance.MakeMonitorInstance(sensor, this);
-            if (!_sensorRangeMonitors.Contains(monitor)) {
+            if (!SensorRangeMonitors.Contains(monitor)) {
                 // only need to record and setup range monitors once. The same monitor can have more than 1 sensor
-                _sensorRangeMonitors.Add(monitor);
+                SensorRangeMonitors.Add(monitor);
             }
         });
     }
@@ -189,7 +201,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
             bool isRangeMonitorStillInUse = monitor.Remove(sensor);
 
             if (!isRangeMonitorStillInUse) {
-                _sensorRangeMonitors.Remove(monitor);
+                SensorRangeMonitors.Remove(monitor);
                 D.Log("{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(SensorRangeMonitor).Name, sensor.Name);
                 UnityUtility.DestroyIfNotNullOrAlreadyDestroyed(monitor);
             }
@@ -200,12 +212,13 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
         bool isRemoved = Elements.Remove(element);
         D.Assert(isRemoved, "{0} not found.".Inject(element.FullName));
         Data.RemoveElement(element.Data);
+        Unsubscribe(element);
 
         DetachSensorsFromMonitors(element.Data.Sensors.ToArray());
         if (IsOperational) {
             // avoid this work if removing during startup
             if (Elements.Count > Constants.Zero) {
-                AssessCmdIcon();
+                AssessIcon();
             }
             else {
                 D.Assert(Data.UnitHealth <= Constants.ZeroF, "{0} UnitHealth error.".Inject(FullName));
@@ -214,17 +227,26 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
         }
     }
 
-    public void OnSubordinateElementDeath(AUnitElementItem deadElement) {
-        D.Assert(deadElement != null);
+    private void Subscribe(AUnitElementItem element) {
+        element.Data.onUserIntelCoverageChanged += OnElementUserIntelCoverageChanged;
+        element.onDeathOneShot += OnSubordinateElementDeath;
+    }
+
+    private void Unsubscribe(AUnitElementItem element) {
+        element.Data.onUserIntelCoverageChanged -= OnElementUserIntelCoverageChanged;
+        element.onDeathOneShot -= OnSubordinateElementDeath;
+    }
+
+    private void OnSubordinateElementDeath(IMortalItem deadElement) {
         D.Log("{0} acknowledging {1} has been lost.", FullName, deadElement.FullName);
-        RemoveElement(deadElement);
+        RemoveElement(deadElement as AUnitElementItem);
     }
 
     protected virtual void OnHQElementChanging(AUnitElementItem newHQElement) {
         Arguments.ValidateNotNull(newHQElement);
         var previousHQElement = HQElement;
         if (previousHQElement != null) {
-            previousHQElement.Data.IsHQElement = false;
+            previousHQElement.Data.IsHQ = false;
         }
         if (!Elements.Contains(newHQElement)) {
             // the player will typically select/change the HQ element of a Unit from the elements already present in the unit
@@ -233,26 +255,26 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
         }
     }
 
-    protected virtual void OnHQElementChanged() {
-        HQElement.Data.IsHQElement = true;
+    private void OnHQElementChanged() {
+        HQElement.Data.IsHQ = true;
         Data.HQElementData = HQElement.Data;
-        //D.Log("{0}'s HQElement is now {1}.", Data.ParentName, HQElement.Data.Name);
         Radius = HQElement.Radius;
-        PlaceCmdUnderHQElement();
+        //D.Log("{0}'s HQElement is now {1}. Radius = {2}.", Data.ParentName, HQElement.Data.Name, Radius);
+        AttachCmdToHQElement(); // needs to occur before formation changed
         _formationGenerator.RegenerateFormation();
         if (DisplayMgr != null) {
             DisplayMgr.ResizePrimaryMesh(Radius);
         }
     }
 
+    protected abstract void AttachCmdToHQElement();
+
     protected override void OnOwnerChanged() {
         base.OnOwnerChanged();
         if (_trackingLabel != null) {
             _trackingLabel.Color = Owner.Color;
         }
-        if (DisplayMgr != null && DisplayMgr.Icon != null) {
-            DisplayMgr.Icon.Color = Owner.Color;
-        }
+        AssessIcon();
     }
 
     private void OnFormationChanged() {
@@ -266,11 +288,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
         }
     }
 
-    private void PlaceCmdUnderHQElement() {
-        D.Assert(UnitContainer != null);    // can't relocate Cmd until it has recorded the UnitContainer
-        UnityUtility.AttachChildToParent(gameObject, HQElement.gameObject);
-    }
-
     public override void __SimulateAttacked() {
         Elements.ForAll(e => e.__SimulateAttacked());
     }
@@ -278,7 +295,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
     protected internal virtual void PositionElementInFormation(AUnitElementItem element, Vector3 stationOffset) {
         element.Transform.position = HQElement.Position + stationOffset;
         //D.Log("{0} positioned at {1}, offset by {2} from {3} at {4}.",
-        //    element.FullName, element.Transform.position, stationOffset, HQElement.FullName, HQElement.Transform.position);
+        //element.FullName, element.Transform.position, stationOffset, HQElement.FullName, HQElement.Transform.position);
     }
 
     protected internal virtual void CleanupAfterFormationGeneration() { }
@@ -287,40 +304,59 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
 
     #region View Methods
 
-    protected override void OnIsDiscernibleChanged() {
-        base.OnIsDiscernibleChanged();
-        ShowTrackingLabel(IsDiscernible);
+    protected override void OnIsDiscernibleToUserChanged() {
+        base.OnIsDiscernibleToUserChanged();
+        ShowTrackingLabel(IsDiscernibleToUser);
     }
 
     protected virtual void OnIsSelectedChanged() {
+        if (IsSelected) {
+            ShowSelectionHud();
+            SelectionManager.Instance.CurrentSelection = this;
+        }
         AssessHighlighting();
         Elements.ForAll(e => e.AssessHighlighting());
-        if (IsSelected) { SelectionManager.Instance.CurrentSelection = this; }
     }
 
-    protected override void OnHumanPlayerIntelCoverageChanged() {
-        base.OnHumanPlayerIntelCoverageChanged();
-        AssessCmdIcon();
+    /// <summary>
+    /// Shows the selection popup.
+    /// </summary>
+    /// <remarks>This method must be called prior to notifying SelectionMgr of the selection change. 
+    /// HudPopup subscribes to the change and needs the SelectionPopup to already 
+    /// be resized and showing so it can position itself properly. Hiding the SelectionPopup is 
+    /// handled by the SelectionMgr when there is no longer an item selected.
+    /// </remarks>
+    protected abstract void ShowSelectionHud();
+
+    protected override void OnUserIntelCoverageChanged() {
+        base.OnUserIntelCoverageChanged();
+        AssessIcon();    // UNCLEAR is this needed? How does IntelCoverage of Cmd change icon contents?
     }
 
-    private void AssessCmdIcon() {
-        //D.Log("{0}.AssessCmdIcon() called.", FullName);
-        AIconID iconID = RefreshCmdIconID();
-        PickCmdIcon(iconID);
+    private void OnElementUserIntelCoverageChanged() {
+        AssessIcon();
     }
 
-    protected abstract AIconID RefreshCmdIconID();
+    private void AssessIcon() {
+        if (DisplayMgr == null) { return; }
 
-    private void PickCmdIcon(AIconID iconID) {
-        if (DisplayMgr != null) {
-            DisplayMgr.Icon.Set(iconID.IconFilename);
-            DisplayMgr.Icon.Color = iconID.Color;
-            //D.Log("{0} Icon filename: {1}, color: {2}.", FullName, iconID.IconFilename, iconID.Color.GetName());
+        var iconInfo = RefreshIconInfo();
+        if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
+            UnsubscribeToIconEvents(DisplayMgr.Icon);
+            //D.Log("{0} changing IconInfo from {1} to {2}.", FullName, DisplayMgr.IconInfo, iconInfo);
+            DisplayMgr.IconInfo = iconInfo;
+            SubscribeToIconEvents(DisplayMgr.Icon);
         }
     }
 
+    private IconInfo RefreshIconInfo() {
+        return MakeIconInfo();
+    }
+
+    protected abstract IconInfo MakeIconInfo();
+
     public override void AssessHighlighting() {
-        if (IsDiscernible) {
+        if (IsDiscernibleToUser) {
             if (IsFocus) {
                 if (IsSelected) {
                     ShowHighlights(HighlightID.Focused, HighlightID.Selected);
@@ -338,7 +374,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
     }
 
     private void ShowTrackingLabel(bool toShow) {
-        D.Log("{0}.ShowTrackingLabel({1}) called. IsTrackingLabelEnabled = {2}.", FullName, toShow, IsTrackingLabelEnabled);
+        //D.Log("{0}.ShowTrackingLabel({1}) called. IsTrackingLabelEnabled = {2}.", FullName, toShow, IsTrackingLabelEnabled);
         if (IsTrackingLabelEnabled) {
             _trackingLabel = _trackingLabel ?? InitializeTrackingLabel();
             _trackingLabel.Show(toShow);
@@ -347,7 +383,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
 
     #endregion
 
-    #region Mouse Events
+    #region Events
 
     protected override void OnLeftClick() {
         base.OnLeftClick();
@@ -361,8 +397,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
     protected void Dead_ExitState() {
         D.Error("{0}.Dead_ExitState should not occur.", Data.Name);
     }
-
-    public override void OnShowCompletion() { RelayToCurrentState(); }
 
     protected void OnTargetDeath(IMortalItem deadTarget) { RelayToCurrentState(deadTarget); }
 
@@ -394,6 +428,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
     }
 
     public override void TakeHit(CombatStrength elementDamageSustained) {
+        if (DebugSettings.Instance.AllPlayersInvulnerable) {
+            return;
+        }
         CombatStrength damageToCmd = elementDamageSustained - Data.DefensiveStrength;
         float unusedDamageSeverity;
         bool isCmdAlive = ApplyDamage(damageToCmd, out unusedDamageSeverity);
@@ -427,9 +464,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
         return false;
     }
 
-    protected void DestroyUnitContainer() {
-        Destroy(UnitContainer.gameObject);
-        D.Log("{0}.UnitContainer has been destroyed.", DisplayName);
+    protected void DestroyUnitContainer(float delayInSeconds = 0F) {
+        UnityUtility.Destroy(UnitContainer.gameObject, delayInSeconds);
     }
 
     #endregion
@@ -443,13 +479,20 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
 
     protected override void Unsubscribe() {
         base.Unsubscribe();
-        if (DisplayMgr != null && DisplayMgr.Icon != null) {
-            var iconEventListener = DisplayMgr.Icon.EventListener;
-            iconEventListener.onHover -= (iconGo, isOver) => OnHover(isOver);
-            iconEventListener.onClick -= (iconGo) => OnClick();
-            iconEventListener.onDoubleClick -= (iconGo) => OnDoubleClick();
-            iconEventListener.onPress -= (iconGo, isDown) => OnPress(isDown);
+        if (DisplayMgr != null) {
+            var icon = DisplayMgr.Icon;
+            if (icon != null) {
+                UnsubscribeToIconEvents(icon);
+            }
         }
+    }
+
+    private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
+        var iconEventListener = icon.EventListener;
+        iconEventListener.onHover -= (go, isOver) => OnHover(isOver);
+        iconEventListener.onClick -= (go) => OnClick();
+        iconEventListener.onDoubleClick -= (go) => OnDoubleClick();
+        iconEventListener.onPress -= (go, isDown) => OnPress(isDown);
     }
 
     // subscriptions contained completely within this gameobject (both subscriber
@@ -475,7 +518,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
 
     #region ICameraFocusable Members
 
-    public override bool IsRetainedFocusEligible { get { return Data.GetHumanPlayerIntelCoverage() != IntelCoverage.None; } }
+    public override bool IsRetainedFocusEligible { get { return Data.GetUserIntelCoverage() != IntelCoverage.None; } }
 
     public override float OptimalCameraViewingDistance { get { return UnitRadius * optViewDistanceFactor; } }
 
@@ -488,6 +531,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, ICommandItem, ISel
         get { return _isSelected; }
         set { SetProperty<bool>(ref _isSelected, value, "IsSelected", OnIsSelectedChanged); }
     }
+
+    //public abstract ColoredStringBuilder HudContent { get; }
 
     #endregion
 

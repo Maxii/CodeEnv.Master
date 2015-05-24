@@ -52,12 +52,12 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.Capacity:
                     return new ColoredTextList<int>(Constants.FormatInt_2DMin, data.Capacity);
                 case GuiHudLineKeys.Resources:
-                    return new ColoredTextList_Resources(data.Resources);
+                    return new ColoredTextList_Resources(data.OpeResources);
                 case GuiHudLineKeys.Specials:
-                    return (data.SpecialResources != TempGameValues.NoSpecialResources) ? new ColoredTextList_Specials(data.SpecialResources)
+                    return (data.RareResources != TempGameValues.NoSpecialResources) ? new ColoredTextList_Specials(data.RareResources)
                         : _emptyTextList;
                 case GuiHudLineKeys.Category:
-                    return (settleData != null) ? new ColoredTextList_String(settleData.Category.GetName(), settleData.Category.GetDescription()) : _emptyTextList;
+                    return (settleData != null) ? new ColoredTextList_String(settleData.Category.GetName(), settleData.Category.GetEnumAttributeText()) : _emptyTextList;
                 case GuiHudLineKeys.SettlementDetails:
                     return (settleData != null) ? new ColoredTextList_Settlement(settleData) : _emptyTextList;
 

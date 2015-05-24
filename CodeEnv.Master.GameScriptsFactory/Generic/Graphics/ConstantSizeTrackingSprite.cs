@@ -37,7 +37,6 @@ public class ConstantSizeTrackingSprite : AWorldTrackingWidget_ConstantSize {
     /// </summary>
     /// <param name="spriteFilename">The Filename of the sprite in the atlas.</param>
     public override void Set(string spriteFilename) {
-        if (Widget.spriteName == spriteFilename) { return; }
         Widget.spriteName = spriteFilename;
     }
 
@@ -51,7 +50,7 @@ public class ConstantSizeTrackingSprite : AWorldTrackingWidget_ConstantSize {
     /// </summary>
     /// <param name="width">The width.</param>
     /// <param name="height">The height.</param>
-    public void __SetDimensions(int width, int height) {
+    public virtual void __SetDimensions(int width, int height) {
         Widget.SetDimensions(width, height);
     }
 

@@ -27,32 +27,38 @@ namespace CodeEnv.Master.GameContent {
 
         public FleetCategory Category { get; private set; }
 
+        /// <summary>
+        /// The Composition of the fleet this report is about. The fleet elements
+        /// (ships) reported will be limited to those ships the Player requesting
+        /// the report has knowledge of. Will never be null as the Player will 
+        /// always know about the HQElement of the fleet, since he knows about
+        /// the fleet itself.
+        /// </summary>
         public FleetComposition UnitComposition { get; private set; }
 
         public INavigableTarget Target { get; private set; }
 
         public float? CurrentSpeed { get; private set; }
 
-        //public float RequestedSpeed { get; private set; }
-        //public Vector3 RequestedHeading { get; private set; }
-        //public Vector3 CurrentHeading { get; private set; }
-        //public float UnitFullStlSpeed { get; private set; }
-        //public float UnitFullFtlSpeed { get; private set; }
-
         public float? UnitFullSpeed { get; private set; }
 
         public float? UnitMaxTurnRate { get; private set; }
 
-        public FleetReport(FleetCmdData cmdData, Player player, ShipReport[] shipReports)
-            : base(cmdData, player, shipReports) { }
+        public ShipReport[] ElementReports { get; private set; }
 
-        protected override void AssignValuesFrom(AElementItemReport[] elementReports, AUnitCmdItemData cmdData) {
-            base.AssignValuesFrom(elementReports, cmdData);
-            var knownElementCategories = elementReports.Cast<ShipReport>().Select(r => r.Category).Where(cat => cat != ShipCategory.None);
-            if (knownElementCategories.Any()) {
+        public FleetReport(FleetCmdData cmdData, Player player, IFleetCmdItem item)
+            : base(cmdData, player, item) {
+            ElementReports = item.GetElementReports(player);
+            AssignValuesFromElementReports(cmdData);
+        }
+
+        private void AssignValuesFromElementReports(FleetCmdData cmdData) {
+            var knownElementCategories = ElementReports.Select(r => r.Category).Where(cat => cat != default(ShipCategory));
+            if (knownElementCategories.Any()) { // Player will always know about the HQElement (since knows Cmd) but Category may not yet be revealed
                 UnitComposition = new FleetComposition(knownElementCategories);
             }
-            Category = UnitComposition != null ? (cmdData as FleetCmdData).GenerateCmdCategory(UnitComposition) : FleetCategory.None;
+            Category = UnitComposition != null ? cmdData.GenerateCmdCategory(UnitComposition) : FleetCategory.None;
+            AssignValuesFrom(ElementReports);
         }
 
         protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
@@ -62,8 +68,8 @@ namespace CodeEnv.Master.GameContent {
             UnitMaxTurnRate = fData.UnitMaxTurnRate;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
-            base.AssignIncrementalValues_IntelCoverageModerate(data);
+        protected override void AssignIncrementalValues_IntelCoverageBroad(AItemData data) {
+            base.AssignIncrementalValues_IntelCoverageBroad(data);
             FleetCmdData fData = data as FleetCmdData;
             Target = fData.Target;
             CurrentSpeed = fData.CurrentSpeed;

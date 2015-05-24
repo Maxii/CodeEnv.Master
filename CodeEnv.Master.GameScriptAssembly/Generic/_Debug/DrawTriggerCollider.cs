@@ -31,7 +31,7 @@ public class DrawTriggerCollider : AMonoBase {
     [SerializeField]
     private string _note1 = "To Hide all, collapse component";
     [SerializeField]
-    private string _note2 = "To show collider's wireframe, enable.";
+    private string _note2 = "Enable to show wireframe.";
 #pragma warning restore 0414
 
     [Tooltip("Draw only when selected")]
@@ -71,12 +71,12 @@ public class DrawTriggerCollider : AMonoBase {
         Color oldColor = Gizmos.color;
         Gizmos.color = color;
         if (BoxCollider != null) {
-            var colliderCenter = _transform.position + BoxCollider.center;
+            var colliderCenter = transform.position + BoxCollider.center;   // can't use _transform as DrawGizmos called when not playing
             var colliderSize = new Vector3(BoxCollider.size.x, BoxCollider.size.y, BoxCollider.size.z);
             Gizmos.DrawWireCube(colliderCenter, colliderSize);
         }
         if (SphereCollider != null) {
-            var colliderCenter = _transform.position + SphereCollider.center;
+            var colliderCenter = transform.position + SphereCollider.center;    // can't use _transform as DrawGizmos called when not playing
             Gizmos.DrawWireSphere(colliderCenter, SphereCollider.radius);
         }
         Gizmos.color = oldColor;

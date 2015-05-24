@@ -31,8 +31,8 @@ public class FleetCommand : FollowableItem, IFleetCommand {
 
     protected override void Awake() {
         base.Awake();
-        _fleetMgr = gameObject.GetSafeMonoBehaviourComponentInParents<FleetUnitCreator>();
-        _fleetGraphics = gameObject.GetSafeMonoBehaviourComponentInParents<FleetGraphics>();
+        _fleetMgr = gameObject.GetSafeMonoBehaviourInParents<FleetUnitCreator>();
+        _fleetGraphics = gameObject.GetSafeMonoBehaviourInParents<FleetGraphics>();
     }
 
     protected override void Start() {
@@ -41,7 +41,7 @@ public class FleetCommand : FollowableItem, IFleetCommand {
     }
 
     private void __ValidateCtxObjectSettings() {
-        CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
+        CtxObject ctxObject = gameObject.GetSafeMonoBehaviour<CtxObject>();
         D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
         UnityUtility.ValidateComponentPresence<Collider>(gameObject);
     }

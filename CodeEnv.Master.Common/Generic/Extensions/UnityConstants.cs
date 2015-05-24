@@ -75,6 +75,10 @@ namespace CodeEnv.Master.Common {
 
         public const string InspectorWindowName = "Inspector";
 
+        public const string NguiEmbeddedColorFormat = "[{0:000000}]";
+        public const string NguiEmbeddedColorTerminator = "[-]";
+
+
     }
 }
 

@@ -16,10 +16,12 @@
 
 // default namespace
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
@@ -45,8 +47,12 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
         float fullStlSpeed = UnityEngine.Random.Range(1.5F, 3.0F);  // planetoids ~ 0.1 units/hour, so Slow min = 0.15 units/hour
         float fullStlThrust = mass * drag * fullStlSpeed;
         float fullFtlThrust = fullStlThrust * TempGameValues.__FtlMultiplier;   // FullFtlSpeed ~ 15 - 30 units/hour
+        float science = category == ShipCategory.Science ? 10F : Constants.ZeroF;
+        float culture = category == ShipCategory.Support || category == ShipCategory.Colonizer ? 2F : Constants.ZeroF;
+        float income = __GetIncome(category);
+        float expense = __GetExpense(category);
 
-        return new ShipStat(elementName, mass, 50F, category, combatStance, maxTurnRate, drag, fullStlThrust, fullFtlThrust);
+        return new ShipStat(elementName, mass, 50F, category, combatStance, maxTurnRate, drag, fullStlThrust, fullFtlThrust, science, culture, income, expense);
     }
 
     protected override FleetCmdItem MakeCommand(Player owner) {
@@ -55,12 +61,14 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
         FleetCmdStat cmdStat = new FleetCmdStat(UnitName, 10F, 100, Formation.Globe);
         FleetCmdItem cmd;
         if (isCompositionPreset) {
-            cmd = gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCmdItem>();
+            cmd = gameObject.GetSafeMonoBehaviourInChildren<FleetCmdItem>();
             _factory.MakeInstance(cmdStat, countermeasures, owner, ref cmd);
         }
         else {
             cmd = _factory.MakeInstance(cmdStat, countermeasures, owner);
+            //D.Log("{0} Position prior to attach to creator = {1}.", cmd.FullName, cmd.Position);
             UnityUtility.AttachChildToParent(cmd.gameObject, gameObject);
+            //D.Log("{0} Position after attach to creator = {1}.", cmd.FullName, cmd.Position);
         }
         cmd.IsTrackingLabelEnabled = enableTrackingLabel;
         return cmd;
@@ -83,7 +91,10 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
     }
 
     protected override ShipCategory[] ElementCategories {
-        get { return new ShipCategory[] { ShipCategory.Frigate, ShipCategory.Destroyer, ShipCategory.Cruiser, ShipCategory.Carrier, ShipCategory.Dreadnaught }; }
+        get {
+            return new ShipCategory[] { ShipCategory.Frigate, ShipCategory.Destroyer, ShipCategory.Cruiser, ShipCategory.Carrier, ShipCategory.Dreadnaught,
+        ShipCategory.Colonizer, ShipCategory.Science, ShipCategory.Troop, ShipCategory.Support};
+        }
     }
 
     protected override ShipCategory[] HQElementCategories {
@@ -183,6 +194,48 @@ public class FleetUnitCreator : AUnitCreator<ShipItem, ShipCategory, ShipData, S
         //IUnitAttackableTarget attackTgt = attackTgts.MaxBy(t => Vector3.SqrMagnitude(t.Position - _transform.position));
         D.Log("{0} attack target is {1}.", UnitName, attackTgt.FullName);
         _command.CurrentOrder = new FleetOrder(FleetDirective.Attack, attackTgt);
+    }
+
+    private float __GetIncome(ShipCategory category) {
+        switch (category) {
+            case ShipCategory.Support:
+                return 3F;
+            case ShipCategory.Carrier:
+            case ShipCategory.Colonizer:
+            case ShipCategory.Cruiser:
+            case ShipCategory.Destroyer:
+            case ShipCategory.Dreadnaught:
+            case ShipCategory.Fighter:
+            case ShipCategory.Frigate:
+            case ShipCategory.Science:
+            case ShipCategory.Scout:
+            case ShipCategory.Troop:
+                return Constants.ZeroF;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));
+        }
+    }
+
+    private float __GetExpense(ShipCategory category) {
+        switch (category) {
+            case ShipCategory.Carrier:
+            case ShipCategory.Dreadnaught:
+            case ShipCategory.Troop:
+            case ShipCategory.Colonizer:
+                return 5F;
+            case ShipCategory.Cruiser:
+            case ShipCategory.Support:  // TODO need Trader
+            case ShipCategory.Science:
+                return 3F;
+            case ShipCategory.Destroyer:
+                return 2F;
+            case ShipCategory.Fighter:
+            case ShipCategory.Frigate:
+            case ShipCategory.Scout:
+                return 1F;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));
+        }
     }
 
     public override string ToString() {

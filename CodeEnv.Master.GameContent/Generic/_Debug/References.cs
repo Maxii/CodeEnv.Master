@@ -19,9 +19,22 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Simple source of useful static references to important Unity-compiled MonoBehaviour scripts.
-    /// Primary purpose is to allow the relocation of classes that need these references
-    /// out of loose scripts and into pre-compiled assemblies.
+    /// Simple source of useful static references to important Unity-compiled MonoBehaviour 
+    /// and non-MonoBehaviour Singletons. Primary purpose is to allow the relocation of classes 
+    /// that need these references out of loose scripts and into pre-compiled assemblies.
+    /// 
+    /// PATTERN NOTES: As a static class, References persists across scenes and so do its'static
+    /// fields providing references to Singletons. Any reference to a Singleton that itself is 
+    /// not persistent across scenes will need to refresh the References field assignment 
+    /// when a new instance is created.
+    ///     - Persistent MonoSingletons: 
+    ///         - no issues as they all persist
+    ///     - Non-persistent MonoSingletons: MainCameraControl, DynamicObjectsFolder, SectorGrid, SphericalHighlight, Tooltip
+    ///         - all need to refresh the reference on instantiation in InitializeOnInstance
+    ///         - all should null the reference in Cleanup
+    ///     - Non-persistent StdGenericSingletons: 
+    ///         - all should implement IDisposable and call OnDispose from Cleanup to null _instance
+    ///         - all should be disposed of and re-instantiated in GameManager.RefreshStaticReferences()
     /// 
     /// WARNING: These references should not be accessed from the using class's Awake()
     /// (or equivalent) method as they can be null during Awake() when a new scene is 
@@ -38,23 +51,36 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public static class References {
 
+        // Note: to add more references, see pattern notes above
+
+        #region Persistent MonoBehaviour Singletons
+
         public static IGameManager GameManager { get; set; }
+        public static IUsefulTools UsefulTools { get; set; }
+        public static IInputManager InputManager { get; set; }
+        public static ISFXManager SFXManager { get; set; }
+
+        #endregion
+
+        #region Non-persistent MonoBehaviour Singletons
 
         public static ICameraControl MainCameraControl { get; set; }
-
+        public static ISectorGrid SectorGrid { get; set; }
+        public static ISphericalHighlight SphericalHighlight { get; set; }
         public static IDynamicObjectsFolder DynamicObjectsFolder { get; set; }
+        public static IHud Tooltip { get; set; }
+        public static IHud SelectionHud { get; set; }
+        public static IHud ItemHud { get; set; }
 
-        public static IGameInputHelper InputHelper { get; set; }
+        #endregion
+
+        #region Standard Generic Singletons
 
         public static IGeneralFactory GeneralFactory { get; set; }
+        public static ITrackingWidgetFactory TrackingWidgetFactory { get; set; }
+        public static IGameInputHelper InputHelper { get; set; }
 
-        public static IUsefulTools UsefulTools { get; set; }
-
-        public static ISectorGrid SectorGrid { get; set; }
-
-        public static IInputManager InputManager { get; set; }
-
-        public static ISphericalHighlight SphericalHighlight { get; set; }
+        #endregion
 
     }
 }

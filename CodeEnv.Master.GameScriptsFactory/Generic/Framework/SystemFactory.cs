@@ -86,7 +86,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         GameObject starPrefab = _starPrefabs.First(sGo => sGo.name == starStat.Category.GetName());
         GameObject starGo = UnityUtility.AddChild(systemParent.gameObject, starPrefab);
         starGo.layer = (int)starLayer;
-        StarItem item = starGo.GetSafeMonoBehaviourComponent<StarItem>();
+        StarItem item = starGo.GetSafeMonoBehaviour<StarItem>();
         MakeInstance(starStat, systemParent.Data.Name, ref item);
         return item;
     }
@@ -122,7 +122,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         GameObject planetPrefab = _planetPrefabs.Single(p => p.category == planetStat.Category).gameObject;
         GameObject planetGo = UnityUtility.AddChild(parentSystem.gameObject, planetPrefab);
 
-        var planetItem = planetGo.GetSafeMonoBehaviourComponent<PlanetItem>();
+        var planetItem = planetGo.GetSafeMonoBehaviour<PlanetItem>();
         MakeInstance(planetStat, cmStats, parentSystem.Data.Name, ref planetItem);
         return planetItem;
     }
@@ -161,7 +161,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         GameObject moonPrefab = _moonPrefabs.Single(m => m.category == moonStat.Category).gameObject;
         GameObject moonGo = UnityUtility.AddChild(parentPlanet.gameObject, moonPrefab);
 
-        var moonItem = moonGo.GetSafeMonoBehaviourComponent<MoonItem>();
+        var moonItem = moonGo.GetSafeMonoBehaviour<MoonItem>();
         MakeInstance(moonStat, cmStats, parentPlanet.Data.Name, ref moonItem);
         return moonItem;
     }
@@ -193,17 +193,15 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// will not be enabled but their gameObject will be parented to the provided parent. Their are
     /// no subordinate planets or stars attached yet.
     /// </summary>
-    /// <param name="sectorIndex">Index of the sector.</param>
-    /// <param name="topography">The topography.</param>
     /// <param name="creatorParent">The creator parent.</param>
     /// <returns></returns>
-    public SystemItem MakeSystemInstance(Index3D sectorIndex, Topography topography, SystemCreator creatorParent) {
+    public SystemItem MakeSystemInstance(SystemCreator creatorParent) {
         GameObject systemPrefab = _systemPrefab.gameObject;
         GameObject systemGo = UnityUtility.AddChild(creatorParent.gameObject, systemPrefab);
         string systemName = creatorParent.SystemName;
         systemGo.name = systemName;
-        SystemItem item = systemGo.GetSafeMonoBehaviourComponent<SystemItem>();
-        MakeSystemInstance(systemName, sectorIndex, topography, ref item);
+        SystemItem item = systemGo.GetSafeMonoBehaviour<SystemItem>();
+        MakeSystemInstance(systemName, ref item);
         return item;
     }
 
@@ -212,12 +210,10 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// will not be enabled. The item's transform will have the same parent and children it arrived with.
     /// </summary>
     /// <param name="systemName">Name of the system.</param>
-    /// <param name="sectorIndex">Index of the sector.</param>
-    /// <param name="topography">The topography.</param>
     /// <param name="system">The system item.</param>
-    public void MakeSystemInstance(string systemName, Index3D sectorIndex, Topography topography, ref SystemItem system) {
+    public void MakeSystemInstance(string systemName, ref SystemItem system) {
         D.Assert(system.transform.parent != null, "{0} should already have a parent.".Inject(system.FullName));
-        SystemData data = new SystemData(system.Transform, systemName, sectorIndex, topography) {
+        SystemData data = new SystemData(system.Transform, systemName) {
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
         };
         system.Data = data;

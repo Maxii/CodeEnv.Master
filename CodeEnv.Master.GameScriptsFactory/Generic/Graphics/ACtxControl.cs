@@ -116,12 +116,12 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         // CtxObject hold the .menuItems that are set programmatically when Show is called. 
 
         if (_availableSubMenus.Count == Constants.Zero) {
-            _availableSubMenus.AddRange(GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>()
+            _availableSubMenus.AddRange(GuiManager.Instance.gameObject.GetSafeMonoBehavioursInChildren<CtxMenu>()
                 .Where(menu => menu.gameObject.name.Equals("SubMenu")));
             D.Assert(UniqueSubmenuCountReqd <= _availableSubMenus.Count);
         }
         if (_generalCtxMenu == null) {
-            _generalCtxMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>()
+            _generalCtxMenu = GuiManager.Instance.gameObject.GetSafeMonoBehavioursInChildren<CtxMenu>()
                 .Single(menu => menu.gameObject.name.Equals("GeneralMenu"));
         }
 

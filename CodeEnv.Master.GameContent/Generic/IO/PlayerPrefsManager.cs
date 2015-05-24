@@ -29,8 +29,8 @@ namespace CodeEnv.Master.GameContent {
     public class PlayerPrefsManager : AGenericSingleton<PlayerPrefsManager>, IInstanceCount {
 
         private string _universeSizeKey = "Universe Size";
-        private string _playerSpeciesKey = "Player Species";
-        private string _playerColorKey = "Player Color";
+        private string _userPlayerSpeciesKey = "User Player Species";
+        private string _userPlayerColorKey = "User Player Color";
 
         private string _gameSpeedOnLoadKey = "Game Speed On Load";
         private string _isZoomOutOnCursorEnabledKey = "Zoom Out On Cursor";
@@ -44,9 +44,9 @@ namespace CodeEnv.Master.GameContent {
         // TODO: notifications are not needed for properties that cannot change during a game instance
         public UniverseSizeGuiSelection UniverseSizeSelection { get; set; }
 
-        public SpeciesGuiSelection PlayerSpeciesSelection { get; set; }
-        public GameColor PlayerColor { get; set; }
-        public GameClockSpeed GameSpeedOnLoad { get; private set; }
+        public SpeciesGuiSelection UserPlayerSpeciesSelection { get; set; }
+        public GameColor UserPlayerColor { get; set; }
+        public GameSpeed GameSpeedOnLoad { get; private set; }
 
         public bool IsPauseOnLoadEnabled { get; private set; }
 
@@ -127,17 +127,17 @@ namespace CodeEnv.Master.GameContent {
                 encryptedStringValue = Encrypt(UniverseSizeSelection.GetName());
                 PlayerPrefs.SetString(_universeSizeKey, encryptedStringValue);
             }
-            if (GameSpeedOnLoad != GameClockSpeed.None) {
+            if (GameSpeedOnLoad != GameSpeed.None) {
                 encryptedStringValue = Encrypt(GameSpeedOnLoad.GetName());
                 PlayerPrefs.SetString(_gameSpeedOnLoadKey, encryptedStringValue);
             }
-            if (PlayerSpeciesSelection != SpeciesGuiSelection.None) {
-                encryptedStringValue = Encrypt(PlayerSpeciesSelection.GetName());
-                PlayerPrefs.SetString(_playerSpeciesKey, encryptedStringValue);
+            if (UserPlayerSpeciesSelection != SpeciesGuiSelection.None) {
+                encryptedStringValue = Encrypt(UserPlayerSpeciesSelection.GetName());
+                PlayerPrefs.SetString(_userPlayerSpeciesKey, encryptedStringValue);
             }
-            if (PlayerColor != GameColor.None) {
-                encryptedStringValue = Encrypt(PlayerColor.GetName());
-                PlayerPrefs.SetString(_playerColorKey, encryptedStringValue);
+            if (UserPlayerColor != GameColor.None) {
+                encryptedStringValue = Encrypt(UserPlayerColor.GetName());
+                PlayerPrefs.SetString(_userPlayerColorKey, encryptedStringValue);
             }
             PlayerPrefs.SetString(_isZoomOutOnCursorEnabledKey, Encrypt(IsZoomOutOnCursorEnabled.ToString()));
             PlayerPrefs.SetString(_isCameraRollEnabledKey, Encrypt(IsCameraRollEnabled.ToString()));
@@ -166,10 +166,10 @@ namespace CodeEnv.Master.GameContent {
             D.Log("{0}.Retrieve() called.", GetType().Name);
             UniverseSizeSelection = PlayerPrefs.HasKey(_universeSizeKey) ? RetrieveEnumPref<UniverseSizeGuiSelection>(_universeSizeKey) : UniverseSizeGuiSelection.Normal;
             //D.Log("GameSpeedOnLoad = {0} before retrieval.", GameSpeedOnLoad);
-            GameSpeedOnLoad = PlayerPrefs.HasKey(_gameSpeedOnLoadKey) ? RetrieveEnumPref<GameClockSpeed>(_gameSpeedOnLoadKey) : GameClockSpeed.Normal;
+            GameSpeedOnLoad = PlayerPrefs.HasKey(_gameSpeedOnLoadKey) ? RetrieveEnumPref<GameSpeed>(_gameSpeedOnLoadKey) : GameSpeed.Normal;
             //D.Log("GameSpeedOnLoad = {0} after retrieval.", GameSpeedOnLoad);
-            PlayerSpeciesSelection = PlayerPrefs.HasKey(_playerSpeciesKey) ? RetrieveEnumPref<SpeciesGuiSelection>(_playerSpeciesKey) : SpeciesGuiSelection.Human;
-            PlayerColor = PlayerPrefs.HasKey(_playerColorKey) ? RetrieveEnumPref<GameColor>(_playerColorKey) : GameColor.Blue;
+            UserPlayerSpeciesSelection = PlayerPrefs.HasKey(_userPlayerSpeciesKey) ? RetrieveEnumPref<SpeciesGuiSelection>(_userPlayerSpeciesKey) : SpeciesGuiSelection.Human;
+            UserPlayerColor = PlayerPrefs.HasKey(_userPlayerColorKey) ? RetrieveEnumPref<GameColor>(_userPlayerColorKey) : GameColor.Blue;
 
             IsPauseOnLoadEnabled = (PlayerPrefs.HasKey(_isPauseAfterLoadEnabledKey)) ? bool.Parse(Decrypt(PlayerPrefs.GetString(_isPauseAfterLoadEnabledKey))) : false;
 
@@ -208,7 +208,7 @@ namespace CodeEnv.Master.GameContent {
             string callerIdMessage = " Called by {0}.{1}().".Inject(stackFrame.GetFileName(), stackFrame.GetMethod().Name);
 
             D.Assert(UniverseSizeSelection != UniverseSizeGuiSelection.None, callerIdMessage + "UniverseSize selection cannot be None.", true);
-            D.Assert(GameSpeedOnLoad != GameClockSpeed.None, callerIdMessage + "GameSpeedOnLoad cannot be None.", true);
+            D.Assert(GameSpeedOnLoad != GameSpeed.None, callerIdMessage + "GameSpeedOnLoad cannot be None.", true);
         }
 
         #endregion

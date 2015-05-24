@@ -26,8 +26,6 @@ namespace CodeEnv.Master.GameContent {
         where ReportType : AItemReport
         where DataType : AItemData {
 
-        protected static AItemLabelTextFactory<ReportType, DataType> LabelTextFactory { private get; set; }
-
         protected DataType _data;
         private IDictionary<Player, ReportType> _reportCache = new Dictionary<Player, ReportType>();
 
@@ -35,6 +33,8 @@ namespace CodeEnv.Master.GameContent {
             : base() {
             _data = data;
         }
+
+        public ReportType GetUserReport() { return GetReport(_gameMgr.UserPlayer); }
 
         public ReportType GetReport(Player player) {
             ReportType cachedReport;
@@ -50,6 +50,8 @@ namespace CodeEnv.Master.GameContent {
             return cachedReport;
         }
 
+        protected abstract ReportType GenerateReport(Player player);
+
         protected virtual bool IsCachedReportCurrent(Player player, out ReportType cachedReport) {
             return TryGetCachedReport(player, out cachedReport) && !_data.IsChanged;
         }
@@ -63,38 +65,6 @@ namespace CodeEnv.Master.GameContent {
                 return true;
             }
             return false;
-        }
-
-        protected abstract ReportType GenerateReport(Player player);
-
-        public override ALabelText GetLabelText(LabelID labelID) {
-            ALabelText cachedLabelText;
-            if (!IsCachedLabelTextCurrent(labelID, out cachedLabelText)) {
-                cachedLabelText = LabelTextFactory.MakeInstance(labelID, GetReport(_gameMgr.HumanPlayer), _data);
-                CacheLabelText(labelID, cachedLabelText);
-                D.Log("{0} generated and cached a new {1} for Label {2}.", GetType().Name, cachedLabelText.GetType().Name, labelID.GetName());
-            }
-            else {
-                D.Log("{0} reusing cached {1} for Label {2}.", GetType().Name, cachedLabelText.GetType().Name, labelID.GetName());
-            }
-            return cachedLabelText;
-        }
-
-        protected bool IsCachedLabelTextCurrent(LabelID labelID, out ALabelText cachedLabelText) {
-            ReportType cachedReport;
-            if (IsCachedReportCurrent(_gameMgr.HumanPlayer, out cachedReport)) {
-                if (TryGetCachedLabelText(labelID, out cachedLabelText)) {
-                    if (cachedLabelText.Report == cachedReport) {
-                        return true;
-                    }
-                }
-            }
-            cachedLabelText = null;
-            return false;
-        }
-
-        public override bool TryUpdateLabelTextContent(LabelID labelID, LabelContentID contentID, out IColoredTextList content) {
-            return LabelTextFactory.TryMakeInstance(labelID, contentID, GetReport(_gameMgr.HumanPlayer), _data, out content);
         }
 
     }

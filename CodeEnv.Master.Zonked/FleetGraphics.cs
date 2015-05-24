@@ -56,8 +56,8 @@ public class FleetGraphics : AGraphics, IDisposable {
 
     protected override void Awake() {
         base.Awake();
-        _fleetMgr = gameObject.GetSafeMonoBehaviourComponent<FleetUnitCreator>();
-        _fleetCmd = gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>();
+        _fleetMgr = gameObject.GetSafeMonoBehaviour<FleetUnitCreator>();
+        _fleetCmd = gameObject.GetSafeMonoBehaviourInChildren<FleetCommand>();
         _trackingLabelFactory = TrackingWidgetFactory.Instance;
         Target = _fleetCmd.transform;
         InitializeHighlighting();
@@ -69,12 +69,12 @@ public class FleetGraphics : AGraphics, IDisposable {
             Target.collider 
         };
         disableGameObjectOnNotDiscernible = new GameObject[1] { 
-            gameObject.GetSafeMonoBehaviourComponentInChildren<Billboard>().gameObject
+            gameObject.GetSafeMonoBehaviourInChildren<Billboard>().gameObject
         };
     }
 
     private void InitializeHighlighting() {
-        _fleetIcon = gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>();
+        _fleetIcon = gameObject.GetSafeMonoBehaviourInChildren<UISprite>();
     }
 
     private void OnIsDetectableChanged() {

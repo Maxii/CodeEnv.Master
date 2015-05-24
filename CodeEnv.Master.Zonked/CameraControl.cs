@@ -364,7 +364,7 @@ public class CameraControl : AMonoBaseSingleton<MainCameraControl> {
     }
 
     private void InitializeContextMenuSettings() {
-        _contextMenuPickHandler = gameObject.GetSafeMonoBehaviourComponent<CtxPickHandler>();
+        _contextMenuPickHandler = gameObject.GetSafeMonoBehaviour<CtxPickHandler>();
         _contextMenuPickHandler.dontUseFallThrough = true;
         _contextMenuPickHandler.pickLayers = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.SectorView);
         if (_contextMenuPickHandler.menuButton != NguiMouseButton.Right.ToUnityMouseButton()) {
@@ -1072,7 +1072,7 @@ public class CameraControl : AMonoBaseSingleton<MainCameraControl> {
     /// <param name="proposedPosition">The proposed position.</param>
     private void ProcessPositionChange(Vector3 proposedPosition) {
         Vector3 currentPosition = Position;
-        if (currentPosition.IsSame(proposedPosition) || !ValidatePosition(proposedPosition)) {
+        if (currentPosition.IsSameAs(proposedPosition) || !ValidatePosition(proposedPosition)) {
             return;
         }
         Index3D proposedSectorIndex = SectorGrid.GetSectorIndex(proposedPosition);

@@ -14,32 +14,34 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
-using CodeEnv.Master.Common;
 namespace CodeEnv.Master.GameContent {
+
+    using CodeEnv.Master.Common;
 
     /// <summary>
     /// Enum identifying the alternative sizes of a Fleet.
+    /// Note: order matters - ascending
     /// </summary>
     public enum FleetCategory {
 
-        None,
+        None = 0,
 
         [EnumAttribute("Small Expeditionary Unit")]
-        Flotilla,
+        Flotilla = 1,
 
         [EnumAttribute("Modest Combat Force")]
-        Squadron,
+        Squadron = 2,
 
         // DIvision,
 
         [EnumAttribute("Medium Combat Force")]
-        TaskForce,
+        TaskForce = 3,
 
         [EnumAttribute("Large Combat Force")]
-        BattleGroup,
+        BattleGroup = 4,
 
         [EnumAttribute("Gigantic Combat Force")]
-        Armada
+        Armada = 5
 
     }
 }

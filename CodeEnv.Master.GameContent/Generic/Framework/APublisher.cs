@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: APublisher.cs
-// Abstract base class for Report and LabelText Publishers.
+// Abstract base class for Report and HudContent Publishers.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,31 +16,17 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System.Collections.Generic;
-    using CodeEnv.Master.Common;
-
     /// <summary>
-    /// Abstract base class for Report and LabelText Publishers.
+    /// Abstract base class for Report and HudContent Publishers.
     /// </summary>
     public abstract class APublisher {
 
+        public abstract ColoredStringBuilder HudContent { get; }
+
         protected IGameManager _gameMgr;
-        private IDictionary<LabelID, ALabelText> _labelTextCache = new Dictionary<LabelID, ALabelText>();
 
         public APublisher() {
             _gameMgr = References.GameManager;
-        }
-
-        public abstract ALabelText GetLabelText(LabelID labelID);
-
-        public abstract bool TryUpdateLabelTextContent(LabelID labelID, LabelContentID contentID, out IColoredTextList content);
-
-        protected void CacheLabelText(LabelID labelID, ALabelText labelText) {
-            _labelTextCache[labelID] = labelText;
-        }
-
-        protected bool TryGetCachedLabelText(LabelID labelID, out ALabelText cachedLabelText) {
-            return _labelTextCache.TryGetValue(labelID, out cachedLabelText);
         }
 
     }

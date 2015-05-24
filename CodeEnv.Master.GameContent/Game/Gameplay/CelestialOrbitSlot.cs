@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
     public class CelestialOrbitSlot : AOrbitSlot {
 
         private GameObject _orbitedObject;
-        private IOrbiter _orbiter;
+        private IOrbitSimulator _orbitSimulator;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CelestialOrbitSlot"/> class.
@@ -47,47 +47,45 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The orbitingObject assumes an orbit around the preset OrbitedObject,
         /// beginning at a random point on the meanRadius of this orbit slot. Returns the newly instantiated
-        /// IOrbiter, parented to the OrbitedObject and the parent of <c>orbitingObject</c>.
+        /// IOrbitSimulator, parented to the OrbitedObject and the parent of <c>orbitingObject</c>.
         /// </summary>
         /// <param name="orbitingObject">The object that wants to assume an orbit.</param>
-        /// <param name="orbiterName">Name of the <c>Orbiter</c> object created to simulate orbit movement.</param>
+        /// <param name="orbitSimulatorName">Name of the object created to simulate orbit movement.</param>
         /// <returns></returns>
-        public IOrbiter AssumeOrbit(Transform orbitingObject, string orbiterName = "") {
+        public IOrbitSimulator AssumeOrbit(Transform orbitingObject, string orbitSimulatorName = "") {
             D.Log("{0}.AssumeOrbit({1}) called.", _orbitedObject.name, orbitingObject.name);
             D.Assert(orbitingObject.GetInterface<IShipItem>() == null);
-            if (_orbiter != null) {
-                D.Error("{0} attempting to assume orbit around {1} which already has {2} orbiting.".Inject(orbitingObject.name, _orbitedObject.name, _orbiter.Transform.name));
+            if (_orbitSimulator != null) {
+                D.Error("{0} attempting to assume orbit around {1} which already has {2} orbiting.".Inject(orbitingObject.name, _orbitedObject.name, _orbitSimulator.Transform.name));
             }
-            _orbiter = References.GeneralFactory.MakeOrbiterInstance(_orbitedObject, _isOrbitedObjectMobile, false, _orbitPeriod, orbiterName);
-            UnityUtility.AttachChildToParent(orbitingObject.gameObject, _orbiter.Transform.gameObject);
+            _orbitSimulator = References.GeneralFactory.MakeOrbitSimulatorInstance(_orbitedObject, _isOrbitedObjectMobile, false, _orbitPeriod, orbitSimulatorName);
+            UnityUtility.AttachChildToParent(orbitingObject.gameObject, _orbitSimulator.Transform.gameObject);
             orbitingObject.localPosition = GenerateRandomLocalPositionWithinSlot();
-            return _orbiter;
+            return _orbitSimulator;
         }
 
         /// <summary>
         /// Destroys the orbiter object referenced by this CelestialOrbitSlot.
         /// </summary>
-        public void DestroyOrbiter() {
-            D.Assert(_orbiter != null, "Attempting to destroy a non-existant orbiter around {0}.".Inject(_orbitedObject.name));
-            new Job(DestroyOrbiterWhenEmpty(), toStart: true, onJobComplete: (wasKilled) => {
-                D.Log("Orbiter around {0} destroyed.", _orbitedObject.name);
+        public void DestroyOrbitSimulator() {
+            D.Assert(_orbitSimulator != null, "Attempting to destroy a non-existant {0} around {1}.".Inject(typeof(IOrbitSimulator).Name, _orbitedObject.name));
+            new Job(DestroyOrbitSimulatorWhenEmpty(), toStart: true, onJobComplete: (wasKilled) => {
+                D.Log("{0} around {1} destroyed.", typeof(IOrbitSimulator).Name, _orbitedObject.name);
             });
         }
 
-        private IEnumerator DestroyOrbiterWhenEmpty() {
-            var startTime = Time.time;
-            var time = startTime;
-            while (_orbiter.Transform.childCount > Constants.Zero) {
-                time += Time.deltaTime;
-                if (time - startTime > 6F) {
+        private IEnumerator DestroyOrbitSimulatorWhenEmpty() {
+            var cumTime = 0F;
+            while (_orbitSimulator.Transform.childCount > Constants.Zero) {
+                cumTime += Time.deltaTime;
+                if (cumTime > 6F) {
                     D.WarnContext("{0} around {1} still waiting for destruction."
-                        .Inject(_orbiter.Transform.name, _orbitedObject.name), _orbiter.Transform);
-                    time = startTime;
+                        .Inject(_orbitSimulator.Transform.name, _orbitedObject.name), _orbitSimulator.Transform);
                 }
                 yield return null;
             }
-            UnityUtility.DestroyIfNotNullOrAlreadyDestroyed<IOrbiter>(_orbiter);
-            _orbiter = null;
+            UnityUtility.DestroyIfNotNullOrAlreadyDestroyed<IOrbitSimulator>(_orbitSimulator);
+            _orbitSimulator = null;
         }
 
         /// <summary>

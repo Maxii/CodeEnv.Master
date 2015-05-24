@@ -72,8 +72,6 @@ namespace CodeEnv.Master.GameContent {
 
         private string ConstructStringRepresentation() {
             var sb = new StringBuilder();
-            sb.Append(CommonTerms.Composition);
-            sb.Append(": ");
             var uniqueCategories = _categoryCountLookup.Keys.ToList();
             foreach (var cat in uniqueCategories) {
                 int count = _categoryCountLookup[cat];

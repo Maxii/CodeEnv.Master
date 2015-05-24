@@ -38,7 +38,11 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<Player>(ref _owner, value, "Owner", OnOwnerChanged); }
         }
 
-        public Topography Topography { get; protected set; }   // can't use OnPropertyChanged approach as default(SpaceTopography) = OpenSpace, aka 0 tag
+        private Topography _topography;
+        public virtual Topography Topography {
+            get { return _topography; }
+            set { SetProperty<Topography>(ref _topography, value, "Topography", OnTopographyChanged); }
+        }
 
         public Vector3 Position { get { return _itemTransform.position; } }
 
@@ -68,6 +72,8 @@ namespace CodeEnv.Master.GameContent {
         private void OnNameChanged() {
             _itemTransform.name = Name;
         }
+
+        protected virtual void OnTopographyChanged() { }
 
 
     }

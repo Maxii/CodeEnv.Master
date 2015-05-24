@@ -31,10 +31,10 @@ public class GuiMenuCheckbox : AGuiMenuElement {
 
     public string tooltip = string.Empty;
 
-    public GuiMenuElementID elementID;
+    public GuiElementID elementID;
 
     public override bool HasPreference { get { return hasPreference; } }
-    public override GuiMenuElementID ElementID { get { return elementID; } }
+    public override GuiElementID ElementID { get { return elementID; } }
 
     protected override string TooltipContent { get { return tooltip; } }
 
@@ -50,7 +50,7 @@ public class GuiMenuCheckbox : AGuiMenuElement {
     /// the checkbox value is set to false.
     /// </summary>
     private void InitializeCheckbox() {
-        _checkbox = gameObject.GetSafeMonoBehaviourComponent<UIToggle>();
+        _checkbox = gameObject.GetSafeMonoBehaviour<UIToggle>();
 
         if (HasPreference) {
             string prefsPropertyName = ElementID.PreferencePropertyName();

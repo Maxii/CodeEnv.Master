@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -28,8 +29,13 @@ using UnityEngine;
 /// </summary>
 public class GuiManager : AMonoSingleton<GuiManager> {
 
+    private IDictionary<GuiElementID, GameObject> _buttonLookup;
     private Stack<IList<UIPanel>> _stackedPanelsToReappear;
-    private UIPanel[] _panelsThatNeverDisappear;
+
+    /// <summary>
+    /// Panels that are immune to visibility manipulation.
+    /// </summary>
+    private IList<UIPanel> _immunePanels;
 
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
@@ -38,14 +44,21 @@ public class GuiManager : AMonoSingleton<GuiManager> {
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        UIPanel uiRootPanel = UIRoot.list[0].gameObject.GetSafeMonoBehaviourComponent<UIPanel>();
-        UIPanel tooltipPanel = gameObject.GetSafeMonoBehaviourComponentInChildren<UITooltip>().gameObject.GetSafeMonoBehaviourComponent<UIPanel>();
-        _panelsThatNeverDisappear = new UIPanel[] { uiRootPanel, tooltipPanel };
+        _immunePanels = AcquireImmunePanels();
+    }
+
+    private IList<UIPanel> AcquireImmunePanels() {
+        UIPanel uiRootPanel = UIRoot.list[0].gameObject.GetSafeMonoBehaviour<UIPanel>();
+        UIPanel tooltipPanel = gameObject.GetSafeMonoBehaviourInChildren<Tooltip>().gameObject.GetSafeMonoBehaviour<UIPanel>();
+        GameObject tempDebugGo = GameObject.Find("UI Debug");
+        UIPanel[] tempDebugPanels = tempDebugGo.GetComponentsInChildren<UIPanel>(includeInactive: true);
+        return new List<UIPanel>(tempDebugPanels) { uiRootPanel, tooltipPanel };
     }
 
     protected override void Start() {
         base.Start();
         CheckDebugSettings();
+        InitializeButtonClickSystem();
     }
 
     //[System.Diagnostics.Conditional("UNITY_EDITOR")]
@@ -55,15 +68,34 @@ public class GuiManager : AMonoSingleton<GuiManager> {
             GuiCameraControl.Instance.GuiCamera.enabled = false;
         }
         if (!debugSettings.EnableFpsReadout) {
-            GameObject fpsReadoutParentGo = gameObject.GetSafeMonoBehaviourComponentInChildren<FpsReadout>().transform.parent.gameObject;
+            GameObject fpsReadoutParentGo = gameObject.GetSafeMonoBehaviourInChildren<FpsReadout>().transform.parent.gameObject;
             fpsReadoutParentGo.SetActive(false);
         }
+    }
+
+    private void InitializeButtonClickSystem() {
+        _buttonLookup = new Dictionary<GuiElementID, GameObject>();
+        var allButtons = gameObject.GetSafeMonoBehavioursInChildren<UIButton>(includeInactive: true);
+        var buttonGuiElements = allButtons.Select(b => b.gameObject.GetComponent<GuiElement>()).Where(ge => ge != null);
+        buttonGuiElements.ForAll(bge => {
+            _buttonLookup.Add(bge.elementID, bge.gameObject);
+            D.Log("{0} added {1} to ButtonLookup.", GetType().Name, bge.elementID.GetName());
+        });
+    }
+
+    /// <summary>
+    /// Calls "OnClick" on the gameObject associated with this buttonID.
+    /// </summary>
+    /// <param name="buttonID">The button identifier.</param>
+    public void ClickButton(GuiElementID buttonID) {
+        var buttonGo = _buttonLookup[buttonID];
+        GameInputHelper.Instance.Notify(buttonGo, "OnClick");
     }
 
     public void ChangeVisibilityOfUIElements(GuiVisibilityMode visMode, IEnumerable<UIPanel> exceptions) {
         switch (visMode) {
             case GuiVisibilityMode.Hidden:
-                var activeUIRootChildPanelCandidates = gameObject.GetSafeMonoBehaviourComponentsInChildren<UIPanel>().Except(_panelsThatNeverDisappear);
+                var activeUIRootChildPanelCandidates = gameObject.GetSafeMonoBehavioursInChildren<UIPanel>().Except(_immunePanels);
                 // Can't use UIPanel.list as it contains ALL active UIPanels, not just those in the 2DUI
                 //D.Log("Active 2DUI UIPanels found on HideVisibleGuiPanels event: {0}{1}.", Constants.NewLine, activeUIRootChildPanelCandidates.Concatenate());
                 var panelsToDisappear = activeUIRootChildPanelCandidates.Except(exceptions);

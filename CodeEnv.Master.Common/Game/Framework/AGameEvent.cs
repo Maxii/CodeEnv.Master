@@ -15,6 +15,7 @@ namespace CodeEnv.Master.Common {
     /// <summary>
     /// Abstract Base class for all GameEvents processed by the GameEventManager.
     /// </summary>
+    [System.Obsolete]
     public abstract class AGameEvent {
 
         public object Source { get; private set; }

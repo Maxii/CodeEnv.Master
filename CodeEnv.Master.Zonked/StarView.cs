@@ -64,7 +64,7 @@ public class StarView : AFocusableItemView {
         starLight.cullingMask = _starLightCullingMask;
         starLight.enabled = true;
 
-        _billboard = gameObject.GetSafeMonoBehaviourComponentInChildren<Billboard>();
+        _billboard = gameObject.GetSafeMonoBehaviourInChildren<Billboard>();
         _billboard.enabled = true;
 
         var animation = gameObject.GetComponentInChildren<Animation>();
@@ -72,11 +72,11 @@ public class StarView : AFocusableItemView {
         animation.enabled = true;
         // TODO animation settings and distance controls
 
-        var revolvers = gameObject.GetSafeMonoBehaviourComponentsInChildren<Revolver>();
+        var revolvers = gameObject.GetSafeMonoBehavioursInChildren<Revolver>();
         revolvers.ForAll(r => r.enabled = true);
         // TODO Revolver settings and distance controls, Revolvers control their own enabled state based on visibility
 
-        var cameraLosChgdListener = gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLosChangedListener>();
+        var cameraLosChgdListener = gameObject.GetSafeMonoBehaviourInChildren<CameraLosChangedListener>();
         cameraLosChgdListener.onCameraLosChanged += (go, inCameraLOS) => InCameraLOS = inCameraLOS;
         cameraLosChgdListener.enabled = true;
     }

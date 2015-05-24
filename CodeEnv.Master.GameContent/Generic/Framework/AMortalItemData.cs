@@ -62,6 +62,8 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<CombatStrength>(ref _defensiveStrength, value, "DefensiveStrength"); }
         }
 
+        public abstract Index3D SectorIndex { get; }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AMortalItemData"/> class.
         /// </summary>

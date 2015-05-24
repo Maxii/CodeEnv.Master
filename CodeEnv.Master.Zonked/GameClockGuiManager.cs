@@ -31,7 +31,7 @@ public class GameClockGuiManager : GuiManagerBase<GameClockGuiManager> {
     public GuiElements guiElements = new GuiElements();
 
     private GameEventManager eventMgr;
-    private GameClockSpeed[] speedsOrderedByRisingValue;
+    private GameSpeed[] speedsOrderedByRisingValue;
     private float[] orderedSliderStepValues;
 
 
@@ -87,29 +87,29 @@ public class GameClockGuiManager : GuiManagerBase<GameClockGuiManager> {
     }
 
     protected override void InitializeGuiWidgets() {
-        GameClockSpeed[] speeds = Enum.GetValues(typeof(GameClockSpeed)) as GameClockSpeed[];
+        GameSpeed[] speeds = Enum.GetValues(typeof(GameSpeed)) as GameSpeed[];
         //GameClockSpeed[] noSpeed = new GameClockSpeed[] { GameClockSpeed.None; };
         //speeds = speeds.Except<GameClockSpeed>(noSpeed) as GameClockSpeed[];
         //speeds = Enums<GameClockSpeed>.Remove(speeds, GameClockSpeed.None);
-        speeds = speeds.Except<GameClockSpeed>(GameClockSpeed.None).ToArray<GameClockSpeed>();
+        speeds = speeds.Except<GameSpeed>(GameSpeed.None).ToArray<GameSpeed>();
 
         int numberOfSliderSteps = speeds.Length;
         guiElements.gameSpeedSlider.numberOfSteps = numberOfSliderSteps;
 
         //var sortedSpeeds = from s in speeds orderby s.SpeedMultiplier() select s;   // using Linq Query syntax
         var sortedSpeeds = speeds.OrderBy(s => s.SpeedMultiplier());   // using IEnumerable extension methods and lamba
-        speedsOrderedByRisingValue = sortedSpeeds.ToArray<GameClockSpeed>();
+        speedsOrderedByRisingValue = sortedSpeeds.ToArray<GameSpeed>();
         orderedSliderStepValues = MyNguiUtilities.GenerateOrderedSliderStepValues(numberOfSliderSteps);
 
         // Set Sliders initial tPrefsValue to that associated with GameClockSpeed.Normal
-        int indexOfNormalSpeed = speedsOrderedByRisingValue.FindIndex<GameClockSpeed>(s => (s == GameClockSpeed.Normal));
+        int indexOfNormalSpeed = speedsOrderedByRisingValue.FindIndex<GameSpeed>(s => (s == GameSpeed.Normal));
         float sliderValueAtNormalSpeed = orderedSliderStepValues[indexOfNormalSpeed];
         guiElements.gameSpeedSlider.sliderValue = sliderValueAtNormalSpeed;
 
-        RefreshGameSpeedReadout(GameClockSpeed.Normal);
+        RefreshGameSpeedReadout(GameSpeed.Normal);
     }
 
-    private void RefreshGameSpeedReadout(GameClockSpeed clockSpeed) {
+    private void RefreshGameSpeedReadout(GameSpeed clockSpeed) {
         guiElements.gameSpeedReadout.text = CommonTerms.MultiplySign + clockSpeed.SpeedMultiplier().ToString();
     }
 
@@ -117,7 +117,7 @@ public class GameClockGuiManager : GuiManagerBase<GameClockGuiManager> {
         float tolerance = 0.05F;
         int index = orderedSliderStepValues.FindIndex<float>(v => Mathfx.Approx(gameSpeedSliderValue, v, tolerance));
         Arguments.ValidateNotNegative(index);
-        GameClockSpeed clockSpeed = speedsOrderedByRisingValue[index];
+        GameSpeed clockSpeed = speedsOrderedByRisingValue[index];
 
         // dispatch event to GameClock telling of change
         eventMgr.Raise<GameSpeedChangeEvent>(new GameSpeedChangeEvent(clockSpeed));

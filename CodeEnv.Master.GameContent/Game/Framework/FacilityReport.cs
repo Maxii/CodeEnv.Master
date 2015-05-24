@@ -25,36 +25,41 @@ namespace CodeEnv.Master.GameContent {
 
         public FacilityCategory Category { get; private set; }
 
-        public FacilityReport(FacilityData data, Player player) : base(data, player) { }
+        public FacilityReport(FacilityData data, Player player, IFacilityItem item) : base(data, player, item) { }
 
         protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageComprehensive(data);
             var fData = data as FacilityData;
-            CurrentHitPoints = fData.CurrentHitPoints;
-            Health = fData.Health;
+            Culture = fData.Culture;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
-            base.AssignIncrementalValues_IntelCoverageModerate(data);
+        protected override void AssignIncrementalValues_IntelCoverageBroad(AItemData data) {
+            base.AssignIncrementalValues_IntelCoverageBroad(data);
             var fData = data as FacilityData;
             DefensiveStrength = fData.DefensiveStrength;
             OffensiveStrength = fData.OffensiveStrength;
+            Health = fData.Health;  // Element Health only matters on Element displays. UnitHealth calc'd using Element HitPts
+            CurrentHitPoints = fData.CurrentHitPoints;
+            Science = fData.Science;
+            Income = fData.Income;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageMinimal(AItemData data) {
-            base.AssignIncrementalValues_IntelCoverageMinimal(data);
+        protected override void AssignIncrementalValues_IntelCoverageEssential(AItemData data) {
+            base.AssignIncrementalValues_IntelCoverageEssential(data);
             var fData = data as FacilityData;
             ParentName = fData.ParentName;
+            Position = fData.Position;
             Owner = fData.Owner;
             Category = fData.Category;
-            MaxHitPoints = fData.MaxHitPoints;
+            MaxHitPoints = fData.MaxHitPoints;  // should always be with or before CurrentHitPts as both are needed to calc CmdReport's UnitHealth
             Mass = fData.Mass;
             MaxSensorRange = fData.MaxSensorRange;
             MaxWeaponsRange = fData.MaxWeaponsRange;
+            Expense = fData.Expense;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageAware(AItemData data) {
-            base.AssignIncrementalValues_IntelCoverageAware(data);
+        protected override void AssignIncrementalValues_IntelCoverageBasic(AItemData data) {
+            base.AssignIncrementalValues_IntelCoverageBasic(data);
             var fData = data as FacilityData;
             Name = fData.Name;
         }

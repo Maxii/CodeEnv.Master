@@ -27,8 +27,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SystemData : AItemData, IDisposable {
 
-        public Index3D SectorIndex { get; private set; }
-
         /// <summary>
         ///  The orbit slot within this system that any current or future settlement can occupy. 
         /// </summary>
@@ -40,16 +38,10 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<int>(ref _capacity, value, "Capacity"); }
         }
 
-        private OpeYield _resources;
-        public OpeYield Resources {
+        private ResourceYield _resources;
+        public ResourceYield Resources {
             get { return _resources; }
-            private set { SetProperty<OpeYield>(ref _resources, value, "Resources"); }
-        }
-
-        private XYield _specialResources;
-        public XYield SpecialResources {
-            get { return _specialResources; }
-            private set { SetProperty<XYield>(ref _specialResources, value, "SpecialResources"); }
+            private set { SetProperty<ResourceYield>(ref _resources, value, "Resources"); }
         }
 
         private SettlementCmdData _settlementData;
@@ -64,10 +56,12 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<StarData>(ref _starData, value, "StarData", OnStarDataChanged, OnStarDataChanging); }
         }
 
+        public Index3D SectorIndex { get; private set; }
+
         private IList<PlanetoidData> _allPlanetoidData = new List<PlanetoidData>();
 
-        private IDictionary<PlanetoidData, IList<IDisposable>> _planetoidSubscribers;
-        private IList<IDisposable> _starSubscribers;
+        private IDictionary<PlanetoidData, IList<IDisposable>> _planetoidSubscriptions;
+        private IList<IDisposable> _starSubscriptions;
         private IList<IDisposable> _settlementSubscribers;
 
         /// <summary>
@@ -76,29 +70,25 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="systemTransform">The system transform.</param>
         /// <param name="systemName">Name of the system.</param>
-        /// <param name="sectorIndex">Index of the sector.</param>
-        /// <param name="topography">The topography.</param>
-        public SystemData(Transform systemTransform, string systemName, Index3D sectorIndex, Topography topography)
-            : this(systemTransform, systemName, sectorIndex, topography, TempGameValues.NoPlayer) { }
+        public SystemData(Transform systemTransform, string systemName)
+            : this(systemTransform, systemName, TempGameValues.NoPlayer) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SystemData" /> class.
         /// </summary>
         /// <param name="systemTransform">The system transform.</param>
         /// <param name="systemName">Name of the system.</param>
-        /// <param name="sectorIndex">Index of the sector.</param>
-        /// <param name="topography">The topography.</param>
         /// <param name="owner">The owner.</param>
-        public SystemData(Transform systemTransform, string systemName, Index3D sectorIndex, Topography topography, Player owner)
+        public SystemData(Transform systemTransform, string systemName, Player owner)
             : base(systemTransform, systemName, owner) {
-            SectorIndex = sectorIndex;
-            base.Topography = topography;
+            SectorIndex = References.SectorGrid.GetSectorIndex(Position);
+            Topography = Topography.System;
             Subscribe();
         }
 
         private void Subscribe() {
-            _planetoidSubscribers = new Dictionary<PlanetoidData, IList<IDisposable>>();
-            _starSubscribers = new List<IDisposable>();
+            _planetoidSubscriptions = new Dictionary<PlanetoidData, IList<IDisposable>>();
+            _starSubscriptions = new List<IDisposable>();
         }
 
         public void AddPlanetoid(PlanetoidData data) {
@@ -118,31 +108,12 @@ namespace CodeEnv.Master.GameContent {
             return true;
         }
 
-        /// <summary>
-        /// Indicates whether the provided <c>player</c> has investigated members of the system and
-        /// gained knowledge about any member that is greater than the default level when the game started.
-        /// Example: This method would return true if the player's IntelCoverage of the System's Star was greater than 
-        /// IntelCoverage.Aware OR the player's IntelCoverage of any of the System's Planetoids was greater than IntelCoverage.None.
-        /// </summary>
-        /// <param name="player">The player.</param>
-        /// <returns></returns>
-        public bool HasPlayerInvestigated(Player player) {
-            var isStarInvestigated = StarData.HasPlayerInvestigated(player);
-            var planetoidsInvestigatedState = _allPlanetoidData.Select(pd => pd.HasPlayerInvestigated(player));
-            //D.Log("{0}.HasPlayerInvestigated({1}) called. Star = {2}, Planetoids = {3}.", FullName, player.LeaderName, isStarInvestigated, planetoidsInvestigatedState.Concatenate());
-            return isStarInvestigated || planetoidsInvestigatedState.Any(pis => pis == true);
-        }
-
         private void OnSystemMemberCapacityChanged() {
             UpdateCapacity();
         }
 
         private void OnSystemMemberResourceValueChanged() {
             UpdateResources();
-        }
-
-        private void OnSystemMemberSpecialResourceValueChanged() {
-            UpdateSpecialResources();
         }
 
         private void OnSettlementDataChanged() {
@@ -187,7 +158,6 @@ namespace CodeEnv.Master.GameContent {
         private void RecalcAllProperties() {
             UpdateCapacity();
             UpdateResources();
-            UpdateSpecialResources();
         }
 
         private void UpdateCapacity() {
@@ -195,33 +165,24 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void UpdateResources() {
-            var defaultValueIfEmpty = default(OpeYield);
+            var defaultValueIfEmpty = default(ResourceYield);
             var resources = _allPlanetoidData.Select(pd => pd.Resources);
-            OpeYield totalResourcesFromPlanets = resources.Aggregate(defaultValueIfEmpty, (accumulator, ope) => accumulator + ope);
+            ResourceYield totalResourcesFromPlanets = resources.Aggregate(defaultValueIfEmpty, (accumulator, res) => accumulator + res);
             Resources = totalResourcesFromPlanets + StarData.Resources;
         }
 
-        private void UpdateSpecialResources() {
-            var defaultValueIfEmpty = default(XYield);
-            var resources = _allPlanetoidData.Select(pd => pd.SpecialResources);
-            XYield totalResourcesFromPlanets = resources.Aggregate(defaultValueIfEmpty, (accumulator, ope) => accumulator + ope);
-            SpecialResources = totalResourcesFromPlanets + StarData.SpecialResources;
-        }
-
         private void SubscribeToPlanetoidDataValueChanges(PlanetoidData data) {
-            if (!_planetoidSubscribers.ContainsKey(data)) {
-                _planetoidSubscribers.Add(data, new List<IDisposable>());
+            if (!_planetoidSubscriptions.ContainsKey(data)) {
+                _planetoidSubscriptions.Add(data, new List<IDisposable>());
             }
-            var planetSubscriber = _planetoidSubscribers[data];
+            var planetSubscriber = _planetoidSubscriptions[data];
             planetSubscriber.Add(data.SubscribeToPropertyChanged<PlanetoidData, int>(pd => pd.Capacity, OnSystemMemberCapacityChanged));
-            planetSubscriber.Add(data.SubscribeToPropertyChanged<PlanetoidData, OpeYield>(pd => pd.Resources, OnSystemMemberResourceValueChanged));
-            planetSubscriber.Add(data.SubscribeToPropertyChanged<PlanetoidData, XYield>(pd => pd.SpecialResources, OnSystemMemberSpecialResourceValueChanged));
+            planetSubscriber.Add(data.SubscribeToPropertyChanged<PlanetoidData, ResourceYield>(pd => pd.Resources, OnSystemMemberResourceValueChanged));
         }
 
         private void SubscribeToStarDataValueChanges() {
-            _starSubscribers.Add(StarData.SubscribeToPropertyChanged<StarData, int>(sd => sd.Capacity, OnSystemMemberCapacityChanged));
-            _starSubscribers.Add(StarData.SubscribeToPropertyChanged<StarData, OpeYield>(sd => sd.Resources, OnSystemMemberResourceValueChanged));
-            _starSubscribers.Add(StarData.SubscribeToPropertyChanged<StarData, XYield>(sd => sd.SpecialResources, OnSystemMemberSpecialResourceValueChanged));
+            _starSubscriptions.Add(StarData.SubscribeToPropertyChanged<StarData, int>(sd => sd.Capacity, OnSystemMemberCapacityChanged));
+            _starSubscriptions.Add(StarData.SubscribeToPropertyChanged<StarData, ResourceYield>(sd => sd.Resources, OnSystemMemberResourceValueChanged));
         }
 
         private void SubscribeToSettlementDataValueChanges() {
@@ -232,13 +193,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void UnsubscribeToPlanetoidDataValueChanges(PlanetoidData data) {
-            _planetoidSubscribers[data].ForAll<IDisposable>(d => d.Dispose());
-            _planetoidSubscribers.Remove(data);
+            _planetoidSubscriptions[data].ForAll<IDisposable>(d => d.Dispose());
+            _planetoidSubscriptions.Remove(data);
         }
 
         private void UnsubscribeToStarDataValueChanges() {
-            _starSubscribers.ForAll(d => d.Dispose());
-            _starSubscribers.Clear();
+            _starSubscriptions.ForAll(d => d.Dispose());
+            _starSubscriptions.Clear();
         }
 
         private void UnsubscribeToSettlementDataValueChanges() {
@@ -253,15 +214,15 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Unsubscribe() {
-            IList<PlanetoidData> subscriberKeys = new List<PlanetoidData>(_planetoidSubscribers.Keys);
+            IList<PlanetoidData> pSubscriptionKeys = new List<PlanetoidData>(_planetoidSubscriptions.Keys);
             // copy of key list as you can't remove keys from a list while you are iterating over the list
-            foreach (PlanetoidData data in subscriberKeys) {
-                UnsubscribeToPlanetoidDataValueChanges(data);
+            foreach (PlanetoidData pData in pSubscriptionKeys) {
+                UnsubscribeToPlanetoidDataValueChanges(pData);
             }
-            _planetoidSubscribers.Clear();
+            _planetoidSubscriptions.Clear();
 
-            _starSubscribers.ForAll(ss => ss.Dispose());
-            _starSubscribers.Clear();
+            _starSubscriptions.ForAll(ss => ss.Dispose());
+            _starSubscriptions.Clear();
 
             UnsubscribeToSettlementDataValueChanges();
         }

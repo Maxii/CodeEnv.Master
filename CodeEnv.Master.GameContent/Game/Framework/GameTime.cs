@@ -24,7 +24,9 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// The primary class that keeps track of game time.
+    /// The primary class that keeps track of time during the game.
+    /// Note: Seconds here always refers to seconds in the real world. There is no
+    /// concept called GameTimeSeconds.
     /// </summary>
     [SerializeAll]
     public class GameTime : AGenericSingleton<GameTime>, IDisposable {
@@ -33,6 +35,9 @@ namespace CodeEnv.Master.GameContent {
 
         public static int HoursPerDay = GeneralSettings.Instance.HoursPerDay;
         public static int DaysPerYear = GeneralSettings.Instance.DaysPerYear;
+        /// <summary>
+        /// The number of GameHours in a Second at a GameSpeedMultiplier of 1 (aka GameSpeed.Normal).
+        /// </summary>
         public static float HoursPerSecond = GeneralSettings.Instance.HoursPerSecond;
         public static int GameStartYear = GeneralSettings.Instance.GameStartYear;
         public static int GameEndYear = GeneralSettings.Instance.GameEndYear;
@@ -41,31 +46,36 @@ namespace CodeEnv.Master.GameContent {
 
         public event Action<GameDate> onDateChanged;
 
-        private GameClockSpeed _gameSpeed;
-        public GameClockSpeed GameSpeed {
+        /// <summary>
+        /// The number of Hours passing per second, adjusted for GameSpeed.
+        /// </summary>
+        public float GameSpeedAdjustedHoursPerSecond { get { return HoursPerSecond * _gameSpeedMultiplier; } }
+
+        private GameSpeed _gameSpeed;
+        public GameSpeed GameSpeed {
             get { return _gameSpeed; }
-            set { SetProperty<GameClockSpeed>(ref _gameSpeed, value, "GameSpeed", OnGameSpeedChanged, OnGameSpeedChanging); }
+            set { SetProperty<GameSpeed>(ref _gameSpeed, value, "GameSpeed", OnGameSpeedChanged, OnGameSpeedChanging); }
         }
 
         /// <summary>
-        /// The amount of time in seconds elapsed since the last Frame 
+        /// The number of seconds elapsed, adjusted for GameSpeed, since the last Frame 
         /// was rendered or zero if the game is paused or not running. Useful for animations
-        /// or other work that should stop while paused. GameClockSpeed IS factored in.
+        /// or other work that should reflect GameSpeed and Stop while paused.
         /// </summary>
-        public float DeltaTimeOrPausedWithGameSpeed {
+        public float GameSpeedAdjustedDeltaTimeOrPaused {
             get {
                 D.Assert(_isClockEnabled, "{0} clock is not enabled.".Inject(typeof(GameTime).Name));
                 if (_gameMgr.IsPaused) {
                     return Constants.ZeroF;
                 }
-                return DeltaTimeWithGameSpeed;
+                return GameSpeedAdjustedDeltaTime;
             }
         }
 
         /// <summary>
-        /// The amount of time in seconds elapsed since the last Frame 
+        /// The number of seconds elapsed since the last Frame 
         /// was rendered or zero if the game is paused or not running. Useful for animations
-        /// or other work that should stop while paused.
+        /// or other work that should not reflect GameSpeed but Stop while paused.
         /// </summary>
         public float DeltaTimeOrPaused {
             get {
@@ -78,28 +88,26 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// The amount of time in seconds elapsed since the last Frame 
-        /// was rendered whether the game is paused or not. Useful for 
-        /// animations or other work I want to continue even while the game is paused.
-        /// GameClockSpeed IS factored in.
+        /// The number of seconds elapsed, adjusted for GameSpeed, since the last Frame 
+        /// was rendered whether the game is paused or not. Useful for animations or other
+        /// work that should reflect GameSpeed and continue even when the game is paused.
         /// </summary>
-        public float DeltaTimeWithGameSpeed {
+        public float GameSpeedAdjustedDeltaTime {
             get { return DeltaTime * _gameSpeedMultiplier; }
         }
 
 
         /// <summary>
-        /// The amount of time in seconds elapsed since the last Frame 
-        /// was rendered whether the game is paused or not. Useful for 
-        /// animations or other work I want to continue even while the game is paused.
-        /// GameClockSpeed has no effect.
+        /// The number of seconds elapsed since the last Frame was rendered whether the 
+        /// game is paused or not. Useful for animations or other work that should not reflect 
+        /// GameSpeed and continue even when the game is paused.
         /// </summary>
         public float DeltaTime {
             get { return UnityEngine.Time.deltaTime; }
         }
 
         /// <summary>
-        /// The realtime elapsed since this session with Unity started. In a standalone
+        /// The number of seconds elapsed since this session with Unity started. In a standalone
         /// player, this is the time since the player was started. In the editor, this is the 
         /// time since the Editor Play button was pushed. GameClockSpeed has no effect.
         /// </summary>
@@ -112,8 +120,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// The real time in seconds since a game instance was originally begun. Any time spent paused 
-        /// during the game is included in this value. GameClockSpeed has no effect.
+        /// The number of seconds since a game instance was originally begun. Any time spent paused 
+        /// during the game is included in this value. GameSpeed is not factored in.
         /// </summary>
         public float RealTime_Game {
             get {
@@ -125,8 +133,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// The real time in seconds since a new or saved game was begun.
-        /// Time on hold (paused or not running) is not counted. GameClockSpeed has no effect.
+        /// The number of seconds since a new or saved game was begun.
+        /// Time on hold (paused or not running) is not counted. GameSpeed is not factored in.
         /// </summary>
         public float RealTime_GamePlay {
             get {
@@ -170,7 +178,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private IList<IDisposable> _subscribers;
+        private IList<IDisposable> _subscriptions;
 
         // the amount of RealTime_Game time accumulated by a saved game in sessions prior to this one
         private float _cumTimeInPriorSessions;
@@ -212,11 +220,11 @@ namespace CodeEnv.Master.GameContent {
             _gameMgr = References.GameManager;
             _playerPrefsMgr = PlayerPrefsManager.Instance;
             PrepareToBeginNewGame();
-            _subscribers = new List<IDisposable>(); // placed here because GameTime exists in IntroScene. _subscribers is null when disposing there
+            _subscriptions = new List<IDisposable>(); // placed here because GameTime exists in IntroScene. _subscriptions is null when disposing there
         }
 
         private void Subscribe() {
-            _subscribers.Add(_gameMgr.SubscribeToPropertyChanging<IGameManager, bool>(gm => gm.IsPaused, OnIsPausedChanging));
+            _subscriptions.Add(_gameMgr.SubscribeToPropertyChanging<IGameManager, bool>(gm => gm.IsPaused, OnIsPausedChanging));
         }
 
         private void OnIsPausedChanging(bool isPausing) {
@@ -311,7 +319,7 @@ namespace CodeEnv.Master.GameContent {
             SyncGameClock();
         }
 
-        private void OnGameSpeedChanging(GameClockSpeed proposedSpeed) {
+        private void OnGameSpeedChanging(GameSpeed proposedSpeed) {
             SyncGameClock();
         }
 
@@ -349,8 +357,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Unsubscribe() {
-            _subscribers.ForAll<IDisposable>(s => s.Dispose());
-            _subscribers.Clear();
+            _subscriptions.ForAll<IDisposable>(s => s.Dispose());
+            _subscriptions.Clear();
         }
 
         public override string ToString() {

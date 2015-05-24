@@ -23,8 +23,6 @@ namespace CodeEnv.Master.Common {
     using System.Linq.Expressions;
     using System.Reflection;
     using System.Text;
-    using CodeEnv.Master.Common.LocalResources;
-    using UnityEngine;
 
     /// <summary>
     /// General purpose Extensions. 
@@ -145,16 +143,16 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Removes items from the source sequence.
+        /// Note: Useful as the Linq Except() extension requires an IEnumerable. This version also handles single values.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="sequence">The IEnumerable sequence of Type T.</param>
-        /// <param name="itemsToRemove">The items to remove.</param>
+        /// <param name="itemsToRemove">The one or more items to remove.</param>
         /// <returns>
         /// An IEnumerable sequence of Type T with items removed.
         /// </returns>
         public static IEnumerable<T> Except<T>(this IEnumerable<T> sequence, params T[] itemsToRemove) {
             return sequence.Except<T>(itemsToRemove as IEnumerable<T>);
-
         }
 
         /// <summary>
@@ -256,35 +254,6 @@ namespace CodeEnv.Master.Common {
                 D.Warn("Next result {0} is default of {1}.", msg, typeof(T).Name);
             }
             return result;
-        }
-
-        public static Color ToUnityColor(this GameColor color) {
-            switch (color) {
-                case GameColor.Black:
-                    return Color.black;
-                case GameColor.Blue:
-                    return Color.blue;
-                case GameColor.Cyan:
-                    return Color.cyan;
-                case GameColor.Green:
-                    return Color.green;
-                case GameColor.Gray:
-                    return Color.gray;
-                case GameColor.Clear:
-                    return Color.clear;
-                case GameColor.Magenta:
-                    return Color.magenta;
-                case GameColor.Red:
-                    return Color.red;
-                case GameColor.White:
-                    return Color.white;
-                case GameColor.Yellow:
-                    return Color.yellow;
-                case GameColor.None:
-                    return Color.white;
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(color));
-            }
         }
 
         #region Generic INotifyPropertyChanged, INotifyPropertyChanging Extensions

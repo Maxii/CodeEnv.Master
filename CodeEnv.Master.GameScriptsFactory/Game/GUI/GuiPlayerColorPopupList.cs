@@ -24,15 +24,18 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class GuiPlayerColorPopupList : AGuiPopupList<GameColor> {
 
-    public GuiMenuElementID elementID;
+    public GuiElementID elementID;
 
     public bool hasPreference;
 
-    public override GuiMenuElementID ElementID { get { return elementID; } }
+    public override GuiElementID ElementID { get { return elementID; } }
 
     public override bool HasPreference { get { return hasPreference; } }
 
-    protected override string[] GetNames() { return Enums<GameColor>.GetNamesExcept(default(GameColor), GameColor.Clear); }
+    protected override string[] GetNames() {
+        return Enums<GameColor>.GetNamesExcept(default(GameColor),
+            GameColor.Clear, GameColor.Gray, GameColor.Black, GameColor.White);
+    }
 
     // no need for taking an action OnPopupListSelectionChanged as changes aren't recorded 
     // from this popup list until the Menu Accept Button is pushed

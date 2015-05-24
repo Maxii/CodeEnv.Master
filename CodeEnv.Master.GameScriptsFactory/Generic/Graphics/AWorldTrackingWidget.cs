@@ -41,7 +41,7 @@ public abstract class AWorldTrackingWidget : ATrackingWidget {
 
     protected override void Awake() {
         base.Awake();
-        _billboard = gameObject.GetSafeMonoBehaviourComponentInChildren<Billboard>();
+        _billboard = gameObject.GetSafeMonoBehaviourInChildren<Billboard>();
     }
 
     protected override void Show() {

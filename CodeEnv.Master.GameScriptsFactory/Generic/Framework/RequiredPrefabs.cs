@@ -27,10 +27,18 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
 
     #region Prefabs
 
-    public GameObject explosion;
+    [Header("Ordnance")]
+    public Projectile projectile;
+    public Beam beam;
+    public Missile missile;
 
-    public GameObject hitImpact;
+    [Header("Effects")]
+    /// <summary>
+    /// Explosion prefab that adjusts its scale to the scale of the Item exploding.
+    /// </summary>
+    public ParticleSystem explosion;
 
+    [Header("Tracking Widgets")]
     /// <summary>
     /// A generic prefab for labels that track the world object they are parented too.
     /// They need to have specific scripts added after instantiation to function.
@@ -46,39 +54,52 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
     /// They need specific scripts and an atlas added after instantiation to function.
     /// </summary>
     public GameObject worldTrackingSprite;
-
     /// <summary>
     /// Prefab for sprites that track world objects from the UI layer.
     /// Includes all scripts but needs an atlas added.
     /// </summary>
     public UITrackingSprite uiTrackingSprite;
 
+    [Header("Sprite Atlases")]
     public UIAtlas fleetIconAtlas;
     public UIAtlas contextualAtlas;
+    public UIAtlas myGuiAtlas;
 
+    [Header("Misc")]
     public SphereCollider universeEdge;
     public Transform cameraDummyTarget;
     public SectorItem sector;
 
-    public Orbiter orbiter;
-    public MovingOrbiter movingOrbiter;
-    public OrbiterForShips orbiterForShips;
-    public MovingOrbiterForShips movingOrbiterForShips;
+    [Header("Orbiters")]
+    public OrbitSimulator orbiter;
+    public MovingOrbitSimulator movingOrbiter;
+    public ShipOrbitSimulator orbiterForShips;
+    public MovingShipOrbitSimulator movingOrbiterForShips;
 
+    [Header("Commands")]
     public FleetCmdItem fleetCmd;
-    public ShipItem[] ships;
-
     public SettlementCmdItem settlementCmd;
-
     public StarbaseCmdItem starbaseCmd;
 
+    [Header("Ships")]
+    public ShipItem[] ships;
+
+    [Header("Facilities")]
     public FacilityItem[] facilities;
 
+    [Header("System")]
     public SystemItem system;   // without the star and settlement
+
+    [Header("Stars")]
     public StarItem[] stars;
+
+    [Header("Planets")]
     public PlanetItem[] planets;   // no bundled moons or orbiters
+
+    [Header("Moons")]
     public MoonItem[] moons;       // no orbiters
 
+    [Header("Monitors")]
     public WeaponRangeMonitor weaponRangeMonitor;
     public SensorRangeMonitor sensorRangeMonitor;
     public FormationStationMonitor formationStation;

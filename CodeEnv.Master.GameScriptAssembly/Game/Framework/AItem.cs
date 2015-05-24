@@ -93,9 +93,10 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
 
     public Player Owner { get { return Data.Owner; } }
 
-    protected IList<IDisposable> _subscribers;
+    protected IList<IDisposable> _subscriptions;
     protected IInputManager _inputMgr;
     protected HudManager _hudManager;
+    protected IGameManager _gameMgr;
 
     #region Initialization
 
@@ -111,11 +112,12 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     /// </summary>
     protected virtual void InitializeLocalReferencesAndValues() {
         _inputMgr = References.InputManager;
+        _gameMgr = References.GameManager;
     }
 
     protected virtual void Subscribe() {
-        _subscribers = new List<IDisposable>();
-        _subscribers.Add(_inputMgr.SubscribeToPropertyChanged<IInputManager, GameInputMode>(inputMgr => inputMgr.InputMode, OnInputModeChanged));
+        _subscriptions = new List<IDisposable>();
+        _subscriptions.Add(_inputMgr.SubscribeToPropertyChanged<IInputManager, GameInputMode>(inputMgr => inputMgr.InputMode, OnInputModeChanged));
         // Subscriptions to data value changes should be done with SubscribeToDataValueChanges()
     }
 
@@ -131,11 +133,10 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     protected abstract void InitializeModelMembers();
 
     /// <summary>
-    /// Called from Start, initializes View-related members of this item 
-    /// that can't wait until the Item first becomes discernible. Default
-    /// implementation does nothing.
+    /// Called from Start, initializes View-related members of this item that aren't
+    /// initialized in some other manner. Default implementation initializes the HudManager.
     /// </summary>
-    protected virtual void InitializeViewMembers() {            // TODO AItem must override and init hud on discernible
+    protected virtual void InitializeViewMembers() {
         _hudManager = InitializeHudManager();
     }
 
@@ -145,9 +146,9 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     ///  Subscribes to changes to values contained in Data. Called when Data first set.
     /// </summary>
     protected virtual void SubscribeToDataValueChanges() {
-        D.Assert(_subscribers != null);
-        _subscribers.Add(Data.SubscribeToPropertyChanging<AItemData, Player>(d => d.Owner, OnOwnerChanging));
-        _subscribers.Add(Data.SubscribeToPropertyChanged<AItemData, Player>(d => d.Owner, OnOwnerChanged));
+        D.Assert(_subscriptions != null);
+        _subscriptions.Add(Data.SubscribeToPropertyChanging<AItemData, Player>(d => d.Owner, OnOwnerChanging));
+        _subscriptions.Add(Data.SubscribeToPropertyChanged<AItemData, Player>(d => d.Owner, OnOwnerChanged));
     }
 
     #endregion
@@ -181,10 +182,10 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     public void ShowHud(bool toShow) {
         if (_hudManager != null) {
             if (toShow) {
-                _hudManager.Show(Position);
+                _hudManager.ShowHud();
             }
             else {
-                _hudManager.Hide();
+                _hudManager.HideHud();
             }
         }
     }
@@ -214,7 +215,7 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
 
     #endregion
 
-    #region Mouse Events
+    #region Events
 
     #endregion
 
@@ -236,8 +237,8 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     }
 
     protected virtual void Unsubscribe() {
-        _subscribers.ForAll(s => s.Dispose());
-        _subscribers.Clear();
+        _subscriptions.ForAll(s => s.Dispose());
+        _subscriptions.Clear();
     }
 
     #endregion
@@ -249,7 +250,6 @@ public abstract class AItem : AMonoBase, IItem, INavigableTarget {
     public virtual bool IsMobile { get { return false; } }
 
     #endregion
-
 
 }
 

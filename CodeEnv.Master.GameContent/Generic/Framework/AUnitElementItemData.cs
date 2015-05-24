@@ -31,10 +31,10 @@ namespace CodeEnv.Master.GameContent {
         public IList<Weapon> Weapons { get; private set; }
         public IList<Sensor> Sensors { get; private set; }
 
-        private bool _isHQElement;
-        public virtual bool IsHQElement {
-            get { return _isHQElement; }
-            set { SetProperty<bool>(ref _isHQElement, value, "IsHQElement", OnIsHQElementChanged); }
+        private bool _isHQ;
+        public virtual bool IsHQ {
+            get { return _isHQ; }
+            set { SetProperty<bool>(ref _isHQ, value, "IsHQ", OnIsHQChanged); }
         }
 
         private string _parentName;
@@ -63,6 +63,30 @@ namespace CodeEnv.Master.GameContent {
         public float MaxSensorRange {
             get { return _maxSensorRange; }
             set { SetProperty<float>(ref _maxSensorRange, value, "MaxSensorRange"); }
+        }
+
+        private float _science;
+        public float Science {
+            get { return _science; }
+            set { SetProperty<float>(ref _science, value, "Science"); }
+        }
+
+        private float _culture;
+        public float Culture {
+            get { return _culture; }
+            set { SetProperty<float>(ref _culture, value, "Culture"); }
+        }
+
+        private float _income;
+        public float Income {
+            get { return _income; }
+            set { SetProperty<float>(ref _income, value, "Income"); }
+        }
+
+        private float _expense;
+        public float Expense {
+            get { return _expense; }
+            set { SetProperty<float>(ref _expense, value, "Expense"); }
         }
 
         public float Mass { get; private set; }
@@ -119,8 +143,8 @@ namespace CodeEnv.Master.GameContent {
             sensor.onIsOperationalChanged -= OnSensorIsOperationalChanged;
         }
 
-        private void OnIsHQElementChanged() {
-            Name = IsHQElement ? Name + _hqNameAddendum : Name.Remove(_hqNameAddendum);
+        private void OnIsHQChanged() {
+            Name = IsHQ ? Name + _hqNameAddendum : Name.Remove(_hqNameAddendum);
         }
 
         private void OnSensorIsOperationalChanged(Sensor sensor) {

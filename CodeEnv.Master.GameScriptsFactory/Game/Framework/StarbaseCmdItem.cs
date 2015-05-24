@@ -25,7 +25,7 @@ using UnityEngine;
 /// <summary>
 /// Class for AUnitBaseCmdItems that are Starbases.
 /// </summary>
-public class StarbaseCmdItem : AUnitBaseCmdItem, ICmdPublisherClient<FacilityReport> {
+public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmdItem {
 
     public new StarbaseCmdData Data {
         get { return base.Data as StarbaseCmdData; }
@@ -40,23 +40,19 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, ICmdPublisherClient<FacilityRep
     #region Initialization
 
     protected override HudManager InitializeHudManager() {
-        var hudManager = new HudManager(Publisher);
-        hudManager.AddContentToUpdate(HudManager.UpdatableLabelContentID.IntelState);
-        return hudManager;
+        return new HudManager(Publisher);
     }
 
     #endregion
 
     #region Model Methods
 
+    public StarbaseReport GetUserReport() { return GetReport(_gameMgr.UserPlayer); }
+
     public StarbaseReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     public FacilityReport[] GetElementReports(Player player) {
         return Elements.Cast<FacilityItem>().Select(e => e.GetReport(player)).ToArray();
-    }
-
-    protected override void OnHQElementChanged() {
-        base.OnHQElementChanged();
     }
 
     protected override void OnDeath() {
@@ -68,18 +64,17 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, ICmdPublisherClient<FacilityRep
 
     #region View Methods
 
-    protected override ResponsiveTrackingSprite MakeIcon() {
-        return TrackingWidgetFactory.Instance.CreateResponsiveTrackingSprite(this, TrackingWidgetFactory.IconAtlasID.Fleet,
-            new Vector2(24, 24), WidgetPlacement.Above);
+    protected override IconInfo MakeIconInfo() {
+        return StarbaseIconInfoFactory.Instance.MakeInstance(GetUserReport());
     }
 
-    protected override AIconID RefreshCmdIconID() {
-        return StarbaseIconIDFactory.Instance.MakeInstance(Data);
+    protected override void ShowSelectionHud() {
+        SelectionHud.Instance.Show(new SelectedItemHudContent(HudElementID.Starbase, GetUserReport()));
     }
 
     #endregion
 
-    #region Mouse Events
+    #region Events
 
     #endregion
 
@@ -90,6 +85,12 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, ICmdPublisherClient<FacilityRep
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region ISelectable Members
+
+    //public override ColoredStringBuilder HudContent { get { return Publisher.HudContent; } }
+
+    #endregion
 
 }
 

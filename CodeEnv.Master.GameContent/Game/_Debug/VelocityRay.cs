@@ -40,6 +40,11 @@ namespace CodeEnv.Master.GameContent {
             _speed = speed;
         }
 
+        public override void Show(bool toShow) {
+            base.Show(toShow);
+            //D.Log("{0}.Show({1}) called. Target: {2}.", GetType().Name, toShow, _target.name);
+        }
+
         protected override void Draw3D() {
             _line.points3[1] = Vector3.forward * _speed.Value;
             base.Draw3D();

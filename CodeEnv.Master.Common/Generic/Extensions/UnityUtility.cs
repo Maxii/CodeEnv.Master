@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: UnityUtility.cs
-// Static class of utility methods that are specific to Unity.
+// Static class of utility methods that are specific to Unity and/or Ngui.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -24,7 +24,7 @@ namespace CodeEnv.Master.Common {
     using System.Collections;
 
     /// <summary>
-    /// Static class of utility methods that are specific to Unity.
+    /// Static class of utility methods that are specific to Unity and/or Ngui.
     /// </summary>
     public static class UnityUtility {
 
@@ -79,14 +79,14 @@ namespace CodeEnv.Master.Common {
 
         public static T ValidateMonoBehaviourPresence<T>(GameObject go) where T : MonoBehaviour {
             System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
-            T monoBehaviour = go.GetSafeMonoBehaviourComponent<T>();
+            T monoBehaviour = go.GetSafeMonoBehaviour<T>();
             D.Assert(monoBehaviour != null, ErrorMessages.ComponentNotFound.Inject(typeof(T).Name, stackFrame.GetMethod().Name));
             return monoBehaviour;
         }
 
         public static T ValidateMonoBehaviourPresence<T>(Transform t) where T : MonoBehaviour {
             System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
-            T monoBehaviour = t.gameObject.GetSafeMonoBehaviourComponent<T>();
+            T monoBehaviour = t.gameObject.GetSafeMonoBehaviour<T>();
             D.Assert(monoBehaviour != null, ErrorMessages.ComponentNotFound.Inject(typeof(T).Name, stackFrame.GetMethod().Name));
             return monoBehaviour;
         }
@@ -247,17 +247,61 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        /// Determines whether <c>point</c> is on the infinite line defined by <c>linePtA</c> and <c>linePtB</c>.
+        /// <see cref="http://stackoverflow.com/questions/7050186/find-if-point-lays-on-line-segment"/>
+        /// </summary>
+        /// <param name="linePtA">A point on a line.</param>
+        /// <param name="linePtB">Another point on the same line.</param>
+        /// <param name="point">The point in question.</param>
+        /// <returns></returns>
+        public static bool IsPointOnLine(Vector3 linePtA, Vector3 linePtB, Vector3 point) {
+            float xValue = (point.x - linePtA.x) / (linePtB.x - linePtA.x);
+            float yValue = (point.y - linePtA.y) / (linePtB.y - linePtA.y);
+            float zValue = (point.z - linePtA.z) / (linePtB.z - linePtA.z);
+            return Mathf.Approximately(xValue, yValue) && Mathf.Approximately(xValue, zValue) && Mathf.Approximately(yValue, zValue);
+        }
+
+        /// <summary>
         /// Finds the closest location on the surface of a sphere to the provided point.
         /// </summary>
         /// <param name="point">The point.</param>
         /// <param name="sphereCenter">The sphere center.</param>
         /// <param name="sphereRadius">The sphere radius.</param>
         /// <returns></returns>
-        public static Vector3 FindClosestPointOnSphereSurfaceTo(Vector3 point, Vector3 sphereCenter, float sphereRadius) {
+        public static Vector3 FindClosestPointOnSphereTo(Vector3 point, Vector3 sphereCenter, float sphereRadius) {
             D.Assert(point != sphereCenter);
             return sphereCenter + ((point - sphereCenter).normalized * sphereRadius);
         }
 
+        /// <summary>
+        /// Finds the closest point on sphere surface orthogonal to intersecting line.
+        /// </summary>
+        /// <param name="intersectPtA">First intersection point between the line and the sphere's surface.</param>
+        /// <param name="intersectPtB">Second intersection point between the line and the sphere's surface.</param>
+        /// <param name="sphereCenter">The sphere center.</param>
+        /// <param name="sphereRadius">The sphere radius.</param>
+        /// <returns></returns>
+        public static Vector3 FindClosestPointOnSphereOrthogonalToIntersectingLine(Vector3 intersectPtA, Vector3 intersectPtB, Vector3 sphereCenter, float sphereRadius) {
+            var aToCenter = Vector3.Distance(intersectPtA, sphereCenter);   // OPTIMIZE with square magnitudes
+            var bToCenter = Vector3.Distance(intersectPtB, sphereCenter);
+            D.Assert(aToCenter.ApproxEquals(sphereRadius), "{0} should equal {1}.".Inject(aToCenter, sphereRadius));
+            D.Assert(bToCenter.ApproxEquals(sphereRadius), "{0} should equal {1}.".Inject(bToCenter, sphereRadius));
+
+            Vector3 lineMidPt = intersectPtA + (intersectPtB - intersectPtA) / 2F;
+            if (lineMidPt != sphereCenter) {
+                return FindClosestPointOnSphereTo(lineMidPt, sphereCenter, sphereRadius);
+            }
+            // any plane containing the intersecting line will do as its normal will always be orthogonal to the intersecting line
+            D.Warn("LineMidPoint and SphereCenter are the same. Using random plane to generate normal.");
+            Vector3 thirdPtDefiningPlane = sphereCenter + UnityEngine.Random.onUnitSphere;
+            int count = 0;
+            while (IsPointOnLine(intersectPtA, intersectPtB, thirdPtDefiningPlane)) {
+                D.Assert(count++ < 100);
+                thirdPtDefiningPlane = sphereCenter + UnityEngine.Random.onUnitSphere;
+            }
+            Plane aPlaneContainingLine = new Plane(intersectPtA, intersectPtB, thirdPtDefiningPlane);
+            return sphereCenter + aPlaneContainingLine.normal * sphereRadius;
+        }
         /// <summary>
         /// Rounds each value in this Vector3 to the float equivalent of the closest integer.
         /// </summary>
@@ -338,48 +382,81 @@ namespace CodeEnv.Master.Common {
 
         public static void Destroy(GameObject gameObject, float delayInSeconds, Action onCompletion = null) {
             //GameObject.Destroy(gameObject, delayInSeconds);
-            D.Log("Initiating destruction of {0} with delay of {1}.", gameObject.name, delayInSeconds);
-            new Job(DelayedDestroy(gameObject, delayInSeconds), toStart: true, onJobComplete: (wasKilled) => {
-                D.Log("{0} has been destroyed.", gameObject.name);
-                if (onCompletion != null) {
-                    onCompletion();
-                }
-            });
-        }
-
-        private static IEnumerator DelayedDestroy(GameObject gameObject, float delayInSeconds) {
-            yield return new WaitForSeconds(delayInSeconds);
             if (gameObject == null) {
                 D.Warn("Trying to destroy a GameObject that has already been destroyed.");
-                yield break;
+                if (onCompletion != null) { onCompletion(); }
+                return;
             }
-            GameObject.Destroy(gameObject);
+            string goName = gameObject.name;
+            D.Log("Initiating destruction of {0} with delay of {1}.", goName, delayInSeconds);
+            WaitForSecondsToExecute(delayInSeconds, onWaitFinished: () => {
+                if (gameObject == null) {
+                    D.Warn("Trying to destroy GameObject {0} that has already been destroyed.", goName);
+                }
+                else {
+                    GameObject.Destroy(gameObject);
+                }
+                if (onCompletion != null) { onCompletion(); }
+            });
         }
-
-        public static AudioClip __GetAudioClip(AudioClipID clipID) {
-            //return (AudioClip)Resources.Load(clipID.GetName());   // Resources folder not currently implemented as it places all assets present in the scene
-            // HACK should probably be handled by an AudioManager which also works with Ngui.PlaySound
-            // so that there isn't an AudioClip copy on each UI element
-            return null;
-        }
-
 
         #region WaitFor Coroutines
 
         /// <summary>
-        /// Waits one frame, then executes the provided delegate.
+        /// Waits for the designated number of seconds, then executes the provided delegate.
         /// Usage:
-        ///     WaitThenExecute(onWaitFinished: (jobWasKilled) =&gt; {
+        ///     WaitForSecondsToExecute(delayInSeconds, onWaitFinished: () =&gt; {
         ///         Code to execute after the wait;
         ///     });
         /// Warning: This method uses a coroutine Job. Accordingly, after being called it will 
         /// immediately return which means the code you have following it will execute 
         /// before the code assigned to the onWaitFinished delegate.
         /// </summary>
-        /// <param name="onWaitFinished">The delegate to execute once the wait is finished. The 
-        /// signature is onWaitFinished(jobWasKilled).</param>
-        public static void WaitOneToExecute(Action<bool> onWaitFinished) {
-            WaitForFrames(Constants.One, onWaitFinished);
+        /// <param name="onWaitFinished">The delegate to execute once the wait is finished.</param>
+        public static void WaitForSecondsToExecute(float delayInSeconds, Action onWaitFinished) {
+            new Job(WaitForSeconds(delayInSeconds), toStart: true, onJobComplete: (wasKilled) => onWaitFinished());
+        }
+
+        private static IEnumerator WaitForSeconds(float delayInSeconds) {
+            yield return new WaitForSeconds(delayInSeconds);
+        }
+
+        /// <summary>
+        /// Waits one FixedUpdate cycle, then executes the provided delegate.
+        /// Usage:
+        ///     WaitOneFixedUpdateToExecute(onWaitFinished: () =&gt; {
+        ///         Code to execute after the wait;
+        ///     });
+        /// Warning: This method uses a coroutine Job. Accordingly, after being called it will 
+        /// immediately return which means the code you have following it will execute 
+        /// before the code assigned to the onWaitFinished delegate.
+        /// </summary>
+        /// <param name="onWaitFinished">The delegate to execute once the wait is finished.</param>
+        public static void WaitOneFixedUpdateToExecute(Action onWaitFinished) {
+            new Job(WaitOneFixedUpdate(), toStart: true, onJobComplete: delegate {
+                onWaitFinished();
+            });
+        }
+
+        private static IEnumerator WaitOneFixedUpdate() {
+            yield return new WaitForFixedUpdate();
+        }
+
+        /// <summary>
+        /// Waits one frame, then executes the provided delegate.
+        /// Usage:
+        ///     WaitOneToExecute(onWaitFinished: () =&gt; {
+        ///         Code to execute after the wait;
+        ///     });
+        /// Warning: This method uses a coroutine Job. Accordingly, after being called it will 
+        /// immediately return which means the code you have following it will execute 
+        /// before the code assigned to the onWaitFinished delegate.
+        /// </summary>
+        /// <param name="onWaitFinished">The delegate to execute once the wait is finished.</param>
+        public static void WaitOneToExecute(Action onWaitFinished) {
+            WaitForFrames(Constants.One, onWaitFinished: delegate {
+                onWaitFinished();
+            });
         }
 
         /// <summary>
@@ -395,10 +472,10 @@ namespace CodeEnv.Master.Common {
         /// <param name="framesToWait">The frames to wait.</param>
         /// <param name="onWaitFinished">The delegate to execute once the wait is finished. The
         /// signature is onWaitFinished(jobWasKilled).</param>
-        /// <returns>A reference to the WaitJob so it can be killed before it finishes, if needed.</returns>
-        public static WaitJob WaitForFrames(int framesToWait, Action<bool> onWaitFinished) {
+        /// <returns>A reference to the Job so it can be killed before it finishes, if needed.</returns>
+        public static Job WaitForFrames(int framesToWait, Action<bool> onWaitFinished) {
             Arguments.ValidateNotNegative(framesToWait);
-            return new WaitJob(WaitForFrames(framesToWait), toStart: true, onJobComplete: onWaitFinished);
+            return new Job(WaitForFrames(framesToWait), toStart: true, onJobComplete: onWaitFinished);
         }
 
         /// <summary>
@@ -433,10 +510,10 @@ namespace CodeEnv.Master.Common {
         /// <param name="repeatingFramesToWait">The repeating frames to wait.</param>
         /// <param name="methodToExecute">The method to execute.</param>
         /// <returns>
-        /// A reference to the WaitJob as it must be killed to stop it.
+        /// A reference to the Job as it must be killed to stop it.
         /// </returns>
-        public static WaitJob WaitForFrames(int initialFramesToWait, int repeatingFramesToWait, Action methodToExecute) {
-            return new WaitJob(RepeatingWaitForFrames(initialFramesToWait, repeatingFramesToWait, methodToExecute), toStart: true, onJobComplete: null);
+        public static Job WaitForFrames(int initialFramesToWait, int repeatingFramesToWait, Action methodToExecute) {
+            return new Job(RepeatingWaitForFrames(initialFramesToWait, repeatingFramesToWait, methodToExecute), toStart: true, onJobComplete: null);
         }
 
         /// <summary>
@@ -598,28 +675,6 @@ namespace CodeEnv.Master.Common {
 
         #endregion
 
-        #region Nested Classes
-
-        public enum AudioClipID {
-
-            None,
-
-            Hit,
-
-            CmdHit,
-
-            Dying,
-
-            Attacking,
-
-            Repairing,
-
-            Refitting,
-
-            Disbanding
-
-        }
-        #endregion
     }
 }
 

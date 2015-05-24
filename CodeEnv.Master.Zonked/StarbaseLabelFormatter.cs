@@ -29,8 +29,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class StarbaseLabelFormatter : ALabelFormatter<StarbaseReport> {
 
-        private static IDictionary<LabelID, IDictionary<LabelLineID, string>> _labelLookup = new Dictionary<LabelID, IDictionary<LabelLineID, string>>() {
-            { LabelID.CursorHud, new Dictionary<LabelLineID, string>() {
+        private static IDictionary<DisplayTargetID, IDictionary<LabelLineID, string>> _labelLookup = new Dictionary<DisplayTargetID, IDictionary<LabelLineID, string>>() {
+            { DisplayTargetID.CursorHud, new Dictionary<LabelLineID, string>() {
                 {LabelLineID.Name, "Name: {0}"},
                 {LabelLineID.ParentName, "Parent: {0}"},
                 {LabelLineID.Owner, "Owner: {0}"},
@@ -51,8 +51,8 @@ namespace CodeEnv.Master.GameContent {
 
         public StarbaseLabelFormatter() { }
 
-        protected override IDictionary<LabelLineID, string> GetLabelLineLookup(LabelID labelID) {
-            return _labelLookup[labelID];
+        protected override IDictionary<LabelLineID, string> GetLabelLineLookup(DisplayTargetID displayTgtID) {
+            return _labelLookup[displayTgtID];
         }
 
         protected override bool TryGetFormattedLine(LabelLineID lineID, out string formattedLine) {

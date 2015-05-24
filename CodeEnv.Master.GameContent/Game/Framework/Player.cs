@@ -34,11 +34,13 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Indicates whether this Player is the human user playing the game.
         /// </summary>
-        public bool IsHumanUser { get; private set; }
+        public bool IsUser { get; private set; }
 
         public IQ IQ { get; private set; }
 
         public string LeaderName { get { return _race.LeaderName; } }
+
+        public string ImageFilename { get { return _race.ImageFilename; } }
 
         private Race _race;
         /// <summary>
@@ -53,18 +55,24 @@ namespace CodeEnv.Master.GameContent {
 
         private IDictionary<Player, DiplomaticRelationship> _diplomaticRelationship = new Dictionary<Player, DiplomaticRelationship>();
 
-        public Player(Race race, IQ iq, bool isPlayer = false) {
-            Race = race;
-            IQ = iq;
-            IsHumanUser = isPlayer;
-            _diplomaticRelationship[this] = DiplomaticRelationship.Self;    // assigning relations this way allows NoPlayer to make SetRelations illegal
-        }
-
         /// <summary>
         /// Copy Constructor.
         /// </summary>
         /// <param name="player">The player to copy.</param>
-        public Player(Player player) : this(player.Race, player.IQ, player.IsHumanUser) { }
+        public Player(Player player) : this(player.Race, player.IQ, player.IsUser) { }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Player" /> class.
+        /// </summary>
+        /// <param name="race">The race.</param>
+        /// <param name="iq">The iq.</param>
+        /// <param name="isUser">if set to <c>true</c> this player is the human user.</param>
+        public Player(Race race, IQ iq, bool isUser = false) {
+            Race = race;
+            IQ = iq;
+            IsUser = isUser;
+            _diplomaticRelationship[this] = DiplomaticRelationship.Self;    // assigning relations this way allows NoPlayer to make SetRelations illegal
+        }
 
         public DiplomaticRelationship GetRelations(Player player) {
             if (!_diplomaticRelationship.ContainsKey(player)) {

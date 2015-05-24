@@ -80,10 +80,12 @@
     <EmbeddedResource Include="CommonTerms.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>CommonTerms.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="CursorHudPhrases.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>CursorHudPhrases.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="ErrorMessages.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: PlanetoidPublisher.cs
-// Report and LabelText Publisher for Planetoids.
+// Report and HudContent Publisher for Planetoids.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,18 +19,20 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Report and LabelText Publisher for Planetoids.
+    /// Report and HudContent Publisher for Planetoids.
     /// </summary>
     public class PlanetoidPublisher : AIntelItemPublisher<PlanetoidReport, PlanetoidData> {
 
-        static PlanetoidPublisher() {
-            LabelTextFactory = new PlanetoidLabelTextFactory();
+        public override ColoredStringBuilder HudContent {
+            get { return PlanetoidDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        public PlanetoidPublisher(PlanetoidData data) : base(data) { }
+        private IPlanetoidItem _item;
+
+        public PlanetoidPublisher(PlanetoidData data, IPlanetoidItem item) : base(data) { _item = item; }
 
         protected override PlanetoidReport GenerateReport(Player player) {
-            return new PlanetoidReport(_data, player);
+            return new PlanetoidReport(_data, player, _item);
         }
 
         public override string ToString() {

@@ -74,7 +74,7 @@ public class ShipManager : AGameObjectManager<ShipData>, ICameraFollowable, IZoo
         Data.LastHumanPlayerIntelDate = new GameDate();
         Data.Health = 38F;
         Data.MaxHitPoints = 50F;
-        Data.Owner = GameManager.Instance.HumanPlayer;
+        Data.Owner = GameManager.Instance.UserPlayer;
         Data.MaxTurnRate = 1.0F;
         Data.RequestedHeading = _transform.forward;
         Data.MaxThrust = Data.Mass * Data.Drag * 2F;    // MaxThrust = MaxSpeed * Mass * Drag

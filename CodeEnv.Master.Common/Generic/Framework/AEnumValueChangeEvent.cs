@@ -22,6 +22,7 @@ namespace CodeEnv.Master.Common {
     /// the change in value of an enum.
     /// </summary>
     /// <typeparam name="T">The type of the Enum being changed.</typeparam>
+    [System.Obsolete]
     public abstract class AEnumValueChangeEvent<T> : AGameEvent where T : struct {
 
         public T NewValue { get; private set; }

@@ -37,13 +37,13 @@ namespace CodeEnv.Master.GameContent {
 
         {IntelCoverage.None, new List<GuiHudLineKeys> { GuiHudLineKeys.SectorIndex }},
 
-        {IntelCoverage.Aware, new List<GuiHudLineKeys> { GuiHudLineKeys.SectorIndex,
+        {IntelCoverage.Basic, new List<GuiHudLineKeys> { GuiHudLineKeys.SectorIndex,
 
                                                                        GuiHudLineKeys.IntelState,
                                                                        GuiHudLineKeys.CameraDistance 
         }},
 
-        {IntelCoverage.Minimal, new List<GuiHudLineKeys> { GuiHudLineKeys.SectorIndex,
+        {IntelCoverage.Essential, new List<GuiHudLineKeys> { GuiHudLineKeys.SectorIndex,
                                                                         GuiHudLineKeys.IntelState,
                                                                         GuiHudLineKeys.CameraDistance, 
                                                                         
@@ -58,7 +58,7 @@ namespace CodeEnv.Master.GameContent {
                                                                            GuiHudLineKeys.Speed
          }},
 
-         {IntelCoverage.Moderate, new List<GuiHudLineKeys> { GuiHudLineKeys.SectorIndex,
+         {IntelCoverage.Broad, new List<GuiHudLineKeys> { GuiHudLineKeys.SectorIndex,
                                                                         GuiHudLineKeys.IntelState,
                                                                         GuiHudLineKeys.CameraDistance, 
                                                                         GuiHudLineKeys.Name,
@@ -100,7 +100,7 @@ namespace CodeEnv.Master.GameContent {
       }}
     };
 
-        protected static IColoredTextList _emptyTextList = new ColoredTextListBase();
+        protected static IColoredTextList _emptyTextList = new ColoredTextList();
 
         protected override void Initialize() { }
 
@@ -157,7 +157,7 @@ namespace CodeEnv.Master.GameContent {
 
         // Note: ColoredTextListBase, ColoredTextList<T> and ColoredTextList_String all in separate class files under Common
 
-        public class ColoredTextList_Distance : ColoredTextListBase {
+        public class ColoredTextList_Distance : ColoredTextList {
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ColoredTextList_Distance"/> class. This version
@@ -180,7 +180,7 @@ namespace CodeEnv.Master.GameContent {
             /// </summary>
             /// <param name="format">The format.</param>
             public ColoredTextList_Distance(string format = Constants.FormatFloat_1DpMax) {
-                float distance = References.MainCameraControl.DistanceToCamera;
+                float distance = References.MainCameraControl.DistanceToCameraTarget;
                 _list.Add(new ColoredText(format.Inject(distance)));
             }
 
@@ -197,22 +197,22 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public class ColoredTextList_Resources : ColoredTextListBase {
+        public class ColoredTextList_Resources : ColoredTextList {
 
-            public ColoredTextList_Resources(OpeYield ope, string format = Constants.FormatFloat_0Dp) {
-                string organics_formatted = format.Inject(ope.GetYield(OpeResource.Organics));
-                string particulates_formatted = format.Inject(ope.GetYield(OpeResource.Particulates));
-                string energy_formatted = format.Inject(ope.GetYield(OpeResource.Energy));
+            public ColoredTextList_Resources(OpeResourceYield ope, string format = Constants.FormatFloat_0Dp) {
+                string organics_formatted = format.Inject(ope.GetYield(OpeResourceID.Organics));
+                string particulates_formatted = format.Inject(ope.GetYield(OpeResourceID.Particulates));
+                string energy_formatted = format.Inject(ope.GetYield(OpeResourceID.Energy));
                 _list.Add(new ColoredText(organics_formatted));
                 _list.Add(new ColoredText(particulates_formatted));
                 _list.Add(new ColoredText(energy_formatted));
             }
         }
 
-        public class ColoredTextList_Specials : ColoredTextListBase {
+        public class ColoredTextList_Specials : ColoredTextList {
 
-            public ColoredTextList_Specials(XYield x, string valueFormat = Constants.FormatFloat_1DpMax) {
-                var resourcesPresent = x.GetAllResources();
+            public ColoredTextList_Specials(RareResourceYield x, string valueFormat = Constants.FormatFloat_1DpMax) {
+                var resourcesPresent = x.ResourcesPresent();
                 foreach (var resource in resourcesPresent) {
                     string resourceName = resource.GetName();
                     float resourceYield = x.GetYield(resource);
@@ -228,7 +228,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public class ColoredTextList_Combat : ColoredTextListBase {
+        public class ColoredTextList_Combat : ColoredTextList {
 
             public ColoredTextList_Combat(CombatStrength offense, CombatStrength defense, string format = Constants.FormatFloat_0Dp) {
                 _list.Add(new ColoredText(format.Inject(offense.Combined + defense.Combined)));
@@ -236,12 +236,12 @@ namespace CodeEnv.Master.GameContent {
                 _list.Add(new ColoredText(format.Inject(defense.GetValue(ArmamentCategory.Beam))));
                 _list.Add(new ColoredText(format.Inject(offense.GetValue(ArmamentCategory.Missile))));
                 _list.Add(new ColoredText(format.Inject(defense.GetValue(ArmamentCategory.Missile))));
-                _list.Add(new ColoredText(format.Inject(offense.GetValue(ArmamentCategory.Particle))));
-                _list.Add(new ColoredText(format.Inject(defense.GetValue(ArmamentCategory.Particle))));
+                _list.Add(new ColoredText(format.Inject(offense.GetValue(ArmamentCategory.Projectile))));
+                _list.Add(new ColoredText(format.Inject(defense.GetValue(ArmamentCategory.Projectile))));
             }
         }
 
-        public class ColoredTextList_Intel : ColoredTextListBase {
+        public class ColoredTextList_Intel : ColoredTextList {
 
             public ColoredTextList_Intel(AIntel intel) {
                 string intelText_formatted = ConstructIntelText(intel);
@@ -263,14 +263,14 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public class ColoredTextList_Owner : ColoredTextListBase {
+        public class ColoredTextList_Owner : ColoredTextList {
 
             public ColoredTextList_Owner(Player player) {
                 _list.Add(new ColoredText(player.LeaderName, player.Color));
             }
         }
 
-        public class ColoredTextList_Health : ColoredTextListBase {
+        public class ColoredTextList_Health : ColoredTextList {
 
             public ColoredTextList_Health(float health, float maxHp, string format = Constants.FormatFloat_1DpMax) {
                 GameColor healthColor = (health > GeneralSettings.Instance.InjuredHealthThreshold) ? GameColor.Green :
@@ -282,7 +282,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public class ColoredTextList_Settlement : ColoredTextListBase {
+        public class ColoredTextList_Settlement : ColoredTextList {
 
             public ColoredTextList_Settlement(SettlementCmdData settlement) {
                 _list.Add(new ColoredText(settlement.Category.GetName()));
@@ -293,7 +293,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public class ColoredTextList_Ship : ColoredTextListBase {
+        public class ColoredTextList_Ship : ColoredTextList {
 
             public ColoredTextList_Ship(ShipData ship, string valueFormat = Constants.FormatFloat_1DpMax) {
                 _list.Add(new ColoredText(ship.Category.GetName()));
@@ -330,7 +330,7 @@ namespace CodeEnv.Master.GameContent {
         //    }
         //}
 
-        public class ColoredTextList_Speed : ColoredTextListBase {
+        public class ColoredTextList_Speed : ColoredTextList {
 
             private static string normalSpeedText = "{0:0.##}/{1:0.##}";
             private static string speedNoRequestedText = "{0:0.##}";

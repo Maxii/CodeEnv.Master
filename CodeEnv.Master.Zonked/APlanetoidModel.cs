@@ -75,7 +75,7 @@ public abstract class APlanetoidModel : AMortalItemModel, IShipOrbitable {
     }
 
     private void DisableParentOrbiter() {
-        _transform.parent.GetInterface<IOrbiter>().enabled = false;
+        _transform.parent.GetInterface<IOrbitSimulator>().enabled = false;
     }
 
     #region StateMachine - Simple Alternative
@@ -93,7 +93,7 @@ public abstract class APlanetoidModel : AMortalItemModel, IShipOrbitable {
                 break;
             case PlanetoidState.Dead:
                 OnDeath();
-                OnShowAnimation(MortalAnimations.Dying);
+                OnShowAnimation(EffectID.Dying);
                 break;
             case PlanetoidState.None:
             default:
@@ -133,7 +133,7 @@ public abstract class APlanetoidModel : AMortalItemModel, IShipOrbitable {
             CurrentState = PlanetoidState.Dead;
             return;
         }
-        OnShowAnimation(MortalAnimations.Hit);
+        OnShowAnimation(EffectID.Hit);
     }
 
     #endregion

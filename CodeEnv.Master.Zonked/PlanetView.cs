@@ -62,7 +62,7 @@ public class PlanetView : APlanetoidView {
 
     private void InitializeContextMenu() {    // IMPROVE string use
         _ctxObject = UnityUtility.ValidateMonoBehaviourPresence<CtxObject>(gameObject);
-        CtxMenu planetoidMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "PlanetoidMenu");
+        CtxMenu planetoidMenu = GuiManager.Instance.gameObject.GetSafeMonoBehavioursInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "PlanetoidMenu");
         _ctxObject.contextMenu = planetoidMenu;
         D.Assert(_ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
         UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);

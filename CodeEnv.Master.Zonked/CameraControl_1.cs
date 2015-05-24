@@ -314,7 +314,7 @@ public class CameraControl : AMonoBaseSingleton<MainCameraControl> {
     }
 
     private void InitializeContextMenuSettings() {
-        ContextMenuPickHandler = gameObject.GetSafeMonoBehaviourComponent<CtxPickHandler>();
+        ContextMenuPickHandler = gameObject.GetSafeMonoBehaviour<CtxPickHandler>();
         ContextMenuPickHandler.dontUseFallThrough = true;
         if (ContextMenuPickHandler.menuButton != (int)UnityMouseButton.Right) {
             D.Warn("Context Menu actuator button not set to Right Mouse Button.");

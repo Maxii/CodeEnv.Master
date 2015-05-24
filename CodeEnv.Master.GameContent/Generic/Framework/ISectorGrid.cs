@@ -32,6 +32,13 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         Topography GetSpaceTopography(Vector3 worldLocation);
 
+        /// <summary>
+        /// Gets the index of the sector.
+        /// </summary>
+        /// <param name="worldPoint">The world point.</param>
+        /// <returns></returns>
+        Index3D GetSectorIndex(Vector3 worldPoint);
+
     }
 }
 

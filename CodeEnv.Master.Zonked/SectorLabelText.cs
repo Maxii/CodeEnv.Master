@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     [Obsolete]
     public class SectorLabelText : ALabelText {
 
-        public SectorLabelText(LabelID labelID, SectorReport report, bool isDedicatedLinePerContentID) : base(labelID, report, isDedicatedLinePerContentID) { }
+        public SectorLabelText(DisplayTargetID displayTgtID, SectorReport report, bool isDedicatedLinePerContentID) : base(displayTgtID, report, isDedicatedLinePerContentID) { }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

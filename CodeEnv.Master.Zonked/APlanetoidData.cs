@@ -34,16 +34,16 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<int>(ref _capacity, value, "Capacity"); }
         }
 
-        private OpeYield _resources;
-        public OpeYield Resources {
+        private OpeResourceYield _resources;
+        public OpeResourceYield Resources {
             get { return _resources; }
-            set { SetProperty<OpeYield>(ref _resources, value, "Resources"); }
+            set { SetProperty<OpeResourceYield>(ref _resources, value, "Resources"); }
         }
 
-        private XYield _specialResources;
-        public XYield SpecialResources {
+        private RareResourceYield _specialResources;
+        public RareResourceYield SpecialResources {
             get { return _specialResources; }
-            set { SetProperty<XYield>(ref _specialResources, value, "SpecialResources"); }
+            set { SetProperty<RareResourceYield>(ref _specialResources, value, "SpecialResources"); }
         }
 
         /// <summary>
@@ -54,8 +54,8 @@ namespace CodeEnv.Master.GameContent {
             : base(stat.Category.GetName(), stat.Mass, stat.MaxHitPoints) {
             Category = stat.Category;
             Capacity = stat.Capacity;
-            Resources = stat.Resources;
-            SpecialResources = stat.SpecialResources;
+            Resources = stat.OpeResources;
+            SpecialResources = stat.RareResources;
             Topography = Topography.System;
         }
 

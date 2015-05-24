@@ -25,15 +25,16 @@ namespace CodeEnv.Master.Common {
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]   // Custom Attributes - see Pro .NET 3.5 Page 548
     public sealed class EnumAttribute : Attribute {
 
+        public string AttributeText { get; private set; }
+
         /// <summary>
-        /// Constructor that initializes a new instance of the <see cref="EnumAttribute"/> class.
+        /// Constructor that initializes a new instance of the <see cref="EnumAttribute" /> class.
         /// </summary>
-        /// <param description="description">An alternative description.</param>
-        public EnumAttribute(string description) {
-            Description = description;
+        /// <param name="attributeText">The attribute text.</param>
+        public EnumAttribute(string attributeText) {
+            AttributeText = attributeText;
         }
 
-        public string Description { get; private set; }
     }
 }
 

@@ -62,11 +62,6 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        public new Topography Topography {
-            get { return base.Topography; }
-            set { base.Topography = value; }
-        }
-
         private bool _isFlapsDeployed;
         public bool IsFlapsDeployed {
             get { return _isFlapsDeployed; }
@@ -93,10 +88,20 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Readonly. Gets the current speed of the ship in Units per hour, normalized for game speed.
+        /// Readonly. Gets the current speed of the ship in Units per hour. Whether paused or at a GameSpeed
+        /// other than Normal (x1), this property always returns the value assuming not paused with GameSpeed.Normal.
         /// </summary>
         public float CurrentSpeed {
-            get { return (_gameMgr.IsPaused) ? _currentSpeedOnPause : (_rigidbody.velocity.magnitude / GeneralSettings.Instance.HoursPerSecond) / _gameSpeedMultiplier; }
+            get {
+                if (_gameMgr.IsPaused) {
+                    return _currentSpeedOnPause;
+                }
+                else {
+                    var speedInGameSpeedAdjustedUnitsPerSec = _rigidbody.velocity.magnitude;
+                    var speedInUnitsPerHour = speedInGameSpeedAdjustedUnitsPerSec / _gameTime.GameSpeedAdjustedHoursPerSecond;
+                    return speedInUnitsPerHour;
+                }
+            }
         }
 
         private float _requestedSpeed;
@@ -147,7 +152,7 @@ namespace CodeEnv.Master.GameContent {
 
         private Vector3 _requestedHeading;
         /// <summary>
-        /// Gets or sets the ship's requested heading, normalized.
+        /// The ship's normalized, requested heading in worldspace coordinates.
         /// </summary>
         public Vector3 RequestedHeading {
             get { return _requestedHeading; }
@@ -196,9 +201,15 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<float>(ref _maxTurnRate, value, "MaxTurnRate"); }
         }
 
+        public override Index3D SectorIndex { get { return References.SectorGrid.GetSectorIndex(Position); } }
+
+
+        /// <summary>
+        /// The speed of the ship in units per hour when it was paused.
+        /// </summary>
         private float _currentSpeedOnPause;
         private Rigidbody _rigidbody;
-        private IList<IDisposable> _subscribers;
+        private IList<IDisposable> _subscriptions;
         private GameTime _gameTime;
         private float _gameSpeedMultiplier;
 
@@ -219,6 +230,10 @@ namespace CodeEnv.Master.GameContent {
             FullStlThrust = stat.FullStlThrust;
             FullFtlThrust = stat.FullFtlThrust;
             MaxTurnRate = stat.MaxTurnRate;
+            Science = stat.Science;
+            Culture = stat.Culture;
+            Income = stat.Income;
+            Expense = stat.Expense;
             InitializeLocalValuesAndReferences();
             Subscribe();
         }
@@ -230,20 +245,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Subscribe() {
-            _subscribers = new List<IDisposable>();
-            _subscribers.Add(_gameMgr.SubscribeToPropertyChanging<IGameManager, bool>(gs => gs.IsPaused, OnIsPausedChanging));
-            _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
-        }
-
-        /// <summary>
-        /// Assesses the availability of the ship's FTL Engines. This must always be called immediately after Topography is potentially changed as there is no
-        /// OnTopographyChanged() method - see note.
-        /// 
-        /// Note: Must be public and handled this way as Topography Property will not reliably generate OnTopographyChanged() as default(Topography) 
-        /// is OpenSpace rather than None. Can't use None = 0, as OpenSpace = 0 is used to generate a Pathfinding bitmask tag used to assign penalty values.
-        /// </summary>
-        public void AssessFtlAvailability() {
-            IsFtlAvailableForUse = Topography == Topography.OpenSpace && IsFtlOperational && !IsFtlDampedByField;
+            _subscriptions = new List<IDisposable>();
+            _subscriptions.Add(_gameMgr.SubscribeToPropertyChanging<IGameManager, bool>(gs => gs.IsPaused, OnIsPausedChanging));
+            _subscriptions.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
         }
 
         private void OnIsFtlOperationalChanged() {
@@ -253,6 +257,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnIsFtlDampedByFieldChanged() {
+            AssessFtlAvailability();
+        }
+
+        protected override void OnTopographyChanged() {
+            base.OnTopographyChanged();
             AssessFtlAvailability();
         }
 
@@ -294,10 +303,14 @@ namespace CodeEnv.Master.GameContent {
             _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();
         }
 
+        private void AssessFtlAvailability() {
+            IsFtlAvailableForUse = Topography == Topography.OpenSpace && IsFtlOperational && !IsFtlDampedByField;
+        }
+
         protected override void Unsubscribe() {
             base.Unsubscribe();
-            _subscribers.ForAll<IDisposable>(s => s.Dispose());
-            _subscribers.Clear();
+            _subscriptions.ForAll<IDisposable>(s => s.Dispose());
+            _subscriptions.Clear();
         }
 
         public override string ToString() {

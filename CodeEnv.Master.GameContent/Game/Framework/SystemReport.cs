@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
 
@@ -24,34 +25,36 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SystemReport : AItemReport {
 
-        public Index3D SectorIndex { get; private set; }
-
         public int? Capacity { get; private set; }
 
-        public OpeYield? Resources { get; private set; }
+        public ResourceYield? Resources { get; private set; }
 
-        public XYield? SpecialResources { get; private set; }
+        public Index3D SectorIndex { get; private set; }
 
         public StarReport StarReport { get; private set; }
         public SettlementReport SettlementReport { get; private set; }
         public PlanetoidReport[] PlanetoidReports { get; private set; }
 
-        public SystemReport(SystemData data, Player player, StarReport starReport, SettlementReport settlementReport, PlanetoidReport[] planetoidReports)
-            : base(player) {
-            StarReport = starReport;
-            SettlementReport = settlementReport;
-            PlanetoidReports = planetoidReports;
+        public SystemReport(SystemData data, Player player, ISystemItem item)
+            : base(player, item) {
+            StarReport = item.GetStarReport(player);
+            SettlementReport = item.GetSettlementReport(player);
+            PlanetoidReports = item.GetPlanetoidReports(player);
             AssignValues(data);
+            AssignValuesFromMemberReports();
         }
 
         protected override void AssignValues(AItemData data) {
             var sysData = data as SystemData;
             Name = sysData.Name;
             SectorIndex = sysData.SectorIndex;
+            Position = sysData.Position;
+        }
+
+        private void AssignValuesFromMemberReports() {
             Owner = SettlementReport != null ? SettlementReport.Owner : null;        // IMPROVE NoPlayer?, other Settlement info?
-            Capacity = StarReport.Capacity + PlanetoidReports.Sum(pr => pr.Capacity);
-            Resources = StarReport.Resources.Sum(PlanetoidReports.Select(pr => pr.Resources).ToArray());
-            SpecialResources = StarReport.SpecialResources.Sum(PlanetoidReports.Select(pr => pr.SpecialResources).ToArray());
+            Capacity = StarReport.Capacity.NullableSum(PlanetoidReports.Select(pr => pr.Capacity).ToArray());
+            Resources = StarReport.Resources.NullableSum(PlanetoidReports.Select(pr => pr.Resources).ToArray());
         }
 
         public override string ToString() {

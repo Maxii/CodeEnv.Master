@@ -26,9 +26,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AIntelItemData : AItemData {
 
-        public event Action onHumanPlayerIntelCoverageChanged;
+        public event Action onUserIntelCoverageChanged;
 
-        public event Action<Player> onPlayerIntelCoverageChanged;
+        public event Action<Player> onIntelCoverageChanged;
 
         protected virtual IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.None; } }
 
@@ -45,8 +45,8 @@ namespace CodeEnv.Master.GameContent {
             int playerCount = _gameMgr.AIPlayers.Count + 1;
             //D.Log("{0} initializing Players Intel settings. PlayerCount = {1}.", GetType().Name, playerCount);
             _playerIntelLookup = new Dictionary<Player, AIntel>(playerCount);
-            var humanPlayer = _gameMgr.HumanPlayer;
-            _playerIntelLookup.Add(humanPlayer, InitializeIntelState(humanPlayer));
+            var userPlayer = _gameMgr.UserPlayer;
+            _playerIntelLookup.Add(userPlayer, InitializeIntelState(userPlayer));
             foreach (var aiPlayer in _gameMgr.AIPlayers) {
                 _playerIntelLookup.Add(aiPlayer, InitializeIntelState(aiPlayer));
             }
@@ -68,26 +68,29 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Indicates whether the provided <c>player</c> has investigated the item and
-        /// gained knowledge of the item that is greater than the default level when the game started.
-        /// Example: All players start with IntelCoverage.Aware knowledge of Stars. This method would
-        /// return false if the player's IntelCoverage of the Star was not greater than Aware.
+        /// Sets the intel coverage for the User player. Returns <c>true</c> if the <c>newCoverage</c>
+        /// was successfully applied, and <c>false</c> if it was rejected due to the inability of
+        /// the item to regress its IntelCoverage.
+        /// </summary>
+        /// <param name="newCoverage">The new coverage.</param>
+        /// <returns></returns>
+        public bool SetUserIntelCoverage(IntelCoverage newCoverage) {
+            return SetIntelCoverage(_gameMgr.UserPlayer, newCoverage);
+        }
+
+        /// <summary>
+        /// Sets the intel coverage for this player. Returns <c>true</c> if the <c>newCoverage</c>
+        /// was successfully applied, and <c>false</c> if it was rejected due to the inability of
+        /// the item to regress its IntelCoverage.
         /// </summary>
         /// <param name="player">The player.</param>
+        /// <param name="newCoverage">The new coverage.</param>
         /// <returns></returns>
-        public bool HasPlayerInvestigated(Player player) {
-            return GetIntelCoverage(player) > DefaultStartingIntelCoverage;
-        }
-
-        public bool TrySetHumanPlayerIntelCoverage(IntelCoverage newCoverage) {
-            return TrySetIntelCoverage(_gameMgr.HumanPlayer, newCoverage);
-        }
-
-        public bool TrySetIntelCoverage(Player player, IntelCoverage newCoverage) {
-            var playerIntel = GetPlayerIntel(player);
+        public bool SetIntelCoverage(Player player, IntelCoverage newCoverage) {
+            var playerIntel = GetIntel(player);
             if (playerIntel.IsCoverageChangeAllowed(newCoverage)) {
                 playerIntel.CurrentCoverage = newCoverage;
-                OnPlayerIntelCoverageChanged(player);
+                OnIntelCoverageChanged(player);
                 return true;
             }
             //D.Log("{0} properly ignored changing {1}'s IntelCoverage from {2} to {3}.",
@@ -95,39 +98,39 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
-        public IntelCoverage GetHumanPlayerIntelCoverage() { return GetIntelCoverage(_gameMgr.HumanPlayer); }
+        public IntelCoverage GetUserIntelCoverage() { return GetIntelCoverage(_gameMgr.UserPlayer); }
 
-        public IntelCoverage GetIntelCoverage(Player player) { return GetPlayerIntelCopy(player).CurrentCoverage; }
+        public IntelCoverage GetIntelCoverage(Player player) { return GetIntelCopy(player).CurrentCoverage; }
 
         /// <summary>
-        /// Returns a copy of the intel instance for the HumanPlayer.
+        /// Returns a copy of the intel instance for the User.
         /// </summary>
         /// <returns></returns>
-        public AIntel GetHumanPlayerIntelCopy() { return GetPlayerIntelCopy(_gameMgr.HumanPlayer); }
+        public AIntel GetUserIntelCopy() { return GetIntelCopy(_gameMgr.UserPlayer); }
 
         /// <summary>
         /// Returns a copy of the intel instance for this player.
         /// </summary>
         /// <param name="player">The player.</param>
         /// <returns></returns>
-        public AIntel GetPlayerIntelCopy(Player player) {
-            AIntel intelToCopy = GetPlayerIntel(player);
+        public AIntel GetIntelCopy(Player player) {
+            AIntel intelToCopy = GetIntel(player);
             if (intelToCopy is Intel) {
                 return new Intel(intelToCopy as Intel);
             }
             return new ImprovingIntel(intelToCopy as ImprovingIntel);
         }
 
-        private AIntel GetPlayerIntel(Player player) {
+        private AIntel GetIntel(Player player) {
             return _playerIntelLookup[player];
         }
 
-        private void OnPlayerIntelCoverageChanged(Player player) {
-            if (onPlayerIntelCoverageChanged != null) {
-                onPlayerIntelCoverageChanged(player);
+        private void OnIntelCoverageChanged(Player player) {
+            if (onIntelCoverageChanged != null) {
+                onIntelCoverageChanged(player);
             }
-            if (onHumanPlayerIntelCoverageChanged != null && player.IsHumanUser) {
-                onHumanPlayerIntelCoverageChanged();
+            if (onUserIntelCoverageChanged != null && player.IsUser) {
+                onUserIntelCoverageChanged();
             }
         }
 

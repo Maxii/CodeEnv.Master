@@ -37,6 +37,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     /// Optimized messaging replacement for SendMessage() that binds the
     /// message to the current state. Essentially calls the method on this MonoBehaviour
     /// instance that has the signature "CurrentState_CallingMethodName(param).
+    /// Returns <c>true</c> if a method in the current state was invoked, false if no method is present.
     /// Usage:
     /// void CallingMethodName(param)  {
     /// RelayToCurrentState(param);
@@ -59,6 +60,9 @@ public abstract class AMortalItemStateMachine : AMortalItem {
 
     /// <summary>
     /// Optimized SendMessage replacement.
+    /// WARNING: BindingFlags.NonPublic DOES NOT find private methods in base classes! This is noted in GetMethods() 
+    /// below, but NOT in the comparable GetMethod() documentation!
+    /// <see cref="https://msdn.microsoft.com/en-us/library/4d848zkb(v=vs.110).aspx"/>
     /// </summary>
     /// <param name="message">The message.</param>
     /// <param name="param">The parameter.</param>
@@ -125,7 +129,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
             if (!param.IsNullOrEmpty()) {
                 parameters = param.Concatenate();
             }
-            D.Warn("{0} did not find Method with signature {1}({2}).", FullName, message, parameters);  // my addition
+            D.Warn("{0} did not find Method with signature {1}({2}). Is it a private method in a base class?", FullName, message, parameters);  // my addition
             return false;   // my addition
         }
     }
@@ -259,9 +263,9 @@ public abstract class AMortalItemStateMachine : AMortalItem {
             __ValidateNoNewStateSetDuringEnterState(value);
             ChangingState();
             if (state.currentState != null && state.currentState.Equals(value)) {
-                D.Log("{0} duplicate state {1} set attempt.", GetType().Name, value);
+                D.Warn("{0} duplicate state {1} set attempt.", GetType().Name, value);
             }
-            //D.Log("{0} setting CurrentState to {1}.", FullName, value.ToString());
+            D.Log("{0} setting CurrentState to {1}.", FullName, value);
             state.currentState = value;
             ConfigureCurrentState();
             __ResetStateChangeValidationTest();
@@ -278,12 +282,15 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     private Stack<State> _stack = new Stack<State>();
 
     /// <summary>
-    /// Call the specified state - activates the new state without deactivating the 
-    /// current state.  Called states need to execute Return() when they are finished
+    /// Call the specified state - immediately suspends execution of the current state
+    /// method that Call()ed, then activates the new state without deactivating the 
+    /// current state.  If the new state's EnterState() method returns void, it is executed
+    /// immediately. If it returns IEnumerable, it is executed during the next Update(). 
+    /// Called states need to execute Return() when they are finished
     /// </summary>
     /// <param name='stateToActivate'> State to activate. </param>
     protected void Call(object stateToActivate) {
-        //D.Log("{0}.Call({1}) called.", FullName, stateToActivate.ToString());
+        D.Log("{0}.Call({1}) called.", FullName, stateToActivate.ToString());
         state.time = timeInCurrentState;
         state.enterStack = enterStateCoroutine.CreateStack();
         state.exitStack = exitStateCoroutine.CreateStack();
@@ -313,8 +320,8 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         //D.Log("{0}.Return() called.", FullName);
         if (state.exitState != null) {
             //D.Log("{0} setting up {1}_ExitState() to run in Return().", FullName, state.currentState.ToString());
-            state.exitStateEnumerator = state.exitState();
-            exitStateCoroutine.Run(state.exitStateEnumerator);
+            state.exitStateEnumerator = state.exitState();  // a void enterState() method executes immediately here rather than wait until the enterCoroutine makes its next pass
+            exitStateCoroutine.Run(state.exitStateEnumerator);  // if IEnumerator return, exitState is run during next Update()
         }
         //D.Log("On Return, Stack count = {0}.", _stack.Count);
         if (_stack.Count > 0) {
@@ -362,20 +369,20 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     /// Configures the state machine for the current state
     /// </summary>
     private void ConfigureCurrentState() {
-        //D.Log("{0}.ConfigureCurrentState() called.", FullName);
+        D.Log("{0}.ConfigureCurrentState() called.", FullName);
         if (state.exitState != null) {
             // runs the exitState of the PREVIOUS state as the state delegates haven't been changed yet
             //if (state.exitState != DoNothingCoroutine) {
-            //    D.Log("{0} setting up {1}_ExitState() to run.", FullName, lastState.ToString());
+            D.Log("{0} setting up {1}_ExitState() to run.", FullName, state.currentState.ToString());
             //}
+            //state.exitStateEnumerator = state.exitState();  // no reason to assign exitStateEnumerator as this state is done after exitState() is executed
             exitStateCoroutine.Run(state.exitState());
         }
 
         GetStateMethods();
 
         if (state.enterState != null) {
-            //D.Log("{0} setting up {1}_EnterState() to run. Time = {2}.", FullName, state.currentState.ToString(), Time.time);
-            //D.Log("{0} EnterState method name = {1}.", FullName, state.enterState.Method.Name);
+            D.Log("{0} setting up {1}_EnterState() to run. EnterState method name = {2}.", FullName, state.currentState.ToString(), state.enterState.Method.Name);
             state.enterStateEnumerator = state.enterState();    // a void enterState() method executes immediately here rather than wait until the enterCoroutine makes its next pass
             // void enterStates are set to return null by ConfigureDelegate when executed. Accordingly, Run(null) below does nothing
             enterStateCoroutine.Run(state.enterStateEnumerator);
@@ -416,6 +423,9 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     /// if the Method name is not present in this State Machine, then returns Default. Also puts an 
     /// IEnumerator wrapper around EnterState or ExitState methods that return void rather than
     /// IEnumerator.
+    /// WARNING: BindingFlags.NonPublic DOES NOT find private methods in base classes! This is noted in GetMethods() 
+    /// below, but NOT in the comparable GetMethod() documentation!
+    /// <see cref="https://msdn.microsoft.com/en-us/library/4d848zkb(v=vs.110).aspx"/>
     /// </summary>
     /// <typeparam name="T">The type of delegate</typeparam>
     /// <param name="methodRoot">Substring of the methodName that follows "StateName_", eg EnterState from State1_EnterState.</param>
@@ -434,17 +444,28 @@ public abstract class AMortalItemStateMachine : AMortalItem {
                 | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.InvokeMethod);
 
             if (mtd != null) {
+                // only enterState and exitState T delegates are of Type Func<IEnumerator> see GetStateMethods above
                 if (typeof(T) == typeof(Func<IEnumerator>) && mtd.ReturnType != typeof(IEnumerator)) {
                     // the enter or exit method returns void, so adjust it to execute properly when placed in the IEnumerable delegate
                     Action a = Delegate.CreateDelegate(typeof(Action), this, mtd) as Action;
                     Func<IEnumerator> func = () => { a(); return null; };
                     returnValue = func;
                 }
-                else
+                else {
                     returnValue = Delegate.CreateDelegate(typeof(T), this, mtd);
+                }
             }
             else {
                 returnValue = Default as Delegate;
+                if (methodRoot == _enterStateText || methodRoot == _exitStateText) {
+                    D.Warn("{0} did not find method {1}_{2}. Is it a private method in a base class?",
+                        FullName, state.currentState.ToString(), methodRoot);
+                }
+                else {
+                    //                    D.Log(@"{0} did not find method {1}_{2}. \n
+                    //                            This is probably because it is not present, but could it be a private method in a base class?",
+                    //                            FullName, state.currentState.ToString(), methodRoot);
+                }
             }
             lookup[methodRoot] = returnValue;
         }
@@ -472,7 +493,8 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         state.DoFixedUpdate();
     }
 
-    void OnTriggerEnter(Collider other) {
+    protected override void OnTriggerEnter(Collider other) {
+        base.OnTriggerEnter(other);
         state.DoOnTriggerEnter(other);
     }
 
@@ -480,20 +502,23 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         state.DoOnTriggerStay(other);
     }
 
-    void OnTriggerExit(Collider other) {
+    protected override void OnTriggerExit(Collider other) {
+        base.OnTriggerExit(other);
         state.DoOnTriggerExit(other);
     }
 
-    void OnCollisionEnter(Collision other) {
-        state.DoOnCollisionEnter(other);
+    protected override void OnCollisionEnter(Collision collision) {
+        base.OnCollisionEnter(collision);
+        state.DoOnCollisionEnter(collision);
     }
 
-    void OnCollisionStay(Collision other) {
-        state.DoOnCollisionStay(other);
+    void OnCollisionStay(Collision collision) {
+        state.DoOnCollisionStay(collision);
     }
 
-    void OnCollisionExit(Collision other) {
-        state.DoOnCollisionExit(other);
+    protected override void OnCollisionExit(Collision collision) {
+        base.OnCollisionExit(collision);
+        state.DoOnCollisionExit(collision);
     }
 
     protected override void OnHover(bool isOver) {
@@ -519,6 +544,9 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     #endregion
 
     #region Debug
+
+    private static string _exitStateText = "ExitState";
+    private static string _enterStateText = "EnterState";
 
     // Note: This StateChange validation system is not really necessary for Items as AMortalItemStateMachine does not support event change notifications.
     // However, making a state change inside a void EnterState() method is a bad idea as EnterState code execution gets out of sync if the EnterState() method 

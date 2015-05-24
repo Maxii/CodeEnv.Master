@@ -28,7 +28,7 @@ public class GuiSavedGamesPopupList : AGuiPopupList<string> {
 
     private static string[] __dummySavedGameNames = new string[] { "DummySave1", "DummySave2", "DummySave3" };
 
-    public override GuiMenuElementID ElementID { get { return GuiMenuElementID.SavedGamesPopupList; } }
+    public override GuiElementID ElementID { get { return GuiElementID.SavedGamesPopupList; } }
 
     protected override string[] GetNames() { return __dummySavedGameNames; }
 

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: StarbasePublisher.cs
-// Report and LabelText Publisher for Starbases.
+// Report and HudContent Publisher for Starbases.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,18 +19,27 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Report and LabelText Publisher for Starbases.
+    /// Report and HudContent Publisher for Starbases.
     /// </summary>
-    public class StarbasePublisher : ACmdPublisher<StarbaseReport, StarbaseCmdData, FacilityReport> {
+    public class StarbasePublisher : ACmdPublisher<StarbaseReport, StarbaseCmdData> {
 
-        static StarbasePublisher() {
-            LabelTextFactory = new StarbaseLabelTextFactory();
+        public override ColoredStringBuilder HudContent {
+            get { return StarbaseDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        public StarbasePublisher(StarbaseCmdData data, ICmdPublisherClient<FacilityReport> cmdItem) : base(data, cmdItem) { }
+        private IStarbaseCmdItem _item;
+
+        public StarbasePublisher(StarbaseCmdData data, IStarbaseCmdItem item)
+            : base(data) {
+            _item = item;
+        }
 
         protected override StarbaseReport GenerateReport(Player player) {
-            return new StarbaseReport(_data, player, _cmdItem.GetElementReports(player));
+            return new StarbaseReport(_data, player, _item);
+        }
+
+        protected override bool IsCachedReportCurrent(Player player, out StarbaseReport cachedReport) {
+            return base.IsCachedReportCurrent(player, out cachedReport) && IsEqual(cachedReport.ElementReports, _item.GetElementReports(player));
         }
 
         public override string ToString() {

@@ -38,16 +38,14 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// The tag name of the root of the Xml document.
         /// </summary>
-        protected override string RootTagName { get { return "EnumValues"; } }
+        protected sealed override string RootTagName { get { return "EnumValues"; } }
 
         /// <summary>
         /// The name of the XML document without extension. Default is the name of the EnumType.
         /// </summary>
-        protected override string XmlFilename {
-            get { return EnumType.Name; }
-        }
+        protected sealed override string XmlFilename { get { return EnumType.Name; } }
 
-        protected override bool ValidateElement(XElement xElement) {
+        protected sealed override bool ValidateElement(XElement xElement) {
             bool isBaseValid = base.ValidateElement(xElement);
             bool isDerivedValid = EnumType.Name.Equals(xElement.Attribute(_enumTypeAttributeName).Value);
             return isBaseValid && isDerivedValid;

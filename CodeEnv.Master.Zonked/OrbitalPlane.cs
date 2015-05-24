@@ -35,13 +35,13 @@ public class OrbitalPlane : StationaryItem, IZoomToFurthest {
 
     protected override void Awake() {
         base.Awake();
-        _systemManager = gameObject.GetSafeMonoBehaviourComponentInParents<SystemCreator>();
-        _systemGraphics = gameObject.GetSafeMonoBehaviourComponentInParents<SystemGraphics>();
+        _systemManager = gameObject.GetSafeMonoBehaviourInParents<SystemCreator>();
+        _systemGraphics = gameObject.GetSafeMonoBehaviourInParents<SystemGraphics>();
         __ValidateCtxObjectSettings();
     }
 
     private void __ValidateCtxObjectSettings() {
-        CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
+        CtxObject ctxObject = gameObject.GetSafeMonoBehaviour<CtxObject>();
         D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
         UnityUtility.ValidateComponentPresence<Collider>(gameObject);
     }

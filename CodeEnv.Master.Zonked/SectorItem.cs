@@ -52,8 +52,8 @@ public class SectorItem : ADiscernibleItem {
 
     protected override void InitializeModelMembers() { }
 
-    protected override void InitializeViewMembersOnDiscernible() {
-        base.InitializeViewMembersOnDiscernible();
+    protected override void InitializeViewMembersWhenFirstDiscernibleToUser() {
+        base.InitializeViewMembersWhenFirstDiscernibleToUser();
         // TODO meshes and animations need to be added to sectors
         // UNCLEAR include a separate CullingLayer for Sector meshes and animations?   
     }

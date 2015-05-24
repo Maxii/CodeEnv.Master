@@ -98,7 +98,7 @@ public class FleetView : AFollowableView, IFleetViewable, ISelectable {
     protected override void RegisterComponentsToDisable() {
         base.RegisterComponentsToDisable();
         disableComponentOnNotDiscernible = disableComponentOnNotDiscernible.Union(new Component[] { collider });
-        disableGameObjectOnNotDiscernible = disableGameObjectOnNotDiscernible.Union(new GameObject[] { gameObject.GetSafeMonoBehaviourComponentInChildren<Billboard>().gameObject });
+        disableGameObjectOnNotDiscernible = disableGameObjectOnNotDiscernible.Union(new GameObject[] { gameObject.GetSafeMonoBehaviourInChildren<Billboard>().gameObject });
     }
 
     private void OnTrackingTargetChanged() {
@@ -292,8 +292,8 @@ public class FleetView : AFollowableView, IFleetViewable, ISelectable {
     #region ContextMenu
 
     private void __InitializeContextMenu() {      // IMPROVE use of string
-        _ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
-        CtxMenu generalMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "GeneralMenu");
+        _ctxObject = gameObject.GetSafeMonoBehaviour<CtxObject>();
+        CtxMenu generalMenu = GuiManager.Instance.gameObject.GetSafeMonoBehavioursInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "GeneralMenu");
         _ctxObject.contextMenu = generalMenu;
         D.Assert(_ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
         UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
@@ -320,9 +320,9 @@ public class FleetView : AFollowableView, IFleetViewable, ISelectable {
     #endregion
 
     private void InitializeFleetIcon() {
-        _fleetIconSprite = gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>();
+        _fleetIconSprite = gameObject.GetSafeMonoBehaviourInChildren<UISprite>();
         _fleetIconTransform = _fleetIconSprite.transform;
-        _fleetIconScaler = _fleetIconTransform.gameObject.GetSafeMonoBehaviourComponent<ScaleRelativeToCamera>();
+        _fleetIconScaler = _fleetIconTransform.gameObject.GetSafeMonoBehaviour<ScaleRelativeToCamera>();
         // I need the collider sitting over the fleet icon to be 3D as it's rotation tracks the Cmd object, not the billboarded icon
         Vector2 iconSize = _fleetIconSprite.localSize;
         _iconSize = new Vector3(iconSize.x, iconSize.y, iconSize.x);

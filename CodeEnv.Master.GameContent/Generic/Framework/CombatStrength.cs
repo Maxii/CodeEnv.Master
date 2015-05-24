@@ -11,7 +11,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -25,7 +25,14 @@ namespace CodeEnv.Master.GameContent {
     /// Immutable data container holding the offense and defensive damage 
     /// infliction and prevention capabilities of weapons and countermeasures respectively.
     /// </summary>
-    public struct CombatStrength : IEquatable<CombatStrength> {
+    public struct CombatStrength : IEquatable<CombatStrength>, IComparable<CombatStrength> {
+
+        private static string _toStringFormat = "B({0:0.#}), M({1:0.#}), P({2:0.#})";
+
+        private static string _toLabelFormat =
+              GameConstants.IconMarker_Beam + " {0:0.#}" + Constants.NewLine
+            + GameConstants.IconMarker_Missile + " {1:0.#}" + Constants.NewLine
+            + GameConstants.IconMarker_Projectile + "{2:0.#}";
 
         #region Operators Override
 
@@ -42,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
         public static CombatStrength operator +(CombatStrength left, CombatStrength right) {
             var b = left.Beam + right.Beam;
             var m = left.Missile + right.Missile;
-            var p = left.Particle + right.Particle;
+            var p = left.Projectile + right.Projectile;
             return new CombatStrength(b, m, p);
         }
 
@@ -61,23 +68,50 @@ namespace CodeEnv.Master.GameContent {
             var m = attacker.Missile - defender.Missile;
             //D.Log("Missile result: " + m);
             if (m < Constants.ZeroF) { m = Constants.ZeroF; }
-            var p = attacker.Particle - defender.Particle;
-            //D.Log("Particle result: " + p);
+            var p = attacker.Projectile - defender.Projectile;
+            //D.Log("Projectile result: " + p);
             if (p < Constants.ZeroF) { p = Constants.ZeroF; }
             return new CombatStrength(b, m, p);
         }
 
+        /// <summary>
+        /// Scales this <c>strength</c> by <c>scaler</c>.
+        /// </summary>
+        /// <param name="strength">The strength.</param>
+        /// <param name="scaler">The scaler.</param>
+        /// <returns>
+        /// The result of the operator.
+        /// </returns>
+        public static CombatStrength operator *(CombatStrength strength, float scaler) {
+            Arguments.ValidateNotNegative(scaler);
+            var beam = strength.Beam * scaler;
+            var missile = strength.Missile * scaler;
+            var projectile = strength.Projectile * scaler;
+            return new CombatStrength(beam, missile, projectile);
+        }
+
+        /// <summary>
+        /// Scales this <c>strength</c> by <c>scaler</c>.
+        /// </summary>
+        /// <param name="scaler">The scaler.</param>
+        /// <param name="strength">The strength.</param>
+        /// <returns>
+        /// The result of the operator.
+        /// </returns>
+        public static CombatStrength operator *(float scaler, CombatStrength strength) {
+            return strength * scaler;
+        }
+
+
         #endregion
 
-        private static string _toStringFormat = "B({0:0.#}), M({1:0.#}), P({2:0.#})";
-
-        public float Combined { get { return Beam + Missile + Particle; } }
+        public float Combined { get { return Beam + Missile + Projectile; } }
 
         public float Beam { get; private set; }
 
         public float Missile { get; private set; }
 
-        public float Particle { get; private set; }
+        public float Projectile { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CombatStrength" /> struct.
@@ -95,8 +129,8 @@ namespace CodeEnv.Master.GameContent {
                 case ArmamentCategory.Missile:
                     Missile = value;
                     break;
-                case ArmamentCategory.Particle:
-                    Particle = value;
+                case ArmamentCategory.Projectile:
+                    Projectile = value;
                     break;
                 case ArmamentCategory.None:
                 default:
@@ -109,13 +143,13 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="beam"><c>ArmamentCategory.Beam</c> value.</param>
         /// <param name="missile"><c>ArmamentCategory.Missile</c> value.</param>
-        /// <param name="particle"><c>ArmamentCategory.Particle</c> value.</param>
-        private CombatStrength(float beam, float missile, float particle)
+        /// <param name="projectile"><c>ArmamentCategory.Projectile</c> value.</param>
+        private CombatStrength(float beam, float missile, float projectile)
             : this() {
-            Arguments.ValidateNotNegative(beam, missile, particle);
+            Arguments.ValidateNotNegative(beam, missile, projectile);
             Beam = beam;
             Missile = missile;
-            Particle = particle;
+            Projectile = projectile;
         }
 
         public float GetValue(ArmamentCategory armament) {
@@ -124,8 +158,8 @@ namespace CodeEnv.Master.GameContent {
                     return Beam;
                 case ArmamentCategory.Missile:
                     return Missile;
-                case ArmamentCategory.Particle:
-                    return Particle;
+                case ArmamentCategory.Projectile:
+                    return Projectile;
                 case ArmamentCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(armament));
@@ -150,20 +184,33 @@ namespace CodeEnv.Master.GameContent {
             int hash = 17;  // 17 = some prime number
             hash = hash * 31 + Beam.GetHashCode(); // 31 = another prime number
             hash = hash * 31 + Missile.GetHashCode();
-            hash = hash * 31 + Particle.GetHashCode();
+            hash = hash * 31 + Projectile.GetHashCode();
             return hash;
         }
 
         #endregion
 
+        public string ToLabel() {
+            return _toLabelFormat.Inject(Beam, Missile, Projectile);
+        }
+
         public override string ToString() {
-            return _toStringFormat.Inject(Beam, Missile, Particle);
+            return _toStringFormat.Inject(Beam, Missile, Projectile);
         }
 
         #region IEquatable<CombatStrength> Members
 
         public bool Equals(CombatStrength other) {
-            return Beam == other.Beam && Missile == other.Missile && Particle == other.Particle;
+            return Beam == other.Beam && Missile == other.Missile && Projectile == other.Projectile;
+        }
+
+        #endregion
+
+        #region IComparable<CombatStrength> Members
+
+        public int CompareTo(CombatStrength other) {
+            //D.Log("{0}.CompareTo({1}) called.", ToString(), other.ToString());
+            return Combined.CompareTo(other.Combined);
         }
 
         #endregion

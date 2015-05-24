@@ -37,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override ALabelText GetLabelText() {
-            return _publisher.GetLabelText(LabelID.CursorHud, _starReport, _planetoidReports);
+            return _publisher.GetLabelText(DisplayTargetID.CursorHud, _starReport, _planetoidReports);
         }
 
         public void Show(Vector3 position, StarReport starReport, PlanetoidReport[] planetoidReports) {
@@ -51,7 +51,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override bool TryUpdateContent(LabelContentID contentID, out IColoredTextList content) {
-            return _publisher.TryUpdateLabelTextContent(LabelID.CursorHud, contentID, _starReport, _planetoidReports, out content);
+            return _publisher.TryUpdateLabelTextContent(DisplayTargetID.CursorHud, contentID, _starReport, _planetoidReports, out content);
         }
 
         public override string ToString() {

@@ -71,7 +71,6 @@ namespace CodeEnv.Master.GameContent {
             _line = new VectorLine(LineName, _points, material, LineWidth, _lineType);
             _line.color = Color.ToUnityColor(); // color removed from constructor in Vectrosity 4.0
 
-
             if (_target != null) { _line.drawTransform = _target; } // added as Vectrosity 3.0 removed Draw3D(Transform)
         }
 
@@ -122,6 +121,7 @@ namespace CodeEnv.Master.GameContent {
         private void OnPointsChanged() {
             if (_line != null) {
                 _line.points3.Clear();  //_line.Resize(Points); removed by Vectrosity 4.0
+                //D.Log("{0}.OnPointsChanged called. Adding {1} points.", GetType().Name, Points.Length);
                 _line.points3.AddRange(Points);
             }
         }

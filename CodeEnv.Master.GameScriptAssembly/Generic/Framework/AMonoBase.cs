@@ -80,87 +80,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
         //LogEvent();
     }
 
-    /// <summary>
-    /// Called when the Application is quiting, followed by OnDisable() and then OnDestroy().
-    /// </summary>
-    protected virtual void OnApplicationQuit() {
-        //LogEvent();
-        IsApplicationQuiting = true;
-    }
-
-    /// <summary>
-    /// Called as a result of Destroy(gameobject) and following OnDisable() which follows
-    /// OnApplicationQuit(). Clients except AAdvancedMonSingleton should not override this method.
-    /// </summary>
-    protected virtual void OnDestroy() {
-        //LogEvent();
-        Cleanup();
-    }
-
-    protected abstract void Cleanup();
-
-    #endregion
-
-    #region UnitySerializer Event Methods
-
-    /// <summary>
-    /// Called by UnitySerializer the same way normal Unity methods (above) are called,
-    /// it occurs after the level has been loaded but before it starts to run.
-    /// It is used to do any final initialization.
-    /// </summary>
-    protected virtual void OnDeserialized() {
-        D.Log("{0}.OnDeserialized().", this.GetType().Name);
-
-    }
-
-    #endregion
-
-    #region Update
-
-    /// <summary>
-    /// Enum used to define how many frames will be
-    /// skipped before ToUpdate or the CoroutineScheduler 
-    /// will run.
-    /// </summary>
-    [Serializable]
-    public enum FrameUpdateFrequency {
-        /// <summary>
-        /// Default.
-        /// </summary>
-        Never = 0,
-        /// <summary>
-        ///Every frame.
-        /// </summary>
-        Continuous = 1,
-        /// <summary>
-        /// Every other frame.
-        /// </summary>
-        Frequent = 2,
-        /// <summary>
-        /// Every fourth frame.
-        /// </summary>
-        Normal = 4,
-        /// <summary>
-        /// Every eighth frame.
-        /// </summary>
-        Infrequent = 8,
-        /// <summary>
-        /// Every sixteenth frame.
-        /// </summary>
-        Seldom = 16,
-        /// <summary>
-        /// Every thirty second frame.
-        /// </summary>
-        Rare = 32,
-        /// <summary>
-        /// Every sixty fourth frame.
-        /// </summary>
-        VeryRare = 64,
-        /// <summary>
-        /// Every one hundred twenty eighth frame.
-        /// </summary>
-        HardlyEver = 128
-    }
+    #region Updating
 
     /// <value>
     ///  The rate at which ToUpdate() returns true, calling OccasionalUpdate(). Default is Never.
@@ -215,6 +135,58 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     }
 
     #endregion
+
+    protected virtual void OnCollisionEnter(Collision collision) {
+        //LogEvent();
+    }
+
+    protected virtual void OnCollisionExit(Collision collision) {
+        //LogEvent();
+    }
+
+    protected virtual void OnTriggerEnter(Collider other) {
+        // LogEvent();
+    }
+
+    protected virtual void OnTriggerExit(Collider other) {
+        //LogEvent();
+    }
+
+    /// <summary>
+    /// Called when the Application is quiting, followed by OnDisable() and then OnDestroy().
+    /// </summary>
+    protected virtual void OnApplicationQuit() {
+        //LogEvent();
+        IsApplicationQuiting = true;
+    }
+
+    /// <summary>
+    /// Called as a result of Destroy(gameobject) and following OnDisable() which follows
+    /// OnApplicationQuit(). Clients except AMonoSingleton should not override this method.
+    /// </summary>
+    protected virtual void OnDestroy() {
+        //LogEvent();
+        Cleanup();
+    }
+
+    protected abstract void Cleanup();
+
+    #endregion
+
+    #region UnitySerializer Event Methods
+
+    /// <summary>
+    /// Called by UnitySerializer the same way normal Unity methods (above) are called,
+    /// it occurs after the level has been loaded but before it starts to run.
+    /// It is used to do any final initialization.
+    /// </summary>
+    protected virtual void OnDeserialized() {
+        D.Log("{0}.OnDeserialized().", this.GetType().Name);
+
+    }
+
+    #endregion
+
 
     #region Invoke
     // Based on an Action Delegate that encapsulates methods with no parameters that return void, aka 'a task'.
@@ -306,7 +278,6 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// <typeparam name="T">The Type of the original to be cloned.</typeparam>
     /// <param name="original">The original.</param>
     /// <returns>A clone of original named [original.Name](Clone)</returns>
-
     public T Instantiate<T>(T original) where T : UnityEngine.Object {
         return (T)UnityEngine.Object.Instantiate(original);
     }
@@ -538,6 +509,55 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
         }
         return list;
     }
+
+    #region Nested Classes
+
+    /// <summary>
+    /// Enum used to define how many frames will be
+    /// skipped before ToUpdate or the CoroutineScheduler 
+    /// will run.
+    /// </summary>
+    [Serializable]
+    public enum FrameUpdateFrequency {
+        /// <summary>
+        /// Default.
+        /// </summary>
+        Never = 0,
+        /// <summary>
+        ///Every frame.
+        /// </summary>
+        Continuous = 1,
+        /// <summary>
+        /// Every other frame.
+        /// </summary>
+        Frequent = 2,
+        /// <summary>
+        /// Every fourth frame.
+        /// </summary>
+        Normal = 4,
+        /// <summary>
+        /// Every eighth frame.
+        /// </summary>
+        Infrequent = 8,
+        /// <summary>
+        /// Every sixteenth frame.
+        /// </summary>
+        Seldom = 16,
+        /// <summary>
+        /// Every thirty second frame.
+        /// </summary>
+        Rare = 32,
+        /// <summary>
+        /// Every sixty fourth frame.
+        /// </summary>
+        VeryRare = 64,
+        /// <summary>
+        /// Every one hundred twenty eighth frame.
+        /// </summary>
+        HardlyEver = 128
+    }
+
+    #endregion
 
     // No need for IDisposable as there are no resources here to clean up
 

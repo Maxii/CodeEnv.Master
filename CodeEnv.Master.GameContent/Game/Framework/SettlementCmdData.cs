@@ -38,34 +38,24 @@ namespace CodeEnv.Master.GameContent {
         private int _population;
         public int Population {
             get { return _population; }
-            set {
-                SetProperty<int>(ref _population, value, "Population");
-            }
+            set { SetProperty<int>(ref _population, value, "Population"); }
         }
 
-        private int _capacityUsed;
-        public int CapacityUsed {
-            get { return _capacityUsed; }
-            set {
-                SetProperty<int>(ref _capacityUsed, value, "CapacityUsed");
-            }
+        public int Capacity { get { return SystemData.Capacity; } }
+
+        public ResourceYield Resources { get { return SystemData.Resources; } }
+
+        private float _approval;
+        public float Approval {
+            get { return _approval; }
+            set { SetProperty<float>(ref _approval, value, "Approval", OnApprovalChanged); }
         }
 
-        private OpeYield _resourcesUsed;
-        public OpeYield ResourcesUsed {
-            get { return _resourcesUsed; }
-            set {
-                SetProperty<OpeYield>(ref _resourcesUsed, value, "ResourcesUsed");
-            }
+        private void OnApprovalChanged() {
+            Arguments.ValidateForRange(Approval, Constants.ZeroF, Constants.OneF);
         }
 
-        private XYield _specialResourcesUsed;
-        public XYield SpecialResourcesUsed {
-            get { return _specialResourcesUsed; }
-            set {
-                SetProperty<XYield>(ref _specialResourcesUsed, value, "SpecialResourcesUsed");
-            }
-        }
+        public SystemData SystemData { private get; set; }
 
         public new FacilityData HQElementData {
             get { return base.HQElementData as FacilityData; }
@@ -77,6 +67,8 @@ namespace CodeEnv.Master.GameContent {
             get { return _unitComposition; }
             set { SetProperty<BaseComposition>(ref _unitComposition, value, "UnitComposition"); }
         }
+
+        public override Index3D SectorIndex { get { return References.SectorGrid.GetSectorIndex(Position); } }   // Settlements get relocated
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SettlementCmdData" /> class.

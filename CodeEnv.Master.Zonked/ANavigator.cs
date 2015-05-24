@@ -98,7 +98,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected virtual void Subscribe() {
             _subscribers = new List<IDisposable>();
-            _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
+            _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
         }
 
         protected void OnCoursePlotFailure() {

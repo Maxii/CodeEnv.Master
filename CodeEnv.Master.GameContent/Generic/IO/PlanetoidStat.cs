@@ -28,37 +28,23 @@ namespace CodeEnv.Master.GameContent {
         public float MaxHitPoints { get; private set; }
         public PlanetoidCategory Category { get; private set; }
         public int Capacity { get; private set; }
-        public OpeYield Resources { get; private set; }
-        public XYield SpecialResources { get; private set; }
+        public ResourceYield Resources { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PlanetoidStat"/> struct.
-        /// </summary>
-        /// <param name="mass">The mass.</param>
-        /// <param name="maxHitPts">The maximum hit PTS.</param>
-        /// <param name="category">The category.</param>
-        /// <param name="capacity">The capacity.</param>
-        /// <param name="resources">The resources.</param>
-        public PlanetoidStat(float mass, float maxHitPts, PlanetoidCategory category, int capacity, OpeYield resources)
-            : this(mass, maxHitPts, category, capacity, resources, new XYield()) { }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PlanetoidStat"/> struct.
+        /// Initializes a new instance of the <see cref="PlanetoidStat" /> struct.
         /// </summary>
         /// <param name="mass">The mass.</param>
         /// <param name="maxHitPts">The maximum hit points.</param>
         /// <param name="category">The category.</param>
         /// <param name="capacity">The capacity.</param>
         /// <param name="resources">The resources.</param>
-        /// <param name="xResources">The x resources.</param>
-        public PlanetoidStat(float mass, float maxHitPts, PlanetoidCategory category, int capacity, OpeYield resources, XYield xResources)
+        public PlanetoidStat(float mass, float maxHitPts, PlanetoidCategory category, int capacity, ResourceYield resources)
             : this() {
             Mass = mass;
             MaxHitPoints = maxHitPts;
             Category = category;
             Capacity = capacity;
             Resources = resources;
-            SpecialResources = xResources;
         }
 
         public override string ToString() {

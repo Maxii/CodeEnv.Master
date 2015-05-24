@@ -44,18 +44,18 @@ public abstract class AUnitCreatorEditor<T> : Editor where T : ACreator {
             EditorGUI.indentLevel--;
         }
 
-        creator.isOwnerPlayer = GUILayout.Toggle(creator.isOwnerPlayer, "Owner is Player");
-        if (!creator.isOwnerPlayer) {
+        creator.isOwnerUser = GUILayout.Toggle(creator.isOwnerUser, "Owner is User");
+        if (!creator.isOwnerUser) {
             EditorGUI.indentLevel++;
-            creator.ownerRelationshipWithPlayer = (ACreator.__DiploStateWithPlayer)
-                EditorGUILayout.EnumPopup("Diplomatic State w/Player", creator.ownerRelationshipWithPlayer);
+            creator.ownerRelationshipWithUser = (ACreator.__DiploStateWithUser)
+                EditorGUILayout.EnumPopup("Diplomatic State w/User", creator.ownerRelationshipWithUser);
             EditorGUI.indentLevel--;
         }
 
         creator.weaponsPerElement = EditorGUILayout.IntSlider("Weapons/Element", creator.weaponsPerElement, 0, 5);
-        creator.countermeasuresPerElement = EditorGUILayout.IntSlider("Countermeasures/Element", creator.countermeasuresPerElement, 0, 5);
+        creator.countermeasuresPerElement = EditorGUILayout.IntSlider("CMs/Element", creator.countermeasuresPerElement, 0, 5);
         creator.sensorsPerElement = EditorGUILayout.IntSlider("Sensors/Element", creator.sensorsPerElement, 0, 5);
-        creator.countermeasuresPerCmd = EditorGUILayout.IntSlider("Countermeasures/Cmd", creator.countermeasuresPerCmd, 0, 3);
+        creator.countermeasuresPerCmd = EditorGUILayout.IntSlider("CMs/Cmd", creator.countermeasuresPerCmd, 0, 3);
 
         creator.enableTrackingLabel = GUILayout.Toggle(creator.enableTrackingLabel, "Enable Tracking Label");
 

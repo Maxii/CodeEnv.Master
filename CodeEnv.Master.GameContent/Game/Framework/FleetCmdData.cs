@@ -106,6 +106,8 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<FleetComposition>(ref _unitComposition, value, "UnitComposition"); }
         }
 
+        public override Index3D SectorIndex { get { return HQElementData.SectorIndex; } }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="FleetCmdData" /> class.
         /// </summary>
@@ -141,6 +143,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void UpdateFullSpeed() {
             if (ElementsData.Any()) {
+                //D.Log("{0}.{1}.UpdateFullSpeed() called.", FullName, GetType().Name);
                 UnitFullStlSpeed = ElementsData.Min(eData => (eData as ShipData).FullStlSpeed);
                 UnitFullFtlSpeed = ElementsData.Min(eData => (eData as ShipData).FullFtlSpeed);
                 UnitFullSpeed = ElementsData.Min(eData => (eData as ShipData).FullSpeed);
@@ -155,7 +158,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Subscribe(AUnitElementItemData elementData) {
             base.Subscribe(elementData);
-            IList<IDisposable> anElementsSubscriptions = _subscribers[elementData];
+            IList<IDisposable> anElementsSubscriptions = _subscriptions[elementData];
             ShipData shipData = elementData as ShipData;
             anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.FullStlSpeed, OnShipFullSpeedChanged));
             anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.FullFtlSpeed, OnShipFullSpeedChanged));

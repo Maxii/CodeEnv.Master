@@ -116,7 +116,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// <summary>
     /// The distance from the camera's target point to the camera's focal plane.
     /// </summary>
-    public float DistanceToCamera { get { return _targetPoint.DistanceToCamera(); } }
+    public float DistanceToCameraTarget { get { return _targetPoint.DistanceToCamera(); } }
 
     private ICameraFocusable _currentFocus;
     /// <summary>
@@ -144,7 +144,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private SectorGrid _sectorGrid;
     private GameManager _gameMgr;
 
-    private IList<IDisposable> _subscribers;
+    private IList<IDisposable> _subscriptions;
 
     private Vector3 _targetPoint;
     private Transform _target;
@@ -159,7 +159,8 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// The layers the main 3DCamera is allowed to render.
     /// </summary>
     private LayerMask _mainCameraCullingMask = LayerMaskExtensions.CreateInclusiveMask(Layers.Default, Layers.TransparentFX,
-        Layers.DummyTarget, Layers.UniverseEdge, Layers.ShipCull, Layers.FacilityCull, Layers.PlanetoidCull, Layers.StarCull, Layers.SystemOrbitalPlane);
+        Layers.DummyTarget, Layers.UniverseEdge, Layers.ShipCull, Layers.FacilityCull, Layers.PlanetoidCull, Layers.StarCull,
+        Layers.SystemOrbitalPlane, Layers.Ordnance);
 
     private LayerMask _universeEdgeOnlyMask = LayerMaskExtensions.CreateInclusiveMask(Layers.UniverseEdge);
     private LayerMask _dummyTargetOnlyMask = LayerMaskExtensions.CreateInclusiveMask(Layers.DummyTarget);
@@ -243,13 +244,13 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     }
 
     private void Subscribe() {
-        _subscribers = new List<IDisposable>();
-        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
-        _subscribers.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsCameraRollEnabled, OnCameraRollEnabledChanged));
-        _subscribers.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsResetOnFocusEnabled, OnResetOnFocusEnabledChanged));
-        _subscribers.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsZoomOutOnCursorEnabled, OnZoomOutOnCursorEnabledChanged));
-        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsRunning, OnIsRunningChanged));
-        //_subscribers.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, OnViewModeChanged));
+        _subscriptions = new List<IDisposable>();
+        _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsCameraRollEnabled, OnCameraRollEnabledChanged));
+        _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsResetOnFocusEnabled, OnResetOnFocusEnabledChanged));
+        _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsZoomOutOnCursorEnabled, OnZoomOutOnCursorEnabledChanged));
+        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsRunning, OnIsRunningChanged));
+        //_subscriptions.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, OnViewModeChanged));
+        _gameMgr.onGameStateChanged += OnGameStateChanged;
     }
 
     private void ValidateActiveConfigurations() {
@@ -284,10 +285,10 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
         //_camera.layerCullSpherical = true;
         float[] cullDistances = new float[32];
-        cullDistances[(int)Layers.ShipCull] = TempGameValues.ShipMaxRadius * AnimationSettings.Instance.ShipLayerCullingDistanceFactor;   // 5
-        cullDistances[(int)Layers.FacilityCull] = TempGameValues.FacilityMaxRadius * AnimationSettings.Instance.FacilityLayerCullingDistanceFactor;  // 12.5
-        cullDistances[(int)Layers.PlanetoidCull] = TempGameValues.PlanetoidMaxRadius * AnimationSettings.Instance.PlanetoidLayerCullingDistanceFactor;   // 500
-        cullDistances[(int)Layers.StarCull] = TempGameValues.StarMaxRadius * AnimationSettings.Instance.StarLayerCullingDistanceFactor; // 3000   // temp commented to always see
+        cullDistances[(int)Layers.ShipCull] = TempGameValues.ShipMaxRadius * GraphicsSettings.Instance.ShipLayerCullingDistanceFactor;   // 5
+        cullDistances[(int)Layers.FacilityCull] = TempGameValues.FacilityMaxRadius * GraphicsSettings.Instance.FacilityLayerCullingDistanceFactor;  // 12.5
+        cullDistances[(int)Layers.PlanetoidCull] = TempGameValues.PlanetoidMaxRadius * GraphicsSettings.Instance.PlanetoidLayerCullingDistanceFactor;   // 500
+        cullDistances[(int)Layers.StarCull] = TempGameValues.StarMaxRadius * GraphicsSettings.Instance.StarLayerCullingDistanceFactor; // 3000   // temp commented to always see
         _camera.layerCullDistances = cullDistances;
     }
 
@@ -397,6 +398,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     [DoNotSerialize]
     private bool _restoredGameFlag = false;
+
     private void OnGameStateChanged() {
         GameState state = _gameMgr.CurrentState;
         //D.Log("{0}{1} received GameState changed to {2}.", GetType().Name, InstanceCount, state.GetName());
@@ -1005,7 +1007,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         // some values are continuously recalculated in update as the target moves so they don't need to be here too
 
         //D.Log("Follow Target is now {0}.", _target.gameObject.GetSafeMonoBehaviourComponent<AItemModel>().FullName);
-        D.Log("Follow Target is now {0}.", _target.gameObject.GetSafeMonoBehaviourComponent<ADiscernibleItem>().FullName);
+        D.Log("Follow Target is now {0}.", _target.gameObject.GetSafeMonoBehaviour<ADiscernibleItem>().FullName);
         ICameraFollowable icfTarget = _target.GetInterface<ICameraFollowable>();
         _cameraRotationDampener = icfTarget.FollowRotationDampener;
         _cameraPositionDampener = icfTarget.FollowDistanceDampener;
@@ -1210,7 +1212,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// <param name="proposedPosition">The proposed position.</param>
     private void ExecutePositionChange(Vector3 proposedPosition) {
         Vector3 currentPosition = Position;
-        if (currentPosition.IsSame(proposedPosition) || !ValidatePosition(proposedPosition)) {
+        if (currentPosition.IsSameAs(proposedPosition) || !ValidatePosition(proposedPosition)) {
             return;
         }
         Index3D proposedSectorIndex = _sectorGrid.GetSectorIndex(proposedPosition);
@@ -1514,8 +1516,9 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     }
 
     private void Unsubscribe() {
-        _subscribers.ForAll<IDisposable>(s => s.Dispose());
-        _subscribers.Clear();
+        _subscriptions.ForAll<IDisposable>(s => s.Dispose());
+        _subscriptions.Clear();
+        _gameMgr.onGameStateChanged -= OnGameStateChanged;
     }
 
     public override string ToString() {

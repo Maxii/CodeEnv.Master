@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
         public FleetComposition(IEnumerable<ShipCategory> nonUniqueUnitCategories) : base(nonUniqueUnitCategories) { }
 
         protected override string GetCategoryDescription(ShipCategory category) {
-            return category.GetDescription();
+            return category.GetEnumAttributeText();
         }
 
     }

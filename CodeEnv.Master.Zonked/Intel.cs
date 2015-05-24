@@ -78,21 +78,21 @@ namespace CodeEnv.Master.GameContent {
                     }
                     break;
                 case IntelSource.LongRangeSensors:
-                    if (CurrentCoverage < IntelCoverage.Aware) {
+                    if (CurrentCoverage < IntelCoverage.Basic) {
                         WarnIllegal(CurrentCoverage, newSource);
-                        CurrentCoverage = IntelCoverage.Aware;
+                        CurrentCoverage = IntelCoverage.Basic;
                     }
                     break;
                 case IntelSource.MediumRangeSensors:
-                    if (CurrentCoverage < IntelCoverage.Minimal) {
+                    if (CurrentCoverage < IntelCoverage.Essential) {
                         WarnIllegal(CurrentCoverage, newSource);
-                        CurrentCoverage = IntelCoverage.Minimal;
+                        CurrentCoverage = IntelCoverage.Essential;
                     }
                     break;
                 case IntelSource.ShortRangeSensors:
-                    if (CurrentCoverage < IntelCoverage.Moderate) {
+                    if (CurrentCoverage < IntelCoverage.Broad) {
                         WarnIllegal(CurrentCoverage, newSource);
-                        CurrentCoverage = IntelCoverage.Moderate;
+                        CurrentCoverage = IntelCoverage.Broad;
                     }
                     break;
                 case IntelSource.InfoNet:

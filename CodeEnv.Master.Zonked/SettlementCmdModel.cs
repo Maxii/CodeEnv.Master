@@ -97,7 +97,7 @@ public class SettlementCmdModel : AUnitBaseCmdModel {
     }
 
     private void DisableParentOrbiter() {
-        _transform.GetSafeInterfaceInParents<IOrbiter>().enabled = false;   // 2 layers up
+        _transform.GetSafeInterfaceInParents<IOrbitSimulator>().enabled = false;   // 2 layers up
     }
 
     protected override void KillCommand() {
@@ -209,7 +209,7 @@ public class SettlementCmdModel : AUnitBaseCmdModel {
     void Dead_EnterState() {
         LogEvent();
         OnDeath();
-        OnShowAnimation(MortalAnimations.Dying);
+        OnShowAnimation(EffectID.Dying);
     }
 
     void Dead_OnShowCompletion() {

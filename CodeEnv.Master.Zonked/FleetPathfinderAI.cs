@@ -42,8 +42,8 @@ public class FleetPathfinderAI : AMonoBase {
 
     protected override void Awake() {
         base.Awake();
-        _seeker = gameObject.GetSafeMonoBehaviourComponent<Seeker>();
-        _fleet = gameObject.GetSafeMonoBehaviourComponent<FleetCmdModel>();
+        _seeker = gameObject.GetSafeMonoBehaviour<Seeker>();
+        _fleet = gameObject.GetSafeMonoBehaviour<FleetCmdModel>();
         Subscribe();
     }
 

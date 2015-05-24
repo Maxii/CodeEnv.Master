@@ -133,36 +133,36 @@ public abstract class AMortalItemView : AFocusableItemView, IMortalViewable {
 
     public event Action onShowCompletion;
 
-    public void ShowAnimation(MortalAnimations animation) {
+    public void ShowAnimation(EffectID animation) {
         switch (animation) {
-            case MortalAnimations.Dying:
+            case EffectID.Dying:
                 ShowDying();
                 break;
-            case MortalAnimations.Hit:
+            case EffectID.Hit:
                 ShowHit();
                 break;
-            case MortalAnimations.Attacking:
+            case EffectID.Attacking:
                 ShowAttacking();
                 break;
-            case MortalAnimations.CmdHit:
+            case EffectID.CmdHit:
                 ShowCmdHit();
                 break;
-            case MortalAnimations.Disbanding:
+            case EffectID.Disbanding:
                 ShowDisbanding();
                 break;
-            case MortalAnimations.Refitting:
+            case EffectID.Refitting:
                 ShowRefitting();
                 break;
-            case MortalAnimations.Repairing:
+            case EffectID.Repairing:
                 ShowRepairing();
                 break;
-            case MortalAnimations.None:
+            case EffectID.None:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(animation));
         }
     }
 
-    public void StopAnimation(MortalAnimations animation) {
+    public void StopAnimation(EffectID animation) {
         if (_showingJob != null && _showingJob.IsRunning) {
             _showingJob.Kill();
         }

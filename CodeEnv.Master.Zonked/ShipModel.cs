@@ -229,7 +229,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
 
             private void Subscribe() {
                 _subscribers = new List<IDisposable>();
-                _subscribers.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
+                _subscribers.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
                 _subscribers.Add(GameStatus.Instance.SubscribeToPropertyChanged<GameStatus, bool>(gs => gs.IsPaused, OnIsPausedChanged));
             }
 
@@ -542,7 +542,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
 
         private void Subscribe() {
             _subscribers = new List<IDisposable>();
-            _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
+            _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
             _subscribers.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullStlSpeed, OnFullSpeedChanged));
             _subscribers.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullFtlSpeed, OnFullSpeedChanged));
             _subscribers.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, bool>(d => d.IsFtlAvailableForUse, OnFtlAvailableForUseChanged));
@@ -555,7 +555,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
         /// <param name="speed">The speed.</param>
         /// <param name="orderSource">The source of this move order.</param>
         public void PlotCourse(INavigableTarget target, Speed speed, OrderSource orderSource) {
-            D.Assert(speed != default(Speed) && speed != Speed.AllStop, "{0} speed of {1} is illegal.".Inject(_ship.FullName, speed.GetName()));
+            D.Assert(speed != default(Speed) && speed != Speed.Stop, "{0} speed of {1} is illegal.".Inject(_ship.FullName, speed.GetName()));
 
             // NOTE: I know of no way to check whether a target is unreachable at this stage since many targets move, 
             // and most have a closeEnoughDistance that makes them reachable even when enclosed in a keepoutZone
@@ -877,7 +877,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
             while (!_ship.Data.CurrentHeading.IsSameDirection(_ship.Data.RequestedHeading, 1F)) {
                 int framesSinceLastPass = Time.frameCount - previousFrameCount; // needed when using yield return WaitForSeconds()
                 previousFrameCount = Time.frameCount;
-                float allowedTurn = maxRadianTurnRatePerSecond * GameTime.DeltaTimeOrPausedWithGameSpeed * framesSinceLastPass;
+                float allowedTurn = maxRadianTurnRatePerSecond * GameTime.GameSpeedAdjustedDeltaTimeOrPaused * framesSinceLastPass;
                 Vector3 newHeading = Vector3.RotateTowards(_ship.Data.CurrentHeading, _ship.Data.RequestedHeading, allowedTurn, maxMagnitudeDelta: 1F);
                 // maxMagnitudeDelta > 0F appears to be important. Otherwise RotateTowards can stop rotating when it gets very close
                 //D.Log("AllowedTurn = {0:0.0000}, CurrentHeading = {1}, ReqHeading = {2}, NewHeading = {3}", allowedTurn, Data.CurrentHeading, Data.RequestedHeading, newHeading);
@@ -894,7 +894,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
         /// moving in the direction and at the speed it had when it exited Moving.
         /// </summary>
         public void AllStop() {
-            if (ChangeSpeed(Speed.AllStop)) {
+            if (ChangeSpeed(Speed.Stop)) {
                 D.Log("{0}.AllStop() called.", _ship.FullName);
             }
             if (IsAutoPilotEngaged) {
@@ -1136,7 +1136,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
                 Vector3 obstacleLocation = hitInfo.transform.position;
                 D.Assert(hitInfo.collider.bounds.Contains(halfWayPointInsideKeepoutZone), "HalfwayPt = {0}, obstacleCenter = {1}.".Inject(halfWayPointInsideKeepoutZone, obstacleLocation));
                 float obstacleClearanceLeeway = _autoPilotSpeedInUnitsPerHour;
-                detour = UnityUtility.FindClosestPointOnSphereSurfaceTo(halfWayPointInsideKeepoutZone, obstacleLocation, keepoutRadius + obstacleClearanceLeeway);
+                detour = UnityUtility.FindClosestPointOnSphereTo(halfWayPointInsideKeepoutZone, obstacleLocation, keepoutRadius + obstacleClearanceLeeway);
                 D.Log("{0} found detour at {1} to avoid obstacle {2} at {3}. \nDistance to detour = {4:0.#}. Obstacle keepout radius = {5:0.##}. Detour is {6:0.#} from obstacle center.",
                     _ship.FullName, detour, obstacleName, obstacleLocation, Vector3.Magnitude(detour - _ship.Data.Position), keepoutRadius, (detour - obstacleLocation).magnitude);
             }
@@ -1769,7 +1769,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
 
     void Attacking_EnterState() {
         LogEvent();
-        OnShowAnimation(MortalAnimations.Attacking);
+        OnShowAnimation(EffectID.Attacking);
         _attackTarget.TakeHit(_attackStrength);
         Return();
     }
@@ -1821,7 +1821,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
 
     void ExecuteJoinFleetOrder_OnMakeFleetCompleted(FleetCmdModel transferFleet) {
         LogEvent();
-        var transferFleetView = transferFleet.Transform.GetSafeMonoBehaviourComponent<FleetCmdView>();
+        var transferFleetView = transferFleet.Transform.GetSafeMonoBehaviour<FleetCmdView>();
         transferFleetView.PlayerIntel.CurrentCoverage = IntelCoverage.Comprehensive;
         // TODO PlayerIntelCoverage should be set through sensor detection
 
@@ -1905,14 +1905,14 @@ public class ShipModel : AUnitElementModel, IShipModel {
     IEnumerator Repairing_EnterState() {
         D.Log("{0}.Repairing_EnterState called.", FullName);
         _helm.AllStop();
-        OnShowAnimation(MortalAnimations.Repairing);
+        OnShowAnimation(EffectID.Repairing);
         yield return new WaitForSeconds(2);
         Data.CurrentHitPoints += 0.5F * (Data.MaxHitPoints - Data.CurrentHitPoints);
         D.Log("{0}'s repair is 50% complete.", FullName);
         yield return new WaitForSeconds(3);
         Data.CurrentHitPoints = Data.MaxHitPoints;
         D.Log("{0}'s repair is 100% complete.", FullName);
-        OnStopAnimation(MortalAnimations.Repairing);
+        OnStopAnimation(EffectID.Repairing);
         Return();
     }
 
@@ -1967,7 +1967,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
     void Dead_EnterState() {
         LogEvent();
         OnDeath();
-        OnShowAnimation(MortalAnimations.Dying);
+        OnShowAnimation(EffectID.Dying);
     }
 
     void Dead_OnShowCompletion() {
@@ -2210,7 +2210,7 @@ public class ShipModel : AUnitElementModel, IShipModel {
             return;
         }
 
-        var hitAnimation = isCmdHit ? MortalAnimations.CmdHit : MortalAnimations.Hit;
+        var hitAnimation = isCmdHit ? EffectID.CmdHit : EffectID.Hit;
         OnShowAnimation(hitAnimation);
 
         AssessNeedForRepair();

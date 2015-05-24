@@ -24,11 +24,17 @@ using UnityEngine;
 /// <summary>
 /// Class for AUnitBaseCmdItems that are Settlements.
 /// </summary>
-public class SettlementCmdItem : AUnitBaseCmdItem, ICmdPublisherClient<FacilityReport> /*, ICameraFollowable  [not currently in motion]*/ {
+public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmdItem /*, ICameraFollowable  [not currently in motion]*/ {
 
     public new SettlementCmdData Data {
         get { return base.Data as SettlementCmdData; }
         set { base.Data = value; }
+    }
+
+    private SystemItem _system;
+    public SystemItem System {
+        get { return _system; }
+        set { SetProperty<SystemItem>(ref _system, value, "System", OnSystemChanged, OnSystemChanging); }
     }
 
     /// <summary>
@@ -37,7 +43,7 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ICmdPublisherClient<FacilityR
     /// IMPROVE no known way to switch the ICameraFollowable interface 
     /// on or off.
     /// </summary>
-    public bool __OrbiterMoves { get; set; }
+    public bool __OrbitSimulatorMoves { get; set; }
 
     private SettlementPublisher _publisher;
     public SettlementPublisher Publisher {
@@ -47,19 +53,27 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ICmdPublisherClient<FacilityR
     #region Initialization
 
     protected override HudManager InitializeHudManager() {
-        var hudManager = new HudManager(Publisher);
-        hudManager.AddContentToUpdate(HudManager.UpdatableLabelContentID.IntelState);
-        return hudManager;
+        return new HudManager(Publisher);
     }
 
     #endregion
 
     #region Model Methods
 
+    public SettlementReport GetUserReport() { return Publisher.GetUserReport(); }
+
     public SettlementReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     public FacilityReport[] GetElementReports(Player player) {
         return Elements.Cast<FacilityItem>().Select(e => e.GetReport(player)).ToArray();
+    }
+
+    private void OnSystemChanging(SystemItem newSystem) {
+        D.Assert(System == null); // should only happen once. No reason to remove on death
+    }
+
+    private void OnSystemChanged() {
+        Data.SystemData = System.Data;
     }
 
     protected override void OnDeath() {
@@ -71,26 +85,24 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ICmdPublisherClient<FacilityR
     /// Removes the settlement and its orbiter from the system in preparation for a future settlement.
     /// </summary>
     private void RemoveSettlementFromSystem() {
-        var system = gameObject.GetSafeMonoBehaviourComponentInParents<SystemItem>();
-        system.Settlement = null;
+        System.Settlement = null;
     }
 
     #endregion
 
     #region View Methods
 
-    protected override ResponsiveTrackingSprite MakeIcon() {
-        return TrackingWidgetFactory.Instance.CreateResponsiveTrackingSprite(this, TrackingWidgetFactory.IconAtlasID.Fleet,
-            new Vector2(24, 24), WidgetPlacement.Above);
+    protected override IconInfo MakeIconInfo() {
+        return SettlementIconInfoFactory.Instance.MakeInstance(GetUserReport());
     }
 
-    protected override AIconID RefreshCmdIconID() {
-        return SettlementIconIDFactory.Instance.MakeInstance(Data);
+    protected override void ShowSelectionHud() {
+        SelectionHud.Instance.Show(new SelectedItemHudContent(HudElementID.Settlement, GetUserReport()));
     }
 
     #endregion
 
-    #region Mouse Events
+    #region Events
 
     #endregion
 
@@ -104,7 +116,7 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ICmdPublisherClient<FacilityR
 
     #region INavigableTarget Members
 
-    public override bool IsMobile { get { return __OrbiterMoves; } }
+    public override bool IsMobile { get { return __OrbitSimulatorMoves; } }
 
     #endregion
 
@@ -121,6 +133,12 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ICmdPublisherClient<FacilityR
     //public virtual float CameraFollowRotationDampener {
     //    get { return cameraFollowRotationDampener; }
     //}
+
+    #endregion
+
+    #region ISelectable Members
+
+    //public override ColoredStringBuilder HudContent { get { return Publisher.HudContent; } }
 
     #endregion
 

@@ -21,19 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     ///  Interface for all items that are ships.
     /// </summary>
-    public interface IShipItem : IElementItem {
-
-        /// <summary>
-        /// Parents the ship to the provided orbiter's transform.
-        /// The ship retains existing position, rotation, scale and layer.
-        /// </summary>
-        /// <param name="orbiter">The orbiter.</param>
-        void AttachTo(IOrbiterForShips orbiter);
-
-        /// <summary>
-        /// Reattaches the ship's transform to the fleet container it came from.
-        /// </summary>
-        void ReattachToParentFleetContainer();
+    public interface IShipItem : IUnitElementItem {
 
         void OnTopographicBoundaryTransition(Topography newTopography);
 

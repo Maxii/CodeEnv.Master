@@ -168,7 +168,7 @@ public class Sector : AMonoBase, IHasContextMenu {
     #region IHasContextMenu Members
 
     public void __ValidateCtxObjectSettings() {
-        CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
+        CtxObject ctxObject = gameObject.GetSafeMonoBehaviour<CtxObject>();
         D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
         UnityUtility.ValidateComponentPresence<Collider>(gameObject);
     }

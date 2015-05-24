@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Class for ADiscernibleItems that are Systems.
 /// </summary>
-public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopographyMonitorable, ISystemPublisherClient {
+public class SystemItem : ADiscernibleItem, ISystemItem, IZoomToFurthest, ISelectable, ITopographyMonitorable {
 
     [Range(1.0F, 5.0F)]
     [Tooltip("Minimum Camera View Distance in Units")]
@@ -66,6 +66,8 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
         get { return _publisher = _publisher ?? new SystemPublisher(Data, this); }
     }
 
+    public Index3D SectorIndex { get { return Data.SectorIndex; } }
+
     private ITrackingWidget _trackingLabel;
     private ICtxControl _ctxControl;
     private MeshCollider _orbitalPlaneCollider;
@@ -81,8 +83,8 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
 
     protected override void InitializeModelMembers() { }
 
-    protected override void InitializeViewMembersOnDiscernible() {
-        base.InitializeViewMembersOnDiscernible();
+    protected override void InitializeViewMembersWhenFirstDiscernibleToUser() {
+        base.InitializeViewMembersWhenFirstDiscernibleToUser();
         InitializeContextMenu(Owner);
 
         _orbitalPlaneCollider = gameObject.GetComponentInChildren<MeshCollider>();
@@ -91,8 +93,7 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
     }
 
     protected override HudManager InitializeHudManager() {
-        var hudManager = new HudManager(Publisher);
-        return hudManager;
+        return new HudManager(Publisher);
     }
 
     private void InitializeContextMenu(Player owner) {
@@ -103,14 +104,14 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
             _ctxControl = new SystemCtxControl(this);
         }
         else {
-            _ctxControl = owner.IsHumanUser ? new SystemCtxControl_Player(this) as ICtxControl : new SystemCtxControl_AI(this);
+            _ctxControl = owner.IsUser ? new SystemCtxControl_User(this) as ICtxControl : new SystemCtxControl_AI(this);
         }
         //D.Log("{0} initializing {1}.", FullName, _ctxControl.GetType().Name);
     }
 
     private ITrackingWidget InitializeTrackingLabel() {
         float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
-        var trackingLabel = TrackingWidgetFactory.Instance.CreateUITrackingLabel(this, WidgetPlacement.Above, minShowDistance);
+        var trackingLabel = TrackingWidgetFactory.Instance.MakeUITrackingLabel(this, WidgetPlacement.Above, minShowDistance);
         trackingLabel.Set(DisplayName);
         trackingLabel.Color = Owner.Color;
         return trackingLabel;
@@ -127,16 +128,13 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
     public void AddPlanetoid(APlanetoidItem planetoid) {
         Planetoids.Add(planetoid);
         Data.AddPlanetoid(planetoid.Data);
-        planetoid.Data.onHumanPlayerIntelCoverageChanged += __OnMemberHumanPlayerIntelCoverageChanged;
     }
 
-    public SystemReport GetReport(Player player) {
-        return Publisher.GetReport(player);
-    }
+    public SystemReport GetUserReport() { return Publisher.GetUserReport(); }
 
-    public StarReport GetStarReport(Player player) {
-        return Star.GetReport(player);
-    }
+    public SystemReport GetReport(Player player) { return Publisher.GetReport(player); }
+
+    public StarReport GetStarReport(Player player) { return Star.GetReport(player); }
 
     public PlanetoidReport[] GetPlanetoidReports(Player player) {
         return Planetoids.Select(p => p.GetReport(player)).ToArray();
@@ -153,18 +151,18 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
 
     private void OnStarChanged() {
         Data.StarData = Star.Data;
-        Star.Data.onHumanPlayerIntelCoverageChanged += __OnMemberHumanPlayerIntelCoverageChanged;
     }
 
     private void OnSettlementChanged() {
         SettlementCmdData settlementData = null;
         if (Settlement != null) {
+            Settlement.System = this;
             settlementData = Settlement.Data;
             AttachSettlement(Settlement);
         }
         else {
             // The existing Settlement has been destroyed, so cleanup the orbit slot in prep for a future Settlement
-            Data.SettlementOrbitSlot.DestroyOrbiter();
+            Data.SettlementOrbitSlot.DestroyOrbitSimulator();
         }
         Data.SettlementData = settlementData;
         // The owner of a system and all it's celestial objects is determined by the ownership of the Settlement, if any
@@ -172,17 +170,17 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
 
     private void AttachSettlement(SettlementCmdItem settlementCmd) {
         Transform settlementUnit = settlementCmd.UnitContainer;
-        var orbiter = Data.SettlementOrbitSlot.AssumeOrbit(settlementUnit, "Settlement Orbiter"); // IMPROVE the only remaining OrbitSlot held in Data
-        orbiter.IsOrbiterInMotion = settlementCmd.__OrbiterMoves;
+        var orbitSimulator = Data.SettlementOrbitSlot.AssumeOrbit(settlementUnit, "Settlement OrbitSimulator"); // IMPROVE the only remaining OrbitSlot held in Data
+        orbitSimulator.IsActive = settlementCmd.__OrbitSimulatorMoves;
         // enabling (or not) the system orbiter can also be handled by the SettlementCreator once isRunning
         //D.Log("{0} has been deployed to {1}.", settlementCmd.DisplayName, FullName);
     }
 
     protected override void OnOwnerChanging(Player newOwner) {
         base.OnOwnerChanging(newOwner);
-        if (_isViewMembersOnDiscernibleInitialized) {
+        if (_isViewMembersInitialized) {
             // _ctxControl has already been initialized
-            if (Owner == TempGameValues.NoPlayer || newOwner == TempGameValues.NoPlayer || Owner.IsHumanUser != newOwner.IsHumanUser) {
+            if (Owner == TempGameValues.NoPlayer || newOwner == TempGameValues.NoPlayer || Owner.IsUser != newOwner.IsUser) {
                 // Kind of owner has changed between AI, Player and NoPlayer so generate a new ctxControl
                 InitializeContextMenu(newOwner);
             }
@@ -200,17 +198,16 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
 
     #region View Methods
 
-    protected override void AssessDiscernability() {
-        // a System is not discernible to the humanPlayer unless it is visible to the camera 
-        // AND the humanPlayer knows more about it than just being aware of its star
-        var hasInvestigated = Data.HasPlayerInvestigated(_gameMgr.HumanPlayer);
-        var inCameraLOS = DisplayMgr == null ? true : DisplayMgr.InCameraLOS;
-        //D.Log("{0}.AssessDiscernability() called. InCameraLOS = {1}, HasPlayerInvestigated = {2}.", FullName, inCameraLOS, hasInvestigated);
-        IsDiscernible = inCameraLOS && hasInvestigated;
+    protected override void AssessDiscernibleToUser() {
+        // a System is not discernible to the User unless it is visible to the camera AND the User has discovered it
+        var isDiscoveredByUser = _gameMgr.GetPlayerKnowledge(_gameMgr.UserPlayer).Systems.Contains(this);
+        var isInMainCameraLOS = DisplayMgr == null ? true : DisplayMgr.IsInMainCameraLOS;
+        //D.Log("{0}.AssessDiscernibleToUser() called. InMainCameraLOS = {1}, UserHasDiscovered = {2}.", FullName, isInMainCameraLOS, isDiscoveredByUser);
+        IsDiscernibleToUser = isInMainCameraLOS && isDiscoveredByUser;
     }
 
     public override void AssessHighlighting() {
-        if (IsDiscernible) {
+        if (IsDiscernibleToUser) {
             if (IsFocus) {
                 if (IsSelected) {
                     ShowHighlights(HighlightID.Focused, HighlightID.Selected);
@@ -227,26 +224,41 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
         ShowHighlights(HighlightID.None);
     }
 
-    protected override void OnIsDiscernibleChanged() {
-        base.OnIsDiscernibleChanged();
-        ShowTrackingLabel(IsDiscernible);
-        _orbitalPlaneCollider.enabled = IsDiscernible;
+    protected override void OnIsDiscernibleToUserChanged() {
+        base.OnIsDiscernibleToUserChanged();
+        ShowTrackingLabel(IsDiscernibleToUser);
+        _orbitalPlaneCollider.enabled = IsDiscernibleToUser;
     }
 
     private void OnIsSelectedChanged() {
         if (IsSelected) {
+            ShowSelectionHud();
             SelectionManager.Instance.CurrentSelection = this;
         }
         AssessHighlighting();
     }
 
-    private void __OnMemberHumanPlayerIntelCoverageChanged() {
-        // HACK one time event to trigger System's first assessment of discernability as System has no IntelCoverage to trigger it itself
-        D.Assert(!_isViewMembersOnDiscernibleInitialized);
-        AssessDiscernability();
-        D.Assert(_isViewMembersOnDiscernibleInitialized);
-        Star.Data.onHumanPlayerIntelCoverageChanged -= __OnMemberHumanPlayerIntelCoverageChanged;
-        Planetoids.ForAll(p => p.Data.onHumanPlayerIntelCoverageChanged -= __OnMemberHumanPlayerIntelCoverageChanged);
+    /// <summary>
+    /// Shows the selection popup.
+    /// </summary>
+    /// <remarks>This method must be called prior to notifying SelectionMgr of the selection change. 
+    /// HudPopup subscribes to the change and needs the SelectionPopup to already 
+    /// be resized and showing so it can position itself properly. Hiding the SelectionPopup is 
+    /// handled by the SelectionMgr when there is no longer an item selected.
+    /// </remarks>
+    private void ShowSelectionHud() {
+        SelectionHud.Instance.Show(new SelectedItemHudContent(HudElementID.System, GetUserReport()));
+    }
+
+    /// <summary>
+    /// Called by User's PlayerKnowledge when the User first discovers this system.
+    /// Note: This is the replacement for ADiscernibleItem.OnUserIntelCoverageChanged() calling 
+    /// AssessDiscernibleToUser() since SystemItem is not an ADiscernibleItem.
+    /// </summary>
+    public void OnUserDiscoveredSystem() {
+        D.Assert(!_isViewMembersInitialized);
+        AssessDiscernibleToUser();
+        D.Assert(_isViewMembersInitialized);
     }
 
     private void ShowTrackingLabel(bool toShow) {
@@ -258,7 +270,7 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
 
     #endregion
 
-    #region Mouse Events
+    #region Events
 
     protected override void OnLeftClick() {
         base.OnLeftClick();
@@ -283,8 +295,6 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
         }
-        Star.Data.onHumanPlayerIntelCoverageChanged -= __OnMemberHumanPlayerIntelCoverageChanged;
-        Planetoids.ForAll(p => p.Data.onHumanPlayerIntelCoverageChanged -= __OnMemberHumanPlayerIntelCoverageChanged);
         Data.Dispose();
     }
 
@@ -315,6 +325,8 @@ public class SystemItem : ADiscernibleItem, IZoomToFurthest, ISelectable, ITopog
         get { return _isSelected; }
         set { SetProperty<bool>(ref _isSelected, value, "IsSelected", OnIsSelectedChanged); }
     }
+
+    //public ColoredStringBuilder HudContent { get { return Publisher.HudContent; } }
 
     #endregion
 

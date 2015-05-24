@@ -50,9 +50,9 @@ namespace CodeEnv.Master.GameContent {
 
         public int? Capacity { get; private set; }
 
-        public OpeYield? Resources { get; private set; }
+        public OpeResourceYield? Resources { get; private set; }
 
-        public XYield? SpecialResources { get; private set; }
+        public RareResourceYield? SpecialResources { get; private set; }
 
 
         public Player Player { get; private set; }
@@ -69,19 +69,19 @@ namespace CodeEnv.Master.GameContent {
         private void SetValues(StarData data) {
             switch (IntelCoverage) {
                 case IntelCoverage.Comprehensive:
-                    SpecialResources = data.SpecialResources;
+                    SpecialResources = data.RareResources;
 
-                    goto case IntelCoverage.Moderate;
-                case IntelCoverage.Moderate:
+                    goto case IntelCoverage.Broad;
+                case IntelCoverage.Broad:
                     Capacity = data.Capacity;
-                    Resources = data.Resources;
+                    Resources = data.OpeResources;
 
-                    goto case IntelCoverage.Minimal;
-                case IntelCoverage.Minimal:
+                    goto case IntelCoverage.Essential;
+                case IntelCoverage.Essential:
                     Owner = data.Owner;
 
-                    goto case IntelCoverage.Aware;
-                case IntelCoverage.Aware:
+                    goto case IntelCoverage.Basic;
+                case IntelCoverage.Basic:
                     Name = data.Name;
                     ParentName = data.ParentName;
                     Category = data.Category;

@@ -34,7 +34,7 @@ public abstract class AGuiEnumSlider<E> : AGuiTooltip where E : struct {
 
     protected override void Awake() {
         base.Awake();
-        _slider = gameObject.GetSafeMonoBehaviourComponent<UISlider>();
+        _slider = gameObject.GetSafeMonoBehaviour<UISlider>();
         InitializeSlider();
         InitializeSliderValue();
         GameManager.Instance.onIsRunningOneShot += delegate {

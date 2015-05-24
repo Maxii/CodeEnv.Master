@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
 
         public bool IsSavedGame { get; set; }
         public UniverseSize UniverseSize { get; set; }
-        public Race HumanPlayerRace { get; set; }
+        public Race UserPlayerRace { get; set; }
         public Race[] AIPlayerRaces { get; set; }
 
         public GameSettings() { }

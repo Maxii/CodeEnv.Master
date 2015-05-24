@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ShipPublisher.cs
-// Report and LabelText Publisher for Ships.
+// Report and HudContent Publisher for Ships.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,18 +19,23 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Report and LabelText Publisher for Ships.
+    /// Report and HudContent Publisher for Ships.
     /// </summary>
     public class ShipPublisher : AIntelItemPublisher<ShipReport, ShipData> {
 
-        static ShipPublisher() {
-            LabelTextFactory = new ShipLabelTextFactory();
+        public override ColoredStringBuilder HudContent {
+            get { return ShipDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        public ShipPublisher(ShipData data) : base(data) { }
+        private IShipItem _item;
+
+        public ShipPublisher(ShipData data, IShipItem item)
+            : base(data) {
+            _item = item;
+        }
 
         protected override ShipReport GenerateReport(Player player) {
-            return new ShipReport(_data, player);
+            return new ShipReport(_data, player, _item);
         }
 
         public override string ToString() {

@@ -18,6 +18,7 @@
 
 using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
@@ -27,26 +28,20 @@ public class PlanetItem : APlanetoidItem {
 
     protected new PlanetDisplayManager DisplayMgr { get { return base.DisplayMgr as PlanetDisplayManager; } }
 
-
     #region Initialization
 
     protected override ADisplayManager InitializeDisplayManager() {
-        var displayMgr = new PlanetDisplayManager(gameObject);
-        displayMgr.Icon = InitializeIcon();
+        var displayMgr = new PlanetDisplayManager(this, MakeIconInfo());
+        SubscribeToIconEvents(displayMgr.Icon);
         return displayMgr;
     }
 
-    private ResponsiveTrackingSprite InitializeIcon() {
-        var icon = TrackingWidgetFactory.Instance.CreateResponsiveTrackingSprite(this, TrackingWidgetFactory.IconAtlasID.Contextual,
-            new Vector2(12, 12), WidgetPlacement.Over);
-        icon.Set("Icon02"); // TODO planet icon should vary depending on whether it has moons or not
-        icon.Color = Owner.Color;
+    private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
-        iconEventListener.onHover += (iconGo, isOver) => OnHover(isOver);
-        iconEventListener.onClick += (iconGo) => OnClick();
-        iconEventListener.onDoubleClick += (iconGo) => OnDoubleClick();
-        iconEventListener.onPress += (iconGo, isDown) => OnPress(isDown);
-        return icon;
+        iconEventListener.onHover += (go, isOver) => OnHover(isOver);
+        iconEventListener.onClick += (go) => OnClick();
+        iconEventListener.onDoubleClick += (go) => OnDoubleClick();
+        iconEventListener.onPress += (go, isDown) => OnPress(isDown);
     }
 
     #endregion
@@ -55,11 +50,8 @@ public class PlanetItem : APlanetoidItem {
 
     protected override void OnOwnerChanged() {
         base.OnOwnerChanged();
-        if (DisplayMgr != null && DisplayMgr.Icon != null) {
-            DisplayMgr.Icon.Color = Owner.Color;
-        }
+        AssessIcon();
     }
-
 
     protected override void OnDeath() {
         base.OnDeath();
@@ -74,22 +66,52 @@ public class PlanetItem : APlanetoidItem {
     #endregion
 
     #region View Methods
+
+    private void AssessIcon() {
+        if (DisplayMgr == null) { return; }
+
+        var iconInfo = RefreshIconInfo();
+        if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
+            UnsubscribeToIconEvents(DisplayMgr.Icon);
+            //D.Log("{0} changing IconInfo from {1} to {2}.", FullName, DisplayMgr.IconInfo, iconInfo);
+            DisplayMgr.IconInfo = iconInfo;
+            SubscribeToIconEvents(DisplayMgr.Icon);
+        }
+    }
+
+    private IconInfo RefreshIconInfo() {
+        return MakeIconInfo();
+    }
+
+    private IconInfo MakeIconInfo() {
+        var report = GetUserReport();
+        GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
+        return new IconInfo("Icon02", AtlasID.Contextual, iconColor);
+    }
+
     #endregion
 
-    #region Mouse Events
+    #region Events
     #endregion
 
     #region Cleanup
 
     protected override void Unsubscribe() {
         base.Unsubscribe();
-        if (DisplayMgr != null && DisplayMgr.Icon != null) {
-            var iconEventListener = DisplayMgr.Icon.EventListener;
-            iconEventListener.onHover -= (iconGo, isOver) => OnHover(isOver);
-            iconEventListener.onClick -= (iconGo) => OnClick();
-            iconEventListener.onDoubleClick -= (iconGo) => OnDoubleClick();
-            iconEventListener.onPress -= (iconGo, isDown) => OnPress(isDown);
+        if (DisplayMgr != null) {
+            var icon = DisplayMgr.Icon;
+            if (icon != null) {
+                UnsubscribeToIconEvents(icon);
+            }
         }
+    }
+
+    private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
+        var iconEventListener = icon.EventListener;
+        iconEventListener.onHover -= (go, isOver) => OnHover(isOver);
+        iconEventListener.onClick -= (go) => OnClick();
+        iconEventListener.onDoubleClick -= (go) => OnDoubleClick();
+        iconEventListener.onPress -= (go, isDown) => OnPress(isDown);
     }
 
     #endregion

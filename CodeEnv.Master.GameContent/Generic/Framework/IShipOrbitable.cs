@@ -25,6 +25,12 @@ namespace CodeEnv.Master.GameContent {
 
         ShipOrbitSlot ShipOrbitSlot { get; }
 
+        /// <summary>
+        /// The radius of the KeepoutZone surrounding this IShipOrbitable object.
+        /// The ShipOrbitSlot.InnerRadius has the same value.
+        /// </summary>
+        float KeepoutRadius { get; }
+
         string FullName { get; }
 
         Vector3 Position { get; }

@@ -32,7 +32,7 @@ public abstract class AGuiMenuElement : AGuiTooltip {
     /// <summary>
     /// Unique ID for this Gui Menu Element.
     /// </summary>
-    public abstract GuiMenuElementID ElementID { get; }
+    public abstract GuiElementID ElementID { get; }
 
     protected override void Awake() {
         base.Awake();
@@ -41,7 +41,7 @@ public abstract class AGuiMenuElement : AGuiTooltip {
 
     private void Validate() {
         UnityUtility.ValidateMonoBehaviourPresence<UIWidget>(gameObject);
-        D.Assert(ElementID != GuiMenuElementID.None, "ElementID not set.", gameObject);
+        D.Assert(ElementID != default(GuiElementID), "ElementID not set.", gameObject);
         if (HasPreference) {
             Arguments.ValidateForContent(ElementID.PreferencePropertyName());
         }

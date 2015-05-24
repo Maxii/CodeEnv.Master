@@ -22,14 +22,20 @@ namespace CodeEnv.Master.GameContent {
     public enum Speed {
 
         /// <summary>
-        /// The absense of speed. Used for error detection.
+        /// Default, used for error detection.
         /// </summary>
         None,
 
         /// <summary>
-        /// A velocity of zero.
+        /// Sets thrust and current velocity to zero.
         /// </summary>
-        AllStop,
+        EmergencyStop,
+
+        /// <summary>
+        /// Sets thrust to zero. Can still retain residual velocity
+        /// for a short time.
+        /// </summary>
+        Stop,
 
         /// <summary>
         /// A tiny fraction of Standard STL speed, 2% of STL Full.
@@ -102,5 +108,6 @@ namespace CodeEnv.Master.GameContent {
         //Flank
 
     }
+
 }
 

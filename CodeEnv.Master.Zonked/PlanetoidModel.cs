@@ -81,7 +81,7 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IShipOrbitable 
     }
 
     private void PropogateOwnerChangeToMoons() {
-        var moons = gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetoidModel>().Except(this);
+        var moons = gameObject.GetSafeMonoBehavioursInChildren<PlanetoidModel>().Except(this);
         if (!moons.IsNullOrEmpty()) {
             moons.ForAll(m => m.Data.Owner = Data.Owner);
         }
@@ -125,7 +125,7 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IShipOrbitable 
                 break;
             case PlanetoidState.Dead:
                 OnDeath();
-                OnShowAnimation(MortalAnimations.Dying);
+                OnShowAnimation(EffectID.Dying);
                 break;
             case PlanetoidState.None:
             default:
@@ -243,7 +243,7 @@ public class PlanetoidModel : AMortalItemModel, IPlanetoidModel, IShipOrbitable 
             CurrentState = PlanetoidState.Dead;
             return;
         }
-        OnShowAnimation(MortalAnimations.Hit);
+        OnShowAnimation(EffectID.Hit);
     }
 
     #endregion

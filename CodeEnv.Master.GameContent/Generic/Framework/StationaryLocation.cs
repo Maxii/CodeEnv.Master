@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: StationaryLocation.cs
-// A dummy IDestinationTarget wrapping a stationary location.
+// An INavigableTarget wrapping a stationary location.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// A dummy IDestinationTarget wrapping a stationary location.
+    /// An INavigableTarget wrapping a stationary location.
     /// </summary>
     public struct StationaryLocation : INavigableTarget, IEquatable<StationaryLocation> {
 
@@ -80,11 +80,11 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        #region IDestinationTarget Members
+        #region INavigableTarget Members
 
         public string DisplayName { get { return FullName; } }
 
-        public string FullName { get { return string.Format("{0}[{1}]", this.GetType().Name, Position); } }
+        public string FullName { get { return string.Format("{0}[{1}]", GetType().Name, Position); } }
 
         // OPTIMIZE consider letting this be settable so navigator's don't have to create a new one every time
         public Vector3 Position { get; private set; }

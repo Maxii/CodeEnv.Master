@@ -22,7 +22,7 @@ namespace CodeEnv.Master.Common {
         public bool IsResetOnFocusEnabled { get; set; }
         public bool IsPauseOnLoadEnabled { get; set; }
 
-        public GameClockSpeed GameSpeedOnLoad { get; set; }
+        public GameSpeed GameSpeedOnLoad { get; set; }
 
         public GamePlayOptionSettings() { }
 

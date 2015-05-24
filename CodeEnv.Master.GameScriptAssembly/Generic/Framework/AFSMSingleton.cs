@@ -64,6 +64,9 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
 
     /// <summary>
     /// Optimized SendMessage replacement.
+    /// WARNING: BindingFlags.NonPublic DOES NOT find private methods in base classes! This is noted in GetMethods() 
+    /// below, but NOT in the comparable GetMethod() documentation!
+    /// <see cref="https://msdn.microsoft.com/en-us/library/4d848zkb(v=vs.110).aspx"/>
     /// </summary>
     /// <param name="message">The message.</param>
     /// <param name="param">The parameter.</param>
@@ -130,7 +133,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
             if (!param.IsNullOrEmpty()) {
                 parameters = param.Concatenate();
             }
-            D.Warn("{0} did not find Method with signature {1}({2}).", _transform.name, message, parameters);  // my addition
+            D.Warn("{0} did not find Method with signature {1}({2}). Is it a private method in a base class?", _transform.name, message, parameters);  // my addition
             return false;   // my addition
         }
     }
@@ -478,14 +481,16 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     /// <summary>
     /// FInds or creates a delegate for the current state and Method name (aka CurrentState_OnClick), or
     /// if the Method name is not present in this State Machine, then returns Default. Also puts an 
-    /// IEnumerator wrapper around EnterState or ExitState methods that return void rather than
-    /// IEnumerator.
+    /// IEnumerator wrapper around EnterState or ExitState methods that return void rather than IEnumerator.
+    /// WARNING: BindingFlags.NonPublic DOES NOT find private methods in base classes! This is noted in GetMethods() 
+    /// below, but NOT in the comparable GetMethod() documentation!
+    /// <see cref="https://msdn.microsoft.com/en-us/library/4d848zkb(v=vs.110).aspx"/>
     /// </summary>
-    /// <typeparam name="D"></typeparam>
+    /// <typeparam name="R"></typeparam>
     /// <param name="methodRoot">Substring of the methodName that follows "StateName_", eg EnterState from State1_EnterState.</param>
     /// <param name="Default">The default delegate to use if a method of the proper name is not found.</param>
     /// <returns></returns>
-    private D ConfigureDelegate<D>(string methodRoot, D Default) where D : class {
+    private R ConfigureDelegate<R>(string methodRoot, R Default) where R : class {
 
         Dictionary<string, Delegate> lookup;
         if (!_cache.TryGetValue(state.currentState, out lookup)) {
@@ -498,20 +503,27 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
                 | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.InvokeMethod);
 
             if (mtd != null) {
-                if (typeof(D) == typeof(Func<IEnumerator>) && mtd.ReturnType != typeof(IEnumerator)) {
+                if (typeof(R) == typeof(Func<IEnumerator>) && mtd.ReturnType != typeof(IEnumerator)) {
                     Action a = Delegate.CreateDelegate(typeof(Action), this, mtd) as Action;
                     Func<IEnumerator> func = () => { a(); return null; };
                     returnValue = func;
                 }
-                else
-                    returnValue = Delegate.CreateDelegate(typeof(D), this, mtd);
+                else {
+                    returnValue = Delegate.CreateDelegate(typeof(R), this, mtd);
+                }
             }
             else {
                 returnValue = Default as Delegate;
+                if (methodRoot == _enterStateText || methodRoot == _exitStateText) {
+                    D.Warn("{0} did not find method {1}_{2}. Is it a private method in a base class?", _transform.name, state.currentState.ToString(), methodRoot);
+                }
+                else {
+                    D.Log("{0} did not find method {1}_{2}. Is it a private method in a base class?", _transform.name, state.currentState.ToString(), methodRoot);
+                }
             }
             lookup[methodRoot] = returnValue;
         }
-        return returnValue as D;
+        return returnValue as R;
 
     }
 
@@ -536,11 +548,13 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         state.DoFixedUpdate();
     }
 
-    void OnTriggerEnter(Collider other) {
+    protected override void OnTriggerEnter(Collider other) {
+        base.OnTriggerEnter(other);
         state.DoOnTriggerEnter(other);
     }
 
-    void OnTriggerExit(Collider other) {
+    protected override void OnTriggerExit(Collider other) {
+        base.OnTriggerExit(other);
         state.DoOnTriggerExit(other);
     }
 
@@ -548,16 +562,18 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         state.DoOnTriggerStay(other);
     }
 
-    void OnCollisionEnter(Collision other) {
-        state.DoOnCollisionEnter(other);
+    protected override void OnCollisionEnter(Collision collision) {
+        base.OnCollisionEnter(collision);
+        state.DoOnCollisionEnter(collision);
     }
 
-    void OnCollisionExit(Collision other) {
-        state.DoOnCollisionExit(other);
+    protected override void OnCollisionExit(Collision collision) {
+        base.OnCollisionExit(collision);
+        state.DoOnCollisionExit(collision);
     }
 
-    void OnCollisionStay(Collision other) {
-        state.DoOnCollisionStay(other);
+    void OnCollisionStay(Collision collision) {
+        state.DoOnCollisionStay(collision);
     }
 
     void OnHover(bool isOver) {
@@ -575,6 +591,13 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     void OnDoubleClick() {
         state.DoOnDoubleClick();
     }
+
+    #endregion
+
+    #region Debug
+
+    private static string _exitStateText = "ExitState";
+    private static string _enterStateText = "EnterState";
 
     #endregion
 

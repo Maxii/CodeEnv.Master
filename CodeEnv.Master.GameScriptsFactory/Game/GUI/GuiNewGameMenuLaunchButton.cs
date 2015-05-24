@@ -52,26 +52,26 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButton {
 
     private UniverseSizeGuiSelection _universeSizeSelection;
 
-    private Species _humanPlayerSpecies;
-    private GameColor _humanPlayerColor;
-    private SpeciesGuiSelection _humanPlayerSpeciesSelection;
+    private Species _userPlayerSpecies;
+    private GameColor _userPlayerColor;
+    private SpeciesGuiSelection _userPlayerSpeciesSelection;
 
-    private GuiMenuElementID[] _aiPlayerSpeciesPopupListIDs;
+    private GuiElementID[] _aiPlayerSpeciesPopupListIDs;
     private Species[] _aiPlayersSpecies;
     private GameColor[] _aiPlayersColor;
 
-    private IDictionary<GuiMenuElementID, GameObject> _aiPlayerFolderLookup = new Dictionary<GuiMenuElementID, GameObject>(7);
+    private IDictionary<GuiElementID, GameObject> _aiPlayerFolderLookup = new Dictionary<GuiElementID, GameObject>(7);
 
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
-        _aiPlayerSpeciesPopupListIDs = new GuiMenuElementID[TempGameValues.MaxAIPlayers] { 
-                                                                            GuiMenuElementID.AIPlayer1SpeciesPopupList, 
-                                                                            GuiMenuElementID.AIPlayer2SpeciesPopupList, 
-                                                                            GuiMenuElementID.AIPlayer3SpeciesPopupList, 
-                                                                            GuiMenuElementID.AIPlayer4SpeciesPopupList, 
-                                                                            GuiMenuElementID.AIPlayer5SpeciesPopupList, 
-                                                                            GuiMenuElementID.AIPlayer6SpeciesPopupList, 
-                                                                            GuiMenuElementID.AIPlayer7SpeciesPopupList
+        _aiPlayerSpeciesPopupListIDs = new GuiElementID[TempGameValues.MaxAIPlayers] { 
+                                                                            GuiElementID.AIPlayer1SpeciesPopupList, 
+                                                                            GuiElementID.AIPlayer2SpeciesPopupList, 
+                                                                            GuiElementID.AIPlayer3SpeciesPopupList, 
+                                                                            GuiElementID.AIPlayer4SpeciesPopupList, 
+                                                                            GuiElementID.AIPlayer5SpeciesPopupList, 
+                                                                            GuiElementID.AIPlayer6SpeciesPopupList, 
+                                                                            GuiElementID.AIPlayer7SpeciesPopupList
         };
         _aiPlayersSpecies = new Species[TempGameValues.MaxAIPlayers];
         _aiPlayersColor = new GameColor[TempGameValues.MaxAIPlayers];
@@ -83,63 +83,63 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButton {
         ValidateState();
     }
 
-    protected override void RecordPopupListState(GuiMenuElementID popupListID, string selectionName) {
+    protected override void RecordPopupListState(GuiElementID popupListID, string selectionName) {
         base.RecordPopupListState(popupListID, selectionName);
         //D.Log("{0}.RecordPopupListState() called. ID = {1}, Selection = {2}.", GetType().Name, popupListID.GetName(), selectionName);
         switch (popupListID) {
-            case GuiMenuElementID.UniverseSizePopupList:
+            case GuiElementID.UniverseSizePopupList:
                 _universeSizeSelection = Enums<UniverseSizeGuiSelection>.Parse(selectionName);
                 UniverseSize = _universeSizeSelection.Convert();
                 break;
 
-            case GuiMenuElementID.HumanPlayerSpeciesPopupList:
-                _humanPlayerSpeciesSelection = Enums<SpeciesGuiSelection>.Parse(selectionName);
-                _humanPlayerSpecies = _humanPlayerSpeciesSelection.Convert();
+            case GuiElementID.UserPlayerSpeciesPopupList:
+                _userPlayerSpeciesSelection = Enums<SpeciesGuiSelection>.Parse(selectionName);
+                _userPlayerSpecies = _userPlayerSpeciesSelection.Convert();
                 break;
-            case GuiMenuElementID.AIPlayer1SpeciesPopupList:
+            case GuiElementID.AIPlayer1SpeciesPopupList:
                 _aiPlayersSpecies[0] = Enums<SpeciesGuiSelection>.Parse(selectionName).Convert();
                 break;
-            case GuiMenuElementID.AIPlayer2SpeciesPopupList:
+            case GuiElementID.AIPlayer2SpeciesPopupList:
                 _aiPlayersSpecies[1] = Enums<SpeciesGuiSelection>.Parse(selectionName).Convert();
                 break;
-            case GuiMenuElementID.AIPlayer3SpeciesPopupList:
+            case GuiElementID.AIPlayer3SpeciesPopupList:
                 _aiPlayersSpecies[2] = Enums<SpeciesGuiSelection>.Parse(selectionName).Convert();
                 break;
-            case GuiMenuElementID.AIPlayer4SpeciesPopupList:
+            case GuiElementID.AIPlayer4SpeciesPopupList:
                 _aiPlayersSpecies[3] = Enums<SpeciesGuiSelection>.Parse(selectionName).Convert();
                 break;
-            case GuiMenuElementID.AIPlayer5SpeciesPopupList:
+            case GuiElementID.AIPlayer5SpeciesPopupList:
                 _aiPlayersSpecies[4] = Enums<SpeciesGuiSelection>.Parse(selectionName).Convert();
                 break;
-            case GuiMenuElementID.AIPlayer6SpeciesPopupList:
+            case GuiElementID.AIPlayer6SpeciesPopupList:
                 _aiPlayersSpecies[5] = Enums<SpeciesGuiSelection>.Parse(selectionName).Convert();
                 break;
-            case GuiMenuElementID.AIPlayer7SpeciesPopupList:
+            case GuiElementID.AIPlayer7SpeciesPopupList:
                 _aiPlayersSpecies[6] = Enums<SpeciesGuiSelection>.Parse(selectionName).Convert();
                 break;
 
-            case GuiMenuElementID.HumanPlayerColorPopupList:
-                _humanPlayerColor = Enums<GameColor>.Parse(selectionName);
+            case GuiElementID.UserPlayerColorPopupList:
+                _userPlayerColor = Enums<GameColor>.Parse(selectionName);
                 break;
-            case GuiMenuElementID.AIPlayer1ColorPopupList:
+            case GuiElementID.AIPlayer1ColorPopupList:
                 _aiPlayersColor[0] = Enums<GameColor>.Parse(selectionName);
                 break;
-            case GuiMenuElementID.AIPlayer2ColorPopupList:
+            case GuiElementID.AIPlayer2ColorPopupList:
                 _aiPlayersColor[1] = Enums<GameColor>.Parse(selectionName);
                 break;
-            case GuiMenuElementID.AIPlayer3ColorPopupList:
+            case GuiElementID.AIPlayer3ColorPopupList:
                 _aiPlayersColor[2] = Enums<GameColor>.Parse(selectionName);
                 break;
-            case GuiMenuElementID.AIPlayer4ColorPopupList:
+            case GuiElementID.AIPlayer4ColorPopupList:
                 _aiPlayersColor[3] = Enums<GameColor>.Parse(selectionName);
                 break;
-            case GuiMenuElementID.AIPlayer5ColorPopupList:
+            case GuiElementID.AIPlayer5ColorPopupList:
                 _aiPlayersColor[4] = Enums<GameColor>.Parse(selectionName);
                 break;
-            case GuiMenuElementID.AIPlayer6ColorPopupList:
+            case GuiElementID.AIPlayer6ColorPopupList:
                 _aiPlayersColor[5] = Enums<GameColor>.Parse(selectionName);
                 break;
-            case GuiMenuElementID.AIPlayer7ColorPopupList:
+            case GuiElementID.AIPlayer7ColorPopupList:
                 _aiPlayersColor[6] = Enums<GameColor>.Parse(selectionName);
                 break;
             default:
@@ -147,13 +147,12 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButton {
         }
     }
 
-
     #region Dynamic AI Player Display System
 
     private void PopulateAIPlayerLookup() {
         // populate the AI Player folder lookup table using the Species Key
         _popupLists.ForAll(popup => {
-            var popupMenuElement = popup.gameObject.GetSafeMonoBehaviourComponent<AGuiMenuElement>();
+            var popupMenuElement = popup.gameObject.GetSafeMonoBehaviour<AGuiMenuElement>();
             if (popupMenuElement.ElementID.EqualsAnyOf(_aiPlayerSpeciesPopupListIDs)) {
                 var aiPlayerSpeciesElement = popupMenuElement;
                 GameObject aiPlayerFolder = aiPlayerSpeciesElement.transform.parent.gameObject;
@@ -173,25 +172,25 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButton {
         // now reactivate the AI player slots that will be in the game
         switch (aiPlayerCount) {
             case 7:
-                _aiPlayerFolderLookup[GuiMenuElementID.AIPlayer7SpeciesPopupList].SetActive(true);
+                _aiPlayerFolderLookup[GuiElementID.AIPlayer7SpeciesPopupList].SetActive(true);
                 goto case 6;
             case 6:
-                _aiPlayerFolderLookup[GuiMenuElementID.AIPlayer6SpeciesPopupList].SetActive(true);
+                _aiPlayerFolderLookup[GuiElementID.AIPlayer6SpeciesPopupList].SetActive(true);
                 goto case 5;
             case 5:
-                _aiPlayerFolderLookup[GuiMenuElementID.AIPlayer5SpeciesPopupList].SetActive(true);
+                _aiPlayerFolderLookup[GuiElementID.AIPlayer5SpeciesPopupList].SetActive(true);
                 goto case 4;
             case 4:
-                _aiPlayerFolderLookup[GuiMenuElementID.AIPlayer4SpeciesPopupList].SetActive(true);
+                _aiPlayerFolderLookup[GuiElementID.AIPlayer4SpeciesPopupList].SetActive(true);
                 goto case 3;
             case 3:
-                _aiPlayerFolderLookup[GuiMenuElementID.AIPlayer3SpeciesPopupList].SetActive(true);
+                _aiPlayerFolderLookup[GuiElementID.AIPlayer3SpeciesPopupList].SetActive(true);
                 goto case 2;
             case 2:
-                _aiPlayerFolderLookup[GuiMenuElementID.AIPlayer2SpeciesPopupList].SetActive(true);
+                _aiPlayerFolderLookup[GuiElementID.AIPlayer2SpeciesPopupList].SetActive(true);
                 goto case 1;
             case 1:
-                _aiPlayerFolderLookup[GuiMenuElementID.AIPlayer1SpeciesPopupList].SetActive(true);
+                _aiPlayerFolderLookup[GuiElementID.AIPlayer1SpeciesPopupList].SetActive(true);
                 break;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(aiPlayerCount));
@@ -210,9 +209,11 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButton {
             aiPlayerRaces[i] = aiPlayerRace;
         }
 
+        var userRaceStat = new RaceStat(_userPlayerSpecies, "Maxii", TempGameValues.AnImageFilename, "Maxii description", _userPlayerColor);
+
         GameSettings settings = new GameSettings() {
             UniverseSize = UniverseSize,
-            HumanPlayerRace = new Race(new RaceStat(_humanPlayerSpecies, "Maxii", "Maxii description", _humanPlayerColor)),
+            UserPlayerRace = new Race(userRaceStat),
             AIPlayerRaces = aiPlayerRaces
         };
         _gameMgr.InitiateNewGame(settings);
@@ -220,14 +221,14 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButton {
 
     private void RecordPreferences() {
         _playerPrefsMgr.UniverseSizeSelection = _universeSizeSelection;
-        _playerPrefsMgr.PlayerSpeciesSelection = _humanPlayerSpeciesSelection;
-        _playerPrefsMgr.PlayerColor = _humanPlayerColor;
+        _playerPrefsMgr.UserPlayerSpeciesSelection = _userPlayerSpeciesSelection;
+        _playerPrefsMgr.UserPlayerColor = _userPlayerColor;
     }
 
     [Conditional("UNITY_EDITOR")]
     private void ValidateState() {
         D.Assert(UniverseSize != UniverseSize.None, "UniverseSize has not been set!");
-        D.Assert(_humanPlayerSpecies != Species.None, "HumanPlayer Species has not been set!");
+        D.Assert(_userPlayerSpecies != Species.None, "User Player Species has not been set!");
         // TODO
     }
 

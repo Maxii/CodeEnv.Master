@@ -68,7 +68,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <returns></returns>
     public FleetCmdItem MakeInstance(FleetCmdStat cmdStat, IEnumerable<CountermeasureStat> cmStats, Player owner) {
         GameObject cmdGo = UnityUtility.AddChild(null, _fleetCmdPrefab);
-        var cmd = cmdGo.GetSafeMonoBehaviourComponent<FleetCmdItem>();
+        var cmd = cmdGo.GetSafeMonoBehaviour<FleetCmdItem>();
         MakeInstance(cmdStat, cmStats, owner, ref cmd);
         return cmd;
     }
@@ -121,7 +121,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         }
 
         cmd.enabled = true;
-        UnityUtility.WaitOneToExecute(delegate {
+        UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
             // wait 1 frame to allow Cmd to initialize
             cmd.AddElement(element);  // resets the element's Command property and parents element to Cmd's parent GO
             cmd.HQElement = element;
@@ -144,7 +144,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         GameObject shipPrefabGo = _shipPrefabs.Single(s => s.category == shipStat.Category).gameObject;
         GameObject shipGoClone = UnityUtility.AddChild(null, shipPrefabGo);
 
-        ShipItem item = shipGoClone.GetSafeMonoBehaviourComponent<ShipItem>();
+        ShipItem item = shipGoClone.GetSafeMonoBehaviour<ShipItem>();
         PopulateInstance(shipStat, weapStats, cmStats, sensorStats, owner, ref item);
         return item;
     }
@@ -178,7 +178,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <returns></returns>
     public StarbaseCmdItem MakeInstance(StarbaseCmdStat cmdStat, IEnumerable<CountermeasureStat> cmStats, Player owner) {
         GameObject cmdGo = UnityUtility.AddChild(null, _starbaseCmdPrefab);
-        StarbaseCmdItem cmd = cmdGo.GetSafeMonoBehaviourComponent<StarbaseCmdItem>();
+        StarbaseCmdItem cmd = cmdGo.GetSafeMonoBehaviour<StarbaseCmdItem>();
         PopulateInstance(cmdStat, cmStats, owner, ref cmd);
         return cmd;
     }
@@ -205,7 +205,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <returns></returns>
     public SettlementCmdItem MakeInstance(SettlementCmdStat cmdStat, IEnumerable<CountermeasureStat> cmStats, Player owner) {
         GameObject cmdGo = UnityUtility.AddChild(null, _settlementCmdPrefab);
-        SettlementCmdItem cmd = cmdGo.GetSafeMonoBehaviourComponent<SettlementCmdItem>();
+        SettlementCmdItem cmd = cmdGo.GetSafeMonoBehaviour<SettlementCmdItem>();
         PopulateInstance(cmdStat, cmStats, owner, ref cmd);
         return cmd;
     }
@@ -219,7 +219,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="item">The item.</param>
     public void PopulateInstance(SettlementCmdStat cmdStat, IEnumerable<CountermeasureStat> cmStats, Player owner, ref SettlementCmdItem item) {
         D.Assert(!item.enabled, "{0} should not be enabled.".Inject(item.FullName));
-        item.Data = new SettlementCmdData(item.Transform, cmdStat, owner) { };
+        item.Data = new SettlementCmdData(item.Transform, cmdStat, owner) {
+            Approval = UnityEngine.Random.Range(.01F, 1.0F)
+        };
         AttachCountermeasures(cmStats, item);
     }
 
@@ -238,7 +240,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     public FacilityItem MakeInstance(FacilityStat facStat, Topography topography, IEnumerable<WeaponStat> wStats, IEnumerable<CountermeasureStat> cmStats, IEnumerable<SensorStat> sensorStats, Player owner) {
         GameObject facilityPrefabGo = _facilityPrefabs.Single(f => f.category == facStat.Category).gameObject;
         GameObject facilityGoClone = UnityUtility.AddChild(null, facilityPrefabGo);
-        FacilityItem item = facilityGoClone.GetSafeMonoBehaviourComponent<FacilityItem>();
+        FacilityItem item = facilityGoClone.GetSafeMonoBehaviour<FacilityItem>();
         PopulateInstance(facStat, topography, wStats, cmStats, sensorStats, owner, ref item);
         return item;
     }
@@ -278,7 +280,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         }
 
         GameObject stationGo = UnityUtility.AddChild(formationStationsFolder, _formationStationPrefab);
-        FormationStationMonitor station = stationGo.GetSafeMonoBehaviourComponent<FormationStationMonitor>();
+        FormationStationMonitor station = stationGo.GetSafeMonoBehaviour<FormationStationMonitor>();
         station.StationOffset = stationOffset;
         //D.Log("New FormationStation created at {0}, Offset = {1}, FleetCmd at {2}.", st.transform.position, stationOffset, fleetCmd.transform.position);
         return station;
@@ -316,7 +318,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             else {
                 GameObject monitorGo = UnityUtility.AddChild(element.gameObject, _weaponRangeMonitorPrefab);
                 monitorGo.layer = (int)Layers.IgnoreRaycast; // AddChild resets prefab layer to elementGo's layer
-                monitor = monitorGo.GetSafeMonoBehaviourComponentInChildren<WeaponRangeMonitor>();
+                monitor = monitorGo.GetSafeMonoBehaviourInChildren<WeaponRangeMonitor>();
             }
             monitor.ParentElement = element;
             //D.Log("{0} has had a {1} chosen for {2}.", element.FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
@@ -345,7 +347,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             else {
                 GameObject monitorGo = UnityUtility.AddChild(command.gameObject, _sensorRangeMonitorPrefab);
                 monitorGo.layer = (int)Layers.IgnoreRaycast; // AddChild resets prefab layer to elementGo's layer
-                monitor = monitorGo.GetSafeMonoBehaviourComponentInChildren<SensorRangeMonitor>();
+                monitor = monitorGo.GetSafeMonoBehaviourInChildren<SensorRangeMonitor>();
             }
             monitor.ParentCommand = command;
             //D.Log("{0} has had a {1} chosen for {2}.", command.FullName, typeof(SensorRangeMonitor).Name, sensor.Name);

@@ -38,7 +38,10 @@ namespace CodeEnv.Master.GameContent {
             get { return ParentName.IsNullOrEmpty() ? Name : ParentName + Constants.Underscore + Name; }
         }
 
-        public new Topography Topography { get { return HQElementData.Topography; } }
+        public override Topography Topography {
+            get { return HQElementData.Topography; }
+            set { throw new NotSupportedException(); }
+        }
 
         private Formation _unitFormation;
         public Formation UnitFormation {
@@ -137,8 +140,16 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        public float UnitScience { get; private set; }
+
+        public float UnitCulture { get; private set; }
+
+        public float UnitIncome { get; private set; }
+
+        public float UnitExpense { get; private set; }
+
         protected IList<AUnitElementItemData> ElementsData { get; private set; }
-        protected IDictionary<AUnitElementItemData, IList<IDisposable>> _subscribers;
+        protected IDictionary<AUnitElementItemData, IList<IDisposable>> _subscriptions;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AUnitCmdItemData" /> class.
@@ -156,25 +167,26 @@ namespace CodeEnv.Master.GameContent {
 
         private void InitializeCollections() {
             ElementsData = new List<AUnitElementItemData>();
-            _subscribers = new Dictionary<AUnitElementItemData, IList<IDisposable>>();
+            _subscriptions = new Dictionary<AUnitElementItemData, IList<IDisposable>>();
         }
 
         protected virtual void OnHQElementDataChanging(AUnitElementItemData newHQElementData) {
             var previousHQElementData = HQElementData;
             if (previousHQElementData != null) {
-                previousHQElementData.onPlayerIntelCoverageChanged -= OnHQElementIntelCoverageChanged;
+                previousHQElementData.onIntelCoverageChanged -= OnHQElementIntelCoverageChanged;
             }
         }
 
         protected virtual void OnHQElementDataChanged() {
             D.Assert(ElementsData.Contains(HQElementData),
                 "HQ Element {0} assigned not present in {1}.".Inject(_hqElementData.FullName, FullName));
-            HQElementData.onPlayerIntelCoverageChanged += OnHQElementIntelCoverageChanged;
+            HQElementData.onIntelCoverageChanged += OnHQElementIntelCoverageChanged;
         }
 
         private void OnHQElementIntelCoverageChanged(Player player) {
             var playerIntelCoverageOfHQElement = HQElementData.GetIntelCoverage(player);
-            D.Assert(TrySetIntelCoverage(player, playerIntelCoverageOfHQElement));
+            var isIntelCoverageSet = SetIntelCoverage(player, playerIntelCoverageOfHQElement);
+            D.Assert(isIntelCoverageSet);
             D.Log("{0}.HQElement's IntelCoverage for {1} has changed to {2}. {0} has assumed the same value.", FullName, player.LeaderName, playerIntelCoverageOfHQElement.GetName());
         }
 
@@ -282,6 +294,10 @@ namespace CodeEnv.Master.GameContent {
             RecalcUnitCurrentHitPoints();
             RecalcUnitMaxWeaponsRange();
             RecalcUnitMaxSensorRange();
+            RecalcUnitScience();
+            RecalcUnitCulture();
+            RecalcUnitIncome();
+            RecalcUnitExpense();
         }
 
         private void RecalcUnitOffensiveStrength() {
@@ -295,11 +311,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void RecalcUnitMaxHitPoints() {
-            UnitMaxHitPoints = ElementsData.Sum<AUnitElementItemData>(ed => ed.MaxHitPoints);
+            UnitMaxHitPoints = ElementsData.Sum(ed => ed.MaxHitPoints);
         }
 
         private void RecalcUnitCurrentHitPoints() {
-            UnitCurrentHitPoints = ElementsData.Sum<AUnitElementItemData>(ed => ed.CurrentHitPoints);
+            UnitCurrentHitPoints = ElementsData.Sum(ed => ed.CurrentHitPoints);
         }
 
         private void RecalcUnitMaxWeaponsRange() {
@@ -310,17 +326,37 @@ namespace CodeEnv.Master.GameContent {
             UnitMaxSensorRange = ElementsData.Count == Constants.Zero ? Constants.ZeroF : ElementsData.Max(ed => ed.MaxSensorRange);
         }
 
+        private void RecalcUnitScience() {
+            UnitScience = ElementsData.Sum(ed => ed.Science);
+        }
+
+        private void RecalcUnitCulture() {
+            UnitCulture = ElementsData.Sum(ed => ed.Culture);
+        }
+
+        private void RecalcUnitIncome() {
+            UnitIncome = ElementsData.Sum(ed => ed.Income);
+        }
+
+        private void RecalcUnitExpense() {
+            UnitExpense = ElementsData.Sum(ed => ed.Expense);
+        }
+
         #region ElementData PropertyChanged Subscription and Methods
 
         protected virtual void Subscribe(AUnitElementItemData elementData) {
-            _subscribers.Add(elementData, new List<IDisposable>());
-            IList<IDisposable> anElementsSubscriptions = _subscribers[elementData];
+            _subscriptions.Add(elementData, new List<IDisposable>());
+            IList<IDisposable> anElementsSubscriptions = _subscriptions[elementData];
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.CurrentHitPoints, OnElementCurrentHitPointsChanged));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.MaxHitPoints, OnElementMaxHitPointsChanged));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, CombatStrength>(ed => ed.DefensiveStrength, OnElementDefensiveStrengthChanged));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, CombatStrength>(ed => ed.OffensiveStrength, OnElementOffensiveStrengthChanged));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.MaxWeaponsRange, OnElementMaxWeaponsRangeChanged));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.MaxSensorRange, OnElementMaxSensorRangeChanged));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.Science, OnElementScienceChanged));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.Culture, OnElementCultureChanged));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.Income, OnElementIncomeChanged));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementItemData, float>(ed => ed.Expense, OnElementExpenseChanged));
         }
 
         private void OnElementOffensiveStrengthChanged() {
@@ -347,13 +383,29 @@ namespace CodeEnv.Master.GameContent {
             RecalcUnitMaxSensorRange();
         }
 
+        private void OnElementScienceChanged() {
+            RecalcUnitScience();
+        }
+
+        private void OnElementCultureChanged() {
+            RecalcUnitCulture();
+        }
+
+        private void OnElementIncomeChanged() {
+            RecalcUnitIncome();
+        }
+
+        private void OnElementExpenseChanged() {
+            RecalcUnitExpense();
+        }
+
         private void Unsubscribe(AUnitElementItemData elementData) {
-            _subscribers[elementData].ForAll(d => d.Dispose());
-            _subscribers.Remove(elementData);
+            _subscriptions[elementData].ForAll(d => d.Dispose());
+            _subscriptions.Remove(elementData);
 
             D.Assert(HQElementData != null);    // UNCLEAR when HQElementData gets nulled when elementData == HQElementData
             if (elementData == HQElementData) {
-                HQElementData.onPlayerIntelCoverageChanged -= OnHQElementIntelCoverageChanged;
+                HQElementData.onIntelCoverageChanged -= OnHQElementIntelCoverageChanged;
             }
         }
 
@@ -361,12 +413,12 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Unsubscribe() {
             base.Unsubscribe();
-            IList<AUnitElementItemData> subscriberKeys = new List<AUnitElementItemData>(_subscribers.Keys);
+            IList<AUnitElementItemData> subscriberKeys = new List<AUnitElementItemData>(_subscriptions.Keys);
             // copy of key list as you can't remove keys from a list while you are iterating over the list
             foreach (AUnitElementItemData eData in subscriberKeys) {
                 Unsubscribe(eData);
             }
-            _subscribers.Clear();
+            _subscriptions.Clear();
         }
 
     }

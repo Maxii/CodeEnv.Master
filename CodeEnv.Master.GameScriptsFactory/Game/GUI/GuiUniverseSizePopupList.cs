@@ -24,7 +24,7 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class GuiUniverseSizePopupList : AGuiPopupList<UniverseSizeGuiSelection> {
 
-    public override GuiMenuElementID ElementID { get { return GuiMenuElementID.UniverseSizePopupList; } }
+    public override GuiElementID ElementID { get { return GuiElementID.UniverseSizePopupList; } }
 
     protected override bool IncludesRandom { get { return true; } }
 

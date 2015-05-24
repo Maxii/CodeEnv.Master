@@ -29,9 +29,10 @@ namespace CodeEnv.Master.GameContent {
         private ISelectable _currentSelection;
         public ISelectable CurrentSelection {
             get { return _currentSelection; }
-            set { SetProperty<ISelectable>(ref _currentSelection, value, "CurrentSelection", null, OnSelectionChanging); }
+            set { SetProperty<ISelectable>(ref _currentSelection, value, "CurrentSelection", OnSelectionChanged, OnSelectionChanging); }
         }
 
+        private ISFXManager _sfxMgr;
         private IInputManager _inputMgr;
 
         private SelectionManager() {
@@ -40,6 +41,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Initialize() {
             _inputMgr = References.InputManager;
+            _sfxMgr = References.SFXManager;
             References.GameManager.onIsRunningOneShot += Subscribe;
         }
 
@@ -56,6 +58,16 @@ namespace CodeEnv.Master.GameContent {
         private void OnSelectionChanging(ISelectable newSelection) {
             if (CurrentSelection != null) {
                 CurrentSelection.IsSelected = false;
+            }
+        }
+
+        private void OnSelectionChanged() {
+            if (CurrentSelection != null) {
+                _sfxMgr.PlaySFX(SfxClipID.Select);
+            }
+            else {
+                _sfxMgr.PlaySFX(SfxClipID.Select);  // TODO play a different sound indicating selection cleared
+                References.SelectionHud.Hide();   // Note: handled centrally here as ISelectable's don't know whether another item has been selected
             }
         }
 

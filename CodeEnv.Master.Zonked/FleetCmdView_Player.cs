@@ -50,11 +50,11 @@ public class FleetCmdView_Player : FleetCmdView {
     private CtxObject _ctxObject;
 
     private void __InitializeContextMenu() {      // IMPROVE use of string
-        _ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
+        _ctxObject = gameObject.GetSafeMonoBehaviour<CtxObject>();
         _ctxObject.offsetMenu = true;
 
         if (_playerFleetMenu == null) {
-            _playerFleetMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "PlayerFleetMenu");
+            _playerFleetMenu = GuiManager.Instance.gameObject.GetSafeMonoBehavioursInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "PlayerFleetMenu");
 
             // NOTE: Cannot set CtxMenu.items from here as CtxMenu.Awake sets defaultItems = items (null) before I can set items programmatically.
             // Accordingly, the work around is to either use the editor to set the items, or have every CtxObject set their menuItems programmatically.

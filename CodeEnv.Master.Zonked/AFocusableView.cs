@@ -66,7 +66,7 @@ public abstract class AFocusableView : AItemView, ICameraFocusable {
     protected override void Awake() {
         base.Awake();
         _collider = UnityUtility.ValidateComponentPresence<Collider>(gameObject);
-        maxAnimateDistance = Mathf.RoundToInt(AnimationSettings.Instance.MaxCelestialObjectAnimateDistanceFactor * Radius);
+        maxAnimateDistance = Mathf.RoundToInt(GraphicsSettings.Instance.MaxCelestialObjectAnimateDistanceFactor * Radius);
     }
 
     protected override void Start() {

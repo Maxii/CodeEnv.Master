@@ -49,7 +49,7 @@ public class StarGlowAnimator : AMonoBase {
 
     protected override void OccasionalUpdate() {
         base.OccasionalUpdate();
-        float adjDeltaTime = GameTime.DeltaTimeWithGameSpeed * (int)UpdateRate;
+        float adjDeltaTime = GameTime.GameSpeedAdjustedDeltaTime * (int)UpdateRate;
         _transform.Rotate(Vector3.up * adjDeltaTime * rotationSpeedAndDirection);
     }
 

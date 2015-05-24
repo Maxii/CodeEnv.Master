@@ -32,7 +32,7 @@ public class View : AItemView, ICameraFocusable {
 
     protected override void Awake() {
         base.Awake();
-        maxAnimateDistance = Mathf.RoundToInt(AnimationSettings.Instance.MaxCelestialObjectAnimateDistanceFactor * Radius);
+        maxAnimateDistance = Mathf.RoundToInt(GraphicsSettings.Instance.MaxCelestialObjectAnimateDistanceFactor * Radius);
     }
 
     protected override void Start() {

@@ -17,18 +17,19 @@
 namespace CodeEnv.Master.GameContent {
 
     using CodeEnv.Master.Common;
+    using UnityEngine;
 
     /// <summary>
     ///  Immutable report on a sector.
     /// </summary>
     public class SectorReport : AItemReport {
 
-        public Index3D? SectorIndex { get; private set; }
+        public Index3D SectorIndex { get; private set; }
 
-        public float? Density { get; private set; }
+        public float Density { get; private set; }
 
-        public SectorReport(SectorData data, Player player)
-            : base(player) {
+        public SectorReport(SectorData data, Player player, ISectorItem item)
+            : base(player, item) {
             AssignValues(data);
         }
 
@@ -36,6 +37,7 @@ namespace CodeEnv.Master.GameContent {
             var sData = data as SectorData;
             Name = sData.Name;
             Owner = sData.Owner;
+            Position = sData.Position;
             SectorIndex = sData.SectorIndex;
             Density = sData.Density;
         }

@@ -386,7 +386,7 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
 
     void Attacking_EnterState() {
         LogEvent();
-        _ship.ShowAnimation(MortalAnimations.Attacking);
+        _ship.ShowAnimation(EffectID.Attacking);
         _attackTarget.TakeHit(_attackStrength);
         Return();
     }
@@ -519,14 +519,14 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
     IEnumerator Repairing_EnterState() {
         //D.Log("{0}.Repairing_EnterState called.", FullName);
         _helm.AllStop();
-        _ship.ShowAnimation(MortalAnimations.Repairing);
+        _ship.ShowAnimation(EffectID.Repairing);
         yield return new WaitForSeconds(2);
         Data.CurrentHitPoints += 0.5F * (Data.MaxHitPoints - Data.CurrentHitPoints);
         //D.Log("{0}'s repair is 50% complete.", FullName);
         yield return new WaitForSeconds(3);
         Data.CurrentHitPoints = Data.MaxHitPoints;
         //D.Log("{0}'s repair is 100% complete.", FullName);
-        _ship.StopAnimation(MortalAnimations.Repairing);
+        _ship.StopAnimation(EffectID.Repairing);
         Return();
     }
 
@@ -583,7 +583,7 @@ public class ShipFSM : AMonoStateMachine<ShipState> {
     void Dead_EnterState() {
         LogEvent();
         _ship.OnDeath();
-        _ship.ShowAnimation(MortalAnimations.Dying);
+        _ship.ShowAnimation(EffectID.Dying);
     }
 
     void Dead_OnShowCompletion() {

@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 ///  Abstract class for AUnitCmdItem's that are Base Commands.
 /// </summary>
-public abstract class AUnitBaseCmdItem : AUnitCmdItem, IShipOrbitable {
+public abstract class AUnitBaseCmdItem : AUnitCmdItem, IBaseCmdItem, IShipOrbitable {
 
     private BaseOrder _currentOrder;
     public BaseOrder CurrentOrder {
@@ -44,21 +44,23 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IShipOrbitable {
     protected override void InitializeLocalReferencesAndValues() {
         base.InitializeLocalReferencesAndValues();
         // radius of the command is the same as the radius of the HQElement
-        InitializeShipOrbitSlot();
+        // BaseCmds and HQElements don't move, so no reason to have method of tracking it
         InitializeKeepoutZone();
-    }
-
-    private void InitializeShipOrbitSlot() {
-        float innerOrbitRadius = UnitRadius * TempGameValues.KeepoutRadiusMultiplier;
-        float outerOrbitRadius = innerOrbitRadius + TempGameValues.DefaultShipOrbitSlotDepth;
-        ShipOrbitSlot = new ShipOrbitSlot(innerOrbitRadius, outerOrbitRadius, this);
+        InitializeShipOrbitSlot();
     }
 
     private void InitializeKeepoutZone() {
         SphereCollider keepoutZoneCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.isTrigger).Single();
         D.Assert(keepoutZoneCollider.gameObject.layer == (int)Layers.CelestialObjectKeepout);
         keepoutZoneCollider.isTrigger = true;
-        keepoutZoneCollider.radius = ShipOrbitSlot.InnerRadius;
+        keepoutZoneCollider.radius = UnitRadius * TempGameValues.KeepoutRadiusMultiplier;
+        KeepoutRadius = keepoutZoneCollider.radius;
+    }
+
+    private void InitializeShipOrbitSlot() {
+        float innerOrbitRadius = KeepoutRadius;
+        float outerOrbitRadius = innerOrbitRadius + TempGameValues.DefaultShipOrbitSlotDepth;
+        ShipOrbitSlot = new ShipOrbitSlot(innerOrbitRadius, outerOrbitRadius, this);
     }
 
     protected override void InitializeModelMembers() {
@@ -66,8 +68,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IShipOrbitable {
         CurrentState = BaseState.None;
     }
 
-    protected override void InitializeViewMembersOnDiscernible() {
-        base.InitializeViewMembersOnDiscernible();
+    protected override void InitializeViewMembersWhenFirstDiscernibleToUser() {
+        base.InitializeViewMembersWhenFirstDiscernibleToUser();
         InitializeContextMenu(Owner);
         // revolvers control their own enabled state
     }
@@ -77,7 +79,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IShipOrbitable {
         if (_ctxControl != null) {
             (_ctxControl as IDisposable).Dispose();
         }
-        _ctxControl = owner.IsHumanUser ? new BaseCtxControl_Player(this) as ICtxControl : new BaseCtxControl_AI(this);
+        _ctxControl = owner.IsUser ? new BaseCtxControl_User(this) as ICtxControl : new BaseCtxControl_AI(this);
         //D.Log("{0} initializing {1}.", FullName, _ctxControl.GetType().Name);
     }
 
@@ -96,10 +98,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IShipOrbitable {
         if (HQElement != null) {
             _formationGenerator.RegenerateFormation();    // Bases simply regenerate the formation when adding an element
         }
-
-        // A facility that is in Idle without being part of a unit might attempt something it is not yet prepared for
-        FacilityItem facility = element as FacilityItem;
-        D.Assert(facility.CurrentState != FacilityState.Idling, "{0} is adding {1} while Idling.".Inject(FullName, facility.FullName));
     }
 
     protected void OnCurrentOrderChanged() {
@@ -131,20 +129,24 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IShipOrbitable {
         }
     }
 
-    protected override void InitiateDeath() {
-        base.InitiateDeath();
-        CurrentState = BaseState.Dead;
-    }
-
     protected override void OnOwnerChanging(Player newOwner) {
         base.OnOwnerChanging(newOwner);
-        if (_isViewMembersOnDiscernibleInitialized) {
+        if (_isViewMembersInitialized) {
             // _ctxControl has already been initialized
-            if (Owner == TempGameValues.NoPlayer || newOwner == TempGameValues.NoPlayer || Owner.IsHumanUser != newOwner.IsHumanUser) {
+            if (Owner == TempGameValues.NoPlayer || newOwner == TempGameValues.NoPlayer || Owner.IsUser != newOwner.IsUser) {
                 // Kind of owner has changed between AI and Player so generate a new ctxControl
                 InitializeContextMenu(newOwner);
             }
         }
+    }
+
+    protected override void AttachCmdToHQElement() {
+        // does nothing as BaseCmds and HQElements don't change or move
+    }
+
+    protected override void InitiateDeath() {
+        base.InitiateDeath();
+        CurrentState = BaseState.Dead;
     }
 
     /// <summary>
@@ -162,7 +164,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IShipOrbitable {
 
     #endregion
 
-    #region Mouse Events
+    #region Events
 
     protected override void OnRightPress(bool isDown) {
         base.OnRightPress(isDown);
@@ -183,11 +185,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IShipOrbitable {
 
     #region None
 
-    void None_EnterState() {
+    protected void None_EnterState() {
         //LogEvent();
     }
 
-    void None_ExitState() {
+    protected void None_ExitState() {
         LogEvent();
     }
 
@@ -195,15 +197,15 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IShipOrbitable {
 
     #region Idle
 
-    void Idling_EnterState() {
-        //LogEvent();
+    protected void Idling_EnterState() {
+        LogEvent();
         // register as available
     }
 
-    void Idling_OnDetectedEnemy() { }
+    protected void Idling_OnDetectedEnemy() { }
 
-    void Idling_ExitState() {
-        //LogEvent();
+    protected void Idling_ExitState() {
+        LogEvent();
         // register as unavailable
     }
 
@@ -211,14 +213,14 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IShipOrbitable {
 
     #region ExecuteAttackOrder
 
-    IEnumerator ExecuteAttackOrder_EnterState() {
+    protected IEnumerator ExecuteAttackOrder_EnterState() {
         D.Log("{0}.ExecuteAttackOrder_EnterState called.", Data.Name);
         Call(BaseState.Attacking);
         yield return null;  // required immediately after Call() to avoid FSM bug
         CurrentState = BaseState.Idling;
     }
 
-    void ExecuteAttackOrder_ExitState() {
+    protected void ExecuteAttackOrder_ExitState() {
         LogEvent();
     }
 
@@ -228,7 +230,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IShipOrbitable {
 
     IUnitAttackableTarget _attackTarget;
 
-    void Attacking_EnterState() {
+    protected void Attacking_EnterState() {
         LogEvent();
         _attackTarget = CurrentOrder.Target as IUnitAttackableTarget;
         _attackTarget.onDeathOneShot += OnTargetDeath;
@@ -236,13 +238,13 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IShipOrbitable {
         Elements.ForAll(e => (e as FacilityItem).CurrentOrder = elementAttackOrder);
     }
 
-    void Attacking_OnTargetDeath(IMortalItem deadTarget) {
+    protected void Attacking_OnTargetDeath(IMortalItem deadTarget) {
         LogEvent();
         D.Assert(_attackTarget == deadTarget, "{0}.target {1} is not dead target {2}.".Inject(FullName, _attackTarget.FullName, deadTarget.FullName));
         Return();
     }
 
-    void Attacking_ExitState() {
+    protected void Attacking_ExitState() {
         LogEvent();
         _attackTarget.onDeathOneShot -= OnTargetDeath;
         _attackTarget = null;
@@ -252,43 +254,57 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IShipOrbitable {
 
     #region Repair
 
-    void GoRepair_EnterState() { }
+    protected void GoRepair_EnterState() { }
 
-    void Repairing_EnterState() { }
+    protected void Repairing_EnterState() { }
 
     #endregion
 
     #region Refit
 
-    void GoRefit_EnterState() { }
+    protected void GoRefit_EnterState() { }
 
-    void Refitting_EnterState() { }
+    protected void Refitting_EnterState() { }
 
     #endregion
 
     #region Disband
 
-    void GoDisband_EnterState() { }
+    protected void GoDisband_EnterState() { }
 
-    void Disbanding_EnterState() { }
+    protected void Disbanding_EnterState() { }
 
     #endregion
 
     #region Dead
 
-    void Dead_EnterState() {
+    /*********************************************************************************
+        * UNCLEAR whether Cmd will show a death effect or not. For now, I'm not going
+        *  to use an effect. Instead, the DisplayMgr will just shut off the Icon and HQ highlight.
+        ************************************************************************************/
+
+    protected void Dead_EnterState() {
         LogEvent();
-        StartAnimation(MortalAnimations.Dying);
+        StartEffect(EffectID.Dying);
     }
 
-    void Dead_OnShowCompletion() {
+    protected void Dead_OnEffectFinished(EffectID effectID) {
         LogEvent();
-        __DestroyMe(3F, onCompletion: DestroyUnitContainer);
+        D.Assert(effectID == EffectID.Dying);
+        __DestroyMe(onCompletion: () => DestroyUnitContainer(5F));  // long wait so last element can play death effect
     }
 
     #endregion
 
     #region StateMachine Support Methods
+
+    public override void OnEffectFinished(EffectID effectID) {
+        base.OnEffectFinished(effectID);
+        if (CurrentState == BaseState.Dead) {   // TEMP avoids 'method not found' warning spam
+            RelayToCurrentState(effectID);
+        }
+    }
+
     #endregion
 
     #endregion
@@ -306,7 +322,33 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IShipOrbitable {
 
     #region IShipOrbitable Members
 
+    public float KeepoutRadius { get; private set; }
+
     public ShipOrbitSlot ShipOrbitSlot { get; private set; }
+
+    #endregion
+
+    #region Nested Classes
+
+    /// <summary>
+    /// Enum defining the states a Base (Starbase or Settlement) can operate in.
+    /// </summary>
+    public enum BaseState {
+
+        None,
+        Idling,
+        ExecuteAttackOrder,
+        Attacking,
+
+        GoRepair,
+        Repairing,
+        GoRefit,
+        Refitting,
+        GoDisband,
+        Disbanding,
+        Dead
+
+    }
 
     #endregion
 

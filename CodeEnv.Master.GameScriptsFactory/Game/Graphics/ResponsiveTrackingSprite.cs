@@ -24,11 +24,11 @@ using UnityEngine;
 /// Sprite resident in world space that can respond to the mouse. 
 /// The user perceives the widget at a constant size, independent of camera distance.
 /// </summary>
-public class ResponsiveTrackingSprite : ConstantSizeTrackingSprite {
+public class ResponsiveTrackingSprite : ConstantSizeTrackingSprite, IResponsiveTrackingSprite {
 
-    public CameraLosChangedListener CameraLosChangedListener { get; private set; }
+    public ICameraLosChangedListener CameraLosChangedListener { get; private set; }
 
-    public UIEventListener EventListener { get; private set; }
+    public IMyNguiEventListener EventListener { get; private set; }
 
     private Collider _collider;
 
@@ -38,7 +38,12 @@ public class ResponsiveTrackingSprite : ConstantSizeTrackingSprite {
         _collider = gameObject.GetComponentInChildren<Collider>();
         _collider.isTrigger = true;
         CameraLosChangedListener = WidgetTransform.gameObject.AddComponent<CameraLosChangedListener>();
-        EventListener = WidgetTransform.gameObject.AddComponent<UIEventListener>();
+        EventListener = WidgetTransform.gameObject.AddComponent<MyNguiEventListener>();
+    }
+
+    public override void __SetDimensions(int width, int height) {
+        base.__SetDimensions(width, height);
+        NGUITools.UpdateWidgetCollider(WidgetTransform.gameObject);
     }
 
     protected override void Show() {

@@ -43,15 +43,15 @@ namespace CodeEnv.Master.GameContent {
                 case GuiHudLineKeys.IntelState:
                     return new ColoredTextList_Intel(intel);
                 case GuiHudLineKeys.Category:
-                    return new ColoredTextList_String(data.Category.GetName(), data.Category.GetDescription());
+                    return new ColoredTextList_String(data.Category.GetName(), data.Category.GetEnumAttributeText());
                 case GuiHudLineKeys.Health:
                     return new ColoredTextList_Health(data.Health, data.MaxHitPoints);
                 case GuiHudLineKeys.Capacity:
                     return new ColoredTextList<int>(Constants.FormatInt_2DMin, data.Capacity);
                 case GuiHudLineKeys.Resources:
-                    return new ColoredTextList_Resources(data.Resources);
+                    return new ColoredTextList_Resources(data.OpeResources);
                 case GuiHudLineKeys.Specials:
-                    return (data.SpecialResources != TempGameValues.NoSpecialResources) ? new ColoredTextList_Specials(data.SpecialResources)
+                    return (data.RareResources != TempGameValues.NoSpecialResources) ? new ColoredTextList_Specials(data.RareResources)
                         : _emptyTextList;
                 case GuiHudLineKeys.Owner:
                     return data.Owner != TempGameValues.NoPlayer ? new ColoredTextList_Owner(data.Owner) : _emptyTextList;

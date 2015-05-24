@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IItem.cs
-//  Interface for all items.
+// Interface for easy access to all items.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,12 +16,27 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using UnityEngine;
 
     /// <summary>
-    ///  Interface for all items.
+    /// Interface for easy access to all items.
     /// </summary>
     public interface IItem {
+
+        /// <summary>
+        /// Occurs when the owner of this <c>IItem</c> is about to change.
+        /// The new incoming owner is the <c>Player</c> provided.
+        /// </summary>
+        event Action<IItem, Player> onOwnerChanging;
+
+        /// <summary>
+        /// Occurs when the owner of this <c>IItem</c> has changed.
+        /// </summary>
+        event Action<IItem> onOwnerChanged;
+
+
+        string DisplayName { get; }
 
         /// <summary>
         /// The name to use for debugging. Includes parent name.

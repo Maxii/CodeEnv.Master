@@ -38,9 +38,9 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasData, IDisposable {
     protected override void Awake() {
         base.Awake();
         UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
-        _shipGraphics = gameObject.GetSafeMonoBehaviourComponent<ShipGraphics>();
-        _fleetMgr = gameObject.GetSafeMonoBehaviourComponentInParents<FleetUnitCreator>();
-        _fleetCmd = _fleetMgr.gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>();
+        _shipGraphics = gameObject.GetSafeMonoBehaviour<ShipGraphics>();
+        _fleetMgr = gameObject.GetSafeMonoBehaviourInParents<FleetUnitCreator>();
+        _fleetCmd = _fleetMgr.gameObject.GetSafeMonoBehaviourInChildren<FleetCommand>();
         _selectionMgr = SelectionManager.Instance;
     }
 
@@ -50,7 +50,7 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasData, IDisposable {
     }
 
     private void __ValidateCtxObjectSettings() {
-        CtxObject ctxObject = gameObject.GetSafeMonoBehaviourComponent<CtxObject>();
+        CtxObject ctxObject = gameObject.GetSafeMonoBehaviour<CtxObject>();
         D.Assert(ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
         UnityUtility.ValidateComponentPresence<Collider>(gameObject);
     }
@@ -158,7 +158,7 @@ public class ShipCaptain : FollowableItem, ISelectable, IHasData, IDisposable {
     }
 
     public void __SimulateAttacked() {
-        if (!DebugSettings.Instance.MakePlayerInvincible) {
+        if (!DebugSettings.Instance.AllPlayersInvulnerable) {
             __OnHit(UnityEngine.Random.Range(1.0F, Data.MaxHitPoints));
         }
     }

@@ -39,8 +39,8 @@ public abstract class AGuiPopupList : AGuiMenuElement {
     /// Configures the popupList prior to initializing list values or the starting selection.
     /// </summary>
     private void ConfigurePopupList() {
-        _popupList = gameObject.GetSafeMonoBehaviourComponent<UIPopupList>();
-        UILabel label = gameObject.GetSafeMonoBehaviourComponentInChildren<UILabel>();
+        _popupList = gameObject.GetSafeMonoBehaviour<UIPopupList>();
+        UILabel label = gameObject.GetSafeMonoBehaviourInChildren<UILabel>();
         EventDelegate.Add(_popupList.onChange, label.SetCurrentSelection);
     }
 

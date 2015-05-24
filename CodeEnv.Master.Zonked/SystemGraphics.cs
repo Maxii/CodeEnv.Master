@@ -49,10 +49,10 @@ public class SystemGraphics : AGraphics, IDisposable {
     protected override void Awake() {
         base.Awake();
         Target = _transform;
-        _orbitalPlane = gameObject.GetSafeMonoBehaviourComponentInChildren<OrbitalPlaneInputEventRouter>();
-        _systemManager = gameObject.GetSafeMonoBehaviourComponent<SystemCreator>();
+        _orbitalPlane = gameObject.GetSafeMonoBehaviourInChildren<OrbitalPlaneInputEventRouter>();
+        _systemManager = gameObject.GetSafeMonoBehaviour<SystemCreator>();
         _trackingLabelFactory = TrackingWidgetFactory.Instance;
-        maxAnimateDistance = AnimationSettings.Instance.MaxSystemAnimateDistance;
+        maxAnimateDistance = GraphicsSettings.Instance.MaxSystemAnimateDistance;
         _systemHighlightRenderer = __FindSystemHighlight();
     }
 
@@ -66,7 +66,7 @@ public class SystemGraphics : AGraphics, IDisposable {
     protected override void RegisterComponentsToDisable() {
         disableGameObjectOnNotDiscernible = new GameObject[1] { _systemHighlightRenderer.gameObject };
 
-        Component[] orbitalPlaneCollider = new Component[1] { gameObject.GetSafeMonoBehaviourComponentInChildren<OrbitalPlaneInputEventRouter>().collider };
+        Component[] orbitalPlaneCollider = new Component[1] { gameObject.GetSafeMonoBehaviourInChildren<OrbitalPlaneInputEventRouter>().collider };
         Renderer[] renderersWithoutVisibilityRelays = gameObject.GetComponentsInChildren<Renderer>()
             .Where<Renderer>(r => r.gameObject.GetComponent<CameraLOSChangedRelay>() == null).ToArray<Renderer>();
         if (disableComponentOnNotDiscernible.IsNullOrEmpty()) {
@@ -137,7 +137,7 @@ public class SystemGraphics : AGraphics, IDisposable {
 
     private GuiTrackingLabel InitializeTrackingLabel() {
         __SetTrackingLabelShowDistance();
-        Star star = gameObject.GetSafeMonoBehaviourComponentInChildren<Star>();
+        Star star = gameObject.GetSafeMonoBehaviourInChildren<Star>();
         Vector3 pivotOffset = new Vector3(Constants.ZeroF, star.transform.collider.bounds.extents.y, Constants.ZeroF);
         GuiTrackingLabel trackingLabel = _trackingLabelFactory.CreateGuiTrackingLabel(Target, pivotOffset, trackingLabelOffsetFromPivot);
         trackingLabel.IsShowing = true;

@@ -32,7 +32,6 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
 
     public MyAStarPointGraph Graph { get; private set; }
 
-    private IList<IDisposable> _subscribers;
     private AstarPath _astarPath;
     private GameManager _gameMgr;
 
@@ -44,8 +43,7 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
     }
 
     private void Subscribe() {
-        _subscribers = new List<IDisposable>();
-        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
+        _gameMgr.onGameStateChanged += OnGameStateChanged;
         AstarPath.OnLatePostScan += OnGraphScansCompleted;
         AstarPath.OnGraphsUpdated += OnGraphRuntimeUpdateCompleted;
     }
@@ -65,7 +63,7 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
     }
 
     private void OnGameStateChanged() {
-        if (GameManager.Instance.CurrentState == GameState.GeneratingPathGraphs) {
+        if (_gameMgr.CurrentState == GameState.GeneratingPathGraphs) {
             _gameMgr.RecordGameStateProgressionReadiness(this, GameState.GeneratingPathGraphs, isReady: false);
             AstarPath.active.Scan();
         }
@@ -95,8 +93,7 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
     }
 
     private void Unsubscribe() {
-        _subscribers.ForAll(d => d.Dispose());
-        _subscribers.Clear();
+        _gameMgr.onGameStateChanged -= OnGameStateChanged;
         AstarPath.OnLatePostScan -= OnGraphScansCompleted;
         AstarPath.OnGraphsUpdated -= OnGraphRuntimeUpdateCompleted;
     }

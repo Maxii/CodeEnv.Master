@@ -26,17 +26,6 @@ namespace CodeEnv.Master.Common {
     public static class D {
 
         /// <summary>
-        /// Sends the specified message to the Unity.Debug log with a ping connection
-        /// to the object that sent it.
-        /// </summary>
-        /// <param name="message">The message string.</param>
-        /// <param name="context">The object that sent the message.</param>
-        [System.Diagnostics.Conditional("DEBUG_LOG")]
-        public static void LogContext(string message, Object context) {
-            Debug.Log(message, context);
-        }
-
-        /// <summary>
         /// Sends the specified message to the Unity.Debug log.
         /// </summary>
         /// <remarks>Use this when including MyObject.ToString() which contains {} that string.Format() doesn't like.</remarks>
@@ -63,6 +52,44 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        /// If <c>condition</c> is <c>true</c>, sends the specified message object (typically a composite message string) 
+        /// to the Unity.Debug log.
+        /// </summary>
+        /// <param name="condition">if set to <c>true</c> [condition].</param>
+        /// <param name="format">The format.</param>
+        /// <param name="paramList">The paramaters to insert into the composite message string.</param>
+        [System.Diagnostics.Conditional("DEBUG_LOG")]
+        public static void Log(bool condition, object format, params object[] paramList) {
+            if (condition) {
+                Log(format, paramList);
+            }
+        }
+
+        /// <summary>
+        /// Sends the specified message to the Unity.Debug log with a ping connection
+        /// to the object that sent it.
+        /// </summary>
+        /// <param name="message">The message string.</param>
+        /// <param name="context">The object that sent the message.</param>
+        [System.Diagnostics.Conditional("DEBUG_LOG")]
+        public static void LogContext(string message, Object context) {
+            Debug.Log(message, context);
+        }
+
+        /// <summary>
+        /// If the condition is true, sends the specified msg to the Unity.Debug log.
+        /// </summary>
+        /// <param name="condition">if set to <c>true</c> [condition].</param>
+        /// <param name="msg">The message.</param>
+        /// <param name="context">The context.</param>
+        [System.Diagnostics.Conditional("DEBUG_LOG")]
+        public static void LogContext(bool condition, string msg, Object context) {
+            if (condition) {
+                Debug.Log(msg, context);
+            }
+        }
+
+        /// <summary>
         /// Sends the specified message to the Unity.Debug warning log with a ping connection
         /// to the object that sent it.
         /// </summary>
@@ -73,6 +100,19 @@ namespace CodeEnv.Master.Common {
             Debug.LogWarning(message, context);
         }
 
+        /// <summary>
+        /// If <c>condition</c> is <c>true</c>, sends the specified message to the Unity.Debug warning log 
+        /// with a ping connection to <c>context</c>.
+        /// </summary>
+        /// <param name="condition">if set to <c>true</c> [condition].</param>
+        /// <param name="message">The message string.</param>
+        /// <param name="context">The object that sent the message.</param>
+        [System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
+        public static void WarnContext(bool condition, string message, Object context) {
+            if (condition) {
+                Debug.LogWarning(message, context);
+            }
+        }
 
         /// <summary>
         /// Sends the specified message object (typically a composite message string) to the Unity.Debug
@@ -91,8 +131,23 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        /// If <c>condition</c> is <c>true</c>, sends the specified message object (typically a composite message string) 
+        /// to the Unity.Debug warning log.
+        /// </summary>
+        /// <param name="condition">if set to <c>true</c> [condition].</param>
+        /// <param name="format">The format.</param>
+        /// <param name="paramList">The paramaters to insert into the composite message string.</param>
+        [System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
+        public static void Warn(bool condition, object format, params object[] paramList) {
+            if (condition) {
+                Warn(format, paramList);
+            }
+        }
+
+
+        /// <summary>
         /// Sends the specified message to the Unity.Debug error log with a ping connection
-        /// to the object that sent it.
+        /// to <c>context</c>.
         /// </summary>
         /// <param name="message">The message string.</param>
         /// <param name="context">The object that sent the message.</param>

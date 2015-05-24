@@ -33,7 +33,7 @@ public class GuiPauseButton : AGuiButton {
     }
 
     private UILabel _pauseButtonLabel;
-    private IList<IDisposable> _subscribers;
+    private IList<IDisposable> _subscriptions;
 
     protected override void Awake() {
         base.Awake();
@@ -43,8 +43,8 @@ public class GuiPauseButton : AGuiButton {
     }
 
     private void Subscribe() {
-        _subscribers = new List<IDisposable>();
-        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, OnIsPausedChanged));
+        _subscriptions = new List<IDisposable>();
+        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, OnIsPausedChanged));
     }
 
     private void OnIsPausedChanged() {
@@ -66,8 +66,8 @@ public class GuiPauseButton : AGuiButton {
     }
 
     private void Unsubscribe() {
-        _subscribers.ForAll<IDisposable>(s => s.Dispose());
-        _subscribers.Clear();
+        _subscriptions.ForAll<IDisposable>(s => s.Dispose());
+        _subscriptions.Clear();
     }
 
     public override string ToString() {

@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -28,29 +28,50 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class Weapon : APropertyChangeTracking, IDisposable {
 
-        static private string _toStringFormat = "{0}: Name[{1}], Operational[{2}], Strength[{3:0.#}], Range[{4:0.#}], ReloadPeriod[{5:0.#}], Size[{6:0.#}], Power[{7:0.#}]";
+        //static private string _toStringFormat = "{0}: Name[{1}], Operational[{2}], Strength[{3:0.#}], Range[{4:0.#}], ReloadPeriod[{5:0.#}], Size[{6:0.#}], Power[{7:0.#}]";
 
         private static string _nameFormat = "{0}_Range({1:0.#})";
 
+        /// <summary>
+        /// Occurs when IsOperational changes.
+        /// </summary>
         public event Action<Weapon> onIsOperationalChanged;
 
-        public event Action<Weapon> onReadyToFireOnEnemyChanged;
+        /// <summary>
+        /// Occurs when IsReady changes.
+        /// </summary>
+        public event Action<Weapon> onReadinessChanged;
 
-        private bool _isReadyToFireOnEnemy;
-        public bool IsReadyToFireOnEnemy {
-            get { return _isReadyToFireOnEnemy; }
-            set { SetProperty<bool>(ref _isReadyToFireOnEnemy, value, "IsReadyToFireOnEnemy", OnIsReadyToFireOnEnemyChanged); }
+        /// <summary>
+        /// Occurs when a qualified enemy target enters this operational 
+        /// weapon's range. Only raised when the weapon IsOperational.
+        /// </summary>
+        public event Action<Weapon> onEnemyTargetEnteringRange;
+
+        private bool _isReady;
+        /// <summary>
+        /// Indicates whether this weapon is ready to fire. A weapon is ready when 
+        /// it is both operational and loaded. This property is not affected by whether 
+        /// there are any enemy targets within range.
+        /// </summary>
+        public bool IsReady {
+            get { return _isReady; }
+            private set { SetProperty<bool>(ref _isReady, value, "IsReady", OnIsReadyChanged); }
         }
 
-        private bool _isAnyEnemyInRange;
-        public bool IsAnyEnemyInRange {
-            get { return _isAnyEnemyInRange; }
-            set { SetProperty<bool>(ref _isAnyEnemyInRange, value, "IsAnyEnemyInRange", OnIsAnyEnemyInRangeChanged); }
-        }
+        /// <summary>
+        /// Indicates whether there are one or more qualified enemy targets within range.
+        /// </summary>
+        public bool IsEnemyInRange { get { return _qualifiedEnemyTargets.Any(); } }
 
         public IWeaponRangeMonitor RangeMonitor { get; set; }
 
         private bool _isOperational;
+        /// <summary>
+        /// Indicates whether this weapon is operational (undamaged). Being operational does
+        /// not mean it is ready to fire. Not being operational definitely means it is not ready to fire.
+        /// The IsReady property reflects both its operational state as well as whether it is loaded.
+        /// </summary>
         public bool IsOperational {
             get { return _isOperational; }
             set { SetProperty<bool>(ref _isOperational, value, "IsOperational", OnIsOperationalChanged); }
@@ -60,12 +81,16 @@ namespace CodeEnv.Master.GameContent {
 
         public string Name {
             get {
-                var owner = RangeMonitor != null ? RangeMonitor.ParentElement.Owner : TempGameValues.NoPlayer;
+                var owner = RangeMonitor != null ? RangeMonitor.Owner : TempGameValues.NoPlayer;
                 return _nameFormat.Inject(_stat.RootName, _stat.Range.GetWeaponRange(owner));
             }
         }
 
-        public int ReloadPeriod { get { return _stat.ReloadPeriod; } }
+        public ArmamentCategory Category { get { return _stat.Category; } }
+
+        public float Accuracy { get { return _stat.Accuracy; } }
+
+        public float ReloadPeriod { get { return _stat.ReloadPeriod; } }
 
         public CombatStrength Strength { get { return _stat.Strength; } }
 
@@ -73,6 +98,12 @@ namespace CodeEnv.Master.GameContent {
 
         public float PowerRequirement { get { return _stat.PowerRequirement; } }
 
+        /// <summary>
+        /// The list of enemy targets in range that qualify as targets of this weapon.
+        /// </summary>
+        private IList<IElementAttackableTarget> _qualifiedEnemyTargets;
+
+        private IList<IOrdnance> _activeFiredOrdnance;
         private bool _isLoaded;
         private WeaponStat _stat;
         private WaitJob _reloadJob;
@@ -83,37 +114,149 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="stat">The stat.</param>
         public Weapon(WeaponStat stat) {
             _stat = stat;
+            _qualifiedEnemyTargets = new List<IElementAttackableTarget>();
+            _activeFiredOrdnance = new List<IOrdnance>();
         }
 
         // Copy Constructor makes no sense when a RangeMonitor must be attached.
 
         /// <summary>
-        /// Fires on the specified enemy target. If the target is null, then attempts to fire on
-        /// an enemy target of opportunity. Returns <c>true </c> if an enemy target was fired on.
+        /// Called when this Weapon should first start operating. 
+        /// Note: Done this way rather than just set IsOperational = true so the Weapon can start loaded.
+        /// </summary>
+        public void CommenceOperations() {
+            _isLoaded = true;
+            IsOperational = true;
+        }
+
+        /****************************************************************************************
+                  * No need to worry about Owner changes as WeaponRangeMonitor tracks it and will 
+                  * remove/add enemyTargets via OnEnemyTargetInRangeChanged() when it happens
+                  * *************************************************************************************/
+
+        /// <summary>
+        /// Called by this weapon's RangeMonitor when an enemy target enters or exits
+        /// its range.
         /// </summary>
         /// <param name="enemyTarget">The enemy target.</param>
+        /// <param name="isInRange">if set to <c>true</c> [is in range].</param>
+        public void OnEnemyTargetInRangeChanged(IElementAttackableTarget enemyTarget, bool isInRange) {
+            D.Log("{0} received OnEnemyTargetInRangeChanged. EnemyTarget: {1}, InRange: {2}.", Name, enemyTarget.FullName, isInRange);
+            if (isInRange) {
+                if (CheckIfQualified(enemyTarget)) {
+                    D.Assert(!_qualifiedEnemyTargets.Contains(enemyTarget));
+                    _qualifiedEnemyTargets.Add(enemyTarget);
+                    if (IsOperational && onEnemyTargetEnteringRange != null) {
+                        onEnemyTargetEnteringRange(this);
+                    }
+                }
+            }
+            else {
+                if (_qualifiedEnemyTargets.Contains(enemyTarget)) {
+                    _qualifiedEnemyTargets.Remove(enemyTarget);
+                }
+            }
+        }
+
+        public void OnParentElementDeath() {
+            if (Category == ArmamentCategory.Beam) {
+                // we are about to die so turn off all active Beams
+                _activeFiredOrdnance.ForAll(ord => ord.Terminate());
+            }
+        }
+
+        /// <summary>
+        /// Called by WeaponRangeMonitor when an ownership change of either the
+        /// ParentElement or a tracked target requires a check to see if any active ordnance
+        /// is currently targeted on a non-enemy.
+        /// </summary>
+        public void CheckActiveOrdnanceTargeting() {
+            Player owner = RangeMonitor.Owner;
+            var ordnanceTargetingNonEnemies = _activeFiredOrdnance.Where(ord => !ord.Target.Owner.IsEnemyOf(owner));
+            if (ordnanceTargetingNonEnemies.Any()) {
+                ordnanceTargetingNonEnemies.ForAll(ord => ord.Terminate());
+            }
+        }
+
+        /// <summary>
+        /// Tries to pick the best (most advantageous) qualified target in range.
+        /// Returns <c>true</c> if a target was picked, <c>false</c> otherwise.
+        /// The hint provided is the initial choice for primary target as determined
+        /// by the Element. It is within sensor range (although not necessarily weapons
+        /// range) and is associated with the target indicated by Command that our
+        /// Element is to attack.
+        /// </summary>
+        /// <param name="hint">The hint.</param>
+        /// <param name="enemyTgt">The enemy target picked.</param>
         /// <returns></returns>
-        public bool FireOnEnemyTarget(IElementAttackableTarget enemyTarget) {
-            D.Assert(IsReadyToFireOnEnemy);
-            if (enemyTarget == null) {
-                return FireOnEnemyTargetOfOpportunity();
+        public bool TryPickBestTarget(IElementAttackableTarget hint, out IElementAttackableTarget enemyTgt) {
+            if (hint != null && _qualifiedEnemyTargets.Contains(hint)) {
+                enemyTgt = hint;
+                return true;
             }
+            return TryPickBestTarget(out enemyTgt);
+        }
 
-            if (!RangeMonitor.EnemyTargets.Contains(enemyTarget)) {
-                D.Warn("Target {0} is not present among tracked enemy targets: {1}{2}.",
-                    enemyTarget.FullName, Constants.NewLine, RangeMonitor.EnemyTargets.Select(et => et.FullName).Concatenate());
-                return false;
+        private bool TryPickBestTarget(out IElementAttackableTarget enemyTgt) {
+            if (_qualifiedEnemyTargets.Count > Constants.Zero) {
+                enemyTgt = _qualifiedEnemyTargets.First();
+                return true;
             }
+            enemyTgt = null;
+            return false;
+        }
 
-            D.Log("{0}.{1} is firing on enemy {2}.", RangeMonitor.ParentElement.FullName, Name, enemyTarget.FullName);
-            enemyTarget.TakeHit(Strength);
+        private bool CheckIfQualified(IElementAttackableTarget enemyTarget) {
+            return true;    // UNDONE
+        }
+
+        /// <summary>
+        /// Called when this weapon's firing process against <c>targetFiredOn</c> has begun.
+        /// </summary>
+        /// <param name="targetFiredOn">The target fired on.</param>
+        /// <param name="ordnanceFired">The ordnance fired.</param>
+        public void OnFiringInitiated(IElementAttackableTarget targetFiredOn, IOrdnance ordnanceFired) {
+            D.Assert(IsOperational, "{0} fired at {1} while not operational.".Inject(Name, targetFiredOn.FullName));
+            D.Assert(_qualifiedEnemyTargets.Contains(targetFiredOn));
+            D.Assert(ordnanceFired.Category == Category);
+
+            D.Log("{0}.OnFiringInitiated(Target: {1}, Ordnance: {2}) called.", Name, targetFiredOn.FullName, ordnanceFired.Name);
+            _activeFiredOrdnance.Add(ordnanceFired);
+            ordnanceFired.onDeathOneShot += OnOrdnanceDeath;
+
             _isLoaded = false;
-            AssessReadinessToFireOnEnemy();
-            UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
+            AssessReadiness();
+        }
+
+        /// <summary>
+        /// Called when this weapon's firing process against <c>targetFiredOn</c> is complete. Projectile
+        /// and Missile Weapons initiate and complete the firing process at the same time. Beam Weapons
+        /// don't complete the firing process until their Beam is terminated.
+        /// </summary>
+        /// <param name="targetFiredOn">The target fired on.</param>
+        public void OnFiringComplete(IOrdnance ordnanceFired) {
+            D.Assert(ordnanceFired.Category == Category);
+            D.Assert(_activeFiredOrdnance.Contains(ordnanceFired));
+            D.Assert(!_isLoaded);
+            D.Log("{0}.OnFiringComplete({1}) called.", Name, ordnanceFired.Name);
+
+            UnityUtility.WaitOneToExecute(onWaitFinished: () => {
                 // give time for _reloadJob to exit before starting another
                 InitiateReloadCycle();
             });
-            return true;
+        }
+
+        public void OnVisualDetailDiscernibleToUserChanged(bool isDetailVisible) {
+            if (_activeFiredOrdnance.Any()) {
+                _activeFiredOrdnance.ForAll(ord => ord.ToShowEffects = isDetailVisible);
+            }
+        }
+
+        private void OnOrdnanceDeath(IOrdnance ordnance) {
+            D.Log("{0}.OnOrdnanceDeath({1}) called.", Name, ordnance.Name);
+
+            D.Assert(_activeFiredOrdnance.Contains(ordnance));
+            _activeFiredOrdnance.Remove(ordnance);
         }
 
         private void OnIsOperationalChanged() {
@@ -129,26 +272,23 @@ namespace CodeEnv.Master.GameContent {
                     _reloadJob.Kill();
                 }
             }
-            AssessReadinessToFireOnEnemy();
+            AssessReadiness();
             if (onIsOperationalChanged != null) {
                 onIsOperationalChanged(this);
             }
         }
 
-        private void OnIsAnyEnemyInRangeChanged() {
-            AssessReadinessToFireOnEnemy();
-        }
-
-        private void OnIsReadyToFireOnEnemyChanged() {
-            if (onReadyToFireOnEnemyChanged != null) {
-                onReadyToFireOnEnemyChanged(this);
+        private void OnIsReadyChanged() {
+            if (onReadinessChanged != null) {
+                onReadinessChanged(this);
             }
         }
 
         private void InitiateReloadCycle() {
+            D.Log("{0} is initiating its reload cycle. Duration: {1} hours.", Name, ReloadPeriod);
             if (_reloadJob != null && _reloadJob.IsRunning) {
-                D.Warn("{0}.{1}.InitiateReloadCycle() called while already Running.", RangeMonitor.ParentElement.FullName, Name);  // UNCLEAR can this happen?
-                return;
+                // UNCLEAR can this happen?
+                D.Warn("{0}.{1}.InitiateReloadCycle() called while already Running.", RangeMonitor.FullName, Name);
             }
             _reloadJob = GameUtility.WaitForHours(ReloadPeriod, onWaitFinished: (jobWasKilled) => {
                 OnReloaded();
@@ -156,29 +296,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OnReloaded() {
-            //D.Log("{0}.{1} completed reload on {2}.", RangeMonitor.ParentElement.FullName, Name, GameTime.Instance.CurrentDate);
+            D.Log("{0}.{1} completed reload.", RangeMonitor.FullName, Name);
             _isLoaded = true;
-            AssessReadinessToFireOnEnemy();
+            AssessReadiness();
         }
 
-        private void AssessReadinessToFireOnEnemy() {
-            //D.Log("{0}.AssessReadinessToFireOnEnemy() called. IsAnyEnemyInRange = {1}, _isLoaded = {2}, IsOperational = {3}.", Name, IsAnyEnemyInRange, _isLoaded, IsOperational);
-            IsReadyToFireOnEnemy = IsAnyEnemyInRange && _isLoaded && IsOperational;
-        }
-
-        /// <summary>
-        /// Fires on any enemy target in range, returning <c>true</c> if 
-        /// an enemy target was fired on.
-        /// </summary>
-        /// <returns></returns>
-        private bool FireOnEnemyTargetOfOpportunity() {
-            IElementAttackableTarget enemyTarget;
-            if (RangeMonitor.TryGetRandomEnemyTarget(out enemyTarget)) {
-                FireOnEnemyTarget(enemyTarget);
-                return true;
-            }
-            D.Warn("{0}.{1} has no enemy target of opportunity to fire on.", RangeMonitor.ParentElement.FullName, Name);
-            return false;
+        private void AssessReadiness() {
+            IsReady = IsOperational && _isLoaded;
         }
 
         private void Cleanup() {
@@ -189,7 +313,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            return _toStringFormat.Inject(GetType().Name, Name, IsOperational, Strength.Combined, Range.GetName(), ReloadPeriod, PhysicalSize, PowerRequirement);
+            return _stat.ToString();
+            //return _toStringFormat.Inject(GetType().Name, Name, IsOperational, Strength.Combined, Range.GetName(), ReloadPeriod, PhysicalSize, PowerRequirement);
         }
 
         #region IDisposable

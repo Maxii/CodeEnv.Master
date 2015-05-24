@@ -72,7 +72,7 @@ namespace CodeEnv.Master.GameContent {
                 _subscribers = new List<IDisposable>();
             }
             _subscribers.Add(_gameStatus.SubscribeToPropertyChanged<GameStatus, bool>(gs => gs.IsPaused, OnIsPausedChanged));
-            _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
+            _subscribers.Add(_gameTime.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
         }
 
         private void OnGameSpeedChanged() {
@@ -97,7 +97,7 @@ namespace CodeEnv.Master.GameContent {
         /// The reported speed and directional heading of the fleet is not affected.
         /// </summary>
         /// <param name="gameSpeed">The game speed.</param>
-        private void AdjustForGameSpeed(GameClockSpeed gameSpeed) {
+        private void AdjustForGameSpeed(GameSpeed gameSpeed) {
             float previousGameSpeedMultiplier = _gameSpeedMultiplier;   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
             _gameSpeedMultiplier = gameSpeed.SpeedMultiplier();
             float gameSpeedChangeRatio = _gameSpeedMultiplier / previousGameSpeedMultiplier;
@@ -149,7 +149,7 @@ namespace CodeEnv.Master.GameContent {
             while (!IsTurnComplete()) {
                 int framesSinceLastPass = Time.frameCount - previousFrameCount;
                 previousFrameCount = Time.frameCount;
-                float allowedTurn = maxTurnRatePerSecond * GameTime.DeltaTimeOrPausedWithGameSpeed * framesSinceLastPass;
+                float allowedTurn = maxTurnRatePerSecond * GameTime.GameSpeedAdjustedDeltaTimeOrPaused * framesSinceLastPass;
                 Vector3 newHeading = Vector3.RotateTowards(_data.CurrentHeading, _data.RequestedHeading, allowedTurn, Constants.ZeroF);
                 _transform.rotation = Quaternion.LookRotation(newHeading);
                 yield return new WaitForSeconds(0.5F);

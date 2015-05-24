@@ -19,7 +19,7 @@
       <PropertyValue>false</PropertyValue>
     </Setting>
     <Setting>
-      <PropertyName>MakePlayerInvincible</PropertyName>
+      <PropertyName>AllPlayersInvulnerable</PropertyName>
       <PropertyValue>false</PropertyValue>
     </Setting>
     <Setting>
@@ -40,15 +40,19 @@
     </Setting>
     <Setting>
       <PropertyName>EnableShipVelocityRays</PropertyName>
-      <PropertyValue>true</PropertyValue>
+      <PropertyValue>false</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>EnableFleetVelocityRays</PropertyName>
       <PropertyValue>true</PropertyValue>
     </Setting>
     <Setting>
-      <PropertyName>StopShipMovement</PropertyName>
+      <PropertyName>EnableFleetCourseDisplay</PropertyName>
       <PropertyValue>false</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>EnableShipCourseDisplay</PropertyName>
+      <PropertyValue>true</PropertyValue>
     </Setting>
     <Setting>
       <PropertyName>AllowEnemyOrders</PropertyName>
@@ -76,3 +80,10 @@
   </Float>
 </Values>
 <!-- Elements are only empty if they are in the format <ElementName/> -->
+
+<!--
+    <Setting>
+      <PropertyName>StopShipMovement</PropertyName>
+      <PropertyValue>false</PropertyValue>
+    </Setting>
+-->

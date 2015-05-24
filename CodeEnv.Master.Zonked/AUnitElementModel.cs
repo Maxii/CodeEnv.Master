@@ -63,7 +63,7 @@ public abstract class AUnitElementModel : ACombatItemModel, IElementModel, IElem
 
     protected override void Subscribe() {
         base.Subscribe();
-        _subscribers.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
+        _subscribers.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
     }
 
     protected override void Initialize() {

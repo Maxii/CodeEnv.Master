@@ -16,9 +16,11 @@
 
 // default namespace
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
@@ -32,7 +34,11 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory
     // all starting units are now built and initialized during GameState.PrepareUnitsForOperations
 
     protected override FacilityStat CreateElementStat(FacilityCategory category, string elementName) {
-        return new FacilityStat(elementName, 10000F, 50F, category);
+        float science = category == FacilityCategory.Laboratory ? 10F : Constants.ZeroF;
+        float culture = category == FacilityCategory.CentralHub || category == FacilityCategory.Colonizer ? 2.5F : Constants.ZeroF;
+        float income = __GetIncome(category);
+        float expense = __GetExpense(category);
+        return new FacilityStat(elementName, 10000F, 50F, category, science, culture, income, expense);
     }
 
     protected override FacilityItem MakeElement(FacilityStat stat, IEnumerable<WeaponStat> wStats, IEnumerable<CountermeasureStat> cmStats, IEnumerable<SensorStat> sensorStats) {
@@ -52,7 +58,10 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory
     }
 
     protected override FacilityCategory[] ElementCategories {
-        get { return new FacilityCategory[] { FacilityCategory.Construction, FacilityCategory.Defense, FacilityCategory.Economic, FacilityCategory.Science }; }
+        get {
+            return new FacilityCategory[] { FacilityCategory.Factory, FacilityCategory.Defense, 
+            FacilityCategory.Economic, FacilityCategory.Laboratory, FacilityCategory.Barracks, FacilityCategory.Colonizer };
+        }
     }
 
     protected override FacilityCategory[] HQElementCategories {
@@ -66,14 +75,14 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory
 
         SettlementCmdItem cmd;
         if (isCompositionPreset) {
-            cmd = gameObject.GetSafeMonoBehaviourComponentInChildren<SettlementCmdItem>();
+            cmd = gameObject.GetSafeMonoBehaviourInChildren<SettlementCmdItem>();
             _factory.PopulateInstance(cmdStat, countermeasures, owner, ref cmd);
         }
         else {
             cmd = _factory.MakeInstance(cmdStat, countermeasures, owner);
             UnityUtility.AttachChildToParent(cmd.gameObject, gameObject);
         }
-        cmd.__OrbiterMoves = orbitMoves;
+        cmd.__OrbitSimulatorMoves = orbitMoves;
         cmd.IsTrackingLabelEnabled = enableTrackingLabel;
         return cmd;
     }
@@ -99,6 +108,40 @@ public class SettlementUnitCreator : AUnitCreator<FacilityItem, FacilityCategory
 
     protected override void __IssueFirstUnitCommand() {
         LogEvent();
+    }
+
+    private float __GetIncome(FacilityCategory category) {
+        switch (category) {
+            case FacilityCategory.CentralHub:
+                return 20F;
+            case FacilityCategory.Economic:
+                return 100F;
+            case FacilityCategory.Barracks:
+            case FacilityCategory.Colonizer:
+            case FacilityCategory.Defense:
+            case FacilityCategory.Factory:
+            case FacilityCategory.Laboratory:
+                return Constants.ZeroF;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));
+        }
+    }
+
+    private float __GetExpense(FacilityCategory category) {
+        switch (category) {
+            case FacilityCategory.CentralHub:
+            case FacilityCategory.Economic:
+                return Constants.ZeroF;
+            case FacilityCategory.Barracks:
+            case FacilityCategory.Colonizer:
+                return 5F;
+            case FacilityCategory.Defense:
+            case FacilityCategory.Factory:
+            case FacilityCategory.Laboratory:
+                return 10F;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));
+        }
     }
 
     public override string ToString() {

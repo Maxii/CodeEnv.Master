@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: StarPublisher.cs
-// Report and LabelText Publisher for Stars.
+// Report and HudContent Publisher for Stars.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,18 +19,20 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Report and LabelText Publisher for Stars.
+    /// Report and HudContent Publisher for Stars.
     /// </summary>
     public class StarPublisher : AIntelItemPublisher<StarReport, StarData> {
 
-        static StarPublisher() {
-            LabelTextFactory = new StarLabelTextFactory();
+        public override ColoredStringBuilder HudContent {
+            get { return StarDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        public StarPublisher(StarData data) : base(data) { }
+        private IStarItem _item;
+
+        public StarPublisher(StarData data, IStarItem item) : base(data) { _item = item; }
 
         protected override StarReport GenerateReport(Player player) {
-            return new StarReport(_data, player);
+            return new StarReport(_data, player, _item);
         }
 
         public override string ToString() {

@@ -34,15 +34,18 @@ namespace CodeEnv.Master.Common {
             return Enum.GetName(enumType, sourceEnumConstant);    // OPTIMIZE better performance than sourceEnumConstant.ToString()?
         }
 
-        /// <summary>Gets the alternative description from the EnumAttribute if present. If not, the name is returned.</summary>
+        /// <summary>
+        /// Gets the alternative text from the EnumAttribute if present. If not, the name is returned.
+        /// Commonly used to get a short abbreviation for the enum name, e.g. "O" for Organics, "CV" for Carrier.
+        /// </summary>
         /// <param friendlyDescription="sourceEnumConstant">The named enum constant.</param>
-        /// <returns>An alternative description as a string or toString() if no <see cref="EnumAttribute"/> is present.</returns>
-        public static string GetDescription(this Enum sourceEnumConstant) {
+        /// <returns>Alternative text for the enum value if the <see cref="EnumAttribute"/> is present.</returns>
+        public static string GetEnumAttributeText(this Enum sourceEnumConstant) {
             EnumAttribute attribute = GetAttribute(sourceEnumConstant);
             if (attribute == null) {
                 return GetName(sourceEnumConstant);
             }
-            return attribute.Description;
+            return attribute.AttributeText;
         }
 
         /// <summary>
@@ -57,7 +60,7 @@ namespace CodeEnv.Master.Common {
             Array enumValues = Enum.GetValues(sourceEnumType);
 
             foreach (Enum value in enumValues) {
-                list.Add(new KeyValuePair<Enum, string>(value, GetDescription(value)));
+                list.Add(new KeyValuePair<Enum, string>(value, GetEnumAttributeText(value)));
             }
             return list;
         }

@@ -24,22 +24,20 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// Initializes Data for all items in the universe.
 /// </summary>
-public class __UniverseInitializer : AMonoBase {
+public class __UniverseInitializer : AMonoSingleton<__UniverseInitializer> {
 
-    private UniverseCenterItem _universeCenter;
+    public UniverseCenterItem UniverseCenter { get; private set; }
 
     private GameManager _gameMgr;
-    private IList<IDisposable> _subscribers;
 
-    protected override void Awake() {
-        base.Awake();
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
         _gameMgr = GameManager.Instance;
         Subscribe();
     }
 
     private void Subscribe() {
-        _subscribers = new List<IDisposable>();
-        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
+        _gameMgr.onGameStateChanged += OnGameStateChanged;
     }
 
     private void OnGameStateChanged() {
@@ -56,11 +54,11 @@ public class __UniverseInitializer : AMonoBase {
     }
 
     private void InitializeUniverseCenter() {
-        _universeCenter = gameObject.GetSafeMonoBehaviourComponentInChildren<UniverseCenterItem>();
-        if (_universeCenter != null) {
-            UniverseCenterData data = new UniverseCenterData(_universeCenter.Transform, "UniverseCenter", 100000000F);
-            _universeCenter.Data = data;
-            _universeCenter.enabled = true;
+        UniverseCenter = gameObject.GetSafeMonoBehaviourInChildren<UniverseCenterItem>();
+        if (UniverseCenter != null) {
+            UniverseCenterData data = new UniverseCenterData(UniverseCenter.Transform, "UniverseCenter");
+            UniverseCenter.Data = data;
+            UniverseCenter.enabled = true;
         }
         UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
             _gameMgr.RecordGameStateProgressionReadiness(this, GameState.BuildAndDeploySystems, isReady: true);
@@ -68,14 +66,14 @@ public class __UniverseInitializer : AMonoBase {
     }
 
     private void EnableOtherWhenRunning() {
-        if (_universeCenter != null) {
+        if (UniverseCenter != null) {
             // CameraLosChangedListener is enabled in Item.InitializeViewMembersOnDiscernible
         }
     }
 
     private void BeginOperations() {
-        if (_universeCenter != null) {
-            _universeCenter.CommenceOperations();
+        if (UniverseCenter != null) {
+            UniverseCenter.CommenceOperations();
         }
     }
 
@@ -84,8 +82,7 @@ public class __UniverseInitializer : AMonoBase {
     }
 
     private void Unsubscribe() {
-        _subscribers.ForAll<IDisposable>(s => s.Dispose());
-        _subscribers.Clear();
+        _gameMgr.onGameStateChanged -= OnGameStateChanged;
     }
 
     public override string ToString() {

@@ -47,7 +47,7 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
     }
 
     protected override void InitializeVisualMembers() {
-        _cmdIcon = TrackingWidgetFactory.Instance.CreateResponsiveTrackingSprite(this);
+        _cmdIcon = TrackingWidgetFactory.Instance.MakeResponsiveTrackingSprite(this);
         // CmdIcon enabled state controlled by CmdIcon.Show()
 
         var cmdIconEventListener = _cmdIcon.EventListener;
@@ -145,7 +145,7 @@ public abstract class AUnitCommandView : AMortalItemView, ICommandViewable, ISel
         if (__normalIntelCoverage == IntelCoverage.None) {
             __normalIntelCoverage = PlayerIntel.CurrentCoverage;
         }
-        PlayerIntel.CurrentCoverage = PlayerIntel.CurrentCoverage == __normalIntelCoverage ? IntelCoverage.Aware : __normalIntelCoverage;
+        PlayerIntel.CurrentCoverage = PlayerIntel.CurrentCoverage == __normalIntelCoverage ? IntelCoverage.Basic : __normalIntelCoverage;
     }
 
     #endregion

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FacilityPublisher.cs
-// Report and LabelText Publisher for Facilities.
+// Report and HudContent Publisher for Facilities.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,18 +19,23 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Report and LabelText Publisher for Facilities.
+    /// Report and HudContent Publisher for Facilities.
     /// </summary>
     public class FacilityPublisher : AIntelItemPublisher<FacilityReport, FacilityData> {
 
-        static FacilityPublisher() {
-            LabelTextFactory = new FacilityLabelTextFactory();
+        public override ColoredStringBuilder HudContent {
+            get { return FacilityDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        public FacilityPublisher(FacilityData data) : base(data) { }
+        private IFacilityItem _item;
+
+        public FacilityPublisher(FacilityData data, IFacilityItem item)
+            : base(data) {
+            _item = item;
+        }
 
         protected override FacilityReport GenerateReport(Player player) {
-            return new FacilityReport(_data, player);
+            return new FacilityReport(_data, player, _item);
         }
 
         public override string ToString() {

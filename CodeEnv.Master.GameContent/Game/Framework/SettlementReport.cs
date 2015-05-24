@@ -30,34 +30,41 @@ namespace CodeEnv.Master.GameContent {
 
         public int? Population { get; private set; }
 
-        public float? CapacityUsed { get; private set; }
+        public int? Capacity { get; private set; }
 
-        public OpeYield? ResourcesUsed { get; private set; }
+        public ResourceYield? Resources { get; private set; }
 
-        public XYield? SpecialResourcesUsed { get; private set; }
+        public float? Approval { get; private set; }
 
-        public SettlementReport(SettlementCmdData cmdData, Player player, FacilityReport[] facilityReports)
-            : base(cmdData, player, facilityReports) { }
+        public FacilityReport[] ElementReports { get; private set; }
 
-        protected override void AssignValuesFrom(AElementItemReport[] elementReports, AUnitCmdItemData cmdData) {
-            base.AssignValuesFrom(elementReports, cmdData);
-            var knownElementCategories = elementReports.Cast<FacilityReport>().Select(r => r.Category).Where(cat => cat != FacilityCategory.None);
-            UnitComposition = new BaseComposition(knownElementCategories);
-            Category = UnitComposition != null ? (cmdData as SettlementCmdData).GenerateCmdCategory(UnitComposition) : SettlementCategory.None;
+        public SettlementReport(SettlementCmdData cmdData, Player player, ISettlementCmdItem item)
+            : base(cmdData, player, item) {
+            ElementReports = item.GetElementReports(player);
+            AssignValuesFromElementReports(cmdData);
+        }
+
+        private void AssignValuesFromElementReports(SettlementCmdData cmdData) {
+            var knownElementCategories = ElementReports.Select(r => r.Category).Where(cat => cat != default(FacilityCategory));
+            if (knownElementCategories.Any()) { // Player will always know about the HQElement (since knows Cmd) but Category may not yet be revealed
+                UnitComposition = new BaseComposition(knownElementCategories);
+            }
+            Category = UnitComposition != null ? cmdData.GenerateCmdCategory(UnitComposition) : SettlementCategory.None;
+            AssignValuesFrom(ElementReports);
         }
 
         protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageComprehensive(data);
             var sData = data as SettlementCmdData;
-            CapacityUsed = sData.CapacityUsed;
-            ResourcesUsed = sData.ResourcesUsed;
-            SpecialResourcesUsed = sData.SpecialResourcesUsed;
+            Capacity = sData.Capacity;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
-            base.AssignIncrementalValues_IntelCoverageModerate(data);
+        protected override void AssignIncrementalValues_IntelCoverageBroad(AItemData data) {
+            base.AssignIncrementalValues_IntelCoverageBroad(data);
             var sData = data as SettlementCmdData;
             Population = sData.Population;
+            Resources = sData.Resources;
+            Approval = sData.Approval;
         }
 
         public override string ToString() {

@@ -67,9 +67,9 @@ public class GuiPrefabLinker : AMonoBase {
         prefabClone.name = linkedPrefab.name;
 
         // some linkedPrefabs are headed by an empty gameObject containing multiple UIPanel fwdBackWindow children (eg. main menu and submenus)
-        var uiPanels = prefabClone.GetSafeMonoBehaviourComponentsInChildren<UIPanel>();
+        var uiPanels = prefabClone.GetSafeMonoBehavioursInChildren<UIPanel>();
         var uiPanelCount = uiPanels.Length;
-        UIPanel topLevelUIPanel = prefabClone.GetSafeMonoBehaviourComponentInChildren<UIPanel>();
+        UIPanel topLevelUIPanel = prefabClone.GetSafeMonoBehaviourInChildren<UIPanel>();
         if (uiPanelCount > 1) {
             // D.Log("{0} contains {1} UIPanels: {2}. \nUsing {3}.", prefabClone.name, uiPanelCount, uiPanels.Concatenate(), topLevelUIPanel.name);
             // GetComponentInChildren() should return the first UIPanel which should be the same as GetComponentsInChildren()[0] when there are other submenus
@@ -86,12 +86,12 @@ public class GuiPrefabLinker : AMonoBase {
         uiPanels.ForAll(p => NGUITools.SetActive(p.gameObject, false));
 
         // get all instances of NguiButtonPlayAnimation on this button in case the button has more than 1 NguiButtonPlayAnimation
-        UIPlayAnimation[] animationsOnTopLevelLaunchButton = topLevelLaunchButton.gameObject.GetSafeMonoBehaviourComponents<UIPlayAnimation>();
+        UIPlayAnimation[] animationsOnTopLevelLaunchButton = topLevelLaunchButton.gameObject.GetSafeMonoBehaviours<UIPlayAnimation>();
         UIPlayAnimation animationOnTopLevelLaunchButtonWithNoAssignedTarget = animationsOnTopLevelLaunchButton.Single<UIPlayAnimation>(c => c.target == null);
         animationOnTopLevelLaunchButtonWithNoAssignedTarget.target = topLevelWindowAnimation;
         // if there are any submenus in this linkedPrefab, they are already wired to the buttons in the topLevelMenu that launch them as prefabs can retain internal linkages
 
-        var launchButton = animationOnTopLevelLaunchButtonWithNoAssignedTarget.gameObject.GetSafeMonoBehaviourComponent<GuiVisibilityModeControlButton>();
+        var launchButton = animationOnTopLevelLaunchButtonWithNoAssignedTarget.gameObject.GetSafeMonoBehaviour<GuiVisibilityModeControlButton>();
         if (!Utility.CheckForContent<UIPanel>(launchButton.exceptions)) {
             launchButton.exceptions = new List<UIPanel>(1);
         }

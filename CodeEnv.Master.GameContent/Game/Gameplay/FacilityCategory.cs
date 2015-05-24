@@ -28,17 +28,23 @@ namespace CodeEnv.Master.GameContent {
         [EnumAttribute("CH")]
         CentralHub,
 
-        [EnumAttribute("C")]
-        Construction,
+        [EnumAttribute("F")]
+        Factory,
 
         [EnumAttribute("E")]
         Economic,
 
-        [EnumAttribute("S")]
-        Science,
+        [EnumAttribute("L")]
+        Laboratory,
 
         [EnumAttribute("D")]
-        Defense
+        Defense,
+
+        [EnumAttribute("B")]
+        Barracks,
+
+        [EnumAttribute("C")]
+        Colonizer
 
     }
 }

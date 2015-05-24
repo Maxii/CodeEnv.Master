@@ -59,9 +59,22 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     /// </summary>
     public event Action onSceneLoaded;
 
+    /// <summary>
+    /// Occurs when GameState is about to change. The parameter is
+    /// the GameState the game is about to change too.
+    /// </summary>
+    public event Action<GameState> onGameStateChanging;
+
+    /// <summary>
+    /// Occurs when the GameState has just changed. 
+    /// </summary>
+    public event Action onGameStateChanged;
+
     public event Action onNewGameBuilding;
 
     public GameSettings GameSettings { get; private set; }
+
+    public bool IsSceneLoading { get; private set; }
 
     private bool _isPaused;
     public bool IsPaused {
@@ -69,11 +82,13 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         set { SetProperty<bool>(ref _isPaused, value, "IsPaused"); }
     }
 
-    public Player HumanPlayer { get; private set; }
+    public IList<Player> AllPlayers { get; private set; }
 
-    public IList<Player> AIPlayers { get; private set; }
+    public Player UserPlayer { get { return AllPlayers.Single(p => p.IsUser); } }
 
-    public SceneLevel CurrentScene { get; private set; }
+    public IList<Player> AIPlayers { get { return AllPlayers.Where(p => !p.IsUser).ToList(); } }
+
+    public SceneLevel CurrentScene { get { return (SceneLevel)Application.loadedLevel; } }
 
     private bool _isRunning;
     /// <summary>
@@ -96,15 +111,29 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         }
     }
 
+    /// <summary>
+    /// The current GameState. 
+    /// WARNING: Donot subscribe to this. 
+    /// Use the events as I can find out who has subscribed to them.
+    /// </summary>
+    public override GameState CurrentState {
+        get { return base.CurrentState; }
+        protected set { base.CurrentState = value; }
+    }
+
     protected override bool IsPersistentAcrossScenes { get { return true; } }
 
+    private IDictionary<Player, PlayerKnowledge> _playerKnowledgeLookup;
     private IDictionary<GameState, IList<MonoBehaviour>> _gameStateProgressionReadinessLookup;
     private GameTime _gameTime;
     private PlayerPrefsManager _playerPrefsMgr;
 
+    #region Initialization
+
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
-        InitializeStaticReference();
+        References.GameManager = Instance;
+        RefreshStaticReferences();
     }
 
     protected override void InitializeOnAwake() {
@@ -128,15 +157,25 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     #endregion
 
-    private void InitializeStaticReference() {
-        References.GameManager = Instance;
-
-        // force initialization so they populate References
+    private void RefreshStaticReferences() {
+        // MonoBehaviour Singletons set their References field themselves
 #pragma warning disable 0168
-        var dummy1 = GameInputHelper.Instance;
-        var dummy2 = GeneralFactory.Instance;
-        var dummy3 = InputManager.Instance;
+        // HACK this sets the References field as it gets called first
+        var dummy1 = InputManager.Instance;
+        var dummy2 = SFXManager.Instance;
 #pragma warning restore 0168
+
+        // Non-persistent (by definition) Generic Singletons need to be newly instantiated to refresh their References field
+        if (References.InputHelper != null) { (References.InputHelper as IDisposable).Dispose(); }
+        if (References.GeneralFactory != null) { (References.GeneralFactory as IDisposable).Dispose(); }
+        if (References.TrackingWidgetFactory != null) { (References.TrackingWidgetFactory as IDisposable).Dispose(); }
+
+        References.InputHelper = GameInputHelper.Instance;
+        if (CurrentScene == SceneLevel.GameScene) {
+            // not used in LobbyScene
+            References.GeneralFactory = GeneralFactory.Instance;
+            References.TrackingWidgetFactory = TrackingWidgetFactory.Instance;
+        }
     }
 
     private void InitializeValuesAndReferences() {
@@ -144,8 +183,10 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         _gameTime = GameTime.Instance;
         UpdateRate = FrameUpdateFrequency.Infrequent;
         _pauseState = PauseState.NotPaused; // initializes value without initiating change event
-        CurrentScene = (SceneLevel)Application.loadedLevel;
+        _playerKnowledgeLookup = new Dictionary<Player, PlayerKnowledge>();
     }
+
+    #endregion
 
     protected override void Start() {
         base.Start();
@@ -183,10 +224,13 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
             aiPlayerRaces[i] = new Race(aiSpecies, aiColor);
         }
 
+        var userRaceStat = new RaceStat(_playerPrefsMgr.UserPlayerSpeciesSelection.Convert(), "Maxii",
+            TempGameValues.AnImageFilename, "Maxii description", _playerPrefsMgr.UserPlayerColor);
+
         var gameSettings = new GameSettings {
             IsStartupSimulation = true,
             UniverseSize = universeSize,
-            HumanPlayerRace = new Race(new RaceStat(_playerPrefsMgr.PlayerSpeciesSelection.Convert(), "Maxii", "Maxii description", _playerPrefsMgr.PlayerColor)),
+            UserPlayerRace = new Race(userRaceStat),
             AIPlayerRaces = aiPlayerRaces
         };
         return gameSettings;
@@ -276,13 +320,15 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     #endregion
 
-    private void CreatePlayers(GameSettings settings) {
-        HumanPlayer = new Player(settings.HumanPlayerRace, IQ.None, isPlayer: true);
-        D.Assert(HumanPlayer.Color != GameColor.None && HumanPlayer.Color != GameColor.Clear);
+    #region Players
 
+    private void CreatePlayers(GameSettings settings) {
         var aiPlayerRaces = settings.AIPlayerRaces;
         int aiPlayerCount = aiPlayerRaces.Length;
-        AIPlayers = new List<Player>(aiPlayerCount);
+
+        AllPlayers = new List<Player>(aiPlayerCount + 1);
+        var userPlayer = new Player(settings.UserPlayerRace, IQ.None, isUser: true);
+        AddPlayer(userPlayer);
 
         for (int i = 0; i < aiPlayerCount; i++) {
             var aiRace = aiPlayerRaces[i];
@@ -292,36 +338,69 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
                 switch (i) {
                     case 0:
                         // makes sure there will always be an AIPlayer with DiploRelation.None
-                        aiPlayer.SetRelations(HumanPlayer, DiplomaticRelationship.None);
+                        aiPlayer.SetRelations(userPlayer, DiplomaticRelationship.None);
                         break;
                     case 1:
-                        aiPlayer.SetRelations(HumanPlayer, DiplomaticRelationship.War);
+                        aiPlayer.SetRelations(userPlayer, DiplomaticRelationship.War);
                         break;
                     case 2:
-                        aiPlayer.SetRelations(HumanPlayer, DiplomaticRelationship.ColdWar);
+                        aiPlayer.SetRelations(userPlayer, DiplomaticRelationship.ColdWar);
                         break;
                     case 3:
-                        aiPlayer.SetRelations(HumanPlayer, DiplomaticRelationship.Ally);
+                        aiPlayer.SetRelations(userPlayer, DiplomaticRelationship.Ally);
                         break;
                     case 4:
-                        aiPlayer.SetRelations(HumanPlayer, DiplomaticRelationship.Friend);
+                        aiPlayer.SetRelations(userPlayer, DiplomaticRelationship.Friend);
                         break;
                     case 5:
-                        aiPlayer.SetRelations(HumanPlayer, DiplomaticRelationship.Neutral);
+                        aiPlayer.SetRelations(userPlayer, DiplomaticRelationship.Neutral);
                         break;
                     case 6:
-                        aiPlayer.SetRelations(HumanPlayer, DiplomaticRelationship.War);
+                        aiPlayer.SetRelations(userPlayer, DiplomaticRelationship.War);
                         break;
                     default:
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(i));
                 }
-                HumanPlayer.SetRelations(aiPlayer, aiPlayer.GetRelations(HumanPlayer));
+                userPlayer.SetRelations(aiPlayer, aiPlayer.GetRelations(userPlayer));
             }
-            D.Log("AI Player {0} created. Human relationship = {1}.", aiPlayer.LeaderName, aiPlayer.GetRelations(HumanPlayer).GetName());
-            D.Assert(aiPlayer.Color != GameColor.None && aiPlayer.Color != GameColor.Clear);
-            AIPlayers.Add(aiPlayer);
+            D.Log("AI Player {0} created. User relationship = {1}.", aiPlayer.LeaderName, aiPlayer.GetRelations(userPlayer).GetName());
+            AddPlayer(aiPlayer);
         }
     }
+
+    private void AddPlayer(Player player) {
+        D.Assert(player.Color != GameColor.None && player.Color != GameColor.Clear);
+        AllPlayers.Add(player);
+        _playerKnowledgeLookup.Add(player, new PlayerKnowledge(player));
+    }
+
+    public PlayerKnowledge GetPlayerKnowledge(Player player) {
+        return _playerKnowledgeLookup[player];
+    }
+
+    public PlayerKnowledge GetUserPlayerKnowledge() {
+        return GetPlayerKnowledge(UserPlayer);
+    }
+
+    /// <summary>
+    /// Populates each player's knowledge base with the knowledge
+    /// known to all players when the game begins.
+    /// </summary>
+    private void PopulatePlayersKnowledgeBase() {
+        var allStars = SystemCreator.AllStars;
+        var universeCenter = __UniverseInitializer.Instance.UniverseCenter;
+        AllPlayers.ForAll(player => {
+            var playerKnowledge = GetPlayerKnowledge(player);
+            allStars.ForAll(star => {
+                playerKnowledge.AddStar(star);
+            });
+            if (universeCenter != null) {   // allows UniverseCenter to be deactivated
+                playerKnowledge.AddUniverseCenter(universeCenter);
+            }
+        });
+    }
+
+    #endregion
 
     /// <summary>
     /// This substitutes my own Event for OnLevelWasLoaded so I don't have to use OnLevelWasLoaded anywhere else
@@ -332,7 +411,9 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     /// <param name="level">The scene level.</param>
     void OnLevelWasLoaded(int level) {
         if (_isExtraCopy) { return; }
+        D.Assert(CurrentScene == (SceneLevel)level);
         //D.Log("{0}_{1}.OnLevelWasLoaded({2}) received. Current State = {3}.", this.name, InstanceCount, ((SceneLevel)level).GetName(), CurrentState.GetName());
+        RefreshStaticReferences();
         RelayToCurrentState(level);
     }
 
@@ -340,9 +421,26 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         D.Log("{0}.IsRunning changed to {1}.", GetType().Name, IsRunning);
         if (IsRunning) {
             if (onIsRunningOneShot != null) {
+                //var targetNames = onIsRunningOneShot.GetInvocationList().Select(d => d.Target.GetType().Name);
+                //D.Log("{0} is sending onIsRunning event to {1}.", GetType().Name, targetNames.Concatenate());
                 onIsRunningOneShot();
                 onIsRunningOneShot = null;
             }
+        }
+    }
+
+    private void OnSceneLoading() {
+        IsSceneLoading = true;
+        if (onSceneLoading != null) {
+            onSceneLoading(SceneLevel.GameScene);
+        }
+    }
+
+    private void OnSceneLoaded() {
+        IsSceneLoading = false;
+        if (onSceneLoaded != null) {
+            //D.Log("{0}.onSceneLoaded event dispatched.", GetType().Name);
+            onSceneLoaded();
         }
     }
 
@@ -420,6 +518,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         if (IsPaused) {
             RequestPauseStateChange(toPause: false, toOverride: true);
         }
+        _playerKnowledgeLookup.Values.ForAll(pk => pk.Dispose());
+        _playerKnowledgeLookup.Clear();
     }
 
     #region Pausing System
@@ -457,6 +557,24 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     #endregion
 
     #region GameState System
+
+    protected override void OnCurrentStateChanging(GameState incomingState) {
+        base.OnCurrentStateChanging(incomingState);
+        if (onGameStateChanging != null) {
+            //var targetNames = onGameStateChanging.GetInvocationList().Select(d => d.Target.GetType().Name);
+            //D.Log("{0} is sending onGameStateChanging event to {1}.", GetType().Name, targetNames.Concatenate());
+            onGameStateChanging(incomingState);
+        }
+    }
+
+    protected override void OnCurrentStateChanged() {
+        base.OnCurrentStateChanged();
+        if (onGameStateChanged != null) {
+            //var targetNames = onGameStateChanged.GetInvocationList().Select(d => d.Target.GetType().Name);
+            //D.Log("{0} is sending onGameStateChanged event to {1}.", GetType().Name, targetNames.Concatenate());
+            onGameStateChanged();
+        }
+    }
 
     // ************************************************************************************************************
     // NOTE: The sequencing when a change of state is initiated by setting CurrentState = newState
@@ -505,7 +623,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         // Start state progression checks here as Loading is always called whether a new game, loading saved game or startup simulation
         StartGameStateProgressionReadinessChecks();
 
-        CreatePlayers(GameSettings);
+        //CreatePlayers(GameSettings);  // moved to Building to follow ResetConditionsForGameStartup()
 
         if (GameSettings.IsStartupSimulation) {
             return;
@@ -513,22 +631,15 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
         RecordGameStateProgressionReadiness(Instance, GameState.Loading, isReady: false);
         // tell ManagementObjects to drop its children (including SaveGameManager!) before the scene gets reloaded
-        if (onSceneLoading != null) {
-            onSceneLoading(SceneLevel.GameScene);
-        }
+        OnSceneLoading();
     }
 
     void Loading_OnLevelWasLoaded(int level) {
         D.Assert(!GameSettings.IsStartupSimulation);
         LogEvent();
 
-        CurrentScene = (SceneLevel)level;
         D.Assert(CurrentScene == SceneLevel.GameScene, "Scene transition to {0} not implemented.".Inject(CurrentScene.GetName()));
-
-        if (onSceneLoaded != null) {
-            //D.Log("{0}.onSceneLoaded event dispatched.", GetType().Name);
-            onSceneLoaded();
-        }
+        OnSceneLoaded();
 
         RecordGameStateProgressionReadiness(Instance, GameState.Loading, isReady: true);
     }
@@ -561,6 +672,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         }
         ResetConditionsForGameStartup();
         _gameTime.PrepareToBeginNewGame();
+
+        CreatePlayers(GameSettings);
 
         RecordGameStateProgressionReadiness(Instance, GameState.Building, isReady: true);
     }
@@ -638,6 +751,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     void BuildAndDeploySystems_ExitState() {
         LogEvent();
         D.Assert(CurrentState == GameState.GeneratingPathGraphs);
+        PopulatePlayersKnowledgeBase();
     }
 
     #endregion
@@ -754,6 +868,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         if (__progressCheckJob != null) {
             __progressCheckJob.Dispose();
         }
+        _playerKnowledgeLookup.Values.ForAll(pk => pk.Dispose());
     }
 
     public override string ToString() {

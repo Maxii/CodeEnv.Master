@@ -45,6 +45,18 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
         set { SetProperty<string>(ref _optionalRootName, value, "OptionalRootName", OnOptionalRootNameChanged); }
     }
 
+    private int _drawDepth = -5;
+    /// <summary>
+    /// The depth of the UIPanel that determines draw order. Higher values will be
+    /// drawn after lower values placing them in front of the lower values. In general, 
+    /// these depth values should be less than 0 as the Panels that manage the UI are
+    /// usually set to 0 so they draw over other Panels.
+    /// </summary>
+    public int DrawDepth {
+        get { return _drawDepth; }
+        set { SetProperty<int>(ref _drawDepth, value, "DrawDepth", OnDrawDepthChanged); }
+    }
+
     private GameColor _color = GameColor.White;
     public GameColor Color {
         get { return _color; }
@@ -75,27 +87,27 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
 
     public Transform WidgetTransform { get { return Widget.transform; } }
 
-    protected UIWidget Widget { get; private set; }
-
     private IWidgetTrackable _target;
     public virtual IWidgetTrackable Target {
         get { return _target; }
         set { SetProperty<IWidgetTrackable>(ref _target, value, "Target", OnTargetChanged); }
     }
 
+    protected UIWidget Widget { get; private set; }
     protected Vector3 _offset;
 
     private float _minShowDistance = Constants.ZeroF;
     private float _maxShowDistance = Mathf.Infinity;
     private bool _toCheckShowDistance = false;
+    private UIPanel _panel;
 
     protected override void Awake() {
         base.Awake();
-        Widget = gameObject.GetSafeMonoBehaviourComponentInChildren<UIWidget>();
+        Widget = gameObject.GetSafeMonoBehaviourInChildren<UIWidget>();
         Widget.color = Color.ToUnityColor();
         Widget.enabled = false;
-        UIPanel panel = gameObject.GetSafeMonoBehaviourComponentInChildren<UIPanel>();
-        panel.depth = -5;  // so it shows up behind the other UI elements  // IMPROVE
+        _panel = gameObject.GetSafeMonoBehaviourInChildren<UIPanel>();
+        _panel.depth = DrawDepth;
         UpdateRate = FrameUpdateFrequency.Normal;
         enabled = false;
         // can't use Show here as derived classes reference other fields not yet set
@@ -277,6 +289,10 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     private void OnPlacementChanged() {
         //D.Log("Placement changed to {0}.", Placement.GetName());
         RefreshWidgetValues();
+    }
+
+    private void OnDrawDepthChanged() {
+        _panel.depth = DrawDepth;
     }
 
     private void OnColorChanged() {

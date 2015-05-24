@@ -207,7 +207,7 @@ public class FacilityModel : AUnitElementModel {
             Return();
             return;
         }
-        OnShowAnimation(MortalAnimations.Attacking);
+        OnShowAnimation(EffectID.Attacking);
         _attackTarget.TakeHit(_attackStrength);
         Return();
     }
@@ -243,14 +243,14 @@ public class FacilityModel : AUnitElementModel {
 
     IEnumerator Repairing_EnterState() {
         D.Log("{0}.Repairing_EnterState called.", FullName);
-        OnShowAnimation(MortalAnimations.Repairing);
+        OnShowAnimation(EffectID.Repairing);
         yield return new WaitForSeconds(2);
         Data.CurrentHitPoints += 0.5F * (Data.MaxHitPoints - Data.CurrentHitPoints);
         D.Log("{0}'s repair is 50% complete.", FullName);
         yield return new WaitForSeconds(3);
         Data.CurrentHitPoints = Data.MaxHitPoints;
         D.Log("{0}'s repair is 100% complete.", FullName);
-        OnStopAnimation(MortalAnimations.Repairing);
+        OnStopAnimation(EffectID.Repairing);
         Return();
     }
 
@@ -305,7 +305,7 @@ public class FacilityModel : AUnitElementModel {
     void Dead_EnterState() {
         LogEvent();
         OnDeath();
-        OnShowAnimation(MortalAnimations.Dying);
+        OnShowAnimation(EffectID.Dying);
     }
 
     void Dead_OnShowCompletion() {
@@ -435,7 +435,7 @@ public class FacilityModel : AUnitElementModel {
 
         if (isDirectlyAttacked) {
             // only show being hit if this facility is the one being directly attacked
-            var hitAnimation = isCmdHit ? MortalAnimations.CmdHit : MortalAnimations.Hit;
+            var hitAnimation = isCmdHit ? EffectID.CmdHit : EffectID.Hit;
             OnShowAnimation(hitAnimation);
         }
         AssessNeedForRepair();

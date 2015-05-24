@@ -76,7 +76,7 @@ public class PlanetoidView : AMortalItemView, ICameraFollowable {
 
     private void InitializeContextMenu() {    // IMPROVE string use
         _ctxObject = UnityUtility.ValidateMonoBehaviourPresence<CtxObject>(gameObject);
-        CtxMenu planetMenu = GuiManager.Instance.gameObject.GetSafeMonoBehaviourComponentsInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "PlanetMenu");
+        CtxMenu planetMenu = GuiManager.Instance.gameObject.GetSafeMonoBehavioursInChildren<CtxMenu>().Single(menu => menu.gameObject.name == "PlanetMenu");
         _ctxObject.contextMenu = planetMenu;
         D.Assert(_ctxObject.contextMenu != null, "{0}.contextMenu on {1} is null.".Inject(typeof(CtxObject).Name, gameObject.name));
         UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);

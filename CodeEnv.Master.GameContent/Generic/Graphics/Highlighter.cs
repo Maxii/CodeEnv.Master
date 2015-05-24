@@ -1,6 +1,6 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Microsoft
+// Copyright © 2012 - 2015 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
@@ -67,7 +67,7 @@ namespace CodeEnv.Master.GameContent {
                 string circlesTitle = "{0} Circle Highlight".Inject(_highlightableObject.DisplayName);
                 float innerCircleRadius = _highlightableObject.HighlightRadius;
                 _circles = new HighlightCircle(circlesTitle, _trackedTransform, innerCircleRadius, _shouldHighlightSizeOnScreenChange, maxCircles: 3);
-                _circles.Colors = new GameColor[3] { UnityDebugConstants.FocusedColor, UnityDebugConstants.SelectedColor, UnityDebugConstants.GeneralHighlightColor };
+                _circles.Colors = new GameColor[3] { TempGameValues.FocusedColor, TempGameValues.SelectedColor, TempGameValues.GeneralHighlightColor };
                 _circles.Widths = new float[3] { 2F, 2F, 1F };
             }
             _circles.Show(true, GetCircleIndex(id));

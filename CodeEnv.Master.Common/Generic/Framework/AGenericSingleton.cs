@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUGWARN
 #define DEBUG_ERROR
 
@@ -57,6 +57,7 @@ namespace CodeEnv.Master.Common {
         /// WARNING: T should be disposed of when it holds any reference to an object that does not persist across scenes
         /// </summary>
         protected void OnDispose() {
+            //D.Log("{0}.OnDispose() called.", GetType().Name);
             _instance = null;
         }
 

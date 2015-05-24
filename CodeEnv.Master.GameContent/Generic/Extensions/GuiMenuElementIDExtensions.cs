@@ -32,25 +32,27 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="elementID">The ID for this Gui menu element.</param>
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
-        public static string PreferencePropertyName(this GuiMenuElementID elementID) {
+        public static string PreferencePropertyName(this GuiElementID elementID) {
             switch (elementID) {
-                case GuiMenuElementID.CameraRollCheckbox:
+                case GuiElementID.CameraRollCheckbox:
                     return "IsCameraRollEnabled";
-                case GuiMenuElementID.ElementIconsCheckbox:
+                case GuiElementID.ElementIconsCheckbox:
                     return "IsElementIconsEnabled";
-                case GuiMenuElementID.GameSpeedOnLoadPopupList:
+                case GuiElementID.GameSpeedOnLoadPopupList:
                     return "GameSpeedOnLoad";
-                case GuiMenuElementID.HumanPlayerSpeciesPopupList:
-                    return "PlayerSpeciesSelection";
-                case GuiMenuElementID.PauseOnLoadCheckbox:
+                case GuiElementID.UserPlayerSpeciesPopupList:
+                    return "UserPlayerSpeciesSelection";
+                case GuiElementID.UserPlayerColorPopupList:
+                    return "UserPlayerColor";
+                case GuiElementID.PauseOnLoadCheckbox:
                     return "IsPauseOnLoadEnabled";
-                case GuiMenuElementID.QualitySettingPopupList:
+                case GuiElementID.QualitySettingPopupList:
                     return "QualitySetting";
-                case GuiMenuElementID.ResetOnFocusCheckbox:
+                case GuiElementID.ResetOnFocusCheckbox:
                     return "IsResetOnFocusEnabled";
-                case GuiMenuElementID.UniverseSizePopupList:
+                case GuiElementID.UniverseSizePopupList:
                     return "UniverseSizeSelection";
-                case GuiMenuElementID.ZoomOutOnCursorCheckbox:
+                case GuiElementID.ZoomOutOnCursorCheckbox:
                     return "IsZoomOutOnCursorEnabled";
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(elementID));

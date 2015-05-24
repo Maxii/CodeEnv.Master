@@ -27,7 +27,9 @@ namespace CodeEnv.Master.GameContent {
 
         Missile,
 
-        Particle
+        Projectile
+
+        // Particle
 
     }
 }

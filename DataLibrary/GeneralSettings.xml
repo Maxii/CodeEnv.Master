@@ -44,7 +44,20 @@
     <Setting>
       <PropertyName>CriticalHealthThreshold</PropertyName>
       <PropertyValue>0.40</PropertyValue>
-    </Setting>    
+    </Setting>
+    <Setting>
+      <PropertyName>ContentApprovalThreshold</PropertyName>
+      <PropertyValue>0.60</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>UnhappyApprovalThreshold</PropertyName>
+      <PropertyValue>0.40</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>RevoltApprovalThreshold</PropertyName>
+      <PropertyValue>0.20</PropertyValue>
+    </Setting>
+
     <Setting>
       <PropertyName>HudRefreshRate</PropertyName>
       <PropertyValue>1.0</PropertyValue>

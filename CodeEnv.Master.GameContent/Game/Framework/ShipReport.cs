@@ -50,40 +50,45 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipCategory Category { get; private set; }
 
-        public ShipReport(ShipData data, Player player) : base(data, player) { }
+        public ShipReport(ShipData data, Player player, IShipItem item) : base(data, player, item) { }
 
         protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
             base.AssignIncrementalValues_IntelCoverageComprehensive(data);
             var sData = data as ShipData;
-            CurrentHitPoints = sData.CurrentHitPoints;
-            Health = sData.Health;
             CombatStance = sData.CombatStance;
             Target = sData.Target;
+            Culture = sData.Culture;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageModerate(AItemData data) {
-            base.AssignIncrementalValues_IntelCoverageModerate(data);
+        protected override void AssignIncrementalValues_IntelCoverageBroad(AItemData data) {
+            base.AssignIncrementalValues_IntelCoverageBroad(data);
             var sData = data as ShipData;
             DefensiveStrength = sData.DefensiveStrength;
             OffensiveStrength = sData.OffensiveStrength;
+            Health = sData.Health;  // Element Health only matters on Element displays. UnitHealth calc'd using Element HitPts
+            CurrentHitPoints = sData.CurrentHitPoints;
+            Science = sData.Science;
+            Income = sData.Income;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageMinimal(AItemData data) {
-            base.AssignIncrementalValues_IntelCoverageMinimal(data);
+        protected override void AssignIncrementalValues_IntelCoverageEssential(AItemData data) {
+            base.AssignIncrementalValues_IntelCoverageEssential(data);
             var sData = data as ShipData;
             ParentName = sData.ParentName;
+            Position = sData.Position;
             Owner = sData.Owner;
             Category = sData.Category;
             MaxSensorRange = sData.MaxSensorRange;
-            MaxHitPoints = sData.MaxHitPoints;
+            MaxHitPoints = sData.MaxHitPoints; // should always be with or before CurrentHitPts as both are needed to calc CmdReport's UnitHealth
             MaxWeaponsRange = sData.MaxWeaponsRange;
             Mass = sData.Mass;
             MaxTurnRate = sData.MaxTurnRate;
             FullSpeed = sData.FullSpeed;
+            Expense = sData.Expense;
         }
 
-        protected override void AssignIncrementalValues_IntelCoverageAware(AItemData data) {
-            base.AssignIncrementalValues_IntelCoverageAware(data);
+        protected override void AssignIncrementalValues_IntelCoverageBasic(AItemData data) {
+            base.AssignIncrementalValues_IntelCoverageBasic(data);
             var sData = data as ShipData;
             Name = sData.Name;
             CurrentSpeed = sData.CurrentSpeed;

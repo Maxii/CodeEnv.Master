@@ -22,7 +22,7 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// Abstract class for ADiscernibleItem's that have knowledge of each player's IntelCoverage.
 /// </summary>
-public abstract class AIntelItem : ADiscernibleItem {
+public abstract class AIntelItem : ADiscernibleItem, IIntelItem {
 
     public new AIntelItemData Data {
         get { return base.Data as AIntelItemData; }
@@ -33,7 +33,7 @@ public abstract class AIntelItem : ADiscernibleItem {
 
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
-        Data.onHumanPlayerIntelCoverageChanged += OnHumanPlayerIntelCoverageChanged;
+        Data.onUserIntelCoverageChanged += OnUserIntelCoverageChanged;
     }
 
     #endregion
@@ -44,26 +44,33 @@ public abstract class AIntelItem : ADiscernibleItem {
 
     #region View Methods
 
-    public IntelCoverage GetHumanPlayerIntelCoverage() { return Data.GetHumanPlayerIntelCoverage(); }
+    public IntelCoverage GetUserIntelCoverage() { return Data.GetUserIntelCoverage(); }
 
-    protected virtual void OnHumanPlayerIntelCoverageChanged() {
-        //D.Log("{0}.OnHumanPlayerIntelCoverageChanged() called. IntelCoverage = {1}.", FullName, GetHumanPlayerIntelCoverage().GetName());
-        AssessDiscernability();
+    public IntelCoverage GetIntelCoverage(Player player) { return Data.GetIntelCoverage(player); }
+
+    public bool SetIntelCoverage(Player player, IntelCoverage coverage) {
+        return Data.SetIntelCoverage(player, coverage);
+    }
+
+    protected virtual void OnUserIntelCoverageChanged() {
+        //D.Log("{0}.OnUserIntelCoverageChanged() called. IntelCoverage = {1}.", FullName, GetUserIntelCoverage().GetName());
+        AssessDiscernibleToUser();
         if (IsHudShowing) {
             // refresh the HUD as IntelCoverage has changed
             ShowHud(true);
         }
-        DisplayMgr.IsDisplayEnabled = Data.GetHumanPlayerIntelCoverage() != IntelCoverage.None;
+        var toEnableDisplayMgr = Data.GetUserIntelCoverage() != IntelCoverage.None;
+        DisplayMgr.EnableDisplay(toEnableDisplayMgr);
     }
 
-    protected override void AssessDiscernability() {
-        var inCameraLOS = DisplayMgr == null ? true : DisplayMgr.InCameraLOS;
-        IsDiscernible = inCameraLOS && Data.GetHumanPlayerIntelCoverage() != IntelCoverage.None;
+    protected override void AssessDiscernibleToUser() {
+        var isInMainCameraLOS = DisplayMgr == null ? true : DisplayMgr.IsInMainCameraLOS;
+        IsDiscernibleToUser = isInMainCameraLOS && Data.GetUserIntelCoverage() != IntelCoverage.None;
     }
 
     #endregion
 
-    #region Mouse Events
+    #region Events
 
     #endregion
 
@@ -71,7 +78,9 @@ public abstract class AIntelItem : ADiscernibleItem {
 
     protected override void Unsubscribe() {
         base.Unsubscribe();
-        Data.onHumanPlayerIntelCoverageChanged -= OnHumanPlayerIntelCoverageChanged;
+        if (Data != null) { // Data can be null for a time when creators delay builds
+            Data.onUserIntelCoverageChanged -= OnUserIntelCoverageChanged;
+        }
     }
 
     #endregion

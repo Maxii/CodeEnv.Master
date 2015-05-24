@@ -21,7 +21,7 @@ namespace CodeEnv.Master.Common {
     /// <summary>
     /// Immutable location struct holding 3 ints.
     /// </summary>
-    public struct Index3D : IEquatable<Index3D> {
+    public struct Index3D : IEquatable<Index3D>, IComparable<Index3D> {
 
         #region Comparison Operators Override
 
@@ -85,7 +85,26 @@ namespace CodeEnv.Master.Common {
 
         #endregion
 
+        #region IComparable<Index3D> Members
 
+        public int CompareTo(Index3D other) {
+            // orders by x, then y, then z
+            var xResult = this.x.CompareTo(other.x);
+            if (xResult != Constants.Zero) {
+                return xResult;
+            }
+            else {
+                var yResult = this.y.CompareTo(other.y);
+                if (yResult != Constants.Zero) {
+                    return yResult;
+                }
+                else {
+                    return this.z.CompareTo(other.z);
+                }
+            }
+        }
+
+        #endregion
     }
 }
 

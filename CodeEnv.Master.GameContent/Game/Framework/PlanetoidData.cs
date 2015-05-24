@@ -36,6 +36,9 @@ namespace CodeEnv.Master.GameContent {
             get { return ParentName.IsNullOrEmpty() ? Name : ParentName + Constants.Underscore + Name; }
         }
 
+        /// <summary>
+        /// The speed at which this planetoid is orbiting in Units/Hr.
+        /// </summary>
         public float OrbitalSpeed { get; set; }
 
         private int _capacity;
@@ -44,17 +47,14 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<int>(ref _capacity, value, "Capacity"); }
         }
 
-        private OpeYield _resources;
-        public OpeYield Resources {
+        private ResourceYield _resources;
+        public ResourceYield Resources {
             get { return _resources; }
-            set { SetProperty<OpeYield>(ref _resources, value, "Resources"); }
+            set { SetProperty<ResourceYield>(ref _resources, value, "Resources"); }
         }
 
-        private XYield _specialResources;
-        public XYield SpecialResources {
-            get { return _specialResources; }
-            set { SetProperty<XYield>(ref _specialResources, value, "SpecialResources"); }
-        }
+        private Index3D _sectorIndex;
+        public override Index3D SectorIndex { get { return _sectorIndex; } }
 
         public float Mass { get; private set; }
 
@@ -80,8 +80,8 @@ namespace CodeEnv.Master.GameContent {
             Category = stat.Category;
             Capacity = stat.Capacity;
             Resources = stat.Resources;
-            SpecialResources = stat.SpecialResources;
             Topography = Topography.System;
+            _sectorIndex = References.SectorGrid.GetSectorIndex(Position);
         }
 
         protected override AIntel MakeIntel(IntelCoverage initialcoverage) {

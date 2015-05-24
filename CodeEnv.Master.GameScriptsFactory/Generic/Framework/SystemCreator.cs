@@ -56,11 +56,15 @@ public class SystemCreator : AMonoBase {
     }
 
     public static IList<APlanetoidItem> AllPlanetoids { get { return _allPlanetoids; } }
+    public static IList<PlanetItem> AllPlanets { get { return _allPlanets; } }
+    public static IList<MoonItem> AllMoons { get { return _allMoons; } }
 
     public static IList<StarItem> AllStars { get { return _allStars; } }
 
     private static IDictionary<Index3D, SystemItem> _systemLookupBySectorIndex = new Dictionary<Index3D, SystemItem>();
     private static IList<APlanetoidItem> _allPlanetoids = new List<APlanetoidItem>();
+    private static IList<PlanetItem> _allPlanets = new List<PlanetItem>();
+    private static IList<MoonItem> _allMoons = new List<MoonItem>();
     private static IList<StarItem> _allStars = new List<StarItem>();
 
     private static int[] _planetNumbers = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
@@ -79,6 +83,11 @@ public class SystemCreator : AMonoBase {
     private static GameTimeDuration _systemOrbitPeriodIncrement;
     private static GameTimeDuration _minMoonOrbitPeriod;
     private static GameTimeDuration _moonOrbitPeriodIncrement;
+
+    /// <summary>
+    /// Allows a one time static subscription to event publishers from this class.
+    /// </summary>
+    private static bool _isStaticallySubscribed;
 
     public bool isCompositionPreset;
     public int maxPlanetsInRandomSystem = 3;
@@ -99,10 +108,7 @@ public class SystemCreator : AMonoBase {
     private StarItem _star;
     private IList<PlanetItem> _planets;
     private IList<MoonItem> _moons;
-
     private Transform _systemsFolder;
-
-    private IList<IDisposable> _subscribers;
     private SystemFactory _factory;
     private GameManager _gameMgr;
 
@@ -134,7 +140,7 @@ public class SystemCreator : AMonoBase {
             _systemOrbitPeriodIncrement = new GameTimeDuration(hours: 0, days: GameTime.DaysPerYear / 2, years: 0);
         }
         if (_minMoonOrbitPeriod == default(GameTimeDuration)) {
-            _minMoonOrbitPeriod = new GameTimeDuration(hours: 0, days: 20, years: 0);
+            _minMoonOrbitPeriod = new GameTimeDuration(hours: 0, days: 30, years: 0);
         }
         if (_moonOrbitPeriodIncrement == default(GameTimeDuration)) {
             _moonOrbitPeriodIncrement = new GameTimeDuration(hours: 0, days: 10, years: 0);
@@ -142,15 +148,10 @@ public class SystemCreator : AMonoBase {
     }
 
     private void Subscribe() {
-        _subscribers = new List<IDisposable>();
-        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
+        _gameMgr.onGameStateChanged += OnGameStateChanged;
         SubscribeStaticallyOnce();
     }
 
-    /// <summary>
-    /// Allows a one time static subscription to event publishers from this class.
-    /// </summary>
-    private static bool _isStaticallySubscribed;
     /// <summary>
     /// Subscribes this class using static event handler(s) to instance events exactly one time.
     /// </summary>
@@ -182,7 +183,6 @@ public class SystemCreator : AMonoBase {
             InitializeTopographyMonitor();
             BeginSystemOperations(onCompletion: delegate {
                 // wait to allow any cellestial objects using the IEnumerator StateMachine to enter their starting state
-                //__SetIntelCoverage();
                 DestroyCreationObject(); // destruction deferred so __UniverseInitializer can complete its work
             });
         }
@@ -206,23 +206,23 @@ public class SystemCreator : AMonoBase {
 
     private StarStat CreateStarStatFromChildren() {
         D.Assert(isCompositionPreset);
-        StarCategory category = gameObject.GetSafeMonoBehaviourComponentInChildren<StarItem>().category;
-        return new StarStat(category, 100, 10000000F, new OpeYield(0F, 0F, 100F), new XYield(XResource.Special_3, 0.3F));
+        StarCategory category = gameObject.GetSafeMonoBehaviourInChildren<StarItem>().category;
+        return new StarStat(category, 100, CreateRandomResourceYield(ResourceCategory.Common, ResourceCategory.Strategic));
     }
 
     private StarStat CreateRandomStarStat() {
         D.Assert(!isCompositionPreset);
         StarCategory category = Enums<StarCategory>.GetRandom(excludeDefault: true);
-        return new StarStat(category, 100, 10000000F, new OpeYield(0F, 0F, 100F), new XYield(XResource.Special_3, 0.3F));
+        return new StarStat(category, 100, CreateRandomResourceYield(ResourceCategory.Common, ResourceCategory.Strategic));
     }
 
     private IList<PlanetoidStat> CreatePlanetStatsFromChildren() {
         D.Assert(isCompositionPreset);
         var planetStats = new List<PlanetoidStat>();
-        var planets = gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetItem>();
+        var planets = gameObject.GetSafeMonoBehavioursInChildren<PlanetItem>();
         foreach (var planet in planets) {
             PlanetoidCategory pCategory = planet.category;
-            PlanetoidStat stat = new PlanetoidStat(1000000F, 100F, pCategory, 25, new OpeYield(3.1F, 2F, 4.8F), new XYield(XResource.Special_1, 0.3F));
+            PlanetoidStat stat = new PlanetoidStat(1000000F, 100F, pCategory, 25, CreateRandomResourceYield(ResourceCategory.Common, ResourceCategory.Strategic));
             planetStats.Add(stat);
         }
         return planetStats;
@@ -235,7 +235,8 @@ public class SystemCreator : AMonoBase {
         //D.Log("{0} random planet count = {1}.", SystemName, planetCount);
         for (int i = 0; i < planetCount; i++) {
             PlanetoidCategory pCategory = RandomExtended<PlanetoidCategory>.Choice(_acceptablePlanetCategories);
-            PlanetoidStat stat = new PlanetoidStat(1000000F, 100F, pCategory, 25, new OpeYield(3.1F, 2F, 4.8F), new XYield(XResource.Special_1, 0.3F));
+            PlanetoidStat stat = new PlanetoidStat(1000000F, 100F, pCategory, 25, CreateRandomResourceYield(ResourceCategory.Common, ResourceCategory.Strategic));
+            //PlanetoidStat stat = new PlanetoidStat(1000000F, 100F, pCategory, 25, new OpeResourceYield(3.1F, 2F, 4.8F), new RareResourceYield(RareResourceID.Titanium, 0.3F));
             planetStats.Add(stat);
         }
         return planetStats;
@@ -247,7 +248,7 @@ public class SystemCreator : AMonoBase {
         var moons = gameObject.GetComponentsInChildren<MoonItem>();
         foreach (var moon in moons) {
             var mCategory = moon.category;
-            PlanetoidStat stat = new PlanetoidStat(10000F, 10F, mCategory, 5, new OpeYield(0.1F, 1F, 0.8F));
+            PlanetoidStat stat = new PlanetoidStat(10000F, 10F, mCategory, 5, CreateRandomResourceYield(ResourceCategory.Common));
             moonStats.Add(stat);
         }
         return moonStats;
@@ -260,7 +261,7 @@ public class SystemCreator : AMonoBase {
         //D.Log("{0} random moon count = {1}.", SystemName, moonCount);
         for (int i = 0; i < moonCount; i++) {
             PlanetoidCategory mCategory = RandomExtended<PlanetoidCategory>.Choice(_acceptableMoonCategories);
-            PlanetoidStat stat = new PlanetoidStat(10000F, 10F, mCategory, 5, new OpeYield(0.1F, 1F, 0.8F));
+            PlanetoidStat stat = new PlanetoidStat(10000F, 10F, mCategory, 5, CreateRandomResourceYield(ResourceCategory.Common));
             moonStats.Add(stat);
         }
         return moonStats;
@@ -280,7 +281,7 @@ public class SystemCreator : AMonoBase {
                 case ArmamentCategory.Missile:
                     strengthValue = UnityEngine.Random.Range(3F, 8F);
                     break;
-                case ArmamentCategory.Particle:
+                case ArmamentCategory.Projectile:
                     name = "Armor";
                     strengthValue = UnityEngine.Random.Range(2F, 3F);
                     break;
@@ -312,13 +313,12 @@ public class SystemCreator : AMonoBase {
 
     private void MakeSystem() {
         LogEvent();
-        Index3D sectorIndex = SectorGrid.Instance.GetSectorIndex(_transform.position);
         if (isCompositionPreset) {
-            _system = gameObject.GetSafeMonoBehaviourComponentInChildren<SystemItem>();
-            _factory.MakeSystemInstance(SystemName, sectorIndex, Topography.OpenSpace, ref _system);
+            _system = gameObject.GetSafeMonoBehaviourInChildren<SystemItem>();
+            _factory.MakeSystemInstance(SystemName, ref _system);
         }
         else {
-            _system = _factory.MakeSystemInstance(sectorIndex, Topography.OpenSpace, this);
+            _system = _factory.MakeSystemInstance(this);
         }
         _system.IsTrackingLabelEnabled = enableTrackingLabel;
     }
@@ -326,7 +326,7 @@ public class SystemCreator : AMonoBase {
     private void MakeStar() {
         LogEvent();
         if (isCompositionPreset) {
-            _star = gameObject.GetSafeMonoBehaviourComponentInChildren<StarItem>();
+            _star = gameObject.GetSafeMonoBehaviourInChildren<StarItem>();
             _factory.MakeInstance(_starStat, SystemName, ref _star);
         }
         else {
@@ -340,7 +340,7 @@ public class SystemCreator : AMonoBase {
     private void MakePlanets() {
         LogEvent();
         if (isCompositionPreset) {
-            _planets = gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetItem>().ToList();
+            _planets = gameObject.GetSafeMonoBehavioursInChildren<PlanetItem>().ToList();
             if (_planets.Any()) {
                 var planetsAlreadyUsed = new List<PlanetItem>();
                 foreach (var planetStat in _planetStats) {  // there is a custom stat for each planet
@@ -421,8 +421,8 @@ public class SystemCreator : AMonoBase {
             if (TryFindOrbitSlot(out slotIndex, slots)) {
                 CelestialOrbitSlot orbitSlotForPlanet = allSystemOrbitSlots[slotIndex];
                 string name = SystemName + Constants.Space + _planetNumbers[slotIndex];
-                string orbiterName = name + " Orbiter";
-                orbitSlotForPlanet.AssumeOrbit(planet.transform, orbiterName);
+                string orbitSimulatorName = name + " OrbitSimulator";
+                orbitSlotForPlanet.AssumeOrbit(planet.transform, orbitSimulatorName);
                 // assign the planet's name using its orbital slot
                 planet.Data.Name = name;
                 //D.Log("{0} has assumed orbit slot {1} in System {2}.", planet.FullName, slotIndex, SystemName);
@@ -516,8 +516,8 @@ public class SystemCreator : AMonoBase {
                         moon.Data.Name = name;
                         GameTimeDuration orbitPeriod = _minMoonOrbitPeriod + (slotIndex * _moonOrbitPeriodIncrement);
                         var moonOrbitSlot = new CelestialOrbitSlot(startDepthForMoonOrbitSlot, endDepthForMoonOrbitSlot, planet.gameObject, true, orbitPeriod);
-                        string orbiterName = name + " Orbiter";
-                        moonOrbitSlot.AssumeOrbit(moon.transform, orbiterName);
+                        string orbitSimulatorName = name + " OrbitSimulator";
+                        moonOrbitSlot.AssumeOrbit(moon.transform, orbitSimulatorName);
                         //D.Log("{0} has assumed orbit slot {1} around Planet {2}.", moon.FullName, slotIndex, planet.FullName);
 
                         startDepthForMoonOrbitSlot = endDepthForMoonOrbitSlot;
@@ -551,9 +551,9 @@ public class SystemCreator : AMonoBase {
     }
 
     private void InitializeTopographyMonitor() {
-        var monitor = gameObject.GetSafeMonoBehaviourComponentInChildren<TopographyMonitor>();
-        monitor.ItemMonitored = _system;
+        var monitor = gameObject.GetSafeMonoBehaviourInChildren<TopographyMonitor>();
         monitor.SurroundingTopography = Topography.OpenSpace;   // TODO Items monitored should know about their surrounding space
+        monitor.ItemMonitored = _system;
     }
 
     /// <summary>
@@ -577,6 +577,7 @@ public class SystemCreator : AMonoBase {
             D.Assert(!planetoidNamesStored.Contains(planet.Name), "{0}.{1} reports {2} already present.".Inject(SystemName, GetType().Name, planet.Name));
             planet.onDeathOneShot += OnPlanetoidDeath;
             _allPlanetoids.Add(planet);
+            _allPlanets.Add(planet);
         });
 
         // Can't use a Contains(item) test as the new item instance will never equal the old instance from the previous scene, even with the same name
@@ -584,6 +585,7 @@ public class SystemCreator : AMonoBase {
             D.Assert(!planetoidNamesStored.Contains(moon.Name), "{0}.{1} reports {2} already present.".Inject(SystemName, GetType().Name, moon.Name));
             moon.onDeathOneShot += OnPlanetoidDeath;
             _allPlanetoids.Add(moon);
+            _allMoons.Add(moon);
         });
     }
 
@@ -608,7 +610,7 @@ public class SystemCreator : AMonoBase {
         _moons.ForAll(m => m.CommenceOperations());
         _star.CommenceOperations();
         _system.CommenceOperations();
-        UnityUtility.WaitOneToExecute(onWaitFinished: (wasKilled) => {
+        UnityUtility.WaitOneToExecute(onWaitFinished: () => {
             onCompletion();
         });
     }
@@ -635,8 +637,8 @@ public class SystemCreator : AMonoBase {
 
         var allOrbitSlots = new CelestialOrbitSlot[TempGameValues.TotalOrbitSlotsPerSystem];
         for (int slotIndex = 0; slotIndex < TempGameValues.TotalOrbitSlotsPerSystem; slotIndex++) {
-            float insideRadius = sysOrbitSlotsStartRadius + _systemOrbitSlotDepth * slotIndex;
-            float outsideRadius = insideRadius + _systemOrbitSlotDepth;
+            float insideRadius = sysOrbitSlotsStartRadius + systemOrbitSlotDepth * slotIndex;
+            float outsideRadius = insideRadius + systemOrbitSlotDepth;
             var orbitPeriod = _minSystemOrbitPeriod + (slotIndex * _systemOrbitPeriodIncrement);
             //D.Log("{0}'s orbit slot index {1} OrbitPeriod = {2}.", SystemName, slotIndex, orbitPeriod);
             GameObject planetsFolder = _system.Transform.FindChild("Planets").gameObject;
@@ -653,6 +655,48 @@ public class SystemCreator : AMonoBase {
     /// <param name="mortalItem">The mortal item.</param>
     private static void OnPlanetoidDeath(IMortalItem mortalItem) {
         _allPlanetoids.Remove(mortalItem as APlanetoidItem);
+        if (mortalItem is PlanetItem) {
+            _allPlanets.Remove(mortalItem as PlanetItem);
+        }
+        else {
+            _allMoons.Remove(mortalItem as MoonItem);
+        }
+    }
+
+    private ResourceYield CreateRandomResourceYield(params ResourceCategory[] resCategories) {
+        ResourceYield sum = default(ResourceYield);
+        resCategories.ForAll(resCat => sum += CreateRandomResourceYield(resCat));
+        return sum;
+    }
+
+    private ResourceYield CreateRandomResourceYield(ResourceCategory resCategory) {
+        float maxYield = Constants.OneF;
+        int minNumberOfResources = Constants.Zero;
+        switch (resCategory) {
+            case ResourceCategory.Common:
+                minNumberOfResources = Constants.One;
+                maxYield = 5F;
+                break;
+            case ResourceCategory.Strategic:
+                maxYield = 2F;
+                break;
+            case ResourceCategory.Luxury:   // No Luxury Resources yet
+            case ResourceCategory.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(resCategory));
+        }
+
+        var categoryResources = Enums<ResourceID>.GetValues(excludeDefault: true).Where(res => res.GetResourceCategory() == resCategory);
+        int categoryResourceCount = categoryResources.Count();
+        int numberOfResourcesToCreate = RandomExtended<int>.Range(minNumberOfResources, categoryResourceCount);
+
+        IList<ResourceYield.ResourceValuePair> resValuePairs = new List<ResourceYield.ResourceValuePair>(numberOfResourcesToCreate);
+        var resourcesChosen = categoryResources.Shuffle().Take(numberOfResourcesToCreate);
+        resourcesChosen.ForAll(resID => {
+            var rvp = new ResourceYield.ResourceValuePair(resID, UnityEngine.Random.Range(Constants.ZeroF, maxYield));
+            resValuePairs.Add(rvp);
+        });
+        return new ResourceYield(resValuePairs.ToArray());
     }
 
     protected override void Cleanup() {
@@ -664,8 +708,7 @@ public class SystemCreator : AMonoBase {
     }
 
     private void Unsubscribe() {
-        _subscribers.ForAll(d => d.Dispose());
-        _subscribers.Clear();
+        _gameMgr.onGameStateChanged -= OnGameStateChanged;
     }
 
     /// <summary>
@@ -679,6 +722,8 @@ public class SystemCreator : AMonoBase {
         _allStars.Clear();
         _allPlanetoids.ForAll(p => p.onDeathOneShot -= OnPlanetoidDeath);
         _allPlanetoids.Clear();
+        _allPlanets.Clear();
+        _allMoons.Clear();
     }
 
     /// <summary>

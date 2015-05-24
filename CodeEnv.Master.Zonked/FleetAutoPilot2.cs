@@ -73,7 +73,7 @@ public class FleetAutoPilot2 : APropertyChangeTracking, IDisposable {
         if (_subscribers == null) {
             _subscribers = new List<IDisposable>();
         }
-        _subscribers.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameClockSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
+        _subscribers.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, OnGameSpeedChanged));
         _seeker.pathCallback += OnCoursePlotCompleted;
     }
 
@@ -82,7 +82,7 @@ public class FleetAutoPilot2 : APropertyChangeTracking, IDisposable {
     /// </summary>
     /// <param name="destination">The destination.</param>
     public void PlotCourse(Vector3 destination) {
-        if (!destination.IsSame(FinalDestination)) {
+        if (!destination.IsSameAs(FinalDestination)) {
             FinalDestination = destination;
         }
         else {

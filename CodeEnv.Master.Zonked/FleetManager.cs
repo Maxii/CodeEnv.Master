@@ -75,10 +75,10 @@ public class FleetManager : AMonoBase, ISelectable, IHasData, IDisposable {
     protected override void Awake() {
         base.Awake();
         enabled = false;    // disabled behaviours aren't updated
-        _fleetCmd = gameObject.GetSafeMonoBehaviourComponentInChildren<FleetCommand>();
+        _fleetCmd = gameObject.GetSafeMonoBehaviourInChildren<FleetCommand>();
         _fleetCmdTransform = _fleetCmd.transform;
-        _fleetGraphics = gameObject.GetSafeMonoBehaviourComponent<FleetGraphics>();
-        ShipCaptains = gameObject.GetSafeMonoBehaviourComponentsInChildren<ShipCaptain>().ToList();
+        _fleetGraphics = gameObject.GetSafeMonoBehaviour<FleetGraphics>();
+        ShipCaptains = gameObject.GetSafeMonoBehavioursInChildren<ShipCaptain>().ToList();
         _gameMgr = GameManager.Instance;
         _eventMgr = GameEventManager.Instance;
         _selectionMgr = SelectionManager.Instance;
@@ -87,9 +87,9 @@ public class FleetManager : AMonoBase, ISelectable, IHasData, IDisposable {
     }
 
     private void InitializeFleetIcon() {
-        _fleetIconSprite = gameObject.GetSafeMonoBehaviourComponentInChildren<UISprite>();
+        _fleetIconSprite = gameObject.GetSafeMonoBehaviourInChildren<UISprite>();
         _fleetIconTransform = _fleetIconSprite.transform;
-        _fleetIconScaler = _fleetIconTransform.gameObject.GetSafeMonoBehaviourComponent<ScaleRelativeToCamera>();
+        _fleetIconScaler = _fleetIconTransform.gameObject.GetSafeMonoBehaviour<ScaleRelativeToCamera>();
         _fleetCmdCollider = _fleetCmd.collider as BoxCollider;
         // I need the CmdCollider sitting over the fleet icon to be 3D as it's rotation tracks the Cmd object, not the billboarded icon
         Vector2 iconSize = _fleetIconSprite.localSize;
@@ -206,7 +206,7 @@ public class FleetManager : AMonoBase, ISelectable, IHasData, IDisposable {
 
     private void OnIsSelectedChanged() {
         _fleetGraphics.AssessHighlighting();
-        ShipCaptains.ForAll<ShipCaptain>(sc => sc.gameObject.GetSafeMonoBehaviourComponent<ShipGraphics>().AssessHighlighting());
+        ShipCaptains.ForAll<ShipCaptain>(sc => sc.gameObject.GetSafeMonoBehaviour<ShipGraphics>().AssessHighlighting());
         //D.Log("ShipCaptains count is {0}.", ShipCaptains.Count);
         if (IsSelected) {
             _selectionMgr.CurrentSelection = this;

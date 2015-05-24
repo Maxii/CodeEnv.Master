@@ -28,14 +28,14 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         protected override Type EnumType {
             get {
-                return typeof(GameClockSpeed);
+                return typeof(GameSpeed);
             }
         }
 
         private float _slowestMultiplier;
         public float SlowestMultiplier {
             get {
-                if (!isPropertyValuesInitialized) {
+                if (!_isPropertyValuesInitialized) {
                     InitializePropertyValues();
                 }
                 return _slowestMultiplier;
@@ -46,7 +46,7 @@ namespace CodeEnv.Master.Common {
         private float _slowMultiplier;
         public float SlowMultiplier {
             get {
-                if (!isPropertyValuesInitialized) {
+                if (!_isPropertyValuesInitialized) {
                     InitializePropertyValues();
                 }
                 return _slowMultiplier;
@@ -57,7 +57,7 @@ namespace CodeEnv.Master.Common {
         private float _normalMultiplier;
         public float NormalMultiplier {
             get {
-                if (!isPropertyValuesInitialized) {
+                if (!_isPropertyValuesInitialized) {
                     InitializePropertyValues();
                 }
                 return _normalMultiplier;
@@ -68,7 +68,7 @@ namespace CodeEnv.Master.Common {
         private float _fastMultiplier;
         public float FastMultiplier {
             get {
-                if (!isPropertyValuesInitialized) {
+                if (!_isPropertyValuesInitialized) {
                     InitializePropertyValues();
                 }
                 return _fastMultiplier;
@@ -79,7 +79,7 @@ namespace CodeEnv.Master.Common {
         private float _fastestMultiplier;
         public float FastestMultiplier {
             get {
-                if (!isPropertyValuesInitialized) {
+                if (!_isPropertyValuesInitialized) {
                     InitializePropertyValues();
                 }
                 return _fastestMultiplier;

@@ -23,16 +23,20 @@ namespace Pathfinding {
     using UnityEngine;
 
     /// <summary>
-    /// My implementation of the AStar PointGraph Generator using the 
-    /// points generated from SectorGrid's GridFramework. 
+    /// My implementation of the AStar PointGraph Generator using the points generated from SectorGrid's GridFramework. 
     /// WARNING: These graphs ARE NOT MonoBehaviours, inspite of the authors usage of Awake().
     /// </summary>
     public class MyAStarPointGraph : PointGraph {
 
-        public static int openSpaceTagMask = 1 << (int)Topography.OpenSpace;   // x0001
-        public static int nebulaTagMask = 1 << (int)Topography.Nebula;         // x0010
-        public static int deepNebulaTagMask = 1 << (int)Topography.DeepNebula; // x0100
-        public static int systemTagMask = 1 << (int)Topography.System;         // x1000
+        public static int openSpaceTagMask = 1 << Topography.OpenSpace.AStarTagValue();   // x0001        //public static int openSpaceTagMask = 1 << (int)Topography.OpenSpace;   // x0001
+        public static int nebulaTagMask = 1 << Topography.Nebula.AStarTagValue();         // x0010        //public static int nebulaTagMask = 1 << (int)Topography.Nebula;         // x0010
+        public static int deepNebulaTagMask = 1 << Topography.DeepNebula.AStarTagValue(); // x0100        //public static int deepNebulaTagMask = 1 << (int)Topography.DeepNebula; // x0100
+        public static int systemTagMask = 1 << Topography.System.AStarTagValue();         // x1000        //public static int systemTagMask = 1 << (int)Topography.System;         // x1000
+
+        /// <summary>
+        /// The size of the grid of Sectors this Pathfinding system will scan for waypoint interconnection.
+        /// </summary>
+        private static Index3D __maxAllowedSectorGridSizeToScan = new Index3D(4, 4, 4);  // limit to divisible by 2
 
         #region Archived
 
@@ -166,17 +170,60 @@ namespace Pathfinding {
         }
 
         /// <summary>
+        /// Gets the sectors this pathfinding system is allowed to scan for waypoint interconnection. 
+        /// This method reduces the total sector count to a manageable value so the scan time is not onerous. 
+        /// This allows SectorGrid to build out a large number of sectors for testing without requiring the
+        /// Pathfinding system to make interconnections between all the waypoints in all sectors.
+        /// </summary>
+        /// <returns></returns>
+        private IList<SectorItem> __GetAllowedSectorsToScan() {
+            IList<SectorItem> sectorsToScan = new List<SectorItem>();
+
+            int maxIndexX = __maxAllowedSectorGridSizeToScan.x / 2;
+            int maxIndexY = __maxAllowedSectorGridSizeToScan.y / 2;
+            int maxIndexZ = __maxAllowedSectorGridSizeToScan.z / 2;
+            var allSectors = SectorGrid.Instance.AllSectors;
+            allSectors.ForAll(s => {
+                var index = s.SectorIndex;
+                if (Mathf.Abs(index.x) <= maxIndexX) {
+                    if (Mathf.Abs(index.y) <= maxIndexY) {
+                        if (Mathf.Abs(index.z) <= maxIndexZ) {
+                            //D.Log("{0} adding Sector {1} to scan.", GetType().Name, s);
+                            sectorsToScan.Add(s);
+                        }
+                    }
+                }
+            });
+            D.Log("{0}: Total Sector Count = {1}, Sectors to scan = {2}.", GetType().Name, allSectors.Count, sectorsToScan.Count);
+            return sectorsToScan;
+        }
+
+        private IList<Vector3> __GetSectorCenters(IList<SectorItem> sectors) {
+            var sectorCenters = new List<Vector3>(sectors.Count);
+            sectors.ForAll(s => {
+                Vector3 sectorCenter;
+                if (SectorGrid.Instance.TryGetSectorPosition(s.SectorIndex, out sectorCenter)) {
+                    sectorCenters.Add(sectorCenter);
+                }
+                else {
+                    D.Warn("{0}: Could not get SectorCenter from Sector {1}.", GetType().Name, s);
+                }
+            });
+            return sectorCenters;
+        }
+
+        /// <summary>
         /// Pre-runtime construction of waypoints for the point graph.
         /// </summary>
         /// <returns></returns>
         private IDictionary<Topography, IList<Vector3>> ConstructGraphWaypoints() {
-            var sectors = SectorGrid.Instance.AllSectors;
-            var sectorCenters = SectorGrid.Instance.SectorCenters;
-            D.Assert(sectorCenters != null, "{0} not yet initialized.".Inject(typeof(SectorGrid).Name));  // AstarPath has an option to automatically call Scan() on Awake which can be too early
+            var sectors = __GetAllowedSectorsToScan(); //= SectorGrid.Instance.AllSectors;
+            var sectorCenters = __GetSectorCenters(sectors);  //= SectorGrid.Instance.SectorCenters;
+            //D.Assert(sectorCenters != null, "{0} not yet initialized.".Inject(typeof(SectorGrid).Name));  // AstarPath has an option to automatically call Scan() on Awake which can be too early
             IEnumerable<Vector3> openSpaceWaypoints = new List<Vector3>(sectorCenters);
 
             // The 8 vertices of the box inscribed inside the sector's spherical radius
-            // Note: these navigational waypoints are clearly inside the boudary of the sector so they can be weighted with the sectors movement penalty
+            // Note: these navigational waypoints are clearly inside the boundary of the sector so they can be weighted with the sectors movement penalty
             // This avoids the weighting ambiguity that exists when navigational waypoints are equidistant between sectors, aka shared between sectors
             IEnumerable<Vector3> interiorSectorPoints = Enumerable.Empty<Vector3>();
             sectors.ForAll(s => {

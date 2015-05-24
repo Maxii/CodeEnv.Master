@@ -147,13 +147,13 @@ public class SystemCreator : AMonoBase, IDisposable {
         LogEvent();
         StarCategory category = GetStarCategory();
         string starName = SystemName + Constants.Space + CommonTerms.Star;
-        return new StarStat(starName, category, 100, new OpeYield(0F, 0F, 100F), new XYield(XResource.Special_3, 0.3F));
+        return new StarStat(starName, category, 100, new OpeResourceYield(0F, 0F, 100F), new RareResourceYield(RareResourceID.Unobtanium, 0.3F));
     }
 
     private StarCategory GetStarCategory() {
         LogEvent();
         if (isCompositionPreset) {
-            Transform transformCarryingStarCategory = gameObject.GetSafeMonoBehaviourComponentInChildren<StarModel>().transform;
+            Transform transformCarryingStarCategory = gameObject.GetSafeMonoBehaviourInChildren<StarModel>().transform;
             return DeriveCategory<StarCategory>(transformCarryingStarCategory);
         }
         return Enums<StarCategory>.GetRandom(excludeDefault: true);
@@ -163,14 +163,14 @@ public class SystemCreator : AMonoBase, IDisposable {
         LogEvent();
         var planetStats = new List<PlanetoidStat>();
         if (isCompositionPreset) {
-            IEnumerable<PlanetoidModel> allPlanetoids = gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetoidModel>();
+            IEnumerable<PlanetoidModel> allPlanetoids = gameObject.GetSafeMonoBehavioursInChildren<PlanetoidModel>();
             // exclude moons
             var planets = allPlanetoids.Where(p => p.gameObject.GetComponentInParents<PlanetoidModel>(excludeSelf: true) == null).ToList();
             foreach (var planet in planets) {
                 Transform transformCarryingPlanetCategory = planet.transform.parent.parent;
                 PlanetoidCategory pCategory = DeriveCategory<PlanetoidCategory>(transformCarryingPlanetCategory);
                 string planetName = planet.gameObject.name; // if already in scene, the planet should already be named for its system and orbit
-                PlanetoidStat stat = new PlanetoidStat(planetName, 1000000F, 10000F, pCategory, 25, new OpeYield(3.1F, 2F, 4.8F), new XYield(XResource.Special_1, 0.3F));
+                PlanetoidStat stat = new PlanetoidStat(planetName, 1000000F, 10000F, pCategory, 25, new OpeResourceYield(3.1F, 2F, 4.8F), new RareResourceYield(RareResourceID.Titanium, 0.3F));
                 planetStats.Add(stat);
             }
         }
@@ -180,7 +180,7 @@ public class SystemCreator : AMonoBase, IDisposable {
             for (int i = 0; i < planetCount; i++) {
                 PlanetoidCategory pCategory = RandomExtended<PlanetoidCategory>.Choice(_acceptablePlanetCategories);
                 string planetName = "{0} [but no orbit was assigned]".Inject(pCategory.GetName());
-                PlanetoidStat stat = new PlanetoidStat(planetName, 1000000F, 10000F, pCategory, 25, new OpeYield(3.1F, 2F, 4.8F), new XYield(XResource.Special_1, 0.3F));
+                PlanetoidStat stat = new PlanetoidStat(planetName, 1000000F, 10000F, pCategory, 25, new OpeResourceYield(3.1F, 2F, 4.8F), new RareResourceYield(RareResourceID.Titanium, 0.3F));
                 planetStats.Add(stat);
             }
         }
@@ -205,7 +205,7 @@ public class SystemCreator : AMonoBase, IDisposable {
         LogEvent();
         Index3D sectorIndex = SectorGrid.GetSectorIndex(_transform.position);
         if (isCompositionPreset) {
-            _system = gameObject.GetSafeMonoBehaviourComponentInChildren<SystemModel>();
+            _system = gameObject.GetSafeMonoBehaviourInChildren<SystemModel>();
             _factory.MakeSystemInstance(SystemName, sectorIndex, Topography.OpenSpace, ref _system);
         }
         else {
@@ -216,7 +216,7 @@ public class SystemCreator : AMonoBase, IDisposable {
     private void MakeStar() {
         LogEvent();
         if (isCompositionPreset) {
-            _star = gameObject.GetSafeMonoBehaviourComponentInChildren<StarModel>();
+            _star = gameObject.GetSafeMonoBehaviourInChildren<StarModel>();
             _factory.MakeInstance(_starStat, SystemName, ref _star);
         }
         else {
@@ -227,7 +227,7 @@ public class SystemCreator : AMonoBase, IDisposable {
     private void MakePlanets() {
         LogEvent();
         if (isCompositionPreset) {
-            IEnumerable<PlanetoidModel> allPlanetoids = gameObject.GetSafeMonoBehaviourComponentsInChildren<PlanetoidModel>();
+            IEnumerable<PlanetoidModel> allPlanetoids = gameObject.GetSafeMonoBehavioursInChildren<PlanetoidModel>();
             // exclude moons
             _planets = allPlanetoids.Where(p => p.gameObject.GetComponentInParents<PlanetoidModel>(excludeSelf: true) == null).ToList();
             var planetsAlreadyUsed = new List<PlanetoidModel>();
@@ -344,7 +344,7 @@ public class SystemCreator : AMonoBase, IDisposable {
                     string planetName = planet.Data.Name;
                     string moonName = planetName + _moonLetters[letterIndex];
                     PlanetoidCategory moonCategory = DeriveCategory<PlanetoidCategory>(moon.transform);
-                    PlanetoidStat stat = new PlanetoidStat(moonName, 1000F, 100000F, moonCategory, 5, new OpeYield(0.1F, 1F, 0.8F));
+                    PlanetoidStat stat = new PlanetoidStat(moonName, 1000F, 100000F, moonCategory, 5, new OpeResourceYield(0.1F, 1F, 0.8F));
 
                     PlanetoidData data = new PlanetoidData(stat) {
                         ParentName = SystemName
@@ -355,7 +355,7 @@ public class SystemCreator : AMonoBase, IDisposable {
                     moon.Data = data;
                     letterIndex++;
                     // include the System and moon as a target in any child with a CameraLOSChangedRelay
-                    moon.gameObject.GetSafeMonoBehaviourComponentInChildren<CameraLOSChangedRelay>().AddTarget(_system.transform, moon.transform);
+                    moon.gameObject.GetSafeMonoBehaviourInChildren<CameraLOSChangedRelay>().AddTarget(_system.transform, moon.transform);
                 }
                 _moons = _moons.Concat(moons);
             }
@@ -369,7 +369,7 @@ public class SystemCreator : AMonoBase, IDisposable {
     }
 
     private void InitializeTopographyMonitor() {
-        var monitor = gameObject.GetSafeMonoBehaviourComponentInChildren<TopographyMonitor>();
+        var monitor = gameObject.GetSafeMonoBehaviourInChildren<TopographyMonitor>();
         monitor.Topography = Topography.System;
         monitor.SurroundingTopography = Topography.OpenSpace;
         monitor.TopographyRadius = TempGameValues.SystemRadius;
@@ -378,7 +378,7 @@ public class SystemCreator : AMonoBase, IDisposable {
     private void CompleteSystem() {
         LogEvent();
         // include the System as a target in any child with a CameraLOSChangedRelay
-        _system.gameObject.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(r => r.AddTarget(_system.transform));
+        _system.gameObject.GetSafeMonoBehavioursInChildren<CameraLOSChangedRelay>().ForAll(r => r.AddTarget(_system.transform));
     }
 
     private void EnableSystem(Action onCompletion = null) {
@@ -388,10 +388,10 @@ public class SystemCreator : AMonoBase, IDisposable {
         _system.enabled = true;
         _star.enabled = true;
         // Enable the Views of the Models 
-        _planets.ForAll(p => p.gameObject.GetSafeMonoBehaviourComponent<AItemView>().enabled = true);
-        _moons.ForAll(m => m.gameObject.GetSafeMonoBehaviourComponent<AItemView>().enabled = true);
-        _system.gameObject.GetSafeMonoBehaviourComponent<AItemView>().enabled = true;
-        _star.gameObject.GetSafeMonoBehaviourComponent<AItemView>().enabled = true;
+        _planets.ForAll(p => p.gameObject.GetSafeMonoBehaviour<AItemView>().enabled = true);
+        _moons.ForAll(m => m.gameObject.GetSafeMonoBehaviour<AItemView>().enabled = true);
+        _system.gameObject.GetSafeMonoBehaviour<AItemView>().enabled = true;
+        _star.gameObject.GetSafeMonoBehaviour<AItemView>().enabled = true;
         UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
             if (onCompletion != null) {
                 onCompletion();
@@ -406,16 +406,16 @@ public class SystemCreator : AMonoBase, IDisposable {
     /// <param name="onCompletion">The on completion.</param>
     private void EnableOtherWhenRunning(Action onCompletion = null) {
         D.Assert(GameStatus.Instance.IsRunning);
-        gameObject.GetSafeMonoBehaviourComponentsInChildren<CameraLOSChangedRelay>().ForAll(relay => relay.enabled = true);
+        gameObject.GetSafeMonoBehavioursInChildren<CameraLOSChangedRelay>().ForAll(relay => relay.enabled = true);
         // Enable planet and moon orbits. Leave any possible settlement that might already be present to the SettlementCreator
-        _planets.ForAll(p => p.gameObject.GetComponentInParents<Orbiter>().enabled = true);   // planet orbits
-        _planets.ForAll(p => p.gameObject.GetComponentsInChildren<Orbiter>().ForAll(o => o.enabled = true));  // moon orbits
+        _planets.ForAll(p => p.gameObject.GetComponentInParents<OrbitSimulator>().enabled = true);   // planet orbits
+        _planets.ForAll(p => p.gameObject.GetComponentsInChildren<OrbitSimulator>().ForAll(o => o.enabled = true));  // moon orbits
 
         // Enable planet, moon and star revolves. Leave any possible settlement that might already be present to the SettlementCreator
         _planets.ForAll(p => p.gameObject.GetComponentsInChildren<Revolver>().ForAll(r => r.enabled = true));    // planets and moons
         _star.gameObject.GetComponentsInChildren<Revolver>().ForAll(r => r.enabled = true);
 
-        gameObject.GetSafeMonoBehaviourComponentInChildren<TopographyMonitor>().enabled = true;
+        gameObject.GetSafeMonoBehaviourInChildren<TopographyMonitor>().enabled = true;
         UnityUtility.WaitOneToExecute(onWaitFinished: delegate {
             if (onCompletion != null) {
                 onCompletion();

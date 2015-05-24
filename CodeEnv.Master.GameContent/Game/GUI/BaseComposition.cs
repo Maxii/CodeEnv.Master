@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
         public BaseComposition(IEnumerable<FacilityCategory> nonUniqueUnitCategories) : base(nonUniqueUnitCategories) { }
 
         protected override string GetCategoryDescription(FacilityCategory category) {
-            return category.GetDescription();
+            return category.GetEnumAttributeText();
         }
 
     }

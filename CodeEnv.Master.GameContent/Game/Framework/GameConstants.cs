@@ -25,6 +25,28 @@ namespace CodeEnv.Master.GameContent {
 
         public static readonly Vector3 UniverseOrigin = Vector3.zero;
 
+        #region UILabel Icon Markers
+
+        /*********************************************************************************
+                    *   Markers used within UILabel to indicate the sprite to inline within the label's text.
+                    *   Note: The UILabel's bbcode checkbox must be checked for the marker to be recognized.
+                    *********************************************************************************/
+
+        public const string IconMarker_Currency = "|currency|";
+
+        public const string IconMarker_Beam = "|beam|";
+
+        public const string IconMarker_Missile = "|missile|";
+
+        public const string IconMarker_Projectile = "|projectile|";
+
+        public const string IconMarker_Distance = "|distance|";
+
+        public const string IconMarker_Health = "|health|";
+
+        #endregion
+
+
     }
 }
 

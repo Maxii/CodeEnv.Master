@@ -26,8 +26,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class StarLabelFormatter : ALabelFormatter<StarReport> {
 
-        private static IDictionary<LabelID, IDictionary<LabelLineID, string>> _labelLookup = new Dictionary<LabelID, IDictionary<LabelLineID, string>>() {
-            { LabelID.CursorHud, new Dictionary<LabelLineID, string>() {
+        private static IDictionary<DisplayTargetID, IDictionary<LabelLineID, string>> _labelLookup = new Dictionary<DisplayTargetID, IDictionary<LabelLineID, string>>() {
+            { DisplayTargetID.CursorHud, new Dictionary<LabelLineID, string>() {
                 {LabelLineID.IntelCoverage, "IntelCoverage: {0}"},
                 {LabelLineID.Name, "Name: {0}"},
                 {LabelLineID.ParentName, "ParentName: {0}"},
@@ -44,8 +44,8 @@ namespace CodeEnv.Master.GameContent {
 
         public StarLabelFormatter() { }
 
-        protected override IDictionary<LabelLineID, string> GetLabelLineLookup(LabelID labelID) {
-            return _labelLookup[labelID];
+        protected override IDictionary<LabelLineID, string> GetLabelLineLookup(DisplayTargetID displayTgtID) {
+            return _labelLookup[displayTgtID];
         }
 
         protected override bool TryGetFormattedLine(LabelLineID lineID, out string formattedLine) {
@@ -70,10 +70,10 @@ namespace CodeEnv.Master.GameContent {
                     content = Report.Capacity.HasValue ? new ColoredTextList<int>(Report.Capacity.Value) : content;
                     break;
                 case LabelLineID.Resources:
-                    content = Report.Resources.HasValue ? new ColoredTextList<OpeYield>(Report.Resources.Value) : content;
+                    content = Report.OpeResources.HasValue ? new ColoredTextList<OpeResourceYield>(Report.OpeResources.Value) : content;
                     break;
                 case LabelLineID.Specials:
-                    content = Report.SpecialResources.HasValue ? new ColoredTextList<XYield>(Report.SpecialResources.Value) : content;
+                    content = Report.RareResources.HasValue ? new ColoredTextList<RareResourceYield>(Report.RareResources.Value) : content;
                     //IColoredTextList result = new ColoredTextList_String();
                     //result.List.Add(new ColoredText(DataReport.SpecialResources.Value.ToString(), GameColor.Green));
                     //content = DataReport.SpecialResources.HasValue ? result : content;

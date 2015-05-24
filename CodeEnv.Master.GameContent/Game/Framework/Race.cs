@@ -29,7 +29,10 @@ namespace CodeEnv.Master.GameContent {
 
         public string LeaderName { get; set; }
 
+        public string ImageFilename { get; private set; }
+
         public string Description { get; set; }
+
 
         public GameColor Color { get; set; }
 
@@ -40,8 +43,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="color">Optional color.</param>
         public Race(Species species, GameColor color) {
             Species = species;
-            LeaderName = species.GetName() + " Leader";
-            Description = species.GetDescription();
+            LeaderName = species != Species.None ? species.GetName() + " Leader" : species.GetName();
+            ImageFilename = species.GetImageFilename();
+            Description = species.GetEnumAttributeText();
             Color = color;
         }
 
@@ -52,6 +56,7 @@ namespace CodeEnv.Master.GameContent {
         public Race(RaceStat stat) {
             Species = stat.Species;
             LeaderName = stat.LeaderName;
+            ImageFilename = stat.ImageFilename;
             Description = stat.Description;
             Color = stat.Color;
         }
@@ -63,6 +68,7 @@ namespace CodeEnv.Master.GameContent {
         public Race(Race race) {
             Species = race.Species;
             LeaderName = race.LeaderName;
+            ImageFilename = race.ImageFilename;
             Description = race.Description;
             Color = race.Color;
         }

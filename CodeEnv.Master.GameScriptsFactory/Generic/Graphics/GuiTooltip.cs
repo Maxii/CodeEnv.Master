@@ -28,8 +28,11 @@ public class GuiTooltip : AGuiTooltip {
 
     public string tooltip = string.Empty;
 
-    protected override string TooltipContent {
-        get { return tooltip; }
+    protected override string TooltipContent { get { return tooltip; } }
+
+    protected override void Start() {
+        base.Start();
+        UnityUtility.ValidateComponentPresence<Collider>(gameObject);
     }
 
     protected override void Cleanup() { }

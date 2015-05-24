@@ -40,10 +40,10 @@ public class GuiGraphicsOptionMenuAcceptButton : AGuiMenuAcceptButton {
         ValidateState();
     }
 
-    protected override void RecordPopupListState(GuiMenuElementID popupListID, string selectionName) {
+    protected override void RecordPopupListState(GuiElementID popupListID, string selectionName) {
         base.RecordPopupListState(popupListID, selectionName);
         switch (popupListID) {
-            case GuiMenuElementID.QualitySettingPopupList:
+            case GuiElementID.QualitySettingPopupList:
                 _qualitySetting = selectionName;
                 break;
             default:
@@ -51,10 +51,10 @@ public class GuiGraphicsOptionMenuAcceptButton : AGuiMenuAcceptButton {
         }
     }
 
-    protected override void RecordCheckboxState(GuiMenuElementID checkboxID, bool checkedState) {
+    protected override void RecordCheckboxState(GuiElementID checkboxID, bool checkedState) {
         base.RecordCheckboxState(checkboxID, checkedState);
         switch (checkboxID) {
-            case GuiMenuElementID.ElementIconsCheckbox:
+            case GuiElementID.ElementIconsCheckbox:
                 _isElementIconsEnabled = checkedState;
                 break;
             default:

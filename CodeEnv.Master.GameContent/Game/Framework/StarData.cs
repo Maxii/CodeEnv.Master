@@ -42,21 +42,15 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<int>(ref _capacity, value, "Capacity"); }
         }
 
-        private OpeYield _resources;
-        public OpeYield Resources {
+        private ResourceYield _resources;
+        public ResourceYield Resources {
             get { return _resources; }
-            set { SetProperty<OpeYield>(ref _resources, value, "Resources"); }
+            set { SetProperty<ResourceYield>(ref _resources, value, "Resources"); }
         }
 
-        private XYield _specialResources;
-        public XYield SpecialResources {
-            get { return _specialResources; }
-            set { SetProperty<XYield>(ref _specialResources, value, "SpecialResources"); }
-        }
+        public Index3D SectorIndex { get; private set; }
 
-        public float Mass { get; private set; }
-
-        protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.Aware; } }
+        protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.Basic; } }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StarData" /> class
@@ -77,11 +71,9 @@ namespace CodeEnv.Master.GameContent {
             : base(starTransform, stat.Category.GetName(), owner) {
             Category = stat.Category;
             Capacity = stat.Capacity;
-            Mass = stat.Mass;
-            starTransform.rigidbody.mass = stat.Mass;
             Resources = stat.Resources;
-            SpecialResources = stat.SpecialResources;
-            base.Topography = Topography.System;
+            Topography = Topography.System;
+            SectorIndex = References.SectorGrid.GetSectorIndex(Position);
         }
 
         protected override AIntel MakeIntel(IntelCoverage initialcoverage) {

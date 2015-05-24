@@ -26,7 +26,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Grid of Sectors. 
+/// Grid of Sectors. Sector indexes contain no 0 value. The sector index to the left of the origin is -1, to the right +1.
 /// </summary>
 public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
@@ -35,7 +35,8 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// <summary>
     /// Readonly. The location of the center of all sectors in world space.
     /// </summary>
-    public IList<Vector3> SectorCenters { get { return _worldBoxLocations; } }
+    //public IList<Vector3> SectorCenters { get { return _worldBoxLocations; } }
+    public IEnumerable<Vector3> SectorCenters { get { return _sectorIndexToWorldBoxLocationLookup.Values; } }
 
     /// <summary>
     ///  Readonly. The location of the corners of all sectors in world space.
@@ -51,12 +52,13 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     private IList<Vector3> _worldVertexLocations;
     private IDictionary<Vector3, Index3D> _gridBoxToSectorIndexLookup;
     private IDictionary<Index3D, Vector3> _sectorIndexToGridBoxLookup;
-    private IList<Vector3> _worldBoxLocations;
+    //private IList<Vector3> _worldBoxLocations;
+    private IDictionary<Index3D, Vector3> _sectorIndexToWorldBoxLocationLookup;
     private IDictionary<Index3D, SectorItem> _sectors;
 
     private SectorFactory _sectorFactory;
     private GridWireframe _gridWireframe;
-    private IList<IDisposable> _subscribers;
+    private IList<IDisposable> _subscriptions;
     private GameManager _gameMgr;
 
     protected override void InitializeOnInstance() {
@@ -73,7 +75,6 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
     private void InitializeLocalReferencesAndValues() {
         _gameMgr = GameManager.Instance;
-        // TODO add other references here
     }
 
     private void InitializeGrid() {
@@ -81,17 +82,19 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         _grid.spacing = TempGameValues.SectorSize;
         _grid.relativeSize = true;
         _grid.renderGrid = false;
-        int sectorCount = Mathf.RoundToInt(Mathf.Pow(2F, 3F) * _grid.size.x * _grid.size.y * _grid.size.z);
-        if (sectorCount > 64) {
-            D.Warn("Sector count is {0}. Currently, values over 64 can take a long time to scan.", sectorCount);
-            // 2x2x2 < 1 sec, 3x3x3 < 5 secs, 5x5x5 > 90 secs
-        }
+        //int sectorCount = Mathf.RoundToInt(Mathf.Pow(2F, 3F) * _grid.size.x * _grid.size.y * _grid.size.z);
+        //D.Log("{0} will build {1} sectors.", GetType().Name, sectorCount);
+        // No longer needed as MyAStarPointGraph now limits the number of sectors it will scan to 64
+        //if (sectorCount > 64) {
+        //    D.Warn("Sector count is {0}. Currently, values over 64 can take a long time to scan.", sectorCount);
+        //    // 2x2x2 < 1 sec, 3x3x3 < 5 secs, 5x5x5 > 90 secs
+        //}
     }
 
     private void Subscribe() {
-        _subscribers = new List<IDisposable>();
-        _subscribers.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, OnPlayerViewModeChanged));
-        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, GameState>(gm => gm.CurrentState, OnGameStateChanged));
+        _subscriptions = new List<IDisposable>();
+        _subscriptions.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, OnPlayerViewModeChanged));
+        _gameMgr.onGameStateChanged += OnGameStateChanged;
     }
 
     protected override void Start() {
@@ -101,11 +104,11 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
     private void DynamicallySubscribe(bool toSubscribe) {
         if (toSubscribe) {
-            _subscribers.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, Index3D>(cc => cc.SectorIndex, OnCameraSectorIndexChanged));
+            _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, Index3D>(cc => cc.SectorIndex, OnCameraSectorIndexChanged));
         }
         else {
-            IDisposable d = _subscribers.Single(s => s as DisposePropertyChangedSubscription<MainCameraControl> != null);
-            _subscribers.Remove(d);
+            IDisposable d = _subscriptions.Single(s => s as DisposePropertyChangedSubscription<MainCameraControl> != null);
+            _subscriptions.Remove(d);
             d.Dispose();
         }
     }
@@ -205,13 +208,17 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         }
     }
 
+    private float __constructSectorsStartTime;
+
     private void ConstructSectors() {
+        __constructSectorsStartTime = Time.time;
         _sectorFactory = SectorFactory.Instance;
         _gridVertexLocations = new List<Vector3>();
         _worldVertexLocations = new List<Vector3>();
         _gridBoxToSectorIndexLookup = new Dictionary<Vector3, Index3D>();
         _sectorIndexToGridBoxLookup = new Dictionary<Index3D, Vector3>();
-        _worldBoxLocations = new List<Vector3>();
+        //_worldBoxLocations = new List<Vector3>();
+        _sectorIndexToWorldBoxLocationLookup = new Dictionary<Index3D, Vector3>();
         _sectors = new Dictionary<Index3D, SectorItem>();
 
         float xSize = _grid.size.x;
@@ -235,7 +242,8 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
                     _sectorIndexToGridBoxLookup.Add(index, gridBoxLocation);
 
                     Vector3 worldBoxLocation = _grid.GridToWorld(gridBoxLocation);
-                    _worldBoxLocations.Add(worldBoxLocation);
+                    //_worldBoxLocations.Add(worldBoxLocation);
+                    _sectorIndexToWorldBoxLocationLookup.Add(index, worldBoxLocation);
 
                     __AddSector(index, worldBoxLocation);
                 }
@@ -243,6 +251,8 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         }
         //D.Log("{0} grid and {1} world vertice found.", _gridVertexLocations.Count, _worldVertexLocations.Count);
         //D.Log("{0} grid and {1} world boxes found.", _gridBoxToSectorIndexLookup.Count, _worldBoxLocations.Count);
+        float elapsedTime = Time.time - __constructSectorsStartTime;
+        D.Log("{0} spent {1:0.0000} seconds building {2} sectors.", GetType().Name, elapsedTime, _sectors.Keys.Count);
     }
 
     /// <summary>
@@ -254,10 +264,12 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     private Index3D CalculateSectorIndexFromGridLocation(Vector3 gridLoc) {
         // Sector indexes will contain no 0 value. The sector index to the left of the origin is -1, to the right +1
         float x = gridLoc.x, y = gridLoc.y, z = gridLoc.z;
-        int xIndex = x.ApproxEquals(Constants.ZeroF) ? 1 : (x > Constants.ZeroF ? Mathf.CeilToInt(x + 1F) : Mathf.FloorToInt(x));
-        int yIndex = y.ApproxEquals(Constants.ZeroF) ? 1 : (y > Constants.ZeroF ? Mathf.CeilToInt(y + 1F) : Mathf.FloorToInt(y));
-        int zIndex = z.ApproxEquals(Constants.ZeroF) ? 1 : (z > Constants.ZeroF ? Mathf.CeilToInt(z + 1F) : Mathf.FloorToInt(z));
-        return new Index3D(xIndex, yIndex, zIndex);
+        int xIndex = x.ApproxEquals(Constants.ZeroF) ? 1 : (x > Constants.ZeroF ? Mathf.CeilToInt(x) : Mathf.FloorToInt(x));
+        int yIndex = y.ApproxEquals(Constants.ZeroF) ? 1 : (y > Constants.ZeroF ? Mathf.CeilToInt(y) : Mathf.FloorToInt(y));
+        int zIndex = z.ApproxEquals(Constants.ZeroF) ? 1 : (z > Constants.ZeroF ? Mathf.CeilToInt(z) : Mathf.FloorToInt(z));
+        var index = new Index3D(xIndex, yIndex, zIndex);
+        //D.Log("{0}: Sector GridLoc = {1}, resulting SectorIndex = {2}.", GetType().Name, gridLoc, index);
+        return index;
     }
 
     private void __AddSector(Index3D index, Vector3 worldPosition) {
@@ -329,6 +341,28 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         return index;
     }
 
+    /// <summary>
+    /// Returns <c>true</c> if the sector's world position was acquired, <c>false</c> otherwise.
+    /// Warning: While debugging, only a limited number of sectors are 'built' to
+    /// reduce the time needed to construct valid paths for pathfinding.
+    /// </summary>
+    /// <param name="sectorIndex">Index of the sector.</param>
+    /// <param name="worldPosition">The world position of the sector's center.</param>
+    /// <returns></returns>
+    public bool TryGetSectorPosition(Index3D sectorIndex, out Vector3 worldPosition) {
+        bool isSectorFound = _sectorIndexToWorldBoxLocationLookup.TryGetValue(sectorIndex, out worldPosition);
+        D.Warn(!isSectorFound, "{0} could not find a sector at Index {1}.", GetType().Name, sectorIndex);
+        return isSectorFound;
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if the sector was acquired, <c>false</c> otherwise.
+    /// Warning: While debugging, only a limited number of sectors are 'built' to
+    /// reduce the time needed to construct valid paths for pathfinding.
+    /// </summary>
+    /// <param name="index">The index.</param>
+    /// <param name="sector">The sector.</param>
+    /// <returns></returns>
     public bool TryGetSector(Index3D index, out SectorItem sector) {
         return _sectors.TryGetValue(index, out sector);
     }
@@ -452,8 +486,9 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     }
 
     private void Unsubscribe() {
-        _subscribers.ForAll(s => s.Dispose());
-        _subscribers.Clear();
+        _subscriptions.ForAll(s => s.Dispose());
+        _subscriptions.Clear();
+        _gameMgr.onGameStateChanged -= OnGameStateChanged;
     }
 
     public override string ToString() {
