@@ -114,22 +114,21 @@ public abstract class AGuiMenuAcceptButton : AGuiButton {
     }
 
     /// <summary>
-    /// Derived classes implement this abstract method, recording the state of the checkbox named <c>checkboxName_lc</c>.
+    /// Derived classes implement this abstract method, recording the state of the checkbox that has <c>checkboxID</c>.
     /// </summary>
     /// <param name="checkboxID">The checkbox identifier.</param>
     /// <param name="checkedState">if set to <c>true</c> [checked state].</param>
     protected virtual void RecordCheckboxState(GuiElementID checkboxID, bool checkedState) { }
 
     /// <summary>
-    /// Derived classes implement this abstract method, recording the state of the popup list named <c>popupListName_lc</c>.
+    /// Derived classes implement this abstract method, recording the state of the popup list that has <c>popupListID</c>.
     /// </summary>
     /// <param name="popupListID">The popup list identifier.</param>
     /// <param name="selectionName">Name of the selection.</param>
     protected virtual void RecordPopupListState(GuiElementID popupListID, string selectionName) { }
 
     /// <summary>
-    /// Derived classes implement this abstract method, recording the state of the slider named <c>sliderName_lc</c>.
-    /// UNDONE sliderValue insufficient to select which slider
+    /// Derived classes implement this abstract method, recording the state of the slider that has <c>sliderID</c>.
     /// </summary>
     /// <param name="sliderID">The slider identifier.</param>
     /// <param name="sliderValue">The slider value.</param>

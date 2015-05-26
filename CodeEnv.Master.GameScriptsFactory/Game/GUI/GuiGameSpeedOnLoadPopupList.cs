@@ -28,9 +28,7 @@ public class GuiGameSpeedOnLoadPopupList : AGuiPopupList<GameSpeed> {
 
     public override GuiElementID ElementID { get { return GuiElementID.GameSpeedOnLoadPopupList; } }
 
-    public override bool HasPreference { get { return true; } }
-
-    protected override string[] GetNames() { return Enums<GameSpeed>.GetNames(excludeDefault: true); }
+    protected override string[] NameValues { get { return Enums<GameSpeed>.GetNames(excludeDefault: true); } }
 
     // no need for taking an action OnPopupListSelectionChanged as changes aren't recorded 
     // from this popup list until the Menu Accept Button is pushed

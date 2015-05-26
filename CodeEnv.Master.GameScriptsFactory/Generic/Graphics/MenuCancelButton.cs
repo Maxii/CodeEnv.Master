@@ -20,12 +20,12 @@ using CodeEnv.Master.Common;
 
 /// <summary>
 /// Menu Cancel Button that restores the original state of the menu to what it was when it was opened.
+/// This version is intended for use with GuiWindow where GuiWindow's onShow delegate is wired in the 
+/// inspector to call CaptureMenuState().
 /// </summary>
 public class MenuCancelButton : AGuiButton {
 
-    protected override string TooltipContent {
-        get { return "Click to cancel changes."; }
-    }
+    protected override string TooltipContent { get { return "Click to cancel changes."; } }
 
     private UIToggle[] _checkboxes;
     private bool[] _checkboxesStateOnShow;
@@ -51,7 +51,7 @@ public class MenuCancelButton : AGuiButton {
     /// transition process and is now ready for user interaction.
     /// </summary>
     public void CaptureMenuState() {
-        D.Log("{0}.CaptureMenuState() called.", GetType().Name);
+        //D.Log("{0}.CaptureMenuState() called.", GetType().Name);
         for (int i = 0; i < _checkboxes.Length; i++) {
             _checkboxesStateOnShow[i] = _checkboxes[i].value;
         }
@@ -70,6 +70,7 @@ public class MenuCancelButton : AGuiButton {
         }
         for (int i = 0; i < _popupLists.Length; i++) {
             _popupLists[i].value = _popupListsSelectionOnShow[i];
+            //D.Log("Restoring {0} from {1} to {2}.", _popupLists[i].name, _popupLists[i].value, _popupListsSelectionOnShow[i]);
         }
     }
 

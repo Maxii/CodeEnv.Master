@@ -28,9 +28,7 @@ public class GuiUniverseSizePopupList : AGuiPopupList<UniverseSizeGuiSelection> 
 
     protected override bool IncludesRandom { get { return true; } }
 
-    public override bool HasPreference { get { return true; } }
-
-    protected override string[] GetNames() { return Enums<UniverseSizeGuiSelection>.GetNames(excludeDefault: true); }
+    protected override string[] NameValues { get { return Enums<UniverseSizeGuiSelection>.GetNames(excludeDefault: true); } }
 
     // no need for taking an action OnPopupListSelectionChanged as changes aren't recorded 
     // from this popup list until the Menu Accept Button is pushed

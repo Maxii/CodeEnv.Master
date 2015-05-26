@@ -249,7 +249,6 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsResetOnFocusEnabled, OnResetOnFocusEnabledChanged));
         _subscriptions.Add(_playerPrefsMgr.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsZoomOutOnCursorEnabled, OnZoomOutOnCursorEnabledChanged));
         _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsRunning, OnIsRunningChanged));
-        //_subscriptions.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, OnViewModeChanged));
         _gameMgr.onGameStateChanged += OnGameStateChanged;
     }
 

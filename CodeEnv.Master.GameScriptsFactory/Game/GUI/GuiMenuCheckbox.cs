@@ -27,13 +27,9 @@ using UnityEngine;
 /// </summary>
 public class GuiMenuCheckbox : AGuiMenuElement {
 
-    public bool hasPreference;
-
     public string tooltip = string.Empty;
-
     public GuiElementID elementID;
 
-    public override bool HasPreference { get { return hasPreference; } }
     public override GuiElementID ElementID { get { return elementID; } }
 
     protected override string TooltipContent { get { return tooltip; } }
@@ -46,14 +42,14 @@ public class GuiMenuCheckbox : AGuiMenuElement {
     }
 
     /// <summary>
-    /// Initializes the checkbox. If the checkbox has a preference saved in PlayerPrefsManager that value is used. If not
-    /// the checkbox value is set to false.
+    /// Initializes the checkbox. If the checkbox has a preference saved in PlayerPrefsManager that value is used. 
+    /// If not the checkbox value is set to false.
     /// </summary>
     private void InitializeCheckbox() {
         _checkbox = gameObject.GetSafeMonoBehaviour<UIToggle>();
 
-        if (HasPreference) {
-            string prefsPropertyName = ElementID.PreferencePropertyName();
+        string prefsPropertyName = ElementID.PreferencePropertyName();
+        if (prefsPropertyName != null) {
             PropertyInfo propertyInfo = typeof(PlayerPrefsManager).GetProperty(prefsPropertyName);
             if (propertyInfo == null) {
                 D.ErrorContext("No {0} property named {1} found!".Inject(typeof(PlayerPrefsManager).Name, prefsPropertyName), gameObject);
@@ -62,6 +58,7 @@ public class GuiMenuCheckbox : AGuiMenuElement {
             _checkbox.startsActive = propertyGet(); // startsActive (aka checked) used as UIToggle Start() uses it to initialize the checkbox
         }
         else {
+            // no pref stored for this ElementID
             D.WarnContext("Checkbox {0} does not use a {1} preference. Initializing to false.".Inject(gameObject.name, typeof(PlayerPrefsManager).Name), gameObject);
             _checkbox.startsActive = false;
         }
@@ -82,8 +79,7 @@ public class GuiMenuCheckbox : AGuiMenuElement {
     // Delegate to be removed is attached to this same GameObject that is being destroyed. In addition,
     // execution is problematic as the gameObject may have already been destroyed.
 
-
-    #region Archive
+    #region PlayerPrefs Reflection-based Property Acquisition Archive
 
     /// <summary>
     /// The name of the PlayerPrefsManager property for this checkbox. 

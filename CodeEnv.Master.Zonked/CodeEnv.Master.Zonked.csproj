@@ -368,6 +368,8 @@
     <Compile Include="PlanetPresenter.cs" />
     <Compile Include="PlanetView.cs" />
     <Compile Include="PlasmaBeam.cs" />
+    <Compile Include="PlayerPrefsManager.cs" />
+    <Compile Include="PlayerPrefsManager1.cs" />
     <Compile Include="PlayerSettingsSetup.cs" />
     <Compile Include="RangeTracker.cs" />
     <Compile Include="RareResourceExtensions.cs" />

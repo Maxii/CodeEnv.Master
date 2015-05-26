@@ -219,8 +219,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         int aiPlayerCount = universeSize.DefaultAIPlayerCount();
         var aiPlayerRaces = new Race[aiPlayerCount];
         for (int i = 0; i < aiPlayerCount; i++) {
-            var aiSpecies = Enums<Species>.GetRandomExcept(Species.None, Species.Human);
-            var aiColor = Enums<GameColor>.GetRandomExcept(GameColor.None, GameColor.Clear);
+            var aiSpecies = Enums<Species>.GetRandomExcept(default(Species), Species.Human);
+            var aiColor = Enums<GameColor>.GetRandomExcept(default(GameColor), GameColor.Clear, GameColor.Black, GameColor.Gray);
             aiPlayerRaces[i] = new Race(aiSpecies, aiColor);
         }
 
@@ -228,7 +228,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
             TempGameValues.AnImageFilename, "Maxii description", _playerPrefsMgr.UserPlayerColor);
 
         var gameSettings = new GameSettings {
-            IsStartupSimulation = true,
+            __IsStartupSimulation = true,
             UniverseSize = universeSize,
             UserPlayerRace = new Race(userRaceStat),
             AIPlayerRaces = aiPlayerRaces
@@ -334,7 +334,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
             var aiRace = aiPlayerRaces[i];
             var aiPlayer = new Player(aiRace, IQ.Normal);
             // if not startupSimulation, all relationships default to None
-            if (settings.IsStartupSimulation) {
+            if (settings.__IsStartupSimulation) {
                 switch (i) {
                     case 0:
                         // makes sure there will always be an AIPlayer with DiploRelation.None
@@ -471,7 +471,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     public void SaveGame(string gameName) {
         GameSettings.IsSavedGame = true;
-        GameSettings.IsStartupSimulation = false;
+        GameSettings.__IsStartupSimulation = false;
         _gameTime.PrepareToSaveGame();
         LevelSerializer.SaveGame(gameName);
     }
@@ -625,7 +625,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
         //CreatePlayers(GameSettings);  // moved to Building to follow ResetConditionsForGameStartup()
 
-        if (GameSettings.IsStartupSimulation) {
+        if (GameSettings.__IsStartupSimulation) {
             return;
         }
 
@@ -635,7 +635,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     }
 
     void Loading_OnLevelWasLoaded(int level) {
-        D.Assert(!GameSettings.IsStartupSimulation);
+        D.Assert(!GameSettings.__IsStartupSimulation);
         LogEvent();
 
         D.Assert(CurrentScene == SceneLevel.GameScene, "Scene transition to {0} not implemented.".Inject(CurrentScene.GetName()));
@@ -700,7 +700,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     void Restoring_OnDeserialized() {
         LogEvent();
-        D.Assert(GameSettings.IsSavedGame && !GameSettings.IsStartupSimulation);
+        D.Assert(GameSettings.IsSavedGame && !GameSettings.__IsStartupSimulation);
 
         ResetConditionsForGameStartup();
         _gameTime.PrepareToResumeSavedGame();

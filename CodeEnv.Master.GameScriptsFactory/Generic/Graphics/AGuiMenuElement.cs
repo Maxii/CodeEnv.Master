@@ -25,12 +25,7 @@ using CodeEnv.Master.GameContent;
 public abstract class AGuiMenuElement : AGuiTooltip {
 
     /// <summary>
-    /// Flag indicating whether PlayerPrefsManager holds a selection preference associated with this ElementID.
-    /// </summary>
-    public virtual bool HasPreference { get { return false; } }
-
-    /// <summary>
-    /// Unique ID for this Gui Menu Element.
+    /// Unique ID for this Gui Element.
     /// </summary>
     public abstract GuiElementID ElementID { get; }
 
@@ -42,9 +37,6 @@ public abstract class AGuiMenuElement : AGuiTooltip {
     private void Validate() {
         UnityUtility.ValidateMonoBehaviourPresence<UIWidget>(gameObject);
         D.Assert(ElementID != default(GuiElementID), "ElementID not set.", gameObject);
-        if (HasPreference) {
-            Arguments.ValidateForContent(ElementID.PreferencePropertyName());
-        }
     }
 
 }

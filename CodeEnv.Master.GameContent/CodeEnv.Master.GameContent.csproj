@@ -149,7 +149,6 @@
     <Compile Include="Game\Framework\GameDate.cs" />
     <Compile Include="Generic\IO\GeneralSettings.cs" />
     <Compile Include="Generic\IO\ICameraControl.cs" />
-    <Compile Include="Generic\IO\PlayerPrefsManager.cs" />
     <Compile Include="Game\Graphics\GridWireframe.cs" />
     <Compile Include="Game\Graphics\GridWireframe_Alt.cs" />
     <Compile Include="Game\Gameplay\PlanetoidCategory.cs" />
@@ -238,6 +237,7 @@
     <Compile Include="Game\GUI\SystemDisplayInfoFactory.cs" />
     <Compile Include="Game\GUI\SelectedItemHudContent.cs" />
     <Compile Include="Generic\Framework\IFacilityItem.cs" />
+    <Compile Include="Generic\IO\PlayerPrefsManager.cs" />
     <Compile Include="ThirdParty\IMyNguiEventListener.cs" />
     <Compile Include="Generic\Graphics\IResponsiveTrackingSprite.cs" />
     <Compile Include="Game\Graphics\MoonDisplayManager.cs" />

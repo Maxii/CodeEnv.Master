@@ -30,7 +30,7 @@ public class GuiSavedGamesPopupList : AGuiPopupList<string> {
 
     public override GuiElementID ElementID { get { return GuiElementID.SavedGamesPopupList; } }
 
-    protected override string[] GetNames() { return __dummySavedGameNames; }
+    protected override string[] NameValues { get { return __dummySavedGameNames; } }
 
     //protected override string[] GetNames() {
     //    var savedGames = LevelSerializer.SavedGames[LevelSerializer.PlayerName];

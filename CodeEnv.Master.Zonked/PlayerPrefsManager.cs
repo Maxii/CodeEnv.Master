@@ -6,26 +6,27 @@
 // </copyright> 
 // <summary> 
 // File: PlayerPrefsManager.cs
-// Singleton. Manages saving and acquiring player preference values via UnityEngine.PlayerPrefs. 
+// Manages saving and acquiring player preference values via UnityEngine.PlayerPrefs. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
     /// <summary>
-    /// Singleton. Manages saving and acquiring player preference values via UnityEngine.PlayerPrefs. 
-    /// Save default location on disk:
-    /// Windows Standalone players: HKCU\Software[company name][product name] key, 
-    /// where company and product names are the names set up in Project Settings.
+    /// Manages saving and acquiring player preference values via UnityEngine.PlayerPrefs. Save default location on disk:
+    /// Windows Standalone players: HKCU\Software[company name][product name] key, where company and product names are the names set up in Project Settings.
     /// Windows Web players: %APPDATA%\Unity\WebPlayerPrefs
     /// </summary>
+    [SerializeAll]
+    [Obsolete]
     public class PlayerPrefsManager : AGenericSingleton<PlayerPrefsManager>, IInstanceCount {
 
         private string _universeSizeKey = "Universe Size";
@@ -36,16 +37,16 @@ namespace CodeEnv.Master.GameContent {
         private string _isZoomOutOnCursorEnabledKey = "Zoom Out On Cursor";
         private string _isCameraRollEnabledKey = "Camera Roll";
         private string _isResetOnFocusEnabledKey = "Reset On Focus";
-        private string _isPauseOnLoadEnabledKey = "Paused On Load";
+        private string _isPauseAfterLoadEnabledKey = "Paused On Load";
         private string _isElementIconsEnabledKey = "Element Icons";
         private string _qualitySettingKey = "Quality Setting";
 
         // WARNING: Changing the name of a Property here requires a comensurate change in the name returned by GuiMenuElementIDExtensions
-        // Notifications are not needed for properties that cannot change during a game instance
-        public UniverseSizeGuiSelection UniverseSizeSelection { get; private set; }
+        // TODO: notifications are not needed for properties that cannot change during a game instance
+        public UniverseSizeGuiSelection UniverseSizeSelection { get; set; }
 
-        public SpeciesGuiSelection UserPlayerSpeciesSelection { get; private set; }
-        public GameColor UserPlayerColor { get; private set; }
+        public SpeciesGuiSelection UserPlayerSpeciesSelection { get; set; }
+        public GameColor UserPlayerColor { get; set; }
         public GameSpeed GameSpeedOnLoad { get; private set; }
 
         public bool IsPauseOnLoadEnabled { get; private set; }
@@ -117,61 +118,43 @@ namespace CodeEnv.Master.GameContent {
             IsElementIconsEnabled = settings.IsElementIconsEnabled;
         }
 
-        public void RecordNewGameSettings(GameSettings gameSettings) {
-            UniverseSizeSelection = gameSettings.UniverseSizeSelection;
-            UserPlayerSpeciesSelection = gameSettings.UserPlayerSpeciesSelection;
-            UserPlayerColor = gameSettings.UserPlayerColor;
-        }
-
         /// <summary>
         /// Stores all PlayerPrefs to disk.
         /// </summary>
         public void Store() {
-            StoreEnumPref<UniverseSizeGuiSelection>(_universeSizeKey, UniverseSizeSelection);
-            StoreEnumPref<GameSpeed>(_gameSpeedOnLoadKey, GameSpeedOnLoad);
-            StoreEnumPref<SpeciesGuiSelection>(_userPlayerSpeciesKey, UserPlayerSpeciesSelection);
-            StoreEnumPref<GameColor>(_userPlayerColorKey, UserPlayerColor);
+            // if variable not null/empty or None, convert the value to a string, encrypt it, and using the key, set it 
+            string encryptedStringValue = string.Empty;
+            if (UniverseSizeSelection != UniverseSizeGuiSelection.None) {
+                encryptedStringValue = Encrypt(UniverseSizeSelection.GetName());
+                PlayerPrefs.SetString(_universeSizeKey, encryptedStringValue);
+            }
+            if (GameSpeedOnLoad != GameSpeed.None) {
+                encryptedStringValue = Encrypt(GameSpeedOnLoad.GetName());
+                PlayerPrefs.SetString(_gameSpeedOnLoadKey, encryptedStringValue);
+            }
+            if (UserPlayerSpeciesSelection != SpeciesGuiSelection.None) {
+                encryptedStringValue = Encrypt(UserPlayerSpeciesSelection.GetName());
+                PlayerPrefs.SetString(_userPlayerSpeciesKey, encryptedStringValue);
+            }
+            if (UserPlayerColor != GameColor.None) {
+                encryptedStringValue = Encrypt(UserPlayerColor.GetName());
+                PlayerPrefs.SetString(_userPlayerColorKey, encryptedStringValue);
+            }
+            PlayerPrefs.SetString(_isZoomOutOnCursorEnabledKey, Encrypt(IsZoomOutOnCursorEnabled.ToString()));
+            PlayerPrefs.SetString(_isCameraRollEnabledKey, Encrypt(IsCameraRollEnabled.ToString()));
+            PlayerPrefs.SetString(_isResetOnFocusEnabledKey, Encrypt(IsResetOnFocusEnabled.ToString()));
+            PlayerPrefs.SetString(_isPauseAfterLoadEnabledKey, Encrypt(IsPauseOnLoadEnabled.ToString()));
+            PlayerPrefs.SetString(_isElementIconsEnabledKey, Encrypt(IsElementIconsEnabled.ToString()));
+            //D.Log("At Store, PlayerPrefsMgr.IsElementIconsEnabled = " + IsElementIconsEnabled);
 
-            StoreBooleanPref(_isZoomOutOnCursorEnabledKey, IsZoomOutOnCursorEnabled);
-            StoreBooleanPref(_isCameraRollEnabledKey, IsCameraRollEnabled);
-            StoreBooleanPref(_isResetOnFocusEnabledKey, IsResetOnFocusEnabled);
-            StoreBooleanPref(_isPauseOnLoadEnabledKey, IsPauseOnLoadEnabled);
-            StoreBooleanPref(_isElementIconsEnabledKey, IsElementIconsEnabled);
-
-            StoreStringPref(_qualitySettingKey, QualitySetting);
+            PlayerPrefs.SetString(_qualitySettingKey, Encrypt(QualitySetting)); // changed from SetInt(key, value)
             PlayerPrefs.Save();
         }
 
-        private void StoreBooleanPref(string key, bool value) {
-            PlayerPrefs.SetString(key, Encrypt(value));
-        }
-
-        private void StoreStringPref(string key, string value) {
-            Arguments.ValidateForContent(value);
-            PlayerPrefs.SetString(key, Encrypt(value));
-        }
-
-        private void StoreIntPref(string key, int value) {
-            PlayerPrefs.SetInt(key, Encrypt(value));
-        }
-
-        private void StoreFloatPref(string key, float value) {
-            PlayerPrefs.SetFloat(key, Encrypt(value));
-        }
-
-        private void StoreEnumPref<T>(string key, T value) where T : struct {
-            if (!Enums<T>.IsDefined(value)) {
-                D.Error("Undefined value {0} of EnumType {1}.", value.ToString(), typeof(T));
-            }
-            if (!value.Equals(default(T))) {
-                PlayerPrefs.SetString(key, Encrypt(value.ToString()));
-            }
-        }
-
-        private string Encrypt(string value) { return value; }
+        // IMPROVE combine key and value into a delimited string, then encrypt/decript   
+        private string Encrypt(string item) { return item; }
         private float Encrypt(float value) { return value; }
         private int Encrypt(int value) { return value; }
-        private string Encrypt(bool value) { return value.ToString(); }
 
         /// <summary>
         /// Retrieves all PlayerPrefs and makes them accessible as Properties from this instance. This is where
@@ -182,53 +165,36 @@ namespace CodeEnv.Master.GameContent {
         /// </remarks>
         public void Retrieve() {
             D.Log("{0}.Retrieve() called.", GetType().Name);
-            UniverseSizeSelection = RetrieveEnumPref<UniverseSizeGuiSelection>(_universeSizeKey, UniverseSizeGuiSelection.Normal);
-            GameSpeedOnLoad = RetrieveEnumPref<GameSpeed>(_gameSpeedOnLoadKey, GameSpeed.Normal);
-            UserPlayerSpeciesSelection = RetrieveEnumPref<SpeciesGuiSelection>(_userPlayerSpeciesKey, SpeciesGuiSelection.Human);
-            UserPlayerColor = RetrieveEnumPref<GameColor>(_userPlayerColorKey, GameColor.Blue);
+            UniverseSizeSelection = PlayerPrefs.HasKey(_universeSizeKey) ? RetrieveEnumPref<UniverseSizeGuiSelection>(_universeSizeKey) : UniverseSizeGuiSelection.Normal;
+            //D.Log("GameSpeedOnLoad = {0} before retrieval.", GameSpeedOnLoad);
+            GameSpeedOnLoad = PlayerPrefs.HasKey(_gameSpeedOnLoadKey) ? RetrieveEnumPref<GameSpeed>(_gameSpeedOnLoadKey) : GameSpeed.Normal;
+            //D.Log("GameSpeedOnLoad = {0} after retrieval.", GameSpeedOnLoad);
+            UserPlayerSpeciesSelection = PlayerPrefs.HasKey(_userPlayerSpeciesKey) ? RetrieveEnumPref<SpeciesGuiSelection>(_userPlayerSpeciesKey) : SpeciesGuiSelection.Human;
+            UserPlayerColor = PlayerPrefs.HasKey(_userPlayerColorKey) ? RetrieveEnumPref<GameColor>(_userPlayerColorKey) : GameColor.Blue;
 
-            IsPauseOnLoadEnabled = RetrieveBooleanPref(_isPauseOnLoadEnabledKey, false);
+            IsPauseOnLoadEnabled = (PlayerPrefs.HasKey(_isPauseAfterLoadEnabledKey)) ? bool.Parse(Decrypt(PlayerPrefs.GetString(_isPauseAfterLoadEnabledKey))) : false;
 
             // the initial change notification sent out by these Properties occur so early they won't be heard by anyone so clients must initialize by calling the Properties directly
-            IsZoomOutOnCursorEnabled = RetrieveBooleanPref(_isZoomOutOnCursorEnabledKey, true);
-            IsCameraRollEnabled = RetrieveBooleanPref(_isCameraRollEnabledKey, false);
-            IsResetOnFocusEnabled = RetrieveBooleanPref(_isResetOnFocusEnabledKey, true);
-            IsElementIconsEnabled = RetrieveBooleanPref(_isElementIconsEnabledKey, true);
-            QualitySetting = RetrieveStringPref(_qualitySettingKey, QualitySettings.names[QualitySettings.GetQualityLevel()]);
+            IsZoomOutOnCursorEnabled = (PlayerPrefs.HasKey(_isZoomOutOnCursorEnabledKey)) ? bool.Parse(Decrypt(PlayerPrefs.GetString(_isZoomOutOnCursorEnabledKey))) : true;
+            IsCameraRollEnabled = (PlayerPrefs.HasKey(_isCameraRollEnabledKey)) ? bool.Parse(Decrypt(PlayerPrefs.GetString(_isCameraRollEnabledKey))) : false;
+            IsResetOnFocusEnabled = (PlayerPrefs.HasKey(_isResetOnFocusEnabledKey)) ? bool.Parse(Decrypt(PlayerPrefs.GetString(_isResetOnFocusEnabledKey))) : true;
+            IsElementIconsEnabled = (PlayerPrefs.HasKey(_isElementIconsEnabledKey)) ? bool.Parse(Decrypt(PlayerPrefs.GetString(_isElementIconsEnabledKey))) : true;
+            QualitySetting = (PlayerPrefs.HasKey(_qualitySettingKey)) ? Decrypt(PlayerPrefs.GetString(_qualitySettingKey)) : QualitySettings.names[QualitySettings.GetQualityLevel()];
         }
 
-        private bool RetrieveBooleanPref(string key, bool defaultValue) {
-            return PlayerPrefs.HasKey(key) ? DecryptToBool(PlayerPrefs.GetString(key)) : defaultValue;
-        }
-
-        private string RetrieveStringPref(string key, string defaultValue) {
-            return PlayerPrefs.HasKey(key) ? DecryptToString(PlayerPrefs.GetString(key)) : defaultValue;
-        }
-
-        private float RetrieveFloatPref(string key, float defaultValue) {
-            return PlayerPrefs.HasKey(key) ? DecryptToFloat(PlayerPrefs.GetFloat(key)) : defaultValue;
-        }
-
-        private int RetrieveIntPref(string key, int defaultValue) {
-            return PlayerPrefs.HasKey(key) ? DecryptToInt(PlayerPrefs.GetInt(key)) : defaultValue;
-        }
-
-        private T RetrieveEnumPref<T>(string key, T defaultValue) where T : struct {
-            if (PlayerPrefs.HasKey(key)) {
-                string decryptedStringValue = DecryptToString(PlayerPrefs.GetString(key));
-                T pref;
-                if (!Enums<T>.TryParse(decryptedStringValue, out pref)) {
-                    D.Error("Unable to parse Preference {0} of Type {1}.", decryptedStringValue, typeof(T));
-                }
-                return pref;
+        private T RetrieveEnumPref<T>(string key) where T : struct {
+            string decryptedStringValue = Decrypt(PlayerPrefs.GetString(key));
+            T pref;
+            if (!Enums<T>.TryParse(decryptedStringValue, out pref)) {
+                D.Error("Unable to parse Preference {0} of Type {1}.", decryptedStringValue, typeof(T));
             }
-            return defaultValue;
+            return pref;
         }
 
-        private string DecryptToString(string value) { return value; }
-        private float DecryptToFloat(float value) { return value; }
-        private int DecryptToInt(int value) { return value; }
-        private bool DecryptToBool(string value) { return bool.Parse(value); }
+        // IMPROVE combine key and value into a delimited string, then encrypt/decript
+        private string Decrypt(string item) { return item; }
+        private float Decrypt(float value) { return value; }
+        private int Decrypt(int value) { return value; }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

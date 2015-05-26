@@ -26,15 +26,31 @@ public class GuiPlayerColorPopupList : AGuiPopupList<GameColor> {
 
     public GuiElementID elementID;
 
-    public bool hasPreference;
+    private GameColor _defaultSelection;
+    public GameColor DefaultSelection {
+        get { return _defaultSelection; }
+        set { SetProperty<GameColor>(ref _defaultSelection, value, "DefaultSelection", OnDefaultSelectionChanged); }
+    }
 
     public override GuiElementID ElementID { get { return elementID; } }
 
-    public override bool HasPreference { get { return hasPreference; } }
+    protected override string[] NameValues {
+        get {
+            return Enums<GameColor>.GetNamesExcept(default(GameColor),
+                GameColor.Clear, GameColor.Gray, GameColor.Black, GameColor.White);
+        }
+    }
 
-    protected override string[] GetNames() {
-        return Enums<GameColor>.GetNamesExcept(default(GameColor),
-            GameColor.Clear, GameColor.Gray, GameColor.Black, GameColor.White);
+    /// <summary>
+    /// Removes the provided color from the available choices within the popup list.
+    /// </summary>
+    /// <param name="color">The color.</param>
+    public void RemoveColor(GameColor color) {
+        RemoveNameValue(color.GetName());
+    }
+
+    private void OnDefaultSelectionChanged() {
+        DefaultSelectionValue = DefaultSelection.GetName();
     }
 
     // no need for taking an action OnPopupListSelectionChanged as changes aren't recorded 

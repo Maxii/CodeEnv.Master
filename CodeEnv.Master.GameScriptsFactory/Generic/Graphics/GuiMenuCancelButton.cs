@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GuiMenuCancelButton.cs
-// General-purpose Menu Cancel Button that restores the original state of the menu
+// The first Menu Cancel Button that restores the original state of the menu
 // to what it was when it was opened.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -23,8 +23,8 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Menu Cancel Button that restores the original state of the menu to what it was when it was opened.
-/// Warning: This button requires the presence of UIPlayAnimation with proper ifDisabledOnPlay
+/// The first Menu Cancel Button that restores the original state of the menu to what it was when it was opened.
+/// WARNING: This button requires the presence of UIPlayAnimation with proper ifDisabledOnPlay
 /// and disableWhenFinished settings as indicated in ValidateSetup().
 /// </summary>
 public class GuiMenuCancelButton : AGuiButton {

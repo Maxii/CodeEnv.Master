@@ -27,11 +27,10 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Returns the PlayerPrefs Property Name associated with this GuiMenuElementID.
-        /// Throws an exception if the elementID has no PlayerPrefs Property associated with it.
+        /// Returns null if the elementID has no PlayerPrefs Property associated with it.
         /// </summary>
-        /// <param name="elementID">The ID for this Gui menu element.</param>
+        /// <param name="elementID">The ID for this Gui element.</param>
         /// <returns></returns>
-        /// <exception cref="System.NotImplementedException"></exception>
         public static string PreferencePropertyName(this GuiElementID elementID) {
             switch (elementID) {
                 case GuiElementID.CameraRollCheckbox:
@@ -55,7 +54,7 @@ namespace CodeEnv.Master.GameContent {
                 case GuiElementID.ZoomOutOnCursorCheckbox:
                     return "IsZoomOutOnCursorEnabled";
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(elementID));
+                    return null;
             }
         }
 

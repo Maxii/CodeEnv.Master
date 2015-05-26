@@ -27,9 +27,7 @@ public class GuiQualitySettingPopupList : AGuiPopupList<string> {
 
     public override GuiElementID ElementID { get { return GuiElementID.QualitySettingPopupList; } }
 
-    public override bool HasPreference { get { return true; } }
-
-    protected override string[] GetNames() { return QualitySettings.names; }
+    protected override string[] NameValues { get { return QualitySettings.names; } }
 
     // no need for taking an action OnPopupListSelectionChanged as changes aren't recorded 
     // from this popup list until the Menu Accept Button is pushed

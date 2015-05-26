@@ -50,10 +50,15 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButton {
         set { SetProperty<UniverseSize>(ref _universeSize, value, "UniverseSize", OnUniverseSizeChanged); }
     }
 
+    private GameColor _userPlayerColor;
+    private GameColor UserPlayerColor {
+        get { return _userPlayerColor; }
+        set { SetProperty<GameColor>(ref _userPlayerColor, value, "UserPlayerColor", OnUserPlayerColorChanged); }
+    }
+
     private UniverseSizeGuiSelection _universeSizeSelection;
 
     private Species _userPlayerSpecies;
-    private GameColor _userPlayerColor;
     private SpeciesGuiSelection _userPlayerSpeciesSelection;
 
     private GuiElementID[] _aiPlayerSpeciesPopupListIDs;
@@ -119,7 +124,7 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButton {
                 break;
 
             case GuiElementID.UserPlayerColorPopupList:
-                _userPlayerColor = Enums<GameColor>.Parse(selectionName);
+                UserPlayerColor = Enums<GameColor>.Parse(selectionName);
                 break;
             case GuiElementID.AIPlayer1ColorPopupList:
                 _aiPlayersColor[0] = Enums<GameColor>.Parse(selectionName);
@@ -161,12 +166,33 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButton {
         });
     }
 
-    private void OnUniverseSizeChanged() {
-        int aiPlayerCount = UniverseSize.DefaultAIPlayerCount();
-        RefreshAvailableAIPlayerElements(aiPlayerCount);
+    private void OnUserPlayerColorChanged() {
+        var colorToRemove = UserPlayerColor;
+        RefreshAIPlayersAvailableColors(colorToRemove);
     }
 
-    private void RefreshAvailableAIPlayerElements(int aiPlayerCount) {
+    private void RefreshAIPlayersAvailableColors(GameColor colorToRemove) {
+        _aiPlayerFolderLookup.Values.ForAll(go => {
+            go.SetActive(true);  // activate folder so can get at popup lists
+            var colorPopupList = go.GetSafeMonoBehaviourInChildren<GuiPlayerColorPopupList>();
+            colorPopupList.RemoveColor(colorToRemove);
+        });
+        if (UniverseSize != default(UniverseSize)) {    // if UniverseSize.None, no worries. RefreshAIPlayerAvailability() will get called when UniverseSize initialized
+            RefreshAIPlayerAvailability(UniverseSize.DefaultAIPlayerCount());  // re-establish the available AI players
+        }
+    }
+
+    private void OnUniverseSizeChanged() {
+        int aiPlayerCount = UniverseSize.DefaultAIPlayerCount();
+        RefreshAIPlayerAvailability(aiPlayerCount);
+    }
+
+    /// <summary>
+    /// Refreshes the AI Players that are available to choose.
+    /// </summary>
+    /// <param name="aiPlayerCount">The AIPlayer count.</param>
+    /// <exception cref="System.NotImplementedException"></exception>
+    private void RefreshAIPlayerAvailability(int aiPlayerCount) {
         _aiPlayerFolderLookup.Values.ForAll(go => go.SetActive(false));
 
         // now reactivate the AI player slots that will be in the game
@@ -200,8 +226,12 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButton {
     #endregion
 
     protected override void OnLeftClick() {
-        RecordPreferences();
+        var settings = CreateNewGameSettings();
+        RecordPreferences(settings);
+        InitiateNewGame(settings);
+    }
 
+    private GameSettings CreateNewGameSettings() {
         int aiPlayerCount = UniverseSize.DefaultAIPlayerCount();
         var aiPlayerRaces = new Race[aiPlayerCount];
         for (int i = 0; i < aiPlayerCount; i++) {
@@ -209,20 +239,27 @@ public class GuiNewGameMenuLaunchButton : AGuiMenuAcceptButton {
             aiPlayerRaces[i] = aiPlayerRace;
         }
 
-        var userRaceStat = new RaceStat(_userPlayerSpecies, "Maxii", TempGameValues.AnImageFilename, "Maxii description", _userPlayerColor);
+        var userRaceStat = new RaceStat(_userPlayerSpecies, "Maxii", TempGameValues.AnImageFilename, "Maxii description", UserPlayerColor);
 
         GameSettings settings = new GameSettings() {
             UniverseSize = UniverseSize,
             UserPlayerRace = new Race(userRaceStat),
-            AIPlayerRaces = aiPlayerRaces
+            AIPlayerRaces = aiPlayerRaces,
+
+            // these are used by PlayerPrefs to record preferences
+            UniverseSizeSelection = _universeSizeSelection,
+            UserPlayerSpeciesSelection = _userPlayerSpeciesSelection,
+            UserPlayerColor = UserPlayerColor
         };
-        _gameMgr.InitiateNewGame(settings);
+        return settings;
     }
 
-    private void RecordPreferences() {
-        _playerPrefsMgr.UniverseSizeSelection = _universeSizeSelection;
-        _playerPrefsMgr.UserPlayerSpeciesSelection = _userPlayerSpeciesSelection;
-        _playerPrefsMgr.UserPlayerColor = _userPlayerColor;
+    private void RecordPreferences(GameSettings settings) {
+        _playerPrefsMgr.RecordNewGameSettings(settings);
+    }
+
+    private void InitiateNewGame(GameSettings settings) {
+        _gameMgr.InitiateNewGame(settings);
     }
 
     [Conditional("UNITY_EDITOR")]

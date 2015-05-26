@@ -33,12 +33,27 @@ public abstract class AGuiPopupList<T> : AGuiMenuElement {
     /// </summary>
     protected virtual bool IncludesRandom { get { return false; } }
 
+    private string _defaultSelectionValue;
+    protected string DefaultSelectionValue {
+        get {
+            if (_defaultSelectionValue == null) { return _popupList.items[Constants.Zero]; }
+            return _defaultSelectionValue;
+        }
+        set { SetProperty<string>(ref _defaultSelectionValue, value, "DefaultSelectionValue", OnDefaultSelectionValueChanged); }
+    }
+
+    /// <summary>
+    /// The name values to initially use populating the popup list.
+    /// Names can be subsequently removed from use using RemoveNameValue(nameValue).
+    /// </summary>
+    protected abstract string[] NameValues { get; }
+
     protected UIPopupList _popupList;
 
     protected override void Awake() {
         base.Awake();
         ConfigurePopupList();
-        InitializeListValues();
+        InitializeListValues(NameValues);
         InitializeSelection();
         // don't receive events until initializing is complete
         EventDelegate.Add(_popupList.onChange, OnPopupListSelectionChanged);
@@ -57,13 +72,22 @@ public abstract class AGuiPopupList<T> : AGuiMenuElement {
     /// Assign all the values in the popupList.
     /// </summary>
     /// <remarks>Must be called in Awake() as UIPopupList makes a selectionName change to the item[0] in Start()</remarks>
-    private void InitializeListValues() {
+    private void InitializeListValues(string[] nameValues) {
         _popupList.items.Clear();
-        GetNames().ForAll(v => _popupList.items.Add(v));
+        nameValues.ForAll(nv => _popupList.items.Add(nv));
         Validate();
     }
 
-    protected abstract string[] GetNames();
+    /// <summary>
+    /// Removes the name value from the PopupList's available choices.
+    /// Allows dynamic adjustment in the available choices to be made by derived classes.
+    /// </summary>
+    /// <param name="nameValue">The name value.</param>
+    protected void RemoveNameValue(string nameValue) {
+        D.Assert(NameValues.Contains(nameValue));   // name might not be present in the list
+        InitializeListValues(NameValues.Except(nameValue).ToArray());
+        InitializeSelection();
+    }
 
     /// <summary>
     /// Select the PopupList item that is the starting selection.
@@ -72,19 +96,35 @@ public abstract class AGuiPopupList<T> : AGuiMenuElement {
     /// a selectionName change to item[0] in Start() if not already set.
     /// </remarks>
     private void InitializeSelection() {
-        if (HasPreference) {
-            string prefsPropertyName = ElementID.PreferencePropertyName();
+        string prefsPropertyName = ElementID.PreferencePropertyName();
+        if (prefsPropertyName != null) {
             PropertyInfo propertyInfo = typeof(PlayerPrefsManager).GetProperty(prefsPropertyName);
             if (propertyInfo == null) {
                 D.ErrorContext("No {0} property named {1} found!".Inject(typeof(PlayerPrefsManager).Name, prefsPropertyName), gameObject);
             }
             Func<T> propertyGet = (Func<T>)Delegate.CreateDelegate(typeof(Func<T>), PlayerPrefsManager.Instance, propertyInfo.GetGetMethod());
-            _popupList.value = propertyGet().ToString();
+            string nameValue = propertyGet().ToString();    // gets the value of the PlayerPrefsManager Property named prefsPropertyName
+            if (!_popupList.items.Contains(nameValue)) {
+                // the prefs name value has been removed from the available choices
+                D.WarnContext("Prefs NameValue {0} is no longer available to choose. Choosing default {1}.".Inject(nameValue, DefaultSelectionValue), gameObject);
+                nameValue = DefaultSelectionValue;
+            }
+            _popupList.value = nameValue;
         }
         else {
-            _popupList.value = IncludesRandom ? _popupList.items.Single(item => item.Equals("Random")) : _popupList.items[Constants.Zero];
+            // no pref stored for this ElementID
+            _popupList.value = IncludesRandom ? _popupList.items.Single(item => item.Equals("Random")) : DefaultSelectionValue;
         }
         //D.Log("GuiElement [{0}] selection initialized to {1}.", ElementID.GetName(), _popupList.value);
+    }
+
+    private void OnDefaultSelectionValueChanged() {
+        if (!_popupList.items.Contains(DefaultSelectionValue)) {
+            // the value is not among the available choices, probably because it was removed
+            D.WarnContext("DefaultSelectionValue {0} not among available value choices. Reverting to {1}.".Inject(DefaultSelectionValue, _popupList.items[0]), gameObject);
+            _defaultSelectionValue = null;  // forces use of _popupList.items[0]
+        }
+        InitializeSelection();
     }
 
     /// <summary>
@@ -100,6 +140,31 @@ public abstract class AGuiPopupList<T> : AGuiMenuElement {
             D.Assert(!_popupList.items.Contains("Random"));
         }
     }
+
+    #region PlayerPrefs Reflection-based Property Acquisition Archive
+
+    //private void InitializeSelection() {
+    //    if (HasPreference) {
+    //        string prefsPropertyName = ElementID.PreferencePropertyName();
+    //        PropertyInfo propertyInfo = typeof(PlayerPrefsManager).GetProperty(prefsPropertyName);
+    //        if (propertyInfo == null) {
+    //            D.ErrorContext("No {0} property named {1} found!".Inject(typeof(PlayerPrefsManager).Name, prefsPropertyName), gameObject);
+    //        }
+    //        Func<T> propertyGet = (Func<T>)Delegate.CreateDelegate(typeof(Func<T>), PlayerPrefsManager.Instance, propertyInfo.GetGetMethod());
+    //        string nameValue = propertyGet().ToString();    // gets the value of the PlayerPrefsManager Property named prefsPropertyName
+    //        if (!_popupList.items.Contains(nameValue)) {
+    //            // the prefs name value has been removed from the available choices
+    //            D.WarnContext("Prefs NameValue {0} is no longer available to choose. Choosing default {1}.".Inject(nameValue, DefaultSelectionValue), gameObject);
+    //            nameValue = DefaultSelectionValue;
+    //        }
+    //        _popupList.value = nameValue;
+    //    }
+    //    else {
+    //        _popupList.value = IncludesRandom ? _popupList.items.Single(item => item.Equals("Random")) : DefaultSelectionValue;
+    //    }
+    //}
+
+    #endregion
 
 }
 
